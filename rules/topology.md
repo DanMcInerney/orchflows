@@ -10,14 +10,16 @@
    first: a direct answer from evidence already in context; a one-off
    bounded route to `orch-task` through an ad-hoc ticket — any request
    that fits one executor's context and bound routes here, named
-   acceptance criteria included; one lane answering a bounded question →
+   acceptance criteria included, oracles concretely specified at cut
+   time — `pre-existing` provenance, independence and inline law per
+   [rules/verification.md](verification.md) §10 and
+   [rules/delegation.md](delegation.md) §2; one lane answering a bounded question →
    `orch-investigate`; independent one-offs: dispatch each packet in
    parallel through the delegation boundary, every result crossing the
    join; dependent one-offs: cut the ad-hoc set with edges, name its
    run bound, and run `orch-frontier` over it — the ticket files are
    the durable state, no spec and no worklog; independence enters per
-   [rules/verification.md](verification.md) §10 through per-item
-   checkers; else — only when the work
+   [rules/verification.md](verification.md) §10; else — only when the work
    needs a frozen spec: lanes at scale, an assembly, or resumption
    across sessions — a pattern, stamped by shape of done, each with
    one entrypoint: acceptance met once → deliver (`orch-deliver`) —

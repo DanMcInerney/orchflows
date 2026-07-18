@@ -12,7 +12,10 @@ defines.
 - Route smallest-first: a direct answer from evidence already in
   context; one one-off bounded task to an ad-hoc ticket and
   `orch-task` — any request that fits one executor's context and
-  bound routes here, named acceptance criteria included; one lane
+  bound routes here, named acceptance criteria included, oracles
+  concretely specified at cut time — `pre-existing` provenance,
+  independence and inline law per rules/verification.md §10 and
+  rules/delegation.md §2; one lane
   answering a bounded question routes to `orch-investigate`;
   independent one-offs: dispatch each packet in parallel through
   `orch-delegate`, every result crossing `orch-integrate`; dependent
