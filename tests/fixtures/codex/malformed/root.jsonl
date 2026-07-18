@@ -1,0 +1,5 @@
+{"timestamp": "2026-01-01T00:00:00.000Z", "type": "session_meta", "payload": {"session_id": "redacted-malformed-thread", "id": "redacted-malformed-thread", "parent_thread_id": null, "cwd": "REDACTED", "model_provider": "openai"}}
+{"timestamp": "2026-01-01T00:00:01.000Z", "type": "response_item", "payload": {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "REDACTED broken
+{"timestamp": "2026-01-01T00:00:02.000Z", "type": "response_item"}
+{"timestamp": "2026-01-01T00:00:03.000Z", "type": "response_item", "payload": {"type": "message", "role": "user", "content": "REDACTED not-a-list"}}
+{"timestamp": "2026-01-01T00:00:04.000Z", "type": "world_state", "payload": {"note": "REDACTED future schema addition"}}

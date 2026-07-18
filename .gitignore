@@ -1,0 +1,30 @@
+# Runtime state: everything in .orch/ except the tracked canary fixture.
+# Canary scratch is a run-output area; only its .gitkeep is tracked.
+.orch/*
+!.orch/canary/
+.orch/canary/scratch/*
+!.orch/canary/scratch/.gitkeep
+
+# Session-local host state.
+.claude/worktrees/
+.claude/settings.local.json
+.claude/skills/no/
+.codex/
+
+# Python bytecode, environments, test output, and tool caches.
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# OS and editor artifacts.
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/

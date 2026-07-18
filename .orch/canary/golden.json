@@ -1,0 +1,41 @@
+{
+  "run": "canary",
+  "items": {
+    "canary-delegate": {
+      "status": "complete",
+      "criteria": {
+        "1": "PASS"
+      },
+      "changed_artifacts_bytes": "{\"a\":10,\"b\":20,\"c\":30}\n"
+    },
+    "canary-scope-reject": {
+      "disposition": "rejected",
+      "blame": "child under-delivered",
+      "reason": "changed_artifacts includes extra.txt, outside write_scope"
+    },
+    "canary-verify-fail": {
+      "status": "failed",
+      "criteria": {
+        "1": "PASS",
+        "2": "FAIL"
+      },
+      "overall": "FAIL"
+    },
+    "canary-tdd-micro": {
+      "status": "complete",
+      "criteria": {
+        "1": "PASS"
+      },
+      "test_name": "test_double_returns_twice_input"
+    },
+    "canary-judge-anchor": {
+      "oracle_class": "judged",
+      "anchor_tolerance": 1,
+      "scores": {
+        "clarity": 4,
+        "evidence": 2,
+        "structure": 4
+      }
+    }
+  }
+}

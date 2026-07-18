@@ -1,0 +1,1 @@
+{"agentType": "worker-a", "description": "REDACTED worker description", "name": "worker-a", "spawnDepth": 0, "taskKind": "in_process_teammate", "teamName": "redacted-team", "color": "blue", "planModeRequired": false, "model": "redacted-model-child", "permissionMode": "bypassPermissions"}

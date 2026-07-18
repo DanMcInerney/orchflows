@@ -1,0 +1,5 @@
+{"parentUuid": null, "isSidechain": false, "type": "user", "message": {"role": "user", "content": "REDACTED request text"}, "uuid": "m-0001", "timestamp": "2026-01-01T00:00:00.000Z", "sessionId": "redacted-session-bbbb2222"}
+{"parentUuid": "m-0001", "isSidechain": false, "type": "assistant", "message": {"model": "redacted-model", "content": [{"type": "text", "text": "REDACTED truncated line
+{"parentUuid": "m-0001", "isSidechain": false, "type": "assistant", "timestamp": "2026-01-01T00:00:02.000Z", "sessionId": "redacted-session-bbbb2222"}
+{"type": "totally-new-bookkeeping-kind", "uuid": "m-0004", "timestamp": "2026-01-01T00:00:03.000Z", "sessionId": "redacted-session-bbbb2222", "note": "REDACTED future schema addition"}
+{"parentUuid": "m-0001", "isSidechain": false, "type": "user", "message": {"role": "user", "content": 12345}, "uuid": "m-0005", "timestamp": "2026-01-01T00:00:04.000Z", "sessionId": "redacted-session-bbbb2222"}

@@ -1,0 +1,2 @@
+* text=auto eol=lf
+install.cmd text eol=crlf
