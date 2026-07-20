@@ -58,4 +58,15 @@
     (glue, rule 2 — primary work stays forbidden by rule 4) records it
     in the run's worklog (`contracts/worklog.md`, `orch-worklog`) at
     dispatch time, so depth-2 work is visible to the caller through run
-    state, never only through transport.
+    state, never only through transport. A lane is watched by its
+    caller, not by its transport: at dispatch the caller arms its own
+    re-check of the lane's durable run state — through the host's
+    scheduler, or a bounded wait loop where it has none — at a cadence
+    it states when arming, never coarser than the lane's bound, and
+    judges each reading by this rule. A dispatch that launches an
+    external process whose outcome its return depends on either holds
+    its turn until that outcome lands in durable state, or records the
+    process and its expected artifact in the run's worklog at launch,
+    as helper lanes are recorded, so the caller's re-check covers it;
+    a turn ending with such a process recorded nowhere is child
+    under-delivered at the join.
