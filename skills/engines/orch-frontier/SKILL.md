@@ -11,11 +11,17 @@ for an ad-hoc set.
 Open by dispatching the whole ready frontier — every ticket whose
 `depends_on` are all `complete` — in parallel through `orch-task`, one
 dispatch per ticket, no two sharing a write scope; a ticket waiting on
-a dependency stays `pending`. Then recompute on every event — a result
-landing, a suspension parking its item, a claim's lease expiring —
-never on a schedule of rounds: record what landed in the worklog —
-the tickets alone are the record when the run keeps none; reclaim
-stale claims per [rules/delegation.md](../../../rules/delegation.md)
+a dependency stays `pending`. Arm the caller's own re-check of every
+open ticket's durable file at dispatch, per
+[rules/delegation.md](../../../rules/delegation.md) §11 — a child's
+closing message is a courtesy, never the signal this engine waits on;
+a lost or misdirected message costs one re-check interval, nothing
+more. Then recompute on every event — a result landing (by message or
+by that re-check reading a ticket `complete`), a suspension parking
+its item, a claim's lease expiring — never on a schedule of rounds:
+record what landed in the worklog — the tickets alone are the record
+when the run keeps none; reclaim stale claims per
+[rules/delegation.md](../../../rules/delegation.md)
 §11 (a parked item's claim never goes stale); promote
 each `pending` ticket whose `depends_on` are now all `complete` to
 `ready`; set each `pending` ticket depending on a `failed`, `blocked`,

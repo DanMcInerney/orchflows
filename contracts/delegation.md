@@ -1,10 +1,10 @@
 # Delegation contract
 
 The packet every dispatch carries — the one dispatch currency.
-`orch-delegate` requires all five parts below and refuses a dispatch
+`orch-delegate` requires all six parts below and refuses a dispatch
 missing any. A [work item](work-item.md) extends this packet: packet
 parts ⊕ completion test ⊕ lifecycle ⊕ graph position — and a work-item
-dispatch may supply the five parts by reference to the ticket path.
+dispatch may supply the six parts by reference to the ticket path.
 
 - `objective` — one explicit outcome; a child with two objectives is two
   dispatches.
@@ -32,12 +32,20 @@ dispatch may supply the five parts by reference to the ticket path.
   pointing to it, per rules/delegation.md §10; a packet naming no
   durable artifact contracts for a message-only return; nothing else
   crosses back.
+- `reply_to` — the literal identifier the child's closing message must
+  address, computed once from the dispatcher's own identity: its own
+  assigned name where the dispatcher is itself a named child, `main`
+  where the dispatcher is the top-level orchestrator. Never left for
+  the child to infer — nothing in a child's own context reveals who
+  dispatched it, and a spawn surface whose return travels only by an
+  addressed message (references/profiles.md) turns a missing `reply_to`
+  into a silently misdirected return, not a loud refusal.
 
-A sixth, optional part: `profile` — an explicit role override per
+A seventh, optional part: `profile` — an explicit role override per
 rules/roles.md §4, binding only the dispatch naming it (one-shot) and
 never propagating to a descendant dispatch; its absence defers role
 resolution to rules/roles.md §4's remaining order. Only a missing part
-among the five refuses a dispatch; a missing `profile` never does.
+among the six refuses a dispatch; a missing `profile` never does.
 
 Blame rule, recorded at every failed join: a failure traceable to a
 missing or false packet field is the caller's defect; a failure to
