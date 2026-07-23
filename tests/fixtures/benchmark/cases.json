@@ -1,0 +1,42 @@
+{
+  "case_set_identity": "case-set:uppercase-transformer-v1",
+  "cases": [
+    {
+      "case_identity": "case:ascii-word-v1",
+      "input": {
+        "text": "orchflows"
+      },
+      "expected": {
+        "text": "ORCHFLOWS"
+      },
+      "oracle": "exact-json-equality",
+      "oracle_class": "deterministic",
+      "required": true,
+      "coverage": [
+        "lowercase ASCII letters"
+      ],
+      "covered_evidence": [
+        "source:fixture-declaration-v1"
+      ]
+    },
+    {
+      "case_identity": "case:mixed-symbols-v1",
+      "input": {
+        "text": "AGENT-42!"
+      },
+      "expected": {
+        "text": "AGENT-42!"
+      },
+      "oracle": "exact-json-equality",
+      "oracle_class": "deterministic",
+      "required": true,
+      "coverage": [
+        "already-cased letters",
+        "digits and punctuation"
+      ],
+      "covered_evidence": [
+        "source:fixture-declaration-v1"
+      ]
+    }
+  ]
+}

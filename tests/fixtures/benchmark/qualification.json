@@ -1,0 +1,237 @@
+{
+  "qualification_identity": "qualification:uppercase-fixture-v1",
+  "overall_verdict": "PASS",
+  "weakest_oracle_class": "deterministic",
+  "actual_qualification_spend": {
+    "replays": 3,
+    "candidate_processes": 6
+  },
+  "calibration_candidates": {
+    "known_good": {
+      "identity": "sha256:c7e66727fc17531ebc3f710d0306fb014c1c465d4c9c532c755f5b4da9a76f7f",
+      "locator": "known_good.py"
+    },
+    "known_bad": {
+      "identity": "sha256:584b56f1980a4c5514e79f6ee30478932711c62bbfec1ed0199f62f31c6a4582",
+      "locator": "known_bad.py"
+    }
+  },
+  "entries": [
+    {
+      "criterion": "oracle_failability",
+      "required": true,
+      "verdict": "PASS",
+      "oracle": "replay the retained known-bad candidate",
+      "oracle_class": "deterministic",
+      "evidence": {
+        "identity": "sha256:7fd3674fadb7725dda0cd78eff272891ee5aad148fdf74113b653493421a271e",
+        "reproduce": "python runner.py --manifest manifest.json --candidate known_bad.py",
+        "provenance": [
+          "sha256:584b56f1980a4c5514e79f6ee30478932711c62bbfec1ed0199f62f31c6a4582",
+          "sha256:ae60516bcac95e8d629ef655ac2ae64ce726275112fcc5dddae591a8e7485435",
+          "sha256:dc952a4792fd17a0ccb777ac03ef679b011e0c4e040cd8d4101f5501ffd07866",
+          "sha256:ebc5b198e865247faf5a6fc7df80a3fd0c90e990da1b830e347e37ee7856388b"
+        ],
+        "observation": {
+          "known_bad_verdict": "FAIL",
+          "eligible_for_ranking": false
+        }
+      },
+      "covers": [
+        "sha256:584b56f1980a4c5514e79f6ee30478932711c62bbfec1ed0199f62f31c6a4582",
+        "sha256:ae60516bcac95e8d629ef655ac2ae64ce726275112fcc5dddae591a8e7485435",
+        "sha256:dc952a4792fd17a0ccb777ac03ef679b011e0c4e040cd8d4101f5501ffd07866",
+        "sha256:ebc5b198e865247faf5a6fc7df80a3fd0c90e990da1b830e347e37ee7856388b"
+      ]
+    },
+    {
+      "criterion": "coverage",
+      "required": true,
+      "verdict": "PASS",
+      "oracle": "compare case identities and coverage with the evaluation design",
+      "oracle_class": "deterministic",
+      "evidence": {
+        "identity": "sha256:5245f55d9836e8b9b4edc4f432e1012f46a7530c33bb3639ac1133db91a0bcd2",
+        "reproduce": "python -m unittest tests.test_benchmaker.TestBenchmarkFixture.test_qualification_recomputes_every_required_check",
+        "provenance": [
+          "sha256:043ee5a568114e8c9d3c95ee45da39f1797b9fb4f24abb46fcc1d8e6a2b8bbe5",
+          "sha256:ae60516bcac95e8d629ef655ac2ae64ce726275112fcc5dddae591a8e7485435"
+        ],
+        "observation": {
+          "case_count": 2,
+          "covered_dimensions": [
+            "already-cased letters",
+            "digits and punctuation",
+            "lowercase ASCII letters"
+          ]
+        }
+      },
+      "covers": [
+        "sha256:043ee5a568114e8c9d3c95ee45da39f1797b9fb4f24abb46fcc1d8e6a2b8bbe5",
+        "sha256:ae60516bcac95e8d629ef655ac2ae64ce726275112fcc5dddae591a8e7485435"
+      ]
+    },
+    {
+      "criterion": "discrimination",
+      "required": true,
+      "verdict": "PASS",
+      "oracle": "replay known-good and known-bad candidates under one component set",
+      "oracle_class": "deterministic",
+      "evidence": {
+        "identity": "sha256:650cd41138e2adbd70f4c3fbfb08ffc7893d5ddfb24199659ce5569c896a35ad",
+        "reproduce": "python -m unittest tests.test_benchmaker.TestBenchmarkFixture.test_runner_accepts_good_rejects_bad_and_replays_evidence",
+        "provenance": [
+          "sha256:584b56f1980a4c5514e79f6ee30478932711c62bbfec1ed0199f62f31c6a4582",
+          "sha256:ae60516bcac95e8d629ef655ac2ae64ce726275112fcc5dddae591a8e7485435",
+          "sha256:c7e66727fc17531ebc3f710d0306fb014c1c465d4c9c532c755f5b4da9a76f7f",
+          "sha256:dc952a4792fd17a0ccb777ac03ef679b011e0c4e040cd8d4101f5501ffd07866",
+          "sha256:ebc5b198e865247faf5a6fc7df80a3fd0c90e990da1b830e347e37ee7856388b"
+        ],
+        "observation": {
+          "known_good_verdict": "PASS",
+          "known_bad_verdict": "FAIL"
+        }
+      },
+      "covers": [
+        "sha256:584b56f1980a4c5514e79f6ee30478932711c62bbfec1ed0199f62f31c6a4582",
+        "sha256:ae60516bcac95e8d629ef655ac2ae64ce726275112fcc5dddae591a8e7485435",
+        "sha256:c7e66727fc17531ebc3f710d0306fb014c1c465d4c9c532c755f5b4da9a76f7f",
+        "sha256:dc952a4792fd17a0ccb777ac03ef679b011e0c4e040cd8d4101f5501ffd07866",
+        "sha256:ebc5b198e865247faf5a6fc7df80a3fd0c90e990da1b830e347e37ee7856388b"
+      ]
+    },
+    {
+      "criterion": "reproducibility",
+      "required": true,
+      "verdict": "PASS",
+      "oracle": "replay the known-good candidate twice and compare results",
+      "oracle_class": "deterministic",
+      "evidence": {
+        "identity": "sha256:0b23b0bae08fd7d0d8f679646f7a380b720b927078c2726fb6f7a68239168c2f",
+        "reproduce": "python -m unittest tests.test_benchmaker.TestBenchmarkFixture.test_runner_accepts_good_rejects_bad_and_replays_evidence",
+        "provenance": [
+          "sha256:ae60516bcac95e8d629ef655ac2ae64ce726275112fcc5dddae591a8e7485435",
+          "sha256:c7e66727fc17531ebc3f710d0306fb014c1c465d4c9c532c755f5b4da9a76f7f",
+          "sha256:dc952a4792fd17a0ccb777ac03ef679b011e0c4e040cd8d4101f5501ffd07866",
+          "sha256:ebc5b198e865247faf5a6fc7df80a3fd0c90e990da1b830e347e37ee7856388b"
+        ],
+        "observation": {
+          "identical_replays": true
+        }
+      },
+      "covers": [
+        "sha256:ae60516bcac95e8d629ef655ac2ae64ce726275112fcc5dddae591a8e7485435",
+        "sha256:c7e66727fc17531ebc3f710d0306fb014c1c465d4c9c532c755f5b4da9a76f7f",
+        "sha256:dc952a4792fd17a0ccb777ac03ef679b011e0c4e040cd8d4101f5501ffd07866",
+        "sha256:ebc5b198e865247faf5a6fc7df80a3fd0c90e990da1b830e347e37ee7856388b"
+      ]
+    },
+    {
+      "criterion": "redundancy",
+      "required": true,
+      "verdict": "PASS",
+      "oracle": "remove each case and recompute the remaining coverage",
+      "oracle_class": "deterministic",
+      "evidence": {
+        "identity": "sha256:cdb7b952e997b4638f133d5f7d6a10c436aecce152a21d7091826deabca309d9",
+        "reproduce": "python -m unittest tests.test_benchmaker.TestBenchmarkFixture.test_qualification_recomputes_every_required_check",
+        "provenance": [
+          "sha256:043ee5a568114e8c9d3c95ee45da39f1797b9fb4f24abb46fcc1d8e6a2b8bbe5",
+          "sha256:ae60516bcac95e8d629ef655ac2ae64ce726275112fcc5dddae591a8e7485435"
+        ],
+        "observation": {
+          "unique_coverage": {
+            "case:ascii-word-v1": [
+              "lowercase ASCII letters"
+            ],
+            "case:mixed-symbols-v1": [
+              "already-cased letters",
+              "digits and punctuation"
+            ]
+          }
+        }
+      },
+      "covers": [
+        "sha256:043ee5a568114e8c9d3c95ee45da39f1797b9fb4f24abb46fcc1d8e6a2b8bbe5",
+        "sha256:ae60516bcac95e8d629ef655ac2ae64ce726275112fcc5dddae591a8e7485435"
+      ]
+    },
+    {
+      "criterion": "provenance",
+      "required": true,
+      "verdict": "PASS",
+      "oracle": "resolve every case source through the provenance component",
+      "oracle_class": "deterministic",
+      "evidence": {
+        "identity": "sha256:41e6d62ea4276f482befa160a8efb398256ce4deb93bda635ad46f694be7b347",
+        "reproduce": "python -m unittest tests.test_benchmaker.TestBenchmarkFixture.test_qualification_recomputes_every_required_check",
+        "provenance": [
+          "sha256:043ee5a568114e8c9d3c95ee45da39f1797b9fb4f24abb46fcc1d8e6a2b8bbe5",
+          "sha256:ae60516bcac95e8d629ef655ac2ae64ce726275112fcc5dddae591a8e7485435",
+          "sha256:f68c17df0e9747450ea1f22f4e0b3d37da20da9b51e40eae97fa355352addc8b"
+        ],
+        "observation": {
+          "case_sources": {
+            "case:ascii-word-v1": [
+              "source:fixture-declaration-v1"
+            ],
+            "case:mixed-symbols-v1": [
+              "source:fixture-declaration-v1"
+            ]
+          }
+        }
+      },
+      "covers": [
+        "sha256:043ee5a568114e8c9d3c95ee45da39f1797b9fb4f24abb46fcc1d8e6a2b8bbe5",
+        "sha256:ae60516bcac95e8d629ef655ac2ae64ce726275112fcc5dddae591a8e7485435",
+        "sha256:f68c17df0e9747450ea1f22f4e0b3d37da20da9b51e40eae97fa355352addc8b"
+      ]
+    },
+    {
+      "criterion": "execution_cost",
+      "required": true,
+      "verdict": "PASS",
+      "oracle": "compare qualification replay spend with design and manifest limits",
+      "oracle_class": "deterministic",
+      "evidence": {
+        "identity": "sha256:c9d420659ab63659c53cd383d472702f8160b73b6af6af6a4dde79eb462435bf",
+        "reproduce": "python -m unittest tests.test_benchmaker.TestBenchmarkFixture.test_qualification_recomputes_every_required_check",
+        "provenance": [
+          "sha256:043ee5a568114e8c9d3c95ee45da39f1797b9fb4f24abb46fcc1d8e6a2b8bbe5",
+          "sha256:ae60516bcac95e8d629ef655ac2ae64ce726275112fcc5dddae591a8e7485435",
+          "sha256:dc952a4792fd17a0ccb777ac03ef679b011e0c4e040cd8d4101f5501ffd07866"
+        ],
+        "observation": {
+          "replays": 3,
+          "candidate_processes": 6,
+          "per_case_timeout_seconds": 2
+        }
+      },
+      "covers": [
+        "sha256:043ee5a568114e8c9d3c95ee45da39f1797b9fb4f24abb46fcc1d8e6a2b8bbe5",
+        "sha256:ae60516bcac95e8d629ef655ac2ae64ce726275112fcc5dddae591a8e7485435",
+        "sha256:dc952a4792fd17a0ccb777ac03ef679b011e0c4e040cd8d4101f5501ffd07866"
+      ]
+    },
+    {
+      "criterion": "optimization_resistance",
+      "required": false,
+      "verdict": "UNVERIFIED",
+      "oracle": "candidate-inaccessible protected-evidence execution",
+      "oracle_class": "deterministic",
+      "evidence": {
+        "identity": "sha256:3dfdaf1ef222ab270468ce2ff23ab469f3a5fa353a69dcaaa26b20c5cb5c4d49",
+        "reproduce": "inspect manifest protected_evidence",
+        "provenance": [
+          "protected-evidence:none"
+        ],
+        "observation": {
+          "candidate_inaccessible_check": null
+        }
+      },
+      "covers": [
+        "protected-evidence:none"
+      ]
+    }
+  ]
+}

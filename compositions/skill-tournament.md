@@ -1,18 +1,19 @@
 # Skill tournament (non-normative example)
 
-Evolve applied to the library itself: competing variants of one skill
-run the same work and are judged by the same oracles. The standing
-method-test harness — how an empirical question about a skill's wording
-gets settled by evidence instead of taste.
+Apply Evolve to one fixed skill identity. Before the campaign,
+`orch-benchmaker` runs its canonical evidence, evaluation-design,
+materialization, qualification, and sealing pipeline to return one immutable
+benchmark. The campaign never changes that benchmark.
 
-Fix the fixture first: a frozen set of work items with known oracles —
-`orch-fixture` harvests them from real completed runs. `orch-build`
-writes the variants, each differing in only the wording under test.
-Per variant: an isolated workspace with the variant installed, the
-fixture run through `orch-task`, results scored — deterministic
-fixtures by their oracles, judged fixtures through `orch-panel` blind
-to which variant produced what. The winner replaces the incumbent
-through `orch-build` like any change.
+`orch-build` writes variants that differ only in the declared surface. Run
+each variant in isolation against the benchmark, submit its fixed evidence to
+`orch-verify`, and exclude every required failure before `orch-panel`. Blind
+judges cite that same admitted evidence in one score card per eligible
+candidate; Evolve applies its frozen promotion rule and returns an evolution
+result. The evolution result does not install its winner; activation is a
+separate authorized run.
 
-One variable per tournament: variants differ in the one wording under
-test, or the result attributes nothing.
+BenchMaker itself can be the fixed target identity. That BenchMaker run does
+not call Evolve. A separate Evolve campaign may consume the qualified
+benchmark, and any successor benchmark must be independently qualified before
+a later campaign.

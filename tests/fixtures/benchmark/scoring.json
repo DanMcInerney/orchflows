@@ -1,0 +1,17 @@
+{
+  "scoring_identity": "scoring:required-exact-match-v1",
+  "required_status": "PASS",
+  "per_case": {
+    "PASS": 1,
+    "FAIL": 0,
+    "UNVERIFIED": 0
+  },
+  "aggregation": {
+    "operator": "all_required_status",
+    "status": "PASS"
+  },
+  "ranking_eligibility": {
+    "operator": "aggregation_passes"
+  },
+  "judged_criteria": []
+}

@@ -12,16 +12,19 @@ Or don't do that — just ask Claude or Codex for any one-off task of any
 size, like you normally would. Every request autoroutes to the smallest
 subagent-driven workflow that can prove it's done: a one-line answer
 stays a one-line answer; a product-sized build gets a frozen spec,
-tickets, parallel subagents, and a verification gate. 37 composable
+tickets, parallel subagents, and a verification gate. 38 composable
 skills. Claude Code and Codex, Windows and POSIX. By default the
 planner/reviewer subagent is Fable 5 on high effort on Claude Code and
 GPT-5.6 Sol on ultra on Codex; workers are Sonnet 5 on xhigh and
 GPT-5.6 Sol on high. Think of it as an upgraded, cross-harness
 Dynamic Workflows.
 
-Use the project-scoped [BenchMaker workflow](docs/benchmaker.md) to request a
-qualified runnable suite; it fails closed until a research-to-bench T0 carrier
-is admitted.
+Use canonical `orch-benchmaker` to build a qualified immutable benchmark for
+any target with an observable outcome. Its
+[public dataflow and migration note](docs/benchmaker.md) cover the immutable
+evaluation design, benchmark, score card, and evolution result roles;
+Verify-before-Judge consumption; and manual between-campaign
+self-benchmarking.
 
 ## The problem
 
@@ -215,18 +218,19 @@ flowchart TD
     │   │   └── orch-panel     — Uses several independent reviewers to compare choices fairly
     │   │
     │   ├── workflows/ — Complete processes made from the smaller building blocks
-    │   │   ├── orch-spec          — Turns a request into a clear, agreed plan
+    │   │   ├── orch-benchmaker    — Builds and qualifies an immutable runnable benchmark
+    │   │   ├── orch-build         — Creates or changes a reusable part of the orchflows library
     │   │   ├── orch-deliver       — Runs a project from the agreed plan to a checked final result
-    │   │   ├── orch-goal          — Runs the delivery process again to improve the result further
-    │   │   ├── orch-bench         — Sets the rules and tests before different options are compared
-    │   │   ├── orch-evolve        — Creates and compares improved versions over several rounds
     │   │   ├── orch-diagnose      — Reproduces a problem and finds what is actually causing it
+    │   │   ├── orch-eval-design   — Freezes candidate-blind evaluation semantics before construction
+    │   │   ├── orch-evolve        — Creates and compares improved versions over several rounds
     │   │   ├── orch-fix           — Finds the cause of a problem, repairs it, and proves it stays fixed
     │   │   ├── orch-repair        — Applies the smallest change that fixes a known problem
     │   │   ├── orch-review-fix    — Reviews the result once, fixes valid problems, and checks it again
-    │   │   ├── orch-build         — Creates or changes a reusable part of the orchflows library
     │   │   ├── orch-fixture       — Saves a finished task as an example that can be run again later
+    │   │   ├── orch-goal          — Runs the delivery process again to improve the result further
     │   │   ├── orch-self-improve  — Studies past difficulties and proposes improvements to the system
+    │   │   ├── orch-spec          — Turns a request into a clear, agreed plan
     │   │   └── orch-triage        — Sorts a list of work into what is ready, blocked, or needs a person
     │   │
     │   ├── instances/ — Skills that perform a particular kind of hands-on work

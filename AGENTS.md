@@ -1,7 +1,5 @@
 # Repository guidance
 
-- `benchmaker`: build and qualify one benchmark suite; read `.orchflows/skills/benchmaker/SKILL.md`.
-
 This repository is the canonical `orchflows` source: a four-tier library
 for orchestrator > subagent work. `ARCHITECTURE.md` maps boundaries,
 ownership, and dependency direction. `docs/vocabulary.md` owns every library

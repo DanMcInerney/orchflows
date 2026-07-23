@@ -1,40 +1,38 @@
 ---
 name: orch-evolve
-description: Bounded generations of judged parallel candidates against a frozen bench, toward a declared target. Manual-only evolve pattern.
+description: Evolve one target through bounded candidate generations against one frozen qualified benchmark. Manual-only campaign.
 disable-model-invocation: true
 role: none
 ---
 
-Require: the incumbent artifact by identity; the goal as stated; a
-done-check independent of the bound — a target score or a stated
-margin over the incumbent, that decision settled through
-`orch-elicit` when undeclared; a generation width; and a bound. When
-the artifact's class matches a pack, its craft, lens, and oracle
-references bind generation and judging; nothing here invents domain
-best practice.
+Require: one complete [delegation packet](../../../contracts/delegation.md)
+whose `inputs` carry one frozen evolve spec governed by the [spec contract](../../../contracts/spec.md).
+The spec's `evidence` identifies the incumbent identity, its fixed benchmark result/evidence, covered eligibility verdict and Judge-owned score card, plus one qualified benchmark identity and covered-PASS qualification verdict.
+`affected_surfaces` names candidate-mutable target surfaces; packet `authority` names write scope and exclusions. Mutation authority is their intersection.
+Spec `acceptance` fixes generation width, lane count per candidate, promotion done-check and rule, required margin, and regression criteria; spec `bound` and packet `bounds` cap the campaign.
 
-Freeze the bench through `orch-bench` (design mode). Run `orch-loop`
-with: body — one generation: dispatch one lane per variant in
-parallel through orch-delegate, every result crossing orch-integrate,
-the incumbent as fixed input, the generation brief's dimensions to
-vary and constraints to hold verbatim, and its executor binding, then
-orch-panel judges the fixed set, incumbent
-plus every variant, against the frozen bench; a winning variant
-promotes as the new incumbent, every non-winner a killed approach
-carrying the panel's evidence; between generations only, on panel
-disagreement or a criterion with no score spread, re-run `orch-bench`
-(revise mode) and re-score the incumbent under the versioned bench
-before the next generation counts as progress. Done-check — the
-declared target or margin, judged through a fresh `orch-judge` pass
-over the final incumbent alone, never the promoting generation's panel
-score. Packet — the incumbent's identity and score card, grafted
-runner-up elements, and the disagreement register. Bound — the
-generation cap. Terminal states — complete, stalled, limited — follow
-[rules/loops.md](../../../rules/loops.md).
+Freeze the benchmark identity, runner, scoring, protected evidence policy, mutation authority, promotion rule, required margin, and bound.
+A changed benchmark starts a new campaign in which every retained candidate is evaluated again.
 
-Never: compare candidates across generations without the frozen bench;
-promote a variant the loss check contradicts.
+Submit the incumbent's fixed result/evidence identity and frozen required eligibility and regression criteria, with named oracles and `oracle_class`, to `orch-verify`.
+Only covered PASS permits the Judge-owned incumbent score card to supply generation direction; expose no protected item-level evidence.
 
-Return: the final incumbent's identity and closing score card,
-generation count, bench version history, the promotion/kill log, and
-bounds spent.
+Run `orch-loop` with the frozen goal, one generation as caller-owned composite body, the done-check, bound, and a context packet carrying campaign constants, incumbent identity and score card, promotion/kill log, disagreement, and failed approaches.
+
+Each generation dispatches independent variants through `orch-delegate` within mutation authority; every child return crosses `orch-integrate` with caller write scope.
+Run the frozen runner against each integrated candidate to produce one fixed result/evidence identity, then submit it and the same frozen criteria to `orch-verify`.
+Kill any candidate lacking PASS on every required deterministic criterion; deterministic failure blocks eligibility and judged score cannot compensate.
+
+Send only verified survivors, including the incumbent, as a fixed set binding each candidate to its covered-PASS result/evidence identity and frozen benchmark/scoring identities.
+Submit that set, frozen criteria, predeclared aggregation, and lane count to `orch-panel`.
+Promote only a survivor whose score card cites the admitted evidence and satisfies the frozen rule and margin; promotion alone never completes.
+
+A judged done-check PASS is provisional. Submit the final incumbent, its admitted result/evidence identity, and frozen scoring criteria to a fresh `orch-judge`.
+Only a closing score card citing that evidence can satisfy the done-check.
+
+An ambiguous or non-discriminating benchmark returns a blocked partial result, evidence, and feedback for a separate BenchMaker run.
+Terminal states and partial-result law follow [rules/loops.md](../../../rules/loops.md).
+
+Never: change campaign constants; rank an ineligible candidate; re-execute or substitute admitted evidence for judging; expose protected evidence; call evaluation design or BenchMaker; treat a changed benchmark as continuity.
+
+Return: status, final incumbent identity and closing score card, frozen benchmark identity, generation count, promotion/kill log, disagreement, partial evidence, feedback and gaps, and bounds spent.

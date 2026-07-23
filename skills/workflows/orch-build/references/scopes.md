@@ -29,7 +29,7 @@ repository itself and needs no install.
 - Custom items never carry the `orch-` prefix; the prefix is reserved
   for canonical skills.
 - Custom workflows instantiate from compositions: pick the nearest
-  worked example in `compositions/`, pin its open decisions (bench,
+  worked example in `compositions/`, pin its open decisions (benchmark,
   bounds, defaults, schedule), and land the result at scope. A proven
   custom workflow may be proposed back as a composition — a
   canonical-scope build.
