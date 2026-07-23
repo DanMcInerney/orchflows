@@ -188,5 +188,31 @@ class TestBenchmakerProtocol(unittest.TestCase):
         self.assertIn("Failure preserves partial evidence", returned_words)
 
 
+class TestBenchmakerDocumentation(unittest.TestCase):
+    def test_docs_describe_only_project_scoped_construction_and_qualification(self):
+        docs = (ROOT / "docs" / "benchmaker.md").read_text(encoding="utf-8")
+        headings = re.findall(r"^#{1,2} (.+)$", docs, re.MULTILINE)
+        self.assertEqual(
+            ["BenchMaker", "Project scope", "Construction", "Qualification", "Result"],
+            headings,
+        )
+        self.assertIn("project-scoped custom workflow", docs)
+        self.assertIn("../.orchflows/skills/benchmaker/SKILL.md", docs)
+        self.assertIn("one declared target and intended outcome", docs)
+        self.assertIn("[`orch-bench`]", docs)
+        self.assertIn("sole design owner", docs)
+        for forbidden in ("recursive", "self-improv", "evolv", "promot", "activat"):
+            self.assertNotIn(forbidden, docs.lower())
+
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        benchmaker_lines = [
+            line for line in readme.splitlines() if "BenchMaker" in line
+        ]
+        self.assertEqual(1, len(benchmaker_lines))
+        self.assertIn("project-scoped", benchmaker_lines[0])
+        self.assertIn("[BenchMaker workflow](docs/benchmaker.md)", benchmaker_lines[0])
+        self.assertNotIn("proposal", benchmaker_lines[0].lower())
+
+
 if __name__ == "__main__":
     unittest.main()
