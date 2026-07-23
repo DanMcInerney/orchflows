@@ -19,10 +19,11 @@ ROLE_TABLE = {
     "orch-task": "none",
     "orch-frontier": "none",
     # none: all workflows
-    "orch-bench": "none",
+    "orch-benchmaker": "none",
     "orch-build": "none",
     "orch-deliver": "none",
     "orch-diagnose": "none",
+    "orch-eval-design": "none",
     "orch-evolve": "none",
     "orch-fix": "none",
     "orch-fixture": "none",
@@ -60,8 +61,8 @@ ROLE_TABLE = {
 
 
 class TestFrozenRoleTable(unittest.TestCase):
-    def test_table_has_37_entries(self):
-        self.assertEqual(37, len(ROLE_TABLE))
+    def test_table_has_38_entries(self):
+        self.assertEqual(38, len(ROLE_TABLE))
 
     def test_table_covers_exactly_every_skill(self):
         packages = validate.discover_packages()

@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "benchmark_identity": "sha256:8246a724ba8384c29ac48719320bae2df6cd60d6fe3933981e8ab1af0d9a88c2",
+  "evaluation_design": {
+    "identity": "sha256:043ee5a568114e8c9d3c95ee45da39f1797b9fb4f24abb46fcc1d8e6a2b8bbe5",
+    "locator": "evaluation-design.json"
+  },
+  "runnable_cases": {
+    "identity": "sha256:ae60516bcac95e8d629ef655ac2ae64ce726275112fcc5dddae591a8e7485435",
+    "locator": "cases.json"
+  },
+  "runner": {
+    "identity": "sha256:dc952a4792fd17a0ccb777ac03ef679b011e0c4e040cd8d4101f5501ffd07866",
+    "locator": "runner.py"
+  },
+  "scoring": {
+    "identity": "sha256:ebc5b198e865247faf5a6fc7df80a3fd0c90e990da1b830e347e37ee7856388b",
+    "locator": "scoring.json"
+  },
+  "provenance": {
+    "identity": "sha256:f68c17df0e9747450ea1f22f4e0b3d37da20da9b51e40eae97fa355352addc8b",
+    "locator": "provenance.json"
+  },
+  "qualification": {
+    "identity": "sha256:b7a5415e027d320d2423c02137bb2cf0b82a599a035164757ff98232ac069e00",
+    "locator": "qualification.json"
+  },
+  "expected_cost": {
+    "unit": "candidate process",
+    "case_count": 2,
+    "candidate_processes_per_replay": 2,
+    "per_case_timeout_seconds": 2
+  },
+  "gaps": [
+    "optimization resistance is UNVERIFIED because this public fixture has no candidate-inaccessible check"
+  ],
+  "protected_evidence": {
+    "identity": "protected-evidence:none",
+    "visibility": "public",
+    "release_policy": "all fixture evidence is public",
+    "candidate_inaccessible_check": null
+  }
+}

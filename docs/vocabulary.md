@@ -120,20 +120,30 @@ that needs a different meaning needs a different word.
   sides' evidence, never averaged away.
 - **lens** — the criteria set a reviewer applies, restated fresh from the
   spec, never from unit output.
+
+The benchmark pipeline has exactly four artifact roles:
+
+- **evaluation design** — the candidate-comparison-blind artifact frozen by
+  `orch-eval-design`: target boundary, case specifications, criteria with
+  oracles, classes, required status and anchors, scoring and aggregation,
+  intended coverage, source identities, expected execution cost, assumptions,
+  and gaps.
+- **benchmark** — the immutable runnable artifact qualified by
+  `orch-benchmaker`; its manifest binds one evaluation design, cases, runner,
+  scoring, provenance, qualification, expected cost, protected-evidence
+  policy, and gaps by identity.
+- **score card** — `orch-judge`'s artifact for one fixed candidate against
+  frozen scoring criteria: per-criterion scores with verdicts, oracle classes,
+  and evidence, plus overall score and confidence.
+- **evolution result** — `orch-evolve`'s campaign artifact: final incumbent
+  identity and closing score card, frozen benchmark identity, campaign
+  history, partial evidence, feedback, gaps, and bounds spent.
 - **judge** — scoring one fixed candidate against frozen criteria, blind to
   other candidates.
 - **judgment shapes** — critique returns findings, judge returns score
   cards, verify returns verdicts; no skill returns another's shape.
 - **incumbent** — the current holder a variant challenges; `orch-evolve`
   owns its prose.
-- **bench** — the frozen selection apparatus of an evolve or
-  tournament run: criteria with oracles and anchors, weights,
-  aggregation, loss check, the task set behavioral candidates run, and
-  the generation brief; versioned, revised only between generations on
-  disagreement or non-discrimination evidence.
-- **loss check** — the bench criterion scoring what a variant lost
-  that the incumbent had, outside the other criteria's letter; the
-  standing anti-Goodhart guard.
 - **gate** — the single review-fix pass a run crosses before final
   verification.
 

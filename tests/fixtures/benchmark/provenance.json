@@ -1,0 +1,19 @@
+{
+  "provenance_identity": "provenance:uppercase-fixture-v1",
+  "sources": [
+    {
+      "identity": "source:fixture-declaration-v1",
+      "kind": "local fixture declaration",
+      "location": "evaluation-design.json",
+      "license_policy": "repository license"
+    }
+  ],
+  "case_sources": {
+    "case:ascii-word-v1": [
+      "source:fixture-declaration-v1"
+    ],
+    "case:mixed-symbols-v1": [
+      "source:fixture-declaration-v1"
+    ]
+  }
+}

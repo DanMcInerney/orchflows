@@ -1,0 +1,50 @@
+{
+  "evaluation_design_identity": "evaluation-design:uppercase-transformer-v1",
+  "target_boundary": {
+    "target_identity": "target:json-text-transformer-v1",
+    "population": "JSON objects containing one text field",
+    "admissible_inputs": "UTF-8 strings represented by JSON",
+    "admissible_states": "one stateless process invocation per case",
+    "observable_outputs": "one JSON object containing one text field",
+    "expected_outcome": "convert cased characters to uppercase and preserve other characters",
+    "exclusions": [
+      "locale-specific casing",
+      "non-JSON process interfaces"
+    ]
+  },
+  "case_specifications": [
+    "case:ascii-word-v1",
+    "case:mixed-symbols-v1"
+  ],
+  "required_criteria": [
+    {
+      "criterion": "exact_uppercase_output",
+      "oracle": "candidate exits zero and emits the exact expected JSON object",
+      "oracle_class": "deterministic",
+      "required": true,
+      "anchors": []
+    }
+  ],
+  "scoring_identity": "scoring:required-exact-match-v1",
+  "aggregation": {
+    "operator": "all_required_status",
+    "status": "PASS"
+  },
+  "intended_coverage": [
+    "lowercase ASCII letters",
+    "already-cased letters",
+    "digits and punctuation"
+  ],
+  "source_identities": [
+    "source:fixture-declaration-v1"
+  ],
+  "expected_execution_cost": {
+    "case_count": 2,
+    "candidate_processes": 2,
+    "per_case_timeout_seconds": 2
+  },
+  "assumptions": [
+    "the Python runtime supplies stable Unicode uppercasing for these fixed ASCII cases"
+  ],
+  "gaps": []
+}
