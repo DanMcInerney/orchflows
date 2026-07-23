@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SKILL = ROOT / ".orchflows" / "skills" / "benchmaker" / "SKILL.md"
 PROTOCOL = SKILL.parent / "references" / "protocol.md"
 ADAPTER = ROOT / ".claude" / "skills" / "benchmaker" / "SKILL.md"
+BENCH_OWNER = ROOT / "skills" / "workflows" / "orch-bench" / "SKILL.md"
 
 
 def split_frontmatter(text: str) -> tuple[dict[str, str], str]:
@@ -21,6 +22,12 @@ def split_frontmatter(text: str) -> tuple[dict[str, str], str]:
         key, value = line.split(":", 1)
         fields[key.strip()] = value.strip()
     return fields, body.lstrip("\r\n")
+
+
+def markdown_section(text: str, heading: str) -> str:
+    start = text.index(f"## {heading}")
+    end = text.find("\n## ", start + len(heading) + 3)
+    return text[start:] if end == -1 else text[start:end]
 
 
 class TestBenchmakerSurface(unittest.TestCase):
@@ -59,6 +66,67 @@ class TestBenchmakerSurface(unittest.TestCase):
             "read `.orchflows/skills/benchmaker/SKILL.md`."
         )
         self.assertEqual(1, agents.count(routing_line))
+
+
+class TestBenchmakerProtocol(unittest.TestCase):
+    def test_research_converges_before_bench_design(self):
+        protocol = PROTOCOL.read_text(encoding="utf-8")
+        intake = markdown_section(protocol, "Intake boundary")
+        research = markdown_section(protocol, "Research delivery")
+        design = markdown_section(protocol, "Bench design")
+        self.assertLess(protocol.index("## Intake boundary"), protocol.index("## Research delivery"))
+        self.assertLess(protocol.index("## Research delivery"), protocol.index("## Bench design"))
+
+        for boundary_term in (
+            "target identity",
+            "intended outcome",
+            "target pack",
+            "evidence access",
+            "execution bound",
+            "judgment permission",
+            "population",
+            "inputs",
+            "states",
+            "outputs",
+            "exclusions",
+        ):
+            self.assertIn(boundary_term, intake)
+
+        self.assertIn("one research-pack delivery", research)
+        self.assertIn("orch-research-pack", research)
+        self.assertIn("independent", research)
+        self.assertIn("bounded", research)
+        for concern in (
+            "prior art",
+            "real failure modes",
+            "edge cases",
+            "authoritative semantics",
+            "oracle options",
+        ):
+            self.assertIn(concern, research)
+        for evidence_property in (
+            "claim-to-source trace",
+            "disagreement register",
+            "gaps",
+            "frozen result identity",
+            "development seeds",
+            "source and license",
+        ):
+            self.assertIn(evidence_property, research)
+
+        self.assertIn("[`orch-bench`]", design)
+        self.assertIn("without amendment", design)
+        for owner_field in (
+            "criteria",
+            "task set",
+            "oracles",
+            "anchors",
+            "weights",
+            "aggregation",
+            "loss check",
+            "generation brief",
+        ):
+            self.assertIn(owner_field, BENCH_OWNER.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
