@@ -9,7 +9,6 @@ ROOT = Path(__file__).resolve().parent.parent
 SKILL = ROOT / ".orchflows" / "skills" / "benchmaker" / "SKILL.md"
 PROTOCOL = SKILL.parent / "references" / "protocol.md"
 ADAPTER = ROOT / ".claude" / "skills" / "benchmaker" / "SKILL.md"
-BENCH_OWNER = ROOT / "skills" / "workflows" / "orch-bench" / "SKILL.md"
 
 
 def split_frontmatter(text: str) -> tuple[dict[str, str], str]:
@@ -28,6 +27,10 @@ def markdown_section(text: str, heading: str) -> str:
     start = text.index(f"## {heading}")
     end = text.find("\n## ", start + len(heading) + 3)
     return text[start:] if end == -1 else text[start:end]
+
+
+def squashed(text: str) -> str:
+    return " ".join(text.split())
 
 
 class TestBenchmakerSurface(unittest.TestCase):
@@ -67,6 +70,29 @@ class TestBenchmakerSurface(unittest.TestCase):
         )
         self.assertEqual(1, agents.count(routing_line))
 
+    def test_callable_stages_are_strictly_ordered_and_fail_closed(self):
+        _, body = split_frontmatter(SKILL.read_text(encoding="utf-8"))
+        body_words = squashed(body)
+        stages = (
+            "Through `orch-spec`, freeze the research spec",
+            "Through `orch-deliver`, deliver the frozen research spec",
+            "If research is non-complete, has a `decision_gap`, or leaves a remainder, return partial evidence",
+            "Through the admitted carrier, call `orch-bench`",
+            "If the design is invalid or UNVERIFIED, return partial evidence",
+            "Through the same spec owner, freeze the construction spec",
+            "Through the same delivery owner, deliver the construction spec",
+        )
+        positions = [body_words.index(stage) for stage in stages]
+        self.assertEqual(sorted(positions), positions)
+        self.assertIn(
+            "If `evidence` does not name the admitted carrier, fail closed before work",
+            body_words,
+        )
+        self.assertIn(
+            "failure, the same fields populated by partial evidence, with `decision_gap` and uncovered remainder",
+            body_words,
+        )
+
 
 class TestBenchmakerProtocol(unittest.TestCase):
     def test_research_converges_before_bench_design(self):
@@ -74,6 +100,8 @@ class TestBenchmakerProtocol(unittest.TestCase):
         intake = markdown_section(protocol, "Intake boundary")
         research = markdown_section(protocol, "Research delivery")
         design = markdown_section(protocol, "Bench design")
+        research_words = squashed(research)
+        design_words = squashed(design)
         self.assertLess(protocol.index("## Intake boundary"), protocol.index("## Research delivery"))
         self.assertLess(protocol.index("## Research delivery"), protocol.index("## Bench design"))
 
@@ -103,7 +131,7 @@ class TestBenchmakerProtocol(unittest.TestCase):
             "authoritative semantics",
             "oracle options",
         ):
-            self.assertIn(concern, research)
+            self.assertIn(concern, research_words)
         for evidence_property in (
             "claim-to-source trace",
             "disagreement register",
@@ -112,21 +140,37 @@ class TestBenchmakerProtocol(unittest.TestCase):
             "development seeds",
             "source and license",
         ):
-            self.assertIn(evidence_property, research)
+            self.assertIn(evidence_property, research_words)
 
-        self.assertIn("[`orch-bench`]", design)
-        self.assertIn("without amendment", design)
-        for owner_field in (
-            "criteria",
-            "task set",
-            "oracles",
-            "anchors",
-            "weights",
-            "aggregation",
-            "loss check",
-            "generation brief",
+        self.assertIn("[`orch-bench`]", design_words)
+        self.assertIn("admitted carrier", design_words)
+        self.assertIn("existing Require field", design_words)
+        self.assertIn("bench owner selects the task set", design_words)
+        self.assertIn("returns the generation brief", design_words)
+        self.assertIn("invalid identity, missing field, or UNVERIFIED design", design_words)
+        self.assertIn("do not freeze construction", design_words)
+
+    def test_one_bound_is_partitioned_once_and_carries_forward(self):
+        intake = squashed(
+            markdown_section(
+                PROTOCOL.read_text(encoding="utf-8"), "Intake boundary"
+            )
+        )
+        self.assertIn("Before any work, partition the single caller bound", intake)
+        for allocation in (
+            "research",
+            "bench-design",
+            "construction",
+            "qualification",
         ):
-            self.assertIn(owner_field, BENCH_OWNER.read_text(encoding="utf-8"))
+            self.assertIn(allocation, intake)
+        self.assertIn("whose total cannot exceed it", intake)
+        self.assertIn(
+            "unused budget carried forward from completed earlier stages", intake
+        )
+        self.assertIn("Never copy the caller bound", intake)
+        self.assertIn("return the result fields as partial evidence", intake)
+        self.assertIn("missing carrier as a `decision_gap`", intake)
 
     def test_cases_are_independently_qualified_deterministic_first(self):
         protocol = PROTOCOL.read_text(encoding="utf-8")
@@ -145,12 +189,21 @@ class TestBenchmakerProtocol(unittest.TestCase):
             "stamped target pack",
             "frozen research synthesis",
             "frozen bench",
-            "disjoint",
-            "valid coverage and discrimination",
-            "runtime bound",
+            "exact materialization of the frozen task set",
+            "exact generation brief",
+            "only disjoint execution and write scopes",
             "provenance",
         ):
             self.assertIn(construction_term, construction_words)
+        self.assertIn(
+            "never selects, adds, removes, ranks, rewrites, or substitutes a case",
+            construction_words,
+        )
+        self.assertIn(
+            "selection change returns partial construction evidence and remainder to the bench owner",
+            construction_words,
+        )
+        self.assertNotIn("Suite selection maximizes", construction)
         self.assertIn("independent context", qualification_words)
         self.assertIn("Case authors never qualify", qualification_words)
         for criterion in (
@@ -173,6 +226,10 @@ class TestBenchmakerProtocol(unittest.TestCase):
             "expected cost",
         ):
             self.assertIn(policy, qualification_words)
+        self.assertIn(
+            "No weight, aggregation result, judged score, or secondary criterion can offset it",
+            qualification_words,
+        )
 
         expected_fields = (
             "runnable suite",
@@ -200,7 +257,10 @@ class TestBenchmakerDocumentation(unittest.TestCase):
         self.assertIn("../.orchflows/skills/benchmaker/SKILL.md", docs)
         self.assertIn("one declared target and intended outcome", docs)
         self.assertIn("[`orch-bench`]", docs)
-        self.assertIn("sole design owner", docs)
+        self.assertIn("has not admitted a T0 carrier", docs)
+        self.assertIn("returns partial evidence and a `decision_gap`", docs)
+        self.assertIn("canonical bench owner is unchanged", docs)
+        self.assertIn("slicing cuts only disjoint execution and write scopes", docs)
         for forbidden in ("recursive", "self-improv", "evolv", "promot", "activat"):
             self.assertNotIn(forbidden, docs.lower())
 
