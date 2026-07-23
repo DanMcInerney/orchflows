@@ -128,6 +128,65 @@ class TestBenchmakerProtocol(unittest.TestCase):
         ):
             self.assertIn(owner_field, BENCH_OWNER.read_text(encoding="utf-8"))
 
+    def test_cases_are_independently_qualified_deterministic_first(self):
+        protocol = PROTOCOL.read_text(encoding="utf-8")
+        construction = markdown_section(protocol, "Case construction")
+        qualification = markdown_section(protocol, "Qualification")
+        returned = markdown_section(protocol, "Return")
+        construction_words = " ".join(construction.split())
+        qualification_words = " ".join(qualification.split())
+        returned_words = " ".join(returned.split())
+        self.assertLess(protocol.index("## Bench design"), protocol.index("## Case construction"))
+        self.assertLess(protocol.index("## Case construction"), protocol.index("## Qualification"))
+        self.assertLess(protocol.index("## Qualification"), protocol.index("## Return"))
+
+        for construction_term in (
+            "one target-pack construction delivery",
+            "stamped target pack",
+            "frozen research synthesis",
+            "frozen bench",
+            "disjoint",
+            "valid coverage and discrimination",
+            "runtime bound",
+            "provenance",
+        ):
+            self.assertIn(construction_term, construction_words)
+        self.assertIn("independent context", qualification_words)
+        self.assertIn("Case authors never qualify", qualification_words)
+        for criterion in (
+            "oracle validity",
+            "coverage",
+            "discrimination",
+            "reproducibility",
+            "redundancy",
+            "provenance",
+            "runtime bound",
+        ):
+            self.assertIn(criterion, qualification_words)
+        for policy in (
+            "Prefer deterministic oracles",
+            "Deterministic failure is non-compensable",
+            "caller granted judgment permission",
+            "recorded deterministic-coverage gap",
+            "anchors",
+            "secondary",
+            "expected cost",
+        ):
+            self.assertIn(policy, qualification_words)
+
+        expected_fields = (
+            "runnable suite",
+            "execution instructions",
+            "coverage map",
+            "research provenance",
+            "qualification verdicts and expected cost",
+            "explicit gaps",
+        )
+        for field in expected_fields:
+            self.assertIn(field, returned_words)
+        self.assertIn("Success returns only", returned_words)
+        self.assertIn("Failure preserves partial evidence", returned_words)
+
 
 if __name__ == "__main__":
     unittest.main()
