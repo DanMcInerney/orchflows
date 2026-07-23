@@ -19,8 +19,9 @@ GPT-5.6 Sol on ultra on Codex; workers are Sonnet 5 on xhigh and
 GPT-5.6 Sol on high. Think of it as an upgraded, cross-harness
 Dynamic Workflows.
 
-Use the project-scoped [BenchMaker workflow](docs/benchmaker.md) to construct
-and independently qualify one runnable benchmark suite.
+Use the project-scoped [BenchMaker workflow](docs/benchmaker.md) to request a
+qualified runnable suite; it fails closed until a research-to-bench T0 carrier
+is admitted.
 
 ## The problem
 
