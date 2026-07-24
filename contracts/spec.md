@@ -1,9 +1,9 @@
 # Spec contract
 
 The frozen statement of one deliverable; the input to decomposition.
-Two editors, never a third: `orch-spec` drafts and stamps it at
-intake; `orch-decompose` repairs it in place when cutting surfaces a
-defect. Every other reader treats it as frozen.
+`orch-spec` is the spec's only editor: it drafts and stamps the spec
+at intake. Every other reader, `orch-decompose` included while
+cutting, treats it as frozen.
 
 - `run` — the owning run id, carried verbatim into every work item and
   dispatch the run decomposes.
@@ -35,6 +35,8 @@ defect. Every other reader treats it as frozen.
 - `risks`, `assumptions`.
 
 Decomposition rejects a spec missing a required field by naming the
-missing fields. A defect it finds while cutting, it repairs in place
-instead, recording the correction — never silently. Mixed-domain work
-is two specs chained through a composition, never one spec.
+missing fields. A defect or an uncoverable criterion it finds while
+cutting returns a decision gap naming exactly those criteria — never
+edited into the spec; the covered remainder is still cut and still
+executed. Mixed-domain work is two specs chained through a
+composition, never one spec.

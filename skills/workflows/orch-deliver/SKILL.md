@@ -11,7 +11,7 @@ stamped pack's cells.
 Open the run: `orch-worklog`, then `orch-workspace` for the run's
 target per the pack's workspace cell. Decompose through
 `orch-decompose`; a returned decision_gap rides this body's own Return
-and routes to the caller.
+and routes to the caller while the covered remainder still executes.
 
 Plan gate: when the caller asked for a plan, or the spec sets
 `plan_gate`, stop here and return the plan — items, edges, budgets,
