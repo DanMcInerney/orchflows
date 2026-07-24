@@ -53,9 +53,9 @@ that needs a different meaning needs a different word.
 - **unit** — one work item's execution by one context; the scope
   `rules/verification.md` §10 binds.
 - **spec** — the frozen statement of a deliverable per `contracts/spec.md`;
-  input to decomposition; two editors, `orch-spec` at intake and
-  `orch-decompose` repairing a defect it finds while cutting — read
-  blind everywhere else.
+  input to decomposition; `orch-spec` is its only editor, at intake —
+  every other reader, `orch-decompose` included while cutting, treats
+  it as frozen.
 - **exemplar** — an artifact a spec's `exemplars` field names to imitate;
   field contract in `contracts/spec.md`; always non-normative.
 - **stamp / routing** — the spec fields fixed at intake — pattern and pack —

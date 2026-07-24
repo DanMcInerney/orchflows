@@ -13,23 +13,23 @@ Cut the spec into [work items](../../../contracts/work-item.md) under
 the slicing — cut count per
 [rules/topology.md](../../../rules/topology.md) §3: each item gets its
 executor from the pack's binding, the spec's `pack` stamp,
-`independence: gate` when the gate re-verifies it, a disjoint write
-scope strictly inside the run's scope, a bound, and a completion test
-whose criteria name oracles from the pack's oracle policy, each with
-its oracle provenance. A spec defect surfaced while cutting is
-repaired in place, the correction recorded in the worklog. Add
-dependency edges; issue `status: pending` for a non-empty `depends_on`,
-`ready` otherwise. Emit at most one terminal assembly item when the
-slicing declares one, depending on every unit item, its completion
-test carrying the final gate's criteria.
+`independence: gate` when the gate re-verifies it, a write scope
+overlapping only siblings it is dependency-ordered with, a bound, and a
+completion test whose criteria name oracles from the pack's oracle
+policy, each with its oracle provenance. Add dependency edges; issue
+`status: pending` for a non-empty `depends_on`, `ready` otherwise. Emit
+at most one terminal assembly item when the slicing declares one,
+depending on every unit item, its completion test carrying the final
+gate's criteria.
 
 Map every acceptance criterion to an item, to the gate when the pack's
-lens owns it, or to uncovered remainder in the worklog. When the
-slicing cannot cover most criteria, return a decision gap naming them
-(§3) — never a forced slicing.
+lens owns it, or to uncovered remainder in the worklog. A criterion no
+slicing covers returns a decision gap naming exactly those criteria;
+the covered remainder is still cut into items, never a forced slicing
+(§3).
 
-Never: branch on the domain in this body; widen the run's scope; repair
-a spec silently.
+Never: branch on the domain in this body; widen the run's scope; edit
+the spec.
 
 Return: item ids with edges, the ticket directory, uncovered remainder
 (`[]` when none), and decision_gap (`[]` when coverable).

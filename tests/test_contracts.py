@@ -126,11 +126,33 @@ class TestWorkItemContract(unittest.TestCase):
             self.assertNotIn("handoff.md", text, f"{name} still references deleted handoff.md")
 
 
+class TestSpecContract(unittest.TestCase):
+    def test_single_editor_and_partial_gap(self):
+        text = read_flat("spec.md")
+        self.assertIn(
+            "`orch-spec` is the spec's only editor", text,
+            "spec.md does not name orch-spec as the spec's only editor",
+        )
+        self.assertNotIn(
+            "orch-decompose` repairs it in place", text,
+            "spec.md still names orch-decompose as a spec editor",
+        )
+        self.assertIn(
+            "a decision gap naming exactly those criteria", text,
+            "spec.md does not state that a defect or uncoverable criterion "
+            "returns a decision gap naming exactly those criteria",
+        )
+        self.assertIn(
+            "the covered remainder is still cut and still executed", text,
+            "spec.md does not state that the covered remainder is still cut and executed",
+        )
+
+
 class TestDelegationContract(unittest.TestCase):
-    def test_ticket_path_supplies_the_five_parts_by_reference(self):
+    def test_ticket_path_supplies_the_six_parts_by_reference(self):
         text = read_flat("delegation.md")
         self.assertIn(
-            "may supply the five parts by reference to the ticket path", text,
+            "may supply the six parts by reference to the ticket path", text,
             "delegation.md is missing the ticket-path-by-reference sentence",
         )
 

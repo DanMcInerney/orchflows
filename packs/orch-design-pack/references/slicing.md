@@ -8,9 +8,9 @@ views.
 - Each ticket: one view with its full identity set (the spec's
   breakpoints × its enumerated states), provable by capture and the
   ticket's deterministic checks; its own isolated workspace at a clean
-  baseline per the pack's workspace cell; a path-set write scope
-  disjoint from its siblings; dependency edges where one view composes
-  another.
+  baseline per the pack's workspace cell; a write scope overlapping only
+  siblings it is dependency-ordered with; dependency edges where one view
+  composes another.
 - Item extensions beyond the core: the identity list verbatim; the
   render, capture, and diff commands and the accessibility bar
   verbatim; the design language verbatim; the standards owner pointer;
