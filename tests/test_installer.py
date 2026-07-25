@@ -18,6 +18,18 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def mock_host_clis(*hosts: str):
+    """Return a deterministic PATH lookup patch for selected host CLIs."""
+
+    installed = set(hosts)
+
+    def lookup(candidate: str) -> str | None:
+        host = candidate.split(".", 1)[0]
+        return str(Path("mock-bin") / candidate) if host in installed else None
+
+    return patch.object(install.shutil, "which", side_effect=lookup)
+
+
 class TestScriptNames(unittest.TestCase):
     """Behavioral replacement: SCRIPT_NAMES only matters if every named
     script actually reaches the installed bin dir with matching content --
@@ -28,7 +40,7 @@ class TestScriptNames(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis("claude"):
                 plan = install.build_plan("user", None)
                 install.apply_plan(plan)
 
@@ -235,7 +247,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             (home / ".codex").mkdir(parents=True)
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis("codex"):
                 plan = install.build_plan("user", None)
 
             parsed_agents = [
@@ -264,7 +276,9 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "claude", "codex"
+            ):
                 plan = install.build_plan("user", None)
 
             configs = {config.kind: config for config in plan.configs}
@@ -294,7 +308,9 @@ class TestScopedHostConfiguration(unittest.TestCase):
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
             (home / ".codex").mkdir(parents=True)
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "claude", "codex"
+            ):
                 plan = install.build_plan("user", None)
 
             self.assertEqual(len(install.discover_packages()), len(plan.claude_adapters))
@@ -327,7 +343,9 @@ class TestScopedHostConfiguration(unittest.TestCase):
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
             (home / ".codex").mkdir(parents=True)
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "claude", "codex"
+            ):
                 plan = install.build_plan("user", None)
 
             by_name_root = (home / ".orchflows" / "lib" / "by-name").resolve()
@@ -355,7 +373,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             (home / ".codex").mkdir(parents=True)
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis("codex"):
                 plan = install.build_plan("user", None)
             self.assertEqual([], plan.claude_adapters)
             self.assertEqual(len(install.discover_packages()), len(plan.by_name))
@@ -443,7 +461,9 @@ class TestScopedHostConfiguration(unittest.TestCase):
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
             (home / ".codex").mkdir(parents=True)
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "claude", "codex"
+            ):
                 plan = install.build_plan("user", None)
 
             self.assertEqual(
@@ -466,23 +486,64 @@ class TestScopedHostConfiguration(unittest.TestCase):
 
 
 class TestHostAutoDetection(unittest.TestCase):
-    """Criterion 2: configure the Claude half only when ``~/.claude`` exists,
-    the Codex half only when ``~/.codex`` exists; warn and write nothing when
-    neither does."""
+    """Configure only hosts whose runnable CLI is discoverable on PATH."""
 
-    def test_detect_hosts_reads_presence_of_each_dir(self):
+    def test_state_directories_are_not_installation_signals(self):
+        with tempfile.TemporaryDirectory() as tmp, mock_host_clis():
+            home = Path(tmp)
+            (home / ".claude").mkdir()
+            (home / ".codex").mkdir()
+
+            self.assertEqual((False, False), install.detect_hosts(home))
+
+    def test_each_cross_platform_cli_candidate_enables_its_host(self):
+        cases = (
+            ("claude", (True, False)),
+            ("claude.exe", (True, False)),
+            ("claude.cmd", (True, False)),
+            ("codex", (False, True)),
+            ("codex.exe", (False, True)),
+            ("codex.cmd", (False, True)),
+        )
+        for executable, expected in cases:
+            with self.subTest(executable=executable), patch.object(
+                install.shutil,
+                "which",
+                side_effect=lambda candidate, executable=executable: (
+                    str(Path("mock-bin") / candidate) if candidate == executable else None
+                ),
+            ):
+                self.assertEqual(expected, install.detect_hosts())
+
+    def test_both_clis_enable_both_hosts_before_state_directories_exist(self):
+        with mock_host_clis("claude", "codex"):
+            self.assertEqual((True, True), install.detect_hosts(Path("missing-home")))
+
+    def test_protected_stale_codex_directory_is_ignored_without_codex_cli(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
-            self.assertEqual((False, False), install.detect_hosts(home))
-            (home / ".claude").mkdir()
-            self.assertEqual((True, False), install.detect_hosts(home))
-            (home / ".codex").mkdir()
-            self.assertEqual((True, True), install.detect_hosts(home))
+            stale_codex = home / ".codex"
+            stale_codex.mkdir()
+            real_mkdir = Path.mkdir
+
+            def reject_codex_writes(path, *args, **kwargs):
+                if path == stale_codex or stale_codex in path.parents:
+                    raise PermissionError(13, "Permission denied", str(path))
+                return real_mkdir(path, *args, **kwargs)
+
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "claude"
+            ), patch.object(Path, "mkdir", autospec=True, side_effect=reject_codex_writes):
+                result = install.main(["--user", "--yes"])
+
+            self.assertEqual(0, result)
+            self.assertFalse((stale_codex / "prompts").exists())
+            self.assertTrue((home / ".claude" / "CLAUDE.md").is_file())
 
     def test_neither_host_present_returns_success_with_no_writes(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis():
                 buffer = io.StringIO()
                 with redirect_stdout(buffer):
                     result = install.main(["--user", "--yes"])
@@ -495,7 +556,7 @@ class TestHostAutoDetection(unittest.TestCase):
     def test_neither_host_present_dry_run_returns_success_with_no_writes(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis():
                 buffer = io.StringIO()
                 with redirect_stdout(buffer):
                     result = install.main(["--user", "--dry-run"])
@@ -509,7 +570,7 @@ class TestHostAutoDetection(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis("claude"):
                 plan = install.build_plan("user", None)
 
             self.assertTrue(plan.claude_enabled)
@@ -529,7 +590,7 @@ class TestHostAutoDetection(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             (home / ".codex").mkdir(parents=True)
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis("codex"):
                 plan = install.build_plan("user", None)
 
             self.assertFalse(plan.claude_enabled)
@@ -547,15 +608,15 @@ class TestHostAutoDetection(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis("claude"):
                 plan = install.build_plan("user", None)
                 buffer = io.StringIO()
                 with redirect_stdout(buffer):
                     install.print_plan(plan)
 
             output = buffer.getvalue()
-            self.assertIn("detected Claude Code (~/.claude): yes", output)
-            self.assertIn("detected Codex (~/.codex): no", output)
+            self.assertIn("detected Claude Code CLI: yes", output)
+            self.assertIn("detected Codex CLI: no", output)
 
 
 class TestClaudeAlwaysOnImport(unittest.TestCase):
@@ -601,7 +662,9 @@ class TestClaudeAlwaysOnImport(unittest.TestCase):
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
             (home / ".codex").mkdir(parents=True)
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "claude", "codex"
+            ):
                 plan = install.build_plan("user", None)
 
             self.assertEqual(home / ".orchflows" / "host-block.md", plan.host_block.dest)
@@ -622,7 +685,9 @@ class TestClaudeAlwaysOnImport(unittest.TestCase):
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
             (home / ".codex").mkdir(parents=True)
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "claude", "codex"
+            ):
                 plan = install.build_plan("user", None)
                 install.apply_plan(plan)
 
@@ -644,7 +709,7 @@ class TestClaudeAlwaysOnImport(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis("claude"):
                 plan = install.build_plan("user", None)
                 install.apply_plan(plan)
                 plan2 = install.build_plan("user", None)
@@ -666,7 +731,7 @@ class TestClaudeAlwaysOnImport(unittest.TestCase):
                 f"# personal notes\n{start_marker}\nold rendered block\n{end_marker}\n", encoding="utf-8"
             )
 
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis("claude"):
                 plan = install.build_plan("user", None)
                 install.apply_plan(plan)
 
@@ -956,9 +1021,9 @@ class TestSourceCommit(unittest.TestCase):
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
 
-            with patch.object(install.Path, "home", return_value=home), patch.object(
-                install, "resolve_source_commit", side_effect=["sha1", "sha2"]
-            ):
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "claude"
+            ), patch.object(install, "resolve_source_commit", side_effect=["sha1", "sha2"]):
                 first = io.StringIO()
                 with redirect_stdout(first):
                     code1 = install.main(["--user", "--yes"])
@@ -1377,7 +1442,7 @@ class TestCodexHooksPreflight(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis("codex"):
                 plan = install.build_plan("user", None)
 
             self.assertEqual(1, len(plan.warnings))

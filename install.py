@@ -3,9 +3,9 @@
 
 Stdlib-only, cross-platform (Windows + POSIX), pathlib throughout, never
 symlinks. User scope is primary and auto-detects which host(s) to
-configure: the Claude half runs only when ``~/.claude`` exists, the Codex
-half only when ``~/.codex`` exists; if neither is found the installer
-warns and exits successfully without writing anything.
+configure: the Claude half runs only when a Claude CLI is on ``PATH``, and
+the Codex half only when a Codex CLI is on ``PATH``. If neither is found,
+the installer warns and exits successfully without writing anything.
 
 - ``~/.orchflows/`` (library, scripts, receipt, the rendered
   ``host-block.md``). The library also carries a flat, host-agnostic
@@ -15,14 +15,14 @@ warns and exits successfully without writing anything.
   pointer never copies the body, so it carries no relative links — an agent
   follows it to the tiered file, where every ``references/`` and
   ``../../../`` link resolves from its authored location.
-- Claude Code (when ``~/.claude`` exists): ``~/.claude/skills/<name>/SKILL.md``
+- Claude Code (when a Claude CLI is on ``PATH``): ``~/.claude/skills/<name>/SKILL.md``
   adapter stubs (frontmatter plus an ``@``-include of the library body),
   role agents, concurrency setting. The always-on instruction layer is
   rendered once to ``~/.orchflows/host-block.md`` (wholly installer-owned)
   and referenced from ``~/.claude/CLAUDE.md`` by one appended ``@<path>``
   import line — idempotent, migrating any legacy inline marker block found
   there from an older install.
-- Codex (when ``~/.codex`` exists): prompts, four redirect skill stubs
+- Codex (when a Codex CLI is on ``PATH``): prompts, four redirect skill stubs
   (``~/.codex/skills/<name>/SKILL.md`` for ``orch-spec``, ``orch-task``,
   ``orch-fix``, ``orch-build``) that point at the library instead of
   duplicating it, role agents, agent-limits config. The always-on layer
@@ -78,6 +78,8 @@ CANONICAL_DIRS = (
     "templates",
 )
 SCRIPT_NAMES = ("friction.py", "tickets.py", "trace.py")
+CLAUDE_CLI_CANDIDATES = ("claude", "claude.exe", "claude.cmd")
+CODEX_CLI_CANDIDATES = ("codex", "codex.exe", "codex.cmd")
 PROFILES_MD = REPO_ROOT / "skills" / "kernel" / "orch-delegate" / "references" / "profiles.md"
 HOST_BLOCK_TEMPLATE = REPO_ROOT / "templates" / "host-block.md"
 CODEX_LIMITS_START = "# BEGIN ORCHFLOWS AGENT LIMITS"
@@ -642,8 +644,8 @@ class Plan:
     claude_import: ImportPlan | None = None              # CLAUDE.md import line, user scope only
     warnings: list = field(default_factory=list)         # preflight, informational only
     manage_host_surfaces: bool = True                    # False for thin project plans
-    claude_enabled: bool = True                          # user scope: ~/.claude was detected
-    codex_enabled: bool = True                           # user scope: ~/.codex was detected
+    claude_enabled: bool = True                          # user scope: a Claude CLI was detected
+    codex_enabled: bool = True                           # user scope: a Codex CLI was detected
 
 
 _BUILD_ARTIFACT_SUFFIXES = (".pyc", ".pyo")
@@ -709,12 +711,17 @@ def _build_project_plan(project_root: Path) -> Plan:
 
 
 def detect_hosts(home: Path | None = None) -> tuple[bool, bool]:
-    """(claude_enabled, codex_enabled) from whether ``~/.claude`` and
-    ``~/.codex`` exist. Presence of the directory is the whole signal — not
-    whether a CLI binary happens to be on PATH."""
+    """Return host enablement from runnable CLI presence on ``PATH``.
 
-    home = home if home is not None else Path.home()
-    return (home / ".claude").is_dir(), (home / ".codex").is_dir()
+    ``home`` remains accepted for caller compatibility, but state/config
+    directories under it are deliberately not installation signals.
+    """
+
+    del home
+    return (
+        any(shutil.which(candidate) for candidate in CLAUDE_CLI_CANDIDATES),
+        any(shutil.which(candidate) for candidate in CODEX_CLI_CANDIDATES),
+    )
 
 
 def _build_user_plan() -> Plan:
@@ -732,8 +739,8 @@ def _build_user_plan() -> Plan:
             bin_dir=bin_dir,
             receipt_path=scope_home / "receipt.json",
             warnings=[
-                "warning: neither Claude Code (~/.claude) nor Codex (~/.codex) "
-                "was detected; nothing was installed."
+                "warning: neither a Claude Code CLI nor a Codex CLI was found "
+                "on PATH; nothing was installed."
             ],
             claude_enabled=False,
             codex_enabled=False,
@@ -901,8 +908,8 @@ def print_plan(plan: Plan) -> None:
     if plan.project_root is not None:
         print(f"project root: {plan.project_root}")
     if plan.scope == "user":
-        print(f"detected Claude Code (~/.claude): {'yes' if plan.claude_enabled else 'no'}")
-        print(f"detected Codex (~/.codex): {'yes' if plan.codex_enabled else 'no'}")
+        print(f"detected Claude Code CLI: {'yes' if plan.claude_enabled else 'no'}")
+        print(f"detected Codex CLI: {'yes' if plan.codex_enabled else 'no'}")
     print(f"source commit: {resolve_source_commit() or 'unknown'}")
     print(f"library home: {plan.lib_home}")
     print(f"bin dir: {plan.bin_dir}")
@@ -1247,8 +1254,8 @@ def print_summary(plan: Plan) -> None:
         print(f"  receipt:     {plan.receipt_path}")
         return
     if plan.scope == "user":
-        print(f"  detected Claude Code (~/.claude): {'yes' if plan.claude_enabled else 'no'}")
-        print(f"  detected Codex (~/.codex): {'yes' if plan.codex_enabled else 'no'}")
+        print(f"  detected Claude Code CLI: {'yes' if plan.claude_enabled else 'no'}")
+        print(f"  detected Codex CLI: {'yes' if plan.codex_enabled else 'no'}")
     print(f"  library:     {plan.lib_home}  ({len(plan.lib_copies)} files)")
     if plan.by_name:
         print(f"  flat index:  {plan.lib_home / 'by-name'}  ({len(plan.by_name)} names)")
