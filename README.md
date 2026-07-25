@@ -80,8 +80,8 @@ bricks either way.
 
 The wrapper resolves an interpreter (uv → python3 → python; any
 Python 3 works) and
-auto-detects your harnesses — Claude Code (`~/.claude`), Codex
-(`~/.codex`) — configuring whichever exists. Update: `git pull`,
+auto-detects your harnesses from runnable CLIs on `PATH` — `claude`,
+`codex` — configuring whichever is installed. Update: `git pull`,
 rerun. Committable per-project routing block: `python install.py
 --project PATH`. Uninstall: `python install.py --user --uninstall`
 removes only what it generated; `--dry-run` previews either.
