@@ -467,7 +467,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
 
 class TestHostAutoDetection(unittest.TestCase):
     """Criterion 2: configure the Claude half only when ``~/.claude`` exists,
-    the Codex half only when ``~/.codex`` exists; error with guidance when
+    the Codex half only when ``~/.codex`` exists; warn and write nothing when
     neither does."""
 
     def test_detect_hosts_reads_presence_of_each_dir(self):
@@ -479,12 +479,31 @@ class TestHostAutoDetection(unittest.TestCase):
             (home / ".codex").mkdir()
             self.assertEqual((True, True), install.detect_hosts(home))
 
-    def test_neither_host_present_raises_with_guidance(self):
+    def test_neither_host_present_returns_success_with_no_writes(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             with patch.object(install.Path, "home", return_value=home):
-                with self.assertRaisesRegex(ValueError, "neither ~/.claude nor ~/.codex"):
-                    install.build_plan("user", None)
+                buffer = io.StringIO()
+                with redirect_stdout(buffer):
+                    result = install.main(["--user", "--yes"])
+
+            self.assertEqual(0, result)
+            self.assertIn("warning:", buffer.getvalue())
+            self.assertIn("nothing was installed", buffer.getvalue())
+            self.assertEqual([], list(home.iterdir()))
+
+    def test_neither_host_present_dry_run_returns_success_with_no_writes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            with patch.object(install.Path, "home", return_value=home):
+                buffer = io.StringIO()
+                with redirect_stdout(buffer):
+                    result = install.main(["--user", "--dry-run"])
+
+            self.assertEqual(0, result)
+            self.assertIn("warning:", buffer.getvalue())
+            self.assertIn("nothing was installed", buffer.getvalue())
+            self.assertEqual([], list(home.iterdir()))
 
     def test_only_claude_present_builds_claude_half_only(self):
         with tempfile.TemporaryDirectory() as tmp:

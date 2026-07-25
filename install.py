@@ -5,7 +5,7 @@ Stdlib-only, cross-platform (Windows + POSIX), pathlib throughout, never
 symlinks. User scope is primary and auto-detects which host(s) to
 configure: the Claude half runs only when ``~/.claude`` exists, the Codex
 half only when ``~/.codex`` exists; if neither is found the installer
-refuses with guidance instead of guessing.
+warns and exits successfully without writing anything.
 
 - ``~/.orchflows/`` (library, scripts, receipt, the rendered
   ``host-block.md``). The library also carries a flat, host-agnostic
@@ -724,9 +724,19 @@ def _build_user_plan() -> Plan:
     home = Path.home()
     claude_enabled, codex_enabled = detect_hosts(home)
     if not claude_enabled and not codex_enabled:
-        raise ValueError(
-            "neither ~/.claude nor ~/.codex was found; install Claude Code or the "
-            "Codex CLI first, then rerun this installer."
+        return Plan(
+            scope="user",
+            project_root=None,
+            lib_home=lib_home,
+            scope_home=scope_home,
+            bin_dir=bin_dir,
+            receipt_path=scope_home / "receipt.json",
+            warnings=[
+                "warning: neither Claude Code (~/.claude) nor Codex (~/.codex) "
+                "was detected; nothing was installed."
+            ],
+            claude_enabled=False,
+            codex_enabled=False,
         )
 
     lib_copies = []
@@ -1517,6 +1527,9 @@ def main(argv=None) -> int:
 
     for warning in plan.warnings:
         print(warning)
+
+    if scope == "user" and not plan.claude_enabled and not plan.codex_enabled:
+        return 0
 
     if args.dry_run:
         print_plan(plan)
