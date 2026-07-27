@@ -1,5 +1,10 @@
 """Installer receipts and conservative uninstall behavior."""
 
+# install.py runs on every interpreter from 3.9 up -- it carries this same
+# future import and guards its own optional tomllib. These tests are held to
+# the same floor, so the suite runs wherever the installer it covers does.
+from __future__ import annotations
+
 import hashlib
 import io
 import json
@@ -12,6 +17,13 @@ from pathlib import Path, PurePosixPath
 from unittest.mock import patch
 
 import install
+
+
+requires_tomllib = unittest.skipIf(
+    install.tomllib is None,
+    "reading back generated TOML requires tomllib (Python 3.11+); "
+    "install.py guards its own use and still runs here",
+)
 
 
 def digest(path: Path) -> str:
@@ -243,6 +255,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "invalid Codex agent_type"):
                 install.load_role_profiles(profiles)
 
+    @requires_tomllib
     def test_codex_role_agent_names_follow_spawn_identifier_grammar(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
@@ -261,6 +274,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertEqual(dest.stem, parsed["name"])
                 self.assertIsNotNone(re.fullmatch(r"[a-z0-9_]+", parsed["name"]))
 
+    @requires_tomllib
     def test_user_plan_merges_limits_and_writes_native_role_agents(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
@@ -402,7 +416,11 @@ class TestScopedHostConfiguration(unittest.TestCase):
             self.assertEqual(2, len(plan.blocks))
             dests = {block.dest for block in plan.blocks}
             self.assertEqual({project / "CLAUDE.md", project / "AGENTS.md"}, dests)
-            user_lib = str((home / ".orchflows" / "lib").resolve())
+            # Unresolved, matching what _lib_home renders into the block.
+            # Resolving here would only agree with the rendered text on a
+            # host whose temp dir has no symlink in it -- macOS resolves
+            # /var to /private/var and the comparison fails for no reason.
+            user_lib = str(home / ".orchflows" / "lib")
             for block in plan.blocks:
                 self.assertIn(user_lib, block.content)
                 self.assertNotIn(str(project), block.content)
@@ -473,6 +491,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             self.assertEqual({home / ".claude" / "agents"}, {dest.parent for dest, _ in plan.claude_agents})
             self.assertEqual({home / ".codex" / "agents"}, {dest.parent for dest, _ in plan.codex_agents})
 
+    @requires_tomllib
     def test_codex_limit_merge_handles_dotted_agent_keys(self):
         rendered, details = install.render_codex_agent_limits(
             "agents.max_threads = 3\nagents.max_depth = 2\n\n[other]\nvalue = true\n"
