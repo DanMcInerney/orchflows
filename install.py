@@ -26,7 +26,8 @@ the installer warns and exits successfully without writing anything.
 - Codex (when a Codex CLI is on ``PATH``): prompts, four redirect skill stubs
   (``~/.codex/skills/<name>/SKILL.md`` for ``orch-spec``, ``orch-task``,
   ``orch-fix``, ``orch-build``) that point at the library instead of
-  duplicating it, role agents, agent-limits config. The always-on layer
+  duplicating it, role agents, agent-limits config. ``CODEX_HOME`` replaces
+  ``~/.codex`` throughout, matching the CLI. The always-on layer
   stays an inline marker block upserted into ``~/.codex/AGENTS.md`` — a
   read-only probe (``codex debug prompt-input`` against a scratch repo,
   installed CLI 0.144.0) found ``@file`` imports do not expand there, so
@@ -177,7 +178,9 @@ def _claude_agents_dir(scope: str, project_root: Path | None) -> Path:
 def _codex_user_home() -> Path:
     # Codex prompts have no project-local equivalent. Native role agents and
     # config use ``_codex_scope_home`` and therefore follow the selected scope.
-    return Path.home() / ".codex"
+    # ``CODEX_HOME`` overrides the ``~/.codex`` default, as the Codex CLI reads it.
+    override = os.environ.get("CODEX_HOME", "").strip()
+    return Path(override).expanduser() if override else Path.home() / ".codex"
 
 
 def _codex_scope_home(scope: str, project_root: Path | None) -> Path:
@@ -196,7 +199,7 @@ def _codex_agents_dir(scope: str, project_root: Path | None) -> Path:
 
 def _codex_agents_path(scope: str, project_root: Path | None) -> Path:
     if scope == "user":
-        return Path.home() / ".codex" / "AGENTS.md"
+        return _codex_user_home() / "AGENTS.md"
     return _require_project_root(project_root) / "AGENTS.md"
 
 
@@ -1294,9 +1297,9 @@ def print_summary(plan: Plan) -> None:
 
 def _uninstall_boundary(path: Path, scope: str, project_root: Path | None) -> Path:
     """Codex prompts live under the user home even for project installs, and a
-    ``CLAUDE_CONFIG_DIR`` install lives outside it entirely."""
+    ``CLAUDE_CONFIG_DIR`` / ``CODEX_HOME`` install lives outside it entirely."""
 
-    roots = [_claude_user_home()]
+    roots = [_claude_user_home(), _codex_user_home()]
     if scope == "project":
         roots.insert(0, _require_project_root(project_root))
     for root in roots:
@@ -1322,7 +1325,7 @@ def _auto_remove_path_is_safe(
             _require_project_root(project_root) if scope == "project" else _claude_user_home()
         )
     else:
-        scope_boundary = Path.home()
+        scope_boundary = _codex_user_home()
     try:
         path.absolute().relative_to(boundary.absolute())
         boundary.resolve().relative_to(scope_boundary.resolve())

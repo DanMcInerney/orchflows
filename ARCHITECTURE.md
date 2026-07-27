@@ -43,11 +43,11 @@ dependencies point. Terms: `docs/vocabulary.md`.
   arguments through to `install.py`. `install.py --user` auto-detects
   which host halves to configure — Claude Code only when a Claude CLI is
   on `PATH` (lib copy, `~/.claude/skills/` adapter stubs, role agents,
-  concurrency setting; `CLAUDE_CONFIG_DIR` replaces `~/.claude`
-  throughout, matching the CLI), Codex only when a Codex CLI is on
-  `PATH` (prompts,
-  four redirect skill stubs, role agents, agent-limits config, hooks
-  warning) — erroring with guidance when neither is present. The
+  concurrency setting), Codex only when a Codex CLI is on `PATH`
+  (prompts, four redirect skill stubs, role agents, agent-limits config,
+  hooks warning) — erroring with guidance when neither is present.
+  `CLAUDE_CONFIG_DIR` and `CODEX_HOME` replace `~/.claude` and
+  `~/.codex` throughout, matching each CLI. The
   always-on layer is one appended `@`-import line in the user
   `CLAUDE.md`/`AGENTS.md` pointing at installer-owned
   `~/.orchflows/host-block.md`, idempotent, replacing any legacy marker
