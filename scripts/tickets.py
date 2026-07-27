@@ -3,10 +3,13 @@
 
 Stdlib-only, cross-platform. Tickets are markdown work items per
 ``contracts/work-item.md``; frontmatter is parsed manually (no third-party
-YAML dependency). Every subcommand exits 0 and prints exactly one JSON
-document to stdout — failures are reported as ``{"error": "..."}"``, never
-as a non-zero exit or a raised traceback, so this stays safe to call from
-any host without argument-parsing surprises.
+YAML dependency). The root is the main repository root — a linked
+worktree's ``.git`` pointer is dereferenced to it — so every worktree of
+a repository reads and writes one run's tickets at one path. Every
+subcommand exits 0 and prints exactly one JSON document to stdout —
+failures are reported as ``{"error": "..."}"``, never as a non-zero exit
+or a raised traceback, so this stays safe to call from any host without
+argument-parsing surprises.
 
 Subcommands:
     list [--run R]
@@ -41,10 +44,34 @@ MAX_WALK_UP = 200
 # --- repository / filesystem helpers ---------------------------------------
 
 
+def _main_checkout_root(git_file: Path):
+    """Resolve a .git pointer file (worktree/submodule) to its main root."""
+    try:
+        for line in git_file.read_text(encoding="utf-8", errors="replace").splitlines():
+            if not line.startswith("gitdir:"):
+                continue
+            gitdir = Path(line.partition(":")[2].strip())
+            if not gitdir.is_absolute():
+                gitdir = git_file.parent / gitdir
+            parts = gitdir.resolve().parts
+            for i in range(len(parts) - 1, -1, -1):
+                if parts[i] == ".git":
+                    return Path(*parts[:i])
+            break
+    except Exception:
+        pass
+    return None
+
+
 def _find_repo_root(start: Path):
     current = start.resolve()
     for _ in range(MAX_WALK_UP):
-        if (current / ".git").exists():
+        marker = current / ".git"
+        if marker.exists():
+            if marker.is_file():
+                main_root = _main_checkout_root(marker)
+                if main_root is not None:
+                    return main_root
             return current
         parent = current.parent
         if parent == current:
