@@ -31,6 +31,7 @@ import hashlib
 import json
 import os
 import re
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -88,7 +89,23 @@ def _is_link_like(path: Path) -> bool:
     if path.is_symlink():
         return True
     isjunction = getattr(os.path, "isjunction", None)
-    return bool(isjunction and isjunction(path))
+    if isjunction is not None:
+        return bool(isjunction(path))
+    # os.path.isjunction is 3.12+. Below it the getattr above returned
+    # None and every junction read as an ordinary directory, so os.walk
+    # descended through it and out of the watched root -- the exact escape
+    # this function exists to prevent, silently unguarded on Windows for
+    # every supported interpreter below 3.12. This is what CPython's own
+    # isjunction does, copied so the answer does not depend on the version:
+    # a junction is precisely a mount-point reparse point, and Windows
+    # lstat results have carried st_reparse_tag since 3.8.
+    mount_point = getattr(stat, "IO_REPARSE_TAG_MOUNT_POINT", None)
+    if mount_point is None:
+        return False
+    try:
+        return os.lstat(path).st_reparse_tag == mount_point
+    except (AttributeError, OSError, ValueError):
+        return False
 
 
 def snapshot_tree(root: Path) -> dict[str, str]:

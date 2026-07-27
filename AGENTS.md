@@ -27,7 +27,10 @@ the request; if none fits, continue without orchflows. On user request,
 
 Resolve the interpreter verified for this host first — e.g. `uv run
 --no-project python` where bare `python` is a Windows Store stub — and
-run each command below through it in place of `python`.
+run each command below through it in place of `python`. It must be
+Python 3.9 or newer: that is the floor `install.py` enforces and CI
+proves on 3.9, 3.11 and 3.13 across Linux, macOS and Windows. A result
+recorded on an older interpreter says nothing about this repository.
 
 python tools/validate.py
 python -m unittest discover -s tests -v

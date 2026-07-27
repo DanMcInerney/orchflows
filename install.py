@@ -62,9 +62,24 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path, PurePath
 
+# The floor this installer is written to and CI proves. Enforced here
+# because install.py is the only file a user runs directly -- the shell
+# wrappers just resolve an interpreter and hand it this script. Kept at 3.9
+# deliberately: install.sh falls through to `python3`, which on a stock
+# macOS is 3.9, and nothing in the tree needs newer syntax.
+MIN_PYTHON = (3, 9)
+if sys.version_info < MIN_PYTHON:
+    _running = ".".join(str(part) for part in sys.version_info[:3])
+    raise SystemExit(
+        f"error: orchflows needs Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]} or "
+        f"newer, but {sys.executable} is {_running}. Point a newer "
+        f"interpreter at this script, or run `uv run --no-project python "
+        f"install.py`."
+    )
+
 try:
     import tomllib
-except ModuleNotFoundError:  # Python 3.10 remains supported.
+except ModuleNotFoundError:  # tomllib is 3.11+; MIN_PYTHON is lower.
     tomllib = None
 
 REPO_ROOT = Path(__file__).resolve().parent
