@@ -90,8 +90,8 @@ class TestSyncManualSkillsMutation(_IsolatedSyncTree):
     def test_mutated_manual_skills_is_flagged(self):
         self._mutate(
             "tools/validate.py",
-            'MANUAL_SKILLS = {"orch-evolve", "orch-goal"}',
-            'MANUAL_SKILLS = {"orch-evolve", "orch-goal", "orch-extra"}',
+            'MANUAL_SKILLS = {"orch-evolve"}',
+            'MANUAL_SKILLS = {"orch-evolve", "orch-extra"}',
         )
         result = self._run()
         self.assertEqual(1, result.returncode, result.stdout)

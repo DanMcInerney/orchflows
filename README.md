@@ -228,7 +228,6 @@ flowchart TD
     │   │   ├── orch-repair        — Applies the smallest change that fixes a known problem
     │   │   ├── orch-review-fix    — Reviews the result once, fixes valid problems, and checks it again
     │   │   ├── orch-fixture       — Saves a finished task as an example that can be run again later
-    │   │   ├── orch-goal          — Runs the delivery process again to improve the result further
     │   │   ├── orch-self-improve  — Studies past difficulties and proposes improvements to the system
     │   │   ├── orch-spec          — Turns a request into a clear, agreed plan
     │   │   └── orch-triage        — Sorts a list of work into what is ready, blocked, or needs a person
@@ -251,7 +250,6 @@ flowchart TD
     │   └── orch-design-pack   — Tells the system how to build and visually check interfaces
     │
     └── Layer 3 · compositions/ — Example playbooks showing how the parts can be combined
-        ├── delivery-loop        — Repeats delivery until a chosen measurement says to stop
         ├── drift-canary         — Reruns known examples to detect changes in agent behavior
         ├── evidence-to-document — Researches a subject first, then turns the findings into a document
         ├── evolve               — Produces several versions and selects the strongest one

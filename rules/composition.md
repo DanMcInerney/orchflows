@@ -6,9 +6,8 @@
    enforced for kernel); engines are composites; workflows and
    instances may be either — their sublayer names the judgment's role,
    not its out-degree. Manual-only is invocation policy, not a kind:
-   `orch-evolve` and `orch-goal` are its only members, matching
-   `tools/validate.py`'s MANUAL_SKILLS (canonical checkout only; not
-   installed).
+   `orch-evolve` is its only member, matching `tools/validate.py`'s
+   MANUAL_SKILLS (canonical checkout only; not installed).
 2. Every resolved backticked skill name in a body is a call edge. Name
    each call once, at its prose call site, with the exact backticked
    name; mention a skill without calling it in plain text, never
