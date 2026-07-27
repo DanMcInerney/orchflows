@@ -9,12 +9,14 @@ synthetic ``tests/`` directory in a tempdir — never the real suite.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
 import textwrap
 import unittest
 from pathlib import Path
+from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
@@ -57,6 +59,20 @@ class TestAuditSkips(unittest.TestCase):
 
 
 class TestHashAndSnapshot(unittest.TestCase):
+    def test_collect_snapshot_watches_relocated_claude_config_dir(self):
+        # A leak into a relocated config dir is the same leak; the guard must
+        # follow CLAUDE_CONFIG_DIR or report a clean tree that isn't.
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            config_dir = root / "elsewhere" / "claude"
+            (config_dir / "skills").mkdir(parents=True)
+            (config_dir / "skills" / "SKILL.md").write_text("leaked\n", encoding="utf-8")
+
+            with mock.patch.dict(os.environ, {"CLAUDE_CONFIG_DIR": str(config_dir)}):
+                snapshot = suite_check.collect_snapshot(root, root / "home", watch_home=True)
+
+            self.assertIn(str(Path("skills") / "SKILL.md"), snapshot["trees"]["claude_home"])
+
     def test_hash_file_is_deterministic(self):
         with tempfile.TemporaryDirectory() as td:
             path = Path(td) / "a.jsonl"

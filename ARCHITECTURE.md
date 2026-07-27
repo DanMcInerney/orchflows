@@ -41,9 +41,11 @@ dependencies point. Terms: `docs/vocabulary.md`.
   teardown, and the friction logger. The root wrappers resolve an
   interpreter (uv → python3 → python, never hardcoded) and pass
   arguments through to `install.py`. `install.py --user` auto-detects
-  which host halves to configure — Claude Code only when `~/.claude`
-  exists (lib copy, `~/.claude/skills/` adapter stubs, role agents,
-  concurrency setting), Codex only when `~/.codex` exists (prompts,
+  which host halves to configure — Claude Code only when a Claude CLI is
+  on `PATH` (lib copy, `~/.claude/skills/` adapter stubs, role agents,
+  concurrency setting; `CLAUDE_CONFIG_DIR` replaces `~/.claude`
+  throughout, matching the CLI), Codex only when a Codex CLI is on
+  `PATH` (prompts,
   four redirect skill stubs, role agents, agent-limits config, hooks
   warning) — erroring with guidance when neither is present. The
   always-on layer is one appended `@`-import line in the user

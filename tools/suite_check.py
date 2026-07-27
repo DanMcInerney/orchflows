@@ -177,6 +177,14 @@ HOME_WATCH_DIRS = (
 )
 
 
+def _watch_dir(home: Path, name: str, dirname: str) -> Path:
+    """``CLAUDE_CONFIG_DIR`` relocates Claude Code's config directory, so the
+    guard must watch the relocated one or miss writes it exists to catch."""
+
+    override = os.environ.get("CLAUDE_CONFIG_DIR", "").strip() if name == "claude_home" else ""
+    return Path(override).expanduser() if override else home / dirname
+
+
 def collect_snapshot(repo_root: Path, home: Path, watch_home: bool) -> dict:
     snapshot = {
         "friction_hashes": snapshot_friction_hashes(repo_root),
@@ -184,7 +192,7 @@ def collect_snapshot(repo_root: Path, home: Path, watch_home: bool) -> dict:
     }
     if watch_home:
         for name, dirname in HOME_WATCH_DIRS:
-            snapshot["trees"][name] = snapshot_tree(home / dirname)
+            snapshot["trees"][name] = snapshot_tree(_watch_dir(home, name, dirname))
     return snapshot
 
 

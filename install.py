@@ -17,7 +17,8 @@ the installer warns and exits successfully without writing anything.
   ``../../../`` link resolves from its authored location.
 - Claude Code (when a Claude CLI is on ``PATH``): ``~/.claude/skills/<name>/SKILL.md``
   adapter stubs (frontmatter plus an ``@``-include of the library body),
-  role agents, concurrency setting. The always-on instruction layer is
+  role agents, concurrency setting. ``CLAUDE_CONFIG_DIR`` replaces ``~/.claude``
+  throughout, matching the CLI. The always-on instruction layer is
   rendered once to ``~/.orchflows/host-block.md`` (wholly installer-owned)
   and referenced from ``~/.claude/CLAUDE.md`` by one appended ``@<path>``
   import line — idempotent, migrating any legacy inline marker block found
@@ -55,6 +56,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import sys
@@ -142,15 +144,25 @@ def _runtime_dirs(scope: str, project_root: Path | None) -> list[Path]:
     ]
 
 
+def _claude_user_home() -> Path:
+    """Claude Code's user config directory. ``CLAUDE_CONFIG_DIR`` overrides the
+    ``~/.claude`` default, and the CLI reads only that env var — a relocated
+    config directory has no project-local equivalent, so project scope is
+    unaffected."""
+
+    override = os.environ.get("CLAUDE_CONFIG_DIR", "").strip()
+    return Path(override).expanduser() if override else Path.home() / ".claude"
+
+
 def _claude_scope_home(scope: str, project_root: Path | None) -> Path:
     if scope == "user":
-        return Path.home() / ".claude"
+        return _claude_user_home()
     return _require_project_root(project_root) / ".claude"
 
 
 def _claude_md_path(scope: str, project_root: Path | None) -> Path:
     if scope == "user":
-        return Path.home() / ".claude" / "CLAUDE.md"
+        return _claude_user_home() / "CLAUDE.md"
     return _require_project_root(project_root) / "CLAUDE.md"
 
 
@@ -1281,15 +1293,18 @@ def print_summary(plan: Plan) -> None:
 
 
 def _uninstall_boundary(path: Path, scope: str, project_root: Path | None) -> Path:
-    """Codex prompts live under the user home even for project installs."""
+    """Codex prompts live under the user home even for project installs, and a
+    ``CLAUDE_CONFIG_DIR`` install lives outside it entirely."""
 
+    roots = [_claude_user_home()]
     if scope == "project":
-        root = _require_project_root(project_root)
+        roots.insert(0, _require_project_root(project_root))
+    for root in roots:
         try:
             path.resolve().relative_to(root.resolve())
             return root
         except (OSError, ValueError):
-            pass
+            continue
     return Path.home()
 
 
@@ -1302,11 +1317,12 @@ def _auto_remove_path_is_safe(
         boundary = _codex_user_home() / "skills"
     else:
         boundary = _codex_user_home() / "prompts"
-    scope_boundary = (
-        _require_project_root(project_root)
-        if kind == "adapter" and scope == "project"
-        else Path.home()
-    )
+    if kind == "adapter":
+        scope_boundary = (
+            _require_project_root(project_root) if scope == "project" else _claude_user_home()
+        )
+    else:
+        scope_boundary = Path.home()
     try:
         path.absolute().relative_to(boundary.absolute())
         boundary.resolve().relative_to(scope_boundary.resolve())

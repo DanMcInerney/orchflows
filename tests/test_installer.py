@@ -3,6 +3,7 @@
 import hashlib
 import io
 import json
+import os
 import re
 import shutil
 import tempfile
@@ -12,6 +13,20 @@ from pathlib import Path, PurePosixPath
 from unittest.mock import patch
 
 import install
+
+_ENV_GUARD = patch.dict(os.environ)
+
+
+def setUpModule():
+    """Every test here fakes a home dir; a real ``CLAUDE_CONFIG_DIR`` in the
+    developer's environment would send user-scope writes outside that fake."""
+
+    _ENV_GUARD.start()
+    os.environ.pop("CLAUDE_CONFIG_DIR", None)
+
+
+def tearDownModule():
+    _ENV_GUARD.stop()
 
 
 def digest(path: Path) -> str:
@@ -1447,6 +1462,73 @@ class TestCodexHooksPreflight(unittest.TestCase):
 
             self.assertEqual(1, len(plan.warnings))
             self.assertIn("orch-missing", plan.warnings[0])
+
+
+class TestClaudeConfigDir(unittest.TestCase):
+    """``CLAUDE_CONFIG_DIR`` relocates Claude Code's user config directory, so
+    every user-scope Claude surface follows it instead of ``~/.claude`` — the
+    same override Claude Code itself reads."""
+
+    def test_user_plan_writes_every_claude_surface_under_claude_config_dir(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / "home"
+            home.mkdir()
+            config_dir = Path(tmp) / "elsewhere" / "claude"
+            config_dir.mkdir(parents=True)
+
+            with patch.object(install.Path, "home", return_value=home), patch.dict(
+                os.environ, {"CLAUDE_CONFIG_DIR": str(config_dir)}
+            ), mock_host_clis("claude"):
+                plan = install.build_plan("user", None)
+                install.apply_plan(plan)
+
+            self.assertTrue(plan.claude_adapters)
+            for dest, _ in plan.claude_adapters:
+                self.assertEqual(config_dir / "skills", dest.parent.parent)
+            self.assertTrue(plan.claude_agents)
+            for dest, _ in plan.claude_agents:
+                self.assertEqual(config_dir / "agents", dest.parent)
+            self.assertTrue((config_dir / "settings.json").is_file())
+            self.assertTrue((config_dir / "CLAUDE.md").is_file())
+            self.assertFalse((home / ".claude").exists())
+
+    def test_uninstall_removes_adapter_installed_under_claude_config_dir(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / "home"
+            home.mkdir()
+            config_dir = Path(tmp) / "elsewhere" / "claude"
+            config_dir.mkdir(parents=True)
+
+            with patch.object(install.Path, "home", return_value=home), patch.dict(
+                os.environ, {"CLAUDE_CONFIG_DIR": str(config_dir)}
+            ), mock_host_clis("claude"):
+                plan = install.build_plan("user", None)
+                install.apply_plan(plan)
+                report = install.run_uninstall("user", None, dry_run=False)
+
+            adapters = {str(dest) for dest, _ in plan.claude_adapters}
+            removed = {
+                action["path"]
+                for action in report["skill_actions"]
+                if action["action"] == "removed unchanged skill"
+            }
+            self.assertTrue(adapters)
+            self.assertTrue(adapters <= removed)
+            for path in adapters:
+                self.assertEqual(config_dir / "skills", Path(path).parent.parent)
+            self.assertFalse((config_dir / "skills").exists())
+
+    def test_blank_claude_config_dir_falls_back_to_home(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".claude").mkdir(parents=True)
+            with patch.object(install.Path, "home", return_value=home), patch.dict(
+                os.environ, {"CLAUDE_CONFIG_DIR": "  "}
+            ), mock_host_clis("claude"):
+                plan = install.build_plan("user", None)
+
+            for dest, _ in plan.claude_adapters:
+                self.assertEqual(home / ".claude" / "skills", dest.parent.parent)
 
 
 if __name__ == "__main__":
