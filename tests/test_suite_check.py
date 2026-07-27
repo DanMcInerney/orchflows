@@ -9,6 +9,7 @@ synthetic ``tests/`` directory in a tempdir — never the real suite.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -109,6 +110,11 @@ class TestHashAndSnapshot(unittest.TestCase):
         # A junction inside a watched tree can point anywhere on the
         # filesystem (e.g. a pnpm/rush build-path-shortener junction).
         # Walking into it must not escape `root` or crash `relative_to`.
+        # Junctions exist only on Windows, and `cmd` is not on PATH
+        # anywhere else -- the POSIX half of this property is covered by
+        # the symlink test below, which runs everywhere.
+        if os.name != "nt":
+            self.skipTest("junctions are Windows-only; see the symlink test for POSIX")
         with tempfile.TemporaryDirectory() as td:
             root = Path(td) / "watched"
             root.mkdir()
@@ -123,6 +129,29 @@ class TestHashAndSnapshot(unittest.TestCase):
             )
             if result.returncode != 0:
                 self.skipTest("mklink /J unavailable on this host: " + result.stderr.strip())
+            snap = suite_check.snapshot_tree(root)
+            self.assertIn("link", snap)
+            self.assertNotEqual(snap["link"], "dir")
+            self.assertNotIn(str(Path("link") / "secret.txt"), snap)
+
+    def test_snapshot_tree_does_not_follow_symlink_out_of_root(self):
+        # The same property as the junction test above, on the side of the
+        # `_is_link_like` branch that POSIX can reach: a link is recorded
+        # as `link`, never as `dir`, and nothing behind it enters the
+        # snapshot. Without this the escape guard is untested on every
+        # non-Windows host.
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "watched"
+            root.mkdir()
+            escape_target = Path(td) / "escape"
+            escape_target.mkdir()
+            (escape_target / "secret.txt").write_text("outside", encoding="utf-8")
+            link = root / "link"
+            try:
+                link.symlink_to(escape_target, target_is_directory=True)
+            except (OSError, NotImplementedError) as error:
+                # Windows only permits this under Developer Mode or admin.
+                self.skipTest("cannot create a directory symlink here: %s" % error)
             snap = suite_check.snapshot_tree(root)
             self.assertIn("link", snap)
             self.assertNotEqual(snap["link"], "dir")
