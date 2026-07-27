@@ -288,17 +288,6 @@ routing clause on `rules/improvement.md` §3, not new tracing machinery:
 more fact off a trace is cheaper than giving every skill and host a
 model-logging responsibility of its own.
 
-## Why orch-goal uses two specs
-
-Audited 2026-07-18. A delivery's verdicts cover one frozen spec and one
-run identity, so learning from delivery 1 cannot rewrite that spec
-without erasing what its evidence proved. `orch-goal` instead gives the
-original request, spec, and first-run evidence back to `orch-spec`, then
-delivers the replacement under a new run id. A single `orch-loop` would
-misname its body — delivery 2 includes re-specification — and make one
-worklog claim two specs; the explicit two-run sequence preserves both
-the original evidence and the revised target.
-
 ## Why the spec has two editors
 
 Superseded 2026-07-17. A spec has exactly two editors across its

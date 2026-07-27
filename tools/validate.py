@@ -32,7 +32,7 @@ BODY_BUDGET = {
 }
 DESCRIPTION_BUDGET = 140
 ALLOWED_FRONTMATTER_KEYS = {"name", "description", "disable-model-invocation", "role"}
-MANUAL_SKILLS = {"orch-evolve", "orch-goal"}
+MANUAL_SKILLS = {"orch-evolve"}
 ROLE_PROFILES = {"orch-planner", "orch-worker"}
 ROLE_VALUES = {"planner", "worker", "none"}
 ROLE_NONE_TIERS = ("engines", "workflows")
