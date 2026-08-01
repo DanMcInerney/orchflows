@@ -6,6 +6,8 @@ missing any. A [work item](work-item.md) extends this packet: packet
 parts ⊕ completion test ⊕ lifecycle ⊕ graph position — and a work-item
 dispatch may supply the six parts by reference to the ticket path.
 
+A packet says what to do. Only `inputs` says what is true.
+
 - `objective` — one explicit outcome; a child with two objectives is two
   dispatches.
 - `inputs` — the fixed evidence the child works from, by identity; the
