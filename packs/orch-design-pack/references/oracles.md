@@ -12,6 +12,8 @@ captures only.
 | visual regression | the spec's diff command against the spec's golden captures; a view with no golden establishes its baseline — establishment is never a PASS, the row decides from the next revision | deterministic |
 | design quality | the lens ([lens.md](lens.md)) via `orch-verify`, over fresh captures | judged |
 
-Green means: every deterministic oracle exits zero at the result
-revision with every covered identity captured. Loop policy: the judged
-row draws only from fresh captures, never a stale capture.
+Green means: every deterministic oracle is no worse at the result
+revision than at the workspace's recorded baseline, compared by failure
+identity and never by count, with every covered identity captured. Loop
+policy: the judged row draws only from fresh captures, never a stale
+capture.
