@@ -2,7 +2,8 @@
 
 1. Every dispatch carries a complete
    [delegation packet](../contracts/delegation.md); a dispatch missing a
-   part is refused, not repaired.
+   part, or naming an identity that does not resolve where it says it
+   is, is refused, not repaired.
 2. The inline rung is glue only: dispatch mechanics, joins, user
    interaction, answers from evidence already in context — spawn a
    role for glue only when at least one holds: context isolation,
@@ -40,7 +41,10 @@
 10. Artifact primacy: a return's payload lives in the dispatch's durable
     artifact (a work item's ticket, or an artifact the packet names),
     never solely in a transport message; the child's closing message
-    delivers the payload or points to it. A packet naming no artifact
+    delivers the payload or points to it. The payload reaches the
+    artifact as it is produced, never in one write at the end — a
+    context dies without heirs, and rule 11 judges a lane by the
+    artifact's own progress. A packet naming no artifact
     contracts for a message-only return and accepts its transport risk.
     A silent child costs the caller a read, never the result — the join
     reads the artifact when no message arrives. Artifact content crosses
