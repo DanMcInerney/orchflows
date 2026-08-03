@@ -46,9 +46,11 @@ The law is `rules/improvement.md` §1; this repository's command:
 Optional flags: `--category` (repeated-attempts | missing-input |
 missing-tool | missing-doc | contract-gap | tool-failure |
 surprising-output | workaround | misrouting), `--skill`, `--ticket`,
-`--run`. If
-`python` is unavailable, append the entry as one JSON line to
-`.orch/friction/<yyyy-mm>.jsonl` directly (ts, observed, expected,
-category, host); never skip the log. Logging friction is part of completing
+`--run`. Whenever the logger cannot run — no interpreter, or the shell
+itself refused the call — append the entry as one JSON line to
+`.orch/friction/<yyyy-mm>.jsonl` with any tool that writes a file (ts,
+observed, expected, category, host); never skip the log. The blocked
+shell is not a reason to lose the entry: it is the entry.
+Logging friction is part of completing
 the task — a session that hit friction and logged nothing failed
 silently.
