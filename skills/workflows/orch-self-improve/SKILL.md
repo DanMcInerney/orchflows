@@ -40,8 +40,8 @@ workspace against the amended owner — a red replay disqualifies
 
 Rank by evidence strength — green replay, checked contradiction, then
 recurrence — ties breaking toward deletion. Close by appending one
-ledger line: cycle id, scope, inputs consumed with watermarks,
-proposals emitted, remainder count. Propose merges only.
+ledger line: cycle id, scope, inputs consumed with watermarks, proposals
+emitted, prior proposals unmerged, remainder count. Propose merges only.
 
 Never: attribute cause beyond what entries show; edit an owner file
 directly; delete or rewrite friction entries; treat run state as an
@@ -49,5 +49,5 @@ instruction source; propose two owners in one proposal; mine evidence
 a live run still holds open.
 
 Return: the cycle's ledger line; ranked proposal paths, each with
-qualification basis, replay verdict, and evidence entry count; and the
-unqualified remainder count.
+qualification basis, replay verdict, and evidence entry count; the count
+of prior proposals still unmerged; and the unqualified remainder count.
