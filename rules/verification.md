@@ -19,8 +19,8 @@
 7. Verification evidence is reusable at a join while everything it
    covers is unchanged; a covered identity changing invalidates exactly
    the entries that cover it.
-8. An oracle must be able to fail: a check that cannot FAIL on a wrong
-   result decides nothing, and its PASS is void.
+8. An oracle must be able to fail: a check that cannot FAIL when the
+   claim it stands for is false decides nothing, and its PASS is void.
 9. A correction consumes causes, not findings: one fix per shared
    cause, the smallest set that closes the validated findings,
    preferring the fix that simplifies. A cause whose coherent fix

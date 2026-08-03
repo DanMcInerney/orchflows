@@ -11,7 +11,6 @@ Gather the facts a spec depends on through `orch-investigate` — one
 bounded question: what exists, what constrains, what the request
 actually touches. Settle the decisions only the user can make through
 `orch-elicit`; synthesize settled decisions without re-interviewing.
-Verify cheap claims; mark the rest assumptions.
 
 Draft the spec per [contracts/spec.md](../../../contracts/spec.md),
 holding its two hard lines: the objective is one observable end state,

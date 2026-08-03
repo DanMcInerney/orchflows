@@ -10,5 +10,7 @@ All classes deterministic unless a criterion is explicitly judged.
 | standards shape | the workspace's linter or validator | deterministic |
 | readability/design | the lens's shape rubric ([lens.md](lens.md)) via `orch-verify` | judged |
 
-Green means: every deterministic oracle exits zero at the result
-revision; the judged row is settled at the gate, fresh from the spec.
+Green means: every deterministic oracle is no worse at the result
+revision than at the workspace's recorded baseline, compared by failure
+identity and never by count; the judged row is settled at the gate,
+fresh from the spec.
