@@ -24,7 +24,9 @@ A packet says what to do. Only `inputs` says what is true.
   hit, per rules/composition.md rule 8 — the caller re-dispatches with a
   ticket when resume matters.
 - `bounds` — the effort budget (tool calls, iterations, tokens, or time)
-  and any tool or source guidance.
+  and any tool or source guidance. The budget covers reading the
+  `inputs` this packet names, stated in whichever currency binds first —
+  for a child handed an evidence set, context before tool calls.
 - `return_contract` — the named fields the child's return must carry; a
   dispatch granting a non-empty write scope contracts for
   `changed_artifacts` among them, and a result whose changed_artifacts
