@@ -188,10 +188,19 @@ def build_stripped_path(executable: str) -> str:
 
 
 HOME_WATCH_DIRS = (
-    ("claude_home", ".claude"),
-    ("codex_home", ".codex"),
-    ("orchflows_home", ".orchflows"),
+    ("claude_home", ".claude", "CLAUDE_CONFIG_DIR"),
+    ("codex_home", ".codex", "CODEX_HOME"),
+    ("orchflows_home", ".orchflows", None),
 )
+
+
+def _watch_dir(home: Path, dirname: str, env_var: str | None) -> Path:
+    """``CLAUDE_CONFIG_DIR`` and ``CODEX_HOME`` relocate a host's config
+    directory, so the guard must watch the relocated one or miss the writes it
+    exists to catch."""
+
+    override = os.environ.get(env_var, "").strip() if env_var else ""
+    return Path(override).expanduser() if override else home / dirname
 
 
 def collect_snapshot(repo_root: Path, home: Path, watch_home: bool) -> dict:
@@ -200,8 +209,8 @@ def collect_snapshot(repo_root: Path, home: Path, watch_home: bool) -> dict:
         "trees": {"orch": snapshot_tree(repo_root / ".orch")},
     }
     if watch_home:
-        for name, dirname in HOME_WATCH_DIRS:
-            snapshot["trees"][name] = snapshot_tree(home / dirname)
+        for name, dirname, env_var in HOME_WATCH_DIRS:
+            snapshot["trees"][name] = snapshot_tree(_watch_dir(home, dirname, env_var))
     return snapshot
 
 

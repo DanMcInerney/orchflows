@@ -41,11 +41,13 @@ dependencies point. Terms: `docs/vocabulary.md`.
   teardown, and the friction logger. The root wrappers resolve an
   interpreter (uv → python3 → python, never hardcoded) and pass
   arguments through to `install.py`. `install.py --user` auto-detects
-  which host halves to configure — Claude Code only when `~/.claude`
-  exists (lib copy, `~/.claude/skills/` adapter stubs, role agents,
-  concurrency setting), Codex only when `~/.codex` exists (prompts,
-  four redirect skill stubs, role agents, agent-limits config, hooks
-  warning) — erroring with guidance when neither is present. The
+  which host halves to configure — Claude Code only when a Claude CLI is
+  on `PATH` (lib copy, `~/.claude/skills/` adapter stubs, role agents,
+  concurrency setting), Codex only when a Codex CLI is on `PATH`
+  (prompts, four redirect skill stubs, role agents, agent-limits config,
+  hooks warning) — erroring with guidance when neither is present.
+  `CLAUDE_CONFIG_DIR` and `CODEX_HOME` replace `~/.claude` and
+  `~/.codex` throughout, matching each CLI. The
   always-on layer is one appended `@`-import line in the user
   `CLAUDE.md`/`AGENTS.md` pointing at installer-owned
   `~/.orchflows/host-block.md`, idempotent, replacing any legacy marker

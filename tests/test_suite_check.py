@@ -16,6 +16,7 @@ import tempfile
 import textwrap
 import unittest
 from pathlib import Path
+from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
@@ -58,6 +59,24 @@ class TestAuditSkips(unittest.TestCase):
 
 
 class TestHashAndSnapshot(unittest.TestCase):
+    def test_collect_snapshot_watches_relocated_host_config_dirs(self):
+        # A leak into a relocated config dir is the same leak; the guard must
+        # follow CLAUDE_CONFIG_DIR / CODEX_HOME or report a clean tree that isn't.
+        for env_var, tree_name in (
+            ("CLAUDE_CONFIG_DIR", "claude_home"),
+            ("CODEX_HOME", "codex_home"),
+        ):
+            with self.subTest(env_var=env_var), tempfile.TemporaryDirectory() as td:
+                root = Path(td)
+                config_dir = root / "elsewhere" / tree_name
+                (config_dir / "skills").mkdir(parents=True)
+                (config_dir / "skills" / "SKILL.md").write_text("leaked\n", encoding="utf-8")
+
+                with mock.patch.dict(os.environ, {env_var: str(config_dir)}):
+                    snapshot = suite_check.collect_snapshot(root, root / "home", watch_home=True)
+
+                self.assertIn(str(Path("skills") / "SKILL.md"), snapshot["trees"][tree_name])
+
     def test_hash_file_is_deterministic(self):
         with tempfile.TemporaryDirectory() as td:
             path = Path(td) / "a.jsonl"
