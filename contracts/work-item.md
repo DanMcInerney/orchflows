@@ -58,7 +58,9 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
   terminal `status`.
 - `excluded_actions` — packet `authority`, optional: named actions this
   item's executor may not take without suspending through the ticket's
-  `## Handoff`.
+  `## Handoff`. Never a path in this item's own `write_scope`: an item
+  forbidden to touch what it is granted cannot be executed as written,
+  and the contradiction is the cut's to fix, not the executor's.
 - `bound` — packet `bounds`: the item's effort budget.
 - `claimed_by`, `claimed_at` — lifecycle: set on claim. Staleness runs
   on wall clock: a claim older than the item's bound read as a duration

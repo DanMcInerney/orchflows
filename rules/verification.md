@@ -1,8 +1,9 @@
 # Verification
 
 1. Completion is decided by external evidence, never by the model's
-   claim of its own success. The executor's claim is exactly worth its
-   cited oracle output.
+   claim of its own success. A claim is exactly worth its cited oracle
+   output — the executor's, and equally a checker's, a judge's or a
+   gate's, including any part of the caller's framing it repeats back.
 2. Verdicts follow [contracts/verdict.md](../contracts/verdict.md):
    PASS, FAIL, or UNVERIFIED per criterion; an unrun check is
    UNVERIFIED; overall PASS requires every required criterion and states
@@ -21,6 +22,9 @@
    the entries that cover it.
 8. An oracle must be able to fail: a check that cannot FAIL when the
    claim it stands for is false decides nothing, and its PASS is void.
+   Show it against a wrong result built beside the tree — a fixture, a
+   parameter, a stub, a copy — never by mutating the tree under test,
+   which an interrupted pass leaves mutated.
 9. A correction consumes causes, not findings: one fix per shared
    cause, the smallest set that closes the validated findings,
    preferring the fix that simplifies. A cause whose coherent fix

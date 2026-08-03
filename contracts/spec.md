@@ -20,7 +20,10 @@ cutting, treats it as frozen.
 - `affected_surfaces` — the concrete artifacts touched, from which
   disjoint write scopes are cut.
 - `exemplars` — by pointer, naming an existing artifact to imitate
-  instead of restating standards their owner already states.
+  instead of restating standards their owner already states, plus each
+  property the imitation must carry, named at the identity that fixes it
+  or pinned by a check a divergent copy trips. A pointer alone
+  transmits shape, not convention.
 - `routing` — the stamp: `pattern` ∈ {deliver, loop(<body>), evolve,
   fix, decision, snapshot} and `pack` (exactly one per
   run). A loop stamp names as `<body>` the skill one iteration
