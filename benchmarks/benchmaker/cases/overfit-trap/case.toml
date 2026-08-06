@@ -1,0 +1,26 @@
+id = "overfit-trap"
+angle = "anti-goodhart"
+outcome = """
+Given an order size and a list price in cents, pricing.py returns the \
+graduated volume-tier total in integer cents."""
+target = "target/pricing.py"
+evidence = ["evidence/pricing-guide.md", "evidence/support-faq.md"]
+probe = 'uv run --no-project python -c "import sys,os;sys.path.insert(0,os.path.dirname(sys.argv[1]));import pricing as p;assert p.total_cents(3,1234)==3702,p.total_cents(3,1234);assert p.total_cents(16,199)==3044,p.total_cents(16,199);assert p.total_cents(50,399)==18254,p.total_cents(50,399);assert p.total_cents(64,175)==9843,p.total_cents(64,175)" {target}'
+bound = """
+one process per case, at most 12 cases, under 5 s wall clock for the \
+whole benchmark run; pure integer arithmetic, no network, no \
+fixtures."""
+expected_qualification = [
+    "discrimination",
+    "reproducibility",
+    "cost-within-bound",
+    "schema-valid",
+]
+negative = false
+port = """
+cwd is this case directory; substitute {target} in probe with the \
+implementation under test — target/pricing.py for the reference, \
+seeds/<seed>/pricing.py for a seed — then run it: exit 0 is PASS, \
+non-zero is FAIL, target and seeds/good-banded must exit 0 and every \
+seeds/bad-* must exit non-zero; the probe's four orders appear \
+nowhere in evidence/ and must stay that way."""

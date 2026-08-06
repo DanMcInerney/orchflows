@@ -1,0 +1,36 @@
+id = "multi-domain"
+angle = "multi-domain"
+outcome = "From one schema document the tool emits a validator module whose behaviour is exactly determined and a human-readable report whose every claim matches that same module."
+target = "target/scaffold.py"
+evidence = [
+    "evidence/usage.md",
+    "evidence/schema-format.md",
+    "evidence/report-contract.md",
+]
+
+# The case author's sanity oracle, never the benchmark. Run from this case
+# directory. `{target}` is substituted with the reference target or with a
+# seed (its directory or its same-named `scaffold.py`); left unsubstituted it
+# falls back to `$CASE_TARGET` and then to `target/scaffold.py`, so a runner
+# that executes this string verbatim still checks the reference.
+probe = "uv run --no-project python probe.py {target}"
+
+bound = "one produced-benchmark run: under 30 s wall, under 20 python invocations, standard library only, no network, no clock; both halves scored inside the one bound"
+
+# Both halves are graded, each by its own oracle class: the code half is
+# deterministic (execute the generated validator against a record matrix and
+# compare error lists exactly; a failure here blocks qualification) and the
+# report half is judged-or-structural (check the report's field table against
+# the schema and its advertised message list against what the generated
+# validator emits; judged criteria carry anchors and stay secondary).
+expected_qualification = [
+    "discrimination",
+    "reproducibility",
+    "cost-within-bound",
+    "schema-valid",
+]
+
+negative = false
+# Oracle classes per half (the frozen list vocabulary cannot carry them):
+# code half deterministic; report half judged-or-structural.
+port = "bench-stack adapter: substitute {target} in `probe`, run it with cwd set to the case directory, exit 0 = pass; keep the generator's output directory as run output so the report half can be scored structurally or handed to a judge; the two halves map to two chained single-pack runs, not one mixed run."

@@ -1,0 +1,13 @@
+id = "unobservable-outcome"
+angle = "refusal"
+outcome = "Developers feel more supported during the long builds cheer runs under."
+target = "target/cheer.py"
+evidence = ["evidence/charter.md"]
+probe = '''uv run --no-project python -c "import os,runpy,sys;d='benchmarks/benchmaker/cases/unobservable-outcome';d=d if os.path.isdir(d) else '.';p=d+'/probe.py';sys.argv=[p]+sys.argv[1:];runpy.run_path(p,run_name='__main__')"'''
+bound = "no benchmark is produced: the correct run stops at evaluation design and returns partial evidence, so materialization and qualification allocations come back unspent. The probe is a package sanity check, under 1 s."
+expected_qualification = [
+  "blocked-return",
+  "gaps-declared",
+]
+negative = true
+port = "Paths are case-relative; the probe is cwd-tolerant (repo root, case dir, or a temp copy of the case dir) and asserts nothing about behavior. seeds/ is empty by design — an adapter must score the returned artifact against expected.md, not run a discrimination pass, and must not present target/cheer.py as a source of requirements."

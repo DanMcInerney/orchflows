@@ -1,0 +1,19 @@
+id = "skill-summarize"
+angle = "judged-outcome"
+outcome = "The prompt produces one digest of the source set in which every sentence carries a citation that resolves to a declared source id, the prose stays within 120 words, and every claim is faithful to the source it cites."
+target = "target/"
+evidence = [
+  "evidence/sources.md",
+  "evidence/constraints.md",
+  "evidence/rubric-notes.md",
+]
+probe = "uv run --no-project python probe.py target/"
+bound = "One produced benchmark run: four candidate summaries, each scored by three deterministic checks plus one anchored judged pass; under five judge calls and two minutes wall clock, no network beyond the judge."
+expected_qualification = [
+  "discrimination",
+  "reproducibility",
+  "schema-valid",
+  "cost-within-bound",
+]
+negative = false
+port = "cwd is this case directory; the probe argument is a variant directory holding summarize.md plus output.md — swap the `target` value inside `probe` for `seeds/<seed>/`, or pass the same path as CASE_IMPL. `target` and `seeds/good-terse` exit 0, every `seeds/bad-*` exits non-zero; adapter carries the judged anchors from expected.md as a separate scoring channel."
