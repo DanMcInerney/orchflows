@@ -14,6 +14,7 @@ import tools.validate as validate  # noqa: E402
 
 ROLE_TABLE = {
     # none: all engines
+    "orch-compose": "none",
     "orch-loop": "none",
     "orch-panel": "none",
     "orch-task": "none",

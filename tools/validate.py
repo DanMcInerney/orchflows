@@ -977,6 +977,17 @@ DONE_CHECK_COPULA_WORDS = {
     "is", "are", "was", "were", "be", "been", "being",
     "has", "have", "had", "it", "its",
 }
+DONE_CHECK_FILLER_WORDS = {
+    # modal/evaluative fillers qualifying a status claim without naming
+    # a second fact (gate finding: "complete successfully" passed)
+    "must", "should", "shall", "may", "can", "will", "indeed",
+    "successfully", "properly", "correctly", "truly", "fully",
+    "when", "then", "and", "or", "not", "no", "with", "without",
+    # the envelope's own field vocabulary — the done_check oracle must
+    # reach beyond the envelope (contracts/composition.md)
+    "result", "identity", "verification", "verified", "verify",
+    "envelope", "verdict", "verdicts",
+}
 
 
 def _validate_composition_done_check(body: str, file_label: str, diag: Diagnostics) -> None:
@@ -988,6 +999,7 @@ def _validate_composition_done_check(body: str, file_label: str, diag: Diagnosti
         w for w in words
         if w.lower() not in CARRIAGE_QUALIFIERS
         and w.lower() not in DONE_CHECK_COPULA_WORDS
+        and w.lower() not in DONE_CHECK_FILLER_WORDS
         and not DONE_CHECK_STATUS_WORD_RE.match(w)
     ]
     if not external_content:

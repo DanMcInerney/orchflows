@@ -46,6 +46,7 @@ Never: stamp two packs in one spec (emit a composition instance
 instead); leave an acceptance criterion oracle-less; restate standards
 an exemplar's owner already states.
 
-Return: the accepted spec path, the composition-instance path and its
-orch-compose executor when one was emitted, the kind-count decision
-and its evidence, assumptions, and evidence consulted.
+Return: the accepted spec path; when a composition instance was
+emitted, its path — orch-compose the executor that runs it; the
+kind-count decision and its evidence, assumptions, and evidence
+consulted.

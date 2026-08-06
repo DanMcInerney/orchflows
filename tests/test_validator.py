@@ -485,6 +485,27 @@ Return: status, result identity, and verification; then feedback.
         self.assertIn("done_check", result.stdout)
         self.assertIn("tautdone", result.stdout)
 
+    def test_done_check_with_filler_qualifiers_only_is_error(self):
+        """Gate repair: modal/evaluative fillers and the envelope's own
+        field vocabulary do not count as an external oracle -- ERROR."""
+        for filler in (
+            "the status is complete successfully.",
+            "the status must be complete indeed.",
+            "status is complete when verified.",
+        ):
+            with self.subTest(filler=filler):
+                gamed = GOOD_COMPOSITION.format(
+                    name="fillerdone", entry="named"
+                )
+                gamed = gamed.replace(
+                    "Done check: the final envelope's verification covers the result.",
+                    "Done check: " + filler,
+                )
+                self._write_composition("fillerdone", gamed)
+                result = self._run()
+                self.assertEqual(1, result.returncode)
+                self.assertIn("done_check", result.stdout)
+
     def test_done_check_naming_an_external_oracle_passes(self):
         real_shaped = GOOD_COMPOSITION.format(name="realdone", entry="named")
         real_shaped = real_shaped.replace(
