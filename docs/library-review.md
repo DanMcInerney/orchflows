@@ -72,13 +72,14 @@ degrades is a finding — this library has no fallback tier.
 For each sentence of rules, contracts, and skill text: which
 constitution principle requires it; who owns it; is this the only
 copy. A paraphrase beside a link is a copy. A restated definition, a
-stale count, a term used off its owner's meaning, a reference loaded
-at a moment it changes nothing, and prose guarding only a capability
-failure a current executor no longer exhibits are all deletion
-candidates; incentive guards — self-grading, laundering,
-scope-widening, record-smoothing — are structural and stay. Verify
-counts by listing; verify every "X checks/owns/enforces Y" claim
-against X's source.
+stale count, a term used off its owner's meaning, and a reference
+loaded at a moment it changes nothing are deletion candidates. So is
+a capability guard — prose protecting only against a model limitation
+a current executor no longer exhibits; an incentive guard —
+self-grading, laundering, scope-widening, record-smoothing —
+protects against a standing incentive no executor outgrows and
+stays. Verify counts by listing; verify every "X checks/owns/enforces
+Y" claim against X's source.
 
 ## Adversarial — can it be gamed?
 

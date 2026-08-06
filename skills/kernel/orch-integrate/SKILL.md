@@ -17,20 +17,19 @@ needs-verify reachable; `suspended` is ticket-grade only, routing to resume from
 takes the packet grade — no completion test, so disposition stays accepted or rejected(blame) only; an exclusion-stop is
 adjudicated on its contracted return per [delegation.md](../../../contracts/delegation.md) — the caller re-dispatches with a ticket when resume matters.
 
-Check always: `changed_artifacts` lie inside the write scope, else
-rejection regardless of verdicts; nothing a verification entry covers has
-changed since it was produced; a non-empty write scope's return must name
-its changed artifacts, any unattributed change is rejected(child). Reuse
-covered, uninvalidated evidence; re-verify nothing it already proves.
+Check always: the returning child's name matches the ticket's `claimed_by` —
+a mismatch is rejected(child), a lapsed claim returning outside its bound,
+never a caller under-supply; `changed_artifacts` lie inside the write scope,
+else rejection regardless of verdicts; nothing a verification entry covers
+has changed since it was produced; a non-empty write scope's return must
+name its changed artifacts, any unattributed change is rejected(child).
+Reuse covered, uninvalidated evidence; re-verify nothing it already proves.
 
-Classify any failure by blame per the
-[delegation contract](../../../contracts/delegation.md) and record the class
-in the worklog — the ticket when the run keeps none. The join alone writes terminal status.
+Classify any failure by blame per the [delegation contract](../../../contracts/delegation.md) and record
+the class in the worklog — the ticket when the run keeps none. The join alone writes terminal status.
 
-Never: trust out-of-scope output; re-run a covered oracle; repair the
-result yourself; reach needs-verify on a packet-graded return; treat
-`suspended` as a failure or let the child write terminal status.
+Never: trust out-of-scope output; re-run a covered oracle; repair the result yourself; reach
+needs-verify on a packet-graded return; treat `suspended` as a failure or let the child write terminal status.
 
-Return: disposition — accepted, rejected(blame), suspended (route to
-resume), or ticket-grade-only needs-verify with the exact uncovered
-criteria — plus invalidated evidence and the integrated state.
+Return: disposition — accepted, rejected(blame), suspended (route to resume), or ticket-grade-only
+needs-verify with the exact uncovered criteria — plus invalidated evidence and the integrated state.

@@ -25,9 +25,9 @@ defines.
      deliverable kinds the end state spans and stamps one pack (code |
      content | research | design) per spec — one run, or a
      composition instance chaining single-pack deliveries, cut where
-     the deliverable's kind changes; `orch-deliver` runs each.
-     Blind-lane convergence is a research delivery, never one
-     investigate lane.
+     the deliverable's kind changes; `orch-deliver` runs each, the
+     composition instance itself run by `orch-compose`. Blind-lane
+     convergence is a research delivery, never one investigate lane.
   4. Fix — a failure with unknown cause → the `fix` composition.
   Everything else — `evolve`, `benchmaker`, scheduled snapshots,
   saved compositions — runs only when named.

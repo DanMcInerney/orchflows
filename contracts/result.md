@@ -13,7 +13,7 @@ any result.
   per required criterion, together covering the `result` identity.
 
 Binding: every dispatchable unit — `orch-deliver`, `orch-task`,
-`orch-investigate`, `orch-loop`, `orch-frontier`, and every
-composition — leads its `Return:` with these three fields; further
+`orch-investigate`, `orch-loop`, `orch-compose`, `orch-frontier`, and
+every composition — leads its `Return:` with these three fields; further
 Return fields follow them. Evaluators and utilities are exempt. The
 law is [rules/composition.md](../rules/composition.md) rule 10.

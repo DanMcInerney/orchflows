@@ -10,14 +10,14 @@ bound, and fixed evidence.
 
 Write the section from the supplied evidence only; every claim traces
 to it. Hold the voice contract — its dimensions per the ticket's craft
-reference — and the slot's section job in the whole: a section that
-says true things in the wrong register or does a sibling's job fails
-its ticket. Cite per the spec's citation policy.
+reference — and the slot's section job in the whole. Cite per the
+spec's citation policy.
 Mark any needed claim the evidence cannot support as a gap in the
 ticket, and write around it.
 
 Never: import knowledge outside the evidence set; write into another
-slot; exceed the length bound and call it thoroughness.
+slot; exceed the length bound and call it thoroughness; write true
+things in the wrong register or do a sibling's job.
 
 Return: the completed ticket per
 [work-item.md](../../../contracts/work-item.md)'s filing law, with the

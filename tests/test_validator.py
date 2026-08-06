@@ -251,6 +251,66 @@ class TestSyntheticPackageBoundaryInputs(unittest.TestCase):
         self.assertEqual(1, result.returncode)
         self.assertIn("pack frontmatter must not declare 'role'", result.stdout)
 
+    def test_orch_worklog_shaped_prose_does_not_warn_loop_lint(self):
+        """T7: 'after every iteration or join' (frontmatter description,
+        a dispatch-timing adverbial) and 'the loop's done-check' / 'a
+        loop run' / 'later iteration' (noun references to another
+        skill's loop, not an instruction to iterate) must not trigger
+        the loop-term lint -- the false positive named in
+        REVIEW-2026-08-06.md thread T7."""
+        self._write_skill(
+            "worklogshaped",
+            b"---\nname: worklogshaped\n"
+            b"description: Create or advance state. Use at start and after every iteration or join.\n"
+            b"role: none\n---\n"
+            b"Require: the run id -- with the spec's objective and acceptance (or\n"
+            b"the loop's done-check) at creation.\n"
+            b"Maintain the file: append iteration entries, failed approaches; detail\n"
+            b"that decides nothing for a later iteration stays out.\n"
+            b"Never: edit the frozen goal; delete a failed approach.\n"
+            b"Return: the path and the next action it implies.\n",
+        )
+        result = self._run()
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("WARN", result.stdout)
+
+    def test_orch_triage_shaped_prose_does_not_warn_loop_lint(self):
+        """T7: 'never a loop' (description) and 'Never: ... an open-ended
+        loop' (body) are prohibitions of looping, not instructions to
+        iterate -- must not trigger the loop-term lint."""
+        self._write_skill(
+            "triageshaped",
+            b"---\nname: triageshaped\n"
+            b"description: Triage a queue into dispositions. A scheduled snapshot, never a loop.\n"
+            b"role: none\n---\n"
+            b"Require: the queue and the disposition vocabulary.\n"
+            b"For each item, decide from the item's own content plus cheap checks.\n"
+            b"Never: fix items while triaging; dispose an item on a stale read; let\n"
+            b"the snapshot become an open-ended loop.\n"
+            b"Return: per-item dispositions, the briefs, and queue statistics.\n",
+        )
+        result = self._run()
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("WARN", result.stdout)
+
+    def test_genuinely_boundless_loop_mention_still_warns(self):
+        """A body that actually instructs iteration, with no bound/budget
+        or stalled/limited/exit/terminal term anywhere, must still WARN
+        -- the narrowed heuristic must not swallow the real signal."""
+        self._write_skill(
+            "boundlesspkg",
+            b"---\nname: boundlesspkg\ndescription: a skill that repeats work\nrole: none\n---\n"
+            b"Require: a task.\n"
+            b"Iterate on the task until it looks right, then repeat until the\n"
+            b"reviewer is satisfied.\n"
+            b"Never: skip a step.\n"
+            b"Return: the result.\n",
+        )
+        result = self._run()
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertIn("WARN", result.stdout)
+        self.assertIn("boundlesspkg", result.stdout)
+
 
 GOOD_COMPOSITION = """---
 name: {name}
@@ -265,7 +325,7 @@ Steps:
 
 Edges: seq one.
 
-Invariants — Never: widen scope.
+Invariants — Never: skip the orch-task dispatch or widen its scope.
 
 Done check: the final envelope's verification covers the result.
 
@@ -314,7 +374,7 @@ class TestCompositionContractChecks(unittest.TestCase):
 
     def test_missing_invariants_and_done_check_are_admission_errors(self):
         bad = GOOD_COMPOSITION.format(name="gutted", entry="named")
-        bad = bad.replace("Invariants — Never: widen scope.\n\n", "")
+        bad = bad.replace("Invariants — Never: skip the orch-task dispatch or widen its scope.\n\n", "")
         bad = bad.replace("Done check: the final envelope's verification covers the result.\n\n", "")
         self._write_composition("gutted", bad)
         result = self._run()
@@ -351,6 +411,90 @@ class TestCompositionContractChecks(unittest.TestCase):
         result = self._run()
         self.assertEqual(1, result.returncode)
         self.assertIn("does not lead with the result envelope", result.stdout)
+
+    def test_invariants_block_vacuous_of_all_step_content_is_error(self):
+        """T2: validate.py:903-953 checked presence only -- an
+        'invariants' block that shares no vocabulary with any step
+        (REVIEW-2026-08-06.md's own example: 'Never: violate the laws
+        of physics') passed. Now it is an ERROR naming the unbound
+        step(s)."""
+        vacuous = """---
+name: gapless
+description: a synthetic composition with a vacuous invariants block
+entry: named
+---
+
+Require: a frozen input.
+
+Steps:
+- acquire-spec — `orch-spec`: freeze one evidence-acquisition spec.
+- materialize — `orch-deliver` of that frozen spec.
+
+Edges: seq acquire-spec → materialize.
+
+Invariants — Never: violate the laws of physics.
+
+Done check: the final envelope's verification covers the result.
+
+Return: status, result identity, and verification; then feedback.
+"""
+        self._write_composition("gapless", vacuous)
+        result = self._run()
+        self.assertEqual(1, result.returncode)
+        self.assertIn("invariants", result.stdout)
+        self.assertIn("gapless", result.stdout)
+
+    def test_invariants_block_binding_at_least_one_step_passes(self):
+        bound = """---
+name: gapbound
+description: a synthetic composition whose invariants bind its steps
+entry: named
+---
+
+Require: a frozen input.
+
+Steps:
+- acquire-spec — `orch-spec`: freeze one evidence-acquisition spec.
+- materialize — `orch-deliver` of that frozen spec.
+
+Edges: seq acquire-spec → materialize.
+
+Invariants — Never: materialize before the spec is frozen; skip the
+acquire-spec step.
+
+Done check: the final envelope's verification covers the result.
+
+Return: status, result identity, and verification; then feedback.
+"""
+        self._write_composition("gapbound", bound)
+        result = self._run()
+        self.assertEqual(0, result.returncode, result.stdout)
+
+    def test_done_check_naming_only_envelope_status_is_error(self):
+        """T2: a tautological done_check ('status is complete') names
+        only the envelope's own status vocabulary and no external
+        oracle -- ERROR."""
+        tautological = GOOD_COMPOSITION.format(name="tautdone", entry="named")
+        tautological = tautological.replace(
+            "Done check: the final envelope's verification covers the result.",
+            "Done check: the status is complete.",
+        )
+        self._write_composition("tautdone", tautological)
+        result = self._run()
+        self.assertEqual(1, result.returncode)
+        self.assertIn("done_check", result.stdout)
+        self.assertIn("tautdone", result.stdout)
+
+    def test_done_check_naming_an_external_oracle_passes(self):
+        real_shaped = GOOD_COMPOSITION.format(name="realdone", entry="named")
+        real_shaped = real_shaped.replace(
+            "Done check: the final envelope's verification covers the result.",
+            "Done check: the sealed manifest's qualification verdict set "
+            "covers the benchmark identity.",
+        )
+        self._write_composition("realdone", real_shaped)
+        result = self._run()
+        self.assertEqual(0, result.returncode, result.stdout)
 
 
 class TestEnvelopeCheck(unittest.TestCase):

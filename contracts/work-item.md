@@ -55,7 +55,9 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
   bookkeeping, not workspace content, and sit outside `write_scope`: the
   executor writes only `## Result`, `## Verification`, `## Feedback`,
   `## Risks`, and — when suspending — `## Handoff`; the join alone sets
-  terminal `status`.
+  terminal `status`. A §10 checker corrects inside this same
+  `write_scope`, per [rules/verification.md](../rules/verification.md)
+  §9 and §10.
 - `excluded_actions` — packet `authority`, optional: named actions this
   item's executor may not take without suspending through the ticket's
   `## Handoff`. Never a path in this item's own `write_scope`: an item
