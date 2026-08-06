@@ -77,10 +77,12 @@ sufficient evidence.
 
 Check oracle failability, coverage, discrimination, reproducibility,
 redundancy, provenance, and execution cost independently. Every oracle must be
-capable of failing; retain known-bad candidates or mutants when available. A
-required deterministic failure blocks qualification. Judged criteria carry
-anchors, remain secondary, and cannot compensate for required deterministic
-failure.
+capable of failing. Discrimination requires seeded known-good and known-bad
+variants supplied by the qualifying context — the benchmark passes every good
+seed and fails every bad one. Where no known-bad variant can exist, absence of
+bad seeds leaves discrimination UNVERIFIED and an explicit gap. A required
+deterministic failure blocks qualification. Judged criteria carry anchors,
+remain secondary, and cannot compensate for required deterministic failure.
 
 Resolve every runnable component and verify its byte digest before replay.
 Qualification recomputes its checks from those bytes and captured outputs;

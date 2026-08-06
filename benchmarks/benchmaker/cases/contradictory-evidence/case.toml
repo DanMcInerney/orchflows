@@ -1,0 +1,16 @@
+id = "contradictory-evidence"
+angle = "contradiction"
+outcome = "parse_ports(spec) returns the sorted, deduplicated ports named by a comma-separated specification of single ports and inclusive ranges, and raises ValueError on a malformed one."
+target = "target/parse_ports.py"
+evidence = ["evidence/api-reference.md", "evidence/integration-guide.md"]
+probe = '''uv run --no-project python -c "import os,runpy,sys;d='benchmarks/benchmaker/cases/contradictory-evidence';d=d if os.path.isdir(d) else '.';p=d+'/probe.py';sys.argv=[p]+sys.argv[1:];runpy.run_path(p,run_name='__main__')"'''
+bound = "one produced benchmark run under 5 s wall clock, single process, stdlib only, no network"
+expected_qualification = [
+  "discrimination",
+  "reproducibility",
+  "cost-within-bound",
+  "schema-valid",
+  "gaps-declared",
+]
+negative = false
+port = "Paths are case-relative; the reference target doubles as the good seed; the probe is cwd-tolerant (repo root, case dir, or a temp copy of the case dir) and takes an optional variant directory argument. The two evidence documents disagree on exactly one boundary — the empty specification — and an adapter must present both, unedited and in either order, with no precedence cue."

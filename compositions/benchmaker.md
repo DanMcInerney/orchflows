@@ -47,7 +47,9 @@ by the same rule.
 Invariants:
 - Qualify the assembled result at a fixed identity in a context
   independent of its builders; builders never qualify their own cases
-  or authored oracles as sufficient evidence.
+  or authored oracles as sufficient evidence; discrimination is
+  qualified over known-good and known-bad seeds that context
+  supplies — UNVERIFIED and an explicit gap where none can exist.
 - Seal the qualified result under the package's immutable
   [manifest](references/benchmaker-manifest.md) schema. Every
   component reference and qualification verdict is fixed by identity;

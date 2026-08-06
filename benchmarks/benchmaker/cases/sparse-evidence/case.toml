@@ -1,0 +1,16 @@
+id = "sparse-evidence"
+angle = "sparse-evidence"
+outcome = "redact(line) returns the line with every value following a token=, password=, or apikey= key replaced by ***."
+target = "target/redact.py"
+evidence = ["evidence/notes.md"]
+probe = '''uv run --no-project python -c "import os,runpy,sys;d='benchmarks/benchmaker/cases/sparse-evidence';d=d if os.path.isdir(d) else '.';p=d+'/probe.py';sys.argv=[p]+sys.argv[1:];runpy.run_path(p,run_name='__main__')"'''
+bound = "one produced benchmark run under 5 s wall clock, single process, stdlib only, no network"
+expected_qualification = [
+  "discrimination",
+  "reproducibility",
+  "cost-within-bound",
+  "schema-valid",
+  "gaps-declared",
+]
+negative = false
+port = "Paths are case-relative; the reference target doubles as the good seed; the probe is cwd-tolerant (repo root, case dir, or a temp copy of the case dir) and takes an optional variant directory argument, so an adapter may either append seeds/bad-<slug> to the probe or overlay a seed onto target/ in a copy."

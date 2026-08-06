@@ -1,0 +1,30 @@
+id = "stateful-plugin"
+angle = "stateful"
+outcome = "A key/value store CLI keeps its whole state in the file named by --state, so removing that file returns it to an empty store and two consecutive exercises from clean state are indistinguishable."
+target = "target/store.py"
+evidence = [
+    "evidence/cli-contract.md",
+    "evidence/state-policy.md",
+]
+
+# The case author's sanity oracle, never the benchmark. Run from this case
+# directory. `{target}` is substituted with the reference target or with a
+# seed (its directory or its same-named `store.py`); left unsubstituted it
+# falls back to `$CASE_TARGET` and then to `target/store.py`, so a runner that
+# executes this string verbatim still checks the reference. The probe creates
+# one temporary directory, copies the tool under probe into it, runs the same
+# scenario twice with the state file removed in between, and removes the
+# directory before exiting; it writes nothing under this case.
+probe = "uv run --no-project python probe.py {target}"
+
+bound = "one produced-benchmark run: under 45 s wall, two suite runs of about 16 short CLI invocations each, standard library only, no network, no clock"
+
+expected_qualification = [
+    "discrimination",
+    "reproducibility",
+    "cost-within-bound",
+    "schema-valid",
+]
+
+negative = false
+port = "bench-stack adapter: substitute {target} in `probe`, run it with cwd set to the case directory, exit 0 = pass; the adapter must give the produced benchmark a scratch state location it owns and must run the suite twice from clean state, keeping both transcripts as run output so the isolation verdict is recomputable."
