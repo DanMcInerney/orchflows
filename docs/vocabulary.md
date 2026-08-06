@@ -233,17 +233,18 @@ The benchmark pipeline has exactly four artifact roles:
 - **machinery ratio** — a trace's mechanical event count over the
   expected budget a fixture declares beside the trace
   (`<trace>.budget.json`).
-- **mining cycle** — one scoped execution of `orch-self-improve` over
+- **mining cycle** — one windowed execution of `orch-self-improve` over
   the evidence pool, recorded in the cycle ledger.
 - **cycle ledger** — the append-only record of each mining cycle — id,
-  scope, consumed inputs with watermarks, proposals emitted,
+  window, consumed inputs with watermarks, proposals emitted,
   remainder; owned by `orch-self-improve`.
 - **watermark** — the last-consumed position a mining cycle records
   per evidence input; later cycles skip evidence at or before it
   unless the scope names it.
 - **proposal** — one qualified improvement (per `rules/improvement.md`
-  §4) with a single causal owner and its evidence entries; passive
-  until a human merges it.
+  §4) with a single causal owner, one scope — environment | project |
+  workflow, per §3 — and its evidence entries; passive until a human
+  acts on it (§6).
 - **replay** — re-running the friction-producing work against a proposed
   change; a proposal that can replay must replay green before merge.
 - **fixture** — one completed ticket frozen into a self-contained

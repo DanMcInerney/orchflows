@@ -3,8 +3,7 @@
 1. A loop carries a frozen goal, an external done-check, and a bound. The
    done-check alone decides success; the bound alone caps cost. A bound
    is never a success condition, and a loop never carries a step plan —
-   prescribed steps encode one model generation's pace and rot; the
-   done-condition does not.
+   the done-condition does not.
 2. Every iteration starts fresh from the frozen goal plus the
    [worklog](../contracts/worklog.md), never from a prior iteration's
    transcript.

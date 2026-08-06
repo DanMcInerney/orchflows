@@ -56,7 +56,7 @@ RETURN_RE = re.compile(r"^Return[ :]", re.MULTILINE)
 PACK_TABLE_CELL_RE = re.compile(r"^\|\s*([a-zA-Z_]+)\s*\|", re.MULTILINE)
 CRAFT_ROW_RE = re.compile(r"^\|\s*craft\s*\|\s*(.+?)\s*\|", re.MULTILINE)
 MD_LINK_RE = re.compile(r"\]\(([^)]+)\)")
-LOOP_TRIGGER_RE = re.compile(r"iterat|repeat until|loop", re.IGNORECASE)
+LOOP_TRIGGER_RE = re.compile(r"\biterat(?:e|es|ing)\b|\brepeat until\b", re.IGNORECASE)
 BOUND_TERM_RE = re.compile(r"bound|budget", re.IGNORECASE)
 TERMINAL_TERM_RE = re.compile(r"stalled|limited|exit|terminal", re.IGNORECASE)
 
@@ -75,6 +75,7 @@ ENVELOPE_UNITS = (
     "orch-task",
     "orch-investigate",
     "orch-loop",
+    "orch-compose",
     "orch-frontier",
 )
 ENVELOPE_VOCAB_RES = (
@@ -905,6 +906,111 @@ def _composition_has_field(field: str, fm: dict, body: str) -> bool:
     return False
 
 
+# --- Composition content checks (REVIEW-2026-08-06.md thread T2) -----
+#
+# Presence checks (above) pass a vacuous `invariants` block ("Never:
+# violate the laws of physics") or a tautological `done_check` ("status
+# is complete"): both name the field, neither says anything. Authored
+# `steps` blocks in this tree bind their invariants thematically, not
+# by repeating each step id verbatim (id-literal matching false-erred
+# on 7 of 9 real compositions), so step-binding is checked at the
+# achievable granularity contracts/composition.md's admission sentence
+# actually enforces today: the invariants block must share real
+# vocabulary with the steps block as a whole, catching an invariants
+# block disconnected from the composition's own work while not
+# requiring per-step id repetition. A step-by-step id requirement is
+# the stronger form the review's remedy text names; narrowing it further
+# to per-step binding is future work, tracked in this ticket's Feedback,
+# not a regression this check introduces.
+COMPOSITION_FIELD_ORDER = ("steps", "edges", "invariants", "done_check")
+
+
+def _composition_field_span(field: str, body: str):
+    """The body slice from `field`'s own label to the next known
+    field's label (or end of body) -- steps/edges/invariants/done_check
+    appear in that fixed order in every authored composition."""
+    m = COMPOSITION_BODY_FIELD_RES[field].search(body)
+    if not m:
+        return None
+    start = m.end()
+    idx = COMPOSITION_FIELD_ORDER.index(field)
+    end = len(body)
+    for later in COMPOSITION_FIELD_ORDER[idx + 1:]:
+        later_m = COMPOSITION_BODY_FIELD_RES[later].search(body, start)
+        if later_m:
+            end = later_m.start()
+            break
+    else:
+        return_m = RETURN_RE.search(body, start)
+        if return_m:
+            end = return_m.start()
+    return body[start:end]
+
+
+def _composition_content_words(text: str) -> set:
+    return {
+        w for w in _carriage_body_stems(text)
+        if w not in CARRIAGE_QUALIFIERS
+    }
+
+
+def _validate_composition_step_binding(body: str, file_label: str, diag: Diagnostics) -> None:
+    steps_span = _composition_field_span("steps", body)
+    invariants_span = _composition_field_span("invariants", body)
+    if steps_span is None or invariants_span is None:
+        return  # missing field already reported by the admission-fields loop
+    step_words = _composition_content_words(steps_span)
+    invariant_words = _composition_content_words(invariants_span)
+    if step_words and not (step_words & invariant_words):
+        diag.error(
+            file_label,
+            "invariants block shares no vocabulary with the steps block -- "
+            "a step no invariant binds (contracts/composition.md's admission "
+            "sentence)",
+        )
+
+
+DONE_CHECK_STATUS_WORD_RE = re.compile(
+    r"^(?:status|complete[ds]?|blocked|stalled|limited|failed)$", re.IGNORECASE
+)
+DONE_CHECK_COPULA_WORDS = {
+    "is", "are", "was", "were", "be", "been", "being",
+    "has", "have", "had", "it", "its",
+}
+DONE_CHECK_FILLER_WORDS = {
+    # modal/evaluative fillers qualifying a status claim without naming
+    # a second fact (gate finding: "complete successfully" passed)
+    "must", "should", "shall", "may", "can", "will", "indeed",
+    "successfully", "properly", "correctly", "truly", "fully",
+    "when", "then", "and", "or", "not", "no", "with", "without",
+    # the envelope's own field vocabulary — the done_check oracle must
+    # reach beyond the envelope (contracts/composition.md)
+    "result", "identity", "verification", "verified", "verify",
+    "envelope", "verdict", "verdicts",
+}
+
+
+def _validate_composition_done_check(body: str, file_label: str, diag: Diagnostics) -> None:
+    done_span = _composition_field_span("done_check", body)
+    if done_span is None:
+        return  # missing field already reported by the admission-fields loop
+    words = CARRIAGE_WORD_RE.findall(done_span)
+    external_content = [
+        w for w in words
+        if w.lower() not in CARRIAGE_QUALIFIERS
+        and w.lower() not in DONE_CHECK_COPULA_WORDS
+        and w.lower() not in DONE_CHECK_FILLER_WORDS
+        and not DONE_CHECK_STATUS_WORD_RE.match(w)
+    ]
+    if not external_content:
+        diag.error(
+            file_label,
+            "done_check names only the envelope's own status vocabulary "
+            "and no external oracle (contracts/composition.md: done_check "
+            "is 'the end-to-end oracle over the final envelope')",
+        )
+
+
 def validate_compositions(diag: Diagnostics) -> None:
     """contracts/composition.md: every compositions/*.md is a normative,
     invocable workflow carrying name, description, entry (routed | named
@@ -944,13 +1050,18 @@ def validate_compositions(diag: Diagnostics) -> None:
                     file_label,
                     f"composition missing required field '{f}' per contracts/composition.md",
                 )
+        admission_fields_present = True
         for f in COMPOSITION_ADMISSION_FIELDS:
             if not _composition_has_field(f, fm, body):
+                admission_fields_present = False
                 diag.error(
                     file_label,
                     f"composition missing '{f}' -- admission rejects a composition "
                     "missing invariants or done_check (contracts/composition.md)",
                 )
+        if admission_fields_present:
+            _validate_composition_step_binding(body, file_label, diag)
+            _validate_composition_done_check(body, file_label, diag)
         if not REQUIRE_RE.search(body):
             diag.error(file_label, "composition body missing a line starting 'Require:'")
         if not RETURN_RE.search(body):
@@ -967,6 +1078,15 @@ def validate_compositions(diag: Diagnostics) -> None:
                 )
 
 
+# LOOP_TRIGGER_RE fires only on the imperative/procedural verb forms that
+# actually instruct the reader to iterate -- "iterate"/"iterating" or "repeat
+# until" -- never on the bare noun "loop" or "iteration", which this corpus
+# uses only referentially ("the loop's done-check", "iteration entries", "a
+# later iteration", "never a loop"). A noun mention names something -- often
+# another skill's bound loop -- without itself being a bound-less instruction
+# to iterate, so it carries no obligation to also state a bound/terminal term
+# (REVIEW-2026-08-06.md thread T7: false positives on orch-worklog and
+# orch-triage, neither of which instructs iteration).
 def validate_loop_lint(body: str, pkg: dict, diag: Diagnostics) -> None:
     if not LOOP_TRIGGER_RE.search(body):
         return

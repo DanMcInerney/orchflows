@@ -24,8 +24,9 @@ never selects the profile. Name the child by normalized base-model-effort
 per that reference.
 
 Never: widen scope; dispatch two objectives in one packet; let a child
-re-dispatch its primary work; substitute a blocked profile silently;
-omit `reply_to` or leave a child to infer its own return address.
+re-dispatch its primary work; resolve a blocked profile only per
+[roles.md](../../../rules/roles.md) §4; omit `reply_to` or leave a
+child to infer its own return address.
 
 Return: executor, child name, profile, and the child's contracted result
 verbatim.

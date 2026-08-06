@@ -62,3 +62,5 @@
    par requires disjoint write scopes and a named join; loop
    dispatches through `orch-loop`. A composition's `done_check` gates
    the whole. Mixed decomposition inside one graph is undefined.
+   `orch-compose` is the executor for every named and runtime
+   composition instance.

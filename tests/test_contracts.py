@@ -51,6 +51,13 @@ class TestWorkItemContract(unittest.TestCase):
         text = read("work-item.md")
         self.assertIn("outside `write_scope`", text, "work-item.md does not state the ticket write is outside write_scope")
 
+    def test_checker_correction_authority_rides_the_write_scope(self):
+        text = read_flat("work-item.md")
+        self.assertIn(
+            "A §10 checker corrects inside this same `write_scope`", text,
+            "work-item.md does not carry the §10 checker's correction authority",
+        )
+
     def test_status_enum_includes_suspended_as_non_terminal(self):
         text = read_flat("work-item.md")
         self.assertIn("`suspended`", text, "work-item.md is missing the `suspended` status")
@@ -140,12 +147,28 @@ class TestResultContract(unittest.TestCase):
 
     def test_binds_the_dispatchable_units_and_exempts_evaluators(self):
         text = read_flat("result.md")
-        for unit in ("orch-deliver", "orch-task", "orch-investigate", "orch-loop", "orch-frontier"):
+        for unit in (
+            "orch-deliver", "orch-task", "orch-investigate", "orch-loop",
+            "orch-frontier", "orch-compose",
+        ):
             self.assertIn(f"`{unit}`", text, f"result.md does not bind {unit}")
         self.assertIn("every composition", text, "result.md does not bind compositions")
         self.assertIn(
             "Evaluators and utilities are exempt", text,
             "result.md is missing the evaluator/utility exemption",
+        )
+
+
+class TestWorklogContract(unittest.TestCase):
+    def test_parked_only_is_open_and_distinct_from_in_progress(self):
+        text = read_flat("worklog.md")
+        self.assertIn(
+            "A parked-only pause is not an exit: `terminal` stays empty", text,
+            "worklog.md does not keep a parked-only pause off the terminal set",
+        )
+        self.assertIn(
+            "Parked is not in progress: no item is under way", text,
+            "worklog.md does not distinguish parked-only from in progress",
         )
 
 

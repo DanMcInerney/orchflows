@@ -6,8 +6,8 @@ role: planner
 
 Require: a frozen [spec](../../../contracts/spec.md) whose routing stamp
 names a pack, carrying every field the pack's `required_spec_fields`
-cell demands — reject otherwise, naming the missing fields — and the
-pack's slicing reference.
+cell demands — reject otherwise, naming what's missing — and the pack's
+slicing reference and oracle_policy.
 
 Cut the spec into [work items](../../../contracts/work-item.md) under
 the slicing — cut count per

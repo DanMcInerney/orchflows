@@ -20,4 +20,6 @@ transcripts are never state.
 - `terminal` — empty until the run exits, then exactly one of: `complete`
   | `blocked` | `stalled` | `limited` | `failed`, with the deciding
   evidence. A parked-only pause is not an exit: `terminal` stays empty
-  and the run resumes from its tickets.
+  and the run resumes from its tickets. Parked is not in progress: no
+  item is under way, and the pause names the external action awaited
+  and every item queued behind it.
