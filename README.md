@@ -2,84 +2,10 @@
 
 ![orchflows](docs/banner.png)
 
-Build a self-improving agent loop in one sentence:
-
-    Build me a workflow that loops over each project in my GitHub and
-    saves a summary of its open issues. After the loop is done, the
-    workflow runs self-improve on itself.
-
-Or don't do that — just ask Claude or Codex for any one-off task of any
-size, like you normally would. Every plain request routes through
-exactly two entry shapes — **ad-hoc** or **deliver** — and the smallest
-one that can prove it's done: a one-line answer stays a one-line
-answer; a product-sized build gets a frozen spec, tickets, parallel
-subagents, and a verification gate. A request spanning multiple
-deliverable kinds ("research X, then build it") becomes a chain of
-single-pack deliveries automatically, joined by result identity.
-Everything else runs by name. 34 composable skills plus a stdlib of
-named compositions. Claude Code and Codex, Windows and POSIX. By
-default the planner/reviewer subagent is Fable 5 on high effort on
-Claude Code and GPT-5.6 Sol on ultra on Codex; workers are Sonnet 5 on
-xhigh and GPT-5.6 Sol on high. Think of it as an upgraded,
-cross-harness Dynamic Workflows.
-
-Use the named `benchmaker` composition to build a qualified immutable
-benchmark for any target with an observable outcome. Its
-[public dataflow and migration note](docs/benchmaker.md) cover the immutable
-evaluation design, benchmark, score card, and evolution result roles;
-Verify-before-Judge consumption; and manual between-campaign
-self-benchmarking.
-
-## The problem
-
-Skill libraries break the same four ways:
-
-- **Overly specific, handcrafted prompts.** As models get smarter,
-  overprescription degrades output quality.
-- **Manual chaining by the user.** First run `/brainstorm`, then run
-  `/to-prd`, then run... blah blah blah.
-- **Domain-specific.** The workflow for writing a blog is basically the
-  workflow for shipping a feature: outline the goal, build each section
-  in parallel, review the output for cohesion and consistency. You
-  don't need a `/write-blog` skill and a `/build-feature` skill.
-- **Static.** Run 100 hits the same snags as run 1.
-
-orchflows answers each in structure:
-
-- **Tiny, composable skills.** Every word of every skill has to fight
-  for its life. Heavily avoids context rot.
-- **Workflows, not prompts.** Every request autoroutes to the smallest
-  workflow. No more memorizing skill names or chains.
-- **Domain-blind.** Smart model outlines the task → cheaper parallel
-  subagents deliver → smart model reviews. The same shape works for
-  blogs, code, or research.
-- **Self-improving.** `orch-self-improve` can run at any time to mine
-  the logs for friction points in agent behavior and reasoning, and
-  improve the workflows over time. The `evolve` composition is its
-  sibling: a tournament-style improvement loop over any artifact,
-  runnable or static.
-
-## Legos
-
-- **One brick, one job.** `orch-deliver` ships, `orch-critique`
-  attacks, `orch-judge` scores blind, `orch-loop` iterates, the `fix`
-  composition proves the cause before repairing it.
-- **One stud pattern.** Eight frozen contracts — spec, work-item,
-  delegation, verdict, worklog, pack-signature, composition, result —
-  are the only interfaces. Anything that emits one plugs into anything
-  that takes one.
-- **One return shape.** Every dispatchable unit returns one result
-  envelope — status, result identity, verification — so any unit's
-  output feeds any successor's evidence. Three combinators — `seq`,
-  `par`, `loop` — are the whole grammar; a composition is just those
-  combinators over named bricks, written down in a file.
-- **Swappable baseplates.** Workflows are domain-blind; a pack
-  (code | content | research | design) is pure data that retargets
-  the whole tower. The pipeline that ships a feature also ships a
-  research report — swap one pack, change zero control flow.
-
-You snap bricks by naming them; the agent snaps them by routing. Same
-bricks either way.
+A skill library that turns Claude Code or Codex into an orchestrator:
+subagents that work in parallel, real verification of everything they
+produce, and workflows that improve themselves. You just talk; it
+picks the right workflow.
 
 ## Install
 
@@ -87,94 +13,116 @@ bricks either way.
     cd orchflows
     ./install.sh          # install.cmd on Windows
 
-The wrapper resolves an interpreter (uv → python3 → python; any
-Python 3 works) and
-auto-detects your harnesses from runnable CLIs on `PATH` — `claude`,
-`codex` — configuring whichever is installed. Update: `git pull`,
-rerun. Committable per-project routing block: `python install.py
---project PATH`. Uninstall: `python install.py --user --uninstall`
-removes only what it generated; `--dry-run` previews either.
+Works with Claude Code and Codex, on Windows, macOS, and Linux. It
+configures whichever CLI it finds. To update: `git pull`, rerun.
 
-## Usage
+## Use
 
-Just talk. Routing has four branches — answer, ad-hoc, deliver, fix —
-and picks the smallest one:
+Ask for things like you normally would. There are no skill names to
+memorize.
 
     > why did memory double last release?
-    # ad-hoc: orch-investigate, one read-only lane, answer cited from
-    # primary evidence
+    # a cited answer from a read-only research lane
 
     > ship dark mode
-    # deliver: orch-spec → orch-deliver — frozen spec, tickets, parallel
-    # subagents on a rolling frontier, one review gate, final verification
-
-    > research the top three auth libraries, then integrate the winner
-    # deliver, chained: two single-pack runs (research, then code), cut
-    # where the deliverable's kind changes; run 1's result identity
-    # becomes run 2's evidence
+    # a frozen spec, tickets, parallel subagents, one review gate,
+    # and a final verification against what you asked for
 
     > fix the flaky login test
-    # the fix composition: reproduce it, prove the cause, guard the repair
+    # reproduce it, prove the cause, repair it, guard the repair
 
-Everything else runs only when named — `evolve`, `benchmaker`,
-scheduled snapshots, and any composition you save. The routing table
-never grows; the named tier does. Name the bricks yourself:
+    > research the top three auth libraries, then integrate the winner
+    # a research run chained into a code run, automatically
+
+Small requests stay small — a one-line question costs a one-line
+answer. Big requests get real project structure. Nothing marks "done"
+except an external check passing.
+
+## More ways to use it
+
+Routing has four branches — answer, ad-hoc, deliver, fix — and picks
+the smallest one that can prove it's done. Everything else runs only
+when you name it, so the routing table never grows as the library
+does. The routing law is `rules/topology.md` §2, installed at
+`~/.orchflows/host-block.md`. If routing gets in the way, `orch-off`
+stands it down for the session.
+
+Name the bricks yourself when you want a specific shape:
 
     > orch-loop orch-deliver until `pytest -q` exits 0
     > orch-panel these three cache designs — blind judges, pick one
     > evolve the summarizer prompt against the frozen benchmark
 
-Or author your own composition — a workflow file built from three
-combinators (`seq`, `par`, `loop`) over skills and other compositions,
-with its invariants and an end-to-end done check written in:
+Or build your own workflow in plain English:
 
     > build me a workflow that does spec > deliver, then always updates
       the documentation afterwards (favoring edits and deletions over
       additions), and automatically PRs and merges it
-    # orch-build admits it as a composition, callable by name from then on
 
-Custom compositions are project-local. In the example above, if you
-were working in `my-personal-site/` you'd get a workflow named
-something like `/site-work-and-merge`, callable only when you're
-working in `my-personal-site/`.
+That gets admitted as a composition — a workflow file made of three
+combinators (`seq`, `par`, `loop`) over skills and other compositions,
+with its own rules and one end-to-end done check. It's project-local
+and callable by name from then on, like a `/site-work-and-merge` you
+own. `orch-compose` is the engine that runs any composition, including
+the chains routing builds for multi-part requests.
 
-Routing too eager? `orch-off` stands it down for the session. The
-routing law is `rules/topology.md` §2, installed as
-`~/.orchflows/host-block.md`.
+Runs survive session death: specs, tickets, and worklogs are files in
+`.orch/`, so a fresh context resumes mid-flight.
 
-### A workflow that upgrades itself
+Team setup: `python install.py --project PATH` writes a committable
+routing block for a repo. Uninstall: `python install.py --user
+--uninstall` removes only what it generated; `--dry-run` previews
+either. Default model bindings: the planner/reviewer is Fable 5 on
+high effort (Claude Code) or GPT-5.6 Sol on ultra (Codex); workers are
+Sonnet 5 on xhigh and GPT-5.6 Sol on high.
 
-Chain any bricks and put `orch-self-improve` last:
+## The interesting parts
+
+### It improves itself
+
+Every run auto-logs its friction — retries, missing inputs,
+workarounds — under an always-on law, and `trace.py` records each
+session's reasoning and secret-redacted tool calls.
+`orch-self-improve` mines those logs into proposals you accept or
+reject, each scoped to where the change lands: your **environment** (a
+missing interpreter, a broken tool), your **project** (code or docs
+that keep causing friction), or the **workflows** themselves. Real
+proposals from my own usage:
+
+- Offload a repeated piece of agent reasoning to a deterministic script
+- A tiny AGENTS.md addition pointing agents at the packaged Python
+  instead of whatever `python` is on `$PATH`
+- Remove overlapping `orch-verify` steps from a workflow to speed it up
+- Add a documentation-update step a user kept requesting manually
+
+Chain any bricks and put `orch-self-improve` last and you have a
+workflow that upgrades itself:
 
     > my release workflow: orch-investigate what merged since the last
       tag → orch-deliver the release notes under the content pack →
       orch-self-improve
 
-Every run auto-logs its friction — retries, missing inputs,
-workarounds — under an always-on law, and `trace.py` logs every
-session's agent reasoning and secret-redacted tool calls.
-`orch-self-improve` mines the logs into single-owner proposals you
-accept or reject. Proposals I've seen in my own usage:
+The coolest part: it runs on itself. I run `orch-self-improve` across
+all sessions in a project, then point a second run at the first one.
 
-- Offload a repeated piece of agent reasoning to a deterministic script
-- A tiny AGENTS.md addition telling agents to use the packaged Python
-  interpreter instead of whatever `python` is on `$PATH`
-- Remove overlapping `orch-verify` steps from a workflow to speed it up
-- Add a documentation-update step to a workflow because the user kept
-  asking for it manually
+### Tournaments: evolve and benchmaker
 
-The coolest part of `orch-self-improve` is that you can run it on
-itself. I run `orch-self-improve` across all sessions in a project,
-then point a second `orch-self-improve` run at the first one.
+The `benchmaker` composition builds a qualified, immutable benchmark
+for any target with an observable outcome — a prompt, a skill, a
+script. The `evolve` composition then runs a tournament against it:
+bounded generations of candidates, blind judges, promotion only when a
+frozen rule and margin are beaten. Together they turn "make this
+better" into a measured campaign instead of vibes. The dataflow is in
+[docs/benchmaker.md](docs/benchmaker.md); `skill-tournament` applies
+the same loop to the library's own skills.
 
 ### Visualize anything
 
 `orch-visualize` renders anything you hand it as a verified Mermaid
-diagram — a workflow, your session trace, a codebase, a website, a
-process from a doc. Every diagram is syntax-verified against a real
-Mermaid renderer before it comes back, and on request it emits a
-self-contained HTML page. This is its drawing of the delivery pipeline
-that ships every orchflows run:
+diagram — a workflow, your session trace, a codebase, a process from a
+doc. Every diagram is syntax-checked against a real renderer before it
+comes back. This is its drawing of the pipeline that ships every
+orchflows delivery:
 
 ```mermaid
 flowchart TD
@@ -195,7 +143,48 @@ flowchart TD
     gate --> final["orch-verify — final result matches the original request"]
 ```
 
-## Architecture
+## Design
+
+### The problem
+
+Skill libraries break the same four ways:
+
+- **Overly specific, handcrafted prompts.** As models get smarter,
+  overprescription degrades output quality.
+- **Manual chaining by the user.** First run `/brainstorm`, then run
+  `/to-prd`, then run... blah blah blah.
+- **Domain-specific.** The workflow for writing a blog is basically the
+  workflow for shipping a feature: outline the goal, build each section
+  in parallel, review the output for cohesion and consistency. You
+  don't need a `/write-blog` skill and a `/build-feature` skill.
+- **Static.** Run 100 hits the same snags as run 1.
+
+orchflows answers each in structure: tiny composable skills where
+every word fights for its life; autorouting instead of memorized
+chains; domain-blind workflows retargeted by data packs; and
+self-improvement wired into every run.
+
+### Legos
+
+- **One brick, one job.** `orch-deliver` ships, `orch-critique`
+  attacks, `orch-judge` scores blind, `orch-loop` iterates, the `fix`
+  composition proves the cause before repairing it.
+- **One stud pattern.** Eight frozen contracts — spec, work-item,
+  delegation, verdict, worklog, pack-signature, composition, result —
+  are the only interfaces. Anything that emits one plugs into anything
+  that takes one.
+- **One return shape.** Every dispatchable unit returns one result
+  envelope — status, result identity, verification — so any unit's
+  output feeds any successor's evidence. Three combinators — `seq`,
+  `par`, `loop` — are the whole grammar; a composition is just those
+  combinators over named bricks, written down in a file.
+- **Swappable baseplates.** Workflows are domain-blind; a pack
+  (code | content | research | design) is pure data that retargets
+  the whole tower. The pipeline that ships a feature also ships a
+  research report — swap one pack, change zero control flow.
+
+You snap bricks by naming them; the agent snaps them by routing. Same
+bricks either way.
 
 ### Skills and workflows
 
@@ -232,7 +221,8 @@ flowchart TD
     │   │   ├── orch-task      — Takes one ready piece of work from start to acceptance
     │   │   ├── orch-frontier  — Starts each piece of work as soon as the work it needs is finished
     │   │   ├── orch-loop      — Repeats work until an agreed check says it is done
-    │   │   └── orch-panel     — Uses several independent reviewers to compare choices fairly
+    │   │   ├── orch-panel     — Uses several independent reviewers to compare choices fairly
+    │   │   └── orch-compose   — Runs a saved workflow step by step and checks the whole at the end
     │   │
     │   ├── workflows/ — Complete processes made from the smaller building blocks
     │   │   ├── orch-build         — Creates or changes a reusable part of the orchflows library
@@ -333,7 +323,7 @@ library builds inside a domain stays cohesive. Stamp a different pack
 on the spec and the identical pipeline ships code, documents, research,
 or UI.
 
-## Advantages over Anthropic's Dynamic Workflows
+### Advantages over Anthropic's Dynamic Workflows
 
 - **Cross-harness.** One library drives both Claude Code and Codex, on
   Windows and POSIX.
