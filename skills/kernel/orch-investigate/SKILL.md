@@ -18,5 +18,7 @@ Probe before targeted reads per [references/probing.md](references/probing.md).
 Never: invent a claim no source shows; silently drop a contradicting
 source; exceed the source policy.
 
-Return: cited findings with confidence, contradictions, dead ends, and
-gaps.
+Return: status; result identity — the evidence packet in its store;
+verification — the verdict against the dispatch's named oracle,
+UNVERIFIED when none was named; then cited findings with confidence,
+contradictions, dead ends, and gaps.

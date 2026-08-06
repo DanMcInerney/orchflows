@@ -28,8 +28,19 @@ that needs a different meaning needs a different word.
   lens, oracle policy, workspace, required spec fields, craft).
 - **signature** — `contracts/pack-signature.md`: the cells every pack must
   provide and the sharing constraints between them.
-- **composition** — a T3 non-normative worked example; never model-invoked;
-  the template a scoped custom workflow instantiates from.
+- **composition** — a T3 named workflow: steps over skills and
+  compositions combined by the combinators, per
+  `contracts/composition.md`; invocable by name; entry
+  `routed | named | scheduled`; admitted through `orch-build`.
+- **combinator** — an inter-run operator a composition's edges use:
+  seq (result identity → successor `evidence`), par (disjoint write
+  scopes plus a named join), loop (through `orch-loop`); owned by
+  `contracts/composition.md`.
+- **dispatchable unit** — a skill or composition a combinator may bind
+  as a step or body; its `Return` leads with the envelope.
+- **envelope** — the leading `Return` fields of every dispatchable
+  unit — status, result identity, verification — per
+  `contracts/result.md`.
 - **scope** — where a built item lands and which oracles gate it:
   canonical (the library repository), user, or project. User- and
   project-scope items are custom — outside library law, binding only at
@@ -58,10 +69,8 @@ that needs a different meaning needs a different word.
   it as frozen.
 - **exemplar** — an artifact a spec's `exemplars` field names to imitate;
   field contract in `contracts/spec.md`; always non-normative.
-- **stamp / routing** — the spec fields fixed at intake — pattern and pack —
+- **stamp / routing** — the spec field fixed at intake — the pack —
   which engines thereafter read blind.
-- **pattern** — the shape of done: deliver, loop(<body>), evolve, fix,
-  decision, or snapshot.
 - **domain** — the deliverable's kind (code, content, research,
   design); selects exactly one pack per run.
 - **work item / ticket** — a delegation packet made durable: packet parts
@@ -128,22 +137,22 @@ The benchmark pipeline has exactly four artifact roles:
   oracles, classes, required status and anchors, scoring and aggregation,
   intended coverage, source identities, expected execution cost, assumptions,
   and gaps.
-- **benchmark** — the immutable runnable artifact qualified by
-  `orch-benchmaker`; its manifest binds one evaluation design, cases, runner,
+- **benchmark** — the immutable runnable artifact qualified by the
+  `benchmaker` composition; its manifest binds one evaluation design, cases, runner,
   scoring, provenance, qualification, expected cost, protected-evidence
   policy, and gaps by identity.
 - **score card** — `orch-judge`'s artifact for one fixed candidate against
   frozen scoring criteria: per-criterion scores with verdicts, oracle classes,
   and evidence, plus overall score and confidence.
-- **evolution result** — `orch-evolve`'s campaign artifact: final incumbent
+- **evolution result** — the `evolve` composition's campaign artifact: final incumbent
   identity and closing score card, frozen benchmark identity, campaign
   history, partial evidence, feedback, gaps, and bounds spent.
 - **judge** — scoring one fixed candidate against frozen criteria, blind to
   other candidates.
 - **judgment shapes** — critique returns findings, judge returns score
   cards, verify returns verdicts; no skill returns another's shape.
-- **incumbent** — the current holder a variant challenges; `orch-evolve`
-  owns its prose.
+- **incumbent** — the current holder a variant challenges; the
+  `evolve` composition owns its prose.
 - **gate** — the single review-fix pass a run crosses before final
   verification.
 

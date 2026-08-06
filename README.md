@@ -9,18 +9,22 @@ Build a self-improving agent loop in one sentence:
     workflow runs self-improve on itself.
 
 Or don't do that — just ask Claude or Codex for any one-off task of any
-size, like you normally would. Every request autoroutes to the smallest
-subagent-driven workflow that can prove it's done: a one-line answer
-stays a one-line answer; a product-sized build gets a frozen spec,
-tickets, parallel subagents, and a verification gate. 38 composable
-skills. Claude Code and Codex, Windows and POSIX. By default the
-planner/reviewer subagent is Fable 5 on high effort on Claude Code and
-GPT-5.6 Sol on ultra on Codex; workers are Sonnet 5 on xhigh and
-GPT-5.6 Sol on high. Think of it as an upgraded, cross-harness
-Dynamic Workflows.
+size, like you normally would. Every plain request routes through
+exactly two entry shapes — **ad-hoc** or **deliver** — and the smallest
+one that can prove it's done: a one-line answer stays a one-line
+answer; a product-sized build gets a frozen spec, tickets, parallel
+subagents, and a verification gate. A request spanning multiple
+deliverable kinds ("research X, then build it") becomes a chain of
+single-pack deliveries automatically, joined by result identity.
+Everything else runs by name. 34 composable skills plus a stdlib of
+named compositions. Claude Code and Codex, Windows and POSIX. By
+default the planner/reviewer subagent is Fable 5 on high effort on
+Claude Code and GPT-5.6 Sol on ultra on Codex; workers are Sonnet 5 on
+xhigh and GPT-5.6 Sol on high. Think of it as an upgraded,
+cross-harness Dynamic Workflows.
 
-Use canonical `orch-benchmaker` to build a qualified immutable benchmark for
-any target with an observable outcome. Its
+Use the named `benchmaker` composition to build a qualified immutable
+benchmark for any target with an observable outcome. Its
 [public dataflow and migration note](docs/benchmaker.md) cover the immutable
 evaluation design, benchmark, score card, and evolution result roles;
 Verify-before-Judge consumption; and manual between-campaign
@@ -51,19 +55,24 @@ orchflows answers each in structure:
   blogs, code, or research.
 - **Self-improving.** `orch-self-improve` can run at any time to mine
   the logs for friction points in agent behavior and reasoning, and
-  improve the workflows over time. `orch-evolve` is its sibling: a
-  tournament-style improvement loop over any artifact, runnable or
-  static.
+  improve the workflows over time. The `evolve` composition is its
+  sibling: a tournament-style improvement loop over any artifact,
+  runnable or static.
 
 ## Legos
 
 - **One brick, one job.** `orch-deliver` ships, `orch-critique`
-  attacks, `orch-judge` scores blind, `orch-loop` iterates,
-  `orch-fix` proves the cause before repairing it.
-- **One stud pattern.** Six frozen contracts — spec, work-item,
-  delegation, verdict, worklog, pack-signature — are the only
-  interfaces. Anything that emits one plugs into anything that
-  takes one.
+  attacks, `orch-judge` scores blind, `orch-loop` iterates, the `fix`
+  composition proves the cause before repairing it.
+- **One stud pattern.** Eight frozen contracts — spec, work-item,
+  delegation, verdict, worklog, pack-signature, composition, result —
+  are the only interfaces. Anything that emits one plugs into anything
+  that takes one.
+- **One return shape.** Every dispatchable unit returns one result
+  envelope — status, result identity, verification — so any unit's
+  output feeds any successor's evidence. Three combinators — `seq`,
+  `par`, `loop` — are the whole grammar; a composition is just those
+  combinators over named bricks, written down in a file.
 - **Swappable baseplates.** Workflows are domain-blind; a pack
   (code | content | research | design) is pure data that retargets
   the whole tower. The pipeline that ships a feature also ships a
@@ -88,40 +97,46 @@ removes only what it generated; `--dry-run` previews either.
 
 ## Usage
 
-Just talk. Routing reads the request and picks the smallest shape:
-
-    > fix the flaky login test
-    # orch-fix: reproduce it, prove the cause, guard the repair
+Just talk. Routing has four branches — answer, ad-hoc, deliver, fix —
+and picks the smallest one:
 
     > why did memory double last release?
-    # orch-investigate: one read-only lane, answer cited from primary evidence
+    # ad-hoc: orch-investigate, one read-only lane, answer cited from
+    # primary evidence
 
     > ship dark mode
-    # orch-spec → orch-deliver: frozen spec, tickets, parallel subagents
-    # on a rolling frontier, one review gate, final verification
+    # deliver: orch-spec → orch-deliver — frozen spec, tickets, parallel
+    # subagents on a rolling frontier, one review gate, final verification
 
-    > build me a custom workflow that reads all the documentation, then
-      researches similar projects, then builds a spec doc to copy their
-      best features and implements them
-    # orch-build: the chain is admitted as a project-local skill,
-    # callable by name from then on
+    > research the top three auth libraries, then integrate the winner
+    # deliver, chained: two single-pack runs (research, then code), cut
+    # where the deliverable's kind changes; run 1's result identity
+    # becomes run 2's evidence
 
-Or name the bricks yourself:
+    > fix the flaky login test
+    # the fix composition: reproduce it, prove the cause, guard the repair
+
+Everything else runs only when named — `evolve`, `benchmaker`,
+scheduled snapshots, and any composition you save. The routing table
+never grows; the named tier does. Name the bricks yourself:
 
     > orch-loop orch-deliver until `pytest -q` exits 0
     > orch-panel these three cache designs — blind judges, pick one
-    > orch-critique src/auth under the security lens
+    > evolve the summarizer prompt against the frozen benchmark
 
-Or build your own custom workflow:
+Or author your own composition — a workflow file built from three
+combinators (`seq`, `par`, `loop`) over skills and other compositions,
+with its invariants and an end-to-end done check written in:
 
     > build me a workflow that does spec > deliver, then always updates
       the documentation afterwards (favoring edits and deletions over
       additions), and automatically PRs and merges it
+    # orch-build admits it as a composition, callable by name from then on
 
-Custom workflows are project-local. In the example above, if you were
-working in `my-personal-site/` you'd get a workflow named something
-like `/site-work-and-merge`, callable only when you're working in
-`my-personal-site/`.
+Custom compositions are project-local. In the example above, if you
+were working in `my-personal-site/` you'd get a workflow named
+something like `/site-work-and-merge`, callable only when you're
+working in `my-personal-site/`.
 
 Routing too eager? `orch-off` stands it down for the session. The
 routing law is `rules/topology.md` §2, installed as
@@ -187,8 +202,10 @@ flowchart TD
     orchflows
     │
     ├── Layer 0 · contracts/ — Shared forms that keep every part of the system speaking the same language
+    │   ├── composition    — Defines a named workflow: steps, edges, invariants, done check
     │   ├── delegation     — Says what another agent should do, use, avoid, and return
     │   ├── pack-signature — Lists what every project-type setup must provide
+    │   ├── result         — The envelope every unit returns: status, result identity, verification
     │   ├── spec           — Records exactly what the user wants made
     │   ├── verdict        — Records whether a check passed and what proves it
     │   ├── work-item      — Describes and tracks one piece of work
@@ -218,13 +235,10 @@ flowchart TD
     │   │   └── orch-panel     — Uses several independent reviewers to compare choices fairly
     │   │
     │   ├── workflows/ — Complete processes made from the smaller building blocks
-    │   │   ├── orch-benchmaker    — Builds and qualifies an immutable runnable benchmark
     │   │   ├── orch-build         — Creates or changes a reusable part of the orchflows library
     │   │   ├── orch-deliver       — Runs a project from the agreed plan to a checked final result
     │   │   ├── orch-diagnose      — Reproduces a problem and finds what is actually causing it
     │   │   ├── orch-eval-design   — Freezes candidate-blind evaluation semantics before construction
-    │   │   ├── orch-evolve        — Creates and compares improved versions over several rounds
-    │   │   ├── orch-fix           — Finds the cause of a problem, repairs it, and proves it stays fixed
     │   │   ├── orch-repair        — Applies the smallest change that fixes a known problem
     │   │   ├── orch-review-fix    — Reviews the result once, fixes valid problems, and checks it again
     │   │   ├── orch-fixture       — Saves a finished task as an example that can be run again later
@@ -249,22 +263,27 @@ flowchart TD
     │   ├── orch-research-pack — Tells the system how to answer questions using trustworthy sources
     │   └── orch-design-pack   — Tells the system how to build and visually check interfaces
     │
-    └── Layer 3 · compositions/ — Example playbooks showing how the parts can be combined
+    └── Layer 3 · compositions/ — Named workflows built from the skills, callable like any skill
+        ├── benchmaker           — Builds and qualifies an immutable runnable benchmark
         ├── drift-canary         — Reruns known examples to detect changes in agent behavior
         ├── evidence-to-document — Researches a subject first, then turns the findings into a document
         ├── evolve               — Produces several versions and selects the strongest one
         ├── feature-plus-docs    — Builds a software feature and then documents what was built
+        ├── fix                  — Finds the cause of a problem, repairs it, and proves it stays fixed
         ├── improvement-delivery — Turns an approved process improvement into a tested change
         ├── renovate             — Reviews an existing project and completes selected improvements
         └── skill-tournament     — Tests competing versions of a skill to see which works best
 
 Four layers, dependencies pointing one way. `contracts/` is the narrow
-waist: six hash-pinned data shapes that are the only interfaces between
-skills. `skills/` is everything callable — kernel primitives that call
-no other skill, engines that add control flow, workflows assembled from
-both, instances that do the domain's hands-on work, and a couple of
-utilities. `packs/` is per-domain data, never control flow.
-`compositions/` is non-normative worked examples, free to churn.
+waist: eight hash-pinned data shapes that are the only interfaces
+between skills. `skills/` is everything callable — kernel primitives
+that call no other skill, engines that add control flow, workflows
+assembled from both, instances that do the domain's hands-on work, and
+a couple of utilities. `packs/` is per-domain data, never control flow.
+`compositions/` is the stdlib: normative, admitted workflow files over
+skills and other compositions, each declaring how it enters (`routed`
+in the intake table, `named` only on request, or `scheduled`), its
+invariants, and one done check over the whole chain.
 
 ### Work routing
 

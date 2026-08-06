@@ -36,7 +36,7 @@ reader. Human legibility is welcome; it is never the design driver.
 ## Structure → constraint
 
 - **A narrow, hash-pinned waist (`contracts/`).** N workflows, M
-  packs, and H hosts meet in six data shapes: N+M+H mutual
+  packs, and H hosts meet in eight data shapes: N+M+H mutual
   understandings instead of N×M×H. Hash-pinned because the reader
   drifts shapes helpfully — renaming a field to a nicer synonym reads
   as a favor and breaks every consumer silently; the pin turns drift
@@ -54,8 +54,10 @@ reader. Human legibility is welcome; it is never the design driver.
   workflow. One generic body reading domain facts through cells means
   a domain is added by writing data, not by editing control flow
   (search is memory; diluted attention).
-- **Compositions are non-normative.** Worked examples rot fastest;
-  outside the instruction path, rot is harmless.
+- **Compositions are the stdlib.** A named workflow is a data file —
+  steps, edges, invariants, done check — admitted like any skill and
+  invocable by name (see "Why patterns became grammar plus stdlib"
+  below).
 - **Tickets and worklogs are markdown on disk.** Files are the only
   memory every context shares and the only store the reader can
   search with native tools. An external tracker is state an amnesiac
@@ -88,10 +90,40 @@ reader. Human legibility is welcome; it is never the design driver.
   differ only in landing zone and available oracles, so one build
   judgment reads those facts from a table — the same move that keeps
   domains in packs and hosts in the installer. Custom workflows
-  instantiate from compositions, the worked-example tier, so user
+  instantiate from compositions, the named-workflow tier, so user
   reuse never mints new control flow; and an item's scope never
   exceeds the install scope that resolves its call edges, or the item
   would dangle (search is memory).
+
+## Why patterns became grammar plus stdlib
+
+Superseded 2026-08-06 (the two-entrypoints spec). Routing once
+enumerated six named "shapes of done," and three of them were whole
+skills (`orch-fix`, `orch-evolve`, `orch-benchmaker`) whose bodies were
+mostly sequencing. Every new recurring shape grew the routing table —
+the one surface every session pays for on every request. The
+replacement splits what a pattern conflated:
+
+- **The routing table stays fixed while the named tier grows.** Four
+  branches — answer, ad-hoc, deliver, fix — and one closed rule:
+  everything else runs only when named. New workflows land as
+  composition files, so recurring shapes accumulate in the stdlib
+  instead of in the dispatch prose (diluted attention: the always-paid
+  cost never grows).
+- **Invariants survive in composition files.** A demoted pattern's law
+  — evolve's frozen benchmark and blindness, fix's
+  proven-cause-before-repair — moves verbatim into a required
+  `invariants` field, and admission rejects a composition missing
+  `invariants` or a `done_check`; a chain of individually gated runs
+  gets its whole-chain gate from that one field (cheap generation:
+  the gate is data the validator can check, not prose to remember).
+- **The envelope closes the algebra.** Every dispatchable unit returns
+  one envelope — status, result identity, verification — so `seq`,
+  `par`, and `loop` compose anything with anything: a predecessor's
+  result identity is a successor spec's evidence, with no per-pair
+  glue. Three combinators plus one value type replace six patterns,
+  and a multi-kind request chains itself (search is memory: one return
+  shape, one name for it).
 
 ## The craft gap
 
@@ -263,7 +295,7 @@ regardless of use, while a skill's body is read live from disk only at
 invocation; mirroring the whole library there would tax every session
 for skills most turns never invoke, so prompts stay Codex's primary
 surface and only four entry points (`orch-spec`, `orch-task`,
-`orch-fix`, `orch-build`) get a redirect stub — a one-line pointer at
+`fix`, `orch-build`) get a redirect stub — a one-line pointer at
 the lib path a live read keeps at zero staleness. Project scope
 collapsed to a routing-block stub because the two things a project
 install used to carry beyond that were never load-bearing: friction

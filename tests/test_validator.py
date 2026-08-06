@@ -252,5 +252,176 @@ class TestSyntheticPackageBoundaryInputs(unittest.TestCase):
         self.assertIn("pack frontmatter must not declare 'role'", result.stdout)
 
 
+GOOD_COMPOSITION = """---
+name: {name}
+description: a synthetic composition exercising the contract checks
+entry: {entry}
+---
+
+Require: a frozen input.
+
+Steps:
+- one — `orch-task`.
+
+Edges: seq one.
+
+Invariants — Never: widen scope.
+
+Done check: the final envelope's verification covers the result.
+
+Return: status, result identity, and verification; then feedback.
+"""
+
+
+class TestCompositionContractChecks(unittest.TestCase):
+    """validate_compositions against contracts/composition.md, on the
+    same isolated tmp-copy pattern as the synthetic package tests."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp_path = Path(self.tmp.name)
+        shutil.copytree(CONTRACTS, self.tmp_path / "contracts")
+        (self.tmp_path / "tools").mkdir()
+        shutil.copy(VALIDATE, self.tmp_path / "tools" / "validate.py")
+        (self.tmp_path / "compositions").mkdir()
+        self._run("--pin")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _run(self, *args):
+        return subprocess.run(
+            [sys.executable, str(self.tmp_path / "tools" / "validate.py"), *args],
+            capture_output=True,
+            text=True,
+        )
+
+    def _write_composition(self, name: str, content: str):
+        (self.tmp_path / "compositions" / f"{name}.md").write_text(content, encoding="utf-8")
+
+    def test_contract_conforming_composition_passes(self):
+        for entry in ("routed", "named", "scheduled"):
+            self._write_composition(f"good-{entry}", GOOD_COMPOSITION.format(name=f"good-{entry}", entry=entry))
+        result = self._run()
+        self.assertEqual(0, result.returncode, result.stdout)
+
+    def test_entry_outside_the_closed_set_is_error(self):
+        self._write_composition("badentry", GOOD_COMPOSITION.format(name="badentry", entry="automatic"))
+        result = self._run()
+        self.assertEqual(1, result.returncode)
+        self.assertIn("entry 'automatic'", result.stdout)
+        self.assertIn("contracts/composition.md", result.stdout)
+
+    def test_missing_invariants_and_done_check_are_admission_errors(self):
+        bad = GOOD_COMPOSITION.format(name="gutted", entry="named")
+        bad = bad.replace("Invariants — Never: widen scope.\n\n", "")
+        bad = bad.replace("Done check: the final envelope's verification covers the result.\n\n", "")
+        self._write_composition("gutted", bad)
+        result = self._run()
+        self.assertEqual(1, result.returncode)
+        self.assertIn("missing 'invariants'", result.stdout)
+        self.assertIn("missing 'done_check'", result.stdout)
+        self.assertIn("admission rejects", result.stdout)
+
+    def test_missing_steps_and_edges_are_errors(self):
+        bad = GOOD_COMPOSITION.format(name="stepless", entry="named")
+        bad = bad.replace("Steps:\n- one — `orch-task`.\n\n", "")
+        bad = bad.replace("Edges: seq one.\n\n", "")
+        self._write_composition("stepless", bad)
+        result = self._run()
+        self.assertEqual(1, result.returncode)
+        self.assertIn("required field 'steps'", result.stdout)
+        self.assertIn("required field 'edges'", result.stdout)
+
+    def test_name_mismatch_and_missing_frontmatter_are_errors(self):
+        self._write_composition("misnamed", GOOD_COMPOSITION.format(name="other", entry="named"))
+        self._write_composition("bare", "# bare (no frontmatter)\n\nprose only\n")
+        result = self._run()
+        self.assertEqual(1, result.returncode)
+        self.assertIn("does not match file name 'misnamed'", result.stdout)
+        self.assertIn("missing opening frontmatter fence", result.stdout)
+
+    def test_composition_return_missing_the_envelope_is_error(self):
+        bad = GOOD_COMPOSITION.format(name="bareret", entry="named")
+        bad = bad.replace(
+            "Return: status, result identity, and verification; then feedback.",
+            "Return: assumptions and feedback.",
+        )
+        self._write_composition("bareret", bad)
+        result = self._run()
+        self.assertEqual(1, result.returncode)
+        self.assertIn("does not lead with the result envelope", result.stdout)
+
+
+class TestEnvelopeCheck(unittest.TestCase):
+    """validate_envelope against contracts/result.md's bound units, on
+    the synthetic skills-tree idiom."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp_path = Path(self.tmp.name)
+        shutil.copytree(CONTRACTS, self.tmp_path / "contracts")
+        (self.tmp_path / "tools").mkdir()
+        shutil.copy(VALIDATE, self.tmp_path / "tools" / "validate.py")
+        self._run("--pin")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _run(self, *args):
+        return subprocess.run(
+            [sys.executable, str(self.tmp_path / "tools" / "validate.py"), *args],
+            capture_output=True,
+            text=True,
+        )
+
+    def _write_skill(self, name: str, body: str, tier: str = "engines"):
+        skill_dir = self.tmp_path / "skills" / tier / name
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text(
+            f"---\nname: {name}\ndescription: a synthetic bound unit\nrole: none\n---\n{body}",
+            encoding="utf-8",
+        )
+
+    def test_bound_unit_return_without_envelope_is_error(self):
+        self._write_skill(
+            "orch-loop",
+            "Require: a body and a bound.\nNever: exceed the bound.\n"
+            "Return: assumptions and feedback.\n",
+        )
+        result = self._run()
+        self.assertEqual(1, result.returncode)
+        self.assertIn("orch-loop", result.stdout)
+        self.assertIn("does not lead with the result envelope", result.stdout)
+        self.assertIn("contracts/result.md", result.stdout)
+
+    def test_bound_unit_leading_with_the_envelope_passes(self):
+        self._write_skill(
+            "orch-loop",
+            "Require: a body and a bound.\nNever: exceed the bound.\n"
+            "Return: status, results by identity, and final verification; "
+            "then bounds spent. Terminal states are stalled or limited.\n",
+        )
+        result = self._run()
+        self.assertEqual(0, result.returncode, result.stdout)
+
+    def test_bound_unit_return_riding_the_work_item_carrier_passes(self):
+        self._write_skill(
+            "orch-task",
+            "Require: one ready ticket.\nNever: skip the join.\n"
+            "Return: the completed ticket per the work-item contract.\n",
+        )
+        result = self._run()
+        self.assertEqual(0, result.returncode, result.stdout)
+
+    def test_unbound_skill_return_is_not_checked(self):
+        self._write_skill(
+            "orch-elsewise",
+            "Require: an input.\nNever: overreach.\nReturn: findings and feedback.\n",
+        )
+        result = self._run()
+        self.assertEqual(0, result.returncode, result.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()

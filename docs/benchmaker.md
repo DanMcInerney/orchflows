@@ -1,12 +1,12 @@
 # BenchMaker
 
-`orch-benchmaker` is the canonical workflow for building one qualified,
-immutable [benchmark](vocabulary.md#verification) for an opaque target with an
+The `benchmaker` composition builds one qualified, immutable
+[benchmark](vocabulary.md#verification) for an opaque target with an
 observable outcome. Its
-[workflow](../skills/workflows/orch-benchmaker/SKILL.md) owns invocation;
-its [protocol](../skills/workflows/orch-benchmaker/references/protocol.md)
+[composition](../compositions/benchmaker.md) owns invocation; its
+[protocol](../compositions/references/benchmaker-protocol.md)
 owns construction and qualification; its
-[manifest](../skills/workflows/orch-benchmaker/references/manifest.md) owns
+[manifest](../compositions/references/benchmaker-manifest.md) owns
 identity.
 
 ## Immutable dataflow
@@ -21,9 +21,9 @@ Benchmark execution produces fixed evidence. `orch-verify` decides required
 eligibility before `orch-judge` may create a
 [score card](vocabulary.md#verification) citing that same evidence; Judge
 never re-executes or substitutes it. Required failure never enters ranking.
-`orch-evolve` consumes the qualified benchmark by identity and returns an
-[evolution result](vocabulary.md#verification) without calling BenchMaker or
-revising that benchmark.
+The `evolve` composition consumes the qualified benchmark by identity and
+returns an [evolution result](vocabulary.md#verification) without calling
+BenchMaker or revising that benchmark.
 
 ## Self-benchmarking
 
@@ -35,5 +35,5 @@ activates it automatically.
 
 ## Migration
 
-Replace `orch-bench` calls with `orch-eval-design`, and replace the removed
-project-scoped `benchmaker` entrypoint with `orch-benchmaker`. No alias remains.
+Replace `orch-bench` calls with `orch-eval-design`, and any `orch-benchmaker`
+invocation with the named `benchmaker` composition. No alias remains.

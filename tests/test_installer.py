@@ -346,7 +346,13 @@ class TestScopedHostConfiguration(unittest.TestCase):
             ):
                 plan = install.build_plan("user", None)
 
-            self.assertEqual(len(install.discover_packages()), len(plan.claude_adapters))
+            # Compositions are invocable by name and get the same adapter
+            # stubs as skills, whatever their entry value.
+            compositions = install.discover_compositions()
+            self.assertEqual(
+                len(install.discover_packages()) + len(compositions),
+                len(plan.claude_adapters),
+            )
             expected_lib_path = (home / ".orchflows" / "lib").resolve()
             for dest, content in plan.claude_adapters:
                 self.assertEqual(home / ".claude" / "skills", dest.parent.parent)
@@ -355,11 +361,18 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertIn("name:", frontmatter)
                 self.assertIn("description:", frontmatter)
                 self.assertNotIn("role:", frontmatter)
+                self.assertNotIn("entry:", frontmatter)
                 self.assertTrue(body.strip().startswith("@"))
                 self.assertIn(str(expected_lib_path), body)
 
+            composition_names = {path.stem for path, _, _ in compositions}
+            expected_stub_names = {
+                name
+                for name in install.CODEX_SKILL_REDIRECT_NAMES
+                if name.startswith("orch-") or name in composition_names
+            }
             self.assertEqual(
-                {"orch-spec", "orch-task", "orch-fix", "orch-build"},
+                expected_stub_names,
                 {dest.parent.name for dest, _ in plan.codex_skills},
             )
             for dest, content in plan.codex_skills:
@@ -370,6 +383,60 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertIn("description:", frontmatter)
                 self.assertIn(str(expected_lib_path), body)
                 self.assertIn("follow it exactly.", body)
+
+    def test_discover_compositions_requires_frontmatter_with_entry(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            comps = root / "compositions"
+            comps.mkdir()
+            (comps / "fix.md").write_text(
+                "---\nname: fix\ndescription: routed fix chain\nentry: routed\n---\n\n"
+                "Require: a failure.\n\nReturn: status, result, verification.\n",
+                encoding="utf-8",
+            )
+            (comps / "legacy.md").write_text(
+                "# legacy example\n\nprose only, no frontmatter\n", encoding="utf-8"
+            )
+            (comps / "no-entry.md").write_text(
+                "---\nname: no-entry\ndescription: missing entry\n---\n\nbody\n",
+                encoding="utf-8",
+            )
+            found = install.discover_compositions(root)
+            self.assertEqual(["fix.md"], [path.name for path, _, _ in found])
+            path, frontmatter, body = found[0]
+            self.assertEqual("routed", install.frontmatter_field(frontmatter, "entry"))
+            self.assertIn("Require: a failure.", body)
+
+    def test_composition_surfaces_cover_every_entry_value(self):
+        # Routed, named, and scheduled compositions all surface as Claude
+        # adapters, Codex prompts, and by-name entries -- the named tier is
+        # unreachable from a host without them (SPEC §8).
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".claude").mkdir(parents=True)
+            (home / ".codex").mkdir(parents=True)
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "claude", "codex"
+            ):
+                plan = install.build_plan("user", None)
+
+            compositions = install.discover_compositions()
+            if not compositions:
+                self.skipTest("no invocable compositions in this tree")
+            adapter_names = {dest.parent.name for dest, _ in plan.claude_adapters}
+            prompt_names = {dest.stem for dest, _ in plan.codex_prompts}
+            by_name_names = {dest.parent.name for dest, _ in plan.by_name}
+            lib_comps = (home / ".orchflows" / "lib" / "compositions").resolve()
+            for path, frontmatter, _ in compositions:
+                name = path.stem
+                self.assertIn(name, adapter_names)
+                self.assertIn(name, prompt_names)
+                self.assertIn(name, by_name_names)
+                adapter = next(c for d, c in plan.claude_adapters if d.parent.name == name)
+                self.assertIn(str(lib_comps / path.name), adapter)
+                pointer = next(c for d, c in plan.by_name if d.parent.name == name)
+                self.assertIn(str(lib_comps / path.name), pointer)
+                self.assertIn("entry:", pointer)
 
     def test_user_plan_writes_flat_by_name_index_for_every_package(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -384,11 +451,12 @@ class TestScopedHostConfiguration(unittest.TestCase):
             by_name_root = (home / ".orchflows" / "lib" / "by-name").resolve()
             expected_lib_path = (home / ".orchflows" / "lib").resolve()
             packages = install.discover_packages()
-            # One flat entry per canonical package — skills across every tier and
-            # packs alike — keyed by the bare orch-name, no tier in the path.
-            self.assertEqual(len(packages), len(plan.by_name))
+            compositions = install.discover_compositions()
+            # One flat entry per canonical name — skills across every tier,
+            # packs, and invocable compositions alike — no tier in the path.
+            self.assertEqual(len(packages) + len(compositions), len(plan.by_name))
             self.assertEqual(
-                {p.parent.name for p in packages},
+                {p.parent.name for p in packages} | {p.stem for p, _, _ in compositions},
                 {dest.parent.name for dest, _ in plan.by_name},
             )
             for dest, content in plan.by_name:
@@ -409,7 +477,10 @@ class TestScopedHostConfiguration(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), mock_host_clis("codex"):
                 plan = install.build_plan("user", None)
             self.assertEqual([], plan.claude_adapters)
-            self.assertEqual(len(install.discover_packages()), len(plan.by_name))
+            self.assertEqual(
+                len(install.discover_packages()) + len(install.discover_compositions()),
+                len(plan.by_name),
+            )
 
     def test_project_plan_writes_only_instruction_blocks_and_minimal_receipt(self):
         with tempfile.TemporaryDirectory() as tmp:

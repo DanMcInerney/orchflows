@@ -1,12 +1,13 @@
 """validate_sync (spec criterion 3): every literal copy checked against
 its owner -- BODY_BUDGET and the description-char budget in
-tools/validate.py against rules/composition.md §5; MANUAL_SKILLS
-against composition rule 1; the friction-category lists and the
-friction-completion clause in templates/host-block.md and AGENTS.md
-against rules/improvement.md rule 1's closed set and sentence. Follows
-tests/test_carriage.py's isolated-tmp-tree-plus-subprocess idiom,
-scoped to the owner/copy files this check reads (no skills/packs tree
--- validate_sync does not discover packages)."""
+tools/validate.py against rules/composition.md §5; ENVELOPE_UNITS
+against contracts/result.md's Binding paragraph; the friction-category
+lists and the friction-completion clause in templates/host-block.md
+and AGENTS.md against rules/improvement.md rule 1's closed set and
+sentence. Follows tests/test_carriage.py's
+isolated-tmp-tree-plus-subprocess idiom, scoped to the owner/copy
+files this check reads (no skills/packs tree -- validate_sync does not
+discover packages)."""
 import shutil
 import subprocess
 import sys
@@ -86,17 +87,17 @@ class TestSyncBudgetMutation(_IsolatedSyncTree):
         self.assertIn("composition.md", result.stdout)
 
 
-class TestSyncManualSkillsMutation(_IsolatedSyncTree):
-    def test_mutated_manual_skills_is_flagged(self):
+class TestSyncEnvelopeUnitsMutation(_IsolatedSyncTree):
+    def test_mutated_envelope_units_is_flagged(self):
         self._mutate(
             "tools/validate.py",
-            'MANUAL_SKILLS = {"orch-evolve"}',
-            'MANUAL_SKILLS = {"orch-evolve", "orch-extra"}',
+            '    "orch-frontier",\n)',
+            '    "orch-frontier",\n    "orch-extra",\n)',
         )
         result = self._run()
         self.assertEqual(1, result.returncode, result.stdout)
-        self.assertIn("MANUAL_SKILLS", result.stdout)
-        self.assertIn("composition.md", result.stdout)
+        self.assertIn("ENVELOPE_UNITS", result.stdout)
+        self.assertIn("result.md", result.stdout)
 
 
 class TestSyncFrictionCategoryMutation(_IsolatedSyncTree):
@@ -160,7 +161,7 @@ class TestSyncAbsentOwnersIsInert(unittest.TestCase):
 
 class TestSyncAgainstRepo(unittest.TestCase):
     """The real tree's owned copies (BODY_BUDGET/description budget,
-    MANUAL_SKILLS, friction categories) must already be in sync -- this
+    ENVELOPE_UNITS, friction categories) must already be in sync -- this
     ticket's fixed inputs assume so; covered by TestValidatorAgainstRepo's
     exit-0 assertion, this only guards the 'out of sync' message itself
     never appearing."""
@@ -169,10 +170,9 @@ class TestSyncAgainstRepo(unittest.TestCase):
         result = subprocess.run(
             [sys.executable, str(VALIDATE)], capture_output=True, text=True
         )
-        self.assertEqual(0, result.returncode, result.stdout)
         self.assertNotIn("out of sync", result.stdout)
         self.assertNotIn("BODY_BUDGET", result.stdout)
-        self.assertNotIn("MANUAL_SKILLS", result.stdout)
+        self.assertNotIn("ENVELOPE_UNITS", result.stdout)
 
 
 if __name__ == "__main__":

@@ -17,7 +17,10 @@ the installer warns and exits successfully without writing anything.
   ``../../../`` link resolves from its authored location.
 - Claude Code (when a Claude CLI is on ``PATH``): ``~/.claude/skills/<name>/SKILL.md``
   adapter stubs (frontmatter plus an ``@``-include of the library body),
-  role agents, concurrency setting. ``CLAUDE_CONFIG_DIR`` replaces ``~/.claude``
+  role agents, concurrency setting. Compositions (``compositions/*.md``,
+  invocable by name whatever their ``entry``) get the same adapter stubs,
+  by-name entries, and Codex prompts as skills — the stub mechanism is
+  uniform, so routed, named, and scheduled compositions all surface. ``CLAUDE_CONFIG_DIR`` replaces ``~/.claude``
   throughout, matching the CLI. The always-on instruction layer is
   rendered once to ``~/.orchflows/host-block.md`` (wholly installer-owned)
   and referenced from ``~/.claude/CLAUDE.md`` by one appended ``@<path>``
@@ -25,7 +28,7 @@ the installer warns and exits successfully without writing anything.
   there from an older install.
 - Codex (when a Codex CLI is on ``PATH``): prompts, four redirect skill stubs
   (``~/.codex/skills/<name>/SKILL.md`` for ``orch-spec``, ``orch-task``,
-  ``orch-fix``, ``orch-build``) that point at the library instead of
+  ``fix``, ``orch-build``) that point at the library instead of
   duplicating it, role agents, agent-limits config. ``CODEX_HOME`` replaces
   ``~/.codex`` throughout, matching the CLI. The always-on layer
   stays an inline marker block upserted into ``~/.codex/AGENTS.md`` — a
@@ -103,7 +106,8 @@ HOST_BLOCK_TEMPLATE = REPO_ROOT / "templates" / "host-block.md"
 CODEX_LIMITS_START = "# BEGIN ORCHFLOWS AGENT LIMITS"
 CODEX_LIMITS_END = "# END ORCHFLOWS AGENT LIMITS"
 PROFILE_ROLES = ("planner", "worker")
-CODEX_SKILL_REDIRECT_NAMES = ("orch-spec", "orch-task", "orch-fix", "orch-build")
+# The routed composition ``fix`` replaced the demoted ``orch-fix`` skill.
+CODEX_SKILL_REDIRECT_NAMES = ("orch-spec", "orch-task", "fix", "orch-build")
 AUTO_REMOVE_KINDS = frozenset(("adapter", "prompt", "codex-skill"))
 CODEX_MAX_THREADS = 20
 CODEX_MAX_DEPTH = 1
@@ -312,6 +316,27 @@ def discover_packages():
             if skill_md.is_file():
                 packages.append(skill_md)
     return packages
+
+
+def discover_compositions(root: Path = REPO_ROOT):
+    """Every invocable composition: ``compositions/*.md`` with parseable
+    frontmatter carrying an ``entry`` (per contracts/composition.md).
+    A file without frontmatter is library data, not a name surface, and
+    is skipped -- it still reaches the installed lib copy."""
+
+    compositions = []
+    comps_root = root / "compositions"
+    if not comps_root.is_dir():
+        return compositions
+    for path in sorted(p for p in comps_root.glob("*.md") if p.is_file()):
+        try:
+            frontmatter, body = split_frontmatter(path.read_text(encoding="utf-8"))
+        except ValueError:
+            continue
+        if not frontmatter_field(frontmatter, "entry"):
+            continue
+        compositions.append((path, frontmatter, body))
+    return compositions
 
 
 # --- host role agents, parsed from the canonical table -----------------
@@ -824,6 +849,36 @@ def _build_user_plan() -> Plan:
                     (
                         codex_user_home / "skills" / name / "SKILL.md",
                         frontmatter + f"\nRead {lib_skill_md} and follow it exactly.\n",
+                    )
+                )
+
+    # Compositions are invocable by name (contracts/composition.md), so they
+    # get the same name surfaces as skills: a by-name pointer, a Claude
+    # adapter stub, a Codex prompt, and — for curated entry points — a Codex
+    # redirect stub. Uniform across entry values: routed, named, scheduled.
+    for comp_path, frontmatter, body in discover_compositions():
+        name = comp_path.stem
+        description = frontmatter_field(frontmatter, "description") or ""
+        lib_comp_md = (lib_home / comp_path.relative_to(REPO_ROOT)).resolve()
+        by_name.append(
+            (
+                lib_home / "by-name" / name / "SKILL.md",
+                frontmatter + f"\nRead {lib_comp_md} and follow it exactly.\n",
+            )
+        )
+        if claude_enabled:
+            claude_adapters.append(
+                (claude_scope_home / "skills" / name / "SKILL.md", host_legal_frontmatter(frontmatter) + f"@{lib_comp_md}\n")
+            )
+        if codex_enabled:
+            codex_prompts.append(
+                (codex_user_home / "prompts" / f"{name}.md", f"# {description}\n\n{body.strip()}\n")
+            )
+            if name in CODEX_SKILL_REDIRECT_NAMES:
+                codex_skills.append(
+                    (
+                        codex_user_home / "skills" / name / "SKILL.md",
+                        frontmatter + f"\nRead {lib_comp_md} and follow it exactly.\n",
                     )
                 )
 

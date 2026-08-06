@@ -5,9 +5,9 @@
    more. Kernel and utility skills are always primitives (validator-
    enforced for kernel); engines are composites; workflows and
    instances may be either — their sublayer names the judgment's role,
-   not its out-degree. Manual-only is invocation policy, not a kind:
-   `orch-evolve` is its only member, matching `tools/validate.py`'s
-   MANUAL_SKILLS (canonical checkout only; not installed).
+   not its out-degree. Invocation policy for compositions lives in
+   their `entry` field per
+   [contracts/composition.md](../contracts/composition.md).
 2. Every resolved backticked skill name in a body is a call edge. Name
    each call once, at its prose call site, with the exact backticked
    name; mention a skill without calling it in plain text, never
@@ -41,8 +41,11 @@
    surfacing, never a domain leak.
 10. Every `Require:` item rides a named T0 carrier — a field a T0
     contract defines, never bare prose; the caller supplies each
-    callee's `Require` item by that name. A `Return:` item with no
-    consumer or carrier is a defect.
+    callee's `Require` item by that name. A dispatchable unit's
+    `Return:` leads with the result envelope per
+    [contracts/result.md](../contracts/result.md); evaluators and
+    utilities are exempt. A `Return:` item with no consumer or
+    carrier is a defect.
 11. `Require:`, `Never:`, and `Return:` are binding contract; the
     procedure between them is the default method. An executor may
     substitute its own method only where every Require, Never, Return,

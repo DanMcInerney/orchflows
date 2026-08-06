@@ -5,8 +5,9 @@ role: none
 ---
 
 Require: a frozen goal; the body — what each iteration dispatches, one
-named skill or a caller-owned composite of named skills, bound as
-plain text and never backticked, a binding rather than a call edge; a
+named skill, a composition by name, or a caller-owned composite of
+named skills, bound as plain text and never backticked, a binding
+rather than a call edge; a
 done-check naming its oracle and oracle_class per
 [contracts/verdict.md](../../../contracts/verdict.md) — the iteration
 count is a deterministic done-check; a bound; and the context packet the
@@ -34,5 +35,5 @@ Never: hardcode a body; carry a step plan; widen the goal; count an
 iteration's own claim as the done-check; end a judged-class run on
 iteration-time green.
 
-Return: status, iterations run, results by identity, final verification,
-queued scope, and bounds spent.
+Return: status, results by identity, final verification, iterations
+run, queued scope, and bounds spent.

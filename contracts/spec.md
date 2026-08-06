@@ -24,13 +24,7 @@ cutting, treats it as frozen.
   property the imitation must carry, named at the identity that fixes it
   or pinned by a check a divergent copy trips. A pointer alone
   transmits shape, not convention.
-- `routing` — the stamp: `pattern` ∈ {deliver, loop(<body>), evolve,
-  fix, decision, snapshot} and `pack` (exactly one per
-  run). A loop stamp names as `<body>` the skill one iteration
-  dispatches and names the acceptance criterion that is its
-  done-check — any oracle_class per the class policy in
-  [verdict.md](verdict.md); a count of iterations
-  (`iterations_run == N`) is a deterministic done-check.
+- `routing` — the stamp: `pack` (exactly one per run).
 - `bound` — the run's effort budget, from which item bounds are cut;
   and `plan_gate`: true when execution must pause for approval after
   decomposition.
