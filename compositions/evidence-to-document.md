@@ -1,17 +1,28 @@
-# Evidence to document (non-normative example)
+---
+name: evidence-to-document
+description: The median knowledge task — postmortem, literature review, due diligence — as two chained single-pack runs, never one mixed run.
+entry: named
+---
 
-The median knowledge task — postmortem, literature review, due
-diligence — is two single-pack runs chained, never one mixed run.
+Require: the knowledge request and evidence access.
 
-Run 1: `orch-deliver` under `orch-research-pack`; the deliverable is a
-verified synthesis with claim-to-source trace.
+Steps:
+- research — `orch-deliver`, pack `orch-research-pack`; deliverable: a
+  verified synthesis with claim-to-source trace.
+- document — `orch-deliver`, pack `orch-content-pack`; the document's
+  claims trace to the synthesis, whose claims trace to sources —
+  provenance runs end to end.
 
-Freeze: the synthesis becomes the next spec's evidence, by identity —
-the content run may not gather new evidence.
+Edges: seq research → document — the synthesis identity, frozen,
+becomes the content spec's evidence.
 
-Run 2: `orch-deliver` under `orch-content-pack`; the document's claims
-trace to the synthesis, whose claims trace to sources — provenance runs
-end to end.
+Invariants — Never: gather new evidence in the content run — a gap
+discovered while drafting is queued scope for a research follow-up
+run, never an inline source hunt.
 
-A gap discovered while drafting is queued scope for a research
-follow-up run, never an inline source hunt inside the content run.
+Done check: the document run's final verification, with every document
+claim tracing through the synthesis to a source.
+
+Return: status, result — the document identity, verification — the
+final run's verdicts; then the synthesis identity and queued research
+follow-ups.

@@ -41,5 +41,5 @@ Never: start a dependent before its dependencies are complete; hold a
 ready ticket back to batch it with others; hide a blocked subtree in a
 summary of the successes; re-order the graph to dodge a failure.
 
-Return: per-ticket results, the graph's terminal state, and the open
-remainder with what blocks it.
+Return: status; per-ticket results by identity; the graph's terminal
+state as verification; and the open remainder with what blocks it.

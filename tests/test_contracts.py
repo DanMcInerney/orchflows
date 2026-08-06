@@ -120,10 +120,51 @@ class TestWorkItemContract(unittest.TestCase):
         )
 
     def test_no_reference_to_the_dead_contracts(self):
-        for name in ("work-item.md", "delegation.md", "pack-signature.md", "spec.md", "worklog.md", "verdict.md"):
+        for name in (
+            "work-item.md", "delegation.md", "pack-signature.md", "spec.md",
+            "worklog.md", "verdict.md", "composition.md", "result.md",
+        ):
             text = read(name)
             self.assertNotIn("task-result.md", text, f"{name} still references deleted task-result.md")
             self.assertNotIn("handoff.md", text, f"{name} still references deleted handoff.md")
+
+
+class TestResultContract(unittest.TestCase):
+    def test_contains_the_envelope_grammar(self):
+        text = read("result.md")
+        for token in (
+            "`status`", "`result`", "`verification`",
+            "complete", "blocked", "stalled", "limited", "failed",
+        ):
+            self.assertIn(token, text, f"result.md is missing {token!r}")
+
+    def test_binds_the_dispatchable_units_and_exempts_evaluators(self):
+        text = read_flat("result.md")
+        for unit in ("orch-deliver", "orch-task", "orch-investigate", "orch-loop", "orch-frontier"):
+            self.assertIn(f"`{unit}`", text, f"result.md does not bind {unit}")
+        self.assertIn("every composition", text, "result.md does not bind compositions")
+        self.assertIn(
+            "Evaluators and utilities are exempt", text,
+            "result.md is missing the evaluator/utility exemption",
+        )
+
+
+class TestCompositionContract(unittest.TestCase):
+    def test_contains_the_composition_fields(self):
+        text = read("composition.md")
+        for token in ("`name`", "`description`", "`entry`", "`steps`", "`edges`", "`invariants`", "`done_check`"):
+            self.assertIn(token, text, f"composition.md is missing {token!r}")
+        for entry in ("`routed`", "`named`", "`scheduled`"):
+            self.assertIn(entry, text, f"composition.md is missing entry value {entry!r}")
+        for combinator in ("`seq`", "`par`", "`loop`"):
+            self.assertIn(combinator, text, f"composition.md is missing combinator {combinator!r}")
+
+    def test_admission_rejects_missing_invariants_or_done_check(self):
+        text = read_flat("composition.md")
+        self.assertIn(
+            "rejects a composition missing `invariants` or `done_check`", text,
+            "composition.md is missing the admission-rejection sentence",
+        )
 
 
 class TestSpecContract(unittest.TestCase):

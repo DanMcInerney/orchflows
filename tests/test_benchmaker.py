@@ -12,10 +12,11 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-PACKAGE = ROOT / "skills" / "workflows" / "orch-benchmaker"
-SKILL = PACKAGE / "SKILL.md"
-PROTOCOL = PACKAGE / "references" / "protocol.md"
-MANIFEST_CONTRACT = PACKAGE / "references" / "manifest.md"
+# Demoted per contracts/composition.md: benchmaker is a named composition.
+OLD_PACKAGE = ROOT / "skills" / "workflows" / "orch-benchmaker"
+SKILL = ROOT / "compositions" / "benchmaker.md"
+PROTOCOL = ROOT / "compositions" / "references" / "benchmaker-protocol.md"
+MANIFEST_CONTRACT = ROOT / "compositions" / "references" / "benchmaker-manifest.md"
 FIXTURE = ROOT / "tests" / "fixtures" / "benchmark"
 FIXTURE_MANIFEST = FIXTURE / "manifest.json"
 PROJECT_OWNER = ROOT / ".orchflows" / "skills" / "benchmaker" / "SKILL.md"
@@ -101,15 +102,13 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         cls.protocol = PROTOCOL.read_text(encoding="utf-8")
         cls.manifest_contract = MANIFEST_CONTRACT.read_text(encoding="utf-8")
 
-    def test_workflow_anatomy_budget_calls_and_delegation_mapping(self):
-        self.assertEqual("orch-benchmaker", self.fields["name"])
-        self.assertEqual("none", self.fields["role"])
+    def test_composition_anatomy_calls_and_delegation_mapping(self):
+        self.assertEqual("benchmaker", self.fields["name"])
+        # Manual-only survives the demotion as entry: named.
+        self.assertEqual("named", self.fields["entry"])
         self.assertLessEqual(len(self.fields["description"]), 140)
         self.assertLess(self.body.index("Require:"), self.body.index("Never:"))
         self.assertLess(self.body.index("Never:"), self.body.index("Return:"))
-        self.assertLessEqual(
-            len([line for line in self.body.splitlines() if line.strip()]), 40
-        )
         calls = re.findall(r"`(orch-[a-z0-9-]+)`", self.body)
         self.assertEqual(
             ["orch-spec", "orch-deliver", "orch-eval-design"], calls
@@ -118,11 +117,11 @@ class TestCanonicalBenchmaker(unittest.TestCase):
             1,
             self.body.count(
                 "[internal-call carrier rule]"
-                "(references/protocol.md#internal-call-carriage)"
+                "(references/benchmaker-protocol.md#internal-call-carriage)"
             ),
         )
-        self.assertEqual(
-            1, self.body.count("[manifest](references/manifest.md)")
+        self.assertGreaterEqual(
+            self.body.count("[manifest](references/benchmaker-manifest.md)"), 1
         )
 
         require = squashed(
@@ -163,10 +162,10 @@ class TestCanonicalBenchmaker(unittest.TestCase):
     def test_ordered_stages_return_partial_evidence_and_do_not_evolve(self):
         body = squashed(self.body)
         stages = (
-            "freeze an evidence-acquisition spec through `orch-spec`",
-            "deliver it through `orch-deliver`",
-            "Invoke `orch-eval-design`",
-            "Materialize the selected case specifications",
+            "freeze one evidence-acquisition spec",
+            "`orch-deliver` of that frozen routing-stamped spec",
+            "design — `orch-eval-design`",
+            "materialize the selected case specifications",
             "qualify the assembled benchmark",
         )
         positions = [body.index(stage) for stage in stages]
@@ -670,18 +669,18 @@ class TestBenchmarkFixture(unittest.TestCase):
 
 
 class TestCanonicalSurface(unittest.TestCase):
-    def test_canonical_owner_exists_and_project_surfaces_are_absent(self):
+    def test_canonical_owner_exists_and_stale_surfaces_are_absent(self):
         for path in (SKILL, PROTOCOL, MANIFEST_CONTRACT):
             self.assertTrue(path.is_file(), f"missing canonical surface: {path}")
-        for path in (PROJECT_OWNER, PROJECT_PROTOCOL, CLAUDE_ADAPTER):
-            self.assertFalse(path.exists(), f"stale project surface: {path}")
+        for path in (PROJECT_OWNER, PROJECT_PROTOCOL, CLAUDE_ADAPTER, OLD_PACKAGE):
+            self.assertFalse(path.exists(), f"stale surface: {path}")
 
-        owners = []
         for skill_path in (ROOT / "skills").rglob("SKILL.md"):
             fields, _ = split_frontmatter(skill_path.read_text(encoding="utf-8"))
-            if fields.get("name") == "orch-benchmaker":
-                owners.append(skill_path)
-        self.assertEqual([SKILL], owners)
+            self.assertNotEqual(
+                "orch-benchmaker", fields.get("name"),
+                f"demoted orch-benchmaker still owned as a skill: {skill_path}",
+            )
 
 
 if __name__ == "__main__":

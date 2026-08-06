@@ -46,6 +46,6 @@ deterministic green. Set the worklog terminal state through
 Never: edit the spec; run a second gate; end a judged run on its own
 claimed green; cross the gate with an open unit item.
 
-Return: status, result identity, changed artifacts, final verification,
-uncovered remainder, decision_gap, anything the gate queued, and
-feedback.
+Return: status, result identity, final verification, changed
+artifacts, uncovered remainder, decision_gap, anything the gate
+queued, and feedback.

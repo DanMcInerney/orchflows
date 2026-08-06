@@ -24,11 +24,11 @@
 8. Work with no terminal done (queue health, upkeep) runs as scheduled
    bounded snapshots, never as an unconverging loop.
 9. A loop's body is a caller-supplied binding: what one iteration
-   dispatches — one named skill, or a caller-owned composite of named
-   skills. A routing stamp's `loop(<body>)` names one skill
-   ([contracts/spec.md](../contracts/spec.md)); a composite body is
-   bound only by a calling workflow. The engine owns iteration and
-   exit; the body carries no judgment over either.
+   dispatches — one named skill, a composition, or a caller-owned
+   composite of named skills; a composition's `loop` edge supplies
+   body, done-check, and bound per
+   [contracts/composition.md](../contracts/composition.md). The engine
+   owns iteration and exit; the body carries no judgment over either.
 10. A done-check may be the iteration count itself (`iterations_run ==
     N`; deterministic; evidence: the worklog's iteration entries). The
     declared count is then the goal; the bound remains a separate cost

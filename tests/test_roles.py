@@ -18,14 +18,12 @@ ROLE_TABLE = {
     "orch-panel": "none",
     "orch-task": "none",
     "orch-frontier": "none",
-    # none: all workflows
-    "orch-benchmaker": "none",
+    # none: all workflows (orch-fix, orch-evolve, orch-benchmaker were
+    # demoted to compositions/, which carry no role)
     "orch-build": "none",
     "orch-deliver": "none",
     "orch-diagnose": "none",
     "orch-eval-design": "none",
-    "orch-evolve": "none",
-    "orch-fix": "none",
     "orch-fixture": "none",
     "orch-repair": "none",
     "orch-review-fix": "none",

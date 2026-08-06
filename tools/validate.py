@@ -2,10 +2,12 @@
 """The orchflows compiler.
 
 Enforces package anatomy, frontmatter, call-graph acyclicity, pack
-signature completeness, T0 hash pins, the manual-only registry, and
-owned-literal sync (budgets, MANUAL_SKILLS, friction categories) against
-their rules/ owners, per AGENTS.md, ARCHITECTURE.md, rules/composition.md,
-and contracts/pack-signature.md. Stdlib only, no network.
+signature completeness, T0 hash pins, the composition contract, the
+result-envelope lead, and owned-literal sync (budgets, envelope units,
+friction categories) against their rules/ and contracts/ owners, per
+AGENTS.md, ARCHITECTURE.md, rules/composition.md,
+contracts/composition.md, contracts/result.md, and
+contracts/pack-signature.md. Stdlib only, no network.
 
 Exit 0 clean. Exit 1 with one line per violation:
     ERROR|WARN <file>: <message>
@@ -32,7 +34,6 @@ BODY_BUDGET = {
 }
 DESCRIPTION_BUDGET = 140
 ALLOWED_FRONTMATTER_KEYS = {"name", "description", "disable-model-invocation", "role"}
-MANUAL_SKILLS = {"orch-evolve"}
 ROLE_PROFILES = {"orch-planner", "orch-worker"}
 ROLE_VALUES = {"planner", "worker", "none"}
 ROLE_NONE_TIERS = ("engines", "workflows")
@@ -58,6 +59,54 @@ MD_LINK_RE = re.compile(r"\]\(([^)]+)\)")
 LOOP_TRIGGER_RE = re.compile(r"iterat|repeat until|loop", re.IGNORECASE)
 BOUND_TERM_RE = re.compile(r"bound|budget", re.IGNORECASE)
 TERMINAL_TERM_RE = re.compile(r"stalled|limited|exit|terminal", re.IGNORECASE)
+
+# --- Result envelope (contracts/result.md) ---------------------------
+#
+# The bound dispatchable units lead their Return: with the envelope --
+# status, result identity, verification. ENVELOPE_UNITS is an owned
+# literal checked against contracts/result.md's Binding paragraph by
+# validate_sync. Mechanized as a first-clause vocabulary lint, tolerant
+# of prose ordering within that clause; a Return whose first clause
+# instead names the work-item carrier (the ticket) passes, because the
+# ticket's T0 shape carries all three fields -- rule 10's envelope-on-a-
+# named-T0-carrier form, the shape `orch-task` uses.
+ENVELOPE_UNITS = (
+    "orch-deliver",
+    "orch-task",
+    "orch-investigate",
+    "orch-loop",
+    "orch-frontier",
+)
+ENVELOPE_VOCAB_RES = (
+    ("status", re.compile(
+        r"\bstatus\b|\bcomplete[ds]?\b|\bblocked\b|\bstalled\b|\blimited\b|\bfailed\b",
+        re.IGNORECASE,
+    )),
+    ("result identity", re.compile(
+        r"\bresults?\b|\bidentit(?:y|ies)\b|\bdeliverables?\b", re.IGNORECASE
+    )),
+    ("verification", re.compile(
+        r"\bverification\b|\bverdicts?\b|\bverified\b", re.IGNORECASE
+    )),
+)
+
+# --- Composition contract (contracts/composition.md) -----------------
+#
+# Every compositions/*.md is a normative, invocable workflow carrying
+# the contract's fields. A field counts as present when it appears as a
+# frontmatter key or as a line-leading label/heading in the body;
+# `invariants` also counts via a `Never:` block, which the contract
+# defines it as. Missing `invariants` or `done_check` is the contract's
+# admission-rejection sentence, an ERROR.
+COMPOSITION_ENTRY_VALUES = {"routed", "named", "scheduled"}
+COMPOSITION_REQUIRED_FIELDS = ("steps", "edges")
+COMPOSITION_ADMISSION_FIELDS = ("invariants", "done_check")
+COMPOSITION_BODY_FIELD_RES = {
+    "steps": re.compile(r"^(?:#{1,6}\s+)?\*{0,2}steps\*{0,2}\b:?", re.IGNORECASE | re.MULTILINE),
+    "edges": re.compile(r"^(?:#{1,6}\s+)?\*{0,2}edges\*{0,2}\b:?", re.IGNORECASE | re.MULTILINE),
+    "invariants": re.compile(r"^(?:#{1,6}\s+)?\*{0,2}invariants\*{0,2}\b:?", re.IGNORECASE | re.MULTILINE),
+    "done_check": re.compile(r"^(?:#{1,6}\s+)?\*{0,2}done[ _-]check\*{0,2}\b:?", re.IGNORECASE | re.MULTILINE),
+}
 
 # --- Carriage (rules/composition.md rule 10) -------------------------
 #
@@ -319,12 +368,13 @@ def _validate_pack_carriage(pkg: dict, by_name: dict, diag: Diagnostics) -> None
 #
 # Owned literals get checked against their owner, never restated as a
 # second source: BODY_BUDGET/DESCRIPTION_BUDGET against
-# rules/composition.md §5, MANUAL_SKILLS against composition rule 1,
-# the friction-category list in templates/host-block.md and AGENTS.md
-# against rules/improvement.md rule 1's closed set, and the same two
-# copies' friction-completion clause against rule 1's sentence. The
-# owner files are prose, so parsing below anchors on enum/number
-# tokens rather than sentence shape, per the carriage checks above.
+# rules/composition.md §5, ENVELOPE_UNITS against contracts/result.md's
+# Binding paragraph, the friction-category list in
+# templates/host-block.md and AGENTS.md against rules/improvement.md
+# rule 1's closed set, and the same two copies' friction-completion
+# clause against rule 1's sentence. The owner files are prose, so
+# parsing below anchors on enum/number tokens rather than sentence
+# shape, per the carriage checks above.
 SYNC_RULE_HEADER_RE = re.compile(r"^(\d+)\.\s", re.MULTILINE)
 SYNC_DESC_BUDGET_RE = re.compile(r"description.{0,15}?(\d+)\s*chars")
 SYNC_KIU_BUDGET_RE = re.compile(r"kernel,\s*instances,\s*and\s*utilities\s+(\d+)\s+lines")
@@ -392,19 +442,29 @@ def _sync_validate_budgets(composition_text: str, diag: Diagnostics) -> None:
         )
 
 
-def _sync_validate_manual_skills(composition_text: str, diag: Diagnostics) -> None:
+SYNC_RESULT_BINDING_RE = re.compile(r"^Binding:(.*?)(?:\n[ \t]*\n|\Z)", re.MULTILINE | re.DOTALL)
+
+
+def _sync_validate_envelope_units(diag: Diagnostics) -> None:
+    """ENVELOPE_UNITS against contracts/result.md's Binding paragraph --
+    the one owner of which dispatchable units the envelope binds."""
+    result_path = ROOT / "contracts" / "result.md"
+    if not result_path.is_file():
+        return  # owner absent (isolated fixtures) -- not this check's tree
     file_label = rel(ROOT / "tools" / "validate.py")
-    owner_label = rel(ROOT / "rules" / "composition.md")
-    rule1 = _sync_extract_numbered_rule(composition_text, 1)
-    if rule1 is None or "MANUAL_SKILLS" not in rule1:
-        diag.error(owner_label, "could not locate rule 1's MANUAL_SKILLS members to check MANUAL_SKILLS against")
+    m = SYNC_RESULT_BINDING_RE.search(_read_source(result_path))
+    if m is None:
+        diag.error(
+            rel(result_path),
+            "could not locate the 'Binding:' paragraph naming the envelope-bound units to check ENVELOPE_UNITS against",
+        )
         return
-    owner_members = set(CALL_TOKEN_RE.findall(rule1))
-    if owner_members != MANUAL_SKILLS:
+    owner_units = set(CALL_TOKEN_RE.findall(m.group(1)))
+    if owner_units != set(ENVELOPE_UNITS):
         diag.error(
             file_label,
-            f"MANUAL_SKILLS = {sorted(MANUAL_SKILLS)} does not match the manual-only members named "
-            f"in rules/composition.md rule 1: {sorted(owner_members)}",
+            f"ENVELOPE_UNITS = {sorted(ENVELOPE_UNITS)} does not match the bound units named "
+            f"in contracts/result.md: {sorted(owner_units)}",
         )
 
 
@@ -483,11 +543,14 @@ def _sync_validate_friction_clause_copy(path: Path, owner_clause: str, diag: Dia
 
 def validate_sync(diag: Diagnostics) -> None:
     """Spec criterion 3: BODY_BUDGET/DESCRIPTION_BUDGET vs.
-    rules/composition.md §5; MANUAL_SKILLS vs. composition rule 1; the
-    friction-category list and the friction-completion clause in
-    templates/host-block.md and AGENTS.md vs. rules/improvement.md rule
-    1's closed set and sentence. A drifted copy gets aligned to its
-    owner, never the reverse -- owners stay frozen."""
+    rules/composition.md §5; ENVELOPE_UNITS vs. contracts/result.md's
+    Binding paragraph; the friction-category list and the
+    friction-completion clause in templates/host-block.md and AGENTS.md
+    vs. rules/improvement.md rule 1's closed set and sentence. A drifted
+    copy gets aligned to its owner, never the reverse -- owners stay
+    frozen."""
+    _sync_validate_envelope_units(diag)
+
     composition_path = ROOT / "rules" / "composition.md"
     improvement_path = ROOT / "rules" / "improvement.md"
     if not composition_path.is_file() or not improvement_path.is_file():
@@ -496,7 +559,6 @@ def validate_sync(diag: Diagnostics) -> None:
     improvement_text = _read_source(improvement_path)
 
     _sync_validate_budgets(composition_text, diag)
-    _sync_validate_manual_skills(composition_text, diag)
 
     rule1_improvement = _sync_extract_numbered_rule(improvement_text, 1)
     owner_categories = _sync_parse_closed_categories(rule1_improvement) if rule1_improvement else None
@@ -788,22 +850,120 @@ def validate_call_graph(packages, diag: Diagnostics) -> None:
             diag.error(rel(pkg["skill_md"]), f"kernel skill has call edges ({called}); kernel skills call no skill")
 
 
-def validate_manual_registry(packages, diag: Diagnostics) -> None:
+def _envelope_first_clause(body: str):
+    """The Return paragraph's first sentence, or None when the body has
+    no Return paragraph (anatomy already reports that)."""
+    m = RETURN_TEXT_RE.search(body)
+    if not m:
+        return None
+    return CARRIAGE_SENTENCE_SPLIT_RE.split(m.group(1), maxsplit=1)[0]
+
+
+def _envelope_missing(clause: str) -> list:
+    """The envelope fields whose vocabulary the first clause lacks; []
+    when the clause instead names the work-item carrier, whose T0 shape
+    carries all three fields."""
+    if TICKET_FILING_RE.search(clause):
+        return []
+    return [label for label, pattern in ENVELOPE_VOCAB_RES if not pattern.search(clause)]
+
+
+def validate_envelope(packages, diag: Diagnostics) -> None:
+    """contracts/result.md: every bound dispatchable unit leads its
+    Return: with status, result identity, and verification."""
     for pkg in packages:
-        name = pkg["path"].name
-        file_label = rel(pkg["skill_md"])
-        if name in MANUAL_SKILLS and pkg["frontmatter"].get("disable-model-invocation") != "true":
-            diag.error(file_label, f"manual-only skill '{name}' must set disable-model-invocation: true")
-    for pkg in packages:
-        if pkg["path"].name in MANUAL_SKILLS:
+        if pkg["path"].name not in ENVELOPE_UNITS:
             continue
-        file_label = rel(pkg["skill_md"])
-        text = _read_source(pkg["skill_md"])
-        for match in CALL_TOKEN_RE.finditer(text):
-            if match.group(1) in MANUAL_SKILLS:
+        clause = _envelope_first_clause(pkg["body"])
+        if clause is None:
+            continue  # missing Return already reported by validate_anatomy
+        missing = _envelope_missing(clause)
+        if missing:
+            diag.error(
+                rel(pkg["skill_md"]),
+                "Return does not lead with the result envelope per contracts/result.md: "
+                f"first clause carries no {', '.join(missing)} vocabulary "
+                "and names no work-item carrier",
+            )
+
+
+def discover_compositions():
+    comps_dir = ROOT / "compositions"
+    if not comps_dir.is_dir():
+        return []
+    return sorted(p for p in comps_dir.glob("*.md") if p.is_file())
+
+
+def _composition_has_field(field: str, fm: dict, body: str) -> bool:
+    keys = {k.strip().lower().replace("-", "_").replace(" ", "_") for k in fm}
+    if field in keys:
+        return True
+    if COMPOSITION_BODY_FIELD_RES[field].search(body):
+        return True
+    if field == "invariants" and NEVER_RE.search(body):
+        return True  # the contract defines invariants as the Never: block
+    return False
+
+
+def validate_compositions(diag: Diagnostics) -> None:
+    """contracts/composition.md: every compositions/*.md is a normative,
+    invocable workflow carrying name, description, entry (routed | named
+    | scheduled), steps, edges, invariants, done_check, and the
+    Require:/Return: envelope law."""
+    for path in discover_compositions():
+        file_label = rel(path)
+        fm, body = parse_frontmatter(_read_source(path), file_label, diag)
+        if fm is None or body is None:
+            continue
+        if not fm.get("name"):
+            diag.error(file_label, "composition frontmatter missing required key 'name'")
+        elif fm["name"] != path.stem:
+            diag.error(
+                file_label,
+                f"composition name '{fm['name']}' does not match file name '{path.stem}'",
+            )
+        if not fm.get("description"):
+            diag.error(file_label, "composition frontmatter missing required key 'description'")
+        elif len(fm["description"]) > DESCRIPTION_BUDGET:
+            diag.error(
+                file_label,
+                f"description is {len(fm['description'])} chars, exceeds {DESCRIPTION_BUDGET}-char budget",
+            )
+        entry = fm.get("entry")
+        if not entry:
+            diag.error(file_label, "composition frontmatter missing required key 'entry'")
+        elif entry not in COMPOSITION_ENTRY_VALUES:
+            diag.error(
+                file_label,
+                f"entry '{entry}' is not one of {sorted(COMPOSITION_ENTRY_VALUES)} "
+                "per contracts/composition.md",
+            )
+        for f in COMPOSITION_REQUIRED_FIELDS:
+            if not _composition_has_field(f, fm, body):
                 diag.error(
                     file_label,
-                    f"body backtick-names manual-only skill `{match.group(1)}`",
+                    f"composition missing required field '{f}' per contracts/composition.md",
+                )
+        for f in COMPOSITION_ADMISSION_FIELDS:
+            if not _composition_has_field(f, fm, body):
+                diag.error(
+                    file_label,
+                    f"composition missing '{f}' -- admission rejects a composition "
+                    "missing invariants or done_check (contracts/composition.md)",
+                )
+        if not REQUIRE_RE.search(body):
+            diag.error(file_label, "composition body missing a line starting 'Require:'")
+        if not RETURN_RE.search(body):
+            diag.error(file_label, "composition body missing a sentence starting 'Return'")
+        else:
+            clause = _envelope_first_clause(body)
+            missing = _envelope_missing(clause) if clause is not None else []
+            if missing:
+                diag.error(
+                    file_label,
+                    "Return does not lead with the result envelope per contracts/result.md: "
+                    f"first clause carries no {', '.join(missing)} vocabulary "
+                    "and names no work-item carrier",
                 )
 
 
@@ -916,7 +1076,8 @@ def run_validation() -> Diagnostics:
 
     validate_call_graph(packages, diag)
     validate_carriage(packages, diag)
-    validate_manual_registry(packages, diag)
+    validate_envelope(packages, diag)
+    validate_compositions(diag)
     validate_cross_package_links(packages, diag)
     validate_pins(diag)
     validate_sync(diag)

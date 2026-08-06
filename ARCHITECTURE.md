@@ -5,10 +5,10 @@ dependencies point. Terms: `docs/vocabulary.md`.
 
 ## Tiers and ownership
 
-- `contracts/` — T0, the narrow waist: six pure data shapes (verdict,
-  work-item, delegation, spec, worklog, pack-signature). Hash-pinned by
-  `tests/`; a shape change is breaking even when prose meaning is
-  unchanged.
+- `contracts/` — T0, the narrow waist: eight pure data shapes (verdict,
+  work-item, delegation, spec, worklog, pack-signature, result,
+  composition). Hash-pinned by `tests/`; a shape change is breaking
+  even when prose meaning is unchanged.
 - `skills/` — T1, everything callable, in four sublayers: `kernel/`
   (primitives, call no skill, frozen), `engines/` (control flow),
   `workflows/` (assembled, domain-blind), `instances/` (concrete domain
@@ -19,8 +19,10 @@ dependencies point. Terms: `docs/vocabulary.md`.
   `contracts/pack-signature.md`, never control flow. One pack per
   domain (code, content, research, design); specificity thickens only in
   `craft` (budgeted).
-- `compositions/` — T3, non-normative worked examples; never
-  model-invoked; free churn.
+- `compositions/` — T3, named workflows: steps over skills and
+  compositions combined by seq/par/loop per
+  `contracts/composition.md`; invocable; entry
+  routed | named | scheduled; admitted through `orch-build`.
 - `rules/` — cross-cutting law (composition, delegation, verification,
   loops, roles, token-economy, topology, visibility, improvement). A
   skill links the owning rule instead of restating it.
@@ -78,8 +80,9 @@ Packs depend on contracts and name instance skills; generic skills
 never name a pack or a domain. A lower layer links the law and
 contracts that bind it; a rule may name a canonical owner file but
 never depends on package internals for its meaning. A cross-package
-reference link is a file dependency, not a call edge. Compositions are
-template data any tier may read; never a call edge.
+reference link is a file dependency, not a call edge. Compositions
+call skills and other compositions (one level of nesting); no skill
+depends on a composition.
 
 ## Invariants
 

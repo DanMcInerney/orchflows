@@ -1,15 +1,30 @@
-# Feature plus docs (non-normative example)
+---
+name: feature-plus-docs
+description: Interleaved code and content, composed — never one mixed graph.
+entry: named
+---
 
-Interleaved code and content, composed — never one mixed graph.
+Require: the feature request and its workspace.
 
-`orch-deliver` under `orch-code-pack` first; its result identity
-becomes frozen evidence for a content spec describing the behavior
-that now verifiably exists.
+Steps:
+- code — `orch-deliver`, pack `orch-code-pack`.
+- docs — `orch-deliver`, pack `orch-content-pack`; the spec describes
+  the behavior that now verifiably exists.
+- gate — one `orch-review-fix` over the combined fixed revision, one
+  lane per lens — the code lens and the content lens — findings
+  validated jointly, per [rules/topology.md](../rules/topology.md) §5.
 
-Review is the exception with a rule of its own
-([rules/topology.md](../rules/topology.md) §5): ONE `orch-review-fix`
-gate over the combined fixed revision, one lane per lens —
-the code lens and the content lens — findings validated jointly.
-Cross-domain inconsistency (docs describing behavior the code does not
-have) is the finding class per-domain gates structurally cannot see,
-and the reason this composition exists.
+Edges: seq code → docs → gate — code's result identity becomes the
+content spec's frozen evidence; the gate takes both runs' combined
+revision.
+
+Invariants — Never: one mixed graph; a gate per domain —
+cross-domain inconsistency (docs describing behavior the code does
+not have) is the finding class per-domain gates structurally cannot
+see, and the reason this composition exists.
+
+Done check: the joint gate's verdicts over the combined revision,
+cross-lens consistency included.
+
+Return: status, result — the combined revision, verification — the
+joint gate's verdicts; then both run identities.

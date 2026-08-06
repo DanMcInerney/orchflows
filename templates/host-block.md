@@ -9,26 +9,28 @@ defines.
   follow the smallest orchflows skill that fully owns the request; read
   it before acting. If none fits, continue without orchflows. On user
   request, `orch-off` suspends this routing for the session.
-- Route smallest-first: a direct answer from evidence already in
-  context; one one-off bounded task to an ad-hoc ticket and
-  `orch-task` — any request that fits one executor's context and
-  bound routes here, named acceptance criteria included, oracles
-  concretely specified at cut time — `pre-existing` provenance,
-  independence and inline law per rules/verification.md §10 and
-  rules/delegation.md §2; one lane
-  answering a bounded question routes to `orch-investigate`;
-  independent one-offs: dispatch each packet in parallel through
-  `orch-delegate`, every result crossing `orch-integrate`; dependent
-  one-offs: an ad-hoc set (edges, one run id, caller-named bound)
-  under `orch-frontier`, ticket files the durable state, independence
-  entering per rules/verification.md §10;
-  else — work needing a frozen spec: lanes at scale, an assembly, or
-  cross-session resumption — start at `orch-spec`, which stamps a
-  pattern (deliver | loop(<body>) | evolve | fix | decision |
-  snapshot) and one domain pack (code | content | research | design) —
-  convergence needing independent blind lanes stamps a research
-  delivery instead, never a single investigate lane; `orch-deliver`
-  runs any stamped spec. Bugs with unknown cause: `orch-fix`.
+- Route smallest-first:
+  1. Answer — evidence already in context decides it.
+  2. Ad-hoc — bounded work needing no frozen spec: write ad-hoc
+     ticket(s) with named acceptance criteria and oracles concretely
+     specified at cut time (`pre-existing` provenance, independence
+     per rules/verification.md §10, rungs per rules/delegation.md
+     §2). One item → `orch-task`; one bounded question →
+     `orch-investigate`; independent items → parallel `orch-delegate`,
+     every result crossing `orch-integrate`; dependent items → an
+     ad-hoc set (edges, one run id, caller-named bound) under
+     `orch-frontier`. Ticket files are the durable state.
+  3. Deliver — work needing a frozen spec (lanes at scale, an
+     assembly, cross-session resumption): `orch-spec` counts the
+     deliverable kinds the end state spans and stamps one pack (code |
+     content | research | design) per spec — one run, or a
+     composition instance chaining single-pack deliveries, cut where
+     the deliverable's kind changes; `orch-deliver` runs each.
+     Blind-lane convergence is a research delivery, never one
+     investigate lane.
+  4. Fix — a failure with unknown cause → the `fix` composition.
+  Everything else — `evolve`, `benchmaker`, scheduled snapshots,
+  saved compositions — runs only when named.
 - Tickets are local markdown at `.orch/tickets/<run>/` — there is no
   external tracker. Executors write results into their own ticket.
 - Run state lives in `.orch/runs/<run>/` (worklog). Neither directory

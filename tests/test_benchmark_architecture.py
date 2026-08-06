@@ -8,7 +8,9 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 EVAL_DESIGN = ROOT / "skills" / "workflows" / "orch-eval-design" / "SKILL.md"
 OLD_BENCH = ROOT / "skills" / "workflows" / "orch-bench"
-EVOLVE = ROOT / "skills" / "workflows" / "orch-evolve" / "SKILL.md"
+OLD_EVOLVE = ROOT / "skills" / "workflows" / "orch-evolve"
+# Demoted per contracts/composition.md: evolve is a named composition.
+EVOLVE = ROOT / "compositions" / "evolve.md"
 PANEL = ROOT / "skills" / "engines" / "orch-panel" / "SKILL.md"
 
 CALL_EDGE_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
@@ -143,15 +145,20 @@ class TestEvaluationDesign(unittest.TestCase):
 
 
 class TestFrozenBenchmarkEvolution(unittest.TestCase):
-    def test_requires_the_frozen_campaign_inputs_and_mutation_intersection(self):
-        fields, body = assert_canonical_anatomy(
-            self,
-            EVOLVE,
-            expected_name="orch-evolve",
-            expected_role="none",
-            body_budget=40,
+    def test_evolve_is_a_named_composition_not_a_skill(self):
+        self.assertFalse(
+            (OLD_EVOLVE / "SKILL.md").exists(),
+            "orch-evolve must not remain as a skill; it is compositions/evolve.md",
         )
-        self.assertEqual("true", fields["disable-model-invocation"])
+        self.assertTrue(EVOLVE.is_file())
+        fields, _ = split_skill(EVOLVE)
+        self.assertEqual("evolve", fields["name"])
+        # Manual-only survives the demotion as entry: named.
+        self.assertEqual("named", fields["entry"])
+        self.assertLessEqual(len(fields["description"]), 140)
+
+    def test_requires_the_frozen_campaign_inputs_and_mutation_intersection(self):
+        _, body = split_skill(EVOLVE)
         require = normalized(paragraph(body, "Require:"))
         for required in (
             "frozen evolve spec",
