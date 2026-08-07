@@ -2,7 +2,7 @@
 """Acceptance oracle for the benchmaker case set.
 
 Checks every ``cases/<id>/`` package against the frozen case schema:
-schema completeness, the angle/case bijection with the twelve-row
+schema completeness, the angle/case bijection with the thirteen-row
 matrix, existence of every referenced path, the seed rules, the
 negative-case rules, and probe inversion — each case's probe must pass
 the reference target and every good seed and fail every bad seed.
@@ -85,6 +85,7 @@ MATRIX = {
     "nondeterminism": "nondeterministic-target",
     "cost-pressure": "cost-explosion",
     "workflow-target": "composition-target",
+    "ranking": "candidate-ranking",
 }
 
 STRING_KEYS = ("id", "angle", "outcome", "target", "probe", "port", "tests", "provenance")
@@ -634,7 +635,7 @@ def main(argv=None):
         default=[],
         metavar="CASE_ID",
         help="validate only this case; repeatable. Drops the requirement that all "
-        "twelve matrix rows be present, so it never stands in for the full run.",
+        "thirteen matrix rows be present, so it never stands in for the full run.",
     )
     args = parser.parse_args(argv)
 

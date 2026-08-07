@@ -1,6 +1,6 @@
 # The benchmaker case set
 
-Twelve benchmark-building tasks that exercise the `benchmaker`
+Thirteen benchmark-building tasks that exercise the `benchmaker`
 composition from every angle it claims to cover. Each case hands
 benchmaker a target, the evidence a builder may read, and a cost bound,
 and holds back seeded implementations that a qualified benchmark must
@@ -30,6 +30,7 @@ Frozen. One case per row; `validate_cases.py` enforces the bijection.
 | nondeterminism | seed pinning or statistical oracle | nondeterministic-target |
 | cost-pressure | smallest evaluation maximizing discrimination in budget | cost-explosion |
 | workflow-target | benchmark of a workflow file, the recursion dry run | composition-target |
+| ranking | candidate set to a total order: ties, margins, exclusion | candidate-ranking |
 
 ## Case package layout
 
@@ -90,5 +91,5 @@ Stdlib only. Exit 0 and silent when the set is clean; exit 1 with one
 `ERROR <case-id>: <message>` line per violation. `--cases-dir` points it
 at another tree; `--only <case-id>` (repeatable) restricts it to named
 cases and, because it then cannot see the whole set, drops the
-twelve-row completeness check — it never stands in for the flagless run,
+thirteen-row completeness check — it never stands in for the flagless run,
 which is the set's acceptance oracle.
