@@ -350,6 +350,23 @@ class TestLegibilityLint(unittest.TestCase):
         _payload, rules = self._lint_rules(result)
         self.assertIn("lint_decision_unlabeled", rules)
 
+    def test_oversized_overview_on_staged_page_warns_but_passes(self):
+        overview_lines = ["flowchart LR"]
+        for index in range(8):
+            overview_lines.append(f'    o{index}["phase {index}"] --> o{index + 1}["phase {index + 1}"]')
+        source = (
+            "```mermaid\n" + "\n".join(overview_lines) + "\n```\n\n"
+            "```mermaid\nflowchart TD\n    a[\"detail a\"] --> b[\"detail b\"]\n```\n"
+        )
+        result = run_verifier(source, "--lint")
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual("pass", payload["status"])
+        self.assertTrue(
+            any("overview budget" in warning for warning in payload["lint"]["warnings"]),
+            payload["lint"]["warnings"],
+        )
+
     def test_clean_diagram_passes_lint_with_warning_channel(self):
         result = run_verifier(
             "```mermaid\n"

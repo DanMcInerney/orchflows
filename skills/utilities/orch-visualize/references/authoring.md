@@ -43,19 +43,19 @@ Labels verb-object within the lint's word budget, quoted when
 punctuated. Decision branches always labeled `|so|`. Subgraphs flat
 within the lint's depth budget, single-line titles, no `direction`
 when any member links outside. classDef within the lint's count
-budget; color marks structure, meaning never rides color alone.
-Direction TD when breadth ≤3, LR for long thin chains; one direction
-per diagram.
+budget; color marks structure, meaning never rides color alone. One
+direction per diagram.
 
 ## Staging
 
 One diagram when the whole subject passes the lint. Otherwise an
-overview of at most 7 nodes in the subject's own vocabulary — a
-declarative-sentence title, expandable nodes marked with one shared
-classDef, omission free, false order or linkage forbidden — then one
-detail panel per marked node: same node ids, same direction, opening
-line naming its overview node and neighbors. Split an oversized
-detail sideways at the same level, never into a third level down.
+overview within the lint's overview budget, in the subject's own
+vocabulary — a declarative-sentence title, expandable nodes marked
+with one shared classDef, omission free, false order or linkage
+forbidden — then one detail panel per marked node: same node ids,
+same direction, opening line naming its overview node and neighbors.
+Split an oversized detail sideways at the same level, never into a
+third level down.
 
 ## Kit classes (`viz-html` fences)
 

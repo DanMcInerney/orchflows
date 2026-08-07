@@ -17,8 +17,9 @@ every diagram (no `-beta`, mindmap, journey, zenuml), then flowchart
 rules — node budget, fan-out, subgraph depth, `direction` in
 externally-linked subgraphs, labeled decision branches — and, when the
 CLI rendered an SVG, node-overlap and viewBox-containment geometry
-checks. A page with prose but no visual fence passes as prose-only;
-an empty page is an error.
+checks. On a staged page (two or more flow diagrams) the first flow
+diagram is advised against the overview budget. A page with prose but
+no visual fence passes as prose-only; an empty page is an error.
 """
 
 from __future__ import annotations
@@ -378,6 +379,7 @@ def structural_check(diagram: Diagram) -> list[dict[str, object]]:
 
 LINT_NODE_BUDGET = 31        # decompose above (Mendling 2012 error-probability threshold)
 LINT_NODE_WARN = 25
+LINT_OVERVIEW_BUDGET = 7     # staged pages: the first flow diagram is the overview
 LINT_FAN_OUT_MAX = 4
 LINT_LABEL_WORD_MAX = 5
 LINT_CLASSDEF_MAX = 3
@@ -1057,6 +1059,7 @@ def main(argv: list[str] | None = None) -> int:
     modes_used: set[str] = set()
     lint_warnings: list[str] = []
     geometry_checked = 0
+    flow_node_counts: list[tuple[int, int]] = []
 
     with tempfile.TemporaryDirectory(prefix="orch-mermaid-") as temporary:
         temporary_directory = Path(temporary)
@@ -1085,11 +1088,26 @@ def main(argv: list[str] | None = None) -> int:
                 lint_fails, lint_warns = lint_diagram(diagram)
                 failures.extend(lint_fails)
                 lint_warnings.extend(lint_warns)
+                token, _line = _diagram_type(diagram)
+                if token in FLOW_TYPES:
+                    flow_node_counts.append(
+                        (diagram.index, len(_extract_flow_graph(diagram).nodes))
+                    )
                 if rendered_svg is not None:
                     geometry = geometry_failures(diagram, rendered_svg)
                     if geometry is not None:
                         geometry_checked += 1
                         failures.extend(geometry)
+
+    # On a staged page the first flow diagram is the overview; advisory
+    # because a multi-relationship page legitimately has no overview.
+    if arguments.lint and len(flow_node_counts) >= 2:
+        first_index, first_nodes = flow_node_counts[0]
+        if first_nodes > LINT_OVERVIEW_BUDGET:
+            lint_warnings.append(
+                f"graph {first_index}: leads a staged page with {first_nodes} "
+                f"nodes; the overview budget is {LINT_OVERVIEW_BUDGET}"
+            )
 
     for block in charts:
         chart_failure = check_vega_fence(block)
