@@ -56,7 +56,10 @@ field or gap that leaves the intended outcome or materialization unobservable
 returns partial evidence and stops materialization; carry every other declared
 gap into qualification and the manifest. BenchMaker neither fixes the
 evaluation boundary nor selects, revises, or interprets its case and scoring
-semantics.
+semantics. A concrete input, output, or trace the frozen evidence exhibits is
+licensed oracle material: an accepted design anchors an oracle to it or records
+why casing it is impossible, and a judgment that it is an implementation
+artifact is not such a reason.
 
 ## Materialization
 
