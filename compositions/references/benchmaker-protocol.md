@@ -82,10 +82,18 @@ Check oracle failability, coverage, discrimination, reproducibility,
 redundancy, provenance, and execution cost independently. Every oracle must be
 capable of failing. Discrimination requires seeded known-good and known-bad
 variants supplied by the qualifying context — the benchmark passes every good
-seed and fails every bad one. Where no known-bad variant can exist, absence of
-bad seeds leaves discrimination UNVERIFIED and an explicit gap. A required
-deterministic failure blocks qualification. Judged criteria carry anchors,
-remain secondary, and cannot compensate for required deterministic failure.
+seed and fails every bad one. The bad set includes one inert variant with the
+intended behavior absent, and a bad variant counts only when shown to change
+the observable outcome — an equivalent variant is excluded, not scored. An
+inert variant shown equivalent is itself a finding: the chosen outcome does
+not observe the intended behavior, recorded as a gap with discrimination
+UNVERIFIED for that behavior. Where
+no known-bad variant can exist, absence of bad seeds leaves discrimination
+UNVERIFIED and an explicit gap. For a nondeterministic outcome, qualification
+fixes a declared trial count; good variants pass and bad variants fail on
+every trial. A required deterministic failure blocks qualification. Judged
+criteria carry anchors, remain secondary, cannot compensate for required
+deterministic failure, and record their rerun variance before sealing.
 
 Resolve every runnable component and verify its byte digest before replay.
 Qualification recomputes its checks from those bytes and captured outputs;

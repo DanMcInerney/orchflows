@@ -11,3 +11,5 @@ histogram" scores this seed as a pass. Catching it requires either an
 expected stream recorded for a pinned seed or an explicit same-seed
 run-to-run equality case; both are the seed-pinning discipline this
 angle exists to force.
+
+deviation: input-ignored

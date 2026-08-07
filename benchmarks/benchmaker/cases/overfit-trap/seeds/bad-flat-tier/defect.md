@@ -10,3 +10,5 @@ examples in `evidence/`. It is here as the discrimination floor: a
 benchmark that cannot catch this one is not measuring the target at
 all, and a set where it is the *only* seed caught is the exact signal
 that the cases were copied from the documentation.
+
+deviation: rule-substitution

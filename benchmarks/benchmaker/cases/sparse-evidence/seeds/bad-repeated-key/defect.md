@@ -6,3 +6,5 @@ it requires a case built from the quantifier in the intent sentence -- every
 value, including a key that appears twice -- rather than from one step past the
 examples. A benchmark that stops at the first generalization it can think of
 scores this variant clean.
+
+deviation: quantifier-narrowing

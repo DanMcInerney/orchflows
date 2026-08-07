@@ -24,3 +24,7 @@ seeds/<seed>/pricing.py for a seed — then run it: exit 0 is PASS, \
 non-zero is FAIL, target and seeds/good-banded must exit 0 and every \
 seeds/bad-* must exit non-zero; the probe's four orders appear \
 nowhere in evidence/ and must stay that way."""
+tests = "Produced benchmark catches a candidate that memorizes the visible worked examples."
+size = "small"
+provenance = "expected.md"
+parallel_safe = true

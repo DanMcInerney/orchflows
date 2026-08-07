@@ -15,3 +15,5 @@ bytes rather than a case-insensitive or set-based match. A benchmark
 that asserts "the duplicate is gone" — by counting lines, sorting, or
 comparing case-insensitively — passes this seed, and would go on to
 accept any future change that silently rewrote user data.
+
+deviation: value-substitution

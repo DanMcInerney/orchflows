@@ -18,3 +18,5 @@ cited id against the closed source set is the cheapest check that
 separates a citation from its imitation — and it is the deterministic
 half, so a produced benchmark that leaves this to a judge has put a
 byte-decidable fact behind a scoring opinion.
+
+deviation: reference-fabrication

@@ -12,3 +12,5 @@ nothing. A quality benchmark must choose boundary values for a store's own
 data — the empty string, and any other value whose truthiness differs from its
 presence — because a store that cannot represent an empty value silently
 serves stale data to every later read.
+
+deviation: guard-insertion

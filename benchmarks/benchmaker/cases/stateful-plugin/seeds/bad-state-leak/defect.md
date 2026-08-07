@@ -18,3 +18,5 @@ state to produce the same transcript. A benchmark that runs its suite once —
 however thorough that one pass is — certifies this seed as correct, and the
 leak surfaces later as a test that passes alone and fails in a second run, or
 passes on a fresh machine and fails on a developer's.
+
+deviation: side-channel-state

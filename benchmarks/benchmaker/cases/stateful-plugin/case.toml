@@ -28,3 +28,7 @@ expected_qualification = [
 
 negative = false
 port = "bench-stack adapter: substitute {target} in `probe`, run it with cwd set to the case directory, exit 0 = pass; the adapter must give the produced benchmark a scratch state location it owns and must run the suite twice from clean state, keeping both transcripts as run output so the isolation verdict is recomputable."
+tests = "Produced benchmark builds setup/teardown isolation and proves clean-state repeatability."
+size = "medium"
+provenance = "expected.md"
+parallel_safe = true

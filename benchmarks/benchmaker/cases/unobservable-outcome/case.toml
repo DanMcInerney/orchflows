@@ -11,3 +11,7 @@ expected_qualification = [
 ]
 negative = true
 port = "Paths are case-relative; the probe is cwd-tolerant (repo root, case dir, or a temp copy of the case dir) and asserts nothing about behavior. seeds/ is empty by design — an adapter must score the returned artifact against expected.md, not run a discrimination pass, and must not present target/cheer.py as a source of requirements."
+tests = "An unobservable outcome stops at evaluation design with declared gaps; nothing is invented."
+size = "small"
+provenance = "expected.md"
+parallel_safe = true

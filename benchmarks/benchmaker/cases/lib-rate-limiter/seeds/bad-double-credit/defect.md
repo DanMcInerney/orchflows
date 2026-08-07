@@ -17,3 +17,5 @@ reflects one interval rather than two. A benchmark whose cases are
 either all-grant or all-deny, or which resets a fresh bucket for every
 assertion, never puts a denial and a later grant on the same instance
 and scores this seed clean.
+
+deviation: state-omission

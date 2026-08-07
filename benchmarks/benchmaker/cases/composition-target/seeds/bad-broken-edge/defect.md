@@ -22,3 +22,5 @@ describes a step consuming evidence that was never produced. Catching it
 requires the benchmark to have modeled produces/consumes as a second
 relation over the same steps — which is precisely the modeling decision
 that separates a benchmark of a workflow from a benchmark of a graph.
+
+deviation: dangling-reference

@@ -15,3 +15,5 @@ input whose repeats are *not* adjacent — the one shape a fixture full of
 `a a b b` runs never produces. The seed is the cheap end of this case's
 discrimination range: any benchmark that fails to catch it has not
 tested the tool's default behaviour at all.
+
+deviation: default-substitution

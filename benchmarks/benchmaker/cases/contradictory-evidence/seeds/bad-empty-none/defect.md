@@ -6,3 +6,5 @@ missed by every weak encoding of the settled decision -- `assert not result`,
 all of which `None` satisfies. The variant tests oracle strength at the
 contested boundary: settling a disagreement buys nothing if the case that
 carries the settlement cannot fail.
+
+deviation: value-substitution

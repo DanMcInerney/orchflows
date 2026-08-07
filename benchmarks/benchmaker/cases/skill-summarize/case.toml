@@ -17,3 +17,7 @@ expected_qualification = [
 ]
 negative = false
 port = "cwd is this case directory; the probe argument is a variant directory holding summarize.md plus output.md — swap the `target` value inside `probe` for `seeds/<seed>/`, or pass the same path as CASE_IMPL. `target` and `seeds/good-terse` exit 0, every `seeds/bad-*` exits non-zero; adapter carries the judged anchors from expected.md as a separate scoring channel."
+tests = "Judged outcome stays anchored and secondary; deterministic checks own byte-decidable facts."
+size = "small"
+provenance = "expected.md"
+parallel_safe = true

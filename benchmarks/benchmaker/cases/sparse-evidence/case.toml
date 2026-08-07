@@ -14,3 +14,7 @@ expected_qualification = [
 ]
 negative = false
 port = "Paths are case-relative; the reference target doubles as the good seed; the probe is cwd-tolerant (repo root, case dir, or a temp copy of the case dir) and takes an optional variant directory argument, so an adapter may either append seeds/bad-<slug> to the probe or overlay a seed onto target/ in a copy."
+tests = "Thin evidence forces gap declaration and intent-quantified cases beyond the examples."
+size = "small"
+provenance = "expected.md"
+parallel_safe = true

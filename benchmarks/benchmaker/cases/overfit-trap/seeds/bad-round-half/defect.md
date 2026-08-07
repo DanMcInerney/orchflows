@@ -13,3 +13,5 @@ reaches the volume or bulk band. It is the second reason
 example-mirroring fails here: the visible evidence is silent on the
 one input class that separates a documented rule from its plausible
 neighbor.
+
+deviation: boundary-shift

@@ -18,3 +18,5 @@ refill is to wait for one, so a benchmark that abandons clock injection
 either misses this seed or trades its entire time budget for a single
 case. Catching it cheaply and catching it at all are the same
 requirement.
+
+deviation: contract-substitution

@@ -33,13 +33,13 @@ Frozen. One case per row; `validate_cases.py` enforces the bijection.
 
 ## Case package layout
 
-`cases/<id>/` holds `case.toml` (the ten frozen schema keys), `target/`
-(the tool under benchmark), `evidence/` (everything a builder may
-read), `seeds/good*/` and `seeds/bad-<slug>/` (protected ground truth,
-each bad seed carrying `defect.md`), and `expected.md` (what a qualified
-benchmark must demonstrate). `tools/validate_cases.py` is the normative
-statement of the schema, the value types, and the probe contract — read
-its module docstring rather than a paraphrase.
+`cases/<id>/` holds `case.toml` (the fourteen frozen schema keys),
+`target/` (the tool under benchmark), `evidence/` (everything a builder
+may read), `seeds/good*/` and `seeds/bad-<slug>/` (protected ground
+truth, each bad seed carrying `defect.md`), and `expected.md` (what a
+qualified benchmark must demonstrate). `tools/validate_cases.py` is the
+normative statement of the schema, the value types, and the probe
+contract — read its module docstring rather than a paraphrase.
 
 The `probe` in `case.toml` is the case author's sanity oracle, not the
 benchmark. It exists so the set can prove its own seeds are live before

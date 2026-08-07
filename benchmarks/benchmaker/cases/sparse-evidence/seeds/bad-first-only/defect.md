@@ -5,3 +5,5 @@ benchmark built by transcribing the examples into cases passes this variant,
 which is the whole failure mode the sparse-evidence angle tests: thin evidence
 must be read for its stated intent and its uncovered boundaries declared as
 gaps, not narrowed to the examples that happen to be written down.
+
+deviation: quantifier-narrowing

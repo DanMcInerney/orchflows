@@ -16,13 +16,23 @@ The case.toml subset this reads is: bare keys, one ``key = value`` per
 logical line, plus plain table headers. Values are strings (single-line
 or triple quoted, literal or basic), booleans, decimal integers, and
 arrays of those. Types: ``id``, ``angle``, ``outcome``, ``target``,
-``probe`` and ``port`` are non-empty strings; ``bound`` is a non-empty
-string or a positive integer; ``evidence`` and
+``probe``, ``port``, ``tests`` and ``provenance`` are non-empty
+strings; ``tests`` is the case's one-line statement of what it tests
+and must be a single line; ``provenance`` names the artifact that
+licenses the case; ``size`` is ``small``, ``medium`` or
+``large`` and sets the per-probe-run timeout (60, 300, 900 s);
+``parallel_safe`` is a boolean, and when it is false the case must
+carry ``parallel_risk``, a non-empty string naming the mechanism by
+which concurrent runs corrupt each other (forbidden when true);
+``bound`` is a non-empty string or a positive integer; ``evidence`` and
 ``expected_qualification`` are lists of strings; ``negative`` is a
-boolean. Declared paths are relative to the case directory and use
-forward slashes. Where ``tomllib`` is available the file is parsed twice
-and the two results must agree, so a case.toml that drifts out of the
-subset is reported rather than silently misread.
+boolean. Every bad seed's ``defect.md`` carries exactly one
+``deviation:`` line naming the deviation that produced it. Declared
+paths are relative to
+the case directory and use forward slashes. Where ``tomllib`` is
+available the file is parsed twice and the two results must agree, so a
+case.toml that drifts out of the subset is reported rather than
+silently misread.
 
 A probe runs once per implementation directory — ``target/`` first, then
 each ``seeds/good*/`` and each ``seeds/bad-*/`` — with the case
@@ -58,7 +68,8 @@ except ModuleNotFoundError:  # tomllib is 3.11+; this file supports 3.9.
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_CASES_DIR = HERE.parent / "cases"
-PROBE_TIMEOUT = 300
+SIZE_TIMEOUTS = {"small": 60, "medium": 300, "large": 900}
+DEFAULT_PROBE_TIMEOUT = 300
 
 # Frozen by the run spec's angle matrix: angle -> case id.
 MATRIX = {
@@ -76,9 +87,12 @@ MATRIX = {
     "workflow-target": "composition-target",
 }
 
-STRING_KEYS = ("id", "angle", "outcome", "target", "probe", "port")
+STRING_KEYS = ("id", "angle", "outcome", "target", "probe", "port", "tests", "provenance")
 LIST_KEYS = ("evidence", "expected_qualification")
-SCHEMA_KEYS = frozenset(STRING_KEYS + LIST_KEYS + ("bound", "negative"))
+SCHEMA_KEYS = frozenset(
+    STRING_KEYS + LIST_KEYS + ("bound", "negative", "size", "parallel_safe")
+)
+CONDITIONAL_KEYS = frozenset(("parallel_risk",))
 QUALIFICATIONS = frozenset(
     (
         "discrimination",
@@ -379,7 +393,7 @@ def render_probe(command, declared_target, impl_rel):
     return argv + [impl_rel]
 
 
-def run_probe(case_dir, command, declared_target, impl_dir):
+def run_probe(case_dir, command, declared_target, impl_dir, timeout):
     """Return (returncode, detail). returncode is None when it could not run."""
     impl_rel = impl_dir.relative_to(case_dir).as_posix()
     try:
@@ -397,21 +411,21 @@ def run_probe(case_dir, command, declared_target, impl_dir):
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            timeout=PROBE_TIMEOUT,
+            timeout=timeout,
         )
     except FileNotFoundError:
         return None, "probe command not found: {}".format(argv[0])
     except OSError as error:
         return None, "probe command failed to start: {}".format(error)
     except subprocess.TimeoutExpired:
-        return None, "probe exceeded {} s".format(PROBE_TIMEOUT)
+        return None, "probe exceeded {} s".format(timeout)
     return done.returncode, _first_line(done.stderr) or _first_line(done.stdout)
 
 
 def check_schema(data, name, fail):
     for key in sorted(SCHEMA_KEYS - set(data)):
         fail("case.toml is missing required key '{}'".format(key))
-    for key in sorted(set(data) - SCHEMA_KEYS):
+    for key in sorted(set(data) - SCHEMA_KEYS - CONDITIONAL_KEYS):
         fail("case.toml carries key '{}', outside the frozen schema".format(key))
     for key in STRING_KEYS:
         if key in data and not _nonempty_string(data[key]):
@@ -428,6 +442,18 @@ def check_schema(data, name, fail):
             fail("'bound' must be a non-empty string or a positive integer")
     if "negative" in data and not isinstance(data["negative"], bool):
         fail("'negative' must be a boolean")
+    if _nonempty_string(data.get("tests")) and "\n" in data["tests"].strip():
+        fail("'tests' must be a single line")
+    if "size" in data and data["size"] not in SIZE_TIMEOUTS:
+        fail("'size' must be one of {}".format(sorted(SIZE_TIMEOUTS)))
+    if "parallel_safe" in data:
+        safe = data["parallel_safe"]
+        if not isinstance(safe, bool):
+            fail("'parallel_safe' must be a boolean")
+        elif safe and "parallel_risk" in data:
+            fail("'parallel_risk' is only allowed when parallel_safe is false")
+        elif not safe and not _nonempty_string(data.get("parallel_risk")):
+            fail("parallel_safe = false requires 'parallel_risk' naming the corruption mechanism")
     if _nonempty_string(data.get("id")) and data["id"] != name:
         fail("id '{}' does not match the directory name".format(data["id"]))
     for value in data.get("expected_qualification", []) or []:
@@ -510,6 +536,17 @@ def check_seeds(bad, negative, fail):
         if not text.strip():
             fail("seed '{}' has an empty defect.md".format(seed.name))
             continue
+        deviations = [
+            line
+            for line in text.splitlines()
+            if line.startswith("deviation:") and line[len("deviation:") :].strip()
+        ]
+        if len(deviations) != 1:
+            fail(
+                "seed '{}' defect.md must carry exactly one 'deviation:' line, found {}".format(
+                    seed.name, len(deviations)
+                )
+            )
         haystack = (text + " " + seed.name).lower()
         if any(mark in haystack for mark in NEAR_MISS_MARKS):
             near_miss += 1
@@ -540,17 +577,18 @@ def check_probe(case_dir, data, good, bad, fail):
         return
     if not bad:
         return
+    timeout = SIZE_TIMEOUTS.get(data.get("size"), DEFAULT_PROBE_TIMEOUT)
     declared = data.get("target") if _nonempty_string(data.get("target")) else ""
     passing = [("target", case_dir / "target")]
     passing.extend((seed.name, seed) for seed in good)
     for label, impl in passing:
-        code, detail = run_probe(case_dir, command, declared, impl)
+        code, detail = run_probe(case_dir, command, declared, impl, timeout)
         if code is None:
             fail("probe against {}: {}".format(label, detail))
         elif code != 0:
             fail("probe must pass {} but exited {} ({})".format(label, code, detail or "no output"))
     for seed in bad:
-        code, detail = run_probe(case_dir, command, declared, seed)
+        code, detail = run_probe(case_dir, command, declared, seed, timeout)
         if code is None:
             fail("probe against {}: {}".format(seed.name, detail))
         elif code == 0:

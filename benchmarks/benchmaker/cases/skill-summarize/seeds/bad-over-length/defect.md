@@ -16,3 +16,5 @@ any benchmark that extracts `max_words` from the prompt under test and
 scores against that number scores this variant as compliant. Holding the
 case's own constant is what makes the check failable, and a failable
 oracle is the qualification requirement this seed exercises.
+
+deviation: constraint-relaxation

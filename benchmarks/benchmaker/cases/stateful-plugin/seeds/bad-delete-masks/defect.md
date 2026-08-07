@@ -11,3 +11,5 @@ then delete again, then confirm a key that was never stored also fails. A
 quality benchmark for a store must include those follow-up commands, because a
 delete that only hides is how a store's state file grows without bound and how
 a resurrected key reappears after an unrelated write.
+
+deviation: state-masking

@@ -17,3 +17,5 @@ Catching it requires the benchmark to quantify over declared steps and
 ask which are bound, rather than reading the invariants block and
 finding it non-empty. A benchmark that only checks presence of the block
 scores this file clean.
+
+deviation: binding-omission

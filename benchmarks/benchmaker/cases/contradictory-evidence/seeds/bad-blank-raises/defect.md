@@ -7,3 +7,5 @@ transcribed the settled decision as the single case `parse_ports("") == []`
 scores this variant clean; only one that carried the decision as a boundary --
 no ports named, whatever the whitespace -- catches it. It also probes whether
 a settled assumption was recorded as a rule or as one literal.
+
+deviation: boundary-shift

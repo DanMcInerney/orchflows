@@ -14,3 +14,7 @@ expected_qualification = [
 ]
 negative = false
 port = "Paths are case-relative; the reference target doubles as the good seed; the probe is cwd-tolerant (repo root, case dir, or a temp copy of the case dir) and takes an optional variant directory argument. The two evidence documents disagree on exactly one boundary — the empty specification — and an adapter must present both, unedited and in either order, with no precedence cue."
+tests = "An evidence contradiction reaches the disagreement register and is settled before casing."
+size = "small"
+provenance = "expected.md"
+parallel_safe = true

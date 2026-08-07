@@ -26,3 +26,7 @@ non-zero is FAIL, target and seeds/good-cumulative must exit 0 and \
 every seeds/bad-* must exit non-zero; the probe pins seeds 7 and 11, \
 which appear nowhere in evidence/, and its distributional band is \
 5700 < count of shard 0 in 20000 draws < 6300."""
+tests = "Nondeterminism is qualified by pinned seeds scored against a recorded stream or a declared per-seed statistical case."
+size = "small"
+provenance = "expected.md"
+parallel_safe = true

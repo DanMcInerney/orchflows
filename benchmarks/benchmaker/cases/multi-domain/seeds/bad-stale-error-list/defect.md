@@ -12,3 +12,5 @@ messages the report advertises must equal the set the generated validator
 demonstrably emits. A quality benchmark for a two-artifact generator must
 grade that coupling, or it will certify documentation that sends a reader
 looking for a string the code never produces.
+
+deviation: artifact-desync
