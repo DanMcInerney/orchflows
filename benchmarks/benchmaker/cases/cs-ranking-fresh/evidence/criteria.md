@@ -34,3 +34,50 @@ package's scoring must state its tie rule; equal aggregates share one
 competition rank with an explicit tie marker; and the published
 ranking must be byte-identical under any permutation of the input
 order.
+
+## Published ranking grammar
+
+The package's runner prints the ranking to stdout, one line per
+candidate, in exactly these two line forms:
+
+    EXCLUDED <candidate-id> [<detail>...]
+    RANK <rank> <candidate-id> <aggregate> [TIE]
+
+Whitespace-separated tokens; on an `EXCLUDED` line the candidate id is
+the second token; on a `RANK` line the tokens are the literal `RANK`,
+the competition rank, the candidate id and the aggregate score, and a
+shared rank carries the literal final token `TIE`. Every input
+candidate appears on exactly one line.
+
+## Scoring declaration
+
+`scoring/policy.json` declares the scoring law with at least these
+keys and values:
+
+    {
+      "verification_before_judging": true,
+      "judge_scope": "fixed-evidence",
+      "tie_policy": {
+        "declared": true,
+        "deterministic": true,
+        "rule": "<the tie rule, stated as a non-empty string>"
+      }
+    }
+
+## Package command lines
+
+The package exposes `runner/run.py`, `scoring/policy.json` and
+`scoring/aggregate.py`, whatever its manifest locators say:
+
+- `python runner/run.py --verify-only <candidate-or-impl-dir>` — runs
+  required verification only; the exit code is the verdict (0
+  eligible, nonzero not).
+- `python runner/run.py <candidate.md> [<candidate.md>...]` — verifies
+  then ranks the given fixed candidates and prints the published
+  ranking grammar above; exit 0 on a completed ranking.
+- `python scoring/aggregate.py <ranking.txt>` — re-checks a saved
+  ranking artifact against the grammar and tie law; exit 0 when it
+  conforms.
+
+Manifest and qualification record shapes are in `interchange.md`
+beside this file.

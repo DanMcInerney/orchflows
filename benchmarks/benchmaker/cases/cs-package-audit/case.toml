@@ -5,6 +5,7 @@ target = "target/"
 probe = "uv run --no-project python probe/check.py {impl}"
 evidence = [
   "evidence/spec.md",
+  "evidence/interchange.md",
   "evidence/inner-impls",
 ]
 bound = "one BC6 share; probe within medium tier"

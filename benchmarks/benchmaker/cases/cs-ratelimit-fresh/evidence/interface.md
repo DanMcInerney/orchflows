@@ -16,3 +16,20 @@ No other attribute, method, argument, or behavior is exhibited anywhere
 in this evidence set. A benchmark case that invokes anything beyond
 `TokenBucket(...)` and `acquire(...)` asserts an interface the evidence
 does not license.
+
+## Case op vocabulary
+
+A benchmark case scripts the limiter as a list of op records. Ops that
+invoke the limiter name a surface member above in their `op` field;
+the one clock-control op is named `advance` — it moves the injected
+clock forward and touches no limiter surface. A worked case fragment:
+
+    {"ops": [{"op": "acquire", "n": 1}, {"op": "advance", "seconds": 3}]}
+
+## Scoring invocation
+
+The suite's scoring component is a Python file invoked from the
+package root as `python <scoring-file> <impl-dir>`; its exit code is
+the verdict (0 pass, nonzero fail). Scoring drives the injected
+scripted clock, so a full sweep completes in wall-clock seconds
+regardless of the virtual time the traces span.

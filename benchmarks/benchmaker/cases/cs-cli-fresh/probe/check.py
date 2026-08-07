@@ -84,19 +84,31 @@ def canonical_identity(manifest):
 def run_runner(runner, impl, cwd):
     env = dict(os.environ)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
-    done = subprocess.run(
-        [sys.executable, runner, impl],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        cwd=cwd,
-        env=env,
-        timeout=RUN_TIMEOUT,
-    )
+    try:
+        done = subprocess.run(
+            [sys.executable, runner, impl],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=cwd,
+            env=env,
+            timeout=RUN_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        return "timeout after %ss" % RUN_TIMEOUT, None
     try:
         report = json.loads(done.stdout.decode("utf-8"))
     except ValueError:
         report = None
+    if not isinstance(report, dict):
+        report = None
     return done.returncode, report
+
+
+def failing_ids(report):
+    cases = report.get("cases")
+    if not isinstance(cases, list):
+        return []
+    return [c.get("id") for c in cases if isinstance(c, dict) and not c.get("pass")]
 
 
 def load_transcripts():
@@ -111,13 +123,16 @@ def load_transcripts():
 
 
 def anchored_case_matches(case, transcript):
-    argv = [arg.replace("{a}", "a.csv").replace("{b}", "b.csv") for arg in case["argv"]]
+    raw_argv = case.get("argv")
+    if not isinstance(raw_argv, list) or not all(isinstance(arg, str) for arg in raw_argv):
+        return False
+    argv = [arg.replace("{a}", "a.csv").replace("{b}", "b.csv") for arg in raw_argv]
     return (
         argv == transcript["argv"]
-        and case["a"] == transcript["files"]["a.csv"]
-        and case["b"] == transcript["files"]["b.csv"]
-        and case["stdout"] == transcript["stdout"]
-        and case["exit"] == transcript["exit"]
+        and case.get("a") == transcript["files"]["a.csv"]
+        and case.get("b") == transcript["files"]["b.csv"]
+        and case.get("stdout") == transcript["stdout"]
+        and case.get("exit") == transcript["exit"]
     )
 
 
@@ -150,6 +165,9 @@ def main():
                     manifest = json.load(handle)
             except ValueError as error:
                 fail("P0.a", "manifest.json is not valid JSON: %s" % error)
+        if manifest is not None and not isinstance(manifest, dict):
+            fail("P0.a", "manifest.json is not a JSON object")
+            manifest = None
         if manifest is not None:
             for field in MANIFEST_FIELDS:
                 if field not in manifest:
@@ -185,13 +203,23 @@ def main():
         qualification = None
         if "qualification" in located:
             with open(located["qualification"], "r", encoding="utf-8") as handle:
-                qualification = json.load(handle)
+                try:
+                    qualification = json.load(handle)
+                except ValueError as error:
+                    fail("P0.c", "qualification component is not valid JSON: %s" % error)
+            if qualification is not None and not isinstance(qualification, dict):
+                fail("P0.c", "qualification component is not a JSON object")
+                qualification = None
+        if qualification is not None:
             entries = qualification.get("entries")
             if not isinstance(entries, list) or not entries:
                 fail("P0.c", "qualification carries no entries")
                 entries = []
             required_fail = False
             for entry in entries:
+                if not isinstance(entry, dict):
+                    fail("P0.c", "qualification entry is not a JSON object")
+                    continue
                 label = entry.get("criterion", "<unnamed>")
                 for key in ("verdict", "oracle", "oracle_class", "evidence", "covers", "required"):
                     if key not in entry:
@@ -205,8 +233,10 @@ def main():
                 )
                 if verdict == "PASS" and empty:
                     fail("P0.c", "entry '%s' is PASS with empty evidence" % label)
-            overall = (qualification.get("overall") or {}).get("verdict")
-            if overall == "PASS" and required_fail:
+            overall = qualification.get("overall") or {}
+            if not isinstance(overall, dict):
+                fail("P0.c", "qualification overall must be an object carrying a verdict")
+            elif overall.get("verdict") == "PASS" and required_fail:
                 fail("P0.c", "overall PASS coexists with a required FAIL")
             if "gaps" not in qualification:
                 fail("P0.c", "qualification has no explicit gaps field")
@@ -224,8 +254,7 @@ def main():
                     continue
                 got_pass = bool(report.get("pass")) and code == 0
                 if expect_pass and not got_pass:
-                    failing = [c["id"] for c in report.get("cases", []) if not c.get("pass")]
-                    fail("P0.d", "inner impl '%s' must pass but failed cases %s" % (name, failing))
+                    fail("P0.d", "inner impl '%s' must pass but failed cases %s" % (name, failing_ids(report)))
                 if not expect_pass and got_pass:
                     fail("P0.d", "inner bad impl '%s' passed the package's runner+scoring" % name)
 
@@ -246,27 +275,42 @@ def main():
                 handle.write(wrapper)
             code, report = run_runner(located["runner"], wrapper_dir, pkg)
             if report is None or not (bool(report.get("pass")) and code == 0):
-                failing = [] if report is None else [c["id"] for c in report.get("cases", []) if not c.get("pass")]
+                failing = [] if report is None else failing_ids(report)
                 fail(
                     "cli.1",
                     "package oracle rejects CRLF-terminated otherwise-valid output (failed cases %s)" % failing,
                 )
 
         # ---- cli.2 transcript anchoring --------------------------------
+        case_set = None
         if "runnable_cases" in located:
             with open(located["runnable_cases"], "r", encoding="utf-8") as handle:
-                case_set = json.load(handle)
+                try:
+                    case_set = json.load(handle)
+                except ValueError as error:
+                    fail("cli.2", "runnable_cases component is not valid JSON: %s" % error)
+            if case_set is not None and not isinstance(case_set, dict):
+                fail("cli.2", "runnable_cases component is not a JSON object")
+                case_set = None
+        if case_set is not None:
             transcripts = load_transcripts()
             anchored = 0
-            for case in case_set.get("cases", []):
+            case_list = case_set.get("cases", [])
+            if not isinstance(case_list, list):
+                fail("cli.2", "runnable_cases 'cases' is not a list")
+                case_list = []
+            for case in case_list:
+                if not isinstance(case, dict):
+                    fail("cli.2", "case record is not a JSON object")
+                    continue
                 anchor = case.get("anchor")
                 if anchor is None:
                     continue
-                if anchor not in transcripts:
-                    fail("cli.2", "case '%s' anchors to unknown transcript '%s'" % (case["id"], anchor))
+                if not isinstance(anchor, str) or anchor not in transcripts:
+                    fail("cli.2", "case '%s' anchors to unknown transcript '%s'" % (case.get("id"), anchor))
                     continue
                 if not anchored_case_matches(case, transcripts[anchor]):
-                    fail("cli.2", "case '%s' claims anchor '%s' but does not reproduce it" % (case["id"], anchor))
+                    fail("cli.2", "case '%s' claims anchor '%s' but does not reproduce it" % (case.get("id"), anchor))
                     continue
                 anchored += 1
             if anchored == 0:
@@ -278,14 +322,24 @@ def main():
 
         # ---- cli.3 qualification independence --------------------------
         if qualification is not None and "provenance" in located:
+            provenance = None
             with open(located["provenance"], "r", encoding="utf-8") as handle:
-                provenance = json.load(handle)
-            builder = str(provenance.get("builder_context") or "").strip()
-            if not builder:
+                try:
+                    provenance = json.load(handle)
+                except ValueError as error:
+                    fail("cli.3", "provenance component is not valid JSON: %s" % error)
+            if provenance is not None and not isinstance(provenance, dict):
+                fail("cli.3", "provenance component is not a JSON object")
+                provenance = None
+            builder = "" if provenance is None else str(provenance.get("builder_context") or "").strip()
+            if provenance is None:
+                pass
+            elif not builder:
                 fail("cli.3", "provenance records no builder_context")
             else:
-                for entry in qualification.get("entries", []):
-                    if entry.get("required") is not True:
+                entries = qualification.get("entries")
+                for entry in entries if isinstance(entries, list) else []:
+                    if not isinstance(entry, dict) or entry.get("required") is not True:
                         continue
                     evidence = entry.get("evidence") or {}
                     context = str(evidence.get("context") or "").strip() if isinstance(evidence, dict) else ""

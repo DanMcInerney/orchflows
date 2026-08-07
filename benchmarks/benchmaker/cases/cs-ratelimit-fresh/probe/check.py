@@ -199,7 +199,13 @@ def check_surface(impl, manifest, failures):
     interface_text = INTERFACE.read_text(encoding="utf-8")
     invoked = set()
     for case in data.get("cases", []):
+        if not isinstance(case, dict):
+            failures.append("rl.2: case record is not an object")
+            continue
         for op in case.get("ops", []):
+            if not isinstance(op, dict):
+                failures.append("rl.2: case op record is not an object")
+                continue
             name = op.get("op")
             if isinstance(name, str) and name not in CLOCK_OPS:
                 invoked.add(name)

@@ -196,12 +196,18 @@ def main():
         except ValueError as error:
             fail("P0.c: qualification component is not valid JSON: {}".format(error))
             raise _Stop()
+        if not isinstance(qualification, dict):
+            fail("P0.c: qualification component is not a JSON object")
+            raise _Stop()
         entries = qualification.get("entries")
         if not isinstance(entries, list) or not entries:
             fail("P0.c: qualification carries no entries")
             entries = []
         required_fail = False
         for index, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                fail("P0.c: qualification entry {} is not a JSON object".format(index))
+                continue
             label = entry.get("criterion", "entry {}".format(index))
             for field in ("verdict", "oracle", "oracle_class", "evidence", "covers"):
                 if field not in entry:
@@ -217,7 +223,9 @@ def main():
             if entry.get("required") is True and entry.get("verdict") == "FAIL":
                 required_fail = True
         overall = qualification.get("overall", {})
-        if overall.get("verdict") == "PASS" and required_fail:
+        if not isinstance(overall, dict):
+            fail("P0.c: qualification overall must be an object carrying a verdict")
+        elif overall.get("verdict") == "PASS" and required_fail:
             fail("P0.c: overall PASS coexists with a required FAIL")
         if not isinstance(manifest.get("gaps"), list):
             fail("P0.c: manifest 'gaps' must be an explicit list ([] allowed)")
@@ -305,9 +313,11 @@ def main():
                 held_ids = []
                 if line:
                     try:
-                        held_ids = json.loads(line).get("protected_ids", [])
+                        parsed = json.loads(line)
                     except ValueError:
-                        pass
+                        parsed = None
+                    if isinstance(parsed, dict):
+                        held_ids = parsed.get("protected_ids", [])
                 if code != 0 or not held_ids:
                     fail("ag.3: package does not score the held-back workload class")
                 code, line = run_runner(
@@ -320,12 +330,16 @@ def main():
                 if line:
                     try:
                         result = json.loads(line)
-                        held_failed = sorted(
-                            set(result.get("failed", []))
-                            & set(result.get("protected_ids", []))
-                        )
                     except ValueError:
-                        pass
+                        result = None
+                    if isinstance(result, dict):
+                        try:
+                            held_failed = sorted(
+                                set(result.get("failed", []))
+                                & set(result.get("protected_ids", []))
+                            )
+                        except TypeError:
+                            held_failed = []
                 if code == 0 or not held_failed:
                     fail("ag.3: held-back class does not discriminate the memorizing variant")
     except _Stop:

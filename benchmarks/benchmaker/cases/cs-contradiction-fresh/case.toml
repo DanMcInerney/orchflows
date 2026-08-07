@@ -6,6 +6,7 @@ evidence = [
   "evidence/doc-a.md",
   "evidence/doc-b.md",
   "evidence/settlement.md",
+  "evidence/interchange.md",
   "evidence/inner-impls",
 ]
 probe = "uv run --no-project python probe/check.py {impl}"

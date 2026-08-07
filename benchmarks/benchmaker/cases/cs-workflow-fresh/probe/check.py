@@ -197,10 +197,14 @@ def load_qualification(pkg, manifest, errors):
         errors.append("P0.c: no qualification.json under '{}'".format(ref.get("locator")))
         return None
     try:
-        return json.loads(qual_path.read_text(encoding="utf-8"))
+        qual = json.loads(qual_path.read_text(encoding="utf-8"))
     except ValueError as error:
         errors.append("P0.c: qualification.json is not valid JSON: {}".format(error))
         return None
+    if not isinstance(qual, dict):
+        errors.append("P0.c: qualification.json is not a JSON object")
+        return None
+    return qual
 
 
 def check_p0c(qual, errors):
@@ -271,7 +275,7 @@ def reference_transcript(interpreter, pool, work, errors):
     if proc.returncode != 0:
         errors.append("wf.1: interpreter failed on the reference pipeline")
         return None
-    return proc.stdout.decode("utf-8").splitlines()
+    return proc.stdout.decode("utf-8", "replace").splitlines()
 
 
 def stage_blocks(lines):
@@ -349,7 +353,7 @@ def check_wf4(pkg, manifest, qual, errors):
         errors.append("wf.4: no provenance/events.md seal ledger")
     else:
         order = {}
-        for index, line in enumerate(events_path.read_text(encoding="utf-8").splitlines()):
+        for index, line in enumerate(events_path.read_text(encoding="utf-8", errors="replace").splitlines()):
             for token in ("components-frozen", "qualification-recorded", "identity-minted"):
                 if token in line and token not in order:
                     order[token] = index
@@ -367,6 +371,9 @@ def check_wf4(pkg, manifest, qual, errors):
             component_ids.add(ref["identity"])
     benchmark_identity = manifest.get("benchmark_identity")
     for index, entry in enumerate(qual.get("entries", []) or []):
+        if not isinstance(entry, dict):
+            errors.append("wf.4: qualification entry {} is not an object".format(index))
+            continue
         covers = entry.get("covers")
         if not isinstance(covers, dict):
             continue
@@ -383,7 +390,7 @@ def check_wf5(pkg, errors):
         errors.append("wf.5: no provenance/evaluation-design.md")
         return
     sources = []
-    for line in design_path.read_text(encoding="utf-8").splitlines():
+    for line in design_path.read_text(encoding="utf-8", errors="replace").splitlines():
         stripped = line.strip()
         if stripped.lower().startswith("evidence-source:"):
             sources.append(stripped.split(":", 1)[1].strip())

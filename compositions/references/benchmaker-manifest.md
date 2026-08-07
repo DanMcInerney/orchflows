@@ -11,7 +11,13 @@ these fields:
 - `scoring` — identity and locator of required-status, scoring, and aggregation
   data.
 - `provenance` — identity and locator of the source trace and case mappings.
-- `qualification` — identity and locator of the verdict set.
+- `qualification` — identity and locator of the verdict set. At
+  construction, before independent qualification has rendered
+  anything, this component may instead be the one-entry pending
+  marker `{"status": "construction-complete-qualification-pending"}`;
+  a manifest carrying it names an unqualified benchmark no campaign
+  or consumer may cite, and qualification replaces the marker only by
+  minting a successor identity.
 - `expected_cost` — declared units, per-execution limit, and suite estimate.
 - `gaps` — explicit unresolved elements; `[]` when none.
 - `protected_evidence` — fixed evidence identity, visibility, release policy,

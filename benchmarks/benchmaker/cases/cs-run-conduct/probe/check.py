@@ -87,7 +87,7 @@ def resolve(argument):
 
 
 def read(path):
-    return path.read_text(encoding="utf-8")
+    return path.read_text(encoding="utf-8", errors="replace")
 
 
 def lines_of(path):
@@ -447,12 +447,17 @@ def check_design(record, impl, packets, failures):
     if cases_path.is_file():
         try:
             data = json.loads(read(cases_path))
-            materialized = {case.get("id") for case in data.get("cases", [])}
-            if designed != materialized:
-                failures.append("rc.7: design case list %s differs from the materialized set %s"
-                                % (sorted(designed), sorted(materialized)))
         except ValueError:
             failures.append("rc.7: package cases.json does not parse")
+        else:
+            case_list = data.get("cases", []) if isinstance(data, dict) else None
+            if not isinstance(case_list, list) or not all(isinstance(case, dict) for case in case_list):
+                failures.append("rc.7: package cases.json is not an object carrying a list of case objects")
+            else:
+                materialized = {case.get("id") for case in case_list}
+                if designed != materialized:
+                    failures.append("rc.7: design case list %s differs from the materialized set %s"
+                                    % (sorted(designed), sorted(materialized)))
     else:
         failures.append("rc.7: no package/cases/cases.json to compare the design selection against")
     by_id = {}

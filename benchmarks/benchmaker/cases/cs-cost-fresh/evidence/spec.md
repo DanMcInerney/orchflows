@@ -38,3 +38,29 @@ A produced benchmark suite executes at most 60 queries per scored
 implementation, and its manifest must declare its expected cost. The
 input space is far larger than the budget: discrimination has to come
 from selected witness-bearing inputs, not from sweep volume.
+
+The manifest records the estimate as an integer field named
+`suite_estimate` inside `expected_cost`:
+
+    "expected_cost": {"suite_estimate": <int>, ...}
+
+`suite_estimate` counts query executions per scored implementation; it
+must cover every selected query and never exceed 60.
+
+The suite's case set records its corpus pin under exactly these keys:
+
+    "corpus": {"seed": 20260807, "count": 20000}
+
+Each selected case record is an object carrying integer `start` and
+`end` and a string `level` (`INFO`, `WARN`, `ERROR`, or the wildcard
+`"ANY"`).
+
+## Scoring invocation
+
+The suite's scoring component is a Python file invoked from the
+package root as
+
+    python <scoring-file> <impl-dir> <corpus.log>
+
+with the package root as working directory; it exits 0 when the
+implementation passes the suite and nonzero when it fails.

@@ -84,12 +84,36 @@ ceiling. Materialize (6 lanes) dominated; the R6 catch cost one
 re-qualification lane and one extra done-check — the price of the
 late-qualification law holding.
 
+## Settlement (closed 2026-08-07)
+
+Owner ruling, elicited: the round closes with NO revivals. Every
+angle carries a fresh successor case; all 39 predecessor seed
+deviations are burned as exhibited; the thirteen-case set remains
+addressable at e66f3b6 and each successor case's `port` key names
+its predecessor. Nothing returns to HEAD. Any future revival is a
+new supersession decision, not a reopening of this round.
+
+## Supersession 2026-08-07 (identity 0509fe44…, R1/R2 closed)
+
+The first-successor fixes landed as one supersession: a fleet audit
+found R1 was systemic — 78 unlicensed demanded-shape clusters and 49
+crash loci across the 16 probes, including four incompatible
+component-reference dialects, so no single package shape could pass
+all probes even in principle. The fix licensed each probe's current
+demands in its own case's exhibited evidence (15 new files, 6
+extensions) and converted every crash to a clean named FAIL; Q4
+re-qualified everything over current bytes with zero tracebacks in
+160 runs. The cross-case dialect heterogeneity is now a declared
+manifest gap — per-case licensing was this run's bound; a uniform
+interchange convention belongs to the bench-stack adapter or a
+successor. Also closed: GD4 (pending-qualification marker in the
+manifest schema), protected-store relocation to the bench-stack
+root role (byte-identical), settlement round (§Settlement).
+
 ## Next
 
-Settlement round (queued): adopt-vs-retire per adapt-marked
-hand-authored case, now against a successor whose per-case `port`
-key names its predecessor. Bench-stack port: uniform adapter (R2),
-held-out store behind an install boundary (R4). First successor
-delta: license probe-required shapes in evidence (R1); mint a
-"construction complete, qualification pending" manifest verdict
-value (design GD4).
+Bench-stack port: resume draft PR #36 (uniform adapter per R2,
+protected root now populated at its own role path; handoff on that
+branch). Successor candidates: uniform interchange convention
+(retiring the dialect gap), cs-package-audit locator-containment
+check, unsolvable-as-written angle, MAST agent-class inner target.
