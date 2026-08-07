@@ -6,6 +6,8 @@ observable outcome. Its
 [composition](../compositions/benchmaker.md) owns invocation; its
 [protocol](../compositions/references/benchmaker-protocol.md)
 owns construction and qualification; its
+[research charter](../compositions/references/benchmaker-research.md)
+owns acquisition's lane cut and synthesis shape; its
 [manifest](../compositions/references/benchmaker-manifest.md) owns
 identity.
 

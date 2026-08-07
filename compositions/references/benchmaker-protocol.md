@@ -39,10 +39,10 @@ the stage allocation, never the caller bound.
 ## Evidence acquisition
 
 Reuse a supplied qualified synthesis only when its identity, provenance,
-claim-to-source trace, disagreement register, gaps, and boundary coverage are
-fixed. Otherwise obtain a converged synthesis under the source policy before
-evaluation design. Public examples are provenance-bearing seeds, never
-protected certification evidence by default.
+boundary coverage, and the
+[research charter](benchmaker-research.md)'s artifacts are fixed. Otherwise
+obtain a converged synthesis under the source policy — lanes and artifacts
+per that charter — before evaluation design.
 
 Freeze the synthesis and sources at one result identity. Unsupported semantics
 remain gaps; they never become invented target truth. A non-complete delivery,

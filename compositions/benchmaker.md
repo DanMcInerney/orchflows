@@ -23,8 +23,10 @@ identity.
 Steps:
 - acquire-spec — `orch-spec` under the carrier rule: freeze one
   evidence-acquisition spec from the request, workspace or evidence
-  access, and one applicable pack per internal spec. Skipped when a
-  supplied qualified synthesis is reused.
+  access, and one applicable pack per internal spec, lanes and
+  synthesis artifacts per the
+  [research charter](references/benchmaker-research.md). Skipped when
+  a supplied qualified synthesis is reused.
 - acquire — `orch-deliver` of that frozen routing-stamped spec. A
   non-complete delivery, decision gap, or uncovered remainder returns
   its partial evidence and stops design.
