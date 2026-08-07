@@ -209,6 +209,9 @@ def check_p0c(pkg, manifest, errors):
     except ValueError as error:
         errors.append("P0.c: qualification.json is not valid JSON: {}".format(error))
         return
+    if not isinstance(qual, dict):
+        errors.append("P0.c: qualification.json is not a JSON object")
+        return
     if "gaps" not in qual or not isinstance(qual["gaps"], list):
         errors.append("P0.c: qualification 'gaps' field must be an explicit list ([] allowed)")
     overall = qual.get("overall")
@@ -283,7 +286,7 @@ def check_rk1(pkg, candidates_dir, work, errors):
     if proc.returncode != 0:
         errors.append("rk.1: package runner failed on the fixed pool")
         return
-    text = proc.stdout.decode("utf-8")
+    text = proc.stdout.decode("utf-8", "replace")
     excluded, ranked = parse_ranking(text)
     ranked_ids = [r["id"] for r in ranked]
     if REQUIRED_DEFECTIVE not in excluded:
@@ -331,7 +334,7 @@ def check_rk2(pkg, work, errors):
         return
     if forward.stdout != reverse.stdout:
         errors.append("rk.2: ranking bytes change under input-order reversal (arrival-ordered)")
-    excluded, ranked = parse_ranking(forward.stdout.decode("utf-8"))
+    excluded, ranked = parse_ranking(forward.stdout.decode("utf-8", "replace"))
     if excluded or len(ranked) != 2:
         errors.append("rk.2: synthetic equal-score candidates must both rank")
         return
@@ -349,7 +352,7 @@ def check_rk3(pkg, candidates_dir, errors):
     for item in sorted(prov.rglob("*")):
         if not item.is_file():
             continue
-        for line in item.read_text(encoding="utf-8").splitlines():
+        for line in item.read_text(encoding="utf-8", errors="replace").splitlines():
             lowered = line.lower()
             named = [cid for cid in ids if cid in line]
             if len(named) >= 2:

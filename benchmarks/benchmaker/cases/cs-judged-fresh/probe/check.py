@@ -137,12 +137,18 @@ def check_p0c(pkg, manifest, fails):
     except (ValueError, OSError) as error:
         fails.append("P0.c: qualification unreadable: %s" % error)
         return None
+    if not isinstance(qual, dict):
+        fails.append("P0.c: qualification component is not a JSON object")
+        return None
     entries = qual.get("entries")
     if not isinstance(entries, list) or not entries:
         fails.append("P0.c: qualification carries no entries")
         return qual
     required_fail = False
     for entry in entries:
+        if not isinstance(entry, dict):
+            fails.append("P0.c: qualification entry is not a JSON object")
+            continue
         missing = ENTRY_KEYS - set(entry)
         if missing:
             fails.append("P0.c: entry '%s' missing %s" % (entry.get("criterion", "?"), sorted(missing)))
@@ -325,7 +331,7 @@ def main():
     try:
         check_jd1(impl, manifest, qual, fails)
         check_jd3(impl, manifest, fails)
-    except (OSError, ValueError, KeyError) as error:
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
         fails.append("jd: package component unreadable: %s" % error)
 
     if not structural_broken:
@@ -339,7 +345,7 @@ def main():
             )
             try:
                 check_jd2(impl, scratch, scratch_pkg, manifest, fails)
-            except (OSError, ValueError, KeyError) as error:
+            except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
                 fails.append("jd.2: %s" % error)
             check_p0d(scratch, scratch_pkg, manifest, fails)
         finally:

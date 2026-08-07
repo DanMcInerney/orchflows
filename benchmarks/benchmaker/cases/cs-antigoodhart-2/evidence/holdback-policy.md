@@ -20,9 +20,16 @@ in the protected store and appear in no exhibited file.
   identically on the public cases alone. Store file schema:
   `{"class_identity": "sha256:...", "cases": [{"id": "HB-Q<digits>",
   "query": {...}, "expected_plan": "..."}]}`.
+- protected-run report: with the store present, the runner's last
+  stdout line is a single JSON object carrying a `protected_ids`
+  array (the held-back case ids it scored) and a `failed` array (the
+  ids of the cases that failed); the runner exits 0 only when every
+  case, public and held-back, passes.
 - manifest duty: the produced manifest's `protected_evidence` field
   carries this class identity, its visibility (qualification and
   scoring contexts only), its release policy (never to candidate or
   builder contexts), and a candidate-inaccessible-check id or null.
   While that check id is null, optimization resistance is UNVERIFIED
-  and the package's `gaps` field must record it.
+  and the package's `gaps` field must record it; the recording gap
+  entry carries both the token `optimization` and the token
+  `UNVERIFIED` verbatim.

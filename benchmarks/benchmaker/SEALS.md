@@ -10,6 +10,30 @@ set digest is the sha256 of `benchmark.lock`'s exact bytes. Verify any entry wit
 
     uv run --no-project python benchmarks/benchmaker/tools/seal_set.py --verify
 
+## 2026-08-07 — shape-licensing supersession
+
+    set digest sha256:75eb992563ba6f3258695ae7e06e8cff086daf74bfd4d01c8ad50b695aff4fcc
+    benchmark_identity sha256:0509fe444edad0f29e3ad5bdd5cf4aacf35dae6228c17d73fb6064014a660787
+
+1022 files. Supersedes `sha256:a263e809…825dcbd8` /
+`1d8e6a24…95c7a118` (entry below). Content: every probe-demanded
+interchange shape is now licensed by its case's exhibited evidence
+(78 audited clusters, 15 new evidence files + 6 extensions across
+all 16 cases); ~49 probe crash loci converted to clean named FAILs
+(0 tracebacks across Q4's 160-run sweep); protected store relocated
+to `BENCH_PROTECTED_DIR` default `%LOCALAPPDATA%\bs-bmk-prot`,
+migration proven byte-identical; the manifest schema gained the
+construction-complete-qualification-pending marker (GD4 closed at
+law level); settlement round closed with no revivals. Q4
+re-qualification: 10/10 required criteria PASS over current bytes
+(qualification/q4-supersession-verdicts.md), QC-6 inherited under a
+git scope proof — no seed, expected.md, or target byte changed.
+Post-re-mint QC-3 record: `seal_set.py --verify` green at the set
+digest above; `benchmark_identity` recomputes from the canonical
+manifest payload. Known-and-declared: fleet interchange
+heterogeneity is a recorded gap; uniformity belongs to the
+bench-stack adapter or a successor.
+
 ## 2026-08-07 — sixteen-case successor (benchmaker-built)
 
     set digest sha256:a263e8094c52ab37885ff13112f0bdea58ae240e9868c35c9c82edb8825dcbd8

@@ -6,6 +6,7 @@ probe = "uv run --no-project python probe/check.py {impl}"
 evidence = [
   "evidence/packet.md",
   "evidence/record-schema.md",
+  "evidence/manifest-component-note.md",
 ]
 bound = "one BC6 share; probe within medium tier"
 expected_qualification = [

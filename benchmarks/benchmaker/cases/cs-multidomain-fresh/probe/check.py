@@ -82,19 +82,31 @@ def canonical_identity(manifest):
 def run_runner(runner, impl, cwd):
     env = dict(os.environ)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
-    done = subprocess.run(
-        [sys.executable, runner, impl],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        cwd=cwd,
-        env=env,
-        timeout=RUN_TIMEOUT,
-    )
+    try:
+        done = subprocess.run(
+            [sys.executable, runner, impl],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=cwd,
+            env=env,
+            timeout=RUN_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        return "timeout after %ss" % RUN_TIMEOUT, None
     try:
         report = json.loads(done.stdout.decode("utf-8"))
     except ValueError:
         report = None
+    if not isinstance(report, dict):
+        report = None
     return done.returncode, report
+
+
+def failing_ids(report):
+    cases = report.get("cases")
+    if not isinstance(cases, list):
+        return []
+    return [c.get("id") for c in cases if isinstance(c, dict) and not c.get("pass")]
 
 
 def main():
@@ -126,6 +138,9 @@ def main():
                     manifest = json.load(handle)
             except ValueError as error:
                 fail("P0.a", "manifest.json is not valid JSON: %s" % error)
+        if manifest is not None and not isinstance(manifest, dict):
+            fail("P0.a", "manifest.json is not a JSON object")
+            manifest = None
         if manifest is not None:
             for field in MANIFEST_FIELDS:
                 if field not in manifest:
@@ -158,15 +173,26 @@ def main():
                 located[name] = path
 
         # ---- P0.c ----------------------------------------------------
+        qualification = None
         if "qualification" in located:
             with open(located["qualification"], "r", encoding="utf-8") as handle:
-                qualification = json.load(handle)
+                try:
+                    qualification = json.load(handle)
+                except ValueError as error:
+                    fail("P0.c", "qualification component is not valid JSON: %s" % error)
+            if qualification is not None and not isinstance(qualification, dict):
+                fail("P0.c", "qualification component is not a JSON object")
+                qualification = None
+        if qualification is not None:
             entries = qualification.get("entries")
             if not isinstance(entries, list) or not entries:
                 fail("P0.c", "qualification carries no entries")
                 entries = []
             required_fail = False
             for entry in entries:
+                if not isinstance(entry, dict):
+                    fail("P0.c", "qualification entry is not a JSON object")
+                    continue
                 label = entry.get("criterion", "<unnamed>")
                 for key in ("verdict", "oracle", "oracle_class", "evidence", "covers", "required"):
                     if key not in entry:
@@ -180,8 +206,10 @@ def main():
                 )
                 if verdict == "PASS" and empty:
                     fail("P0.c", "entry '%s' is PASS with empty evidence" % label)
-            overall = (qualification.get("overall") or {}).get("verdict")
-            if overall == "PASS" and required_fail:
+            overall = qualification.get("overall") or {}
+            if not isinstance(overall, dict):
+                fail("P0.c", "qualification overall must be an object carrying a verdict")
+            elif overall.get("verdict") == "PASS" and required_fail:
                 fail("P0.c", "overall PASS coexists with a required FAIL")
             if "gaps" not in qualification:
                 fail("P0.c", "qualification has no explicit gaps field")
@@ -201,17 +229,31 @@ def main():
                 got_pass = bool(report.get("pass")) and code == 0
                 verdicts[name] = got_pass
                 if expect_pass and not got_pass:
-                    failing = [c["id"] for c in report.get("cases", []) if not c.get("pass")]
-                    fail("P0.d", "inner impl '%s' must pass but failed cases %s" % (name, failing))
+                    fail("P0.d", "inner impl '%s' must pass but failed cases %s" % (name, failing_ids(report)))
                 if not expect_pass and got_pass:
                     fail("P0.d", "inner bad impl '%s' passed the package's runner+scoring" % name)
 
         # ---- md.1 single-domain blindness ------------------------------
+        case_set = None
         if "runnable_cases" in located:
             with open(located["runnable_cases"], "r", encoding="utf-8") as handle:
-                case_set = json.load(handle)
+                try:
+                    case_set = json.load(handle)
+                except ValueError as error:
+                    fail("md.1", "runnable_cases component is not valid JSON: %s" % error)
+            if case_set is not None and not isinstance(case_set, dict):
+                fail("md.1", "runnable_cases component is not a JSON object")
+                case_set = None
+        if case_set is not None:
             domains = {}
-            for case in case_set.get("cases", []):
+            case_list = case_set.get("cases", [])
+            if not isinstance(case_list, list):
+                fail("md.1", "runnable_cases 'cases' is not a list")
+                case_list = []
+            for case in case_list:
+                if not isinstance(case, dict):
+                    fail("md.1", "case record is not a JSON object")
+                    continue
                 domains[case.get("domain", "?")] = domains.get(case.get("domain", "?"), 0) + 1
             for name in BLIND_PAIR:
                 if verdicts.get(name, False):
@@ -222,12 +264,22 @@ def main():
                     )
 
         # ---- md.2 chained single-pack join ------------------------------
+        provenance = None
         if "provenance" in located:
             with open(located["provenance"], "r", encoding="utf-8") as handle:
-                provenance = json.load(handle)
+                try:
+                    provenance = json.load(handle)
+                except ValueError as error:
+                    fail("md.2", "provenance component is not valid JSON: %s" % error)
+            if provenance is not None and not isinstance(provenance, dict):
+                fail("md.2", "provenance component is not a JSON object")
+                provenance = None
+        if provenance is not None:
             chain = provenance.get("chain")
             if not isinstance(chain, list) or len(chain) < 2:
                 fail("md.2", "provenance records no two-element construction chain")
+            elif not all(isinstance(link, dict) for link in chain):
+                fail("md.2", "chain links must be JSON objects")
             else:
                 packs = [str(link.get("pack") or "") for link in chain]
                 if len(set(packs)) < 2 or any(not p for p in packs):

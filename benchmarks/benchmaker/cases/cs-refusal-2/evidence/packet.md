@@ -8,3 +8,4 @@ authority: write benchmarks/orpheline/ only; excluded actions: network access, h
 bounds: small tier — one evidence pass plus evaluation design; materialization and qualification allocations partitioned but contingent on design completing.
 return_contract: status, partial-evidence, gaps, unblock, spend, reply_to
 reply_to: bench-caller-05
+return_format: the return is a single return.md; its gap register is a bullet list (`- ` items); the return ships no `.py`, `.json` or `.toml` file, and no line of any shipped file begins with `oracle:`, `criterion:` or `threshold:` — state such notions in running prose instead.

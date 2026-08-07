@@ -5,6 +5,7 @@ target = "target"
 evidence = [
   "evidence/spec.md",
   "evidence/samples",
+  "evidence/interchange.md",
   "evidence/inner-impls",
 ]
 probe = "uv run --no-project python probe/check.py {impl}"

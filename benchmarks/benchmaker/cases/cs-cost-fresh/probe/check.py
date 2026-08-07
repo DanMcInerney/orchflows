@@ -257,6 +257,9 @@ def check_witnesses(data, records, failures):
         by_ts.setdefault(ts, []).append(level)
     witnessed = set()
     for case in data.get("cases", []):
+        if not isinstance(case, dict):
+            failures.append("cp.2: selected case record is not an object")
+            continue
         start, end, level = case.get("start"), case.get("end"), case.get("level")
         if not (isinstance(start, int) and isinstance(end, int) and isinstance(level, str)):
             continue

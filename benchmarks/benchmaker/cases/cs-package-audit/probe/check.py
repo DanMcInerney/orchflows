@@ -237,7 +237,14 @@ def check_seed_discipline(qual, manifest, by_criterion, failures):
 
 
 def check_case_provenance(cases, failures):
-    for case in (cases or {}).get("cases", []):
+    case_list = (cases or {}).get("cases", [])
+    if not isinstance(case_list, list):
+        failures.append("pa.4: cases component 'cases' is not a list")
+        return
+    for case in case_list:
+        if not isinstance(case, dict):
+            failures.append("pa.4: case record is not an object")
+            continue
         cid = case.get("id", "?")
         prov = str(case.get("provenance") or "").strip()
         if "expected.md" in prov:
@@ -306,6 +313,9 @@ def check_inner_discrimination(pkg, manifest, inner_root, failures):
             results = json.loads(done.stdout.decode("utf-8", "replace"))
         except ValueError:
             failures.append("P0.d: runner emitted no parseable results for '%s'" % name)
+            continue
+        if not isinstance(results, dict):
+            failures.append("P0.d: runner results for '%s' are not a JSON object" % name)
             continue
         overall = all(
             isinstance(results.get(cid), dict) and results[cid].get("ok") is True

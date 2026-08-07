@@ -142,6 +142,9 @@ def check_p0a(pkg, errors):
     except ValueError as error:
         errors.append("P0.a: manifest.json is not valid JSON: {}".format(error))
         return None
+    if not isinstance(manifest, dict):
+        errors.append("P0.a: manifest.json is not a JSON object")
+        return None
     fields = set(manifest)
     for missing in sorted(MANIFEST_FIELDS - fields):
         errors.append("P0.a: manifest is missing field '{}'".format(missing))
@@ -197,6 +200,9 @@ def check_p0c(pkg, manifest, errors):
         qual = json.loads(qual_path.read_text(encoding="utf-8"))
     except ValueError as error:
         errors.append("P0.c: qualification.json is not valid JSON: {}".format(error))
+        return
+    if not isinstance(qual, dict):
+        errors.append("P0.c: qualification.json is not a JSON object")
         return
     if "gaps" not in qual or not isinstance(qual["gaps"], list):
         errors.append("P0.c: qualification 'gaps' field must be an explicit list ([] allowed)")
@@ -303,13 +309,19 @@ def check_p0d(pkg, pool, trial_count, work, errors, cases_override=None, tag="P0
             errors.append("{}: {}: {}".format(tag, impl.name, note))
             continue
         if isinstance(trial_count, int):
-            for case in results.get("cases", []):
-                if len(case.get("trials", [])) != trial_count:
-                    errors.append(
-                        "{}: {}: case '{}' ran {} trials, declared {}".format(
-                            tag, impl.name, case.get("id"), len(case.get("trials", [])), trial_count
+            if not isinstance(results, dict):
+                errors.append("{}: {}: results file is not a JSON object".format(tag, impl.name))
+            else:
+                for case in results.get("cases", []):
+                    if not isinstance(case, dict):
+                        errors.append("{}: {}: results case record is not an object".format(tag, impl.name))
+                        continue
+                    if len(case.get("trials", [])) != trial_count:
+                        errors.append(
+                            "{}: {}: case '{}' ran {} trials, declared {}".format(
+                                tag, impl.name, case.get("id"), len(case.get("trials", [])), trial_count
+                            )
                         )
-                    )
         expected = impl_expectation(impl.name)
         if expected == "pass" and rc != 0:
             errors.append("{}: inner impl '{}' must pass but aggregated FAIL".format(tag, impl.name))
@@ -341,6 +353,9 @@ def check_nd2(pkg, cases, trace, errors):
     if trace is None or cases is None:
         return
     for case in cases:
+        if not isinstance(case, dict):
+            errors.append("nd.2: cases.json case record is not an object")
+            return
         if case.get("anchor") != "evidence/trace.md":
             continue
         if case.get("stream") != trace["items"] or case.get("seed") != trace["seed"] or case.get("k") != trace["k"]:
