@@ -2,7 +2,7 @@
 """Acceptance oracle for the benchmaker case set.
 
 Checks every ``cases/<id>/`` package against the frozen case schema:
-schema completeness, the angle/case bijection with the thirteen-row
+schema completeness, the angle/case bijection with the sixteen-row
 matrix, existence of every referenced path, the seed rules, the
 negative-case rules, and probe inversion — each case's probe must pass
 the reference target and every good seed and fail every bad seed.
@@ -73,19 +73,22 @@ DEFAULT_PROBE_TIMEOUT = 300
 
 # Frozen by the run spec's angle matrix: angle -> case id.
 MATRIX = {
-    "deterministic-cli": "cli-dedupe",
-    "time-semantics": "lib-rate-limiter",
-    "judged-outcome": "skill-summarize",
-    "anti-goodhart": "overfit-trap",
-    "refusal": "unobservable-outcome",
-    "sparse-evidence": "sparse-evidence",
-    "contradiction": "contradictory-evidence",
-    "multi-domain": "multi-domain",
-    "stateful": "stateful-plugin",
-    "nondeterminism": "nondeterministic-target",
-    "cost-pressure": "cost-explosion",
-    "workflow-target": "composition-target",
-    "ranking": "candidate-ranking",
+    "deterministic-cli": "cs-cli-fresh",
+    "time-semantics": "cs-ratelimit-fresh",
+    "judged-outcome": "cs-judged-fresh",
+    "anti-goodhart": "cs-antigoodhart-2",
+    "refusal": "cs-refusal-2",
+    "sparse-evidence": "cs-sparse-fresh",
+    "contradiction": "cs-contradiction-fresh",
+    "multi-domain": "cs-multidomain-fresh",
+    "stateful": "cs-stateful-fresh",
+    "nondeterminism": "cs-nondet-fresh",
+    "cost-pressure": "cs-cost-fresh",
+    "workflow-target": "cs-workflow-fresh",
+    "ranking": "cs-ranking-fresh",
+    "intake-refusal": "cs-intake-refusal",
+    "run-conduct": "cs-run-conduct",
+    "package-audit": "cs-package-audit",
 }
 
 STRING_KEYS = ("id", "angle", "outcome", "target", "probe", "port", "tests", "provenance")
@@ -635,7 +638,7 @@ def main(argv=None):
         default=[],
         metavar="CASE_ID",
         help="validate only this case; repeatable. Drops the requirement that all "
-        "thirteen matrix rows be present, so it never stands in for the full run.",
+        "sixteen matrix rows be present, so it never stands in for the full run.",
     )
     args = parser.parse_args(argv)
 

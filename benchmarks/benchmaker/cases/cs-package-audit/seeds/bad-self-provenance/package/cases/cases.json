@@ -1,0 +1,44 @@
+{
+  "cases": [
+    {
+      "argv": [
+        "1",
+        "ft",
+        "m"
+      ],
+      "expect": "0.3048",
+      "id": "pc-1",
+      "provenance": "cs-package-audit/expected.md criteria section"
+    },
+    {
+      "argv": [
+        "2",
+        "in",
+        "cm"
+      ],
+      "expect": "5.0800",
+      "id": "pc-2",
+      "provenance": "cs-package-audit/expected.md criteria section"
+    },
+    {
+      "argv": [
+        "2",
+        "m",
+        "ft"
+      ],
+      "expect": "6.5617",
+      "id": "pc-3",
+      "provenance": "cs-package-audit/expected.md criteria section"
+    },
+    {
+      "argv": [
+        "10",
+        "cm",
+        "in"
+      ],
+      "expect": "3.9370",
+      "id": "pc-4",
+      "provenance": "cs-package-audit/expected.md criteria section"
+    }
+  ]
+}

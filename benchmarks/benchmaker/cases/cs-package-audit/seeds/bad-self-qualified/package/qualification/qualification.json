@@ -1,0 +1,131 @@
+{
+  "context": "bx-conv-07",
+  "entries": [
+    {
+      "covers": [
+        "sha256:0c04bbfefa5908ef5ba2d233ec45d350a2f9d9ba487d64583765fef85dde8b1f",
+        "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
+        "sha256:91d84771e4e9ead68e5042cd80cdd916e51fc576d051f7f4be8a13ad76576f2e"
+      ],
+      "criterion": "failability",
+      "evidence": "recomputed in qualifying context bx-conv-07: each oracle run against a mutated output; every one failed",
+      "oracle": "independent failability recheck",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": [
+        "sha256:0c04bbfefa5908ef5ba2d233ec45d350a2f9d9ba487d64583765fef85dde8b1f",
+        "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
+        "sha256:91d84771e4e9ead68e5042cd80cdd916e51fc576d051f7f4be8a13ad76576f2e"
+      ],
+      "criterion": "coverage",
+      "evidence": "recomputed in qualifying context bx-conv-07: all four spec behaviors mapped to a case; map replayed",
+      "oracle": "independent coverage recheck",
+      "oracle_class": "evidence",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": [
+        "sha256:0c04bbfefa5908ef5ba2d233ec45d350a2f9d9ba487d64583765fef85dde8b1f",
+        "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
+        "sha256:91d84771e4e9ead68e5042cd80cdd916e51fc576d051f7f4be8a13ad76576f2e"
+      ],
+      "criterion": "discrimination",
+      "evidence": "recomputed in qualifying context bx-conv-07: sweep: goods pass, bads fail incl. the boundary variant",
+      "oracle": "independent discrimination recheck",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": [
+        "sha256:0c04bbfefa5908ef5ba2d233ec45d350a2f9d9ba487d64583765fef85dde8b1f",
+        "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
+        "sha256:91d84771e4e9ead68e5042cd80cdd916e51fc576d051f7f4be8a13ad76576f2e"
+      ],
+      "criterion": "reproducibility",
+      "evidence": "recomputed in qualifying context bx-conv-07: three identical reruns, byte-identical results",
+      "oracle": "independent reproducibility recheck",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": [
+        "sha256:0c04bbfefa5908ef5ba2d233ec45d350a2f9d9ba487d64583765fef85dde8b1f",
+        "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
+        "sha256:91d84771e4e9ead68e5042cd80cdd916e51fc576d051f7f4be8a13ad76576f2e"
+      ],
+      "criterion": "redundancy",
+      "evidence": "recomputed in qualifying context bx-conv-07: no two cases share a witness; removal matrix replayed",
+      "oracle": "independent redundancy recheck",
+      "oracle_class": "evidence",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": [
+        "sha256:0c04bbfefa5908ef5ba2d233ec45d350a2f9d9ba487d64583765fef85dde8b1f",
+        "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
+        "sha256:91d84771e4e9ead68e5042cd80cdd916e51fc576d051f7f4be8a13ad76576f2e"
+      ],
+      "criterion": "provenance",
+      "evidence": "recomputed in qualifying context bx-conv-07: every case provenance resolved to spec or synthesis",
+      "oracle": "independent provenance recheck",
+      "oracle_class": "evidence",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": [
+        "sha256:0c04bbfefa5908ef5ba2d233ec45d350a2f9d9ba487d64583765fef85dde8b1f",
+        "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
+        "sha256:91d84771e4e9ead68e5042cd80cdd916e51fc576d051f7f4be8a13ad76576f2e"
+      ],
+      "criterion": "execution-cost",
+      "evidence": "recomputed in qualifying context bx-conv-07: suite timed under the declared estimate",
+      "oracle": "independent execution-cost recheck",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    }
+  ],
+  "overall": "PASS",
+  "seed_sweep": {
+    "context": "bx-conv-07",
+    "excluded": [
+      {
+        "equivalence_proof": "diff confined to comments and whitespace; all four case outputs byte-identical to the reference across the declared trials",
+        "name": "var-comment-shuffle"
+      }
+    ],
+    "seeds": [
+      {
+        "name": "good-swap-format",
+        "result": "PASS",
+        "role": "good"
+      },
+      {
+        "behavior_change_proof": "case pc-3 emits 6.6061, reference emits 6.5617",
+        "inert": false,
+        "name": "bad-factor-drift",
+        "result": "FAIL",
+        "role": "bad"
+      },
+      {
+        "behavior_change_proof": "inert variant echoes its input untransformed; all four case outputs differ from the reference outputs",
+        "inert": true,
+        "name": "bad-noop-echo",
+        "result": "FAIL",
+        "role": "bad"
+      }
+    ]
+  },
+  "spend": {
+    "actual": "9 probe-minutes",
+    "expected": "12 probe-minutes"
+  }
+}

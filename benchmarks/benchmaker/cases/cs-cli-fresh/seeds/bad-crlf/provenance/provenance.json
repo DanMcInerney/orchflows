@@ -1,0 +1,17 @@
+{
+  "builder_context": "bc1-materialize-cli-9a02",
+  "sources": [
+    {"artifact": "spec.md", "role": "interface contract"},
+    {"artifact": "transcripts.md", "role": "exhibited oracle material"}
+  ],
+  "case_mappings": [
+    {"case": "c1-disjoint-merge", "clauses": ["output ordering law", "merge"]},
+    {"case": "c2-shared-key-prefer-default", "clauses": ["deduplication", "prefer default a"], "anchored_to": "t1"},
+    {"case": "c3-shared-key-prefer-b", "clauses": ["--prefer b"], "anchored_to": "t2"},
+    {"case": "c4-shared-final-key-prefer-default", "clauses": ["deduplication at the maximum key"]},
+    {"case": "c5-shared-final-key-prefer-b", "clauses": ["--prefer b at the maximum key"]},
+    {"case": "c6-crlf-input-equivalence", "clauses": ["LF/CRLF input equivalence"]},
+    {"case": "c7-unsorted-data-error", "clauses": ["exit 1 on unsorted keys", "empty stdout on error"], "anchored_to": "t3"},
+    {"case": "c8-extra-argument-usage-error", "clauses": ["exit 2 on wrong argument count"]}
+  ]
+}

@@ -1,0 +1,20 @@
+{
+ "sealed_at": "2026-08-07T05:30:00Z",
+ "builder": "benchmaker reference build (BC3 exemplar)",
+ "source_trace": {
+  "doc-a": "evidence/doc-a.md (platform handbook edition), line-id addressed",
+  "doc-b": "evidence/doc-b.md (integrations guide edition), line-id addressed",
+  "settlement": "evidence/settlement.md (release note RN-2.4), identity-cited"
+ },
+ "case_mappings": {
+  "c1": "doc-a.md#A02; doc-b.md#B02",
+  "c2": "doc-a.md#A04; doc-b.md#B04",
+  "c3": "doc-a.md#A04; doc-b.md#B04",
+  "c4": "settlement.md#S02",
+  "c5": "settlement.md#S02",
+  "c6": "settlement.md#S02",
+  "c7": "doc-a.md#A05; doc-b.md#B05",
+  "c8": "doc-a.md#A05; doc-b.md#B05"
+ },
+ "disagreements_file": "provenance/disagreements.md"
+}

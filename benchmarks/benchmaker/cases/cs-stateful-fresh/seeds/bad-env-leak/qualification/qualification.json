@@ -1,0 +1,72 @@
+{
+  "entries": [
+    {
+      "covers": [
+        "runnable_cases sha256:84a07600bd45ea8945e88f21ed2e3aa391c5734a863ba6893480ab36d1ebee03",
+        "runner sha256:c1814114ee6ceec0756908132209df91bd6bcb539dce9ca009ac3bf1e6061729",
+        "scoring sha256:97685e534d5cea389887177fe17db5729394f3200516244790d62d55a5b1d577"
+      ],
+      "criterion": "schema-valid",
+      "evidence": {
+        "context": "q2-independent-st-51b8",
+        "summary": "benchmark_identity recomputed equal; six component digests verified over shipped bytes"
+      },
+      "oracle": "manifest canonicalization audit: recompute benchmark_identity and every component digest over the shipped bytes",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": [
+        "runnable_cases sha256:84a07600bd45ea8945e88f21ed2e3aa391c5734a863ba6893480ab36d1ebee03",
+        "runner sha256:c1814114ee6ceec0756908132209df91bd6bcb539dce9ca009ac3bf1e6061729",
+        "scoring sha256:97685e534d5cea389887177fe17db5729394f3200516244790d62d55a5b1d577"
+      ],
+      "criterion": "discrimination",
+      "evidence": {
+        "context": "q2-independent-st-51b8",
+        "summary": "reference PASS, good-equiv PASS, bad-remigrate FAIL (s1,s2 run 2; s3 run 1), bad-near-miss-journal FAIL (s1,s2 journal bytes)"
+      },
+      "oracle": "runner sweep over the fixed inner pool: reference and good-equiv must pass; bad-remigrate (second-run corruption) and bad-near-miss-journal (one journal field) must fail",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": [
+        "runnable_cases sha256:84a07600bd45ea8945e88f21ed2e3aa391c5734a863ba6893480ab36d1ebee03",
+        "runner sha256:c1814114ee6ceec0756908132209df91bd6bcb539dce9ca009ac3bf1e6061729"
+      ],
+      "criterion": "reproducibility",
+      "evidence": {
+        "context": "q2-independent-st-51b8",
+        "summary": "sweep repeated twice, per-case verdicts byte-identical; state constructed fresh in scratch per pass, environment pinned to the allowlist"
+      },
+      "oracle": "two independent runner sweeps over the same pool with pinned environment; verdict sets must be identical",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": [
+        "runnable_cases sha256:84a07600bd45ea8945e88f21ed2e3aa391c5734a863ba6893480ab36d1ebee03",
+        "runner sha256:c1814114ee6ceec0756908132209df91bd6bcb539dce9ca009ac3bf1e6061729"
+      ],
+      "criterion": "cost-within-bound",
+      "evidence": {
+        "context": "q2-independent-st-51b8",
+        "summary": "3 cases x 2 runs per implementation, full four-implementation sweep under 30 s, within the declared per-execution limit"
+      },
+      "oracle": "wall-clock of one full sweep against manifest expected_cost",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    }
+  ],
+  "gaps": [],
+  "overall": {
+    "oracle_class": "deterministic",
+    "statement": "every required criterion PASS; weakest oracle_class deterministic",
+    "verdict": "PASS"
+  }
+}

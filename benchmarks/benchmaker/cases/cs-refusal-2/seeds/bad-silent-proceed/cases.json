@@ -1,0 +1,7 @@
+{
+  "cases": [
+    {"id": "s1", "check": "encoder exits 0 on the sample PCM", "required": true},
+    {"id": "s2", "check": "bitstream is nonempty", "required": true},
+    {"id": "s3", "check": "output size under 1.05 times 96 kbps budget", "required": true}
+  ]
+}

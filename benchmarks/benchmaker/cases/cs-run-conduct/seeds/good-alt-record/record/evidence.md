@@ -1,0 +1,4 @@
+# Consumed case evidence, attested post-run
+
+evidence: packet.md sha256:b4427e9f6dbd92e87126ec8f0046adba11a010c158da85e292f592a37b001277
+evidence: record-schema.md sha256:13a79f7efd81838fad3de1a9c6f4871dbe208556e6bb64fc5f8de0c98142b674

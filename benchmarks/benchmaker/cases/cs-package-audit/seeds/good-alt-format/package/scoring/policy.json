@@ -1,0 +1,9 @@
+{
+ "aggregation": "all-required-pass",
+ "required": [
+  "ca-1",
+  "ca-2",
+  "ca-3",
+  "ca-4"
+ ]
+}

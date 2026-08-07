@@ -1,95 +1,82 @@
 # The benchmaker case set
 
-Thirteen benchmark-building tasks that exercise the `benchmaker`
-composition from every angle it claims to cover. Each case hands
-benchmaker a target, the evidence a builder may read, and a cost bound,
-and holds back seeded implementations that a qualified benchmark must
-separate. A case is passed when the benchmark benchmaker produces
-passes every good seed, fails every bad one, and stays inside the
-case's bound; the seeds are what turn "benchmaker produced a benchmark"
-into "benchmaker produced a benchmark that works".
+Sixteen benchmark-building tasks that exercise the `benchmaker`
+composition from every angle it claims to cover. This set is the
+successor of the thirteen-case hand-authored set (sealed
+`sha256:ff7d9aad…6de675d0`, superseded — see SEALS.md): it was
+produced end to end by the `benchmaker` composition run against
+benchmaker's own fixed identity per `docs/benchmaker.md`
+§Self-benchmarking, from a frozen two-lane research synthesis, a
+candidate-blind evaluation design, disjoint builder contexts, and an
+independent qualification. Every case's `provenance` key traces to
+the claim register of that synthesis; the evaluation design and
+qualification verdicts ship with the package.
 
-The set is authored for reuse: `evolve` and `skill-tournament` seal a
-B(0) from it, and `drift-canary` replays it when a binding changes.
+Each case hands benchmaker a target, the evidence a builder may
+read, and a cost bound. The artifact under test in most cases is a
+REFERENCE BENCHMARK PACKAGE — the thing benchmaker is expected to
+produce — and the case's probe scores that package: manifest
+identity recomputation, component digests, verdict-contract
+compliance, and inner discrimination over a supplied implementation
+pool. Seeds are whole-package variants; a case is passed when the
+probe passes the reference and every good variant and fails every
+bad one.
 
 ## The angle matrix
 
-Frozen. One case per row; `validate_cases.py` enforces the bijection.
+Frozen. One case per row; `tools/validate_cases.py` enforces the
+bijection.
 
 | angle | what it proves about benchmaker | case |
 | --- | --- | --- |
-| deterministic-cli | crisp outcome, near-miss mutants | cli-dedupe |
-| time-semantics | benchmark must control time injectably | lib-rate-limiter |
-| judged-outcome | judged anchors, judged-secondary law | skill-summarize |
-| anti-goodhart | produced benchmark catches a hardcoding gamer | overfit-trap |
-| refusal | unobservable outcome, stop with gaps, never invent | unobservable-outcome |
-| sparse-evidence | gap declaration under thin docs | sparse-evidence |
-| contradiction | disagreement register propagates to design | contradictory-evidence |
-| multi-domain | chained single-pack materialization (code + doc) | multi-domain |
-| stateful | setup/teardown isolation in produced benchmark | stateful-plugin |
-| nondeterminism | seed pinning or statistical oracle | nondeterministic-target |
-| cost-pressure | smallest evaluation maximizing discrimination in budget | cost-explosion |
-| workflow-target | benchmark of a workflow file, the recursion dry run | composition-target |
-| ranking | candidate set to a total order: ties, margins, exclusion | candidate-ranking |
+| deterministic-cli | byte-exact outcome, transcript anchoring, qualification independence | cs-cli-fresh |
+| time-semantics | injected-clock scoring, no invented interface surface | cs-ratelimit-fresh |
+| judged-outcome | anchored judged split, non-compensating, rerun variance recorded | cs-judged-fresh |
+| anti-goodhart | protected policy complete or resistance UNVERIFIED; no exhibited holdback | cs-antigoodhart-2 |
+| refusal | blocked return with zero benchmark identities, no proxy oracle | cs-refusal-2 |
+| sparse-evidence | every criterion evidence-traced, gaps declared, no invented truth | cs-sparse-fresh |
+| contradiction | settled point cased per settlement, open point registered | cs-contradiction-fresh |
+| multi-domain | chained single-pack join, dual-domain blindness caught | cs-multidomain-fresh |
+| stateful | two-run state transcript, env pinning | cs-stateful-fresh |
+| nondeterminism | declared trial count, all-trials law, exhibited-trace anchor | cs-nondet-fresh |
+| cost-pressure | witness per class inside budget, honest cost estimate | cs-cost-fresh |
+| workflow-target | per-edge gates, frozen joins, HAZOP late + reverse | cs-workflow-fresh |
+| ranking | required-failure excluded not ranked, declared ties, judge never re-executes | cs-ranking-fresh |
+| intake-refusal | packet/synthesis deficiency blocks at intake, nothing invented | cs-intake-refusal |
+| run-conduct | five stages, charter lanes, frozen joins, never-clauses in the run record | cs-run-conduct |
+| package-audit | qualify-the-qualifier: identities, seven axes, independence, provenance grammar | cs-package-audit |
 
 ## Case package layout
 
 `cases/<id>/` holds `case.toml` (the fourteen frozen schema keys),
-`target/` (the tool under benchmark), `evidence/` (everything a builder
-may read), `seeds/good*/` and `seeds/bad-<slug>/` (protected ground
-truth, each bad seed carrying `defect.md`), and `expected.md` (what a
-qualified benchmark must demonstrate). `tools/validate_cases.py` is the
-normative statement of the schema, the value types, and the probe
-contract — read its module docstring rather than a paraphrase.
-
-The `probe` in `case.toml` is the case author's sanity oracle, not the
-benchmark. It exists so the set can prove its own seeds are live before
-benchmaker ever runs.
+`target/` (the artifact under test — a reference benchmark package,
+or a reference blocked return for the negative rows), `evidence/`
+(everything a builder may read, including the inner implementation
+pool the package's own scoring is probed against), `probe/check.py`
+(the case author's sanity oracle, NOT the benchmark), `seeds/good*/`
+and `seeds/bad-<slug>/` (protected ground truth; each bad seed's
+`defect.md` carries exactly one `deviation:` line naming deviation
+and locus; exactly one inert variant and one near-miss per case),
+and `expected.md` (criteria classes only — never transcribable
+answers; each ends with the public canary footer).
+`tools/validate_cases.py` is the normative schema statement.
 
 ## Protected evidence
 
-Seeds are ground truth. The policy has three parts:
-
-- **Storage is repo-local.** `seeds/` sits beside the case it belongs
-  to. Nothing here is encrypted or held out of the checkout.
-- **Access is barred by dispatch authority, not by secrecy.** A builder
-  or candidate context receives only the paths in the case's `evidence`
-  key and its `target/`; `seeds/`, `expected.md` and `probe.py` are
-  outside that authority and outside the builder's write scope.
-  `validate_cases.py` fails any case whose `evidence` reaches into
-  `seeds/`. Qualification runs in a context disjoint from builders, per
-  `compositions/references/benchmaker-protocol.md`.
-- **True held-out storage is the port hardening, not a property of this
-  set.** Anything with checkout access can read the seeds today. Moving
-  them behind the bench-stack plugin boundary — installed bytes outside
-  this repository — is what makes the protection structural rather than
-  procedural. Until then, treat a candidate that has read the repo as
-  having seen the seeds, and re-seed before trusting a score from it.
-
-## Port path to bench-stack
-
-A bench-stack plugin is one directory: `benchmark.toml` plus
-`adapter.py`, installed outside the repository. Nothing here needs to
-move. The port is:
-
-- `benchmark.toml` — plugin identity and case selection, keyed on the
-  `angle` and `negative` fields already in each `case.toml`.
-- `adapter.py` — walks `cases/*/case.toml`, resolves `target`,
-  `evidence` and `bound`, and runs `probe` once per implementation
-  directory under the substitution rules in `validate_cases.py`. The
-  `port` key in every `case.toml` carries that case's adapter hints.
-
-The set stays port-ready by construction: `case.toml` is the only thing
-an adapter must read, every path in it is case-relative, and no target
-needs network, Docker, or an external install.
+Storage for the two held-back inputs (anti-goodhart workload class,
+nondeterminism streams) is OFF-TREE, outside this sealed package,
+fixed by sha256 in the manifest's `protected_evidence`. Probes read
+`BENCH_PROTECTED_DIR` when set and degrade to public-subset checks
+when unset, so the validator context is store-independent. The
+candidate-inaccessible check is `null` at this seal: optimization
+resistance is UNVERIFIED, an explicit gap. Two canary GUIDs
+(public: expected.md footers; protected: store files) make verbatim
+contamination detectable; nothing yet prevents it.
 
 ## Running the validator
 
     uv run --no-project python benchmarks/benchmaker/tools/validate_cases.py
 
-Stdlib only. Exit 0 and silent when the set is clean; exit 1 with one
-`ERROR <case-id>: <message>` line per violation. `--cases-dir` points it
-at another tree; `--only <case-id>` (repeatable) restricts it to named
-cases and, because it then cannot see the whole set, drops the
-thirteen-row completeness check — it never stands in for the flagless run,
-which is the set's acceptance oracle.
+Stdlib only. Exit 0 and silent when the set is clean; `--only`
+drops the sixteen-row completeness check and never stands in for
+the flagless run, which is the set's acceptance oracle.

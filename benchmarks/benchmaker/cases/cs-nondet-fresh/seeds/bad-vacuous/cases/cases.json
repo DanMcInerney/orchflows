@@ -1,0 +1,92 @@
+{
+  "cases": [
+    {
+      "anchor": "evidence/trace.md",
+      "expected": [
+        [
+          "item-03",
+          "item-01",
+          "item-02"
+        ],
+        [
+          "item-07",
+          "item-03",
+          "item-08"
+        ],
+        [
+          "item-00",
+          "item-01",
+          "item-06"
+        ]
+      ],
+      "id": "anchored-trace",
+      "k": 3,
+      "seed": 14,
+      "stream": [
+        "item-00",
+        "item-01",
+        "item-02",
+        "item-03",
+        "item-04",
+        "item-05",
+        "item-06",
+        "item-07",
+        "item-08",
+        "item-09"
+      ]
+    },
+    {
+      "expected": null,
+      "id": "mid-stream",
+      "k": 4,
+      "seed": 14,
+      "stream": [
+        "m-00",
+        "m-01",
+        "m-02",
+        "m-03",
+        "m-04",
+        "m-05",
+        "m-06",
+        "m-07",
+        "m-08",
+        "m-09",
+        "m-10",
+        "m-11"
+      ]
+    },
+    {
+      "expected": null,
+      "id": "long-stream",
+      "k": 5,
+      "seed": 26,
+      "stream": [
+        "l-00",
+        "l-01",
+        "l-02",
+        "l-03",
+        "l-04",
+        "l-05",
+        "l-06",
+        "l-07",
+        "l-08",
+        "l-09",
+        "l-10",
+        "l-11",
+        "l-12",
+        "l-13",
+        "l-14",
+        "l-15",
+        "l-16",
+        "l-17",
+        "l-18",
+        "l-19",
+        "l-20",
+        "l-21",
+        "l-22",
+        "l-23",
+        "l-24"
+      ]
+    }
+  ]
+}

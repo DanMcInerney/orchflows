@@ -1,0 +1,72 @@
+{
+  "entries": [
+    {
+      "covers": [
+        "runnable_cases sha256:57c26bbd47338e052526bc36770ec27658af88660710c9d940fe8729ff404dac",
+        "runner sha256:81946439d073e45368ad4ce5a67d4df8a857b23f937900f8f252485dd6f878d2",
+        "scoring sha256:0d91b2008fd682a5cb1de9ea5ff97bca873d6f975c72122f3240154ce54c1ea0"
+      ],
+      "criterion": "schema-valid",
+      "evidence": {
+        "context": "q2-independent-md-77c3",
+        "summary": "benchmark_identity recomputed equal; six component digests verified over shipped bytes"
+      },
+      "oracle": "manifest canonicalization audit: recompute benchmark_identity and every component digest over the shipped bytes",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": [
+        "runnable_cases sha256:57c26bbd47338e052526bc36770ec27658af88660710c9d940fe8729ff404dac",
+        "runner sha256:81946439d073e45368ad4ce5a67d4df8a857b23f937900f8f252485dd6f878d2",
+        "scoring sha256:0d91b2008fd682a5cb1de9ea5ff97bca873d6f975c72122f3240154ce54c1ea0"
+      ],
+      "criterion": "discrimination",
+      "evidence": {
+        "context": "q2-independent-md-77c3",
+        "summary": "reference PASS, good-equiv PASS, bad-code-doc-broken FAIL (md1,md3), bad-doc-code-broken FAIL (mc2,mc3)"
+      },
+      "oracle": "runner sweep over the fixed inner pool: reference and good-equiv must pass; bad-code-doc-broken and bad-doc-code-broken (the single-domain-blindness pair) must fail",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": [
+        "runnable_cases sha256:57c26bbd47338e052526bc36770ec27658af88660710c9d940fe8729ff404dac",
+        "runner sha256:81946439d073e45368ad4ce5a67d4df8a857b23f937900f8f252485dd6f878d2"
+      ],
+      "criterion": "reproducibility",
+      "evidence": {
+        "context": "q2-independent-md-77c3",
+        "summary": "sweep repeated twice, per-case verdicts byte-identical; every check is a pure function of stdout bytes and exit status"
+      },
+      "oracle": "two independent runner sweeps over the same pool; verdict sets must be identical",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": [
+        "runnable_cases sha256:57c26bbd47338e052526bc36770ec27658af88660710c9d940fe8729ff404dac",
+        "runner sha256:81946439d073e45368ad4ce5a67d4df8a857b23f937900f8f252485dd6f878d2"
+      ],
+      "criterion": "cost-within-bound",
+      "evidence": {
+        "context": "q2-independent-md-77c3",
+        "summary": "7 cases per implementation, full four-implementation sweep under 30 s, within the declared per-execution limit"
+      },
+      "oracle": "wall-clock of one full sweep against manifest expected_cost",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    }
+  ],
+  "gaps": [],
+  "overall": {
+    "oracle_class": "deterministic",
+    "statement": "every required criterion PASS; weakest oracle_class deterministic",
+    "verdict": "PASS"
+  }
+}

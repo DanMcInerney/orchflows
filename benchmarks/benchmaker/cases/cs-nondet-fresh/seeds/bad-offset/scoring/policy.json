@@ -1,0 +1,7 @@
+{
+  "trial_count": 3,
+  "aggregation": "all-trials",
+  "trial_seed_rule": "trial t of a case with base seed s uses seed s + t",
+  "required_cases": "all",
+  "notes": "An implementation passes a case only when every declared trial passes; a case with a missing or extra trial is not a pass."
+}

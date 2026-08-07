@@ -1,0 +1,36 @@
+{
+ "evaluation_design": {
+  "sha256": "2050497924b69e6f0c74b727b5509cc61b9114de0793194404ee7cf3830319fd",
+  "locator": "provenance/evaluation-design.md"
+ },
+ "runnable_cases": {
+  "sha256": "3cc84bd983b583c22a721b98ffda8dfdd879ac09ad993ca0118f817913a638f3",
+  "locator": "cases/cases.json"
+ },
+ "runner": {
+  "sha256": "ea0b9900a6e3a3a92542b67246f8fda3f7990fdaa25c65285e45f85409ed4e9f",
+  "locator": "runner/run.py"
+ },
+ "scoring": {
+  "sha256": "a4f0e1402e14eb9b72edd5ec01248f71fab70f159ba1f8ec23db77441237ea8d",
+  "locator": "scoring/aggregate.py"
+ },
+ "provenance": {
+  "sha256": "901a4c3f7eba0af2e083128ca22af572a2eee0ad102129988cc1e298a381d1b7",
+  "locator": "provenance/provenance.json"
+ },
+ "qualification": {
+  "sha256": "b70fb917984aebabcecbb3c9a061bb2f07364bfafae0684be2c989a58b37c1b4",
+  "locator": "qualification/verdicts.json"
+ },
+ "expected_cost": {
+  "units": "inner scoring runs",
+  "per_execution_limit_s": 30,
+  "suite_estimate": "4 inner variants x 8 parse executions, under 60 s"
+ },
+ "gaps": [
+  "one contested point between the manual editions remains unsettled; it is registered as a disagreement and deliberately not cased"
+ ],
+ "protected_evidence": null,
+ "benchmark_identity": "sha256:c3787e2dba97ae16e946ad89f211bac58737cb246f5f7650ad4a1da3defe241a"
+}

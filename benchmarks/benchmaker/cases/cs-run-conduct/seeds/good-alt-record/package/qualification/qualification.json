@@ -1,0 +1,58 @@
+{
+  "context": "qc-alt-02",
+  "entries": [
+    {
+      "covers": [
+        "sha256:a8b94d4feea74ec233ce58dd306e0f3e099d66b602a220bbb01a55415b26fb8f",
+        "sha256:c016b9dec510be757fc3188b498b0ae6c723785933595b9b5baef7fafe6ba742",
+        "sha256:6b9c9f666549ca6bd8b3ac2ecb7268d7971f4edae439efacc0d024a20fbea6b3"
+      ],
+      "criterion": "schema-valid",
+      "evidence": "recomputed clean in qualifying context qc-alt-02; log q-schema-valid",
+      "oracle": "deterministic recheck of schema-valid at qc-alt-02",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": [
+        "sha256:a8b94d4feea74ec233ce58dd306e0f3e099d66b602a220bbb01a55415b26fb8f",
+        "sha256:c016b9dec510be757fc3188b498b0ae6c723785933595b9b5baef7fafe6ba742",
+        "sha256:6b9c9f666549ca6bd8b3ac2ecb7268d7971f4edae439efacc0d024a20fbea6b3"
+      ],
+      "criterion": "discrimination",
+      "evidence": "recomputed clean in qualifying context qc-alt-02; log q-discrimination",
+      "oracle": "deterministic recheck of discrimination at qc-alt-02",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": [
+        "sha256:a8b94d4feea74ec233ce58dd306e0f3e099d66b602a220bbb01a55415b26fb8f",
+        "sha256:c016b9dec510be757fc3188b498b0ae6c723785933595b9b5baef7fafe6ba742",
+        "sha256:6b9c9f666549ca6bd8b3ac2ecb7268d7971f4edae439efacc0d024a20fbea6b3"
+      ],
+      "criterion": "reproducibility",
+      "evidence": "recomputed clean in qualifying context qc-alt-02; log q-reproducibility",
+      "oracle": "deterministic recheck of reproducibility at qc-alt-02",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": [
+        "sha256:a8b94d4feea74ec233ce58dd306e0f3e099d66b602a220bbb01a55415b26fb8f",
+        "sha256:c016b9dec510be757fc3188b498b0ae6c723785933595b9b5baef7fafe6ba742",
+        "sha256:6b9c9f666549ca6bd8b3ac2ecb7268d7971f4edae439efacc0d024a20fbea6b3"
+      ],
+      "criterion": "cost-within-bound",
+      "evidence": "recomputed clean in qualifying context qc-alt-02; log q-cost-within-bound",
+      "oracle": "deterministic recheck of cost-within-bound at qc-alt-02",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    }
+  ],
+  "overall": "PASS"
+}

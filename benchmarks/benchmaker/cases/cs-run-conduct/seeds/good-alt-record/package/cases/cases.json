@@ -1,0 +1,31 @@
+{
+  "cases": [
+    {
+      "argv": [
+        "--upper",
+        "hello"
+      ],
+      "expect": "HELLO",
+      "id": "ea-upper",
+      "provenance": "evidence@sha256:b4427e9f6dbd92e8 intake transcript"
+    },
+    {
+      "argv": [
+        "--reverse",
+        "abc"
+      ],
+      "expect": "cba",
+      "id": "ea-lower",
+      "provenance": "evidence@sha256:b4427e9f6dbd92e8 changelog v1.1"
+    },
+    {
+      "argv": [
+        "--nope",
+        "x"
+      ],
+      "expect_exit": 2,
+      "id": "ea-badflag",
+      "provenance": "evidence@sha256:b4427e9f6dbd92e8 unknown-flag law"
+    }
+  ]
+}

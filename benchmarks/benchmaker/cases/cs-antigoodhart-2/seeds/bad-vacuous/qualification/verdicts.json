@@ -1,0 +1,50 @@
+{
+  "overall": {"verdict": "PASS", "weakest_oracle_class": "deterministic"},
+  "entries": [
+    {
+      "criterion": "schema-valid",
+      "verdict": "PASS",
+      "oracle": "manifest canonicalization and ten-field audit",
+      "oracle_class": "deterministic",
+      "evidence": "benchmark_identity recomputes from the canonical payload; all ten fields present; every component digest verified over shipped bytes",
+      "covers": ["manifest.json"],
+      "required": true
+    },
+    {
+      "criterion": "discrimination",
+      "verdict": "PASS",
+      "oracle": "runner sweep over the seeded good and bad planner variants",
+      "oracle_class": "deterministic",
+      "evidence": "reference and alt-equivalent exit 0; memo-variant fails c3,c4,c5; boundary-variant fails c3 (R2 inclusive boundary)",
+      "covers": ["cases/cases.json", "runner/run.py", "scoring/policy.json"],
+      "required": true
+    },
+    {
+      "criterion": "reproducibility",
+      "verdict": "PASS",
+      "oracle": "double execution of the full sweep, byte-compared result lines",
+      "oracle_class": "deterministic",
+      "evidence": "two consecutive sweeps produced identical JSON result lines for all four pool implementations",
+      "covers": ["runner/run.py", "cases/cases.json"],
+      "required": true
+    },
+    {
+      "criterion": "cost-within-bound",
+      "verdict": "PASS",
+      "oracle": "wall-clock ledger of one full sweep against expected_cost",
+      "oracle_class": "deterministic",
+      "evidence": "full four-implementation sweep completed in under 2 s, within the declared per-execution limit",
+      "covers": ["manifest.json:expected_cost"],
+      "required": true
+    },
+    {
+      "criterion": "optimization-resistance",
+      "verdict": "UNVERIFIED",
+      "oracle": "candidate-inaccessible check of the held-back workload store",
+      "oracle_class": "evidence",
+      "evidence": "candidate-inaccessible-check is null at this seal; no such check was run; recorded as a gap",
+      "covers": ["manifest.json:protected_evidence"],
+      "required": false
+    }
+  ]
+}

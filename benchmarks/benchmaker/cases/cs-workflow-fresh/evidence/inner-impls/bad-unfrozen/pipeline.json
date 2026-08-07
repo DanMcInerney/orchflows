@@ -1,0 +1,12 @@
+{
+  "stages": [
+    {"id": "spec", "produces": {"artifact": "spec.art", "payload": "spec-payload-v1", "freeze": false}},
+    {"id": "build", "consumes": ["spec.art"], "produces": {"artifact": "build.art", "payload": "build-payload-v1", "freeze": true}},
+    {"id": "verify", "consumes": ["build.art"], "produces": {"artifact": "verdict.art", "payload": "verdict-payload-v1", "freeze": true}}
+  ],
+  "edges": [
+    {"from": "spec", "to": "build", "gate": "gate-spec-build"},
+    {"from": "build", "to": "verify", "gate": "gate-build-verify"}
+  ],
+  "run": ["spec", "build", "verify"]
+}

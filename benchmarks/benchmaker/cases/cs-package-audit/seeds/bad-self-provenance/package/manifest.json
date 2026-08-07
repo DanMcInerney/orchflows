@@ -1,0 +1,34 @@
+{
+  "benchmark_identity": "sha256:e636e27da42d04a5c6ab0587e7cad279c26808def59cb966aace79e7d38d9397",
+  "evaluation_design": {
+    "locator": "design/design.md",
+    "sha256": "sha256:07e2fbb23c734d37dc07a8f3c20212ec662c0fc5b2af9b052097137698f5bbf0"
+  },
+  "expected_cost": {
+    "per_execution_limit": "30 s",
+    "suite_estimate": "under 60 s",
+    "units": "runner executions"
+  },
+  "gaps": [],
+  "protected_evidence": null,
+  "provenance": {
+    "locator": "provenance/provenance.json",
+    "sha256": "sha256:0d6f1b64257a0d3ac1e59ccb2fb156c0ef94e0107de5980b63cdae1e344d523e"
+  },
+  "qualification": {
+    "locator": "qualification/qualification.json",
+    "sha256": "sha256:c5a5f03ad4508191246394c3fc0545eeadbb9c3bf48417b863936d934453fd6c"
+  },
+  "runnable_cases": {
+    "locator": "cases/cases.json",
+    "sha256": "sha256:d5a0d39d16e0a2b167b95b681285ac8025ff849b19e67203a921a204b7d184e2"
+  },
+  "runner": {
+    "locator": "runner/run.py",
+    "sha256": "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c"
+  },
+  "scoring": {
+    "locator": "scoring/scoring.json",
+    "sha256": "sha256:91d84771e4e9ead68e5042cd80cdd916e51fc576d051f7f4be8a13ad76576f2e"
+  }
+}

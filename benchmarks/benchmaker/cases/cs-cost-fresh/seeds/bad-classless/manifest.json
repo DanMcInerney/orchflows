@@ -1,0 +1,34 @@
+{
+  "benchmark_identity": "sha256:ff6afa32309e81fd249a0304caa464dd49c13b7306c071eb94418dbe51055e01",
+  "evaluation_design": {
+    "identity": "sha256:b2a8593db0fcf51f35446e89f271ace22e37768ec5768d119017c43793e9c98b",
+    "locator": "design.md"
+  },
+  "expected_cost": {
+    "per_execution_limit_s": 1,
+    "suite_estimate": 12,
+    "units": "query executions per scored implementation"
+  },
+  "gaps": [],
+  "protected_evidence": null,
+  "provenance": {
+    "identity": "sha256:6896e157a8233280b558c24a819a7cf02815de8c980ba48399edcc0aa4ce0bc0",
+    "locator": "provenance/provenance.json"
+  },
+  "qualification": {
+    "identity": "sha256:3f2f1d715d66e00e24b2a4397d1d98736d2cabefd9ac9d1e245fd6397d5d9c9a",
+    "locator": "qualification/qualification.json"
+  },
+  "runnable_cases": {
+    "identity": "sha256:83ac3964fa01659c5d934c5718f702b3d6b32669b8e0d57ca94c9f30b9b9a9f5",
+    "locator": "cases/cases.json"
+  },
+  "runner": {
+    "identity": "sha256:fa54916ad7bde2db1eccf2a0b02c392e3b107a457d80e5878fd6c22c2ea2ec51",
+    "locator": "runner/run.py"
+  },
+  "scoring": {
+    "identity": "sha256:6ecc822d92f8f48ab8eb383179172ec643c001b78dda85a049fd16d16fcec7d6",
+    "locator": "scoring/score.py"
+  }
+}

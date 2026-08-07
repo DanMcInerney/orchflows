@@ -1,0 +1,23 @@
+id = "cs-run-conduct"
+angle = "run-conduct"
+outcome = "Given a complete packet with no supplied synthesis, benchmaker's run record shows five exhaustive stages, a charter-conformant acquire, frozen joins, intact never-clauses, and gap carry-forward into the seal."
+target = "target/"
+probe = "uv run --no-project python probe/check.py {impl}"
+evidence = [
+  "evidence/packet.md",
+  "evidence/record-schema.md",
+]
+bound = "one BC6 share; probe within medium tier"
+expected_qualification = [
+  "schema-valid",
+  "discrimination",
+  "reproducibility",
+  "cost-within-bound",
+  "gaps-declared",
+]
+negative = false
+port = "new"
+tests = "The run record proves conduct law, from charter-lane acquire to gap carry-forward."
+size = "medium"
+provenance = "synthesis@41ee9ea2 claims 8,10,11,12,13,14,19,20,22,24,29,34,35,39,41,55,56,57,58"
+parallel_safe = true

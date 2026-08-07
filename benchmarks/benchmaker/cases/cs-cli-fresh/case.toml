@@ -1,0 +1,14 @@
+id = "cs-cli-fresh"
+angle = "deterministic-cli"
+outcome = "Given the csvmerge CLI evidence, benchmaker produces a sealed package whose byte-exact oracle discriminates over supplied implementations."
+target = "target"
+evidence = ["evidence/spec.md", "evidence/transcripts.md", "evidence/inner-impls"]
+probe = "uv run --no-project python probe/check.py {impl}"
+bound = "one BC1 share; probe within small tier"
+expected_qualification = ["schema-valid", "discrimination", "reproducibility", "cost-within-bound"]
+negative = false
+port = "cli-dedupe"
+tests = "A deterministic-CLI target yields a discriminating, seal-valid package."
+size = "small"
+provenance = "synthesis@41ee9ea2 claims 1,17,45 (G13)"
+parallel_safe = true

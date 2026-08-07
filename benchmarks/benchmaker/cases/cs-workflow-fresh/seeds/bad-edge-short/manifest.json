@@ -1,0 +1,34 @@
+{
+  "benchmark_identity": "sha256:dbb7097c98bbe3614e869200f7df8ef2fe9d39c99da6ee0ca089da291cb13a11",
+  "evaluation_design": {
+    "identity": "sha256:d89d9caada0c38b20252fe982bfc7c8d16db93208653b6b90319ead8e758f1c0",
+    "locator": "provenance/evaluation-design.md"
+  },
+  "expected_cost": {
+    "per_execution_limit": "60 s per pipeline run; probe within the 300 s medium tier",
+    "suite_estimate": "one interpreter run and one oracle run per implementation, five implementations per sweep",
+    "units": "interpreter and oracle executions"
+  },
+  "gaps": [],
+  "protected_evidence": null,
+  "provenance": {
+    "identity": "sha256:f86beaa569abb21fbdc49a372edec0781104f9c7eb420b0d2f4e54dcb43e8979",
+    "locator": "provenance"
+  },
+  "qualification": {
+    "identity": "sha256:66e78e79bc007762482b203cdd30c2adf22c4e83f981e18940bc87f4ac4697ec",
+    "locator": "qualification"
+  },
+  "runnable_cases": {
+    "identity": "sha256:aec7bb79a15339706bbef8c174a5e95ebdd0efd99f3ead5adfc258e0f8f7628f",
+    "locator": "cases"
+  },
+  "runner": {
+    "identity": "sha256:3a5978d87a808bc18f833fdc1f367fee34a988f03b7a19f2e0d1b1a898ad5df1",
+    "locator": "runner"
+  },
+  "scoring": {
+    "identity": "sha256:64734da90d698a4b35f10d2237676a8ed8477fbd7623547895e4e009d63dd957",
+    "locator": "scoring"
+  }
+}

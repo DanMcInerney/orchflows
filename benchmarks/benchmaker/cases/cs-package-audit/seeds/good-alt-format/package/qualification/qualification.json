@@ -1,0 +1,131 @@
+{
+ "context": "qz-alt-03",
+ "entries": [
+  {
+   "covers": [
+    "sha256:164fd1b01d654c24dc1808ded6359a722676e1137e96c0354d1c36061ba68481",
+    "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
+    "sha256:f35af5765a80e9b5927c9c766bddcf0556ba585abe2a9f4a98a70eed5dada1c9"
+   ],
+   "criterion": "execution-cost",
+   "evidence": "recomputed in qualifying context qz-alt-03: suite timed under the declared estimate",
+   "oracle": "independent execution-cost recheck",
+   "oracle_class": "deterministic",
+   "required": true,
+   "verdict": "PASS"
+  },
+  {
+   "covers": [
+    "sha256:164fd1b01d654c24dc1808ded6359a722676e1137e96c0354d1c36061ba68481",
+    "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
+    "sha256:f35af5765a80e9b5927c9c766bddcf0556ba585abe2a9f4a98a70eed5dada1c9"
+   ],
+   "criterion": "provenance",
+   "evidence": "recomputed in qualifying context qz-alt-03: every case provenance resolved to spec or synthesis",
+   "oracle": "independent provenance recheck",
+   "oracle_class": "evidence",
+   "required": true,
+   "verdict": "PASS"
+  },
+  {
+   "covers": [
+    "sha256:164fd1b01d654c24dc1808ded6359a722676e1137e96c0354d1c36061ba68481",
+    "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
+    "sha256:f35af5765a80e9b5927c9c766bddcf0556ba585abe2a9f4a98a70eed5dada1c9"
+   ],
+   "criterion": "redundancy",
+   "evidence": "recomputed in qualifying context qz-alt-03: no two cases share a witness; removal matrix replayed",
+   "oracle": "independent redundancy recheck",
+   "oracle_class": "evidence",
+   "required": true,
+   "verdict": "PASS"
+  },
+  {
+   "covers": [
+    "sha256:164fd1b01d654c24dc1808ded6359a722676e1137e96c0354d1c36061ba68481",
+    "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
+    "sha256:f35af5765a80e9b5927c9c766bddcf0556ba585abe2a9f4a98a70eed5dada1c9"
+   ],
+   "criterion": "reproducibility",
+   "evidence": "recomputed in qualifying context qz-alt-03: three identical reruns, byte-identical results",
+   "oracle": "independent reproducibility recheck",
+   "oracle_class": "deterministic",
+   "required": true,
+   "verdict": "PASS"
+  },
+  {
+   "covers": [
+    "sha256:164fd1b01d654c24dc1808ded6359a722676e1137e96c0354d1c36061ba68481",
+    "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
+    "sha256:f35af5765a80e9b5927c9c766bddcf0556ba585abe2a9f4a98a70eed5dada1c9"
+   ],
+   "criterion": "discrimination",
+   "evidence": "recomputed in qualifying context qz-alt-03: sweep: goods pass, bads fail incl. the boundary variant",
+   "oracle": "independent discrimination recheck",
+   "oracle_class": "deterministic",
+   "required": true,
+   "verdict": "PASS"
+  },
+  {
+   "covers": [
+    "sha256:164fd1b01d654c24dc1808ded6359a722676e1137e96c0354d1c36061ba68481",
+    "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
+    "sha256:f35af5765a80e9b5927c9c766bddcf0556ba585abe2a9f4a98a70eed5dada1c9"
+   ],
+   "criterion": "coverage",
+   "evidence": "recomputed in qualifying context qz-alt-03: all four spec behaviors mapped to a case; map replayed",
+   "oracle": "independent coverage recheck",
+   "oracle_class": "evidence",
+   "required": true,
+   "verdict": "PASS"
+  },
+  {
+   "covers": [
+    "sha256:164fd1b01d654c24dc1808ded6359a722676e1137e96c0354d1c36061ba68481",
+    "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
+    "sha256:f35af5765a80e9b5927c9c766bddcf0556ba585abe2a9f4a98a70eed5dada1c9"
+   ],
+   "criterion": "failability",
+   "evidence": "recomputed in qualifying context qz-alt-03: each oracle run against a mutated output; every one failed",
+   "oracle": "independent failability recheck",
+   "oracle_class": "deterministic",
+   "required": true,
+   "verdict": "PASS"
+  }
+ ],
+ "overall": "PASS",
+ "seed_sweep": {
+  "context": "qz-alt-03",
+  "excluded": [
+   {
+    "equivalence_proof": "diff confined to comments and whitespace; all four case outputs byte-identical to the reference across the declared trials",
+    "name": "var-comment-shuffle"
+   }
+  ],
+  "seeds": [
+   {
+    "name": "good-swap-format",
+    "result": "PASS",
+    "role": "good"
+   },
+   {
+    "behavior_change_proof": "case ca-3 emits 6.6061, reference emits 6.5617",
+    "inert": false,
+    "name": "bad-factor-drift",
+    "result": "FAIL",
+    "role": "bad"
+   },
+   {
+    "behavior_change_proof": "inert variant echoes its input untransformed; all four case outputs differ from the reference outputs",
+    "inert": true,
+    "name": "bad-noop-echo",
+    "result": "FAIL",
+    "role": "bad"
+   }
+  ]
+ },
+ "spend": {
+  "actual": "9 probe-minutes",
+  "expected": "12 probe-minutes"
+ }
+}

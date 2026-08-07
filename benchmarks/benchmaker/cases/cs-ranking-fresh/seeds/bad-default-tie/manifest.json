@@ -1,0 +1,34 @@
+{
+  "benchmark_identity": "sha256:2a2253aac0f623319c6a996d2c47238f4d1f6fe9e4ed24aa46a160a2b45067c0",
+  "evaluation_design": {
+    "identity": "sha256:5efce1c481874bf4394eb91843f0aa74a9ce2281a3479ae5cacd8c2b04edad8e",
+    "locator": "provenance/evaluation-design.md"
+  },
+  "expected_cost": {
+    "per_execution_limit": "60 s per run; probe within the 60 s small tier",
+    "suite_estimate": "one verification per inner implementation plus one pool ranking; integer arithmetic over fixed bytes",
+    "units": "verification and ranking runs"
+  },
+  "gaps": [],
+  "protected_evidence": null,
+  "provenance": {
+    "identity": "sha256:3420c5987120b893dbcdfb2138bbc2a29d0b776cbc31fe933de6699d5caf7865",
+    "locator": "provenance"
+  },
+  "qualification": {
+    "identity": "sha256:422a393d6776187ade0eccf8cbd15908c5dbf976401a5bea09a07e9bd7004a90",
+    "locator": "qualification"
+  },
+  "runnable_cases": {
+    "identity": "sha256:3ca62bea4394389cf1343bf39a85661f6c3dac213044a9b516c62bd9c1818110",
+    "locator": "cases"
+  },
+  "runner": {
+    "identity": "sha256:655da136aba77668ea048ebe83d410773716eaa0adb488025a02fc90c8caa7c7",
+    "locator": "runner"
+  },
+  "scoring": {
+    "identity": "sha256:65f8ea3c58de485af051b0aafe293e073b74682dea244e7ef630fee302645cbf",
+    "locator": "scoring"
+  }
+}

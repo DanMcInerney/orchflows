@@ -1,0 +1,13 @@
+{
+  "sources": [
+    {"artifact": "evidence/interface.md", "role": "exhibited interface; the anti-invention boundary"},
+    {"artifact": "evidence/traces.md", "role": "exhibited scripted-clock timelines; anchored-case material"}
+  ],
+  "case_mappings": {
+    "trace-1": "traces.md timeline T1, carried verbatim",
+    "trace-2": "traces.md timeline T2, carried verbatim",
+    "refill-after-idle": "interface.md refill law over idle elapsed time",
+    "full-refill-boundary": "interface.md burst cap law at exact full refill",
+    "partial-refill-denial": "interface.md consume-nothing-on-denial law"
+  }
+}

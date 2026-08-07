@@ -1,0 +1,14 @@
+{
+  "builder_context": "bc-alt-09",
+  "case_mappings": {
+    "ea-badflag": "design row 3",
+    "ea-lower": "design row 2",
+    "ea-upper": "design row 1"
+  },
+  "sources": [
+    {
+      "file": "evidence/packet.md",
+      "sha256": "sha256:b4427e9f6dbd92e87126ec8f0046adba11a010c158da85e292f592a37b001277"
+    }
+  ]
+}

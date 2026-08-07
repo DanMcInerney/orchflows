@@ -1,0 +1,14 @@
+id = "cs-ranking-fresh"
+angle = "ranking"
+outcome = "Given four fixed candidate artifacts, benchmaker produces a package whose scoring ranks eligible candidates only after required verification, without benchmaker itself comparing candidates."
+tests = "Verify decides eligibility before Judge scores; required failure never ranks."
+target = "target"
+probe = "uv run --no-project python probe/check.py {impl}"
+evidence = ["evidence/criteria.md", "evidence/candidates", "evidence/inner-impls"]
+bound = "one BC4 share; probe within small tier"
+port = "candidate-ranking"
+provenance = "synthesis@41ee9ea2 claims 21,59"
+size = "small"
+parallel_safe = true
+negative = false
+expected_qualification = ["schema-valid", "discrimination", "reproducibility", "cost-within-bound"]

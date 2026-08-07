@@ -1,0 +1,41 @@
+{
+  "overall": "PASS",
+  "entries": [
+    {
+      "criterion": "schema-valid",
+      "verdict": "PASS",
+      "oracle": "manifest canonicalization and component digest audit",
+      "oracle_class": "deterministic",
+      "evidence": "qualifying-context record q-rl-01: benchmark_identity recomputed from the canonical payload; six component digests verified over shipped bytes",
+      "covers": "manifest.json and every component locator",
+      "required": true
+    },
+    {
+      "criterion": "discrimination",
+      "verdict": "PASS",
+      "oracle": "inner-implementation sweep through runner and scoring",
+      "oracle_class": "deterministic",
+      "evidence": "qualifying-context record q-rl-02: reference and the equivalent variant pass; the never-refilling variant and the refill-margin variant fail",
+      "covers": "cases/cases.json via scoring/score.py",
+      "required": true
+    },
+    {
+      "criterion": "reproducibility",
+      "verdict": "PASS",
+      "oracle": "double-run verdict comparison under the scripted clock",
+      "oracle_class": "deterministic",
+      "evidence": "qualifying-context record q-rl-03: two full sweeps, identical verdicts; no wall-clock dependence in any case",
+      "covers": "runner/run.py scripted-clock execution path",
+      "required": true
+    },
+    {
+      "criterion": "cost-within-bound",
+      "verdict": "PASS",
+      "oracle": "wall-clock ledger against expected_cost",
+      "oracle_class": "deterministic",
+      "evidence": "qualifying-context record q-rl-04: full sweep completes in seconds; per-execution limit never approached",
+      "covers": "expected_cost",
+      "required": true
+    }
+  ]
+}

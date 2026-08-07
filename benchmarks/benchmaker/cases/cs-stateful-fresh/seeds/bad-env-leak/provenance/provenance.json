@@ -1,0 +1,11 @@
+{
+  "builder_context": "bc1-materialize-st-9a02",
+  "sources": [
+    {"artifact": "spec.md", "role": "migration semantics, journal format, idempotency law, no-env-dependence law"}
+  ],
+  "case_mappings": [
+    {"case": "s1-basic-two-records", "clauses": ["first-run migration", "journal completeness", "idempotency law (second run)"]},
+    {"case": "s2-empty-records", "clauses": ["first-run migration at the empty boundary", "idempotency law (second run)"]},
+    {"case": "s3-already-migrated", "clauses": ["already-migrated no-op", "state read from the journal, never the environment"]}
+  ]
+}

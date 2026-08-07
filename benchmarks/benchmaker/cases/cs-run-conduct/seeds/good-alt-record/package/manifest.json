@@ -1,0 +1,38 @@
+{
+  "benchmark_identity": "sha256:66ae7ff286c32e99e088a6dd0f4368ad55530dd55384e3a1391250d4f9acb2ee",
+  "evaluation_design": {
+    "locator": "../record/design.md",
+    "sha256": "sha256:ec48ddd483b995c5925ca1caf98bd34460433502cba36a6a465e3b88b2d7d9ff"
+  },
+  "expected_cost": {
+    "per_execution_limit": "300 s",
+    "suite_estimate": "under 120 s",
+    "units": "probe runs"
+  },
+  "gaps": [
+    "ga-alt-1",
+    "gd-alt-1",
+    "gd-alt-2"
+  ],
+  "protected_evidence": null,
+  "provenance": {
+    "locator": "provenance/provenance.json",
+    "sha256": "sha256:e55fd54b7e2f90af8bee413965105c106b931aeeb26cc92827749a782301b8e4"
+  },
+  "qualification": {
+    "locator": "qualification/qualification.json",
+    "sha256": "sha256:9f1acd08aa246aa8c55c3bec7c5e2dbaa47630982706157db3cac378da2dd229"
+  },
+  "runnable_cases": {
+    "locator": "cases/cases.json",
+    "sha256": "sha256:a8b94d4feea74ec233ce58dd306e0f3e099d66b602a220bbb01a55415b26fb8f"
+  },
+  "runner": {
+    "locator": "runner/run.py",
+    "sha256": "sha256:c016b9dec510be757fc3188b498b0ae6c723785933595b9b5baef7fafe6ba742"
+  },
+  "scoring": {
+    "locator": "scoring/scoring.json",
+    "sha256": "sha256:6b9c9f666549ca6bd8b3ac2ecb7268d7971f4edae439efacc0d024a20fbea6b3"
+  }
+}

@@ -1,0 +1,23 @@
+id = "cs-judged-fresh"
+angle = "judged-outcome"
+outcome = "Given meeting transcripts and a rubric frame, benchmaker produces a package whose deterministic and judged criteria are split, anchored, and sealed with recorded judge rerun variance."
+target = "target"
+evidence = [
+  "evidence/sources",
+  "evidence/rubric-frame.md",
+  "evidence/inner-impls",
+]
+probe = "uv run --no-project python probe/check.py {impl}"
+bound = "one BC3 share; probe within medium tier; 3 judge reruns budgeted"
+expected_qualification = [
+  "schema-valid",
+  "discrimination",
+  "reproducibility",
+  "cost-within-bound",
+]
+negative = false
+port = "skill-summarize"
+tests = "Judged outcomes stay secondary, anchored, non-compensating, with variance recorded before seal."
+size = "medium"
+provenance = "synthesis@41ee9ea2 claims 50"
+parallel_safe = true

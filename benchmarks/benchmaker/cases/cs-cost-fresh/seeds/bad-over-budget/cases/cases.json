@@ -1,0 +1,1929 @@
+{
+  "corpus": {
+    "generator": "evidence/corpus-gen.py",
+    "seed": 20260807,
+    "count": 20000
+  },
+  "cases": [
+    {
+      "id": "q-01",
+      "start": 1699919990,
+      "end": 1700020010,
+      "level": "ANY",
+      "expected": 20000,
+      "required": true
+    },
+    {
+      "id": "q-02",
+      "start": 1699920001,
+      "end": 1700006399,
+      "level": "ANY",
+      "expected": 17311,
+      "required": true
+    },
+    {
+      "id": "q-03",
+      "start": 1699940000,
+      "end": 1699980000,
+      "level": "ERROR",
+      "expected": 816,
+      "required": true
+    },
+    {
+      "id": "q-04",
+      "start": 1699921032,
+      "end": 1699921782,
+      "level": "ERROR",
+      "expected": 17,
+      "required": true
+    },
+    {
+      "id": "q-05",
+      "start": 1699920193,
+      "end": 1699920273,
+      "level": "ANY",
+      "expected": 15,
+      "required": true
+    },
+    {
+      "id": "q-06",
+      "start": 1699920000,
+      "end": 1699927200,
+      "level": "ANY",
+      "expected": 1458,
+      "required": true
+    },
+    {
+      "id": "q-07",
+      "start": 1700006401,
+      "end": 1700019999,
+      "level": "WARN",
+      "expected": 526,
+      "required": true
+    },
+    {
+      "id": "q-08",
+      "start": 1700020100,
+      "end": 1700020200,
+      "level": "ANY",
+      "expected": 0,
+      "required": true
+    },
+    {
+      "id": "q-09",
+      "start": 1699920620,
+      "end": 1699920620,
+      "level": "ANY",
+      "expected": 1,
+      "required": true
+    },
+    {
+      "id": "q-10",
+      "start": 1699923000,
+      "end": 1699924000,
+      "level": "INFO",
+      "expected": 134,
+      "required": true
+    },
+    {
+      "id": "q-11",
+      "start": 1699970000,
+      "end": 1699969000,
+      "level": "ANY",
+      "expected": 0,
+      "required": true
+    },
+    {
+      "id": "q-12",
+      "start": 1700001400,
+      "end": 1700011400,
+      "level": "ANY",
+      "expected": 2037,
+      "required": true
+    },
+    {
+      "id": "b-000",
+      "start": 1699920001,
+      "end": 1699920401,
+      "level": "ANY",
+      "expected": 73,
+      "required": true
+    },
+    {
+      "id": "b-001",
+      "start": 1699920431,
+      "end": 1699920831,
+      "level": "ANY",
+      "expected": 67,
+      "required": true
+    },
+    {
+      "id": "b-002",
+      "start": 1699920861,
+      "end": 1699921261,
+      "level": "ANY",
+      "expected": 76,
+      "required": true
+    },
+    {
+      "id": "b-003",
+      "start": 1699921291,
+      "end": 1699921691,
+      "level": "ANY",
+      "expected": 79,
+      "required": true
+    },
+    {
+      "id": "b-004",
+      "start": 1699921721,
+      "end": 1699922121,
+      "level": "ANY",
+      "expected": 81,
+      "required": true
+    },
+    {
+      "id": "b-005",
+      "start": 1699922151,
+      "end": 1699922551,
+      "level": "ANY",
+      "expected": 67,
+      "required": true
+    },
+    {
+      "id": "b-006",
+      "start": 1699922581,
+      "end": 1699922981,
+      "level": "ANY",
+      "expected": 78,
+      "required": true
+    },
+    {
+      "id": "b-007",
+      "start": 1699923011,
+      "end": 1699923411,
+      "level": "ANY",
+      "expected": 61,
+      "required": true
+    },
+    {
+      "id": "b-008",
+      "start": 1699923441,
+      "end": 1699923841,
+      "level": "ANY",
+      "expected": 88,
+      "required": true
+    },
+    {
+      "id": "b-009",
+      "start": 1699923871,
+      "end": 1699924271,
+      "level": "ANY",
+      "expected": 74,
+      "required": true
+    },
+    {
+      "id": "b-010",
+      "start": 1699924301,
+      "end": 1699924701,
+      "level": "ANY",
+      "expected": 75,
+      "required": true
+    },
+    {
+      "id": "b-011",
+      "start": 1699924731,
+      "end": 1699925131,
+      "level": "ANY",
+      "expected": 98,
+      "required": true
+    },
+    {
+      "id": "b-012",
+      "start": 1699925161,
+      "end": 1699925561,
+      "level": "ANY",
+      "expected": 107,
+      "required": true
+    },
+    {
+      "id": "b-013",
+      "start": 1699925591,
+      "end": 1699925991,
+      "level": "ANY",
+      "expected": 92,
+      "required": true
+    },
+    {
+      "id": "b-014",
+      "start": 1699926021,
+      "end": 1699926421,
+      "level": "ANY",
+      "expected": 93,
+      "required": true
+    },
+    {
+      "id": "b-015",
+      "start": 1699926451,
+      "end": 1699926851,
+      "level": "ANY",
+      "expected": 92,
+      "required": true
+    },
+    {
+      "id": "b-016",
+      "start": 1699926881,
+      "end": 1699927281,
+      "level": "ANY",
+      "expected": 76,
+      "required": true
+    },
+    {
+      "id": "b-017",
+      "start": 1699927311,
+      "end": 1699927711,
+      "level": "ANY",
+      "expected": 70,
+      "required": true
+    },
+    {
+      "id": "b-018",
+      "start": 1699927741,
+      "end": 1699928141,
+      "level": "ANY",
+      "expected": 75,
+      "required": true
+    },
+    {
+      "id": "b-019",
+      "start": 1699928171,
+      "end": 1699928571,
+      "level": "ANY",
+      "expected": 82,
+      "required": true
+    },
+    {
+      "id": "b-020",
+      "start": 1699928601,
+      "end": 1699929001,
+      "level": "ANY",
+      "expected": 75,
+      "required": true
+    },
+    {
+      "id": "b-021",
+      "start": 1699929031,
+      "end": 1699929431,
+      "level": "ANY",
+      "expected": 87,
+      "required": true
+    },
+    {
+      "id": "b-022",
+      "start": 1699929461,
+      "end": 1699929861,
+      "level": "ANY",
+      "expected": 98,
+      "required": true
+    },
+    {
+      "id": "b-023",
+      "start": 1699929891,
+      "end": 1699930291,
+      "level": "ANY",
+      "expected": 79,
+      "required": true
+    },
+    {
+      "id": "b-024",
+      "start": 1699930321,
+      "end": 1699930721,
+      "level": "ANY",
+      "expected": 77,
+      "required": true
+    },
+    {
+      "id": "b-025",
+      "start": 1699930751,
+      "end": 1699931151,
+      "level": "ANY",
+      "expected": 88,
+      "required": true
+    },
+    {
+      "id": "b-026",
+      "start": 1699931181,
+      "end": 1699931581,
+      "level": "ANY",
+      "expected": 77,
+      "required": true
+    },
+    {
+      "id": "b-027",
+      "start": 1699931611,
+      "end": 1699932011,
+      "level": "ANY",
+      "expected": 76,
+      "required": true
+    },
+    {
+      "id": "b-028",
+      "start": 1699932041,
+      "end": 1699932441,
+      "level": "ANY",
+      "expected": 71,
+      "required": true
+    },
+    {
+      "id": "b-029",
+      "start": 1699932471,
+      "end": 1699932871,
+      "level": "ANY",
+      "expected": 82,
+      "required": true
+    },
+    {
+      "id": "b-030",
+      "start": 1699932901,
+      "end": 1699933301,
+      "level": "ANY",
+      "expected": 84,
+      "required": true
+    },
+    {
+      "id": "b-031",
+      "start": 1699933331,
+      "end": 1699933731,
+      "level": "ANY",
+      "expected": 88,
+      "required": true
+    },
+    {
+      "id": "b-032",
+      "start": 1699933761,
+      "end": 1699934161,
+      "level": "ANY",
+      "expected": 72,
+      "required": true
+    },
+    {
+      "id": "b-033",
+      "start": 1699934191,
+      "end": 1699934591,
+      "level": "ANY",
+      "expected": 61,
+      "required": true
+    },
+    {
+      "id": "b-034",
+      "start": 1699934621,
+      "end": 1699935021,
+      "level": "ANY",
+      "expected": 88,
+      "required": true
+    },
+    {
+      "id": "b-035",
+      "start": 1699935051,
+      "end": 1699935451,
+      "level": "ANY",
+      "expected": 71,
+      "required": true
+    },
+    {
+      "id": "b-036",
+      "start": 1699935481,
+      "end": 1699935881,
+      "level": "ANY",
+      "expected": 83,
+      "required": true
+    },
+    {
+      "id": "b-037",
+      "start": 1699935911,
+      "end": 1699936311,
+      "level": "ANY",
+      "expected": 85,
+      "required": true
+    },
+    {
+      "id": "b-038",
+      "start": 1699936341,
+      "end": 1699936741,
+      "level": "ANY",
+      "expected": 86,
+      "required": true
+    },
+    {
+      "id": "b-039",
+      "start": 1699936771,
+      "end": 1699937171,
+      "level": "ANY",
+      "expected": 57,
+      "required": true
+    },
+    {
+      "id": "b-040",
+      "start": 1699937201,
+      "end": 1699937601,
+      "level": "ANY",
+      "expected": 72,
+      "required": true
+    },
+    {
+      "id": "b-041",
+      "start": 1699937631,
+      "end": 1699938031,
+      "level": "ANY",
+      "expected": 69,
+      "required": true
+    },
+    {
+      "id": "b-042",
+      "start": 1699938061,
+      "end": 1699938461,
+      "level": "ANY",
+      "expected": 70,
+      "required": true
+    },
+    {
+      "id": "b-043",
+      "start": 1699938491,
+      "end": 1699938891,
+      "level": "ANY",
+      "expected": 70,
+      "required": true
+    },
+    {
+      "id": "b-044",
+      "start": 1699938921,
+      "end": 1699939321,
+      "level": "ANY",
+      "expected": 89,
+      "required": true
+    },
+    {
+      "id": "b-045",
+      "start": 1699939351,
+      "end": 1699939751,
+      "level": "ANY",
+      "expected": 91,
+      "required": true
+    },
+    {
+      "id": "b-046",
+      "start": 1699939781,
+      "end": 1699940181,
+      "level": "ANY",
+      "expected": 83,
+      "required": true
+    },
+    {
+      "id": "b-047",
+      "start": 1699940211,
+      "end": 1699940611,
+      "level": "ANY",
+      "expected": 81,
+      "required": true
+    },
+    {
+      "id": "b-048",
+      "start": 1699940641,
+      "end": 1699941041,
+      "level": "ANY",
+      "expected": 58,
+      "required": true
+    },
+    {
+      "id": "b-049",
+      "start": 1699941071,
+      "end": 1699941471,
+      "level": "ANY",
+      "expected": 83,
+      "required": true
+    },
+    {
+      "id": "b-050",
+      "start": 1699941501,
+      "end": 1699941901,
+      "level": "ANY",
+      "expected": 66,
+      "required": true
+    },
+    {
+      "id": "b-051",
+      "start": 1699941931,
+      "end": 1699942331,
+      "level": "ANY",
+      "expected": 77,
+      "required": true
+    },
+    {
+      "id": "b-052",
+      "start": 1699942361,
+      "end": 1699942761,
+      "level": "ANY",
+      "expected": 83,
+      "required": true
+    },
+    {
+      "id": "b-053",
+      "start": 1699942791,
+      "end": 1699943191,
+      "level": "ANY",
+      "expected": 83,
+      "required": true
+    },
+    {
+      "id": "b-054",
+      "start": 1699943221,
+      "end": 1699943621,
+      "level": "ANY",
+      "expected": 78,
+      "required": true
+    },
+    {
+      "id": "b-055",
+      "start": 1699943651,
+      "end": 1699944051,
+      "level": "ANY",
+      "expected": 76,
+      "required": true
+    },
+    {
+      "id": "b-056",
+      "start": 1699944081,
+      "end": 1699944481,
+      "level": "ANY",
+      "expected": 67,
+      "required": true
+    },
+    {
+      "id": "b-057",
+      "start": 1699944511,
+      "end": 1699944911,
+      "level": "ANY",
+      "expected": 91,
+      "required": true
+    },
+    {
+      "id": "b-058",
+      "start": 1699944941,
+      "end": 1699945341,
+      "level": "ANY",
+      "expected": 86,
+      "required": true
+    },
+    {
+      "id": "b-059",
+      "start": 1699945371,
+      "end": 1699945771,
+      "level": "ANY",
+      "expected": 81,
+      "required": true
+    },
+    {
+      "id": "b-060",
+      "start": 1699945801,
+      "end": 1699946201,
+      "level": "ANY",
+      "expected": 88,
+      "required": true
+    },
+    {
+      "id": "b-061",
+      "start": 1699946231,
+      "end": 1699946631,
+      "level": "ANY",
+      "expected": 74,
+      "required": true
+    },
+    {
+      "id": "b-062",
+      "start": 1699946661,
+      "end": 1699947061,
+      "level": "ANY",
+      "expected": 80,
+      "required": true
+    },
+    {
+      "id": "b-063",
+      "start": 1699947091,
+      "end": 1699947491,
+      "level": "ANY",
+      "expected": 82,
+      "required": true
+    },
+    {
+      "id": "b-064",
+      "start": 1699947521,
+      "end": 1699947921,
+      "level": "ANY",
+      "expected": 99,
+      "required": true
+    },
+    {
+      "id": "b-065",
+      "start": 1699947951,
+      "end": 1699948351,
+      "level": "ANY",
+      "expected": 87,
+      "required": true
+    },
+    {
+      "id": "b-066",
+      "start": 1699948381,
+      "end": 1699948781,
+      "level": "ANY",
+      "expected": 88,
+      "required": true
+    },
+    {
+      "id": "b-067",
+      "start": 1699948811,
+      "end": 1699949211,
+      "level": "ANY",
+      "expected": 80,
+      "required": true
+    },
+    {
+      "id": "b-068",
+      "start": 1699949241,
+      "end": 1699949641,
+      "level": "ANY",
+      "expected": 100,
+      "required": true
+    },
+    {
+      "id": "b-069",
+      "start": 1699949671,
+      "end": 1699950071,
+      "level": "ANY",
+      "expected": 91,
+      "required": true
+    },
+    {
+      "id": "b-070",
+      "start": 1699950101,
+      "end": 1699950501,
+      "level": "ANY",
+      "expected": 84,
+      "required": true
+    },
+    {
+      "id": "b-071",
+      "start": 1699950531,
+      "end": 1699950931,
+      "level": "ANY",
+      "expected": 87,
+      "required": true
+    },
+    {
+      "id": "b-072",
+      "start": 1699950961,
+      "end": 1699951361,
+      "level": "ANY",
+      "expected": 91,
+      "required": true
+    },
+    {
+      "id": "b-073",
+      "start": 1699951391,
+      "end": 1699951791,
+      "level": "ANY",
+      "expected": 69,
+      "required": true
+    },
+    {
+      "id": "b-074",
+      "start": 1699951821,
+      "end": 1699952221,
+      "level": "ANY",
+      "expected": 63,
+      "required": true
+    },
+    {
+      "id": "b-075",
+      "start": 1699952251,
+      "end": 1699952651,
+      "level": "ANY",
+      "expected": 95,
+      "required": true
+    },
+    {
+      "id": "b-076",
+      "start": 1699952681,
+      "end": 1699953081,
+      "level": "ANY",
+      "expected": 70,
+      "required": true
+    },
+    {
+      "id": "b-077",
+      "start": 1699953111,
+      "end": 1699953511,
+      "level": "ANY",
+      "expected": 95,
+      "required": true
+    },
+    {
+      "id": "b-078",
+      "start": 1699953541,
+      "end": 1699953941,
+      "level": "ANY",
+      "expected": 84,
+      "required": true
+    },
+    {
+      "id": "b-079",
+      "start": 1699953971,
+      "end": 1699954371,
+      "level": "ANY",
+      "expected": 74,
+      "required": true
+    },
+    {
+      "id": "b-080",
+      "start": 1699954401,
+      "end": 1699954801,
+      "level": "ANY",
+      "expected": 77,
+      "required": true
+    },
+    {
+      "id": "b-081",
+      "start": 1699954831,
+      "end": 1699955231,
+      "level": "ANY",
+      "expected": 68,
+      "required": true
+    },
+    {
+      "id": "b-082",
+      "start": 1699955261,
+      "end": 1699955661,
+      "level": "ANY",
+      "expected": 101,
+      "required": true
+    },
+    {
+      "id": "b-083",
+      "start": 1699955691,
+      "end": 1699956091,
+      "level": "ANY",
+      "expected": 72,
+      "required": true
+    },
+    {
+      "id": "b-084",
+      "start": 1699956121,
+      "end": 1699956521,
+      "level": "ANY",
+      "expected": 82,
+      "required": true
+    },
+    {
+      "id": "b-085",
+      "start": 1699956551,
+      "end": 1699956951,
+      "level": "ANY",
+      "expected": 79,
+      "required": true
+    },
+    {
+      "id": "b-086",
+      "start": 1699956981,
+      "end": 1699957381,
+      "level": "ANY",
+      "expected": 72,
+      "required": true
+    },
+    {
+      "id": "b-087",
+      "start": 1699957411,
+      "end": 1699957811,
+      "level": "ANY",
+      "expected": 87,
+      "required": true
+    },
+    {
+      "id": "b-088",
+      "start": 1699957841,
+      "end": 1699958241,
+      "level": "ANY",
+      "expected": 74,
+      "required": true
+    },
+    {
+      "id": "b-089",
+      "start": 1699958271,
+      "end": 1699958671,
+      "level": "ANY",
+      "expected": 87,
+      "required": true
+    },
+    {
+      "id": "b-090",
+      "start": 1699958701,
+      "end": 1699959101,
+      "level": "ANY",
+      "expected": 81,
+      "required": true
+    },
+    {
+      "id": "b-091",
+      "start": 1699959131,
+      "end": 1699959531,
+      "level": "ANY",
+      "expected": 66,
+      "required": true
+    },
+    {
+      "id": "b-092",
+      "start": 1699959561,
+      "end": 1699959961,
+      "level": "ANY",
+      "expected": 103,
+      "required": true
+    },
+    {
+      "id": "b-093",
+      "start": 1699959991,
+      "end": 1699960391,
+      "level": "ANY",
+      "expected": 88,
+      "required": true
+    },
+    {
+      "id": "b-094",
+      "start": 1699960421,
+      "end": 1699960821,
+      "level": "ANY",
+      "expected": 75,
+      "required": true
+    },
+    {
+      "id": "b-095",
+      "start": 1699960851,
+      "end": 1699961251,
+      "level": "ANY",
+      "expected": 69,
+      "required": true
+    },
+    {
+      "id": "b-096",
+      "start": 1699961281,
+      "end": 1699961681,
+      "level": "ANY",
+      "expected": 74,
+      "required": true
+    },
+    {
+      "id": "b-097",
+      "start": 1699961711,
+      "end": 1699962111,
+      "level": "ANY",
+      "expected": 78,
+      "required": true
+    },
+    {
+      "id": "b-098",
+      "start": 1699962141,
+      "end": 1699962541,
+      "level": "ANY",
+      "expected": 90,
+      "required": true
+    },
+    {
+      "id": "b-099",
+      "start": 1699962571,
+      "end": 1699962971,
+      "level": "ANY",
+      "expected": 79,
+      "required": true
+    },
+    {
+      "id": "b-100",
+      "start": 1699963001,
+      "end": 1699963401,
+      "level": "ANY",
+      "expected": 93,
+      "required": true
+    },
+    {
+      "id": "b-101",
+      "start": 1699963431,
+      "end": 1699963831,
+      "level": "ANY",
+      "expected": 76,
+      "required": true
+    },
+    {
+      "id": "b-102",
+      "start": 1699963861,
+      "end": 1699964261,
+      "level": "ANY",
+      "expected": 67,
+      "required": true
+    },
+    {
+      "id": "b-103",
+      "start": 1699964291,
+      "end": 1699964691,
+      "level": "ANY",
+      "expected": 83,
+      "required": true
+    },
+    {
+      "id": "b-104",
+      "start": 1699964721,
+      "end": 1699965121,
+      "level": "ANY",
+      "expected": 92,
+      "required": true
+    },
+    {
+      "id": "b-105",
+      "start": 1699965151,
+      "end": 1699965551,
+      "level": "ANY",
+      "expected": 68,
+      "required": true
+    },
+    {
+      "id": "b-106",
+      "start": 1699965581,
+      "end": 1699965981,
+      "level": "ANY",
+      "expected": 80,
+      "required": true
+    },
+    {
+      "id": "b-107",
+      "start": 1699966011,
+      "end": 1699966411,
+      "level": "ANY",
+      "expected": 88,
+      "required": true
+    },
+    {
+      "id": "b-108",
+      "start": 1699966441,
+      "end": 1699966841,
+      "level": "ANY",
+      "expected": 87,
+      "required": true
+    },
+    {
+      "id": "b-109",
+      "start": 1699966871,
+      "end": 1699967271,
+      "level": "ANY",
+      "expected": 68,
+      "required": true
+    },
+    {
+      "id": "b-110",
+      "start": 1699967301,
+      "end": 1699967701,
+      "level": "ANY",
+      "expected": 74,
+      "required": true
+    },
+    {
+      "id": "b-111",
+      "start": 1699967731,
+      "end": 1699968131,
+      "level": "ANY",
+      "expected": 72,
+      "required": true
+    },
+    {
+      "id": "b-112",
+      "start": 1699968161,
+      "end": 1699968561,
+      "level": "ANY",
+      "expected": 72,
+      "required": true
+    },
+    {
+      "id": "b-113",
+      "start": 1699968591,
+      "end": 1699968991,
+      "level": "ANY",
+      "expected": 83,
+      "required": true
+    },
+    {
+      "id": "b-114",
+      "start": 1699969021,
+      "end": 1699969421,
+      "level": "ANY",
+      "expected": 79,
+      "required": true
+    },
+    {
+      "id": "b-115",
+      "start": 1699969451,
+      "end": 1699969851,
+      "level": "ANY",
+      "expected": 62,
+      "required": true
+    },
+    {
+      "id": "b-116",
+      "start": 1699969881,
+      "end": 1699970281,
+      "level": "ANY",
+      "expected": 63,
+      "required": true
+    },
+    {
+      "id": "b-117",
+      "start": 1699970311,
+      "end": 1699970711,
+      "level": "ANY",
+      "expected": 66,
+      "required": true
+    },
+    {
+      "id": "b-118",
+      "start": 1699970741,
+      "end": 1699971141,
+      "level": "ANY",
+      "expected": 67,
+      "required": true
+    },
+    {
+      "id": "b-119",
+      "start": 1699971171,
+      "end": 1699971571,
+      "level": "ANY",
+      "expected": 96,
+      "required": true
+    },
+    {
+      "id": "b-120",
+      "start": 1699971601,
+      "end": 1699972001,
+      "level": "ANY",
+      "expected": 80,
+      "required": true
+    },
+    {
+      "id": "b-121",
+      "start": 1699972031,
+      "end": 1699972431,
+      "level": "ANY",
+      "expected": 106,
+      "required": true
+    },
+    {
+      "id": "b-122",
+      "start": 1699972461,
+      "end": 1699972861,
+      "level": "ANY",
+      "expected": 75,
+      "required": true
+    },
+    {
+      "id": "b-123",
+      "start": 1699972891,
+      "end": 1699973291,
+      "level": "ANY",
+      "expected": 90,
+      "required": true
+    },
+    {
+      "id": "b-124",
+      "start": 1699973321,
+      "end": 1699973721,
+      "level": "ANY",
+      "expected": 79,
+      "required": true
+    },
+    {
+      "id": "b-125",
+      "start": 1699973751,
+      "end": 1699974151,
+      "level": "ANY",
+      "expected": 75,
+      "required": true
+    },
+    {
+      "id": "b-126",
+      "start": 1699974181,
+      "end": 1699974581,
+      "level": "ANY",
+      "expected": 75,
+      "required": true
+    },
+    {
+      "id": "b-127",
+      "start": 1699974611,
+      "end": 1699975011,
+      "level": "ANY",
+      "expected": 89,
+      "required": true
+    },
+    {
+      "id": "b-128",
+      "start": 1699975041,
+      "end": 1699975441,
+      "level": "ANY",
+      "expected": 68,
+      "required": true
+    },
+    {
+      "id": "b-129",
+      "start": 1699975471,
+      "end": 1699975871,
+      "level": "ANY",
+      "expected": 81,
+      "required": true
+    },
+    {
+      "id": "b-130",
+      "start": 1699975901,
+      "end": 1699976301,
+      "level": "ANY",
+      "expected": 81,
+      "required": true
+    },
+    {
+      "id": "b-131",
+      "start": 1699976331,
+      "end": 1699976731,
+      "level": "ANY",
+      "expected": 90,
+      "required": true
+    },
+    {
+      "id": "b-132",
+      "start": 1699976761,
+      "end": 1699977161,
+      "level": "ANY",
+      "expected": 93,
+      "required": true
+    },
+    {
+      "id": "b-133",
+      "start": 1699977191,
+      "end": 1699977591,
+      "level": "ANY",
+      "expected": 88,
+      "required": true
+    },
+    {
+      "id": "b-134",
+      "start": 1699977621,
+      "end": 1699978021,
+      "level": "ANY",
+      "expected": 93,
+      "required": true
+    },
+    {
+      "id": "b-135",
+      "start": 1699978051,
+      "end": 1699978451,
+      "level": "ANY",
+      "expected": 79,
+      "required": true
+    },
+    {
+      "id": "b-136",
+      "start": 1699978481,
+      "end": 1699978881,
+      "level": "ANY",
+      "expected": 85,
+      "required": true
+    },
+    {
+      "id": "b-137",
+      "start": 1699978911,
+      "end": 1699979311,
+      "level": "ANY",
+      "expected": 75,
+      "required": true
+    },
+    {
+      "id": "b-138",
+      "start": 1699979341,
+      "end": 1699979741,
+      "level": "ANY",
+      "expected": 90,
+      "required": true
+    },
+    {
+      "id": "b-139",
+      "start": 1699979771,
+      "end": 1699980171,
+      "level": "ANY",
+      "expected": 85,
+      "required": true
+    },
+    {
+      "id": "b-140",
+      "start": 1699980201,
+      "end": 1699980601,
+      "level": "ANY",
+      "expected": 64,
+      "required": true
+    },
+    {
+      "id": "b-141",
+      "start": 1699980631,
+      "end": 1699981031,
+      "level": "ANY",
+      "expected": 86,
+      "required": true
+    },
+    {
+      "id": "b-142",
+      "start": 1699981061,
+      "end": 1699981461,
+      "level": "ANY",
+      "expected": 71,
+      "required": true
+    },
+    {
+      "id": "b-143",
+      "start": 1699981491,
+      "end": 1699981891,
+      "level": "ANY",
+      "expected": 86,
+      "required": true
+    },
+    {
+      "id": "b-144",
+      "start": 1699981921,
+      "end": 1699982321,
+      "level": "ANY",
+      "expected": 78,
+      "required": true
+    },
+    {
+      "id": "b-145",
+      "start": 1699982351,
+      "end": 1699982751,
+      "level": "ANY",
+      "expected": 96,
+      "required": true
+    },
+    {
+      "id": "b-146",
+      "start": 1699982781,
+      "end": 1699983181,
+      "level": "ANY",
+      "expected": 73,
+      "required": true
+    },
+    {
+      "id": "b-147",
+      "start": 1699983211,
+      "end": 1699983611,
+      "level": "ANY",
+      "expected": 92,
+      "required": true
+    },
+    {
+      "id": "b-148",
+      "start": 1699983641,
+      "end": 1699984041,
+      "level": "ANY",
+      "expected": 78,
+      "required": true
+    },
+    {
+      "id": "b-149",
+      "start": 1699984071,
+      "end": 1699984471,
+      "level": "ANY",
+      "expected": 82,
+      "required": true
+    },
+    {
+      "id": "b-150",
+      "start": 1699984501,
+      "end": 1699984901,
+      "level": "ANY",
+      "expected": 81,
+      "required": true
+    },
+    {
+      "id": "b-151",
+      "start": 1699984931,
+      "end": 1699985331,
+      "level": "ANY",
+      "expected": 85,
+      "required": true
+    },
+    {
+      "id": "b-152",
+      "start": 1699985361,
+      "end": 1699985761,
+      "level": "ANY",
+      "expected": 72,
+      "required": true
+    },
+    {
+      "id": "b-153",
+      "start": 1699985791,
+      "end": 1699986191,
+      "level": "ANY",
+      "expected": 68,
+      "required": true
+    },
+    {
+      "id": "b-154",
+      "start": 1699986221,
+      "end": 1699986621,
+      "level": "ANY",
+      "expected": 86,
+      "required": true
+    },
+    {
+      "id": "b-155",
+      "start": 1699986651,
+      "end": 1699987051,
+      "level": "ANY",
+      "expected": 84,
+      "required": true
+    },
+    {
+      "id": "b-156",
+      "start": 1699987081,
+      "end": 1699987481,
+      "level": "ANY",
+      "expected": 72,
+      "required": true
+    },
+    {
+      "id": "b-157",
+      "start": 1699987511,
+      "end": 1699987911,
+      "level": "ANY",
+      "expected": 71,
+      "required": true
+    },
+    {
+      "id": "b-158",
+      "start": 1699987941,
+      "end": 1699988341,
+      "level": "ANY",
+      "expected": 109,
+      "required": true
+    },
+    {
+      "id": "b-159",
+      "start": 1699988371,
+      "end": 1699988771,
+      "level": "ANY",
+      "expected": 91,
+      "required": true
+    },
+    {
+      "id": "b-160",
+      "start": 1699988801,
+      "end": 1699989201,
+      "level": "ANY",
+      "expected": 69,
+      "required": true
+    },
+    {
+      "id": "b-161",
+      "start": 1699989231,
+      "end": 1699989631,
+      "level": "ANY",
+      "expected": 75,
+      "required": true
+    },
+    {
+      "id": "b-162",
+      "start": 1699989661,
+      "end": 1699990061,
+      "level": "ANY",
+      "expected": 80,
+      "required": true
+    },
+    {
+      "id": "b-163",
+      "start": 1699990091,
+      "end": 1699990491,
+      "level": "ANY",
+      "expected": 76,
+      "required": true
+    },
+    {
+      "id": "b-164",
+      "start": 1699990521,
+      "end": 1699990921,
+      "level": "ANY",
+      "expected": 93,
+      "required": true
+    },
+    {
+      "id": "b-165",
+      "start": 1699990951,
+      "end": 1699991351,
+      "level": "ANY",
+      "expected": 86,
+      "required": true
+    },
+    {
+      "id": "b-166",
+      "start": 1699991381,
+      "end": 1699991781,
+      "level": "ANY",
+      "expected": 100,
+      "required": true
+    },
+    {
+      "id": "b-167",
+      "start": 1699991811,
+      "end": 1699992211,
+      "level": "ANY",
+      "expected": 74,
+      "required": true
+    },
+    {
+      "id": "b-168",
+      "start": 1699992241,
+      "end": 1699992641,
+      "level": "ANY",
+      "expected": 80,
+      "required": true
+    },
+    {
+      "id": "b-169",
+      "start": 1699992671,
+      "end": 1699993071,
+      "level": "ANY",
+      "expected": 82,
+      "required": true
+    },
+    {
+      "id": "b-170",
+      "start": 1699993101,
+      "end": 1699993501,
+      "level": "ANY",
+      "expected": 91,
+      "required": true
+    },
+    {
+      "id": "b-171",
+      "start": 1699993531,
+      "end": 1699993931,
+      "level": "ANY",
+      "expected": 73,
+      "required": true
+    },
+    {
+      "id": "b-172",
+      "start": 1699993961,
+      "end": 1699994361,
+      "level": "ANY",
+      "expected": 77,
+      "required": true
+    },
+    {
+      "id": "b-173",
+      "start": 1699994391,
+      "end": 1699994791,
+      "level": "ANY",
+      "expected": 96,
+      "required": true
+    },
+    {
+      "id": "b-174",
+      "start": 1699994821,
+      "end": 1699995221,
+      "level": "ANY",
+      "expected": 90,
+      "required": true
+    },
+    {
+      "id": "b-175",
+      "start": 1699995251,
+      "end": 1699995651,
+      "level": "ANY",
+      "expected": 65,
+      "required": true
+    },
+    {
+      "id": "b-176",
+      "start": 1699995681,
+      "end": 1699996081,
+      "level": "ANY",
+      "expected": 64,
+      "required": true
+    },
+    {
+      "id": "b-177",
+      "start": 1699996111,
+      "end": 1699996511,
+      "level": "ANY",
+      "expected": 81,
+      "required": true
+    },
+    {
+      "id": "b-178",
+      "start": 1699996541,
+      "end": 1699996941,
+      "level": "ANY",
+      "expected": 71,
+      "required": true
+    },
+    {
+      "id": "b-179",
+      "start": 1699996971,
+      "end": 1699997371,
+      "level": "ANY",
+      "expected": 79,
+      "required": true
+    },
+    {
+      "id": "b-180",
+      "start": 1699997401,
+      "end": 1699997801,
+      "level": "ANY",
+      "expected": 75,
+      "required": true
+    },
+    {
+      "id": "b-181",
+      "start": 1699997831,
+      "end": 1699998231,
+      "level": "ANY",
+      "expected": 98,
+      "required": true
+    },
+    {
+      "id": "b-182",
+      "start": 1699998261,
+      "end": 1699998661,
+      "level": "ANY",
+      "expected": 84,
+      "required": true
+    },
+    {
+      "id": "b-183",
+      "start": 1699998691,
+      "end": 1699999091,
+      "level": "ANY",
+      "expected": 78,
+      "required": true
+    },
+    {
+      "id": "b-184",
+      "start": 1699999121,
+      "end": 1699999521,
+      "level": "ANY",
+      "expected": 75,
+      "required": true
+    },
+    {
+      "id": "b-185",
+      "start": 1699999551,
+      "end": 1699999951,
+      "level": "ANY",
+      "expected": 86,
+      "required": true
+    },
+    {
+      "id": "b-186",
+      "start": 1699999981,
+      "end": 1700000381,
+      "level": "ANY",
+      "expected": 75,
+      "required": true
+    },
+    {
+      "id": "b-187",
+      "start": 1700000411,
+      "end": 1700000811,
+      "level": "ANY",
+      "expected": 80,
+      "required": true
+    },
+    {
+      "id": "b-188",
+      "start": 1700000841,
+      "end": 1700001241,
+      "level": "ANY",
+      "expected": 84,
+      "required": true
+    },
+    {
+      "id": "b-189",
+      "start": 1700001271,
+      "end": 1700001671,
+      "level": "ANY",
+      "expected": 77,
+      "required": true
+    },
+    {
+      "id": "b-190",
+      "start": 1700001701,
+      "end": 1700002101,
+      "level": "ANY",
+      "expected": 80,
+      "required": true
+    },
+    {
+      "id": "b-191",
+      "start": 1700002131,
+      "end": 1700002531,
+      "level": "ANY",
+      "expected": 92,
+      "required": true
+    },
+    {
+      "id": "b-192",
+      "start": 1700002561,
+      "end": 1700002961,
+      "level": "ANY",
+      "expected": 82,
+      "required": true
+    },
+    {
+      "id": "b-193",
+      "start": 1700002991,
+      "end": 1700003391,
+      "level": "ANY",
+      "expected": 73,
+      "required": true
+    },
+    {
+      "id": "b-194",
+      "start": 1700003421,
+      "end": 1700003821,
+      "level": "ANY",
+      "expected": 84,
+      "required": true
+    },
+    {
+      "id": "b-195",
+      "start": 1700003851,
+      "end": 1700004251,
+      "level": "ANY",
+      "expected": 85,
+      "required": true
+    },
+    {
+      "id": "b-196",
+      "start": 1700004281,
+      "end": 1700004681,
+      "level": "ANY",
+      "expected": 75,
+      "required": true
+    },
+    {
+      "id": "b-197",
+      "start": 1700004711,
+      "end": 1700005111,
+      "level": "ANY",
+      "expected": 63,
+      "required": true
+    },
+    {
+      "id": "b-198",
+      "start": 1700005141,
+      "end": 1700005541,
+      "level": "ANY",
+      "expected": 95,
+      "required": true
+    },
+    {
+      "id": "b-199",
+      "start": 1700005571,
+      "end": 1700005971,
+      "level": "ANY",
+      "expected": 100,
+      "required": true
+    },
+    {
+      "id": "b-200",
+      "start": 1700006001,
+      "end": 1700006401,
+      "level": "ANY",
+      "expected": 86,
+      "required": true
+    },
+    {
+      "id": "b-201",
+      "start": 1700006431,
+      "end": 1700006831,
+      "level": "ANY",
+      "expected": 98,
+      "required": true
+    },
+    {
+      "id": "b-202",
+      "start": 1700006861,
+      "end": 1700007261,
+      "level": "ANY",
+      "expected": 82,
+      "required": true
+    },
+    {
+      "id": "b-203",
+      "start": 1700007291,
+      "end": 1700007691,
+      "level": "ANY",
+      "expected": 68,
+      "required": true
+    },
+    {
+      "id": "b-204",
+      "start": 1700007721,
+      "end": 1700008121,
+      "level": "ANY",
+      "expected": 73,
+      "required": true
+    },
+    {
+      "id": "b-205",
+      "start": 1700008151,
+      "end": 1700008551,
+      "level": "ANY",
+      "expected": 79,
+      "required": true
+    },
+    {
+      "id": "b-206",
+      "start": 1700008581,
+      "end": 1700008981,
+      "level": "ANY",
+      "expected": 82,
+      "required": true
+    },
+    {
+      "id": "b-207",
+      "start": 1700009011,
+      "end": 1700009411,
+      "level": "ANY",
+      "expected": 85,
+      "required": true
+    },
+    {
+      "id": "b-208",
+      "start": 1700009441,
+      "end": 1700009841,
+      "level": "ANY",
+      "expected": 76,
+      "required": true
+    },
+    {
+      "id": "b-209",
+      "start": 1700009871,
+      "end": 1700010271,
+      "level": "ANY",
+      "expected": 104,
+      "required": true
+    },
+    {
+      "id": "b-210",
+      "start": 1700010301,
+      "end": 1700010701,
+      "level": "ANY",
+      "expected": 77,
+      "required": true
+    },
+    {
+      "id": "b-211",
+      "start": 1700010731,
+      "end": 1700011131,
+      "level": "ANY",
+      "expected": 73,
+      "required": true
+    },
+    {
+      "id": "b-212",
+      "start": 1700011161,
+      "end": 1700011561,
+      "level": "ANY",
+      "expected": 76,
+      "required": true
+    },
+    {
+      "id": "b-213",
+      "start": 1700011591,
+      "end": 1700011991,
+      "level": "ANY",
+      "expected": 73,
+      "required": true
+    },
+    {
+      "id": "b-214",
+      "start": 1700012021,
+      "end": 1700012421,
+      "level": "ANY",
+      "expected": 67,
+      "required": true
+    },
+    {
+      "id": "b-215",
+      "start": 1700012451,
+      "end": 1700012851,
+      "level": "ANY",
+      "expected": 87,
+      "required": true
+    },
+    {
+      "id": "b-216",
+      "start": 1700012881,
+      "end": 1700013281,
+      "level": "ANY",
+      "expected": 74,
+      "required": true
+    },
+    {
+      "id": "b-217",
+      "start": 1700013311,
+      "end": 1700013711,
+      "level": "ANY",
+      "expected": 70,
+      "required": true
+    },
+    {
+      "id": "b-218",
+      "start": 1700013741,
+      "end": 1700014141,
+      "level": "ANY",
+      "expected": 93,
+      "required": true
+    },
+    {
+      "id": "b-219",
+      "start": 1700014171,
+      "end": 1700014571,
+      "level": "ANY",
+      "expected": 60,
+      "required": true
+    },
+    {
+      "id": "b-220",
+      "start": 1700014601,
+      "end": 1700015001,
+      "level": "ANY",
+      "expected": 68,
+      "required": true
+    },
+    {
+      "id": "b-221",
+      "start": 1700015031,
+      "end": 1700015431,
+      "level": "ANY",
+      "expected": 85,
+      "required": true
+    },
+    {
+      "id": "b-222",
+      "start": 1700015461,
+      "end": 1700015861,
+      "level": "ANY",
+      "expected": 73,
+      "required": true
+    },
+    {
+      "id": "b-223",
+      "start": 1700015891,
+      "end": 1700016291,
+      "level": "ANY",
+      "expected": 91,
+      "required": true
+    },
+    {
+      "id": "b-224",
+      "start": 1700016321,
+      "end": 1700016721,
+      "level": "ANY",
+      "expected": 95,
+      "required": true
+    },
+    {
+      "id": "b-225",
+      "start": 1700016751,
+      "end": 1700017151,
+      "level": "ANY",
+      "expected": 67,
+      "required": true
+    },
+    {
+      "id": "b-226",
+      "start": 1700017181,
+      "end": 1700017581,
+      "level": "ANY",
+      "expected": 78,
+      "required": true
+    },
+    {
+      "id": "b-227",
+      "start": 1700017611,
+      "end": 1700018011,
+      "level": "ANY",
+      "expected": 77,
+      "required": true
+    }
+  ]
+}

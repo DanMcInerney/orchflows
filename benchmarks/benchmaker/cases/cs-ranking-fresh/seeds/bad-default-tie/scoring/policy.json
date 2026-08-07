@@ -1,0 +1,9 @@
+{
+  "judge_scope": "fixed-evidence",
+  "required": [
+    "R1",
+    "R2",
+    "R3"
+  ],
+  "verification_before_judging": true
+}

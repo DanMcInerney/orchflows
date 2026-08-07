@@ -1,0 +1,19 @@
+id = "cs-refusal-2"
+angle = "refusal"
+outcome = "Given a codec target whose only quality channel is barred by source policy, benchmaker returns one lawful blocked result with explicit gaps and ships no benchmark identity."
+target = "target/return.md"
+evidence = ["evidence/packet.md", "evidence/codec-notes.md"]
+probe = "uv run --no-project python probe/check.py {impl}"
+bound = "one BC5 share; probe within small tier"
+expected_qualification = [
+    "blocked-return",
+    "schema-valid",
+    "gaps-declared",
+    "discrimination",
+]
+negative = true
+port = "unobservable-outcome"
+tests = "An unobservable outcome yields a blocked return, never a proxy oracle."
+size = "small"
+provenance = "synthesis@41ee9ea2 claims 1,31"
+parallel_safe = true

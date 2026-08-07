@@ -1,0 +1,5 @@
+{
+  "aggregation": "all-required-match",
+  "protected_required": true,
+  "required": []
+}

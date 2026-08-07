@@ -1,0 +1,14 @@
+id = "cs-ratelimit-fresh"
+angle = "time-semantics"
+outcome = "Given the token-bucket evidence, benchmaker produces a package that scores against an injected clock and cites no interface element the evidence never exhibits."
+target = "target"
+evidence = ["evidence/interface.md", "evidence/traces.md", "evidence/inner-impls"]
+probe = "uv run --no-project python probe/check.py {impl}"
+bound = "one BC2 share; probe within medium tier"
+expected_qualification = ["schema-valid", "discrimination", "reproducibility", "cost-within-bound"]
+negative = false
+port = "lib-rate-limiter"
+tests = "Time-semantics targets get clock-injected oracles on the exhibited surface only."
+size = "medium"
+provenance = "synthesis@41ee9ea2 claims 38,1,17,45"
+parallel_safe = true

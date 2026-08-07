@@ -1,0 +1,11 @@
+{
+  "aggregation": "all-required-pass",
+  "required_case_ids": [
+    "s1-basic-two-records",
+    "s2-empty-records",
+    "s3-already-migrated"
+  ],
+  "oracle_class": "deterministic",
+  "transcript_law": "two runs per case against the same state directory; second-run state asserted byte-exact",
+  "environment_law": "inner process receives an explicit controlled environment (platform allowlist only)"
+}

@@ -1,0 +1,34 @@
+{
+ "evaluation_design": {
+  "sha256": "17927f0d557443ec233d6a40484cf9130607be176d7fdd4562b78c75e4c804e4",
+  "locator": "provenance/evaluation-design.md"
+ },
+ "runnable_cases": {
+  "sha256": "1290ac8e3898abdd825d957d66225855a0633098856ee39e2f3bea1a9062e557",
+  "locator": "cases/cases.json"
+ },
+ "runner": {
+  "sha256": "35318954be7d69183c1e35968389520e3bbff6f38e3820edf7e28319c903a48c",
+  "locator": "runner/run.py"
+ },
+ "scoring": {
+  "sha256": "42e683620073d9c57146643f87fd91c32ab15ed107b6c4004dff19f5efba2633",
+  "locator": "scoring/aggregate.py"
+ },
+ "provenance": {
+  "sha256": "5bb45742cbd945d20108bdf80c01c34a1c16a7cbaa397595aa05c7523af3d501",
+  "locator": "provenance/provenance.json"
+ },
+ "qualification": {
+  "sha256": "e80eb44ac8173221e0932e2ef226a2c7efad6308b5380f2f4a90bc53ea4b58f1",
+  "locator": "qualification/verdicts.json"
+ },
+ "expected_cost": {
+  "units": "inner scoring runs",
+  "per_execution_limit_s": 30,
+  "suite_estimate": "5 inner variants x 1 run, under 60 s; 3 judge reruns per judged criterion budgeted separately"
+ },
+ "gaps": [],
+ "protected_evidence": null,
+ "benchmark_identity": "sha256:49359fe7b3919f4ea3583374cd4e2b02a833f6cc464e1a83277810beb837f36d"
+}

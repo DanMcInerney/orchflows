@@ -1,0 +1,89 @@
+{
+  "corpus": {
+    "generator": "evidence/corpus-gen.py",
+    "seed": 20260807,
+    "count": 20000
+  },
+  "cases": [
+    {
+      "id": "a-01",
+      "start": 1699920005,
+      "end": 1699990000,
+      "level": "ANY",
+      "expected": 13989,
+      "required": true
+    },
+    {
+      "id": "a-02",
+      "start": 1700007025,
+      "end": 1700007925,
+      "level": "ERROR",
+      "expected": 16,
+      "required": true
+    },
+    {
+      "id": "a-03",
+      "start": 1700019870,
+      "end": 1700019955,
+      "level": "ANY",
+      "expected": 19,
+      "required": true
+    },
+    {
+      "id": "a-04",
+      "start": 1700006400,
+      "end": 1700011400,
+      "level": "ANY",
+      "expected": 1015,
+      "required": true
+    },
+    {
+      "id": "a-05",
+      "start": 1699920100,
+      "end": 1699960000,
+      "level": "WARN",
+      "expected": 1527,
+      "required": true
+    },
+    {
+      "id": "a-06",
+      "start": 1700010000,
+      "end": 1700019999,
+      "level": "ANY",
+      "expected": 1962,
+      "required": true
+    },
+    {
+      "id": "a-07",
+      "start": 1699919990,
+      "end": 1700020010,
+      "level": "ERROR",
+      "expected": 2039,
+      "required": true
+    },
+    {
+      "id": "a-08",
+      "start": 1699980000,
+      "end": 1699981000,
+      "level": "INFO",
+      "expected": 144,
+      "required": true
+    },
+    {
+      "id": "a-09",
+      "start": 1700020500,
+      "end": 1700020600,
+      "level": "ANY",
+      "expected": 0,
+      "required": true
+    },
+    {
+      "id": "a-10",
+      "start": 1700019397,
+      "end": 1700019397,
+      "level": "ANY",
+      "expected": 1,
+      "required": true
+    }
+  ]
+}

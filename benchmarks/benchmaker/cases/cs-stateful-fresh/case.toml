@@ -1,0 +1,14 @@
+id = "cs-stateful-fresh"
+angle = "stateful"
+outcome = "Given a migration tool whose defining defects only appear on the second run, benchmaker produces a package whose oracle reaches the escaped state through a two-run transcript."
+target = "target"
+evidence = ["evidence/spec.md", "evidence/inner-impls"]
+probe = "uv run --no-project python probe/check.py {impl}"
+bound = "one BC1 share; probe within medium tier"
+expected_qualification = ["schema-valid", "discrimination", "reproducibility", "cost-within-bound"]
+negative = false
+port = "stateful-plugin"
+tests = "Only a two-run transcript reaches the escaped state."
+size = "medium"
+provenance = "synthesis@41ee9ea2 claims 1,17,45 (G13); atlas B4 kin"
+parallel_safe = true

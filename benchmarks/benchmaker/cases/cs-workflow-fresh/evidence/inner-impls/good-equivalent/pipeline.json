@@ -1,0 +1,12 @@
+{
+  "stages": [
+    {"id": "spec", "note": "authoring stage", "produces": {"artifact": "spec.art", "payload": "alpha-contract", "freeze": true}},
+    {"id": "build", "note": "construction stage", "consumes": ["spec.art"], "produces": {"artifact": "build.art", "payload": "beta-artifact", "freeze": true}},
+    {"id": "verify", "note": "verification stage", "consumes": ["build.art"], "produces": {"artifact": "verdict.art", "payload": "gamma-verdict", "freeze": true}}
+  ],
+  "edges": [
+    {"from": "spec", "to": "build", "gate": "g-sb"},
+    {"from": "build", "to": "verify", "gate": "g-bv"}
+  ],
+  "run": ["spec", "build", "verify"]
+}

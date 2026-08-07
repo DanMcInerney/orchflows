@@ -1,0 +1,6 @@
+{
+  "aggregate": "reject-empty-run",
+  "laws": ["stage-order", "per-edge-gates", "frozen-joins"],
+  "gate_coverage": "every canonical edge, including the final one",
+  "required": "all"
+}

@@ -1,0 +1,34 @@
+{
+  "benchmark_identity": "sha256:676fb9c88bf3105de3a6a9acc42aca98d8dd26ca6411fca28fe4f03de9946405",
+  "evaluation_design": {
+    "locator": "design/design.md",
+    "sha256": "69e4a3dc201fa4525459bd245c6ff1f5dd7979e769ab2fbc02c366056e4657df"
+  },
+  "expected_cost": {
+    "per_execution_limit_s": 5,
+    "suite_estimate": "four-implementation sweep, six public cases each, under 10 s total",
+    "units": "runner executions over the inner pool"
+  },
+  "gaps": [],
+  "protected_evidence": null,
+  "provenance": {
+    "locator": "provenance/trace.json",
+    "sha256": "405059553f42dcc483c96e56e85abcd05c95c98b63082d83e086f0f737ac7b64"
+  },
+  "qualification": {
+    "locator": "qualification/verdicts.json",
+    "sha256": "793a0f5da39edc16bd8e5e73106eeb2be2b94bd19fbad308d8d48f6d95818b8d"
+  },
+  "runnable_cases": {
+    "locator": "cases/cases.json",
+    "sha256": "a4c3fd45bd63ec4c51b6806b85ae3f4950dd410d96957d2f12efe6e4be34a203"
+  },
+  "runner": {
+    "locator": "runner/run.py",
+    "sha256": "7065b1354716fc08fe3cf5b621ef0d63bb2365a95c660adeeb443247ec5d19c6"
+  },
+  "scoring": {
+    "locator": "scoring/policy.json",
+    "sha256": "59ab94cf60d411faccf5cdb1ec5be56665319701b80776fa4fa0dccc49cb8491"
+  }
+}

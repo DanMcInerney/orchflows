@@ -1,0 +1,75 @@
+{
+ "cases": [
+  {
+   "id": "k1",
+   "rule": "key-syntax",
+   "cites": "spec.md#L03",
+   "input": "beta = 2\n",
+   "expect_findings": []
+  },
+  {
+   "id": "k2",
+   "rule": "key-syntax",
+   "cites": "spec.md#L03",
+   "input": "cache2x = 7\n",
+   "expect_findings": []
+  },
+  {
+   "id": "k3",
+   "rule": "key-syntax",
+   "cites": "spec.md#L03",
+   "input": "Beta = 2\n",
+   "expect_findings": [
+    "1:key-syntax"
+   ]
+  },
+  {
+   "id": "k4",
+   "rule": "key-syntax",
+   "cites": "spec.md#L03",
+   "input": "_beta = 2\n",
+   "expect_findings": [
+    "1:key-syntax"
+   ]
+  },
+  {
+   "id": "v1",
+   "rule": "value-type",
+   "cites": "spec.md#L05",
+   "input": "b = 0\n",
+   "expect_findings": []
+  },
+  {
+   "id": "v2",
+   "rule": "value-type",
+   "cites": "spec.md#L05",
+   "input": "b = 1.5\n",
+   "expect_findings": [
+    "1:value-type"
+   ]
+  },
+  {
+   "id": "c1",
+   "rule": "comment",
+   "cites": "spec.md#L07",
+   "input": "# beta = [x] 9\nb = 3\n",
+   "expect_findings": []
+  },
+  {
+   "id": "s1",
+   "rule": "section-header",
+   "cites": "spec.md#L09",
+   "input": "[cache2]\nb = 1\n",
+   "expect_findings": []
+  },
+  {
+   "id": "s2",
+   "rule": "section-header",
+   "cites": "spec.md#L09",
+   "input": "[Cache]\nb = 1\n",
+   "expect_findings": [
+    "1:section-header"
+   ]
+  }
+ ]
+}

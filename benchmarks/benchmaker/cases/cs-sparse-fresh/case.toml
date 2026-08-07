@@ -1,0 +1,24 @@
+id = "cs-sparse-fresh"
+angle = "sparse-evidence"
+outcome = "Given a spec covering 4 of ~9 behaviors of the QML-lite format, benchmaker cases only the licensed behaviors and declares the rest as gaps, never inventing truth."
+target = "target"
+evidence = [
+  "evidence/spec.md",
+  "evidence/samples",
+  "evidence/inner-impls",
+]
+probe = "uv run --no-project python probe/check.py {impl}"
+bound = "one BC3 share; probe within medium tier"
+expected_qualification = [
+  "schema-valid",
+  "discrimination",
+  "reproducibility",
+  "cost-within-bound",
+  "gaps-declared",
+]
+negative = false
+port = "sparse-evidence"
+tests = "Unsupported semantics stay gaps; every criterion traces to an evidence line."
+size = "medium"
+provenance = "synthesis@41ee9ea2 claims 3,38"
+parallel_safe = true
