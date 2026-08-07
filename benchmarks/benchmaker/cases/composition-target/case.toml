@@ -16,3 +16,7 @@ expected_qualification = [
 ]
 negative = false
 port = "cwd is this case directory; the probe argument is a variant directory holding workflow.md — swap the `target` value inside `probe` for `seeds/<seed>/`, or pass the same path as CASE_IMPL. `target` and `seeds/good-three-step` exit 0, every `seeds/bad-*` exits non-zero; the per-failure stdout lines are the discrimination trace."
+tests = "A workflow file is benchmarked on its artifact chain, bindings, and gate - the recursion dry run."
+size = "small"
+provenance = "expected.md"
+parallel_safe = true

@@ -16,3 +16,5 @@ contain 0.0015 of them. Only an evaluation that reasons from the
 language's boundary rules and picks the endpoint deliberately catches
 it, and that is what a benchmark for this target has to demonstrate
 inside the cost bound.
+
+deviation: boundary-shift

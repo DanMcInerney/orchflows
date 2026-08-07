@@ -16,3 +16,7 @@ expected_qualification = [
 ]
 negative = false
 port = "adapter.py substitutes {impl} with target/ and with each seeds/*/ in turn and runs probe from the case directory, exit 0 = pass; benchmark.toml selects cases by angle."
+tests = "The smallest evaluation maximizing discrimination is selected inside a hard cost bound."
+size = "small"
+provenance = "expected.md"
+parallel_safe = true

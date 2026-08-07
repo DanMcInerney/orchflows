@@ -19,3 +19,5 @@ over citations, which is a design decision the benchmark has to make
 before it can be made. That is what this seed measures: not whether the
 produced benchmark checks citations, but whether it chose the right set
 to quantify over.
+
+deviation: quantifier-narrowing

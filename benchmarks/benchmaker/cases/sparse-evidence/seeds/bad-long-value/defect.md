@@ -6,3 +6,5 @@ reading the intent's purpose clause as a constraint on the value space rather
 than treating the example inputs as the value space; a benchmark whose only
 inputs are example-sized strings certifies a redactor that leaks every secret
 worth redacting.
+
+deviation: input-class-drop

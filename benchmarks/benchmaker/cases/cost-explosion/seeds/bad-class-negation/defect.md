@@ -12,3 +12,5 @@ sample of 2,000 pairs from that space is expected to contain 0.06 of
 them. A benchmark catches this defect by choosing negated sets on
 purpose, which is the case's demand: the evaluation must be selected
 from the input space, not drawn from it.
+
+deviation: guard-deletion

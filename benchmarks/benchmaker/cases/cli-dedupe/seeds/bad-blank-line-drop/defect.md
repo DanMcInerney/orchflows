@@ -15,3 +15,5 @@ a benchmark built only from word-list fixtures never generates one.
 Blank-line handling is also the difference between "retained lines" and
 "non-empty lines" as the window's unit, so a suite that ignores it is
 blind to a whole class of window drift as well.
+
+deviation: input-class-drop

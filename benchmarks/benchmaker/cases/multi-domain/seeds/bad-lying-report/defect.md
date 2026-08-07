@@ -12,3 +12,5 @@ artifact — checking the report's per-field claims against the schema and
 against what the validator actually emits — because the report is what a
 person reads before trusting the generated module, and a confidently wrong
 report is worse than no report.
+
+deviation: artifact-desync

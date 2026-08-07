@@ -12,3 +12,5 @@ deterministic oracle that executes the generated module against a record
 carrying two independent violations catches it, which is why the produced
 benchmark must run the generated code as code rather than reason about it from
 the report.
+
+deviation: early-exit

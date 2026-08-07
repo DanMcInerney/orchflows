@@ -12,3 +12,5 @@ unit_cents)` pair appears nowhere in `evidence/`; a benchmark that
 mirrors the documentation's table certifies a tool that cannot price
 an order. Catching this is the whole anti-goodhart angle: the produced
 benchmark must measure the behavior, not replay the evidence.
+
+deviation: memorization

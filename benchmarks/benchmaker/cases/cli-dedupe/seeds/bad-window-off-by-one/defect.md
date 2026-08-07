@@ -18,3 +18,5 @@ seed identical to the reference and reports a benchmark that cannot
 distinguish a correct window from a wrong one. This is the case's
 discrimination floor — a benchmark that misses it has tested that
 dedupe deduplicates, not that it obeys its contract.
+
+deviation: boundary-shift

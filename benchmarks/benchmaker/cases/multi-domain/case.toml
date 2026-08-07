@@ -34,3 +34,7 @@ negative = false
 # Oracle classes per half (the frozen list vocabulary cannot carry them):
 # code half deterministic; report half judged-or-structural.
 port = "bench-stack adapter: substitute {target} in `probe`, run it with cwd set to the case directory, exit 0 = pass; keep the generator's output directory as run output so the report half can be scored structurally or handed to a judge; the two halves map to two chained single-pack runs, not one mixed run."
+tests = "Code and document halves are materialized as chained single-pack runs and scored coupled."
+size = "small"
+provenance = "expected.md"
+parallel_safe = true

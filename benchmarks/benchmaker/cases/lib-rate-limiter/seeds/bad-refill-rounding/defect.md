@@ -16,3 +16,5 @@ the clock by 2 seconds in one jump and then calls once sees `int(2.0)`
 and passes. The seed is the direct penalty for treating an injected
 clock as a source of whole-second ticks rather than of arbitrary
 instants.
+
+deviation: value-truncation

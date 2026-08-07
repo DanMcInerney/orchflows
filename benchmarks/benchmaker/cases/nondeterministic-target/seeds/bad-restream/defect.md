@@ -12,3 +12,5 @@ case that compares the full stream for a pinned seed against a
 recorded expectation catches it. It is also the reason "pin a seed"
 alone is not the requirement: the pinned run must be scored against a
 fixed expected stream, not merely against itself.
+
+deviation: contract-substitution

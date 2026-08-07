@@ -10,3 +10,5 @@ outside the runbook's 1.5-point tolerance. A benchmark catches it by
 comparing an exact recorded stream, or by a distributional case with a
 declared sample size and tolerance; a benchmark carrying neither is
 testing that the tool is repeatable, not that it is right.
+
+deviation: input-ignored

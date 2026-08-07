@@ -39,10 +39,10 @@ the stage allocation, never the caller bound.
 ## Evidence acquisition
 
 Reuse a supplied qualified synthesis only when its identity, provenance,
-claim-to-source trace, disagreement register, gaps, and boundary coverage are
-fixed. Otherwise obtain a converged synthesis under the source policy before
-evaluation design. Public examples are provenance-bearing seeds, never
-protected certification evidence by default.
+boundary coverage, and the
+[research charter](benchmaker-research.md)'s artifacts are fixed. Otherwise
+obtain a converged synthesis under the source policy — lanes and artifacts
+per that charter — before evaluation design.
 
 Freeze the synthesis and sources at one result identity. Unsupported semantics
 remain gaps; they never become invented target truth. A non-complete delivery,
@@ -82,10 +82,18 @@ Check oracle failability, coverage, discrimination, reproducibility,
 redundancy, provenance, and execution cost independently. Every oracle must be
 capable of failing. Discrimination requires seeded known-good and known-bad
 variants supplied by the qualifying context — the benchmark passes every good
-seed and fails every bad one. Where no known-bad variant can exist, absence of
-bad seeds leaves discrimination UNVERIFIED and an explicit gap. A required
-deterministic failure blocks qualification. Judged criteria carry anchors,
-remain secondary, and cannot compensate for required deterministic failure.
+seed and fails every bad one. The bad set includes one inert variant with the
+intended behavior absent, and a bad variant counts only when shown to change
+the observable outcome — an equivalent variant is excluded, not scored. An
+inert variant shown equivalent is itself a finding: the chosen outcome does
+not observe the intended behavior, recorded as a gap with discrimination
+UNVERIFIED for that behavior. Where
+no known-bad variant can exist, absence of bad seeds leaves discrimination
+UNVERIFIED and an explicit gap. For a nondeterministic outcome, qualification
+fixes a declared trial count; good variants pass and bad variants fail on
+every trial. A required deterministic failure blocks qualification. Judged
+criteria carry anchors, remain secondary, cannot compensate for required
+deterministic failure, and record their rerun variance before sealing.
 
 Resolve every runnable component and verify its byte digest before replay.
 Qualification recomputes its checks from those bytes and captured outputs;

@@ -10,3 +10,5 @@ exhaustive truncation that fits the cost bound catches it. A benchmark
 that misses this one is not discriminating at all, and its presence
 gives the case a floor — a candidate evaluation cannot score by
 covering only the exotic corners.
+
+deviation: guard-deletion

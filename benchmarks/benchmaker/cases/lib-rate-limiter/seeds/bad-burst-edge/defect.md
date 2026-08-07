@@ -17,3 +17,5 @@ saturates and never sees the defect. This is the near-miss: it survives a
 suite that uses an injectable clock correctly but only ever asks small
 questions of it, and it is caught only by a case that deliberately
 overshoots the saturation point.
+
+deviation: guard-deletion

@@ -20,3 +20,5 @@ decision the benchmark must make before it can be built, and it is
 harder than it looks: the defective text is a well-formed English
 sentence about the workflow, in the right field, and it passes any
 check for the field's presence or non-emptiness.
+
+deviation: oracle-vacuity

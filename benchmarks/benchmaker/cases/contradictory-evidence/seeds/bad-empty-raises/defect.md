@@ -9,3 +9,5 @@ empty specification at all scores both clean. Catching it requires surfacing
 the contradiction as an assumption or gap, settling it with the caller, and
 then encoding the settled answer as a case -- which is the whole contradiction
 angle.
+
+deviation: contract-substitution
