@@ -28,12 +28,12 @@ def _no_npx_env():
     return env
 
 
-def run_verifier(markdown: str):
+def run_verifier(markdown: str, *extra_args: str):
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "diagram.md"
         path.write_text(markdown, encoding="utf-8")
         return subprocess.run(
-            [sys.executable, str(VERIFIER), str(path)],
+            [sys.executable, str(VERIFIER), str(path), *extra_args],
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -187,12 +187,15 @@ class TestBoundaryInputs(unittest.TestCase):
         self.assertEqual("error", payload["status"])
         self.assertIn("No ```mermaid fenced block", payload["message"])
 
-    def test_file_without_mermaid_fence_reports_no_fence_and_exits_two(self):
+    def test_file_without_any_fence_passes_as_prose_only(self):
+        # The form ladder's first rungs (sentence, list, table) draw
+        # nothing, so a fence-free prose page is a legal verified page.
         result = run_verifier("# Just a heading\n\nSome prose with no fence at all.\n")
-        self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         payload = json.loads(result.stdout)
-        self.assertEqual("error", payload["status"])
-        self.assertIn("No ```mermaid fenced block", payload["message"])
+        self.assertEqual("pass", payload["status"])
+        self.assertEqual(0, payload["graphs"])
+        self.assertEqual("prose-only", payload["mode"])
 
     def test_non_utf8_bytes_report_unreadable_and_exit_two(self):
         result = run_verifier_bytes(b"\xff\xfe\x00\x01garbage, not valid utf-8")
@@ -228,6 +231,221 @@ class TestBoundaryInputs(unittest.TestCase):
         self.assertEqual("pass", payload["status"])
         self.assertEqual(1, payload["graphs"])
         self.assertEqual("structural-only", payload["mode"])
+
+
+class TestElkFrontmatter(unittest.TestCase):
+    def test_elk_frontmatter_diagram_passes_structural_check(self):
+        result = run_verifier(
+            "```mermaid\n"
+            "---\n"
+            "config:\n"
+            "  layout: elk\n"
+            "---\n"
+            "flowchart TD\n"
+            '    a["start work"] --> b["done"]\n'
+            "```\n"
+        )
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual("pass", payload["status"])
+        self.assertEqual(1, payload["graphs"])
+
+
+class TestLegibilityLint(unittest.TestCase):
+    """--lint promotes legibility-contract violations to failures; without
+    the flag the same inputs keep the historical pass behavior."""
+
+    def _lint_rules(self, result):
+        payload = json.loads(result.stdout)
+        return payload, [failure["rule"] for failure in payload["failures"]]
+
+    def test_forbidden_type_mindmap_fails_only_under_lint(self):
+        source = "```mermaid\nmindmap\n  root\n```\n"
+        self.assertEqual(0, run_verifier(source).returncode)
+        result = run_verifier(source, "--lint")
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        payload, rules = self._lint_rules(result)
+        self.assertIn("lint_forbidden_type", rules)
+
+    def test_forbidden_type_beta_suffix_fails_under_lint(self):
+        result = run_verifier("```mermaid\ntreemap-beta\n```\n", "--lint")
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        _payload, rules = self._lint_rules(result)
+        self.assertIn("lint_forbidden_type", rules)
+
+    def test_node_budget_exceeded_fails_under_lint(self):
+        lines = ["flowchart TD"]
+        for index in range(34):
+            lines.append(f'    n{index}["step {index}"] --> n{index + 1}["step {index + 1}"]')
+        source = "```mermaid\n" + "\n".join(lines) + "\n```\n"
+        self.assertEqual(0, run_verifier(source).returncode)
+        result = run_verifier(source, "--lint")
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        _payload, rules = self._lint_rules(result)
+        self.assertIn("lint_node_budget", rules)
+
+    def test_fan_out_over_four_fails_under_lint(self):
+        lines = ["flowchart TD"]
+        for index in range(5):
+            lines.append(f'    hub["dispatch work"] --> t{index}["target {index}"]')
+        result = run_verifier("```mermaid\n" + "\n".join(lines) + "\n```\n", "--lint")
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        _payload, rules = self._lint_rules(result)
+        self.assertIn("lint_fan_out", rules)
+
+    def test_fan_out_via_ampersand_list_fails_under_lint(self):
+        result = run_verifier(
+            "```mermaid\n"
+            "flowchart TD\n"
+            '    hub["dispatch work"] --> a["t1"] & b["t2"] & c["t3"] & d["t4"] & e["t5"]\n'
+            "```\n",
+            "--lint",
+        )
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        _payload, rules = self._lint_rules(result)
+        self.assertIn("lint_fan_out", rules)
+
+    def test_nested_subgraph_fails_under_lint(self):
+        result = run_verifier(
+            "```mermaid\n"
+            "flowchart TD\n"
+            "    subgraph outer\n"
+            "        subgraph inner\n"
+            '            z1["deep node"]\n'
+            "        end\n"
+            "    end\n"
+            "```\n",
+            "--lint",
+        )
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        _payload, rules = self._lint_rules(result)
+        self.assertIn("lint_subgraph_depth", rules)
+
+    def test_direction_in_externally_linked_subgraph_fails_under_lint(self):
+        result = run_verifier(
+            "```mermaid\n"
+            "flowchart TD\n"
+            "    subgraph s1\n"
+            "        direction LR\n"
+            '        x1["inside a"] --> x2["inside b"]\n'
+            "    end\n"
+            '    x2 --> y1["outside"]\n'
+            "```\n",
+            "--lint",
+        )
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        _payload, rules = self._lint_rules(result)
+        self.assertIn("lint_direction_ignored", rules)
+
+    def test_unlabeled_decision_branch_fails_under_lint(self):
+        result = run_verifier(
+            "```mermaid\n"
+            "flowchart TD\n"
+            '    a["check input"] --> d{"valid?"}\n'
+            '    d --> b["accept"]\n'
+            "```\n",
+            "--lint",
+        )
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        _payload, rules = self._lint_rules(result)
+        self.assertIn("lint_decision_unlabeled", rules)
+
+    def test_clean_diagram_passes_lint_with_warning_channel(self):
+        result = run_verifier(
+            "```mermaid\n"
+            "flowchart TD\n"
+            '    a["check input"] --> d{"valid?"}\n'
+            '    d -->|yes| b["accept"]\n'
+            '    d -->|no| c["reject"]\n'
+            "```\n",
+            "--lint",
+        )
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual("pass", payload["status"])
+        self.assertEqual([], payload["lint"]["warnings"])
+        self.assertEqual(0, payload["lint"]["geometry_checked"])
+
+
+class TestStaticFences(unittest.TestCase):
+    """vega-lite and viz-html fences are verified without any mermaid block."""
+
+    def test_vega_only_page_passes_with_chart_count(self):
+        result = run_verifier(
+            "```vega-lite\n"
+            '{"mark": "bar", "data": {"values": []}}\n'
+            "```\n"
+        )
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual("pass", payload["status"])
+        self.assertEqual(0, payload["graphs"])
+        self.assertEqual(1, payload["charts"])
+        self.assertEqual("static-only", payload["mode"])
+
+    def test_invalid_vega_json_fails(self):
+        result = run_verifier("```vega-lite\n{not json}\n```\n")
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(
+            ["invalid_vega_json"], [failure["rule"] for failure in payload["failures"]]
+        )
+
+    def test_unbalanced_viz_html_fails(self):
+        result = run_verifier(
+            "```viz-html\n"
+            '<div class="viz-steps"><ol><li>one</li></ol>\n'
+            "```\n"
+        )
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(
+            ["unbalanced_html"], [failure["rule"] for failure in payload["failures"]]
+        )
+
+    def test_script_in_viz_html_fails(self):
+        result = run_verifier(
+            "```viz-html\n"
+            "<div><script>alert(1)</script></div>\n"
+            "```\n"
+        )
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        rules = [failure["rule"] for failure in payload["failures"]]
+        self.assertIn("viz_html_script", rules)
+
+    def test_inline_style_in_viz_html_fails(self):
+        result = run_verifier(
+            "```viz-html\n"
+            '<div style="color: red">styled</div>\n'
+            "```\n"
+        )
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        rules = [failure["rule"] for failure in payload["failures"]]
+        self.assertIn("viz_html_inline_style", rules)
+
+    def test_external_reference_in_viz_html_fails(self):
+        result = run_verifier(
+            "```viz-html\n"
+            '<div><img src="https://example.com/x.png"></div>\n'
+            "```\n"
+        )
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        rules = [failure["rule"] for failure in payload["failures"]]
+        self.assertIn("viz_html_external", rules)
+
+    def test_balanced_viz_html_passes(self):
+        result = run_verifier(
+            "```viz-html\n"
+            '<table class="viz-compare"><tr><th>axis</th><td>value</td></tr></table>\n'
+            "```\n"
+        )
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual("pass", payload["status"])
+        self.assertEqual(1, payload["components"])
 
 
 if __name__ == "__main__":
