@@ -1,0 +1,23 @@
+id = "cs-package-audit"
+angle = "package-audit"
+outcome = "Given a complete packet for a trivial target, benchmaker's sealed package survives independent recomputation: identity, digests, seven qualification axes, seed discipline, equivalence bridges, and claim-traced provenance."
+target = "target/"
+probe = "uv run --no-project python probe/check.py {impl}"
+evidence = [
+  "evidence/spec.md",
+  "evidence/inner-impls",
+]
+bound = "one BC6 share; probe within medium tier"
+expected_qualification = [
+  "schema-valid",
+  "discrimination",
+  "reproducibility",
+  "cost-within-bound",
+  "gaps-declared",
+]
+negative = false
+port = "new"
+tests = "The qualifier is qualified: seals recompute and verdicts carry independent evidence."
+size = "medium"
+provenance = "synthesis@41ee9ea2 claims 1,4,15,16,17,18,23,27,44,45,47,48,51,52,53 (54-residue: separate candidate-result identity checked at pa.5)"
+parallel_safe = true

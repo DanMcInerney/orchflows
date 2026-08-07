@@ -1,0 +1,54 @@
+{
+  "tool": "changelog.py",
+  "cases": [
+    {
+      "id": "mc1-entry-sequence",
+      "domain": "code",
+      "input": "feat: add csv export\nfix: correct rounding\nfeat: add profile page\n",
+      "entries": ["Add csv export", "Add profile page", "Correct rounding"],
+      "exit": 0
+    },
+    {
+      "id": "mc2-input-order-preserved",
+      "domain": "code",
+      "input": "feat: zeta stream support\nfeat: alpha channel blend\nfix: unbreak retry\nfix: cap backoff\n",
+      "entries": ["Zeta stream support", "Alpha channel blend", "Unbreak retry", "Cap backoff"],
+      "exit": 0
+    },
+    {
+      "id": "mc3-malformed-line",
+      "domain": "code",
+      "input": "feat: ok thing\nthis is not a commit\n",
+      "entries": [],
+      "exit": 1
+    },
+    {
+      "id": "mc4-crlf-input",
+      "domain": "code",
+      "input": "fix: patch loader\r\nfeat: add loader\r\n",
+      "entries": ["Add loader", "Patch loader"],
+      "exit": 0
+    },
+    {
+      "id": "md1-structure-full",
+      "domain": "doc",
+      "input": "feat: add csv export\nfix: correct rounding\ndocs: describe retry policy\nfeat: add profile page\n",
+      "expected_sections": ["Features", "Fixes", "Documentation"],
+      "exit": 0
+    },
+    {
+      "id": "md2-single-section",
+      "domain": "doc",
+      "input": "fix: correct rounding\n",
+      "expected_sections": ["Fixes"],
+      "exit": 0
+    },
+    {
+      "id": "md3-voice",
+      "domain": "doc",
+      "input": "feat: speed up initial sync\nfeat: add dark theme\n",
+      "expected_sections": ["Features"],
+      "exit": 0
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "cases": [
+    {"id": "f1", "input": ["a", "a", "a", "b"], "expected": ["a x3", "b"]},
+    {"id": "f2", "input": ["x", "y", "y"], "expected": ["x", "y x2"]}
+  ]
+}

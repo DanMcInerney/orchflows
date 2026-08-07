@@ -1,0 +1,84 @@
+{
+ "cases": [
+  {
+   "id": "k1",
+   "rule": "key-syntax",
+   "cites": "spec.md#L03",
+   "input": "alpha = 1\n",
+   "expect_findings": []
+  },
+  {
+   "id": "k2",
+   "rule": "key-syntax",
+   "cites": "spec.md#L03",
+   "input": "retry2 = 5\n",
+   "expect_findings": []
+  },
+  {
+   "id": "k3",
+   "rule": "key-syntax",
+   "cites": "spec.md#L03",
+   "input": "Alpha = 1\n",
+   "expect_findings": [
+    "1:key-syntax"
+   ]
+  },
+  {
+   "id": "k4",
+   "rule": "key-syntax",
+   "cites": "spec.md#L03",
+   "input": "9alpha = 1\n",
+   "expect_findings": [
+    "1:key-syntax"
+   ]
+  },
+  {
+   "id": "v1",
+   "rule": "value-type",
+   "cites": "spec.md#L05",
+   "input": "a = -12\n",
+   "expect_findings": []
+  },
+  {
+   "id": "v2",
+   "rule": "value-type",
+   "cites": "spec.md#L05",
+   "input": "a = twelve\n",
+   "expect_findings": [
+    "1:value-type"
+   ]
+  },
+  {
+   "id": "c1",
+   "rule": "comment",
+   "cites": "spec.md#L07",
+   "input": "# note = [weird] text\na = 1\n",
+   "expect_findings": []
+  },
+  {
+   "id": "s1",
+   "rule": "section-header",
+   "cites": "spec.md#L09",
+   "input": "[db]\na = 1\n",
+   "expect_findings": []
+  },
+  {
+   "id": "s2",
+   "rule": "section-header",
+   "cites": "spec.md#L09",
+   "input": "[Db]\na = 1\n",
+   "expect_findings": [
+    "1:section-header"
+   ]
+  },
+  {
+   "id": "q1",
+   "rule": "quoted-string",
+   "cites": "spec.md#E14",
+   "input": "name = \"web\"\n",
+   "expect_findings": [
+    "1:value-type"
+   ]
+  }
+ ]
+}

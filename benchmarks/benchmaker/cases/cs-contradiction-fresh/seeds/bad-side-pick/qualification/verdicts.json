@@ -1,0 +1,73 @@
+{
+ "overall": "PASS",
+ "entries": [
+  {
+   "criterion": "schema-valid",
+   "verdict": "PASS",
+   "oracle": "manifest canonicalization + component digest audit",
+   "oracle_class": "deterministic",
+   "evidence": "identity recomputed equal; six component digests verified over the shipped bytes",
+   "covers": [
+    "runnable_cases@sha256:13cd94c68093a19e47d684f070a11222a1793e4f23247744bebb59b949f69880",
+    "runner@sha256:ea0b9900a6e3a3a92542b67246f8fda3f7990fdaa25c65285e45f85409ed4e9f",
+    "scoring@sha256:a4f0e1402e14eb9b72edd5ec01248f71fab70f159ba1f8ec23db77441237ea8d"
+   ],
+   "required": true
+  },
+  {
+   "criterion": "discrimination",
+   "verdict": "PASS",
+   "oracle": "inner sweep: runner + scoring over the qualification impl pool",
+   "oracle_class": "deterministic",
+   "evidence": "reference and good variant PASS; every bad variant failed through the criterion owning its defect; sweep ledger q-sweep-01",
+   "covers": [
+    "runnable_cases@sha256:13cd94c68093a19e47d684f070a11222a1793e4f23247744bebb59b949f69880",
+    "runner@sha256:ea0b9900a6e3a3a92542b67246f8fda3f7990fdaa25c65285e45f85409ed4e9f",
+    "scoring@sha256:a4f0e1402e14eb9b72edd5ec01248f71fab70f159ba1f8ec23db77441237ea8d"
+   ],
+   "required": true
+  },
+  {
+   "criterion": "reproducibility",
+   "verdict": "PASS",
+   "oracle": "double run of the inner sweep, byte-compare of the result records",
+   "oracle_class": "deterministic",
+   "evidence": "two sweeps produced identical result bytes",
+   "covers": [
+    "runnable_cases@sha256:13cd94c68093a19e47d684f070a11222a1793e4f23247744bebb59b949f69880",
+    "runner@sha256:ea0b9900a6e3a3a92542b67246f8fda3f7990fdaa25c65285e45f85409ed4e9f",
+    "scoring@sha256:a4f0e1402e14eb9b72edd5ec01248f71fab70f159ba1f8ec23db77441237ea8d"
+   ],
+   "required": true
+  },
+  {
+   "criterion": "cost-within-bound",
+   "verdict": "PASS",
+   "oracle": "suite wall clock against expected_cost",
+   "oracle_class": "deterministic",
+   "evidence": "sweep completed in 4.1 s against the 30 s per-execution limit",
+   "covers": [
+    "runnable_cases@sha256:13cd94c68093a19e47d684f070a11222a1793e4f23247744bebb59b949f69880",
+    "runner@sha256:ea0b9900a6e3a3a92542b67246f8fda3f7990fdaa25c65285e45f85409ed4e9f",
+    "scoring@sha256:a4f0e1402e14eb9b72edd5ec01248f71fab70f159ba1f8ec23db77441237ea8d"
+   ],
+   "required": true
+  },
+  {
+   "criterion": "gaps-declared",
+   "verdict": "PASS",
+   "oracle": "disagreement register + gap audit against both editions",
+   "oracle_class": "evidence",
+   "evidence": "the open point is registered with citations into both editions and carried as an explicit gap",
+   "covers": [
+    "runnable_cases@sha256:13cd94c68093a19e47d684f070a11222a1793e4f23247744bebb59b949f69880",
+    "runner@sha256:ea0b9900a6e3a3a92542b67246f8fda3f7990fdaa25c65285e45f85409ed4e9f",
+    "scoring@sha256:a4f0e1402e14eb9b72edd5ec01248f71fab70f159ba1f8ec23db77441237ea8d"
+   ],
+   "required": true
+  }
+ ],
+ "gaps": [
+  "the open contested point is registered, not cased; discrimination over it UNVERIFIED"
+ ]
+}

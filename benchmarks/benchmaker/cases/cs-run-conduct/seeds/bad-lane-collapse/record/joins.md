@@ -1,0 +1,5 @@
+# Frozen joins
+
+join: acquire-spec -> acquire | frozen: sha256:7777777777777777777777777777777777777777777777777777777777777777 | consumed: sha256:7777777777777777777777777777777777777777777777777777777777777777
+join: acquire -> design | frozen: sha256:3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f | consumed: sha256:3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f
+join: design -> materialize | frozen: sha256:5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a | consumed: sha256:5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a

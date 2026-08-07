@@ -1,0 +1,8 @@
+{
+  "aggregation": "all-required-pass",
+  "required": [
+    "ec-upper",
+    "ec-reverse",
+    "ec-exit"
+  ]
+}

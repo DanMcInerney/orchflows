@@ -1,0 +1,97 @@
+{
+ "overall": "PASS",
+ "entries": [
+  {
+   "criterion": "schema-valid",
+   "verdict": "PASS",
+   "oracle": "manifest canonicalization + component digest audit",
+   "oracle_class": "deterministic",
+   "evidence": "identity recomputed equal; six component digests verified over the shipped bytes",
+   "covers": [
+    "runnable_cases@sha256:1290ac8e3898abdd825d957d66225855a0633098856ee39e2f3bea1a9062e557",
+    "runner@sha256:35318954be7d69183c1e35968389520e3bbff6f38e3820edf7e28319c903a48c",
+    "scoring@sha256:42e683620073d9c57146643f87fd91c32ab15ed107b6c4004dff19f5efba2633"
+   ],
+   "required": true
+  },
+  {
+   "criterion": "discrimination",
+   "verdict": "PASS",
+   "oracle": "inner sweep: runner + scoring over the qualification impl pool",
+   "oracle_class": "deterministic",
+   "evidence": "reference and good variant PASS; every bad variant failed through the criterion owning its defect; sweep ledger q-sweep-01",
+   "covers": [
+    "runnable_cases@sha256:1290ac8e3898abdd825d957d66225855a0633098856ee39e2f3bea1a9062e557",
+    "runner@sha256:35318954be7d69183c1e35968389520e3bbff6f38e3820edf7e28319c903a48c",
+    "scoring@sha256:42e683620073d9c57146643f87fd91c32ab15ed107b6c4004dff19f5efba2633"
+   ],
+   "required": true
+  },
+  {
+   "criterion": "reproducibility",
+   "verdict": "PASS",
+   "oracle": "double run of the inner sweep, byte-compare of the result records",
+   "oracle_class": "deterministic",
+   "evidence": "two sweeps produced identical result bytes",
+   "covers": [
+    "runnable_cases@sha256:1290ac8e3898abdd825d957d66225855a0633098856ee39e2f3bea1a9062e557",
+    "runner@sha256:35318954be7d69183c1e35968389520e3bbff6f38e3820edf7e28319c903a48c",
+    "scoring@sha256:42e683620073d9c57146643f87fd91c32ab15ed107b6c4004dff19f5efba2633"
+   ],
+   "required": true
+  },
+  {
+   "criterion": "cost-within-bound",
+   "verdict": "PASS",
+   "oracle": "suite wall clock against expected_cost",
+   "oracle_class": "deterministic",
+   "evidence": "sweep completed in 4.1 s against the 30 s per-execution limit",
+   "covers": [
+    "runnable_cases@sha256:1290ac8e3898abdd825d957d66225855a0633098856ee39e2f3bea1a9062e557",
+    "runner@sha256:35318954be7d69183c1e35968389520e3bbff6f38e3820edf7e28319c903a48c",
+    "scoring@sha256:42e683620073d9c57146643f87fd91c32ab15ed107b6c4004dff19f5efba2633"
+   ],
+   "required": true
+  },
+  {
+   "criterion": "judged-variance-recorded",
+   "verdict": "PASS",
+   "oracle": "judge rerun ledger, three reruns per judged criterion",
+   "oracle_class": "evidence",
+   "evidence": "three reruns per judged criterion recorded before the seal; max spread 1",
+   "covers": [
+    "runnable_cases@sha256:1290ac8e3898abdd825d957d66225855a0633098856ee39e2f3bea1a9062e557",
+    "runner@sha256:35318954be7d69183c1e35968389520e3bbff6f38e3820edf7e28319c903a48c",
+    "scoring@sha256:42e683620073d9c57146643f87fd91c32ab15ed107b6c4004dff19f5efba2633"
+   ],
+   "required": true
+  }
+ ],
+ "gaps": [],
+ "judge_variance": [
+  {
+   "criterion": "judged-coverage",
+   "reruns": 3,
+   "scores": [
+    2,
+    2,
+    1
+   ],
+   "spread": 1,
+   "recorded_at": "2026-08-07T05:10:00Z",
+   "covers": "runnable_cases@sha256:1290ac8e3898abdd825d957d66225855a0633098856ee39e2f3bea1a9062e557"
+  },
+  {
+   "criterion": "judged-no-invention",
+   "reruns": 3,
+   "scores": [
+    2,
+    2,
+    2
+   ],
+   "spread": 0,
+   "recorded_at": "2026-08-07T05:10:00Z",
+   "covers": "runnable_cases@sha256:1290ac8e3898abdd825d957d66225855a0633098856ee39e2f3bea1a9062e557"
+  }
+ ]
+}

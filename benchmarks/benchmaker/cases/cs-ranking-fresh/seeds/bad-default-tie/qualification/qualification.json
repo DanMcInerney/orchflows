@@ -1,0 +1,58 @@
+{
+  "entries": [
+    {
+      "covers": {
+        "runnable_cases": "sha256:3ca62bea4394389cf1343bf39a85661f6c3dac213044a9b516c62bd9c1818110",
+        "runner": "sha256:655da136aba77668ea048ebe83d410773716eaa0adb488025a02fc90c8caa7c7",
+        "scoring": "sha256:65f8ea3c58de485af051b0aafe293e073b74682dea244e7ef630fee302645cbf"
+      },
+      "criterion": "schema-valid",
+      "evidence": "recomputed benchmark identity matched the recorded value; all component digests verified over shipped bytes",
+      "oracle": "manifest canonical-identity recomputation and component digest verification (probe P0.a/P0.b)",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": {
+        "runnable_cases": "sha256:3ca62bea4394389cf1343bf39a85661f6c3dac213044a9b516c62bd9c1818110",
+        "runner": "sha256:655da136aba77668ea048ebe83d410773716eaa0adb488025a02fc90c8caa7c7",
+        "scoring": "sha256:65f8ea3c58de485af051b0aafe293e073b74682dea244e7ef630fee302645cbf"
+      },
+      "criterion": "discrimination",
+      "evidence": "see qualification/sweep-log.md: conforming variants pass verification; R1/R2 violators and the 81-character near miss fail",
+      "oracle": "inner pool sweep via the package's runner and scoring (probe P0.d)",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": {
+        "runnable_cases": "sha256:3ca62bea4394389cf1343bf39a85661f6c3dac213044a9b516c62bd9c1818110",
+        "runner": "sha256:655da136aba77668ea048ebe83d410773716eaa0adb488025a02fc90c8caa7c7",
+        "scoring": "sha256:65f8ea3c58de485af051b0aafe293e073b74682dea244e7ef630fee302645cbf"
+      },
+      "criterion": "reproducibility",
+      "evidence": "two sweeps produced identical result bytes; execution is seeded/deterministic with no clock or network",
+      "oracle": "repeated inner sweep, byte comparison of results",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": {
+        "runnable_cases": "sha256:3ca62bea4394389cf1343bf39a85661f6c3dac213044a9b516c62bd9c1818110",
+        "runner": "sha256:655da136aba77668ea048ebe83d410773716eaa0adb488025a02fc90c8caa7c7",
+        "scoring": "sha256:65f8ea3c58de485af051b0aafe293e073b74682dea244e7ef630fee302645cbf"
+      },
+      "criterion": "cost-within-bound",
+      "evidence": "full sweep completes within a fraction of the tier timeout; see qualification/sweep-log.md",
+      "oracle": "sweep wall clock against the case size tier",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    }
+  ],
+  "gaps": [],
+  "overall": "PASS"
+}

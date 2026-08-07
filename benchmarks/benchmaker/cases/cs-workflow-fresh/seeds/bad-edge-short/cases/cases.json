@@ -1,0 +1,24 @@
+{
+  "cases": [
+    {
+      "id": "stage-order",
+      "law": "for every edge S->T of the canonical graph, STAGE-END S precedes STAGE-START T",
+      "oracle": "runner/check_transcript.py"
+    },
+    {
+      "id": "per-edge-gates",
+      "law": "every canonical edge, including the final build->verify edge, carries a PASS gate line between its stages",
+      "oracle": "runner/check_transcript.py"
+    },
+    {
+      "id": "frozen-joins",
+      "law": "every JOIN consumes exactly the digest its artifact's FROZEN record carries; MISSING and live artifacts never pass",
+      "oracle": "runner/check_transcript.py"
+    },
+    {
+      "id": "aggregate-nonempty",
+      "law": "an empty run never passes the package-level aggregate gate",
+      "oracle": "runner/check_transcript.py"
+    }
+  ]
+}

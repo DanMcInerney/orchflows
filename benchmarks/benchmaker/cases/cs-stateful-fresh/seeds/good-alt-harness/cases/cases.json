@@ -1,0 +1,20 @@
+{
+  "tool": "migrate.py",
+  "cases": [
+    {
+      "id": "s1-basic-two-records",
+      "records": [["widget", 4], ["gear", 9]],
+      "pre_migrated": false
+    },
+    {
+      "id": "s2-empty-records",
+      "records": [],
+      "pre_migrated": false
+    },
+    {
+      "id": "s3-already-migrated",
+      "records": [["bolt", 12]],
+      "pre_migrated": true
+    }
+  ]
+}

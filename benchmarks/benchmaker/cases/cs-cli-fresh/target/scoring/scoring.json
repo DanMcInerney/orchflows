@@ -1,0 +1,15 @@
+{
+  "aggregation": "all-required-pass",
+  "required_case_ids": [
+    "c1-disjoint-merge",
+    "c2-shared-key-prefer-default",
+    "c3-shared-key-prefer-b",
+    "c4-shared-final-key-prefer-default",
+    "c5-shared-final-key-prefer-b",
+    "c6-crlf-input-equivalence",
+    "c7-unsorted-data-error",
+    "c8-extra-argument-usage-error"
+  ],
+  "oracle_class": "deterministic",
+  "tolerance": "stdout compared after CRLF-to-LF normalization; exit status exact"
+}

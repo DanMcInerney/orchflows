@@ -1,0 +1,7 @@
+{
+  "stages": ["spec", "build", "verify"],
+  "edges": [
+    {"from": "spec", "to": "build"},
+    {"from": "build", "to": "verify"}
+  ]
+}

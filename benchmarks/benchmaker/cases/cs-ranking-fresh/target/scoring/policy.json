@@ -1,0 +1,10 @@
+{
+  "required": ["R1", "R2", "R3"],
+  "verification_before_judging": true,
+  "judge_scope": "fixed-evidence",
+  "tie_policy": {
+    "declared": true,
+    "deterministic": true,
+    "rule": "equal aggregates share one competition rank with an explicit TIE marker; intra-tie listing order is candidate id ascending; input arrival order never participates"
+  }
+}

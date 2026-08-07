@@ -1,0 +1,8 @@
+{
+  "aggregation": "all-required-pass",
+  "required": [
+    "ea-upper",
+    "ea-lower",
+    "ea-badflag"
+  ]
+}

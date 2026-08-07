@@ -1,0 +1,15 @@
+{
+  "aggregation": "all-required-pass",
+  "required_case_ids": [
+    "mc1-entry-sequence",
+    "mc2-input-order-preserved",
+    "mc3-malformed-line",
+    "mc4-crlf-input",
+    "md1-structure-full",
+    "md2-single-section",
+    "md3-voice"
+  ],
+  "oracle_class": "deterministic",
+  "domains_required": ["code", "doc"],
+  "tolerance": "stdout compared after CRLF-to-LF normalization; structure, order, voice, and exit status exact"
+}

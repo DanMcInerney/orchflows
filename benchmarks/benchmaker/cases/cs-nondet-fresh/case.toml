@@ -1,0 +1,14 @@
+id = "cs-nondet-fresh"
+angle = "nondeterminism"
+outcome = "Given a randomized reservoir sampler with one exhibited trace, benchmaker produces a package with a declared trial count whose good variants pass and bad variants fail on every trial, anchored to the exhibited trace."
+tests = "Nondeterministic outcomes get declared-trial oracles; exhibited traces anchor or record impossibility."
+target = "target"
+probe = "uv run --no-project python probe/check.py {impl}"
+evidence = ["evidence/spec.md", "evidence/trace.md", "evidence/holdback-policy.md", "evidence/inner-impls"]
+bound = "one BC4 share; probe within medium tier; 3 trials budgeted"
+port = "nondeterministic-target"
+provenance = "synthesis@41ee9ea2 claims 40,49"
+size = "medium"
+parallel_safe = true
+negative = false
+expected_qualification = ["schema-valid", "discrimination", "reproducibility", "cost-within-bound"]

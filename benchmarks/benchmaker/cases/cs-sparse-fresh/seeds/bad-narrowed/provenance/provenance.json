@@ -1,0 +1,14 @@
+{
+ "sealed_at": "2026-08-07T05:30:00Z",
+ "builder": "benchmaker reference build (BC3 exemplar)",
+ "source_trace": {
+  "spec": "evidence/spec.md, line-id addressed",
+  "samples": "evidence/samples/s1.qml through s3.qml"
+ },
+ "case_mappings": {
+  "k1,k2,k3,k4": "spec.md#L03 (key syntax)",
+  "v1,v2": "spec.md#L05 (integer scalar)",
+  "c1": "spec.md#L07 (comment form)",
+  "s1,s2": "spec.md#L09 (section header)"
+ }
+}

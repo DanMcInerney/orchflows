@@ -1,0 +1,13 @@
+{
+  "required": [
+    {"id": "R1", "check": "a line exactly '## Summary' is present"},
+    {"id": "R2", "check": "no line exceeds 80 characters"},
+    {"id": "R3", "check": "a line matching the version declaration shape is present"}
+  ],
+  "scored": [
+    {"id": "S1", "check": "one point per '## ' section heading, capped at five"},
+    {"id": "S2", "check": "two points for a '## Risks' section"},
+    {"id": "J1", "oracle_class": "judged", "input": "fixed candidate bytes", "check": "clarity band from line lengths; the judge never executes a candidate"}
+  ],
+  "ordering": "required verification decides eligibility first; EXCLUDED candidates never rank; eligible candidates rank by aggregate under the declared tie policy"
+}

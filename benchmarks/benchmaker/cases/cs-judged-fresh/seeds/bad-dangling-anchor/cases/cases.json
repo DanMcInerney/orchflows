@@ -1,0 +1,104 @@
+{
+ "source_index": {
+  "m1": [
+   "m1-01",
+   "m1-02",
+   "m1-03",
+   "m1-04",
+   "m1-05"
+  ],
+  "m2": [
+   "m2-01",
+   "m2-02",
+   "m2-03",
+   "m2-04",
+   "m2-05"
+  ],
+  "m3": [
+   "m3-01",
+   "m3-02",
+   "m3-03",
+   "m3-04"
+  ],
+  "m4": [
+   "m4-01",
+   "m4-02",
+   "m4-03",
+   "m4-04",
+   "m4-05"
+  ],
+  "m5": [
+   "m5-01",
+   "m5-02",
+   "m5-03"
+  ]
+ },
+ "deterministic": [
+  {
+   "id": "cite-resolve",
+   "required": true
+  },
+  {
+   "id": "length-bound",
+   "required": true,
+   "max_words": 160
+  },
+  {
+   "id": "coverage-sources",
+   "required": true,
+   "sources": [
+    "m1",
+    "m2",
+    "m3",
+    "m4",
+    "m5"
+   ]
+  }
+ ],
+ "judged": [
+  {
+   "id": "judged-coverage",
+   "criterion": "decision coverage quality — decisions and owners rendered faithfully across every meeting",
+   "secondary": true,
+   "scale": [
+    0,
+    1,
+    2
+   ],
+   "anchors": [
+    {
+     "level": 2,
+     "cite": "m6-12",
+     "note": "a level-2 rendering carries this decision"
+    },
+    {
+     "level": 0,
+     "cite": "m7-03",
+     "note": "a level-0 rendering omits it"
+    }
+   ]
+  },
+  {
+   "id": "judged-no-invention",
+   "criterion": "faithfulness — the minutes state nothing beyond what the cited lines state",
+   "secondary": true,
+   "scale": [
+    0,
+    1,
+    2
+   ],
+   "anchors": [
+    {
+     "level": 2,
+     "cite": "m8-01",
+     "note": "a level-2 rendering stays inside the line"
+    },
+    {
+     "level": 0,
+     "cite": "m9-09",
+     "note": "a level-0 rendering invents beyond it"
+    }
+   ]
+  }
+ ]
+}

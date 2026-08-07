@@ -1,0 +1,78 @@
+{
+  "tool": "csvmerge.py",
+  "anchor_source": "transcripts.md",
+  "cases": [
+    {
+      "id": "c1-disjoint-merge",
+      "argv": ["{a}", "{b}"],
+      "a": "1,a\n3,c\n",
+      "b": "2,b\n",
+      "stdout": "1,a\n2,b\n3,c\n",
+      "exit": 0,
+      "anchor": null
+    },
+    {
+      "id": "c2-shared-key-prefer-default",
+      "argv": ["{a}", "{b}"],
+      "a": "1,alpha\n3,gamma\n5,epsilon\n",
+      "b": "2,beta\n3,delta\n",
+      "stdout": "1,alpha\n2,beta\n3,gamma\n5,epsilon\n",
+      "exit": 0,
+      "anchor": "t1"
+    },
+    {
+      "id": "c3-shared-key-prefer-b",
+      "argv": ["--prefer", "b", "{a}", "{b}"],
+      "a": "1,alpha\n4,delta\n",
+      "b": "4,dee\n9,zeta\n",
+      "stdout": "1,alpha\n4,dee\n9,zeta\n",
+      "exit": 0,
+      "anchor": "t2"
+    },
+    {
+      "id": "c4-shared-final-key-prefer-default",
+      "argv": ["{a}", "{b}"],
+      "a": "1,alpha\n7,omega\n",
+      "b": "2,beta\n7,psi\n",
+      "stdout": "1,alpha\n2,beta\n7,omega\n",
+      "exit": 0,
+      "anchor": null
+    },
+    {
+      "id": "c5-shared-final-key-prefer-b",
+      "argv": ["--prefer", "b", "{a}", "{b}"],
+      "a": "1,alpha\n7,omega\n",
+      "b": "2,beta\n7,psi\n",
+      "stdout": "1,alpha\n2,beta\n7,psi\n",
+      "exit": 0,
+      "anchor": null
+    },
+    {
+      "id": "c6-crlf-input-equivalence",
+      "argv": ["{a}", "{b}"],
+      "a": "1,x\r\n3,y\r\n",
+      "b": "2,w\n",
+      "stdout": "1,x\n2,w\n3,y\n",
+      "exit": 0,
+      "anchor": null
+    },
+    {
+      "id": "c7-unsorted-data-error",
+      "argv": ["{a}", "{b}"],
+      "a": "5,epsilon\n2,beta\n",
+      "b": "1,alpha\n",
+      "stdout": "",
+      "exit": 1,
+      "anchor": "t3"
+    },
+    {
+      "id": "c8-extra-argument-usage-error",
+      "argv": ["{a}", "{b}", "extra.csv"],
+      "a": "1,a\n",
+      "b": "2,b\n",
+      "stdout": "",
+      "exit": 2,
+      "anchor": null
+    }
+  ]
+}

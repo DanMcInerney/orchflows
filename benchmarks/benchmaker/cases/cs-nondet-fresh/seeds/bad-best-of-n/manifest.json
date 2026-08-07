@@ -1,0 +1,43 @@
+{
+  "benchmark_identity": "sha256:d3e6e2cfabd56c7b67aa29ee5a6458739165ae704ab9b822e011856691eb3e74",
+  "evaluation_design": {
+    "identity": "sha256:e9d1a725f9bef32254c4b78b5e47e00ff33d198cdb56df61e91f8ddea4b6f958",
+    "locator": "provenance/evaluation-design.md"
+  },
+  "expected_cost": {
+    "per_execution_limit": "60 s per sampler run; probe within the 300 s medium tier",
+    "suite_estimate": "36 sampler runs per implementation sweep, well under one tier timeout",
+    "units": "inner sampler executions"
+  },
+  "gaps": [
+    "optimization-resistance UNVERIFIED: candidate-inaccessible-check is null; detection is by canary only",
+    "held-back stream identity bound at qualification (Q2) per evidence/holdback-policy.md; null at materialization"
+  ],
+  "protected_evidence": {
+    "binder": "evidence/holdback-policy.md; store identity minted by the qualifying context (Q2)",
+    "candidate_inaccessible_check": null,
+    "identity": null,
+    "release_policy": "never-to-candidate-or-builder-contexts",
+    "visibility": "qualification-and-scoring-contexts-only"
+  },
+  "provenance": {
+    "identity": "sha256:2879c46014a5316f96bc74f35dc14918219f1c71c642ad279eb25a5adafde505",
+    "locator": "provenance"
+  },
+  "qualification": {
+    "identity": "sha256:d38cf185e6e61d56449e3451ad470f515de8529d24535096494403af71039630",
+    "locator": "qualification"
+  },
+  "runnable_cases": {
+    "identity": "sha256:f3609ea5e23c63cf93642bcad691ad3a3c08e1bfca653551a0028758d73c17f2",
+    "locator": "cases"
+  },
+  "runner": {
+    "identity": "sha256:86fc13095915f6864c15fd4081ce634480700949c3ea1ef8f28964647a35d912",
+    "locator": "runner"
+  },
+  "scoring": {
+    "identity": "sha256:6ccd2e40d6b8503eca372525f0f147e2fd0eac6209a86950af8bdb1fabcda4ce",
+    "locator": "scoring"
+  }
+}

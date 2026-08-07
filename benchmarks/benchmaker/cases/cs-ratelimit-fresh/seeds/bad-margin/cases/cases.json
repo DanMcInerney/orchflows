@@ -1,0 +1,71 @@
+{
+  "cases": [
+    {
+      "id": "trace-1",
+      "anchor": "traces.md timeline T1",
+      "rate": 2.0,
+      "burst": 6,
+      "required": true,
+      "ops": [
+        {"op": "acquire", "n": 4, "expect": true},
+        {"op": "advance", "by": 1.0},
+        {"op": "acquire", "n": 4, "expect": true},
+        {"op": "acquire", "n": 1, "expect": false},
+        {"op": "advance", "by": 44.0},
+        {"op": "acquire", "n": 6, "expect": true}
+      ]
+    },
+    {
+      "id": "trace-2",
+      "anchor": "traces.md timeline T2",
+      "rate": 2.0,
+      "burst": 6,
+      "required": true,
+      "ops": [
+        {"op": "acquire", "n": 6, "expect": true},
+        {"op": "acquire", "n": 1, "expect": false},
+        {"op": "advance", "by": 0.5},
+        {"op": "acquire", "n": 1, "expect": true},
+        {"op": "advance", "by": 74.5},
+        {"op": "acquire", "n": 5, "expect": true}
+      ]
+    },
+    {
+      "id": "refill-after-idle",
+      "anchor": "interface.md refill law over idle elapsed time",
+      "rate": 2.0,
+      "burst": 6,
+      "required": true,
+      "ops": [
+        {"op": "acquire", "n": 6, "expect": true},
+        {"op": "advance", "by": 30.0},
+        {"op": "acquire", "n": 3, "expect": true}
+      ]
+    },
+    {
+      "id": "full-refill-boundary",
+      "anchor": "interface.md burst cap law at exact full refill",
+      "rate": 2.0,
+      "burst": 6,
+      "required": true,
+      "ops": [
+        {"op": "acquire", "n": 6, "expect": true},
+        {"op": "advance", "by": 3.0},
+        {"op": "acquire", "n": 6, "expect": false}
+      ]
+    },
+    {
+      "id": "partial-refill-denial",
+      "anchor": "interface.md consume-nothing-on-denial law",
+      "rate": 2.0,
+      "burst": 6,
+      "required": true,
+      "ops": [
+        {"op": "acquire", "n": 5, "expect": true},
+        {"op": "advance", "by": 1.0},
+        {"op": "acquire", "n": 3, "expect": true},
+        {"op": "acquire", "n": 1, "expect": false}
+      ]
+    }
+  ]
+}

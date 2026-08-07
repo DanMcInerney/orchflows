@@ -1,0 +1,16 @@
+{
+  "sources": [
+    "case evidence rules.md: public planning rules R1-R3, workload class W-PUB, worked examples E1-E4",
+    "case evidence holdback-policy.md: held-back class W-HELD carried by identity only"
+  ],
+  "held_back_class_identity": "sha256:31cfaadf691d28ad412b4eb30e6a9afc58f1652d52bf261773ee14fc682ac2ce",
+  "case_mappings": {
+    "c1": "R1 (non-exhibited small relation)",
+    "c2": "R1 (rows boundary, one below 100000)",
+    "c3": "R2 (inclusive selectivity boundary, exactly 0.05)",
+    "c4": "R2 (non-exhibited interior point)",
+    "c5": "R3 (non-exhibited, unordered)",
+    "c6": "R3 (non-exhibited, ordered)"
+  },
+  "selection_law": "no case reproduces an exhibited worked example; every rule has a non-exhibited witness; the R2 boundary is cased at its inclusive edge"
+}

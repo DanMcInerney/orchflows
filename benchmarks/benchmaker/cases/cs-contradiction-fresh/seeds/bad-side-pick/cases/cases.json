@@ -1,0 +1,135 @@
+{
+ "cases": [
+  {
+   "id": "c1",
+   "topic": "four-digit-date",
+   "argv": [
+    "2026-03-05"
+   ],
+   "expect": {
+    "status": 0,
+    "out": "2026-03-05"
+   },
+   "cites": [
+    "doc-a.md#A02",
+    "doc-b.md#B02"
+   ]
+  },
+  {
+   "id": "c2",
+   "topic": "month-range",
+   "argv": [
+    "2026-13-01"
+   ],
+   "expect": {
+    "status": 1
+   },
+   "cites": [
+    "doc-a.md#A04",
+    "doc-b.md#B04"
+   ]
+  },
+  {
+   "id": "c3",
+   "topic": "day-range",
+   "argv": [
+    "2026-04-32"
+   ],
+   "expect": {
+    "status": 1
+   },
+   "cites": [
+    "doc-a.md#A04",
+    "doc-b.md#B04"
+   ]
+  },
+  {
+   "id": "c4",
+   "topic": "two-digit-year-pivot-strict",
+   "argv": [
+    "--strict",
+    "85-03-14"
+   ],
+   "expect": {
+    "status": 0,
+    "out": "2085-03-14"
+   },
+   "cites": [
+    "settlement.md#S02"
+   ]
+  },
+  {
+   "id": "c5",
+   "topic": "two-digit-year-pivot-strict-edge",
+   "argv": [
+    "--strict",
+    "00-01-02"
+   ],
+   "expect": {
+    "status": 0,
+    "out": "2000-01-02"
+   },
+   "cites": [
+    "settlement.md#S02"
+   ]
+  },
+  {
+   "id": "c6",
+   "topic": "two-digit-year-pivot-strict",
+   "argv": [
+    "--strict",
+    "17-11-30"
+   ],
+   "expect": {
+    "status": 0,
+    "out": "2017-11-30"
+   },
+   "cites": [
+    "settlement.md#S02"
+   ]
+  },
+  {
+   "id": "c7",
+   "topic": "time-parse",
+   "argv": [
+    "2026-01-02 03:04:05"
+   ],
+   "expect": {
+    "status": 0,
+    "out": "2026-01-02 03:04:05"
+   },
+   "cites": [
+    "doc-a.md#A05",
+    "doc-b.md#B05"
+   ]
+  },
+  {
+   "id": "c8",
+   "topic": "seconds-upper-agreed",
+   "argv": [
+    "2026-01-02 03:04:59"
+   ],
+   "expect": {
+    "status": 0,
+    "out": "2026-01-02 03:04:59"
+   },
+   "cites": [
+    "doc-a.md#A05",
+    "doc-b.md#B05"
+   ]
+  },
+  {
+   "id": "c9",
+   "topic": "leap-second",
+   "argv": [
+    "2026-06-30 23:59:60"
+   ],
+   "expect": {
+    "status": 1
+   },
+   "cites": [
+    "doc-b.md#B06"
+   ]
+  }
+ ]
+}

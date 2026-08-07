@@ -1,0 +1,72 @@
+{
+  "entries": [
+    {
+      "covers": [
+        "runnable_cases sha256:86007844ebb55a32cf23c68faabca5f3738d592e0086c06b3aa0093329fb7cdf",
+        "runner sha256:477a5fb1c87c7e5bf24fa9da7700696f686cc9eda66bbc90b980010e5d590976",
+        "scoring sha256:466abd8cc6d7d14d2127de41779c91508ff23640ad04091ac3b7e7bd237c2e30"
+      ],
+      "criterion": "schema-valid",
+      "evidence": {
+        "context": "q2-independent-cli-4e71",
+        "summary": "benchmark_identity recomputed equal; six component digests verified over shipped bytes"
+      },
+      "oracle": "manifest canonicalization audit: recompute benchmark_identity and every component digest over the shipped bytes",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": [
+        "runnable_cases sha256:86007844ebb55a32cf23c68faabca5f3738d592e0086c06b3aa0093329fb7cdf",
+        "runner sha256:477a5fb1c87c7e5bf24fa9da7700696f686cc9eda66bbc90b980010e5d590976",
+        "scoring sha256:466abd8cc6d7d14d2127de41779c91508ff23640ad04091ac3b7e7bd237c2e30"
+      ],
+      "criterion": "discrimination",
+      "evidence": {
+        "context": "q2-independent-cli-4e71",
+        "summary": "reference PASS, good-equiv PASS, bad-drop-dedup FAIL (c2,c3,c4,c5), bad-near-miss-final-key FAIL (c4,c5)"
+      },
+      "oracle": "runner sweep over the fixed inner pool: reference and good-equiv must pass, bad-drop-dedup and bad-near-miss-final-key must fail",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": [
+        "runnable_cases sha256:86007844ebb55a32cf23c68faabca5f3738d592e0086c06b3aa0093329fb7cdf",
+        "runner sha256:477a5fb1c87c7e5bf24fa9da7700696f686cc9eda66bbc90b980010e5d590976"
+      ],
+      "criterion": "reproducibility",
+      "evidence": {
+        "context": "q2-independent-cli-4e71",
+        "summary": "sweep repeated twice, per-case verdicts byte-identical; no clock, randomness, or network in any case"
+      },
+      "oracle": "two independent runner sweeps over the same pool; verdict sets must be identical",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": [
+        "runnable_cases sha256:86007844ebb55a32cf23c68faabca5f3738d592e0086c06b3aa0093329fb7cdf",
+        "runner sha256:477a5fb1c87c7e5bf24fa9da7700696f686cc9eda66bbc90b980010e5d590976"
+      ],
+      "criterion": "cost-within-bound",
+      "evidence": {
+        "context": "q2-independent-cli-4e71",
+        "summary": "8 cases per implementation, full four-implementation sweep under 30 s, within the declared per-execution limit"
+      },
+      "oracle": "wall-clock of one full sweep against manifest expected_cost",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    }
+  ],
+  "gaps": [],
+  "overall": {
+    "oracle_class": "deterministic",
+    "statement": "every required criterion PASS; weakest oracle_class deterministic",
+    "verdict": "PASS"
+  }
+}

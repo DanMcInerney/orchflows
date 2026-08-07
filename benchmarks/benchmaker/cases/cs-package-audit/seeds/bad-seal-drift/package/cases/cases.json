@@ -1,0 +1,44 @@
+{
+  "cases": [
+    {
+      "argv": [
+        "1",
+        "ft",
+        "m"
+      ],
+      "expect": "0.3048",
+      "id": "pc-1",
+      "provenance": "evidence@sha256:b933dcd4a99f560b factors table"
+    },
+    {
+      "argv": [
+        "2",
+        "in",
+        "cm"
+      ],
+      "expect": "5.0800",
+      "id": "pc-2",
+      "provenance": "evidence@sha256:b933dcd4a99f560b factors table"
+    },
+    {
+      "argv": [
+        "2",
+        "m",
+        "ft"
+      ],
+      "expect": "6.5617",
+      "id": "pc-3",
+      "provenance": "evidence@sha256:b933dcd4a99f560b factors table"
+    },
+    {
+      "argv": [
+        "10",
+        "cm",
+        "in"
+      ],
+      "expect": "3.9370",
+      "id": "pc-4",
+      "provenance": "evidence@sha256:b933dcd4a99f560b factors table"
+    }
+  ]
+}

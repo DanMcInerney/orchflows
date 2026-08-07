@@ -1,0 +1,45 @@
+{
+  "cases": [
+    {
+      "domain": "code",
+      "entries": [
+        "Add csv export",
+        "Add profile page",
+        "Correct rounding"
+      ],
+      "exit": 0,
+      "id": "mc1-entry-sequence",
+      "input": "feat: add csv export\nfix: correct rounding\nfeat: add profile page\n"
+    },
+    {
+      "domain": "code",
+      "entries": [
+        "Zeta stream support",
+        "Alpha channel blend",
+        "Unbreak retry",
+        "Cap backoff"
+      ],
+      "exit": 0,
+      "id": "mc2-input-order-preserved",
+      "input": "feat: zeta stream support\nfeat: alpha channel blend\nfix: unbreak retry\nfix: cap backoff\n"
+    },
+    {
+      "domain": "code",
+      "entries": [],
+      "exit": 1,
+      "id": "mc3-malformed-line",
+      "input": "feat: ok thing\nthis is not a commit\n"
+    },
+    {
+      "domain": "code",
+      "entries": [
+        "Add loader",
+        "Patch loader"
+      ],
+      "exit": 0,
+      "id": "mc4-crlf-input",
+      "input": "fix: patch loader\r\nfeat: add loader\r\n"
+    }
+  ],
+  "tool": "changelog.py"
+}

@@ -1,0 +1,14 @@
+id = "cs-multidomain-fresh"
+angle = "multi-domain"
+outcome = "Given a target spanning code and document domains, benchmaker produces a package that cases both domains through chained single-pack runs and fails single-domain-blind implementations."
+target = "target"
+evidence = ["evidence/code-spec.md", "evidence/doc-spec.md", "evidence/inner-impls"]
+probe = "uv run --no-project python probe/check.py {impl}"
+bound = "one BC1 share; probe within medium tier"
+expected_qualification = ["schema-valid", "discrimination", "reproducibility", "cost-within-bound"]
+negative = false
+port = "multi-domain"
+tests = "A cross-domain target cannot pass on one domain alone."
+size = "medium"
+provenance = "synthesis@41ee9ea2 claims 1,17,45 (G13)"
+parallel_safe = true

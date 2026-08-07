@@ -1,0 +1,41 @@
+{
+  "overall": "PASS",
+  "entries": [
+    {
+      "criterion": "schema-valid",
+      "verdict": "PASS",
+      "oracle": "manifest canonicalization and component digest audit",
+      "oracle_class": "deterministic",
+      "evidence": "qualifying-context record q-cq-01: benchmark_identity recomputed from the canonical payload; six component digests verified over shipped bytes",
+      "covers": "manifest.json and every component locator",
+      "required": true
+    },
+    {
+      "criterion": "discrimination",
+      "verdict": "PASS",
+      "oracle": "inner-implementation sweep through runner and scoring over the regenerated corpus",
+      "oracle_class": "deterministic",
+      "evidence": "qualifying-context record q-cq-02: reference and the equivalent variant pass; the W1, W2 and W3 defective variants and the boundary-instant variant fail",
+      "covers": "cases/cases.json witness selection via scoring/score.py",
+      "required": true
+    },
+    {
+      "criterion": "reproducibility",
+      "verdict": "PASS",
+      "oracle": "double regeneration and double sweep verdict comparison",
+      "oracle_class": "deterministic",
+      "evidence": "qualifying-context record q-cq-03: corpus regenerated twice byte-identically; two sweeps, identical verdicts",
+      "covers": "corpus parameters recorded in cases/cases.json",
+      "required": true
+    },
+    {
+      "criterion": "cost-within-bound",
+      "verdict": "PASS",
+      "oracle": "query-execution ledger against expected_cost and the 60-query budget",
+      "oracle_class": "deterministic",
+      "evidence": "qualifying-context record q-cq-04: 12 queries per scored implementation, inside the declared budget",
+      "covers": "expected_cost",
+      "required": true
+    }
+  ]
+}

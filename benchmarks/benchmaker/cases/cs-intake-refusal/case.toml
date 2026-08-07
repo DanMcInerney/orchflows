@@ -1,0 +1,19 @@
+id = "cs-intake-refusal"
+angle = "intake-refusal"
+outcome = "Given a packet missing its bounds and offering a charter-deficient synthesis, benchmaker blocks at intake with a complete return that invents nothing."
+target = "target/return.md"
+evidence = ["evidence/packet.md", "evidence/synthesis-offered.md"]
+probe = "uv run --no-project python probe/check.py {impl}"
+bound = "one BC5 share; probe within small tier"
+expected_qualification = [
+    "blocked-return",
+    "schema-valid",
+    "gaps-declared",
+    "discrimination",
+]
+negative = true
+port = "new"
+tests = "Incomplete packets stop at intake; deficient syntheses are not reused."
+size = "small"
+provenance = "synthesis@41ee9ea2 claims 2,3,7,28,30,33,37"
+parallel_safe = true

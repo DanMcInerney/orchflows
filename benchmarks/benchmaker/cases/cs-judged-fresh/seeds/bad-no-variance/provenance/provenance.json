@@ -1,0 +1,15 @@
+{
+ "sealed_at": "2026-08-07T05:30:00Z",
+ "builder": "benchmaker reference build (BC3 exemplar)",
+ "source_trace": {
+  "rubric-frame": "evidence/rubric-frame.md",
+  "sources": "evidence/sources/m1.md through m5.md, line-id addressed"
+ },
+ "case_mappings": {
+  "cite-resolve": "rubric-frame.md no-invention clause; source line ids",
+  "length-bound": "rubric-frame.md length bound, 160 words excluding citation tokens",
+  "coverage-sources": "rubric-frame.md coverage clause",
+  "judged-coverage": "rubric-frame.md coverage clause; anchors drawn from evidence/sources",
+  "judged-no-invention": "rubric-frame.md no-invention clause; anchors drawn from evidence/sources"
+ }
+}

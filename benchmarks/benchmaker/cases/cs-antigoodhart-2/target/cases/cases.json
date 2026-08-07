@@ -1,0 +1,10 @@
+{
+  "cases": [
+    {"id": "c1", "query": {"rows": 1200, "selectivity": 0.9, "ordered": false}, "expected_plan": "full-scan"},
+    {"id": "c2", "query": {"rows": 99999, "selectivity": 0.01, "ordered": true}, "expected_plan": "full-scan"},
+    {"id": "c3", "query": {"rows": 100000, "selectivity": 0.05, "ordered": false}, "expected_plan": "btree-lookup"},
+    {"id": "c4", "query": {"rows": 180000, "selectivity": 0.004, "ordered": false}, "expected_plan": "btree-lookup"},
+    {"id": "c5", "query": {"rows": 640000, "selectivity": 0.11, "ordered": false}, "expected_plan": "bitmap-scan"},
+    {"id": "c6", "query": {"rows": 900000, "selectivity": 0.5, "ordered": true}, "expected_plan": "full-scan"}
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "benchmark_identity": "sha256:4f971fdc6865a9fc2719d29215d47029d1dd1d00f72b12b0eac5c0f6f8b2ff70",
+  "evaluation_design": {
+    "locator": "design/design.md",
+    "sha256": "69e4a3dc201fa4525459bd245c6ff1f5dd7979e769ab2fbc02c366056e4657df"
+  },
+  "expected_cost": {
+    "per_execution_limit_s": 5,
+    "suite_estimate": "four-implementation sweep, six public cases each, under 10 s total",
+    "units": "runner executions over the inner pool"
+  },
+  "gaps": [
+    "optimization-resistance UNVERIFIED: candidate-inaccessible-check is null; held-back class discrimination runs only where the protected store is reachable"
+  ],
+  "protected_evidence": {
+    "candidate_inaccessible_check": null,
+    "description": "held-back class W-HELD; representative member HB-Q03: {\"rows\": 2400000, \"selectivity\": 0.003, \"ordered\": false} -> btree-lookup",
+    "identity": "sha256:31cfaadf691d28ad412b4eb30e6a9afc58f1652d52bf261773ee14fc682ac2ce",
+    "release_policy": "never to candidate or builder contexts",
+    "visibility": "qualification and scoring contexts only"
+  },
+  "provenance": {
+    "locator": "provenance/trace.json",
+    "sha256": "405059553f42dcc483c96e56e85abcd05c95c98b63082d83e086f0f737ac7b64"
+  },
+  "qualification": {
+    "locator": "qualification/verdicts.json",
+    "sha256": "9a3af988a0d37bba9a40533683bea7d300e9b43ff08694f0770991a6e11d0a8e"
+  },
+  "runnable_cases": {
+    "locator": "cases/cases.json",
+    "sha256": "a4c3fd45bd63ec4c51b6806b85ae3f4950dd410d96957d2f12efe6e4be34a203"
+  },
+  "runner": {
+    "locator": "runner/run.py",
+    "sha256": "ff74db22aad111c9ff5d8927bd1186719815f39a9947adf4d8ce5a290d17877b"
+  },
+  "scoring": {
+    "locator": "scoring/policy.json",
+    "sha256": "59ab94cf60d411faccf5cdb1ec5be56665319701b80776fa4fa0dccc49cb8491"
+  }
+}

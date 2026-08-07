@@ -1,0 +1,15 @@
+{
+  "builder_context": "bx-conv-07",
+  "case_mappings": {
+    "pc-1": "spec behavior 1",
+    "pc-2": "spec behavior 2",
+    "pc-3": "spec behavior 3",
+    "pc-4": "spec behavior 4"
+  },
+  "sources": [
+    {
+      "file": "evidence/spec.md",
+      "sha256": "sha256:b933dcd4a99f560b4feb8bb3b2c2857ebadae1a04fa1c68a7db552ea5b16c431"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "entries": [
+    {
+      "covers": {
+        "runnable_cases": "sha256:f3609ea5e23c63cf93642bcad691ad3a3c08e1bfca653551a0028758d73c17f2",
+        "runner": "sha256:86fc13095915f6864c15fd4081ce634480700949c3ea1ef8f28964647a35d912",
+        "scoring": "sha256:6ccd2e40d6b8503eca372525f0f147e2fd0eac6209a86950af8bdb1fabcda4ce"
+      },
+      "criterion": "schema-valid",
+      "evidence": "recomputed benchmark identity matched the recorded value; all component digests verified over shipped bytes",
+      "oracle": "manifest canonical-identity recomputation and component digest verification (probe P0.a/P0.b)",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": {
+        "runnable_cases": "sha256:f3609ea5e23c63cf93642bcad691ad3a3c08e1bfca653551a0028758d73c17f2",
+        "runner": "sha256:86fc13095915f6864c15fd4081ce634480700949c3ea1ef8f28964647a35d912",
+        "scoring": "sha256:6ccd2e40d6b8503eca372525f0f147e2fd0eac6209a86950af8bdb1fabcda4ce"
+      },
+      "criterion": "discrimination",
+      "evidence": "see qualification/sweep-log.md: reference and good variants pass and bad variants fail on every declared trial",
+      "oracle": "inner pool sweep via the package's runner and scoring (probe P0.d)",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": {
+        "runnable_cases": "sha256:f3609ea5e23c63cf93642bcad691ad3a3c08e1bfca653551a0028758d73c17f2",
+        "runner": "sha256:86fc13095915f6864c15fd4081ce634480700949c3ea1ef8f28964647a35d912",
+        "scoring": "sha256:6ccd2e40d6b8503eca372525f0f147e2fd0eac6209a86950af8bdb1fabcda4ce"
+      },
+      "criterion": "reproducibility",
+      "evidence": "two sweeps produced identical result bytes; execution is seeded/deterministic with no clock or network",
+      "oracle": "repeated inner sweep, byte comparison of results",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    },
+    {
+      "covers": {
+        "runnable_cases": "sha256:f3609ea5e23c63cf93642bcad691ad3a3c08e1bfca653551a0028758d73c17f2",
+        "runner": "sha256:86fc13095915f6864c15fd4081ce634480700949c3ea1ef8f28964647a35d912",
+        "scoring": "sha256:6ccd2e40d6b8503eca372525f0f147e2fd0eac6209a86950af8bdb1fabcda4ce"
+      },
+      "criterion": "cost-within-bound",
+      "evidence": "full sweep completes within a fraction of the tier timeout; see qualification/sweep-log.md",
+      "oracle": "sweep wall clock against the case size tier",
+      "oracle_class": "deterministic",
+      "required": true,
+      "verdict": "PASS"
+    }
+  ],
+  "gaps": [
+    "optimization-resistance UNVERIFIED: candidate-inaccessible-check is null; detection is by canary only",
+    "held-back stream identity bound at qualification (Q2) per evidence/holdback-policy.md; null at materialization"
+  ],
+  "overall": "PASS"
+}

@@ -1,0 +1,25 @@
+id = "cs-contradiction-fresh"
+angle = "contradiction"
+outcome = "Given two evidence docs that disagree and a settlement resolving one of two contested points, benchmaker cases the settled point per the settlement and registers the other without picking a side."
+target = "target"
+evidence = [
+  "evidence/doc-a.md",
+  "evidence/doc-b.md",
+  "evidence/settlement.md",
+  "evidence/inner-impls",
+]
+probe = "uv run --no-project python probe/check.py {impl}"
+bound = "one BC3 share; probe within medium tier"
+expected_qualification = [
+  "schema-valid",
+  "discrimination",
+  "reproducibility",
+  "cost-within-bound",
+  "gaps-declared",
+]
+negative = false
+port = "contradictory-evidence"
+tests = "Contested semantics land in a disagreement register, not in a case."
+size = "medium"
+provenance = "synthesis@41ee9ea2 claims 1,17,45 (G13); atlas FA6"
+parallel_safe = true

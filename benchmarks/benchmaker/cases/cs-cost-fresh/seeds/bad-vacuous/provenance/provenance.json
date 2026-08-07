@@ -1,0 +1,21 @@
+{
+  "sources": [
+    {"artifact": "evidence/spec.md", "role": "query contract, corpus parameters, budget law"},
+    {"artifact": "evidence/witness-classes.md", "role": "named defect witness classes W1-W3 with density arithmetic"},
+    {"artifact": "evidence/corpus-gen.py", "role": "deterministic corpus generator"}
+  ],
+  "case_mappings": {
+    "q-01": "spec.md count law over the full span",
+    "q-02": "spec.md range law, day-one interior",
+    "q-03": "spec.md level predicate law",
+    "q-04": "witness-classes.md W1 start-boundary equality witness",
+    "q-05": "witness-classes.md W2 duplicate-timestamp witness",
+    "q-06": "witness-classes.md W3 day-rollover instant witness",
+    "q-07": "spec.md level predicate law, day-two interior",
+    "q-08": "spec.md empty-result law beyond the span",
+    "q-09": "spec.md single-instant range law",
+    "q-10": "spec.md narrow-window count law",
+    "q-11": "spec.md empty-range law (start > end)",
+    "q-12": "spec.md wide-window count law across the rollover"
+  }
+}

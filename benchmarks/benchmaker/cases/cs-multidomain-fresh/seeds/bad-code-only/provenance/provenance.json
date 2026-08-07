@@ -1,0 +1,54 @@
+{
+  "builder_context": "bc1-materialize-md-9a02",
+  "case_mappings": [
+    {
+      "case": "mc1-entry-sequence",
+      "clauses": [
+        "input format",
+        "ordering law"
+      ]
+    },
+    {
+      "case": "mc2-input-order-preserved",
+      "clauses": [
+        "ordering law: no sorting"
+      ]
+    },
+    {
+      "case": "mc3-malformed-line",
+      "clauses": [
+        "exit 1 on malformed input",
+        "no partial changelog"
+      ]
+    },
+    {
+      "case": "mc4-crlf-input",
+      "clauses": [
+        "LF/CRLF input equivalence"
+      ]
+    }
+  ],
+  "chain": [
+    {
+      "construction": "code-domain case construction from code-spec.md",
+      "output_identity": "sha256:f0c3df369514572f6857ea10295f1127dccbc937de3e3589a20d462f7e920dcf",
+      "pack": "orch-code-pack"
+    },
+    {
+      "construction": "document-domain case construction from doc-spec.md, joined on the frozen code-lane evidence identity",
+      "consumes_identity": "sha256:f0c3df369514572f6857ea10295f1127dccbc937de3e3589a20d462f7e920dcf",
+      "output_identity": "sha256:2fd48b8c3e84a7d2e21336baed9e05445f5cbfc040f8592e6191367f79463c20",
+      "pack": "orch-content-pack"
+    }
+  ],
+  "sources": [
+    {
+      "artifact": "code-spec.md",
+      "role": "code-domain contract"
+    },
+    {
+      "artifact": "doc-spec.md",
+      "role": "document-domain contract"
+    }
+  ]
+}

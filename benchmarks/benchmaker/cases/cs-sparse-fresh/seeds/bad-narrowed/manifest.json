@@ -1,0 +1,40 @@
+{
+ "evaluation_design": {
+  "sha256": "02e96638adc1daaa500638aa4aaff81153966d98b2c45211432777c00a379ec5",
+  "locator": "provenance/evaluation-design.md"
+ },
+ "runnable_cases": {
+  "sha256": "753c1ec71c143f9f54e3ab23480d8b50095cf5d136395267a032d2d8668b749e",
+  "locator": "cases/cases.json"
+ },
+ "runner": {
+  "sha256": "8a9a7aea57dd0f29811ccff07595283df6371ae413ae0a99d82c688174c89100",
+  "locator": "runner/run.py"
+ },
+ "scoring": {
+  "sha256": "a4f0e1402e14eb9b72edd5ec01248f71fab70f159ba1f8ec23db77441237ea8d",
+  "locator": "scoring/aggregate.py"
+ },
+ "provenance": {
+  "sha256": "af5ae850be954706c0f9778e9c35e2e5208e537c5c72d3ad01caedf18720ebb1",
+  "locator": "provenance/provenance.json"
+ },
+ "qualification": {
+  "sha256": "853df082e062afc7eb4d31e8a13578dfea01772683c2cdb08dc19aa8e31d3ed3",
+  "locator": "qualification/verdicts.json"
+ },
+ "expected_cost": {
+  "units": "inner scoring runs",
+  "per_execution_limit_s": 30,
+  "suite_estimate": "4 inner variants x 9 lint executions, under 60 s"
+ },
+ "gaps": [
+  "quoted string values (spec.md#E14) are undocumented — not cased",
+  "boolean literals (spec.md#E15) are undocumented — not cased",
+  "list values (spec.md#E16) are undocumented — not cased",
+  "dotted section names (spec.md#E17) are undocumented — not cased",
+  "trailing inline remarks (spec.md#E18) are undocumented — not cased"
+ ],
+ "protected_evidence": null,
+ "benchmark_identity": "sha256:0ab6492544e6a1d77916429f4afd0b0501eea39c6b4c1941921f34da4ded4fdd"
+}
