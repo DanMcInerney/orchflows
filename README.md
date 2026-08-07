@@ -118,16 +118,18 @@ the same loop to the library's own skills.
 
 ### Visualize anything
 
-`orch-visualize` renders anything you hand it as a verified Mermaid
-diagram — a workflow, your session trace, a codebase, a process from a
-doc. Every diagram is syntax-checked against a real renderer before it
-comes back. This is its drawing of the pipeline that ships every
+`orch-visualize` renders anything you hand it as a verified visual
+page — a workflow, your session trace, a codebase, a process from a
+doc — choosing the form per subject: Mermaid graphs (ELK layout),
+styled HTML panels for timelines and comparisons, Vega-Lite charts
+for data. Every visual is syntax-checked and legibility-linted before
+it comes back. This is its drawing of the pipeline that ships every
 orchflows delivery:
 
 ```mermaid
 flowchart TD
     spec["orch-spec — freeze exactly what should be made"] --> pack{"pack: code | content | research | design"}
-    pack --> ws["orch-workspace — clean, isolated working area"]
+    pack -->|stamped| ws["orch-workspace — clean, isolated working area"]
     ws --> dec["orch-decompose — cut the spec into ordered tickets"]
     dec --> frontier["orch-frontier — dispatch every ready ticket"]
     frontier --> task["orch-task"]
@@ -244,7 +246,7 @@ bricks either way.
     │   │   └── orch-render            — Builds a screen and checks how it actually looks and behaves
     │   │
     │   └── utilities/ — Small optional helpers
-    │       ├── orch-visualize — Turns supplied information into a diagram
+    │       ├── orch-visualize — Turns supplied information into a visual page
     │       └── orch-off       — Stops orchflows from automatically choosing skills
     │
     ├── Layer 2 · packs/ — Setups for different kinds of projects
