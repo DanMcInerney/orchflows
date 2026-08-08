@@ -9,7 +9,8 @@ owns construction and qualification; its
 [research charter](../compositions/references/benchmaker-research.md)
 owns acquisition's lane cut and synthesis shape; its
 [manifest](../compositions/references/benchmaker-manifest.md) owns
-identity.
+identity. [Benchmark design](benchmark-design.md) carries the field
+evidence a builder needs — findings, not law.
 
 ## Immutable dataflow
 
