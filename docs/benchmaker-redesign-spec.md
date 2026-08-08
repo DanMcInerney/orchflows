@@ -17,6 +17,84 @@ a thing that produces evaluations — and one older meta-benchmark.
 They corroborate the register in several places and extend it in
 four.
 
+## 0. Revision — 2026-08-08, after the first measurement pass
+
+Two things happened after this spec was written: the owner struck
+immutability, and §10 step 1 ran. Both invalidate parts of what follows.
+This section is normative over any section it contradicts.
+
+**Immutability is no longer a goal.** BenchMaker may edit the benchmarks
+it makes. Everything below whose only argument is successor-minting
+therefore loses its ground:
+
+| section | status |
+| --- | --- |
+| §3, the three surfaces | **withdrawn as a structural argument.** Its case is that post-seal figures mint successors. Splitting the surfaces may still be good hygiene; it is no longer forced, and it may not be argued from immutability |
+| §3.2, "outside the package, not merely outside the digest" | **withdrawn.** Pure seal reasoning. The record still lives at `benchmarks/measures/` because a consumer-side record outside the package it describes is right on its own terms — the spec's own second reason, which survives |
+| §10 step 3, "re-seal exactly once" | **withdrawn.** There is no supersession to economize |
+| P1's rationale | **narrowed.** "A gate that fails after qualification mints a successor per failed attempt" no longer holds. P1's *conclusion* stands on its corollary alone: a high score means the set is too easy **or** the oracle is too lenient, and a gate collapses two readings needing opposite repairs into one verdict. Owner reaffirmed: difficulty stays a recording |
+| §7's supersession pricing | **narrowed.** Cross-identity incomparability survives and is now measured; "re-run every retained candidate to span a supersession" was seal bookkeeping |
+| P9 row 1, immutable identity | **withdrawn** as library law |
+
+What survives untouched, because it rests on label noise and measurement
+validity rather than on sealing: P2 anchors, P3 the reference audit and
+the ban on selecting by target failure, P4 oracle certification, P5 the
+attack pass, P6 distributions, §5's instrument and its readings table.
+
+**§7 is no longer the spec's most abstract claim; it is its most
+demonstrated one.** The measurement pass confounded itself. Every
+candidate was dispatched "do not spawn subagents" while the protocol
+requires a qualification context disjoint from the builder, so a
+required criterion was made unreachable by the harness. Four of six
+rung-level FAILs are qualification-shaped in consequence, and one strong
+rung failed *for refusing* to author a self-qualified PASS. §4.3
+specifies rungs and scope and says nothing about candidate dispatch;
+that omission is what let it happen.
+
+**§4.3 gains a required declaration.** A measurement pass declares,
+before it runs, the authority each candidate receives — delegation,
+tooling, network, and evidence — and any protocol-required criterion
+that authority makes unreachable. A criterion the dispatch has made
+unreachable is an intake gap recorded before scoring, never a candidate
+FAIL. The law half of this landed in `benchmaker-protocol.md`
+§Qualification on 2026-08-08.
+
+**§5 gains a distinction the pass needed and did not have.** Separation
+produced by one repeated candidate behaviour is not angle-level
+discrimination. Three cases produced one `split` and two `both-fail`,
+and the weak rung shipped a byte-identical qualification stub in all
+three — so a large discriminating set can evidence a single systematic
+habit counted N times. Report, beside the discriminating set, how many
+distinct failure signatures produced it.
+
+**Three defects the pass found in the library, all recorded before any
+repair.** Two are fixed: the manifest licensed a pending qualification
+marker the case probes reject (now schema-legal, never task-complete),
+and `cs-antigoodhart-2` enforced a runner invocation no candidate-visible
+evidence declared (now declared). One is open and belongs to a case-schema
+change, not a patch: `case.toml`'s `bound` conflates the construction
+allocation with the candidate execution bound. `BC1`–`BC6` are the six
+*builder contexts* of the construction run's capacity plan
+(`evaluation-design.md` §8), so "one BC1 share" tells a candidate how the
+case was authored. Only the probe tier half is candidate-facing, and only
+it was measurable.
+
+**A fourth defect, structural, found while re-sealing.** The package's
+integrity chain has a hole. `benchmark_identity` recomputes from the
+canonical manifest payload, which proves the manifest is internally
+consistent; `benchmark.lock` proves the tree matches its own recipe;
+**nothing binds the two.** The manifest's directory-component identities
+are reproducible by no tool in the package, so a `cases/` change does not
+move `benchmark_identity` and nothing detects the divergence. Any surface
+this spec adds to the manifest inherits that hole until a component
+recompute tool exists.
+
+**Unmeasured, and not to be cited as measured.** Thirteen of sixteen
+cases were never dispatched. Rerun spread is unmeasured — neither
+three-trial case ran. The judged oracle class, the suite's weakest, is
+entirely unexercised. Cost ran ≈1.5x the estimate below: 211,834 tokens
+for one case at two rungs, against §4.3's projection.
+
 ## 1. The change, in one paragraph
 
 BenchMaker seals a benchmark whose difficulty is unmeasured and whose
@@ -398,36 +476,57 @@ new instrument:
 
 ## 10. Sequence
 
-The ordering constraint that dominates everything else: **the law may
-land incrementally, but the existing case set is re-sealed exactly
-once.** Amending `benchmaker-manifest.md` is a law change and mints no
-successor of anything. Re-sealing `benchmarks/benchmaker/` under the
-new schema mints one. Do it once, when every new field can be filled.
+**Superseded by §0 in its ordering constraint.** The rule this section
+opened with — the case set is re-sealed exactly once — was an economy
+argument about minting successors, and there are no successors to
+economize. Re-seal whenever a repair lands, record it in `SEALS.md`, and
+carry the predecessor digest into any measurement record the repair
+invalidates. The steps below stand; only the once-and-only-once
+constraint falls.
 
-1. **Measure the current seal.** Run §4.3 against
-   `sha256:0509fe44…4a660787`, candidate-accessible scope, two rungs.
-   Write the first measurement entry to `benchmarks/measures/`. This
-   changes no sealed byte and needs no law at all — §3.2 is why — and
-   `seal_set.py --verify` green at the existing set digest, before and
-   after, is the proof. G12 records that this benchmark has never been
-   consumed by a campaign; until it is, everything below is advice
-   about an unmeasured instrument.
-2. **Land the law**, in reviewable pieces: `PROT` gains §4's stage
-   order and the three stages; `MAN` gains §3.1's fields; `scoring.md`
-   and the scoring law gain §3.3; `EVD` gains the per-case
-   smallest-deviation declaration (RF-02) and the arbitration order
-   (RF-21) stated once. No successor is minted by any of these, and
-   `seal_set.py` is not touched.
-3. **Run the pre-seal stages** on the existing set — triage, audit,
-   repair, attack, repair-or-declare, recorded measurement — and
-   **re-seal once**, carrying every new field. This is the single
-   supersession the handoff's Sequence step 2 asks for, now including
-   the audit and attack results, which is why it is one PR and not two.
-4. **Then anchors** (§6) for target classes as they arrive. Anchors are
-   a per-case manifest field, so a new anchor on an existing case is a
-   further successor; batch them with step 3 where the anchor is free
-   (the predecessor-verdict rows are), and defer the rest to the next
-   supersession rather than minting one per anchor.
+1. **Measure the current seal.** ~~Run §4.3 against
+   `sha256:0509fe44…4a660787`~~ — **run 2026-08-08, partial.**
+   Three cases of sixteen at two rungs
+   (`benchmarks/measures/benchmaker.md`, run
+   `20260808T061035Z-benchmaker-seal-measurement`): one `split`, two
+   `both-fail`, margin one case, rerun spread unmeasured, judged class
+   unexercised. Thirteen cases never dispatched; the record declares
+   them absent rather than passed, failed or UNVERIFIED.
+   **Read §0 before citing any figure from it** — the pass confounded
+   itself through candidate dispatch, and the two `both-fail` rows are
+   substantially evidence of that confound rather than of case
+   difficulty. The instrument built alongside it
+   (`tools/validate_measures.py`, 85 tests, 47 mutations 0 survivors)
+   is reusable and is the more durable output.
+   Re-running the remaining thirteen requires §4.3's new dispatch
+   declaration first, or it reproduces the confound.
+2. **Land the law**, in reviewable pieces. Two targets resolve, two do
+   not, and that must be fixed before the step can be cut:
+   `PROT` = `compositions/references/benchmaker-protocol.md` gains §4's
+   stage order and the three stages — its §Qualification independence
+   clause landed 2026-08-08; `MAN` =
+   `compositions/references/benchmaker-manifest.md` gains §3.1's fields
+   — its pending-marker clarification landed 2026-08-08.
+   **`scoring.md` is not a law surface**: the only file of that name is
+   `benchmarks/benchmaker/scoring.md`, a *package* file inside the case
+   set, so §3.3's scoring changes have no owner named here and the
+   scoring law lives in `PROT`. **`EVD` resolves to nothing** —
+   `compositions/references/` holds only protocol, manifest and
+   research. Name both owners before cutting this step.
+   Add, from §0: the dispatch-authority declaration (§4.3), the
+   distinct-failure-signature count beside the discriminating set (§5),
+   and a component-identity recompute tool without which every field
+   added to `MAN` inherits the manifest-to-tree hole.
+3. **Run the remaining pre-seal stages** on the existing set — triage,
+   reference audit, repair, attack, repair-or-declare, recorded
+   measurement. The reference audit has four defects waiting for it
+   before it starts: the two repaired on 2026-08-08 (which it should
+   confirm rather than trust), the `bound` conflation, and the
+   manifest-to-tree gap. Re-seal when the repairs land; the
+   once-only constraint is withdrawn.
+4. **Then anchors** (§6) for target classes as they arrive. The
+   successor-per-anchor cost that motivated batching is gone, so add
+   each anchor when its reference exists rather than holding a batch.
 
 Deferred, with the condition that would undefer each: judge
 certification waits on the WMT/MQM vein (G1), and at one judged case a

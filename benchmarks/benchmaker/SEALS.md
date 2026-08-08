@@ -10,6 +10,38 @@ set digest is the sha256 of `benchmark.lock`'s exact bytes. Verify any entry wit
 
     uv run --no-project python benchmarks/benchmaker/tools/seal_set.py --verify
 
+## 2026-08-08 — declared runner invocation (cs-antigoodhart-2)
+
+    set digest sha256:ec343b64016e1c295433b5d1cbf494d3af8df19dd46acace4f41ff2f19ddce61
+    benchmark_identity sha256:0509fe444edad0f29e3ad5bdd5cf4aacf35dae6228c17d73fb6064014a660787 (unchanged)
+
+1022 files. One file changed:
+`cases/cs-antigoodhart-2/evidence/interchange.md` gains a **Runner
+invocation** section. Repaired for a named correctness defect, not for
+a score: `probe/check.py` executes the runner as
+`python <runner> <impl-dir>` with a scratch working directory and
+treats exit status as the verdict, and no candidate-visible evidence
+stated any of it. Found by the 2026-08-08 measurement pass, where both
+rungs invented different signatures and both failed P0.d in
+consequence; reproduced outside the probe. The declaration is read off
+the probe and adds no requirement the probe does not already enforce.
+
+`benchmark_identity` is unchanged because `manifest.json` is
+unchanged — and that is the entry's second finding. The manifest's
+directory-component identities (`runnable_cases` at `cases/`, and the
+`provenance/` and `qualification/` locators) are **not reproducible by
+any tool in this package**: `seal_set.py` computes only the whole-set
+lock, and the lock recipe applied to `cases/` reproduces the stated
+`sha256:5ae08ffa…` under no path convention tried, including over the
+pre-edit bytes. So a `cases/` change does not move `benchmark_identity`
+and nothing detects the divergence. QC-3 as recorded proves
+manifest-internal consistency and tree-lock consistency, never
+manifest-to-tree agreement. Logged as friction; the recompute tool is
+owed.
+
+Consumers of the 2026-08-08 measurement record: its three rows were
+measured against the predecessor digest below, not this one.
+
 ## 2026-08-07 — shape-licensing supersession
 
     set digest sha256:75eb992563ba6f3258695ae7e06e8cff086daf74bfd4d01c8ad50b695aff4fcc

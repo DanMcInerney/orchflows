@@ -78,6 +78,14 @@ Qualify the assembled result at a fixed identity in a context independent of
 its builders. Builders never qualify their own cases or authored oracles as
 sufficient evidence.
 
+Independence per [rules/verification.md](../../rules/verification.md)
+§10 is the caller's to supply. A dispatch withholding the authority to
+reach a builder-disjoint context makes this stage unreachable: the run
+returns blocked naming that authority — never a self-qualified verdict
+set, never the pending marker presented as finished. A caller unable to
+supply it declares qualification unreachable at intake, so the
+deficiency is a recorded gap rather than a builder's apparent failure.
+
 Check oracle failability, coverage, discrimination, reproducibility,
 redundancy, provenance, and execution cost independently. Every oracle must be
 capable of failing. Discrimination requires seeded known-good and known-bad

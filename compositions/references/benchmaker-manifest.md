@@ -17,7 +17,10 @@ these fields:
   marker `{"status": "construction-complete-qualification-pending"}`;
   a manifest carrying it names an unqualified benchmark no campaign
   or consumer may cite, and qualification replaces the marker only by
-  minting a successor identity.
+  minting a successor identity. The marker is schema-legal and never
+  task-complete: it satisfies no objective that asks for a qualified
+  package. Behavior when qualification is unreachable is
+  [the protocol](benchmaker-protocol.md)'s.
 - `expected_cost` — declared units, per-execution limit, and suite estimate.
 - `gaps` — explicit unresolved elements; `[]` when none.
 - `protected_evidence` — fixed evidence identity, visibility, release policy,

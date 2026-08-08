@@ -6,7 +6,7 @@ ec7f09edab06843cf91db3ac337425fd416de857aecceba8d169a47d6c3f4d43  cases/cs-antig
 e7d39245c9930d9e22df322ba8e45638f2157decd4816e3e51471f494194ad3d  cases/cs-antigoodhart-2/evidence/inner-impls/memo-variant/planner.py
 904c87ed16cbed60823a556da65b5adecd6894915af972c7d0796e9558a06b7a  cases/cs-antigoodhart-2/evidence/inner-impls/pool.md
 3de351eb9aecf9abe4bd96777bea2f3f8082e4719658226cfc5d35ed636a854a  cases/cs-antigoodhart-2/evidence/inner-impls/reference/planner.py
-f17f6f568972a6bc2b69c9369da99748d06fde3c35cdc50256f4833603748913  cases/cs-antigoodhart-2/evidence/interchange.md
+2f8ceefa4513a83fa371fa324e7084fd8377d3d232cf5313ca8c8f173b8637e0  cases/cs-antigoodhart-2/evidence/interchange.md
 c549b2add0876f2f790a34dbcd4d2a4f9156472d1df5dec3f120a5937c1f0165  cases/cs-antigoodhart-2/evidence/rules.md
 3b3efe7e3654727e7fa0d40e862ad3a60ceea37e9954f7f66e779dcc46c560e2  cases/cs-antigoodhart-2/expected.md
 b2d3a4af155071a36af8ecef4ad330dd80671a84ad4409f503d2c5da9ab1c03b  cases/cs-antigoodhart-2/probe/check.py
