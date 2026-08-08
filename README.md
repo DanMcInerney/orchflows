@@ -258,9 +258,7 @@ bricks either way.
     └── Layer 3 · compositions/ — Named workflows built from the skills, callable like any skill
         ├── benchmaker           — Builds and qualifies an immutable runnable benchmark
         ├── drift-canary         — Reruns known examples to detect changes in agent behavior
-        ├── evidence-to-document — Researches a subject first, then turns the findings into a document
         ├── evolve               — Produces several versions and selects the strongest one
-        ├── feature-plus-docs    — Builds a software feature and then documents what was built
         ├── fix                  — Finds the cause of a problem, repairs it, and proves it stays fixed
         ├── improvement-delivery — Turns an approved process improvement into a tested change
         ├── renovate             — Reviews an existing project and completes selected improvements
