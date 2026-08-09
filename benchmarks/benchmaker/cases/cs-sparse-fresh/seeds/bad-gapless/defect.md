@@ -1,7 +1,7 @@
 deviation: state-omission @ gap-register locus (manifest.json gaps)
 
 near-miss: the closest-to-lawful violation. Every case is lawful and
-licensed, discrimination holds, the seal recomputes — but the manifest
+licensed, discrimination holds, every locator resolves — but the manifest
 gap register is empty despite the spec documenting only four of the
 roughly nine behaviors the samples exhibit. Partial coverage is
 silently presented as total.

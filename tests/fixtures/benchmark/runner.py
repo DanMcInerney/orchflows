@@ -16,7 +16,8 @@ REFERENCE_FIELDS = (
     "provenance",
     "qualification",
 )
-PRESEAL_FIELDS = REFERENCE_FIELDS[:-1]
+# Qualification covers everything it ran against: every component but its own.
+COVERED_FIELDS = REFERENCE_FIELDS[:-1]
 REQUIRED_QUALIFICATION_CRITERIA = {
     "oracle_failability",
     "coverage",
@@ -40,12 +41,6 @@ def sha256_identity(path):
     return sha256_bytes(path.read_bytes())
 
 
-def benchmark_identity(manifest):
-    payload = dict(manifest)
-    payload.pop("benchmark_identity")
-    return sha256_bytes(canonical_json(payload).encode("utf-8"))
-
-
 def evidence_identity(evidence):
     payload = {key: value for key, value in evidence.items() if key != "identity"}
     return sha256_bytes(canonical_json(payload).encode("utf-8"))
@@ -56,15 +51,10 @@ def load_json(path):
 
 
 def resolve_reference(root, reference):
-    identity = reference["identity"]
-    if not identity.startswith("sha256:"):
-        raise ValueError("component identity is not a sha256 digest")
     path = (root / reference["locator"]).resolve()
     path.relative_to(root)
     if not path.is_file():
         raise ValueError(f"missing reference: {reference['locator']}")
-    if sha256_identity(path) != identity:
-        raise ValueError(f"identity mismatch: {reference['locator']}")
     return path
 
 
@@ -228,11 +218,9 @@ def verify_qualification(
             raise ValueError("qualification redundancy failed")
         unique_coverage[case_identity] = unique
 
-    covers = {
-        name: manifest[name]["identity"] for name in PRESEAL_FIELDS
-    }
-    covers["known_good"] = calibration["known_good"]["identity"]
-    covers["known_bad"] = calibration["known_bad"]["identity"]
+    covers = {name: manifest[name]["locator"] for name in COVERED_FIELDS}
+    covers["known_good"] = calibration["known_good"]["locator"]
+    covers["known_bad"] = calibration["known_bad"]["locator"]
     expected = {
         "oracle_failability": {
             "covers": [covers["runner"], covers["runnable_cases"], covers["scoring"], covers["known_bad"]],
@@ -332,8 +320,6 @@ def replay(manifest_path, candidate_path):
     candidate_path = candidate_path.resolve()
     root = manifest_path.parent.resolve()
     manifest = load_json(manifest_path)
-    if manifest["benchmark_identity"] != benchmark_identity(manifest):
-        raise ValueError("benchmark identity mismatch")
     references = {
         name: resolve_reference(root, manifest[name]) for name in REFERENCE_FIELDS
     }
@@ -357,18 +343,14 @@ def replay(manifest_path, candidate_path):
         provenance,
         manifest["expected_cost"]["per_case_timeout_seconds"],
     )
+    # The benchmark this ran against is a git revision of the tree holding the
+    # manifest; the result restates only what it produced itself.
     evidence_payload = {
-        "benchmark_identity": manifest["benchmark_identity"],
-        "evaluation_design_identity": manifest["evaluation_design"]["identity"],
-        "runner_identity": manifest["runner"]["identity"],
         "candidate_identity": result["candidate_identity"],
         "cases": result["cases"],
         "covered_evidence": result["covered_evidence"],
     }
     return {
-        "benchmark_identity": manifest["benchmark_identity"],
-        "evaluation_design_identity": manifest["evaluation_design"]["identity"],
-        "runner_identity": manifest["runner"]["identity"],
         "candidate_identity": result["candidate_identity"],
         "verdict": result["verdict"],
         "oracle_class": "deterministic",

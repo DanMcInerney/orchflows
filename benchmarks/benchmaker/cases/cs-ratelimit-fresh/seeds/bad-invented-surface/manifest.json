@@ -1,7 +1,5 @@
 {
-  "benchmark_identity": "sha256:b1c19ce3d58527dfb8983eabd507ed008b5d2e0cf1f1b583ead26599d38504d6",
   "evaluation_design": {
-    "identity": "sha256:4a6dfd12cdd73e6e35666febb0e8bac8321dee9dd866e337a0039eec7147fb3a",
     "locator": "design.md"
   },
   "expected_cost": {
@@ -10,25 +8,21 @@
     "units": "scripted-clock case executions per scored implementation"
   },
   "gaps": [],
+  "incomparability": "A score is a property of target x model x harness x benchmark. Scores do not cross a change of model id, effort level, host binding or scaffold; the injected clock is part of the scaffold, so a wall-clock run never compares with an injected-clock run. No harness offset is subtracted.",
   "protected_evidence": null,
   "provenance": {
-    "identity": "sha256:1f3375a844ac628cd1bd9b5bfb6d247a8e7b46fbb65bd1ba78f307506999754a",
     "locator": "provenance/provenance.json"
   },
   "qualification": {
-    "identity": "sha256:7586d8dc6c84b259d408fd34b3af1195ffed682bf6d598bec2e0e175db7d9044",
     "locator": "qualification/qualification.json"
   },
   "runnable_cases": {
-    "identity": "sha256:03dac0a015fe748cd11879fc7f6dc0c24002ee738454bd058cbfb014d9b2a46d",
     "locator": "cases/cases.json"
   },
   "runner": {
-    "identity": "sha256:c2039c4cd9df4c860b4c0429d9ff86701d7a45b29506cd500069acddc54f07b7",
     "locator": "runner/run.py"
   },
   "scoring": {
-    "identity": "sha256:6272e36c53b7f9eaf0c862c52e7e14536107f79b30472f6b9df0d48539ab54a0",
     "locator": "scoring/score.py"
   }
 }

@@ -1,26 +1,20 @@
 {
  "evaluation_design": {
-  "sha256": "2050497924b69e6f0c74b727b5509cc61b9114de0793194404ee7cf3830319fd",
   "locator": "provenance/evaluation-design.md"
  },
  "runnable_cases": {
-  "sha256": "3cc84bd983b583c22a721b98ffda8dfdd879ac09ad993ca0118f817913a638f3",
   "locator": "cases/cases.json"
  },
  "runner": {
-  "sha256": "ea0b9900a6e3a3a92542b67246f8fda3f7990fdaa25c65285e45f85409ed4e9f",
   "locator": "runner/run.py"
  },
  "scoring": {
-  "sha256": "a4f0e1402e14eb9b72edd5ec01248f71fab70f159ba1f8ec23db77441237ea8d",
   "locator": "scoring/aggregate.py"
  },
  "provenance": {
-  "sha256": "49d22888a88f6707f9937cea5742a2484d4644aeb803f278e8a9d712e156225a",
   "locator": "provenance/provenance.json"
  },
  "qualification": {
-  "sha256": "b70fb917984aebabcecbb3c9a061bb2f07364bfafae0684be2c989a58b37c1b4",
   "locator": "qualification/verdicts.json"
  },
  "expected_cost": {
@@ -32,5 +26,23 @@
   "one contested point between the manual editions remains unsettled; it is registered as a disagreement and deliberately not cased"
  ],
  "protected_evidence": null,
- "benchmark_identity": "sha256:2c0674d402b9d9b5b5098a5266a6b8c72e455e1936fa5a10ad2a84bb5734b82c"
+ "reference_audit": {
+  "auditor_context": "QC-A1 — a re-reading context disjoint from every builder context",
+  "declared_sample": "all 8 cases",
+  "defect_classes": [
+   "expected outcome stated more narrowly than the settlement licenses"
+  ],
+  "defect_count": 1,
+  "method": {
+   "c1": "re-read",
+   "c2": "re-read",
+   "c3": "re-read",
+   "c4": "re-read",
+   "c5": "re-read",
+   "c6": "re-read",
+   "c7": "solve-from-prompt",
+   "c8": "solve-from-prompt"
+  },
+  "status": "run at qualification"
+ }
 }

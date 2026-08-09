@@ -16,8 +16,8 @@ not benchmaker-invented. The returned artifact tree is:
       gaps.md
       design.md
       evidence.md
-    package/                    minimal sealed benchmark package
-      manifest.json             ten fields per the manifest schema
+    package/                    minimal benchmark package
+      manifest.json             nine fields per the manifest schema
       cases/  runner/  scoring/  qualification/  provenance/
 
 Machine lines are `key: value`, with multi-field lines split by ` | `
@@ -30,7 +30,7 @@ into `key: value` parts. Prose outside machine lines is free.
   once at open.
 - One line `stage: <name> | allocation: <text>` for each of the five
   protocol stages: `acquire`, `design`, `materialize`, `qualify`,
-  `seal`. The allocation text is the stage's share, never the caller
+  `manifest`. The allocation text is the stage's share, never the caller
   bound.
 - Item lines `item: <id> | stage: <name> | artifact: <path>`. Every
   file under `record/` and `package/` except `record/stages.md` itself
@@ -107,8 +107,10 @@ Nowhere in `record/` may a line begin `promotion:`, `activation:`, or
 
 ## package/
 
-Sealed per the benchmark manifest schema: ten fields, identity
-recomputed from the canonical payload, every component digest true
-over shipped bytes (locators resolved relative to `package/`), and a
+Per the benchmark manifest schema: the nine schema fields, every
+component reference resolving over the shipped bytes at its locator
+(locators resolved relative to `package/`), a `builders` field
+recording each case's builder context by `model_id`, `effort` and
+`host_binding` — null only beside a `note` saying why — and a
 qualification component whose entries each carry verdict, oracle,
 oracle_class, evidence, covers, and a required flag.

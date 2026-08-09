@@ -1,7 +1,5 @@
 {
-  "benchmark_identity": "sha256:90f28524c256ea65d764852673f3e9a3ebbb9d7b9a59cf71054f9ea99063defa",
   "evaluation_design": {
-    "identity": "sha256:e9d1a725f9bef32254c4b78b5e47e00ff33d198cdb56df61e91f8ddea4b6f958",
     "locator": "provenance/evaluation-design.md"
   },
   "expected_cost": {
@@ -21,23 +19,24 @@
     "visibility": "qualification-and-scoring-contexts-only"
   },
   "provenance": {
-    "identity": "sha256:2879c46014a5316f96bc74f35dc14918219f1c71c642ad279eb25a5adafde505",
     "locator": "provenance"
   },
   "qualification": {
-    "identity": "sha256:9d5fa9b8d1527fe5fb09f957458f27a0e32e55f79e1163cf09468a919617e711",
     "locator": "qualification"
   },
+  "resolution": {
+    "measured_rerun_spread": 1,
+    "note": "three trials of the declared sampler moved one case between trials",
+    "one_case": 1,
+    "smallest_reportable_difference": "1 case of 3 = 33.3 percentage points"
+  },
   "runnable_cases": {
-    "identity": "sha256:4f34859e905f96d0532d6fd9e0a9329d6b9febd488522881d7517f85f28c56b8",
     "locator": "cases"
   },
   "runner": {
-    "identity": "sha256:888ba9830fbc5f4eb73b763bb819973b7412ccc7311e8d863ebe00a0633a3ad3",
     "locator": "runner"
   },
   "scoring": {
-    "identity": "sha256:95cb4e057dd488c1a2521dc6186db2189707ea6e99857402f746059b952aec60",
     "locator": "scoring"
   }
 }

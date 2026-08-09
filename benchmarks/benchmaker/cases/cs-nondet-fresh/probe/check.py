@@ -9,10 +9,8 @@ cwd is the case directory; {impl} is target/ or one seeds/* package.
 Exit 0 = pass; exit 1 with one FAIL line per violated check.
 
 Checks:
-- P0.a manifest present with the ten schema fields; benchmark_identity
-  recomputes from the canonical payload.
-- P0.b every component reference's sha256 verifies over the shipped
-  bytes at its locator (file digest, or the tree digest defined below).
+- P0.a manifest present with the nine schema fields.
+- P0.b every component reference's locator resolves inside the package.
 - P0.c qualification entries are verdict-contract complete.
 - P0.d the package's own runner+scoring discriminates over the case's
   evidence/inner-impls/ pool at the declared trial count.
@@ -29,18 +27,12 @@ Structural trial law: the probe runs the inner sampler the declared
 number of times — every case's result must carry exactly the declared
 trial count.
 
-Tree digest rule (matches the package builder): a file's digest is
-sha256 over its bytes; a directory's digest is sha256 over the UTF-8
-encoding of "<posix-relpath>:<file-sha256-hex>" lines for every file
-under it, sorted by relpath, joined with "\n". __pycache__ is excluded.
-
 Scratch-copy hygiene: the implementation and the inner pool are copied
 to a temporary directory before any execution; nothing under the case
 directory is written.
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import shutil
@@ -51,7 +43,6 @@ from pathlib import Path
 
 MANIFEST_FIELDS = frozenset(
     (
-        "benchmark_identity",
         "evaluation_design",
         "runnable_cases",
         "runner",
@@ -77,29 +68,79 @@ ORACLE_CLASSES = ("deterministic", "judged", "evidence")
 SUBPROC_TIMEOUT = 240
 
 
-def sha256_hex(data):
-    return hashlib.sha256(data).hexdigest()
+# ---- P0.e: the post-qualification manifest fields -------------------
+# `compositions/references/benchmaker-manifest.md` owns the eight. None is
+# re-derivable after the fact, so a package that omits one cannot be repaired
+# by a consumer. This case covers `resolution`:
+# the rerun spread is measured here or nowhere.
+# The other fields are legal here and covered by the cases whose angle reaches
+# them; `tools/validate_cases.py` reads PROBED_MANIFEST_FIELDS and refuses a
+# case set that leaves one of the eight uncovered and unrecorded.
+POST_QUALIFICATION_FIELDS = frozenset(
+    (
+        "anchors",
+        "builders",
+        "reference_audit",
+        "attack_audit",
+        "measurement",
+        "resolution",
+        "retirement_trigger",
+        "incomparability",
+    )
+)
+PROBED_MANIFEST_FIELDS = {"resolution": "constrained"}
+REQUIRED_MANIFEST_FIELDS = frozenset(MANIFEST_FIELDS)
+ALLOWED_MANIFEST_FIELDS = REQUIRED_MANIFEST_FIELDS | POST_QUALIFICATION_FIELDS
+
+def _leading_number(text):
+    digits = ""
+    for char in text:
+        if char.isdigit() or (char == "." and digits):
+            digits += char
+        elif digits:
+            break
+    digits = digits.rstrip(".")
+    return float(digits) if digits else None
 
 
-def tree_digest(path):
-    path = Path(path)
-    if path.is_file():
-        return "sha256:" + sha256_hex(path.read_bytes())
-    entries = []
-    for item in sorted(path.rglob("*")):
-        if not item.is_file():
-            continue
-        rel = item.relative_to(path).as_posix()
-        if "__pycache__" in rel.split("/"):
-            continue
-        entries.append(rel + ":" + sha256_hex(item.read_bytes()))
-    return "sha256:" + sha256_hex("\n".join(entries).encode("utf-8"))
+def _resolution_failures(manifest, out):
+    record = manifest.get("resolution")
+    if not isinstance(record, dict):
+        out.append("'resolution' must state the smallest reportable difference, "
+                   "max(measured rerun spread, one case)")
+        return
+    one_case = record.get("one_case")
+    if isinstance(one_case, bool) or not isinstance(one_case, int) or one_case < 1:
+        out.append("resolution states no one-case floor")
+    spread = record.get("measured_rerun_spread")
+    if spread is None:
+        if not str(record.get("note") or "").strip():
+            out.append("resolution leaves the rerun spread unmeasured with no note")
+    elif isinstance(spread, bool) or not isinstance(spread, (int, float)) or spread < 0:
+        out.append("resolution 'measured_rerun_spread' must be a measured number or null")
+    declared = record.get("smallest_reportable_difference")
+    if not (isinstance(declared, str) and declared.strip()):
+        out.append("resolution states no smallest reportable difference")
+        return
+    reported = _leading_number(declared)
+    floor = max(
+        one_case if isinstance(one_case, int) and not isinstance(one_case, bool) else 1,
+        spread if isinstance(spread, (int, float)) and not isinstance(spread, bool) else 0,
+    )
+    if reported is None:
+        out.append("resolution's smallest reportable difference names no number of cases")
+    elif reported != floor:
+        out.append("resolution reports %g where max(rerun spread, one case) is %g"
+                   % (reported, floor))
 
 
-def canonical_identity(manifest):
-    payload = {key: value for key, value in manifest.items() if key != "benchmark_identity"}
-    data = json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
-    return "sha256:" + sha256_hex(data.encode("utf-8"))
+def post_qualification_failures(manifest):
+    """P0.e — the field(s) this case covers, against the manifest contract."""
+    if not isinstance(manifest, dict):
+        return ["manifest is not a JSON object"]
+    out = []
+    _resolution_failures(manifest, out)
+    return out
 
 
 def resolve_locator(pkg, locator):
@@ -148,41 +189,22 @@ def check_p0a(pkg, errors):
     fields = set(manifest)
     for missing in sorted(MANIFEST_FIELDS - fields):
         errors.append("P0.a: manifest is missing field '{}'".format(missing))
-    for extra in sorted(fields - MANIFEST_FIELDS):
+    for extra in sorted(fields - ALLOWED_MANIFEST_FIELDS):
         errors.append("P0.a: manifest carries field '{}' outside the schema".format(extra))
-    if MANIFEST_FIELDS - fields:
-        return manifest
-    recorded = manifest.get("benchmark_identity")
-    if not isinstance(recorded, str) or not recorded.startswith("sha256:"):
-        errors.append("P0.a: benchmark_identity is not a sha256: value")
-        return manifest
-    recomputed = canonical_identity(manifest)
-    if recomputed != recorded:
-        errors.append(
-            "P0.a: benchmark_identity does not recompute (recorded {}, recomputed {})".format(
-                recorded, recomputed
-            )
-        )
+    for message in post_qualification_failures(manifest):
+        errors.append("P0.e: " + message)
     return manifest
 
 
 def check_p0b(pkg, manifest, errors):
     for name in COMPONENT_FIELDS:
         ref = manifest.get(name)
-        if not isinstance(ref, dict) or "identity" not in ref or "locator" not in ref:
-            errors.append("P0.b: component '{}' is not an identity+locator reference".format(name))
+        if not isinstance(ref, dict) or "locator" not in ref:
+            errors.append("P0.b: component '{}' is not a locator reference".format(name))
             continue
         resolved = resolve_locator(pkg, ref["locator"])
         if resolved is None or not resolved.exists():
             errors.append("P0.b: component '{}' locator '{}' does not resolve inside the package".format(name, ref["locator"]))
-            continue
-        actual = tree_digest(resolved)
-        if actual != ref["identity"]:
-            errors.append(
-                "P0.b: component '{}' digest mismatch at '{}' (recorded {}, actual {})".format(
-                    name, ref["locator"], ref["identity"], actual
-                )
-            )
 
 
 def check_p0c(pkg, manifest, errors):

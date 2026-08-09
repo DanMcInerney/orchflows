@@ -2,9 +2,9 @@
 """Acceptance oracle for the BenchMaker measurement record.
 
 Checks ``benchmarks/measures/benchmaker.md`` — the consumer-side record
-that redesign-spec §3.2 places outside the sealed package — against the
-entry idiom and the row schema. Stdlib only, no network. Exit 0 and
-silent when the record is clean; exit 1 with one line per violation:
+of what a measurement pass read — against the entry idiom and the row
+schema. Stdlib only, no network. Exit 0 and silent when the record is
+clean; exit 1 with one line per violation:
 
     ERROR <scope>: <message>
 
@@ -17,11 +17,11 @@ stands in for the flagless run.
 
 The file opens with a preamble, then one ``## <YYYY-MM-DD> — <title>``
 entry per measurement event, newest first. Each entry states, inside
-itself, the ``benchmark_identity`` and ``set digest`` it covers, carries
-an inline verify command, and holds one fenced ``json`` block per case
-row. That block *is* the row: prose beside it explains and never
-restates a field. A row file under the run's evidence store carries the
-same block, so the rollup is a copy rather than a transcription.
+itself, the git revision of the case set it measured, carries an inline
+verify command, and holds one fenced ``json`` block per case row. That
+block *is* the row: prose beside it explains and never restates a
+field. A row file under the run's evidence store carries the same
+block, so the rollup is a copy rather than a transcription.
 
 An entry carries four ``###`` sections — ``Rungs``, ``Incomparability``,
 ``Measured scope``, ``Figures`` — and its rows. Three of them are read,
@@ -33,7 +33,10 @@ not merely counted:
   be the model and effort every row records for that rung.
 * **Measured scope** must name every protected path the covered
   ``manifest.json`` lists, and ``expected.md``, ``seeds/`` and ``probe/``
-  as withheld from candidate contexts.
+  as withheld from candidate contexts. A manifest this cannot read, or
+  that states no ``protected_evidence.files`` list, is reported under the
+  ``protected-evidence`` rule: reading it as "no protected paths" would
+  leave this check requiring nothing while the record still passed.
 * **Figures** is a table keyed by figure name. Four of its figures are
   recomputed from the rows of the same entry and must agree with them:
   the status distribution (``<status> <count>`` pairs), the
@@ -67,11 +70,19 @@ Top level: ``case``, ``angle``, ``size``, ``trials_declared``,
 ``rungs``, ``status``, ``discriminating``, ``readings``,
 ``failed_checks``, ``scope``, ``observations``.
 
+A row's ``angle`` and ``size``, and each rung's declared bound, are
+checked against the case's own ``case.toml``. One this cannot read —
+absent, or outside the single-line basic-string subset, which is
+narrower than the subset ``validate_cases.py`` accepts — is reported
+under the ``case-schema`` rule. Reading it as "declares nothing" is how
+three checks turn themselves off wherever the two validators disagree.
+
 ``rungs`` carries exactly ``strong`` and ``weak``, each with ``model``,
 ``effort_requested``, ``verdict``, ``artifact_identity``,
-``artifact_path``, ``artifact_files``, ``manifest_benchmark_identity``,
-``probe_exit_code``, ``trial_exit_codes``, ``probe_log``, ``canary``,
-``bound`` and ``cost_actual``.
+``artifact_path``, ``artifact_files``, ``probe_exit_code``,
+``trial_exit_codes``, ``probe_log``, ``canary``, ``bound`` and
+``cost_actual``. A key an older pass recorded and this list drops is a
+fact of that pass, tolerated here and required of nothing.
 
 ## Two decisions this checker encodes, both named in the record's gaps
 
@@ -83,7 +94,7 @@ exactly when a verdict is UNVERIFIED, and never otherwise.
 
 **Artifact identities resolve or they are violations.** A row's
 ``artifact_identity`` is recomputed over the bytes at ``artifact_path``
-by the ``seal_set.py`` recipe applied to that subtree. ``.orch/`` is
+by ``tree_digest`` below, never a benchmark seal. ``.orch/`` is
 gitignored runtime state, so once a run's evidence store is pruned these
 identities stop resolving and this checker reports them. That is
 deliberate: the alternative is an oracle that silently weakens the day
@@ -104,20 +115,21 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_RECORD = REPO_ROOT / "benchmarks" / "measures" / "benchmaker.md"
 DEFAULT_CASES_DIR = REPO_ROOT / "benchmarks" / "benchmaker" / "cases"
 
-# The seal this record covers. A measurement of a different seal is a
-# different benchmark identity and updates these two constants with it.
-BENCHMARK_IDENTITY = "sha256:0509fe444edad0f29e3ad5bdd5cf4aacf35dae6228c17d73fb6064014a660787"
-SET_DIGEST = "sha256:75eb992563ba6f3258695ae7e06e8cff086daf74bfd4d01c8ad50b695aff4fcc"
 CASE_COUNT = 16
 
 SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
 ENTRY_HEADING = re.compile(r"^## (\d{4}-\d{2}-\d{2}) [—-] (.+)$")
 INCOMPLETE = re.compile(r"INCOMPLETE: (\d+) of (\d+) rows")
 FENCED_JSON = re.compile(r"^```json\n(.*?)^```", re.M | re.S)
-IDENTITY_LINE = re.compile(r"benchmark_identity\s+(sha256:[0-9a-f]{64})")
-SET_DIGEST_LINE = re.compile(r"set digest\s+(sha256:[0-9a-f]{64})")
+# A benchmark's version is its git revision, so an entry names the case
+# set it measured by revision. The 7-to-40 bound admits an abbreviated
+# sha and excludes a 64-hex content digest, the form this replaced.
+CASE_SET_LINE = re.compile(r"case set\s+([0-9a-f]{7,40})\b")
+CASE_SET_RULE = "case-set"
 VERIFY_COMMAND = re.compile(r"^ {4,}.*tools/validate_measures\.py", re.M)
-TOML_SCALAR = re.compile(r'^(angle|size|exec_bound)\s*=\s*"(.*)"\s*$')
+CASE_KEYS = ("angle", "size", "exec_bound")
+TOML_SCALAR = re.compile(r'^(%s)\s*=\s*"(.*)"\s*$' % "|".join(CASE_KEYS))
+CASE_SCHEMA_RULE = "case-schema"
 # 2026-08-09: `bound` became `exec_bound` and shed its construction half.
 # A row recorded before that quotes the conflated string verbatim, and a
 # record is a fact — it is not rewritten to match a later schema. Strip
@@ -142,7 +154,7 @@ ROW_KEYS = (
 )
 RUNG_KEYS = (
     "model", "effort_requested", "verdict", "artifact_identity",
-    "artifact_path", "artifact_files", "manifest_benchmark_identity",
+    "artifact_path", "artifact_files",
     "probe_exit_code", "trial_exit_codes", "probe_log", "canary", "bound",
     "cost_actual",
 )
@@ -157,10 +169,7 @@ RESOLUTION_FORMULA = "max(measured rerun spread, 1 case)"
 # A10: the candidate-accessible restriction, and what candidates never see.
 SCOPE_TOKENS = ("cs-antigoodhart-2/workload.json", "cs-nondet-fresh")
 WITHHELD_TOKENS = ("expected.md", "seeds/", "probe/")
-IDENTITY_STATEMENTS = (
-    ("benchmark_identity", IDENTITY_LINE, BENCHMARK_IDENTITY),
-    ("set digest", SET_DIGEST_LINE, SET_DIGEST),
-)
+PROTECTED_EVIDENCE_RULE = "protected-evidence"
 SKIP_DIR_PREFIXES = (".", "_", "__")
 
 Env = namedtuple("Env", "cases_dir cases resolve_root preamble_verify")
@@ -180,7 +189,7 @@ def _int(value):
 
 
 def tree_digest(root):
-    """seal_set.py's recipe over one subtree: sorted per-file lock, hashed."""
+    """One subtree's evidence identity: sorted per-file lock, hashed."""
     files = []
     for path in root.rglob("*"):
         if not path.is_file():
@@ -197,25 +206,38 @@ def tree_digest(root):
     return "sha256:" + hashlib.sha256(payload).hexdigest(), len(lines)
 
 
+class CaseSchemaError(Exception):
+    """The case does not declare, readably, what its row is checked against."""
+
+
 def case_keys(cases_dir, case_id):
-    """The angle/size/exec_bound a case declares, or {} when unreadable.
+    """The angle/size/exec_bound a case declares, or a refusal.
 
     A deliberately narrow read of the case.toml subset: these three keys
     are single-line basic strings in every case of the frozen set, and
-    validate_cases.py already owns the general parser.
+    validate_cases.py already owns the general parser. That parser
+    accepts more than this one reads — literal strings, trailing
+    comments — so a case.toml both validators bless can still be opaque
+    here. Answering "{}" then disarms the angle, size and bound
+    comparisons in silence, which is why this raises instead: a checker
+    that cannot read what it checks refuses.
     """
     path = cases_dir / case_id / "case.toml"
-    if not path.is_file():
-        return {}
-    found = {}
     try:
         text = path.read_text(encoding="utf-8")
-    except OSError:
-        return {}
+    except OSError as error:
+        raise CaseSchemaError("cannot read %s: %s" % (path, error))
+    found = {}
     for line in text.splitlines():
         match = TOML_SCALAR.match(line.strip())
         if match:
             found[match.group(1)] = match.group(2)
+    absent = [key for key in CASE_KEYS if key not in found]
+    if absent:
+        raise CaseSchemaError(
+            "%s states no %s as a single-line basic string"
+            % (path, ", ".join("'%s'" % key for key in absent))
+        )
     return found
 
 
@@ -316,10 +338,9 @@ def check_rung(rung, name, row, declared_bound, resolve_root, fail):
         if key in rung and not _text(rung[key]):
             fail("%s '%s' must be a non-empty string" % (label, key))
 
-    for key in ("artifact_identity", "manifest_benchmark_identity"):
-        value = rung.get(key)
-        if key in rung and not (isinstance(value, str) and SHA256.match(value)):
-            fail("%s '%s' is not a sha256:<64 hex> identity" % (label, key))
+    value = rung.get("artifact_identity")
+    if "artifact_identity" in rung and not (isinstance(value, str) and SHA256.match(value)):
+        fail("%s 'artifact_identity' is not a sha256:<64 hex> identity" % label)
 
     if "artifact_files" in rung and not (_int(rung["artifact_files"]) and rung["artifact_files"] > 0):
         fail("%s artifact_files must be a positive integer" % label)
@@ -414,9 +435,14 @@ def check_row(row, scope, cases_dir, resolve_root, errors):
         fail("'case' must be a non-empty string")
         return None
 
-    declared = case_keys(cases_dir, case_id)
+    declared = {}
     if not (cases_dir / case_id).is_dir():
         fail("no case directory '%s' under %s" % (case_id, cases_dir))
+    else:
+        try:
+            declared = case_keys(cases_dir, case_id)
+        except CaseSchemaError as error:
+            fail("%s: %s" % (CASE_SCHEMA_RULE, error))
     for key in ("angle", "size"):
         if key in declared and row.get(key) != declared[key]:
             fail("'%s' is %r but case.toml declares %r" % (key, row.get(key), declared[key]))
@@ -517,24 +543,40 @@ def table_cells(block):
     return rows
 
 
+class ProtectedEvidenceError(Exception):
+    """The covered manifest does not state its protected paths."""
+
+
 def protected_files(cases_dir):
-    """The protected paths the covered manifest names, or () when unreadable."""
+    """Every protected path the covered manifest names.
+
+    Raises rather than answering "none" when the manifest cannot be read
+    or does not state the list. Answering "none" is how this check went
+    silent on 2026-08-09: the manifest's shape moved, the reader swallowed
+    the KeyError, check_scope required nothing, and the record stayed
+    green. A scope check that cannot read what it checks refuses.
+    """
+    path = cases_dir.parent / "manifest.json"
     try:
-        manifest = json.loads((cases_dir.parent / "manifest.json").read_text(encoding="utf-8"))
-        files = manifest["protected_evidence"]["identity"]["files"]
-    except (OSError, ValueError, KeyError, TypeError):
-        return ()
-    return tuple(sorted(files)) if isinstance(files, dict) else ()
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise ProtectedEvidenceError("cannot read %s: %s" % (path, error))
+    evidence = manifest.get("protected_evidence") if isinstance(manifest, dict) else None
+    files = evidence.get("files") if isinstance(evidence, dict) else None
+    if not (isinstance(files, list) and all(_text(name) for name in files)):
+        raise ProtectedEvidenceError(
+            "%s states no 'protected_evidence.files' list of paths (found %r)" % (path, files)
+        )
+    return tuple(sorted(files))
 
 
-def check_identity(body, fail):
-    """A4: the entry names the seal it covers, and it is the covered seal."""
-    for label, pattern, expected in IDENTITY_STATEMENTS:
-        stated = pattern.findall(body)
-        if not stated:
-            fail("does not state the %s it covers" % label)
-        elif expected not in stated:
-            fail("states %s %s, which is not the covered %s" % (label, stated[0], expected))
+def check_case_set(body, fail):
+    """A4: the entry names the case set it measured, by git revision."""
+    if not CASE_SET_LINE.search(body):
+        fail(
+            "%s: names no case set; state 'case set <git revision>' inside the entry, "
+            "as 7 to 40 hex characters — never a content digest" % CASE_SET_RULE
+        )
 
 
 def check_rungs(body, fail):
@@ -586,7 +628,12 @@ def check_scope(body, cases_dir, fail):
     block = section(body, "Measured scope")
     if block is None:
         return
-    for token in sorted(set(SCOPE_TOKENS) | set(protected_files(cases_dir))):
+    try:
+        protected = protected_files(cases_dir)
+    except ProtectedEvidenceError as error:
+        fail("%s: %s" % (PROTECTED_EVIDENCE_RULE, error))
+        protected = ()
+    for token in sorted(set(SCOPE_TOKENS) | set(protected)):
         if token not in block:
             fail("the measured scope does not name %s" % token)
     for token in WITHHELD_TOKENS:
@@ -718,7 +765,7 @@ def check_entry(date, heading, body, env, errors):
     if not env.preamble_verify and not VERIFY_COMMAND.search(body):
         fail("names no inline command that verifies it, and neither does the preamble")
 
-    check_identity(body, fail)
+    check_case_set(body, fail)
     for name in ENTRY_SECTIONS:
         if section(body, name) is None:
             fail("has no '### %s' section" % name)
@@ -808,7 +855,7 @@ def check_row_file(path, cases_dir, resolve_root, errors):
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Validate the BenchMaker measurement record.")
     parser.add_argument("--record", default=str(DEFAULT_RECORD), help="the measurement record")
-    parser.add_argument("--cases-dir", default=str(DEFAULT_CASES_DIR), help="the sealed case directory")
+    parser.add_argument("--cases-dir", default=str(DEFAULT_CASES_DIR), help="the case directory")
     parser.add_argument(
         "--row",
         metavar="PATH",

@@ -4,9 +4,9 @@
     {
       "criterion": "schema-valid",
       "verdict": "PASS",
-      "oracle": "manifest canonicalization and component digest audit",
+      "oracle": "manifest schema and component locator audit",
       "oracle_class": "deterministic",
-      "evidence": "qualifying-context record q-rl-01: benchmark_identity recomputed from the canonical payload; six component digests verified over shipped bytes",
+      "evidence": "qualifying-context record q-rl-01: nine schema fields present; six component locators resolved over shipped bytes",
       "covers": "manifest.json and every component locator",
       "required": true
     },

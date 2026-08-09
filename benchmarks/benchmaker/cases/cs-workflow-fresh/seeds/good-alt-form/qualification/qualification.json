@@ -2,22 +2,22 @@
   "entries": [
     {
       "covers": {
-        "runnable_cases": "sha256:00e0590964cde1a8862cde63ed689971e98ad01118e2aa7ade7528ff9ad10775",
-        "runner": "sha256:b50670423e8b5f897e232094a2154010b3a72b29837128baf33011bff27a54c1",
-        "scoring": "sha256:64734da90d698a4b35f10d2237676a8ed8477fbd7623547895e4e009d63dd957"
+        "runnable_cases": "cases",
+        "runner": "runner",
+        "scoring": "scoring"
       },
       "criterion": "schema-valid",
-      "evidence": "recomputed benchmark identity matched the recorded value; all component digests verified over shipped bytes",
-      "oracle": "manifest canonical-identity recomputation and component digest verification (probe P0.a/P0.b)",
+      "evidence": "every component reference resolved over the shipped bytes at its locator",
+      "oracle": "manifest schema completeness and component locator resolution (probe P0.a/P0.b)",
       "oracle_class": "deterministic",
       "required": true,
       "verdict": "PASS"
     },
     {
       "covers": {
-        "runnable_cases": "sha256:00e0590964cde1a8862cde63ed689971e98ad01118e2aa7ade7528ff9ad10775",
-        "runner": "sha256:b50670423e8b5f897e232094a2154010b3a72b29837128baf33011bff27a54c1",
-        "scoring": "sha256:64734da90d698a4b35f10d2237676a8ed8477fbd7623547895e4e009d63dd957"
+        "runnable_cases": "cases",
+        "runner": "runner",
+        "scoring": "scoring"
       },
       "criterion": "discrimination",
       "evidence": "see qualification/sweep-log.md: reference and good variants pass; out-of-order, unfrozen, and last-edge-ungated variants fail",
@@ -28,9 +28,9 @@
     },
     {
       "covers": {
-        "runnable_cases": "sha256:00e0590964cde1a8862cde63ed689971e98ad01118e2aa7ade7528ff9ad10775",
-        "runner": "sha256:b50670423e8b5f897e232094a2154010b3a72b29837128baf33011bff27a54c1",
-        "scoring": "sha256:64734da90d698a4b35f10d2237676a8ed8477fbd7623547895e4e009d63dd957"
+        "runnable_cases": "cases",
+        "runner": "runner",
+        "scoring": "scoring"
       },
       "criterion": "reproducibility",
       "evidence": "two sweeps produced identical result bytes; execution is seeded/deterministic with no clock or network",
@@ -41,9 +41,9 @@
     },
     {
       "covers": {
-        "runnable_cases": "sha256:00e0590964cde1a8862cde63ed689971e98ad01118e2aa7ade7528ff9ad10775",
-        "runner": "sha256:b50670423e8b5f897e232094a2154010b3a72b29837128baf33011bff27a54c1",
-        "scoring": "sha256:64734da90d698a4b35f10d2237676a8ed8477fbd7623547895e4e009d63dd957"
+        "runnable_cases": "cases",
+        "runner": "runner",
+        "scoring": "scoring"
       },
       "criterion": "cost-within-bound",
       "evidence": "full sweep completes within a fraction of the tier timeout; see qualification/sweep-log.md",

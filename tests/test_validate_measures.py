@@ -44,6 +44,9 @@ PROTECTED = (
     "cs-antigoodhart-2/workload.json", "cs-nondet-fresh/streams.json",
     "stream-held-1.json", "stream-held-2.json", "stream-held-3.json",
 )
+# A revision-shaped set reference. The checker reads the shape, never
+# the value: which revision an entry names is that entry's own fact.
+SET_REVISION = "d8cabcb7dafe95181e279b0f2852cb6364d2a4bf"
 MODEL = {"strong": "claude-opus-5", "weak": "claude-sonnet-5"}
 EFFORT = {"strong": "xhigh", "weak": "high"}
 DECLARED_BOUND = "probe within small tier"
@@ -76,7 +79,7 @@ INCOMPARABILITY = (
 
 
 def tree_identity(root: Path):
-    """seal_set.py's recipe, re-implemented here rather than imported.
+    """The checker's evidence-identity recipe, re-implemented not imported.
 
     Per-file ``<sha256>  <relative posix path>`` lines in path order, one
     newline each, hashed. Independent of the checker's own copy, so a
@@ -105,7 +108,7 @@ class World:
                 encoding="utf-8",
             )
         (root / "manifest.json").write_text(
-            json.dumps({"protected_evidence": {"identity": {"files": {p: "sha256:0" for p in PROTECTED}}}}),
+            json.dumps({"protected_evidence": {"files": list(PROTECTED)}}),
             encoding="utf-8",
         )
         self.artifacts = {}
@@ -157,7 +160,6 @@ def make_rung(name: str, verdict: str) -> dict:
         "artifact_identity": identity,
         "artifact_path": str(directory),
         "artifact_files": count,
-        "manifest_benchmark_identity": "sha256:" + "b" * 64,
         "probe_exit_code": trials[0],
         "trial_exit_codes": trials,
         "probe_log": "%s/probe-trial1.log" % directory,
@@ -243,26 +245,24 @@ def entry_text(
     title="two-rung measurement pass",
     incomplete=None,
     absent=None,
-    identity=None,
-    digest=None,
+    case_set=None,
     rung_table=None,
     incomparability=INCOMPARABILITY,
     scope=None,
     figures=None,
     figure_overrides=None,
     verify=False,
-    sections=("identity", "rungs", "incomparability", "scope", "figures"),
+    sections=("case set", "rungs", "incomparability", "scope", "figures"),
 ) -> str:
-    """One entry. ``sections`` drops a whole section; ``digest=""`` drops
-    the set-digest line alone; ``incomplete=N`` adds the declaration."""
+    """One entry. ``sections`` drops a whole section; ``case_set=""`` drops
+    the case-set line alone; ``incomplete=N`` adds the declaration."""
     heading = "## %s — %s" % (date, title)
     if incomplete is not None:
         heading += " (INCOMPLETE: %d of 16 rows)" % incomplete
     parts = [heading, ""]
-    if "identity" in sections:
-        parts.append("    benchmark_identity %s" % (identity or vm.BENCHMARK_IDENTITY))
-        if digest != "":
-            parts.append("    set digest         %s" % (digest or vm.SET_DIGEST))
+    if "case set" in sections:
+        if case_set != "":
+            parts.append("    case set           %s" % (case_set or SET_REVISION))
         parts.append("")
     if verify:
         parts += ["Verify this entry with:", "", "    python tools/validate_measures.py", ""]
@@ -327,12 +327,12 @@ def record_text(entries, preamble_verify=True) -> str:
     return "\n".join(head + list(entries)) + "\n"
 
 
-def run(record: str):
+def run(record: str, cases_dir=None):
     """(exit code, output lines) for a flagless run over one record."""
     path = WORLD.write_record(record)
     stream = io.StringIO()
     with contextlib.redirect_stdout(stream):
-        code = vm.main(["--record", str(path), "--cases-dir", str(WORLD.cases_dir)])
+        code = vm.main(["--record", str(path), "--cases-dir", str(cases_dir or WORLD.cases_dir)])
     output = stream.getvalue()
     return code, [line for line in output.splitlines() if line]
 
@@ -360,8 +360,8 @@ class RecordCase(unittest.TestCase):
         code, lines = run(record)
         self.assertEqual((code, lines), (0, []))
 
-    def assertViolation(self, record, needle, count=None):
-        code, lines = run(record)
+    def assertViolation(self, record, needle, count=None, cases_dir=None):
+        code, lines = run(record, cases_dir)
         self.assertEqual(code, 1, "expected a violation, got a clean run")
         self.assertTrue(
             any(needle in line for line in lines),
@@ -394,24 +394,35 @@ class TestClean(RecordCase):
 
 
 # --------------------------------------------------------------------
-# C1 (A4) — the entry names the seal it covers
+# C1 (A4) — the entry names the case set it measured, by git revision
 # --------------------------------------------------------------------
 
 
-class TestCoveredIdentity(RecordCase):
-    def test_wrong_benchmark_identity_is_reported(self):
-        self.assertViolation(full(identity="sha256:" + "0" * 64), "not the covered", count=1)
+class TestCoveredCaseSet(RecordCase):
+    def test_case_set_named_by_a_full_revision_is_clean(self):
+        self.assertClean(full(case_set=SET_REVISION))
 
-    def test_wrong_set_digest_is_reported(self):
-        self.assertViolation(full(digest="sha256:" + "1" * 64), "not the covered", count=1)
+    def test_case_set_named_by_an_abbreviated_revision_is_clean(self):
+        self.assertClean(full(case_set=SET_REVISION[:7]))
 
-    def test_absent_identity_statement_is_reported(self):
+    def test_entry_naming_no_case_set_is_reported(self):
+        self.assertViolation(full(case_set=""), "case-set: names no case set", count=1)
+
+    def test_entry_without_the_case_set_block_is_reported(self):
         record = full(sections=("rungs", "incomparability", "scope", "figures"))
-        lines = self.assertViolation(record, "does not state the benchmark_identity")
-        self.assertTrue(any("does not state the set digest" in line for line in lines))
+        self.assertViolation(record, "case-set: names no case set", count=1)
 
-    def test_absent_set_digest_is_reported(self):
-        self.assertViolation(full(digest=""), "does not state the set digest", count=1)
+    def test_a_digest_where_the_revision_belongs_is_reported(self):
+        """The retired form is refused, not silently read as a revision."""
+        self.assertViolation(
+            full(case_set="sha256:" + "b" * 64), "case-set: names no case set", count=1
+        )
+
+    def test_a_bare_sixty_four_hex_digest_is_not_a_revision(self):
+        self.assertViolation(full(case_set="b" * 64), "case-set: names no case set", count=1)
+
+    def test_a_revision_too_short_to_resolve_is_reported(self):
+        self.assertViolation(full(case_set="abc123"), "case-set: names no case set", count=1)
 
 
 # --------------------------------------------------------------------
@@ -638,7 +649,7 @@ class TestRungIdentity(RecordCase):
         self.assertViolation(record_text([entry_text(rows)]), "effort_requested", count=1)
 
     def test_absent_incomparability_section_is_reported(self):
-        record = full(sections=("identity", "rungs", "scope", "figures"))
+        record = full(sections=("case set", "rungs", "scope", "figures"))
         self.assertViolation(record, "has no '### Incomparability' section", count=1)
 
     def test_empty_incomparability_statement_is_reported(self):
@@ -652,7 +663,7 @@ class TestRungIdentity(RecordCase):
 
 class TestScope(RecordCase):
     def test_absent_scope_section_is_reported(self):
-        record = full(sections=("identity", "rungs", "incomparability", "figures"))
+        record = full(sections=("case set", "rungs", "incomparability", "figures"))
         self.assertViolation(record, "has no '### Measured scope' section", count=1)
 
     def test_scope_that_omits_the_protected_workload_is_reported(self):
@@ -671,6 +682,65 @@ class TestScope(RecordCase):
             + ". Withheld from candidates: `expected.md`, `probe/`."
         )
         self.assertViolation(full(scope=scope), "does not name seeds/ as withheld", count=1)
+
+
+class TestProtectedEvidence(RecordCase):
+    """The scope check's own input: the covered manifest.
+
+    The one live file this suite reads. A shape change to it must fail
+    here, because the alternative is what happened on 2026-08-09 — the
+    reader answered "no protected files", the scope check required
+    nothing, and the run stayed green.
+    """
+
+    @contextlib.contextmanager
+    def package(self, manifest):
+        """A second synthetic package carrying ``manifest``, or none."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = World(Path(tmp).resolve()).root / "manifest.json"
+            if manifest is None:
+                path.unlink()
+            else:
+                path.write_text(manifest, encoding="utf-8")
+            yield path.parent / "cases"
+
+    def test_the_live_manifest_yields_its_five_protected_paths(self):
+        live = REPO_ROOT / "benchmarks" / "benchmaker" / "cases"
+        self.assertEqual(vm.protected_files(live), PROTECTED)
+
+    def test_scope_that_omits_a_path_only_the_manifest_names_is_reported(self):
+        """`stream-held-3.json` is in no module constant: only the
+        manifest requires it, so this fails if the manifest goes unread."""
+        scope = (
+            "Public subset. Unavailable: " + ", ".join("`%s`" % p for p in PROTECTED[:-1])
+            + ". Withheld from candidates: `expected.md`, `seeds/`, `probe/`."
+        )
+        self.assertViolation(full(scope=scope), "does not name stream-held-3.json", count=1)
+
+    def test_a_manifest_that_names_no_protected_files_is_refused(self):
+        with self.package('{"anchors": {}}') as cases_dir:
+            self.assertViolation(
+                full(), "protected-evidence: ", count=1, cases_dir=cases_dir
+            )
+
+    def test_a_manifest_whose_protected_files_is_not_a_list_is_refused(self):
+        """The 2026-08-09 shape change, inverted: the old map form."""
+        with self.package('{"protected_evidence": {"files": {"a.json": "sha256:0"}}}') as cases_dir:
+            self.assertViolation(
+                full(), "states no 'protected_evidence.files' list", count=1, cases_dir=cases_dir
+            )
+
+    def test_an_absent_manifest_is_refused(self):
+        with self.package(None) as cases_dir:
+            self.assertViolation(
+                full(), "protected-evidence: cannot read", count=1, cases_dir=cases_dir
+            )
+
+    def test_a_manifest_that_does_not_parse_is_refused(self):
+        with self.package("{not json") as cases_dir:
+            self.assertViolation(
+                full(), "protected-evidence: cannot read", count=1, cases_dir=cases_dir
+            )
 
 
 # --------------------------------------------------------------------
@@ -988,6 +1058,93 @@ class TestRowSchema(RecordCase):
             '"case": "cs-cli-fresh"', '"case": "cs-cli-fresh", "extra": 1', 1
         )
         self.assertClean(record)
+
+
+# --------------------------------------------------------------------
+# the row check's other input: the case's own declaration
+# --------------------------------------------------------------------
+
+
+class TestCaseSchema(RecordCase):
+    """One injected lie, every state of `case.toml`.
+
+    A row's angle is checked against what the case declares, so a
+    `case.toml` the reader cannot use turns the comparison off rather
+    than red — the shape T07 closed in `protected_files`. The same lie
+    must be caught whether the declaration is readable or not.
+    """
+
+    LIE = "time-semantics"
+
+    @contextlib.contextmanager
+    def case_toml(self, text):
+        """A second synthetic package whose cs-cli-fresh declaration is ``text``."""
+        with tempfile.TemporaryDirectory() as tmp:
+            cases = World(Path(tmp).resolve()).cases_dir
+            path = cases / "cs-cli-fresh" / "case.toml"
+            if text is None:
+                path.unlink()
+            else:
+                path.write_text(text, encoding="utf-8")
+            yield cases
+
+    def lying_record(self):
+        def change(row):
+            row["angle"] = self.LIE
+
+        return record_text([entry_text(mutate(FULL_PLAN, "cs-cli-fresh", change))])
+
+    def assertLieCaught(self, declaration, needle):
+        with self.case_toml(declaration) as cases_dir:
+            lines = self.assertViolation(self.lying_record(), needle, cases_dir=cases_dir)
+            self.assertEqual(
+                1, len(lines), "the lie must be caught exactly once:\n" + "\n".join(lines)
+            )
+
+    def test_the_lie_is_caught_against_a_readable_declaration(self):
+        """The control: the comparison itself works."""
+        self.assertViolation(
+            self.lying_record(), "but case.toml declares 'angle-1'", count=1
+        )
+
+    def test_the_lie_is_caught_when_the_declaration_carries_a_trailing_comment(self):
+        """`validate_cases.py` blesses this line; this reader cannot use it."""
+        self.assertLieCaught(
+            'id = "cs-cli-fresh"\nangle = "angle-1"  # the CLI row\n'
+            'size = "small"\nexec_bound = "%s"\n' % DECLARED_BOUND,
+            "case-schema",
+        )
+
+    def test_the_lie_is_caught_when_the_declaration_uses_a_literal_string(self):
+        self.assertLieCaught(
+            "id = 'cs-cli-fresh'\nangle = 'angle-1'\n"
+            "size = 'small'\nexec_bound = '%s'\n" % DECLARED_BOUND,
+            "case-schema",
+        )
+
+    def test_the_lie_is_caught_when_the_declaration_is_absent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cases = World(Path(tmp).resolve()).cases_dir
+            (cases / "cs-cli-fresh" / "case.toml").unlink()
+            lines = self.assertViolation(
+                self.lying_record(), "case-schema: cannot read", cases_dir=cases
+            )
+            self.assertEqual(1, len(lines), "\n".join(lines))
+
+    def test_a_declaration_outside_the_subset_is_refused_with_no_lie_present(self):
+        """The refusal is the missing reading, not the contradiction."""
+        with self.case_toml(
+            'id = "cs-cli-fresh"\nangle = "angle-1"\nsize = "small"\n'
+        ) as cases_dir:
+            self.assertViolation(
+                full(), "states no 'exec_bound'", count=1, cases_dir=cases_dir
+            )
+
+    def test_case_keys_reads_every_live_case(self):
+        """The narrow subset is a claim about the frozen set; here it is checked."""
+        live = REPO_ROOT / "benchmarks" / "benchmaker" / "cases"
+        for case in sorted(entry.name for entry in live.iterdir() if entry.is_dir()):
+            self.assertEqual(set(vm.CASE_KEYS), set(vm.case_keys(live, case)), case)
 
 
 # --------------------------------------------------------------------

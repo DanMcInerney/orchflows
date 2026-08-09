@@ -1,41 +1,46 @@
-# Sealed-package interchange contract
+# Package interchange contract
 
-The shapes the caller's audit relies on when it recomputes over the
-returned tree. A return that departs from any shape below is rejected.
+The shapes the caller's audit relies on when it reads the returned
+tree. A return that departs from any shape below is rejected.
 
 ## Returned tree
 
-The sealed benchmark lives in a `package/` subtree at the
-implementation root:
+The benchmark lives in a `package/` subtree at the implementation
+root:
 
     <impl-root>/package/manifest.json
     <impl-root>/package/...        (components at their locators)
 
-Exactly one JSON artifact anywhere in the returned tree carries a
-`benchmark_identity` key: the manifest.
+Exactly one manifest ships anywhere in the returned tree.
 
 ## Manifest
 
-`package/manifest.json` carries these ten fields:
+`package/manifest.json` carries these eleven fields:
 
-    benchmark_identity, evaluation_design, runnable_cases, runner,
-    scoring, provenance, qualification, expected_cost, gaps,
-    protected_evidence
+    evaluation_design, runnable_cases, runner, scoring, provenance,
+    qualification, expected_cost, gaps, protected_evidence,
+    builders, reference_audit
 
-`gaps` is an explicit list (`[]` allowed). `benchmark_identity`
-recomputes from the canonical payload: the manifest object minus
-`benchmark_identity`, serialized as JSON with sorted keys, compact
-separators `(",", ":")` and `ensure_ascii=False`, digested as UTF-8
-and recorded as `sha256:<hex>`.
+`builders` records each case's builder context by `model_id`, `effort`
+and `host_binding`. A value left null is legal only beside a `note`
+saying why it was not recorded.
+`reference_audit` records `auditor_context`, `method` per case,
+`declared_sample`, a `defect_count` and one entry in `defect_classes`
+per defect. A rate is not a count and is invalid.
+
+These are recorded once qualification closes and are not re-derivable
+afterwards, which is why the manifest carries them. Other
+post-qualification fields may be present and are not read here.
+
+`gaps` is an explicit list (`[]` allowed).
 
 Each of the six components — `evaluation_design`, `runnable_cases`,
 `runner`, `scoring`, `provenance`, `qualification` — is a reference
 object of exactly this form:
 
-    {"sha256": "sha256:<64-hex>", "locator": "<path relative to package/>"}
+    {"locator": "<path relative to package/>"}
 
-The locator resolves to a single file; the `sha256` value is the
-prefixed digest of that file's bytes.
+The locator resolves to a single file.
 
 ## Qualification record
 

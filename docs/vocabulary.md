@@ -137,15 +137,14 @@ The benchmark pipeline has exactly four artifact roles:
   oracles, classes, required status and anchors, scoring and aggregation,
   intended coverage, source identities, expected execution cost, assumptions,
   and gaps.
-- **benchmark** — the immutable runnable artifact qualified by the
-  `benchmaker` composition; its manifest binds one evaluation design, cases, runner,
-  scoring, provenance, qualification, expected cost, protected-evidence
-  policy, and gaps by identity.
+- **benchmark** — the runnable artifact qualified by the
+  `benchmaker` composition; its manifest carries the field set
+  `compositions/references/benchmaker-manifest.md` owns.
 - **score card** — `orch-judge`'s artifact for one fixed candidate against
   frozen scoring criteria: per-criterion scores with verdicts, oracle classes,
   and evidence, plus overall score and confidence.
 - **evolution result** — the `evolve` composition's campaign artifact: final incumbent
-  identity and closing score card, frozen benchmark identity, campaign
+  identity and closing score card, frozen benchmark revision, campaign
   history, partial evidence, feedback, gaps, and bounds spent.
 - **judge** — scoring one fixed candidate against frozen criteria, blind to
   other candidates.

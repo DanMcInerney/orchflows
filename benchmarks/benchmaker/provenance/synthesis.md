@@ -5,6 +5,12 @@ compositions/references/benchmaker-research.md (charter; artifact contract).
 Citation convention: LA:<line> / LB:<line> = packet line numbers. Claim row N in §2
 cites LA line 15+N. Doc aliases (COMP/PROT/MAN/CHART/DOCS/B0/EV) as defined at LA:6-10.
 
+Superseded in part, 2026-08-09: sealing was removed from the law
+(run 20260809T021408Z-benchmaker-unseal). Claim 53, failure mode SD and
+disagreement D5 record the sealing law as it stood on 2026-08-07 and are kept
+unedited — every case's `provenance` resolves against these row numbers — but
+nothing they describe is current. A benchmark's version is now its git revision.
+
 ## 1. Construct definition
 
 The capability measured is: **benchmaker's ability to take one complete delegation

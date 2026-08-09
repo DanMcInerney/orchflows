@@ -1,6 +1,6 @@
 # bad-gap-truncated
 
-deviation: value-truncation @ gap-ledger locus (record/gaps.md -> manifest gaps) - one design-stage gap is missing from the sealed manifest's gaps; the identity was re-minted honestly and every other conduct law holds.
+deviation: value-truncation @ gap-ledger locus (record/gaps.md -> manifest gaps) - one design-stage gap is missing from the manifest's gaps; every other conduct law holds.
 
 near-miss: the closest-to-lawful violation in this seed set - stages, lanes, joins, packets, and never-clauses are all intact.
 

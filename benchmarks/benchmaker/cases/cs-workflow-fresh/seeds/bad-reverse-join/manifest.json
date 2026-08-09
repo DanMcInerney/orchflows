@@ -1,7 +1,5 @@
 {
-  "benchmark_identity": "sha256:701ec468587409aec3c7163d84f783d4b6a63203dfd9d74d6d1e605869de1b23",
   "evaluation_design": {
-    "identity": "sha256:ad890aa622982fcb7618e2a0188f41e52b6cf59d717adc6c4bb3b78b33d86e89",
     "locator": "provenance/evaluation-design.md"
   },
   "expected_cost": {
@@ -12,23 +10,19 @@
   "gaps": [],
   "protected_evidence": null,
   "provenance": {
-    "identity": "sha256:46bf6677f531da5f6fd3d6f75e3196f450ee48ee17a251473e8c927ca60838d5",
     "locator": "provenance"
   },
   "qualification": {
-    "identity": "sha256:11e23656d0870c66c1691a8ae3a2b148eb004a634832ed2091956cfabd5b500e",
     "locator": "qualification"
   },
+  "retirement_trigger": "statistical indistinguishability between the compared implementations at this instrument's declared resolution. A firing is recorded in the measurement record outside the package, never here.",
   "runnable_cases": {
-    "identity": "sha256:aec7bb79a15339706bbef8c174a5e95ebdd0efd99f3ead5adfc258e0f8f7628f",
     "locator": "cases"
   },
   "runner": {
-    "identity": "sha256:95601a9462ef75cced60dd671851b51fbae33062e3922688ec2a1188accd53c4",
     "locator": "runner"
   },
   "scoring": {
-    "identity": "sha256:64734da90d698a4b35f10d2237676a8ed8477fbd7623547895e4e009d63dd957",
     "locator": "scoring"
   }
 }

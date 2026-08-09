@@ -1,7 +1,5 @@
 {
-  "benchmark_identity": "sha256:4e3133d624987b8a51e2948e675d21c66fd712f9490ef56919dbe3ef64c4bc6b",
   "evaluation_design": {
-    "identity": "sha256:5efce1c481874bf4394eb91843f0aa74a9ce2281a3479ae5cacd8c2b04edad8e",
     "locator": "provenance/evaluation-design.md"
   },
   "expected_cost": {
@@ -10,25 +8,35 @@
     "units": "verification and ranking runs"
   },
   "gaps": [],
+  "measurement": {
+    "candidates": {
+      "strong": "candidate artifact A at the declared verification gate",
+      "weak": "candidate artifact D at the declared verification gate"
+    },
+    "distinct_failure_signatures": 2,
+    "margin_cases": 1,
+    "per_case_status": {
+      "ordering": "split",
+      "required": "both-pass",
+      "scored": "split"
+    },
+    "scope": "the four fixed candidate artifacts the case supplies",
+    "status": "complete"
+  },
   "protected_evidence": null,
   "provenance": {
-    "identity": "sha256:3420c5987120b893dbcdfb2138bbc2a29d0b776cbc31fe933de6699d5caf7865",
     "locator": "provenance"
   },
   "qualification": {
-    "identity": "sha256:68501ba777a75016f8393d4b5c5bd847482423cea5f8251bcf5e67aa0c42e3ec",
     "locator": "qualification"
   },
   "runnable_cases": {
-    "identity": "sha256:3ca62bea4394389cf1343bf39a85661f6c3dac213044a9b516c62bd9c1818110",
     "locator": "cases"
   },
   "runner": {
-    "identity": "sha256:e835932694e2dfc6547a293718ed62c84020acb6c85b0fd5b955f2867ab86bce",
     "locator": "runner"
   },
   "scoring": {
-    "identity": "sha256:061c0f596032bc20a7c9ece21b6c5c5b8b936a0f2bbe730b4f48ed32045870ff",
     "locator": "scoring"
   }
 }

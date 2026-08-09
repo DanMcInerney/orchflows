@@ -107,9 +107,9 @@ all sessions in a project, then point a second run at the first one.
 
 ### Tournaments: evolve and benchmaker
 
-The `benchmaker` composition builds a qualified, immutable benchmark
-for any target with an observable outcome — a prompt, a skill, a
-script. The `evolve` composition then runs a tournament against it:
+The `benchmaker` composition builds a qualified benchmark for any
+target with an observable outcome — a prompt, a skill, a script. The
+`evolve` composition then runs a tournament against it:
 bounded generations of candidates, blind judges, promotion only when a
 frozen rule and margin are beaten. Together they turn "make this
 better" into a measured campaign instead of vibes. The dataflow is in
@@ -256,7 +256,7 @@ bricks either way.
     │   └── orch-design-pack   — Tells the system how to build and visually check interfaces
     │
     └── Layer 3 · compositions/ — Named workflows built from the skills, callable like any skill
-        ├── benchmaker           — Builds and qualifies an immutable runnable benchmark
+        ├── benchmaker           — Builds and qualifies a runnable benchmark
         ├── drift-canary         — Reruns known examples to detect changes in agent behavior
         ├── evolve               — Produces several versions and selects the strongest one
         ├── fix                  — Finds the cause of a problem, repairs it, and proves it stays fixed

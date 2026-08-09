@@ -1,7 +1,5 @@
 {
-  "benchmark_identity": "sha256:5c3ea922f2b9cd3b002fbd8cbe97e0332f69f2aad7b0e7da71979485d7c80941",
   "evaluation_design": {
-    "identity": "sha256:29bc3a3fc1a468d88f551220ee3843c672521c51e72946506e3bbb8f8ac01cfd",
     "locator": "provenance/design.md"
   },
   "expected_cost": {
@@ -12,23 +10,24 @@
   "gaps": [],
   "protected_evidence": null,
   "provenance": {
-    "identity": "sha256:a327bf157d714d1e8d01015a1cc8426f4dbd976f7aeaf685419f4e684f9ee87e",
     "locator": "provenance/provenance.json"
   },
   "qualification": {
-    "identity": "sha256:cb7dbba4b6874974380e0831f381426cd2144a0e7d53899bb1e59d81510dec40",
     "locator": "qualification/qualification.json"
   },
+  "resolution": {
+    "measured_rerun_spread": 0,
+    "note": "the two-run transcript is deterministic given a fresh state directory; three reruns returned identical verdicts",
+    "one_case": 1,
+    "smallest_reportable_difference": "1 case of 3 = 33.3 percentage points"
+  },
   "runnable_cases": {
-    "identity": "sha256:84a07600bd45ea8945e88f21ed2e3aa391c5734a863ba6893480ab36d1ebee03",
     "locator": "cases/cases.json"
   },
   "runner": {
-    "identity": "sha256:6d2ae62c3e88c2e8e08af8e1b8f439d96b027510afe0a39a2778cb4097f5f70b",
     "locator": "runner/run.py"
   },
   "scoring": {
-    "identity": "sha256:97685e534d5cea389887177fe17db5729394f3200516244790d62d55a5b1d577",
     "locator": "scoring/scoring.json"
   }
 }

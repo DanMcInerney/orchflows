@@ -1,28 +1,21 @@
 {
   "schema_version": 1,
-  "benchmark_identity": "sha256:abae73df5498febabbfb2e2c5e58fd2e16996476559a8fa62c1392741672c9b0",
   "evaluation_design": {
-    "identity": "sha256:043ee5a568114e8c9d3c95ee45da39f1797b9fb4f24abb46fcc1d8e6a2b8bbe5",
     "locator": "evaluation-design.json"
   },
   "runnable_cases": {
-    "identity": "sha256:ae60516bcac95e8d629ef655ac2ae64ce726275112fcc5dddae591a8e7485435",
     "locator": "cases.json"
   },
   "runner": {
-    "identity": "sha256:dc952a4792fd17a0ccb777ac03ef679b011e0c4e040cd8d4101f5501ffd07866",
     "locator": "runner.py"
   },
   "scoring": {
-    "identity": "sha256:ebc5b198e865247faf5a6fc7df80a3fd0c90e990da1b830e347e37ee7856388b",
     "locator": "scoring.json"
   },
   "provenance": {
-    "identity": "sha256:f68c17df0e9747450ea1f22f4e0b3d37da20da9b51e40eae97fa355352addc8b",
     "locator": "provenance.json"
   },
   "qualification": {
-    "identity": "sha256:b7a5415e027d320d2423c02137bb2cf0b82a599a035164757ff98232ac069e00",
     "locator": "qualification.json"
   },
   "expected_cost": {
@@ -37,7 +30,7 @@
     "measurement pass not run: the fixture has no candidate rung pair, so difficulty is UNVERIFIED and resolution rests on the one-case floor"
   ],
   "protected_evidence": {
-    "identity": "protected-evidence:none",
+    "files": [],
     "visibility": "public",
     "release_policy": "all fixture evidence is public",
     "candidate_inaccessible_check": null
@@ -66,7 +59,7 @@
     "unrepaired": [],
     "status": "not run — declared in gaps"
   },
-  "seal_measurement": {
+  "measurement": {
     "status": "not run — declared in gaps",
     "candidates": [],
     "scope": "candidate-accessible portion",
@@ -80,5 +73,5 @@
     "smallest_reportable_difference": "1 case of 2"
   },
   "retirement_trigger": "statistical indistinguishability between the compared candidates; a firing is recorded in the measurement record, never here",
-  "incomparability": "scores do not cross this benchmark identity, nor a change of model id, effort level, host binding, or scaffold"
+  "incomparability": "scores do not cross this benchmark revision, nor a change of model id, effort level, host binding, or scaffold"
 }

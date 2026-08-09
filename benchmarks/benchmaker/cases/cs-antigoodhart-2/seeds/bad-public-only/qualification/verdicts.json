@@ -5,8 +5,8 @@
         "manifest.json"
       ],
       "criterion": "schema-valid",
-      "evidence": "benchmark_identity recomputes from the canonical payload; all ten fields present; every component digest verified over shipped bytes",
-      "oracle": "manifest canonicalization and ten-field audit",
+      "evidence": "all nine schema fields present; every component locator resolves over shipped bytes",
+      "oracle": "manifest schema and component locator audit",
       "oracle_class": "deterministic",
       "required": true,
       "verdict": "PASS"

@@ -11,6 +11,7 @@ Frozen before construction; candidate-blind.
 - Anchors: authored from the supplied sources only; every anchor cites
   a source line id.
 - Variance: three judge reruns per judged criterion; the spread is
-  recorded in the qualification component before the seal.
+  recorded in the qualification component before qualification
+  closed.
 - Selection rationale: criteria cover every rubric-frame clause; no
   criterion rests on material the evidence does not exhibit.

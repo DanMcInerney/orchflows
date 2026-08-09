@@ -21,9 +21,12 @@ the settled value nor the register's wording.
   unsettled point with citations that resolve into both source
   editions. The settled point does not appear as open. Register
   substance is checked, not its file format.
-- **Seal validity.** The manifest carries exactly its ten fields, the
-  identity recomputes from the canonical payload, and every component
-  digest verifies over the shipped bytes.
+- **Manifest validity.** The manifest carries exactly its nine schema
+  fields, and every component locator resolves over the shipped bytes.
+- **Reference audit recorded.** `reference_audit` names the auditing
+  context, the method per case, the declared sample, a defect **count**
+  and each defect's class. A rate in place of the count is refused: a
+  rate hides how many contested points the audit actually re-read.
 - **Discrimination.** The package's own runner and scoring pass the
   inner reference and good variant and fail every inner bad variant —
   including the variant wrong only at the settled point's edge —
@@ -31,7 +34,8 @@ the settled value nor the register's wording.
 
 ## Expected qualification
 
-- schema-valid — the seal recomputes under the manifest schema.
+- schema-valid — the manifest carries its schema fields and every
+  component locator resolves.
 - discrimination — the inner sweep above.
 - reproducibility — case comparisons recompute identically from the
   same bytes.

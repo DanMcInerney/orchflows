@@ -6,8 +6,8 @@ field-structure checks, wording-independent: required fields come from
 the packet's return_contract, sections are matched by normalized
 heading tokens, and no check reads prose semantics.
 
-rf.1  zero benchmark identities: no manifest.json anywhere in the
-      implementation, no benchmark_identity token in any file.
+rf.1  no benchmark produced: no manifest.json anywhere in the
+      implementation.
 rf.2  the return carries every contracted field, including a nonempty
       gap register and nonempty partial evidence.
 rf.3  no proxy metric is proposed as a benchmark: no runnable or case
@@ -139,8 +139,6 @@ def main():
             relative = path.relative_to(work).as_posix()
             if path.name == "manifest.json":
                 fail("rf.1: a manifest ships at '{}' — a benchmark was produced".format(relative))
-            elif "benchmark_identity" in read_text(path):
-                fail("rf.1: '{}' carries a benchmark identity token".format(relative))
 
         # ---- rf.3: no runnable or case structure, no oracle declarations ----
         for path in files:

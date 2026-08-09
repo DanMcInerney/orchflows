@@ -3,9 +3,9 @@
  "entries": [
   {
    "covers": [
-    "sha256:164fd1b01d654c24dc1808ded6359a722676e1137e96c0354d1c36061ba68481",
-    "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
-    "sha256:f35af5765a80e9b5927c9c766bddcf0556ba585abe2a9f4a98a70eed5dada1c9"
+    "cases/cases.json",
+    "runner/run.py",
+    "scoring/policy.json"
    ],
    "criterion": "execution-cost",
    "evidence": "recomputed in qualifying context qz-alt-03: suite timed under the declared estimate",
@@ -16,9 +16,9 @@
   },
   {
    "covers": [
-    "sha256:164fd1b01d654c24dc1808ded6359a722676e1137e96c0354d1c36061ba68481",
-    "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
-    "sha256:f35af5765a80e9b5927c9c766bddcf0556ba585abe2a9f4a98a70eed5dada1c9"
+    "cases/cases.json",
+    "runner/run.py",
+    "scoring/policy.json"
    ],
    "criterion": "provenance",
    "evidence": "recomputed in qualifying context qz-alt-03: every case provenance resolved to spec or synthesis",
@@ -29,9 +29,9 @@
   },
   {
    "covers": [
-    "sha256:164fd1b01d654c24dc1808ded6359a722676e1137e96c0354d1c36061ba68481",
-    "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
-    "sha256:f35af5765a80e9b5927c9c766bddcf0556ba585abe2a9f4a98a70eed5dada1c9"
+    "cases/cases.json",
+    "runner/run.py",
+    "scoring/policy.json"
    ],
    "criterion": "redundancy",
    "evidence": "recomputed in qualifying context qz-alt-03: no two cases share a witness; removal matrix replayed",
@@ -42,9 +42,9 @@
   },
   {
    "covers": [
-    "sha256:164fd1b01d654c24dc1808ded6359a722676e1137e96c0354d1c36061ba68481",
-    "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
-    "sha256:f35af5765a80e9b5927c9c766bddcf0556ba585abe2a9f4a98a70eed5dada1c9"
+    "cases/cases.json",
+    "runner/run.py",
+    "scoring/policy.json"
    ],
    "criterion": "reproducibility",
    "evidence": "recomputed in qualifying context qz-alt-03: three identical reruns, byte-identical results",
@@ -55,9 +55,9 @@
   },
   {
    "covers": [
-    "sha256:164fd1b01d654c24dc1808ded6359a722676e1137e96c0354d1c36061ba68481",
-    "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
-    "sha256:f35af5765a80e9b5927c9c766bddcf0556ba585abe2a9f4a98a70eed5dada1c9"
+    "cases/cases.json",
+    "runner/run.py",
+    "scoring/policy.json"
    ],
    "criterion": "discrimination",
    "evidence": "recomputed in qualifying context qz-alt-03: sweep: goods pass, bads fail incl. the boundary variant",
@@ -68,9 +68,9 @@
   },
   {
    "covers": [
-    "sha256:164fd1b01d654c24dc1808ded6359a722676e1137e96c0354d1c36061ba68481",
-    "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
-    "sha256:f35af5765a80e9b5927c9c766bddcf0556ba585abe2a9f4a98a70eed5dada1c9"
+    "cases/cases.json",
+    "runner/run.py",
+    "scoring/policy.json"
    ],
    "criterion": "coverage",
    "evidence": "recomputed in qualifying context qz-alt-03: all four spec behaviors mapped to a case; map replayed",
@@ -81,9 +81,9 @@
   },
   {
    "covers": [
-    "sha256:164fd1b01d654c24dc1808ded6359a722676e1137e96c0354d1c36061ba68481",
-    "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
-    "sha256:f35af5765a80e9b5927c9c766bddcf0556ba585abe2a9f4a98a70eed5dada1c9"
+    "cases/cases.json",
+    "runner/run.py",
+    "scoring/policy.json"
    ],
    "criterion": "failability",
    "evidence": "recomputed in qualifying context qz-alt-03: each oracle run against a mutated output; every one failed",

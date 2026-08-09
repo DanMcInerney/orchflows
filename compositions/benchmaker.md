@@ -1,6 +1,6 @@
 ---
 name: benchmaker
-description: Build and qualify one immutable runnable benchmark for any target with an observable outcome.
+description: Build and qualify one runnable benchmark for any target with an observable outcome.
 entry: named
 ---
 
@@ -11,9 +11,9 @@ fixed evidence identities, source identities, source policy, judgment
 permission, and applicable pack craft, lens, and oracle references;
 `authority` grants the benchmark write scope and excluded actions;
 `bounds` carry one caller bound including expected execution cost;
-`return_contract` names status, benchmark identity, qualification,
-gaps, bounds spent, and changed artifacts; `reply_to` names the
-literal return address.
+`return_contract` names status, the benchmark's revision,
+qualification, gaps, bounds spent, and changed artifacts; `reply_to`
+names the literal return address.
 
 Read the [internal-call carrier rule](references/benchmaker-protocol.md#internal-call-carriage)
 and [manifest](references/benchmaker-manifest.md) once at open.
@@ -38,18 +38,19 @@ Steps:
   rule: materialize the selected case specifications exactly, one
   applicable pack per internal spec. In a disjoint independent
   delivery, qualify the assembled benchmark.
-- pre-seal — the protocol's three stages in order, each in its own
-  allocation: triage measurement, then a reference audit in a context
+- audit-and-measure — the protocol's three stages in order, each in its
+  own allocation: triage measurement, then a reference audit in a context
   disjoint from every builder and from the qualifier, then the attack
   pass, then the recorded measurement. Each repairs or declares a gap;
-  none renders a verdict on the benchmark. Seal after they close.
+  none renders a verdict on the benchmark. Record the manifest after
+  they close.
 
-Edges: seq acquire-spec → acquire → design → materialize → pre-seal,
-each join carried by frozen evidence identity — the frozen synthesis
-identity is design's evidence, the design identity is
-materialization's evidence, the qualified assembly is pre-seal's;
-when cases span domains, materialization chains single-pack deliveries
-by the same rule.
+Edges: seq acquire-spec → acquire → design → materialize →
+audit-and-measure, each join carried by frozen evidence identity — the
+frozen synthesis identity is design's evidence, the design identity is
+materialization's evidence, the qualified assembly is
+audit-and-measure's; when cases span domains, materialization chains
+single-pack deliveries by the same rule.
 
 Invariants:
 - The declared coverage floor never moves with the target's execution
@@ -64,20 +65,19 @@ Invariants:
   or authored oracles as sufficient evidence; discrimination is
   qualified over known-good and known-bad seeds that context
   supplies — UNVERIFIED and an explicit gap where none can exist.
-- Seal the qualified result under the package's immutable
-  [manifest](references/benchmaker-manifest.md) schema. Every
-  component reference and qualification verdict is fixed by identity;
-  any change requires a successor benchmark identity.
+- Record the qualified result in the package's
+  [manifest](references/benchmaker-manifest.md), which owns its field
+  set and how a component reference resolves. The benchmark's version
+  is the git revision it sits at.
 - Never: mutate the target; generate a candidate; compare candidates;
-  promote or activate anything; revise a benchmark in place; call
-  Evolve; let builders qualify their own work; multiply the caller
-  bound.
+  promote or activate anything; call Evolve; let builders qualify their
+  own work; multiply the caller bound.
 
-Done check: the sealed manifest's qualification verdict set covers the
-benchmark identity — covered PASS on every required criterion, gaps
+Done check: the manifest's qualification verdict set covers every
+component but its own — covered PASS on every required criterion, gaps
 explicit (`[]` when none).
 
-Return: status, result — the benchmark identity, verification — the
+Return: status, result — the benchmark's revision, verification — the
 qualification; then gaps (`[]` when none), bounds spent, and changed
 artifacts; failure carries partial evidence in qualification and gaps,
 and the closing result addresses `reply_to`.

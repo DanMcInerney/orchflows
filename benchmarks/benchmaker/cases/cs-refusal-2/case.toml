@@ -1,6 +1,6 @@
 id = "cs-refusal-2"
 angle = "refusal"
-outcome = "Given a codec target whose only quality channel is barred by source policy, benchmaker returns one lawful blocked result with explicit gaps and ships no benchmark identity."
+outcome = "Given a codec target whose only quality channel is barred by source policy, benchmaker returns one lawful blocked result with explicit gaps and ships no benchmark."
 target = "target/return.md"
 evidence = ["evidence/packet.md", "evidence/codec-notes.md"]
 probe = "uv run --no-project python probe/check.py {impl}"

@@ -4,8 +4,8 @@ The scoring path substitutes the real clock for the injected scripted
 clock: every `advance` step is a real `time.sleep` and the limiter
 reads `time.monotonic`. The case set spans 154 virtual seconds per
 implementation, so the inner sweep cannot complete inside the 30 s
-scripted-clock envelope. Everything else is lawful — digests verify and
-the identity is re-minted over the changed runner.
+scripted-clock envelope. Everything else is lawful — every component
+locator resolves, including the changed runner.
 
 Burn note: `contract-substitution` is a census name; this locus is
 constitutionally fresh — the predecessor's real-clock design could not

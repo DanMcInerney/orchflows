@@ -1,6 +1,6 @@
 # What a qualified result must demonstrate — cs-run-conduct
 
-The artifact under test is a RUN RECORD plus the minimal sealed package
+The artifact under test is a RUN RECORD plus the minimal package
 it closes on. The inner target (an echo-transform CLI) is trivial by
 construction: the record, not the package, carries the difficulty.
 These are criteria CLASSES only — no reference record content appears
@@ -25,18 +25,24 @@ here, and a return transcribed from this file proves nothing.
    the caller bound; each internal spec carries exactly one pack stamp
    and its paired deliver preserves it.
 5. **Never-clauses intact** — the case's evidence digests are unchanged
-   post-run; no candidate artifact, no candidate comparison, no evolve
+   post-run wherever the return attests them, the record and the
+   package's provenance included, and the two never contradict each
+   other; no candidate artifact, no candidate comparison, no evolve
    dispatch, and no promotion or activation marker appears anywhere in
    the record or the return.
 6. **Gap carry-forward** — every design-stage gap in the record's gap
-   ledger appears in the sealed manifest's gaps.
+   ledger appears in the manifest's gaps.
 7. **Design fidelity** — the design artifact cites the packet for its
    boundary, and the materialized case set equals the design's selected
    case list; nothing is rewritten at materialization.
-8. **Package validity** — the minimal package seals per the manifest
-   schema: the identity recomputes from the canonical payload, every
-   component digest verifies, and the qualification component is
+8. **Package validity** — the minimal package conforms to the manifest
+   schema: all nine fields are present, every component locator
+   resolves, and the qualification component is
    verdict-contract-complete.
+9. **Builders recorded** — `builders` records each case's builder
+   context by model id, effort and host binding, or declares the gap
+   with its reason. The run record is the only place that knows which
+   context authored which case, and nothing recovers it afterwards.
 
 ## Tolerated gap classes
 

@@ -26,9 +26,12 @@ UNVERIFIED.
 
 ## Suite qualification criteria
 
-QC-1 schema-valid, QC-2 probe inversion + declared trials, QC-3 seal
-reproducibility, QC-4 provenance-traced, QC-5 equivalence bridge,
-QC-6 burn-law compliance, QC-7 judged rerun variance, QC-8
-cost-within-bound, QC-9 canary integrity, QC-10 blocked-return
-shape. All required; the overall verdict's weakest oracle_class is
-judged (QC-7). Verdicts: qualification/.
+QC-1 schema-valid, QC-2 probe inversion + declared trials, QC-4
+provenance-traced, QC-5 equivalence bridge, QC-6 burn-law
+compliance, QC-7 judged rerun variance, QC-8 cost-within-bound,
+QC-9 canary integrity, QC-10 blocked-return shape. All required;
+the overall verdict's weakest oracle_class is judged (QC-7).
+Verdicts: qualification/.
+
+QC-3 (seal reproducibility) is withdrawn; `qualification/index.md`
+states the withdrawal.

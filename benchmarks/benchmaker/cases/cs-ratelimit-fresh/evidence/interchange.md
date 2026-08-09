@@ -8,27 +8,28 @@ invocation are in `interface.md`.
 ## Manifest
 
 `manifest.json` sits at the package root and carries exactly these ten
-fields — no extras, none missing:
+fields:
 
-    benchmark_identity, evaluation_design, runnable_cases, runner,
-    scoring, provenance, qualification, expected_cost, gaps,
-    protected_evidence
+    evaluation_design, runnable_cases, runner, scoring, provenance,
+    qualification, expected_cost, gaps, protected_evidence, incomparability
 
-`gaps` is an explicit list (`[]` allowed). `benchmark_identity` is a
-`sha256:`-prefixed hex string recomputable from the canonical payload:
-the manifest object minus `benchmark_identity`, serialized as JSON
-with sorted keys, compact separators `(",", ":")` and
-`ensure_ascii=False`, digested as UTF-8.
+`incomparability` states the identity boundary scores do not cross,
+naming model id, effort level, host binding and scaffold.
+
+These are recorded once qualification closes and are not re-derivable
+afterwards, which is why the manifest carries them. Other
+post-qualification fields may be present and are not read here.
+
+`gaps` is an explicit list (`[]` allowed).
 
 Each of the six components — `evaluation_design`, `runnable_cases`,
 `runner`, `scoring`, `provenance`, `qualification` — is a reference
 object of exactly this form:
 
-    {"identity": "sha256:<64-hex>", "locator": "<posix-relative-path>"}
+    {"locator": "<posix-relative-path>"}
 
 The locator is a forward-slash path that resolves to a single file
-inside the package; the identity is the `sha256:`-prefixed digest of
-that file's bytes.
+inside the package.
 
 ## Qualification record
 

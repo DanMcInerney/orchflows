@@ -1,7 +1,5 @@
 {
-  "benchmark_identity": "sha256:427049fa9b17509b52936ec6ade959021d8f4e95db107a63c2872ae20b799917",
   "evaluation_design": {
-    "identity": "sha256:b2a8593db0fcf51f35446e89f271ace22e37768ec5768d119017c43793e9c98b",
     "locator": "design.md"
   },
   "expected_cost": {
@@ -10,25 +8,35 @@
     "units": "query executions per scored implementation"
   },
   "gaps": [],
+  "measurement": {
+    "candidates": {
+      "strong": "inner-impls/reference at the declared query budget",
+      "weak": "inner-impls/bad-w1-boundary at the declared query budget"
+    },
+    "distinct_failure_signatures": 1,
+    "margin_cases": 1,
+    "per_case_status": {
+      "q-01": "split",
+      "q-04": "both-pass",
+      "q-11": "split"
+    },
+    "scope": "three witness-bearing cases, one per witness class, inside the declared sweep budget",
+    "status": "partial — 3 of 12 cases, bounded by the sweep budget"
+  },
   "protected_evidence": null,
   "provenance": {
-    "identity": "sha256:6896e157a8233280b558c24a819a7cf02815de8c980ba48399edcc0aa4ce0bc0",
     "locator": "provenance/provenance.json"
   },
   "qualification": {
-    "identity": "sha256:3f2f1d715d66e00e24b2a4397d1d98736d2cabefd9ac9d1e245fd6397d5d9c9a",
     "locator": "qualification/qualification.json"
   },
   "runnable_cases": {
-    "identity": "sha256:de2827229bc994e6e8b3cdb5a959b151bb42e4b3d8e4e7458c1e31e648085e3c",
     "locator": "cases/cases.json"
   },
   "runner": {
-    "identity": "sha256:fa54916ad7bde2db1eccf2a0b02c392e3b107a457d80e5878fd6c22c2ea2ec51",
     "locator": "runner/run.py"
   },
   "scoring": {
-    "identity": "sha256:a7aa7e23f3d81e2fb436fe47c66e5c18030f5428cd3309507b51251cebaab12b",
     "locator": "scoring/score.py"
   }
 }

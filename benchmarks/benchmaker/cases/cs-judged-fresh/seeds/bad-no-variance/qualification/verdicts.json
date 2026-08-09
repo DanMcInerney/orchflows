@@ -4,13 +4,13 @@
   {
    "criterion": "schema-valid",
    "verdict": "PASS",
-   "oracle": "manifest canonicalization + component digest audit",
+   "oracle": "manifest schema and component locator audit",
    "oracle_class": "deterministic",
-   "evidence": "identity recomputed equal; six component digests verified over the shipped bytes",
+   "evidence": "six component locators resolved over the shipped bytes",
    "covers": [
-    "runnable_cases@sha256:1290ac8e3898abdd825d957d66225855a0633098856ee39e2f3bea1a9062e557",
-    "runner@sha256:35318954be7d69183c1e35968389520e3bbff6f38e3820edf7e28319c903a48c",
-    "scoring@sha256:42e683620073d9c57146643f87fd91c32ab15ed107b6c4004dff19f5efba2633"
+    "runnable_cases@cases/cases.json",
+    "runner@runner/run.py",
+    "scoring@scoring/aggregate.py"
    ],
    "required": true
   },
@@ -21,9 +21,9 @@
    "oracle_class": "deterministic",
    "evidence": "reference and good variant PASS; every bad variant failed through the criterion owning its defect; sweep ledger q-sweep-01",
    "covers": [
-    "runnable_cases@sha256:1290ac8e3898abdd825d957d66225855a0633098856ee39e2f3bea1a9062e557",
-    "runner@sha256:35318954be7d69183c1e35968389520e3bbff6f38e3820edf7e28319c903a48c",
-    "scoring@sha256:42e683620073d9c57146643f87fd91c32ab15ed107b6c4004dff19f5efba2633"
+    "runnable_cases@cases/cases.json",
+    "runner@runner/run.py",
+    "scoring@scoring/aggregate.py"
    ],
    "required": true
   },
@@ -34,9 +34,9 @@
    "oracle_class": "deterministic",
    "evidence": "two sweeps produced identical result bytes",
    "covers": [
-    "runnable_cases@sha256:1290ac8e3898abdd825d957d66225855a0633098856ee39e2f3bea1a9062e557",
-    "runner@sha256:35318954be7d69183c1e35968389520e3bbff6f38e3820edf7e28319c903a48c",
-    "scoring@sha256:42e683620073d9c57146643f87fd91c32ab15ed107b6c4004dff19f5efba2633"
+    "runnable_cases@cases/cases.json",
+    "runner@runner/run.py",
+    "scoring@scoring/aggregate.py"
    ],
    "required": true
   },
@@ -47,9 +47,9 @@
    "oracle_class": "deterministic",
    "evidence": "sweep completed in 4.1 s against the 30 s per-execution limit",
    "covers": [
-    "runnable_cases@sha256:1290ac8e3898abdd825d957d66225855a0633098856ee39e2f3bea1a9062e557",
-    "runner@sha256:35318954be7d69183c1e35968389520e3bbff6f38e3820edf7e28319c903a48c",
-    "scoring@sha256:42e683620073d9c57146643f87fd91c32ab15ed107b6c4004dff19f5efba2633"
+    "runnable_cases@cases/cases.json",
+    "runner@runner/run.py",
+    "scoring@scoring/aggregate.py"
    ],
    "required": true
   }

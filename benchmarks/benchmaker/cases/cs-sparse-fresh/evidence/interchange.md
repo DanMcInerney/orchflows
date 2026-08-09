@@ -5,26 +5,28 @@ directory; paths are relative to its root, forward slashes.
 
 ## Manifest
 
-`manifest.json` is a JSON object with exactly these ten fields — no
-more, no fewer:
+`manifest.json` is a JSON object with exactly these ten fields:
 
-    benchmark_identity, evaluation_design, runnable_cases, runner,
-    scoring, provenance, qualification, expected_cost, gaps,
-    protected_evidence
+    evaluation_design, runnable_cases, runner, scoring, provenance,
+    qualification, expected_cost, gaps, protected_evidence, anchors
+
+`anchors` binds each case to the reference outside the package its
+expected outcome is measured against, or declares `none` with its
+reason. A case left silent is invalid; a declared `none` is not.
+
+These are recorded once qualification closes and are not re-derivable
+afterwards, which is why the manifest carries them. Other
+post-qualification fields may be present and are not read here.
 
 The six component fields — `evaluation_design`, `runnable_cases`,
 `runner`, `scoring`, `provenance`, `qualification` — are component
-references whose digest is the bare lowercase hex SHA-256 of the
-component file's bytes (no prefix):
+references naming the component's package-relative path:
 
 ```json
-{"sha256": "<hex>", "locator": "cases/cases.json"}
+{"locator": "cases/cases.json"}
 ```
 
-`benchmark_identity` is `"sha256:"` plus the hex SHA-256 of the
-manifest serialized without its `benchmark_identity` field as compact
-canonical JSON: keys sorted, separators `(",", ":")` with no spaces,
-`ensure_ascii` false, UTF-8 encoded. `gaps` is an explicit list.
+`gaps` is an explicit list.
 
 ## Runner and scoring interface
 

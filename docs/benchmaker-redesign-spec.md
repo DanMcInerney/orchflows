@@ -142,6 +142,97 @@ for named correctness defects and neither for a score; §4.1's reference
 audit should confirm the repairs rather than trust them, which is now
 recorded in the manifest's `reference_audit.awaiting_confirmation`.
 
+## 0c. Revision — 2026-08-09, the seal removal
+
+Sealing is withdrawn. A benchmark is an ordinary editable artifact whose
+version is the git revision it sits at: no content-hash seal, no
+benchmark or component digest, no prohibition on editing a benchmark or
+its manifest in place. Run `20260809T021408Z-benchmaker-unseal`. This
+section is normative over any section it contradicts, §0 and §0b
+included.
+
+**The mechanism goes with the prohibition, and that supersedes §0.** §0
+struck immutability as a *goal* and left successor-on-change standing as
+machinery; §0b then recorded `component_identity.py` as closing the
+manifest-to-tree hole, which only a live identity can have. Both
+readings are withdrawn. Nothing mints a successor identity, because
+there is no identity to mint, and a later benchmark is a later revision.
+The reason, named once: retained machinery drifts back into being
+treated as law — this tree is the demonstration, since the 2026-08-09
+pass edited in place a package whose text still forbade it.
+
+| section | status |
+| --- | --- |
+| §1 | **withdrawn as an argument.** Its rearrangement — every forcing check before the seal, every later figure outside it — has no seal to arrange around. The stage order survives on its own ground: a check that can force a repair runs before the result is recorded |
+| §3.1, "fixed at seal" | **restated.** The manifest is recorded, not fixed; [the manifest owner](../compositions/references/benchmaker-manifest.md) holds the surviving field set |
+| §3.2, "outside the sealed root" | **withdrawn**, the argument by §0 and now the seal it named. The record stays at `benchmarks/measures/` on §0's surviving second reason |
+| §4, "Pre-seal stage order" | **renamed, same order.** The stages are [the protocol](../compositions/references/benchmaker-protocol.md) §Audit and measurement |
+| §7 | **survives.** Its four candidate axes stand; the manifest field carrying them is restated below |
+| §10 steps 1–4 | **the seal bookkeeping falls**: re-sealing, `SEALS.md`, the predecessor digest, and step 2's `component_identity.py`, which is deleted along with the hole it closed. The measurement, the law landing, the remaining stages and the anchors stand |
+| §11's standing gaps | unchanged |
+
+**What the deleted tests were proving.** `tests/test_component_identity.py`
+went with the tool, 22 tests, plus one in `tests/test_benchmaker.py`:
+they proved every manifest component identity recomputes from the tree
+bytes and that a forged or stale digest is detected. No digest is
+recorded now, so the property has no subject. Five more properties were
+dropped from inside tests that survive, each for the same reason and
+each with the half that survives named:
+
+| dropped | it proved | what stands in its place |
+| --- | --- | --- |
+| the fixture runner's component-mutation refusal | appending one byte to `cases.json` is caught by the recorded digest | a component reference that does not resolve is refused |
+| `_reference()`'s digest equality | each component's recorded digest matched its bytes | the same |
+| the manifest's `benchmark_identity` recomputation | the package digest was non-self-referential and recomputable from the canonical payload | nothing; the field is gone |
+| two candidate runs' equal benchmark, design and runner identities | both candidates were scored against the same benchmark bytes | candidate identity differs between candidates, and the evidence identity recomputes over its payload |
+| every `covers` entry starting `sha256:` | every cover was a content digest | every cover resolves to a file in the package |
+
+QC-3, "seal reproducibility", is withdrawn with its oracle rather than
+reworded; nine required qualification criteria remain, all PASS. The
+fall sits inside a rise, so read it as two numbers and not one: 23 tests
+deleted, and the suite 532 before the run against 568 after.
+
+**What replaced the seal, and the one place it is weaker.** The git
+revision, plus the durability rule
+[the protocol](../compositions/references/benchmaker-protocol.md)
+§Audit and measurement now states. The seal did not have this failure
+mode: this repository squash-merges, so a branch commit is no ancestor
+of the default branch and its sha dangles once the branch is collected,
+while a content digest resolved from the bytes alone. The rule is what
+closes it — name a default-branch-reachable revision, or the reachable
+ancestor carrying identical measured bytes and the relation between
+them. No check enforces it: CI's shallow checkout cannot resolve a
+revision, so a checker would refuse clean records.
+
+**What is not weaker.** The qualification discipline is untouched, at
+[the protocol](../compositions/references/benchmaker-protocol.md).
+Freezing a benchmark for one campaign's duration is untouched, at
+[evolve](../compositions/evolve.md) and
+[skill-tournament](../compositions/skill-tournament.md): sealing forbade
+*anyone* editing the benchmark *forever* on pain of a new identity,
+while freezing binds *one campaign* to *one version* so its candidates
+are comparable. Only the first was withdrawn — a campaign comparing
+candidates across a moving benchmark measures nothing.
+
+**Off-tree protected evidence is no longer pinned by any digest.** The
+manifest named its five held-back files by digest; the digests went with
+every other `sha256:`, and those files sit outside the tree the revision
+covers. `tools/validate_measures.py` refuses a measurement record that
+does not name each protected path, so the scope is guarded — but nothing
+checks their bytes, and no rule now claims to. A byte pin, if one is
+wanted, belongs in the store's own policy rather than in the manifest.
+
+**`incomparability` survives, and the removal's own delivery spec was
+wrong about why.** That spec kept the field on the ground that its
+boundary "is candidate identity … never benchmark identity". The field's
+text bounds both, and its first clause named the retired mechanism. The
+substance is right — a score genuinely does not cross a benchmark
+version — so the noun is restated, `identity` → `revision`, and the four
+candidate axes of §7 stand. Deleting the clause would have silently
+licensed comparing scores across benchmark versions, which is the one
+thing the field exists to forbid. Recorded here because that spec is
+frozen and was not edited.
+
 ## 1. The change, in one paragraph
 
 BenchMaker seals a benchmark whose difficulty is unmeasured and whose

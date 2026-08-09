@@ -1,7 +1,7 @@
 # Blocked return — orpheline benchmark request
 
 Status: blocked at evaluation design; nothing was materialized and
-nothing was sealed.
+nothing was built.
 
 ## What the evidence established (partial evidence)
 

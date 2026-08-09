@@ -1,6 +1,6 @@
-# bad-seal-drift
+# bad-locator-drift
 
-deviation: artifact-desync @ manifest-tree seal locus (provenance component) - one component's bytes differ from its recorded digest and the benchmark identity was not re-minted; every other law holds.
+deviation: artifact-desync @ manifest-component locator locus (evaluation_design component) - the manifest names a component at a path the package does not contain; every other law holds.
 
 near-miss: the closest-to-lawful violation in this seed set - qualification, provenance grammar, seed discipline, and inner discrimination are all intact (SD atlas / D5 exercise).
 

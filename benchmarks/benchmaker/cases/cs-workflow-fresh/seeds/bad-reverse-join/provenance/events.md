@@ -1,8 +1,7 @@
-# Seal event ledger
+# Build event ledger
 
-Ordinal event log; the order is the law (qualification precedes the
-identity it is sealed under).
+Ordinal event log; the order is the law (the components are frozen
+before the qualification recorded against them).
 
 1 components-frozen
 2 qualification-recorded
-3 identity-minted

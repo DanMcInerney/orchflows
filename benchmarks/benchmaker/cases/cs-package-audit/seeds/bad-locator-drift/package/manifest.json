@@ -1,0 +1,65 @@
+{
+  "builders": {
+    "pc-1": {
+      "effort": "high",
+      "host_binding": "linux-x86_64",
+      "model_id": "bmk-builder-1"
+    },
+    "pc-2": {
+      "effort": "high",
+      "host_binding": "linux-x86_64",
+      "model_id": "bmk-builder-1"
+    },
+    "pc-3": {
+      "effort": "high",
+      "host_binding": "linux-x86_64",
+      "model_id": "bmk-builder-1"
+    },
+    "pc-4": {
+      "effort": null,
+      "host_binding": null,
+      "model_id": null,
+      "note": "authored in the same construction pass but its context was not recorded; declared as a gap, not inferred"
+    }
+  },
+  "evaluation_design": {
+    "locator": "design/evaluation-design.md"
+  },
+  "expected_cost": {
+    "per_execution_limit": "30 s",
+    "suite_estimate": "under 60 s",
+    "units": "runner executions"
+  },
+  "gaps": [],
+  "protected_evidence": null,
+  "provenance": {
+    "locator": "provenance/provenance.json"
+  },
+  "qualification": {
+    "locator": "qualification/qualification.json"
+  },
+  "reference_audit": {
+    "auditor_context": "QC-A1 — a re-reading context disjoint from every builder context",
+    "declared_sample": "all 4 cases",
+    "defect_classes": [
+      "expected output under-specified at one boundary"
+    ],
+    "defect_count": 1,
+    "method": {
+      "pc-1": "re-read",
+      "pc-2": "re-read",
+      "pc-3": "re-read",
+      "pc-4": "solve-from-prompt"
+    },
+    "status": "run at qualification"
+  },
+  "runnable_cases": {
+    "locator": "cases/cases.json"
+  },
+  "runner": {
+    "locator": "runner/run.py"
+  },
+  "scoring": {
+    "locator": "scoring/scoring.json"
+  }
+}

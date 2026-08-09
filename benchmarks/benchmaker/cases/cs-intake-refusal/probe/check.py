@@ -8,8 +8,8 @@ required packet parts are the delegation contract's six, the required
 synthesis artifacts and return fields are read from the packet, and
 both defects are derived by comparison — never hardcoded prose.
 
-ir.1  no work past intake: no manifest, no benchmark identity token,
-      no runnable or case structure anywhere in the implementation.
+ir.1  no work past intake: no manifest and no runnable or case
+      structure anywhere in the implementation.
 ir.2  the return names both defects in its gap register: the missing
       packet part (by field name) and the offered synthesis's missing
       required artifact (by artifact name).
@@ -160,9 +160,6 @@ def main():
                 continue
             if path.suffix.lower() in FORBIDDEN_SUFFIXES:
                 fail("ir.1: stage artifact ships at '{}'".format(relative))
-                continue
-            if "benchmark_identity" in read_text(path):
-                fail("ir.1: '{}' carries a benchmark identity token".format(relative))
 
         # ---- ir.3: contracted fields ----
         return_path = work / "return.md"

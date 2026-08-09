@@ -2,7 +2,7 @@
 
 Angle: **nondeterminism**. Benchmaker, given a randomized reservoir
 sampler whose only fixed observables are a spec, one exhibited trace,
-and a digest-only holdback policy, must produce a sealed benchmark
+and a digest-only holdback policy, must produce a benchmark
 package whose scoring is lawful under nondeterminism. The classes a
 qualifying package must satisfy — stated as classes, never as
 transcribable content:
@@ -22,13 +22,20 @@ expectation equal to the exhibited run, or the package records a
 substantive impossibility reason — "implementation artifact" is not
 one.
 
-## Seal validity
+## Manifest validity
 
-The manifest carries the ten schema fields; the benchmark identity
-recomputes from the canonical payload; every component digest verifies
-over the shipped bytes at its locator; qualification entries are
+The manifest carries the nine schema fields; every component locator
+resolves over the shipped bytes; qualification entries are
 verdict-contract complete, with no overall PASS over a required FAIL
 and no PASS on empty evidence.
+
+## Resolution declared
+
+`resolution` states the smallest reportable difference as
+`max(measured rerun spread, one case)`, and the spread it names is the
+one the declared trials measured. A randomized sampler is where a
+rerun spread shows up, so an unmeasured spread is declared, not
+assumed zero.
 
 ## Inner discrimination
 
