@@ -44,6 +44,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      # Every case declares its probe as `uv run --no-project python ...`,
+      # and the coverage-teeth tests execute those probes for real -- they
+      # delete a field from a copy of a case target and require the probe
+      # to fail. Without `uv` on PATH they fail as "probe command not
+      # found" rather than skipping, which is the correct behavior for a
+      # check that cannot run and the reason this step exists. The case's
+      # declared command is candidate-facing evidence; CI matches it
+      # rather than substituting an interpreter behind its back.
+      - uses: astral-sh/setup-uv@v5
+
       - name: python tools/validate.py
         run: python tools/validate.py
 
