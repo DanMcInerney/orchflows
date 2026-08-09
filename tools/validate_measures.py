@@ -117,7 +117,13 @@ FENCED_JSON = re.compile(r"^```json\n(.*?)^```", re.M | re.S)
 IDENTITY_LINE = re.compile(r"benchmark_identity\s+(sha256:[0-9a-f]{64})")
 SET_DIGEST_LINE = re.compile(r"set digest\s+(sha256:[0-9a-f]{64})")
 VERIFY_COMMAND = re.compile(r"^ {4,}.*tools/validate_measures\.py", re.M)
-TOML_SCALAR = re.compile(r'^(angle|size|bound)\s*=\s*"(.*)"\s*$')
+TOML_SCALAR = re.compile(r'^(angle|size|exec_bound)\s*=\s*"(.*)"\s*$')
+# 2026-08-09: `bound` became `exec_bound` and shed its construction half.
+# A row recorded before that quotes the conflated string verbatim, and a
+# record is a fact — it is not rewritten to match a later schema. Strip
+# the construction clause before comparing, so the comparison still has
+# teeth on the half that was ever a bound.
+CONSTRUCTION_CLAUSE = re.compile(r"^\s*one BC\d+ share;\s*")
 STATUS_COUNT = re.compile(r"(both-pass|both-fail|inversion|undetermined|split)\D{0,3}(\d+)")
 RESOLUTION_VALUE = re.compile(r"=\s*(\d+(?:\.\d+)?)\s*cases?\b")
 SPREAD = re.compile(r"spread[^.\n]{0,80}?\b(unmeasured|(\d+(?:\.\d+)?)\s*cases?)\b")
@@ -192,7 +198,7 @@ def tree_digest(root):
 
 
 def case_keys(cases_dir, case_id):
-    """The angle/size/bound a case declares, or {} when unreadable.
+    """The angle/size/exec_bound a case declares, or {} when unreadable.
 
     A deliberately narrow read of the case.toml subset: these three keys
     are single-line basic strings in every case of the frozen set, and
@@ -263,9 +269,12 @@ def check_bound(bound, declared_bound, label, fail):
     status = bound.get("status")
     if status not in BOUND_STATUSES:
         fail("%s bound status %r is not one of %s" % (label, status, list(BOUND_STATUSES)))
-    if declared_bound is not None and bound.get("declared") != declared_bound:
+    recorded = bound.get("declared")
+    if isinstance(recorded, str):
+        recorded = CONSTRUCTION_CLAUSE.sub("", recorded)
+    if declared_bound is not None and recorded != declared_bound:
         fail(
-            "%s bound.declared %r does not match the case's declared bound %r"
+            "%s bound.declared %r does not match the case's declared execution bound %r"
             % (label, bound.get("declared"), declared_bound)
         )
     ceiling = bound.get("probe_tier_ceiling_s")
@@ -432,7 +441,7 @@ def check_row(row, scope, cases_dir, resolve_root, errors):
     else:
         for rung_name in RUNGS:
             verdicts[rung_name] = check_rung(
-                rungs[rung_name], rung_name, row, declared.get("bound"), resolve_root, fail
+                rungs[rung_name], rung_name, row, declared.get("exec_bound"), resolve_root, fail
             )
 
     status = row.get("status")

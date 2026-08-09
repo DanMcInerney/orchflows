@@ -205,8 +205,11 @@ class TestCanonicalBenchmaker(unittest.TestCase):
                 "Internal call carriage",
                 "Evidence acquisition",
                 "Evaluation design",
+                "Execution tier and difficulty",
                 "Materialization",
                 "Qualification",
+                "Pre-seal stages",
+                "Scoring",
                 "Manifest and return",
             ],
             headings,
@@ -214,7 +217,7 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         packed = squashed(self.protocol)
         for phrase in (
             "partition one caller bound",
-            "evidence, design, materialization, and qualification",
+            "evidence, design, materialization, qualification, and the pre-seal stages",
             "total cannot exceed",
             "unused allocation",
             "Never copy the caller bound",
@@ -291,6 +294,70 @@ class TestCanonicalBenchmaker(unittest.TestCase):
             self.assertIn(policy, qualification)
         self.assertIn("Builders never qualify", qualification)
 
+    def test_protocol_prices_speed_below_the_coverage_floor(self):
+        tier = squashed(markdown_section(self.protocol, "Execution tier and difficulty"))
+        # The coverage floor outranks cost, in both directions of the split.
+        self.assertIn("declared coverage floor never moves", tier)
+        self.assertIn("smallest tier", tier)
+        self.assertIn("suite ceiling rises", tier)
+        self.assertIn("raise that case's tier and record why; never drop the angle", tier)
+        # Speed and difficulty each name what they may not be bought from.
+        self.assertIn(
+            "Speed is bought from the probe, never from the coverage floor, "
+            "the oracle, or the horizon",
+            tier,
+        )
+        self.assertIn("Difficulty is built, never filtered", tier)
+        for forbidden in (
+            "Never select or retain a case by target failure",
+            "never remove one for low discrimination",
+            "never revise the design from a candidate's scores",
+        ):
+            self.assertIn(forbidden, tier)
+
+    def test_protocol_orders_and_bounds_the_three_pre_seal_stages(self):
+        stages = squashed(markdown_section(self.protocol, "Pre-seal stages"))
+        for ordered in (
+            "triage measurement",
+            "reference audit",
+            "attack pass",
+            "recorded measurement",
+        ):
+            self.assertIn(ordered, stages)
+        self.assertLess(stages.index("reference audit"), stages.index("attack pass"))
+        # The audit's third context, and its count-not-rate output.
+        self.assertIn(
+            "disjoint from every builder **and** from the qualifying context", stages
+        )
+        self.assertIn("binary fatal-flaw call, never a graded scale", stages)
+        self.assertIn("defect count", stages)
+        self.assertIn("never a rate", stages)
+        # The attack pass's three outcomes and its declared-hole failure path.
+        for outcome in ("`SUCCEEDED`", "`FAILED`", "`BLOCKED`"):
+            self.assertIn(outcome, stages)
+        self.assertIn("**dated** checklist", stages)
+        self.assertIn("An undeclared hole is the failure", stages)
+        # The measurement pass records; it never renders a verdict.
+        self.assertIn("Recording only", stages)
+        self.assertIn("cannot fail", stages)
+        self.assertIn("dispatch made unreachable is an intake gap", stages)
+        self.assertIn("distinct failure signatures", stages)
+        for status in ("`both-pass`", "`split`", "`both-fail`", "`inversion`"):
+            self.assertIn(status, stages)
+        self.assertIn("max(measured rerun spread, one case)", stages)
+        self.assertIn("outside the sealed package", stages)
+
+    def test_protocol_scoring_reports_distributions_not_points(self):
+        scoring = squashed(markdown_section(self.protocol, "Scoring"))
+        self.assertIn("per-angle vector is the artifact", scoring)
+        self.assertIn("never headline a scalar", scoring)
+        self.assertIn("`(score, cost)` pairs", scoring)
+        self.assertIn("`pass^k` beside `pass@1`", scoring)
+        self.assertIn("deterministic oracle versus by judged oracle", scoring)
+        self.assertIn("target × model × harness × benchmark", scoring)
+        self.assertIn("Never subtract a harness offset", scoring)
+        self.assertIn("count of sign flips", scoring)
+
     def test_manifest_owner_is_immutable_and_complete(self):
         manifest = squashed(self.manifest_contract)
         for field in (
@@ -317,6 +384,46 @@ class TestCanonicalBenchmaker(unittest.TestCase):
             "covers",
         ):
             self.assertIn(rule, manifest)
+
+    def test_manifest_owner_carries_every_pre_seal_field(self):
+        manifest = squashed(self.manifest_contract)
+        for field in (
+            "`anchors`",
+            "`builders`",
+            "`reference_audit`",
+            "`attack_audit`",
+            "`seal_measurement`",
+            "`resolution`",
+            "`retirement_trigger`",
+            "`incomparability`",
+        ):
+            self.assertIn(field, manifest)
+        self.assertIn("A declared `none` is legal; silence is not", manifest)
+        self.assertIn("defect **count**", manifest)
+        self.assertIn("Never a rate", manifest)
+        self.assertIn("the attack that works", manifest)
+        self.assertIn("count of distinct failure signatures", manifest)
+        self.assertIn("`max(measured rerun spread, one case)`", manifest)
+        self.assertIn("the declaration only. Its firing is recorded", manifest)
+
+    def test_manifest_component_identity_is_recomputable_from_the_tree(self):
+        manifest = squashed(self.manifest_contract)
+        self.assertIn("A component identity is recomputable", manifest)
+        self.assertIn("SHA-256 of its bytes", manifest)
+        # squashed() collapses the lock format's double space.
+        self.assertIn("`<sha256> <posix-path>` line per contained file", manifest)
+        self.assertIn("sorted by path, LF-terminated", manifest)
+        self.assertIn("ships the recompute as a runnable check", manifest)
+        # The check the law names has to exist, and has to be the same recipe.
+        tool = ROOT / "benchmarks" / "benchmaker" / "tools" / "component_identity.py"
+        self.assertTrue(tool.is_file(), f"missing recompute tool: {tool}")
+
+    def test_composition_runs_the_pre_seal_stages_before_sealing(self):
+        self.assertIn("- pre-seal —", self.body)
+        self.assertLess(self.body.index("- materialize —"), self.body.index("- pre-seal —"))
+        self.assertIn("materialize → pre-seal", self.body)
+        self.assertIn("Seal after they close", self.body)
+        self.assertIn("declared coverage floor never moves", self.body)
 
 
 class TestBenchmarkFixture(unittest.TestCase):
@@ -374,6 +481,14 @@ class TestBenchmarkFixture(unittest.TestCase):
                 "expected_cost",
                 "gaps",
                 "protected_evidence",
+                "anchors",
+                "builders",
+                "reference_audit",
+                "attack_audit",
+                "seal_measurement",
+                "resolution",
+                "retirement_trigger",
+                "incomparability",
             },
             set(self.manifest),
         )
@@ -391,6 +506,40 @@ class TestBenchmarkFixture(unittest.TestCase):
             self.manifest["protected_evidence"]["candidate_inaccessible_check"]
         )
         self.assertTrue(self.manifest["gaps"])
+
+    def test_pre_seal_fields_declare_absence_rather_than_fabricate_it(self):
+        cases = [
+            case["case_identity"]
+            for case in json.loads(
+                (FIXTURE / "cases.json").read_text(encoding="utf-8")
+            )["cases"]
+        ]
+        # Per case, and never silent: `none` with a reason is the legal form.
+        for field in ("anchors", "builders"):
+            self.assertEqual(set(cases), set(self.manifest[field]))
+            for value in self.manifest[field].values():
+                self.assertTrue(value.strip())
+        for anchor in self.manifest["anchors"].values():
+            if anchor.startswith("none"):
+                self.assertIn("—", anchor, "a `none` anchor carries its reason")
+        # A count and classes, never a rate.
+        audit = self.manifest["reference_audit"]
+        self.assertIsInstance(audit["defect_count"], int)
+        self.assertEqual(len(audit["defect_classes"]), audit["defect_count"])
+        self.assertEqual(set(cases), set(audit["method"]))
+        # A stage that did not run says so here and in gaps — never a figure.
+        gaps = " ".join(self.manifest["gaps"])
+        for field in ("attack_audit", "seal_measurement"):
+            self.assertIn("not run", self.manifest[field]["status"])
+        self.assertIn("attack pass not run", gaps)
+        self.assertIn("measurement pass not run", gaps)
+        self.assertEqual([], self.manifest["attack_audit"]["unrepaired"])
+        self.assertIsNone(self.manifest["seal_measurement"]["margin_cases"])
+        # Resolution rests on the one-case floor while the spread is unmeasured.
+        self.assertIsNone(self.manifest["resolution"]["measured_rerun_spread"])
+        self.assertEqual(1, self.manifest["resolution"]["one_case"])
+        for field in ("retirement_trigger", "incomparability"):
+            self.assertTrue(self.manifest[field].strip())
 
     def test_runner_accepts_good_rejects_bad_and_replays_evidence(self):
         good_first = self._run("known_good.py")

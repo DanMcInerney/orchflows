@@ -26,12 +26,46 @@ these fields:
 - `protected_evidence` — fixed evidence identity, visibility, release policy,
   and candidate-inaccessible-check identity or `null`.
 
+These carry what [the protocol](benchmaker-protocol.md)'s pre-seal stages
+establish. Each is true at seal and none is re-derivable afterwards, so
+each is fixed here rather than recomputed by a consumer:
+
+- `anchors` — per case, the reference outside the package that the expected
+  outcome is bound to, or `none` with its reason. A declared `none` is
+  legal; silence is not.
+- `builders` — per case, the builder context's model id, effort, and host
+  binding. Recording it is what lets a successor compute a builder-family
+  effect the run itself cannot.
+- `reference_audit` — the auditing context identity, the method per case
+  (solve-from-prompt or re-read), the declared sample, a defect **count**,
+  and each defect's class. Never a rate.
+- `attack_audit` — the dated checklist identity, the outcome per class, and
+  every hole left unrepaired at seal named with the attack that works.
+- `seal_measurement` — the recorded measurement pass: candidate identities,
+  measured scope, per-case status, the count of distinct failure signatures,
+  and the margin.
+- `resolution` — the smallest reportable difference,
+  `max(measured rerun spread, one case)`.
+- `retirement_trigger` — the declaration only. Its firing is recorded in the
+  measurement record outside the package, never here.
+- `incomparability` — the identity boundary scores do not cross, covering
+  model id, effort level, host binding, and scaffold.
+
 Every component reference carries a `sha256:` digest of its exact
 canonical bytes and a workspace-resolved locator; consumers and qualification
 resolve the locator and verify that digest before use. The reference fixture
 uses relative-file locators, but the schema prescribes no storage layout. Each
 qualification entry carries `verdict`, `oracle`, `oracle_class`, `evidence`,
 and `covers` per the verdict contract, plus whether the criterion is required.
+
+A component identity is recomputable from the bytes it names, and the
+recipe is one rule nested: a file component's identity is the SHA-256 of
+its bytes; a directory component's is the SHA-256 of its component lock —
+one `<sha256>  <posix-path>` line per contained file, path relative to
+the component root, sorted by path, LF-terminated. An identity no tool
+can reproduce from the tree proves only that the JSON agrees with
+itself, so the package ships the recompute as a runnable check. Evidence
+held off-tree by policy is exempt and named as exempt.
 
 Canonicalize the manifest after removing only `benchmark_identity`: UTF-8 JSON,
 keys sorted recursively, no insignificant whitespace, and non-ASCII characters

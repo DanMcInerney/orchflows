@@ -41,6 +41,19 @@ and a re-measurement at the current digest is not comparable to them.
 recorded gap in the package's integrity chain, not evidence that the
 tree is unchanged.
 
+**That gap is now closed, and the distance has grown.** On 2026-08-09 the
+package gained `tools/component_identity.py`, which recomputes every
+manifest component identity from the tree, so `benchmark_identity` moves
+when `cases/` moves. The same seal split `case.toml`'s `bound` into a
+candidate-facing `exec_bound` and added the redesign's eight pre-seal
+manifest fields, minting `benchmark_identity`
+`sha256:cb06f656…b839088` at set digest `sha256:b236f614…ee8c5712`
+(SEALS.md, 2026-08-09). Every row below is two seals behind that.
+Each row's `bound.declared` quotes the predecessor key verbatim; the
+rows are facts and are not rewritten, and `validate_measures.py` strips
+the construction clause before comparing them to the current
+`exec_bound`.
+
 **This entry is incomplete and is not the finished record.** Three cases
 of sixteen are measured: `cs-cli-fresh`, `cs-antigoodhart-2` and
 `cs-contradiction-fresh`. The run was closed at three cases by its

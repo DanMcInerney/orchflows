@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "benchmark_identity": "sha256:8246a724ba8384c29ac48719320bae2df6cd60d6fe3933981e8ab1af0d9a88c2",
+  "benchmark_identity": "sha256:abae73df5498febabbfb2e2c5e58fd2e16996476559a8fa62c1392741672c9b0",
   "evaluation_design": {
     "identity": "sha256:043ee5a568114e8c9d3c95ee45da39f1797b9fb4f24abb46fcc1d8e6a2b8bbe5",
     "locator": "evaluation-design.json"
@@ -32,12 +32,53 @@
     "per_case_timeout_seconds": 2
   },
   "gaps": [
-    "optimization resistance is UNVERIFIED because this public fixture has no candidate-inaccessible check"
+    "optimization resistance is UNVERIFIED because this public fixture has no candidate-inaccessible check",
+    "attack pass not run: this public fixture ships no protected evidence, so passing without the work is its intended shape rather than a hole",
+    "measurement pass not run: the fixture has no candidate rung pair, so difficulty is UNVERIFIED and resolution rests on the one-case floor"
   ],
   "protected_evidence": {
     "identity": "protected-evidence:none",
     "visibility": "public",
     "release_policy": "all fixture evidence is public",
     "candidate_inaccessible_check": null
-  }
+  },
+  "anchors": {
+    "case:ascii-word-v1": "none — the outcome follows from the Unicode simple-uppercase mapping, which nothing outside this package can move",
+    "case:mixed-symbols-v1": "none — the same mapping; this case fixes its identity half"
+  },
+  "builders": {
+    "case:ascii-word-v1": "hand-authored as a schema witness; no model builder context",
+    "case:mixed-symbols-v1": "hand-authored as a schema witness; no model builder context"
+  },
+  "reference_audit": {
+    "auditor_context": "none — this fixture witnesses the manifest shape and grades no candidate",
+    "method": {
+      "case:ascii-word-v1": "re-read",
+      "case:mixed-symbols-v1": "re-read"
+    },
+    "declared_sample": "both cases",
+    "defect_count": 0,
+    "defect_classes": []
+  },
+  "attack_audit": {
+    "checklist_identity": "attack-classes:2026-08-08",
+    "outcomes": {},
+    "unrepaired": [],
+    "status": "not run — declared in gaps"
+  },
+  "seal_measurement": {
+    "status": "not run — declared in gaps",
+    "candidates": [],
+    "scope": "candidate-accessible portion",
+    "per_case_status": {},
+    "distinct_failure_signatures": 0,
+    "margin_cases": null
+  },
+  "resolution": {
+    "measured_rerun_spread": null,
+    "one_case": 1,
+    "smallest_reportable_difference": "1 case of 2"
+  },
+  "retirement_trigger": "statistical indistinguishability between the compared candidates; a firing is recorded in the measurement record, never here",
+  "incomparability": "scores do not cross this benchmark identity, nor a change of model id, effort level, host binding, or scaffold"
 }

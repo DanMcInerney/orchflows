@@ -46,7 +46,7 @@ PROTECTED = (
 )
 MODEL = {"strong": "claude-opus-5", "weak": "claude-sonnet-5"}
 EFFORT = {"strong": "xhigh", "weak": "high"}
-DECLARED_BOUND = "one BC1 share"
+DECLARED_BOUND = "probe within small tier"
 VERDICT_PAIR = {
     "both-pass": ("PASS", "PASS"),
     "split": ("PASS", "FAIL"),
@@ -100,7 +100,7 @@ class World:
             directory = self.cases_dir / case
             directory.mkdir(parents=True)
             (directory / "case.toml").write_text(
-                'id = "%s"\nangle = "angle-%d"\nsize = "small"\nbound = "%s"\n'
+                'id = "%s"\nangle = "angle-%d"\nsize = "small"\nexec_bound = "%s"\n'
                 % (case, index, DECLARED_BOUND),
                 encoding="utf-8",
             )
@@ -796,7 +796,35 @@ class TestCost(RecordCase):
 
         rows = mutate(FULL_PLAN, "cs-cli-fresh", change)
         self.assertViolation(
-            record_text([entry_text(rows)]), "does not match the case's declared bound", count=1
+            record_text([entry_text(rows)]),
+            "does not match the case's declared execution bound",
+            count=1,
+        )
+
+    def test_predecessor_format_bound_still_matches(self):
+        # A row recorded before `bound` became `exec_bound` quotes the
+        # conflated string. The record is a fact and is not rewritten;
+        # the checker strips the construction clause before comparing.
+        def change(row):
+            row["rungs"]["strong"]["bound"]["declared"] = (
+                "one BC1 share; " + DECLARED_BOUND
+            )
+
+        rows = mutate(FULL_PLAN, "cs-cli-fresh", change)
+        self.assertClean(record_text([entry_text(rows)]))
+
+    def test_predecessor_format_with_the_wrong_tier_still_fails(self):
+        # The normalization drops the construction clause, not the check.
+        def change(row):
+            row["rungs"]["strong"]["bound"]["declared"] = (
+                "one BC1 share; probe within large tier"
+            )
+
+        rows = mutate(FULL_PLAN, "cs-cli-fresh", change)
+        self.assertViolation(
+            record_text([entry_text(rows)]),
+            "does not match the case's declared execution bound",
+            count=1,
         )
 
 

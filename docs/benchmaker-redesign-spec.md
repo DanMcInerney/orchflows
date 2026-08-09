@@ -95,6 +95,53 @@ three-trial case ran. The judged oracle class, the suite's weakest, is
 entirely unexercised. Cost ran ≈1.5x the estimate below: 211,834 tokens
 for one case at two rungs, against §4.3's projection.
 
+## 0b. Revision — 2026-08-09, the law landing
+
+**A new owner requirement, and it is not derivable from anything above.**
+Speed is now a stated goal, scoped by target class: for a target whose
+execution is cheap, BenchMaker builds cases that are fast *and*
+comprehensive *and* hard; for a target whose execution is expensive —
+BenchMaker building benchmarks for itself is the type case — it stays
+comprehensive and may not be fast. This is an owner decision, not a
+field finding; no retrieved source states it.
+
+It slots into the arbitration order without disturbing it, because it is
+a cost constraint and the order already ranks cost below validity and
+coverage. Written as law in `PROT` §Execution tier and difficulty, it
+resolves to three rules:
+
+- The declared coverage floor never moves with the target's execution
+  cost. A cheap target's suite ceiling is tight and every case sits in
+  the smallest tier its angle can be observed in; an expensive target's
+  ceiling rises and the cost is declared rather than hidden.
+- **Speed is bought from the probe, never from the coverage floor, the
+  oracle, or the horizon the outcome needs.** A case made fast by
+  loosening its oracle buys a `both-pass` reading, and §5's table says
+  no measurement can tell that from a lenient oracle. Where an angle is
+  unobservable within its tier, the tier rises and the reason is
+  recorded; the angle is never dropped.
+- **Difficulty is built, never filtered.** Horizon length, outcome
+  specificity, and a stricter oracle that stays correct are the licensed
+  levers. P3's ban on selecting by target failure, §9's ban on culling
+  low-discrimination cases, and the ban on revising the design from
+  scores are the same rule from three directions, and this makes them
+  one clause.
+
+The cheap-target half also pays for itself: §4's two measurement passes
+run the whole set at two rungs twice, so a slow suite is a measurement
+pass that does not get run. Speed is not economy here; it is what makes
+the instrument affordable enough to exist.
+
+**Two defects from §0 are closed and one is downgraded.** The
+manifest-to-tree hole is closed by `component_identity.py` (§10 step 2).
+The `bound` conflation is closed: `case.toml` carries `exec_bound`, the
+candidate-facing execution bound alone, and the construction allocation
+stays in `evaluation-design.md` §8 where it already lived; the validator
+refuses a `BC<n>` token in a candidate-facing key. Both were repaired
+for named correctness defects and neither for a score; §4.1's reference
+audit should confirm the repairs rather than trust them, which is now
+recorded in the manifest's `reference_audit.awaiting_confirmation`.
+
 ## 1. The change, in one paragraph
 
 BenchMaker seals a benchmark whose difficulty is unmeasured and whose
@@ -500,23 +547,31 @@ constraint falls.
    is reusable and is the more durable output.
    Re-running the remaining thirteen requires §4.3's new dispatch
    declaration first, or it reproduces the confound.
-2. **Land the law**, in reviewable pieces. Two targets resolve, two do
-   not, and that must be fixed before the step can be cut:
-   `PROT` = `compositions/references/benchmaker-protocol.md` gains §4's
-   stage order and the three stages — its §Qualification independence
-   clause landed 2026-08-08; `MAN` =
-   `compositions/references/benchmaker-manifest.md` gains §3.1's fields
-   — its pending-marker clarification landed 2026-08-08.
-   **`scoring.md` is not a law surface**: the only file of that name is
-   `benchmarks/benchmaker/scoring.md`, a *package* file inside the case
-   set, so §3.3's scoring changes have no owner named here and the
-   scoring law lives in `PROT`. **`EVD` resolves to nothing** —
-   `compositions/references/` holds only protocol, manifest and
-   research. Name both owners before cutting this step.
-   Add, from §0: the dispatch-authority declaration (§4.3), the
-   distinct-failure-signature count beside the discriminating set (§5),
-   and a component-identity recompute tool without which every field
-   added to `MAN` inherits the manifest-to-tree hole.
+2. **Land the law.** ~~In reviewable pieces~~ — **landed 2026-08-09**,
+   as one change, with the two unresolved owners named first.
+   `PROT` = `compositions/references/benchmaker-protocol.md` gained §4's
+   stage order and the three stages, §4.3's dispatch-authority
+   declaration, §5's distinct-failure-signature count, and a new
+   §Execution tier and difficulty; `MAN` =
+   `compositions/references/benchmaker-manifest.md` gained §3.1's eight
+   fields and the component-identity recipe.
+   **The two owners, resolved.** `scoring.md` is not a law surface — the
+   only file of that name is `benchmarks/benchmaker/scoring.md`, a
+   *package* file inside the case set — so §3.3's scoring law lives in
+   `PROT` §Scoring. `EVD` is `skills/workflows/orch-eval-design/SKILL.md`,
+   not a file under `compositions/references/`; it gained the tier and
+   anchor obligations and the ban on selecting a case by a candidate's
+   result.
+   `benchmarks/benchmaker/tools/component_identity.py` closes the
+   manifest-to-tree hole every `MAN` field would otherwise have
+   inherited: it defines the recompute recipe as `seal_set.py`'s own
+   line format nested one level, and `benchmark_identity` now moves when
+   `cases/` moves. The package re-sealed at
+   `sha256:cb06f656…b839088` / set digest `sha256:b236f614…ee8c5712`.
+   Still open at this surface: the sixteen cases were cut against the
+   predecessor manifest law and case none of the new fields, so a
+   candidate that omits all eight still passes every probe. Recorded as
+   a manifest gap.
 3. **Run the remaining pre-seal stages** on the existing set — triage,
    reference audit, repair, attack, repair-or-declare, recorded
    measurement. The reference audit has four defects waiting for it

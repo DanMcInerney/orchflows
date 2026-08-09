@@ -9,7 +9,7 @@ evidence = [
   "evidence/inner-impls",
 ]
 probe = "uv run --no-project python probe/check.py {impl}"
-bound = "one BC3 share; probe within medium tier; 3 judge reruns budgeted"
+exec_bound = "probe within medium tier; 3 judge reruns budgeted"
 expected_qualification = [
   "schema-valid",
   "discrimination",
