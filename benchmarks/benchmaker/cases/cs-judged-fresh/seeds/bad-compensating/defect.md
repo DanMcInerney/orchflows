@@ -2,8 +2,8 @@ deviation: rule-substitution @ judged/deterministic aggregation locus (scoring/a
 
 The aggregation law is substituted: when a required deterministic
 criterion fails, a sufficient judged score total buys the verdict back
-to PASS. Anchors, variance, seal and inner discrimination on the
-runner-produced records all stay lawful, and the package is re-sealed
+to PASS. Anchors, variance, manifest and inner discrimination on the
+runner-produced records all stay lawful, and the package is rebuilt
 over the substituted scoring bytes — the defect is reachable only by
 exercising the aggregation against a synthetic required-FAIL record.
 

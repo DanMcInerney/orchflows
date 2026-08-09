@@ -1,5 +1,5 @@
 {
- "sealed_at": "2026-08-07T05:30:00Z",
+ "qualified_at": "2026-08-07T05:30:00Z",
  "builder": "benchmaker reference build (BC3 exemplar)",
  "source_trace": {
   "spec": "evidence/spec.md, line-id addressed",

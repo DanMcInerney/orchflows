@@ -4,9 +4,9 @@
     {
       "criterion": "schema-valid",
       "verdict": "PASS",
-      "oracle": "manifest canonicalization and ten-field audit",
+      "oracle": "manifest schema and component locator audit",
       "oracle_class": "deterministic",
-      "evidence": "benchmark_identity recomputes from the canonical payload; all ten fields present; every component digest verified over shipped bytes",
+      "evidence": "all nine schema fields present; every component locator resolves over shipped bytes",
       "covers": ["manifest.json"],
       "required": true
     },
@@ -42,7 +42,7 @@
       "verdict": "UNVERIFIED",
       "oracle": "candidate-inaccessible check of the held-back workload store",
       "oracle_class": "evidence",
-      "evidence": "candidate-inaccessible-check is null at this seal; no such check was run; recorded as a gap",
+      "evidence": "candidate-inaccessible-check is null in this package; no such check was run; recorded as a gap",
       "covers": ["manifest.json:protected_evidence"],
       "required": false
     }

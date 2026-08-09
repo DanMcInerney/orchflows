@@ -1,26 +1,20 @@
 {
  "evaluation_design": {
-  "sha256": "17927f0d557443ec233d6a40484cf9130607be176d7fdd4562b78c75e4c804e4",
   "locator": "provenance/evaluation-design.md"
  },
  "runnable_cases": {
-  "sha256": "1290ac8e3898abdd825d957d66225855a0633098856ee39e2f3bea1a9062e557",
   "locator": "cases/cases.json"
  },
  "runner": {
-  "sha256": "2659dd8de7f594b9e2f0fdf6090e9152ec150f73b51d0dfebca370e08a3b2ad6",
   "locator": "runner/run.py"
  },
  "scoring": {
-  "sha256": "42e683620073d9c57146643f87fd91c32ab15ed107b6c4004dff19f5efba2633",
   "locator": "scoring/aggregate.py"
  },
  "provenance": {
-  "sha256": "5bb45742cbd945d20108bdf80c01c34a1c16a7cbaa397595aa05c7523af3d501",
   "locator": "provenance/provenance.json"
  },
  "qualification": {
-  "sha256": "d00de2fa52ce28fd5c99298f180457dbc847c792967728d6a5f3cdc2572fe418",
   "locator": "qualification/verdicts.json"
  },
  "expected_cost": {
@@ -30,5 +24,11 @@
  },
  "gaps": [],
  "protected_evidence": null,
- "benchmark_identity": "sha256:2dc455d78018463a609a285eb3a49fc8737d7c0412892aa1c29aab3e8d242cfe"
+ "anchors": {
+  "cite-resolve": "the exhibited meeting transcript m1 in the case evidence — the expected citation set is read from it, not from this package",
+  "coverage-sources": "the exhibited transcript source list in the case evidence",
+  "judged-coverage": "the rubric frame exhibited in the case evidence — the judged expectation is bound to its wording",
+  "judged-no-invention": "none — no exhibit outside this package pins the absence of invention; the reference audit's re-read is what would establish it",
+  "length-bound": "the declared bound in the exhibited rubric frame"
+ }
 }

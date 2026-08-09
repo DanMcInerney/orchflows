@@ -11,6 +11,7 @@ OLD_BENCH = ROOT / "skills" / "workflows" / "orch-bench"
 OLD_EVOLVE = ROOT / "skills" / "workflows" / "orch-evolve"
 # Demoted per contracts/composition.md: evolve is a named composition.
 EVOLVE = ROOT / "compositions" / "evolve.md"
+TOURNAMENT = ROOT / "compositions" / "skill-tournament.md"
 PANEL = ROOT / "skills" / "engines" / "orch-panel" / "SKILL.md"
 
 CALL_EDGE_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
@@ -164,7 +165,7 @@ class TestFrozenBenchmarkEvolution(unittest.TestCase):
             "frozen evolve spec",
             "`evidence`",
             "incumbent identity",
-            "qualified benchmark identity",
+            "qualified benchmark revision",
             "`affected_surfaces`",
             "`authority`",
             "intersection",
@@ -190,7 +191,10 @@ class TestFrozenBenchmarkEvolution(unittest.TestCase):
             "generation direction",
             "incumbent score card",
             "judge-owned incumbent score card",
-            "benchmark identity",
+            # Sealing goes; freezing the benchmark for the campaign's duration
+            # does not. A campaign comparing candidates across a moving
+            # benchmark measures nothing.
+            "freeze the benchmark revision",
             "result/evidence identity",
             "runner",
             "scoring",
@@ -224,6 +228,21 @@ class TestFrozenBenchmarkEvolution(unittest.TestCase):
             }
             <= calls
         )
+
+    def test_skill_tournament_campaigns_over_one_fixed_benchmark_revision(self):
+        fields, body = split_skill(TOURNAMENT)
+        self.assertEqual("skill-tournament", fields["name"])
+        self.assertLessEqual(len(fields["description"]), 140)
+        contract = normalized(body)
+        # What the sealed identity was standing in for, and all of it that
+        # survives: every candidate scored against the same benchmark bytes.
+        self.assertIn("one benchmark revision the campaign never changes", contract)
+        self.assertIn("qualified benchmark revision", contract)
+        self.assertNotIn("seal", contract)
+        # A done check naming something a run can check.
+        done = normalized(paragraph(body, "Done check:"))
+        self.assertIn("closing score card", done)
+        self.assertIn("benchmark revision", done)
 
     def test_judged_done_check_gets_a_fresh_closing_score_card(self):
         _, body = split_skill(EVOLVE)

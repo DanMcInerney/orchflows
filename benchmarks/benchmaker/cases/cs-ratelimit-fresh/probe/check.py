@@ -13,10 +13,9 @@ directory or from the repository root.
 
 Checks (exit 0 all pass, exit 1 with one line per failure):
 
-  P0.a  manifest present, exactly the ten fields, benchmark_identity
-        recomputes from the canonical payload.
-  P0.b  every component reference's sha256 verifies over the shipped
-        bytes at its locator, resolved relative to the package root.
+  P0.a  manifest present, exactly the nine fields.
+  P0.b  every component reference's locator resolves to shipped bytes,
+        relative to the package root.
   P0.c  qualification entries verdict-contract-complete; no overall
         PASS with a required FAIL; no PASS entry with empty evidence;
         manifest gaps field explicit.
@@ -34,7 +33,6 @@ Hygiene: the package and the inner-implementation pool are copied to a
 scratch directory before any execution; nothing under the case
 directory is ever written.
 """
-import hashlib
 import json
 import os
 import re
@@ -60,10 +58,58 @@ COMPONENT_KEYS = (
     "qualification",
 )
 MANIFEST_KEYS = frozenset(
-    COMPONENT_KEYS + ("benchmark_identity", "expected_cost", "gaps", "protected_evidence")
+    COMPONENT_KEYS + ("expected_cost", "gaps", "protected_evidence")
 )
 ENTRY_KEYS = ("verdict", "oracle", "oracle_class", "evidence", "covers", "required")
 CLOCK_OPS = frozenset(("advance",))
+
+
+# ---- P0.e: the post-qualification manifest fields -------------------
+# `compositions/references/benchmaker-manifest.md` owns the eight. None is
+# re-derivable after the fact, so a package that omits one cannot be repaired
+# by a consumer. This case covers `incomparability`:
+# the injected clock is part of the scaffold, so a wall-clock score and an
+# injected-clock score do not compare.
+# The other fields are legal here and covered by the cases whose angle reaches
+# them; `tools/validate_cases.py` reads PROBED_MANIFEST_FIELDS and refuses a
+# case set that leaves one of the eight uncovered and unrecorded.
+POST_QUALIFICATION_FIELDS = frozenset(
+    (
+        "anchors",
+        "builders",
+        "reference_audit",
+        "attack_audit",
+        "measurement",
+        "resolution",
+        "retirement_trigger",
+        "incomparability",
+    )
+)
+PROBED_MANIFEST_FIELDS = {"incomparability": "constrained"}
+REQUIRED_MANIFEST_FIELDS = frozenset(MANIFEST_KEYS)
+ALLOWED_MANIFEST_FIELDS = REQUIRED_MANIFEST_FIELDS | POST_QUALIFICATION_FIELDS
+
+_BOUNDARY_TERMS = ("model", "effort", "host", "scaffold")
+
+
+def _incomparability_failures(manifest, out):
+    text = manifest.get("incomparability")
+    if not (isinstance(text, str) and text.strip()):
+        out.append("'incomparability' states no identity boundary")
+        return
+    lowered = text.lower()
+    absent = [term for term in _BOUNDARY_TERMS if term not in lowered]
+    if absent:
+        out.append("incomparability's boundary omits %s" % ", ".join(absent))
+
+
+def post_qualification_failures(manifest):
+    """P0.e — the field(s) this case covers, against the manifest contract."""
+    if not isinstance(manifest, dict):
+        return ["manifest is not a JSON object"]
+    out = []
+    _incomparability_failures(manifest, out)
+    return out
 
 
 def resolve_impl():
@@ -74,16 +120,6 @@ def resolve_impl():
         if candidate.is_dir():
             return candidate.resolve()
     return None
-
-
-def sha256_file(path):
-    return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def canonical_identity(manifest):
-    payload = {k: v for k, v in manifest.items() if k != "benchmark_identity"}
-    blob = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-    return "sha256:" + hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
 def locate(root, locator):
@@ -116,34 +152,22 @@ def check_manifest(impl, failures):
     keys = set(manifest)
     for missing in sorted(MANIFEST_KEYS - keys):
         failures.append("P0.a: manifest field '%s' missing" % missing)
-    for extra in sorted(keys - MANIFEST_KEYS):
+    for extra in sorted(keys - ALLOWED_MANIFEST_FIELDS):
         failures.append("P0.a: manifest carries unknown field '%s'" % extra)
-    if keys != MANIFEST_KEYS:
+    if (MANIFEST_KEYS - keys) or (keys - ALLOWED_MANIFEST_FIELDS):
         return None
-    recorded = manifest.get("benchmark_identity")
-    recomputed = canonical_identity(manifest)
-    if recorded != recomputed:
-        failures.append(
-            "P0.a: benchmark_identity does not recompute (recorded %s, canonical %s)"
-            % (recorded, recomputed)
-        )
-
+    for message in post_qualification_failures(manifest):
+        failures.append("P0.e: " + message)
     for key in COMPONENT_KEYS:
         ref = manifest.get(key)
-        if not (isinstance(ref, dict) and "identity" in ref and "locator" in ref):
-            failures.append("P0.b: component '%s' lacks identity/locator" % key)
+        if not (isinstance(ref, dict) and "locator" in ref):
+            failures.append("P0.b: component '%s' is not a locator reference" % key)
             continue
         path = locate(impl, ref["locator"])
         if path is None or not path.is_file():
             failures.append(
                 "P0.b: component '%s' locator '%s' does not resolve to a file inside the package"
                 % (key, ref["locator"])
-            )
-            continue
-        actual = sha256_file(path)
-        if actual != ref["identity"]:
-            failures.append(
-                "P0.b: component '%s' digest mismatch at '%s'" % (key, ref["locator"])
             )
 
     if not isinstance(manifest.get("gaps"), list):

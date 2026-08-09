@@ -2,7 +2,7 @@
 
 The scoring policy declares `any-trial` aggregation: a case passes
 when any one of its declared trials passes. Everything else is
-lawful — the manifest recomputes, component digests verify, the trial
+lawful — the manifest is schema-valid, its locators resolve, the trial
 count is still three, the anchored case still pins the exhibited
 trace, and the inner sweep still discriminates because the inner bad
 variants happen to fail every trial. Only a probe that pins the

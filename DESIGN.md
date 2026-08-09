@@ -371,7 +371,7 @@ widens the run's scope or branches on domain.
   `orch-fixture`'s withheld anchors — and enforces every one at the
   dispatch layer that [contracts/delegation.md](contracts/delegation.md)
   owns, through `inputs` and `authority`, never in a `workspace` cell.
-  Protected evidence is that construct with a digest attached. The
+  Protected evidence is that construct with the held-back files named. The
   paired executor was refused with it: its claimed ground — that an
   oracle's counterexample is constructible only after the oracle exists
   — is false, because a counterexample derives from the behavior, which

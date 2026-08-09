@@ -20,4 +20,5 @@ per-source coverage — are deterministic criteria and form the required
 floor. Judged renderings of coverage quality and faithfulness are
 secondary criteria: they carry a stated scale with anchors drawn from
 the sources, they never compensate for a deterministic failure, and
-their judge rerun variance is recorded before the package seals.
+their judge rerun variance is recorded before the package's
+qualification closes.

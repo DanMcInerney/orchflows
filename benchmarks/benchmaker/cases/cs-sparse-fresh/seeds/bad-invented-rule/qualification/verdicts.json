@@ -4,13 +4,13 @@
   {
    "criterion": "schema-valid",
    "verdict": "PASS",
-   "oracle": "manifest canonicalization + component digest audit",
+   "oracle": "manifest schema and component locator audit",
    "oracle_class": "deterministic",
-   "evidence": "identity recomputed equal; six component digests verified over the shipped bytes",
+   "evidence": "six component locators resolved over the shipped bytes",
    "covers": [
-    "runnable_cases@sha256:94111ea4e8e0aadb4e6fc93aba2473b43655b3d2e54922676faf50c173ca9d81",
-    "runner@sha256:8a9a7aea57dd0f29811ccff07595283df6371ae413ae0a99d82c688174c89100",
-    "scoring@sha256:a4f0e1402e14eb9b72edd5ec01248f71fab70f159ba1f8ec23db77441237ea8d"
+    "runnable_cases@cases/cases.json",
+    "runner@runner/run.py",
+    "scoring@scoring/aggregate.py"
    ],
    "required": true
   },
@@ -21,9 +21,9 @@
    "oracle_class": "deterministic",
    "evidence": "reference and good variant PASS; every bad variant failed through the criterion owning its defect; sweep ledger q-sweep-01",
    "covers": [
-    "runnable_cases@sha256:94111ea4e8e0aadb4e6fc93aba2473b43655b3d2e54922676faf50c173ca9d81",
-    "runner@sha256:8a9a7aea57dd0f29811ccff07595283df6371ae413ae0a99d82c688174c89100",
-    "scoring@sha256:a4f0e1402e14eb9b72edd5ec01248f71fab70f159ba1f8ec23db77441237ea8d"
+    "runnable_cases@cases/cases.json",
+    "runner@runner/run.py",
+    "scoring@scoring/aggregate.py"
    ],
    "required": true
   },
@@ -34,9 +34,9 @@
    "oracle_class": "deterministic",
    "evidence": "two sweeps produced identical result bytes",
    "covers": [
-    "runnable_cases@sha256:94111ea4e8e0aadb4e6fc93aba2473b43655b3d2e54922676faf50c173ca9d81",
-    "runner@sha256:8a9a7aea57dd0f29811ccff07595283df6371ae413ae0a99d82c688174c89100",
-    "scoring@sha256:a4f0e1402e14eb9b72edd5ec01248f71fab70f159ba1f8ec23db77441237ea8d"
+    "runnable_cases@cases/cases.json",
+    "runner@runner/run.py",
+    "scoring@scoring/aggregate.py"
    ],
    "required": true
   },
@@ -47,9 +47,9 @@
    "oracle_class": "deterministic",
    "evidence": "sweep completed in 4.1 s against the 30 s per-execution limit",
    "covers": [
-    "runnable_cases@sha256:94111ea4e8e0aadb4e6fc93aba2473b43655b3d2e54922676faf50c173ca9d81",
-    "runner@sha256:8a9a7aea57dd0f29811ccff07595283df6371ae413ae0a99d82c688174c89100",
-    "scoring@sha256:a4f0e1402e14eb9b72edd5ec01248f71fab70f159ba1f8ec23db77441237ea8d"
+    "runnable_cases@cases/cases.json",
+    "runner@runner/run.py",
+    "scoring@scoring/aggregate.py"
    ],
    "required": true
   },
@@ -60,9 +60,9 @@
    "oracle_class": "evidence",
    "evidence": "every undocumented sampled construct is registered; no gap overlaps a cased behavior",
    "covers": [
-    "runnable_cases@sha256:94111ea4e8e0aadb4e6fc93aba2473b43655b3d2e54922676faf50c173ca9d81",
-    "runner@sha256:8a9a7aea57dd0f29811ccff07595283df6371ae413ae0a99d82c688174c89100",
-    "scoring@sha256:a4f0e1402e14eb9b72edd5ec01248f71fab70f159ba1f8ec23db77441237ea8d"
+    "runnable_cases@cases/cases.json",
+    "runner@runner/run.py",
+    "scoring@scoring/aggregate.py"
    ],
    "required": true
   }

@@ -9,7 +9,7 @@ whose `inputs` carry one frozen evolve spec governed by the
 [spec contract](../contracts/spec.md). The spec's `evidence`
 identifies the incumbent identity, its fixed benchmark
 result/evidence, covered eligibility verdict and Judge-owned score
-card, plus one qualified benchmark identity and covered-PASS
+card, plus one qualified benchmark revision and covered-PASS
 qualification verdict. `affected_surfaces` names candidate-mutable
 target surfaces; packet `authority` names write scope and exclusions.
 Mutation authority is their intersection. Spec `acceptance` fixes
@@ -30,8 +30,9 @@ Steps:
   integrated candidate, submitted with the same frozen criteria to
   `orch-verify`; verified survivors, including the incumbent, go as a
   fixed set — each candidate bound to its covered-PASS result/evidence
-  identity and frozen benchmark/scoring identities — with frozen
-  criteria, predeclared aggregation, and lane count to `orch-panel`.
+  identity and the frozen benchmark revision and scoring identity —
+  with frozen criteria, predeclared aggregation, and lane count to
+  `orch-panel`.
   Promote only a survivor whose score card cites the admitted evidence
   and satisfies the frozen rule and margin; promotion alone never
   completes.
@@ -47,9 +48,10 @@ Edges:
   approaches.
 
 Invariants:
-- Freeze the benchmark identity, runner, scoring, protected evidence
+- Freeze the benchmark revision, runner, scoring, protected evidence
   policy, mutation authority, promotion rule, required margin, and
-  bound.
+  bound. A campaign comparing candidates across a moving benchmark
+  measures nothing.
 - A changed benchmark starts a new campaign in which every retained
   candidate is evaluated again.
 - Kill any candidate lacking PASS on every required deterministic
@@ -74,6 +76,6 @@ incumbent's admitted result/evidence identity, satisfies the frozen
 promotion done-check.
 
 Return: status, result — the final incumbent identity, verification —
-the closing score card and eligibility verdicts; then frozen benchmark
-identity, generation count, promotion/kill log, disagreement, partial
-evidence, feedback and gaps, and bounds spent.
+the closing score card and eligibility verdicts; then the frozen
+benchmark revision, generation count, promotion/kill log, disagreement,
+partial evidence, feedback and gaps, and bounds spent.

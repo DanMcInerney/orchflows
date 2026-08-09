@@ -23,12 +23,12 @@ about whether the target finds the benchmark hard. A benchmark can pass
 every validity check at a 100% target score. Gate validity; **measure**
 difficulty and publish the figure.
 
-Measure pre-seal, on the candidate-accessible half only — running the
-target against protected evidence exposes it. Publish the score, its
-scope, the target identity, and the date. Do not gate on a band: at a
-32-case resolution a 5-9% band admits one attainable score, and a FAIL
-after qualification has fixed an identity mints a successor per attempt
-with no loop bound.
+Measure in the measurement pass, on the candidate-accessible half
+only — running the target against protected evidence exposes it.
+Publish the score, its scope, the target identity, and the date. Do not
+gate on a band: at a 32-case resolution a 5-9% band admits one
+attainable score, and a gate forces one verdict on the two readings
+below, which demand opposite repairs.
 
 A published launch band is one maintainer's stated practice, not a field
 standard. Cite it as an anchor; never as a threshold.
@@ -72,7 +72,7 @@ difficulty from the outside.
   generation and authors its novelty.
 - **Never calibrate difficulty to the system under test.** It is
   revising the design from scores, and no benchmark in the field does
-  it. Incompatible with a sealed set.
+  it.
 
 ## The answer key is the weakest link
 
@@ -127,9 +127,10 @@ Attackability is architectural. Every one of ten audited agent benchmarks
 was passable at near-perfect scores without solving a task (219 flaws).
 One round of patching cannot tell a fixable benchmark from a structurally
 broken one — only re-running the attacker can. Attempt to pass the
-benchmark without doing the work, before sealing, from the candidate's
-own scope. An attack that needs material the candidate cannot reach is
-the strongest result available: it shows the protection is load-bearing.
+benchmark without doing the work, in the attack pass, from the
+candidate's own scope. An attack that needs material the candidate
+cannot reach is the strongest result available: it shows the protection
+is load-bearing.
 
 ## A score is a property of its configuration
 
@@ -236,7 +237,7 @@ published canary GUID) and n-gram decontamination falls to paraphrase.
 Treat a canary as detection, never as resistance.
 
 At a version boundary, declare cross-version results not comparable and
-re-grade. This is the field converging on BenchMaker's successor-identity
+re-grade. This is the field converging on BenchMaker's incomparability
 rule, arrived at independently.
 
 **The re-grade is also an agreement test.** The agreement-testing work

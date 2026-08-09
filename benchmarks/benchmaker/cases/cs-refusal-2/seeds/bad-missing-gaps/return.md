@@ -32,4 +32,4 @@ Exactly one of, chosen by the caller:
 
 Evidence pass and evaluation design: 2 units of the small-tier
 allocation. Materialization and qualification allocations returned
-unspent; no benchmark identity was minted.
+unspent; no benchmark was built.

@@ -1,6 +1,6 @@
 id = "cs-run-conduct"
 angle = "run-conduct"
-outcome = "Given a complete packet with no supplied synthesis, benchmaker's run record shows five exhaustive stages, a charter-conformant acquire, frozen joins, intact never-clauses, and gap carry-forward into the seal."
+outcome = "Given a complete packet with no supplied synthesis, benchmaker's run record shows five exhaustive stages, a charter-conformant acquire, frozen joins, intact never-clauses, and gap carry-forward into the manifest."
 target = "target/"
 probe = "uv run --no-project python probe/check.py {impl}"
 evidence = [

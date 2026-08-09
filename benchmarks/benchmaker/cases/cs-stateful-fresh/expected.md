@@ -1,16 +1,22 @@
 # cs-stateful-fresh — criteria classes
 
-Angle: **stateful**. The produced artifact is a sealed benchmark
+Angle: **stateful**. The produced artifact is a benchmark
 package for the schema-migration tool fixed by `evidence/spec.md`,
 whose defining defects appear only on the second run against the same
 state. Criteria classes only; nothing below names a transcribable
 fixture, journal constant, or oracle value.
 
-## Seal validity (required)
+## Manifest validity (required)
 
-All ten manifest fields present; benchmark identity recomputes from
-the canonical payload; every component digest verifies over the
-shipped bytes at its locator.
+All nine manifest fields present; every component locator resolves
+over the shipped bytes at its locator.
+
+## Resolution declared (required)
+
+`resolution` states the smallest reportable difference as
+`max(measured rerun spread, one case)`. A two-run oracle is where a
+rerun spread first shows up, so the spread is measured and recorded
+rather than left to a reader to infer.
 
 ## Two-run transcript (required)
 

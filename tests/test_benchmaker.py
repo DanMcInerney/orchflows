@@ -17,11 +17,240 @@ OLD_PACKAGE = ROOT / "skills" / "workflows" / "orch-benchmaker"
 SKILL = ROOT / "compositions" / "benchmaker.md"
 PROTOCOL = ROOT / "compositions" / "references" / "benchmaker-protocol.md"
 MANIFEST_CONTRACT = ROOT / "compositions" / "references" / "benchmaker-manifest.md"
+PACKAGE = ROOT / "benchmarks" / "benchmaker"
+PACKAGE_MANIFEST = PACKAGE / "manifest.json"
 FIXTURE = ROOT / "tests" / "fixtures" / "benchmark"
 FIXTURE_MANIFEST = FIXTURE / "manifest.json"
 PROJECT_OWNER = ROOT / ".orchflows" / "skills" / "benchmaker" / "SKILL.md"
 PROJECT_PROTOCOL = PROJECT_OWNER.parent / "references" / "protocol.md"
 CLAUDE_ADAPTER = ROOT / ".claude" / "skills" / "benchmaker" / "SKILL.md"
+
+COMPONENT_FIELDS = (
+    "evaluation_design",
+    "runnable_cases",
+    "runner",
+    "scoring",
+    "provenance",
+    "qualification",
+)
+DECLARATION_FIELDS = ("expected_cost", "gaps", "protected_evidence")
+POST_QUALIFICATION_FIELDS = (
+    "anchors",
+    "builders",
+    "reference_audit",
+    "attack_audit",
+    "measurement",
+    "resolution",
+    "retirement_trigger",
+    "incomparability",
+)
+# Package-relative, so the deletion check and the by-path grep below both
+# derive from this one list rather than re-listing it.
+RETIRED_SEAL_PATHS = ("benchmark.lock", "SEALS.md", "tools/seal_set.py")
+
+# A dated record naming a retired mechanism states what was true when it was
+# written; it is not an assertion of the rule, and history is not rewritten to
+# agree with today's law. One ruling, one owner, both guards below. Exact
+# paths, matched whole and asserted to exist: a directory prefix would excuse
+# every file a later date puts under it, which is an exclusion that outlives
+# the text it excuses.
+_CAMPAIGN_HISTORY = "a campaign history — what that pass believed at its date"
+DATED_RECORDS = {
+    "benchmarks/measures/benchmaker.md":
+        "frozen measurement rows — the record is the fact it recorded",
+    "benchmarks/benchmaker/FINDINGS-B0.md": _CAMPAIGN_HISTORY,
+    "benchmarks/benchmaker/FINDINGS-EVOLVE.md": _CAMPAIGN_HISTORY,
+    "benchmarks/benchmaker/FINDINGS-FIELD.md": _CAMPAIGN_HISTORY,
+    "benchmarks/benchmaker/FINDINGS-RECURSION.md": _CAMPAIGN_HISTORY,
+    "benchmarks/benchmaker/qualification/q2-verdicts.md":
+        "the 2026-08-07 independent-qualifier verdicts, captured observations",
+    "benchmarks/benchmaker/provenance/synthesis.md":
+        "the frozen claim register — every case's provenance resolves by row",
+    "docs/benchmaker-redesign-spec.md":
+        "the dated design record; its revision sections describe the removal",
+}
+# Three sites under `cases/` where a retired word is a *target's* own
+# vocabulary rather than the library's law. Rewording them to dodge a grep
+# would change what the case measures, so the pattern scan skips them and the
+# guard pins them instead: the licensed line must still be there, and no other
+# line in those files may carry a retired word. An exclusion that cannot cover
+# a relapse, and cannot outlive the text it excuses.
+TARGET_VOCABULARY = {
+    "benchmarks/benchmaker/cases/cs-package-audit/seeds/good-unsealed/variant.md":
+        ("# good-unsealed",
+         "the seed's name states the absence the seed exhibits"),
+    "benchmarks/benchmaker/cases/cs-refusal-2/evidence/codec-notes.md":
+        ("only inside the vendor's sealed playback SDK, which reports nothing",
+         "the codec target's closed-source decoder"),
+    "benchmarks/benchmaker/cases/cs-workflow-fresh/evidence/pipeline-spec.md":
+        ("identity at production and makes it immutable; `freeze` false leaves",
+         "the fictional CI DSL's freeze semantics for a pipeline artifact"),
+}
+RETIRED_WORD = re.compile(r"seal|immutab", re.IGNORECASE)
+# The path guard below reads the whole tree, where one further exclusion
+# applies: a guard names what it forbids, so it excludes itself.
+RETIRED_PATH_EXCLUSIONS = frozenset(DATED_RECORDS) | {"tests/test_benchmaker.py"}
+SKIPPED_TREES = frozenset({".git", ".orch", ".claude", "__pycache__"})
+# A guard that cannot read what it scans decides nothing. An unreadable file
+# is reported by name; only a declared binary suffix is skipped, and every
+# scan asserts a floor far below the ~1100 files it reads today, so a scan
+# that collapses is red rather than green.
+BINARY_SUFFIXES = (".png",)
+SCAN_FLOOR = 700
+
+
+class UnreadableSurface(Exception):
+    """A file the guard was supposed to scan and could not."""
+
+# Where library law is stated. A retired phrase here is a rule the tree no
+# longer has.
+LAW_TREES = (
+    "benchmarks/benchmaker",
+    "compositions",
+    "contracts",
+    "skills",
+    "rules",
+    "packs",
+    "docs",
+)
+# Two root files state law the trees above do not own and the guard could not
+# see: the tree's most public description of the composition, and the owner of
+# refusals. `README.md` asserted the withdrawn rule until 2026-08-09 and a
+# pattern below catches it. `DESIGN.md` is here for reach, not coverage: what
+# it said — protected evidence as "that construct with a digest attached" —
+# no pattern targets, so restoring that sentence would leave this green.
+LAW_ROOT_FILES = ("README.md", "DESIGN.md")
+
+# The sealing law, phrase by phrase: what the 2026-08-09 withdrawal removed.
+# Matched case-insensitively over each file's whitespace-squashed text, so
+# neither a wrapped sentence nor a heading's capital can hide from it.
+RETIRED_LAW = (
+    (
+        "a benchmark, case set, manifest or package called immutable",
+        r"immutab\w*[^.]{0,50}?"
+        r"(?:benchmark|manifest|index|case set|package|dataflow|runnable artifact)"
+        r"|(?:benchmark|manifest|case set|package)[^.]{0,50}?\bimmutab\w*",
+    ),
+    ("stages named for the seal they preceded", r"pre-seal"),
+    ("a change minting a successor", r"mint\w*\s+(?:a|no|new|one)\s+successor"),
+    ("a successor benchmark identity", r"successor\s+(?:benchmark\s+)?identity"),
+    (
+        "a prohibition on revising a benchmark in place",
+        r"revise[sd]?\s+a\s+benchmark\s+in\s+place",
+    ),
+    (
+        "a prohibition on editing in place",
+        r"(?:never|not|cannot|no)\s+(?:[\w'’-]+[ ,]+){0,6}"
+        r"(?:edit|revise|change|mutate|amend)\w*"
+        r"\s+(?:[\w'’-]+[ ,]+){0,6}in place|in-place edit",
+    ),
+    (
+        "a benchmark identity frozen or sealed where a revision belongs",
+        r"(?:frozen|freezes?|sealed|seals?)\s+(?:the\s+)?benchmark\s+identity",
+    ),
+    (
+        "sealing as a stage of the protocol",
+        r"manifest sealing|before sealing|after sealing|seal(?:s|ed)? the qualified"
+        r"|benchmark sealed|sealed for it|qualification, sealing",
+    ),
+)
+# T01's seven retired sentences, verbatim from `benchmaker-manifest.md` at
+# `1d98cc7`, matched as literals so a restoration cannot slip back reworded.
+RETIRED_SENTENCES = (
+    "- `benchmark_identity` — `sha256:` plus the digest of the canonical "
+    "manifest payload defined below.",
+    "A component identity is recomputable from the bytes it names, and the "
+    "recipe is one rule nested: a file component's identity is the SHA-256 of "
+    "its bytes; a directory component's is the SHA-256 of its component lock — "
+    "one `<sha256>  <posix-path>` line per contained file, path relative to the "
+    "component root, sorted by path, LF-terminated.",
+    "An identity no tool can reproduce from the tree proves only that the JSON "
+    "agrees with itself, so the package ships the recompute as a runnable check.",
+    "Evidence held off-tree by policy is exempt and named as exempt.",
+    "Canonicalize the manifest after removing only `benchmark_identity`: UTF-8 "
+    "JSON, keys sorted recursively, no insignificant whitespace, and non-ASCII "
+    "characters unescaped.",
+    "The SHA-256 of those bytes is `benchmark_identity`; this "
+    "non-self-referential digest covers every other field and, through each "
+    "verified component digest, the referenced bytes.",
+    "Changing any covered byte mints a successor benchmark identity; a builder "
+    "or consumer never edits the manifest in place.",
+)
+
+def read_surface(path: Path, name: str) -> str:
+    if path.suffix in BINARY_SUFFIXES:
+        return None
+    try:
+        return path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as error:
+        raise UnreadableSurface("{}: {}".format(name, error))
+
+
+def law_files():
+    """Every law surface that is not a dated record.
+
+    `LAW_TREES` plus `LAW_ROOT_FILES`; the root files carry law of the same
+    kind and were reachable by no guard before 2026-08-09.
+    """
+    candidates = [ROOT / name for name in LAW_ROOT_FILES]
+    for tree in LAW_TREES:
+        base = ROOT / tree
+        if base.is_dir():
+            candidates.extend(sorted(base.rglob("*")))
+    read = 0
+    for path in candidates:
+        if not path.is_file():
+            continue
+        relative = path.relative_to(ROOT)
+        if SKIPPED_TREES.intersection(relative.parts):
+            continue
+        name = relative.as_posix()
+        if name in DATED_RECORDS or name in TARGET_VOCABULARY:
+            continue
+        text = read_surface(path, name)
+        if text is None:
+            continue
+        read += 1
+        yield name, squashed(text)
+    if read < SCAN_FLOOR:
+        raise UnreadableSurface(
+            "the law scan read {} files, under the floor of {}".format(read, SCAN_FLOOR)
+        )
+
+
+def live_files(tree: Path):
+    """Every text file under `tree` that is not a dated record."""
+    read = 0
+    for path in sorted(tree.rglob("*")):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(ROOT)
+        if SKIPPED_TREES.intersection(relative.parts):
+            continue
+        name = relative.as_posix()
+        if name in RETIRED_PATH_EXCLUSIONS:
+            continue
+        text = read_surface(path, name)
+        if text is None:
+            continue
+        read += 1
+        yield name, text
+    if read < SCAN_FLOOR:
+        raise UnreadableSurface(
+            "the scan of {} read {} files, under the floor of {}".format(
+                tree.relative_to(ROOT) if tree != ROOT else ".", read, SCAN_FLOOR
+            )
+        )
+
+
+def live_matches(pattern: str, tree: Path = ROOT) -> list[str]:
+    expression = re.compile(pattern)
+    return [
+        f"{name}:{number}"
+        for name, text in live_files(tree)
+        for number, line in enumerate(text.splitlines(), 1)
+        if expression.search(line)
+    ]
 
 
 def split_frontmatter(text: str) -> tuple[dict[str, str], str]:
@@ -50,15 +279,6 @@ def sha256_identity(path: Path) -> str:
     return f"sha256:{hashlib.sha256(path.read_bytes()).hexdigest()}"
 
 
-def benchmark_identity(manifest: dict) -> str:
-    payload = dict(manifest)
-    payload.pop("benchmark_identity")
-    canonical = json.dumps(
-        payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True
-    )
-    return f"sha256:{hashlib.sha256(canonical.encode('utf-8')).hexdigest()}"
-
-
 def qualification_evidence_identity(evidence: dict) -> str:
     payload = {key: value for key, value in evidence.items() if key != "identity"}
     canonical = json.dumps(
@@ -72,26 +292,6 @@ def write_json(path: Path, value: dict) -> None:
         json.dumps(value, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
-
-
-def reseal_manifest(fixture: Path) -> dict:
-    manifest_path = fixture / "manifest.json"
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    for name in (
-        "evaluation_design",
-        "runnable_cases",
-        "runner",
-        "scoring",
-        "provenance",
-        "qualification",
-    ):
-        manifest[name]["identity"] = sha256_identity(
-            fixture / manifest[name]["locator"]
-        )
-    manifest["benchmark_identity"] = "sha256:pending"
-    manifest["benchmark_identity"] = benchmark_identity(manifest)
-    write_json(manifest_path, manifest)
-    return manifest
 
 
 class TestCanonicalBenchmaker(unittest.TestCase):
@@ -150,7 +350,10 @@ class TestCanonicalBenchmaker(unittest.TestCase):
             "excluded actions",
             "one caller bound",
             "status",
-            "benchmark identity",
+            # There is no benchmark identity to return; a benchmark's version
+            # is its git revision. The case set's mirror of this packet line
+            # (`cs-run-conduct/evidence/packet.md`) says the same words.
+            "the benchmark's revision",
             "qualification",
             "gaps",
             "bounds spent",
@@ -173,22 +376,30 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         self.assertIn("one applicable pack per internal spec", body)
         self.assertIn("partial evidence", body)
 
+        # Every prohibition that is not seal-derived survives; only "revise a
+        # benchmark in place" goes, and the qualification discipline stays.
         never = body[body.index("Never:") : body.index("Return:")]
         for forbidden_action in (
             "mutate the target",
             "generate a candidate",
+            "compare candidates",
             "promote",
             "activate",
-            "revise a benchmark in place",
             "call Evolve",
+            "let builders qualify their own work",
+            "multiply the caller bound",
         ):
             self.assertIn(forbidden_action, never)
+        self.assertNotIn("in place", never)
 
         returned = body[body.index("Return:") :]
         self.assertIn("the closing result addresses `reply_to`", returned)
         for field in (
             "status",
-            "benchmark identity",
+            # There is no benchmark identity to return; a benchmark's version
+            # is its git revision. The case set's mirror of this packet line
+            # (`cs-run-conduct/evidence/packet.md`) says the same words.
+            "the benchmark's revision",
             "qualification",
             "gaps",
             "bounds spent",
@@ -208,7 +419,7 @@ class TestCanonicalBenchmaker(unittest.TestCase):
                 "Execution tier and difficulty",
                 "Materialization",
                 "Qualification",
-                "Pre-seal stages",
+                "Audit and measurement",
                 "Scoring",
                 "Manifest and return",
             ],
@@ -217,7 +428,8 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         packed = squashed(self.protocol)
         for phrase in (
             "partition one caller bound",
-            "evidence, design, materialization, qualification, and the pre-seal stages",
+            "evidence, design, materialization, qualification, and the audit "
+            "and measurement stages",
             "total cannot exceed",
             "unused allocation",
             "Never copy the caller bound",
@@ -315,8 +527,8 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         ):
             self.assertIn(forbidden, tier)
 
-    def test_protocol_orders_and_bounds_the_three_pre_seal_stages(self):
-        stages = squashed(markdown_section(self.protocol, "Pre-seal stages"))
+    def test_protocol_orders_and_bounds_the_three_audit_stages(self):
+        stages = squashed(markdown_section(self.protocol, "Audit and measurement"))
         for ordered in (
             "triage measurement",
             "reference audit",
@@ -345,7 +557,13 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         for status in ("`both-pass`", "`split`", "`both-fail`", "`inversion`"):
             self.assertIn(status, stages)
         self.assertIn("max(measured rerun spread, one case)", stages)
-        self.assertIn("outside the sealed package", stages)
+        self.assertIn("outside the package", stages)
+        # The revision-durability rule that replaces the seal's guarantee: a
+        # revision only resolves while it is reachable, and a squash merge
+        # strands every branch commit.
+        self.assertIn("reachable from the default branch", stages)
+        self.assertIn("identical measured bytes", stages)
+        self.assertIn("squash", stages)
 
     def test_protocol_scoring_reports_distributions_not_points(self):
         scoring = squashed(markdown_section(self.protocol, "Scoring"))
@@ -358,46 +576,22 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         self.assertIn("Never subtract a harness offset", scoring)
         self.assertIn("count of sign flips", scoring)
 
-    def test_manifest_owner_is_immutable_and_complete(self):
+    def test_manifest_owner_lists_every_field_and_rule(self):
         manifest = squashed(self.manifest_contract)
-        for field in (
-            "`benchmark_identity`",
-            "`evaluation_design`",
-            "`runnable_cases`",
-            "`runner`",
-            "`scoring`",
-            "`provenance`",
-            "`qualification`",
-            "`expected_cost`",
-            "`gaps`",
-            "`protected_evidence`",
-        ):
-            self.assertIn(field, manifest)
+        for field in COMPONENT_FIELDS + DECLARATION_FIELDS:
+            self.assertIn(f"`{field}`", manifest)
         for rule in (
-            "Changing any covered byte mints a successor benchmark identity",
-            "never edits the manifest in place",
-            "identity and locator",
-            "digest of its exact canonical bytes",
-            "resolve the locator and verify that digest before use",
+            "locator",
             "oracle_class",
             "evidence",
             "covers",
         ):
             self.assertIn(rule, manifest)
 
-    def test_manifest_owner_carries_every_pre_seal_field(self):
+    def test_manifest_owner_carries_every_post_qualification_field(self):
         manifest = squashed(self.manifest_contract)
-        for field in (
-            "`anchors`",
-            "`builders`",
-            "`reference_audit`",
-            "`attack_audit`",
-            "`seal_measurement`",
-            "`resolution`",
-            "`retirement_trigger`",
-            "`incomparability`",
-        ):
-            self.assertIn(field, manifest)
+        for field in POST_QUALIFICATION_FIELDS:
+            self.assertIn(f"`{field}`", manifest)
         self.assertIn("A declared `none` is legal; silence is not", manifest)
         self.assertIn("defect **count**", manifest)
         self.assertIn("Never a rate", manifest)
@@ -406,24 +600,184 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         self.assertIn("`max(measured rerun spread, one case)`", manifest)
         self.assertIn("the declaration only. Its firing is recorded", manifest)
 
-    def test_manifest_component_identity_is_recomputable_from_the_tree(self):
-        manifest = squashed(self.manifest_contract)
-        self.assertIn("A component identity is recomputable", manifest)
-        self.assertIn("SHA-256 of its bytes", manifest)
-        # squashed() collapses the lock format's double space.
-        self.assertIn("`<sha256> <posix-path>` line per contained file", manifest)
-        self.assertIn("sorted by path, LF-terminated", manifest)
-        self.assertIn("ships the recompute as a runnable check", manifest)
-        # The check the law names has to exist, and has to be the same recipe.
-        tool = ROOT / "benchmarks" / "benchmaker" / "tools" / "component_identity.py"
-        self.assertTrue(tool.is_file(), f"missing recompute tool: {tool}")
+    def test_benchmark_identity_is_retired_from_law_manifest_and_tooling(self):
+        """A benchmark's version is its git revision; no field digests it."""
+        surfaces = [
+            MANIFEST_CONTRACT,
+            PACKAGE_MANIFEST,
+            PACKAGE / "evaluation-design.md",
+            PACKAGE / "qualification" / "q3-delta-verdicts.md",
+        ]
+        # `deseal_cases.py` is the tool that *removes* the token; it must name
+        # what it deletes, exactly as this guard file names what it forbids.
+        # Exempted by name, never by widening the glob, so any other tool under
+        # `tools/` that reintroduces the field still turns this red.
+        surfaces.extend(
+            path
+            for path in sorted((PACKAGE / "tools").glob("*.py"))
+            if path.name != "deseal_cases.py"
+        )
+        surfaces.extend(sorted(FIXTURE.iterdir()))
+        named = [
+            f"{path.relative_to(ROOT)}:{number}"
+            for path in surfaces
+            for number, line in enumerate(
+                path.read_text(encoding="utf-8").splitlines(), 1
+            )
+            if "benchmark_identity" in line
+        ]
+        with self.subTest("no law, manifest, tool, design or fixture names it"):
+            self.assertEqual([], named)
+        with self.subTest("the recompute recipe and its proof are gone"):
+            self.assertEqual(
+                [],
+                [
+                    str(path.relative_to(ROOT))
+                    for path in (
+                        PACKAGE / "tools" / "component_identity.py",
+                        ROOT / "tests" / "test_component_identity.py",
+                    )
+                    if path.exists()
+                ],
+            )
+        with self.subTest("the package manifest parses and carries no key"):
+            self.assertNotIn(
+                "benchmark_identity",
+                json.loads(PACKAGE_MANIFEST.read_text(encoding="utf-8")),
+            )
 
-    def test_composition_runs_the_pre_seal_stages_before_sealing(self):
-        self.assertIn("- pre-seal —", self.body)
-        self.assertLess(self.body.index("- materialize —"), self.body.index("- pre-seal —"))
-        self.assertIn("materialize → pre-seal", self.body)
-        self.assertIn("Seal after they close", self.body)
-        self.assertIn("declared coverage floor never moves", self.body)
+    def test_seal_machinery_is_deleted_and_no_live_surface_names_it(self):
+        retired = [PACKAGE / name for name in RETIRED_SEAL_PATHS]
+        with self.subTest("the lock, the seal history and the seal tool are gone"):
+            self.assertEqual(
+                [],
+                [str(path.relative_to(ROOT)) for path in retired if path.exists()],
+            )
+        with self.subTest("no live surface names one of them by path"):
+            self.assertEqual(
+                [],
+                live_matches(
+                    "|".join(re.escape(Path(name).name) for name in RETIRED_SEAL_PATHS)
+                ),
+            )
+
+    def test_package_names_no_tool_that_no_longer_exists(self):
+        """`cases/` is the case set's own scope and carries its own `--verify-only`."""
+        matches = [
+            match
+            for match in live_matches(
+                r"seal_set|component_identity|--verify(?!-)", PACKAGE
+            )
+            if not match.startswith("benchmarks/benchmaker/cases/")
+        ]
+        self.assertEqual([], matches)
+
+    def test_package_manifest_keeps_locators_and_carries_no_digest(self):
+        text = PACKAGE_MANIFEST.read_text(encoding="utf-8")
+        with self.subTest("no digest anywhere in the manifest"):
+            self.assertNotIn("sha256:", text)
+        manifest = json.loads(text)
+        with self.subTest("every component entry is a locator that resolves"):
+            for field in COMPONENT_FIELDS:
+                self.assertEqual({"locator"}, set(manifest[field]), field)
+                self.assertTrue(
+                    (PACKAGE / manifest[field]["locator"]).exists(),
+                    manifest[field]["locator"],
+                )
+        with self.subTest("the post-qualification field set is exactly the eight"):
+            self.assertEqual(
+                set(POST_QUALIFICATION_FIELDS),
+                set(manifest).difference(COMPONENT_FIELDS, DECLARATION_FIELDS),
+            )
+        with self.subTest("incomparability bounds a revision and four candidate axes"):
+            # The field survives the withdrawal because a score genuinely does
+            # not cross a benchmark version; only the noun moves. Deleting the
+            # clause would license comparing scores across versions, which is
+            # the one thing the field exists to forbid.
+            boundary = manifest["incomparability"]
+            self.assertIn("do not cross this benchmark revision", boundary)
+            for axis in ("model id", "effort level", "host binding", "scaffold"):
+                self.assertIn(axis, boundary)
+
+    def test_the_retired_sealing_law_is_absent_from_every_live_surface(self):
+        """The run's one guard against the sealing law coming back.
+
+        T01's `test_manifest_owner_states_no_identity_recipe` and the
+        exclusion lists T02 and T04 each derived are folded in here, per
+        `rules/visibility.md`: one job, one owner.
+        """
+        patterns = [
+            (reason, re.compile(pattern, re.IGNORECASE))
+            for reason, pattern in RETIRED_LAW
+        ]
+        patterns.extend(
+            (
+                "a retired manifest sentence, verbatim",
+                re.compile(re.escape(squashed(sentence)), re.IGNORECASE),
+            )
+            for sentence in RETIRED_SENTENCES
+        )
+        offending = {}
+        for name, text in law_files():
+            hit = sorted({reason for reason, expression in patterns if expression.search(text)})
+            if hit:
+                offending[name] = hit
+
+        with self.subTest("no live law surface asserts the retired rule"):
+            self.assertEqual({}, offending)
+        with self.subTest("every exclusion names a file that is still there"):
+            for name in sorted(RETIRED_PATH_EXCLUSIONS | set(DATED_RECORDS)):
+                self.assertTrue(
+                    (ROOT / name).is_file(),
+                    "{}: an exclusion outliving the text it excuses".format(name),
+                )
+        with self.subTest("the manifest owner states no identity recipe"):
+            manifest = squashed(self.manifest_contract)
+            for retired in (
+                "A component identity is recomputable from the bytes it names",
+                "Canonicalize the manifest after removing only `benchmark_identity`",
+                "`sha256:` digest",
+                "verify that digest before use",
+                "true at seal",
+                "unrepaired at seal",
+                "`seal_measurement`",
+            ):
+                self.assertNotIn(retired, manifest)
+            # Candidate isolation is not sealing: a builder may now edit a
+            # manifest, and a candidate still may not.
+            self.assertIn(
+                "Candidate execution emits a separate result identity and cannot "
+                "change a manifest field",
+                manifest,
+            )
+        with self.subTest("each target-vocabulary exclusion excuses exactly its own line"):
+            for name, (licensed, _) in sorted(TARGET_VOCABULARY.items()):
+                self.assertEqual(
+                    [licensed],
+                    [
+                        line.strip()
+                        for line in (ROOT / name).read_text(encoding="utf-8").splitlines()
+                        if RETIRED_WORD.search(line)
+                    ],
+                    "{}: the excluded file's retired-word lines moved".format(name),
+                )
+        with self.subTest("the scan reaches every surface the guard names"):
+            scanned = [name for name, _ in law_files()]
+            for source in LAW_ROOT_FILES:
+                self.assertIn(source, scanned)
+            for tree in LAW_TREES:
+                self.assertTrue(
+                    any(name.startswith(tree + "/") for name in scanned),
+                    "the law scan read nothing under {}".format(tree),
+                )
+
+    def test_composition_runs_the_audit_stages_and_records_the_manifest(self):
+        body = squashed(self.body)
+        self.assertIn("- audit-and-measure —", body)
+        self.assertLess(body.index("- materialize —"), body.index("- audit-and-measure —"))
+        self.assertIn("materialize → audit-and-measure", body)
+        self.assertIn("Record the manifest after they close", body)
+        self.assertIn("declared coverage floor never moves", body)
 
 
 class TestBenchmarkFixture(unittest.TestCase):
@@ -432,11 +786,9 @@ class TestBenchmarkFixture(unittest.TestCase):
         cls.manifest = json.loads(FIXTURE_MANIFEST.read_text(encoding="utf-8"))
 
     def _reference(self, name: str) -> Path:
-        reference = self.manifest[name]
-        path = (FIXTURE / reference["locator"]).resolve()
+        path = (FIXTURE / self.manifest[name]["locator"]).resolve()
         path.relative_to(FIXTURE.resolve())
         self.assertTrue(path.is_file(), f"missing {name} reference: {path}")
-        self.assertEqual(reference["identity"], sha256_identity(path))
         return path
 
     def _run_fixture(
@@ -463,43 +815,19 @@ class TestBenchmarkFixture(unittest.TestCase):
     def _run(self, candidate: str) -> subprocess.CompletedProcess[str]:
         return self._run_fixture(FIXTURE, candidate)
 
-    def test_manifest_references_are_complete_and_content_addressed(self):
+    def test_manifest_references_are_complete_and_locator_addressed(self):
         self.assertEqual(1, self.manifest["schema_version"])
+        fixture_text = FIXTURE_MANIFEST.read_text(encoding="utf-8")
+        self.assertNotIn("sha256:", fixture_text)
+        # The reference manifest states the law the package manifest states.
+        self.assertNotIn("benchmark identity", fixture_text)
         self.assertEqual(
-            self.manifest["benchmark_identity"], benchmark_identity(self.manifest)
-        )
-        self.assertEqual(
-            {
-                "schema_version",
-                "benchmark_identity",
-                "evaluation_design",
-                "runnable_cases",
-                "runner",
-                "scoring",
-                "provenance",
-                "qualification",
-                "expected_cost",
-                "gaps",
-                "protected_evidence",
-                "anchors",
-                "builders",
-                "reference_audit",
-                "attack_audit",
-                "seal_measurement",
-                "resolution",
-                "retirement_trigger",
-                "incomparability",
-            },
+            {"schema_version", *COMPONENT_FIELDS, *DECLARATION_FIELDS,
+             *POST_QUALIFICATION_FIELDS},
             set(self.manifest),
         )
-        for name in (
-            "evaluation_design",
-            "runnable_cases",
-            "runner",
-            "scoring",
-            "provenance",
-            "qualification",
-        ):
+        for name in COMPONENT_FIELDS:
+            self.assertEqual({"locator"}, set(self.manifest[name]), name)
             self._reference(name)
         self.assertEqual("public", self.manifest["protected_evidence"]["visibility"])
         self.assertIsNone(
@@ -507,7 +835,7 @@ class TestBenchmarkFixture(unittest.TestCase):
         )
         self.assertTrue(self.manifest["gaps"])
 
-    def test_pre_seal_fields_declare_absence_rather_than_fabricate_it(self):
+    def test_post_qualification_fields_declare_absence_rather_than_fabricate_it(self):
         cases = [
             case["case_identity"]
             for case in json.loads(
@@ -529,12 +857,12 @@ class TestBenchmarkFixture(unittest.TestCase):
         self.assertEqual(set(cases), set(audit["method"]))
         # A stage that did not run says so here and in gaps — never a figure.
         gaps = " ".join(self.manifest["gaps"])
-        for field in ("attack_audit", "seal_measurement"):
+        for field in ("attack_audit", "measurement"):
             self.assertIn("not run", self.manifest[field]["status"])
         self.assertIn("attack pass not run", gaps)
         self.assertIn("measurement pass not run", gaps)
         self.assertEqual([], self.manifest["attack_audit"]["unrepaired"])
-        self.assertIsNone(self.manifest["seal_measurement"]["margin_cases"])
+        self.assertIsNone(self.manifest["measurement"]["margin_cases"])
         # Resolution rests on the one-case floor while the spread is unmeasured.
         self.assertIsNone(self.manifest["resolution"]["measured_rerun_spread"])
         self.assertEqual(1, self.manifest["resolution"]["one_case"])
@@ -563,16 +891,11 @@ class TestBenchmarkFixture(unittest.TestCase):
         self.assertEqual(
             good_result["covered_evidence"], bad_result["covered_evidence"]
         )
+        # The result identifies the candidate and itself; the benchmark it ran
+        # against is a git revision of this tree, not a field it can restate.
         evidence_payload = {
             field: good_result[field]
-            for field in (
-                "benchmark_identity",
-                "evaluation_design_identity",
-                "runner_identity",
-                "candidate_identity",
-                "cases",
-                "covered_evidence",
-            )
+            for field in ("candidate_identity", "cases", "covered_evidence")
         }
         canonical = json.dumps(
             evidence_payload,
@@ -584,65 +907,28 @@ class TestBenchmarkFixture(unittest.TestCase):
             good_result["evidence_identity"],
             f"sha256:{hashlib.sha256(canonical.encode('utf-8')).hexdigest()}",
         )
-        for identity_field in (
-            "benchmark_identity",
-            "evaluation_design_identity",
-            "runner_identity",
-        ):
-            self.assertEqual(
-                good_result[identity_field], bad_result[identity_field]
-            )
+        self.assertNotEqual(
+            good_result["candidate_identity"], bad_result["candidate_identity"]
+        )
 
-    def test_runner_rejects_resealed_unsupported_scoring(self):
+    def _copy(self, temp_dir: str) -> tuple[Path, dict]:
+        fixture = Path(temp_dir) / "benchmark"
+        shutil.copytree(FIXTURE, fixture)
+        return fixture, json.loads(
+            (fixture / "manifest.json").read_text(encoding="utf-8")
+        )
+
+    def test_runner_rejects_unsupported_scoring(self):
         with tempfile.TemporaryDirectory() as temp_dir:
-            fixture = Path(temp_dir) / "benchmark"
-            shutil.copytree(FIXTURE, fixture)
-            manifest = json.loads(
-                (fixture / "manifest.json").read_text(encoding="utf-8")
-            )
-            old_design = manifest["evaluation_design"]["identity"]
-            old_scoring = manifest["scoring"]["identity"]
+            fixture, manifest = self._copy(temp_dir)
             scoring_path = fixture / manifest["scoring"]["locator"]
             scoring = json.loads(scoring_path.read_text(encoding="utf-8"))
-            scoring["aggregation"] = {
-                "operator": "unsupported",
-                "status": "PASS",
-            }
+            scoring["aggregation"] = {"operator": "unsupported", "status": "PASS"}
             write_json(scoring_path, scoring)
-            new_scoring = sha256_identity(scoring_path)
             design_path = fixture / manifest["evaluation_design"]["locator"]
             design = json.loads(design_path.read_text(encoding="utf-8"))
             design["aggregation"] = scoring["aggregation"]
             write_json(design_path, design)
-            new_design = sha256_identity(design_path)
-
-            qualification_path = fixture / manifest["qualification"]["locator"]
-            qualification = json.loads(
-                qualification_path.read_text(encoding="utf-8")
-            )
-            for entry in qualification["entries"]:
-                entry["covers"] = [
-                    (
-                        new_scoring
-                        if identity == old_scoring
-                        else new_design
-                        if identity == old_design
-                        else identity
-                    )
-                    for identity in entry["covers"]
-                ]
-                entry["evidence"]["provenance"] = [
-                    (
-                        new_scoring
-                        if identity == old_scoring
-                        else new_design
-                        if identity == old_design
-                        else identity
-                    )
-                    for identity in entry["evidence"]["provenance"]
-                ]
-            write_json(qualification_path, qualification)
-            reseal_manifest(fixture)
 
             result = self._run_fixture(fixture, "known_good.py")
             self.assertEqual(2, result.returncode)
@@ -650,24 +936,19 @@ class TestBenchmarkFixture(unittest.TestCase):
 
     def test_runner_rejects_incomplete_required_cover_union(self):
         with tempfile.TemporaryDirectory() as temp_dir:
-            fixture = Path(temp_dir) / "benchmark"
-            shutil.copytree(FIXTURE, fixture)
-            manifest = json.loads(
-                (fixture / "manifest.json").read_text(encoding="utf-8")
-            )
-            scoring_identity = manifest["scoring"]["identity"]
+            fixture, manifest = self._copy(temp_dir)
+            scoring_locator = manifest["scoring"]["locator"]
             qualification_path = fixture / manifest["qualification"]["locator"]
             qualification = json.loads(
                 qualification_path.read_text(encoding="utf-8")
             )
             for entry in qualification["entries"]:
                 entry["covers"] = [
-                    identity
-                    for identity in entry["covers"]
-                    if identity != scoring_identity
+                    covered
+                    for covered in entry["covers"]
+                    if covered != scoring_locator
                 ]
             write_json(qualification_path, qualification)
-            reseal_manifest(fixture)
 
             result = self._run_fixture(fixture, "known_good.py")
             self.assertEqual(2, result.returncode)
@@ -676,52 +957,23 @@ class TestBenchmarkFixture(unittest.TestCase):
                 result.stderr,
             )
 
-    def test_runner_rejects_same_manifest_component_mutation(self):
+    def test_runner_rejects_an_unresolvable_component_locator(self):
         with tempfile.TemporaryDirectory() as temp_dir:
-            fixture = Path(temp_dir) / "benchmark"
-            shutil.copytree(FIXTURE, fixture)
-            cases_path = fixture / self.manifest["runnable_cases"]["locator"]
-            cases_path.write_text(
-                cases_path.read_text(encoding="utf-8") + " ",
-                encoding="utf-8",
-            )
+            fixture, manifest = self._copy(temp_dir)
+            manifest["runnable_cases"]["locator"] = "absent-cases.json"
+            write_json(fixture / "manifest.json", manifest)
 
             result = self._run_fixture(fixture, "known_good.py")
             self.assertEqual(2, result.returncode)
-            self.assertIn("identity mismatch: cases.json", result.stderr)
+            self.assertIn("missing reference: absent-cases.json", result.stderr)
 
-    def test_runner_rejects_resealed_self_certification(self):
+    def test_runner_rejects_self_certification(self):
         with tempfile.TemporaryDirectory() as temp_dir:
-            fixture = Path(temp_dir) / "benchmark"
-            shutil.copytree(FIXTURE, fixture)
-            manifest = json.loads(
-                (fixture / "manifest.json").read_text(encoding="utf-8")
-            )
-            old_cases = manifest["runnable_cases"]["identity"]
+            fixture, manifest = self._copy(temp_dir)
             cases_path = fixture / manifest["runnable_cases"]["locator"]
             cases = json.loads(cases_path.read_text(encoding="utf-8"))
             cases["cases"][0]["expected"]["text"] = "SELF-CERTIFIED"
             write_json(cases_path, cases)
-            new_cases = sha256_identity(cases_path)
-
-            qualification_path = fixture / manifest["qualification"]["locator"]
-            qualification = json.loads(
-                qualification_path.read_text(encoding="utf-8")
-            )
-            for entry in qualification["entries"]:
-                entry["covers"] = [
-                    new_cases if identity == old_cases else identity
-                    for identity in entry["covers"]
-                ]
-                entry["evidence"]["provenance"] = [
-                    new_cases if identity == old_cases else identity
-                    for identity in entry["evidence"]["provenance"]
-                ]
-                entry["evidence"]["identity"] = qualification_evidence_identity(
-                    entry["evidence"]
-                )
-            write_json(qualification_path, qualification)
-            reseal_manifest(fixture)
 
             result = self._run_fixture(fixture, "known_good.py")
             self.assertEqual(2, result.returncode)
@@ -756,30 +1008,29 @@ class TestBenchmarkFixture(unittest.TestCase):
             qualification["actual_qualification_spend"],
         )
         for candidate in qualification["calibration_candidates"].values():
+            self.assertEqual({"locator"}, set(candidate))
             candidate_path = (FIXTURE / candidate["locator"]).resolve()
             candidate_path.relative_to(FIXTURE.resolve())
-            self.assertEqual(candidate["identity"], sha256_identity(candidate_path))
+            self.assertTrue(candidate_path.is_file(), candidate["locator"])
         required = {
             entry["criterion"]: entry
             for entry in qualification["entries"]
             if entry["required"]
         }
         required_cover_union = {
-            identity
+            covered
             for entry in required.values()
-            for identity in entry["covers"]
+            for covered in entry["covers"]
         }
-        preseal_identities = {
-            self.manifest[name]["identity"]
-            for name in (
-                "evaluation_design",
-                "runnable_cases",
-                "runner",
-                "scoring",
-                "provenance",
-            )
+        # `compositions/benchmaker.md`'s done check reads "every component but
+        # its own": `qualification` is excluded here because a verdict set
+        # covering itself is self-certification, not coverage.
+        component_locators = {
+            self.manifest[name]["locator"]
+            for name in COMPONENT_FIELDS
+            if name != "qualification"
         }
-        self.assertTrue(preseal_identities <= required_cover_union)
+        self.assertTrue(component_locators <= required_cover_union)
         self.assertEqual(
             {
                 "oracle_failability",
@@ -805,8 +1056,9 @@ class TestBenchmarkFixture(unittest.TestCase):
                 entry["evidence"]["identity"],
                 qualification_evidence_identity(entry["evidence"]),
             )
-            for identity in entry["covers"]:
-                self.assertTrue(identity.startswith("sha256:"), identity)
+            # A cover names a component by the locator it resolves through.
+            for covered in entry["covers"]:
+                self.assertTrue((FIXTURE / covered).is_file(), covered)
         self.assertEqual("PASS", qualification["overall_verdict"])
         optimization = next(
             entry

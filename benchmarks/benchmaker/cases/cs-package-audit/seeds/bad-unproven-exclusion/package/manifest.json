@@ -1,8 +1,29 @@
 {
-  "benchmark_identity": "sha256:c8a18ef82579d4313fa49e67ca0879220bac4de99657f051afebf03373aa5baa",
+  "builders": {
+    "pc-1": {
+      "effort": "high",
+      "host_binding": "linux-x86_64",
+      "model_id": "bmk-builder-1"
+    },
+    "pc-2": {
+      "effort": "high",
+      "host_binding": "linux-x86_64",
+      "model_id": "bmk-builder-1"
+    },
+    "pc-3": {
+      "effort": "high",
+      "host_binding": "linux-x86_64",
+      "model_id": "bmk-builder-1"
+    },
+    "pc-4": {
+      "effort": null,
+      "host_binding": null,
+      "model_id": null,
+      "note": "authored in the same construction pass but its context was not recorded; declared as a gap, not inferred"
+    }
+  },
   "evaluation_design": {
-    "locator": "design/design.md",
-    "sha256": "sha256:07e2fbb23c734d37dc07a8f3c20212ec662c0fc5b2af9b052097137698f5bbf0"
+    "locator": "design/design.md"
   },
   "expected_cost": {
     "per_execution_limit": "30 s",
@@ -12,23 +33,33 @@
   "gaps": [],
   "protected_evidence": null,
   "provenance": {
-    "locator": "provenance/provenance.json",
-    "sha256": "sha256:0d6f1b64257a0d3ac1e59ccb2fb156c0ef94e0107de5980b63cdae1e344d523e"
+    "locator": "provenance/provenance.json"
   },
   "qualification": {
-    "locator": "qualification/qualification.json",
-    "sha256": "sha256:695f93fdec8aff1bf7013131f9e4af53c25d03d198ab19d4cd00fecf808a72cd"
+    "locator": "qualification/qualification.json"
+  },
+  "reference_audit": {
+    "auditor_context": "QC-A1 — a re-reading context disjoint from every builder context",
+    "declared_sample": "all 4 cases",
+    "defect_classes": [
+      "expected output under-specified at one boundary"
+    ],
+    "defect_count": 1,
+    "method": {
+      "pc-1": "re-read",
+      "pc-2": "re-read",
+      "pc-3": "re-read",
+      "pc-4": "solve-from-prompt"
+    },
+    "status": "run at qualification"
   },
   "runnable_cases": {
-    "locator": "cases/cases.json",
-    "sha256": "sha256:0c04bbfefa5908ef5ba2d233ec45d350a2f9d9ba487d64583765fef85dde8b1f"
+    "locator": "cases/cases.json"
   },
   "runner": {
-    "locator": "runner/run.py",
-    "sha256": "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c"
+    "locator": "runner/run.py"
   },
   "scoring": {
-    "locator": "scoring/scoring.json",
-    "sha256": "sha256:91d84771e4e9ead68e5042cd80cdd916e51fc576d051f7f4be8a13ad76576f2e"
+    "locator": "scoring/scoring.json"
   }
 }

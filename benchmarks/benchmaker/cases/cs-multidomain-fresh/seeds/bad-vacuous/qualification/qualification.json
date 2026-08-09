@@ -2,25 +2,25 @@
   "entries": [
     {
       "covers": [
-        "runnable_cases sha256:911c8baa23c3b295c10d353d0b46d1bfd7f5727815669ad0cc1dd79b324b6ae2",
-        "runner sha256:a644ee82ae86967d819fc3067ec4f9f2e9a2e6693454dbd11f2de0e5a7a932da",
-        "scoring sha256:9f2e422b6f5661fb7c7e33cc3e9cf44f3c74df447b8e2d2cd148a9b2806a1be0"
+        "runnable_cases cases/cases.json",
+        "runner runner/run.py",
+        "scoring scoring/scoring.json"
       ],
       "criterion": "schema-valid",
       "evidence": {
         "context": "q2-independent-md-77c3",
-        "summary": "benchmark_identity recomputed equal; six component digests verified over shipped bytes"
+        "summary": "nine schema fields present; six component locators resolved over shipped bytes"
       },
-      "oracle": "manifest canonicalization audit: recompute benchmark_identity and every component digest over the shipped bytes",
+      "oracle": "manifest audit: every schema field present and every component locator resolving over the shipped bytes",
       "oracle_class": "deterministic",
       "required": true,
       "verdict": "PASS"
     },
     {
       "covers": [
-        "runnable_cases sha256:911c8baa23c3b295c10d353d0b46d1bfd7f5727815669ad0cc1dd79b324b6ae2",
-        "runner sha256:a644ee82ae86967d819fc3067ec4f9f2e9a2e6693454dbd11f2de0e5a7a932da",
-        "scoring sha256:9f2e422b6f5661fb7c7e33cc3e9cf44f3c74df447b8e2d2cd148a9b2806a1be0"
+        "runnable_cases cases/cases.json",
+        "runner runner/run.py",
+        "scoring scoring/scoring.json"
       ],
       "criterion": "discrimination",
       "evidence": {
@@ -34,8 +34,8 @@
     },
     {
       "covers": [
-        "runnable_cases sha256:911c8baa23c3b295c10d353d0b46d1bfd7f5727815669ad0cc1dd79b324b6ae2",
-        "runner sha256:a644ee82ae86967d819fc3067ec4f9f2e9a2e6693454dbd11f2de0e5a7a932da"
+        "runnable_cases cases/cases.json",
+        "runner runner/run.py"
       ],
       "criterion": "reproducibility",
       "evidence": {
@@ -49,8 +49,8 @@
     },
     {
       "covers": [
-        "runnable_cases sha256:911c8baa23c3b295c10d353d0b46d1bfd7f5727815669ad0cc1dd79b324b6ae2",
-        "runner sha256:a644ee82ae86967d819fc3067ec4f9f2e9a2e6693454dbd11f2de0e5a7a932da"
+        "runnable_cases cases/cases.json",
+        "runner runner/run.py"
       ],
       "criterion": "cost-within-bound",
       "evidence": {

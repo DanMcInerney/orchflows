@@ -1,17 +1,23 @@
 # cs-cli-fresh — criteria classes
 
-Angle: **deterministic-cli**. The produced artifact is a sealed
+Angle: **deterministic-cli**. The produced artifact is a
 benchmark package for the `csvmerge` CLI fixed by `evidence/spec.md`
 and `evidence/transcripts.md`. What follows are criteria classes only;
 no class names a transcribable answer, case list, or oracle constant.
 
-## Seal validity (required)
+## Manifest validity (required)
 
-The manifest carries all ten benchmark-manifest fields; the benchmark
-identity recomputes from the canonical payload; every component
-reference's digest verifies over the shipped bytes at its locator.
+The manifest carries all nine benchmark-manifest fields, and every
+component reference's locator resolves over the shipped bytes.
 Locators are layout-free: a package that moves a component and updates
 its locator is equally valid.
+
+## Resolution declared (required)
+
+`resolution` states the smallest reportable difference as
+`max(measured rerun spread, one case)`. A byte-exact oracle's spread is
+zero, so the one-case floor governs, and a difference below it is not
+reportable.
 
 ## Transcript anchoring (required)
 

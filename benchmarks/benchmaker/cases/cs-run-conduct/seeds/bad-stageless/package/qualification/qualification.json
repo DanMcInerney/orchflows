@@ -3,9 +3,9 @@
   "entries": [
     {
       "covers": [
-        "sha256:4fcbf9a26176f7f7e681396df20e355bff2856600c38ebfe7da9f703e469bb19",
-        "sha256:c016b9dec510be757fc3188b498b0ae6c723785933595b9b5baef7fafe6ba742",
-        "sha256:70fcecbb004fd2505f91ddb17afe445d6643043b8106726dfd07db45b1d7c503"
+        "cases/cases.json",
+        "runner/run.py",
+        "scoring/scoring.json"
       ],
       "criterion": "schema-valid",
       "evidence": "recomputed clean in qualifying context qc-et-11; log q-schema-valid",
@@ -16,9 +16,9 @@
     },
     {
       "covers": [
-        "sha256:4fcbf9a26176f7f7e681396df20e355bff2856600c38ebfe7da9f703e469bb19",
-        "sha256:c016b9dec510be757fc3188b498b0ae6c723785933595b9b5baef7fafe6ba742",
-        "sha256:70fcecbb004fd2505f91ddb17afe445d6643043b8106726dfd07db45b1d7c503"
+        "cases/cases.json",
+        "runner/run.py",
+        "scoring/scoring.json"
       ],
       "criterion": "discrimination",
       "evidence": "recomputed clean in qualifying context qc-et-11; log q-discrimination",
@@ -29,9 +29,9 @@
     },
     {
       "covers": [
-        "sha256:4fcbf9a26176f7f7e681396df20e355bff2856600c38ebfe7da9f703e469bb19",
-        "sha256:c016b9dec510be757fc3188b498b0ae6c723785933595b9b5baef7fafe6ba742",
-        "sha256:70fcecbb004fd2505f91ddb17afe445d6643043b8106726dfd07db45b1d7c503"
+        "cases/cases.json",
+        "runner/run.py",
+        "scoring/scoring.json"
       ],
       "criterion": "reproducibility",
       "evidence": "recomputed clean in qualifying context qc-et-11; log q-reproducibility",
@@ -42,9 +42,9 @@
     },
     {
       "covers": [
-        "sha256:4fcbf9a26176f7f7e681396df20e355bff2856600c38ebfe7da9f703e469bb19",
-        "sha256:c016b9dec510be757fc3188b498b0ae6c723785933595b9b5baef7fafe6ba742",
-        "sha256:70fcecbb004fd2505f91ddb17afe445d6643043b8106726dfd07db45b1d7c503"
+        "cases/cases.json",
+        "runner/run.py",
+        "scoring/scoring.json"
       ],
       "criterion": "cost-within-bound",
       "evidence": "recomputed clean in qualifying context qc-et-11; log q-cost-within-bound",

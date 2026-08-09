@@ -25,10 +25,9 @@ benchmark whose oracle is simply too lenient.
 ### P1 — Gate validity; *record* difficulty
 
 Difficulty enters as a published figure with a declared gap, never as a
-pass/fail threshold. This is not timidity, it is forced by immutability:
-a gate that fails after qualification has fixed an identity mints a
-successor per failed attempt with no loop bound. The measurement is
-cheap and the gate is incoherent.
+pass/fail threshold. The sealing argument that once forced this is
+withdrawn ([spec](benchmaker-redesign-spec.md) §0c); the corollary below
+carries P1 alone. The measurement is cheap and the gate is incoherent.
 
 Corollary: a high incumbent score has **two** readings — the set is too
 easy, or the oracle is too lenient — and they demand opposite repairs.
@@ -84,7 +83,7 @@ patching cannot tell a fixable benchmark from a structurally broken
 one** — only re-running the attacker can. Benchmaker's probes execute in
 the same tree as the packages they grade.
 
-Add a pre-seal pass whose objective is to *pass the benchmark without
+Add an attack pass whose objective is to *pass the benchmark without
 doing the work*. This is also the candidate-inaccessible check whose
 absence currently leaves optimization resistance UNVERIFIED. Name any
 attack taxonomy a **dated** checklist; freezing one freezes a 2026
@@ -131,7 +130,7 @@ field *after* BenchMaker had them. Treat them as load-bearing:
 
 | keep | why |
 |---|---|
-| immutable identity, successor-on-change | the field is retrofitting this after polluting leaderboards |
+| ~~immutable identity, successor-on-change~~ | **withdrawn 2026-08-09 with the seal** ([spec](benchmaker-redesign-spec.md) §0c). What the field retrofitted is that scores do not cross a version boundary, and that survives; the minting mechanism it was carried on does not |
 | qualification disjoint from every builder | the structural answer to self-grading |
 | blocked-return shape, UNVERIFIED-on-crash | a crash is not a FAIL; this predates the field's version |
 | the equivalence bridge | a bad variant counts only when shown to change the outcome |

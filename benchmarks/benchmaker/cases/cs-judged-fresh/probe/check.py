@@ -15,7 +15,6 @@ ever written.
 Invocation: uv run --no-project python probe/check.py {impl}
 Exit 0 pass; exit 1 with one line per violation.
 """
-import hashlib
 import json
 import os
 import re
@@ -26,7 +25,6 @@ import tempfile
 
 CASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MANIFEST_FIELDS = {
-    "benchmark_identity",
     "evaluation_design",
     "runnable_cases",
     "runner",
@@ -50,26 +48,69 @@ INNER_TIMEOUT = 60
 SOURCE_ID = re.compile(r"^(m\d-\d{2}):", re.M)
 
 
+# ---- P0.e: the post-qualification manifest fields -------------------
+# `compositions/references/benchmaker-manifest.md` owns the eight. None is
+# re-derivable after the fact, so a package that omits one cannot be repaired
+# by a consumer. This case covers `anchors`:
+# a judged outcome is only as good as the reference it is bound to, and
+# this case's evidence does not anchor every criterion.
+# The other fields are legal here and covered by the cases whose angle reaches
+# them; `tools/validate_cases.py` reads PROBED_MANIFEST_FIELDS and refuses a
+# case set that leaves one of the eight uncovered and unrecorded.
+POST_QUALIFICATION_FIELDS = frozenset(
+    (
+        "anchors",
+        "builders",
+        "reference_audit",
+        "attack_audit",
+        "measurement",
+        "resolution",
+        "retirement_trigger",
+        "incomparability",
+    )
+)
+PROBED_MANIFEST_FIELDS = {"anchors": "constrained"}
+REQUIRED_MANIFEST_FIELDS = frozenset(MANIFEST_FIELDS)
+ALLOWED_MANIFEST_FIELDS = REQUIRED_MANIFEST_FIELDS | POST_QUALIFICATION_FIELDS
+
+def schema_ok(manifest):
+    keys = set(manifest)
+    return not (REQUIRED_MANIFEST_FIELDS - keys) and not (keys - ALLOWED_MANIFEST_FIELDS)
+
+
+def schema_delta(manifest):
+    keys = set(manifest)
+    return (REQUIRED_MANIFEST_FIELDS - keys) | (keys - ALLOWED_MANIFEST_FIELDS)
+
+def _anchor_failures(manifest, out):
+    anchors = manifest.get("anchors")
+    if not isinstance(anchors, dict) or not anchors:
+        out.append("'anchors' must bind each case to a reference outside the package")
+        return
+    for case_id in sorted(anchors):
+        value = anchors[case_id]
+        text = value.strip() if isinstance(value, str) else ""
+        if not text:
+            out.append("anchors['%s'] is silent; a declared 'none' is legal, silence is not" % case_id)
+        elif text[:4].lower() == "none" and not text[4:].strip(" -—:,.;").strip():
+            out.append("anchors['%s'] declares 'none' with no reason" % case_id)
+
+
+def post_qualification_failures(manifest):
+    """P0.e — the field(s) this case covers, against the manifest contract."""
+    if not isinstance(manifest, dict):
+        return ["manifest is not a JSON object"]
+    out = []
+    _anchor_failures(manifest, out)
+    return out
+
+
 def resolve_impl():
     raw = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("CASE_IMPL") or "target"
     for candidate in (raw, os.path.join(CASE_DIR, raw)):
         if os.path.isdir(candidate):
             return os.path.abspath(candidate)
     return None
-
-
-def sha256_path(path):
-    digest = hashlib.sha256()
-    with open(path, "rb") as fh:
-        for chunk in iter(lambda: fh.read(65536), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def canonical_identity(manifest):
-    payload = {k: v for k, v in manifest.items() if k != "benchmark_identity"}
-    data = json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
-    return "sha256:" + hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 
 def load_json(path):
@@ -98,31 +139,28 @@ def check_p0a(pkg, fails):
     except (ValueError, OSError) as error:
         fails.append("P0.a: manifest.json unreadable: %s" % error)
         return None
-    if set(manifest) != MANIFEST_FIELDS:
+    if not schema_ok(manifest):
         fails.append(
-            "P0.a: manifest fields differ from the ten required (delta: %s)"
-            % sorted(set(manifest) ^ MANIFEST_FIELDS)
+            "P0.a: manifest fields are outside the schema (delta: %s)"
+            % sorted(schema_delta(manifest))
         )
         return manifest
-    if manifest.get("benchmark_identity") != canonical_identity(manifest):
-        fails.append("P0.a: benchmark_identity does not recompute from the canonical payload")
     if not isinstance(manifest.get("gaps"), list):
         fails.append("P0.a: manifest 'gaps' must be an explicit list")
+    for message in post_qualification_failures(manifest):
+        fails.append("P0.e: " + message)
     return manifest
 
 
 def check_p0b(pkg, manifest, fails):
     for name in COMPONENTS:
         ref = manifest.get(name)
-        if not isinstance(ref, dict) or "sha256" not in ref or "locator" not in ref:
-            fails.append("P0.b: component '%s' lacks sha256 + locator" % name)
+        if not isinstance(ref, dict) or "locator" not in ref:
+            fails.append("P0.b: component '%s' is not a locator reference" % name)
             continue
         path = os.path.join(pkg, ref["locator"])
         if not os.path.isfile(path):
             fails.append("P0.b: component '%s' locator '%s' missing" % (name, ref["locator"]))
-            continue
-        if sha256_path(path) != ref["sha256"]:
-            fails.append("P0.b: component '%s' digest mismatch at '%s'" % (name, ref["locator"]))
 
 
 def check_p0c(pkg, manifest, fails):
@@ -231,9 +269,9 @@ def check_jd1(pkg, manifest, qual, fails):
         fails.append("jd.1: package declares no judged criteria")
         return
     prov = load_json(os.path.join(pkg, manifest["provenance"]["locator"]))
-    sealed_at = prov.get("sealed_at", "")
-    if not sealed_at:
-        fails.append("jd.1: provenance carries no sealed_at timestamp")
+    qualified_at = prov.get("qualified_at", "")
+    if not qualified_at:
+        fails.append("jd.1: provenance carries no qualified_at timestamp")
     variance = (qual or {}).get("judge_variance")
     if not isinstance(variance, list) or not variance:
         fails.append("jd.1: no judge rerun variance record in the qualification component")
@@ -250,8 +288,8 @@ def check_jd1(pkg, manifest, qual, fails):
             fails.append("jd.1: variance for '%s' lacks >=3 recorded reruns" % cid)
         if not entry.get("covers"):
             fails.append("jd.1: variance for '%s' covers nothing" % cid)
-        if sealed_at and not (str(entry.get("recorded_at", "")) < sealed_at):
-            fails.append("jd.1: variance for '%s' was not recorded before the seal" % cid)
+        if qualified_at and not (str(entry.get("recorded_at", "")) < qualified_at):
+            fails.append("jd.1: variance for '%s' was not recorded before qualification closed" % cid)
 
 
 def check_jd2(pkg, scratch, scratch_pkg, manifest, fails):
@@ -320,7 +358,7 @@ def main():
         return 2
     fails = []
     manifest = check_p0a(impl, fails)
-    if manifest is None or set(manifest) != MANIFEST_FIELDS:
+    if manifest is None or not schema_ok(manifest):
         for line in fails:
             sys.stderr.write("probe FAIL: %s\n" % line)
         return 1

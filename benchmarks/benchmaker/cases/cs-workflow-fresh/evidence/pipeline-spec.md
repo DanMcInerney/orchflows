@@ -74,13 +74,12 @@ Command lines:
   already-emitted transcript; exit 0 accepts, nonzero rejects. An
   empty transcript is rejected.
 
-Seal ledger: `provenance/events.md` records the seal events one per
-line, containing these three tokens in this order — an event may not
+Build ledger: `provenance/events.md` records the build events one per
+line, containing these two tokens in this order — an event may not
 appear later than one it must precede:
 
     components-frozen
     qualification-recorded
-    identity-minted
 
 Design-evidence flow: `provenance/evaluation-design.md` names each of
 its inputs on its own line of the form
@@ -91,10 +90,9 @@ Evidence sources never name the package's own downstream components
 (`cases/`, `runner/`, `scoring/`, `qualification/`).
 
 Qualification coverage: each qualification entry's `covers` is an
-object mapping component names to that component's recorded identity,
-for example
+object mapping component names to that component's locator, for
+example
 
-    "covers": {"runner": "sha256:<hex>", "scoring": "sha256:<hex>"}
+    "covers": {"runner": "runner/run.py", "scoring": "scoring/scoring.json"}
 
-Every `covers` value must be a component identity of this package;
-none may be the package's own `benchmark_identity`.
+Every `covers` value must be a component locator of this package.

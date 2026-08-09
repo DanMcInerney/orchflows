@@ -6,11 +6,11 @@ stage: acquire | allocation: 14 units (acquire-spec 4, acquire delivery 10)
 stage: design | allocation: 8 units
 stage: materialize | allocation: 10 units
 stage: qualify | allocation: 6 units
-stage: seal | allocation: 2 units
+stage: manifest | allocation: 2 units
 
 item: w01 | stage: materialize | artifact: package/cases/cases.json
-item: w02 | stage: seal | artifact: package/manifest.json
-item: w03 | stage: seal | artifact: package/provenance/provenance.json
+item: w02 | stage: manifest | artifact: package/manifest.json
+item: w03 | stage: manifest | artifact: package/provenance/provenance.json
 item: w04 | stage: qualify | artifact: package/qualification/qualification.json
 item: w05 | stage: materialize | artifact: package/runner/run.py
 item: w06 | stage: materialize | artifact: package/scoring/scoring.json
@@ -22,7 +22,7 @@ item: w11 | stage: acquire | artifact: record/acquire/synthesis.md
 item: w12 | stage: design | artifact: record/design.md
 item: w13 | stage: acquire | artifact: record/evidence.md
 item: w14 | stage: qualify | artifact: record/gaps.md
-item: w15 | stage: seal | artifact: record/joins.md
+item: w15 | stage: manifest | artifact: record/joins.md
 item: w16 | stage: acquire | artifact: record/packets/p1-acquire-spec.md
 item: w17 | stage: acquire | artifact: record/packets/p2-acquire.md
 item: w18 | stage: design | artifact: record/packets/p3-design.md

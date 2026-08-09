@@ -1,7 +1,5 @@
 {
-  "benchmark_identity": "sha256:79862db63b5b5b6ae666ab8402f6eea4e3473a851873b4a4756d4a8bdfc8231b",
   "evaluation_design": {
-    "identity": "sha256:4240e7f0fe10cac92fcc8fa5344b76f6093dffdd3d2ea63c5683fc32615d2a0a",
     "locator": "provenance/design.md"
   },
   "expected_cost": {
@@ -10,25 +8,21 @@
     "units": "inner-case executions"
   },
   "gaps": [],
+  "incomparability": "A score is a property of target x model x harness x benchmark. Scores do not cross a change of model id, effort level, host binding or scaffold, and a code-domain score never combines with a document-domain score into one number. No harness offset is subtracted: the effect is candidate-dependent.",
   "protected_evidence": null,
   "provenance": {
-    "identity": "sha256:7383f3e13c7acc0bc666a32520dfe8dbc9ffc827cb8295af2a2e494da73d82bb",
     "locator": "provenance/provenance.json"
   },
   "qualification": {
-    "identity": "sha256:b741a379290eca62cab59b2f2a4f11be5642da74fb8bdb09e71e71c5b7e6348c",
     "locator": "qualification/qualification.json"
   },
   "runnable_cases": {
-    "identity": "sha256:911c8baa23c3b295c10d353d0b46d1bfd7f5727815669ad0cc1dd79b324b6ae2",
     "locator": "cases/cases.json"
   },
   "runner": {
-    "identity": "sha256:81946439d073e45368ad4ce5a67d4df8a857b23f937900f8f252485dd6f878d2",
     "locator": "runner/run.py"
   },
   "scoring": {
-    "identity": "sha256:9f2e422b6f5661fb7c7e33cc3e9cf44f3c74df447b8e2d2cd148a9b2806a1be0",
     "locator": "scoring/scoring.json"
   }
 }

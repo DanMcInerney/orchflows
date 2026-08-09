@@ -17,7 +17,6 @@ Hygiene: the implementation under test and the inner pool are copied
 to a scratch directory before any inner execution; nothing under the
 case directory is ever written.
 """
-import hashlib
 import json
 import os
 import re
@@ -27,9 +26,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-TEN_FIELDS = frozenset(
+NINE_FIELDS = frozenset(
     (
-        "benchmark_identity",
         "evaluation_design",
         "runnable_cases",
         "runner",
@@ -56,6 +54,60 @@ SKIP_SCAN = ("defect.md", "variant.md")
 HELD_NAMESPACE = re.compile(r"HB-Q\d")
 DIGEST_LINE = re.compile(r"sha256:([0-9a-f]{64})")
 INNER_TIMEOUT = 60
+
+
+# ---- P0.e: the post-qualification manifest fields -------------------
+# `compositions/references/benchmaker-manifest.md` owns the eight. None is
+# re-derivable after the fact, so a package that omits one cannot be repaired
+# by a consumer. This case covers `attack_audit`:
+# the angle is optimization pressure, and an unrepaired hole named with
+# the attack that works is what stops the audit from being a formality.
+# The other fields are legal here and covered by the cases whose angle reaches
+# them; `tools/validate_cases.py` reads PROBED_MANIFEST_FIELDS and refuses a
+# case set that leaves one of the eight uncovered and unrecorded.
+POST_QUALIFICATION_FIELDS = frozenset(
+    (
+        "anchors",
+        "builders",
+        "reference_audit",
+        "attack_audit",
+        "measurement",
+        "resolution",
+        "retirement_trigger",
+        "incomparability",
+    )
+)
+PROBED_MANIFEST_FIELDS = {"attack_audit": "constrained"}
+REQUIRED_MANIFEST_FIELDS = frozenset(NINE_FIELDS)
+ALLOWED_MANIFEST_FIELDS = REQUIRED_MANIFEST_FIELDS | POST_QUALIFICATION_FIELDS
+
+def _attack_audit_failures(manifest, out):
+    audit = manifest.get("attack_audit")
+    if not isinstance(audit, dict):
+        out.append("'attack_audit' must record the dated checklist, the outcome per class, "
+                   "and every unrepaired hole with the attack that works")
+        return
+    if not str(audit.get("checklist_identity") or "").strip():
+        out.append("attack_audit names no dated checklist identity")
+    if not isinstance(audit.get("outcomes"), dict):
+        out.append("attack_audit records no outcome per attack class")
+    unrepaired = audit.get("unrepaired")
+    if not isinstance(unrepaired, list):
+        out.append("attack_audit 'unrepaired' must be an explicit list ([] allowed)")
+        return
+    for index, hole in enumerate(unrepaired):
+        attack = hole.get("attack") if isinstance(hole, dict) else None
+        if not (isinstance(attack, str) and attack.strip()):
+            out.append("attack_audit unrepaired hole %d names no attack that works" % index)
+
+
+def post_qualification_failures(manifest):
+    """P0.e — the field(s) this case covers, against the manifest contract."""
+    if not isinstance(manifest, dict):
+        return ["manifest is not a JSON object"]
+    out = []
+    _attack_audit_failures(manifest, out)
+    return out
 
 
 def case_dir():
@@ -92,10 +144,6 @@ def component_path(root, reference):
     except ValueError:
         return None
     return resolved
-
-
-def sha256_file(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
 def declared_holdback_digest(case):
@@ -147,7 +195,7 @@ def main():
         pool = Path(scratch) / "pool"
         shutil.copytree(str(case / "evidence" / "inner-impls"), str(pool))
 
-        # ---- P0.a: manifest present, ten fields, identity recomputes ----
+        # ---- P0.a: manifest present, nine fields ----
         manifest_path = pkg / "manifest.json"
         if not manifest_path.is_file():
             fail("P0.a: no manifest.json at the package root")
@@ -158,33 +206,25 @@ def main():
             fail("P0.a: manifest.json is not valid JSON: {}".format(error))
             raise _Stop()
         keys = set(manifest)
-        for missing in sorted(TEN_FIELDS - keys):
+        for missing in sorted(NINE_FIELDS - keys):
             fail("P0.a: manifest field '{}' missing".format(missing))
-        for extra in sorted(keys - TEN_FIELDS):
+        for extra in sorted(keys - ALLOWED_MANIFEST_FIELDS):
             fail("P0.a: manifest carries unknown field '{}'".format(extra))
-        if TEN_FIELDS - keys:
+        if NINE_FIELDS - keys:
             raise _Stop()
-        payload = {k: v for k, v in manifest.items() if k != "benchmark_identity"}
-        canonical = json.dumps(
-            payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
-        ).encode("utf-8")
-        want = "sha256:" + hashlib.sha256(canonical).hexdigest()
-        if manifest.get("benchmark_identity") != want:
-            fail("P0.a: benchmark_identity does not recompute from the canonical payload")
+        for message in post_qualification_failures(manifest):
+            fail("P0.e: " + message)
 
-        # ---- P0.b: every component digest verifies at its locator ----
+        # ---- P0.b: every component locator resolves ----
         component_files = {}
         for field in COMPONENT_FIELDS:
             reference = manifest.get(field)
-            if not isinstance(reference, dict) or "sha256" not in reference:
+            if not isinstance(reference, dict) or "locator" not in reference:
                 fail("P0.b: '{}' is not a component reference".format(field))
                 continue
             resolved = component_path(pkg, reference)
             if resolved is None or not resolved.is_file():
                 fail("P0.b: '{}' locator does not resolve inside the package".format(field))
-                continue
-            if sha256_file(resolved) != str(reference["sha256"]).replace("sha256:", ""):
-                fail("P0.b: '{}' digest does not match shipped bytes".format(field))
                 continue
             component_files[field] = resolved
         if "runner" not in component_files or "qualification" not in component_files:

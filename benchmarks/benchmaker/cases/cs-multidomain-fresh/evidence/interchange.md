@@ -8,26 +8,25 @@ directory; paths are relative to its root, forward slashes.
 `manifest.json` sits at the package root and is a JSON object carrying
 these ten fields:
 
-    benchmark_identity, evaluation_design, runnable_cases, runner,
-    scoring, provenance, qualification, expected_cost, gaps,
-    protected_evidence
+    evaluation_design, runnable_cases, runner, scoring, provenance,
+    qualification, expected_cost, gaps, protected_evidence, incomparability
+
+`incomparability` states the identity boundary scores do not cross,
+naming model id, effort level, host binding and scaffold.
+
+These are recorded once qualification closes and are not re-derivable
+afterwards, which is why the manifest carries them. Other
+post-qualification fields may be present and are not read here.
 
 The six component fields — `evaluation_design`, `runnable_cases`,
 `runner`, `scoring`, `provenance`, `qualification` — are component
 references of this exact shape:
 
 ```json
-{"identity": "sha256:<hex>", "locator": "cases/cases.json"}
+{"locator": "cases/cases.json"}
 ```
 
-`identity` is the lowercase hex SHA-256 of the component file's bytes,
-prefixed `sha256:`. `locator` is the component's package-relative
-path.
-
-`benchmark_identity` is `"sha256:"` plus the hex SHA-256 of the
-manifest serialized without its `benchmark_identity` field as compact
-canonical JSON: keys sorted, separators `(",", ":")` with no spaces,
-`ensure_ascii` false, UTF-8 encoded.
+`locator` is the component's package-relative path.
 
 ## Runner report
 

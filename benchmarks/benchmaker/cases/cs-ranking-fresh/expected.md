@@ -1,7 +1,7 @@
 # cs-ranking-fresh — criteria classes
 
 Angle: **ranking**. Benchmaker, given four fixed candidate artifacts
-and an eligibility spec, must produce a sealed benchmark package whose
+and an eligibility spec, must produce a benchmark package whose
 scoring ranks eligible candidates only after required verification —
 without benchmaker itself comparing the candidates. The classes a
 qualifying package must satisfy — stated as classes, never as
@@ -34,13 +34,21 @@ says.
 The package's provenance records machinery and evidence mappings; it
 contains no builder-authored comparison of the fixed candidates.
 
-## Seal validity and discrimination
+## Manifest validity and discrimination
 
-The manifest carries the ten schema fields with a recomputable
-benchmark identity and verified component digests; qualification
+The manifest carries the nine schema fields and every component
+locator resolves over the shipped bytes; qualification
 entries are verdict-contract complete; the package's verification
 passes the conforming inner variants and fails every defective inner
 variant including the boundary near miss.
+
+## Measurement recorded
+
+`measurement` names the candidate identities, the measured scope, a
+per-case status from `both-pass`/`split`/`both-fail`/`inversion`, the
+count of distinct failure signatures, and the margin. A ranking over
+one signature counted several times is not a ranking, which is why the
+count is recorded rather than the raw failure tally.
 
 ## Expected qualification
 

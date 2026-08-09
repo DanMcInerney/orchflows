@@ -1,7 +1,6 @@
-# Seal event ledger
+# Build event ledger
 
 Ordinal event log.
 
-1 components-frozen
-2 identity-minted
-3 qualification-recorded
+1 qualification-recorded
+2 components-frozen

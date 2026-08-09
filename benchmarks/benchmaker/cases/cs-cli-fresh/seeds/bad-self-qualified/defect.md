@@ -3,7 +3,7 @@
 Every qualification verdict cites only builder self-run evidence: the
 `context` recorded in each entry's evidence is the builder context id
 from the package's own provenance, not an independent qualifying
-context. All else is lawful — the seal recomputes, every component
+context. All else is lawful — the manifest resolves, every component
 digest verifies, the case set discriminates the full inner pool, the
 verdicts are verdict-contract complete with non-empty evidence, and
 the recorded sweep results are even true. That is what makes this the

@@ -13,5 +13,5 @@ frozen-joins, aggregate-nonempty each bind one spec law to the
 transcript oracle.
 
 Licensing: synthesis@41ee9ea2 claims 1,17,45 (G13); taxonomy HAZOP
-late and reverse are seeded at the package's seal-ordering and
+late and reverse are seeded at the package's build-ordering and
 design-evidence-join loci.

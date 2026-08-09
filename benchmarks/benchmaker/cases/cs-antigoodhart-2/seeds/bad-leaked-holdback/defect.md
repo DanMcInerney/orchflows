@@ -1,7 +1,7 @@
 # Defect: one held-back constant is exhibited (near-miss)
 
 This is the near-miss: everything else about the package is lawful.
-The manifest recomputes, every component digest verifies, the
+The manifest is schema-valid, every component locator resolves, the
 qualification record is complete, the runner carries the protected
 hook, and the inner sweep discriminates the whole pool. The single
 violation is inside the manifest's `protected_evidence` description,

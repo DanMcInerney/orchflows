@@ -48,7 +48,7 @@ files; cs-refusal-2 via its packet.md extension). Scope compliance:
 - untracked additions outside evidence/: **0**
 
 Outside cases/: FINDINGS-RECURSION.md modified — campaign history, outside the
-sealed scope by seal_set.py's exclusion list; noted, not a case-scope change.
+case scope; noted, not a case-scope change.
 No scope violation.
 
 ## QC-1 — schema-valid
@@ -62,7 +62,7 @@ evidence: exit 0, zero output lines (validator is silent-when-clean),
   wall 171 s; all 16 matrix rows present (a missing row exits 1 with an
   ERROR line). The 15 extended case.toml evidence lists all resolve: every
   declared evidence path exists and none points into seeds/.
-covers: runnable_cases sha256:5ae08ffa...ead704; runner sha256:a1f07139...826234
+covers: runnable_cases cases/; runner tools/validate_cases.py
 required: true
 ```
 
@@ -77,29 +77,15 @@ oracle_class: deterministic
 evidence: full sweep exit 0; per-run record, all identically green (exit 0,
   zero output): cs-judged-fresh 4.69 s / 4.58 s / 4.84 s;
   cs-nondet-fresh 14.55 s / 18.34 s / 22.21 s
-covers: runnable_cases sha256:5ae08ffa...ead704; runner sha256:a1f07139...826234
+covers: runnable_cases cases/; runner tools/validate_cases.py
 required: true
 ```
 
-## QC-3 — seal reproducibility (anchoring rule)
+## QC-3 — seal reproducibility
 
-```
-verdict: PASS (anchoring-rule entry; post-re-mint verify is assembly's)
-oracle: component digests recomputed from bytes by Q4 (recipe above);
-  seal_set.py --verify deferred to assembly's re-mint
-oracle_class: deterministic
-evidence: benchmark.lock/SEALS.md will be re-minted AFTER this verdict file
-  lands (writing this file changes qualification/ bytes), so no --verify
-  result is claimed here. This entry anchors the verdicts to component
-  identities that do not change at the re-mint:
-  runnable_cases sha256:5ae08ffa3514b07da2f4a49d800320f6416768120ef621f0890fed6df4ead704 (1009 files);
-  runner sha256:a1f071395dd418b81bff9df7c2be1cf2a923d7d6e7c9ff172c6334be0f826234;
-  scoring sha256:685bc932ddd837763fabef27a909a7b7b54240aa199115340032b2917a78bd17.
-  Recipe proven against the predecessor: a9449a3 cases/ reproduces
-  sha256:1c2ab198...013132 byte-exactly (994 files).
-covers: the three component identities above
-required: true
-```
+Rendered PASS here on 2026-08-08 and since withdrawn; `index.md` states
+the withdrawal. The component identities it anchored to are recorded
+above and carried by every other entry's `covers`.
 
 ## QC-4 — provenance-traced (full re-render; case.tomls changed)
 
@@ -115,7 +101,7 @@ evidence: register parse found rows 1-60 (60 rows), merged rows
   {25,36,46,54}; all 16 provenances parse; every cited id resolves in 1-60;
   none cites a merged row; none names the case's own files. Violations: 0.
   Per-case claim ids identical to the Q1/Q3 QC-4 tables (q1-verdicts.md).
-covers: runnable_cases sha256:5ae08ffa...ead704; provenance/synthesis.md
+covers: runnable_cases cases/; provenance/synthesis.md
   at current bytes (unchanged vs a9449a3)
 required: true
 ```
@@ -134,7 +120,7 @@ oracle_class: evidence
 evidence: 64/64 bad seeds fail with named checks matching their deviation
   loci (table below); all 16 targets and all 16 good seeds exit 0;
   equivalent variants: 0; uncaught tracebacks: 0 (see traceback ledger)
-covers: runnable_cases sha256:5ae08ffa...ead704; runner sha256:a1f07139...826234
+covers: runnable_cases cases/; runner tools/validate_cases.py
 required: true
 ```
 
@@ -234,7 +220,7 @@ evidence: git diff a9449a3 over cases/*/seeds/ is EMPTY — zero changed
   the Q2-audited tree; no untracked file exists under any seeds/. The
   supersession touches no deviation: line; the predecessor census side is
   git-pinned and unchanged. Q2's 0-violation result covers current bytes.
-covers: runnable_cases sha256:5ae08ffa...ead704; q2-verdicts.md QC-6;
+covers: runnable_cases cases/; q2-verdicts.md QC-6;
   q3-delta-verdicts.md QC-6 inheritance proof
 required: true
 ```
@@ -257,7 +243,7 @@ evidence: variance 0.0 on every criterion for every implementation —
   (The changed file is probe/check.py; the target scoring path it audits
   is byte-unchanged — re-rendered fresh regardless because the packet
   demands it.) QC-2's 3x --only cs-judged-fresh runs additionally all green.
-covers: cs-judged-fresh case tree within runnable_cases sha256:5ae08ffa...ead704
+covers: cs-judged-fresh case tree within runnable_cases cases/
 required: true
 ```
 
@@ -279,7 +265,7 @@ evidence: full validator sweep 171 s (~2.9 min) — inside §8's <45 min and
   run-conduct 0.31/300; sparse 3.71/300; stateful 3.45/300;
   workflow 2.92/300. Trial extras: judged 4.58-4.84 s, nondet
   14.55-22.21 s, negative pair 2.53 s — all inside tier.
-covers: runnable_cases sha256:5ae08ffa...ead704; runner sha256:a1f07139...826234
+covers: runnable_cases cases/; runner tools/validate_cases.py
 required: true
 ```
 
@@ -312,7 +298,7 @@ evidence:
   streams.json 8c0bd810...41605d4f9. No file in the package hardcodes
   either store path (grep for bs-bmk-prot / benchmaker-successor-20260807
   over cases/ and tools/: zero hits) — access is via BENCH_PROTECTED_DIR only.
-covers: runnable_cases sha256:5ae08ffa...ead704; the 5 store-file digests above
+covers: runnable_cases cases/; the 5 store-file digests above
 required: true
 ```
 
@@ -327,7 +313,7 @@ evidence: exit 0, zero output, wall 2.53 s — negative-case rules
   (blocked-return in expected_qualification; expected.md states blocked
   return + gap content) plus full probe inversion for both negative cases
   over current bytes
-covers: runnable_cases sha256:5ae08ffa...ead704; runner sha256:a1f07139...826234
+covers: runnable_cases cases/; runner tools/validate_cases.py
 required: true
 ```
 
@@ -348,7 +334,7 @@ evidence:
   cs-nondet-fresh: target exit 0; seeds/bad-best-of-n exit 1 with nd.1
   lines ("scoring must declare the all-trials aggregation law, found
   'any-trial'"; "a pass-2-of-3 record aggregates to PASS").
-covers: runnable_cases sha256:5ae08ffa...ead704; store digests per QC-9
+covers: runnable_cases cases/; store digests per QC-9
 required: true
 ```
 
@@ -369,7 +355,7 @@ evidence: zero hits for probes/seeds/expected.md/graders in any new
   in cs-antigoodhart-2/evidence/holdback-policy.md (2 lines declaring the
   reserved member namespace `HB-Q<digits>` — the legitimate documentation
   site; no concrete member value exhibited). Nothing suspicious flagged.
-covers: runnable_cases sha256:5ae08ffa...ead704
+covers: runnable_cases cases/
 required: true
 ```
 

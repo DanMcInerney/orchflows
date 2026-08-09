@@ -1,26 +1,20 @@
 {
  "evaluation_design": {
-  "sha256": "02e96638adc1daaa500638aa4aaff81153966d98b2c45211432777c00a379ec5",
   "locator": "provenance/evaluation-design.md"
  },
  "runnable_cases": {
-  "sha256": "94111ea4e8e0aadb4e6fc93aba2473b43655b3d2e54922676faf50c173ca9d81",
   "locator": "cases/cases.json"
  },
  "runner": {
-  "sha256": "8a9a7aea57dd0f29811ccff07595283df6371ae413ae0a99d82c688174c89100",
   "locator": "runner/run.py"
  },
  "scoring": {
-  "sha256": "a4f0e1402e14eb9b72edd5ec01248f71fab70f159ba1f8ec23db77441237ea8d",
   "locator": "scoring/aggregate.py"
  },
  "provenance": {
-  "sha256": "af5ae850be954706c0f9778e9c35e2e5208e537c5c72d3ad01caedf18720ebb1",
   "locator": "provenance/provenance.json"
  },
  "qualification": {
-  "sha256": "bfff2f0bf8c36848c08964be472bb859bd6bcbc03418e03902cba6c7ac6becb3",
   "locator": "qualification/verdicts.json"
  },
  "expected_cost": {
@@ -36,5 +30,15 @@
   "trailing inline remarks (spec.md#E18) are undocumented — not cased"
  ],
  "protected_evidence": null,
- "benchmark_identity": "sha256:4f83ee06cf66f973ebd36610c3c492bc0972eee7cd3825882aa13b72400cccf6"
+ "anchors": {
+  "c1": "the exhibited QML-lite spec section the comment rule is read from",
+  "k1": "the exhibited QML-lite spec section for key parsing",
+  "k2": "the exhibited QML-lite spec section for key parsing",
+  "k3": "the exhibited QML-lite spec section for key parsing",
+  "k4": "the exhibited QML-lite spec section for key parsing",
+  "s1": "none — the spec exhibits no example for this behavior, so no reference outside this package pins the expected outcome; the behavior is declared a gap",
+  "s2": "none — the spec exhibits no example for this behavior, so no reference outside this package pins the expected outcome; the behavior is declared a gap",
+  "v1": "the exhibited QML-lite spec section for value parsing",
+  "v2": "the exhibited QML-lite spec section for value parsing"
+ }
 }

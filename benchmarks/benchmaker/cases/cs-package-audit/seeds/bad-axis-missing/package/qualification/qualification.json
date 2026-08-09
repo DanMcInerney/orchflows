@@ -3,9 +3,9 @@
   "entries": [
     {
       "covers": [
-        "sha256:0c04bbfefa5908ef5ba2d233ec45d350a2f9d9ba487d64583765fef85dde8b1f",
-        "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
-        "sha256:91d84771e4e9ead68e5042cd80cdd916e51fc576d051f7f4be8a13ad76576f2e"
+        "cases/cases.json",
+        "runner/run.py",
+        "scoring/scoring.json"
       ],
       "criterion": "failability",
       "evidence": "recomputed in qualifying context qx-conv-21: each oracle run against a mutated output; every one failed",
@@ -16,9 +16,9 @@
     },
     {
       "covers": [
-        "sha256:0c04bbfefa5908ef5ba2d233ec45d350a2f9d9ba487d64583765fef85dde8b1f",
-        "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
-        "sha256:91d84771e4e9ead68e5042cd80cdd916e51fc576d051f7f4be8a13ad76576f2e"
+        "cases/cases.json",
+        "runner/run.py",
+        "scoring/scoring.json"
       ],
       "criterion": "coverage",
       "evidence": "recomputed in qualifying context qx-conv-21: all four spec behaviors mapped to a case; map replayed",
@@ -29,9 +29,9 @@
     },
     {
       "covers": [
-        "sha256:0c04bbfefa5908ef5ba2d233ec45d350a2f9d9ba487d64583765fef85dde8b1f",
-        "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
-        "sha256:91d84771e4e9ead68e5042cd80cdd916e51fc576d051f7f4be8a13ad76576f2e"
+        "cases/cases.json",
+        "runner/run.py",
+        "scoring/scoring.json"
       ],
       "criterion": "discrimination",
       "evidence": "recomputed in qualifying context qx-conv-21: sweep: goods pass, bads fail incl. the boundary variant",
@@ -42,9 +42,9 @@
     },
     {
       "covers": [
-        "sha256:0c04bbfefa5908ef5ba2d233ec45d350a2f9d9ba487d64583765fef85dde8b1f",
-        "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
-        "sha256:91d84771e4e9ead68e5042cd80cdd916e51fc576d051f7f4be8a13ad76576f2e"
+        "cases/cases.json",
+        "runner/run.py",
+        "scoring/scoring.json"
       ],
       "criterion": "reproducibility",
       "evidence": "recomputed in qualifying context qx-conv-21: three identical reruns, byte-identical results",
@@ -55,9 +55,9 @@
     },
     {
       "covers": [
-        "sha256:0c04bbfefa5908ef5ba2d233ec45d350a2f9d9ba487d64583765fef85dde8b1f",
-        "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
-        "sha256:91d84771e4e9ead68e5042cd80cdd916e51fc576d051f7f4be8a13ad76576f2e"
+        "cases/cases.json",
+        "runner/run.py",
+        "scoring/scoring.json"
       ],
       "criterion": "provenance",
       "evidence": "recomputed in qualifying context qx-conv-21: every case provenance resolved to spec or synthesis",
@@ -68,9 +68,9 @@
     },
     {
       "covers": [
-        "sha256:0c04bbfefa5908ef5ba2d233ec45d350a2f9d9ba487d64583765fef85dde8b1f",
-        "sha256:172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c",
-        "sha256:91d84771e4e9ead68e5042cd80cdd916e51fc576d051f7f4be8a13ad76576f2e"
+        "cases/cases.json",
+        "runner/run.py",
+        "scoring/scoring.json"
       ],
       "criterion": "execution-cost",
       "evidence": "recomputed in qualifying context qx-conv-21: suite timed under the declared estimate",

@@ -1,6 +1,6 @@
 id = "cs-judged-fresh"
 angle = "judged-outcome"
-outcome = "Given meeting transcripts and a rubric frame, benchmaker produces a package whose deterministic and judged criteria are split, anchored, and sealed with recorded judge rerun variance."
+outcome = "Given meeting transcripts and a rubric frame, benchmaker produces a package whose deterministic and judged criteria are split, anchored, and qualified with recorded judge rerun variance."
 target = "target"
 evidence = [
   "evidence/sources",
@@ -18,7 +18,7 @@ expected_qualification = [
 ]
 negative = false
 port = "skill-summarize"
-tests = "Judged outcomes stay secondary, anchored, non-compensating, with variance recorded before seal."
+tests = "Judged outcomes stay secondary, anchored, non-compensating, with variance recorded before qualification closes."
 size = "medium"
 provenance = "synthesis@41ee9ea2 claims 50"
 parallel_safe = true

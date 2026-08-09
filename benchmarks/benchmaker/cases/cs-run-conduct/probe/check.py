@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Case probe for cs-run-conduct. The case author's sanity oracle.
 
-Deterministic audit of a benchmaker RUN RECORD plus its minimal sealed
+Deterministic audit of a benchmaker RUN RECORD plus its minimal
 package, against the grammar fixed in evidence/record-schema.md:
 
-  P0.a  manifest present, ten fields, identity recomputes
-  P0.b  every component digest true over shipped bytes
+  P0.a  manifest present, nine fields
+  P0.b  every component locator resolves over shipped bytes
   P0.c  qualification entries verdict-contract-complete
   rc.1  every artifact stage-attributed exactly once (five stages)
   rc.2  charter-conformant acquire: two lanes, seven synthesis
@@ -14,7 +14,8 @@ package, against the grammar fixed in evidence/record-schema.md:
   rc.3  each join consumes exactly the upstream frozen identity
   rc.4  every internal-call packet complete; stage allocation distinct
         from the caller bound
-  rc.5  never-clauses: evidence digests unchanged post-run; no evolve
+  rc.5  never-clauses: evidence digests unchanged post-run wherever
+        the record or the package's provenance attests them; no evolve
         dispatch, promotion, activation, or comparison marker
   rc.6  every design-stage gap carried into the manifest's gaps
   rc.7  one pack stamp per spec, preserved by its deliver; design
@@ -42,12 +43,12 @@ import tempfile
 from pathlib import Path
 
 CASE_ROOT = Path(__file__).resolve().parent.parent
-STAGES = ("acquire", "design", "materialize", "qualify", "seal")
+STAGES = ("acquire", "design", "materialize", "qualify", "manifest")
 SHA64 = re.compile(r"^sha256:[0-9a-f]{64}$")
 SHA_ANY = re.compile(r"sha256:[0-9a-f]{8,}")
 MANIFEST_FIELDS = (
-    "benchmark_identity", "evaluation_design", "runnable_cases", "runner",
-    "scoring", "provenance", "qualification", "expected_cost", "gaps",
+    "evaluation_design", "runnable_cases", "runner", "scoring",
+    "provenance", "qualification", "expected_cost", "gaps",
     "protected_evidence",
 )
 COMPONENTS = (
@@ -67,6 +68,62 @@ SYNTH_HEADINGS = ("construct definition", "claim register", "failure atlas",
                   "sourcing mode")
 PACKET_FIELDS = ("packet", "skill", "objective", "inputs", "authority",
                  "bounds", "return_contract", "reply_to")
+
+
+# ---- P0.e: the post-qualification manifest fields -------------------
+# `compositions/references/benchmaker-manifest.md` owns the eight. None is
+# re-derivable after the fact, so a package that omits one cannot be repaired
+# by a consumer. This case covers `builders`:
+# run conduct is the record of who ran what; the builder context is the part
+# a later revision cannot recover.
+# The other fields are legal here and covered by the cases whose angle reaches
+# them; `tools/validate_cases.py` reads PROBED_MANIFEST_FIELDS and refuses a
+# case set that leaves one of the eight uncovered and unrecorded.
+POST_QUALIFICATION_FIELDS = frozenset(
+    (
+        "anchors",
+        "builders",
+        "reference_audit",
+        "attack_audit",
+        "measurement",
+        "resolution",
+        "retirement_trigger",
+        "incomparability",
+    )
+)
+PROBED_MANIFEST_FIELDS = {"builders": "constrained"}
+REQUIRED_MANIFEST_FIELDS = frozenset(MANIFEST_FIELDS)
+ALLOWED_MANIFEST_FIELDS = REQUIRED_MANIFEST_FIELDS | POST_QUALIFICATION_FIELDS
+
+_BUILDER_KEYS = ("model_id", "effort", "host_binding")
+
+
+def _builder_failures(manifest, out):
+    builders = manifest.get("builders")
+    if not isinstance(builders, dict) or not builders:
+        out.append("'builders' must record the builder context of each case")
+        return
+    for case_id in sorted(builders):
+        record = builders[case_id]
+        if not isinstance(record, dict):
+            out.append("builders['%s'] is not a builder-context record" % case_id)
+            continue
+        absent = [key for key in _BUILDER_KEYS if key not in record]
+        if absent:
+            out.append("builders['%s'] does not record %s" % (case_id, ", ".join(absent)))
+        unrecorded = [key for key in _BUILDER_KEYS if record.get(key) is None]
+        if unrecorded and not str(record.get("note") or "").strip():
+            out.append("builders['%s'] leaves %s null with no note saying why"
+                       % (case_id, ", ".join(unrecorded)))
+
+
+def post_qualification_failures(manifest):
+    """P0.e — the field(s) this case covers, against the manifest contract."""
+    if not isinstance(manifest, dict):
+        return ["manifest is not a JSON object"]
+    out = []
+    _builder_failures(manifest, out)
+    return out
 
 
 def emit(message):
@@ -118,13 +175,6 @@ def sha_lf(path):
     return hashlib.sha256(data).hexdigest()
 
 
-def canonical_identity(manifest):
-    payload = {k: v for k, v in manifest.items() if k != "benchmark_identity"}
-    canon = json.dumps(payload, sort_keys=True, separators=(",", ":"),
-                       ensure_ascii=False).encode("utf-8")
-    return "sha256:" + hashlib.sha256(canon).hexdigest()
-
-
 def check_package(impl, failures):
     pkg = impl / "package"
     manifest_path = pkg / "manifest.json"
@@ -141,22 +191,17 @@ def check_package(impl, failures):
             failures.append("P0.a: manifest is missing field '%s'" % field)
     if not all(field in manifest for field in MANIFEST_FIELDS):
         return manifest
-    if manifest["benchmark_identity"] != canonical_identity(manifest):
-        failures.append("P0.a: benchmark_identity does not recompute from the canonical payload")
+    for message in post_qualification_failures(manifest):
+        failures.append("P0.e: " + message)
     for name in COMPONENTS:
         ref = manifest[name]
-        if not (isinstance(ref, dict) and isinstance(ref.get("sha256"), str)
-                and isinstance(ref.get("locator"), str)):
-            failures.append("P0.b: component '%s' lacks sha256 + locator" % name)
+        if not (isinstance(ref, dict) and isinstance(ref.get("locator"), str)):
+            failures.append("P0.b: component '%s' is not a locator reference" % name)
             continue
         resolved = (pkg / ref["locator"]).resolve()
         if not resolved.is_file():
             failures.append("P0.b: component '%s' locator '%s' resolves to no file"
                             % (name, ref["locator"]))
-            continue
-        digest = "sha256:" + hashlib.sha256(resolved.read_bytes()).hexdigest()
-        if digest != ref["sha256"]:
-            failures.append("P0.b: component '%s' bytes do not match the recorded digest" % name)
     if not isinstance(manifest["gaps"], list):
         failures.append("P0.a: manifest gaps must be an explicit list")
     qual_ref = manifest.get("qualification")
@@ -379,7 +424,49 @@ def check_packets(packets, caller_bounds, failures):
             failures.append("rc.4: no internal call with skill '%s' is recorded" % required)
 
 
-def check_never(impl, record, packets, failures):
+def check_provenance_sources(impl, manifest, failures):
+    """rc.5: the package attests the same bytes the record attests.
+
+    One package holding two digests for one path is a contradiction the
+    audit is supposed to catch, so the digest is recomputed here rather
+    than compared against another written-down copy of itself.
+    """
+    if not isinstance(manifest, dict):
+        return
+    ref = manifest.get("provenance")
+    if not (isinstance(ref, dict) and isinstance(ref.get("locator"), str)):
+        return
+    path = (impl / "package" / ref["locator"]).resolve()
+    if not path.is_file():
+        return
+    try:
+        provenance = json.loads(read(path))
+    except ValueError as error:
+        failures.append("rc.5: provenance component does not parse: %s" % error)
+        return
+    sources = provenance.get("sources")
+    if not isinstance(sources, list):
+        failures.append("rc.5: provenance states no 'sources' list of attested files")
+        return
+    for entry in sources:
+        if not isinstance(entry, dict):
+            failures.append("rc.5: a provenance source is not an object")
+            continue
+        named = str(entry.get("file") or "")
+        digest = str(entry.get("sha256") or "")
+        source = CASE_ROOT / named
+        if not named or not digest:
+            failures.append("rc.5: a provenance source names no file or no digest")
+        elif not source.is_file():
+            failures.append("rc.5: provenance attests '%s', which the case does not supply" % named)
+        elif digest[len("sha256:"):] != sha_lf(source):
+            failures.append(
+                "rc.5: provenance digest for '%s' does not match the case evidence" % named
+            )
+
+
+def check_never(impl, record, packets, manifest, failures):
+    check_provenance_sources(impl, manifest, failures)
     case_evidence = CASE_ROOT / "evidence"
     evidence_path = record / "evidence.md"
     if not evidence_path.is_file():
@@ -513,7 +600,7 @@ def audit(impl):
         synth_identity = check_acquire(record, failures)
         packets = load_packets(record, failures)
         check_packets(packets, caller_bounds_line(), failures)
-        check_never(impl, record, packets, failures)
+        check_never(impl, record, packets, manifest, failures)
         check_gaps(record, manifest, failures)
         design_identity = check_design(record, impl, packets, failures)
         check_joins(record, synth_identity, design_identity, failures)

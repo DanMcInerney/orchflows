@@ -1,7 +1,5 @@
 {
-  "benchmark_identity": "sha256:a5a25ebfc7293d324ae750ecaf877357d9c517b0d3b1585d75bcf28d8ae39ebb",
   "evaluation_design": {
-    "identity": "sha256:a95641c9fc5db2321bd878dc053b6ea7026c1bf4e4343830ea822fbb5ca0c81d",
     "locator": "provenance/design.md"
   },
   "expected_cost": {
@@ -12,23 +10,24 @@
   "gaps": [],
   "protected_evidence": null,
   "provenance": {
-    "identity": "sha256:e1353ac7cc864bba57d9502ccf6c78a76d5eaf9389ad2836b1e7c3e96a912e6e",
     "locator": "provenance/provenance.json"
   },
   "qualification": {
-    "identity": "sha256:10a73a9d3109bfb6efb43f08def6d35c006d0a1a78e62cae6b52387036466203",
     "locator": "qualification/qualification.json"
   },
+  "resolution": {
+    "measured_rerun_spread": 0,
+    "note": "the oracle is byte-exact, so three reruns of the inner pool returned identical verdicts",
+    "one_case": 1,
+    "smallest_reportable_difference": "1 case of 8 = 12.5 percentage points"
+  },
   "runnable_cases": {
-    "identity": "sha256:86007844ebb55a32cf23c68faabca5f3738d592e0086c06b3aa0093329fb7cdf",
     "locator": "cases/cases.json"
   },
   "runner": {
-    "identity": "sha256:c96d8ed3561c7d464fd93deb18c5d92722b3df7982fdf4f1ed66b4e97b96f935",
     "locator": "runner/run.py"
   },
   "scoring": {
-    "identity": "sha256:466abd8cc6d7d14d2127de41779c91508ff23640ad04091ac3b7e7bd237c2e30",
     "locator": "scoring/scoring.json"
   }
 }

@@ -5,7 +5,7 @@ scratch inputs, executes the implementation, and emits a
 well-formed report, but its comparison block was deleted: no exit
 status is checked, no stdout byte is compared, and every case is
 recorded as passing for every implementation. The package is inert:
-it runs the csvmerge tool and verifies nothing about it. The seal,
+it runs the csvmerge tool and verifies nothing about it. The manifest,
 manifest, case set, and qualification record are all internally
 consistent, which is what makes vacuity dangerous — nothing about the
 package's static shape reveals that its oracle cannot fail.

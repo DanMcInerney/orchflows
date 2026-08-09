@@ -9,10 +9,8 @@ cwd is the case directory; {impl} is target/ or one seeds/* package.
 Exit 0 = pass; exit 1 with one FAIL line per violated check.
 
 Checks:
-- P0.a manifest present with the ten schema fields; benchmark_identity
-  recomputes from the canonical payload.
-- P0.b every component reference's sha256 verifies over the shipped
-  bytes at its locator (file digest, or the tree digest defined below).
+- P0.a manifest present with the nine schema fields.
+- P0.b every component reference's locator resolves inside the package.
 - P0.c qualification entries are verdict-contract complete.
 - P0.d the package's own runner+scoring discriminates over the case's
   evidence/inner-impls/ pool (interpreter supplied from case evidence).
@@ -22,19 +20,14 @@ Checks:
   differs from the frozen upstream identity.
 - wf.3 gate coverage is per-edge: the last-edge-ungated inner
   near-miss is failed.
-- wf.4 seal ordering: the provenance event ledger records
-  qualification before identity minting, and no qualification verdict
-  covers the package's own benchmark identity (covers resolve to
-  component identities only).
+- wf.4 build ordering: the provenance event ledger records the
+  components frozen before the qualification recorded against them,
+  and every qualification verdict's covers resolve to components of
+  this package.
 - wf.5 design-evidence flow direction: the design component's
   evidence-source lines never point at the package's own downstream
   components (cases/, runner/, scoring/, qualification/).
 - wf.6 the package-level aggregate gate rejects an empty run.
-
-Tree digest rule (matches the package builder): a file's digest is
-sha256 over its bytes; a directory's digest is sha256 over the UTF-8
-encoding of "<posix-relpath>:<file-sha256-hex>" lines for every file
-under it, sorted by relpath, joined with "\n". __pycache__ is excluded.
 
 Scratch-copy hygiene: the implementation, the interpreter, and the
 inner pool are copied to a temporary directory before any execution;
@@ -42,7 +35,6 @@ nothing under the case directory is written.
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import shutil
@@ -53,7 +45,6 @@ from pathlib import Path
 
 MANIFEST_FIELDS = frozenset(
     (
-        "benchmark_identity",
         "evaluation_design",
         "runnable_cases",
         "runner",
@@ -81,29 +72,61 @@ DOWNSTREAM_NAMES = ("cases", "runner", "scoring", "qualification")
 SUBPROC_TIMEOUT = 240
 
 
-def sha256_hex(data):
-    return hashlib.sha256(data).hexdigest()
+# ---- P0.e: the post-qualification manifest fields -------------------
+# `compositions/references/benchmaker-manifest.md` owns the eight. None is
+# re-derivable after the fact, so a package that omits one cannot be repaired
+# by a consumer. This case covers `retirement_trigger`:
+# this case is about records landing in the right place in the right order,
+# and a firing recorded in the manifest is the wrong place.
+# The other fields are legal here and covered by the cases whose angle reaches
+# them; `tools/validate_cases.py` reads PROBED_MANIFEST_FIELDS and refuses a
+# case set that leaves one of the eight uncovered and unrecorded.
+POST_QUALIFICATION_FIELDS = frozenset(
+    (
+        "anchors",
+        "builders",
+        "reference_audit",
+        "attack_audit",
+        "measurement",
+        "resolution",
+        "retirement_trigger",
+        "incomparability",
+    )
+)
+PROBED_MANIFEST_FIELDS = {"retirement_trigger": "constrained"}
+REQUIRED_MANIFEST_FIELDS = frozenset(MANIFEST_FIELDS)
+ALLOWED_MANIFEST_FIELDS = REQUIRED_MANIFEST_FIELDS | POST_QUALIFICATION_FIELDS
+
+_FIRING_KEYS = ("fired", "fired_at", "firing", "retired_at")
+_FIRING_MARKS = ("fired on", "fired at", "has fired", "trigger fired")
 
 
-def tree_digest(path):
-    path = Path(path)
-    if path.is_file():
-        return "sha256:" + sha256_hex(path.read_bytes())
-    entries = []
-    for item in sorted(path.rglob("*")):
-        if not item.is_file():
-            continue
-        rel = item.relative_to(path).as_posix()
-        if "__pycache__" in rel.split("/"):
-            continue
-        entries.append(rel + ":" + sha256_hex(item.read_bytes()))
-    return "sha256:" + sha256_hex("\n".join(entries).encode("utf-8"))
+def _retirement_trigger_failures(manifest, out):
+    trigger = manifest.get("retirement_trigger")
+    if isinstance(trigger, dict):
+        for key in sorted(trigger):
+            if key.lower() in _FIRING_KEYS:
+                out.append("retirement_trigger records a firing ('%s'); the manifest carries "
+                           "the declaration only" % key)
+        trigger = trigger.get("declaration")
+    if not (isinstance(trigger, str) and trigger.strip()):
+        out.append("retirement_trigger states no declaration")
+        return
+    lowered = trigger.lower()
+    for mark in _FIRING_MARKS:
+        if mark in lowered:
+            out.append("retirement_trigger records a firing; a firing belongs in the "
+                       "measurement record outside the package")
+            break
 
 
-def canonical_identity(manifest):
-    payload = {key: value for key, value in manifest.items() if key != "benchmark_identity"}
-    data = json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
-    return "sha256:" + sha256_hex(data.encode("utf-8"))
+def post_qualification_failures(manifest):
+    """P0.e — the field(s) this case covers, against the manifest contract."""
+    if not isinstance(manifest, dict):
+        return ["manifest is not a JSON object"]
+    out = []
+    _retirement_trigger_failures(manifest, out)
+    return out
 
 
 def resolve_locator(pkg, locator):
@@ -148,41 +171,22 @@ def check_p0a(pkg, errors):
     fields = set(manifest)
     for missing in sorted(MANIFEST_FIELDS - fields):
         errors.append("P0.a: manifest is missing field '{}'".format(missing))
-    for extra in sorted(fields - MANIFEST_FIELDS):
+    for extra in sorted(fields - ALLOWED_MANIFEST_FIELDS):
         errors.append("P0.a: manifest carries field '{}' outside the schema".format(extra))
-    if MANIFEST_FIELDS - fields:
-        return manifest
-    recorded = manifest.get("benchmark_identity")
-    if not isinstance(recorded, str) or not recorded.startswith("sha256:"):
-        errors.append("P0.a: benchmark_identity is not a sha256: value")
-        return manifest
-    recomputed = canonical_identity(manifest)
-    if recomputed != recorded:
-        errors.append(
-            "P0.a: benchmark_identity does not recompute (recorded {}, recomputed {})".format(
-                recorded, recomputed
-            )
-        )
+    for message in post_qualification_failures(manifest):
+        errors.append("P0.e: " + message)
     return manifest
 
 
 def check_p0b(pkg, manifest, errors):
     for name in COMPONENT_FIELDS:
         ref = manifest.get(name)
-        if not isinstance(ref, dict) or "identity" not in ref or "locator" not in ref:
-            errors.append("P0.b: component '{}' is not an identity+locator reference".format(name))
+        if not isinstance(ref, dict) or "locator" not in ref:
+            errors.append("P0.b: component '{}' is not a locator reference".format(name))
             continue
         resolved = resolve_locator(pkg, ref["locator"])
         if resolved is None or not resolved.exists():
             errors.append("P0.b: component '{}' locator '{}' does not resolve inside the package".format(name, ref["locator"]))
-            continue
-        actual = tree_digest(resolved)
-        if actual != ref["identity"]:
-            errors.append(
-                "P0.b: component '{}' digest mismatch at '{}' (recorded {}, actual {})".format(
-                    name, ref["locator"], ref["identity"], actual
-                )
-            )
 
 
 def load_qualification(pkg, manifest, errors):
@@ -350,26 +354,25 @@ def check_wf3(pkg, pool, interpreter, work, errors):
 def check_wf4(pkg, manifest, qual, errors):
     events_path = pkg / "provenance" / "events.md"
     if not events_path.is_file():
-        errors.append("wf.4: no provenance/events.md seal ledger")
+        errors.append("wf.4: no provenance/events.md event ledger")
     else:
         order = {}
         for index, line in enumerate(events_path.read_text(encoding="utf-8", errors="replace").splitlines()):
-            for token in ("components-frozen", "qualification-recorded", "identity-minted"):
+            for token in ("components-frozen", "qualification-recorded"):
                 if token in line and token not in order:
                     order[token] = index
-        missing = [t for t in ("components-frozen", "qualification-recorded", "identity-minted") if t not in order]
+        missing = [t for t in ("components-frozen", "qualification-recorded") if t not in order]
         if missing:
-            errors.append("wf.4: seal ledger is missing events: {}".format(", ".join(missing)))
-        elif not (order["components-frozen"] < order["qualification-recorded"] < order["identity-minted"]):
-            errors.append("wf.4: seal ledger records qualification after identity minting (late operation)")
+            errors.append("wf.4: event ledger is missing events: {}".format(", ".join(missing)))
+        elif not (order["components-frozen"] < order["qualification-recorded"]):
+            errors.append("wf.4: event ledger records qualification before its components were frozen (late operation)")
     if qual is None or manifest is None:
         return
-    component_ids = set()
+    component_locators = set()
     for name in COMPONENT_FIELDS:
         ref = manifest.get(name)
-        if isinstance(ref, dict) and isinstance(ref.get("identity"), str):
-            component_ids.add(ref["identity"])
-    benchmark_identity = manifest.get("benchmark_identity")
+        if isinstance(ref, dict) and isinstance(ref.get("locator"), str):
+            component_locators.add(ref["locator"])
     for index, entry in enumerate(qual.get("entries", []) or []):
         if not isinstance(entry, dict):
             errors.append("wf.4: qualification entry {} is not an object".format(index))
@@ -378,10 +381,8 @@ def check_wf4(pkg, manifest, qual, errors):
         if not isinstance(covers, dict):
             continue
         for value in covers.values():
-            if value == benchmark_identity:
-                errors.append("wf.4: qualification entry {} covers the package's own benchmark identity".format(index))
-            elif value not in component_ids:
-                errors.append("wf.4: qualification entry {} covers an identity that is no component of this package".format(index))
+            if value not in component_locators:
+                errors.append("wf.4: qualification entry {} covers something that is no component of this package".format(index))
 
 
 def check_wf5(pkg, errors):

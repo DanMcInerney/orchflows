@@ -1,5 +1,11 @@
 # Q2 verdicts — qualification context Q2 (independent evidence/judged)
 
+Dated record, unedited. Every digest and `benchmark_identity` below is a
+captured observation of what a candidate or a tree contained on 2026-08-07,
+not a schema this package still requires: sealing was removed on 2026-08-09
+(run 20260809T021408Z-benchmaker-unseal) and a benchmark's version is now its
+git revision.
+
 run: 20260807T060439Z-benchmaker-recursion
 context: q2 (disjoint from all builder contexts; every result below recomputed from bytes)
 date: 2026-08-07

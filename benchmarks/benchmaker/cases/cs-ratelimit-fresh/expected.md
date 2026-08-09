@@ -8,12 +8,18 @@ interface.
 The judgment is over criteria classes; no expected value, timeline, or
 case content below is transcribable into a passing package.
 
-## Seal validity (required: schema-valid)
+## Manifest validity (required: schema-valid)
 
-The package is a sealed benchmark: a manifest carrying exactly the ten
-schema fields, a `benchmark_identity` that recomputes from the
-canonical payload, and component digests that verify over the shipped
-bytes at their locators, wherever in the package those bytes live.
+The package carries a manifest with exactly the nine schema fields, and
+every component locator resolves to shipped bytes, wherever in the
+package those bytes live.
+
+## Incomparability declared (required)
+
+`incomparability` states the identity boundary scores do not cross,
+covering model id, effort level, host binding and scaffold. The
+injected clock is part of the scaffold, so a wall-clock reading and an
+injected-clock reading of the same target are not the same score.
 
 ## Clock injection (required: reproducibility, cost-within-bound)
 

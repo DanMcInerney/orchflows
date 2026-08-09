@@ -11,12 +11,18 @@ must have selected its witnesses deliberately.
 The judgment is over criteria classes; no witness input, count, or
 corpus value below is transcribable into a passing package.
 
-## Seal validity (required: schema-valid)
+## Manifest validity (required: schema-valid)
 
-The package is a sealed benchmark: a manifest carrying exactly the ten
-schema fields, a `benchmark_identity` that recomputes from the
-canonical payload, and component digests that verify over the shipped
-bytes at their locators.
+The package carries a manifest with exactly the nine schema fields, and
+every component locator resolves to shipped bytes inside the package.
+
+## Measurement recorded (required)
+
+`measurement` names the candidate identities, the measured scope, a
+per-case status from `both-pass`/`split`/`both-fail`/`inversion`, the
+count of distinct failure signatures, and the margin. A pass narrowed
+by the sweep budget says so and names what it did not reach; a scope
+left unstated reads as complete coverage it did not buy.
 
 ## Budget law (required: cost-within-bound)
 

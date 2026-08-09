@@ -1,7 +1,7 @@
 # bad-edge-short (near-miss)
 
 The gate-coverage check quantifies over every canonical edge except
-the last one. Stage order, frozen joins, the aggregate gate, the seal
+the last one. Stage order, frozen joins, the aggregate gate, the build
 ledger, the design flow — all lawful; the package even fails the
 out-of-order and drifted-join transcripts. It only stops one
 implementation short: the inner near-miss that gates every edge but

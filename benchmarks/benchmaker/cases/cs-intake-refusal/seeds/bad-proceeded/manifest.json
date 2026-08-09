@@ -1,11 +1,10 @@
 {
-  "benchmark_identity": "sha256:9d4f2b8a6c1e0d3f5a7b9c2e4d6f8a0b1c3d5e7f9a0b2c4d6e8f0a1b3c5d7e9f",
-  "evaluation_design": {"sha256": "1111111111111111111111111111111111111111111111111111111111111101", "locator": "design.md"},
-  "runnable_cases": {"sha256": "1111111111111111111111111111111111111111111111111111111111111102", "locator": "cases.json"},
-  "runner": {"sha256": "1111111111111111111111111111111111111111111111111111111111111103", "locator": "runner.py"},
-  "scoring": {"sha256": "1111111111111111111111111111111111111111111111111111111111111104", "locator": "cases.json"},
-  "provenance": {"sha256": "1111111111111111111111111111111111111111111111111111111111111105", "locator": "design.md"},
-  "qualification": {"sha256": "1111111111111111111111111111111111111111111111111111111111111106", "locator": "design.md"},
+  "evaluation_design": {"locator": "design.md"},
+  "runnable_cases": {"locator": "cases.json"},
+  "runner": {"locator": "runner.py"},
+  "scoring": {"locator": "cases.json"},
+  "provenance": {"locator": "design.md"},
+  "qualification": {"locator": "design.md"},
   "expected_cost": {"units": "runs", "per_execution_limit_s": 10, "suite_estimate": "under 60 s"},
   "gaps": [],
   "protected_evidence": null

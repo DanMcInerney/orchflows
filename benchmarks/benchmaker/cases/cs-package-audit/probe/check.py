@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """Case probe for cs-package-audit. Qualify-the-qualifier.
 
-Independent recomputation over a sealed benchmark package for the
-unit-converter target:
+Independent audit of a benchmark package for the unit-converter
+target:
 
-  P0.a  manifest present, ten fields, benchmark_identity recomputes
-        from the canonical payload
-  P0.b  every component reference's sha256 verifies over the shipped
-        bytes at its locator (layout-agnostic, package-root relative)
+  P0.a  manifest present, nine fields
+  P0.b  every component reference's locator resolves over the shipped
+        bytes (layout-agnostic, package-root relative)
   P0.c  every qualification entry carries verdict/oracle/oracle_class/
         evidence/covers plus a required flag; no overall PASS with a
         required FAIL; no PASS with empty evidence
@@ -29,7 +28,7 @@ unit-converter target:
         tracing or an evidence-identity citation, never a pointer to
         its own expected answers
   pa.5  expected and actual qualification spend recorded; exactly one
-        benchmark identity in the implementation
+        manifest in the implementation
 
 Usage: check.py [IMPL_DIR]. CASE_IMPL outranks the positional. The
 implementation and the inner pool are copied to a scratch directory
@@ -38,7 +37,6 @@ Exit 0 when every check passes, else 1 with one FAIL line per finding.
 
 Stdlib only. Python 3.9+.
 """
-import hashlib
 import json
 import os
 import re
@@ -52,8 +50,8 @@ CASE_ROOT = Path(__file__).resolve().parent.parent
 AXES = ("failability", "coverage", "discrimination", "reproducibility",
         "redundancy", "provenance", "execution-cost")
 MANIFEST_FIELDS = (
-    "benchmark_identity", "evaluation_design", "runnable_cases", "runner",
-    "scoring", "provenance", "qualification", "expected_cost", "gaps",
+    "evaluation_design", "runnable_cases", "runner", "scoring",
+    "provenance", "qualification", "expected_cost", "gaps",
     "protected_evidence",
 )
 COMPONENTS = (
@@ -64,6 +62,90 @@ ENTRY_FIELDS = ("verdict", "oracle", "oracle_class", "evidence", "covers", "requ
 VERDICTS = ("PASS", "FAIL", "UNVERIFIED")
 PROV_SYNTH = re.compile(r"^synthesis@[0-9a-f]{6,}\s+claims\s+[0-9]")
 PROV_EVID = re.compile(r"^evidence@sha256:[0-9a-f]{8,}")
+
+
+# ---- P0.e: the post-qualification manifest fields -------------------
+# `compositions/references/benchmaker-manifest.md` owns the eight. None is
+# re-derivable after the fact, so a package that omits one cannot be repaired
+# by a consumer. This case covers `reference_audit` and `builders`:
+# the audit case audits the audit: an independent auditing context and the
+# builder contexts it must differ from.
+# The other fields are legal here and covered by the cases whose angle reaches
+# them; `tools/validate_cases.py` reads PROBED_MANIFEST_FIELDS and refuses a
+# case set that leaves one of the eight uncovered and unrecorded.
+POST_QUALIFICATION_FIELDS = frozenset(
+    (
+        "anchors",
+        "builders",
+        "reference_audit",
+        "attack_audit",
+        "measurement",
+        "resolution",
+        "retirement_trigger",
+        "incomparability",
+    )
+)
+PROBED_MANIFEST_FIELDS = {"reference_audit": "constrained", "builders": "constrained"}
+REQUIRED_MANIFEST_FIELDS = frozenset(MANIFEST_FIELDS)
+ALLOWED_MANIFEST_FIELDS = REQUIRED_MANIFEST_FIELDS | POST_QUALIFICATION_FIELDS
+
+def _reference_audit_failures(manifest, out):
+    audit = manifest.get("reference_audit")
+    if not isinstance(audit, dict):
+        out.append("'reference_audit' must record the auditing context, the method per case, "
+                   "the declared sample, a defect count and each defect's class")
+        return
+    for key in ("auditor_context", "method", "declared_sample", "defect_count", "defect_classes"):
+        if key not in audit:
+            out.append("reference_audit does not state '%s'" % key)
+    for key in sorted(audit):
+        if "rate" in key.lower():
+            out.append("reference_audit states a rate ('%s'); the contract is a defect count "
+                       "and a class per defect" % key)
+    count = audit.get("defect_count")
+    if count is None:
+        if not str(audit.get("status") or "").strip():
+            out.append("reference_audit records no defect count and no status saying why")
+    elif isinstance(count, bool) or not isinstance(count, int) or count < 0:
+        out.append("reference_audit 'defect_count' is a count of defects, never a rate (found %r)"
+                   % (count,))
+    classes = audit.get("defect_classes")
+    if not isinstance(classes, list):
+        out.append("reference_audit 'defect_classes' must be a list, one class per defect")
+    elif isinstance(count, int) and not isinstance(count, bool) and len(classes) != count:
+        out.append("reference_audit records %d defects and %d classes; each defect carries its class"
+                   % (count, len(classes)))
+
+_BUILDER_KEYS = ("model_id", "effort", "host_binding")
+
+
+def _builder_failures(manifest, out):
+    builders = manifest.get("builders")
+    if not isinstance(builders, dict) or not builders:
+        out.append("'builders' must record the builder context of each case")
+        return
+    for case_id in sorted(builders):
+        record = builders[case_id]
+        if not isinstance(record, dict):
+            out.append("builders['%s'] is not a builder-context record" % case_id)
+            continue
+        absent = [key for key in _BUILDER_KEYS if key not in record]
+        if absent:
+            out.append("builders['%s'] does not record %s" % (case_id, ", ".join(absent)))
+        unrecorded = [key for key in _BUILDER_KEYS if record.get(key) is None]
+        if unrecorded and not str(record.get("note") or "").strip():
+            out.append("builders['%s'] leaves %s null with no note saying why"
+                       % (case_id, ", ".join(unrecorded)))
+
+
+def post_qualification_failures(manifest):
+    """P0.e — the field(s) this case covers, against the manifest contract."""
+    if not isinstance(manifest, dict):
+        return ["manifest is not a JSON object"]
+    out = []
+    _reference_audit_failures(manifest, out)
+    _builder_failures(manifest, out)
+    return out
 
 
 def emit(message):
@@ -95,13 +177,6 @@ def load_json(path, label, failures):
         return None
 
 
-def canonical_identity(manifest):
-    payload = {k: v for k, v in manifest.items() if k != "benchmark_identity"}
-    canon = json.dumps(payload, sort_keys=True, separators=(",", ":"),
-                       ensure_ascii=False).encode("utf-8")
-    return "sha256:" + hashlib.sha256(canon).hexdigest()
-
-
 def component_path(pkg, manifest, name):
     ref = manifest.get(name)
     if isinstance(ref, dict) and isinstance(ref.get("locator"), str):
@@ -109,7 +184,7 @@ def component_path(pkg, manifest, name):
     return None
 
 
-def check_seal(pkg, failures):
+def check_package(pkg, failures):
     manifest_path = pkg / "manifest.json"
     if not manifest_path.is_file():
         failures.append("P0.a: no package/manifest.json")
@@ -122,24 +197,19 @@ def check_seal(pkg, failures):
         failures.append("P0.a: manifest is missing field '%s'" % field)
     if missing:
         return manifest
-    if manifest["benchmark_identity"] != canonical_identity(manifest):
-        failures.append("P0.a: benchmark_identity does not recompute from the canonical payload")
     if not isinstance(manifest["gaps"], list):
         failures.append("P0.a: manifest gaps must be an explicit list")
+    for message in post_qualification_failures(manifest):
+        failures.append("P0.e: " + message)
     for name in COMPONENTS:
         ref = manifest[name]
-        if not (isinstance(ref, dict) and isinstance(ref.get("sha256"), str)
-                and isinstance(ref.get("locator"), str)):
-            failures.append("P0.b: component '%s' lacks sha256 + locator" % name)
+        if not (isinstance(ref, dict) and isinstance(ref.get("locator"), str)):
+            failures.append("P0.b: component '%s' is not a locator reference" % name)
             continue
         resolved = (pkg / ref["locator"]).resolve()
         if not resolved.is_file():
             failures.append("P0.b: component '%s' locator '%s' resolves to no file"
                             % (name, ref["locator"]))
-            continue
-        digest = "sha256:" + hashlib.sha256(resolved.read_bytes()).hexdigest()
-        if digest != ref["sha256"]:
-            failures.append("P0.b: component '%s' bytes do not match the recorded digest" % name)
     return manifest
 
 
@@ -254,30 +324,14 @@ def check_case_provenance(cases, failures):
             failures.append("pa.4: case '%s' provenance parses as neither claim tracing nor an evidence citation" % cid)
 
 
-def check_spend_and_identity(impl, qual, failures):
+def check_spend_and_manifest_count(impl, qual, failures):
     spend = qual.get("spend")
     if not isinstance(spend, dict) or not str(spend.get("expected") or "").strip() \
             or not str(spend.get("actual") or "").strip():
         failures.append("pa.5: expected and actual qualification spend are not both recorded")
-    identities = 0
-    for path in sorted(impl.rglob("*.json")):
-        data = load_json(path, "pa.5: %s" % path.name, failures)
-        identities += count_key(data, "benchmark_identity")
-    if identities != 1:
-        failures.append("pa.5: found %d benchmark identities; law is exactly one" % identities)
-
-
-def count_key(node, key):
-    total = 0
-    if isinstance(node, dict):
-        for name, value in node.items():
-            if name == key:
-                total += 1
-            total += count_key(value, key)
-    elif isinstance(node, list):
-        for value in node:
-            total += count_key(value, key)
-    return total
+    manifests = [path for path in sorted(impl.rglob("manifest.json")) if path.is_file()]
+    if len(manifests) != 1:
+        failures.append("pa.5: found %d manifests; law is exactly one" % len(manifests))
 
 
 def check_inner_discrimination(pkg, manifest, inner_root, failures):
@@ -333,7 +387,7 @@ def audit(impl, inner_root):
     if not pkg.is_dir():
         failures.append("P0.a: no package/ tree")
         return failures
-    manifest = check_seal(pkg, failures)
+    manifest = check_package(pkg, failures)
     if manifest is None:
         return failures
     qual_path = component_path(pkg, manifest, "qualification")
@@ -350,7 +404,7 @@ def audit(impl, inner_root):
         check_axes(by_criterion, failures)
         check_independence(qual, provenance if isinstance(provenance, dict) else {}, failures)
         check_seed_discipline(qual, manifest, by_criterion, failures)
-        check_spend_and_identity(impl, qual, failures)
+        check_spend_and_manifest_count(impl, qual, failures)
     else:
         failures.append("P0.c: no qualification component")
     if isinstance(cases, dict):

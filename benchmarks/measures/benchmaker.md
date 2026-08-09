@@ -1,12 +1,8 @@
 # BenchMaker measurements
 
-One entry per measurement event, newest first. A measurement is a
-consumer-side reading of an already-sealed set, so it lives here rather
-than inside `benchmarks/benchmaker/` — `seal_set.py` reports an unlisted
-file under the package as untracked, and a record placed inside would
-mint a successor to record a measurement (redesign-spec §3.2). Each
-entry names, inside itself, the benchmark identity and set digest it
-covers; position in this file never carries that.
+One entry per measurement event, newest first. Each entry names, inside
+itself, the git revision of the case set it measured; position in this
+file never carries that.
 
 Each case row is one fenced `json` block, and that block is the row.
 Prose beside a row explains; it never restates a field.
@@ -14,45 +10,36 @@ Prose beside a row explains; it never restates a field.
 Verify any entry with, from the repository root:
 
     uv run --no-project python tools/validate_measures.py
-    uv run --no-project python benchmarks/benchmaker/tools/seal_set.py --verify
 
-The first checks this file against the schema and the case set; the
-second proves the covered package is byte-unchanged at the digest the
-entry names. A single row is checkable alone with
+It checks this file against the schema and the case set. The bytes an
+entry measured are `benchmarks/benchmaker/` at the revision it names. A
+single row is checkable alone with
 `tools/validate_measures.py --row <path>`.
 
 ## 2026-08-08 — two-rung measurement pass (INCOMPLETE: 3 of 16 rows)
 
-    benchmark_identity sha256:0509fe444edad0f29e3ad5bdd5cf4aacf35dae6228c17d73fb6064014a660787
-    set digest         sha256:75eb992563ba6f3258695ae7e06e8cff086daf74bfd4d01c8ad50b695aff4fcc
+    case set           63e88fefddb3319c0b6128e0f69a488fa4b98281
     scoring.md         sha256:685bc932ddd837763fabef27a909a7b7b54240aa199115340032b2917a78bd17
     run                20260808T061035Z-benchmaker-seal-measurement
 
-**These rows describe a predecessor tree.** They were measured at set
-digest `sha256:75eb9925…5aff4fcc` above. After the pass closed, the
-`cs-antigoodhart-2` defect these rows record — a runner invocation the
-probe enforces and no candidate-visible evidence declared — was
-repaired in `cases/cs-antigoodhart-2/evidence/interchange.md`, minting
-set digest `sha256:ec343b64…2f19ddce61` (SEALS.md, 2026-08-08). Both
+**These rows describe a predecessor tree.** They were measured at the
+case set of `63e88fe` above — the bytes the pass read at its own working
+revision `d8cabcb`, whose `cases/` is identical to it. After the pass
+closed, the `cs-antigoodhart-2` defect these rows record — a runner
+invocation the probe enforces and no candidate-visible evidence
+declared — was repaired in
+`cases/cs-antigoodhart-2/evidence/interchange.md` at `e5bdb24`. Both
 `cs-antigoodhart-2` rows therefore measure a case that no longer exists
 in the form scored: their P0.d failures are attributable to the defect,
-and a re-measurement at the current digest is not comparable to them.
-`benchmark_identity` above is unchanged across that repair, which is a
-recorded gap in the package's integrity chain, not evidence that the
-tree is unchanged.
+and a re-measurement at the current revision is not comparable to them.
 
-**That gap is now closed, and the distance has grown.** On 2026-08-09 the
-package gained `tools/component_identity.py`, which recomputes every
-manifest component identity from the tree, so `benchmark_identity` moves
-when `cases/` moves. The same seal split `case.toml`'s `bound` into a
-candidate-facing `exec_bound` and added the redesign's eight pre-seal
-manifest fields, minting `benchmark_identity`
-`sha256:cb06f656…b839088` at set digest `sha256:b236f614…ee8c5712`
-(SEALS.md, 2026-08-09). Every row below is two seals behind that.
-Each row's `bound.declared` quotes the predecessor key verbatim; the
-rows are facts and are not rewritten, and `validate_measures.py` strips
-the construction clause before comparing them to the current
-`exec_bound`.
+**The distance has grown.** At `1d98cc7` (2026-08-09) `case.toml`'s
+`bound` split into a candidate-facing `exec_bound` and the manifest
+gained the redesign's eight post-qualification fields. Every row below is
+two case-set revisions behind that. Each row's `bound.declared` quotes
+the predecessor key verbatim; the rows are facts and are not rewritten,
+and `validate_measures.py` strips the construction clause before
+comparing them to the current `exec_bound`.
 
 **This entry is incomplete and is not the finished record.** Three cases
 of sixteen are measured: `cs-cli-fresh`, `cs-antigoodhart-2` and

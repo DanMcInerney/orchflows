@@ -9,26 +9,26 @@ slashes.
 `manifest.json` sits at the package root and is a JSON object carrying
 these ten fields:
 
-    benchmark_identity, evaluation_design, runnable_cases, runner,
-    scoring, provenance, qualification, expected_cost, gaps,
-    protected_evidence
+    evaluation_design, runnable_cases, runner, scoring, provenance,
+    qualification, expected_cost, gaps, protected_evidence, resolution
+
+`resolution` records `one_case`, `measured_rerun_spread` (a number, or
+null beside a `note`) and a `smallest_reportable_difference` whose
+leading figure is max(spread, one case).
+
+These are recorded once qualification closes and are not re-derivable
+afterwards, which is why the manifest carries them. Other
+post-qualification fields may be present and are not read here.
 
 The six component fields — `evaluation_design`, `runnable_cases`,
 `runner`, `scoring`, `provenance`, `qualification` — are component
 references of this exact shape:
 
 ```json
-{"identity": "sha256:<hex>", "locator": "cases/cases.json"}
+{"locator": "cases/cases.json"}
 ```
 
-`identity` is the lowercase hex SHA-256 of the component file's bytes,
-prefixed `sha256:`. `locator` is the component's package-relative
-path.
-
-`benchmark_identity` is `"sha256:"` plus the hex SHA-256 of the
-manifest serialized without its `benchmark_identity` field as compact
-canonical JSON: keys sorted, separators `("," , ":")` with no spaces,
-`ensure_ascii` false, UTF-8 encoded.
+`locator` is the component's package-relative path.
 
 ## Runner report
 
@@ -88,7 +88,7 @@ records under `builder_context`. Worked entry:
   "oracle": "runner sweep over the fixed inner pool",
   "oracle_class": "deterministic",
   "evidence": {"context": "<qualifying-context-id>", "summary": "..."},
-  "covers": ["runnable_cases sha256:<hex>"],
+  "covers": ["runnable_cases cases/cases.json"],
   "required": true
 }
 ```

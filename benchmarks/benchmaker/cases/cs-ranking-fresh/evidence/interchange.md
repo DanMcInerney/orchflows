@@ -8,34 +8,27 @@ lines are in `criteria.md`.
 ## Manifest
 
 `manifest.json` sits at the package root and carries exactly these ten
-fields — no extras, none missing:
+fields:
 
-    benchmark_identity, evaluation_design, runnable_cases, runner,
-    scoring, provenance, qualification, expected_cost, gaps,
-    protected_evidence
+    evaluation_design, runnable_cases, runner, scoring, provenance,
+    qualification, expected_cost, gaps, protected_evidence, measurement
 
-`benchmark_identity` is a `sha256:`-prefixed hex string recomputable
-from the canonical payload: the manifest object minus
-`benchmark_identity`, serialized as JSON with sorted keys, compact
-separators `(",", ":")` and `ensure_ascii=False`, digested as UTF-8.
+`measurement` records `candidates`, `scope`, `per_case_status` drawn
+from `both-pass`/`split`/`both-fail`/`inversion`,
+`distinct_failure_signatures` and `margin_cases`.
+
+These are recorded once qualification closes and are not re-derivable
+afterwards, which is why the manifest carries them. Other
+post-qualification fields may be present and are not read here.
 
 Each of the six components — `evaluation_design`, `runnable_cases`,
 `runner`, `scoring`, `provenance`, `qualification` — is a reference
 object of exactly this form:
 
-    {"identity": "sha256:<64-hex>", "locator": "<posix-relative-path>"}
+    {"locator": "<posix-relative-path>"}
 
 Locators are forward-slash paths relative to the package root and must
-resolve inside it.
-
-## Digest rule
-
-A file locator's identity is sha256 over the file's bytes, recorded
-with the `sha256:` prefix. A directory locator's identity is the tree
-digest: sha256 over the UTF-8 encoding of
-`<posix-relpath>:<file-sha256-hex>` lines — one per file under the
-directory, sorted by relpath, joined with `"\n"` — with `__pycache__`
-directories excluded. Tree digests carry the same `sha256:` prefix.
+resolve inside it, to a file or to a directory.
 
 ## Qualification record
 

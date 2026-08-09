@@ -159,6 +159,6 @@ Successor set under test: `successor/tools/validate_cases.py` (16-row MATRIX) +
 
 QC-3 (seal reproducibility), QC-5 (equivalence bridge), QC-6 (Q-BURN), QC-7 (judged
 rerun variance) are outside this packet's criterion list; QC-3 was assigned to Q1 by
-design §8 but no delegation criterion or sealed benchmark.lock input was supplied in
-this packet, so it is UNVERIFIED here, not FAIL — no seal artifact was presented to
-recompute. QC-5/6/7 are Q2's.
+design §8 but no delegation criterion and no seal artifact was supplied in
+this packet, so it is UNVERIFIED here, not FAIL. QC-3 is itself withdrawn;
+`index.md` states the withdrawal. QC-5/6/7 are Q2's.

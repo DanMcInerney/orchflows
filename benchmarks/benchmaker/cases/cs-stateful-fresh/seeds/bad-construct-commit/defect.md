@@ -6,8 +6,8 @@ state directory whose migrated data and complete journal were
 committed by the harness itself during setup, not carried over from
 the implementation's own first run. The journal state the second run
 sees is harness side-channel state. Everything else is lawful: run-1
-assertions are intact, the environment is pinned, the seal
-recomputes, and every inner pool variant still splits exactly as it
+assertions are intact, the environment is pinned, the manifest is
+schema-valid, and every inner pool variant still splits exactly as it
 does under the reference package — which is what makes this the
 near-miss. The masking is narrow: any second-run defect reachable
 only through the journal bytes the implementation itself wrote on

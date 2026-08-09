@@ -1,8 +1,8 @@
 # BenchMaker protocol
 
 These stages are exhaustive: evidence acquisition, evaluation-design
-invocation, materialization, qualification, the three pre-seal stages,
-and manifest sealing.
+invocation, materialization, qualification, the three audit and
+measurement stages, and the manifest.
 
 ## Intake and bound
 
@@ -12,11 +12,11 @@ evaluation-design owner records an unobservable outcome or unavailable oracle
 as an explicit gap.
 
 Before work, partition one caller bound across evidence, design,
-materialization, qualification, and the pre-seal stages. An unpriced
-stage is a stage that gets skipped or overruns. Allocations are nonnegative and their
-total cannot exceed the caller bound; unused allocation from a completed stage
-may carry forward. Never copy the caller bound into a stage, internal spec,
-delivery, or lane.
+materialization, qualification, and the audit and measurement stages.
+An unpriced stage is a stage that gets skipped or overruns. Allocations
+are nonnegative and their total cannot exceed the caller bound; unused
+allocation from a completed stage may carry forward. Never copy the
+caller bound into a stage, internal spec, delivery, or lane.
 
 Fix the evidence identities, source policy, judgment permission, applicable
 pack references, benchmark write scope, excluded actions, protected-evidence
@@ -84,8 +84,8 @@ measurement pass that does not run.
 **Expensive execution — declare it, do not hide it.** Where a case asks
 a candidate to produce the artifact, as BenchMaker's own set does, the
 per-case cost belongs to the target and the suite ceiling rises with it.
-The coverage floor does not fall, and §Pre-seal stages' two measurement
-passes are justified per run rather than assumed.
+The coverage floor does not fall, and §Audit and measurement's two
+measurement passes are justified per run rather than assumed.
 
 **Speed is bought from the probe, never from the coverage floor, the
 oracle, or the horizon the outcome needs.** A case moved to a faster
@@ -98,8 +98,8 @@ tier, raise that case's tier and record why; never drop the angle.
 length, outcome specificity, and a stricter oracle that stays correct.
 Never select or retain a case by target failure, never remove one for
 low discrimination, and never revise the design from a candidate's
-scores. A recorded status routes a case to §Pre-seal stages' reference
-audit; only a named correctness defect removes it.
+scores. A recorded status routes a case to §Audit and measurement's
+reference audit; only a named correctness defect removes it.
 
 ## Materialization
 
@@ -141,30 +141,30 @@ UNVERIFIED and an explicit gap. For a nondeterministic outcome, qualification
 fixes a declared trial count; good variants pass and bad variants fail on
 every trial. A required deterministic failure blocks qualification. Judged
 criteria carry anchors, remain secondary, cannot compensate for required
-deterministic failure, and record their rerun variance before sealing.
+deterministic failure, and record their rerun variance.
 
-Resolve every runnable component and verify its byte digest before replay.
-Qualification recomputes its checks from those bytes and captured outputs;
-self-declared verdicts or evidence never qualify a benchmark.
+Resolve every runnable component before replay. Qualification recomputes its
+checks from those bytes and captured outputs; self-declared verdicts or
+evidence never qualify a benchmark.
 
 Fix protected evidence by identity with its visibility and release policy.
 When optimization resistance depends on protected evidence, absence of a
 candidate-inaccessible check leaves it UNVERIFIED. Record expected cost and
 actual qualification spend.
 
-## Pre-seal stages
+## Audit and measurement
 
 Qualification proves a benchmark measures something. It never asks
 whether the target finds it hard, whether the expectation is right, or
 whether the probe is passable without the work. Three stages answer
-those, in this order, after qualification and before sealing:
+those, in this order, after qualification:
 
     triage measurement → reference audit → repair
       → attack pass → repair-or-declare
-      → recorded measurement → seal
+      → recorded measurement
 
 Two measurement passes, not one: the cheap pass targets the expensive
-audit, and the second produces the figure that seals. Where §Execution
+audit, and the second produces the recorded figure. Where §Execution
 tier and difficulty declares an expensive class, justify the second pass
 for this run or declare its absence a gap. Each stage carries its own
 allocation from the intake partition, and none of them renders a
@@ -239,10 +239,15 @@ without evidence, and the reference audit is what decides the second.
 Declare the instrument's resolution as `max(measured rerun spread, one
 case)` and report no delta below it.
 
-The record lands outside the sealed package, one entry per measurement
-event, naming the benchmark identity it covers, the full candidate
+The record lands outside the package, one entry per measurement event,
+naming the git revision of the benchmark it covers, the full candidate
 identity per §Scoring, the date, the measured scope, and these figures.
-Re-measuring an existing seal lands there and mints no successor.
+Name a revision reachable from the default branch: where the pass ran on
+a branch, name the default-branch-reachable ancestor carrying identical
+measured bytes and state that relation in one clause. A squash merge
+makes no branch commit an ancestor of the default branch, so a branch
+revision dangles once the branch is collected — the failure mode a
+content digest did not have and a revision does.
 
 ## Scoring
 
@@ -268,6 +273,6 @@ over few candidates.
 
 ## Manifest and return
 
-Seal the qualified result under the package's immutable manifest schema. Every
-component reference and qualification verdict is fixed by identity; any
-change requires a successor benchmark identity.
+Record the qualified result in the package's
+[manifest](benchmaker-manifest.md), which owns its field set and how a
+component reference resolves.

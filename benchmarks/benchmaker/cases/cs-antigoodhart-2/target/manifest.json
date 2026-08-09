@@ -1,8 +1,22 @@
 {
-  "benchmark_identity": "sha256:385414ca49ad027d1d34873bde1ba6f477fece5f3b2634090ed6071cd879ddb8",
+  "attack_audit": {
+    "checklist_identity": "attack-classes:2026-08-08 — isolation failure, answers shipped with the test, remote code execution, judge prompt injection, weak string matching, evaluation-logic gaps, trusting untrusted output, excessive permissions",
+    "outcomes": {
+      "answers shipped with the test": "clean — no exhibited file carries a held-back constant",
+      "excessive permissions": "clean — the runner reads the pool and writes only its results file",
+      "isolation failure": "repaired — the inner runner was copied to scratch before execution",
+      "weak string matching": "clean — the oracle compares parsed plans, never rendered text"
+    },
+    "status": "run at qualification",
+    "unrepaired": [
+      {
+        "attack": "paraphrase a held-back workload rather than copying it; the canary matches verbatim reuse only",
+        "hole": "optimization resistance rests on canaries; there is no candidate-inaccessible check"
+      }
+    ]
+  },
   "evaluation_design": {
-    "locator": "design/design.md",
-    "sha256": "69e4a3dc201fa4525459bd245c6ff1f5dd7979e769ab2fbc02c366056e4657df"
+    "locator": "design/design.md"
   },
   "expected_cost": {
     "per_execution_limit_s": 5,
@@ -19,23 +33,18 @@
     "visibility": "qualification and scoring contexts only"
   },
   "provenance": {
-    "locator": "provenance/trace.json",
-    "sha256": "405059553f42dcc483c96e56e85abcd05c95c98b63082d83e086f0f737ac7b64"
+    "locator": "provenance/trace.json"
   },
   "qualification": {
-    "locator": "qualification/verdicts.json",
-    "sha256": "9a3af988a0d37bba9a40533683bea7d300e9b43ff08694f0770991a6e11d0a8e"
+    "locator": "qualification/verdicts.json"
   },
   "runnable_cases": {
-    "locator": "cases/cases.json",
-    "sha256": "a4c3fd45bd63ec4c51b6806b85ae3f4950dd410d96957d2f12efe6e4be34a203"
+    "locator": "cases/cases.json"
   },
   "runner": {
-    "locator": "runner/run.py",
-    "sha256": "ff74db22aad111c9ff5d8927bd1186719815f39a9947adf4d8ce5a290d17877b"
+    "locator": "runner/run.py"
   },
   "scoring": {
-    "locator": "scoring/policy.json",
-    "sha256": "59ab94cf60d411faccf5cdb1ec5be56665319701b80776fa4fa0dccc49cb8491"
+    "locator": "scoring/policy.json"
   }
 }

@@ -72,10 +72,8 @@ Probe armature P0 (every non-negative case's probe begins with these checks; pro
 one Python 3.9 stdlib script per case at `probe/check.py`, invoked per the validator's
 token contract with `{impl}`; exit 0 pass, nonzero fail):
 
-- P0.a manifest present with all ten fields; `benchmark_identity` recomputes from the
-  canonical payload (UTF-8 JSON, sorted keys, no insignificant whitespace, non-ASCII
-  unescaped, `benchmark_identity` removed) and equals the recorded value.
-- P0.b every component reference's sha256 verifies over the shipped bytes at its
+- P0.a manifest present with all nine fields.
+- P0.b every component reference resolves at its
   locator (layout-agnostic: locators resolved relative to the package root).
 - P0.c every qualification entry carries verdict/oracle/oracle_class/evidence/covers
   plus a required flag; no overall PASS coexists with a required FAIL; no PASS entry
@@ -128,9 +126,9 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
 ## 3. Case specifications
 
 ### 3.1 cs-cli-fresh — deterministic-cli — small — N=1
-- outcome: "Given the csvmerge CLI evidence, benchmaker produces a sealed package
+- outcome: "Given the csvmerge CLI evidence, benchmaker produces a package
   whose byte-exact oracle discriminates over supplied implementations."
-- tests: "A deterministic-CLI target yields a discriminating, seal-valid package."
+- tests: "A deterministic-CLI target yields a discriminating, schema-valid package."
 - target shape: reference package per armature; inner target = `csvmerge`, a Python
   3.9 CLI merging two sorted CSV files on an integer key with deduplication; stdin
   unused; exit 0/1/2 codes specified.
@@ -152,8 +150,9 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   bad-self-qualified — NEAR-MISS — deviation: self-reported-score-trusted @ inner
   qualification record (fresh locus; burned locus was ranking aggregation input) —
   verdicts cite only builder self-run evidence, all else lawful.
-- expected.md: criteria classes for seal validity, transcript anchoring, tolerance
-  breadth, discrimination floor; canary footer.
+- expected.md: criteria classes for manifest validity, declared resolution,
+  transcript anchoring, tolerance breadth, discrimination floor, and the
+  qualification record; canary footer.
 - keys: size=small; parallel_safe=true; negative=false; exec_bound="probe
   within small tier"; port="cli-dedupe";
   provenance="synthesis@41ee9ea2 claims 1,17,45 (G13)";
@@ -195,10 +194,10 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
 
 ### 3.3 cs-judged-fresh — judged-outcome — medium — N=3 (median; judged)
 - outcome: "Given meeting transcripts and a rubric frame, benchmaker produces a
-  package whose deterministic and judged criteria are split, anchored, and sealed
-  with recorded judge rerun variance."
+  package whose deterministic and judged criteria are split, anchored, and
+  qualified with recorded judge rerun variance."
 - tests: "Judged outcomes stay secondary, anchored, non-compensating, with variance
-  recorded before seal."
+  recorded before qualification closes."
 - target shape: reference package; inner target = a prompt/skill artifact
   "meeting-minutes condenser" (entirely fresh source set — LB:30 requires full
   rebuild since predecessor anchors quoted seed outputs).
@@ -206,7 +205,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   `rubric-frame.md` (criteria structure only: coverage, no-invention, length bound;
   anchors to be authored by benchmaker FROM the sources).
 - probe: P0 + (jd.1) qualification component records rerun variance for every judged
-  criterion, recorded before the seal timestamp/identity it covers; (jd.2) scoring
+  criterion, recorded before the `qualified_at` its provenance states; (jd.2) scoring
   marks judged criteria secondary and non-compensating — a synthetic inner result with
   a required deterministic FAIL and maximal judged score aggregates to FAIL;
   (jd.3) every anchor cites a source line id that exists.
@@ -215,7 +214,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   aggregation locus (census name, fresh locus vs overfit-trap burn) — judged score
   offsets a required deterministic failure; bad-no-variance — NEAR-MISS — deviation:
   state-omission @ variance-record locus (census name, fresh locus vs rate-limiter
-  burn) — sealed without rerun variance, all else lawful; bad-vacuous — INERT —
+  burn) — qualified without rerun variance, all else lawful; bad-vacuous — INERT —
   deviation: oracle-vacuity @ judged rubric locus (fresh locus) — rubric accepts any
   text; bad-dangling-anchor — deviation: dangling-reference @ anchor→source citation
   locus (census name, fresh locus vs composition-target burn) — anchors cite
@@ -528,8 +527,8 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   ungated inner near-miss is failed.
 - seeds: good-alt-form (good; equivalent package, different transcript encoding);
   bad-late-qualification — deviation: late-operation (HAZOP "late"; NEW deviation
-  name, unburned) @ seal-ordering locus — the package's qualification verdicts cover
-  an identity minted after them (qualification recorded post-seal);
+  name, unburned) @ event-ordering locus — the package's qualification verdicts
+  cover components frozen after the qualification recorded against them;
   bad-reverse-join — deviation: reverse-flow (HAZOP "reverse"; NEW name, unburned) @
   design-evidence join — the package's design component cites the materialized cases
   as its own evidence source (downstream fed upstream); bad-vacuous — INERT —
@@ -622,10 +621,10 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
 ### 3.15 cs-run-conduct — run-conduct — medium — N=1
 - outcome: "Given a complete packet with no supplied synthesis, benchmaker's run
   record shows five exhaustive stages, a charter-conformant acquire, frozen joins,
-  intact never-clauses, and gap carry-forward into the seal."
+  intact never-clauses, and gap carry-forward into the manifest."
 - tests: "The run record proves conduct law, from charter-lane acquire to gap
   carry-forward."
-- target shape: reference RUN RECORD tree + minimal sealed package. Inner target = a
+- target shape: reference RUN RECORD tree + minimal package. Inner target = a
   trivial Python echo-transform CLI (so the record, not the package, carries the
   difficulty). Record tree layout (fixed here so the probe is deterministic):
   `record/stages.md` (per-stage ledger: allocation, work items, artifacts, each work
@@ -633,7 +632,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   call); `record/acquire/` (two lane records + synthesis with its seven charter
   artifacts at one identity + saturation/gap notes); `record/joins.md` (frozen
   identity consumed at each edge); `record/gaps.md` (gap ledger, design-stage gaps
-  carried to the manifest); plus `package/` (minimal sealed package per armature).
+  carried to the manifest); plus `package/` (minimal package per armature).
   The case's packet return_contract requires the record among the returned
   artifacts, which is what licenses scoring it.
 - evidence/: `packet.md` (complete packet for the echo-transform target, no supplied
@@ -649,7 +648,8 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   internal-call packet in `record/packets/` carries objective/inputs/authority/
   bounds/return_contract with a stage allocation distinct from the caller bound
   string (claim 34 presence-check; arithmetic remains G3); (rc.5) never-clauses: the
-  case's evidence digests are unchanged post-run (claim 19); no candidate artifact,
+  case's evidence digests are unchanged post-run wherever the return attests them,
+  the record and the package's provenance included (claim 19); no candidate artifact,
   no comparison, no evolve invocation, no promotion/activation marker anywhere in
   record or return (claims 20, 22, 24); (rc.6) every design-stage gap in `gaps.md`
   appears in the package manifest's `gaps` (claim 12); (rc.7) each internal spec in
@@ -681,10 +681,10 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   cost-within-bound, gaps-declared].
 
 ### 3.16 cs-package-audit — package-audit — medium — N=1
-- outcome: "Given a complete packet for a trivial target, benchmaker's sealed
-  package survives independent recomputation: identity, digests, seven qualification
-  axes, seed discipline, equivalence bridges, and claim-traced provenance."
-- tests: "The qualifier is qualified: seals recompute and verdicts carry
+- outcome: "Given a complete packet for a trivial target, benchmaker's package
+  survives an independent audit: manifest resolution, seven qualification axes,
+  seed discipline, equivalence bridges, and claim-traced provenance."
+- tests: "The qualifier is qualified: manifests resolve and verdicts carry
   independent evidence."
 - target shape: reference package per armature; inner target = a Python
   unit-converter function (trivial, so the qualification record carries the
@@ -707,11 +707,13 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   provenance parses as `synthesis@<id> claims <ids>`-style claim tracing or an
   evidence-identity citation — never a pointer to its own expected.md (claim 4, D2);
   (pa.5) expected and actual qualification spend recorded (claim 52 tail); exactly
-  one benchmark identity in the impl (claim 1, one-identity half).
+  one manifest in the impl (claim 1, one-identity half).
 - seeds: good-alt-format (good; same qualification substance, different axis order
-  and record formatting); bad-seal-drift — NEAR-MISS — deviation: artifact-desync @
-  manifest-tree seal locus (census name, fresh locus vs multi-domain burns) — one
-  component byte differs from its recorded digest, identity not re-minted, all else
+  and record formatting); good-unsealed (good; a package edited after assembly —
+  one component's bytes amended, every component addressed by locator alone);
+  bad-locator-drift — NEAR-MISS — deviation: artifact-desync @ manifest-component
+  locator locus (census name, fresh locus vs multi-domain burns) — the manifest
+  names a component at a path the package does not contain, all else
   lawful (SD atlas / D5 exercise); bad-self-qualified — deviation:
   self-reported-score-trusted @ qualification-independence locus (census name, fresh
   locus) — every verdict cites builder self-run evidence only; bad-axis-missing —
@@ -748,32 +750,32 @@ run's case results to UNVERIFIED. Required deterministic failure never ranks (cl
 
 Suite qualification required criteria (all required; overall PASS only when every one
 is PASS; the overall verdict states its weakest oracle_class, which is `judged` via
-QC-7):
+QC-7). QC-3 (seal reproducibility) is withdrawn; `qualification/index.md` states
+the withdrawal.
 
 | id | criterion | oracle | oracle_class |
 |---|---|---|---|
 | QC-1 | schema-valid | `python tools/validate_cases.py` at the superseded 16-row MATRIX | deterministic |
 | QC-2 | probe inversion / discrimination | validate_cases.py seed sweep + per-case declared trials | deterministic |
-| QC-3 | seal reproducibility | `seal_set.py` / benchmark.lock digest recomputation over the shipped tree | deterministic |
 | QC-4 | provenance-traced | provenance audit: every case's provenance parses per §2 grammar and every claim id resolves in the frozen claim register (D2 closure) | deterministic |
 | QC-5 | equivalence bridge | Q2's per-seed behavior-change / equivalence proof record: every bad seed proven behavior-changing or excluded with proof; inert-equivalent recorded as gap + UNVERIFIED | evidence |
 | QC-6 | burn-law compliance (Q-BURN) | Q2 compares every seed deviation+locus against the predecessor set's `deviation:` lines; any same-name-same-locus reuse fails | evidence |
-| QC-7 | judged rerun variance | cs-judged-fresh judge rerun x3 with variance recorded before seal | judged |
+| QC-7 | judged rerun variance | cs-judged-fresh judge rerun x3 with variance recorded before qualification closes | judged |
 | QC-8 | cost-within-bound | probe runtime ledger vs size tiers; suite estimate vs §8 | deterministic |
 | QC-9 | contamination canary integrity | scan: both GUIDs present in their stores, absent from every target/ and seed tree | deterministic |
 | QC-10 | blocked-return shape (rows 5, 14) | the negative cases' probes at inversion | deterministic |
 
 ## 5. Protected evidence policy
 
-Store: a directory OUTSIDE the sealed public tree (workspace-resolved; not under
+Store: a directory OUTSIDE the public tree (workspace-resolved; not under
 `cases/**`), holding cs-antigoodhart-2's held-back workload class and
 cs-nondet-fresh's held-back streams. Authored in Q2 (qualifying context supplies
-discrimination inputs), fixed by sha256 identity in each package manifest's
+discrimination inputs), named file by file in each package manifest's
 `protected_evidence` and in the suite manifest. Visibility: qualification and scoring
 contexts only. Release policy: never to candidate or builder contexts.
 Access mechanism: probes read `BENCH_PROTECTED_DIR` when set (qualification/scoring)
 and degrade to public-subset checks when unset (validator context) — validator
-behavior is unchanged. candidate-inaccessible-check: `null` at this seal;
+behavior is unchanged. candidate-inaccessible-check: `null`;
 optimization resistance is therefore recorded UNVERIFIED with an explicit gap
 (protocol §Qualification; claims 52; D1/D4 honest closure — the barrier is
 procedural, detection is by canary only).
@@ -828,7 +830,7 @@ scopes disjoint by case directory):
 
 Qualification contexts:
 
-- Q1 (deterministic): QC-1, QC-2, QC-3, QC-4, QC-8, QC-9, QC-10.
+- Q1 (deterministic): QC-1, QC-2, QC-4, QC-8, QC-9, QC-10.
 - Q2 (independent evidence/judged): QC-5, QC-6, QC-7; authors the protected store;
   runs one matched-builder-model liveness trial on two sampled cases (one
   deterministic, one process-shaped) as the capacity-bounded solvability check.
