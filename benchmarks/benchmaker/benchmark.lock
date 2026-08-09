@@ -1,12 +1,12 @@
 57b3b9c3cc5e7ff649cd11f26819dc1c92b1855f68bb8e797a6d3661888585a0  README.md
-d6b35fd33888a93c80500d5d1352c78282ee97051f558145ef9e7c1a75998949  cases/cs-antigoodhart-2/case.toml
+9799101f1d819d97cffde29b44798e116f2f0bcc8b484c94eb827fff17e03f84  cases/cs-antigoodhart-2/case.toml
 ec7f09edab06843cf91db3ac337425fd416de857aecceba8d169a47d6c3f4d43  cases/cs-antigoodhart-2/evidence/holdback-policy.md
 1f0b63776f43c763a517d82efe281ccd18c3ffa8ad8a9828be84c77eef988c4d  cases/cs-antigoodhart-2/evidence/inner-impls/alt-equivalent/planner.py
 60ea99811a6c53733c30e00489eaef962b26daa6fc12a09b05141f97bd94e4f9  cases/cs-antigoodhart-2/evidence/inner-impls/boundary-variant/planner.py
 e7d39245c9930d9e22df322ba8e45638f2157decd4816e3e51471f494194ad3d  cases/cs-antigoodhart-2/evidence/inner-impls/memo-variant/planner.py
 904c87ed16cbed60823a556da65b5adecd6894915af972c7d0796e9558a06b7a  cases/cs-antigoodhart-2/evidence/inner-impls/pool.md
 3de351eb9aecf9abe4bd96777bea2f3f8082e4719658226cfc5d35ed636a854a  cases/cs-antigoodhart-2/evidence/inner-impls/reference/planner.py
-f17f6f568972a6bc2b69c9369da99748d06fde3c35cdc50256f4833603748913  cases/cs-antigoodhart-2/evidence/interchange.md
+2f8ceefa4513a83fa371fa324e7084fd8377d3d232cf5313ca8c8f173b8637e0  cases/cs-antigoodhart-2/evidence/interchange.md
 c549b2add0876f2f790a34dbcd4d2a4f9156472d1df5dec3f120a5937c1f0165  cases/cs-antigoodhart-2/evidence/rules.md
 3b3efe7e3654727e7fa0d40e862ad3a60ceea37e9954f7f66e779dcc46c560e2  cases/cs-antigoodhart-2/expected.md
 b2d3a4af155071a36af8ecef4ad330dd80671a84ad4409f503d2c5da9ab1c03b  cases/cs-antigoodhart-2/probe/check.py
@@ -49,7 +49,7 @@ a4c3fd45bd63ec4c51b6806b85ae3f4950dd410d96957d2f12efe6e4be34a203  cases/cs-antig
 9a3af988a0d37bba9a40533683bea7d300e9b43ff08694f0770991a6e11d0a8e  cases/cs-antigoodhart-2/target/qualification/verdicts.json
 ff74db22aad111c9ff5d8927bd1186719815f39a9947adf4d8ce5a290d17877b  cases/cs-antigoodhart-2/target/runner/run.py
 59ab94cf60d411faccf5cdb1ec5be56665319701b80776fa4fa0dccc49cb8491  cases/cs-antigoodhart-2/target/scoring/policy.json
-e1fe0f1c7847e830cdec392b0c7d077669dfa70835502bfaa41735aae1361732  cases/cs-cli-fresh/case.toml
+e188e919c5c20330b216021fdf95aa949608e5b9051bd5b15c91ec253fc94751  cases/cs-cli-fresh/case.toml
 49b38d1e2ac0c283619bf69413a5ca5a8f10dfbd83f97faa4b6c8e015e07c5b2  cases/cs-cli-fresh/evidence/inner-impls/bad-drop-dedup/csvmerge.py
 55cc1679b2fa26bd2e3589c59aae79026c0305e1c26d5e03a2f5d4f0792fcbd3  cases/cs-cli-fresh/evidence/inner-impls/bad-near-miss-final-key/csvmerge.py
 825f2c303c6e656c4803b12feaf6d06461ecdaad49be5c413f3bc3f8d31a0bd3  cases/cs-cli-fresh/evidence/inner-impls/good-equiv/csvmerge.py
@@ -97,7 +97,7 @@ e1353ac7cc864bba57d9502ccf6c78a76d5eaf9389ad2836b1e7c3e96a912e6e  cases/cs-cli-f
 10a73a9d3109bfb6efb43f08def6d35c006d0a1a78e62cae6b52387036466203  cases/cs-cli-fresh/target/qualification/qualification.json
 c96d8ed3561c7d464fd93deb18c5d92722b3df7982fdf4f1ed66b4e97b96f935  cases/cs-cli-fresh/target/runner/run.py
 466abd8cc6d7d14d2127de41779c91508ff23640ad04091ac3b7e7bd237c2e30  cases/cs-cli-fresh/target/scoring/scoring.json
-61e328fa55a20815b1451658077dea5ea96765d771a32342ac651714e593ce66  cases/cs-contradiction-fresh/case.toml
+6f6d898398e9a591683e392dcbea7b4c83a5d3dd2bbc0d5a40377e854cc26e2d  cases/cs-contradiction-fresh/case.toml
 adf9b8bb12a5edca19b4893b2033091ffd284ff82de203d5d01fd8447f8ac8da  cases/cs-contradiction-fresh/evidence/doc-a.md
 38499e155878c24fa95cd19c42d5a40c14ffbe104148f825e5e1945dc7f23adf  cases/cs-contradiction-fresh/evidence/doc-b.md
 7e29e0307ab887ec3e4eb38aa11fcef5c544a07233ed55879721ab4b9bb28094  cases/cs-contradiction-fresh/evidence/inner-impls/bad-nearmiss-zeroyear/parse.py
@@ -155,7 +155,7 @@ f75bf5d356dc2b8639eed9409f77a603188e46e6c2b597a122d522ce465a8825  cases/cs-contr
 b70fb917984aebabcecbb3c9a061bb2f07364bfafae0684be2c989a58b37c1b4  cases/cs-contradiction-fresh/target/qualification/verdicts.json
 ea0b9900a6e3a3a92542b67246f8fda3f7990fdaa25c65285e45f85409ed4e9f  cases/cs-contradiction-fresh/target/runner/run.py
 a4f0e1402e14eb9b72edd5ec01248f71fab70f159ba1f8ec23db77441237ea8d  cases/cs-contradiction-fresh/target/scoring/aggregate.py
-c2aa9e324e13e4dab50c42208e8548af35a957da98122be3f414a0ef6245f4bc  cases/cs-cost-fresh/case.toml
+a49ed73363803401414dca70796226e93892ba36fcf790dc2b855745505cbbe0  cases/cs-cost-fresh/case.toml
 6b99360cb362550f93ae7ba83701b72e5c5007e88e67978c0c365542725f80fd  cases/cs-cost-fresh/evidence/corpus-gen.py
 0f9aa9d850bd98d6087d4bba51b1d75dfdad1472119a55f4a74fcdc6b64c0933  cases/cs-cost-fresh/evidence/inner-impls/bad-w1-boundary/engine.py
 822a8e33e3085a6f22968e8ae7d365a6297e97885656c64c6761b809c44c319c  cases/cs-cost-fresh/evidence/inner-impls/bad-w2-dupes/engine.py
@@ -206,7 +206,7 @@ b2a8593db0fcf51f35446e89f271ace22e37768ec5768d119017c43793e9c98b  cases/cs-cost-
 3f2f1d715d66e00e24b2a4397d1d98736d2cabefd9ac9d1e245fd6397d5d9c9a  cases/cs-cost-fresh/target/qualification/qualification.json
 fa54916ad7bde2db1eccf2a0b02c392e3b107a457d80e5878fd6c22c2ea2ec51  cases/cs-cost-fresh/target/runner/run.py
 6ecc822d92f8f48ab8eb383179172ec643c001b78dda85a049fd16d16fcec7d6  cases/cs-cost-fresh/target/scoring/score.py
-3d61d37988aa77762801ebd21f1a54bf483f38316af10b1e9fa8403d541e0835  cases/cs-intake-refusal/case.toml
+b04f5aa3535842c3b7587eaeffeb153fcec555964dc0afdb3aab15869645020c  cases/cs-intake-refusal/case.toml
 4fc3d0cde2aabcb01a57322bc54e1fcad64dcc4868b3877094e43cd0da552c08  cases/cs-intake-refusal/evidence/packet.md
 12cd1a604308446bbb9e1b604d0735d303b8dc9845d1a20fa819cc4caeb3173b  cases/cs-intake-refusal/evidence/return-contract.md
 977c02e2db759fe309a9edfd3fbdd705159ad7d216b56c83369c76b50db45726  cases/cs-intake-refusal/evidence/synthesis-offered.md
@@ -225,7 +225,7 @@ a9699c73288e092117d2922202f51a834fae1c82ccd850679915926ffc1aaab1  cases/cs-intak
 470b671a3036a960cfc6267ee42e69c14db72c6c6c2c38e3bab86c2ecc767dbd  cases/cs-intake-refusal/seeds/bad-reuse-deficient/return.md
 e39928eccc09e7fade7d5c456486abfc53eb6b206ea1df4b42bef5850bcbc489  cases/cs-intake-refusal/seeds/good-alt-return/return.md
 99016e5f95001a8870fedbdc583591bd74b49b664af5d88f11420d9e702ee548  cases/cs-intake-refusal/target/return.md
-91841649dc3604d3342a47ab802cc4f06d18a538d8f46000d1995e87630ff28f  cases/cs-judged-fresh/case.toml
+ff0d08417b26a9f8bf02aff3554dcdf0b954cb1dedaee72beecb4f2ce97d8e8b  cases/cs-judged-fresh/case.toml
 c91de3ed39eea2158edd5d0edbb9f8dd8cbc89fa82386c979f6cb80af2cbc267  cases/cs-judged-fresh/evidence/inner-impls/bad-invented-cite/condenser.md
 970f273038afa467e35ec62326c5789a7ae85c2660f9e927afa0185558aebf5e  cases/cs-judged-fresh/evidence/inner-impls/bad-invented-cite/minutes.md
 6c11f193cc296cc1619e75e01e4790de1b314868ffe9bdc4254efe4408a121ed  cases/cs-judged-fresh/evidence/inner-impls/bad-nearmiss-drop/condenser.md
@@ -291,7 +291,7 @@ d7e5433050a47f9885e244ba7817d7606e977dc14cd543fe8512f492a189d2a5  cases/cs-judge
 e80eb44ac8173221e0932e2ef226a2c7efad6308b5380f2f4a90bc53ea4b58f1  cases/cs-judged-fresh/target/qualification/verdicts.json
 35318954be7d69183c1e35968389520e3bbff6f38e3820edf7e28319c903a48c  cases/cs-judged-fresh/target/runner/run.py
 42e683620073d9c57146643f87fd91c32ab15ed107b6c4004dff19f5efba2633  cases/cs-judged-fresh/target/scoring/aggregate.py
-21927807649f1c888ef26dfda1a1fdae4cd132c6589d8ce1df00285601a277b5  cases/cs-multidomain-fresh/case.toml
+f3dcf8871bd2709468f1853eb90ba48405547827736eec231541d984f9946989  cases/cs-multidomain-fresh/case.toml
 f0c3df369514572f6857ea10295f1127dccbc937de3e3589a20d462f7e920dcf  cases/cs-multidomain-fresh/evidence/code-spec.md
 2fd48b8c3e84a7d2e21336baed9e05445f5cbfc040f8592e6191367f79463c20  cases/cs-multidomain-fresh/evidence/doc-spec.md
 adbd13e844281517d72804ae1e156ddbe6497362c3ae24f589df4fd3e1bd1b01  cases/cs-multidomain-fresh/evidence/inner-impls/bad-code-doc-broken/changelog.py
@@ -339,7 +339,7 @@ b741a379290eca62cab59b2f2a4f11be5642da74fb8bdb09e71e71c5b7e6348c  cases/cs-multi
 b741a379290eca62cab59b2f2a4f11be5642da74fb8bdb09e71e71c5b7e6348c  cases/cs-multidomain-fresh/target/qualification/qualification.json
 81946439d073e45368ad4ce5a67d4df8a857b23f937900f8f252485dd6f878d2  cases/cs-multidomain-fresh/target/runner/run.py
 9f2e422b6f5661fb7c7e33cc3e9cf44f3c74df447b8e2d2cd148a9b2806a1be0  cases/cs-multidomain-fresh/target/scoring/scoring.json
-a6dd894b0119afd914a32dc49d35813f03cd2141e136d352fb07bb880d045a04  cases/cs-nondet-fresh/case.toml
+b1d33a02fac8e0d8a776654c1da6157cbaf6a4dea887e495cded0aef7cabca88  cases/cs-nondet-fresh/case.toml
 143780f2ad51862990a65a4af6a20cfe514dca0672e40979b852742eb762cbad  cases/cs-nondet-fresh/evidence/holdback-policy.md
 1f746fe694bb37ab5109ceaf976523f1d8a9d92f479c7eb42a42be6aa7bb3dbe  cases/cs-nondet-fresh/evidence/inner-impls/bad-biased/sampler.py
 e2ed2908e02b9a26af4d93bddce47d2ce3fa9e26f6b44bf3fc55dc7b6dcccee3  cases/cs-nondet-fresh/evidence/inner-impls/good-equivalent/sampler.py
@@ -414,7 +414,7 @@ bb4198cc8396f3e88e1eebdb0b823e7998c3edd54286a401e7eae8084ce91519  cases/cs-nonde
 c3e00f0d3af88a2460f7886811af5b04b8dc1e33dba6f701762ff186a2437d1a  cases/cs-nondet-fresh/target/runner/run.py
 fddfdfbae2065dc814b906145202e0d70d0c8821791a28c5d3ab82c160aeaaf5  cases/cs-nondet-fresh/target/scoring/aggregate.py
 88983e149e4280ac76ef1267f7e677e4cccb730621bf0a2829025f4892ac6859  cases/cs-nondet-fresh/target/scoring/policy.json
-e4781c10b6d7650ca47b31c2457a2a996b019668c2fb2c6f3a928656bfcfb29e  cases/cs-package-audit/case.toml
+e4d0da5ccbc3aa2434975976e3a3465b3d78dea6b3337c217a754326bd380449  cases/cs-package-audit/case.toml
 a28f5798844dd370a0f3ca75639b99191cbdf2315f733f73f150d57883749316  cases/cs-package-audit/evidence/inner-impls/bad-round-floor/convert.py
 5ed47d6f81b3a00f22d260acaa14ea41ee2a6e75eed4e8aaf837c17c36bfd377  cases/cs-package-audit/evidence/inner-impls/bad-wrong-factor/convert.py
 7d651d77ff575b74a5748f5e73f4f9fb6bd1509ac137855b7c74206b81ed8991  cases/cs-package-audit/evidence/inner-impls/good-pivot/convert.py
@@ -485,7 +485,7 @@ f35af5765a80e9b5927c9c766bddcf0556ba585abe2a9f4a98a70eed5dada1c9  cases/cs-packa
 17a137700b46422518309eef88f588adddbd505cb2b1ee59a00d543c8673bd87  cases/cs-package-audit/target/package/qualification/qualification.json
 172b6ce35d2d0ecd98aebf1fc417b459df799699a3a80344c695b39c0206175c  cases/cs-package-audit/target/package/runner/run.py
 91d84771e4e9ead68e5042cd80cdd916e51fc576d051f7f4be8a13ad76576f2e  cases/cs-package-audit/target/package/scoring/scoring.json
-7eaa78c2a47fe73985631b395c9ac6bd1e9b65a8b8c4921e774dcd98a5e9f1d4  cases/cs-ranking-fresh/case.toml
+6a64a3131b0e14b28e39760a3586524196a1d6094f5aefb439b375154895620f  cases/cs-ranking-fresh/case.toml
 a1bdbf3c1ca983e295a98e23a7d7a53000150b25e8ba34f09e651648120b78d3  cases/cs-ranking-fresh/evidence/candidates/cand-alpha.md
 acd959fe3fc4916aae020ac882e5270da92fab384a037fcc6ca93f9ed65c5c11  cases/cs-ranking-fresh/evidence/candidates/cand-bravo.md
 f88cf05ea13221516a125798e96945c4a1c37c0c89cedde4e606a01f3be77594  cases/cs-ranking-fresh/evidence/candidates/cand-charlie.md
@@ -557,7 +557,7 @@ d4104c48ec3b94af4e4135eb541cf7a39722c4af9746aa9994c1f0e4ad57a05b  cases/cs-ranki
 b94de266bc2c0f259328d160045e8b53e649689980561dcefeff923b63027df8  cases/cs-ranking-fresh/target/runner/run.py
 6c69d0c0aec37d4513e98d2544b8b2cf7a20e87c56ff27171ee5523ce4269b12  cases/cs-ranking-fresh/target/scoring/aggregate.py
 c0200bb4565df30a33d5faebab2579517a10f4f9bf668118aeb759e5452aef43  cases/cs-ranking-fresh/target/scoring/policy.json
-57c8ce3bc64c326410f8fa1181533037781cfd826d5e361a221157e8e9d54c41  cases/cs-ratelimit-fresh/case.toml
+ece08b006f798c80ed8f3435f39648040a7a6177c7bc91fa27c3471431baf31e  cases/cs-ratelimit-fresh/case.toml
 a510ec1b32491cfbdce34d614457e8cab44a397736199bcb8fed373029f62a4a  cases/cs-ratelimit-fresh/evidence/inner-impls/bad-refill-never/tokenbucket.py
 028a4815e235f12cc1f5b39ce4145da24c8896b90e81f86e8e1439a63599823a  cases/cs-ratelimit-fresh/evidence/inner-impls/good-equivalent/tokenbucket.py
 dec83ebdd978bdbc8bd1ea7bb1a1b55c601d1ab11074f6b386694e7268c8beaa  cases/cs-ratelimit-fresh/evidence/inner-impls/near-miss-margin/tokenbucket.py
@@ -613,7 +613,7 @@ a2c4a2ed4fb76721790bed42394d2bce72d521edbac0ee6f956097cc462c9a82  cases/cs-ratel
 7586d8dc6c84b259d408fd34b3af1195ffed682bf6d598bec2e0e175db7d9044  cases/cs-ratelimit-fresh/target/qualification/qualification.json
 e68fcb4a4cf6b2b34d01f85702a895fa40342cc6784438721b737d92d6944083  cases/cs-ratelimit-fresh/target/runner/run.py
 6272e36c53b7f9eaf0c862c52e7e14536107f79b30472f6b9df0d48539ab54a0  cases/cs-ratelimit-fresh/target/scoring/score.py
-d2a70b7598780c1eb8ba681471276516102b66709e225149d5a4364ae120219b  cases/cs-refusal-2/case.toml
+72494750ca39013821a5139a63cbcfd978a8681cebad704b1dc0139e74974e92  cases/cs-refusal-2/case.toml
 50f04cf9a2c34d1a2203b836fc4c794ec45e8137f1d2da9ec43cc731ae4a2206  cases/cs-refusal-2/evidence/codec-notes.md
 4af6a55a4975e082904c8a6cd6c69fd8704497f34ae413ad69bc01a4889fa4b5  cases/cs-refusal-2/evidence/packet.md
 15010949452b14e99ef46742fb67138f78c2fc4a28d865e9502894bc6a22cfac  cases/cs-refusal-2/expected.md
@@ -633,7 +633,7 @@ c98fcc5d7f842751820cc284b97c7b2881e6229a38a001a40f739a625ca76f11  cases/cs-refus
 cf9bba91ae3c57e117dbf676cdd314f5047cb6379a1d00d29398c60584d3fbec  cases/cs-refusal-2/seeds/bad-silent-proceed/seal-note.md
 7549e098589ea855d18981c9083ba31126681829e1ae4cae4d1e3202b13525a4  cases/cs-refusal-2/seeds/good-alt-return/return.md
 ab120b3d893a99cd45becb24e6307e645d0596d92b7620e404c6a93ee5a1bbd7  cases/cs-refusal-2/target/return.md
-69d9312bb0bf07958d6f4142be42c5e0be2e40cd3274fa302ba6125b07592242  cases/cs-run-conduct/case.toml
+ec6809b90ccc97cb270fcaa592bd4e93e6129a6cb4766e996181f6d3c55aab59  cases/cs-run-conduct/case.toml
 a6f7d5544381deeae17bede972e2508ffe0a5407688f5e13bcb97a5d48db5c30  cases/cs-run-conduct/evidence/manifest-component-note.md
 b4427e9f6dbd92e87126ec8f0046adba11a010c158da85e292f592a37b001277  cases/cs-run-conduct/evidence/packet.md
 13a79f7efd81838fad3de1a9c6f4871dbe208556e6bb64fc5f8de0c98142b674  cases/cs-run-conduct/evidence/record-schema.md
@@ -814,7 +814,7 @@ da18d9576f9a9134fd33d6070452e6a51fbfd1d6eee426525c7c7861e7bb493a  cases/cs-run-c
 6c2aee6f7f206be1a4398fb4d5e1a5dd83a3f60e1473c727dcfe6e28619585a4  cases/cs-run-conduct/target/record/packets/p5-materialize.md
 2cd06dab263bad0008cbc41b332f1ccc45c55d203d09c3b7d49e96f470c28767  cases/cs-run-conduct/target/record/packets/p6-qualify.md
 dccd96ba0615291310aa555721f1897b2e0799967602f3919da6b5f5f53e7e4e  cases/cs-run-conduct/target/record/stages.md
-5dccb353ddae85525f48200380fddf5330b003c4ec822d1b5ec519876cce2331  cases/cs-sparse-fresh/case.toml
+66a6fc3ca6519556f869f1eeb5e68a9b8e578d56025578d63d4b64fe07fb7ae6  cases/cs-sparse-fresh/case.toml
 ca9fc59ca4d3bf167e00d690c078440518c81d0fc2ee7842013010d171425838  cases/cs-sparse-fresh/evidence/inner-impls/bad-nearmiss-digitless/qml_lint.py
 0bf2b815f8572a4ad20d39dcbc2e015fb20b0eda66fc1b2a64d268193e85ad0c  cases/cs-sparse-fresh/evidence/inner-impls/bad-norule/qml_lint.py
 bcfedfad6bab9582e1f7093bccaadf27aaa10b1eec57134a28f0aca9660ee406  cases/cs-sparse-fresh/evidence/inner-impls/good-equiv/qml_lint.py
@@ -872,7 +872,7 @@ af5ae850be954706c0f9778e9c35e2e5208e537c5c72d3ad01caedf18720ebb1  cases/cs-spars
 5dc89e351a2223a63a01f2cb47ad5dbe9b98ee7b6e3a7051cea38dd5f10f732d  cases/cs-sparse-fresh/target/qualification/verdicts.json
 8a9a7aea57dd0f29811ccff07595283df6371ae413ae0a99d82c688174c89100  cases/cs-sparse-fresh/target/runner/run.py
 a4f0e1402e14eb9b72edd5ec01248f71fab70f159ba1f8ec23db77441237ea8d  cases/cs-sparse-fresh/target/scoring/aggregate.py
-a4f998c3e783827e129aec86644572abd30f02492e3e596849b2ed2b1c38810a  cases/cs-stateful-fresh/case.toml
+cdde15e7ff9af454880c47191ec5f07cbe60e4810a43f626baa00e4b8ea12d39  cases/cs-stateful-fresh/case.toml
 6f225c1138478e20f476fbdcb1eca5b93d4e5fd9cbd9ac3c7c5d9d35cb54be33  cases/cs-stateful-fresh/evidence/inner-impls/bad-near-miss-journal/migrate.py
 80925c87ca6a6001815bc92d55d19a14edb0d08c129c6435ed2743078ed88cc2  cases/cs-stateful-fresh/evidence/inner-impls/bad-remigrate/migrate.py
 3ddf98705614d863546c8842d51805d0e948655771e68d3348d897f7bde6bd47  cases/cs-stateful-fresh/evidence/inner-impls/good-equiv/migrate.py
@@ -927,7 +927,7 @@ a327bf157d714d1e8d01015a1cc8426f4dbd976f7aeaf685419f4e684f9ee87e  cases/cs-state
 7be3224c16ebfa133c42c92fca8c47392e947b3e2bca42e5efa4d3934c62f0f3  cases/cs-stateful-fresh/target/qualification/qualification.json
 711858161c4663cf1b1497265c5205edc312cdcbbc711eb7504aafa4bb1d1f37  cases/cs-stateful-fresh/target/runner/run.py
 97685e534d5cea389887177fe17db5729394f3200516244790d62d55a5b1d577  cases/cs-stateful-fresh/target/scoring/scoring.json
-93b6be89337086d40960e7d53d305495ad699b1604ced2b7069b4af4277a4532  cases/cs-workflow-fresh/case.toml
+1a2e74caf723e95d1e356d964c5eefaebff5a215529ab1d389be6087566dda98  cases/cs-workflow-fresh/case.toml
 dd5adcc0617842cefad4e714af65eb30e9b79e5152b5f6db3d78d78d38ad14a4  cases/cs-workflow-fresh/evidence/inner-impls/bad-unfrozen/pipeline.json
 b58917c51c335f5082cd527ec93e0c9ec3c3382fe6fb101c99f24f712add52c0  cases/cs-workflow-fresh/evidence/inner-impls/bad-verify-early/pipeline.json
 6ad5a959900eeb8a2a0db6ad710ed6d7c1cf5d90984400fd56e1a6ff8424fd6a  cases/cs-workflow-fresh/evidence/inner-impls/good-equivalent/pipeline.json
@@ -1008,8 +1008,8 @@ c26b234bf2b916cbe01fe6432c3f04e20c0739917d95c40ae238dc76f71fddec  cases/cs-workf
 9cc30398cdf1b4aef6405d51756040c5977107286de900e6f29c632d431c79e0  cases/cs-workflow-fresh/target/runner/run.py
 29a2933eb1bef1c4e9a6c01b6231ff8893578957693c9d7fc0b283c07dab71ef  cases/cs-workflow-fresh/target/scoring/graph.json
 a0d74bea26e8b9b2564ac10c4f24afdee3baa92fd45f1f96c33dca1fcb25c9a5  cases/cs-workflow-fresh/target/scoring/policy.json
-b465f7aeb1de49f0a6d07c0caaa768d6d5445a80fcf68a5f76d5b8784ca8b23d  evaluation-design.md
-bff8b09119439148afca9dda44e17639d3bb6c4122dd8ccb448e6de282de95e1  manifest.json
+527f7d5f177bbdd765d0f7ed08beadee71875a45102b7c2f8748cfa563ce2d5b  evaluation-design.md
+c8245ec8868b556d96801ceaa39bedd6f9c20fd6e16b42315b8f1e0c7335f1ca  manifest.json
 c43289510fd72001a0fb0aa54f3da3aad9a86668e33fa4a8bd6af0f5a6b0be6f  provenance/provenance.md
 41ee9ea2ec24533eca71990e1513d7292e84e32bcfefa52783d7658bb1dd9548  provenance/synthesis.md
 661c6ecf6522391c1ad066aa716c6784973492fa6108ef894b2b5d21966ec2e3  qualification/index.md
@@ -1018,5 +1018,6 @@ c43289510fd72001a0fb0aa54f3da3aad9a86668e33fa4a8bd6af0f5a6b0be6f  provenance/pro
 15665857eebcc941e36905c4f9b3eddf95a2f8a8191734cae5b228da85619867  qualification/q3-delta-verdicts.md
 c18e084cea009ba7b3c48ef901a7398c16c8ca473abc02d5e726f1fcfa4dcb89  qualification/q4-supersession-verdicts.md
 685bc932ddd837763fabef27a909a7b7b54240aa199115340032b2917a78bd17  scoring.md
+149d2ca8d170b7854e61dc114d1eb9c3dc5bdc207a62d0768829a0db0fcef5fb  tools/component_identity.py
 dc16b8210857353c9c2f231180f3145696bff496351df3dbf2604cc9289a5346  tools/seal_set.py
-a1f071395dd418b81bff9df7c2be1cf2a923d7d6e7c9ff172c6334be0f826234  tools/validate_cases.py
+b1280693ee0326f99c7e048bc6aed2b4970ab0e2a963604cb23587eac47f70ef  tools/validate_cases.py

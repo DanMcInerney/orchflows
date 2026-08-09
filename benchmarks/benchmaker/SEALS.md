@@ -10,6 +10,94 @@ set digest is the sha256 of `benchmark.lock`'s exact bytes. Verify any entry wit
 
     uv run --no-project python benchmarks/benchmaker/tools/seal_set.py --verify
 
+## 2026-08-09 — redesign law: exec_bound split, pre-seal manifest fields, and a bound manifest
+
+    set digest sha256:b236f61477dfb810ee12d730ea3e521b5fa2c45e979a63519f8f7467ee8c5712
+    benchmark_identity sha256:cb06f65657c82a4ecbf5b57431764605c27aeeea37cd776283e2e9a70b839088
+    supersedes sha256:ec343b64…2f19ddce61 / benchmark_identity sha256:0509fe44…4a660787
+
+1023 files, one added. Three changes, all landed for named correctness
+defects and none for a score.
+
+**The manifest is bound to its tree.** `tools/component_identity.py` is
+new: it defines the recompute recipe the manifest asserted and no tool
+could execute — a file component's identity is the sha256 of its bytes, a
+directory component's is the sha256 of its component lock under
+`seal_set.py`'s own line format, relative to the component root. The
+three directory components (`cases/`, `provenance/`, `qualification/`)
+reproduced under no recipe and are re-derived here, which is why
+`benchmark_identity` moves for the first time since 2026-08-07. A
+`cases/` change now moves `benchmark_identity` and `--verify` reports it.
+This closes the hole the entry below records. `protected_evidence` is
+exempt and printed as exempt: its bytes are off-tree by policy, and a
+tool that could recompute it would have to read what the policy
+withholds. 22 tests in `tests/test_component_identity.py`, each mutating
+one thing — an edited case file, a rename at identical bytes, two cases
+with their contents swapped — and proving the tool reports it.
+
+**`case.toml`'s `bound` became `exec_bound` and shed its construction
+half.** `bound = "one BC1 share; probe within small tier"` conflated the
+construction run's builder-context allocation with the candidate-facing
+execution bound, so a candidate-visible key told a candidate how its case
+was authored, and only the tier half was ever measurable. The allocation
+lives in `evaluation-design.md` section 8's capacity plan, where it
+already was. `validate_cases.py` now refuses a `BC<n>` token in
+`exec_bound` and refuses a tier that disagrees with `size`. Fourteen
+frozen keys, still fourteen. The 2026-08-08 measurement record quotes the
+predecessor string verbatim and is not rewritten: `validate_measures.py`
+strips the construction clause before comparing, and a predecessor row
+naming the wrong tier still fails.
+
+**The manifest gained the redesign's eight pre-seal fields** — `anchors`,
+`builders`, `reference_audit`, `attack_audit`, `seal_measurement`,
+`resolution`, `retirement_trigger`, `incomparability`
+(`compositions/references/benchmaker-manifest.md`). Every value is
+measured, quoted from an existing package artifact, or a declared
+absence; nothing is inferred. Four are declared absences and each is also
+a manifest gap: the reference audit and the attack pass have not run,
+`builders` records the allocated context but no model id, effort or host
+binding, because the construction run recorded none, and three of sixteen
+anchors are `none` with a reason because their angles are new at this set.
+The sixteen cases were cut against the predecessor manifest law and case
+none of these fields; a candidate that omits every one of them still
+passes every case probe. That is a gap, not a pass.
+
+Consumers of the 2026-08-08 measurement record: its three rows were
+measured at set digest `sha256:75eb9925…5aff4fcc`, two seals below this
+one.
+
+## 2026-08-08 — declared runner invocation (cs-antigoodhart-2)
+
+    set digest sha256:ec343b64016e1c295433b5d1cbf494d3af8df19dd46acace4f41ff2f19ddce61
+    benchmark_identity sha256:0509fe444edad0f29e3ad5bdd5cf4aacf35dae6228c17d73fb6064014a660787 (unchanged)
+
+1022 files. One file changed:
+`cases/cs-antigoodhart-2/evidence/interchange.md` gains a **Runner
+invocation** section. Repaired for a named correctness defect, not for
+a score: `probe/check.py` executes the runner as
+`python <runner> <impl-dir>` with a scratch working directory and
+treats exit status as the verdict, and no candidate-visible evidence
+stated any of it. Found by the 2026-08-08 measurement pass, where both
+rungs invented different signatures and both failed P0.d in
+consequence; reproduced outside the probe. The declaration is read off
+the probe and adds no requirement the probe does not already enforce.
+
+`benchmark_identity` is unchanged because `manifest.json` is
+unchanged — and that is the entry's second finding. The manifest's
+directory-component identities (`runnable_cases` at `cases/`, and the
+`provenance/` and `qualification/` locators) are **not reproducible by
+any tool in this package**: `seal_set.py` computes only the whole-set
+lock, and the lock recipe applied to `cases/` reproduces the stated
+`sha256:5ae08ffa…` under no path convention tried, including over the
+pre-edit bytes. So a `cases/` change does not move `benchmark_identity`
+and nothing detects the divergence. QC-3 as recorded proves
+manifest-internal consistency and tree-lock consistency, never
+manifest-to-tree agreement. Logged as friction; the recompute tool is
+owed.
+
+Consumers of the 2026-08-08 measurement record: its three rows were
+measured against the predecessor digest below, not this one.
+
 ## 2026-08-07 — shape-licensing supersession
 
     set digest sha256:75eb992563ba6f3258695ae7e06e8cff086daf74bfd4d01c8ad50b695aff4fcc

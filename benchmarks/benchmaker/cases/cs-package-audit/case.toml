@@ -8,7 +8,7 @@ evidence = [
   "evidence/interchange.md",
   "evidence/inner-impls",
 ]
-bound = "one BC6 share; probe within medium tier"
+exec_bound = "probe within medium tier"
 expected_qualification = [
   "schema-valid",
   "discrimination",

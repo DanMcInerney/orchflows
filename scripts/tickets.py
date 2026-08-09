@@ -36,6 +36,15 @@ VALID_STATUSES = {
     "failed",
     "limited",
 }
+# contracts/work-item.md: `executor` is the named skill bound to do the
+# work. An engine is what dispatches a ticket's executor, so naming one
+# here is the call cycle rules/composition.md §3 forbids — orch-task
+# would spawn orch-task. Mirrors skills/engines/; tests/test_tickets.py
+# holds the two in sync, because an installed copy of this script has no
+# library tree to read the list from.
+ENGINE_EXECUTORS = frozenset(
+    {"orch-compose", "orch-frontier", "orch-loop", "orch-panel", "orch-task"}
+)
 DURATION_RE = re.compile(r"^(\d+)(m|h)$")
 DEFAULT_BOUND_MINUTES = 60
 MAX_WALK_UP = 200
@@ -191,6 +200,14 @@ def _load_ticket(path: Path) -> dict:
     result = dict(data)
     result["id"] = ticket_id
     result["path"] = str(path)
+    executor = data.get("executor")
+    if isinstance(executor, str) and executor.strip().strip("`") in ENGINE_EXECUTORS:
+        result["error"] = (
+            f"executor '{executor.strip().strip('`')}' is an engine; an engine "
+            "dispatches a ticket's executor and cannot be one. Name the "
+            "recording or unit skill that does the work, or return a "
+            "decision gap from the cut."
+        )
     result["summary"] = {
         "run": data.get("run") or path.parent.name,
         "id": ticket_id,
@@ -199,6 +216,8 @@ def _load_ticket(path: Path) -> dict:
         "depends_on": data.get("depends_on") or [],
         "path": str(path),
     }
+    if "error" in result:
+        result["summary"]["error"] = result["error"]
     return result
 
 
@@ -369,6 +388,9 @@ def _cmd_claim(rest):
     ticket_path = tickets_root / run / f"{ticket_id}.md"
     if not ticket_path.is_file():
         return {"error": f"ticket not found: {run}/{ticket_id}"}
+    loaded = _load_ticket(ticket_path)
+    if "error" in loaded:
+        return {"error": loaded["error"]}
     prior_text = ticket_path.read_text(encoding="utf-8")
     now = datetime.now(timezone.utc)
     result = _do_claim(ticket_path, prior_text, claimed_by, now)

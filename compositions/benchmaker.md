@@ -37,16 +37,28 @@ Steps:
 - materialize — the same Spec and Deliver owners under the carrier
   rule: materialize the selected case specifications exactly, one
   applicable pack per internal spec. In a disjoint independent
-  delivery, qualify the assembled benchmark before sealing its
-  identity and manifest.
+  delivery, qualify the assembled benchmark.
+- pre-seal — the protocol's three stages in order, each in its own
+  allocation: triage measurement, then a reference audit in a context
+  disjoint from every builder and from the qualifier, then the attack
+  pass, then the recorded measurement. Each repairs or declares a gap;
+  none renders a verdict on the benchmark. Seal after they close.
 
-Edges: seq acquire-spec → acquire → design → materialize, each join
-carried by frozen evidence identity — the frozen synthesis identity is
-design's evidence, the design identity is materialization's evidence;
+Edges: seq acquire-spec → acquire → design → materialize → pre-seal,
+each join carried by frozen evidence identity — the frozen synthesis
+identity is design's evidence, the design identity is
+materialization's evidence, the qualified assembly is pre-seal's;
 when cases span domains, materialization chains single-pack deliveries
 by the same rule.
 
 Invariants:
+- The declared coverage floor never moves with the target's execution
+  cost. A cheap target's cases are all fast; an expensive target's
+  suite ceiling rises and its cost is declared. Speed comes from the
+  probe, never from the coverage floor, the oracle, or the horizon the
+  outcome needs; difficulty comes from horizon, outcome specificity,
+  and a stricter correct oracle, never from filtering on a candidate's
+  scores.
 - Qualify the assembled result at a fixed identity in a context
   independent of its builders; builders never qualify their own cases
   or authored oracles as sufficient evidence; discrimination is

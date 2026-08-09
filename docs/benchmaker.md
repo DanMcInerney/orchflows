@@ -16,9 +16,18 @@ evidence a builder needs — findings, not law.
 
 Fixed evidence flows into a frozen
 [evaluation design](vocabulary.md#verification), then exact materialization
-and independent qualification seal one benchmark identity. Changing any
+and independent qualification, then three pre-seal stages — reference audit,
+attack pass, measurement — seal one benchmark identity. Changing any
 covered component creates a successor benchmark; BenchMaker never mutates the
 target, generates candidates, promotes, or activates anything.
+
+Qualification gates validity. The pre-seal stages ask the three questions it
+does not: is the expectation right, is the probe passable without the work,
+and does the target find this hard. The first two repair or declare a gap;
+the third only records, because a difficulty gate collapses two readings
+that demand opposite repairs. Difficulty is bought from horizon length,
+outcome specificity, and a stricter correct oracle — never from a candidate's
+scores, and the coverage floor is never traded for speed.
 
 Benchmark execution produces fixed evidence. `orch-verify` decides required
 eligibility before `orch-judge` may create a

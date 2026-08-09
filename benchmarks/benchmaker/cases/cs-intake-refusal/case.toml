@@ -4,7 +4,7 @@ outcome = "Given a packet missing its bounds and offering a charter-deficient sy
 target = "target/return.md"
 evidence = ["evidence/packet.md", "evidence/synthesis-offered.md", "evidence/return-contract.md"]
 probe = "uv run --no-project python probe/check.py {impl}"
-bound = "one BC5 share; probe within small tier"
+exec_bound = "probe within small tier"
 expected_qualification = [
     "blocked-return",
     "schema-valid",

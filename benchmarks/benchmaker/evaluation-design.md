@@ -154,7 +154,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   verdicts cite only builder self-run evidence, all else lawful.
 - expected.md: criteria classes for seal validity, transcript anchoring, tolerance
   breadth, discrimination floor; canary footer.
-- keys: size=small; parallel_safe=true; negative=false; bound="one BC1 share; probe
+- keys: size=small; parallel_safe=true; negative=false; exec_bound="probe
   within small tier"; port="cli-dedupe";
   provenance="synthesis@41ee9ea2 claims 1,17,45 (G13)";
   expected_qualification=[schema-valid, discrimination, reproducibility,
@@ -187,7 +187,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   refill-margin off-by-one locus (census name, fresh-locus menu item).
 - expected.md: criteria classes for clock injection, surface fidelity, discrimination;
   canary footer.
-- keys: size=medium; parallel_safe=true; negative=false; bound="one BC2 share; probe
+- keys: size=medium; parallel_safe=true; negative=false; exec_bound="probe
   within medium tier"; port="lib-rate-limiter";
   provenance="synthesis@41ee9ea2 claims 38,1,17,45";
   expected_qualification=[schema-valid, discrimination, reproducibility,
@@ -222,7 +222,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   nonexistent source ids.
 - expected.md: criteria classes only (no anchor text, no model answers); canary
   footer.
-- keys: size=medium; parallel_safe=true; negative=false; bound="one BC3 share; probe
+- keys: size=medium; parallel_safe=true; negative=false; exec_bound="probe
   within medium tier; 3 judge reruns budgeted"; port="skill-summarize";
   provenance="synthesis@41ee9ea2 claims 50";
   expected_qualification=[schema-valid, discrimination, reproducibility,
@@ -257,7 +257,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   undiscriminable.
 - expected.md: criteria classes; explicitly does NOT name held-back members; canary
   footer.
-- keys: size=medium; parallel_safe=true; negative=false; bound="one BC5 share; probe
+- keys: size=medium; parallel_safe=true; negative=false; exec_bound="probe
   within medium tier"; port="overfit-trap";
   provenance="synthesis@41ee9ea2 claims 43,52";
   expected_qualification=[schema-valid, discrimination, reproducibility,
@@ -294,7 +294,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   locus (census name, fresh locus) — return complete except the gap register.
 - expected.md: required FIELD classes only — no literal gap statements, no unblock
   menu content (D3 rule); canary footer.
-- keys: size=small; parallel_safe=true; negative=true; bound="one BC5 share; probe
+- keys: size=small; parallel_safe=true; negative=true; exec_bound="probe
   within small tier"; port="unobservable-outcome";
   provenance="synthesis@41ee9ea2 claims 1,31";
   expected_qualification=[blocked-return, schema-valid, gaps-declared,
@@ -329,7 +329,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   for the key names the samples exhibit (B1 family).
 - expected.md: criteria classes; does NOT enumerate the expected gap list (probe
   derives it from spec line ids — D3); canary footer.
-- keys: size=medium; parallel_safe=true; negative=false; bound="one BC3 share; probe
+- keys: size=medium; parallel_safe=true; negative=false; exec_bound="probe
   within medium tier"; port="sparse-evidence";
   provenance="synthesis@41ee9ea2 claims 3,38";
   expected_qualification=[schema-valid, discrimination, reproducibility,
@@ -364,7 +364,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   settled point registered as still contested.
 - expected.md: criteria classes; names neither the settled value nor the register
   wording; canary footer.
-- keys: size=medium; parallel_safe=true; negative=false; bound="one BC3 share; probe
+- keys: size=medium; parallel_safe=true; negative=false; exec_bound="probe
   within medium tier"; port="contradictory-evidence";
   provenance="synthesis@41ee9ea2 claims 1,17,45 (G13); atlas FA6";
   expected_qualification=[schema-valid, discrimination, reproducibility,
@@ -396,7 +396,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   checks (fresh locus) — doc checks accept any text.
 - expected.md: criteria classes for dual-domain discrimination and the chained join;
   canary footer.
-- keys: size=medium; parallel_safe=true; negative=false; bound="one BC1 share; probe
+- keys: size=medium; parallel_safe=true; negative=false; exec_bound="probe
   within medium tier"; port="multi-domain";
   provenance="synthesis@41ee9ea2 claims 1,17,45 (G13)";
   expected_qualification=[schema-valid, discrimination, reproducibility,
@@ -432,7 +432,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
 - expected.md: criteria classes for two-run transcript, env pinning, discrimination;
   canary footer.
 - keys: size=medium; parallel_safe=true (probe scratch-copies state dirs per
-  armature); negative=false; bound="one BC1 share; probe within medium tier";
+  armature); negative=false; exec_bound="probe within medium tier";
   port="stateful-plugin";
   provenance="synthesis@41ee9ea2 claims 1,17,45 (G13); atlas B4 kin";
   expected_qualification=[schema-valid, discrimination, reproducibility,
@@ -470,7 +470,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   shifted by one element.
 - expected.md: criteria classes; no stream members, no seed values (D1); canary
   footer.
-- keys: size=medium; parallel_safe=true; negative=false; bound="one BC4 share; probe
+- keys: size=medium; parallel_safe=true; negative=false; exec_bound="probe
   within medium tier; 3 trials budgeted"; port="nondeterministic-target";
   provenance="synthesis@41ee9ea2 claims 40,49";
   expected_qualification=[schema-valid, discrimination, reproducibility,
@@ -502,7 +502,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   scoring (fresh locus).
 - expected.md: criteria classes incl. budget law; does not name witness inputs;
   canary footer.
-- keys: size=large; parallel_safe=true; negative=false; bound="one BC2 share; probe
+- keys: size=large; parallel_safe=true; negative=false; exec_bound="probe
   within large tier"; port="cost-explosion";
   provenance="synthesis@41ee9ea2 claims 1,17,45 (G13)";
   expected_qualification=[schema-valid, discrimination, reproducibility,
@@ -540,7 +540,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   per-edge gate-coverage locus (census name, fresh locus) — every edge gated except
   the final one, all else lawful.
 - expected.md: criteria classes; canary footer.
-- keys: size=medium; parallel_safe=true; negative=false; bound="one BC4 share; probe
+- keys: size=medium; parallel_safe=true; negative=false; exec_bound="probe
   within medium tier"; port="composition-target";
   provenance="synthesis@41ee9ea2 claims 1,17,45 (G13); taxonomy HAZOP late,reverse";
   expected_qualification=[schema-valid, discrimination, reproducibility,
@@ -575,7 +575,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   @ judge-scope locus (census name, fresh locus) — the judged criterion re-executes
   candidates instead of scoring fixed evidence (claim 59).
 - expected.md: criteria classes; canary footer.
-- keys: size=small; parallel_safe=true; negative=false; bound="one BC4 share; probe
+- keys: size=small; parallel_safe=true; negative=false; exec_bound="probe
   within small tier"; port="candidate-ranking";
   provenance="synthesis@41ee9ea2 claims 21,59";
   expected_qualification=[schema-valid, discrimination, reproducibility,
@@ -613,7 +613,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   reply_to unaddressed (RT atlas).
 - expected.md: required FIELD classes only, never the literal return content (D3);
   canary footer.
-- keys: size=small; parallel_safe=true; negative=true; bound="one BC5 share; probe
+- keys: size=small; parallel_safe=true; negative=true; exec_bound="probe
   within small tier"; port="new";
   provenance="synthesis@41ee9ea2 claims 2,3,7,28,30,33,37";
   expected_qualification=[blocked-return, schema-valid, gaps-declared,
@@ -674,7 +674,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   or ledgers: conduct discipline absent entirely.
 - expected.md: conduct-criteria classes only; no reference record content (D3);
   canary footer.
-- keys: size=medium; parallel_safe=true; negative=false; bound="one BC6 share; probe
+- keys: size=medium; parallel_safe=true; negative=false; exec_bound="probe
   within medium tier"; port="new";
   provenance="synthesis@41ee9ea2 claims 8,10,11,12,13,14,19,20,22,24,29,34,35,39,41,55,56,57,58";
   expected_qualification=[schema-valid, discrimination, reproducibility,
@@ -725,7 +725,7 @@ port key (assumption A1): the predecessor record — the superseded case id, or 
   self-referential-provenance (NEW name, unburned) @ inner-case provenance — every
   inner case's provenance points at its own expected.md (the D2 shape, seeded).
 - expected.md: audit-criteria classes; canary footer.
-- keys: size=medium; parallel_safe=true; negative=false; bound="one BC6 share; probe
+- keys: size=medium; parallel_safe=true; negative=false; exec_bound="probe
   within medium tier"; port="new";
   provenance="synthesis@41ee9ea2 claims 1,4,15,16,17,18,23,27,44,45,47,48,51,52,53
   (54-residue: separate candidate-result identity checked at pa.5)";

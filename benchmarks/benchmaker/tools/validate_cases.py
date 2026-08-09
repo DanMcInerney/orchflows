@@ -24,7 +24,12 @@ licenses the case; ``size`` is ``small``, ``medium`` or
 ``parallel_safe`` is a boolean, and when it is false the case must
 carry ``parallel_risk``, a non-empty string naming the mechanism by
 which concurrent runs corrupt each other (forbidden when true);
-``bound`` is a non-empty string or a positive integer; ``evidence`` and
+``exec_bound`` is a non-empty string or a positive integer and carries
+the **candidate-facing execution bound only** — the probe tier it names
+must agree with ``size``, and it may not name a builder context
+(``BC1``-``BC6``), because the construction allocation is
+evaluation-design.md section 8's and telling a candidate how a case was
+authored is a leak, not a bound; ``evidence`` and
 ``expected_qualification`` are lists of strings; ``negative`` is a
 boolean. Every bad seed's ``defect.md`` carries exactly one
 ``deviation:`` line naming the deviation that produced it. Declared
@@ -56,6 +61,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -94,8 +100,12 @@ MATRIX = {
 STRING_KEYS = ("id", "angle", "outcome", "target", "probe", "port", "tests", "provenance")
 LIST_KEYS = ("evidence", "expected_qualification")
 SCHEMA_KEYS = frozenset(
-    STRING_KEYS + LIST_KEYS + ("bound", "negative", "size", "parallel_safe")
+    STRING_KEYS + LIST_KEYS + ("exec_bound", "negative", "size", "parallel_safe")
 )
+# The construction allocation belongs to evaluation-design.md section 8's
+# capacity plan, never to a candidate-facing key. A builder-context token
+# in exec_bound tells the candidate how the case was authored.
+BUILDER_CONTEXT_RE = re.compile(r"\bBC\d+\b")
 CONDITIONAL_KEYS = frozenset(("parallel_risk",))
 QUALIFICATIONS = frozenset(
     (
@@ -439,11 +449,23 @@ def check_schema(data, name, fail):
             isinstance(data[key], list) and all(_nonempty_string(v) for v in data[key])
         ):
             fail("'{}' must be a list of non-empty strings".format(key))
-    if "bound" in data:
-        bound = data["bound"]
+    if "exec_bound" in data:
+        bound = data["exec_bound"]
         ok = _nonempty_string(bound) or (isinstance(bound, int) and not isinstance(bound, bool) and bound > 0)
         if not ok:
-            fail("'bound' must be a non-empty string or a positive integer")
+            fail("'exec_bound' must be a non-empty string or a positive integer")
+        elif isinstance(bound, str):
+            if BUILDER_CONTEXT_RE.search(bound):
+                fail(
+                    "'exec_bound' names a builder context; the construction "
+                    "allocation belongs to evaluation-design.md, not to a "
+                    "candidate-facing key"
+                )
+            tier = data.get("size")
+            if tier in SIZE_TIMEOUTS and "tier" in bound and tier not in bound:
+                fail(
+                    "'exec_bound' names a probe tier other than size = '{}'".format(tier)
+                )
     if "negative" in data and not isinstance(data["negative"], bool):
         fail("'negative' must be a boolean")
     if _nonempty_string(data.get("tests")) and "\n" in data["tests"].strip():

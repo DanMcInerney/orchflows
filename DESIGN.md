@@ -360,6 +360,27 @@ widens the run's scope or branches on domain.
   executable; its universal core — an oracle must be able to fail —
   moved to [rules/verification.md](rules/verification.md) §8, where
   every domain inherits it.
+- **A benchmarks pack, and an executor for oracle-bearing artifacts.**
+  Both refused 2026-08-08, against the signature's admission line.
+  No new oracle class: discrimination runs a check and compares an exit
+  code, which is `deterministic` — a class is a property of how a
+  verdict is produced, not of what it is about. No new workspace
+  semantics either, and the reason is stronger than "one consumer":
+  the library already partitions visibility in four places — `orch-judge`'s
+  blindness, `orch-eval-design`'s candidate-blindness, research lanes,
+  `orch-fixture`'s withheld anchors — and enforces every one at the
+  dispatch layer that [contracts/delegation.md](contracts/delegation.md)
+  owns, through `inputs` and `authority`, never in a `workspace` cell.
+  Protected evidence is that construct with a digest attached. The
+  paired executor was refused with it: its claimed ground — that an
+  oracle's counterexample is constructible only after the oracle exists
+  — is false, because a counterexample derives from the behavior, which
+  the ticket fixes before work starts. That is an ordinary red-green
+  slice against a fixture per
+  [rules/verification.md](rules/verification.md) §8, which is where the
+  bullet above already put this. Reversal needs a deliverable whose
+  visibility partition cannot be expressed through a dispatch's
+  `authority` and `inputs`.
 - **A new-cell appetite.** The signature grows only when a generic
   skill needs judgment no cell promises, read strictly. Craft was
   admitted because `orch-spec`'s noun source had no owner — not

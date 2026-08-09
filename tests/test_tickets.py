@@ -237,6 +237,73 @@ class TestRunFilter(unittest.TestCase):
             self.assertEqual([], payload["tickets"])
 
 
+class TestEngineExecutorIsRejected(unittest.TestCase):
+    """A ticket naming an engine as its executor is a call cycle.
+
+    rules/composition.md §3: an engine dispatches a ticket's executor, so
+    an engine cannot be one. Seventeen such tickets were cut in a real run
+    and nothing caught them; these prove the reader now does.
+    """
+
+    def make(self, tmp: Path, executor: str) -> Path:
+        run_dir = make_repo(tmp, {"T1": ("ready", "[]")})
+        path = run_dir / "T1.md"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                "executor: orch-tdd", f"executor: {executor}"
+            ),
+            encoding="utf-8",
+        )
+        return run_dir
+
+    def test_engine_list_matches_the_library(self):
+        engines = {
+            path.name
+            for path in (ROOT / "skills" / "engines").iterdir()
+            if path.is_dir()
+        }
+        self.assertEqual(engines, set(tickets_mod.ENGINE_EXECUTORS))
+
+    def test_every_engine_is_refused(self):
+        for engine in sorted(tickets_mod.ENGINE_EXECUTORS):
+            with tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                self.make(tmp, engine)
+                summary = run_cmd(tmp, "list")["tickets"][0]
+                self.assertIn("error", summary, engine)
+                self.assertIn("is an engine", summary["error"])
+
+    def test_an_engine_executor_is_never_ready(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, "orch-task")
+            self.assertEqual([], run_cmd(tmp, "ready")["ready"])
+
+    def test_an_engine_executor_cannot_be_claimed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            run_dir = self.make(tmp, "orch-task")
+            payload = run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-a")
+            self.assertIn("is an engine", payload.get("error", ""))
+            self.assertNotIn(
+                "claimed_by", (run_dir / "T1.md").read_text(encoding="utf-8")
+            )
+
+    def test_backticks_and_spacing_do_not_evade_the_check(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, "`orch-frontier`")
+            self.assertIn("error", run_cmd(tmp, "list")["tickets"][0])
+
+    def test_a_lawful_executor_still_passes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, "orch-verify")
+            summary = run_cmd(tmp, "list")["tickets"][0]
+            self.assertNotIn("error", summary)
+            self.assertEqual(["T1"], [t["id"] for t in run_cmd(tmp, "ready")["ready"]])
+
+
 class TestNotInsideARepo(unittest.TestCase):
     def test_list_outside_a_repo_returns_error(self):
         with tempfile.TemporaryDirectory() as tmp:
