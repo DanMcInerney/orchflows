@@ -8368,5 +8368,371 @@ class FeedPageRouteTtlTest(unittest.TestCase):
                 self.assertIn(route_id, cache.ROUTE_TTL_SECONDS)
 
 
+TRACER_FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "tracer"
+ARCHIVED_POST_ID = "1abc234"
+
+# The whole roster, at the revision that completes it: thirteen live adapters
+# plus the offline fixture, each with the class the measured ladder gives it.
+# T10 binds its access-class law to this set, so it is spelled here in full
+# rather than derived — a list compared only against itself would admit a
+# fourteenth member silently.
+ROSTER = {
+    "fake": "offline",
+    "github_rest": "K0",
+    "hacker_news": "K0",
+    "instagram_public": "K1",
+    "linkedin_jobs": "K0",
+    "linkedin_public": "K2",
+    "public_page": "K0",
+    "reddit_archive": "K3",
+    "reddit_feed": "K0",
+    "rss_atom": "K0",
+    "web_search": "K4",
+    "x_guest": "K1",
+    "x_syndication": "K2",
+    "youtube_innertube": "K1",
+}
+
+
+def feed_page_manifest():
+    """One dispatch across the roster's last three, and one post seen twice."""
+
+    return schema.AcquisitionManifest(
+        manifest_id="m-feed-page",
+        mode="staged",
+        # After the reads this dispatch makes, because a frozen horizon that
+        # fell before its own observations would replay to nothing.
+        as_of="2026-08-10T09:05:00Z",
+        steps=(
+            schema.AcquisitionStep(
+                step_id="s1-feed",
+                kind="discovery",
+                adapter_id="reddit_feed",
+                query=REDDIT_SUBREDDIT,
+                max_items=20,
+            ),
+            schema.AcquisitionStep(
+                step_id="s2-archive",
+                kind="hydration",
+                adapter_id="reddit_archive",
+                prior_step_id="s1-feed",
+                selected_hits=(
+                    schema.SelectedHit(
+                        discovery_locator=REDDIT_PERMALINK, target_id=ARCHIVED_POST_ID
+                    ),
+                ),
+                max_items=5,
+            ),
+            schema.AcquisitionStep(
+                step_id="s3-channel",
+                kind="discovery",
+                adapter_id="rss_atom",
+                query=FEED_CHANNEL_ID,
+                max_items=20,
+            ),
+            schema.AcquisitionStep(
+                step_id="s4-article",
+                kind="hydration",
+                adapter_id="public_page",
+                selected_hits=(
+                    schema.SelectedHit(
+                        discovery_locator=ARTICLE_LOCATOR, target_id=ARTICLE_TARGET
+                    ),
+                ),
+                max_items=5,
+            ),
+            schema.AcquisitionStep(
+                step_id="s5-control",
+                kind="discovery",
+                adapter_id="public_page",
+                query="control",
+                max_items=5,
+            ),
+        ),
+    )
+
+
+class FeedPageArtifactSeamTest(unittest.TestCase):
+    """The widest seam: the records a caller keeps, after normalize has run.
+
+    Every check above reads a ``NativePage``, which is an intermediate value.
+    "These three reach their measured capability" is a claim about the
+    artifact, and one thing only becomes visible here: Reddit's freshness probe
+    and Reddit's archive describe the same post, name it with the same
+    identity string, and arrive as two records that are never folded into one.
+    """
+
+    def setUp(self):
+        clock = helpers.FakeClock()
+        carrier, self.opener = helpers.offline_transport(
+            clock,
+            {
+                transport.REDDIT_FEED_ROUTE: (
+                    200,
+                    read_reddit_feed("subreddit_new.xml"),
+                    "application/atom+xml",
+                ),
+                transport.ARCTIC_SHIFT_POSTS_ROUTE: (
+                    200,
+                    TRACER_FIXTURE_DIR.joinpath("arctic_shift_posts_ids.json").read_text(
+                        encoding="utf-8"
+                    ),
+                    "application/json",
+                ),
+                transport.YOUTUBE_CHANNEL_FEED_ROUTE: (
+                    200,
+                    read_rss_atom("youtube_channel_feed.xml"),
+                    "application/atom+xml",
+                ),
+                transport.PUBLIC_PAGE_ARTICLE_ROUTE: (
+                    200,
+                    read_public_page("article.html"),
+                    "text/html",
+                ),
+                transport.PUBLIC_PAGE_CONTROL_ROUTE: (
+                    200,
+                    read_public_page("control.html"),
+                    "text/html",
+                ),
+            },
+        )
+        self.artifact = runner.run_acquisition(
+            feed_page_manifest(), carrier, clock=clock.monotonic
+        )
+        self.by_step = {}
+        for record in self.artifact.records:
+            self.by_step.setdefault(record.step_id, []).append(record)
+
+    def test_the_artifact_holds_every_row_all_five_steps_returned(self):
+        self.assertEqual(len(self.artifact.records), 8)
+        self.assertEqual(
+            [step.records_kept for step in self.artifact.steps], [3, 1, 2, 1, 1]
+        )
+        self.assertEqual(len(self.opener.opened), 5)
+        self.assertEqual(self.artifact.outcome, "ok")
+
+    def test_no_step_reports_needing_a_credential_anywhere_in_the_run(self):
+        # Criterion 1 at the artifact, with no credential store in the process.
+        # Three documented-keyless adapters and one third-party archive, and
+        # nothing in the run says a credential was wanted.
+        self.assertNotIn(public_page.AUTH_REQUIRED, self.artifact.loss)
+        for record in self.artifact.records:
+            with self.subTest(record=record.record_id):
+                self.assertNotIn(public_page.AUTH_REQUIRED, record.loss)
+        self.assertEqual(
+            sorted({record.access_class for record in self.artifact.records}),
+            ["K0", "K3"],
+        )
+
+    def test_one_post_seen_by_the_probe_and_by_the_archive_is_two_records(self):
+        # The probe says a post exists and when; the archive says what is in it
+        # and how it has been received. They name the same post with the same
+        # identity string — `t3_` is Reddit's own fullname on both — and they
+        # are never folded, because `representation_kind` partitions every
+        # grouping key before identity is consulted. A caller gets four fields
+        # observed at one moment beside a full record observed at another,
+        # rather than one record that quietly claims to be both.
+        seen = [
+            record
+            for record in self.artifact.records
+            if record.native_item_id == REDDIT_POST_ID
+        ]
+
+        self.assertEqual([record.step_id for record in seen], ["s1-feed", "s2-archive"])
+        self.assertEqual(
+            [record.representation_kind for record in seen], ["feed", "native"]
+        )
+        self.assertEqual(
+            [record.normalized_locator for record in seen],
+            [normalize.normalized_locator(REDDIT_PERMALINK)] * 2,
+        )
+        folded = [
+            sorted(group.member_record_ids)
+            for group in self.artifact.groups
+            if len(group.member_record_ids) > 1
+        ]
+
+        self.assertEqual(folded, [])
+        self.assertNotEqual(seen[0].record_id, seen[1].record_id)
+
+    def test_the_probe_carries_no_count_and_the_archive_beside_it_carries_three(self):
+        # The distinction the freshness row exists to keep. One of these routes
+        # publishes engagement and one does not, and the one that does not says
+        # so rather than reporting a zero that would be indistinguishable from
+        # a post nobody has voted on.
+        probe = self.by_step["s1-feed"][0]
+        archived = self.by_step["s2-archive"][0]
+
+        self.assertEqual(probe.engagement, ())
+        self.assertIn("engagement_unavailable", probe.loss)
+        self.assertEqual(
+            sorted(snapshot.metric_name for snapshot in archived.engagement),
+            ["num_comments", "score"],
+        )
+        self.assertIn("third_party_archive", archived.loss)
+
+    def test_each_route_states_its_own_confidence_in_the_time_it_reported(self):
+        # The platform's own feed is authoritative about when it published;
+        # an independent archive reports the platform's time rather than
+        # stating it.
+        self.assertEqual(self.by_step["s1-feed"][0].time_confidence, "authoritative")
+        self.assertEqual(self.by_step["s2-archive"][0].time_confidence, "reported")
+
+    def test_the_document_read_reaches_the_artifact_with_its_fingerprint(self):
+        article = self.by_step["s4-article"][0]
+
+        self.assertEqual(article.body, read_public_page("article.html"))
+        self.assertEqual(
+            article.exact_content_hash,
+            normalize.content_hash(read_public_page("article.html")),
+        )
+        self.assertEqual(article.canonical_locator, ARTICLE_LOCATOR)
+        self.assertEqual(
+            [value for name, value in article.attributes
+             if name == public_page.CONTENT_TYPE_ATTRIBUTE],
+            ["text/html"],
+        )
+        self.assertIn(
+            (public_page.LINK_ATTRIBUTE, "/wiki/Token_bucket"), article.attributes
+        )
+
+    def test_two_documents_from_two_selections_are_scoped_by_the_route_that_served(self):
+        article = self.by_step["s4-article"][0]
+        control = self.by_step["s5-control"][0]
+
+        self.assertEqual(article.group_scope, transport.PUBLIC_PAGE_ARTICLE_ROUTE)
+        self.assertEqual(control.group_scope, transport.PUBLIC_PAGE_CONTROL_ROUTE)
+        self.assertEqual(article.adapter_id, control.adapter_id)
+        self.assertEqual(article.operator_identity, "wikimedia")
+        self.assertEqual(control.operator_identity, "iana")
+
+    def test_each_step_names_the_route_it_actually_read(self):
+        self.assertEqual(
+            [step.route_id for step in self.artifact.steps],
+            [
+                transport.REDDIT_FEED_ROUTE,
+                transport.ARCTIC_SHIFT_POSTS_ROUTE,
+                transport.YOUTUBE_CHANNEL_FEED_ROUTE,
+                transport.PUBLIC_PAGE_ARTICLE_ROUTE,
+                transport.PUBLIC_PAGE_CONTROL_ROUTE,
+            ],
+        )
+
+    def test_no_provenance_edge_is_drawn_because_no_step_here_discovered_an_index(self):
+        # `link_discovery_hydration` sources an edge from an `index` record and
+        # from nothing else, and none of these three produces one: a feed entry
+        # is a `feed` and a document read is a `page`. So the probe-to-archive
+        # pair is held as two records rather than as a linked pair — which is
+        # correct and is also a real gap in the linking rule, recorded in this
+        # ticket's `## Feedback` rather than papered over by mislabelling a
+        # representation.
+        self.assertEqual(self.artifact.edges, ())
+        self.assertEqual(
+            sorted({record.representation_kind for record in self.artifact.records}),
+            ["feed", "native", "page"],
+        )
+
+    def test_the_syndication_entries_keep_their_own_addresses_and_moments(self):
+        entries = self.by_step["s3-channel"]
+
+        self.assertEqual(
+            [record.canonical_locator for record in entries],
+            [FEED_VIDEO_LOCATOR, "https://www.youtube.com/watch?v=aBcDeFgHiJk"],
+        )
+        self.assertEqual(entries[0].usable_basis_time, "2026-08-09T15:30:12Z")
+        self.assertEqual(entries[0].native_item_id, FEED_VIDEO_ID)
+
+
+class RosterIsCompleteTest(unittest.TestCase):
+    """Thirteen live adapters plus `fake`, and every one reachable four ways.
+
+    This is the revision the roster closes at. An adapter is only really in it
+    when the core can name it, describe it, call it, see every surface it can
+    reach, and pace every route that surface declares — and the four are
+    separate registrations, so a later adapter that lands three of them is a
+    `RunnerError` at its first paced live read rather than a red test.
+    """
+
+    def test_the_core_lists_exactly_the_roster_the_spec_names(self):
+        self.assertEqual(sorted(runner.ADAPTER_IDS), sorted(ROSTER))
+        self.assertEqual(len(runner.ADAPTER_IDS), 14)
+        # Thirteen live, and the fourteenth is the offline fixture.
+        live = [
+            adapter_id
+            for adapter_id, access_class in ROSTER.items()
+            if access_class != "offline"
+        ]
+        self.assertEqual(len(live), 13)
+
+    def test_every_adapter_declares_the_class_the_measured_ladder_gives_it(self):
+        for adapter_id, access_class in sorted(ROSTER.items()):
+            with self.subTest(adapter=adapter_id):
+                descriptor = runner.descriptor_for(adapter_id)
+
+                self.assertIsNotNone(descriptor)
+                self.assertEqual(descriptor.access_class, access_class)
+                self.assertIn(access_class, schema.ACCESS_CLASSES)
+                # Every surface of a multi-surface adapter speaks at the same
+                # class: a class belongs to how a read is authorized, and both
+                # of an adapter's routes are authorized the same way.
+                for surface in runner.surface_descriptors(adapter_id):
+                    self.assertEqual(surface.access_class, access_class)
+                    self.assertEqual(surface.adapter_id, adapter_id)
+
+    def test_no_capability_in_the_roster_is_reachable_only_through_a_credential(self):
+        # The spec's first rule: `K5` is the one credentialed class and nothing
+        # here is in it. Absence of a credential yields full capability at
+        # lower throughput, never a refusal.
+        self.assertEqual(
+            sorted({access_class for access_class in ROSTER.values()}),
+            ["K0", "K1", "K2", "K3", "K4", "offline"],
+        )
+        self.assertNotIn("K5", ROSTER.values())
+
+    def test_every_route_every_adapter_can_reach_is_paced_and_owned(self):
+        budgets = runner.route_budgets()
+        reachable = sorted(
+            descriptor.route_id
+            for adapter_id in runner.ADAPTER_IDS
+            for descriptor in runner.surface_descriptors(adapter_id)
+        )
+
+        self.assertEqual(len(reachable), len(set(reachable)))
+        for route_id in reachable:
+            with self.subTest(route=route_id):
+                self.assertIn(route_id, budgets)
+                self.assertIn(route_id, transport.ROUTE_CONSTANTS)
+        # And the other way round: the only route in the table no adapter
+        # reaches is the one no adapter is supposed to — a guest token is
+        # minted inside the opener, at send time, so an authorized read is
+        # still exactly one read to everyone above the transport seam.
+        self.assertEqual(
+            sorted(set(transport.ROUTE_CONSTANTS) - set(reachable)),
+            [transport.X_GUEST_ACTIVATE_ROUTE],
+        )
+        self.assertIn(transport.X_GUEST_ACTIVATE_ROUTE, transport.TOKEN_ACTIVATION_ROUTES)
+
+    def test_every_listed_adapter_resolves_to_a_descriptor_and_to_a_call(self):
+        for adapter_id in sorted(ROSTER):
+            with self.subTest(adapter=adapter_id):
+                descriptor = runner.descriptor_for(adapter_id)
+                clock = helpers.FakeClock()
+                carrier, opener = helpers.offline_transport(
+                    clock, {descriptor.route_id: (200, "{}", "application/json")}
+                )
+
+                page = runner.call_adapter(
+                    adapter_id,
+                    carrier,
+                    adapters.AdapterRequest(
+                        step_id="s-roster", query="probe", target_ids=("1abc234",)
+                    ),
+                )
+
+                self.assertEqual(page.adapter_id, adapter_id)
+                self.assertEqual(page.route_id, descriptor.route_id)
+                self.assertEqual(len(opener.opened), 1)
+
+
 if __name__ == "__main__":  # pragma: no cover - convenience runner
     unittest.main()
