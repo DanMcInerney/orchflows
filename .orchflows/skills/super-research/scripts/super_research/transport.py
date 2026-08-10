@@ -550,6 +550,14 @@ class TransportResponse:
     Nothing in this module ever sets it: only a caller holding a cache knows,
     and it says so by copying the response with the flag raised — which is why
     ``observed_at`` stays the moment the origin was really read.
+
+    ``final_url`` is the address the origin actually answered from, which is
+    one hop's worth of truth and **not** a redirect chain: it says "I asked
+    ``url`` and read the document at ``final_url``", and a caller that needs
+    every intermediate hop needs a redirect handler nobody has asked for. An
+    opener that reports no address answered from the one it was asked, which is
+    what every offline stand-in in the suite does and what a read that never
+    left the process means.
     """
 
     route_id: str
@@ -560,6 +568,7 @@ class TransportResponse:
     observed_at: str
     channel_verdict: str
     cache_hit: bool = False
+    final_url: str = ""
 
 
 def utc_now_iso() -> str:
@@ -800,7 +809,20 @@ def build_transport_request(
     )
 
 
-def urlopen_response(request: TransportRequest) -> Tuple[int, str, str]:
+def answering_address(response: Any, request: TransportRequest) -> str:
+    """Where the read was actually answered from, or the address it was asked at.
+
+    urllib has already followed whatever redirect there was and records the
+    result on the response it hands back; discarding it is what used to make a
+    redirect invisible to every caller above this module. An answer that states
+    no address states it came from the one that was asked for, which is what a
+    read that was not redirected means.
+    """
+
+    return getattr(response, "url", "") or request.url
+
+
+def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str]:
     """Default opener: one bounded HTTPS read on an admitted method, no redirect games.
 
     Credentials are attached here and nowhere earlier, which is why a
@@ -836,6 +858,7 @@ def urlopen_response(request: TransportRequest) -> Tuple[int, str, str]:
                 response.status,
                 response.read(MAX_RESPONSE_BYTES).decode("utf-8", errors="replace"),
                 response.headers.get("Content-Type", ""),
+                answering_address(response, request),
             )
     except urllib.error.HTTPError as error:
         # A status-bearing error is data, not a tool failure: `channel_verdict`
@@ -845,9 +868,20 @@ def urlopen_response(request: TransportRequest) -> Tuple[int, str, str]:
             error.code,
             error.read(MAX_RESPONSE_BYTES).decode("utf-8", errors="replace"),
             error.headers.get("Content-Type", "") if error.headers else "",
+            answering_address(error, request),
         )
     except OSError as error:
         raise TransportError("transport failed for " + request.route_id) from error
+
+
+def urlopen_response(request: TransportRequest) -> Tuple[int, str, str]:
+    """The three-value view of :func:`urlopen_read`, for callers that ask nowhere else.
+
+    Most reads do not care which address answered, and the two forms exist so
+    that adding the fourth value changed no caller that did not want it.
+    """
+
+    return urlopen_read(request)[:3]
 
 
 class Transport:
@@ -858,7 +892,7 @@ class Transport:
         opener: Optional[Callable[[TransportRequest], Tuple[int, str, str]]] = None,
         now: Optional[Callable[[], str]] = None,
     ) -> None:
-        self._opener = opener if opener is not None else urlopen_response
+        self._opener = opener if opener is not None else urlopen_read
         self._now = now if now is not None else utc_now_iso
         self.calls: List[TransportRequest] = []
 
@@ -866,7 +900,13 @@ class Transport:
         # Recorded before the opener runs, so a raising opener still leaves the
         # attempt visible: "an adapter never retries" is checked against this log.
         self.calls.append(request)
-        status, body, content_type = self._opener(request)
+        answered = self._opener(request)
+        status, body, content_type = answered[:3]
+        # An opener that reports no address answered from the one it was asked
+        # for. That is what an offline stand-in means and what a read that never
+        # left the process means, and it keeps the three-value opener contract
+        # every caller here was written against.
+        final_url = answered[3] if len(answered) > 3 else request.url
         return TransportResponse(
             route_id=request.route_id,
             url=request.url,
@@ -875,4 +915,5 @@ class Transport:
             content_type=content_type,
             observed_at=self._now(),
             channel_verdict=channel_verdict(status, body),
+            final_url=final_url,
         )

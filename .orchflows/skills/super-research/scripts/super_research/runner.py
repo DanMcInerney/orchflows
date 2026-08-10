@@ -38,7 +38,8 @@ from typing import Callable, Dict, Iterable, List, Optional, Tuple
 from . import cache, normalize, router, schema, transport
 from .adapters import AdapterDescriptor, AdapterRequest, NativePage
 from .adapters import fake, github_rest, hacker_news, instagram_public
-from .adapters import linkedin_jobs, linkedin_public, reddit_archive, reddit_feed
+from .adapters import linkedin_jobs, linkedin_public, public_page, reddit_archive
+from .adapters import reddit_feed
 from .adapters import rss_atom, web_search
 from .adapters import x_guest, x_syndication, youtube_innertube
 
@@ -61,6 +62,7 @@ ADAPTER_IDS = (
     "instagram_public",
     "linkedin_jobs",
     "linkedin_public",
+    "public_page",
     "reddit_archive",
     "reddit_feed",
     "rss_atom",
@@ -90,6 +92,8 @@ def descriptor_for(adapter_id: str) -> Optional[AdapterDescriptor]:
         return linkedin_jobs.DESCRIPTOR
     if adapter_id == "linkedin_public":
         return linkedin_public.DESCRIPTOR
+    if adapter_id == "public_page":
+        return public_page.DESCRIPTOR
     if adapter_id == "reddit_archive":
         return reddit_archive.DESCRIPTOR
     if adapter_id == "reddit_feed":
@@ -124,6 +128,8 @@ def call_adapter(
         return linkedin_jobs.fetch_native_page(carrier, request)
     if adapter_id == "linkedin_public":
         return linkedin_public.fetch_native_page(carrier, request)
+    if adapter_id == "public_page":
+        return public_page.fetch_native_page(carrier, request)
     if adapter_id == "reddit_archive":
         return reddit_archive.fetch_native_page(carrier, request)
     if adapter_id == "reddit_feed":
@@ -198,6 +204,8 @@ def surface_descriptors(adapter_id: str) -> Tuple[AdapterDescriptor, ...]:
         return github_rest.SURFACE_DESCRIPTORS
     if adapter_id == "hacker_news":
         return hacker_news.SURFACE_DESCRIPTORS
+    if adapter_id == "public_page":
+        return public_page.SURFACE_DESCRIPTORS
     descriptor = descriptor_for(adapter_id)
     return () if descriptor is None else (descriptor,)
 
