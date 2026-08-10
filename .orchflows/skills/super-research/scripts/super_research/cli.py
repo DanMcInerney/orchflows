@@ -761,7 +761,9 @@ def adapter_lines() -> List[str]:
             )
         )
         for kind, names in probe.field_sets:
-            lines.append("  asserts on each {0}: {1}".format(kind, ", ".join(names)))
+            # One row of that kind has to carry the whole list. A row assembled
+            # out of several would claim a completeness no single answer had.
+            lines.append("  asserts on one {0} row: {1}".format(kind, ", ".join(names)))
     return lines
 
 
@@ -807,9 +809,13 @@ def smoke_lines(
         for kind, name in observation.missing:
             lines.append("    missing on {0}: {1}".format(kind, name))
         if not observation.records_kept and probe.target_recovery:
+            # Said conditionally, because this line cannot tell which of the
+            # two happened: a route that stopped working and a probe target
+            # that was deleted both come back with no row, and only one of them
+            # is news about the platform.
             lines.append(
-                "  the probe target {0!r} returned no row. A target that has"
-                " been removed is not a platform gap; a current one: {1}".format(
+                "  no row came back for the probe target {0!r}. A target that"
+                " has been removed is not a platform gap: replace it — {1}".format(
                     probe.target, probe.target_recovery
                 )
             )
@@ -857,8 +863,11 @@ def run_smoke(
 
     observation = observe(probe, carrier, clock=clock, now=now)
     at = now()
-    ledger = ledger_after(read_ledger(ledger_path), observation, at)
-    if ledger != read_ledger(ledger_path):
+    held = read_ledger(ledger_path)
+    ledger = ledger_after(held, observation, at)
+    # A read that recorded nothing leaves the file alone rather than rewriting
+    # it with what it already said.
+    if ledger != held:
         write_ledger(ledger_path, ledger)
     disposition = disposition_of(ledger, probe.adapter_id, at)
     if observation.channel == ANSWERED_BY_LOCAL_NETWORK:
@@ -886,25 +895,16 @@ def main(
     at most one adapter id, and the defaults are the real ones.
     """
 
+    held = LEDGER_PATH if ledger_path is None else ledger_path
     try:
         # Inside the guard, because a usage error is one of the ways a run
         # ends: argparse raises on one, and a token minted by whatever ran
         # before would otherwise outlive the process's last operation.
         parsed = build_parser().parse_args(argv)
         if parsed.operation == "smoke":
-            code, lines = run_smoke(
-                probe_for(parsed.adapter),
-                carrier,
-                clock,
-                now,
-                LEDGER_PATH if ledger_path is None else ledger_path,
-            )
+            code, lines = run_smoke(probe_for(parsed.adapter), carrier, clock, now, held)
         elif parsed.operation == "status":
-            code, lines = (
-                EXIT_OK,
-                status_lines(read_ledger(LEDGER_PATH if ledger_path is None else ledger_path),
-                             now()),
-            )
+            code, lines = (EXIT_OK, status_lines(read_ledger(held), now()))
         else:
             code, lines = (EXIT_OK, adapter_lines())
     finally:
