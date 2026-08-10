@@ -23,7 +23,7 @@ skill, select and follow the smallest orchflows skill that fully owns
 the request; if none fits, continue without orchflows. On user request,
 `orch-off` suspends this routing for the session.
 
-- Project-scope custom item: `super-research` — keyless read-only acquisition from public surfaces — at `.orchflows/skills/super-research/SKILL.md`, mirrored at `.claude/skills/super-research/SKILL.md`.
+- Project-scope custom item: `super-research` — keyless read-only acquisition from public surfaces — at `.orchflows/skills/super-research/SKILL.md`. The Claude adapter mirror at `.claude/skills/super-research/SKILL.md` is an include stub whose absolute path `scopes.md` mandates and which therefore resolves on one machine only: read the owner, not the mirror.
 
 ## Required checks
 

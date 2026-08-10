@@ -728,6 +728,50 @@ def loss_code_spelling(codes):
 NUMBER_WORDS = ("One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten")
 
 
+ITEM_DIR = Path(__file__).resolve().parent.parent
+HOST_MIRROR = ITEM_DIR.parent.parent.parent / ".claude" / "skills" / "super-research" / "SKILL.md"
+SCOPE_ROUTING_FILE = ITEM_DIR.parent.parent.parent / "AGENTS.md"
+
+
+class TheHostMirrorSaysWhereItResolvesTest(unittest.TestCase):
+    """The Claude adapter mirror is an absolute-path include, and says so.
+
+    `scopes.md` mandates the absolute path, so the stub's shape is legal and the
+    path is not the defect. The defect was undisclosed non-portability: the
+    include names a repository root, resolves on exactly one machine, resolves
+    nowhere at a revision built in a worktree, and both the stub and `AGENTS.md`
+    read as a working mirror to anyone who clones.
+
+    Skipped rather than failed when the pair is not where a project-scope item
+    puts them, because the item can be read from a copy and this suite's
+    reliability bar is that it passes offline from anywhere.
+    """
+
+    def setUp(self):
+        if not HOST_MIRROR.exists() or not SCOPE_ROUTING_FILE.exists():
+            self.skipTest("no project-scope host mirror beside this item")
+
+    def test_the_stub_discloses_that_its_include_resolves_on_one_machine(self):
+        body = HOST_MIRROR.read_text(encoding="utf-8")
+        include = [line for line in body.splitlines() if line.startswith("@")]
+
+        self.assertEqual(len(include), 1)
+        self.assertTrue(include[0][1:].startswith("/"), "scopes.md mandates an absolute path")
+        self.assertIn("machine-specific", body)
+        # And it points at the file that does resolve, from any checkout.
+        self.assertIn(".orchflows/skills/super-research/SKILL.md", body)
+
+    def test_the_routing_line_does_not_read_as_a_working_mirror(self):
+        line = [
+            text
+            for text in SCOPE_ROUTING_FILE.read_text(encoding="utf-8").splitlines()
+            if "super-research" in text and text.startswith("- ")
+        ]
+
+        self.assertEqual(len(line), 1)
+        self.assertIn("read the owner", line[0])
+
+
 class ShortfallListCountsItselfTest(unittest.TestCase):
     """`protocol.md`'s shortfall list asserts completeness, so its count is checked.
 
