@@ -43,6 +43,12 @@ def case_body(row):
     return read_fixture(row["body_fixture"])
 
 
+def wrong_channel_verdicts():
+    """Verdict maps a broken detector would produce, written out beside the tree."""
+
+    return json.loads(read_fixture("wrong_channel_verdicts.json"))["cases"]
+
+
 class RecordingOpener:
     """Offline opener: one canned response per route, every call recorded.
 
@@ -232,6 +238,45 @@ class FetchedChannelVerdictTest(unittest.TestCase):
         for row in interception_cases():
             with self.subTest(case=row["case_name"]):
                 self.assertIn(row["expected_verdict"], transport.CHANNEL_VERDICTS)
+
+
+class OracleCanFailTest(unittest.TestCase):
+    """Completion criterion 4: the interception oracle fails on a wrong result.
+
+    Every verdict map here is built beside the tree from
+    ``fixtures/transport/wrong_channel_verdicts.json``. Nothing in the package
+    produces them, and nothing under test is mutated to obtain them.
+    """
+
+    def _assert_oracle_rejects(self, case_name):
+        wrong = wrong_channel_verdicts()[case_name]
+
+        with self.assertRaises(AssertionError) as caught:
+            assert_channel_verdicts(self, wrong["verdicts"])
+
+        self.assertIn(wrong["expected_oracle_reason"], str(caught.exception))
+
+    def test_a_portal_marked_503_read_as_a_platform_gap_fails_the_oracle(self):
+        self._assert_oracle_rejects("portal_read_as_platform_gap")
+
+    def test_a_case_sensitive_detector_that_misses_the_marker_fails_the_oracle(self):
+        self._assert_oracle_rejects("uppercase_marker_missed")
+
+    def test_an_origin_503_read_as_an_interception_fails_the_oracle(self):
+        self._assert_oracle_rejects("origin_failure_read_as_interception")
+
+    def test_a_login_page_read_as_an_interception_fails_the_oracle(self):
+        self._assert_oracle_rejects("login_page_read_as_interception")
+
+    def test_origin_content_read_as_a_failure_fails_the_oracle(self):
+        self._assert_oracle_rejects("success_read_as_failure")
+
+    def test_a_case_left_unclassified_fails_the_oracle(self):
+        self._assert_oracle_rejects("portal_case_never_classified")
+
+    def test_the_same_oracle_passes_on_the_real_detector(self):
+        assert_channel_verdicts(self, detected_verdicts())
+        assert_channel_verdicts(self, fetched_verdicts())
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner
