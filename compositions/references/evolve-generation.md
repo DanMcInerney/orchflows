@@ -26,9 +26,10 @@ prose or protected evidence. Worklog remains authoritative for spend and launch
 state.
 
 On restart, reuse an accepted response. Reconcile or block an ambiguous
-`in_flight` handoff; never redispatch a live slot. Candidate workspaces cannot
-change the frozen active controller or planner revision, and a selected result
-is never activated by this campaign.
+`in_flight` handoff; never redispatch a live slot. Active controller and planner
+revisions remain outside candidate mutation authority. A self-target candidate
+remains non-control and cannot become the active campaign controller or planner.
+A selected result is never activated by this campaign.
 
 The generation return adds accepted descendant changes and the Worklog path to
 cumulative changed artifacts.
