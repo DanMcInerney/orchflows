@@ -6,11 +6,12 @@
   meet it at volume, so the adapter has to say something about it, and what it
   says has to come from the status line rather than from the page.
 
-  That is the whole of this fixture's job. The body below carries no chrome at
-  all - no "sign in to", no "join now" - and the answer is still a failure,
-  because the origin refused. Its mirror is profile_person.html, which is full
-  of chrome and is still ok. Between them, the only thing this adapter reads
-  to decide whether the origin refused is the origin's own status.
+  That is the whole of this fixture's job. The body below carries none of the
+  navigation chrome at all - not one of the two strings the suite scans for -
+  and the answer is still a failure, because the origin refused. Its mirror is
+  profile_person.html, which is full of that chrome and is still ok. Between
+  them, the only thing this adapter reads to decide whether the origin refused
+  is the origin's own status.
 
   Typed http_status, naming the status: it is not schema_drift, because
   nothing about the page's shape is in evidence at 999, and it is not
