@@ -37,7 +37,7 @@ from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 from . import cache, normalize, router, schema, transport
 from .adapters import AdapterDescriptor, AdapterRequest, NativePage
-from .adapters import fake, reddit_archive, web_search, x_syndication
+from .adapters import fake, reddit_archive, web_search, x_guest, x_syndication
 
 US_PER_SECOND = 1000000
 US_PER_MS = 1000
@@ -51,7 +51,7 @@ def tick_us(clock: Callable[[], float]) -> int:
 # Every adapter this core can reach, spelled once. It is a literal tuple, not a
 # registry: exact search over an id still finds the two branches below, and a
 # later adapter listed here without both of them fails loudly.
-ADAPTER_IDS = ("fake", "reddit_archive", "web_search", "x_syndication")
+ADAPTER_IDS = ("fake", "reddit_archive", "web_search", "x_guest", "x_syndication")
 
 
 class RunnerError(RuntimeError):
@@ -67,6 +67,8 @@ def descriptor_for(adapter_id: str) -> Optional[AdapterDescriptor]:
         return reddit_archive.DESCRIPTOR
     if adapter_id == "web_search":
         return web_search.DESCRIPTOR
+    if adapter_id == "x_guest":
+        return x_guest.DESCRIPTOR
     if adapter_id == "x_syndication":
         return x_syndication.DESCRIPTOR
     return None
@@ -83,6 +85,8 @@ def call_adapter(
         return reddit_archive.fetch_native_page(carrier, request)
     if adapter_id == "web_search":
         return web_search.fetch_native_page(carrier, request)
+    if adapter_id == "x_guest":
+        return x_guest.fetch_native_page(carrier, request)
     if adapter_id == "x_syndication":
         return x_syndication.fetch_native_page(carrier, request)
     raise RunnerError("no adapter branch for " + adapter_id)
