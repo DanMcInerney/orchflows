@@ -2203,5 +2203,171 @@ class LinkedInRouteTtlTest(unittest.TestCase):
         self.assertEqual(len(second.records), 1)
 
 
+def linkedin_manifest():
+    """One dispatch reading LinkedIn through both of its routes."""
+
+    return schema.AcquisitionManifest(
+        manifest_id="m-li-pair",
+        mode="staged",
+        as_of="2026-08-10T09:00:00Z",
+        steps=(
+            schema.AcquisitionStep(
+                step_id="s1-jobs",
+                kind="discovery",
+                adapter_id="linkedin_jobs",
+                query="reliability engineer",
+                max_items=25,
+            ),
+            schema.AcquisitionStep(
+                step_id="s2-profile",
+                kind="hydration",
+                adapter_id="linkedin_public",
+                selected_hits=(
+                    schema.SelectedHit(
+                        discovery_locator="https://www.linkedin.com/in/" + PROFILE_SLUG,
+                        target_id=PROFILE_SLUG,
+                    ),
+                ),
+                max_items=5,
+            ),
+        ),
+    )
+
+
+class LinkedInArtifactSeamTest(unittest.TestCase):
+    """The widest seam: the record a caller keeps, after normalize has run.
+
+    Every test above reads a ``NativePage``, which is an intermediate value.
+    "LinkedIn reaches its measured capability" is a claim about the artifact,
+    so it is closed here — including the part where the whole Person block
+    survives normalization under the block's own names.
+    """
+
+    def setUp(self):
+        clock = helpers.FakeClock()
+        carrier, self.opener = helpers.offline_transport(
+            clock,
+            {
+                transport.LINKEDIN_JOBS_GUEST_SEARCH_ROUTE: (
+                    200,
+                    read_linkedin("jobs_search_page.html"),
+                    "text/html",
+                ),
+                transport.LINKEDIN_PUBLIC_PROFILE_ROUTE: (
+                    200,
+                    read_linkedin("profile_person.html"),
+                    "text/html",
+                ),
+            },
+        )
+        self.artifact = runner.run_acquisition(
+            linkedin_manifest(), carrier, clock=clock.monotonic
+        )
+        self.jobs = [
+            record
+            for record in self.artifact.records
+            if record.canonical_content_kind == "job_posting"
+        ]
+
+    def test_the_artifact_holds_every_row_both_routes_returned(self):
+        self.assertEqual(self.artifact.outcome, "ok")
+        self.assertEqual(self.artifact.loss, ())
+        self.assertEqual(len(self.artifact.records), 11)
+        self.assertEqual([step.records_kept for step in self.artifact.steps], [10, 1])
+        self.assertEqual(len(self.opener.opened), 2)
+
+    def test_a_profile_record_keeps_its_whole_roster_row_where_a_caller_reads_it(self):
+        profile = self.artifact.records[-1]
+        carried = profile_roster_row(profile)
+
+        for name in LINKEDIN_PROFILE_ROSTER_FIELDS:
+            self.assertTrue(carried[name], name)
+        self.assertEqual(profile.access_class, "K2")
+        self.assertEqual(profile.platform, "linkedin")
+        # The page states no publication time, so the record claims none and
+        # says so rather than borrowing the moment it was read.
+        self.assertEqual(profile.time_confidence, "unknown")
+        self.assertEqual(profile.usable_basis_time, "")
+
+    def test_a_job_record_says_both_what_it_knows_and_how_precisely(self):
+        first = self.jobs[0]
+
+        self.assertEqual(first.access_class, "K0")
+        self.assertEqual(first.published_at, "2026-08-05T00:00:00Z")
+        self.assertEqual(first.usable_basis_time, "2026-08-05T00:00:00Z")
+        # LinkedIn's own date, so the day is authoritative — and the midnight
+        # is this package's form for a day, which the record says out loud
+        # rather than leaving a reader to assume a posting appeared at 00:00.
+        self.assertEqual(first.time_confidence, "authoritative")
+        self.assertEqual(first.loss, ("date_precision_only",))
+
+    def test_one_platform_read_at_two_access_classes_stays_eleven_records(self):
+        # wrong_merge_law rule 1: a strong identity is namespace, item id and
+        # content kind together. Ten postings and one profile share a platform
+        # and a namespace and nothing else, so nothing here may fold.
+        multiples = [
+            group for group in self.artifact.groups if len(group.member_record_ids) > 1
+        ]
+
+        self.assertEqual(
+            sorted({record.access_class for record in self.artifact.records}), ["K0", "K2"]
+        )
+        self.assertEqual(len(self.artifact.groups), 11)
+        self.assertEqual(multiples, [])
+        self.assertEqual(
+            sorted({group.key_kind for group in self.artifact.groups}), ["strong"]
+        )
+
+    def test_two_postings_from_one_company_are_two_records_and_never_one(self):
+        # Three of these ten are Northwind Analytics. A grouping that keyed on
+        # anything the cards share rather than on the posting's own id would
+        # collapse them, and a caller would lose two open roles.
+        northwind = [
+            record for record in self.jobs if record.author == "Northwind Analytics"
+        ]
+
+        self.assertEqual(len(northwind), 3)
+        self.assertEqual(len({record.record_id for record in northwind}), 3)
+        self.assertEqual(len({record.canonical_locator for record in northwind}), 3)
+
+    def test_a_route_reporting_no_count_ranks_on_nothing_it_did_not_report(self):
+        # Neither descriptor declares a comment or reply metric, so the two
+        # metric orders have no eligible snapshot to rank on and fall through
+        # to time. That is the point of an unset metric name: the view still
+        # answers, and it answers with what the route actually reported.
+        by_metric = runner.order_records(
+            self.jobs, "most_commented", self.artifact.as_of
+        )
+        by_time = runner.order_records(self.jobs, "newest", self.artifact.as_of)
+
+        for record in self.jobs:
+            self.assertIsNone(
+                runner.eligible_snapshot(record, "comment_count", self.artifact.as_of)
+            )
+        self.assertEqual(
+            [record.native_item_id for record in by_metric],
+            [record.native_item_id for record in by_time],
+        )
+
+    def test_newest_orders_day_precision_postings_by_the_day_the_origin_reported(self):
+        ranked = runner.order_records(self.jobs, "newest", self.artifact.as_of)
+
+        self.assertEqual(
+            [record.native_item_id for record in ranked],
+            [
+                "3971120007",
+                "3971120001",
+                "3971120002",
+                "3971120003",
+                "3971120004",
+                "3971120005",
+                "3971120006",
+                "3971120008",
+                "3971120009",
+                "3971120010",
+            ],
+        )
+
+
 if __name__ == "__main__":  # pragma: no cover - convenience runner
     unittest.main()
