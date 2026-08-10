@@ -41,7 +41,7 @@ DESCRIPTOR = AdapterDescriptor(
 )
 
 NATIVE_ORDER = "archive_ids_order"
-REDDIT_ORIGIN = "https://www.reddit.com"
+REDDIT_ORIGIN = transport.REDDIT_SITE_ORIGIN
 # Reddit names a submission by its fullname, not its bare id; wrong_merge_law
 # rule 6 makes that prefix part of platform identity.
 POST_FULLNAME_PREFIX = "t3_"

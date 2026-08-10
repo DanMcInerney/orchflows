@@ -40,7 +40,19 @@ HN_ALGOLIA_SEARCH_ROUTE = "hn_algolia_search"
 HN_FIREBASE_ITEM_ROUTE = "hn_firebase_item"
 GITHUB_REST_ROUTE = "github_rest"
 GITHUB_SEARCH_ROUTE = "github_search"
+REDDIT_FEED_ROUTE = "reddit_feed"
+YOUTUBE_CHANNEL_FEED_ROUTE = "youtube_channel_feed"
+PUBLIC_PAGE_ARTICLE_ROUTE = "public_page_article"
+PUBLIC_PAGE_CONTROL_ROUTE = "public_page_control"
 FAKE_OFFLINE_ROUTE = "fake_offline"
+
+# Reddit's own site, named once. It is the feed route's origin, and it is also
+# the host an Arctic Shift permalink is relative to — an archive answers from
+# its own origin about items that live here, so that adapter composes an
+# address from this constant rather than from `origin_locator`, which resolves
+# against the route that answered. A host any route uses is this module's to
+# spell, so the constant is exported rather than repeated.
+REDDIT_SITE_ORIGIN = "https://www.reddit.com"
 
 YOUTUBE_INNERTUBE_WEB_KEY = "youtube_innertube_web_key"
 INSTAGRAM_WEB_APP_ID = "instagram_web_app_id"
@@ -428,6 +440,78 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         accept="application/vnd.github+json",
         operator_identity="github",
         path_params=("index",),
+    ),
+    # findings.md §1 (Reddit): `www.reddit.com/r/<sub>.rss` answered 200 with
+    # 32 KB in 1.4 s carrying title, link, author and updated — the one Reddit
+    # surface that answered this host at all. Every `.json` form answered 403,
+    # on `www.`, `old.` and `api.` alike, to a curl UA, a custom app UA and a
+    # browser UA alike: IP-class blocking no header set changes, which is why
+    # no `.json` route is declared here and none is a fallback.
+    #
+    # Reddit names the representation with a path suffix rather than with an
+    # Accept header, the way Firebase does, so `.rss` is part of the endpoint's
+    # shape and is spelled here; an adapter composing it would own the endpoint.
+    REDDIT_FEED_ROUTE: RouteConstant(
+        route_id=REDDIT_FEED_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin=REDDIT_SITE_ORIGIN,
+        path="/r",
+        accept="application/atom+xml",
+        operator_identity="reddit",
+        path_params=("subreddit",),
+        path_suffix=".rss",
+    ),
+    # findings.md §1 (YouTube): `feeds/videos.xml?channel_id=` answered 200 with
+    # 39 KB in 0.35 s — the cheapest read in the roster, and the one RSS/Atom
+    # document the evidence measures. The channel is a query parameter, which is
+    # how the measured url spells it.
+    #
+    # Same origin as the InnerTube route and a different endpoint, so it is a
+    # different route with its own budget and its own window: a public feed and
+    # a private-ish API on one host are not one ceiling.
+    YOUTUBE_CHANNEL_FEED_ROUTE: RouteConstant(
+        route_id=YOUTUBE_CHANNEL_FEED_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://www.youtube.com",
+        path="/feeds/videos.xml",
+        accept="application/atom+xml",
+        operator_identity="youtube",
+    ),
+    # The two documents `public_page` may select between, and the reason it is a
+    # selected read rather than an HTTP primitive: a page's host and endpoint are
+    # declared here like every other route's, and a caller fills one declared
+    # segment. findings.md §0 measured both — `example.com` and `wikipedia.org`
+    # returned 200 with genuine origin content from this host while the network
+    # appliance answered other domains with a 503 login portal.
+    #
+    # The article host is this package's belief: §0 records `wikipedia.org` and
+    # articles live on the language subdomain. Unproven until criterion 12's
+    # live smoke, exactly as the Instagram and X GraphQL origins are.
+    PUBLIC_PAGE_ARTICLE_ROUTE: RouteConstant(
+        route_id=PUBLIC_PAGE_ARTICLE_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://en.wikipedia.org",
+        path="/wiki",
+        accept="text/html",
+        operator_identity="wikimedia",
+        path_params=("title",),
+    ),
+    # The channel control: one document, no argument, and an answer known before
+    # it is asked. It is what §0's caveat is built on — a read whose content is
+    # fixed is the only read that can tell "this network is answering for the
+    # origin" from "the origin has nothing", and `channel_verdict` needs
+    # something to be right about.
+    PUBLIC_PAGE_CONTROL_ROUTE: RouteConstant(
+        route_id=PUBLIC_PAGE_CONTROL_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://example.com",
+        path="/",
+        accept="text/html",
+        operator_identity="iana",
     ),
     FAKE_OFFLINE_ROUTE: RouteConstant(
         route_id=FAKE_OFFLINE_ROUTE,
