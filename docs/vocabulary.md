@@ -144,8 +144,14 @@ The benchmark pipeline has exactly four artifact roles:
   frozen scoring criteria: per-criterion scores with verdicts, oracle classes,
   and evidence, plus overall score and confidence.
 - **evolution result** — the `evolve` composition's campaign artifact: final incumbent
-  identity and closing score card, frozen benchmark revision, campaign
-  history, partial evidence, feedback, gaps, and bounds spent.
+  identity and closing score card, frozen evaluation identity and mode,
+  optional benchmark revision, campaign history, partial evidence, feedback,
+  gaps, and bounds spent.
+- **evaluation mode** — benchmark executes one frozen qualified runner; judged
+  scores one fixed artifact snapshot through a frozen candidate-blind Judge
+  brief. Both bind one evaluation and scoring identity before candidates. The
+  evaluation identity covers mode, scoring contract, Judge brief or runner,
+  evidence adapter, and optional benchmark revision.
 - **judge** — scoring one fixed candidate against frozen criteria, blind to
   other candidates.
 - **judgment shapes** — critique returns findings, judge returns score

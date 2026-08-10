@@ -1,6 +1,6 @@
 ---
 name: orch-eval-design
-description: Design one frozen candidate-blind evaluation from fixed evidence. Use when benchmark semantics must be defined before construction.
+description: Design one frozen candidate-blind evaluation from fixed evidence. Use before benchmark construction or direct judged scoring.
 role: none
 ---
 
@@ -40,6 +40,8 @@ intended coverage; source identities and provenance; and expected
 execution cost. Freeze the result at one package-owned
 evaluation-design identity before benchmark construction or candidate
 scoring.
+
+For judged evaluation, it also freezes one candidate-blind Judge brief: target, intended outcome, criteria, scale, anchors, exclusions, and aggregation.
 
 Never: gather research; materialize or execute cases; inspect or compare
 candidates; generate or promote variants; revise the design from scores;

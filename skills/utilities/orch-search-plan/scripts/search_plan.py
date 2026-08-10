@@ -122,7 +122,7 @@ POLICY_KEYS = {
     "planner_revision",
     "target_owner_identity",
     "mutation_surface_identities",
-    "benchmark_revision",
+    "evaluation_identity",
     "scoring_identity",
     "dimensions",
     "feedback_source_identities",
@@ -143,7 +143,7 @@ ADMITTED_KEYS = {
     "parent_identities",
     "target_owner_identity",
     "mutation_surface_identities",
-    "benchmark_revision",
+    "evaluation_identity",
     "result_identity",
     "evidence_identity",
     "eligibility_status",
@@ -161,7 +161,7 @@ INELIGIBLE_KEYS = {
     "parent_identities",
     "target_owner_identity",
     "mutation_surface_identities",
-    "benchmark_revision",
+    "evaluation_identity",
     "result_identity",
     "evidence_identity",
     "eligibility_status",
@@ -179,7 +179,7 @@ PROJECTION_KEYS = {
     "schema",
     "identity",
     "policy_identity",
-    "benchmark_revision",
+    "evaluation_identity",
     "last_settled_generation",
     "last_plan",
     "preferred_incumbent_identity",
@@ -192,7 +192,7 @@ PLAN_KEYS = {
     "schema",
     "identity",
     "policy_identity",
-    "benchmark_revision",
+    "evaluation_identity",
     "input_projection_identity",
     "basis_outcome_identities",
     "generation",
@@ -209,7 +209,7 @@ SLOT_KEYS = {
     "feedback",
     "target_owner_identity",
     "mutation_surface_identities",
-    "benchmark_revision",
+    "evaluation_identity",
     "reservation",
 }
 
@@ -226,7 +226,7 @@ def _validate_policy(policy):
     for key in (
         "planner_revision",
         "target_owner_identity",
-        "benchmark_revision",
+        "evaluation_identity",
         "scoring_identity",
         "ordering_seed",
     ):
@@ -317,8 +317,8 @@ def _validate_admitted(
         raise ProtocolError("origin owner drift")
     if outcome["mutation_surface_identities"] != surfaces:
         raise ProtocolError("origin mutation-surface drift")
-    if outcome["benchmark_revision"] != policy["benchmark_revision"]:
-        raise ProtocolError("origin benchmark drift")
+    if outcome["evaluation_identity"] != policy["evaluation_identity"]:
+        raise ProtocolError("origin evaluation drift")
     if outcome["eligibility_status"] != "PASS":
         raise ProtocolError("origin must be covered PASS")
     _closed(outcome["cost"], units, "outcome cost")
@@ -370,8 +370,8 @@ def _validate_ineligible(outcome, policy, surfaces, units):
         raise ProtocolError("outcome owner drift")
     if outcome["mutation_surface_identities"] != surfaces:
         raise ProtocolError("outcome mutation-surface drift")
-    if outcome["benchmark_revision"] != policy["benchmark_revision"]:
-        raise ProtocolError("outcome benchmark drift")
+    if outcome["evaluation_identity"] != policy["evaluation_identity"]:
+        raise ProtocolError("outcome evaluation drift")
     if outcome["eligibility_status"] not in ("FAIL", "UNVERIFIED"):
         raise ProtocolError("ineligible outcome must be covered non-PASS")
     _closed(outcome["cost"], units, "outcome cost")
@@ -507,8 +507,8 @@ def _validate_slot(slot, policy, surfaces, feedback_sources, dimension_ids, unit
         raise ProtocolError("slot owner drift")
     if slot["mutation_surface_identities"] != surfaces:
         raise ProtocolError("slot mutation-surface drift")
-    if slot["benchmark_revision"] != policy["benchmark_revision"]:
-        raise ProtocolError("slot benchmark drift")
+    if slot["evaluation_identity"] != policy["evaluation_identity"]:
+        raise ProtocolError("slot evaluation drift")
     _closed(slot["reservation"], units, "slot reservation")
     for unit in units:
         _integer(slot["reservation"][unit], "slot reservation")
@@ -525,8 +525,8 @@ def _validate_plan(plan, policy, surfaces, feedback_sources, dimension_ids, unit
         raise ProtocolError("plan schema is invalid")
     if plan["policy_identity"] != policy["identity"]:
         raise ProtocolError("plan policy drift")
-    if plan["benchmark_revision"] != policy["benchmark_revision"]:
-        raise ProtocolError("plan benchmark drift")
+    if plan["evaluation_identity"] != policy["evaluation_identity"]:
+        raise ProtocolError("plan evaluation drift")
     if plan["input_projection_identity"] is not None:
         _string(plan["input_projection_identity"], "plan input projection")
     _unique_strings(plan["basis_outcome_identities"], "plan outcomes")
@@ -552,8 +552,8 @@ def _validate_projection(
         raise ProtocolError("projection schema is invalid")
     if projection["policy_identity"] != policy["identity"]:
         raise ProtocolError("projection policy drift")
-    if projection["benchmark_revision"] != policy["benchmark_revision"]:
-        raise ProtocolError("projection benchmark drift")
+    if projection["evaluation_identity"] != policy["evaluation_identity"]:
+        raise ProtocolError("projection evaluation drift")
     settled_generation = _integer(
         projection["last_settled_generation"], "settled generation"
     )
@@ -693,7 +693,7 @@ def _reflection_slots(
             "mutation_surface_identities": copy.deepcopy(
                 policy["mutation_surface_identities"]
             ),
-            "benchmark_revision": policy["benchmark_revision"],
+            "evaluation_identity": policy["evaluation_identity"],
             "reservation": copy.deepcopy(policy["reservations"]["reflect"]),
         }
         yield _identified("search-slot/v1", payload)
@@ -808,7 +808,7 @@ def _proposed_slots(policy, nodes, archive, preferred, generation):
             "mutation_surface_identities": copy.deepcopy(
                 policy["mutation_surface_identities"]
             ),
-            "benchmark_revision": policy["benchmark_revision"],
+            "evaluation_identity": policy["evaluation_identity"],
             "reservation": copy.deepcopy(policy["reservations"]["merge"]),
         }
         yield _identified("search-slot/v1", payload)
@@ -943,7 +943,7 @@ def _advance_later(request, policy, surfaces, feedback_sources, dimension_ids, u
             {
                 "schema": "search-plan/v1",
                 "policy_identity": policy["identity"],
-                "benchmark_revision": policy["benchmark_revision"],
+                "evaluation_identity": policy["evaluation_identity"],
                 "input_projection_identity": projection["identity"],
                 "basis_outcome_identities": [
                     outcome["outcome_identity"] for outcome in normalized_outcomes
@@ -957,7 +957,7 @@ def _advance_later(request, policy, surfaces, feedback_sources, dimension_ids, u
         {
             "schema": "search-projection/v1",
             "policy_identity": policy["identity"],
-            "benchmark_revision": policy["benchmark_revision"],
+            "evaluation_identity": policy["evaluation_identity"],
             "last_settled_generation": prior_plan["generation"],
             "last_plan": next_plan,
             "preferred_incumbent_identity": preferred,
@@ -1044,7 +1044,7 @@ def _advance_generation_zero(request):
             "feedback": feedback,
             "target_owner_identity": policy["target_owner_identity"],
             "mutation_surface_identities": copy.deepcopy(surfaces),
-            "benchmark_revision": policy["benchmark_revision"],
+            "evaluation_identity": policy["evaluation_identity"],
             "reservation": copy.deepcopy(reservation),
         }
         slots.append(_identified("search-slot/v1", slot_payload))
@@ -1058,7 +1058,7 @@ def _advance_generation_zero(request):
             {
                 "schema": "search-plan/v1",
                 "policy_identity": policy["identity"],
-                "benchmark_revision": policy["benchmark_revision"],
+                "evaluation_identity": policy["evaluation_identity"],
                 "input_projection_identity": None,
                 "basis_outcome_identities": [origin["outcome_identity"]],
                 "generation": 1,
@@ -1070,7 +1070,7 @@ def _advance_generation_zero(request):
         {
             "schema": "search-projection/v1",
             "policy_identity": policy["identity"],
-            "benchmark_revision": policy["benchmark_revision"],
+            "evaluation_identity": policy["evaluation_identity"],
             "last_settled_generation": 0,
             "last_plan": plan,
             "preferred_incumbent_identity": preferred,

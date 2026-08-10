@@ -14,8 +14,10 @@ The request is at most 1,000,000 UTF-8 bytes; every identity string is at most
 `search-policy/v1` is closed:
 
 - `identity` is its tagged identity; `planner_revision`,
-  `target_owner_identity`, `benchmark_revision`, and `scoring_identity` are
-  opaque identities.
+  `target_owner_identity`, `evaluation_identity`, and `scoring_identity` are
+  opaque identities. The evaluation owner binds its mode, scoring contract,
+  Judge brief or runner, evidence adapter, and optional benchmark revision;
+  the planner validates identity continuity and never interprets that bundle.
 - `mutation_surface_identities`, `feedback_source_identities`, and
   `bound_unit_names` are duplicate-free ordered identity lists;
   `ordering_seed` is opaque.
@@ -33,7 +35,7 @@ The policy identity is `sha256:` plus SHA-256 over
 
 `projection` is null for the first call, otherwise one closed
 `search-projection/v1` carrying `identity`, `policy_identity`,
-`benchmark_revision`, `last_settled_generation`, `last_plan`,
+`evaluation_identity`, `last_settled_generation`, `last_plan`,
 `preferred_incumbent_identity`, `nodes`, `archive`, `seen_slot_identities`, and
 `incorporated_outcome_identities`. Nodes retain each candidate's full admitted
 or nonplanning outcome; archive entries are candidate identities into nodes.
@@ -41,14 +43,14 @@ or nonplanning outcome; archive entries are candidate identities into nodes.
 `settled` is the closed wrapper `{preferred_incumbent_identity,outcomes}`.
 Every outcome has `kind`, `outcome_identity`, `slot_identity`, and closed `cost`.
 An admitted outcome adds `candidate_identity`, ordered `parent_identities`,
-owner and surfaces, `benchmark_revision`, fixed result and evidence identities,
+owner and surfaces, `evaluation_identity`, fixed result and evidence identities,
 `eligibility_status:"PASS"`, eligibility-verdict and score-card identities,
 an ordered complete `dimension_vector` of `{identity,value}`, and ordered public
 `feedback` entries `{source_identity,dimension_identity,reference_identity}`.
 The origin is admitted with null slot and no parents.
 
 A produced ineligible outcome adds candidate and parent identities, owner and
-surfaces, benchmark, fixed result and evidence, covered non-PASS eligibility
+surfaces, evaluation, fixed result and evidence, covered non-PASS eligibility
 status and verdict, and fixed `disposition`; it has no planning vector, score
 card, or feedback. A no-candidate outcome adds only fixed `disposition` to the
 common fields. Missing, duplicate, stale, dangling, or lineage-mismatched
@@ -69,7 +71,7 @@ still reflects first.
 
 Reflection slots precede merge slots. Their closed records carry `identity`,
 generation, ordinal, kind, ordered parents, focus or complementary dimension
-identities, ordered allowed feedback, owner, surfaces, benchmark revision, and
+identities, ordered allowed feedback, owner, surfaces, evaluation identity, and
 closed reservation. Merge feedback is the ordered union of each parent's
 allowed feedback on dimensions where that parent is resolution-better: parent
 order, policy dimension order, feedback-source order, then reference identity.
@@ -86,7 +88,7 @@ not ambient fixed precision.
 ## Result
 
 `search-plan/v1` is closed over `identity`, `policy_identity`,
-`benchmark_revision`, `input_projection_identity`, ordered
+`evaluation_identity`, `input_projection_identity`, ordered
 `basis_outcome_identities`, `generation`, and ordered `slots`.
 `search-advance/v1` is closed over `schema`, `status` (`planned|pending|no_fit`),
 input and output projection identities, `projection`, `plan`, ordered

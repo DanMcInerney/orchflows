@@ -51,6 +51,7 @@ Name the bricks yourself when you want a specific shape:
 
     > orch-loop orch-deliver until `pytest -q` exits 0
     > orch-panel these three cache designs — blind judges, pick one
+    > evolve this blog post — no benchmark, derive a blind judge panel
     > evolve the summarizer prompt against the frozen benchmark
 
 Or build your own workflow in plain English:

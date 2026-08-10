@@ -66,7 +66,7 @@ def generation_zero_request():
             "planner_revision": "git:planner-1",
             "target_owner_identity": "owner:fixture",
             "mutation_surface_identities": ["surface:prompt"],
-            "benchmark_revision": "git:benchmark-1",
+            "evaluation_identity": "evaluation:judged-fixture",
             "scoring_identity": "scoring:fixture",
             "dimensions": [
                 {
@@ -96,7 +96,7 @@ def generation_zero_request():
         "parent_identities": [],
         "target_owner_identity": "owner:fixture",
         "mutation_surface_identities": ["surface:prompt"],
-        "benchmark_revision": "git:benchmark-1",
+        "evaluation_identity": "evaluation:judged-fixture",
         "result_identity": "result:origin",
         "evidence_identity": "evidence:origin",
         "eligibility_status": "PASS",
@@ -176,7 +176,7 @@ def admitted_outcome(slot, candidate, quality, cost, suffix=None):
         "mutation_surface_identities": copy.deepcopy(
             slot["mutation_surface_identities"]
         ),
-        "benchmark_revision": slot["benchmark_revision"],
+        "evaluation_identity": slot["evaluation_identity"],
         "result_identity": f"result:{suffix}",
         "evidence_identity": f"evidence:{suffix}",
         "eligibility_status": "PASS",
@@ -214,7 +214,7 @@ def ineligible_outcome(slot, candidate, suffix=None):
         "mutation_surface_identities": copy.deepcopy(
             slot["mutation_surface_identities"]
         ),
-        "benchmark_revision": slot["benchmark_revision"],
+        "evaluation_identity": slot["evaluation_identity"],
         "result_identity": f"result:{suffix}",
         "evidence_identity": f"evidence:{suffix}",
         "eligibility_status": "FAIL",
@@ -367,6 +367,7 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
     evolve_calls = Counter(CALL_EDGE_RE.findall(combined_evolve))
     required = {
         "orch-delegate",
+        "orch-eval-design",
         "orch-integrate",
         "orch-judge",
         "orch-loop",
@@ -416,6 +417,14 @@ class TestArchitecture(unittest.TestCase):
         command = "python skills/utilities/orch-search-plan/scripts/search_plan.py advance"
         self.assertEqual(1, leaf.count(command))
         self.assertNotIn("operation registry", normalized(leaf))
+
+    def test_planner_is_evaluation_mode_agnostic(self):
+        protocol = read(SEARCH_PROTOCOL)
+        script = read(SEARCH_SCRIPT)
+        self.assertIn("evaluation_identity", protocol)
+        self.assertIn('"evaluation_identity"', script)
+        self.assertNotIn("benchmark_revision", protocol)
+        self.assertNotIn('"benchmark_revision"', script)
 
     def test_known_wrong_ownership_fixtures_are_rejected(self):
         evolve = read(EVOLVE)
@@ -513,6 +522,40 @@ class TestCanonicalAdvance(unittest.TestCase):
                 {key: value for key, value in slot.items() if key != "identity"},
             ),
         )
+
+    def test_opaque_evaluation_identity_has_no_mode_branch(self):
+        judged = generation_zero_request()
+        benchmark = copy.deepcopy(judged)
+        benchmark["policy"]["evaluation_identity"] = "evaluation:benchmark-fixture"
+        benchmark["policy"]["identity"] = tagged_identity(
+            "search-policy/v1",
+            {
+                key: value
+                for key, value in benchmark["policy"].items()
+                if key != "identity"
+            },
+        )
+        benchmark["settled"]["outcomes"][0]["evaluation_identity"] = (
+            "evaluation:benchmark-fixture"
+        )
+
+        judged_result = run_advance(judged)
+        benchmark_result = run_advance(benchmark)
+        self.assertEqual(0, judged_result.returncode, judged_result.stderr.decode())
+        self.assertEqual(0, benchmark_result.returncode, benchmark_result.stderr.decode())
+        judged_response = json.loads(judged_result.stdout)
+        benchmark_response = json.loads(benchmark_result.stdout)
+        self.assertEqual(judged_response["status"], benchmark_response["status"])
+        self.assertEqual(
+            [slot["kind"] for slot in judged_response["plan"]["slots"]],
+            [slot["kind"] for slot in benchmark_response["plan"]["slots"]],
+        )
+
+        drift = copy.deepcopy(judged)
+        drift["settled"]["outcomes"][0]["evaluation_identity"] = (
+            "evaluation:benchmark-fixture"
+        )
+        self.assert_rejected(drift)
 
     def test_closed_schema_identity_numeric_and_reference_failures_exit_two(self):
         cases = []

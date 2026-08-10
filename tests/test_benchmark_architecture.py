@@ -11,6 +11,7 @@ OLD_BENCH = ROOT / "skills" / "workflows" / "orch-bench"
 OLD_EVOLVE = ROOT / "skills" / "workflows" / "orch-evolve"
 # Demoted per contracts/composition.md: evolve is a named composition.
 EVOLVE = ROOT / "compositions" / "evolve.md"
+EVOLVE_EVALUATION = ROOT / "compositions" / "references" / "evolve-evaluation.md"
 EVOLVE_GENERATION = ROOT / "compositions" / "references" / "evolve-generation.md"
 TOURNAMENT = ROOT / "compositions" / "skill-tournament.md"
 PANEL = ROOT / "skills" / "engines" / "orch-panel" / "SKILL.md"
@@ -127,6 +128,7 @@ class TestEvaluationDesign(unittest.TestCase):
             "intended coverage",
             "source identities",
             "expected execution cost",
+            "candidate-blind judge brief",
             "smallest",
             "discrimination",
             "explicit gaps",
@@ -166,7 +168,7 @@ class TestFrozenBenchmarkEvolution(unittest.TestCase):
             "frozen evolve spec",
             "`evidence`",
             "incumbent identity",
-            "qualified benchmark revision",
+            "frozen evaluation identity",
             "`affected_surfaces`",
             "`authority`",
             "intersection",
@@ -179,26 +181,24 @@ class TestFrozenBenchmarkEvolution(unittest.TestCase):
         combined = body + read(EVOLVE_GENERATION)
         self.assertLess(combined.index("`orch-verify`"), combined.index("`orch-panel`"))
         contract = normalized(combined)
-        self.assertIn("required eligibility", contract)
-        self.assertIn("verified survivors", contract)
-        self.assertIn("required deterministic", contract)
+        self.assertIn("required admission", contract)
+        self.assertIn("eligible candidates", contract)
+        self.assertIn("required admission criterion", contract)
         self.assertIn("cannot compensate", contract)
-        self.assertIn("covered-pass result/evidence identity", contract)
-        self.assertIn("score card cites the admitted evidence", contract)
+        self.assertIn("fixed result/evidence", contract)
+        self.assertIn("score card cites admitted evidence", contract)
 
-    def test_owns_generation_and_promotion_against_one_frozen_benchmark(self):
+    def test_owns_generation_and_promotion_against_one_frozen_evaluation(self):
         _, body = split_skill(EVOLVE)
         combined = body + read(EVOLVE_GENERATION)
         contract = normalized(combined)
         for required in (
             "generation direction",
-            "incumbent score card",
-            "judge-owned incumbent score card",
-            # Sealing goes; freezing the benchmark for the campaign's duration
-            # does not. A campaign comparing candidates across a moving
-            # benchmark measures nothing.
-            "freeze the benchmark revision",
+            "score the fixed incumbent",
+            "frozen evaluation",
+            "freeze the evaluation identity",
             "result/evidence identity",
+            "evaluation mode",
             "runner",
             "scoring",
             "protected evidence policy",
@@ -209,7 +209,7 @@ class TestFrozenBenchmarkEvolution(unittest.TestCase):
             "new campaign",
             "retained candidate",
             "blocked partial result",
-            "separate benchmaker run",
+            "evaluation-design gap",
         ):
             self.assertIn(required, contract)
 
@@ -218,10 +218,10 @@ class TestFrozenBenchmarkEvolution(unittest.TestCase):
             if "runner" in sentence:
                 self.assertNotIn("score card", sentence)
         self.assertNotIn("orch-bench", calls)
-        self.assertNotIn("orch-eval-design", calls)
         self.assertNotIn("orch-benchmaker", calls)
         self.assertTrue(
             {
+                "orch-eval-design",
                 "orch-loop",
                 "orch-delegate",
                 "orch-integrate",
@@ -233,6 +233,32 @@ class TestFrozenBenchmarkEvolution(unittest.TestCase):
             }
             <= calls
         )
+
+    def test_missing_evaluation_defaults_to_a_frozen_judge_brief(self):
+        _, body = split_skill(EVOLVE)
+        combined = normalized(body + read(EVOLVE_GENERATION))
+        self.assertTrue(EVOLVE_EVALUATION.is_file())
+        mapping = normalized(read(EVOLVE_EVALUATION))
+        self.assertIn("when no frozen evaluation is supplied", combined)
+        self.assertIn("candidate-blind judge brief", combined)
+        self.assertIn("before generation", combined)
+        self.assertIn("frozen panel binding before the first plan", combined)
+        self.assertIn("score card identity and complete numeric dimension vector", combined)
+        self.assertIn("benchmark mode", combined)
+        self.assertIn("judged mode", combined)
+        self.assertIn("never: change evaluation after campaign open", combined)
+        self.assertNotIn("`orch-benchmaker`", combined)
+        for carrier in (
+            "`objective`",
+            "`inputs`",
+            "`authority`",
+            "`bounds`",
+            "`return_contract`",
+            "`reply_to`",
+        ):
+            self.assertIn(carrier, mapping)
+        self.assertIn("evaluation-design write scope", mapping)
+        self.assertIn("candidate mutation authority", mapping)
 
     def test_skill_tournament_campaigns_over_one_fixed_benchmark_revision(self):
         fields, body = split_skill(TOURNAMENT)
@@ -280,7 +306,15 @@ class TestPanelPacketShape(unittest.TestCase):
         self.assertIn("exactly one fixed candidate identity", active_procedure)
         self.assertIn("frozen scoring criteria", active_procedure)
         self.assertIn("exact result/evidence identity", active_procedure)
-        self.assertIn("frozen benchmark and scoring identities", active_procedure)
+        self.assertIn("frozen evaluation and scoring identities", active_procedure)
+        self.assertIn("frozen evaluation mode", active_procedure)
+        self.assertIn("frozen candidate-blind judge brief", active_procedure)
+        self.assertIn(
+            "carry the frozen candidate-blind judge brief verbatim",
+            active_procedure,
+        )
+        self.assertIn("static artifact snapshot", active_procedure)
+        self.assertNotIn("render one candidate-blind judge brief", active_procedure)
         self.assertIn("score card citing the exact evidence identity", active_procedure)
         self.assertNotIn("candidate set as the packet", active_procedure)
         self.assertEqual(
@@ -303,6 +337,7 @@ class TestPanelPacketShape(unittest.TestCase):
         self.assertIn("aggregate exactly by the declared method", active_procedure)
         self.assertIn("disagreement", active_procedure)
         never = normalized(paragraph(body, "Never:"))
+        self.assertIn("replace or alter the frozen brief", never)
         self.assertIn("change the aggregation method", never)
         self.assertIn("drop a dissenting lane", never)
         self.assertIn("re-execute or substitute admitted evidence", never)
