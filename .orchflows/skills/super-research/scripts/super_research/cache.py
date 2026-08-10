@@ -41,6 +41,16 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     transport.DDG_HTML_ROUTE: 300.0,
     # An archive lookup by fixed id changes only as the archive backfills.
     transport.ARCTIC_SHIFT_POSTS_ROUTE: 900.0,
+    # One author's whole timeline for 2.5 s and 378 KB (findings.md §1), so
+    # this is the route where remembering earns the most. Five minutes bounds
+    # how stale an engagement count a caller can be handed, and a run asking
+    # for the same author twice is asking the same question.
+    transport.X_SYNDICATION_TIMELINE_ROUTE: 300.0,
+    # One route, three operations, one TTL — so it takes the volatility of the
+    # most volatile of them, a tweet's counts, and not that of a profile. The
+    # read costs 0.5 s, so holding an answer longer buys less here than
+    # anywhere else on X.
+    transport.X_GUEST_GRAPHQL_ROUTE: 120.0,
 }
 
 # The two halves of one bound. Every route in the roster answers in kilobytes,

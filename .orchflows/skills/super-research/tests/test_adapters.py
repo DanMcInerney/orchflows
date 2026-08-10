@@ -39,7 +39,7 @@ import urllib.request
 from pathlib import Path
 from unittest import mock
 
-from super_research import adapters, runner, schema, transport
+from super_research import adapters, cache, runner, schema, transport
 from super_research.adapters import x_guest, x_syndication
 from tests import helpers
 
@@ -988,6 +988,82 @@ class OneCallOnePageTest(unittest.TestCase):
         ]
 
         self.assertEqual(named, [])
+
+
+class RouteTtlTest(unittest.TestCase):
+    """How long each X route's answer may stand in for a fresh read.
+
+    A TTL belongs to a route's own volatility, and `cache.py`'s default is
+    deliberately short — a route nobody has measured is not one to trust for
+    long. Both of these were measured, so both declare their own, and the
+    proof is behavioral: a re-read ninety seconds later, which the default
+    would have sent back to the origin.
+    """
+
+    def _paced(self, clock, route_id, body, content_type):
+        carrier, opener = helpers.offline_transport(
+            clock, {route_id: (200, body, content_type)}
+        )
+        governor = runner.RateGovernor(
+            carrier,
+            run_cache=cache.RunCache(clock=clock.monotonic),
+            clock=clock.monotonic,
+            sleep=clock.sleep,
+        )
+        return governor, opener
+
+    def test_a_timeline_reread_inside_the_window_is_answered_from_memory(self):
+        clock = helpers.FakeClock()
+        governor, opener = self._paced(
+            clock,
+            transport.X_SYNDICATION_TIMELINE_ROUTE,
+            read_fixture("syndication_timeline.html"),
+            "text/html",
+        )
+
+        first = x_syndication.fetch_native_page(governor, PROFILE_REQUEST)
+        clock.advance(90)
+        second = x_syndication.fetch_native_page(governor, PROFILE_REQUEST)
+
+        self.assertEqual(len(opener.opened), 1)
+        self.assertNotIn(cache.CACHE_HIT, first.loss)
+        self.assertIn(cache.CACHE_HIT, second.loss)
+        # The mark moves, the moment does not: a served page still states when
+        # the origin was really read, which is what makes the saving free
+        # rather than a quiet loss of freshness.
+        self.assertEqual(second.observed_at, first.observed_at)
+        self.assertEqual(len(second.records), 100)
+
+    def test_the_route_serving_the_most_volatile_thing_holds_it_for_the_least_time(self):
+        # One TTL per route, and the guest route serves three operations at
+        # once, so it takes the volatility of the most volatile of them — a
+        # tweet's counts — rather than the least. It is also the cheap read:
+        # 0.5 s against 2.5 s and 378 KB, so holding an answer longer buys
+        # less here than anywhere else on X.
+        clock = helpers.FakeClock()
+        governor, opener = self._paced(
+            clock,
+            transport.X_GUEST_GRAPHQL_ROUTE,
+            read_fixture("guest_tweet_result.json"),
+            "application/json",
+        )
+        request = adapters.AdapterRequest(
+            step_id="s1-x", target_ids=("tweet:1799990000000000001",)
+        )
+
+        x_guest.fetch_native_page(governor, request)
+        clock.advance(90)
+        held = x_guest.fetch_native_page(governor, request)
+        clock.advance(90)
+        expired = x_guest.fetch_native_page(governor, request)
+
+        self.assertIn(cache.CACHE_HIT, held.loss)
+        self.assertNotIn(cache.CACHE_HIT, expired.loss)
+        self.assertEqual(len(opener.opened), 2)
+        self.assertLess(
+            cache.ttl_seconds(transport.X_GUEST_GRAPHQL_ROUTE),
+            cache.ttl_seconds(transport.X_SYNDICATION_TIMELINE_ROUTE),
+        )
 
 
 def x_manifest():
