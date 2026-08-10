@@ -17,7 +17,7 @@ from pathlib import Path
 from unittest import mock
 
 from super_research import adapters, schema, transport
-from super_research.adapters import web_search
+from super_research.adapters import fake, reddit_archive, web_search
 
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "tracer"
@@ -272,6 +272,142 @@ class WebSearchDiscoveryTest(unittest.TestCase):
         self.assertEqual(page.outcome, "empty")
         self.assertEqual(page.records, ())
         self.assertNotIn("http_status", page.loss)
+
+
+class RedditArchiveHydrationTest(unittest.TestCase):
+    """The K3 hydration adapter: the archive's own fields, labelled as the archive."""
+
+    def setUp(self):
+        self.payload = read_fixture("arctic_shift_posts_ids.json")
+        self.request = adapters.AdapterRequest(step_id="s2-hydrate", target_ids=("1abc234",))
+
+    def _page(self, response):
+        carrier, opener = tracer_transport({"arctic_shift_posts_ids": response})
+        return reddit_archive.fetch_native_page(carrier, self.request), carrier, opener
+
+    def test_arctic_shift_post_yields_one_native_page_with_platform_engagement(self):
+        page, carrier, opener = self._page((200, self.payload, "application/json"))
+
+        self.assertEqual(page.adapter_id, "reddit_archive")
+        self.assertEqual(page.representation_kind, "native")
+        self.assertEqual(page.platform, "reddit")
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(len(page.records), 1)
+        self.assertEqual(len(opener.opened), 1)
+        self.assertEqual([call.route_id for call in carrier.calls], ["arctic_shift_posts_ids"])
+
+        post = page.records[0]
+        self.assertEqual(post.canonical_content_kind, "post")
+        self.assertEqual(post.canonical_locator, REDDIT_THREAD_LOCATOR)
+        self.assertEqual(post.title, "What is the best local model right now?")
+        self.assertIn("prompt-processing time", post.body)
+        self.assertEqual(post.author, "vram_hoarder")
+        self.assertEqual(post.community, "LocalLLaMA")
+        self.assertEqual(post.published_at, "2026-08-09T13:20:00Z")
+        self.assertEqual(dict(post.engagement), {"score": 120, "num_comments": 88})
+
+    def test_reddit_native_identity_carries_the_fullname_prefix(self):
+        page, _, _ = self._page((200, self.payload, "application/json"))
+
+        self.assertEqual(page.records[0].native_item_id, "t3_1abc234")
+
+    def test_third_party_archive_records_name_their_operator(self):
+        page, _, _ = self._page((200, self.payload, "application/json"))
+
+        self.assertEqual(page.operator_identity, "arctic-shift")
+        self.assertEqual(page.access_class, "K3")
+        self.assertIn("third_party_archive", page.records[0].loss)
+
+    def test_malformed_json_is_typed_and_never_a_silent_empty(self):
+        page, _, opener = self._page((200, "{not json", "application/json"))
+
+        self.assertEqual(page.outcome, "failed")
+        self.assertEqual(page.records, ())
+        self.assertIn("malformed_json", page.loss)
+        self.assertEqual(len(opener.opened), 1)
+
+    def test_non_success_status_is_typed_and_never_retried(self):
+        page, _, opener = self._page((502, "bad gateway", "text/plain"))
+
+        self.assertEqual(page.outcome, "failed")
+        self.assertIn("http_status", page.loss)
+        self.assertEqual(len(opener.opened), 1)
+
+    def test_hydration_performs_no_filesystem_or_socket_io(self):
+        carrier, _ = tracer_transport(
+            {"arctic_shift_posts_ids": (200, self.payload, "application/json")}
+        )
+
+        with forbid_io():
+            page = reddit_archive.fetch_native_page(carrier, self.request)
+
+        self.assertEqual(len(page.records), 1)
+
+
+class FakeAdapterTest(unittest.TestCase):
+    """The offline adapter stands in for a route that does not exist yet."""
+
+    def test_fixture_page_declares_the_platform_it_stands_in_for(self):
+        carrier, opener = tracer_transport(
+            {"fake_offline": (200, read_fixture("fake_x_native_page.json"), "application/json")}
+        )
+
+        page = fake.fetch_native_page(
+            carrier, adapters.AdapterRequest(step_id="s2-hydrate", target_ids=("x_native_page",))
+        )
+
+        self.assertEqual(page.adapter_id, "fake")
+        self.assertEqual(page.platform, "x")
+        self.assertEqual(page.native_identity_namespace, "x")
+        self.assertEqual(page.representation_kind, "native")
+        self.assertEqual(len(page.records), 2)
+        self.assertEqual(len(opener.opened), 1)
+
+        post, reply = page.records
+        self.assertEqual(post.canonical_content_kind, "post")
+        self.assertEqual(post.canonical_locator, X_POST_LOCATOR)
+        self.assertEqual(dict(post.engagement)["favorite_count"], 412)
+        self.assertEqual(reply.canonical_content_kind, "reply")
+        self.assertEqual(reply.native_parent_id, post.native_item_id)
+
+
+class AdapterDeclarationTest(unittest.TestCase):
+    """A live adapter's page always agrees with the descriptor it ships."""
+
+    def test_live_pages_agree_with_their_static_descriptor(self):
+        carrier, _ = tracer_transport(
+            {
+                "ddg_html": (200, read_fixture("ddg_html_results.html"), "text/html"),
+                "arctic_shift_posts_ids": (
+                    200,
+                    read_fixture("arctic_shift_posts_ids.json"),
+                    "application/json",
+                ),
+            }
+        )
+        pages = (
+            web_search.fetch_native_page(
+                carrier, adapters.AdapterRequest(step_id="s1-discover", query="q")
+            ),
+            reddit_archive.fetch_native_page(
+                carrier, adapters.AdapterRequest(step_id="s2-hydrate", target_ids=("1abc234",))
+            ),
+        )
+        descriptors = (web_search.DESCRIPTOR, reddit_archive.DESCRIPTOR)
+
+        for page, descriptor in zip(pages, descriptors):
+            self.assertEqual(page.adapter_id, descriptor.adapter_id)
+            self.assertEqual(page.route_id, descriptor.route_id)
+            self.assertEqual(page.access_class, descriptor.access_class)
+            self.assertEqual(page.platform, descriptor.platform)
+            self.assertEqual(page.representation_kind, descriptor.representation_kind)
+            self.assertEqual(
+                page.native_identity_namespace, descriptor.native_identity_namespace
+            )
+
+    def test_discovery_and_hydration_declare_different_representations(self):
+        self.assertEqual(web_search.DESCRIPTOR.representation_kind, "index")
+        self.assertEqual(reddit_archive.DESCRIPTOR.representation_kind, "native")
 
 
 class RouteConstantOwnershipTest(unittest.TestCase):

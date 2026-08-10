@@ -18,7 +18,7 @@ from html.parser import HTMLParser
 from typing import List, Optional, Tuple
 
 from .. import transport
-from . import AdapterDescriptor, AdapterRequest, NativePage, NativeRecord
+from . import AdapterDescriptor, AdapterRequest, NativePage, NativeRecord, build_native_page
 
 DESCRIPTOR = AdapterDescriptor(
     adapter_id="web_search",
@@ -108,11 +108,9 @@ def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> 
         )
     )
     if response.status != 200:
-        return NativePage(
-            adapter_id=DESCRIPTOR.adapter_id,
-            adapter_version=DESCRIPTOR.adapter_version,
-            route_id=DESCRIPTOR.route_id,
-            records=(),
+        return build_native_page(
+            DESCRIPTOR,
+            (),
             native_order=NATIVE_ORDER,
             warnings=("http status {0} from {1}".format(response.status, DESCRIPTOR.route_id),),
             outcome="failed",
@@ -128,11 +126,9 @@ def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> 
         for position, (locator, title, snippet) in enumerate(parser.hits)
         if locator
     )
-    return NativePage(
-        adapter_id=DESCRIPTOR.adapter_id,
-        adapter_version=DESCRIPTOR.adapter_version,
-        route_id=DESCRIPTOR.route_id,
-        records=records,
+    return build_native_page(
+        DESCRIPTOR,
+        records,
         cursor_out=parser.next_offset,
         native_order=NATIVE_ORDER,
         outcome="ok" if records else "empty",

@@ -63,15 +63,57 @@ class NativeRecord:
 
 @dataclass(frozen=True)
 class NativePage:
-    """Exactly one adapter call's return. It can hold no next call and no judgment."""
+    """Exactly one adapter call's return. It can hold no next call and no judgment.
+
+    A page is self-describing: it states which platform it speaks for, under
+    which identity namespace, and at which representation. A live adapter
+    copies that from its own ``DESCRIPTOR``; the offline ``fake`` adapter
+    takes it from the fixture whose route it is standing in for.
+    """
 
     adapter_id: str
     adapter_version: str
     route_id: str
+    access_class: str
+    platform: str
+    native_identity_namespace: str
+    representation_kind: str
     records: Tuple[NativeRecord, ...]
+    operator_identity: str = ""
     cursor_out: str = ""
     native_order: str = ""
     warnings: Tuple[str, ...] = ()
     outcome: str = "ok"
     loss: Tuple[str, ...] = ()
     page_index: int = 0
+
+
+def build_native_page(
+    descriptor: AdapterDescriptor,
+    records: Tuple[NativeRecord, ...],
+    cursor_out: str = "",
+    native_order: str = "",
+    warnings: Tuple[str, ...] = (),
+    outcome: str = "ok",
+    loss: Tuple[str, ...] = (),
+    page_index: int = 0,
+) -> NativePage:
+    """Stamp one page with the declaration the calling adapter is making."""
+
+    return NativePage(
+        adapter_id=descriptor.adapter_id,
+        adapter_version=descriptor.adapter_version,
+        route_id=descriptor.route_id,
+        access_class=descriptor.access_class,
+        platform=descriptor.platform,
+        native_identity_namespace=descriptor.native_identity_namespace,
+        representation_kind=descriptor.representation_kind,
+        records=records,
+        operator_identity=descriptor.operator_identity,
+        cursor_out=cursor_out,
+        native_order=native_order,
+        warnings=warnings,
+        outcome=outcome,
+        loss=loss,
+        page_index=page_index,
+    )
