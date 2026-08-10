@@ -1,0 +1,17 @@
+<!--
+  An origin's own login page, served 200, that happens to set the same base
+  href the appliance uses. Nothing measured shows an interception answering
+  2xx, so this must stay platform behavior: claiming it as a local block is
+  the mirror of the error findings.md §0 forbids.
+-->
+<html>
+<head>
+<base href="/login/">
+<title>Log in</title>
+</head>
+<body>
+<form action="session" method="post">
+<input name="user">
+</form>
+</body>
+</html>

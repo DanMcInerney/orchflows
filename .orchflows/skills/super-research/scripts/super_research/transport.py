@@ -4,6 +4,10 @@ Nothing outside this module may name a host, a path, or a vendor-published
 public client credential. Callers that need to know whether a route is
 reachable ask :func:`route_admissions`, which answers in booleans only.
 
+This module also owns the captive-portal detector. Every response it returns
+names the party that answered it — the origin, or a local network appliance —
+so a caller can never record this network's block as a platform gap.
+
 Reliability bar: read-only. The default opener refuses any URL that is not
 ``https://`` and any method that is not ``GET`` or ``HEAD``, so no code
 path here can mutate a remote resource, and the offline ``fake`` route can
@@ -29,6 +33,22 @@ USER_AGENT = "super-research/0.1 (keyless read-only acquisition)"
 REQUEST_TIMEOUT_SECONDS = 20
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 READ_METHODS = ("GET", "HEAD")
+
+# Which party answered a request. `network_intercepted` is also the typed
+# loss code a caller attaches, so an intercepted route is reported as
+# unverified rather than as a platform gap.
+ORIGIN_CONTENT = "origin_content"
+ORIGIN_FAILURE = "origin_failure"
+NETWORK_INTERCEPTED = "network_intercepted"
+CHANNEL_VERDICTS = (ORIGIN_CONTENT, ORIGIN_FAILURE, NETWORK_INTERCEPTED)
+
+# The one measured captive-portal signature (findings.md §0, 2026-08-10):
+# this host's appliance answered tiktok.com and ecosia.org with HTTP 503 and
+# a body carrying this marker, while example.com and wikipedia.org returned
+# genuine 200 origin content. Widening this set requires a new measurement:
+# a marker an origin also emits would record platform behavior as a local
+# block, which is the mirror of the error §0 forbids.
+CAPTIVE_PORTAL_MARKERS = ('<base href="/login/">',)
 
 
 class TransportError(RuntimeError):
@@ -93,10 +113,30 @@ class TransportResponse:
     body: str
     content_type: str
     observed_at: str
+    channel_verdict: str
 
 
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def channel_verdict(status: int, body: str) -> str:
+    """Name the party that answered: the origin, or a local network appliance.
+
+    An interception needs both halves of the measured signature — a failure
+    status and a portal marker. A success is never one: this host's control
+    probes show a 2xx is genuine origin content, and an origin's own login
+    page must stay platform behavior. A failure without the marker is the
+    origin's own, so a real platform gap is still recordable as one.
+    """
+
+    if 200 <= status < 300:
+        return ORIGIN_CONTENT
+    lowered = body.lower()
+    for marker in CAPTIVE_PORTAL_MARKERS:
+        if marker in lowered:
+            return NETWORK_INTERCEPTED
+    return ORIGIN_FAILURE
 
 
 def route_constant(route_id: str) -> RouteConstant:
@@ -189,4 +229,5 @@ class Transport:
             body=body,
             content_type=content_type,
             observed_at=self._now(),
+            channel_verdict=channel_verdict(status, body),
         )
