@@ -39,8 +39,8 @@ import urllib.request
 from pathlib import Path
 from unittest import mock
 
-from super_research import adapters, cache, runner, schema, transport
-from super_research.adapters import linkedin_jobs, x_guest, x_syndication
+from super_research import adapters, cache, normalize, runner, schema, transport
+from super_research.adapters import linkedin_jobs, linkedin_public, x_guest, x_syndication
 from tests import helpers
 
 
@@ -1440,6 +1440,292 @@ class LinkedInJobsDescriptorTest(unittest.TestCase):
 
         self.assertEqual(len(page.records), 10)
         self.assertEqual(len(opener.opened), 1)
+
+
+PROFILE_SLUG = "avery-lindqvist-8a41b207"
+LINKEDIN_PROFILE_REQUEST = adapters.AdapterRequest(
+    step_id="s1-li", target_ids=(PROFILE_SLUG,)
+)
+
+# findings.md §1 (LinkedIn): every field the profile row records the ld+json
+# Person block carrying, named as the evidence names them.
+LINKEDIN_PROFILE_ROSTER_FIELDS = (
+    "name",
+    "jobTitle",
+    "addressLocality",
+    "description",
+    "worksFor",
+    "alumniOf",
+)
+
+
+def profile_page(fixture, status=200, request=None):
+    """Run ``linkedin_public`` over one canned answer."""
+
+    return adapter_page(
+        linkedin_public,
+        status,
+        read_linkedin(fixture),
+        content_type="text/html",
+        request=LINKEDIN_PROFILE_REQUEST if request is None else request,
+    )
+
+
+def profile_roster_row(record):
+    """One profile's roster row exactly as a caller reads it off the record.
+
+    Deliberately assembled from the record and never from the adapter's own
+    parse: the claim is that the fields reach the value a caller keeps, and a
+    helper that read the block again would be checking the parser twice.
+    """
+
+    repeated = {}
+    for name, value in record.attributes:
+        repeated.setdefault(name, []).append(value)
+    return {
+        "name": record.title,
+        "jobTitle": repeated.get("jobTitle", []),
+        "addressLocality": "".join(repeated.get("addressLocality", [])),
+        "description": record.body,
+        "worksFor": repeated.get("worksFor", []),
+        "alumniOf": repeated.get("alumniOf", []),
+    }
+
+
+class LinkedInPublicProfileTest(unittest.TestCase):
+    """Criterion 1, K2 half: the whole Person block out of a page anyone can read."""
+
+    def setUp(self):
+        self.page, self.opener = profile_page("profile_person.html")
+
+    def test_one_page_carries_the_one_profile_this_route_serves(self):
+        self.assertEqual(self.page.outcome, "ok")
+        self.assertEqual(self.page.loss, ())
+        self.assertEqual(len(self.page.records), 1)
+        self.assertEqual(len(self.opener.opened), 1)
+
+    def test_the_record_carries_every_field_its_roster_row_names(self):
+        carried = profile_roster_row(self.page.records[0])
+
+        self.assertEqual(sorted(carried), sorted(LINKEDIN_PROFILE_ROSTER_FIELDS))
+        for name in LINKEDIN_PROFILE_ROSTER_FIELDS:
+            self.assertTrue(carried[name], name)
+        self.assertEqual(carried["name"], "Avery Lindqvist")
+        # Repeated facts arrive repeated, in the order the block listed them.
+        # Joining them into one string would invent a separator the origin
+        # never sent and make two positions unreadable as two.
+        self.assertEqual(
+            carried["jobTitle"], ["Principal Reliability Engineer", "Board Advisor"]
+        )
+        self.assertEqual(
+            carried["addressLocality"], "Gothenburg, Vastra Gotaland County, Sweden"
+        )
+        self.assertIn("distributed storage", carried["description"])
+        self.assertEqual(carried["worksFor"], ["Northwind Analytics", "Kestrel Systems"])
+        self.assertEqual(
+            carried["alumniOf"],
+            ["Chalmers University of Technology", "Lund University"],
+        )
+        self.assertEqual(self.page.records[0].loss, ())
+
+    def test_the_record_names_the_profile_and_the_address_the_origin_published(self):
+        record = self.page.records[0]
+
+        self.assertEqual(record.canonical_content_kind, "profile")
+        # Identity is the slug this run read, which is the route's own path
+        # segment and LinkedIn's own public name for a member. The address is
+        # the one the block published, so no adapter spells a route host.
+        self.assertEqual(record.native_item_id, PROFILE_SLUG)
+        self.assertEqual(record.author, PROFILE_SLUG)
+        self.assertEqual(
+            record.canonical_locator,
+            "https://www.linkedin.com/in/avery-lindqvist-8a41b207",
+        )
+        # A profile page states no publication time, so the record states none
+        # rather than borrowing the moment it was read.
+        self.assertEqual(record.published_at, "")
+        self.assertEqual(record.engagement, ())
+        self.assertEqual(record.native_position, 0)
+
+    def test_the_person_is_found_by_its_declared_type_and_never_by_position(self):
+        # The page carries two ld+json scripts and the Person is in neither
+        # first position: not the first script, and not the first node of the
+        # graph inside it. A parser keyed to position would read a
+        # BreadcrumbList and report a profile named "LinkedIn".
+        self.assertEqual(self.page.records[0].title, "Avery Lindqvist")
+
+    def test_a_profile_the_origin_populated_in_part_is_marked_and_never_filled(self):
+        page, _ = profile_page(
+            "profile_partial_person.html",
+            request=adapters.AdapterRequest(
+                step_id="s1-li", target_ids=("mira-okonkwo-4d90c113",)
+            ),
+        )
+        carried = profile_roster_row(page.records[0])
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(page.records[0].loss, ("field_omitted",))
+        # Marked, and absent rather than invented: no locality and no summary
+        # at all, instead of an empty string that reads as "wrote nothing".
+        self.assertEqual(carried["addressLocality"], "")
+        self.assertEqual(carried["description"], "")
+        self.assertEqual(carried["jobTitle"], [])
+        self.assertEqual(carried["alumniOf"], [])
+        self.assertEqual(carried["name"], "Mira Okonkwo")
+        self.assertEqual(carried["worksFor"], ["Kestrel Systems"])
+
+    def test_the_slug_is_read_from_the_target_or_from_the_query(self):
+        for request in (
+            adapters.AdapterRequest(step_id="s1-li", target_ids=(PROFILE_SLUG,)),
+            adapters.AdapterRequest(step_id="s1-li", query=PROFILE_SLUG),
+        ):
+            with self.subTest(request=request):
+                _, opener = profile_page("profile_person.html", request=request)
+
+                self.assertTrue(
+                    opener.opened[0].url.endswith("/" + PROFILE_SLUG), opener.opened[0].url
+                )
+
+    def test_the_page_speaks_for_linkedin_at_the_class_the_ladder_gives_it(self):
+        self.assertEqual(self.page.adapter_id, "linkedin_public")
+        self.assertEqual(self.page.platform, "linkedin")
+        self.assertEqual(self.page.native_identity_namespace, "linkedin")
+        self.assertEqual(self.page.access_class, "K2")
+        self.assertEqual(self.page.representation_kind, "native")
+        self.assertEqual(self.page.route_id, transport.LINKEDIN_PUBLIC_PROFILE_ROUTE)
+
+
+class LinkedInPublicDescriptorTest(unittest.TestCase):
+    """The descriptor T04's seam reads: measured ceiling, class, declared metrics."""
+
+    def test_the_route_is_paced_by_the_interval_the_evidence_measured(self):
+        # findings.md §1 (LinkedIn): 1.3 s per request. Nothing on this route
+        # was measured refusing, so burst and cooldown keep the conservative
+        # defaults rather than a ceiling nobody observed.
+        descriptor = linkedin_public.DESCRIPTOR
+
+        self.assertEqual(descriptor.min_interval_ms, 1300)
+        self.assertEqual(descriptor.burst, adapters.DEFAULT_BURST)
+        self.assertEqual(descriptor.cooldown_ms, adapters.DEFAULT_COOLDOWN_MS)
+        self.assertEqual(
+            runner.route_budgets()[transport.LINKEDIN_PUBLIC_PROFILE_ROUTE],
+            runner.RouteBudget(min_interval_ms=1300, burst=1, cooldown_ms=60000),
+        )
+
+    def test_it_declares_neither_engagement_metric_because_the_block_reports_none(self):
+        self.assertEqual(linkedin_public.DESCRIPTOR.comment_count_metric, "")
+        self.assertEqual(linkedin_public.DESCRIPTOR.reply_count_metric, "")
+
+    def test_the_core_can_reach_it_by_both_of_its_literal_branches(self):
+        self.assertIn("linkedin_public", runner.ADAPTER_IDS)
+        self.assertIs(runner.descriptor_for("linkedin_public"), linkedin_public.DESCRIPTOR)
+
+        clock = helpers.FakeClock()
+        carrier, opener = helpers.offline_transport(
+            clock,
+            {
+                transport.LINKEDIN_PUBLIC_PROFILE_ROUTE: (
+                    200,
+                    read_linkedin("profile_person.html"),
+                    "text/html",
+                )
+            },
+        )
+        page = runner.call_adapter("linkedin_public", carrier, LINKEDIN_PROFILE_REQUEST)
+
+        self.assertEqual(len(page.records), 1)
+        self.assertEqual(len(opener.opened), 1)
+
+
+def profile_manifest():
+    """One dispatch reading one public profile."""
+
+    return schema.AcquisitionManifest(
+        manifest_id="m-li",
+        mode="staged",
+        as_of="2026-08-10T09:00:00Z",
+        steps=(
+            schema.AcquisitionStep(
+                step_id="s1-profile",
+                kind="hydration",
+                adapter_id="linkedin_public",
+                selected_hits=(
+                    schema.SelectedHit(
+                        discovery_locator="https://www.linkedin.com/in/" + PROFILE_SLUG,
+                        target_id=PROFILE_SLUG,
+                    ),
+                ),
+                max_items=5,
+            ),
+        ),
+    )
+
+
+class NamedAttributeCarrierTest(unittest.TestCase):
+    """The one protocol extension this pair needed, and the law it carries.
+
+    Four of `linkedin_public`'s six roster fields are named string facts, three
+    of them repeated, and no other record field means any of them. Forcing them
+    into `community` or `title` would alias a field that means a subreddit on
+    one adapter into meaning a city on another, which is the same error the
+    descriptor's metric law forbids for engagement counts. So they travel under
+    their own names, and nothing else about a record moves.
+    """
+
+    def _artifact(self):
+        clock = helpers.FakeClock()
+        carrier, _ = helpers.offline_transport(
+            clock,
+            {
+                transport.LINKEDIN_PUBLIC_PROFILE_ROUTE: (
+                    200,
+                    read_linkedin("profile_person.html"),
+                    "text/html",
+                )
+            },
+        )
+        return runner.run_acquisition(profile_manifest(), carrier, clock=clock.monotonic)
+
+    def test_a_repeated_named_fact_reaches_the_artifact_in_the_blocks_own_order(self):
+        # The claim closes where a caller keeps it. A page-level assertion
+        # would leave the artifact free to drop the whole family.
+        artifact = self._artifact()
+        carried = profile_roster_row(artifact.records[0])
+
+        self.assertEqual(len(artifact.records), 1)
+        self.assertEqual(
+            carried["jobTitle"], ["Principal Reliability Engineer", "Board Advisor"]
+        )
+        self.assertEqual(carried["worksFor"], ["Northwind Analytics", "Kestrel Systems"])
+        self.assertEqual(artifact.records[0].time_confidence, "unknown")
+        self.assertEqual(artifact.records[0].access_class, "K2")
+
+    def test_a_record_from_a_route_reporting_no_named_fact_carries_none(self):
+        # Defaulted and additive: every adapter that reported nothing under a
+        # name still reports nothing, and no existing record grew a field with
+        # something in it.
+        page, _ = adapter_page(
+            x_syndication, 200, read_fixture("syndication_timeline.html")
+        )
+
+        self.assertEqual(page.records[0].attributes, ())
+
+    def test_a_named_fact_that_is_not_a_string_is_refused_rather_than_coerced(self):
+        # Same bar as an engagement snapshot: the exact value as reported, or
+        # nothing. A number stringified here would be a fact this package made.
+        native = adapters.NativeRecord(
+            canonical_content_kind="profile",
+            canonical_locator="https://example.test/x",
+            attributes=(("jobTitle", 7),),
+        )
+
+        with self.assertRaises(normalize.NormalizeError):
+            normalize.normalize_page(
+                adapters.build_native_page(linkedin_public.DESCRIPTOR, (native,)),
+                profile_manifest().steps[0],
+                "artifact:m-li",
+                "m-li",
+            )
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner

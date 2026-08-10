@@ -139,6 +139,11 @@ class AcquisitionRecord:
     discovery_locator: str
     outcome: str
     loss: Tuple[str, ...]
+    # Named string facts the route reported that no other field here means,
+    # carried under the route's own names and repeating where the route
+    # repeated them. Last and defaulted, because most routes report none and
+    # every existing construction site names its fields by keyword.
+    attributes: Tuple[Tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True)

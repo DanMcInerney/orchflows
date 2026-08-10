@@ -37,7 +37,8 @@ from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 from . import cache, normalize, router, schema, transport
 from .adapters import AdapterDescriptor, AdapterRequest, NativePage
-from .adapters import fake, linkedin_jobs, reddit_archive, web_search, x_guest, x_syndication
+from .adapters import fake, linkedin_jobs, linkedin_public, reddit_archive
+from .adapters import web_search, x_guest, x_syndication
 
 US_PER_SECOND = 1000000
 US_PER_MS = 1000
@@ -54,6 +55,7 @@ def tick_us(clock: Callable[[], float]) -> int:
 ADAPTER_IDS = (
     "fake",
     "linkedin_jobs",
+    "linkedin_public",
     "reddit_archive",
     "web_search",
     "x_guest",
@@ -72,6 +74,8 @@ def descriptor_for(adapter_id: str) -> Optional[AdapterDescriptor]:
         return fake.DESCRIPTOR
     if adapter_id == "linkedin_jobs":
         return linkedin_jobs.DESCRIPTOR
+    if adapter_id == "linkedin_public":
+        return linkedin_public.DESCRIPTOR
     if adapter_id == "reddit_archive":
         return reddit_archive.DESCRIPTOR
     if adapter_id == "web_search":
@@ -92,6 +96,8 @@ def call_adapter(
         return fake.fetch_native_page(carrier, request)
     if adapter_id == "linkedin_jobs":
         return linkedin_jobs.fetch_native_page(carrier, request)
+    if adapter_id == "linkedin_public":
+        return linkedin_public.fetch_native_page(carrier, request)
     if adapter_id == "reddit_archive":
         return reddit_archive.fetch_native_page(carrier, request)
     if adapter_id == "web_search":

@@ -98,7 +98,19 @@ class AdapterRequest:
 
 @dataclass(frozen=True)
 class NativeRecord:
-    """One row as the route itself reported it, before normalization."""
+    """One row as the route itself reported it, before normalization.
+
+    ``attributes`` carries named string facts a route reported that no other
+    field on this record means — a structured public page's own vocabulary,
+    where ``title`` and ``body`` and ``community`` each already mean something
+    else. A name repeats when the route reported it more than once, in the
+    route's own order, and every value is the exact string as reported.
+
+    Nothing here is inferred, aliased across platforms, or parsed further: a
+    name means what the route that emitted it means by it, which is the same
+    law ``comment_count_metric`` and ``reply_count_metric`` carry for the two
+    counted ones. A route that reports no such fact carries none.
+    """
 
     canonical_content_kind: str
     canonical_locator: str
@@ -110,6 +122,7 @@ class NativeRecord:
     community: str = ""
     published_at: str = ""
     engagement: Tuple[Tuple[str, int], ...] = ()
+    attributes: Tuple[Tuple[str, str], ...] = ()
     native_position: int = -1
     loss: Tuple[str, ...] = ()
 

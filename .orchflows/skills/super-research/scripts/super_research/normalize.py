@@ -70,6 +70,25 @@ def engagement_snapshots(
     return tuple(snapshots)
 
 
+def named_attributes(
+    pairs: Sequence[Tuple[str, Any]]
+) -> Tuple[Tuple[str, str], ...]:
+    """Admit only exact strings, under the route's own names, in its own order.
+
+    The same bar an engagement snapshot is held to, for the same reason: a
+    number stringified here, or a list flattened into one value, would be a
+    fact this package made rather than one a route reported. A name may repeat,
+    because a route reporting two job titles reported two.
+    """
+
+    for name, value in pairs:
+        if not isinstance(name, str) or not name:
+            raise NormalizeError("a named attribute has no name: {0!r}".format(value))
+        if not isinstance(value, str):
+            raise NormalizeError("attribute {0} is not a string".format(name))
+    return tuple((name, value) for name, value in pairs)
+
+
 def time_confidence_for(access_class: str, published_at: str) -> str:
     if not published_at:
         return "unknown"
@@ -227,6 +246,7 @@ def normalize_page(
                 time_confidence=time_confidence_for(page.access_class, published_at),
                 usable_basis_time=published_at,
                 engagement=engagement_snapshots(native.engagement, page.observed_at),
+                attributes=named_attributes(native.attributes),
                 page_index=page_index,
                 list_index=list_index,
                 native_position=native.native_position,
