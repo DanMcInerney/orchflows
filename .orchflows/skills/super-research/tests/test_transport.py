@@ -21,15 +21,24 @@ import urllib.request
 from pathlib import Path
 from unittest import mock
 
-from super_research import transport
+from super_research import adapters, transport
+from super_research.adapters import fake, reddit_archive, web_search
 
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "transport"
 PACKAGE_DIR = Path(__file__).resolve().parent.parent / "scripts" / "super_research"
+ADAPTER_DIR = PACKAGE_DIR / "adapters"
 FROZEN_OBSERVED_AT = "2026-08-10T09:00:00Z"
 
 # Only the transport seam may reach the network.
 NETWORK_MODULES = ("urllib.request", "http.client", "socket", "ssl")
+
+# Every adapter the package ships today. One request serves all three: each
+# reads only the fields its own route needs.
+SHIPPED_ADAPTERS = (web_search, reddit_archive, fake)
+PROBE_REQUEST = adapters.AdapterRequest(
+    step_id="s1-probe", query="probe", target_ids=("1abc234",)
+)
 
 
 def read_fixture(name):
@@ -243,6 +252,79 @@ class FetchedChannelVerdictTest(unittest.TestCase):
         for name, verdict in sorted(fetched_verdicts().items()):
             with self.subTest(case=name):
                 self.assertIn(verdict, transport.CHANNEL_VERDICTS)
+
+
+def adapter_page(module, status, body, content_type="text/html"):
+    """Run one adapter over one canned response; return its page and the opener."""
+
+    carrier, opener = offline_transport(
+        {module.DESCRIPTOR.route_id: (status, body, content_type)}
+    )
+    return module.fetch_native_page(carrier, PROBE_REQUEST), opener
+
+
+class OriginBehaviorSurvivesTest(unittest.TestCase):
+    """The origin's own responses, pinned before the interception branch exists.
+
+    These say what each shipped adapter already does with a response the
+    origin itself sent. They are the counterweight to the interception path:
+    a branch that widened to swallow ordinary failures, or that read the
+    portal marker without the failure status, is caught here.
+    """
+
+    def test_a_marker_less_503_stays_the_origins_own_http_failure(self):
+        for module in (web_search, reddit_archive):
+            with self.subTest(adapter=module.DESCRIPTOR.adapter_id):
+                page, opener = adapter_page(
+                    module, 503, read_fixture("origin_service_unavailable.html")
+                )
+
+                self.assertEqual(page.outcome, "failed")
+                self.assertEqual(page.loss, ("http_status",))
+                self.assertEqual(page.records, ())
+                self.assertIn("503", " ".join(page.warnings))
+                self.assertEqual(len(opener.opened), 1)
+
+    def test_a_403_authwall_stays_the_platforms_own_refusal(self):
+        for module in (web_search, reddit_archive):
+            with self.subTest(adapter=module.DESCRIPTOR.adapter_id):
+                page, _ = adapter_page(module, 403, read_fixture("origin_authwall.html"))
+
+                self.assertEqual(page.outcome, "failed")
+                self.assertEqual(page.loss, ("http_status",))
+                self.assertIn("403", " ".join(page.warnings))
+
+    def test_the_offline_adapter_keeps_its_own_typed_failure(self):
+        # `fake` never had a status branch: a body it cannot parse is
+        # `malformed_json`, whatever status carried it.
+        page, _ = adapter_page(fake, 503, read_fixture("origin_service_unavailable.html"))
+
+        self.assertEqual(page.outcome, "failed")
+        self.assertEqual(page.loss, ("malformed_json",))
+
+    def test_a_success_carrying_the_portal_marker_still_parses_into_records(self):
+        page, _ = adapter_page(
+            web_search, 200, read_fixture("origin_results_with_portal_marker.html")
+        )
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(page.loss, ())
+        self.assertEqual(
+            [record.canonical_locator for record in page.records],
+            ["https://example.org/notes/local-models", "https://example.net/kv-cache"],
+        )
+
+    def test_a_record_whose_body_quotes_the_marker_is_still_content(self):
+        page, _ = adapter_page(
+            reddit_archive,
+            200,
+            read_fixture("origin_archive_with_portal_marker.json"),
+            "application/json",
+        )
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(page.loss, ())
+        self.assertIn('<base href="/login/">', page.records[0].body)
 
 
 class PublicClientCredentialTest(unittest.TestCase):
