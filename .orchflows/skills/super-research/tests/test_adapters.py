@@ -9,9 +9,24 @@ a scheduled outage into an empty answer nobody could attribute, and one that
 read it as `auth_required` would report a keyless route as credentialed.
 findings.md §1 measured both halves: `SearchTimeline` and `TweetDetail`
 returned 404 from stale ids while the three operations whose ids were current
-returned 200, and a guest-blocked operation returns 403 or 401.
+returned 200, and a guest-blocked operation returns 403 or 401. That claim is
+checked over a case table and shown to be falsifiable by three wrong adapters
+written beside the tree, one per confusion.
 
-Every test here runs offline against fixtures under `fixtures/x/`.
+Three smaller claims hold it up. The first is that the capability is real:
+100 timeline entries carrying the platform's own engagement out of a public
+page, and three operations out of a token anyone can mint. The second is that
+the token stays a transport concern — one mint per process, applied at send
+time, absent from every value the run keeps — so an adapter that needs
+authorization is still exactly one read. The third is that a structured page
+that moved is `schema_drift` and never an empty profile, which is the same
+distinction as the first claim at the other access class.
+
+Every test here runs offline against fixtures under `fixtures/x/`. Those
+fixtures carry the shape and field set findings.md §1 records; the evidence
+records no captured bodies, and this package may not reach the network to
+make one, so what they prove is that this code reads that shape correctly.
+Criterion 12's live smoke is what proves the shape.
 """
 
 from __future__ import annotations
@@ -382,15 +397,42 @@ class SyndicationTimelineTest(unittest.TestCase):
     def test_every_entry_carries_every_field_its_roster_row_names(self):
         for record in self.page.records:
             with self.subTest(item=record.native_item_id):
-                metrics = dict(record.engagement)
+                carried = dict(record.engagement)
+                carried["full_text"] = record.body
+                carried["created_at"] = record.published_at
+                carried["conversation_id_str"] = record.native_parent_id
 
-                self.assertTrue(record.body, "full_text")
-                self.assertTrue(record.published_at, "created_at")
-                self.assertTrue(record.native_parent_id, "conversation_id_str")
-                self.assertEqual(sorted(metrics), sorted(SYNDICATION_METRICS))
+                self.assertEqual(sorted(carried), sorted(SYNDICATION_ROSTER_FIELDS))
+                for name in SYNDICATION_ROSTER_FIELDS:
+                    self.assertTrue(carried[name], name)
                 for name in SYNDICATION_METRICS:
-                    self.assertIsInstance(metrics[name], int)
+                    self.assertIsInstance(carried[name], int)
                 self.assertEqual(record.loss, ())
+
+    def test_an_entry_missing_a_roster_field_arrives_marked_and_never_zero_filled(self):
+        page, _ = adapter_page(
+            x_syndication, 200, read_fixture("syndication_partial_entry.html")
+        )
+        complete, partial = page.records
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(complete.loss, ())
+        self.assertEqual(partial.loss, ("field_omitted",))
+        # Marked, and absent rather than invented: no quote count at all, and
+        # no time, instead of a zero and a moment nobody observed.
+        self.assertNotIn("quote_count", dict(partial.engagement))
+        self.assertEqual(partial.published_at, "")
+        self.assertEqual(dict(partial.engagement)["favorite_count"], 96)
+
+    def test_an_entry_that_is_not_a_post_is_not_read_as_one(self):
+        page, _ = adapter_page(
+            x_syndication, 200, read_fixture("syndication_partial_entry.html")
+        )
+
+        self.assertEqual(len(page.records), 2)
+        self.assertEqual(
+            [record.canonical_content_kind for record in page.records], ["post", "post"]
+        )
 
     def test_a_record_names_the_tweet_its_author_and_its_conversation(self):
         first = self.page.records[0]

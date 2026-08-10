@@ -19,7 +19,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from html.parser import HTMLParser
-from typing import Any, Mapping, Optional, Sequence, Tuple
+from typing import Any, Mapping, Sequence, Tuple
 
 from .. import transport
 from . import (

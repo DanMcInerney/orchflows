@@ -35,6 +35,12 @@ from . import (
     fetch_one_page,
 )
 
+# The three operations a guest token authorizes, spelled once each. X names
+# them, so these strings are the platform's and go on the wire verbatim.
+TWEET_OPERATION = "TweetResultByRestId"
+USER_OPERATION = "UserByScreenName"
+TIMELINE_OPERATION = "UserTweets"
+
 # The rotating half of every url this adapter builds. findings.md §1 records
 # these three operations answering 200 with a current id at probe time; it does
 # not record the literal ids, so the values below are the ones this package
@@ -43,9 +49,9 @@ from . import (
 # wrong one answers 404, which this module types `stale_identifier` and hands
 # back with the procedure below, never as an empty result.
 GUEST_QUERY_IDS = {
-    "TweetResultByRestId": "0hWvDhmW8YQ-S_ib3azIrw",
-    "UserByScreenName": "G3KGOASz96M-Qu0nwmGXNg",
-    "UserTweets": "V7H0Ap3_Hh2FyS75OCDO3Q",
+    TWEET_OPERATION: "0hWvDhmW8YQ-S_ib3azIrw",
+    USER_OPERATION: "G3KGOASz96M-Qu0nwmGXNg",
+    TIMELINE_OPERATION: "V7H0Ap3_Hh2FyS75OCDO3Q",
 }
 
 # findings.md §1 (X) recorded the shape of the way back, having walked into it:
@@ -103,14 +109,14 @@ PROFILE_KIND = "profile"
 # rather than a shape this module recognized.
 TWEET_TARGET_KIND = "tweet"
 GUEST_OPERATIONS = {
-    TWEET_TARGET_KIND: ("TweetResultByRestId", "tweetId"),
-    "user": ("UserByScreenName", "screen_name"),
-    "user_tweets": ("UserTweets", "userId"),
+    TWEET_TARGET_KIND: (TWEET_OPERATION, "tweetId"),
+    "user": (USER_OPERATION, "screen_name"),
+    "user_tweets": (TIMELINE_OPERATION, "userId"),
 }
 RESULT_PATHS = {
-    "TweetResultByRestId": ("data", "tweetResult", "result"),
-    "UserByScreenName": ("data", "user", "result"),
-    "UserTweets": ("data", "user", "result", "timeline_v2", "timeline", "instructions"),
+    TWEET_OPERATION: ("data", "tweetResult", "result"),
+    USER_OPERATION: ("data", "user", "result"),
+    TIMELINE_OPERATION: ("data", "user", "result", "timeline_v2", "timeline", "instructions"),
 }
 
 # One timeline instruction's shape, and the two kinds of entry it holds.
@@ -342,13 +348,13 @@ def _page_from(response: transport.TransportResponse, operation: str) -> NativeP
         )
 
     cursor = ""
-    if operation == "UserTweets":
+    if operation == TIMELINE_OPERATION:
         if not isinstance(result, list):
             return _failed(
                 response, "schema_drift", operation + " answered 200 with no instruction list"
             )
         records, cursor = _timeline_rows(result)
-    elif operation == "UserByScreenName":
+    elif operation == USER_OPERATION:
         records = tuple(record for record in (_record_from_user(result),) if record)
     else:
         records = tuple(record for record in (_record_from_tweet(0, result),) if record)
