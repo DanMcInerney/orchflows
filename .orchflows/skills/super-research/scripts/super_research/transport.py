@@ -27,6 +27,8 @@ from typing import Callable, Dict, List, Mapping, Optional, Tuple
 DDG_HTML_ROUTE = "ddg_html"
 ARCTIC_SHIFT_POSTS_ROUTE = "arctic_shift_posts_ids"
 X_GUEST_ACTIVATE_ROUTE = "x_guest_activate"
+X_SYNDICATION_TIMELINE_ROUTE = "x_syndication_timeline"
+X_GUEST_GRAPHQL_ROUTE = "x_guest_graphql"
 FAKE_OFFLINE_ROUTE = "fake_offline"
 
 YOUTUBE_INNERTUBE_WEB_KEY = "youtube_innertube_web_key"
@@ -137,6 +139,14 @@ PUBLIC_CLIENT_CREDENTIALS: Dict[str, PublicClientCredential] = {
 
 @dataclass(frozen=True)
 class RouteConstant:
+    """One endpoint, spelled once.
+
+    ``path_params`` names the inputs this endpoint takes as path segments
+    rather than as query parameters, in the order they appear. The segment
+    names are the route's, so the endpoint's shape stays owned here; only the
+    values come from the caller. A route that takes none has none.
+    """
+
     route_id: str
     access_class: str
     method: str
@@ -145,6 +155,7 @@ class RouteConstant:
     accept: str
     operator_identity: str = ""
     credential_id: str = ""
+    path_params: Tuple[str, ...] = ()
 
 
 ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
@@ -175,6 +186,37 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         accept="application/json",
         operator_identity="x",
         credential_id=X_GUEST_PUBLIC_BEARER,
+    ),
+    # findings.md §1 (X): 200, 378 KB in 2.5 s, carrying 100 timeline entries
+    # in the page's own `__NEXT_DATA__`. The handle is a path segment, not a
+    # query parameter.
+    X_SYNDICATION_TIMELINE_ROUTE: RouteConstant(
+        route_id=X_SYNDICATION_TIMELINE_ROUTE,
+        access_class="K2",
+        method="GET",
+        origin="https://syndication.twitter.com",
+        path="/srv/timeline-profile/screen-name",
+        accept="text/html",
+        operator_identity="x",
+        path_params=("screen_name",),
+    ),
+    # findings.md §1 (X): three GraphQL operations answered 200 with a guest
+    # token. The evidence records the activation origin and not this one, so
+    # the endpoint is pinned to the origin the evidence does record; criterion
+    # 12's live smoke is what proves it. Both path segments come from the
+    # adapter: the query id rotates per web release and is declared as that
+    # adapter's volatile identifier, which is why a stale one answers 404 here
+    # rather than an error inside a 200 body.
+    X_GUEST_GRAPHQL_ROUTE: RouteConstant(
+        route_id=X_GUEST_GRAPHQL_ROUTE,
+        access_class="K1",
+        method="GET",
+        origin="https://api.twitter.com",
+        path="/graphql",
+        accept="application/json",
+        operator_identity="x",
+        credential_id=X_GUEST_PUBLIC_BEARER,
+        path_params=("query_id", "operation_name"),
     ),
     FAKE_OFFLINE_ROUTE: RouteConstant(
         route_id=FAKE_OFFLINE_ROUTE,
@@ -298,12 +340,31 @@ def credentialed_headers(
     return tuple(headers) + ((credential.name, credential.value),)
 
 
+def path_segments(route: RouteConstant, params: Dict[str, str]) -> str:
+    """Spend this route's declared path params, in order, removing them from ``params``.
+
+    Segments stop at the first one the caller left empty: a later segment
+    appended past a missing earlier one would name a different endpoint, and
+    guessing which is not this module's to do.
+    """
+
+    values = [params.pop(name, "") for name in route.path_params]
+    spent = ""
+    for value in values:
+        if not value:
+            break
+        spent = spent + "/" + urllib.parse.quote(value, safe="")
+    return spent
+
+
 def build_transport_request(
     route_id: str, params: Optional[Mapping[str, str]] = None
 ) -> TransportRequest:
     route = route_constant(route_id)
-    pairs = [(key, value) for key, value in sorted((params or {}).items()) if value != ""]
-    url = route.origin + route.path
+    supplied = dict(params or {})
+    path = route.path + path_segments(route, supplied)
+    pairs = [(key, value) for key, value in sorted(supplied.items()) if value != ""]
+    url = route.origin + path
     if pairs:
         url = url + "?" + urllib.parse.urlencode(pairs)
     return TransportRequest(
