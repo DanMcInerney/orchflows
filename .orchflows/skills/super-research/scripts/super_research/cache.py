@@ -76,6 +76,33 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # with 57 KB of headroom, so this window binds on the body the evidence
     # measured rather than only on a smaller one.
     transport.INSTAGRAM_WEB_PROFILE_ROUTE: 300.0,
+    # HN's index answers a query about a site whose front page turns over in
+    # hours, so a list held too long is a list that has moved on. Three minutes
+    # covers a run's discovery phase — the reason the web index beside it holds
+    # five — and stops short of it, because a story that broke while the run
+    # was working is exactly what a search of HN is for.
+    transport.HN_ALGOLIA_SEARCH_ROUTE: 180.0,
+    # Shorter than the index beside it, and that is the volatility talking
+    # rather than the cost: an item's `score` and `descendants` move while
+    # nobody edits anything, the way a tweet's counts do, and this is the
+    # window the X GraphQL route holds them for. Two minutes also bounds a
+    # `kids` traversal sensibly — a walk re-reading one item that fast is
+    # asking the same question, and one re-reading it later wants the counts.
+    transport.HN_FIREBASE_ITEM_ROUTE: 120.0,
+    # The longest window this ticket declares, and the only one in the table
+    # argued from a budget rather than from a latency. findings.md §1 measured
+    # the anonymous ceiling at 60/hr per bucket: a repeat read here costs a
+    # full minute of the hour, where every other route in the roster costs
+    # seconds of waiting. A repository's own row — its description, its star
+    # and fork and open-issue counts — moves on a human timescale, so ten
+    # minutes hands back nothing a caller would have read differently, and it
+    # is what makes a run that reads one repository twice cost one read.
+    transport.GITHUB_REST_ROUTE: 600.0,
+    # Half of that, on the same ceiling, because a ranked search moves whenever
+    # anything in it does — a repository created, starred, or pushed to
+    # reorders the answer, where the repository's own row does not. Five
+    # minutes is the window every other search in this table holds.
+    transport.GITHUB_SEARCH_ROUTE: 300.0,
     # `transport.YOUTUBE_INNERTUBE_ROUTE` declares no window on purpose, and it
     # is the one route here where that is structural rather than a judgment:
     # it asks its question in a POST body, and `cacheable` holds only what came
