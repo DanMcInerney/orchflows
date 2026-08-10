@@ -1,6 +1,7 @@
 """Public-seam checks for deterministic search planning."""
 
 from pathlib import Path
+from collections import Counter
 import re
 import unittest
 
@@ -33,7 +34,7 @@ def normalized(text: str) -> str:
 def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str):
     errors = []
     combined_evolve = evolve + generation
-    evolve_calls = set(CALL_EDGE_RE.findall(combined_evolve))
+    evolve_calls = Counter(CALL_EDGE_RE.findall(combined_evolve))
     required = {
         "orch-delegate",
         "orch-integrate",
@@ -44,7 +45,7 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
         "orch-verify",
         "orch-worklog",
     }
-    if not required <= evolve_calls:
+    if evolve_calls != Counter({name: 1 for name in required}):
         errors.append("evolve-call-graph")
     if re.search(r"^-\s*closing\b", evolve, re.IGNORECASE | re.MULTILINE):
         errors.append("closing-wrapper")

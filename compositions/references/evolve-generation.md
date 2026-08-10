@@ -5,17 +5,17 @@ promotion judgment.
 
 1. Derive the closed search-policy, prior projection, settled wrapper, and
    remaining bound from the frozen spec and latest Worklog entry. If a complete
-   candidate-accessible dimension mapping is absent, do not call
-   `orch-search-plan`; return the blocked Benchmaker gap.
+   candidate-accessible dimension mapping is absent, do not call the search
+   planner; return the blocked Benchmaker gap.
 2. Accept only the planner's canonical response. Append it to the current
-   iteration through `orch-worklog`; only its plan and projection identities
+   iteration through the Worklog owner; only its plan and projection identities
    ride the next Loop context.
 3. For each ordered slot, map focus and public feedback or complementary parents
    to the frozen writer. Record slot, handoff, reservation, and `in_flight` in
-   the same Worklog entry before `orch-delegate`; pass every return through
-   `orch-integrate`, run the frozen benchmark runner, and submit its fixed
-   result/evidence identity to `orch-verify`.
-4. Send the incumbent and eligible candidates as one fixed set to `orch-panel`,
+   the same Worklog entry before delegation; pass every return through the join
+   owner, run the frozen benchmark runner, and submit its fixed result/evidence
+   identity to the eligibility verifier.
+4. Send the incumbent and eligible candidates as one fixed set to Panel,
    then apply Evolve's frozen promotion rule and margin. Map planner `no_fit` to
    Loop `limited`; a `pending` response launches nothing.
 

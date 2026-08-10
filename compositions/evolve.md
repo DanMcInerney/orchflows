@@ -16,7 +16,7 @@ count per candidate, promotion done-check and rule, required margin, and
 regression criteria; `bound` and packet `bounds` cap the campaign.
 
 Steps:
-- eligibility — `orch-verify` the incumbent's fixed evidence against required
+- eligibility — Verify the incumbent's fixed evidence against required
   eligibility and regression criteria. Only covered PASS permits generation
   direction from its score card; expose no protected item-level evidence.
 - campaign — `orch-loop` over the generation body mapped by the
