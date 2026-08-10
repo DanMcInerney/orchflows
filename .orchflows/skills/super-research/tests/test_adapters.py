@@ -3952,5 +3952,215 @@ class YoutubeInstagramRouteTtlTest(unittest.TestCase):
         self.assertLess(21 * 1024, cache.MAX_ENTRY_BYTES)
 
 
+def youtube_instagram_manifest():
+    """One dispatch reading both platforms, and YouTube twice about one video."""
+
+    return schema.AcquisitionManifest(
+        manifest_id="m-yt-ig",
+        mode="staged",
+        as_of="2026-08-10T09:00:00Z",
+        steps=(
+            schema.AcquisitionStep(
+                step_id="s1-search",
+                kind="discovery",
+                adapter_id="youtube_innertube",
+                query="local models",
+                max_items=25,
+            ),
+            schema.AcquisitionStep(
+                step_id="s2-video",
+                kind="hydration",
+                adapter_id="youtube_innertube",
+                selected_hits=(
+                    schema.SelectedHit(
+                        discovery_locator="https://www.youtube.com/watch?v=" + YOUTUBE_VIDEO_ID,
+                        target_id="player:" + YOUTUBE_VIDEO_ID,
+                    ),
+                ),
+                max_items=5,
+            ),
+            schema.AcquisitionStep(
+                step_id="s3-profile",
+                kind="hydration",
+                adapter_id="instagram_public",
+                selected_hits=(
+                    schema.SelectedHit(
+                        discovery_locator="https://www.instagram.com/" + INSTAGRAM_USERNAME + "/",
+                        target_id=INSTAGRAM_USERNAME,
+                    ),
+                ),
+                max_items=25,
+            ),
+        ),
+    )
+
+
+class YoutubeInstagramArtifactSeamTest(unittest.TestCase):
+    """The widest seam: the record a caller keeps, after normalize has run.
+
+    Every test above reads a ``NativePage``, which is an intermediate value.
+    "These two reach their measured capability" is a claim about the artifact,
+    so it is closed here — including the part where the one thing this half
+    must never say quietly stays said, on the record and on the artifact.
+    """
+
+    def setUp(self):
+        clock = helpers.FakeClock()
+        carrier, self.opener = helpers.offline_transport(
+            clock,
+            {
+                # One route, two operations, in the order the steps run them.
+                transport.YOUTUBE_INNERTUBE_ROUTE: [
+                    (200, read_youtube("search_results.json"), "application/json"),
+                    (200, read_youtube("player_metadata.json"), "application/json"),
+                ],
+                transport.INSTAGRAM_WEB_PROFILE_ROUTE: (
+                    200,
+                    read_instagram("web_profile_info.json"),
+                    "application/json",
+                ),
+            },
+        )
+        self.artifact = runner.run_acquisition(
+            youtube_instagram_manifest(), carrier, clock=clock.monotonic
+        )
+        self.posts = [
+            record
+            for record in self.artifact.records
+            if record.adapter_id == "instagram_public"
+            and record.canonical_content_kind == "post"
+        ]
+
+    def test_the_artifact_holds_every_row_all_three_steps_returned(self):
+        self.assertEqual(len(self.artifact.records), 19)
+        self.assertEqual([step.records_kept for step in self.artifact.steps], [5, 1, 13])
+        self.assertEqual(len(self.opener.opened), 3)
+        self.assertEqual(self.artifact.outcome, "ok")
+
+    def test_the_one_thing_this_half_must_never_say_reaches_the_artifact_unsaid(self):
+        # The whole ticket, at the value a caller keeps: nothing anywhere in
+        # this artifact states that the video has no captions, and the reason
+        # the captions are missing is on the record and on the run.
+        video = [
+            record
+            for record in self.artifact.records
+            if record.step_id == "s2-video"
+        ][0]
+
+        self.assertEqual(self.artifact.loss, (youtube_innertube.ATTESTATION_REQUIRED,))
+        self.assertIn(youtube_innertube.ATTESTATION_REQUIRED, video.loss)
+        self.assertEqual(video.title, "Running a 70B locally on two consumer GPUs")
+        self.assertEqual(video.usable_basis_time, "2026-07-26T00:00:00Z")
+        self.assertEqual(video.time_confidence, "authoritative")
+        self.assertIn("date_precision_only", video.loss)
+
+    def test_one_video_seen_twice_is_two_records_held_together(self):
+        # wrong_merge_law rule 1: a search hit and a player read of one video
+        # share a namespace, an item id and a content kind, so they are one
+        # group of two and never one record. They disagree about nothing here,
+        # and they would still not be folded if they did.
+        seen = [
+            record
+            for record in self.artifact.records
+            if record.native_item_id == YOUTUBE_VIDEO_ID
+        ]
+        grouped = [
+            group for group in self.artifact.groups if len(group.member_record_ids) > 1
+        ]
+
+        self.assertEqual([record.step_id for record in seen], ["s1-search", "s2-video"])
+        self.assertEqual(len(grouped), 1)
+        self.assertEqual(grouped[0].key_kind, "strong")
+        self.assertEqual(
+            sorted(grouped[0].member_record_ids), sorted(record.record_id for record in seen)
+        )
+
+    def test_a_search_hit_is_the_platform_speaking_and_not_an_index_entry(self):
+        # Which is why the pair above groups instead of linking: an edge joins
+        # an index hit to the target it discovered, and every operation on this
+        # route is YouTube reporting its own items. The `K4` index-mediated
+        # pattern is `web_search`'s, and it is not what happened here.
+        self.assertEqual(
+            sorted({record.representation_kind for record in self.artifact.records}),
+            ["native"],
+        )
+        self.assertEqual(self.artifact.edges, ())
+
+    def test_a_named_fact_the_route_wrote_for_a_reader_survives_normalization(self):
+        first = [
+            record for record in self.artifact.records if record.step_id == "s1-search"
+        ][0]
+
+        self.assertEqual(
+            first.attributes,
+            (
+                (youtube_innertube.VIEW_COUNT_TEXT_KEY, "1,284,553 views"),
+                (youtube_innertube.PUBLISHED_TIME_TEXT_KEY, "2 weeks ago"),
+            ),
+        )
+        # And the record states no time at all, rather than one derived from
+        # the words beside it.
+        self.assertEqual(first.usable_basis_time, "")
+        self.assertEqual(first.time_confidence, "unknown")
+
+    def test_a_post_keeps_the_platforms_own_counts_at_the_moment_they_were_read(self):
+        first = self.posts[0]
+        snapshots = {snapshot.metric_name: snapshot for snapshot in first.engagement}
+
+        self.assertEqual(
+            sorted(snapshots),
+            sorted((instagram_public.LIKE_METRIC, instagram_public.COMMENT_METRIC)),
+        )
+        self.assertEqual(snapshots[instagram_public.LIKE_METRIC].value, 412873)
+        self.assertEqual(
+            snapshots[instagram_public.LIKE_METRIC].observed_at, first.observed_at
+        )
+        # The platform's own payload, so its times are authoritative rather
+        # than reported: nothing here is an archive speaking for Instagram.
+        self.assertEqual(first.time_confidence, "authoritative")
+        self.assertEqual(first.access_class, "K1")
+
+    def test_a_route_that_declares_a_comment_metric_ranks_on_the_one_it_reported(self):
+        # The counterpart to LinkedIn's fall-through: there, no metric was
+        # declared and `most_commented` ranked on time. Here the descriptor
+        # names the exact key path the payload publishes the count at, so the
+        # view ranks on the count itself — and on nothing this package named.
+        ranked = runner.order_records(self.posts, "most_commented", self.artifact.as_of)
+        counts = [
+            runner.eligible_snapshot(
+                record, instagram_public.COMMENT_METRIC, self.artifact.as_of
+            ).value
+            for record in ranked
+        ]
+
+        self.assertEqual(counts, sorted(counts, reverse=True))
+        self.assertEqual(ranked[0].native_item_id, "C9xR2mQLpQz")
+        self.assertNotEqual(
+            [record.native_item_id for record in ranked],
+            [
+                record.native_item_id
+                for record in runner.order_records(
+                    self.posts, "newest", self.artifact.as_of
+                )
+            ],
+        )
+
+    def test_two_platforms_at_one_access_class_stay_nineteen_records(self):
+        # Both of these are `K1`, and nothing about sharing a class makes two
+        # platforms' rows comparable. Nineteen records, nineteen strong
+        # identities, and exactly one fold — the video read twice, above.
+        self.assertEqual(
+            sorted({record.access_class for record in self.artifact.records}), ["K1"]
+        )
+        self.assertEqual(
+            sorted({record.platform for record in self.artifact.records}),
+            ["instagram", "youtube"],
+        )
+        self.assertEqual(len(self.artifact.groups), 18)
+        self.assertEqual(
+            sorted({group.key_kind for group in self.artifact.groups}), ["strong"]
+        )
+
+
 if __name__ == "__main__":  # pragma: no cover - convenience runner
     unittest.main()
