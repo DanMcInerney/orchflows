@@ -44,9 +44,12 @@ READ_METHODS = ("GET", "HEAD")
 # anonymous guest token needs a POST, and that POST creates no account,
 # session, or content at the origin. Nothing else may leave a read.
 TOKEN_ACTIVATION_ROUTES = (X_GUEST_ACTIVATE_ROUTE,)
+TOKEN_ACTIVATION_METHODS = ("POST",)
 
 # Where a public client credential goes on the wire.
-CREDENTIAL_PLACEMENTS = ("query", "header")
+QUERY_PLACEMENT = "query"
+HEADER_PLACEMENT = "header"
+CREDENTIAL_PLACEMENTS = (QUERY_PLACEMENT, HEADER_PLACEMENT)
 
 # Which party answered a request. `network_intercepted` is also the typed
 # loss code a caller attaches, so an intercepted route is reported as
@@ -71,7 +74,7 @@ class TransportError(RuntimeError):
 
 @dataclass(frozen=True)
 class PublicClientCredential:
-    """A `K1` credential the vendor ships publicly in its own web client.
+    """A ``K1`` credential the vendor ships publicly in its own web client.
 
     It is not a user secret and it is never a manifest or artifact field: it
     is a route constant this module attaches at send time, so nothing the
@@ -94,7 +97,7 @@ PUBLIC_CLIENT_CREDENTIALS: Dict[str, PublicClientCredential] = {
     YOUTUBE_INNERTUBE_WEB_KEY: PublicClientCredential(
         credential_id=YOUTUBE_INNERTUBE_WEB_KEY,
         vendor="youtube",
-        placement="query",
+        placement=QUERY_PLACEMENT,
         name="key",
         value="AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8",
     ),
@@ -103,7 +106,7 @@ PUBLIC_CLIENT_CREDENTIALS: Dict[str, PublicClientCredential] = {
     INSTAGRAM_WEB_APP_ID: PublicClientCredential(
         credential_id=INSTAGRAM_WEB_APP_ID,
         vendor="instagram",
-        placement="header",
+        placement=HEADER_PLACEMENT,
         name="x-ig-app-id",
         value="936619743392459",
     ),
@@ -115,7 +118,7 @@ PUBLIC_CLIENT_CREDENTIALS: Dict[str, PublicClientCredential] = {
     X_GUEST_PUBLIC_BEARER: PublicClientCredential(
         credential_id=X_GUEST_PUBLIC_BEARER,
         vendor="x",
-        placement="header",
+        placement=HEADER_PLACEMENT,
         name="Authorization",
         value=(
             "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs"
@@ -227,11 +230,24 @@ def route_constant(route_id: str) -> RouteConstant:
     return route
 
 
+def route_admissions() -> Dict[str, bool]:
+    """Per-route booleans — the only route knowledge the router ever sees.
+
+    A route is admitted when it needs no user credential. ``K5`` is the one
+    credentialed class, so it is the one class that can answer False here.
+    """
+
+    return {
+        route_id: route.access_class != "K5"
+        for route_id, route in sorted(ROUTE_CONSTANTS.items())
+    }
+
+
 def admitted_methods(route_id: str) -> Tuple[str, ...]:
     """Every method this route may use: reads, plus token activation where declared."""
 
     if route_id in TOKEN_ACTIVATION_ROUTES:
-        return READ_METHODS + ("POST",)
+        return READ_METHODS + TOKEN_ACTIVATION_METHODS
     return READ_METHODS
 
 
@@ -250,7 +266,7 @@ def route_credential(route_id: str) -> Optional[PublicClientCredential]:
 def credentialed_url(url: str, credential: Optional[PublicClientCredential]) -> str:
     """Apply a query-placed credential. Called at send time, never before."""
 
-    if credential is None or credential.placement != "query":
+    if credential is None or credential.placement != QUERY_PLACEMENT:
         return url
     separator = "&" if "?" in url else "?"
     return url + separator + urllib.parse.urlencode(((credential.name, credential.value),))
@@ -261,22 +277,9 @@ def credentialed_headers(
 ) -> Tuple[Tuple[str, str], ...]:
     """Apply a header-placed credential. Called at send time, never before."""
 
-    if credential is None or credential.placement != "header":
+    if credential is None or credential.placement != HEADER_PLACEMENT:
         return tuple(headers)
     return tuple(headers) + ((credential.name, credential.value),)
-
-
-def route_admissions() -> Dict[str, bool]:
-    """Per-route booleans — the only route knowledge the router ever sees.
-
-    A route is admitted when it needs no user credential. ``K5`` is the one
-    credentialed class, so it is the one class that can answer False here.
-    """
-
-    return {
-        route_id: route.access_class != "K5"
-        for route_id, route in sorted(ROUTE_CONSTANTS.items())
-    }
 
 
 def build_transport_request(
@@ -296,7 +299,7 @@ def build_transport_request(
 
 
 def urlopen_response(request: TransportRequest) -> Tuple[int, str, str]:
-    """Default opener: one bounded read-only HTTPS request, no redirect games."""
+    """Default opener: one bounded HTTPS request on an admitted method, no redirect games."""
 
     if not request.url.startswith("https://"):
         raise TransportError("refusing a non-https url for route " + request.route_id)
@@ -321,8 +324,9 @@ def urlopen_response(request: TransportRequest) -> Tuple[int, str, str]:
                 response.headers.get("Content-Type", ""),
             )
     except urllib.error.HTTPError as error:
-        # A status-bearing error is data, not a tool failure: the adapter
-        # types it, and T02's detector separates a local block from an origin.
+        # A status-bearing error is data, not a tool failure: `channel_verdict`
+        # separates a local block from the origin's own failure, and the
+        # adapter types the result.
         return (
             error.code,
             error.read(MAX_RESPONSE_BYTES).decode("utf-8", errors="replace"),
