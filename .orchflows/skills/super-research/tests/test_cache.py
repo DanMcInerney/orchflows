@@ -444,10 +444,12 @@ class TtlServeTest(unittest.TestCase):
 
         self.assertEqual(len(opener.opened), 1)
         self.assertFalse(miss.cache_hit)
-        self.assertEqual(miss.loss, ())
         self.assertTrue(hit.cache_hit)
-        self.assertEqual(hit.loss, (cache.CACHE_HIT,))
         self.assertEqual(hit.response, miss.response)
+        # The serve says which party answered and stops there. Turning that
+        # into a loss code is `adapters._served_from_cache`'s, and a second
+        # place that could produce `cache_hit` is a second one to keep in step.
+        self.assertFalse(hasattr(hit, "loss"))
 
     def test_each_route_expires_on_its_own_ttl(self):
         clock = FakeClock()

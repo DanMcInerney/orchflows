@@ -319,49 +319,87 @@ record carrying a loss code is not a failed read — `youtube_innertube` returns
 `ok` with `attestation_required` when a player withholds caption tracks and still
 carries the metadata it did get.
 
+**Both tables below are read back off the source, never transcribed into it.**
+`test_dependency_boundary.LOSS_VOCABULARY` parses these two tables out of this
+file and compares each row against what the package's own syntax says, so a cell
+that stops being true is a red test rather than a sentence nobody re-read. The
+same treatment `THREAT_REMAP` gets, and for the same reason: an earlier hand-kept
+count said three emitters where there were thirteen.
+
+The **named by** column is every module whose executable code spells that code,
+to attach it or to read it. Spelling is the property worth pinning, because the
+defect it prevents is a name with two spellings: a module-level constant in one
+file and a bare literal in another means one search finds neither half. Three
+entries are readers rather than emitters and are named as such below the tables.
+A module that only declares a constant and never loads it is not named — that
+absence is itself a claim, and it is checked too.
+
 The seven codes this delivery adds to the retained vocabulary:
 
-| code | means | emitted by |
+| code | means | named by |
 | --- | --- | --- |
-| `third_party_archive` | an independent archive answered, not the platform | `reddit_archive`, on the page and every record |
+| `third_party_archive` | an independent archive answered, not the platform | `reddit_archive` |
 | `stale_identifier` | a vendor identifier rotated; the read was refused, not empty | `x_guest` (404), `youtube_innertube` (400) |
 | `attestation_required` | the origin withheld a payload behind an attestation this package does not perform | `youtube_innertube`, for the two playability statuses findings.md §1 measured and for a withheld caption list |
-| `network_intercepted` | the local network answered, not the origin | `transport.channel_verdict`, applied in `adapters.fetch_one_page` |
-| `cache_hit` | this run's own memory answered | `cache.RunCache` |
-| `archive_lag` | an archive's coverage trails the platform | **declared, not emitted** |
-| `scope_required` | an archive query needs a scope it was not given | **declared, not emitted** |
+| `network_intercepted` | the local network answered, not the origin | `transport`, `adapters`, `smoke` |
+| `cache_hit` | this run's own memory answered | `adapters`, `runner` |
+| `archive_lag` | an archive's coverage trails the platform | nothing: **absent from the source entirely** |
+| `scope_required` | an archive query needs a scope it was not given | nothing: **absent from the source entirely** |
 
-`archive_lag` and `scope_required` appear nowhere in the shipped package. The one
-Arctic Shift route delivered is `posts/ids`, which is hydration by exact id and
-takes no scope; `posts/search`, `comments/search` and `comments` by `link_id` —
-where the spec's grammar rule that `title=` requires `subreddit` or `author`
-lives, and where a lag window would be observable — are not shipped. The two codes
-are named here so a later route adds a code the vocabulary already has, and so
-nobody reads their absence from the source as the vocabulary being smaller than
-the spec says.
+`third_party_archive` is on the row and not on the page.
+`normalize.normalize_page` builds a record's loss from that native record's own
+and never from the page's, so an archive labelling only the page would leave an
+artifact whose rows all read as the platform speaking — which is why rule 3 of the
+access ladder says every record.
 
-The retained codes this package emits, and where:
+`archive_lag` and `scope_required` are named in this table and nowhere else in the
+delivery: not emitted, and not declared either. The one Arctic Shift route
+delivered is `posts/ids`, which is hydration by exact id and takes no scope;
+`posts/search`, `comments/search` and `comments` by `link_id` — where the spec's
+grammar rule that `title=` requires `subreddit` or `author` lives, and where a lag
+window would be observable — are not shipped. The two codes are named here so a
+later route adds a code the vocabulary already has, and so nobody reads their
+absence from the source as the vocabulary being smaller than the spec says.
 
-| code | emitted by |
+The retained codes, and every module that spells one:
+
+| code | named by |
 | --- | --- |
-| `auth_required` | `router.select_route` for a `K5` route, and `x_guest`, `linkedin_public`, `instagram_public`, `youtube_innertube` for an origin's own refusal |
-| `no_route` | `router.select_route` and `runner.run_step`, for an adapter or route the core does not declare |
-| `rate_limited` | `adapters.fetch_one_page`, on HTTP 429 |
-| `schema_drift` | five adapters, when a payload's shape is not the one measured |
-| `field_omitted` | nine adapters, when a row lacks a field its route normally carries |
-| `malformed_json` | `reddit_archive`, `x_syndication`, `fake` |
-| `http_status` | `reddit_archive`, `web_search`, `x_syndication` |
+| `auth_required` | `router`, `x_guest`, `linkedin_public`, `instagram_public`, `youtube_innertube` — the router for a K5 route, the four adapters for an origin's own refusal |
+| `no_route` | `router`, `runner`, for an adapter or route the core does not declare |
+| `rate_limited` | `adapters`, on HTTP 429 |
+| `schema_drift` | `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `reddit_archive`, `reddit_feed`, `rss_atom`, `web_search`, `x_guest`, `x_syndication`, `youtube_innertube` |
+| `field_omitted` | `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `reddit_archive`, `reddit_feed`, `rss_atom`, `web_search`, `x_syndication`, `youtube_innertube` |
+| `malformed_json` | `fake`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_public`, `reddit_archive`, `x_guest`, `x_syndication`, `youtube_innertube` |
+| `http_status` | `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `public_page`, `reddit_archive`, `reddit_feed`, `rss_atom`, `web_search`, `x_guest`, `x_syndication`, `youtube_innertube` — thirteen, which is every adapter that reads an origin |
 | `withheld` | `youtube_innertube`, for a playability refusal the evidence did not record |
 | `engagement_unavailable` | `reddit_feed`, `web_search` |
 | `date_precision_only` | `linkedin_jobs`, `youtube_innertube` |
-| `native_identity_unknown`, `unknown_publication_time`, `target_not_hydrated` | `web_search`, standing on every index hit |
-| `recall_window_partial` | `runner.run_step`, when a cap truncated |
+| `unselected_target` | `public_page`, for a selection this route does not serve |
+| `native_identity_unknown` | `web_search`, standing on every index hit |
+| `unknown_publication_time` | `web_search`, standing on every index hit |
+| `target_not_hydrated` | `web_search`, standing on every index hit |
+| `recall_window_partial` | `runner`, when a cap truncated |
 
-`reddit_feed`, `rss_atom`, `public_page`, `github_rest` and `hacker_news` each
-declare `AUTH_REQUIRED` and produce it nowhere. That is the statement, not an
-oversight: no status those documented-keyless routes can answer with is a report
-that a credential was needed, and a name with zero uses makes it checkable from
-outside the module.
+Two of the names above are readers rather than emitters, and the distinction is
+worth keeping: `runner.reached_origin` reads `cache_hit` to decide whether a page
+cost an origin a read, and `smoke.channel_of` reads `network_intercepted` to
+decide which exit code an operator gets. Everywhere else, naming the code is
+attaching it. Two modules declare a code as a constant and never load it, which
+is the same shape the four keyless adapters have for `auth_required`:
+`transport` owns `rate_limited` for `adapters.fetch_one_page` to attach, and
+`cache` owns `cache_hit` for `adapters._served_from_cache` to attach.
+
+A cell holds module names in backticks and nothing else in backticks, because
+the test reads it that way: a term of art or a count belongs in the prose beside
+the names.
+
+`reddit_feed`, `rss_atom`, `public_page` and `github_rest` each declare
+`AUTH_REQUIRED` and load it nowhere. That is the statement, not an oversight: no
+status those documented-keyless routes can answer with is a report that a
+credential was needed, and a name with zero loads makes it checkable from outside
+the module — which the same test checks, in that direction too. `hacker_news`
+does not declare it at all.
 
 A route that fails does not fall back. `schema_drift` and `stale_identifier` exist
 so that a changed payload is a typed failure rather than an empty success, which

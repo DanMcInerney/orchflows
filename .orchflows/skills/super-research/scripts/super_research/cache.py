@@ -245,16 +245,15 @@ def cacheable(
 
 @dataclass(frozen=True)
 class CacheServe:
-    """One answer to one request, and which party it actually came from."""
+    """One answer to one request, and which party it actually came from.
+
+    It carries no loss of its own. ``adapters._served_from_cache`` is what
+    attaches `cache_hit`, to the page and to every record on it, and a second
+    place that could produce the same code is a second place to keep in step.
+    """
 
     response: transport.TransportResponse
     cache_hit: bool
-
-    @property
-    def loss(self) -> Tuple[str, ...]:
-        """The typed loss a record built from this answer carries."""
-
-        return (CACHE_HIT,) if self.cache_hit else ()
 
 
 class RunCache:
