@@ -462,6 +462,28 @@ class WebSearchDiscoveryTest(unittest.TestCase):
         self.assertIn("http_status", page.loss)
         self.assertIn("503", " ".join(page.warnings))
 
+    def test_two_nav_forms_leave_the_last_offset_and_nobody_spends_it(self):
+        # A paginated page carries an `s` input in the "< Previous" form and
+        # another in "Next", and this parser takes the last. Whether the last
+        # is the forward one is not in the evidence — page one, which is what
+        # findings.md §1 measured, has only the forward form. Recorded here
+        # rather than guarded, because nothing reads the value:
+        # `runner.planned_calls` sets no cursor, which
+        # `NothingOverlapsAndNothingPagesTest` pins.
+        backwards = self.html.replace(
+            '<div class="nav-link">',
+            '<div class="nav-link"><form action="/html/" method="post">'
+            '<input type="hidden" name="s" value="0" /></form></div>'
+            '<div class="nav-link">',
+            1,
+        )
+        carrier, _ = tracer_transport({"ddg_html": (200, backwards, "text/html")})
+
+        page = web_search.fetch_native_page(carrier, self.request)
+
+        self.assertEqual(page.cursor_out, "30")
+        self.assertEqual(backwards.count('name="s"'), 2)
+
     def test_a_parsed_page_with_no_results_is_empty_not_failed(self):
         carrier, _ = tracer_transport(
             {"ddg_html": (200, "<html><body><div class='results'></div></body></html>", "text/html")}

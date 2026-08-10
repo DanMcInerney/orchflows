@@ -96,6 +96,18 @@ class _DuckDuckGoResultParser(HTMLParser):
         elif tag == "a" and RESULT_SNIPPET_CLASS in classes and self.hits:
             self._capturing = 2
         elif tag == "input" and attributes.get("name") == NEXT_OFFSET_FIELD:
+            # Last one wins, and a paginated page carries two of these: one in
+            # the "< Previous" nav form and one in "Next". Which is which is not
+            # in the evidence — findings.md §1 measured page one, where there is
+            # only the forward form — so a rule preferring one would be markup
+            # this package invented rather than markup it read, and reading the
+            # last is at least a rule rather than a coincidence.
+            #
+            # Nothing spends the value: `runner.planned_calls` sets no cursor,
+            # so a backwards offset is a field on a page and never a read. The
+            # hazard is recorded here rather than guarded against, because the
+            # guard would be a guess and the ticket that makes the core page is
+            # the one that has to measure page two.
             self.next_offset = attributes.get("value") or ""
 
     def handle_endtag(self, tag):
