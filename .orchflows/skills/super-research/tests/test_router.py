@@ -46,9 +46,15 @@ PACKAGE_DIR = Path(__file__).resolve().parent.parent / "scripts" / "super_resear
 # archive actually sent, not on a shape written to make the point.
 TRACER_FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "tracer"
 REDDIT_FEED_FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "reddit_feed"
+YOUTUBE_FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "youtube"
+INSTAGRAM_FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "instagram"
+X_FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "x"
+ADAPTER_DIR = PACKAGE_DIR / "adapters"
 
 ARCHIVED_POST_ID = "1abc234"
 REDDIT_SUBREDDIT = "LocalLLaMA"
+INSTAGRAM_USERNAME = "harbourlight.optics"
+X_TWEET_TARGET = "tweet:1799990000000000001"
 
 # The ladder's roster, transcribed from the spec's own table rather than
 # derived from the code under test. `test_adapters.RosterIsCompleteTest` keeps
@@ -219,6 +225,70 @@ def assert_the_access_ladder_holds(case, roster):
 
     assert_one_class_per_adapter(case, roster)
     assert_no_capability_needs_a_credential(case, roster)
+
+
+def strings_in(value, path="emitted"):
+    """Every string one emitted value holds, paired with where it sits.
+
+    Exhaustive by construction rather than by field list. An artifact gains
+    fields — `attributes` and `final_url` both arrived after the first release
+    of the record — and a scan written against the fields it had would quietly
+    stop covering the ones it gains, which is the failure mode a credential
+    leak needs to survive.
+    """
+
+    if isinstance(value, str):
+        yield path, value
+    elif dataclasses.is_dataclass(value):
+        for field in dataclasses.fields(value):
+            yield from strings_in(getattr(value, field.name), path + "." + field.name)
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            yield from strings_in(key, "{0}[{1!r}]".format(path, key))
+            yield from strings_in(item, "{0}[{1!r}]".format(path, key))
+    elif isinstance(value, (tuple, list)):
+        for index, item in enumerate(value):
+            yield from strings_in(item, "{0}[{1}]".format(path, index))
+
+
+def public_client_secrets():
+    """Every string that would identify this package's client to a vendor.
+
+    The three credential values, the ids they are held under, and the two
+    header names that would only ever appear in something a run kept by
+    accident. Read off ``transport`` rather than transcribed: a credential
+    added there is inside this law without anybody remembering to add it.
+    """
+
+    secrets = []
+    for credential in transport.PUBLIC_CLIENT_CREDENTIALS.values():
+        secrets.append((credential.credential_id + " value", credential.value))
+        secrets.append((credential.credential_id + " id", credential.credential_id))
+    secrets.append(("the instagram app id header", "x-ig-app-id"))
+    secrets.append(("the guest token header", transport.GUEST_TOKEN_HEADER))
+    return tuple(secrets)
+
+
+def assert_no_credential_reaches_what_the_run_keeps(case, emitted, secrets):
+    """A `K1` credential is a route constant, and nothing a run keeps holds one.
+
+    The credential is applied at send time, inside the opener, so a caller
+    holding a request has never had one. This says the same thing about the
+    other end: every string the emitted value actually holds, at whatever
+    depth, against every secret there is. An emitted value holding no strings,
+    or a secret list holding nothing, fails rather than passes — both are ways
+    of proving nothing while reporting a pass.
+    """
+
+    if not secrets:
+        case.fail("no credential was looked for, so nothing about credentials was checked")
+    held = tuple(strings_in(emitted))
+    if not held:
+        case.fail("nothing was scanned, so nothing about credentials was checked")
+    for path, text in held:
+        for name, secret in secrets:
+            if secret and secret in text:
+                case.fail("{0} reached {1}".format(name, path))
 
 
 THIRD_PARTY_ARCHIVE = "third_party_archive"
@@ -605,6 +675,186 @@ class ThirdPartyArchiveTest(unittest.TestCase):
         self.assertEqual(archives[0].operator_identity, "arctic-shift")
 
 
+def k1_seeds():
+    """The three credentialed routes, each answering with its measured payload."""
+
+    return {
+        transport.YOUTUBE_INNERTUBE_ROUTE: (
+            200,
+            YOUTUBE_FIXTURE_DIR.joinpath("search_results.json").read_text(encoding="utf-8"),
+            "application/json",
+        ),
+        transport.INSTAGRAM_WEB_PROFILE_ROUTE: (
+            200,
+            INSTAGRAM_FIXTURE_DIR.joinpath("web_profile_info.json").read_text(
+                encoding="utf-8"
+            ),
+            "application/json",
+        ),
+        transport.X_GUEST_GRAPHQL_ROUTE: (
+            200,
+            X_FIXTURE_DIR.joinpath("guest_tweet_result.json").read_text(encoding="utf-8"),
+            "application/json",
+        ),
+    }
+
+
+def k1_manifest():
+    """One dispatch over every credentialed route in the roster."""
+
+    return schema.AcquisitionManifest(
+        manifest_id="m-k1",
+        mode="staged",
+        as_of="2026-08-10T09:05:00Z",
+        steps=(
+            schema.AcquisitionStep(
+                step_id="s1-youtube",
+                kind="discovery",
+                adapter_id="youtube_innertube",
+                query="local models",
+                max_items=25,
+            ),
+            schema.AcquisitionStep(
+                step_id="s2-instagram",
+                kind="hydration",
+                adapter_id="instagram_public",
+                selected_hits=(
+                    schema.SelectedHit(
+                        discovery_locator="https://www.instagram.com/"
+                        + INSTAGRAM_USERNAME
+                        + "/",
+                        target_id=INSTAGRAM_USERNAME,
+                    ),
+                ),
+                max_items=25,
+            ),
+            schema.AcquisitionStep(
+                step_id="s3-x",
+                kind="hydration",
+                adapter_id="x_guest",
+                selected_hits=(
+                    schema.SelectedHit(
+                        discovery_locator="https://x.com/simonw", target_id=X_TWEET_TARGET
+                    ),
+                ),
+                max_items=5,
+            ),
+        ),
+    )
+
+
+CREDENTIALED_ROUTES = (
+    transport.YOUTUBE_INNERTUBE_ROUTE,
+    transport.INSTAGRAM_WEB_PROFILE_ROUTE,
+    transport.X_GUEST_GRAPHQL_ROUTE,
+    transport.X_GUEST_ACTIVATE_ROUTE,
+)
+
+
+def k1_run():
+    """One offline dispatch over the three credentialed routes."""
+
+    clock = helpers.FakeClock()
+    carrier, opener = helpers.offline_transport(clock, k1_seeds())
+    return runner.run_scheduled(k1_manifest(), carrier, clock=clock.monotonic), carrier, opener
+
+
+class PublicClientCredentialTest(unittest.TestCase):
+    """Criterion 4: a `K1` credential is a route constant and reaches nothing kept.
+
+    The transport suite proves the credential is attached at send time and is
+    absent from the request and the response. This is the other end of that
+    argument, checked rather than reasoned: the artifact three credentialed
+    routes actually produced, walked string by string at whatever depth they
+    sit, against every secret ``transport`` holds.
+    """
+
+    def setUp(self):
+        self.manifest = k1_manifest()
+        self.run, self.carrier, self.opener = k1_run()
+
+    def test_the_run_read_every_credentialed_route_and_kept_what_they_said(self):
+        # A scan of an artifact nothing wrote is a scan of nothing.
+        self.assertEqual(self.run.artifact.outcome, "ok")
+        self.assertEqual(len(self.opener.opened), 3)
+        self.assertEqual(
+            sorted({record.access_class for record in self.run.artifact.records}), ["K1"]
+        )
+        self.assertEqual(
+            sorted({record.route_id for record in self.run.artifact.records}),
+            sorted(k1_seeds()),
+        )
+
+    def test_every_credentialed_route_really_sends_a_secret(self):
+        # Which is what makes every absence below mean something: the value is
+        # nonempty, it is on the wire, and it is on the wire only there.
+        for route_id in CREDENTIALED_ROUTES:
+            with self.subTest(route=route_id):
+                credential = transport.route_credential(route_id)
+                request = transport.build_transport_request(route_id)
+
+                self.assertIsNotNone(credential)
+                self.assertTrue(credential.value)
+                self.assertIn(
+                    credential.value,
+                    transport.credentialed_url(request.url, credential)
+                    + repr(transport.credentialed_headers(request.headers, credential)),
+                )
+                self.assertNotIn(credential.value, request.url + repr(request.headers))
+
+    def test_no_credential_reaches_the_artifact(self):
+        assert_no_credential_reaches_what_the_run_keeps(
+            self, self.run.artifact, public_client_secrets()
+        )
+
+    def test_no_credential_reaches_the_manifest_the_caller_wrote(self):
+        assert_no_credential_reaches_what_the_run_keeps(
+            self, self.manifest, public_client_secrets()
+        )
+
+    def test_no_credential_reaches_the_work_ledger(self):
+        assert_no_credential_reaches_what_the_run_keeps(
+            self, self.run.ledger, public_client_secrets()
+        )
+
+    def test_no_credential_reaches_the_call_log_the_run_leaves_behind(self):
+        assert_no_credential_reaches_what_the_run_keeps(
+            self, tuple(self.carrier.calls), public_client_secrets()
+        )
+
+    def test_the_scan_reads_the_whole_artifact_and_not_a_field_list(self):
+        # The scan's own coverage, stated as numbers: every record family, the
+        # steps, the groups, and the strings nested two tuples deep inside an
+        # attribute pair are all in what it walked.
+        paths = [path for path, _ in strings_in(self.run.artifact)]
+
+        self.assertGreater(len(paths), 700)
+        for expected in (
+            "emitted.records[0].canonical_locator",
+            "emitted.records[0].attributes[0][1]",
+            "emitted.steps[0].step_id",
+            "emitted.groups[0].key[0]",
+        ):
+            with self.subTest(path=expected):
+                self.assertTrue([path for path in paths if path.startswith(expected)])
+
+    def test_no_adapter_on_a_credentialed_route_publishes_the_answering_address(self):
+        # `final_url` is the one string in the package that can hold a
+        # query-placed credential: the address an origin answered from is the
+        # url the key was appended to. One adapter publishes it, and that
+        # adapter's routes carry no credential — checked, because the day a
+        # credentialed route publishes it the key is in the artifact.
+        for adapter_id in sorted(ROSTER):
+            source = ADAPTER_DIR / (adapter_id + ".py")
+            if "final_url" not in source.read_text(encoding="utf-8"):
+                continue
+            for surface in runner.surface_descriptors(adapter_id):
+                with self.subTest(adapter=adapter_id, route=surface.route_id):
+                    self.assertEqual(
+                        transport.route_constant(surface.route_id).credential_id, ""
+                    )
+
+
 class OracleCanFailTest(unittest.TestCase):
     """Criterion 6, access-class half: the keyless law rejects, and admits.
 
@@ -616,8 +866,75 @@ class OracleCanFailTest(unittest.TestCase):
     def setUp(self):
         self.wrong = load_beside_the_tree(FIXTURE_DIR / "credentialed_rosters.py")
         self.archives = load_beside_the_tree(FIXTURE_DIR / "archive_adapters.py")
+        self.leaks = load_beside_the_tree(FIXTURE_DIR / "leaking_artifacts.py")
         self.correct_records = records_from(
             self.archives.correct, ARCHIVE_STEP, ARCHIVE_REQUEST
+        )
+
+    def test_every_place_a_credential_could_hide_in_an_artifact_is_found(self):
+        # Six fields at four depths, one artifact each, and the failure names
+        # the field it was found in — because "a credential is in here
+        # somewhere" is not a finding anybody can act on.
+        run, _, _ = k1_run()
+        secret = transport.PUBLIC_CLIENT_CREDENTIALS[
+            transport.YOUTUBE_INNERTUBE_WEB_KEY
+        ].value
+        for where, plant in self.leaks.ARTIFACT_LEAKS:
+            with self.subTest(where=where):
+                with self.assertRaisesRegex(
+                    AssertionError, "youtube_innertube_web_key value reached emitted"
+                ):
+                    assert_no_credential_reaches_what_the_run_keeps(
+                        self, plant(run.artifact, secret), public_client_secrets()
+                    )
+
+    def test_every_secret_there_is_gets_looked_for_and_not_just_the_first(self):
+        run, _, _ = k1_run()
+        for name, secret in public_client_secrets():
+            with self.subTest(secret=name):
+                with self.assertRaisesRegex(AssertionError, "reached emitted.loss"):
+                    assert_no_credential_reaches_what_the_run_keeps(
+                        self,
+                        self.leaks.in_the_artifact_loss(run.artifact, secret),
+                        public_client_secrets(),
+                    )
+
+    def test_a_credential_in_the_manifest_the_caller_wrote_is_found(self):
+        secret = transport.PUBLIC_CLIENT_CREDENTIALS[transport.INSTAGRAM_WEB_APP_ID].value
+
+        with self.assertRaisesRegex(AssertionError, "reached emitted.steps"):
+            assert_no_credential_reaches_what_the_run_keeps(
+                self,
+                self.leaks.in_a_manifest_query(k1_manifest(), secret),
+                public_client_secrets(),
+            )
+
+    def test_a_credential_on_the_ledgers_stop_marker_is_found(self):
+        run, _, _ = k1_run()
+        secret = transport.PUBLIC_CLIENT_CREDENTIALS[transport.X_GUEST_PUBLIC_BEARER].value
+
+        with self.assertRaisesRegex(AssertionError, "reached emitted"):
+            assert_no_credential_reaches_what_the_run_keeps(
+                self,
+                self.leaks.in_a_ledger_reason(run.ledger, secret),
+                public_client_secrets(),
+            )
+
+    def test_a_scan_that_looks_for_nothing_is_refused(self):
+        run, _, _ = k1_run()
+
+        with self.assertRaisesRegex(AssertionError, "no credential was looked for"):
+            assert_no_credential_reaches_what_the_run_keeps(self, run.artifact, ())
+
+    def test_a_scan_over_nothing_is_refused(self):
+        with self.assertRaisesRegex(AssertionError, "nothing was scanned"):
+            assert_no_credential_reaches_what_the_run_keeps(self, (), public_client_secrets())
+
+    def test_the_same_scan_accepts_the_artifact_the_run_really_produced(self):
+        run, _, _ = k1_run()
+
+        assert_no_credential_reaches_what_the_run_keeps(
+            self, run.artifact, public_client_secrets()
         )
 
     def archive_records(self, fetch):
