@@ -111,6 +111,7 @@ def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> 
         return build_native_page(
             DESCRIPTOR,
             (),
+            observed_at=response.observed_at,
             native_order=NATIVE_ORDER,
             warnings=("http status {0} from {1}".format(response.status, DESCRIPTOR.route_id),),
             outcome="failed",
@@ -129,6 +130,7 @@ def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> 
     return build_native_page(
         DESCRIPTOR,
         records,
+        observed_at=response.observed_at,
         cursor_out=parser.next_offset,
         native_order=NATIVE_ORDER,
         outcome="ok" if records else "empty",

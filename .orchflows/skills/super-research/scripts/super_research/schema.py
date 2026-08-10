@@ -19,6 +19,24 @@ ACQUISITION_MODES = ("staged", "fused")
 
 STEP_KINDS = ("discovery", "hydration")
 
+# Ordered by severity for `reduce_outcomes`; a usable record never hides a
+# failure and a failure never erases a usable record.
+OUTCOMES = ("ok", "empty", "partial", "failed", "refused")
+
+# Preference order, not authority order: every class but K5 is uncredentialed,
+# and `offline` is the fixture adapter's class.
+ACCESS_CLASSES = ("K0", "K1", "K2", "K3", "K4", "K5", "offline")
+
+REPRESENTATION_KINDS = ("index", "native", "page", "feed", "transcript")
+
+TIME_CONFIDENCES = ("authoritative", "reported", "derived", "unknown")
+
+PROVENANCE_EDGE_KINDS = ("discovery_hydration",)
+
+GROUP_KEY_KINDS = ("strong", "weak", "ungrouped")
+
+MAX_ENGAGEMENT_VALUE = 2 ** 63 - 1
+
 MANIFEST_KEYS = ("schema_version", "manifest_id", "mode", "as_of", "steps")
 STEP_KEYS = (
     "step_id",
@@ -67,6 +85,122 @@ class AcquisitionManifest:
     as_of: str
     steps: Tuple[AcquisitionStep, ...]
     schema_version: int = MANIFEST_SCHEMA_VERSION
+
+
+@dataclass(frozen=True)
+class EngagementSnapshot:
+    """One native metric as one route reported it at one moment."""
+
+    metric_name: str
+    value: int
+    observed_at: str
+
+
+@dataclass(frozen=True)
+class AcquisitionRecord:
+    """One immutable row of an AcquisitionArtifact.
+
+    Grouping never rewrites one of these: two records that describe the same
+    thing are linked by a group's membership or by a provenance edge, and
+    each keeps its own body, time, route, and metric snapshots.
+    """
+
+    record_id: str
+    artifact_id: str
+    manifest_id: str
+    step_id: str
+    adapter_id: str
+    adapter_version: str
+    route_id: str
+    access_class: str
+    operator_identity: str
+    platform: str
+    native_identity_namespace: str
+    group_scope: str
+    representation_kind: str
+    canonical_content_kind: str
+    native_item_id: str
+    native_parent_id: str
+    canonical_locator: str
+    normalized_locator: str
+    exact_content_hash: str
+    title: str
+    body: str
+    author: str
+    community: str
+    published_at: str
+    observed_at: str
+    time_confidence: str
+    usable_basis_time: str
+    engagement: Tuple[EngagementSnapshot, ...]
+    page_index: int
+    list_index: int
+    native_position: int
+    discovery_locator: str
+    outcome: str
+    loss: Tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ProvenanceEdge:
+    """A link between two records. It is never an identity merge."""
+
+    edge_kind: str
+    from_record_id: str
+    to_record_id: str
+
+
+@dataclass(frozen=True)
+class RecordGroup:
+    """Records that describe one thing, held side by side and never folded."""
+
+    key_kind: str
+    key: Tuple[str, ...]
+    member_record_ids: Tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class StepResult:
+    """What one manifest step consumed and produced."""
+
+    step_id: str
+    adapter_id: str
+    route_id: str
+    pages: int
+    records_received: int
+    records_kept: int
+    outcome: str
+    loss: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class AcquisitionArtifact:
+    artifact_id: str
+    manifest_id: str
+    mode: str
+    as_of: str
+    records: Tuple[AcquisitionRecord, ...]
+    steps: Tuple[StepResult, ...]
+    edges: Tuple[ProvenanceEdge, ...] = ()
+    groups: Tuple[RecordGroup, ...] = ()
+    outcome: str = "ok"
+    loss: Tuple[str, ...] = ()
+
+
+def reduce_outcomes(outcomes: Sequence[str]) -> str:
+    """Reduce step outcomes to one batch outcome, exactly and without rounding up."""
+
+    if not outcomes:
+        return "empty"
+    distinct = set(outcomes)
+    if distinct == {"refused"}:
+        return "refused"
+    if distinct <= {"ok", "empty"}:
+        return "ok" if "ok" in distinct else "empty"
+    usable = distinct & {"ok", "empty", "partial"}
+    if not usable:
+        return "failed"
+    return "partial"
 
 
 def _require_mapping(value: Any, label: str) -> Mapping[str, Any]:
@@ -121,8 +255,8 @@ def _parse_step(payload: Any, position: int) -> AcquisitionStep:
         raise ManifestError("{0} is a discovery step and forbids selected_hits".format(label))
 
     max_items = mapping.get("max_items", 0)
-    if not isinstance(max_items, int) or isinstance(max_items, bool) or max_items < 0:
-        raise ManifestError("{0} requires a nonnegative integer max_items".format(label))
+    if not isinstance(max_items, int) or isinstance(max_items, bool) or max_items < 1:
+        raise ManifestError("{0} requires a hard positive max_items cap".format(label))
 
     return AcquisitionStep(
         step_id=step_id,

@@ -16,7 +16,7 @@ import urllib.request
 from pathlib import Path
 from unittest import mock
 
-from super_research import adapters, schema, transport
+from super_research import adapters, normalize, router, runner, schema, transport
 from super_research.adapters import fake, reddit_archive, web_search
 
 
@@ -90,7 +90,7 @@ TRACER_MANIFEST = {
             "kind": "discovery",
             "adapter_id": "web_search",
             "query": "site:reddit.com best local model",
-            "max_items": 4,
+            "max_items": 6,
         },
         {
             "step_id": "s2-hydrate",
@@ -106,10 +106,57 @@ TRACER_MANIFEST = {
                     "target_id": "1abc234",
                 }
             ],
-            "max_items": 4,
+            "max_items": 6,
         },
     ],
 }
+
+
+TRACER_X_MANIFEST = {
+    "schema_version": 2,
+    "manifest_id": "tracer-k4-x",
+    "mode": "staged",
+    "as_of": "2026-08-10T00:00:00Z",
+    "steps": [
+        {
+            "step_id": "s1-discover",
+            "kind": "discovery",
+            "adapter_id": "web_search",
+            "query": "site:x.com local model benchmark",
+            "max_items": 6,
+        },
+        {
+            "step_id": "s2-hydrate-x",
+            "kind": "hydration",
+            "adapter_id": "fake",
+            "prior_step_id": "s1-discover",
+            "selected_hits": [
+                {"discovery_locator": X_POST_LOCATOR, "target_id": "1799990000000000001"}
+            ],
+            "max_items": 6,
+        },
+    ],
+}
+
+
+def tracer_responses():
+    return {
+        "ddg_html": (200, read_fixture("ddg_html_results.html"), "text/html"),
+        "arctic_shift_posts_ids": (
+            200,
+            read_fixture("arctic_shift_posts_ids.json"),
+            "application/json",
+        ),
+        "fake_offline": (200, read_fixture("fake_x_native_page.json"), "application/json"),
+    }
+
+
+def run_tracer(payload):
+    """Run one tracer manifest end to end over the offline fixtures."""
+
+    carrier, opener = tracer_transport(tracer_responses())
+    artifact = runner.run_acquisition(schema.parse_manifest(payload), carrier)
+    return artifact, carrier, opener
 
 
 class ManifestSchemaTest(unittest.TestCase):
@@ -438,6 +485,154 @@ class RouteConstantOwnershipTest(unittest.TestCase):
         with forbid_io():
             with self.assertRaises(transport.TransportError):
                 transport.urlopen_response(offline)
+
+
+class RouterTest(unittest.TestCase):
+    """The router decides from per-route booleans and nothing else."""
+
+    def setUp(self):
+        self.step = schema.parse_manifest(TRACER_MANIFEST).steps[0]
+
+    def test_an_admitted_route_is_selected(self):
+        decision = router.select_route(self.step, web_search.DESCRIPTOR, {"ddg_html": True})
+
+        self.assertTrue(decision.admitted)
+        self.assertEqual(decision.route_id, "ddg_html")
+        self.assertEqual(decision.access_class, "K4")
+        self.assertEqual(decision.refusal_reason, "")
+
+    def test_the_same_route_turned_off_is_refused_as_auth_required(self):
+        decision = router.select_route(self.step, web_search.DESCRIPTOR, {"ddg_html": False})
+
+        self.assertFalse(decision.admitted)
+        self.assertEqual(decision.refusal_reason, "auth_required")
+
+    def test_a_route_absent_from_the_admissions_map_is_refused_as_no_route(self):
+        decision = router.select_route(self.step, web_search.DESCRIPTOR, {})
+
+        self.assertFalse(decision.admitted)
+        self.assertEqual(decision.refusal_reason, "no_route")
+
+    def test_a_descriptor_for_another_adapter_is_refused_as_no_route(self):
+        decision = router.select_route(
+            self.step, reddit_archive.DESCRIPTOR, {"arctic_shift_posts_ids": True}
+        )
+
+        self.assertFalse(decision.admitted)
+        self.assertEqual(decision.refusal_reason, "no_route")
+
+
+class OutcomeReductionTest(unittest.TestCase):
+    """Batch reduction is exact; a usable record never hides a failure."""
+
+    def test_every_reduction_branch(self):
+        self.assertEqual(schema.reduce_outcomes(("empty", "empty")), "empty")
+        self.assertEqual(schema.reduce_outcomes(("ok", "empty")), "ok")
+        self.assertEqual(schema.reduce_outcomes(("ok", "partial")), "partial")
+        self.assertEqual(schema.reduce_outcomes(("ok", "failed")), "partial")
+        self.assertEqual(schema.reduce_outcomes(("failed", "refused")), "failed")
+        self.assertEqual(schema.reduce_outcomes(("refused", "refused")), "refused")
+        self.assertEqual(schema.reduce_outcomes(()), "empty")
+
+
+class NormalizeTest(unittest.TestCase):
+    """Normalization derives artifact fields without inventing any."""
+
+    def test_engagement_refuses_a_boolean_value(self):
+        with self.assertRaises(normalize.NormalizeError):
+            normalize.engagement_snapshots((("score", True),), FROZEN_OBSERVED_AT)
+
+    def test_engagement_refuses_a_negative_value(self):
+        with self.assertRaises(normalize.NormalizeError):
+            normalize.engagement_snapshots((("score", -1),), FROZEN_OBSERVED_AT)
+
+    def test_locator_normalization_is_stable_across_case_and_trailing_slash(self):
+        self.assertEqual(
+            normalize.normalized_locator("HTTPS://Www.Reddit.com/r/LocalLLaMA/comments/1abc234/"),
+            normalize.normalized_locator("https://www.reddit.com/r/LocalLLaMA/comments/1abc234"),
+        )
+
+    def test_content_hash_is_empty_when_there_is_no_content(self):
+        self.assertEqual(normalize.content_hash(""), "")
+        self.assertNotEqual(normalize.content_hash("a snippet"), "")
+
+
+class StagedRunTest(unittest.TestCase):
+    """The core owns the run: route selection, caps, page count, and stop."""
+
+    def test_staged_run_produces_discovery_and_hydration_records(self):
+        artifact, carrier, _ = run_tracer(TRACER_MANIFEST)
+
+        self.assertEqual(artifact.manifest_id, "tracer-k4-reddit")
+        self.assertEqual(artifact.mode, "staged")
+        self.assertEqual(artifact.outcome, "ok")
+        self.assertEqual([step.step_id for step in artifact.steps], ["s1-discover", "s2-hydrate"])
+        self.assertEqual([step.outcome for step in artifact.steps], ["ok", "ok"])
+        self.assertEqual([step.pages for step in artifact.steps], [1, 1])
+        self.assertEqual(len(carrier.calls), 2)
+
+        discovered = [record for record in artifact.records if record.step_id == "s1-discover"]
+        hydrated = [record for record in artifact.records if record.step_id == "s2-hydrate"]
+        self.assertEqual(len(discovered), 6)
+        self.assertEqual(len(hydrated), 1)
+
+        self.assertEqual(discovered[0].representation_kind, "index")
+        self.assertEqual(discovered[0].time_confidence, "unknown")
+        self.assertEqual(discovered[0].usable_basis_time, "")
+        self.assertEqual(discovered[0].group_scope, "duckduckgo")
+        self.assertEqual(discovered[0].observed_at, FROZEN_OBSERVED_AT)
+        self.assertEqual(discovered[0].record_id, "s1-discover#0.0")
+        self.assertEqual(discovered[0].adapter_version, "1")
+
+        self.assertEqual(hydrated[0].representation_kind, "native")
+        self.assertEqual(hydrated[0].native_item_id, "t3_1abc234")
+        self.assertEqual(hydrated[0].time_confidence, "reported")
+        self.assertEqual(hydrated[0].usable_basis_time, "2026-08-09T13:20:00Z")
+        self.assertEqual(hydrated[0].group_scope, "reddit")
+        self.assertEqual(hydrated[0].operator_identity, "arctic-shift")
+        self.assertEqual(
+            [(snapshot.metric_name, snapshot.value) for snapshot in hydrated[0].engagement],
+            [("score", 120), ("num_comments", 88)],
+        )
+        self.assertEqual(
+            hydrated[0].discovery_locator, normalize.normalized_locator(REDDIT_THREAD_LOCATOR)
+        )
+
+    def test_a_step_cap_truncates_and_emits_recall_window_partial(self):
+        steps = [dict(TRACER_MANIFEST["steps"][0], max_items=2), TRACER_MANIFEST["steps"][1]]
+        artifact, _, _ = run_tracer(dict(TRACER_MANIFEST, steps=steps))
+
+        discovery = artifact.steps[0]
+        self.assertEqual(discovery.records_received, 6)
+        self.assertEqual(discovery.records_kept, 2)
+        self.assertEqual(discovery.outcome, "partial")
+        self.assertIn("recall_window_partial", discovery.loss)
+        self.assertEqual(artifact.outcome, "partial")
+        self.assertEqual(
+            len([record for record in artifact.records if record.step_id == "s1-discover"]), 2
+        )
+
+    def test_an_unimplemented_adapter_is_refused_before_any_transport_call(self):
+        steps = [dict(TRACER_MANIFEST["steps"][0], adapter_id="reddit_oauth")]
+        artifact, carrier, _ = run_tracer(dict(TRACER_MANIFEST, steps=steps))
+
+        self.assertEqual(artifact.steps[0].outcome, "refused")
+        self.assertIn("no_route", artifact.steps[0].loss)
+        self.assertEqual(artifact.records, ())
+        self.assertEqual(carrier.calls, [])
+        self.assertEqual(artifact.outcome, "refused")
+
+    def test_the_x_shaped_manifest_runs_through_the_offline_adapter(self):
+        artifact, carrier, _ = run_tracer(TRACER_X_MANIFEST)
+
+        hydrated = [record for record in artifact.records if record.step_id == "s2-hydrate-x"]
+        self.assertEqual(len(hydrated), 2)
+        self.assertEqual(hydrated[0].platform, "x")
+        self.assertEqual(hydrated[0].representation_kind, "native")
+        self.assertEqual(hydrated[0].time_confidence, "authoritative")
+        self.assertEqual(hydrated[1].canonical_content_kind, "reply")
+        self.assertEqual(hydrated[1].native_parent_id, "1799990000000000001")
+        self.assertEqual(len(carrier.calls), 2)
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner

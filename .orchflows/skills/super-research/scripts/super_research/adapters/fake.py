@@ -83,6 +83,7 @@ def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> 
         return build_native_page(
             DESCRIPTOR,
             (),
+            observed_at=response.observed_at,
             warnings=("fixture payload was not a record-bearing json object",),
             outcome="failed",
             loss=("malformed_json",),
@@ -94,6 +95,7 @@ def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> 
     return build_native_page(
         _declaration_from(payload),
         records,
+        observed_at=response.observed_at,
         cursor_out=payload.get("cursor_out", ""),
         native_order=payload.get("native_order", ""),
         outcome=payload.get("outcome", "ok" if records else "empty"),

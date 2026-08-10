@@ -80,6 +80,7 @@ class NativePage:
     representation_kind: str
     records: Tuple[NativeRecord, ...]
     operator_identity: str = ""
+    observed_at: str = ""
     cursor_out: str = ""
     native_order: str = ""
     warnings: Tuple[str, ...] = ()
@@ -91,6 +92,7 @@ class NativePage:
 def build_native_page(
     descriptor: AdapterDescriptor,
     records: Tuple[NativeRecord, ...],
+    observed_at: str = "",
     cursor_out: str = "",
     native_order: str = "",
     warnings: Tuple[str, ...] = (),
@@ -110,6 +112,7 @@ def build_native_page(
         representation_kind=descriptor.representation_kind,
         records=records,
         operator_identity=descriptor.operator_identity,
+        observed_at=observed_at,
         cursor_out=cursor_out,
         native_order=native_order,
         warnings=warnings,
