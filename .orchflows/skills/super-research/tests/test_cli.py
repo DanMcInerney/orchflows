@@ -23,6 +23,7 @@ from __future__ import annotations
 import contextlib
 import dataclasses
 import importlib.util
+import io
 import socket
 import tempfile
 import unittest
@@ -44,6 +45,10 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[4]
 NOW = helpers.FROZEN_START
 ADAPTER = "github_rest"
 REJECTED = "rejected"
+
+# A guest token, minted into the process's own store, so "nothing the run holds
+# reaches the output" is checked against something the run really held.
+GUEST_TOKEN = "guest-token-minted-for-this-run"
 
 
 def stamp_at(offset_seconds):
@@ -652,6 +657,350 @@ class SmokeLedgerTest(unittest.TestCase):
 
         self.assertEqual(after, {})
         self.assertEqual(cli.disposition_of(after, ADAPTER, NOW).reason, cli.NEVER_SMOKED)
+
+
+def run_cli(case, argv, seeds=None, ledger_path=None, clock=None):
+    """One whole invocation, argv in and printed lines out, reaching no socket."""
+
+    resolved = helpers.FakeClock() if clock is None else clock
+    answers = probe_seeds() if seeds is None else seeds
+    carrier, opener = helpers.offline_transport(resolved, answers)
+    printed = io.StringIO()
+    with forbid_network():
+        code = cli.main(
+            argv,
+            carrier=carrier,
+            clock=resolved.monotonic,
+            now=resolved.stamp,
+            ledger_path=case.path if ledger_path is None else ledger_path,
+            out=printed,
+        )
+    return code, printed.getvalue(), opener
+
+
+def refused(case, argv):
+    """One invocation the surface must refuse before anything is read."""
+
+    carrier, opener = helpers.offline_transport(helpers.FakeClock(), {})
+    complaint = io.StringIO()
+    with contextlib.redirect_stderr(complaint):
+        with forbid_network():
+            with case.assertRaises(SystemExit) as caught:
+                cli.main(argv, carrier=carrier, ledger_path=case.path, out=io.StringIO())
+    case.assertEqual(caught.exception.code, cli.EXIT_USAGE)
+    case.assertEqual(opener.opened, [], "a refused invocation still made a read")
+
+
+class LedgerHoldingCase(unittest.TestCase):
+    """Every CLI row writes its ledger into a temporary directory, never the default."""
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.path = Path(self.directory.name) / "smoke-ledger.json"
+
+
+class TheOperationSetIsClosedTest(LedgerHoldingCase):
+    """Row 4: three operations, one argument, and no way to name anything else."""
+
+    def test_the_reachable_operations_are_exactly_these_three(self):
+        self.assertEqual(
+            tuple(operation.name for operation in cli.OPERATIONS),
+            ("adapters", "smoke", "status"),
+        )
+
+    def test_the_only_argument_the_whole_surface_takes_is_a_closed_choice(self):
+        # Fifteen reachable invocations: two operations that take nothing, and
+        # one that takes an adapter id off a list of thirteen.
+        reachable = 0
+        for operation in cli.OPERATIONS:
+            with self.subTest(operation=operation.name):
+                if not operation.argument:
+                    self.assertEqual(operation.choices, ())
+                    reachable += 1
+                    continue
+                self.assertEqual(operation.argument, "--adapter")
+                self.assertEqual(
+                    operation.choices,
+                    tuple(probe.adapter_id for probe in cli.SMOKE_PROBES),
+                )
+                reachable += len(operation.choices)
+
+        self.assertEqual(reachable, 15)
+
+    def test_every_declared_operation_runs(self):
+        for operation in cli.OPERATIONS:
+            argv = [operation.name]
+            for choice in operation.choices or ("",):
+                if choice:
+                    argv = [operation.name, operation.argument, choice]
+                with self.subTest(argv=" ".join(argv)):
+                    code, printed, _ = run_cli(self, argv)
+
+                    self.assertEqual(code, cli.EXIT_OK)
+                    self.assertTrue(printed.strip())
+
+    def test_no_operation_outside_the_table_exists(self):
+        # The shapes a generic primitive would arrive as. Each is refused by
+        # the parser, before any carrier is touched.
+        for name in (
+            "fetch", "get", "http", "run", "exec", "shell", "eval", "curl",
+            "request", "read", "manifest", "acquire",
+        ):
+            with self.subTest(operation=name):
+                refused(self, [name])
+
+    def test_no_argument_can_name_an_address_a_route_or_a_command(self):
+        for argv in (
+            ["smoke", "--url", "https://example.com/"],
+            ["smoke", "--adapter", "public_page", "--url", "https://example.com/"],
+            ["smoke", "--adapter", "public_page", "--target", "article:Anything"],
+            ["smoke", "--route", "github_rest"],
+            ["smoke", "--adapter", "github_rest", "--command", "ls"],
+            ["adapters", "--adapter", "github_rest"],
+            ["status", "--ledger", "/tmp/anywhere.json"],
+        ):
+            with self.subTest(argv=" ".join(argv)):
+                refused(self, argv)
+
+    def test_an_adapter_the_roster_does_not_name_is_refused(self):
+        for adapter_id in ("no_such_adapter", "tiktok_public", "", "github_rest "):
+            with self.subTest(adapter=adapter_id):
+                refused(self, ["smoke", "--adapter", adapter_id])
+
+    def test_the_offline_adapter_is_not_reachable_from_the_surface(self):
+        # `fake` is in the roster and has no smoke: reading a fixture and
+        # calling it liveness is the one result this subcommand must not print.
+        refused(self, ["smoke", "--adapter", cli.OFFLINE_ADAPTER])
+
+    def test_a_smoke_with_no_adapter_named_is_refused(self):
+        refused(self, ["smoke"])
+
+    def test_the_usage_code_is_argparses_own_and_nothing_else_takes_it(self):
+        self.assertEqual(cli.EXIT_USAGE, 2)
+        self.assertNotIn(cli.EXIT_USAGE, (cli.EXIT_OK, cli.EXIT_ROW_UNMET, cli.EXIT_LOCAL_NETWORK))
+
+
+class SmokeSubcommandTest(LedgerHoldingCase):
+    """What one `smoke --adapter <id>` does, offline, for each of the thirteen."""
+
+    def test_a_satisfied_smoke_reports_verified_and_records_its_stamp(self):
+        code, printed, opener = run_cli(self, ["smoke", "--adapter", ADAPTER])
+
+        self.assertEqual(code, cli.EXIT_OK)
+        self.assertIn(cli.VERIFIED, printed)
+        self.assertEqual([request.route_id for request in opener.opened], ["github_rest"])
+        self.assertEqual(sorted(cli.read_ledger(self.path)), [ADAPTER])
+
+    def test_every_one_of_the_thirteen_smokes_runs_and_is_recorded(self):
+        for probe in cli.SMOKE_PROBES:
+            with self.subTest(adapter=probe.adapter_id):
+                code, printed, _ = run_cli(self, ["smoke", "--adapter", probe.adapter_id])
+
+                self.assertEqual(code, cli.EXIT_OK)
+                self.assertIn(probe.adapter_id, printed)
+                self.assertIn(probe.route_id, printed)
+
+        self.assertEqual(
+            sorted(cli.read_ledger(self.path)),
+            sorted(probe.adapter_id for probe in cli.SMOKE_PROBES),
+        )
+
+    def test_a_run_that_did_not_carry_its_row_says_so_and_records_nothing(self):
+        seeds = probe_seeds()
+        seeds["github_rest"] = (404, payload("github/not_found.json"), "application/json")
+
+        code, printed, _ = run_cli(self, ["smoke", "--adapter", ADAPTER], seeds=seeds)
+
+        self.assertEqual(code, cli.EXIT_ROW_UNMET)
+        self.assertIn(cli.UNVERIFIED, printed)
+        self.assertEqual(cli.read_ledger(self.path), {})
+
+    def test_an_intercepted_run_says_local_network_and_changes_nothing(self):
+        held = {ADAPTER: stamp_at(-3600)}
+        cli.write_ledger(self.path, held)
+        before = self.path.read_text(encoding="utf-8")
+        seeds = probe_seeds()
+        seeds["github_rest"] = (503, payload("transport/captive_portal.html"), "text/html")
+
+        code, printed, _ = run_cli(self, ["smoke", "--adapter", ADAPTER], seeds=seeds)
+
+        self.assertEqual(code, cli.EXIT_LOCAL_NETWORK)
+        self.assertIn("local network", printed)
+        self.assertNotIn("platform gap", printed)
+        # Nothing degraded: the adapter keeps the standing it had, and the file
+        # on disk is the same bytes it was.
+        self.assertIn(cli.VERIFIED, printed)
+        self.assertEqual(self.path.read_text(encoding="utf-8"), before)
+
+    def test_a_platform_refusal_and_a_local_block_do_not_read_alike(self):
+        seeds = probe_seeds()
+        seeds["github_rest"] = (
+            503, payload("transport/origin_service_unavailable.html"), "text/html"
+        )
+
+        code, printed, _ = run_cli(self, ["smoke", "--adapter", ADAPTER], seeds=seeds)
+
+        self.assertEqual(code, cli.EXIT_ROW_UNMET)
+        self.assertNotIn("local network", printed)
+
+    def test_a_run_that_found_no_row_offers_the_way_to_a_current_target(self):
+        # A probe target that has rotted is not a platform gap, and the smoke
+        # says where a current one comes from instead of leaving an operator
+        # to guess which of the two happened.
+        seeds = probe_seeds()
+        seeds["arctic_shift_posts_ids"] = (200, '{"data": []}', "application/json")
+
+        code, printed, _ = run_cli(self, ["smoke", "--adapter", "reddit_archive"], seeds=seeds)
+
+        self.assertEqual(code, cli.EXIT_ROW_UNMET)
+        self.assertIn(cli.probe_for("reddit_archive").target, printed)
+        self.assertIn("reddit_feed record", printed)
+
+    def test_a_withheld_caption_track_is_not_a_failed_run(self):
+        # T07's obligation at the surface a human reads: the measured player
+        # answer carries `attestation_required`, the metadata arrived, and this
+        # must not print as a failure.
+        code, printed, _ = run_cli(self, ["smoke", "--adapter", "youtube_innertube"])
+
+        self.assertEqual(code, cli.EXIT_OK)
+        self.assertIn("attestation_required", printed)
+        self.assertIn(cli.VERIFIED, printed)
+        self.assertEqual(sorted(cli.read_ledger(self.path)), ["youtube_innertube"])
+
+    def test_a_second_smoke_replaces_only_its_own_stamp(self):
+        run_cli(self, ["smoke", "--adapter", ADAPTER])
+        first = cli.read_ledger(self.path)
+        later = helpers.FakeClock()
+        later.advance(90)
+
+        run_cli(self, ["smoke", "--adapter", "reddit_feed"], clock=later)
+        second = cli.read_ledger(self.path)
+
+        self.assertEqual(second[ADAPTER], first[ADAPTER])
+        self.assertNotEqual(second["reddit_feed"], first[ADAPTER])
+
+
+class StatusSubcommandTest(LedgerHoldingCase):
+    """What the smokes have proven, read back without touching a network."""
+
+    def test_status_reports_every_live_adapter(self):
+        code, printed, opener = run_cli(self, ["status"])
+
+        self.assertEqual(code, cli.EXIT_OK)
+        self.assertEqual(opener.opened, [])
+        for probe in cli.SMOKE_PROBES:
+            self.assertIn(probe.adapter_id, printed)
+        self.assertNotIn(cli.OFFLINE_ADAPTER + " ", printed)
+
+    def test_an_adapter_never_smoked_is_unverified_and_not_rejected(self):
+        code, printed, _ = run_cli(self, ["status"])
+
+        self.assertEqual(printed.count(cli.UNVERIFIED), 13)
+        self.assertIn(cli.NEVER_SMOKED, printed)
+        self.assertNotIn(REJECTED, printed)
+
+    def test_a_stale_stamp_reads_as_unverified_on_a_moved_clock(self):
+        cli.write_ledger(self.path, {ADAPTER: stamp_at(-(cli.SMOKE_MAX_AGE_SECONDS + 60))})
+
+        code, printed, _ = run_cli(self, ["status"])
+
+        self.assertIn(cli.STALE_SUCCESS, printed)
+        self.assertNotIn(REJECTED, printed)
+
+    def test_status_never_judges_and_always_reports(self):
+        # It reads a ledger and prints it. An exit code that turned "nothing
+        # has been smoked yet" into a failure would make the offline suite's
+        # own state look like a broken platform.
+        cli.write_ledger(self.path, {ADAPTER: stamp_at(-(cli.SMOKE_MAX_AGE_SECONDS + 60))})
+
+        code, _, _ = run_cli(self, ["status"])
+
+        self.assertEqual(code, cli.EXIT_OK)
+
+
+class AdaptersSubcommandTest(LedgerHoldingCase):
+    """The roster, its access classes, and what each smoke will assert."""
+
+    def test_the_listing_names_every_probe_with_its_class_and_route(self):
+        code, printed, opener = run_cli(self, ["adapters"])
+
+        self.assertEqual(code, cli.EXIT_OK)
+        self.assertEqual(opener.opened, [])
+        for probe in cli.SMOKE_PROBES:
+            descriptor = runner.descriptor_for(probe.adapter_id)
+            with self.subTest(adapter=probe.adapter_id):
+                self.assertIn(probe.adapter_id, printed)
+                self.assertIn(descriptor.access_class, printed)
+                self.assertIn(probe.route_id, printed)
+
+    def test_the_listing_names_every_field_each_smoke_asserts(self):
+        _, printed, _ = run_cli(self, ["adapters"])
+
+        for probe in cli.SMOKE_PROBES:
+            for kind, names in probe.field_sets:
+                for name in names:
+                    with self.subTest(adapter=probe.adapter_id, field=name):
+                        self.assertIn(name, printed)
+
+
+class NothingTheRunHoldsReachesTheOutputTest(LedgerHoldingCase):
+    """The `K1` law at the last surface a credential could leave by."""
+
+    def setUp(self):
+        super().setUp()
+        transport.GUEST_TOKENS.clear()
+        self.addCleanup(transport.GUEST_TOKENS.clear)
+
+    def mint_one_token(self):
+        with mock.patch.object(transport, "mint_guest_token", lambda route: GUEST_TOKEN):
+            transport.tokened_headers((), transport.X_GUEST_ACTIVATE_ROUTE)
+
+    def test_no_line_any_subcommand_prints_carries_a_public_client_credential(self):
+        self.mint_one_token()
+        secrets = [
+            credential.value
+            for credential in transport.PUBLIC_CLIENT_CREDENTIALS.values()
+        ] + [GUEST_TOKEN]
+        printed = []
+        for probe in cli.SMOKE_PROBES:
+            printed.append(run_cli(self, ["smoke", "--adapter", probe.adapter_id])[1])
+            self.mint_one_token()
+        printed.append(run_cli(self, ["status"])[1])
+        printed.append(run_cli(self, ["adapters"])[1])
+
+        self.assertTrue(secrets)
+        for secret in secrets:
+            for output in printed:
+                self.assertNotIn(secret, output)
+
+    def test_the_guest_token_never_outlives_the_run_that_minted_it(self):
+        # T05 minted it into a module-level store for the process; the run has
+        # to end somewhere, and this is where.
+        self.mint_one_token()
+        self.assertEqual(
+            transport.GUEST_TOKENS.token_for(transport.X_GUEST_ACTIVATE_ROUTE), GUEST_TOKEN
+        )
+
+        run_cli(self, ["smoke", "--adapter", "x_guest"])
+
+        self.assertEqual(transport.GUEST_TOKENS._tokens, {})
+
+    def test_every_subcommand_ends_the_run_the_same_way(self):
+        for argv in (["adapters"], ["status"], ["smoke", "--adapter", ADAPTER]):
+            with self.subTest(argv=" ".join(argv)):
+                self.mint_one_token()
+
+                run_cli(self, argv)
+
+                self.assertEqual(transport.GUEST_TOKENS._tokens, {})
+
+    def test_a_refused_invocation_clears_it_too(self):
+        self.mint_one_token()
+
+        refused(self, ["smoke", "--adapter", "no_such_adapter"])
+
+        self.assertEqual(transport.GUEST_TOKENS._tokens, {})
 
 
 if __name__ == "__main__":

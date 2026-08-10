@@ -107,11 +107,12 @@ CORE_IMPORT_EDGES = {
     "transport": (),
 }
 
-# Everything the package takes from outside itself. Fourteen names, and the
+# Everything the package takes from outside itself. Fifteen names, and the
 # check below resolves each one to where this interpreter actually answers it
 # from.
 STANDARD_LIBRARY_IMPORTS = (
     "__future__",
+    "argparse",
     "collections",
     "dataclasses",
     "datetime",
