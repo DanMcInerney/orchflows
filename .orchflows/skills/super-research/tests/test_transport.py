@@ -749,10 +749,18 @@ class RouteOwnershipScanTest(unittest.TestCase):
 
 
 class FakeHTTPResponse:
-    """The little of an http response that ``urlopen_response`` reads."""
+    """The little of an http response that ``urlopen_read`` reads.
 
-    def __init__(self, status, body, content_type):
+    ``url`` is carried because urllib carries it: a real response states the
+    address it was answered from, and that address is the one the request
+    actually went out on — credential and all. A stand-in that omitted it made
+    `final_url` fall back to the uncredentialed url a caller had built, which
+    is the one shape in which the T02 leak below is invisible.
+    """
+
+    def __init__(self, status, body, content_type, url=""):
         self.status = status
+        self.url = url
         self.headers = {"Content-Type": content_type}
         self._body = body.encode("utf-8")
 
@@ -777,7 +785,11 @@ class RecordingUrlopen:
 
     def __call__(self, outbound, timeout=None):
         self.requests.append(outbound)
-        return FakeHTTPResponse(self.status, self.body, self.content_type)
+        # Answered from the address it was asked at, which is what an origin
+        # that did not redirect reports.
+        return FakeHTTPResponse(
+            self.status, self.body, self.content_type, url=outbound.full_url
+        )
 
 
 def outbound_blob(outbound):
@@ -1066,6 +1078,758 @@ class InterceptionOracleCanFailTest(unittest.TestCase):
                 assert_interception_reaches_the_page(
                     self, module.DESCRIPTOR.adapter_id, adapter_pages(module)
                 )
+
+
+THREAT_FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "threats"
+
+# The ladder the retained threat oracles are remapped onto. `offline` is the
+# fixture adapter's class and is not on it: nothing about `fake` is a claim
+# about a route.
+KEYLESS_CLASSES = ("K0", "K1", "K2", "K3", "K4")
+CREDENTIALED_CLASS = "K5"
+EVERY_CLASS = KEYLESS_CLASSES + (CREDENTIALED_CLASS,)
+# The two classes where a credential exists at all. `K1`'s is vendor-published
+# and names no user; `K5`'s is the user's own and no first-release capability
+# may depend on it. Every credential-handling threat is quantified over both.
+CREDENTIAL_CLASSES = ("K1", CREDENTIALED_CLASS)
+NO_CLASS = ()
+
+# T01-T16, retained by reference from the superseded spec and remapped from
+# `A0`-`A5` to `K0`-`K5`. The remap is of *applicability* — which classes a
+# threat is about — and the rule is the one the old mapping used: a threat
+# applies to a class when that class has the machinery the threat is about.
+#
+# Three threats apply to no class, and that is the finding rather than a gap.
+# `A2` was a CLI with an ambient identity and `A3` was an exported browser
+# session; the new ladder has neither, so T05, T06's argv half, T07 and T08
+# are about machinery this package does not contain. They are answered by its
+# absence, which `test_dependency_boundary` proves and which the row below
+# restates at this seam.
+#
+# One clause is dropped on purpose. The superseded T09 also demanded a
+# `hostile_instruction_present` code. The frozen spec's criterion 11 states
+# the remapped T09 without it — "acquired text is `untrusted_content` and
+# cannot alter plan, grants, or write set" — and the criterion is the runnable
+# authority here. Emitting a code would mean this package judging which text
+# is hostile, which is the calling lane's job and is the one thing an
+# acquisition core must not start doing.
+THREAT_REMAP = {
+    "T01": (CREDENTIAL_CLASSES, "no credential id or value reaches a request, a response, a call log, or an artifact"),
+    "T02": (CREDENTIAL_CLASSES, "an echoed credential — the address a query-placed key was appended to — comes back stripped"),
+    "T03": (CREDENTIAL_CLASSES, "a credential is attached at send time from the route's own constant, so it reaches that origin and no other"),
+    "T04": (EVERY_CLASS, "no route admits a state-changing verb: PUT, PATCH and DELETE nowhere, POST only for two named reads"),
+    "T05": (NO_CLASS, "no process is launched, because none can be: nothing here imports one or spells a command"),
+    "T06": (EVERY_CLASS, "a caller cannot escape a route's admitted method set, and a body is the route's shape with the caller's values"),
+    "T07": (NO_CLASS, "there is no session state to export: the one token a run mints lives in memory and nowhere else"),
+    "T08": (NO_CLASS, "nothing navigates, clicks or submits: the only outbound operation is one bounded read"),
+    "T09": (EVERY_CLASS, "acquired text is untrusted_content: it changes no plan, no grant, and no write set"),
+    "T10": (CREDENTIAL_CLASSES, "a K1 credential names no user, so there is no principal to mismatch; the operator that answered is declared"),
+    "T11": (EVERY_CLASS, "a refusal is typed rate_limited on one call, and no identity changes because of it"),
+    "T12": (EVERY_CLASS, "a route the run cannot reach is refused with a typed reason and never probed"),
+    "T13": (("K4",), "an index surface declares itself an index, and it is the only surface in the roster that does"),
+    "T14": (EVERY_CLASS, "the package has no delete primitive: its only stores are in memory and clearing one is all there is"),
+    "T15": (EVERY_CLASS, "a refusal costs the origin nothing: it is decided before any call is made"),
+    "T16": (EVERY_CLASS, "no fallback: a failed read is a typed failure, never a second read somewhere else"),
+}
+
+
+def load_threat_fixture(name):
+    """Load one module written beside the tree, by path."""
+
+    spec = importlib.util.spec_from_file_location(
+        "threat_fixture_" + name, THREAT_FIXTURE_DIR / (name + ".py")
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def read_threat_fixture(name):
+    return THREAT_FIXTURE_DIR.joinpath(name).read_text(encoding="utf-8")
+
+
+def routes_at(classes):
+    """Every declared route answering at one of these access classes."""
+
+    return tuple(
+        route_id
+        for route_id, route in sorted(transport.ROUTE_CONSTANTS.items())
+        if route.access_class in classes
+    )
+
+
+def credential_strings():
+    """Every string that would identify this package's client to a vendor."""
+
+    secrets = []
+    for credential in transport.PUBLIC_CLIENT_CREDENTIALS.values():
+        secrets.append((credential.credential_id + " value", credential.value))
+        secrets.append((credential.credential_id + " id", credential.credential_id))
+    return tuple(secrets)
+
+
+def sent_and_answered(route_id, params=None):
+    """One read through the real opener, with the wire captured and no socket.
+
+    The recorder answers from the address it was asked at, which is what
+    urllib reports for a read nobody redirected. That makes the outbound blob
+    and the returned address two different things: the credential belongs in
+    the first and must not survive into the second.
+    """
+
+    recorder = RecordingUrlopen(200, "{}", "application/json")
+    request = transport.build_transport_request(route_id, params or {})
+    with mock.patch.object(urllib.request, "urlopen", recorder):
+        answered = transport.urlopen_read(request)
+    return answered, recorder.requests[0]
+
+
+def route_grants():
+    """Every grant this package holds, as one comparable value.
+
+    Two halves, because a widening could arrive as either: which routes are
+    reachable at all, and what each one is allowed to do.
+    """
+
+    return (
+        tuple(sorted(transport.route_admissions().items())),
+        tuple(
+            (route_id, transport.admitted_methods(route_id))
+            for route_id in sorted(transport.ROUTE_CONSTANTS)
+        ),
+    )
+
+
+def authorized_routes(manifest):
+    """Every route the steps of one manifest authorize a read on."""
+
+    return {
+        surface.route_id
+        for step in manifest.steps
+        for surface in runner.surface_descriptors(step.adapter_id)
+    }
+
+
+def assert_acquired_text_changed_nothing(case, manifest, artifact, calls, grants_before):
+    """The T09 oracle: what was read cannot decide what happens next.
+
+    Four clauses, and they are four separate ways for the claim to be false: a
+    read that left for a route the plan never authorized, a read that left for
+    an address its own route does not own, a verb on the wire the route does
+    not admit, and a grant that is not the grant the run started with. The
+    fifth is vacuity — an artifact holding nothing proves nothing about what
+    text can do, and fails here rather than passing.
+    """
+
+    if not artifact.records:
+        case.fail("no acquired text reached the artifact, so nothing about it was proven")
+    if not calls:
+        case.fail("no read was made, so nothing about what a read can be aimed at was proven")
+
+    authorized = authorized_routes(manifest)
+    for call in calls:
+        if call.route_id not in authorized:
+            case.fail(
+                "acquired text reached a route the plan never authorized: " + call.route_id
+            )
+        if call.method not in transport.admitted_methods(call.route_id):
+            case.fail(
+                "acquired text put {0} on the wire, which route {1} does not admit".format(
+                    call.method, call.route_id
+                )
+            )
+        origin = transport.route_constant(call.route_id).origin
+        if not call.url.startswith(origin):
+            case.fail("acquired text chose the address a read went to: " + call.url)
+
+    if route_grants() != grants_before:
+        case.fail("acquired text changed the grants this package holds")
+    if tuple(step.adapter_id for step in artifact.steps) != tuple(
+        step.adapter_id for step in manifest.steps
+    ):
+        case.fail("acquired text changed the plan the caller wrote")
+
+
+def assert_hostile_text_is_carried_as_content(case, artifact, markers):
+    """The other half: the text is kept verbatim, and it is kept only as text.
+
+    Refusing to record a hostile sentence would be the same mistake in the
+    other direction — a caller cannot judge a source it is not shown. So each
+    marker has to be somewhere in the acquired rows, and nowhere in the fields
+    that decide anything.
+    """
+
+    if not markers:
+        case.fail("no hostile text was looked for, so nothing about it was checked")
+    for marker in markers:
+        carried = [
+            record
+            for record in artifact.records
+            if marker in record.title or marker in record.body
+        ]
+        if not carried:
+            case.fail("marker {0!r} never reached a record: nothing hostile was carried".format(marker))
+    for record in artifact.records:
+        deciding = (
+            record.adapter_id,
+            record.route_id,
+            record.access_class,
+            record.representation_kind,
+            record.operator_identity,
+        ) + tuple(record.loss)
+        for marker in markers:
+            for field in deciding:
+                if marker in field:
+                    case.fail(
+                        "hostile text reached a field that decides something: {0!r} in {1!r}".format(
+                            marker, field
+                        )
+                    )
+
+
+def injected_manifest():
+    """One discovery step over the K4 surface, answered with an injected page."""
+
+    return schema.AcquisitionManifest(
+        manifest_id="m-injected",
+        mode="staged",
+        as_of=FROZEN_OBSERVED_AT,
+        steps=(
+            schema.AcquisitionStep(
+                step_id="s1-discover",
+                kind="discovery",
+                adapter_id="web_search",
+                query="local model benchmarks",
+                max_items=10,
+            ),
+        ),
+    )
+
+
+def injected_run():
+    """Acquire the injected page, and hand back everything a caller would hold."""
+
+    carrier, opener = offline_transport(
+        {
+            route_id: (200, read_threat_fixture("injected_search_results.html"), "text/html")
+            for route_id in transport.ROUTE_CONSTANTS
+        }
+    )
+    manifest = injected_manifest()
+    artifact = runner.run_acquisition(manifest, carrier)
+    return manifest, artifact, carrier, opener
+
+
+class ThreatRemapTest(unittest.TestCase):
+    """Criterion 11: the retained oracles, and which class each one is about."""
+
+    def test_the_remap_names_every_retained_threat_exactly_once(self):
+        self.assertEqual(
+            sorted(THREAT_REMAP), ["T{0:02d}".format(number) for number in range(1, 17)]
+        )
+
+    def test_every_class_named_is_one_the_ladder_declares(self):
+        for threat, (classes, form) in sorted(THREAT_REMAP.items()):
+            with self.subTest(threat=threat):
+                self.assertTrue(form)
+                for access_class in classes:
+                    self.assertIn(access_class, schema.ACCESS_CLASSES)
+
+    def test_every_class_the_roster_answers_at_is_covered_by_the_remap(self):
+        # A remap that quietly left a class out would be a threat model with a
+        # hole in it, so the classes the routes actually use are read off the
+        # route table and each has to appear.
+        covered = {
+            access_class for classes, _ in THREAT_REMAP.values() for access_class in classes
+        }
+        answered = {
+            route.access_class
+            for route in transport.ROUTE_CONSTANTS.values()
+            if route.access_class != "offline"
+        }
+
+        self.assertTrue(answered)
+        self.assertEqual(sorted(answered - covered), [])
+
+    def test_the_three_threats_about_absent_machinery_are_declared_absent(self):
+        # T05 and T06's argv half were about a CLI, T07 about an exported
+        # browser session, T08 about a driver that clicks. The new ladder has
+        # none of the three, and saying so is the remap rather than a gap in it.
+        for threat in ("T05", "T07", "T08"):
+            with self.subTest(threat=threat):
+                self.assertEqual(THREAT_REMAP[threat][0], NO_CLASS)
+
+    def test_no_first_release_route_answers_at_the_credentialed_class(self):
+        self.assertEqual(routes_at((CREDENTIALED_CLASS,)), ())
+        self.assertTrue(routes_at(("K1",)))
+
+
+class CredentialThreatTest(unittest.TestCase):
+    """T01, T02, T03, T10 over `K1` and `K5`: the credential stays inside."""
+
+    def test_t01_no_credentialed_route_puts_its_secret_in_anything_kept(self):
+        for route_id in routes_at(CREDENTIAL_CLASSES):
+            with self.subTest(route=route_id):
+                carrier, _ = offline_transport(
+                    {route_id: (200, read_fixture("origin_page.html"), "text/html")}
+                )
+                request = transport.build_transport_request(route_id, {"q": "probe"})
+                response = carrier.fetch(request)
+
+                for name, secret in credential_strings():
+                    self.assertNotIn(secret, repr(request), name)
+                    self.assertNotIn(secret, repr(response), name)
+                    self.assertNotIn(secret, repr(carrier.calls), name)
+
+    def test_t02_a_query_placed_key_goes_out_on_the_wire(self):
+        # Which is what makes the next test mean anything: the credential is
+        # really sent, and really appended to the address that is asked for.
+        credential = transport.PUBLIC_CLIENT_CREDENTIALS[transport.YOUTUBE_INNERTUBE_WEB_KEY]
+        _, outbound = sent_and_answered(
+            transport.YOUTUBE_INNERTUBE_ROUTE, {"endpoint": "search", "query": "probe"}
+        )
+
+        self.assertIn(credential.value, outbound.full_url)
+
+    def test_t02_the_address_the_origin_answered_from_comes_back_stripped(self):
+        credential = transport.PUBLIC_CLIENT_CREDENTIALS[transport.YOUTUBE_INNERTUBE_WEB_KEY]
+        # `prettyPrint` is an ordinary query parameter — the route declares it
+        # neither as a path segment nor in `body_params` — so it is on the
+        # address beside the key and has to still be there afterwards.
+        answered, _ = sent_and_answered(
+            transport.YOUTUBE_INNERTUBE_ROUTE,
+            {"endpoint": "search", "query": "probe", "prettyPrint": "false"},
+        )
+        final_url = answered[3]
+
+        # The one string in this package that can carry a query-placed key past
+        # the transport seam: the origin answers from the address the key was
+        # appended to, and `final_url` is a caller-visible field one adapter
+        # publishes onto a record.
+        self.assertNotIn(credential.value, final_url)
+        self.assertNotIn(credential.name + "=", final_url)
+        # Stripped, not blanked: the path, the endpoint segment and every other
+        # parameter say exactly what they said on the way out.
+        self.assertTrue(
+            final_url.startswith(
+                transport.route_constant(transport.YOUTUBE_INNERTUBE_ROUTE).origin
+            )
+        )
+        self.assertIn("/youtubei/v1/search", final_url)
+        self.assertIn("prettyPrint=false", final_url)
+
+    def test_t02_no_routes_answering_address_carries_any_credential(self):
+        # Every route on the ladder. The offline fixture route is left out
+        # because it has no address to answer from: it never leaves the
+        # process, which is why its class is `offline` and not one of these.
+        for route_id in routes_at(EVERY_CLASS):
+            with self.subTest(route=route_id):
+                answered, _ = sent_and_answered(route_id, {"q": "probe"})
+                response = transport.Transport(
+                    opener=lambda request, held=answered: held, now=lambda: FROZEN_OBSERVED_AT
+                ).fetch(transport.build_transport_request(route_id, {"q": "probe"}))
+
+                for name, secret in credential_strings():
+                    self.assertNotIn(secret, answered[3], name)
+                    self.assertNotIn(secret, response.final_url, name)
+
+    def test_t03_a_credential_reaches_its_own_routes_origin_and_no_other(self):
+        for route_id in routes_at(CREDENTIAL_CLASSES):
+            with self.subTest(route=route_id):
+                route = transport.route_constant(route_id)
+                _, outbound = sent_and_answered(route_id)
+
+                self.assertTrue(outbound.full_url.startswith(route.origin))
+
+    def test_t03_a_keyless_route_never_receives_another_routes_credential(self):
+        keyless = sorted(set(routes_at(EVERY_CLASS)) - set(routes_at(CREDENTIAL_CLASSES)))
+        for route_id in keyless:
+            with self.subTest(route=route_id):
+                _, outbound = sent_and_answered(route_id, {"q": "probe"})
+                blob = outbound_blob(outbound)
+
+                for name, secret in credential_strings():
+                    self.assertNotIn(secret, blob, name)
+
+    def test_t10_a_public_client_credential_names_a_vendor_and_no_user(self):
+        # The remapped principal check. `A1`'s was about an account a wrong
+        # credential could belong to; a `K1` credential is one the vendor ships
+        # in its own web client, so what has to be declared is which vendor,
+        # and which operator answered.
+        for route_id in routes_at(("K1",)):
+            with self.subTest(route=route_id):
+                route = transport.route_constant(route_id)
+                credential = transport.route_credential(route_id)
+
+                self.assertTrue(route.operator_identity)
+                if credential is not None:
+                    self.assertTrue(credential.vendor)
+                    self.assertIn(credential.placement, transport.CREDENTIAL_PLACEMENTS)
+
+
+class NoWriteIsReachableTest(unittest.TestCase):
+    """T04 and T06, and the four conditions the T07 widening was granted under.
+
+    The gate admitted a second non-read route because InnerTube publishes no
+    GET form. What keeps that a read is not the verb but the enumeration, and
+    each condition is re-proved here at the assembled revision rather than
+    taken from the ticket that asked for it.
+    """
+
+    def test_condition_a_each_non_read_set_is_exactly_what_it_declares(self):
+        # Each set on its own, not only their union: a union assertion is
+        # satisfied by the two routes swapping sets, and the sets do not mean
+        # the same thing — one mints a token, the other asks a question.
+        self.assertEqual(
+            transport.TOKEN_ACTIVATION_ROUTES, (transport.X_GUEST_ACTIVATE_ROUTE,)
+        )
+        self.assertEqual(transport.QUERY_BODY_ROUTES, (transport.YOUTUBE_INNERTUBE_ROUTE,))
+        self.assertEqual(transport.TOKEN_ACTIVATION_METHODS, ("POST",))
+        self.assertEqual(transport.QUERY_BODY_METHODS, ("POST",))
+
+    def test_condition_b_post_is_reachable_for_those_two_routes_and_no_other(self):
+        reached = sorted(
+            route_id
+            for route_id in transport.ROUTE_CONSTANTS
+            if "POST" in transport.admitted_methods(route_id)
+        )
+
+        self.assertEqual(
+            reached,
+            sorted((transport.X_GUEST_ACTIVATE_ROUTE, transport.YOUTUBE_INNERTUBE_ROUTE)),
+        )
+
+    def test_condition_c_a_body_is_the_routes_shape_and_the_callers_values(self):
+        # The point a query-body route would become the generic HTTP primitive
+        # the non-goals forbid: a caller that can choose the body's shape can
+        # send anything. It can choose values into a shape this module owns and
+        # nothing else — a name the route never declared stays a query
+        # parameter, in the open, on a url the run records.
+        route = transport.route_constant(transport.YOUTUBE_INNERTUBE_ROUTE)
+        declared = {name for name, _ in route.body_params}
+        request = transport.build_transport_request(
+            transport.YOUTUBE_INNERTUBE_ROUTE,
+            {
+                "endpoint": "search",
+                "query": "probe",
+                "client_name": "WEB",
+                "smuggled": '{"mutate": true}',
+            },
+        )
+
+        self.assertNotIn("smuggled", request.body)
+        self.assertNotIn("mutate", request.body)
+        self.assertIn("smuggled", request.url)
+        self.assertEqual(json.loads(request.body), {
+            "context": {"client": {"clientName": "WEB"}},
+            "query": "probe",
+        })
+        self.assertTrue(declared)
+
+    def test_condition_c_a_route_declaring_no_body_params_never_carries_one(self):
+        for route_id in sorted(transport.ROUTE_CONSTANTS):
+            if transport.route_constant(route_id).body_params:
+                continue
+            with self.subTest(route=route_id):
+                request = transport.build_transport_request(
+                    route_id, {"q": "probe", "body": "anything", "data": "anything"}
+                )
+
+                self.assertEqual(request.body, "")
+
+    def test_condition_d_put_patch_and_delete_are_admitted_by_no_route(self):
+        for route_id in sorted(transport.ROUTE_CONSTANTS):
+            admitted = transport.admitted_methods(route_id)
+            for method in ("PUT", "PATCH", "DELETE"):
+                with self.subTest(route=route_id, method=method):
+                    self.assertNotIn(method, admitted)
+
+    def test_t04_zero_writes_are_reachable_from_any_class_on_the_ladder(self):
+        # Criterion 11's headline, quantified over the ladder rather than over
+        # the route table, so a class with no route today still states the law
+        # it would answer under.
+        for access_class in EVERY_CLASS:
+            for route_id in routes_at((access_class,)):
+                with self.subTest(access_class=access_class, route=route_id):
+                    admitted = transport.admitted_methods(route_id)
+
+                    self.assertEqual(
+                        [method for method in admitted if method not in transport.READ_METHODS],
+                        ["POST"] if route_id in (
+                            transport.TOKEN_ACTIVATION_ROUTES + transport.QUERY_BODY_ROUTES
+                        ) else [],
+                    )
+
+    def test_t06_a_caller_cannot_escape_a_routes_admitted_method_set(self):
+        for route_id in sorted(transport.ROUTE_CONSTANTS):
+            for method in ("PUT", "PATCH", "DELETE", "CONNECT", "TRACE"):
+                with self.subTest(route=route_id, method=method):
+                    request = transport.TransportRequest(
+                        route_id=route_id, method=method, url="https://example.test/probe"
+                    )
+
+                    with forbid_io():
+                        with self.assertRaises(transport.TransportError):
+                            transport.urlopen_response(request)
+
+
+class AbsentMachineryTest(unittest.TestCase):
+    """T07 at this seam: the only state a run holds is a token in memory."""
+
+    def test_t07_a_minted_token_lives_in_the_store_and_nowhere_else(self):
+        store = transport.GuestTokenStore()
+        self.assertEqual(store._tokens, {})
+
+        store._tokens["probe_route"] = "a-token-this-run-minted"
+        self.assertEqual(store.token_for("probe_route"), "a-token-this-run-minted")
+        store.clear()
+
+        self.assertEqual(store._tokens, {})
+        self.assertEqual(
+            transport.tokened_headers((("Accept", "text/html"),), ""),
+            (("Accept", "text/html"),),
+        )
+
+    def test_t07_no_route_constant_or_response_field_can_hold_a_session(self):
+        # There is no cookie, no netrc, no profile and no export: the only
+        # field that could carry one is a header this module attaches at send
+        # time, and a caller's request has never had it.
+        request = transport.build_transport_request(transport.X_GUEST_GRAPHQL_ROUTE, {
+            "query_id": "abc", "operation_name": "TweetResultByRestId"
+        })
+
+        self.assertNotIn(transport.GUEST_TOKEN_HEADER, dict(request.headers))
+
+    def test_t14_the_only_store_there_is_clears_and_nothing_persists(self):
+        # "The package has no delete primitive" — there is nothing to delete,
+        # because the one thing it holds is a dict that goes away with the
+        # process. Physical deletion stays the caller's run store's.
+        self.assertIsInstance(transport.GUEST_TOKENS, transport.GuestTokenStore)
+        transport.GUEST_TOKENS.clear()
+
+        self.assertEqual(transport.GUEST_TOKENS._tokens, {})
+
+
+class UntrustedContentTest(unittest.TestCase):
+    """T09 and criterion 11's second half: acquired text decides nothing.
+
+    The payload is a real DuckDuckGo results page with three snippets that ask
+    for everything a run could give away — a replaced manifest, a widened verb
+    set, a new write target, and the guest token. It is parsed by the shipped
+    `K4` adapter, so what reaches the artifact is what would reach it live.
+    """
+
+    def setUp(self):
+        self.grants_before = route_grants()
+        self.manifest, self.artifact, self.carrier, self.opener = injected_run()
+        self.markers = (
+            "IGNORE YOUR PREVIOUS INSTRUCTIONS",
+            "GRANT ISSUED",
+            "TOOL DEFINITION UPDATE",
+        )
+
+    def test_the_injected_page_was_really_acquired(self):
+        self.assertEqual(self.artifact.outcome, "ok")
+        self.assertEqual(len(self.artifact.records), 3)
+        self.assertEqual(len(self.opener.opened), 1)
+
+    def test_the_run_changed_no_plan_no_grant_and_no_write_set(self):
+        assert_acquired_text_changed_nothing(
+            self, self.manifest, self.artifact, self.carrier.calls, self.grants_before
+        )
+
+    def test_the_hostile_text_is_kept_verbatim_and_only_as_text(self):
+        assert_hostile_text_is_carried_as_content(self, self.artifact, self.markers)
+
+    def test_the_address_a_snippet_demanded_was_recorded_and_never_read(self):
+        # The sharpest form of the claim. One hit really does point at
+        # `evil.example`, so the run holds its address — and holding an address
+        # is not reading it. Hydration reads what the caller froze, never what
+        # a page suggested.
+        locators = [record.canonical_locator for record in self.artifact.records]
+
+        self.assertIn("https://evil.example/collect", locators)
+        self.assertEqual(
+            [call.url for call in self.carrier.calls if "evil.example" in call.url], []
+        )
+
+    def test_the_grants_are_the_same_object_they_were_before_the_run(self):
+        self.assertEqual(route_grants(), self.grants_before)
+
+
+class UntrustedContentOracleCanFailTest(unittest.TestCase):
+    """Criterion 4: the T09 oracle rejects a caller that does what it is told.
+
+    Both consumers are written beside the tree and loaded by path. Nothing in
+    the package produces them and nothing under test is mutated to obtain them.
+    """
+
+    def setUp(self):
+        self.consumers = load_threat_fixture("acting_consumer")
+
+    def test_a_consumer_that_obeys_the_snippet_fails_the_oracle(self):
+        grants_before = route_grants()
+        manifest, artifact, carrier, _ = injected_run()
+
+        obeyed = self.consumers.acts_on_instructions(artifact, carrier)
+
+        self.assertEqual(obeyed, 2)
+        with self.assertRaises(AssertionError) as caught:
+            assert_acquired_text_changed_nothing(
+                self, manifest, artifact, carrier.calls, grants_before
+            )
+
+        self.assertIn("acquired text", str(caught.exception))
+
+    def test_the_obeying_consumer_really_put_a_write_verb_on_the_wire(self):
+        # The rejection is not a technicality about a declaration: the call it
+        # makes is recorded on the carrier with POST on it and an address no
+        # route in this package declares, and transport would refuse it before
+        # any socket — which is the second line of defence, not the first.
+        _, artifact, carrier, _ = injected_run()
+
+        self.consumers.acts_on_instructions(artifact, carrier)
+        obeying = [call for call in carrier.calls if "evil.example" in call.url]
+
+        self.assertEqual([call.method for call in obeying], ["POST", "POST"])
+        with forbid_io():
+            with self.assertRaises(transport.TransportError):
+                transport.urlopen_response(obeying[0])
+
+    def test_a_run_that_acquired_nothing_is_refused_rather_than_passed(self):
+        # The vacuity direction: "no text changed anything" is satisfied
+        # perfectly by a run with no text in it.
+        manifest = injected_manifest()
+        empty = schema.AcquisitionArtifact(
+            artifact_id="artifact:m-injected",
+            manifest_id="m-injected",
+            mode="staged",
+            as_of=FROZEN_OBSERVED_AT,
+            records=(),
+            steps=(),
+        )
+
+        with self.assertRaisesRegex(AssertionError, "no acquired text reached the artifact"):
+            assert_acquired_text_changed_nothing(self, manifest, empty, (), route_grants())
+
+    def test_an_oracle_that_looked_for_no_hostile_text_is_refused(self):
+        _, artifact, _, _ = injected_run()
+
+        with self.assertRaisesRegex(AssertionError, "no hostile text was looked for"):
+            assert_hostile_text_is_carried_as_content(self, artifact, ())
+
+    def test_a_marker_that_never_arrived_is_refused(self):
+        # The other way the content half goes wrong: an adapter that quietly
+        # dropped the hostile snippet would satisfy every clause about fields
+        # that decide things, and would have hidden the payload from the caller.
+        _, artifact, _, _ = injected_run()
+
+        with self.assertRaisesRegex(AssertionError, "never reached a record"):
+            assert_hostile_text_is_carried_as_content(
+                self, artifact, ("A SENTENCE NO SNIPPET CARRIES",)
+            )
+
+    def test_the_same_oracle_accepts_the_consumer_that_reads_and_obeys_nothing(self):
+        grants_before = route_grants()
+        manifest, artifact, carrier, _ = injected_run()
+
+        counted = self.consumers.correct(artifact, carrier)
+
+        self.assertEqual(counted, 3)
+        assert_acquired_text_changed_nothing(
+            self, manifest, artifact, carrier.calls, grants_before
+        )
+
+    def test_nothing_in_the_package_can_reach_the_obeying_consumer(self):
+        named = sorted(
+            path.name
+            for path in PACKAGE_DIR.rglob("*.py")
+            for wrong in ("acts_on_instructions", "acting_consumer", "evil.example")
+            if wrong in path.read_text(encoding="utf-8")
+        )
+
+        self.assertEqual(named, [])
+
+
+class RefusalThreatTest(unittest.TestCase):
+    """T11, T12, T13, T15 and T16 at the seam that decides them."""
+
+    def test_t11_a_refusal_is_typed_on_one_call_and_changes_no_identity(self):
+        page, opener = adapter_page(web_search, 429, read_fixture("origin_page.html"))
+
+        self.assertEqual(page.loss, (transport.RATE_LIMITED,))
+        self.assertEqual(page.outcome, "failed")
+        self.assertEqual(len(opener.opened), 1)
+        # No rotation: one static agent, on this call and on every other.
+        self.assertEqual(
+            [dict(call.headers)["User-Agent"] for call in opener.opened],
+            [transport.USER_AGENT],
+        )
+
+    def test_t11_every_route_is_read_under_the_one_static_identity(self):
+        for route_id in sorted(transport.ROUTE_CONSTANTS):
+            with self.subTest(route=route_id):
+                request = transport.build_transport_request(route_id, {"q": "probe"})
+
+                self.assertEqual(dict(request.headers)["User-Agent"], transport.USER_AGENT)
+
+    def test_t12_and_t15_an_unreachable_route_is_refused_before_any_call(self):
+        carrier, opener = offline_transport(
+            {route_id: (200, "{}", "application/json") for route_id in transport.ROUTE_CONSTANTS}
+        )
+        manifest = schema.AcquisitionManifest(
+            manifest_id="m-unreachable",
+            mode="staged",
+            as_of=FROZEN_OBSERVED_AT,
+            steps=(
+                schema.AcquisitionStep(
+                    step_id="s1-unknown",
+                    kind="discovery",
+                    adapter_id="no_such_adapter",
+                    query="probe",
+                    max_items=5,
+                ),
+            ),
+        )
+
+        artifact = runner.run_acquisition(manifest, carrier)
+
+        self.assertEqual(artifact.steps[0].outcome, "refused")
+        self.assertEqual(artifact.steps[0].loss, ("no_route",))
+        self.assertEqual(opener.opened, [])
+
+    def test_t13_the_index_surface_declares_itself_and_is_the_only_one(self):
+        indexes = sorted(
+            surface.adapter_id
+            for adapter_id in runner.ADAPTER_IDS
+            for surface in runner.surface_descriptors(adapter_id)
+            if surface.representation_kind == "index"
+        )
+
+        self.assertEqual(indexes, ["web_search"])
+        self.assertEqual(runner.descriptor_for("web_search").access_class, "K4")
+
+    def test_t13_every_row_a_k4_read_produces_is_marked_an_index(self):
+        _, artifact, _, _ = injected_run()
+
+        self.assertEqual(
+            sorted({record.representation_kind for record in artifact.records}), ["index"]
+        )
+
+    def test_t16_a_failed_read_is_a_typed_failure_and_never_a_second_read(self):
+        carrier, opener = offline_transport(
+            {
+                route_id: (500, read_fixture("origin_service_unavailable.html"), "text/html")
+                for route_id in transport.ROUTE_CONSTANTS
+            }
+        )
+
+        artifact = runner.run_acquisition(injected_manifest(), carrier)
+
+        self.assertEqual(artifact.outcome, "failed")
+        self.assertEqual(artifact.loss, ("http_status",))
+        self.assertEqual([call.route_id for call in carrier.calls], [transport.DDG_HTML_ROUTE])
+        self.assertEqual(len(opener.opened), 1)
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner

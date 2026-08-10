@@ -809,6 +809,34 @@ def build_transport_request(
     )
 
 
+def without_query_credential(
+    url: str, credential: Optional[PublicClientCredential]
+) -> str:
+    """Take a query-placed credential back off an address before it leaves here.
+
+    :func:`credentialed_url` puts it on at send time, and an origin answers
+    from the address it was asked at — so the address that comes back is the
+    only string in this module that can carry a ``K1`` key past its own seam.
+    That matters because it does not stop here: ``final_url`` is a field every
+    caller sees and one adapter publishes onto a record.
+
+    Only this route's own credential name is dropped, and only where it is
+    actually present, so an address nobody credentialed is handed back
+    untouched rather than re-encoded.
+    """
+
+    if credential is None or credential.placement != QUERY_PLACEMENT:
+        return url
+    split = urllib.parse.urlsplit(url)
+    pairs = urllib.parse.parse_qsl(split.query, keep_blank_values=True)
+    if not any(name == credential.name for name, _ in pairs):
+        return url
+    kept = [(name, value) for name, value in pairs if name != credential.name]
+    return urllib.parse.urlunsplit(
+        (split.scheme, split.netloc, split.path, urllib.parse.urlencode(kept), split.fragment)
+    )
+
+
 def answering_address(response: Any, request: TransportRequest) -> str:
     """Where the read was actually answered from, or the address it was asked at.
 
@@ -817,9 +845,14 @@ def answering_address(response: Any, request: TransportRequest) -> str:
     redirect invisible to every caller above this module. An answer that states
     no address states it came from the one that was asked for, which is what a
     read that was not redirected means.
+
+    Whatever it says, it says it without the credential. A route constant is
+    this module's to hold and nobody else's to see, and an address is the one
+    place a query-placed one could ride out.
     """
 
-    return getattr(response, "url", "") or request.url
+    answered = getattr(response, "url", "") or request.url
+    return without_query_credential(answered, route_credential(request.route_id))
 
 
 def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str]:
