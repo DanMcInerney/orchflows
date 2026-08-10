@@ -188,9 +188,10 @@ but `K5` is uncredentialed.
    attached at send time, never enters a manifest or an artifact, and is stripped
    back off the answering address before that address leaves the transport seam.
 3. A `K3` route is labelled with its operator identity and carries
-   `third_party_archive` on the page **and on every record** — a record's loss is
-   built from the record's own, so an archive that labelled only the page would
-   produce an artifact that reads as the platform throughout.
+   `third_party_archive` on **every record**. The label has to be on the row:
+   `normalize.normalize_page` builds a record's loss from that native record's
+   own and never from the page's, so an archive that labelled only the page
+   would leave an artifact whose rows all read as the platform speaking.
 4. A `K4` discovery hit and its hydrated target are linked, never merged.
 
 `AdapterDescriptor.__post_init__` refuses any `access_class` not in
@@ -255,10 +256,13 @@ roster would otherwise find the gap by being wrong about it.
    would be inferred rather than measured. `linkedin.com/company/<slug>` is a
    different path and would be a different route constant.
 2. **`reddit_archive`'s smoke omits `upvote_ratio` and `selftext`.** The spec's
-   row names both. `upvote_ratio` is a float and `EngagementSnapshot.value` admits
-   only exact integers, so it is not an engagement snapshot; `selftext` is absent
-   on a link submission, so requiring it would fail a healthy read. The parser
-   reads what the payload carries; the row asserted is the one above.
+   row names both, and they fail its assertion for different reasons.
+   `upvote_ratio` is a float where `EngagementSnapshot.value` admits only exact
+   integers, so it is carried nowhere on the record. `selftext` *is* carried — it
+   is the record's `body` — but a link submission has none, so asserting it would
+   fail a healthy read. The gate may yet close the first through `attributes`;
+   until it does, the smoke asserts the seven fields the inventory below lists,
+   and the roster row names more than the shipped adapter carries.
 
 ## Rate budgets, cache, and the work ledger
 
@@ -269,7 +273,8 @@ reading one route declare the same three numbers. An undeclared route takes
 `DEFAULT_MIN_INTERVAL_MS=1000`, `DEFAULT_BURST=1`, `DEFAULT_COOLDOWN_MS=60000`: a
 limit nobody has measured is not one to spend. The measured extremes are
 `reddit_feed`, at one read per 30 000 ms, and `github_rest`, whose anonymous hour
-is sixty reads across two separately counted buckets.
+is sixty reads in each of two separately counted buckets — which is why its two
+surfaces are two routes rather than one.
 
 An HTTP 429 is typed `rate_limited` on the page, sets that route's cooldown, and
 ends the call. It never triggers a second read, another route, or a changed
@@ -331,7 +336,7 @@ The retained codes this package emits, and where:
 
 | code | emitted by |
 | --- | --- |
-| `auth_required` | `router.select_route` for a `K5` route, and seven adapters for an origin's own 401/403 |
+| `auth_required` | `router.select_route` for a `K5` route, and `x_guest`, `linkedin_public`, `instagram_public`, `youtube_innertube` for an origin's own refusal |
 | `no_route` | `router.select_route` and `runner.run_step`, for an adapter or route the core does not declare |
 | `rate_limited` | `adapters.fetch_one_page`, on HTTP 429 |
 | `schema_drift` | five adapters, when a payload's shape is not the one measured |
@@ -342,6 +347,12 @@ The retained codes this package emits, and where:
 | `date_precision_only` | `linkedin_jobs`, `youtube_innertube` |
 | `native_identity_unknown`, `unknown_publication_time`, `target_not_hydrated` | `web_search`, standing on every index hit |
 | `recall_window_partial` | `runner.run_step`, when a cap truncated |
+
+`reddit_feed`, `rss_atom`, `public_page`, `github_rest` and `hacker_news` each
+declare `AUTH_REQUIRED` and produce it nowhere. That is the statement, not an
+oversight: no status those documented-keyless routes can answer with is a report
+that a credential was needed, and a name with zero uses makes it checkable from
+outside the module.
 
 A route that fails does not fall back. `schema_drift` and `stale_identifier` exist
 so that a changed payload is a typed failure rather than an empty success, which
