@@ -723,6 +723,48 @@ def loss_code_spelling(codes):
     return (spelling, declaring)
 
 
+# Number words the shortfall heading may count in, which is every count this
+# list could plausibly reach before it stops being a list.
+NUMBER_WORDS = ("One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten")
+
+
+class ShortfallListCountsItselfTest(unittest.TestCase):
+    """`protocol.md`'s shortfall list asserts completeness, so its count is checked.
+
+    "Two capabilities that ship smaller than their roster row" is a heading that
+    claims to be exhaustive, which is the most expensive kind of sentence to get
+    wrong: a reader who finds a third gap concludes the section is decorative
+    rather than that it is out of date. There were five. A heading that counts
+    and a body that enumerates can disagree silently, so they are compared here.
+    """
+
+    def test_the_heading_counts_the_entries_beneath_it(self):
+        lines = PROTOCOL_PATH.read_text(encoding="utf-8").splitlines()
+        headings = [
+            index
+            for index, line in enumerate(lines)
+            if line.startswith("## ") and "ship smaller than their roster row" in line
+        ]
+
+        self.assertEqual(len(headings), 1, "the shortfall section was renamed or removed")
+        start = headings[0]
+        counted = lines[start].split()[1]
+        self.assertIn(counted, NUMBER_WORDS, "the heading names no count")
+
+        entries = 0
+        for line in lines[start + 1 :]:
+            if line.startswith("## "):
+                break
+            if line[:1].isdigit() and line[1:3] == ". ":
+                entries += 1
+
+        self.assertEqual(
+            entries,
+            NUMBER_WORDS.index(counted) + 1,
+            "the heading says {0} and the list has {1}".format(counted, entries),
+        )
+
+
 class LossVocabularyIsReadOffTheSourceTest(unittest.TestCase):
     """`protocol.md`'s two loss tables, checked against the package's own syntax.
 

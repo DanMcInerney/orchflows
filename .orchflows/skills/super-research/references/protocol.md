@@ -258,10 +258,13 @@ current `SearchTimeline` query id is unrecovered behind an ESM import map) with
 answered 503 with a login portal and §0 forbids reading that as platform
 behaviour; `reddit_oauth` and `youtube_data_api` as `K5` throughput upgrades.
 
-## Two capabilities that ship smaller than their roster row
+## Five capabilities that ship smaller than their roster row
 
 Stated here because a reader comparing the shipped package to the frozen spec's
-roster would otherwise find the gap by being wrong about it.
+roster would otherwise find the gap by being wrong about it. This list asserts
+completeness — five, not "some" — and it is the third enumeration in this file
+that does, so `test_dependency_boundary` counts its entries against the number
+in the heading. An earlier revision said two and had five.
 
 1. **`linkedin_public` reads `/in/<slug>` only.** The spec's row reads
    "profile/company". `findings.md` §1 records `linkedin.com/company/<slug>`
@@ -276,6 +279,29 @@ roster would otherwise find the gap by being wrong about it.
    fail a healthy read. The gate may yet close the first through `attributes`;
    until it does, the smoke asserts the seven fields the inventory below lists,
    and the roster row names more than the shipped adapter carries.
+3. **`web_search` ships DuckDuckGo and no second provider.** The spec's row
+   commits "Brave/Bing as declared secondary providers with per-provider
+   parsers". Neither ships: `transport.py` declares one web-index route and
+   `web_search.py` holds one parser. `findings.md` §1 measured both answering
+   200 and resisting extraction — Brave with obfuscated class names, Bing with
+   markup no clean triple came out of — so a parser for either would be written
+   against markup nobody has extracted from rather than against a measurement.
+   Reopen when one of them yields a title/locator/snippet triple on a probe.
+4. **`reddit_archive` ships one Arctic Shift route of the four the spec names.**
+   The row names `posts/search`, `comments/search`, `posts/ids` and `comments`
+   by `link_id`. Only `posts/ids` is delivered, which is hydration by exact id,
+   so **all Reddit discovery through the archive is absent** — `reddit_feed`'s
+   one-per-30 s RSS and `K4` are the discovery this package has for Reddit. This
+   is also why `scope_required` and `archive_lag` are named in the loss
+   vocabulary and emitted nowhere: the routes where a scope grammar and a lag
+   window would be observable are the three that are not here.
+5. **`rss_atom` is a generic parser bound to one route.** The row reads
+   "Generic RSS/Atom", and the parser is: it reads RSS 2.0 and Atom, identity,
+   dates, enclosures and transcript links. What it cannot do is point anywhere
+   — a feed is a route constant `transport.py` owns, and one is declared,
+   `youtube_channel_feed`. The adapter names no host, so a second feed is a
+   second constant and not a caller-supplied address. That is the non-goal about
+   generic HTTP primitives holding, and it is still less than the row implies.
 
 ## Rate budgets, cache, and the work ledger
 
