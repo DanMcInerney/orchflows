@@ -1018,12 +1018,54 @@ class OrderingContractTest(unittest.TestCase):
 
     def test_most_commented_replays_engagement_against_the_frozen_as_of(self):
         # stale 120, changing 80 (not its earlier 10), equal_time 40 (the
-        # smaller of two at one moment), future 5 (not the 9999 the as_of
+        # earlier of two at one moment), future 5 (not the 9999 the as_of
         # cannot see), then the rows with no eligible metric at all.
         self.assertEqual(
             self.ordered("most_commented"),
             ["stale", "changing", "equal_time", "future", "missing", "wrong_name", "untimed"],
         )
+
+    def test_two_readings_at_one_moment_resolve_to_the_earlier_position(self):
+        # The `equal_time` seed has said "the tie is the smallest stable
+        # snapshot id, never the larger value" since it was written, and until
+        # this test nothing asserted the value it resolves to: 40 and 41 both
+        # sit between `changing`'s 80 and `future`'s 5, so the rank above is
+        # the same either way and the comparator returned 41 — the larger
+        # reading, on the larger id, which is exactly what the rule forbids.
+        equal_time = next(
+            record for record, seed in zip(self.records, self.seeds["records"])
+            if seed["case"] == "equal_time"
+        )
+        resolved = runner.eligible_snapshot(equal_time, "num_comments", self.as_of)
+
+        self.assertEqual([snapshot.value for snapshot in equal_time.engagement], [40, 41])
+        self.assertEqual(resolved.value, 40)
+        self.assertEqual(resolved, equal_time.engagement[0])
+
+    def test_a_tie_is_broken_by_position_and_never_by_how_a_position_is_spelled(self):
+        # Eleven readings at one moment, so the tie spans `#e2` and `#e10`. A
+        # comparator ranking a derived `record#e<position>` id as text picks
+        # `#e9`; one ranking the position picks the first. Values descend, so
+        # a rule that leaked value into the tie is visible here too.
+        source = next(
+            record for record, seed in zip(self.records, self.seeds["records"])
+            if seed["case"] == "equal_time"
+        )
+        crowded = dataclasses.replace(
+            source,
+            engagement=tuple(
+                schema.EngagementSnapshot(
+                    metric_name="num_comments", value=100 - index,
+                    observed_at="2026-08-08T00:00:00Z",
+                )
+                for index in range(11)
+            ),
+        )
+
+        resolved = runner.eligible_snapshot(crowded, "num_comments", self.as_of)
+
+        self.assertEqual(resolved.value, 100)
+        self.assertEqual(sorted(["r#e2", "r#e10"]), ["r#e10", "r#e2"])
 
     def test_most_replied_uses_its_own_declared_metric_and_never_the_other(self):
         self.assertEqual(

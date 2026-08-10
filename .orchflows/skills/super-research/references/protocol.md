@@ -444,10 +444,14 @@ order is the terminal tie everywhere.
   descending, then `usable_basis_time`, then native item id, then record id.
 
 An eligible snapshot is the **greatest observation at or before the manifest's
-`as_of`**, ties broken by smallest stable snapshot id and never by value — picking
-the larger of two simultaneous readings would let a comparator improve its own
-inputs. An observation after `as_of` is not eligible at all, so the replay answers
-the same way whenever it runs.
+`as_of`**, ties broken by the snapshot's earliest declared position and never by
+value — picking the larger of two simultaneous readings would let a comparator
+improve its own inputs. Position, because it is the only stable thing a snapshot
+has: `EngagementSnapshot` carries no id and a record's snapshots are an
+immutable tuple. It is compared as a number and never as a derived
+`record#e<position>` string, which sorts `#e10` below `#e2` and would break the
+tie by how the number was spelled. An observation after `as_of` is not eligible
+at all, so the replay answers the same way whenever it runs.
 
 The two counted orders read the exact metric name the surface declares in
 `comment_count_metric` or `reply_count_metric`. An adapter declaring neither has

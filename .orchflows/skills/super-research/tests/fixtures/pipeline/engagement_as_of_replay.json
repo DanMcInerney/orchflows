@@ -53,7 +53,7 @@
     },
     {
       "case": "equal_time",
-      "why": "two observations at one moment: the tie is the smallest stable snapshot id, never the larger value",
+      "why": "two observations at one moment: the tie is the earlier declared position, never the larger value",
       "adapter_id": "reddit_archive",
       "platform": "reddit",
       "native_identity_namespace": "reddit",

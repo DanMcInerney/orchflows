@@ -65,7 +65,6 @@ from .ordering import (
     instant_seconds,
     order_records,
     ordering_key,
-    snapshot_id,
 )
 from .pacing import (
     US_PER_MS,

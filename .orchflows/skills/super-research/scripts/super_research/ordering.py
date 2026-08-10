@@ -61,43 +61,41 @@ def instant_seconds(value: str) -> Optional[int]:
     return int(moment.timestamp())
 
 
-def snapshot_id(record: schema.AcquisitionRecord, position: int) -> str:
-    """One engagement snapshot's stable id.
-
-    Derived from the record and the snapshot's declared position rather than
-    stored: ``schema.EngagementSnapshot`` carries no id of its own, and a
-    record's snapshots are an immutable tuple, so position is stable for as
-    long as the record is.
-    """
-
-    return "{0}#e{1}".format(record.record_id, position)
-
-
 def eligible_snapshot(
     record: schema.AcquisitionRecord, metric_name: str, as_of: str
 ) -> Optional[schema.EngagementSnapshot]:
     """The snapshot a frozen ``as_of`` replays to: the greatest observation at or before it.
 
-    Equal observation times break by smallest stable snapshot id, never by
-    value — picking the larger of two simultaneous readings would let a
-    comparator improve its own inputs. An observation after ``as_of`` is not
-    eligible at all: the replay must answer the same way whenever it runs.
+    Equal observation times break by the **earliest declared position**, never
+    by value: picking the larger of two simultaneous readings would let a
+    comparator improve its own inputs. Position is the tie because it is the
+    only stable thing a snapshot has — ``schema.EngagementSnapshot`` carries no
+    id, and a record's snapshots are an immutable tuple — and because it is a
+    number rather than text. A derived id of the shape ``record#e<position>``
+    reads as an id and sorts as a word: ``#e10`` sorts below ``#e2``, so a
+    record with ten snapshots would have broken this tie by how the number was
+    spelled. Comparing the position leaves nothing to spell.
+
+    An observation after ``as_of`` is not eligible at all: the replay must
+    answer the same way whenever it runs.
     """
 
     if not metric_name:
         return None
     horizon = instant_seconds(as_of)
-    best: Optional[Tuple[int, str, schema.EngagementSnapshot]] = None
-    for position, snapshot in enumerate(record.engagement):
+    best: Optional[Tuple[int, schema.EngagementSnapshot]] = None
+    for snapshot in record.engagement:
         if snapshot.metric_name != metric_name:
             continue
         observed = instant_seconds(snapshot.observed_at)
         if observed is None or (horizon is not None and observed > horizon):
             continue
-        candidate = (observed, snapshot_id(record, position), snapshot)
-        if best is None or candidate[:2] > best[:2]:
-            best = candidate
-    return None if best is None else best[2]
+        # Strictly greater, so an equal time leaves the earlier position in
+        # place. The tuple is walked in declared order, which is what makes
+        # "earliest position" and "first one seen" the same rule.
+        if best is None or observed > best[0]:
+            best = (observed, snapshot)
+    return None if best is None else best[1]
 
 
 def content_family(record: schema.AcquisitionRecord) -> Tuple[str, str]:
