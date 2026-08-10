@@ -3602,6 +3602,45 @@ class AttestationIsNotAnAbsenceTest(unittest.TestCase):
         self.assertIn("UNPLAYABLE", warning)
         self.assertIn("bot", warning)
 
+    def test_each_refusal_is_typed_as_the_one_it_is_and_not_as_the_measured_one(self):
+        # `attestation_required` is reserved for a payload withheld behind an
+        # attestation this package does not perform. Every non-`OK` playability
+        # used to take it, so a private video and a deleted one were both filed
+        # as a deferred capability — and the warning quoted five clients and
+        # three videos as the evidence for a status the probe run never saw.
+        expected = {
+            "UNPLAYABLE": youtube_innertube.ATTESTATION_REQUIRED,
+            "ERROR": youtube_innertube.ATTESTATION_REQUIRED,
+            "LOGIN_REQUIRED": youtube_innertube.AUTH_REQUIRED,
+            "AGE_VERIFICATION_REQUIRED": youtube_innertube.AUTH_REQUIRED,
+            "CONTENT_CHECK_REQUIRED": youtube_innertube.WITHHELD,
+        }
+        for status, code in sorted(expected.items()):
+            with self.subTest(playability=status):
+                page, _ = adapter_page(
+                    youtube_innertube,
+                    200,
+                    json.dumps(
+                        {"playabilityStatus": {"status": status, "reason": "a reason"}}
+                    ),
+                    content_type="application/json",
+                    request=youtube_request("player:" + YOUTUBE_VIDEO_ID),
+                )
+                warning = " ".join(page.warnings)
+
+                self.assertEqual(page.outcome, "failed")
+                self.assertEqual(page.records, ())
+                self.assertEqual(tuple(page.loss), (code,))
+                self.assertIn(status, warning)
+                self.assertIn("a reason", warning)
+                # The measured citation appears only on the statuses it was
+                # measured on: a module that quotes evidence for its own typing
+                # under a status nobody probed is its own witness.
+                self.assertEqual(
+                    "findings.md §1 measured this status" in warning,
+                    status in youtube_innertube.ATTESTED_PLAYABILITY,
+                )
+
     def test_a_degraded_answer_is_not_mined_for_the_metadata_it_still_carries(self):
         # That fixture carries a complete videoDetails. The origin said it was
         # not serving this client, so reporting its contents as a successful

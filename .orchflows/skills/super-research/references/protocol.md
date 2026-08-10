@@ -317,7 +317,7 @@ The seven codes this delivery adds to the retained vocabulary:
 | --- | --- | --- |
 | `third_party_archive` | an independent archive answered, not the platform | `reddit_archive`, on the page and every record |
 | `stale_identifier` | a vendor identifier rotated; the read was refused, not empty | `x_guest` (404), `youtube_innertube` (400) |
-| `attestation_required` | the origin withheld a payload behind an attestation this package does not perform | `youtube_innertube` |
+| `attestation_required` | the origin withheld a payload behind an attestation this package does not perform | `youtube_innertube`, for the two playability statuses findings.md §1 measured and for a withheld caption list |
 | `network_intercepted` | the local network answered, not the origin | `transport.channel_verdict`, applied in `adapters.fetch_one_page` |
 | `cache_hit` | this run's own memory answered | `cache.RunCache` |
 | `archive_lag` | an archive's coverage trails the platform | **declared, not emitted** |
@@ -343,6 +343,7 @@ The retained codes this package emits, and where:
 | `field_omitted` | nine adapters, when a row lacks a field its route normally carries |
 | `malformed_json` | `reddit_archive`, `x_syndication`, `fake` |
 | `http_status` | `reddit_archive`, `web_search`, `x_syndication` |
+| `withheld` | `youtube_innertube`, for a playability refusal the evidence did not record |
 | `engagement_unavailable` | `reddit_feed`, `web_search` |
 | `date_precision_only` | `linkedin_jobs`, `youtube_innertube` |
 | `native_identity_unknown`, `unknown_publication_time`, `target_not_hydrated` | `web_search`, standing on every index hit |

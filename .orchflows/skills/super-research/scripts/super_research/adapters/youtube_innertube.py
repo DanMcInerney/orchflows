@@ -144,6 +144,14 @@ EMBED_URL_PATH = ("embed", "iframeUrl")
 # was not served, and it was not served because it cannot attest.
 ATTESTED_PLAYABILITY = ("UNPLAYABLE", "ERROR")
 
+# The statuses that are YouTube refusing on its own account rather than this
+# client failing to attest. protocol.md reserves `attestation_required` for a
+# payload withheld behind an attestation this package does not perform, and
+# names `auth_required` for the origin's own refusal; a private video is the
+# second, and typing it as the first would file a video nobody may watch under
+# a capability that is merely deferred.
+CREDENTIAL_PLAYABILITY = ("LOGIN_REQUIRED", "AGE_VERIFICATION_REQUIRED")
+
 # Where the caption tracks would be listed, and the field a caption fetcher
 # would need. The path is read to learn whether the list is empty and for
 # nothing else; the field below is named here so a reader knows this module has
@@ -198,6 +206,10 @@ AUTHORIZATION_STATUSES = (401, 403)
 STALE_IDENTIFIER = "stale_identifier"
 ATTESTATION_REQUIRED = "attestation_required"
 AUTH_REQUIRED = "auth_required"
+# A refusal this evidence has nothing to say about: the origin declined to
+# serve the payload and this package knows only that. It is the retained
+# vocabulary's word for exactly that much, and it claims no cause.
+WITHHELD = "withheld"
 
 
 def dig(payload: Any, path: Sequence[str]) -> Any:
@@ -584,6 +596,62 @@ def _comments_page(
     )
 
 
+def _playability_loss(status: str) -> str:
+    """Which refusal a non-`OK` playability is, off the two declared lists.
+
+    Three answers, because they are three different pieces of news. A status
+    findings.md §1 measured is attestation. A status naming the origin's own
+    refusal is `auth_required`, which is what protocol.md reserves for it. A
+    status on neither list is `withheld`: the origin declined and this package
+    knows only that, and typing it as attestation would report a video that is
+    private, deleted, or region-blocked as a capability merely deferred.
+    """
+
+    if status in ATTESTED_PLAYABILITY:
+        return ATTESTATION_REQUIRED
+    if status in CREDENTIAL_PLAYABILITY:
+        return AUTH_REQUIRED
+    return WITHHELD
+
+
+def _playability_warning(playability: Mapping[str, Any]) -> str:
+    """What the origin said, and the evidence for reading it that way — if any.
+
+    The measured citation is attached only to the statuses it was measured on.
+    Quoting five clients and three videos under a status the probe run never
+    saw would make this module's own warning the evidence for its own typing.
+    """
+
+    status = _text(playability.get(PLAYABILITY_STATUS_KEY))
+    said = "{0} answered 200 with playability {1} ({2}).".format(
+        PLAYER_OPERATION,
+        status or "unstated",
+        _text(playability.get(PLAYABILITY_REASON_KEY)) or "no reason given",
+    )
+    if status in ATTESTED_PLAYABILITY:
+        # Measured on videos that exist, so the code names the cause. The same
+        # status is also how the origin answers for a video it no longer has,
+        # which the reason above is the only thing that distinguishes.
+        return said + (
+            " findings.md §1 measured this status across five clients and three"
+            " videos and names the cause as PoToken/BotGuard attestation;"
+            " caption retrieval and attestation are deferred by the spec. The"
+            " origin's own reason is quoted above: this status is also what it"
+            " answers for a video it no longer holds."
+        )
+    if status in CREDENTIAL_PLAYABILITY:
+        return said + (
+            " That is the origin refusing this read on its own account, not an"
+            " attestation this package could perform: no credential makes a"
+            " keyless route credentialed, and none is supplied."
+        )
+    return said + (
+        " findings.md §1 did not record this status, so nothing here names a"
+        " cause: the origin declined to serve the payload and the reason it"
+        " gave is quoted above."
+    )
+
+
 def _player_page(response: transport.TransportResponse, payload: Any) -> NativePage:
     playability = payload.get(PLAYABILITY_KEY) if isinstance(payload, Mapping) else None
     if not isinstance(playability, Mapping):
@@ -593,27 +661,12 @@ def _player_page(response: transport.TransportResponse, payload: Any) -> NativeP
 
     status = _text(playability.get(PLAYABILITY_STATUS_KEY))
     if status != PLAYABLE_STATUS:
-        # The origin declined to serve this client. findings.md §1 measured
-        # exactly this after the first metadata call, on five clients and three
-        # videos, and names the cause. The answer is not mined for the metadata
-        # it happens to carry: a degraded response is not a successful read.
-        # It is also not a credential problem, whatever its reason says — the
-        # measured reason is a bot check, and a keyless route is not called
-        # credentialed because a body used the word sign in.
-        return _failed(
-            response,
-            ATTESTATION_REQUIRED,
-            "{0} answered 200 with playability {1} ({2}){3}. findings.md §1"
-            " measured this across five clients and three videos and names the"
-            " cause as PoToken/BotGuard attestation; caption retrieval and"
-            " attestation are deferred by the spec.".format(
-                PLAYER_OPERATION,
-                status or "unstated",
-                _text(playability.get(PLAYABILITY_REASON_KEY)) or "no reason given",
-                "" if status in ATTESTED_PLAYABILITY else ", a status the evidence"
-                " did not record",
-            ),
-        )
+        # The origin declined to serve this client, and the answer is not mined
+        # for the metadata it happens to carry: a degraded response is not a
+        # successful read. Which refusal it is comes off the two declared lists
+        # above rather than from "not OK", because the three cases are three
+        # different pieces of news and only one of them is measured.
+        return _failed(response, _playability_loss(status), _playability_warning(playability))
 
     details = payload.get(VIDEO_DETAILS_KEY)
     if not isinstance(details, Mapping):
