@@ -52,6 +52,12 @@ SHIPPED_ADAPTERS = (web_search, reddit_archive, fake)
 # Names a package that rotates identity to outrun a limit would have to spell.
 # None of them is a judgment call: each one is a way to become a different
 # client, and this package has exactly one client.
+# Adapters whose roster row names a vendor identifier that rotates. Every other
+# listed adapter declares none, and one declaring a rotating id without being on
+# this list is declaring a dependency it does not have. In `ADAPTER_IDS` order,
+# because that is the order the check below collects them in.
+ADAPTERS_WITH_ROTATING_IDENTIFIERS = ("x_guest",)
+
 IDENTITY_ROTATION_NAMES = (
     "ProxyHandler",
     "build_opener",
@@ -1121,10 +1127,14 @@ class VolatileIdentifierTest(unittest.TestCase):
                 ),
             )
 
-    def test_an_adapter_that_depends_on_no_rotating_identifier_declares_none(self):
-        for adapter_id in runner.ADAPTER_IDS:
-            with self.subTest(adapter=adapter_id):
-                self.assertEqual(runner.descriptor_for(adapter_id).volatile_identifiers, ())
+    def test_an_adapter_declares_a_rotating_identifier_only_when_it_depends_on_one(self):
+        declaring = tuple(
+            adapter_id
+            for adapter_id in runner.ADAPTER_IDS
+            if runner.descriptor_for(adapter_id).volatile_identifiers
+        )
+
+        self.assertEqual(declaring, ADAPTERS_WITH_ROTATING_IDENTIFIERS)
 
 
 class FakeClockOnlyTest(unittest.TestCase):
