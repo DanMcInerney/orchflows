@@ -152,7 +152,12 @@ class RateGovernor:
         self._clock = clock
         self._sleep = sleep
         self._origin_us = int(round(clock() * US_PER_SECOND))
-        self._route_free_at_us: Dict[str, int] = {}
+        # Per route: the arrival time the declared interval implies, and the
+        # moment a refusal's cooldown ends. They are separate because a burst
+        # allowance may be spent against the first and never against the
+        # second — an origin that asked for fewer requests is not owed fewer.
+        self._route_arrival_us: Dict[str, int] = {}
+        self._route_blocked_until_us: Dict[str, int] = {}
         self.log: List[OriginRead] = []
         self.serves: List[cache.CacheServe] = []
 
@@ -177,13 +182,11 @@ class RateGovernor:
         """Reached only on a cache miss, which is what makes a hit free."""
 
         budget = self._budget_for(request.route_id)
-        waited_us = self._wait_until(self._route_free_at_us.get(request.route_id, 0))
+        waited_us = self._wait_until(self._ready_at(request.route_id, budget))
         began_us = self._elapsed_us()
         response = self._carrier.fetch(request)
         stopped_us = self._elapsed_us()
-        self._route_free_at_us[request.route_id] = (
-            began_us + budget.min_interval_ms * US_PER_MS
-        )
+        self._charge(request.route_id, budget, began_us, stopped_us, response.status)
         self.log.append(
             OriginRead(
                 route_id=request.route_id,
@@ -200,6 +203,36 @@ class RateGovernor:
         if budget is None:
             raise RunnerError("route {0} declares no rate budget".format(route_id))
         return budget
+
+    def _ready_at(self, route_id: str, budget: RouteBudget) -> int:
+        """The earliest moment this route's declared budget admits another read.
+
+        Spacing is a theoretical arrival time the burst allowance may run
+        behind: a route declaring sixty per hour as one bucket spends sixty
+        reads at once and then refills one per minute, which is what the
+        origin permits and what one interval alone would forbid.
+        """
+
+        interval_us = budget.min_interval_ms * US_PER_MS
+        ready_us = self._route_blocked_until_us.get(route_id, 0)
+        arrival_us = self._route_arrival_us.get(route_id)
+        if arrival_us is not None:
+            ready_us = max(ready_us, arrival_us - (budget.burst - 1) * interval_us)
+        return ready_us
+
+    def _charge(
+        self, route_id: str, budget: RouteBudget, began_us: int, stopped_us: int, status: int
+    ) -> None:
+        """Spend one read against this route, and open a cooldown if it was refused."""
+
+        arrival_us = self._route_arrival_us.get(route_id, began_us)
+        self._route_arrival_us[route_id] = (
+            max(arrival_us, began_us) + budget.min_interval_ms * US_PER_MS
+        )
+        if status == transport.RATE_LIMITED_STATUS:
+            self._route_blocked_until_us[route_id] = (
+                stopped_us + budget.cooldown_ms * US_PER_MS
+            )
 
     def _elapsed_us(self) -> int:
         return int(round(self._clock() * US_PER_SECOND)) - self._origin_us

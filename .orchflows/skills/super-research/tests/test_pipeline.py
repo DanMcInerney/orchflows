@@ -24,14 +24,36 @@ they describe.
 from __future__ import annotations
 
 import dataclasses
+import importlib.util
 import unittest
 from pathlib import Path
 
-from super_research import adapters, runner, transport
+from super_research import adapters, runner, schema, transport
+from super_research.adapters import fake, reddit_archive, web_search
 from tests import helpers
 
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "pipeline"
+PACKAGE_DIR = Path(__file__).resolve().parent.parent / "scripts" / "super_research"
+# T02b's adapter written beside the tree, read rather than copied: it writes no
+# failure handling of any kind, which is what makes it proof that a later
+# adapter inherits the protocol's typing rather than repeating it.
+LATER_ADAPTER = Path(__file__).resolve().parent / "fixtures" / "transport" / "minimal_adapter.py"
+
+SHIPPED_ADAPTERS = (web_search, reddit_archive, fake)
+
+# Names a package that rotates identity to outrun a limit would have to spell.
+# None of them is a judgment call: each one is a way to become a different
+# client, and this package has exactly one client.
+IDENTITY_ROTATION_NAMES = (
+    "ProxyHandler",
+    "build_opener",
+    "install_opener",
+    "set_proxy",
+    "proxies",
+    "user_agents",
+    "USER_AGENTS",
+)
 
 # Two routes the roster names and no ticket has implemented yet. They are seeds
 # for the replay, not entries in the route table: what is under test is the
@@ -61,6 +83,7 @@ SEEDED_BUDGETS = {
 }
 
 OK_JSON = (200, '{"data": []}', "application/json")
+RATE_LIMITED_ANSWER = (transport.RATE_LIMITED_STATUS, "slow down", "text/plain")
 US_PER_MS = 1000
 
 # One body every shipped adapter can parse into an empty page: no result
@@ -71,6 +94,56 @@ EMPTY_PAGE_BODY = (200, '{"data": [], "records": []}', "application/json")
 PROBE_REQUEST = adapters.AdapterRequest(
     step_id="s-probe", query="probe", target_ids=("1abc234",)
 )
+
+# T01's tracer fixtures, read rather than copied: the strongest fused-versus-
+# staged claim is over the run's own end-to-end path on the run's own data, and
+# a copy would drift away from the path it claims to describe.
+TRACER_FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "tracer"
+REDDIT_THREAD_LOCATOR = (
+    "https://www.reddit.com/r/LocalLLaMA/comments/1abc234/"
+    "what_is_the_best_local_model_right_now/"
+)
+DISCOVERY_STEP = {
+    "step_id": "s1-discover",
+    "kind": "discovery",
+    "adapter_id": "web_search",
+    "query": "site:reddit.com best local model",
+    "max_items": 6,
+}
+HYDRATION_STEP = {
+    "step_id": "s2-hydrate",
+    "kind": "hydration",
+    "adapter_id": "reddit_archive",
+    "prior_step_id": "s1-discover",
+    "selected_hits": [{"discovery_locator": REDDIT_THREAD_LOCATOR, "target_id": "1abc234"}],
+    "max_items": 6,
+}
+DISCOVERY_MANIFEST = {
+    "schema_version": 2,
+    "manifest_id": "pipeline-discover",
+    "mode": "staged",
+    "as_of": "2026-08-10T00:00:00Z",
+    "steps": [DISCOVERY_STEP],
+}
+
+
+def tracer_responses():
+    """One canned origin answer per route the tracer manifests read."""
+
+    return {
+        transport.DDG_HTML_ROUTE: (
+            200,
+            TRACER_FIXTURE_DIR.joinpath("ddg_html_results.html").read_text(encoding="utf-8"),
+            "text/html",
+        ),
+        transport.ARCTIC_SHIFT_POSTS_ROUTE: (
+            200,
+            TRACER_FIXTURE_DIR.joinpath("arctic_shift_posts_ids.json").read_text(
+                encoding="utf-8"
+            ),
+            "application/json",
+        ),
+    }
 
 
 def probe_request(route_id, index=0):
@@ -95,6 +168,45 @@ def paced_governor(clock, responses, latencies=None, budgets=None):
         sleep=clock.sleep,
     )
     return governor, opener
+
+
+def load_module_beside_the_tree(path):
+    """Load one module written beside the tree, by path.
+
+    These are not package modules: nothing in the package imports them and no
+    discovery pattern matches them. They exist so an oracle can be shown to
+    reject a wrong result — or a bare adapter shown to inherit a right one —
+    without mutating the tree under test.
+    """
+
+    spec = importlib.util.spec_from_file_location("pipeline_fixture_" + path.stem, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def adapter_page(module, clock, answers):
+    """Run one adapter over one canned answer; return its page and the opener."""
+
+    carrier, opener = helpers.offline_transport(clock, {module.DESCRIPTOR.route_id: answers})
+    return module.fetch_native_page(carrier, PROBE_REQUEST), opener
+
+
+def package_sources():
+    """Every source file the package ships."""
+
+    return sorted(PACKAGE_DIR.rglob("*.py"))
+
+
+def sources_naming(names, paths):
+    """Every (file name, name) pair where a source spells something it must not."""
+
+    return sorted(
+        (path.name, name)
+        for path in paths
+        for name in names
+        if name in path.read_text(encoding="utf-8")
+    )
 
 
 def assert_rate_budget_respected(case, governor, budgets):
@@ -221,6 +333,147 @@ class RateBudgetTest(unittest.TestCase):
         )
         with self.assertRaises(runner.RunnerError):
             runner.budgets_from((declared, disagreeing))
+
+
+class BurstAndCooldownTest(unittest.TestCase):
+    """Criterion 1, the other two constants: a burst is spendable, a 429 is waited out."""
+
+    def test_a_declared_burst_leaves_at_once_and_then_paces(self):
+        # GitHub spends its anonymous hour as one bucket, so sixty reads may
+        # leave together and the sixty-first waits a refill. A scheduler that
+        # only knew an interval would take an hour to do what the origin
+        # permits in an instant.
+        clock = helpers.FakeClock()
+        governor, opener = paced_governor(
+            clock, {GITHUB_REST_ROUTE: OK_JSON}, latencies={GITHUB_REST_ROUTE: 0.0}
+        )
+
+        for index in range(GITHUB_REST_BUDGET.burst + 1):
+            governor.fetch(probe_request(GITHUB_REST_ROUTE, index))
+
+        assert_rate_budget_respected(self, governor, SEEDED_BUDGETS)
+        arrivals = [read.at_us for read in governor.log]
+        self.assertEqual(arrivals[: GITHUB_REST_BUDGET.burst], [0] * GITHUB_REST_BUDGET.burst)
+        self.assertEqual(
+            arrivals[GITHUB_REST_BUDGET.burst],
+            GITHUB_REST_BUDGET.min_interval_ms * US_PER_MS,
+        )
+        self.assertEqual(len(opener.opened), GITHUB_REST_BUDGET.burst + 1)
+
+    def test_a_429_holds_that_route_for_its_declared_cooldown(self):
+        clock = helpers.FakeClock()
+        governor, _ = paced_governor(
+            clock,
+            {REDDIT_FEED_ROUTE: [OK_JSON, RATE_LIMITED_ANSWER, OK_JSON]},
+            latencies={REDDIT_FEED_ROUTE: 0.5},
+        )
+
+        for index in range(3):
+            governor.fetch(probe_request(REDDIT_FEED_ROUTE, index))
+
+        assert_rate_budget_respected(self, governor, SEEDED_BUDGETS)
+        self.assertEqual([read.status for read in governor.log], [200, 429, 200])
+        # The refusal ends at the moment it landed plus the declared cooldown,
+        # which is strictly later than the interval alone would have allowed.
+        refusal = governor.log[1]
+        self.assertEqual(
+            governor.log[2].at_us,
+            refusal.at_us + refusal.duration_us + REDDIT_FEED_BUDGET.cooldown_ms * US_PER_MS,
+        )
+        self.assertGreater(
+            governor.log[2].at_us - refusal.at_us,
+            REDDIT_FEED_BUDGET.min_interval_ms * US_PER_MS,
+        )
+
+    def test_the_whole_of_the_governors_answer_to_a_429_is_to_wait(self):
+        clock = helpers.FakeClock()
+        governor, opener = paced_governor(
+            clock,
+            {REDDIT_FEED_ROUTE: [RATE_LIMITED_ANSWER, OK_JSON]},
+            latencies={REDDIT_FEED_ROUTE: 0.5},
+        )
+
+        governor.fetch(probe_request(REDDIT_FEED_ROUTE, 0))
+        governor.fetch(probe_request(REDDIT_FEED_ROUTE, 1))
+
+        assert_rate_budget_respected(self, governor, SEEDED_BUDGETS)
+        self.assertEqual(
+            governor.log[1].waited_us, REDDIT_FEED_BUDGET.cooldown_ms * US_PER_MS
+        )
+        self.assertEqual({request.route_id for request in opener.opened}, {REDDIT_FEED_ROUTE})
+
+    def test_a_rate_limited_response_is_typed_rather_than_substituted(self):
+        # Including on an adapter that writes no failure handling at all: the
+        # branch lives in the protocol, so no adapter has to remember it and
+        # none can quietly report a refusal as a result.
+        later = load_module_beside_the_tree(LATER_ADAPTER)
+
+        for module in SHIPPED_ADAPTERS + (later,):
+            with self.subTest(adapter=module.DESCRIPTOR.adapter_id):
+                page, opener = adapter_page(module, helpers.FakeClock(), RATE_LIMITED_ANSWER)
+
+                self.assertEqual(page.loss, (transport.RATE_LIMITED,))
+                self.assertEqual(page.outcome, "failed")
+                self.assertEqual(page.records, ())
+                self.assertEqual(page.route_id, module.DESCRIPTOR.route_id)
+                self.assertEqual(len(opener.opened), 1)
+
+    def test_a_rate_limited_step_keeps_its_own_route_and_substitutes_nothing(self):
+        clock = helpers.FakeClock()
+        carrier, opener = helpers.offline_transport(
+            clock, {transport.DDG_HTML_ROUTE: RATE_LIMITED_ANSWER}
+        )
+        governor = runner.RateGovernor(carrier, clock=clock.monotonic, sleep=clock.sleep)
+
+        artifact = runner.run_acquisition(schema.parse_manifest(DISCOVERY_MANIFEST), governor)
+
+        self.assertEqual(artifact.steps[0].route_id, transport.DDG_HTML_ROUTE)
+        self.assertEqual(artifact.steps[0].loss, (transport.RATE_LIMITED,))
+        self.assertEqual(artifact.steps[0].outcome, "failed")
+        self.assertEqual(artifact.loss, (transport.RATE_LIMITED,))
+        self.assertEqual(artifact.records, ())
+        self.assertEqual({request.route_id for request in opener.opened}, {transport.DDG_HTML_ROUTE})
+
+    def test_no_package_module_can_become_a_different_client(self):
+        # The structural half of "respected, never evaded": the package holds
+        # one static identity and one channel, and nothing in it spells a way
+        # to acquire a second of either.
+        self.assertEqual(sources_naming(IDENTITY_ROTATION_NAMES, package_sources()), [])
+
+        identities = {
+            value
+            for route_id in transport.ROUTE_CONSTANTS
+            for name, value in transport.build_transport_request(route_id).headers
+            if name.lower() == "user-agent"
+        }
+        self.assertEqual(identities, {transport.USER_AGENT})
+
+
+class VolatileIdentifierTest(unittest.TestCase):
+    """Spec item 4's declaration half: a rotating identifier names its way back."""
+
+    def test_a_volatile_identifier_declared_without_a_recovery_is_refused(self):
+        descriptor = runner.descriptor_for("web_search")
+
+        with self.assertRaises(adapters.AdapterError):
+            dataclasses.replace(
+                descriptor,
+                volatile_identifiers=(
+                    adapters.VolatileIdentifier(name="ddg_result_class", recovery=""),
+                ),
+            )
+        with self.assertRaises(adapters.AdapterError):
+            dataclasses.replace(
+                descriptor,
+                volatile_identifiers=(
+                    adapters.VolatileIdentifier(name="", recovery="re-read one saved page"),
+                ),
+            )
+
+    def test_an_adapter_that_depends_on_no_rotating_identifier_declares_none(self):
+        for adapter_id in runner.ADAPTER_IDS:
+            with self.subTest(adapter=adapter_id):
+                self.assertEqual(runner.descriptor_for(adapter_id).volatile_identifiers, ())
 
 
 class AdapterBranchTest(unittest.TestCase):

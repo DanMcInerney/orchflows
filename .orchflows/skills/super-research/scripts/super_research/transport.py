@@ -40,10 +40,12 @@ REQUEST_TIMEOUT_SECONDS = 20
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 READ_METHODS = ("GET", "HEAD")
 
-# The status an origin answers with when it wants fewer requests. Named here
-# once, because the scheduler that waits it out and the record that reports it
-# must be talking about the same thing.
+# The status an origin answers with when it wants fewer requests, and the typed
+# loss a caller records for it. Named here once each, because the scheduler that
+# waits it out and the record that reports it must be talking about the same
+# thing. A refusal is an outcome, never a reason to become a different client.
 RATE_LIMITED_STATUS = 429
+RATE_LIMITED = "rate_limited"
 
 # The one closed exception to reads-only, named by route id: minting an
 # anonymous guest token needs a POST, and that POST creates no account,

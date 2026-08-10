@@ -33,6 +33,19 @@ DEFAULT_COOLDOWN_MS = 60000
 
 
 @dataclass(frozen=True)
+class VolatileIdentifier:
+    """A vendor identifier that rotates, and the documented way back to a current one.
+
+    Declaring one without its recovery would leave a scheduled outage with no
+    procedure attached, so both halves are required together or neither is
+    admitted.
+    """
+
+    name: str
+    recovery: str
+
+
+@dataclass(frozen=True)
 class AdapterDescriptor:
     """The static declaration a route's adapter makes about itself.
 
@@ -54,6 +67,15 @@ class AdapterDescriptor:
     min_interval_ms: int = DEFAULT_MIN_INTERVAL_MS
     burst: int = DEFAULT_BURST
     cooldown_ms: int = DEFAULT_COOLDOWN_MS
+    volatile_identifiers: Tuple[VolatileIdentifier, ...] = ()
+
+    def __post_init__(self) -> None:
+        for identifier in self.volatile_identifiers:
+            if not identifier.name or not identifier.recovery:
+                raise AdapterError(
+                    "adapter {0} declares a volatile identifier without both a name"
+                    " and a recovery procedure: {1!r}".format(self.adapter_id, identifier)
+                )
 
 
 @dataclass(frozen=True)
@@ -173,5 +195,23 @@ def fetch_one_page(
             ),
             outcome="failed",
             loss=(transport.NETWORK_INTERCEPTED,),
+        )
+    if response.status == transport.RATE_LIMITED_STATUS:
+        # A refusal is typed here for the same reason an interception is: an
+        # adapter that met it alone would report it as an ordinary http status,
+        # and a caller could not tell "the origin asked for fewer requests"
+        # from "the origin has nothing". Neither is a reason to try elsewhere.
+        return build_native_page(
+            descriptor,
+            (),
+            observed_at=response.observed_at,
+            native_order=native_order,
+            warnings=(
+                "route {0} asked for fewer requests: http status {1}".format(
+                    descriptor.route_id, response.status
+                ),
+            ),
+            outcome="failed",
+            loss=(transport.RATE_LIMITED,),
         )
     return parse(response)
