@@ -65,6 +65,7 @@ STDLIB_DIR = Path(sysconfig.get_paths()["stdlib"]).resolve()
 CORE_MODULES = (
     "__init__",
     "cache",
+    "cli",
     "ledger",
     "normalize",
     "ordering",
@@ -84,6 +85,7 @@ CORE_MODULES = (
 CORE_IMPORT_EDGES = {
     "__init__": (),
     "cache": ("transport",),
+    "cli": ("runner", "schema", "transport"),
     "ledger": ("schema",),
     "normalize": ("adapters", "schema"),
     "ordering": ("adapters", "runner", "schema"),
