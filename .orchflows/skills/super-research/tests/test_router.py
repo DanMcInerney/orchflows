@@ -36,10 +36,19 @@ import importlib.util
 import unittest
 from pathlib import Path
 
-from super_research import adapters, runner, schema
+from super_research import adapters, normalize, runner, schema, transport
+from tests import helpers
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "router"
 PACKAGE_DIR = Path(__file__).resolve().parent.parent / "scripts" / "super_research"
+# The measured payloads the roster's two Reddit surfaces were built against,
+# read rather than copied: an archive's label has to be proven on the bytes the
+# archive actually sent, not on a shape written to make the point.
+TRACER_FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "tracer"
+REDDIT_FEED_FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "reddit_feed"
+
+ARCHIVED_POST_ID = "1abc234"
+REDDIT_SUBREDDIT = "LocalLLaMA"
 
 # The ladder's roster, transcribed from the spec's own table rather than
 # derived from the code under test. `test_adapters.RosterIsCompleteTest` keeps
@@ -210,6 +219,78 @@ def assert_the_access_ladder_holds(case, roster):
 
     assert_one_class_per_adapter(case, roster)
     assert_no_capability_needs_a_credential(case, roster)
+
+
+THIRD_PARTY_ARCHIVE = "third_party_archive"
+ARCHIVE_CLASS = "K3"
+
+
+def assert_an_archive_never_speaks_as_the_platform(case, roster, records):
+    """The `K3` law, at the declaration and at the record a caller keeps.
+
+    An archive is not the platform: it is one operator's copy of what another
+    operator published, and a caller who cannot tell the two apart will read a
+    volunteer mirror's gap as the platform's own. So every `K3` surface
+    declares the loss and names an operator that is not the platform, every
+    `K3` record carries both, and no record on any other class carries the
+    label — the mark has to mean something, which it stops doing the moment
+    something that is the platform speaking wears it.
+
+    Records with no `K3` row in them fail rather than pass: this law is about
+    what an archive record says, and nothing said it.
+    """
+
+    for surface in roster:
+        if surface.access_class != ARCHIVE_CLASS:
+            continue
+        if THIRD_PARTY_ARCHIVE not in surface.standing_loss:
+            case.fail(
+                "archive surface {0} declares no {1} standing loss".format(
+                    surface.route_id, THIRD_PARTY_ARCHIVE
+                )
+            )
+        if not surface.operator_identity:
+            case.fail("archive surface {0} names no operator".format(surface.route_id))
+        if surface.operator_identity == surface.platform:
+            case.fail(
+                "archive surface {0} names the platform as its operator".format(
+                    surface.route_id
+                )
+            )
+
+    checked = 0
+    for record in records:
+        if record.access_class == ARCHIVE_CLASS:
+            checked += 1
+            if THIRD_PARTY_ARCHIVE not in record.loss:
+                case.fail(
+                    "archive record {0} carries no {1} loss".format(
+                        record.record_id, THIRD_PARTY_ARCHIVE
+                    )
+                )
+            if not record.operator_identity:
+                case.fail("archive record {0} names no operator".format(record.record_id))
+            if record.operator_identity == record.platform:
+                case.fail(
+                    "archive record {0} names the platform as its operator".format(
+                        record.record_id
+                    )
+                )
+            if record.published_at and record.time_confidence != "reported":
+                case.fail(
+                    "archive record {0} calls its time {1}, and an archive reports"
+                    " a time rather than setting it".format(
+                        record.record_id, record.time_confidence
+                    )
+                )
+        elif THIRD_PARTY_ARCHIVE in record.loss:
+            case.fail(
+                "record {0} on a {1} route carries {2}".format(
+                    record.record_id, record.access_class, THIRD_PARTY_ARCHIVE
+                )
+            )
+    if not checked:
+        case.fail("no archive record was read, so nothing about archives was checked")
 
 
 def credentialed(roster, route_ids):
@@ -383,6 +464,147 @@ class KeylessCapabilityTest(unittest.TestCase):
                     )
 
 
+def archive_seeds():
+    """The two Reddit surfaces, each answering with the bytes it was measured on."""
+
+    return {
+        transport.ARCTIC_SHIFT_POSTS_ROUTE: (
+            200,
+            TRACER_FIXTURE_DIR.joinpath("arctic_shift_posts_ids.json").read_text(
+                encoding="utf-8"
+            ),
+            "application/json",
+        ),
+        transport.REDDIT_FEED_ROUTE: (
+            200,
+            REDDIT_FEED_FIXTURE_DIR.joinpath("subreddit_new.xml").read_text(encoding="utf-8"),
+            "application/atom+xml",
+        ),
+    }
+
+
+def reddit_manifest():
+    """One dispatch over one post, seen by the archive and by Reddit's own feed.
+
+    Both steps, rather than the archive alone, because half of the `K3` law is
+    that the label means something: a keyless route on the same platform,
+    about the same post, in the same artifact, has to come back without it.
+    """
+
+    return schema.AcquisitionManifest(
+        manifest_id="m-k3",
+        mode="staged",
+        as_of="2026-08-10T09:05:00Z",
+        steps=(
+            schema.AcquisitionStep(
+                step_id="s1-archive",
+                kind="hydration",
+                adapter_id="reddit_archive",
+                selected_hits=(
+                    schema.SelectedHit(
+                        discovery_locator="https://www.reddit.com/r/LocalLLaMA/comments/"
+                        + ARCHIVED_POST_ID
+                        + "/what_is_the_best_local_model_right_now/",
+                        target_id=ARCHIVED_POST_ID,
+                    ),
+                ),
+                max_items=5,
+            ),
+            schema.AcquisitionStep(
+                step_id="s2-feed",
+                kind="discovery",
+                adapter_id="reddit_feed",
+                query=REDDIT_SUBREDDIT,
+                max_items=20,
+            ),
+        ),
+    )
+
+
+def records_from(fetch, step, request):
+    """Run one adapter — shipped or written beside the tree — into artifact records."""
+
+    clock = helpers.FakeClock()
+    carrier, _ = helpers.offline_transport(clock, archive_seeds())
+    page = fetch(carrier, request)
+    return normalize.normalize_page(page, step, "artifact:m-k3", "m-k3")
+
+
+ARCHIVE_STEP = reddit_manifest().steps[0]
+FEED_STEP = reddit_manifest().steps[1]
+ARCHIVE_REQUEST = adapters.AdapterRequest(
+    step_id=ARCHIVE_STEP.step_id, target_ids=(ARCHIVED_POST_ID,)
+)
+FEED_REQUEST = adapters.AdapterRequest(step_id=FEED_STEP.step_id, query=REDDIT_SUBREDDIT)
+
+
+class ThirdPartyArchiveTest(unittest.TestCase):
+    """Criterion 5: a `K3` record says whose copy it is.
+
+    Arctic Shift is volunteer-run and has no uptime guarantee and no
+    obligation to be complete. A caller who reads its answer as Reddit's own
+    reads a mirror's gap as a platform gap — the mirror image of the
+    interception rule §0 turns on — so the label and the operator travel on
+    every row, and the row is where a caller reads them.
+    """
+
+    def setUp(self):
+        clock = helpers.FakeClock()
+        carrier, self.opener = helpers.offline_transport(clock, archive_seeds())
+        self.artifact = runner.run_acquisition(
+            reddit_manifest(), carrier, clock=clock.monotonic
+        )
+        self.archived = [
+            record for record in self.artifact.records if record.access_class == ARCHIVE_CLASS
+        ]
+
+    def test_the_run_read_both_reddit_surfaces_and_kept_rows_from_each(self):
+        # The oracle below is only worth its verdict if it read something: one
+        # archived post and the feed's three entries, from two routes.
+        self.assertEqual(self.artifact.outcome, "ok")
+        self.assertEqual(len(self.archived), 1)
+        self.assertEqual(len(self.artifact.records) - len(self.archived), 3)
+        self.assertEqual(
+            sorted({record.access_class for record in self.artifact.records}), ["K0", "K3"]
+        )
+
+    def test_every_archive_record_carries_the_label_and_names_its_operator(self):
+        assert_an_archive_never_speaks_as_the_platform(
+            self, shipped_roster(), self.artifact.records
+        )
+
+    def test_the_operator_the_records_name_is_the_archive_and_not_reddit(self):
+        for record in self.archived:
+            with self.subTest(record=record.record_id):
+                self.assertEqual(record.operator_identity, "arctic-shift")
+                self.assertEqual(record.platform, "reddit")
+                self.assertEqual(record.loss, (THIRD_PARTY_ARCHIVE,))
+                self.assertEqual(record.time_confidence, "reported")
+
+    def test_reddits_own_feed_about_the_same_post_is_not_wearing_the_label(self):
+        # Same platform, same post, one artifact. The feed's row states an
+        # absence of its own — no engagement — and says nothing about archives.
+        feed = [
+            record for record in self.artifact.records if record.route_id == "reddit_feed"
+        ]
+
+        self.assertTrue(feed)
+        for record in feed:
+            with self.subTest(record=record.record_id):
+                self.assertNotIn(THIRD_PARTY_ARCHIVE, record.loss)
+                self.assertEqual(record.operator_identity, "reddit")
+                self.assertEqual(record.time_confidence, "authoritative")
+
+    def test_the_only_archive_surface_in_the_roster_is_the_one_that_declares_it(self):
+        archives = [
+            surface for surface in shipped_roster() if surface.access_class == ARCHIVE_CLASS
+        ]
+
+        self.assertEqual([surface.route_id for surface in archives], ["arctic_shift_posts_ids"])
+        self.assertEqual(archives[0].standing_loss, (THIRD_PARTY_ARCHIVE,))
+        self.assertEqual(archives[0].operator_identity, "arctic-shift")
+
+
 class OracleCanFailTest(unittest.TestCase):
     """Criterion 6, access-class half: the keyless law rejects, and admits.
 
@@ -393,6 +615,88 @@ class OracleCanFailTest(unittest.TestCase):
 
     def setUp(self):
         self.wrong = load_beside_the_tree(FIXTURE_DIR / "credentialed_rosters.py")
+        self.archives = load_beside_the_tree(FIXTURE_DIR / "archive_adapters.py")
+        self.correct_records = records_from(
+            self.archives.correct, ARCHIVE_STEP, ARCHIVE_REQUEST
+        )
+
+    def archive_records(self, fetch):
+        return records_from(fetch, ARCHIVE_STEP, ARCHIVE_REQUEST)
+
+    def test_an_archive_that_leaves_the_label_off_the_record_is_rejected(self):
+        with self.assertRaisesRegex(AssertionError, "carries no third_party_archive loss"):
+            assert_an_archive_never_speaks_as_the_platform(
+                self, shipped_roster(), self.archive_records(self.archives.unlabelled)
+            )
+
+    def test_an_archive_that_labels_only_the_page_is_rejected(self):
+        # The one a descriptor-level check would pass: the declaration is
+        # right, the page is right, and every row a caller keeps is unmarked.
+        page_only = self.archive_records(self.archives.page_labelled_only)
+
+        with self.assertRaisesRegex(AssertionError, "carries no third_party_archive loss"):
+            assert_an_archive_never_speaks_as_the_platform(self, shipped_roster(), page_only)
+
+    def test_an_archive_that_will_not_name_its_operator_is_rejected(self):
+        with self.assertRaisesRegex(AssertionError, "record .* names no operator"):
+            assert_an_archive_never_speaks_as_the_platform(
+                self, shipped_roster(), self.archive_records(self.archives.anonymous)
+            )
+
+    def test_an_archive_answering_under_the_platforms_name_is_rejected(self):
+        with self.assertRaisesRegex(
+            AssertionError, "record .* names the platform as its operator"
+        ):
+            assert_an_archive_never_speaks_as_the_platform(
+                self, shipped_roster(), self.archive_records(self.archives.as_the_platform)
+            )
+
+    def test_a_keyless_route_wearing_the_archive_label_is_rejected(self):
+        wearing = records_from(
+            self.archives.keyless_route_wearing_the_label, FEED_STEP, FEED_REQUEST
+        )
+
+        with self.assertRaisesRegex(
+            AssertionError, "record .* on a K0 route carries third_party_archive"
+        ):
+            assert_an_archive_never_speaks_as_the_platform(self, shipped_roster(), wearing)
+
+    def test_a_run_holding_no_archive_record_is_refused_rather_than_passed(self):
+        # Nothing in these rows is wrong; there is simply nothing here to be
+        # right about, and the archive law must not report a pass over it.
+        feed_only = records_from(self.archives.keyless_route, FEED_STEP, FEED_REQUEST)
+
+        with self.assertRaisesRegex(AssertionError, "no archive record was read"):
+            assert_an_archive_never_speaks_as_the_platform(self, shipped_roster(), feed_only)
+
+    def test_an_archive_surface_declaring_no_standing_loss_is_rejected(self):
+        with self.assertRaisesRegex(
+            AssertionError, "surface .* declares no third_party_archive standing loss"
+        ):
+            assert_an_archive_never_speaks_as_the_platform(
+                self, self.archives.UNDECLARED_LOSS_ROSTER, self.correct_records
+            )
+
+    def test_an_archive_surface_naming_no_operator_is_rejected(self):
+        with self.assertRaisesRegex(AssertionError, "surface .* names no operator"):
+            assert_an_archive_never_speaks_as_the_platform(
+                self, self.archives.ANONYMOUS_OPERATOR_ROSTER, self.correct_records
+            )
+
+    def test_an_archive_surface_naming_the_platform_as_operator_is_rejected(self):
+        with self.assertRaisesRegex(
+            AssertionError, "surface .* names the platform as its operator"
+        ):
+            assert_an_archive_never_speaks_as_the_platform(
+                self, self.archives.OPERATOR_IS_THE_PLATFORM_ROSTER, self.correct_records
+            )
+
+    def test_the_same_archive_law_accepts_the_archive_that_ships(self):
+        # Which is what makes the eight rejections above attributable: the
+        # correct fixture is the same call with nothing overridden.
+        assert_an_archive_never_speaks_as_the_platform(
+            self, shipped_roster(), self.correct_records
+        )
 
     def test_a_credentialed_adapter_of_its_own_is_rejected(self):
         with self.assertRaisesRegex(
