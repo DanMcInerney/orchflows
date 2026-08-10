@@ -239,10 +239,10 @@ class FetchedChannelVerdictTest(unittest.TestCase):
     def test_every_measured_case_survives_the_fetch_seam(self):
         assert_channel_verdicts(self, fetched_verdicts())
 
-    def test_the_verdict_is_one_of_the_closed_set(self):
-        for row in interception_cases():
-            with self.subTest(case=row["case_name"]):
-                self.assertIn(row["expected_verdict"], transport.CHANNEL_VERDICTS)
+    def test_no_fetch_ever_produces_a_verdict_outside_the_closed_set(self):
+        for name, verdict in sorted(fetched_verdicts().items()):
+            with self.subTest(case=name):
+                self.assertIn(verdict, transport.CHANNEL_VERDICTS)
 
 
 class PublicClientCredentialTest(unittest.TestCase):
