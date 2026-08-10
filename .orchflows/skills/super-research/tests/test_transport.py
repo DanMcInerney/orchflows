@@ -375,12 +375,12 @@ class InterceptionReachesThePageTest(unittest.TestCase):
 
 
 class OriginBehaviorSurvivesTest(unittest.TestCase):
-    """The origin's own responses, pinned before the interception branch exists.
+    """The origin's own responses, pinned before the interception branch existed.
 
-    These say what each shipped adapter already does with a response the
-    origin itself sent. They are the counterweight to the interception path:
-    a branch that widened to swallow ordinary failures, or that read the
-    portal marker without the failure status, is caught here.
+    These say what each shipped adapter does with a response the origin itself
+    sent. They are the counterweight to the interception path: a branch that
+    widened to swallow ordinary failures, or that read the portal marker
+    without the failure status, is caught here.
     """
 
     def test_a_marker_less_503_stays_the_origins_own_http_failure(self):
