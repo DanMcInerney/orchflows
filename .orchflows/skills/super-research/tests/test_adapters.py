@@ -39,7 +39,7 @@ import urllib.request
 from pathlib import Path
 from unittest import mock
 
-from super_research import adapters, runner, transport
+from super_research import adapters, runner, schema, transport
 from super_research.adapters import x_guest, x_syndication
 from tests import helpers
 
@@ -973,6 +973,110 @@ class OneCallOnePageTest(unittest.TestCase):
         ]
 
         self.assertEqual(named, [])
+
+
+def x_manifest():
+    """One dispatch reading the same author through both X routes."""
+
+    return schema.AcquisitionManifest(
+        manifest_id="m-x",
+        mode="staged",
+        as_of="2026-08-10T09:00:00Z",
+        steps=(
+            schema.AcquisitionStep(
+                step_id="s1-timeline",
+                kind="hydration",
+                adapter_id="x_syndication",
+                selected_hits=(
+                    schema.SelectedHit(
+                        discovery_locator="https://x.com/simonw", target_id="simonw"
+                    ),
+                ),
+                max_items=200,
+            ),
+            schema.AcquisitionStep(
+                step_id="s2-tweet",
+                kind="hydration",
+                adapter_id="x_guest",
+                selected_hits=(
+                    schema.SelectedHit(
+                        discovery_locator="https://x.com/simonw",
+                        target_id="tweet:1799990000000000001",
+                    ),
+                ),
+                max_items=1,
+            ),
+        ),
+    )
+
+
+class ArtifactSeamTest(unittest.TestCase):
+    """The widest seam: the record a caller keeps, after normalize has run.
+
+    Every test above reads a ``NativePage``, which is an intermediate value.
+    "X reaches its measured capability" is a claim about the artifact, so it
+    is closed here — including the part where one tweet observed twice, at two
+    access classes, stays two records.
+    """
+
+    def setUp(self):
+        clock = helpers.FakeClock()
+        carrier, self.opener = helpers.offline_transport(
+            clock,
+            {
+                transport.X_SYNDICATION_TIMELINE_ROUTE: (
+                    200,
+                    read_fixture("syndication_timeline.html"),
+                    "text/html",
+                ),
+                transport.X_GUEST_GRAPHQL_ROUTE: (
+                    200,
+                    read_fixture("guest_tweet_result.json"),
+                    "application/json",
+                ),
+            },
+        )
+        self.artifact = runner.run_acquisition(x_manifest(), carrier, clock=clock.monotonic)
+
+    def test_the_artifact_holds_every_entry_both_routes_returned(self):
+        self.assertEqual(self.artifact.outcome, "ok")
+        self.assertEqual(self.artifact.loss, ())
+        self.assertEqual(len(self.artifact.records), 101)
+        self.assertEqual([step.records_kept for step in self.artifact.steps], [100, 1])
+        self.assertEqual(len(self.opener.opened), 2)
+
+    def test_a_record_keeps_the_platforms_own_counts_at_the_moment_they_were_read(self):
+        record = self.artifact.records[0]
+        snapshots = {snapshot.metric_name: snapshot for snapshot in record.engagement}
+
+        self.assertEqual(sorted(snapshots), sorted(SYNDICATION_METRICS))
+        self.assertEqual(snapshots["favorite_count"].value, 412)
+        self.assertEqual(snapshots["favorite_count"].observed_at, record.observed_at)
+        # The platform's own page, so its times are authoritative rather than
+        # reported: nothing here is an archive speaking for X.
+        self.assertEqual(record.time_confidence, "authoritative")
+        self.assertEqual(record.access_class, "K2")
+        self.assertEqual(record.usable_basis_time, "2026-08-09T07:00:00Z")
+
+    def test_one_tweet_seen_at_two_access_classes_is_two_records_held_together(self):
+        # wrong_merge_law rule 1: the same native identity observed twice is
+        # one group of two, never one record. The K1 read and the K2 read
+        # disagree about nothing here, and they would still not be folded if
+        # they did.
+        shared = "1799990000000000001"
+        seen = [record for record in self.artifact.records if record.native_item_id == shared]
+        groups = [
+            group
+            for group in self.artifact.groups
+            if len(group.member_record_ids) > 1
+        ]
+
+        self.assertEqual([record.access_class for record in seen], ["K2", "K1"])
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(groups[0].key_kind, "strong")
+        self.assertEqual(
+            sorted(groups[0].member_record_ids), sorted(record.record_id for record in seen)
+        )
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner
