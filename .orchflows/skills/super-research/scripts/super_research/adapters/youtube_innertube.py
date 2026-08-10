@@ -619,8 +619,9 @@ def _player_page(response: transport.TransportResponse, payload: Any) -> NativeP
         "ok",
         warnings=(
             "{0} answered 200 listing no caption track at {1}. findings.md §1"
-            " measured that on every client and every video probed: the tracks"
-            " are withheld from a client that cannot attest, and this is not a"
+            " measured that on every client and every video probed and names"
+            " the cause as PoToken/BotGuard attestation: the tracks are"
+            " withheld from a client that cannot attest, and this is not a"
             " statement that the video has none.".format(
                 PLAYER_OPERATION, ".".join(CAPTION_TRACKS_PATH)
             ),

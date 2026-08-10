@@ -3416,5 +3416,414 @@ class InnerTubeDescriptorTest(unittest.TestCase):
         self.assertEqual(len(opener.opened), 1)
 
 
+WRONG_YOUTUBE_ADAPTERS = (
+    "empty_captions_as_absence_adapter",
+    "stale_version_as_empty_adapter",
+    "every_player_as_attested_adapter",
+)
+
+
+def typed_youtube_pages(module):
+    """Type every measured case through one adapter's own ``fetch_native_page``."""
+
+    return {
+        row["case_name"]: adapter_page(
+            module,
+            row["status"],
+            read_youtube(row["body_fixture"]),
+            content_type="application/json",
+            request=youtube_request(row["target_id"], cursor=row["cursor"]),
+        )[0]
+        for row in youtube_cases()
+    }
+
+
+def assert_captions_are_never_reported_absent(case, adapter_id, pages):
+    """Row 3's oracle: a withheld caption list is named, and named as itself.
+
+    ``pages`` maps a measured case name to the ``NativePage`` some adapter
+    produced for it. Four confusions are called out by name, because each is a
+    different wrong thing to believe.
+
+    A player answer listing no caption track, read as a video with no captions,
+    asserts something false about the video rather than about the read — and it
+    is the one findings.md §1 measured on every client and every video, so it
+    is the answer this adapter will meet every single time.
+
+    A player answer that did list tracks, read as withheld, is the mirror: it
+    would make the claim above satisfiable by typing every player answer the
+    same way, and this package would report attestation on a video it could
+    have read.
+
+    A request the origin refused, read as an empty result, turns a scheduled
+    client-version rotation into silence nobody can attribute; read as an
+    authorization failure, it calls a keyless route credentialed.
+    """
+
+    for row in youtube_cases():
+        name = row["case_name"]
+        case.assertIn(name, pages, "{0} produced no page for case {1}".format(adapter_id, name))
+        page = pages[name]
+        loss = tuple(page.loss)
+        detail = " {0} typed case {1} as outcome {2} loss {3}".format(
+            adapter_id, name, page.outcome, loss
+        )
+        if row["captions_withheld"] is True:
+            if youtube_innertube.ATTESTATION_REQUIRED not in loss:
+                case.fail(
+                    "a player answer listing no caption track was recorded as a"
+                    " video with no captions:" + detail
+                )
+        elif row["captions_withheld"] is False:
+            if youtube_innertube.ATTESTATION_REQUIRED in loss:
+                case.fail(
+                    "a player answer that did list caption tracks was recorded as"
+                    " withheld:" + detail
+                )
+        if row["expected_loss"] == youtube_innertube.STALE_IDENTIFIER:
+            if not page.records and page.outcome != "failed":
+                case.fail("a refused request was recorded as an empty success:" + detail)
+            if youtube_innertube.AUTH_REQUIRED in loss:
+                case.fail(
+                    "a refused request was recorded as an authorization failure:" + detail
+                )
+        case.assertEqual(
+            page.outcome,
+            row["expected_outcome"],
+            "case {0} came back {1}, its evidence says {2}".format(
+                name, page.outcome, row["expected_outcome"]
+            ),
+        )
+        case.assertEqual(
+            loss, (row["expected_loss"],) if row["expected_loss"] else (), detail
+        )
+
+
+class AttestationIsNotAnAbsenceTest(unittest.TestCase):
+    """Criteria 2 and 3: this half's spine, and the false capability it prevents.
+
+    Across five clients and three videos, ``captionTracks`` came back empty
+    every time and playability degraded to ``UNPLAYABLE`` after the first
+    metadata call. That is attestation, not a property of the videos. An
+    adapter that reported it as "no captions" would assert something false
+    about every video it ever read, and it would do so quietly, on a 200, with
+    the rest of the metadata looking perfectly healthy beside it.
+    """
+
+    def test_every_measured_case_is_typed_as_its_evidence_says(self):
+        assert_captions_are_never_reported_absent(
+            self, "youtube_innertube", typed_youtube_pages(youtube_innertube)
+        )
+
+    def test_a_withheld_caption_list_names_where_it_looked_and_why_it_is_empty(self):
+        page, _ = youtube_page("player_metadata.json")
+        warning = " ".join(page.warnings)
+
+        self.assertEqual(page.loss, (youtube_innertube.ATTESTATION_REQUIRED,))
+        self.assertEqual(page.outcome, "ok")
+        self.assertIn(".".join(youtube_innertube.CAPTION_TRACKS_PATH), warning)
+        self.assertIn("attestation", warning)
+        # The record a caller keeps carries it too: a caller reading one record
+        # would otherwise have to correlate back to a step to learn that the
+        # captions were withheld rather than absent.
+        self.assertIn(
+            youtube_innertube.ATTESTATION_REQUIRED, page.records[0].loss
+        )
+
+    def test_a_video_that_does_list_tracks_is_not_reported_as_withheld(self):
+        # Without this the claim above is satisfiable by typing every player
+        # answer the same way, and the oracle would be checking nothing.
+        page, _ = youtube_page(
+            "player_with_caption_tracks.json", target_id="player:7pQm3nXkT2a"
+        )
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(page.loss, ())
+        self.assertNotIn(youtube_innertube.ATTESTATION_REQUIRED, page.records[0].loss)
+
+    def test_an_unplayable_answer_is_attestation_and_never_a_credential_problem(self):
+        page, _ = youtube_page("player_unplayable.json")
+        warning = " ".join(page.warnings)
+
+        self.assertEqual(page.loss, (youtube_innertube.ATTESTATION_REQUIRED,))
+        self.assertEqual(page.outcome, "failed")
+        self.assertNotIn(youtube_innertube.AUTH_REQUIRED, page.loss)
+        self.assertIn("UNPLAYABLE", warning)
+        self.assertIn("bot", warning)
+
+    def test_a_degraded_answer_is_not_mined_for_the_metadata_it_still_carries(self):
+        # That fixture carries a complete videoDetails. The origin said it was
+        # not serving this client, so reporting its contents as a successful
+        # read would make a degraded response indistinguishable from a healthy
+        # one at exactly the moment a caller needs to tell them apart.
+        page, _ = youtube_page("player_unplayable.json")
+
+        self.assertEqual(page.records, ())
+        self.assertIn(
+            "Running a 70B locally", read_youtube("player_unplayable.json")
+        )
+
+    def test_a_refused_request_names_the_rotating_part_and_the_way_back(self):
+        page, opener = youtube_page("innertube_invalid_argument.json", status=400)
+        warning = " ".join(page.warnings)
+
+        self.assertEqual(page.loss, (youtube_innertube.STALE_IDENTIFIER,))
+        self.assertEqual(page.outcome, "failed")
+        self.assertEqual(page.records, ())
+        self.assertIn(youtube_innertube.CLIENT_VERSION, warning)
+        self.assertIn("ytcfg", warning)
+        # And it cost one call: a refused request is an answer, not a reason to
+        # look somewhere else.
+        self.assertEqual(len(opener.opened), 1)
+
+    def test_the_same_bytes_at_two_statuses_are_two_different_answers(self):
+        refused_request, _ = youtube_page("innertube_invalid_argument.json", status=400)
+        refused_read, _ = youtube_page("innertube_invalid_argument.json", status=403)
+
+        self.assertEqual(refused_request.loss, (youtube_innertube.STALE_IDENTIFIER,))
+        self.assertEqual(refused_read.loss, (youtube_innertube.AUTH_REQUIRED,))
+
+    def test_a_results_section_that_moved_is_drift_and_not_a_search_with_no_matches(self):
+        page, _ = youtube_page("search_reshaped.json", target_id=YOUTUBE_SEARCH_TARGET)
+        warning = " ".join(page.warnings)
+
+        self.assertEqual(page.outcome, "failed")
+        self.assertEqual(page.loss, ("schema_drift",))
+        self.assertIn(".".join(youtube_innertube.SEARCH_RESULTS_PATH), warning)
+
+    def test_the_shipped_adapter_never_reads_the_field_a_caption_fetcher_needs(self):
+        # Caption retrieval is deferred by the spec with a named reopen
+        # condition. The module declares the field a fetcher would need so a
+        # reader knows it has seen it, and reads it nowhere: a count of zero is
+        # the statement, and `test_the_caption_scan_can_fail` is what makes the
+        # count worth anything.
+        source = ADAPTER_DIR / "youtube_innertube.py"
+
+        self.assertEqual(names_read(source, "CAPTION_FETCH_FIELD"), 0)
+        self.assertIn("baseUrl", source.read_text(encoding="utf-8"))
+
+    def test_no_youtube_route_returns_auth_required_with_an_empty_credential_store(self):
+        # Criterion 1's other half. The web key is a vendor-published constant,
+        # not a user credential: the only way `auth_required` appears is the
+        # origin's own 401 or 403.
+        for fixture, target in (
+            ("search_results.json", YOUTUBE_SEARCH_TARGET),
+            ("player_metadata.json", "player:" + YOUTUBE_VIDEO_ID),
+        ):
+            with self.subTest(fixture=fixture):
+                page, _ = youtube_page(fixture, target_id=target)
+
+                self.assertNotIn(youtube_innertube.AUTH_REQUIRED, page.loss)
+                self.assertEqual(page.outcome, "ok")
+                self.assertTrue(
+                    transport.route_admissions()[transport.YOUTUBE_INNERTUBE_ROUTE]
+                )
+
+
+class AttestationOracleCanFailTest(unittest.TestCase):
+    """Criterion 6: the oracle above rejects a wrong result, in every direction.
+
+    All three adapters here are written beside the tree and loaded by path.
+    Each runs the shipped adapter and then draws exactly one wrong conclusion
+    from what it returned, which is what makes a rejection attributable to that
+    conclusion and to nothing else. Nothing in the package produces them and
+    nothing under test is mutated to obtain them.
+    """
+
+    def _assert_oracle_rejects(self, name, reason):
+        wrong = load_adapter_fixture(name, directory=YOUTUBE_FIXTURE_DIR)
+
+        with self.assertRaises(AssertionError) as caught:
+            assert_captions_are_never_reported_absent(
+                self, name, typed_youtube_pages(wrong)
+            )
+
+        self.assertIn(reason, str(caught.exception))
+
+    def test_an_adapter_that_calls_a_withheld_caption_list_an_absence_fails_the_oracle(self):
+        # Row 6's named case: the empty list becomes a successful answer
+        # asserting that the video has no captions, which is a claim about the
+        # video that this package is in no position to make.
+        self._assert_oracle_rejects(
+            "empty_captions_as_absence_adapter",
+            "a player answer listing no caption track was recorded as a video with"
+            " no captions",
+        )
+
+    def test_an_adapter_that_calls_every_player_answer_attested_fails_the_oracle(self):
+        # The opposite error. Without this side the oracle could be satisfied
+        # by typing every player answer as withheld, and the package would
+        # report attestation on a video it could have read.
+        self._assert_oracle_rejects(
+            "every_player_as_attested_adapter",
+            "a player answer that did list caption tracks was recorded as withheld",
+        )
+
+    def test_an_adapter_that_answers_a_refused_request_with_nothing_fails_the_oracle(self):
+        self._assert_oracle_rejects(
+            "stale_version_as_empty_adapter",
+            "a refused request was recorded as an empty success",
+        )
+
+    def test_the_same_oracle_passes_on_the_shipped_adapter(self):
+        assert_captions_are_never_reported_absent(
+            self, "youtube_innertube", typed_youtube_pages(youtube_innertube)
+        )
+
+    def test_the_caption_scan_can_fail(self):
+        # Which is what makes the shipped adapter's count of zero worth
+        # anything: a module beside the tree that does read the constant is
+        # named by the same scan.
+        self.assertGreater(
+            names_read(
+                YOUTUBE_FIXTURE_DIR / "empty_captions_as_absence_adapter.py",
+                "CAPTION_FETCH_FIELD",
+            ),
+            0,
+        )
+
+    def test_nothing_in_the_package_can_reach_a_wrong_youtube_adapter(self):
+        named = [
+            path.name
+            for path in PACKAGE_DIR.rglob("*.py")
+            for name in WRONG_YOUTUBE_ADAPTERS
+            if name in path.read_text(encoding="utf-8")
+        ]
+
+        self.assertEqual(named, [])
+
+
+class YoutubeInstagramOneCallOnePageTest(unittest.TestCase):
+    """Criterion 5: one bounded call in, exactly one page out, whatever comes back."""
+
+    def _every_case(self):
+        for row in youtube_cases():
+            yield (
+                "youtube_innertube/" + row["case_name"],
+                youtube_innertube,
+                row["status"],
+                read_youtube(row["body_fixture"]),
+                youtube_request(row["target_id"], cursor=row["cursor"]),
+            )
+        for row in instagram_cases():
+            yield (
+                "instagram_public/" + row["case_name"],
+                instagram_public,
+                row["status"],
+                read_instagram(row["body_fixture"]),
+                adapters.AdapterRequest(step_id="s1-ig", target_ids=(row["username"],)),
+            )
+        for status in (404, 429, 500, 503):
+            yield (
+                "youtube_innertube/http_{0}".format(status),
+                youtube_innertube,
+                status,
+                '{"error": "no"}',
+                youtube_request("player:" + YOUTUBE_VIDEO_ID),
+            )
+            yield (
+                "instagram_public/http_{0}".format(status),
+                instagram_public,
+                status,
+                '{"error": "no"}',
+                INSTAGRAM_REQUEST,
+            )
+
+    def test_every_answer_costs_one_call_on_the_adapters_own_route(self):
+        for name, module, status, body, request in self._every_case():
+            with self.subTest(case=name):
+                page, opener = adapter_page(
+                    module, status, body, content_type="application/json", request=request
+                )
+
+                self.assertEqual(len(opener.opened), 1)
+                self.assertEqual(
+                    [call.route_id for call in opener.opened], [module.DESCRIPTOR.route_id]
+                )
+                self.assertEqual(page.route_id, module.DESCRIPTOR.route_id)
+                self.assertIsInstance(page, adapters.NativePage)
+
+    def test_a_continuation_the_core_hands_back_is_spent_on_the_next_single_call(self):
+        page, opener = youtube_page(
+            "next_comment_threads.json",
+            target_id="next:" + YOUTUBE_VIDEO_ID,
+            cursor=YOUTUBE_COMMENT_CURSOR,
+        )
+
+        self.assertEqual(len(opener.opened), 1)
+        self.assertTrue(page.cursor_out)
+
+    def test_neither_adapter_names_another_adapter_or_the_cores_dispatch(self):
+        for module_name, own_id in (
+            ("youtube_innertube.py", "youtube_innertube"),
+            ("instagram_public.py", "instagram_public"),
+        ):
+            with self.subTest(module=module_name):
+                self.assertEqual(adapters_named(ADAPTER_DIR / module_name, own_id), [])
+                self.assertNotIn(
+                    "call_adapter", (ADAPTER_DIR / module_name).read_text(encoding="utf-8")
+                )
+
+    def test_neither_adapter_reads_a_file_opens_a_socket_or_waits(self):
+        cases = (
+            (youtube_innertube, "player_metadata.json", read_youtube,
+             youtube_request("player:" + YOUTUBE_VIDEO_ID)),
+            (instagram_public, "web_profile_info.json", read_instagram, INSTAGRAM_REQUEST),
+        )
+
+        for module, fixture, reader, request in cases:
+            with self.subTest(adapter=module.DESCRIPTOR.adapter_id):
+                clock = helpers.FakeClock()
+                carrier, _ = helpers.offline_transport(
+                    clock,
+                    {module.DESCRIPTOR.route_id: (200, reader(fixture), "application/json")},
+                )
+
+                with helpers.forbid_io():
+                    with helpers.forbid_sleep():
+                        page = module.fetch_native_page(carrier, request)
+
+                self.assertEqual(page.outcome, "ok")
+
+    def test_a_local_block_is_never_recorded_as_a_platform_gap(self):
+        # Inherited from the protocol by writing nothing: `fetch_one_page`
+        # reads the channel verdict ahead of any status test either adapter
+        # runs, so a captive portal's 503 is `network_intercepted` and never a
+        # YouTube attestation or an Instagram refusal.
+        portal = TRANSPORT_FIXTURE_DIR.joinpath("captive_portal.html").read_text(
+            encoding="utf-8"
+        )
+
+        for module, request in (
+            (youtube_innertube, youtube_request("player:" + YOUTUBE_VIDEO_ID)),
+            (instagram_public, INSTAGRAM_REQUEST),
+        ):
+            with self.subTest(adapter=module.DESCRIPTOR.adapter_id):
+                page, _ = adapter_page(
+                    module, 503, portal, content_type="text/html", request=request
+                )
+
+                self.assertEqual(page.loss, (transport.NETWORK_INTERCEPTED,))
+                self.assertEqual(page.outcome, "failed")
+
+    def test_a_refusal_to_slow_down_is_typed_and_never_substituted(self):
+        for module, request in (
+            (youtube_innertube, youtube_request("player:" + YOUTUBE_VIDEO_ID)),
+            (instagram_public, INSTAGRAM_REQUEST),
+        ):
+            with self.subTest(adapter=module.DESCRIPTOR.adapter_id):
+                page, opener = adapter_page(
+                    module,
+                    transport.RATE_LIMITED_STATUS,
+                    "slow down",
+                    content_type="text/plain",
+                    request=request,
+                )
+
+                self.assertEqual(page.loss, (transport.RATE_LIMITED,))
+                self.assertEqual(page.outcome, "failed")
+                self.assertEqual(len(opener.opened), 1)
+
+
 if __name__ == "__main__":  # pragma: no cover - convenience runner
     unittest.main()
