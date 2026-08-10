@@ -16,6 +16,7 @@ Every test here runs offline against fixtures under `fixtures/x/`.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import unittest
 import urllib.parse
@@ -29,6 +30,8 @@ from tests import helpers
 
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "x"
+PACKAGE_DIR = Path(__file__).resolve().parent.parent / "scripts" / "super_research"
+ADAPTER_DIR = PACKAGE_DIR / "adapters"
 GUEST_QUERY_ID = "V7H0Ap3_Hh2FyS75OCDO3Q"
 MINTED_GUEST_TOKEN = "1804400000000000000"
 
@@ -52,6 +55,95 @@ def read_fixture(name):
     """Read one offline fixture."""
 
     return FIXTURE_DIR.joinpath(name).read_text(encoding="utf-8")
+
+
+def stale_identifier_cases():
+    """The measured case table: a status, a body, and the loss its evidence names."""
+
+    return tuple(json.loads(read_fixture("stale_identifier_cases.json"))["cases"])
+
+
+def adapters_named(path, own_id):
+    """Every adapter id one source names that is not its own."""
+
+    source = path.read_text(encoding="utf-8")
+    return sorted(
+        adapter_id
+        for adapter_id in runner.ADAPTER_IDS
+        if adapter_id != own_id and adapter_id in source
+    )
+
+
+def load_adapter_fixture(name):
+    """Load one adapter written beside the tree, by path.
+
+    These are not package modules: nothing in the package imports them and no
+    discovery pattern matches them. They exist so the oracle below can be shown
+    to reject a wrong result, without mutating the tree under test.
+    """
+
+    spec = importlib.util.spec_from_file_location(
+        "adapter_fixture_" + name, FIXTURE_DIR / (name + ".py")
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def typed_pages(module):
+    """Type every measured case through one adapter's own ``fetch_native_page``."""
+
+    return {
+        row["case_name"]: adapter_page(
+            module,
+            row["status"],
+            read_fixture(row["body_fixture"]),
+            content_type="application/json",
+            request=adapters.AdapterRequest(step_id="s1-x", target_ids=(row["target_id"],)),
+        )[0]
+        for row in stale_identifier_cases()
+    }
+
+
+def assert_stale_identifier_is_typed(case, adapter_id, pages):
+    """The stale-identifier oracle: a rotated id is named, and named as itself.
+
+    ``pages`` maps a measured case name to the ``NativePage`` some adapter
+    produced for it. Three confusions are called out by name, because each one
+    is a different wrong thing to believe: a stale id read as an empty result
+    turns a scheduled rotation into silence, a stale id read as an
+    authorization failure calls a keyless route credentialed, and a refusal
+    read as a stale id sends a reader chasing a bundle over something the
+    origin decided.
+    """
+
+    for row in stale_identifier_cases():
+        name = row["case_name"]
+        case.assertIn(name, pages, "{0} produced no page for case {1}".format(adapter_id, name))
+        page = pages[name]
+        loss = tuple(page.loss)
+        detail = " {0} typed case {1} as outcome {2} loss {3}".format(
+            adapter_id, name, page.outcome, loss
+        )
+        if row["expected_loss"] == x_guest.STALE_IDENTIFIER:
+            if not page.records and page.outcome != "failed":
+                case.fail("a stale query id was recorded as an empty success:" + detail)
+            if x_guest.AUTH_REQUIRED in loss:
+                case.fail("a stale query id was recorded as an authorization failure:" + detail)
+            if x_guest.STALE_IDENTIFIER not in loss:
+                case.fail("a stale query id was not recorded as one:" + detail)
+        elif x_guest.STALE_IDENTIFIER in loss:
+            case.fail("a response naming no stale identifier was recorded as one:" + detail)
+        case.assertEqual(
+            page.outcome,
+            row["expected_outcome"],
+            "case {0} came back {1}, its evidence says {2}".format(
+                name, page.outcome, row["expected_outcome"]
+            ),
+        )
+        case.assertEqual(
+            loss, (row["expected_loss"],) if row["expected_loss"] else (), detail
+        )
 
 
 def adapter_page(module, status, body, content_type="text/html", request=None):
@@ -588,6 +680,257 @@ class GuestDescriptorTest(unittest.TestCase):
 
         self.assertEqual(len(page.records), 1)
         self.assertEqual(len(opener.opened), 1)
+
+
+class StaleIdentifierTest(unittest.TestCase):
+    """Criterion 2: a rotated query id is typed, and never mistaken for the other thing.
+
+    This is the ticket's spine. X rotates these ids on its own release
+    schedule, so the day one goes stale is a day this package must say what
+    happened — not return nothing, and not blame a credential it does not use.
+    """
+
+    def test_every_measured_case_is_typed_as_its_evidence_says(self):
+        assert_stale_identifier_is_typed(self, "x_guest", typed_pages(x_guest))
+
+    def test_a_stale_query_id_names_the_id_and_the_way_back_to_a_current_one(self):
+        page, opener = guest_page(read_fixture("guest_stale_query_id.json"), status=404)
+        warning = " ".join(page.warnings)
+
+        self.assertEqual(page.loss, ("stale_identifier",))
+        self.assertEqual(page.outcome, "failed")
+        self.assertEqual(page.records, ())
+        self.assertIn("TweetResultByRestId", warning)
+        self.assertIn(x_guest.GUEST_QUERY_IDS["TweetResultByRestId"], warning)
+        self.assertIn("import map", warning)
+        # And it cost one call: a stale id is an answer, not a reason to look
+        # somewhere else.
+        self.assertEqual(len(opener.opened), 1)
+
+    def test_a_refusal_is_the_platforms_and_never_a_rotated_id(self):
+        page, _ = guest_page(read_fixture("guest_blocked_operation.json"), status=403)
+
+        self.assertEqual(page.loss, ("auth_required",))
+        self.assertNotIn("stale_identifier", page.loss)
+
+    def test_no_x_route_returns_auth_required_with_an_empty_credential_store(self):
+        # Criterion 1's other half. Both routes are keyless: the only way
+        # `auth_required` can appear is the origin's own 401 or 403, never the
+        # absence of something this package was supposed to have.
+        for module, body, content_type in (
+            (x_syndication, read_fixture("syndication_timeline.html"), "text/html"),
+            (x_guest, read_fixture("guest_tweet_result.json"), "application/json"),
+        ):
+            with self.subTest(adapter=module.DESCRIPTOR.adapter_id):
+                page, _ = adapter_page(
+                    module,
+                    200,
+                    body,
+                    content_type=content_type,
+                    request=adapters.AdapterRequest(
+                        step_id="s1-x", target_ids=("tweet:1799990000000000001",)
+                    ),
+                )
+
+                self.assertNotIn("auth_required", page.loss)
+                self.assertEqual(page.outcome, "ok")
+                self.assertTrue(transport.route_admissions()[module.DESCRIPTOR.route_id])
+
+
+class StaleIdentifierOracleCanFailTest(unittest.TestCase):
+    """Criterion 5: the oracle above rejects a wrong result, in either direction.
+
+    Both adapters here are written beside the tree and loaded by path. Each is
+    ``x_guest`` with exactly one status branch replaced, which is what makes a
+    rejection attributable to that branch and to nothing else. Nothing in the
+    package produces them and nothing under test is mutated to obtain them.
+    """
+
+    def _assert_oracle_rejects(self, name, reason):
+        wrong = load_adapter_fixture(name)
+
+        with self.assertRaises(AssertionError) as caught:
+            assert_stale_identifier_is_typed(self, name, typed_pages(wrong))
+
+        self.assertIn(reason, str(caught.exception))
+
+    def test_an_adapter_that_answers_a_stale_id_with_nothing_fails_the_oracle(self):
+        # Row 5's named case: the 404 comes back as a result set with no rows
+        # in it, so a caller reads "this account has no posts" off a page the
+        # origin never served.
+        self._assert_oracle_rejects(
+            "stale_id_as_empty_adapter",
+            "a stale query id was recorded as an empty success",
+        )
+
+    def test_an_adapter_that_calls_a_stale_id_a_credential_problem_fails_the_oracle(self):
+        self._assert_oracle_rejects(
+            "stale_id_as_auth_required_adapter",
+            "a stale query id was recorded as an authorization failure",
+        )
+
+    def test_an_adapter_that_calls_every_refusal_a_stale_id_fails_the_oracle(self):
+        # The opposite error. Without this side the oracle could be satisfied
+        # by typing everything stale, which would send a reader after a bundle
+        # walk over an operation the origin simply will not serve a guest.
+        self._assert_oracle_rejects(
+            "blocked_as_stale_adapter",
+            "a response naming no stale identifier was recorded as one",
+        )
+
+    def test_the_same_oracle_passes_on_the_shipped_adapter(self):
+        assert_stale_identifier_is_typed(self, "x_guest", typed_pages(x_guest))
+
+
+class OneCallOnePageTest(unittest.TestCase):
+    """Criterion 4: one bounded call in, exactly one page out, whatever comes back.
+
+    An adapter that retried, paged, or reached for a second route on a bad
+    answer would spend an origin's budget without anyone having asked, and the
+    ledger would stop describing the work. The proof is the carrier's own
+    attempt log, over every case in the table and every failure shape either
+    route can answer with.
+    """
+
+    def _every_case(self):
+        for row in stale_identifier_cases():
+            yield (
+                "x_guest/" + row["case_name"],
+                x_guest,
+                row["status"],
+                read_fixture(row["body_fixture"]),
+                "application/json",
+                adapters.AdapterRequest(step_id="s1-x", target_ids=(row["target_id"],)),
+            )
+        syndication = (
+            ("timeline", 200, "syndication_timeline.html"),
+            ("no_next_data", 200, "syndication_without_next_data.html"),
+            ("drifted", 200, "syndication_drifted_container.html"),
+        )
+        for name, status, fixture in syndication:
+            yield (
+                "x_syndication/" + name,
+                x_syndication,
+                status,
+                read_fixture(fixture),
+                "text/html",
+                PROFILE_REQUEST,
+            )
+        for status in (404, 500, 503):
+            yield (
+                "x_syndication/http_{0}".format(status),
+                x_syndication,
+                status,
+                "<html><body>no</body></html>",
+                "text/html",
+                PROFILE_REQUEST,
+            )
+
+    def test_every_answer_costs_one_call_on_the_adapters_own_route(self):
+        for name, module, status, body, content_type, request in self._every_case():
+            with self.subTest(case=name):
+                page, opener = adapter_page(
+                    module, status, body, content_type=content_type, request=request
+                )
+
+                self.assertEqual(len(opener.opened), 1)
+                self.assertEqual(
+                    [call.route_id for call in opener.opened], [module.DESCRIPTOR.route_id]
+                )
+                self.assertEqual(page.route_id, module.DESCRIPTOR.route_id)
+                self.assertIsInstance(page, adapters.NativePage)
+
+    def test_a_cursor_is_surfaced_for_the_core_and_never_followed(self):
+        page, opener = guest_page(
+            read_fixture("guest_user_tweets.json"), target_id="user_tweets:12497"
+        )
+
+        self.assertTrue(page.cursor_out)
+        self.assertEqual(len(opener.opened), 1)
+
+    def test_a_cursor_the_core_hands_back_is_spent_on_the_next_single_call(self):
+        clock = helpers.FakeClock()
+        carrier, opener = helpers.offline_transport(
+            clock,
+            {
+                transport.X_GUEST_GRAPHQL_ROUTE: (
+                    200,
+                    read_fixture("guest_user_tweets.json"),
+                    "application/json",
+                )
+            },
+        )
+
+        x_guest.fetch_native_page(
+            carrier,
+            adapters.AdapterRequest(
+                step_id="s1-x", target_ids=("user_tweets:12497",), cursor="DAABCgABGel3"
+            ),
+        )
+
+        self.assertEqual(len(opener.opened), 1)
+        self.assertIn("DAABCgABGel3", urllib.parse.unquote(opener.opened[0].url))
+
+    def test_neither_adapter_names_another_adapter_or_the_cores_dispatch(self):
+        # "Never calls another adapter" as a structure. Each module speaks to
+        # the transport seam and the shared protocol, and to nothing else, so
+        # no adapter can quietly become a fallback for a route it does not own.
+        for module_name, own_id in (
+            ("x_guest.py", "x_guest"),
+            ("x_syndication.py", "x_syndication"),
+        ):
+            with self.subTest(module=module_name):
+                self.assertEqual(adapters_named(ADAPTER_DIR / module_name, own_id), [])
+                self.assertNotIn(
+                    "call_adapter", (ADAPTER_DIR / module_name).read_text(encoding="utf-8")
+                )
+
+    def test_the_cross_adapter_scan_can_fail(self):
+        # Which is what makes the case above worth anything: a module beside
+        # the tree that does reach another adapter is named by the same scan.
+        self.assertEqual(
+            adapters_named(FIXTURE_DIR / "stale_id_as_empty_adapter.py", "stale_id_as_empty"),
+            ["x_guest"],
+        )
+
+    def test_neither_adapter_reads_a_file_opens_a_socket_or_waits(self):
+        cases = [
+            (x_syndication, read_fixture("syndication_timeline.html"), "text/html", PROFILE_REQUEST),
+            (
+                x_guest,
+                read_fixture("guest_user_tweets.json"),
+                "application/json",
+                adapters.AdapterRequest(step_id="s1-x", target_ids=("user_tweets:12497",)),
+            ),
+        ]
+
+        for module, body, content_type, request in cases:
+            with self.subTest(adapter=module.DESCRIPTOR.adapter_id):
+                clock = helpers.FakeClock()
+                carrier, _ = helpers.offline_transport(
+                    clock, {module.DESCRIPTOR.route_id: (200, body, content_type)}
+                )
+
+                with helpers.forbid_io():
+                    with helpers.forbid_sleep():
+                        page = module.fetch_native_page(carrier, request)
+
+                self.assertEqual(page.outcome, "ok")
+
+    def test_nothing_in_the_package_can_reach_a_wrong_x_adapter(self):
+        wrong = (
+            "stale_id_as_empty_adapter",
+            "stale_id_as_auth_required_adapter",
+            "blocked_as_stale_adapter",
+        )
+        named = [
+            path.name
+            for path in PACKAGE_DIR.rglob("*.py")
+            for name in wrong
+            if name in path.read_text(encoding="utf-8")
+        ]
+
+        self.assertEqual(named, [])
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner
