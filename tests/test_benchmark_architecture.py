@@ -11,6 +11,7 @@ OLD_BENCH = ROOT / "skills" / "workflows" / "orch-bench"
 OLD_EVOLVE = ROOT / "skills" / "workflows" / "orch-evolve"
 # Demoted per contracts/composition.md: evolve is a named composition.
 EVOLVE = ROOT / "compositions" / "evolve.md"
+EVOLVE_GENERATION = ROOT / "compositions" / "references" / "evolve-generation.md"
 TOURNAMENT = ROOT / "compositions" / "skill-tournament.md"
 PANEL = ROOT / "skills" / "engines" / "orch-panel" / "SKILL.md"
 
@@ -175,8 +176,9 @@ class TestFrozenBenchmarkEvolution(unittest.TestCase):
 
     def test_verifies_required_eligibility_before_ranking_survivors(self):
         _, body = split_skill(EVOLVE)
-        self.assertLess(body.index("`orch-verify`"), body.index("`orch-panel`"))
-        contract = normalized(body)
+        combined = body + read(EVOLVE_GENERATION)
+        self.assertLess(combined.index("`orch-verify`"), combined.index("`orch-panel`"))
+        contract = normalized(combined)
         self.assertIn("required eligibility", contract)
         self.assertIn("verified survivors", contract)
         self.assertIn("required deterministic", contract)
@@ -186,7 +188,8 @@ class TestFrozenBenchmarkEvolution(unittest.TestCase):
 
     def test_owns_generation_and_promotion_against_one_frozen_benchmark(self):
         _, body = split_skill(EVOLVE)
-        contract = normalized(body)
+        combined = body + read(EVOLVE_GENERATION)
+        contract = normalized(combined)
         for required in (
             "generation direction",
             "incumbent score card",
@@ -210,7 +213,7 @@ class TestFrozenBenchmarkEvolution(unittest.TestCase):
         ):
             self.assertIn(required, contract)
 
-        calls = set(CALL_EDGE_RE.findall(body))
+        calls = set(CALL_EDGE_RE.findall(combined))
         for sentence in re.split(r"(?<=[.!?])\s+", normalized(procedure(body))):
             if "runner" in sentence:
                 self.assertNotIn("score card", sentence)
@@ -225,6 +228,8 @@ class TestFrozenBenchmarkEvolution(unittest.TestCase):
                 "orch-verify",
                 "orch-panel",
                 "orch-judge",
+                "orch-search-plan",
+                "orch-worklog",
             }
             <= calls
         )
@@ -241,17 +246,25 @@ class TestFrozenBenchmarkEvolution(unittest.TestCase):
         self.assertNotIn("seal", contract)
         # A done check naming something a run can check.
         done = normalized(paragraph(body, "Done check:"))
-        self.assertIn("closing score card", done)
+        self.assertIn("final score card", done)
         self.assertIn("benchmark revision", done)
+        self.assertEqual(
+            set(),
+            set(CALL_EDGE_RE.findall(body)),
+            "Tournament binds Evolve and its writer, never Evolve internals",
+        )
+        self.assertIn("writer binding orch-build", contract)
+        self.assertNotIn("promotion", contract)
 
-    def test_judged_done_check_gets_a_fresh_closing_score_card(self):
+    def test_loop_supplies_the_fresh_final_score_card_without_a_wrapper(self):
         _, body = split_skill(EVOLVE)
-        self.assertLess(body.index("`orch-panel`"), body.index("`orch-judge`"))
-        contract = normalized(body)
-        self.assertIn("judged done-check pass is provisional", contract)
+        combined = body + read(EVOLVE_GENERATION)
+        self.assertLess(combined.index("`orch-panel`"), combined.index("`orch-judge`"))
+        contract = normalized(combined)
         self.assertIn("final incumbent identity", contract)
-        self.assertIn("fresh `orch-judge`", contract)
-        self.assertIn("closing score card", contract)
+        self.assertIn("fresh `orch-judge` done-check", contract)
+        self.assertIn("final score card", contract)
+        self.assertNotRegex(body, r"(?im)^-\s*closing\b")
 
 
 class TestPanelPacketShape(unittest.TestCase):
