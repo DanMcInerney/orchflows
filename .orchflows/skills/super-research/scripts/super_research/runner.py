@@ -13,8 +13,8 @@ from dataclasses import replace
 from typing import List, Optional, Tuple
 
 from . import normalize, router, schema, transport
-from .adapters import AdapterDescriptor, AdapterRequest, NativePage, fake, reddit_archive
-from .adapters import web_search
+from .adapters import AdapterDescriptor, AdapterRequest, NativePage
+from .adapters import fake, reddit_archive, web_search
 
 
 class RunnerError(RuntimeError):
