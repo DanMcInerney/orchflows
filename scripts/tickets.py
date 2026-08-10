@@ -16,6 +16,7 @@ Subcommands:
     ready [--run R]
     claim <run> <id> --by <name>
     set-status <run> <id> <status>
+    packet <run> <id> --reply-to <name> [--workspace <path>]
 """
 
 from __future__ import annotations
@@ -48,6 +49,15 @@ ENGINE_EXECUTORS = frozenset(
 DURATION_RE = re.compile(r"^(\d+)(m|h)$")
 DEFAULT_BOUND_MINUTES = 60
 MAX_WALK_UP = 200
+# contracts/delegation.md: a work-item dispatch may supply the six packet
+# parts by reference to the ticket path. These are the parts that live in
+# a body section; authority and bounds live in frontmatter, and reply_to
+# is the dispatcher's own, never the item's.
+PACKET_SECTIONS = (
+    ("objective", "Objective"),
+    ("inputs", "Fixed inputs"),
+    ("return_contract", "Return fields"),
+)
 
 
 # --- repository / filesystem helpers ---------------------------------------
@@ -185,6 +195,25 @@ def _set_frontmatter_field(text: str, key: str, value: str) -> str:
             return "".join(lines)
     lines.insert(end, f"{key}: {value}{newline}")
     return "".join(lines)
+
+
+def _sections(text: str) -> dict:
+    """Map each ``## Heading`` to its stripped body text."""
+
+    sections: dict = {}
+    heading = None
+    body: list = []
+    for line in text.splitlines():
+        if line.startswith("## "):
+            if heading is not None:
+                sections[heading] = "\n".join(body).strip()
+            heading = line[3:].strip()
+            body = []
+        elif heading is not None:
+            body.append(line)
+    if heading is not None:
+        sections[heading] = "\n".join(body).strip()
+    return sections
 
 
 def _load_ticket(path: Path) -> dict:
@@ -420,9 +449,92 @@ def _cmd_set_status(rest):
     return {"set_status": {"run": run, "id": ticket_id, "status": status}}
 
 
+def _cmd_packet(rest):
+    """Emit the by-reference dispatch packet for one ticket.
+
+    The dispatcher never has to read the ticket body: this refuses a packet
+    missing a part and names it (contracts/delegation.md, orch-delegate), and
+    resolves the one absolute ticket path every worktree agrees on
+    (contracts/work-item.md). Only the three values a ticket cannot carry are
+    supplied here — reply_to belongs to the dispatch rather than the item, the
+    workspace is derived from the pack's cell at dispatch, and the profile
+    binding is a spawn argument, not prompt text.
+    """
+
+    args = list(rest)
+    reply_to = _extract_flag(args, "--reply-to")
+    workspace = _extract_flag(args, "--workspace")
+    if len(args) != 2:
+        return {"error": "usage: packet <run> <id> --reply-to <name> [--workspace <path>]"}
+    run, ticket_id = args
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {"error": "not inside a git repository"}
+    ticket_path = tickets_root / run / f"{ticket_id}.md"
+    if not ticket_path.is_file():
+        return {"error": f"ticket not found: {run}/{ticket_id}"}
+    loaded = _load_ticket(ticket_path)
+    if "error" in loaded:
+        return {"error": loaded["error"]}
+    try:
+        sections = _sections(ticket_path.read_text(encoding="utf-8"))
+    except OSError as error:
+        return {"error": f"unreadable ticket: {error}"}
+
+    executor = (loaded.get("executor") or "").strip().strip("`")
+    missing = []
+    if not reply_to:
+        missing.append("reply_to (--reply-to)")
+    if not executor:
+        missing.append("executor (frontmatter)")
+    if not loaded.get("write_scope"):
+        missing.append("authority (write_scope)")
+    if not loaded.get("bound"):
+        missing.append("bounds (bound)")
+    for part, heading in PACKET_SECTIONS:
+        if not sections.get(heading):
+            missing.append(f"{part} (## {heading})")
+    completion = sections.get("Completion test", "")
+    if not completion:
+        missing.append("completion test (## Completion test)")
+    elif "oracle_class" not in completion.lower():
+        missing.append("oracle_class on every completion-test criterion")
+    if missing:
+        return {"error": "packet incomplete: " + "; ".join(missing)}
+
+    prompt = [
+        f"Apply skill {executor} to ticket {ticket_path}.",
+        "Read the ticket; it is your complete delegation packet — objective, "
+        "fixed inputs, authority (write_scope, excluded_actions), bounds, "
+        "return fields. Gather nothing outside its fixed inputs.",
+    ]
+    if workspace:
+        prompt.append(f"Workspace: {workspace}")
+    prompt.append(
+        "Write your result into the ticket's own sections as you produce it, "
+        "never in one write at the end; the join alone sets terminal status."
+    )
+    prompt.append(f"reply_to: {reply_to} — address your closing message to `{reply_to}`.")
+
+    return {
+        "packet": {
+            "run": loaded.get("run") or run,
+            "id": loaded["id"],
+            "path": str(ticket_path),
+            "executor": executor,
+            "pack": loaded.get("pack"),
+            "profile": loaded.get("profile"),
+            "independence": loaded.get("independence") or "checker",
+            "reply_to": reply_to,
+            "workspace": workspace,
+            "prompt": "\n".join(prompt),
+        }
+    }
+
+
 def _dispatch(argv):
     if not argv:
-        return {"error": "missing subcommand: list | ready | claim | set-status"}
+        return {"error": "missing subcommand: list | ready | claim | set-status | packet"}
     command, rest = argv[0], argv[1:]
     if command == "list":
         return _cmd_list(rest)
@@ -432,6 +544,8 @@ def _dispatch(argv):
         return _cmd_claim(rest)
     if command == "set-status":
         return _cmd_set_status(rest)
+    if command == "packet":
+        return _cmd_packet(rest)
     return {"error": f"unknown subcommand: {command}"}
 
 

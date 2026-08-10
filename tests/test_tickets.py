@@ -323,5 +323,124 @@ class TestNotInsideARepo(unittest.TestCase):
             self.assertEqual({"error": "not inside a git repository"}, payload)
 
 
+FULL_TICKET = """---
+id: T1
+run: testrun
+status: ready
+executor: orch-tdd
+pack: orch-code-pack
+depends_on: []
+write_scope: scratch/t1.txt
+bound: 30m
+---
+
+## Objective
+
+Add `double(n)`.
+
+## Fixed inputs
+
+None.
+
+## Completion test
+
+1. `python -m unittest` exits 0. Oracle: that command. oracle_class: deterministic.
+
+## Return fields
+
+status, changed_artifacts, verification.
+"""
+
+
+class TestPacket(unittest.TestCase):
+    """`packet` is the by-reference dispatch of contracts/delegation.md: the
+    dispatcher gets a path and a refusal check, never the ticket body."""
+
+    def make(self, tmp: Path, body: str = FULL_TICKET) -> Path:
+        (tmp / ".git").mkdir()
+        run_dir = tmp / ".orch" / "tickets" / "testrun"
+        run_dir.mkdir(parents=True)
+        path = run_dir / "T1.md"
+        path.write_text(body, encoding="utf-8")
+        return path
+
+    def test_complete_ticket_yields_an_absolute_path_and_prompt(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            ticket_path = self.make(tmp)
+            packet = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")["packet"]
+            self.assertEqual(str(ticket_path.resolve()), packet["path"])
+            self.assertTrue(Path(packet["path"]).is_absolute())
+            self.assertEqual("orch-tdd", packet["executor"])
+            self.assertEqual("orch-code-pack", packet["pack"])
+            # contracts/work-item.md: absent `independence` reads `checker`.
+            self.assertEqual("checker", packet["independence"])
+            self.assertIn(packet["path"], packet["prompt"])
+            self.assertIn("orch-tdd", packet["prompt"])
+            self.assertIn("reply_to: main", packet["prompt"])
+
+    def test_workspace_rides_the_prompt_only_when_supplied(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            bare = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")["packet"]
+            self.assertIsNone(bare["workspace"])
+            self.assertNotIn("Workspace:", bare["prompt"])
+            with_ws = run_cmd(
+                tmp, "packet", "testrun", "T1", "--reply-to", "main", "--workspace", "/wt/a"
+            )["packet"]
+            self.assertEqual("/wt/a", with_ws["workspace"])
+            self.assertIn("Workspace: /wt/a", with_ws["prompt"])
+
+    def test_missing_body_section_is_refused_by_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            trimmed = FULL_TICKET.split("## Return fields")[0]
+            self.make(tmp, trimmed)
+            payload = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")
+            self.assertIn("return_contract (## Return fields)", payload["error"])
+            self.assertNotIn("packet", payload)
+
+    def test_missing_frontmatter_part_is_refused_by_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, FULL_TICKET.replace("bound: 30m\n", ""))
+            payload = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")
+            self.assertIn("bounds (bound)", payload["error"])
+
+    def test_reply_to_is_required(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            payload = run_cmd(tmp, "packet", "testrun", "T1")
+            self.assertIn("reply_to (--reply-to)", payload["error"])
+
+    def test_criterion_without_oracle_class_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, FULL_TICKET.replace(" oracle_class: deterministic.", ""))
+            payload = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")
+            self.assertIn("oracle_class", payload["error"])
+
+    def test_engine_executor_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, FULL_TICKET.replace("executor: orch-tdd", "executor: orch-task"))
+            payload = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")
+            self.assertIn("is an engine", payload["error"])
+
+    def test_unknown_ticket_and_no_repo_are_errors_not_crashes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            self.assertIn("ticket not found", run_cmd(tmp, "packet", "testrun", "T9", "--reply-to", "main")["error"])
+        with tempfile.TemporaryDirectory() as tmp:
+            result = run_full(Path(tmp), "packet", "testrun", "T1", "--reply-to", "main")
+            self.assertEqual(0, result.returncode)
+            self.assertEqual(
+                {"error": "not inside a git repository"}, json.loads(result.stdout)
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
