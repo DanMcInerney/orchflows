@@ -22,7 +22,7 @@ import urllib.request
 from pathlib import Path
 from unittest import mock
 
-from super_research import adapters, transport
+from super_research import adapters, runner, schema, transport
 from super_research.adapters import fake, reddit_archive, web_search
 
 
@@ -436,6 +436,62 @@ class OriginBehaviorSurvivesTest(unittest.TestCase):
         self.assertEqual(page.outcome, "ok")
         self.assertEqual(page.loss, ())
         self.assertIn('<base href="/login/">', page.records[0].body)
+
+
+def intercepted_step_manifest():
+    """One discovery step, one call, over whichever adapter ``runner`` resolves."""
+
+    return schema.AcquisitionManifest(
+        manifest_id="m-intercepted",
+        mode="staged",
+        as_of=FROZEN_OBSERVED_AT,
+        steps=(
+            schema.AcquisitionStep(
+                step_id="s1-discover",
+                kind="discovery",
+                adapter_id="web_search",
+                query="probe",
+                max_items=10,
+            ),
+        ),
+    )
+
+
+def assert_artifact_never_blames_the_platform(case, artifact):
+    """The objective at its widest seam: what a caller keeps names who blocked it."""
+
+    if transport.NETWORK_INTERCEPTED not in artifact.loss:
+        case.fail(
+            "a local network block reached the artifact as loss {0}".format(artifact.loss)
+        )
+    if "http_status" in artifact.loss:
+        case.fail(
+            "a local network block was recorded as an http status: {0}".format(artifact.loss)
+        )
+
+
+class InterceptionReachesTheArtifactTest(unittest.TestCase):
+    """Criterion 1, at the seam the objective names: the artifact a caller keeps.
+
+    A page is an intermediate value. ``runner`` folds page loss into the step
+    result and the step results into the artifact, so this is where "never
+    recorded as a platform gap" is finally either true or false.
+    """
+
+    def test_a_blocked_run_is_recorded_as_a_local_block_end_to_end(self):
+        carrier, _ = offline_transport(
+            {transport.DDG_HTML_ROUTE: (503, read_fixture("captive_portal.html"), "text/html")}
+        )
+
+        artifact = runner.run_acquisition(intercepted_step_manifest(), carrier)
+
+        assert_artifact_never_blames_the_platform(self, artifact)
+        self.assertEqual(artifact.loss, (transport.NETWORK_INTERCEPTED,))
+        self.assertEqual(artifact.outcome, "failed")
+        self.assertEqual(artifact.records, ())
+        self.assertEqual(
+            [step.loss for step in artifact.steps], [(transport.NETWORK_INTERCEPTED,)]
+        )
 
 
 class PublicClientCredentialTest(unittest.TestCase):
@@ -894,8 +950,8 @@ class OracleCanFailTest(unittest.TestCase):
         assert_channel_verdicts(self, fetched_verdicts())
 
 
-class InterceptionReachesThePageOracleCanFailTest(unittest.TestCase):
-    """Completion criterion 4: the artifact oracle fails on a wrong adapter.
+class InterceptionOracleCanFailTest(unittest.TestCase):
+    """Completion criterion 4: every oracle this ticket adds fails on a wrong result.
 
     Both adapters below are written beside the tree and loaded by path: they
     are the two ways this claim can be false, one in each direction. Nothing
@@ -945,6 +1001,25 @@ class InterceptionReachesThePageOracleCanFailTest(unittest.TestCase):
                 ("status_first_adapter.py", "carrier.fetch"),
             ],
         )
+
+    def test_a_status_first_adapter_fails_the_artifact_oracle_too(self):
+        # The same wrong adapter, stood in for `web_search` at the runner's
+        # own branch: the run completes and its artifact blames DuckDuckGo for
+        # a page this network never let out. Restored on exit — the tree on
+        # disk is never the thing mutated.
+        wrong = load_adapter_fixture("status_first_adapter")
+        carrier, _ = offline_transport(
+            {transport.DDG_HTML_ROUTE: (503, read_fixture("captive_portal.html"), "text/html")}
+        )
+
+        with mock.patch.object(runner, "web_search", wrong):
+            artifact = runner.run_acquisition(intercepted_step_manifest(), carrier)
+
+        self.assertEqual(artifact.loss, ("http_status",))
+        with self.assertRaises(AssertionError) as caught:
+            assert_artifact_never_blames_the_platform(self, artifact)
+
+        self.assertIn("reached the artifact as loss", str(caught.exception))
 
     def test_the_same_oracle_passes_on_every_shipped_adapter(self):
         for module in SHIPPED_ADAPTERS:

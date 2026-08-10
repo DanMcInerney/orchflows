@@ -1,9 +1,10 @@
 """The opposite wrong result: an adapter that blames the network for everything.
 
-It makes the call itself and types every failure status as a local block, so
-the platform's own 503 and its authwall stop being recordable as platform
-behavior at all. That erases the evidence this run exists to collect, which
-is why the interception path must not widen into it.
+The same ``web_search`` stand-in, wrong in the other direction. It makes the
+call itself and types every failure status as a local block, so the
+platform's own 503 and its authwall stop being recordable as platform
+behavior at all — the evidence this run exists to collect. That is what the
+interception path must never widen into.
 
 Loaded by path, part of no package, and never imported by the tree under
 test. It exists so the interception oracle can be shown to fail in the
@@ -14,20 +15,18 @@ from super_research import transport
 from super_research.adapters import AdapterDescriptor, build_native_page
 
 DESCRIPTOR = AdapterDescriptor(
-    adapter_id="intercept_every_failure_probe",
+    adapter_id="web_search",
     adapter_version="1",
-    access_class="offline",
-    route_id=transport.FAKE_OFFLINE_ROUTE,
-    platform="fixture",
-    native_identity_namespace="fixture",
-    representation_kind="native",
-    operator_identity="super-research-fixture",
+    access_class="K4",
+    route_id=transport.DDG_HTML_ROUTE,
+    platform="duckduckgo",
+    native_identity_namespace="",
+    representation_kind="index",
+    operator_identity="duckduckgo",
 )
 
 
 def parse_body(response):
-    """This fixture exists for its failure branch; a success is an empty page."""
-
     return build_native_page(
         DESCRIPTOR, (), observed_at=response.observed_at, outcome="empty"
     )
@@ -36,7 +35,7 @@ def parse_body(response):
 def fetch_native_page(carrier, request):
     response = carrier.fetch(
         transport.build_transport_request(
-            DESCRIPTOR.route_id, {"target": ",".join(request.target_ids)}
+            DESCRIPTOR.route_id, {"q": request.query, "s": request.cursor}
         )
     )
     if response.status != 200:
