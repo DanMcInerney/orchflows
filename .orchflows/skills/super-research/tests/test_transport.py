@@ -240,6 +240,165 @@ class FetchedChannelVerdictTest(unittest.TestCase):
                 self.assertIn(row["expected_verdict"], transport.CHANNEL_VERDICTS)
 
 
+class PublicClientCredentialTest(unittest.TestCase):
+    """Completion criterion 3: the K1 credentials are route constants owned here."""
+
+    def _credential(self, credential_id):
+        return transport.PUBLIC_CLIENT_CREDENTIALS[credential_id]
+
+    def test_the_three_k1_credentials_are_owned_by_this_module(self):
+        self.assertEqual(
+            sorted(transport.PUBLIC_CLIENT_CREDENTIALS),
+            [
+                transport.INSTAGRAM_WEB_APP_ID,
+                transport.X_GUEST_PUBLIC_BEARER,
+                transport.YOUTUBE_INNERTUBE_WEB_KEY,
+            ],
+        )
+
+    def test_the_instagram_app_id_is_the_value_the_evidence_records(self):
+        credential = self._credential(transport.INSTAGRAM_WEB_APP_ID)
+
+        # findings.md §1 records this one in full.
+        self.assertEqual(credential.name, "x-ig-app-id")
+        self.assertEqual(credential.value, "936619743392459")
+        self.assertEqual(credential.placement, "header")
+
+    def test_the_innertube_web_key_matches_the_shape_the_evidence_records(self):
+        credential = self._credential(transport.YOUTUBE_INNERTUBE_WEB_KEY)
+
+        # findings.md §1 records this one elided, as `AIzaSy...11qcW8`. The
+        # middle is not in the evidence, so this pins exactly what is.
+        self.assertTrue(credential.value.startswith("AIzaSy"), credential.value)
+        self.assertTrue(credential.value.endswith("11qcW8"), credential.value)
+        self.assertEqual(credential.name, "key")
+        self.assertEqual(credential.placement, "query")
+
+    def test_the_x_guest_bearer_is_an_authorization_header(self):
+        credential = self._credential(transport.X_GUEST_PUBLIC_BEARER)
+
+        self.assertEqual(credential.name, "Authorization")
+        self.assertEqual(credential.placement, "header")
+        self.assertTrue(credential.value.startswith("Bearer AAAAAAAAAAAAAAAAAAAAA"), credential.value)
+
+    def test_every_credential_declares_a_vendor_a_placement_and_a_value(self):
+        for credential_id, credential in transport.PUBLIC_CLIENT_CREDENTIALS.items():
+            with self.subTest(credential=credential_id):
+                self.assertEqual(credential.credential_id, credential_id)
+                self.assertIn(credential.placement, transport.CREDENTIAL_PLACEMENTS)
+                self.assertTrue(credential.vendor)
+                self.assertTrue(credential.name)
+                self.assertTrue(credential.value)
+
+    def test_every_route_that_names_a_credential_resolves_to_one(self):
+        for route_id, route in transport.ROUTE_CONSTANTS.items():
+            with self.subTest(route=route_id):
+                if route.credential_id:
+                    self.assertIs(
+                        transport.route_credential(route_id),
+                        transport.PUBLIC_CLIENT_CREDENTIALS[route.credential_id],
+                    )
+                else:
+                    self.assertIsNone(transport.route_credential(route_id))
+
+    def test_a_keyless_route_carries_no_credential(self):
+        self.assertIsNone(transport.route_credential(transport.DDG_HTML_ROUTE))
+        self.assertIsNone(transport.route_credential(transport.ARCTIC_SHIFT_POSTS_ROUTE))
+
+
+class CredentialApplicationTest(unittest.TestCase):
+    """A credential is attached at send time, to the url or to the headers."""
+
+    def setUp(self):
+        self.query_credential = transport.PUBLIC_CLIENT_CREDENTIALS[
+            transport.YOUTUBE_INNERTUBE_WEB_KEY
+        ]
+        self.header_credential = transport.PUBLIC_CLIENT_CREDENTIALS[
+            transport.INSTAGRAM_WEB_APP_ID
+        ]
+
+    def test_a_query_placed_credential_is_appended_to_a_bare_url(self):
+        url = transport.credentialed_url("https://example.test/v1/search", self.query_credential)
+
+        self.assertEqual(
+            url, "https://example.test/v1/search?key=" + self.query_credential.value
+        )
+
+    def test_a_query_placed_credential_joins_an_existing_query_string(self):
+        url = transport.credentialed_url("https://example.test/v1?q=a", self.query_credential)
+
+        self.assertEqual(url, "https://example.test/v1?q=a&key=" + self.query_credential.value)
+
+    def test_a_header_placed_credential_never_touches_the_url(self):
+        url = transport.credentialed_url("https://example.test/v1", self.header_credential)
+
+        self.assertEqual(url, "https://example.test/v1")
+
+    def test_a_header_placed_credential_is_appended_to_the_headers(self):
+        headers = transport.credentialed_headers(
+            (("Accept", "application/json"),), self.header_credential
+        )
+
+        self.assertEqual(
+            headers,
+            (("Accept", "application/json"), ("x-ig-app-id", self.header_credential.value)),
+        )
+
+    def test_a_query_placed_credential_never_touches_the_headers(self):
+        headers = transport.credentialed_headers(
+            (("Accept", "application/json"),), self.query_credential
+        )
+
+        self.assertEqual(headers, (("Accept", "application/json"),))
+
+    def test_a_route_without_a_credential_changes_neither(self):
+        self.assertEqual(transport.credentialed_url("https://example.test/v1", None), "https://example.test/v1")
+        self.assertEqual(transport.credentialed_headers((("Accept", "text/html"),), None), (("Accept", "text/html"),))
+
+    def test_applying_a_credential_opens_no_socket_and_reads_no_file(self):
+        with forbid_io():
+            url = transport.credentialed_url("https://example.test/v1", self.query_credential)
+            headers = transport.credentialed_headers((), self.header_credential)
+
+        self.assertIn(self.query_credential.value, url)
+        self.assertEqual(headers[0][1], self.header_credential.value)
+
+
+class CredentialStaysInsideTransportTest(unittest.TestCase):
+    """Criterion 3, leak half: no K1 credential rides on a value the package keeps.
+
+    Everything downstream of this module sees only ``TransportRequest`` and
+    ``TransportResponse`` — the request log, the adapters, and therefore every
+    record and artifact derive from those two. A credential absent from both
+    cannot reach a manifest or an artifact.
+    """
+
+    def _credential_values(self):
+        return [
+            credential.value
+            for credential in transport.PUBLIC_CLIENT_CREDENTIALS.values()
+        ]
+
+    def test_no_built_request_carries_a_credential_value(self):
+        for route_id in sorted(transport.ROUTE_CONSTANTS):
+            with self.subTest(route=route_id):
+                request = transport.build_transport_request(route_id, {"q": "probe"})
+
+                for value in self._credential_values():
+                    self.assertNotIn(value, repr(request))
+
+    def test_no_fetched_response_or_call_log_carries_a_credential_value(self):
+        for route_id in sorted(transport.ROUTE_CONSTANTS):
+            with self.subTest(route=route_id):
+                carrier, _ = offline_transport({route_id: (200, read_fixture("origin_page.html"), "text/html")})
+
+                response = carrier.fetch(transport.build_transport_request(route_id))
+
+                for value in self._credential_values():
+                    self.assertNotIn(value, repr(response))
+                    self.assertNotIn(value, repr(carrier.calls))
+
+
 class OracleCanFailTest(unittest.TestCase):
     """Completion criterion 4: the interception oracle fails on a wrong result.
 

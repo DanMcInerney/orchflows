@@ -27,12 +27,19 @@ DDG_HTML_ROUTE = "ddg_html"
 ARCTIC_SHIFT_POSTS_ROUTE = "arctic_shift_posts_ids"
 FAKE_OFFLINE_ROUTE = "fake_offline"
 
+YOUTUBE_INNERTUBE_WEB_KEY = "youtube_innertube_web_key"
+INSTAGRAM_WEB_APP_ID = "instagram_web_app_id"
+X_GUEST_PUBLIC_BEARER = "x_guest_public_bearer"
+
 # One static identity. Never rotated: a rate limit is an observed constraint
 # this package respects, not one it evades.
 USER_AGENT = "super-research/0.1 (keyless read-only acquisition)"
 REQUEST_TIMEOUT_SECONDS = 20
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 READ_METHODS = ("GET", "HEAD")
+
+# Where a public client credential goes on the wire.
+CREDENTIAL_PLACEMENTS = ("query", "header")
 
 # Which party answered a request. `network_intercepted` is also the typed
 # loss code a caller attaches, so an intercepted route is reported as
@@ -56,6 +63,62 @@ class TransportError(RuntimeError):
 
 
 @dataclass(frozen=True)
+class PublicClientCredential:
+    """A `K1` credential the vendor ships publicly in its own web client.
+
+    It is not a user secret and it is never a manifest or artifact field: it
+    is a route constant this module attaches at send time, so nothing the
+    package records can carry it.
+    """
+
+    credential_id: str
+    vendor: str
+    placement: str
+    name: str
+    value: str
+
+
+PUBLIC_CLIENT_CREDENTIALS: Dict[str, PublicClientCredential] = {
+    # findings.md §1 (YouTube) records this key elided, as `AIzaSy...11qcW8`:
+    # it is embedded in youtube.com's own page source, and no account or
+    # console project is involved. The middle is not in the evidence, so the
+    # value below must be re-proved against a live probe before any YouTube
+    # route is declared live.
+    YOUTUBE_INNERTUBE_WEB_KEY: PublicClientCredential(
+        credential_id=YOUTUBE_INNERTUBE_WEB_KEY,
+        vendor="youtube",
+        placement="query",
+        name="key",
+        value="AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8",
+    ),
+    # findings.md §1 (Instagram) records this one in full: the measured probe
+    # sent `x-ig-app-id: 936619743392459` and got 200 with profile data.
+    INSTAGRAM_WEB_APP_ID: PublicClientCredential(
+        credential_id=INSTAGRAM_WEB_APP_ID,
+        vendor="instagram",
+        placement="header",
+        name="x-ig-app-id",
+        value="936619743392459",
+    ),
+    # findings.md §1 (X) records the activation returning 200 with a guest
+    # token but does not record the bearer the probe sent. This is the bearer
+    # x.com ships in its own logged-out web bundle; like the InnerTube key it
+    # must be re-proved live before the X routes are declared live. The guest
+    # token it mints is per-run state, never a constant.
+    X_GUEST_PUBLIC_BEARER: PublicClientCredential(
+        credential_id=X_GUEST_PUBLIC_BEARER,
+        vendor="x",
+        placement="header",
+        name="Authorization",
+        value=(
+            "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs"
+            "%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA"
+        ),
+    ),
+}
+
+
+@dataclass(frozen=True)
 class RouteConstant:
     route_id: str
     access_class: str
@@ -64,6 +127,7 @@ class RouteConstant:
     path: str
     accept: str
     operator_identity: str = ""
+    credential_id: str = ""
 
 
 ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
@@ -146,6 +210,37 @@ def route_constant(route_id: str) -> RouteConstant:
     return route
 
 
+def route_credential(route_id: str) -> Optional[PublicClientCredential]:
+    """The public client credential this route needs, or None for a keyless one."""
+
+    credential_id = route_constant(route_id).credential_id
+    if not credential_id:
+        return None
+    credential = PUBLIC_CLIENT_CREDENTIALS.get(credential_id)
+    if credential is None:
+        raise TransportError("unknown public client credential " + credential_id)
+    return credential
+
+
+def credentialed_url(url: str, credential: Optional[PublicClientCredential]) -> str:
+    """Apply a query-placed credential. Called at send time, never before."""
+
+    if credential is None or credential.placement != "query":
+        return url
+    separator = "&" if "?" in url else "?"
+    return url + separator + urllib.parse.urlencode(((credential.name, credential.value),))
+
+
+def credentialed_headers(
+    headers: Tuple[Tuple[str, str], ...], credential: Optional[PublicClientCredential]
+) -> Tuple[Tuple[str, str], ...]:
+    """Apply a header-placed credential. Called at send time, never before."""
+
+    if credential is None or credential.placement != "header":
+        return tuple(headers)
+    return tuple(headers) + ((credential.name, credential.value),)
+
+
 def route_admissions() -> Dict[str, bool]:
     """Per-route booleans — the only route knowledge the router ever sees.
 
@@ -183,8 +278,11 @@ def urlopen_response(request: TransportRequest) -> Tuple[int, str, str]:
     if request.method not in READ_METHODS:
         raise TransportError("refusing a write-capable method " + request.method)
 
-    outbound = urllib.request.Request(request.url, method=request.method)
-    for name, value in request.headers:
+    credential = route_credential(request.route_id)
+    outbound = urllib.request.Request(
+        credentialed_url(request.url, credential), method=request.method
+    )
+    for name, value in credentialed_headers(request.headers, credential):
         outbound.add_header(name, value)
     try:
         with urllib.request.urlopen(outbound, timeout=REQUEST_TIMEOUT_SECONDS) as response:
