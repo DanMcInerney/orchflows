@@ -1,0 +1,59 @@
+[
+  {
+    "id": 2411900731,
+    "node_id": "I_kwDOKfPJgs6RQKb7",
+    "number": 812,
+    "title": "KV cache dtype flag is ignored on the second run",
+    "user": {
+      "login": "bramble",
+      "id": 9930014,
+      "type": "User"
+    },
+    "state": "open",
+    "locked": false,
+    "comments": 23,
+    "created_at": "2026-08-09T12:04:51Z",
+    "updated_at": "2026-08-09T16:22:08Z",
+    "closed_at": null,
+    "html_url": "https://github.com/harbourlight/gpu-bench/issues/812",
+    "body": "Passing --kv-cache-dtype twice in one session silently keeps the first value."
+  },
+  {
+    "id": 2411004488,
+    "node_id": "I_kwDOKfPJgs6RMuiI",
+    "number": 809,
+    "title": "Add a two-GPU split benchmark",
+    "user": {
+      "login": "kessel_run",
+      "id": 4410221,
+      "type": "User"
+    },
+    "state": "open",
+    "locked": false,
+    "comments": 31,
+    "created_at": "2026-08-08T20:41:03Z",
+    "updated_at": "2026-08-09T08:12:44Z",
+    "closed_at": null,
+    "html_url": "https://github.com/harbourlight/gpu-bench/issues/809",
+    "body": "The 70B numbers everyone quotes are single-card. A split run would settle it."
+  },
+  {
+    "id": 2409776610,
+    "node_id": "I_kwDOKfPJgs6RIC7i",
+    "number": 803,
+    "title": "Docs: the quantization table is a year out of date",
+    "user": {
+      "login": "quilling",
+      "id": 771230,
+      "type": "User"
+    },
+    "state": "open",
+    "locked": false,
+    "comments": 0,
+    "created_at": "2026-08-07T11:19:36Z",
+    "updated_at": "2026-08-07T11:19:36Z",
+    "closed_at": null,
+    "html_url": "https://github.com/harbourlight/gpu-bench/issues/803",
+    "body": "Half the rows predate the current kernel."
+  }
+]
