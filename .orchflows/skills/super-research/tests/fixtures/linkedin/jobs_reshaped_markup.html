@@ -1,0 +1,29 @@
+<!--
+  Fixture: markup the origin sent that is neither the results list nor a card.
+
+  A K0 route that answers with HTML is still HTML, and LinkedIn is free to
+  rewrite this fragment. The body below is full of content and full of
+  plausible job-looking text - titles, companies, dates in prose - and it
+  carries neither the declared results list nor a single data-entity-urn. A
+  parser that scraped by similarity would find "jobs" here and report some.
+
+  Typed schema_drift, naming both declared markers so an operator knows what
+  was looked for. It is deliberately not the same answer as jobs_empty_list:
+  markup that moved and a search that matched nothing are different facts and
+  cost an operator different work.
+-->
+<div class="jobs-search-results">
+  <section class="results-panel">
+    <p class="results-panel__heading">10 results for reliability engineer</p>
+    <article class="posting-summary">
+      <span class="posting-summary__title">Staff Data Engineer</span>
+      <span class="posting-summary__company">Northwind Analytics</span>
+      <span class="posting-summary__age">Posted 5 days ago</span>
+    </article>
+    <article class="posting-summary">
+      <span class="posting-summary__title">Site Reliability Engineer</span>
+      <span class="posting-summary__company">Kestrel Systems</span>
+      <span class="posting-summary__age">Posted 6 days ago</span>
+    </article>
+  </section>
+</div>

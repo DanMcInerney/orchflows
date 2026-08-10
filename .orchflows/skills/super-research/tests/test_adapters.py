@@ -1170,5 +1170,53 @@ class ArtifactSeamTest(unittest.TestCase):
         )
 
 
+class LinkedInRouteConstantTest(unittest.TestCase):
+    """Both LinkedIn routes name a surface the evidence measured, owned by transport."""
+
+    def test_the_jobs_guest_route_is_the_search_endpoint_the_evidence_measured(self):
+        request = transport.build_transport_request(
+            transport.LINKEDIN_JOBS_GUEST_SEARCH_ROUTE,
+            {"keywords": "reliability engineer", "location": "Seattle", "start": "10"},
+        )
+
+        # findings.md §1 (LinkedIn): linkedin.com/jobs-guest/jobs/api/
+        # seeMoreJobPostings/search returned 200 with 10 jobs, start= paginating.
+        self.assertEqual(
+            request.url,
+            "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
+            "?keywords=reliability+engineer&location=Seattle&start=10",
+        )
+        self.assertEqual(request.method, "GET")
+
+    def test_the_public_profile_route_spends_the_slug_as_a_path_segment(self):
+        request = transport.build_transport_request(
+            transport.LINKEDIN_PUBLIC_PROFILE_ROUTE, {"slug": "avery-lindqvist-8a41b207"}
+        )
+
+        # findings.md §1 (LinkedIn): linkedin.com/in/<slug> returned 200 with a
+        # complete ld+json Person block. The slug is a path segment, so the
+        # endpoint's shape stays transport's and only the value is the caller's.
+        self.assertEqual(
+            request.url, "https://www.linkedin.com/in/avery-lindqvist-8a41b207"
+        )
+        self.assertEqual(request.method, "GET")
+
+    def test_both_linkedin_routes_are_keyless_and_read_only(self):
+        for route_id in (
+            transport.LINKEDIN_JOBS_GUEST_SEARCH_ROUTE,
+            transport.LINKEDIN_PUBLIC_PROFILE_ROUTE,
+        ):
+            with self.subTest(route=route_id):
+                route = transport.route_constant(route_id)
+
+                self.assertTrue(transport.route_admissions()[route_id])
+                self.assertEqual(transport.admitted_methods(route_id), transport.READ_METHODS)
+                self.assertEqual(route.operator_identity, "linkedin")
+                # Neither route carries a credential of any kind. The whole
+                # claim this pair defends is that LinkedIn is readable without
+                # one, so a credential here would contradict the finding.
+                self.assertIsNone(transport.route_credential(route_id))
+
+
 if __name__ == "__main__":  # pragma: no cover - convenience runner
     unittest.main()

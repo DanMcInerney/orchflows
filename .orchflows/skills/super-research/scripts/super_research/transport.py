@@ -30,6 +30,8 @@ ARCTIC_SHIFT_POSTS_ROUTE = "arctic_shift_posts_ids"
 X_GUEST_ACTIVATE_ROUTE = "x_guest_activate"
 X_SYNDICATION_TIMELINE_ROUTE = "x_syndication_timeline"
 X_GUEST_GRAPHQL_ROUTE = "x_guest_graphql"
+LINKEDIN_JOBS_GUEST_SEARCH_ROUTE = "linkedin_jobs_guest_search"
+LINKEDIN_PUBLIC_PROFILE_ROUTE = "linkedin_public_profile"
 FAKE_OFFLINE_ROUTE = "fake_offline"
 
 YOUTUBE_INNERTUBE_WEB_KEY = "youtube_innertube_web_key"
@@ -232,6 +234,35 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         credential_id=X_GUEST_PUBLIC_BEARER,
         path_params=("query_id", "operation_name"),
         token_route_id=X_GUEST_ACTIVATE_ROUTE,
+    ),
+    # findings.md §1 (LinkedIn): 200, 27 KB in 0.7 s, ten jobs per page each
+    # carrying a jobPosting URN, a title, a company and a datetime, with
+    # `start=` paginating. A guest surface in the plainest sense — no account,
+    # no token, and no vendor-published credential attached here or anywhere.
+    LINKEDIN_JOBS_GUEST_SEARCH_ROUTE: RouteConstant(
+        route_id=LINKEDIN_JOBS_GUEST_SEARCH_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://www.linkedin.com",
+        path="/jobs-guest/jobs/api/seeMoreJobPostings/search",
+        accept="text/html",
+        operator_identity="linkedin",
+    ),
+    # findings.md §1 (LinkedIn): 200, 577 KB in 1.3 s, carrying a complete
+    # ld+json Person block — **not** the 999 authwall the superseded spec put
+    # this whole platform outside the roster for. The slug is a path segment,
+    # so the endpoint's shape stays owned here and only the value is the
+    # caller's; `linkedin.com/company/<slug>` is a different path and would be
+    # a different route.
+    LINKEDIN_PUBLIC_PROFILE_ROUTE: RouteConstant(
+        route_id=LINKEDIN_PUBLIC_PROFILE_ROUTE,
+        access_class="K2",
+        method="GET",
+        origin="https://www.linkedin.com",
+        path="/in",
+        accept="text/html",
+        operator_identity="linkedin",
+        path_params=("slug",),
     ),
     FAKE_OFFLINE_ROUTE: RouteConstant(
         route_id=FAKE_OFFLINE_ROUTE,
