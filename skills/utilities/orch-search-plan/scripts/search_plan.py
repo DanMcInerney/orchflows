@@ -10,6 +10,7 @@ import sys
 
 
 MAX_INPUT_BYTES = 1_000_000
+MAX_IDENTITY_CHARS = 256
 MAX_DECIMAL_CHARS = 128
 DECIMAL_RE = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]*[1-9])?\Z")
 SHA256_RE = re.compile(r"sha256:[0-9a-f]{64}\Z")
@@ -53,7 +54,7 @@ def _closed(value, keys, label):
 
 
 def _string(value, label):
-    if not isinstance(value, str) or not value or len(value) > 256:
+    if not isinstance(value, str) or not value or len(value) > MAX_IDENTITY_CHARS:
         raise ProtocolError(label + " must be a bounded identity string")
     return value
 
@@ -111,7 +112,7 @@ def _load_request(raw):
             parse_float=_reject_float,
             parse_constant=_reject_constant,
         )
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError) as exc:
         raise ProtocolError("input is not one UTF-8 JSON object") from exc
 
 
@@ -511,6 +512,8 @@ def _validate_slot(slot, policy, surfaces, feedback_sources, dimension_ids, unit
     _closed(slot["reservation"], units, "slot reservation")
     for unit in units:
         _integer(slot["reservation"][unit], "slot reservation")
+    if slot["reservation"] != policy["reservations"][slot["kind"]]:
+        raise ProtocolError("slot reservation drifts from policy")
 
 
 def _validate_plan(plan, policy, surfaces, feedback_sources, dimension_ids, units):
@@ -592,10 +595,13 @@ def _validate_projection(
     archive = _unique_strings(projection["archive"], "projection archive")
     if archive != _pareto_archive(nodes, policy["dimensions"]):
         raise ProtocolError("projection archive is incomplete")
+    admitted_candidates = {
+        node["candidate_identity"] for node in nodes if node["kind"] == "admitted"
+    }
     preferred = _string(
         projection["preferred_incumbent_identity"], "preferred incumbent"
     )
-    if preferred not in candidates:
+    if preferred not in admitted_candidates:
         raise ProtocolError("preferred incumbent is not admitted")
     seen_slots = _unique_strings(
         projection["seen_slot_identities"], "seen slots", allow_empty=True
@@ -612,6 +618,29 @@ def _validate_projection(
         for node in nodes
     ):
         raise ProtocolError("projection slot lineage is incomplete")
+    if plan is not None:
+        if any(
+            parent not in admitted_candidates
+            for slot in plan["slots"]
+            for parent in slot["parent_identities"]
+        ):
+            raise ProtocolError("plan parent is not admitted")
+        if any(slot["identity"] not in seen_slots for slot in plan["slots"]):
+            raise ProtocolError("open plan is absent from seen slots")
+        proposals = _proposed_slots(
+            policy,
+            nodes,
+            archive,
+            preferred,
+            plan["generation"],
+        )
+        for slot in plan["slots"]:
+            try:
+                expected = next(proposals)
+            except StopIteration as exc:
+                raise ProtocolError("open plan is not a proposal prefix") from exc
+            if slot != expected:
+                raise ProtocolError("open plan is not a proposal prefix")
     return nodes, candidates
 
 
@@ -619,14 +648,14 @@ def _fits(spent, reservation, remaining):
     return all(spent[unit] + reservation[unit] <= remaining[unit] for unit in spent)
 
 
-def _reflection_slots(policy, nodes, archive, preferred, count, generation):
+def _reflection_slots(
+    policy, nodes, archive, preferred, start_ordinal, count, generation
+):
     by_candidate = {node["candidate_identity"]: node for node in nodes}
     remaining = [candidate for candidate in archive if candidate != preferred]
     remaining.sort(key=lambda candidate: _stable_key(policy["ordering_seed"], candidate))
     parents = [preferred] + remaining
-    slots = []
-    uses = {candidate: 0 for candidate in parents}
-    for ordinal in range(count):
+    for ordinal in range(start_ordinal, start_ordinal + count):
         parent_identity = parents[ordinal % len(parents)]
         parent = by_candidate[parent_identity]
         parent_vector = _vector(parent)
@@ -645,8 +674,8 @@ def _reflection_slots(policy, nodes, archive, preferred, count, generation):
             ):
                 trailing.append(dimension_id)
         focus_pool = trailing or [item["identity"] for item in policy["dimensions"]]
-        focus = focus_pool[uses[parent_identity] % len(focus_pool)]
-        uses[parent_identity] += 1
+        focus_index = generation - 1 + ordinal // len(parents)
+        focus = focus_pool[focus_index % len(focus_pool)]
         feedback = [
             copy.deepcopy(item)
             for item in parent["feedback"]
@@ -667,8 +696,7 @@ def _reflection_slots(policy, nodes, archive, preferred, count, generation):
             "benchmark_revision": policy["benchmark_revision"],
             "reservation": copy.deepcopy(policy["reservations"]["reflect"]),
         }
-        slots.append(_identified("search-slot/v1", payload))
-    return slots
+        yield _identified("search-slot/v1", payload)
 
 
 def _merge_pairs(policy, nodes, archive):
@@ -734,15 +762,26 @@ def _merge_feedback(policy, left, right, relations):
 
 def _proposed_slots(policy, nodes, archive, preferred, generation):
     by_candidate = {node["candidate_identity"]: node for node in nodes}
-    pairs = _merge_pairs(policy, nodes, archive)
-    merge_count = min(policy["merge_slots"], len(pairs))
-    reflection_count = policy["generation_width"] - merge_count
-    slots = _reflection_slots(
+    minimum_reflection_count = policy["generation_width"] - policy["merge_slots"]
+    yield from _reflection_slots(
         policy,
         nodes,
         archive,
         preferred,
-        reflection_count,
+        0,
+        minimum_reflection_count,
+        generation,
+    )
+    pairs = _merge_pairs(policy, nodes, archive)
+    merge_count = min(policy["merge_slots"], len(pairs))
+    reflection_count = policy["generation_width"] - merge_count
+    yield from _reflection_slots(
+        policy,
+        nodes,
+        archive,
+        preferred,
+        minimum_reflection_count,
+        reflection_count - minimum_reflection_count,
         generation,
     )
     for pair_index in range(merge_count):
@@ -754,7 +793,7 @@ def _proposed_slots(policy, nodes, archive, preferred, generation):
         ]
         payload = {
             "generation": generation,
-            "ordinal": len(slots),
+            "ordinal": reflection_count + pair_index,
             "kind": "merge",
             "parent_identities": [left_identity, right_identity],
             "focus_dimension_identity": None,
@@ -772,8 +811,14 @@ def _proposed_slots(policy, nodes, archive, preferred, generation):
             "benchmark_revision": policy["benchmark_revision"],
             "reservation": copy.deepcopy(policy["reservations"]["merge"]),
         }
-        slots.append(_identified("search-slot/v1", payload))
-    return slots
+        yield _identified("search-slot/v1", payload)
+
+
+def _validate_remaining_bound(value, units):
+    _closed(value, units, "remaining bound")
+    for unit in units:
+        _integer(value[unit], "remaining bound")
+    return value
 
 
 def _pending_response(projection, missing):
@@ -804,6 +849,7 @@ def _advance_later(request, policy, surfaces, feedback_sources, dimension_ids, u
     outcomes = request["settled"]["outcomes"]
     if not isinstance(outcomes, list):
         raise ProtocolError("settled outcomes must be a list")
+    remaining_bound = _validate_remaining_bound(request["remaining_bound"], units)
     slots = {slot["identity"]: slot for slot in prior_plan["slots"]}
     by_slot = {}
     seen_candidates = set(candidates)
@@ -856,6 +902,8 @@ def _advance_later(request, policy, surfaces, feedback_sources, dimension_ids, u
         by_slot[slot_identity] = outcome
     missing = [slot["identity"] for slot in prior_plan["slots"] if slot["identity"] not in by_slot]
     if missing:
+        if preferred != projection["preferred_incumbent_identity"]:
+            raise ProtocolError("pending settlement changes preferred incumbent")
         return _pending_response(projection, missing)
     normalized_outcomes = [by_slot[slot["identity"]] for slot in prior_plan["slots"]]
     updated_nodes = copy.deepcopy(nodes) + [
@@ -872,10 +920,6 @@ def _advance_later(request, policy, surfaces, feedback_sources, dimension_ids, u
         raise ProtocolError("preferred incumbent is not admitted")
     archive = _pareto_archive(updated_nodes, policy["dimensions"])
 
-    _closed(request["remaining_bound"], units, "remaining bound")
-    remaining_bound = request["remaining_bound"]
-    for unit in units:
-        _integer(remaining_bound[unit], "remaining bound")
     generation = prior_plan["generation"] + 1
     proposed = _proposed_slots(
         policy,
@@ -927,6 +971,14 @@ def _advance_later(request, policy, surfaces, feedback_sources, dimension_ids, u
             + [outcome["outcome_identity"] for outcome in normalized_outcomes],
         },
     )
+    _validate_projection(
+        output_projection,
+        policy,
+        surfaces,
+        feedback_sources,
+        dimension_ids,
+        units,
+    )
     return {
         "schema": "search-advance/v1",
         "status": "planned" if next_plan is not None else "no_fit",
@@ -968,10 +1020,7 @@ def _advance_generation_zero(request):
     )
     if preferred != origin["candidate_identity"]:
         raise ProtocolError("preferred incumbent does not name the origin")
-    _closed(request["remaining_bound"], units, "remaining bound")
-    remaining = request["remaining_bound"]
-    for unit in units:
-        _integer(remaining[unit], "remaining bound")
+    remaining = _validate_remaining_bound(request["remaining_bound"], units)
 
     reservation = policy["reservations"]["reflect"]
     spent = {unit: 0 for unit in units}
@@ -1031,6 +1080,14 @@ def _advance_generation_zero(request):
             "incorporated_outcome_identities": [origin["outcome_identity"]],
         },
     )
+    _validate_projection(
+        projection,
+        policy,
+        surfaces,
+        feedback_sources,
+        dimension_ids,
+        units,
+    )
     return {
         "schema": "search-advance/v1",
         "status": "planned" if plan is not None else "no_fit",
@@ -1061,7 +1118,7 @@ def main(argv):
     try:
         request = _load_request(sys.stdin.buffer.read(MAX_INPUT_BYTES + 1))
         response = _advance(request)
-    except (ProtocolError, TypeError, ValueError):
+    except (ProtocolError, TypeError, ValueError, RecursionError):
         sys.stderr.write("search-plan: invalid request\n")
         return 2
     sys.stdout.buffer.write(_canonical_bytes(response) + b"\n")

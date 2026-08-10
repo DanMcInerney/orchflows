@@ -4,6 +4,7 @@ from pathlib import Path
 from collections import Counter
 import copy
 import hashlib
+import importlib.util
 import json
 import re
 import subprocess
@@ -17,6 +18,14 @@ EVOLVE = ROOT / "compositions" / "evolve.md"
 EVOLVE_GENERATION = ROOT / "compositions" / "references" / "evolve-generation.md"
 TOURNAMENT = ROOT / "compositions" / "skill-tournament.md"
 SEARCH_SKILL = ROOT / "skills" / "utilities" / "orch-search-plan" / "SKILL.md"
+SEARCH_PROTOCOL = (
+    ROOT
+    / "skills"
+    / "utilities"
+    / "orch-search-plan"
+    / "references"
+    / "protocol.md"
+)
 SEARCH_SCRIPT = (
     ROOT
     / "skills"
@@ -214,6 +223,16 @@ def ineligible_outcome(slot, candidate, suffix=None):
     }
 
 
+def no_candidate_outcome(slot, suffix):
+    return {
+        "kind": "no_candidate",
+        "outcome_identity": f"outcome:{suffix}",
+        "slot_identity": slot["identity"],
+        "cost": {unit: 0 for unit in slot["reservation"]},
+        "disposition": "no-candidate",
+    }
+
+
 def settled_request(policy, response, outcomes, preferred, remaining=20):
     return {
         "policy": copy.deepcopy(policy),
@@ -251,6 +270,37 @@ def run_advance(payload=None, raw=None, cwd=None):
 
 def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
+
+def load_search_module():
+    spec = importlib.util.spec_from_file_location("search_plan_test_module", SEARCH_SCRIPT)
+    if spec is None or spec.loader is None:
+        raise AssertionError("search-plan module could not be loaded")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def rehash_open_plan_slot(projection, index):
+    plan = projection["last_plan"]
+    slot = plan["slots"][index]
+    old_slot_identity = slot["identity"]
+    slot["identity"] = tagged_identity(
+        "search-slot/v1",
+        {key: value for key, value in slot.items() if key != "identity"},
+    )
+    projection["seen_slot_identities"] = [
+        slot["identity"] if identity == old_slot_identity else identity
+        for identity in projection["seen_slot_identities"]
+    ]
+    plan["identity"] = tagged_identity(
+        "search-plan/v1",
+        {key: value for key, value in plan.items() if key != "identity"},
+    )
+    projection["identity"] = tagged_identity(
+        "search-projection/v1",
+        {key: value for key, value in projection.items() if key != "identity"},
+    )
 
 
 def normalized(text: str) -> str:
@@ -327,6 +377,12 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
     }
     if evolve_calls != Counter({name: 1 for name in required}):
         errors.append("evolve-call-graph")
+    eligibility = evolve[evolve.index("- eligibility") : evolve.index("- campaign")]
+    campaign = evolve[evolve.index("- campaign") : evolve.index("Edges:")]
+    if "`orch-verify`" not in eligibility:
+        errors.append("eligibility-unit")
+    if "eligibility Verify binding" not in campaign:
+        errors.append("generation-verify-binding")
     if re.search(r"^-\s*closing\b", evolve, re.IGNORECASE | re.MULTILINE):
         errors.append("closing-wrapper")
     if normalized(combined_evolve).count("`orch-judge`") != 1:
@@ -381,6 +437,12 @@ class TestArchitecture(unittest.TestCase):
         self.assertIn(
             "leaf-call",
             architecture_errors(evolve, generation, tournament, extra_leaf_call),
+        )
+
+        unresolved = evolve.replace("`orch-verify`", "Verify", 1)
+        self.assertIn(
+            "eligibility-unit",
+            architecture_errors(unresolved, generation, tournament, leaf),
         )
 
 
@@ -496,6 +558,124 @@ class TestCanonicalAdvance(unittest.TestCase):
         )
         self.assert_rejected(raw=duplicate)
 
+    def test_deep_json_recursion_is_invalid_input(self):
+        raw = b'{"policy":' + b"[" * 5_000 + b"0" + b"]" * 5_000 + b"}"
+        self.assert_rejected(raw=raw)
+
+    def test_public_request_identity_and_decimal_caps_are_exact(self):
+        protocol = read(SEARCH_PROTOCOL)
+        self.assertIn("1,000,000 UTF-8 bytes", protocol)
+        self.assertIn("256 Unicode code points", protocol)
+        self.assertIn("128 characters", protocol)
+
+        module = load_search_module()
+        at_request_cap = b"0" + b" " * (module.MAX_INPUT_BYTES - 1)
+        self.assertEqual(0, module._load_request(at_request_cap))
+        with self.assertRaises(module.ProtocolError):
+            module._load_request(at_request_cap + b" ")
+
+        identity_at_cap = generation_zero_request()
+        identity_at_cap["policy"]["planner_revision"] = "x" * 256
+        identity_at_cap["policy"]["identity"] = tagged_identity(
+            "search-policy/v1",
+            {
+                key: value
+                for key, value in identity_at_cap["policy"].items()
+                if key != "identity"
+            },
+        )
+        self.assertEqual(0, run_advance(identity_at_cap).returncode)
+        identity_over_cap = copy.deepcopy(identity_at_cap)
+        identity_over_cap["policy"]["planner_revision"] += "x"
+        identity_over_cap["policy"]["identity"] = tagged_identity(
+            "search-policy/v1",
+            {
+                key: value
+                for key, value in identity_over_cap["policy"].items()
+                if key != "identity"
+            },
+        )
+        self.assert_rejected(identity_over_cap)
+
+        decimal_at_cap = generation_zero_request()
+        decimal_at_cap["policy"]["dimensions"][0]["resolution"] = "1" + "0" * 127
+        decimal_at_cap["policy"]["identity"] = tagged_identity(
+            "search-policy/v1",
+            {
+                key: value
+                for key, value in decimal_at_cap["policy"].items()
+                if key != "identity"
+            },
+        )
+        self.assertEqual(0, run_advance(decimal_at_cap).returncode)
+        decimal_over_cap = copy.deepcopy(decimal_at_cap)
+        decimal_over_cap["policy"]["dimensions"][0]["resolution"] += "0"
+        decimal_over_cap["policy"]["identity"] = tagged_identity(
+            "search-policy/v1",
+            {
+                key: value
+                for key, value in decimal_over_cap["policy"].items()
+                if key != "identity"
+            },
+        )
+        self.assert_rejected(decimal_over_cap)
+
+    def test_rehashed_open_plans_must_be_current_lawful_policy_prefixes(self):
+        request = two_dimension_request()
+        initial_result = run_advance(request)
+        self.assertEqual(0, initial_result.returncode, initial_result.stderr.decode())
+        initial = json.loads(initial_result.stdout)
+
+        cases = []
+        dangling = copy.deepcopy(initial["projection"])
+        dangling["last_plan"]["slots"][0]["parent_identities"] = ["candidate:missing"]
+        rehash_open_plan_slot(dangling, 0)
+        cases.append(dangling)
+
+        reservation_drift = copy.deepcopy(initial["projection"])
+        reservation_drift["last_plan"]["slots"][0]["reservation"]["runs"] = 0
+        rehash_open_plan_slot(reservation_drift, 0)
+        cases.append(reservation_drift)
+
+        proposal_drift = copy.deepcopy(initial["projection"])
+        proposal_drift["last_plan"]["slots"][0][
+            "focus_dimension_identity"
+        ] = "dimension:cost"
+        rehash_open_plan_slot(proposal_drift, 0)
+        cases.append(proposal_drift)
+
+        unseen = copy.deepcopy(initial["projection"])
+        unseen["seen_slot_identities"].remove(
+            unseen["last_plan"]["slots"][0]["identity"]
+        )
+        unseen["identity"] = tagged_identity(
+            "search-projection/v1",
+            {key: value for key, value in unseen.items() if key != "identity"},
+        )
+        cases.append(unseen)
+
+        for projection in cases:
+            with self.subTest(case=cases.index(projection)):
+                replay = settled_request(
+                    request["policy"],
+                    {"projection": projection},
+                    [],
+                    "candidate:origin",
+                )
+                self.assert_rejected(replay)
+
+    def test_emitted_projection_replays_as_valid_pending_state(self):
+        request = two_dimension_request()
+        first = run_advance(request)
+        self.assertEqual(0, first.returncode, first.stderr.decode())
+        response = json.loads(first.stdout)
+        replay = settled_request(
+            request["policy"], response, [], "candidate:origin"
+        )
+        pending = run_advance(replay)
+        self.assertEqual(0, pending.returncode, pending.stderr.decode())
+        self.assertEqual("pending", json.loads(pending.stdout)["status"])
+
 
 class TestParetoReflection(unittest.TestCase):
     def run_ok(self, request):
@@ -565,9 +745,15 @@ class TestParetoReflection(unittest.TestCase):
             for item in changed["settled"]["outcomes"]
             if item.get("candidate_identity") == "candidate:dominated"
         )
-        dominated["feedback"][0]["reference_identity"] = "feedback:d-quality-v2"
-        revised = self.run_ok(changed)
         original_slot = original["plan"]["slots"][0]
+        focused_feedback = next(
+            item
+            for item in dominated["feedback"]
+            if item["dimension_identity"]
+            == original_slot["focus_dimension_identity"]
+        )
+        focused_feedback["reference_identity"] += "-v2"
+        revised = self.run_ok(changed)
         revised_slot = revised["plan"]["slots"][0]
         self.assertNotEqual(original_slot["feedback"], revised_slot["feedback"])
         self.assertNotEqual(original_slot["identity"], revised_slot["identity"])
@@ -608,6 +794,36 @@ class TestParetoReflection(unittest.TestCase):
                 ]
         response = self.run_ok(request)
         self.assertNotIn("candidate:dominated", response["projection"]["archive"])
+
+    def test_width_one_focus_rotates_across_generations(self):
+        initial_request = two_dimension_request(width=1, merge_slots=0)
+        generation_one = self.run_ok(initial_request)
+        first_slot = generation_one["plan"]["slots"][0]
+        generation_two = self.run_ok(
+            settled_request(
+                initial_request["policy"],
+                generation_one,
+                [admitted_outcome(first_slot, "candidate:best", "0.8", "0.2")],
+                "candidate:origin",
+            )
+        )
+        second_slot = generation_two["plan"]["slots"][0]
+        generation_three = self.run_ok(
+            settled_request(
+                initial_request["policy"],
+                generation_two,
+                [no_candidate_outcome(second_slot, "generation-two")],
+                "candidate:origin",
+            )
+        )
+        self.assertEqual(
+            ["dimension:quality", "dimension:cost", "dimension:quality"],
+            [
+                first_slot["focus_dimension_identity"],
+                second_slot["focus_dimension_identity"],
+                generation_three["plan"]["slots"][0]["focus_dimension_identity"],
+            ],
+        )
 
 
 class TestMergeLineage(unittest.TestCase):
@@ -718,7 +934,7 @@ class TestMergeLineage(unittest.TestCase):
             policy,
             generation_two,
             [admitted_outcome(slots[0], "candidate:partial", "0.6", "0.4", "p")],
-            "candidate:partial",
+            "candidate:dominated",
         )
         pending = self.run_ok(partial)
         self.assertEqual("pending", pending["status"])
@@ -733,6 +949,12 @@ class TestMergeLineage(unittest.TestCase):
         malformed = copy.deepcopy(partial)
         malformed["settled"]["atomic"] = True
         self.assert_rejected(malformed)
+
+        changed_incumbent = copy.deepcopy(partial)
+        changed_incumbent["settled"][
+            "preferred_incumbent_identity"
+        ] = "candidate:partial"
+        self.assert_rejected(changed_incumbent)
 
     def test_cycle_dangling_reuse_and_inherited_score_are_rejected(self):
         policy, generation_two = self.merge_fixture()
@@ -891,6 +1113,40 @@ class TestBoundedResume(unittest.TestCase):
             [slot["identity"] for slot in generation_two_slots[1:]],
             pending["missing_slot_identities"],
         )
+
+        invalid_bound = copy.deepcopy(partial)
+        invalid_bound["remaining_bound"] = {"unexpected": -1}
+        result = run_advance(invalid_bound)
+        self.assertEqual(2, result.returncode)
+        self.assertEqual(b"", result.stdout)
+
+    def test_first_no_fit_does_not_materialize_the_proposal_suffix(self):
+        initial_request = two_dimension_request(width=5, merge_slots=0)
+        initial = self.run_ok(initial_request)
+        outcomes = [
+            no_candidate_outcome(slot, f"generation-one-{index}")
+            for index, slot in enumerate(initial["plan"]["slots"])
+        ]
+        request = settled_request(
+            initial_request["policy"],
+            initial,
+            outcomes,
+            "candidate:origin",
+            remaining=0,
+        )
+        module = load_search_module()
+        original_identified = module._identified
+        produced_slots = []
+
+        def tracking_identified(tag, payload):
+            if tag == "search-slot/v1" and payload["generation"] == 2:
+                produced_slots.append(payload["ordinal"])
+            return original_identified(tag, payload)
+
+        module._identified = tracking_identified
+        response = module._advance(copy.deepcopy(request))
+        self.assertEqual("no_fit", response["status"])
+        self.assertEqual([0], produced_slots)
 
     def test_worklog_launch_and_restart_contract_has_failure_controls(self):
         generation = read(EVOLVE_GENERATION)
