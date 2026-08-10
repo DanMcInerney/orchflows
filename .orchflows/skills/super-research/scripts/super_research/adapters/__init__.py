@@ -16,7 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import Callable, Mapping, Tuple
 
-from .. import cache, transport
+from .. import cache, schema, transport
 
 
 class AdapterError(RuntimeError):
@@ -59,6 +59,14 @@ class AdapterDescriptor:
     never inferred, aliased, summed, or compared across platforms — an adapter
     that declares neither has no eligible metric, which is a stated absence
     rather than a zero nobody reported.
+
+    ``access_class`` is exactly one class off the ladder :mod:`schema` owns,
+    and it is checked here because three separate rules read it and none of
+    them can tell an unnamed class from a wrong one: the router admits a step
+    on it, ``time_confidence_for`` decides on it how far a record's time is
+    trusted, and the artifact publishes it to a caller. A descriptor declaring
+    a class nothing names would carry that quietly past all three, so the
+    module that declares one fails at import instead.
     """
 
     adapter_id: str
@@ -78,6 +86,13 @@ class AdapterDescriptor:
     reply_count_metric: str = ""
 
     def __post_init__(self) -> None:
+        if self.access_class not in schema.ACCESS_CLASSES:
+            raise AdapterError(
+                "adapter {0} declares access class {1!r}, which is not one of the"
+                " ladder's: {2}".format(
+                    self.adapter_id, self.access_class, ", ".join(schema.ACCESS_CLASSES)
+                )
+            )
         for identifier in self.volatile_identifiers:
             if not identifier.name or not identifier.recovery:
                 raise AdapterError(
