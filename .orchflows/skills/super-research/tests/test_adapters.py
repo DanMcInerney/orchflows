@@ -1,10 +1,12 @@
-"""Adapter suite: X and LinkedIn reach their measured capability, keyless.
+"""Adapter suite: four platforms reach their measured capability, keyless.
 
-Two platforms, and one shape of claim twice. Each has a way of failing that
-looks exactly like having nothing to say, and each half of this suite exists
-to keep those two apart — for X a rotated identifier, for LinkedIn a page
-whose structured block moved, and beside that a page whose navigation chrome
-merely looks like a wall.
+Four platforms, and one shape of claim four times. Each has a way of failing
+that looks exactly like having nothing to say, and each part of this suite
+exists to keep those apart — for X a rotated identifier, for LinkedIn a page
+whose structured block moved and beside it a page whose navigation chrome
+merely looks like a wall, for YouTube a caption list withheld from a client
+that cannot attest, and for Instagram a login page arriving where JSON was
+asked for.
 
 The claim the X half exists to defend is that a stale vendor identifier is
 never silence. X rotates its GraphQL query ids per web release, and the id
@@ -46,12 +48,35 @@ page with stable URNs, and a Person block whose every roster field reaches the
 artifact. And the strings the ticket turns on are declared in the adapter and
 read nowhere in it, which an AST scan states as a count of zero.
 
-Every test here runs offline against fixtures under `fixtures/x/` and
-`fixtures/linkedin/`. Those fixtures carry the shape and field set
-findings.md §1 records; the evidence records no captured bodies, and this
-package may not reach the network to make one, so what they prove is that this
-code reads that shape correctly. Criterion 12's live smoke is what proves the
-shape.
+The claim the YouTube half exists to defend is that a caption list nobody was
+served is never a video with no captions. Across five clients and three videos
+`captionTracks` came back empty every time and playability degraded to
+`UNPLAYABLE` after the first metadata call, and the evidence names the cause:
+PoToken/BotGuard attestation. An adapter that read that as an absence would
+assert something false about every video it ever touched, quietly, on a 200,
+with title and view count and publish date looking perfectly healthy beside it.
+The same half must not read "Sign in to confirm you're not a bot" as a
+credential problem, which is the LinkedIn finding again at its sharpest — the
+words are in the body, and only a status line decides. Three wrong adapters
+beside the tree hold the oracle honest, including one that types every player
+answer as withheld, without which the claim could be satisfied by never
+distinguishing anything.
+
+The claim the Instagram half exists to defend is the same one from the other
+end: this route's origin serves a logged-out page saying "Log in" in plain
+words, and at 200 that is a route which stopped answering in JSON, while the
+same bytes at 401 are a refusal. Beside it, the roster row itself — a bio, a
+follower count, and twelve posts each carrying its shortcode, the platform's
+own timestamp, and two counts under the exact key paths the payload publishes
+them at, because a name translated here would be a cross-platform vocabulary
+this package invented.
+
+Every test here runs offline against fixtures under `fixtures/x/`,
+`fixtures/linkedin/`, `fixtures/youtube/` and `fixtures/instagram/`. Those
+fixtures carry the shape and field set findings.md §1 records; the evidence
+records no captured bodies, and this package may not reach the network to make
+one, so what they prove is that this code reads that shape correctly.
+Criterion 12's live smoke is what proves the shape.
 """
 
 from __future__ import annotations
@@ -2831,7 +2856,7 @@ class InstagramProfileTest(unittest.TestCase):
                 step_id="s1-ig", target_ids=("kestrel.field.notes",)
             ),
         )
-        complete, partial = instagram_posts(page)
+        complete, partial, quiet = instagram_posts(page)
 
         self.assertEqual(page.outcome, "ok")
         self.assertEqual(complete.loss, ())
@@ -2841,6 +2866,15 @@ class InstagramProfileTest(unittest.TestCase):
         self.assertNotIn(instagram_public.COMMENT_METRIC, counts_of(partial))
         self.assertEqual(partial.published_at, "")
         self.assertEqual(counts_of(partial)[instagram_public.LIKE_METRIC], 611)
+        # And the other direction, which is the whole reason the mark exists:
+        # a post nobody has liked or commented on reported both counts, and
+        # both are zero. A row marked omitted for that would say the payload
+        # was short when the payload was complete.
+        self.assertEqual(quiet.loss, ())
+        self.assertEqual(
+            counts_of(quiet),
+            {instagram_public.LIKE_METRIC: 0, instagram_public.COMMENT_METRIC: 0},
+        )
 
     def test_the_metric_names_are_the_ones_the_payload_publishes_them_under(self):
         # A metric name is never inferred and never translated. Instagram
@@ -3308,6 +3342,20 @@ class InnerTubePlayerTest(unittest.TestCase):
         self.assertEqual(carried["viewCount"], 1284553)
         self.assertIsInstance(carried["viewCount"], int)
         self.assertEqual(carried["publishDate"], "2026-07-26T00:00:00Z")
+
+    def test_a_video_nobody_has_watched_reported_a_count_and_it_is_zero(self):
+        # The other direction of `field_omitted`, and the whole reason the mark
+        # exists: the route reported the view count and it is zero. Marking
+        # that omitted would say the payload was short when it was complete.
+        # The same answer carries a full instant rather than a bare day, so
+        # this record claims no precision it does not have and says nothing
+        # about precision it does.
+        page, _ = youtube_page("player_zero_views.json", target_id="player:Zk5xD1nQ9pL")
+        record = page.records[0]
+
+        self.assertEqual(dict(record.engagement), {youtube_innertube.VIEW_COUNT_METRIC: 0})
+        self.assertEqual(record.published_at, "2026-08-10T08:55:00Z")
+        self.assertEqual(record.loss, (youtube_innertube.ATTESTATION_REQUIRED,))
 
     def test_a_day_the_route_reported_is_a_day_and_the_record_says_so(self):
         # The route states a date and the artifact's instant carries seconds,

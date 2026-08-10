@@ -308,7 +308,14 @@ def _named_facts(
 
 
 def _missing(row: Mapping[str, Any], keys: Sequence[str]) -> Tuple[str, ...]:
-    return tuple(key for key in keys if not row.get(key))
+    """Which of this row's declared fields the payload did not report.
+
+    Absence, never falsehood: a video nobody has watched reports zero views,
+    and zero is a count. Marking it omitted would erase the one distinction
+    `field_omitted` exists to make.
+    """
+
+    return tuple(key for key in keys if row.get(key) is None or row.get(key) == "")
 
 
 def continuation_in(entry: Any) -> str:

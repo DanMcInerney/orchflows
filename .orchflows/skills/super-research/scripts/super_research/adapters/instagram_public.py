@@ -201,7 +201,14 @@ def _text(value: Any) -> str:
 
 
 def _missing(row: Mapping[str, Any], keys: Sequence[str]) -> Tuple[str, ...]:
-    return tuple(key for key in keys if not row.get(key))
+    """Which of this row's roster fields the payload did not report.
+
+    Absence, never falsehood: a post nobody has commented on reports zero, and
+    zero is a count. Marking it omitted would erase the one distinction
+    `field_omitted` exists to make.
+    """
+
+    return tuple(key for key in keys if row.get(key) is None or row.get(key) == "")
 
 
 def _profile_record(user: Mapping[str, Any]) -> NativeRecord:
@@ -214,7 +221,9 @@ def _profile_record(user: Mapping[str, Any]) -> NativeRecord:
     """
 
     username = _text(user.get(USERNAME_KEY))
-    snapshots = _snapshots(user, ((FOLLOWERS_KEY, FOLLOWERS_METRIC), (MEDIA_KEY, POST_COUNT_METRIC)))
+    snapshots = _snapshots(
+        user, ((FOLLOWERS_KEY, FOLLOWERS_METRIC), (MEDIA_KEY, POST_COUNT_METRIC))
+    )
     row = dict(snapshots)
     row[USERNAME_KEY] = username
     row[BIOGRAPHY_KEY] = _text(user.get(BIOGRAPHY_KEY))

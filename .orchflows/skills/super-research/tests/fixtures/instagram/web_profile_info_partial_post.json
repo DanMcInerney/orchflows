@@ -30,6 +30,20 @@
               "edge_liked_by": {"count": 611},
               "edge_media_to_caption": {"edges": []}
             }
+          },
+          {
+            "node": {
+              "id": "3421900000000000103",
+              "shortcode": "C8gY5kGLzHm",
+              "taken_at_timestamp": 1785314100,
+              "edge_liked_by": {"count": 0},
+              "edge_media_to_comment": {"count": 0},
+              "edge_media_to_caption": {
+                "edges": [
+                  {"node": {"text": "Box camera offline for maintenance until Friday."}}
+                ]
+              }
+            }
           }
         ]
       }
