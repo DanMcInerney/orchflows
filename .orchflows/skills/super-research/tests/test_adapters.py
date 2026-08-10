@@ -4684,6 +4684,21 @@ class HackerNewsSearchTest(unittest.TestCase):
         self.assertEqual(len(opener.opened), 1)
         self.assertIn(("page", "3"), urllib.parse.parse_qsl(opener.opened[0].url.split("?")[1]))
 
+    def test_rows_this_adapter_cannot_type_are_not_a_query_that_matched_nothing(self):
+        # Two answers with no records and two different reasons. An index that
+        # returned nothing matched nothing; an index that returned rows this
+        # adapter cannot identify matched something it could not read, and
+        # saying "matched nothing" there would hide a shape this package does
+        # not handle behind an ordinary empty.
+        unreadable, _ = hn_page("algolia_untypable_only.json", query="front page")
+        matched, _ = hn_page("algolia_no_matches.json", query="a phrase")
+
+        self.assertEqual(unreadable.outcome, "empty")
+        self.assertEqual(unreadable.records, ())
+        self.assertIn("2", " ".join(unreadable.warnings))
+        self.assertNotIn("matched nothing", " ".join(unreadable.warnings))
+        self.assertIn("matched nothing", " ".join(matched.warnings))
+
     def test_a_row_short_of_its_fields_says_so_and_a_row_of_no_type_is_not_a_row(self):
         page, _ = hn_page("algolia_partial_hit.json", query="short row")
 
@@ -4749,6 +4764,18 @@ class HackerNewsItemTest(unittest.TestCase):
         # A comment reports no score and no descendant count, and neither is
         # invented as a zero here.
         self.assertEqual(counts_of(comment), {})
+
+    def test_a_stamp_no_clock_can_hold_is_a_missing_time_and_not_a_crash(self):
+        # Every wrong shape this route can send has to arrive as an answer,
+        # because an adapter that raised would cost the core its one page and
+        # the run its typed outcome. An epoch second past what a clock can
+        # represent is the one value here that is not a string to be parsed.
+        page, _ = hn_page("firebase_absurd_time.json", target_id="44831999")
+
+        self.assertEqual(len(page.records), 1)
+        self.assertEqual(page.records[0].published_at, "")
+        self.assertEqual(page.records[0].loss, ("field_omitted",))
+        self.assertEqual(page.outcome, "ok")
 
     def test_one_story_seen_on_both_surfaces_states_one_identity(self):
         # What makes the two surfaces one adapter: Algolia's `objectID` is HN's
@@ -5114,6 +5141,21 @@ class GithubReadTest(unittest.TestCase):
         self.assertEqual(page.records[0].author, "bramble")
         self.assertEqual(attribute_pairs(page.records[0], "number"), ("812",))
         self.assertEqual(attribute_pairs(page.records[0], "state"), ("open",))
+
+    def test_an_issue_names_its_repository_only_the_way_the_route_does(self):
+        # A listed issue states its repository as an api address and never as
+        # the numeric id this package identifies a repository by. The address
+        # is carried verbatim so a caller can tie the two, and no id is
+        # recovered from a url — that would be this adapter inventing an
+        # identity out of a string it was handed.
+        page, _ = gh_page("issues.json", target_id="issues:" + GITHUB_TARGET)
+        issue = page.records[0]
+
+        self.assertEqual(issue.native_parent_id, "")
+        self.assertEqual(
+            attribute_pairs(issue, "repository_url"),
+            ("https://api.github.com/repos/" + GITHUB_TARGET,),
+        )
 
     def test_releases_carry_their_tag_and_the_moment_they_were_published(self):
         page, opener = gh_page("releases.json", target_id="releases:" + GITHUB_TARGET)

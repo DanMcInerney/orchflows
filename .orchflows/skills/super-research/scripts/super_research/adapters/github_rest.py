@@ -149,7 +149,7 @@ STATE_KEY = "state"
 TAG_NAME_KEY = "tag_name"
 LANGUAGE_KEY = "language"
 TOPICS_KEY = "topics"
-REPOSITORY_KEY = "repository"
+REPOSITORY_URL_KEY = "repository_url"
 
 STARS_METRIC = "stargazers_count"
 FORKS_METRIC = "forks_count"
@@ -312,15 +312,20 @@ def _issue_record(position: int, payload: Mapping[str, Any]) -> NativeRecord:
     state = _text(payload.get(STATE_KEY))
     if state:
         named.append((STATE_KEY, state))
+    repository_url = _text(payload.get(REPOSITORY_URL_KEY))
+    if repository_url:
+        # How this route names the repository an issue belongs to: an address,
+        # never the numeric id a repository record is identified by. Carried
+        # verbatim so a caller can tie the two, because recovering an id by
+        # taking a url apart would be this adapter inventing an identity.
+        named.append((REPOSITORY_URL_KEY, repository_url))
     return NativeRecord(
         canonical_content_kind=ISSUE_KIND,
         canonical_locator=row[HTML_URL_KEY],
         native_item_id=row[ID_KEY],
-        # A listed issue names its repository only by an API url, so the parent
-        # is carried when the payload nests the repository itself — as a search
-        # answer does — and left unstated otherwise rather than derived from a
-        # url this module would have to take apart.
-        native_parent_id=_nested_repository_id(payload),
+        # Left unstated for the reason above: this payload states no id for the
+        # repository, and `native_parent_id` holds an id or nothing.
+        native_parent_id="",
         title=row[TITLE_KEY],
         body=_text(payload.get(BODY_KEY)),
         author=row[USER_KEY],
@@ -347,7 +352,9 @@ def _release_record(position: int, payload: Mapping[str, Any]) -> NativeRecord:
         canonical_content_kind=RELEASE_KIND,
         canonical_locator=row[HTML_URL_KEY],
         native_item_id=row[ID_KEY],
-        native_parent_id=_nested_repository_id(payload),
+        # A release payload states no id for its repository either, and unlike
+        # an issue it states no address for one, so there is nothing to carry.
+        native_parent_id="",
         # A release names itself and falls back to its tag, which is what
         # GitHub shows when a release was published without a name.
         title=_text(payload.get(NAME_KEY)) or row[TAG_NAME_KEY],
@@ -360,11 +367,6 @@ def _release_record(position: int, payload: Mapping[str, Any]) -> NativeRecord:
         native_position=position,
         loss=("field_omitted",) if _missing(row, RELEASE_ROW_KEYS) else (),
     )
-
-
-def _nested_repository_id(payload: Mapping[str, Any]) -> str:
-    repository = payload.get(REPOSITORY_KEY)
-    return id_text(repository.get(ID_KEY)) if isinstance(repository, Mapping) else ""
 
 
 RECORD_BUILDERS = {

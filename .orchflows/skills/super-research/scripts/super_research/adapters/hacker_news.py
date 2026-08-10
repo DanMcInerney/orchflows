@@ -61,7 +61,6 @@ HN_ITEM_PATH = "/item?id="
 # row this adapter can type, and typing it anyway would be a guess about what
 # HN meant.
 ITEM_TYPES = ("story", "comment", "poll", "pollopt", "job")
-STORY_TYPE = "story"
 COMMENT_TYPE = "comment"
 TEXT_TYPES = (COMMENT_TYPE, "pollopt")
 
@@ -127,7 +126,10 @@ HN_OPERATIONS = (
 
 # Which endpoint each search operation asks, and under which tag. `search`
 # ranks by relevance and `search_by_date` by recency; the tag selects rows
-# rather than an endpoint, so it travels as a query parameter.
+# rather than an endpoint, so it travels as a query parameter. The two story
+# searches send no tag at all, which is the shape the evidence measured: the
+# index then answers with every kind of item that matched, and each row is
+# typed from its own tags rather than filtered here.
 SEARCH_ENDPOINTS = {
     SEARCH_OPERATION: (SEARCH_OPERATION, ""),
     SEARCH_BY_DATE_OPERATION: (SEARCH_BY_DATE_OPERATION, ""),
@@ -261,12 +263,18 @@ def epoch_to_utc_iso(seconds: Any) -> str:
 
     Epoch seconds are an exact instant, so this loses no precision and states
     none it was not given: a value that is not a whole number of seconds is a
-    missing time.
+    missing time, and so is one no clock can represent. A payload that moved
+    must arrive as a typed answer rather than as an exception — an adapter that
+    raised would cost the core the one page it is owed.
     """
 
     if isinstance(seconds, bool) or not isinstance(seconds, int):
         return ""
-    return datetime.fromtimestamp(seconds, tz=timezone.utc).strftime(RECORD_INSTANT_FORMAT)
+    try:
+        moment = datetime.fromtimestamp(seconds, tz=timezone.utc)
+    except (OverflowError, OSError, ValueError):
+        return ""
+    return moment.strftime(RECORD_INSTANT_FORMAT)
 
 
 def _missing(row: Mapping[str, Any], keys: Sequence[str]) -> Tuple[str, ...]:
@@ -292,10 +300,11 @@ def _engagement(pairs: Sequence[Tuple[str, Any]]) -> Tuple[Tuple[str, int], ...]
 def hit_kind(hit: Mapping[str, Any]) -> str:
     """The item type this index row states, or nothing when it states none.
 
-    Algolia writes the type as the first of the row's own `_tags`, beside tags
-    for the author and the story. The tag is read rather than guessed at from
-    the fields present: a row with a `comment_text` is a comment because HN
-    says so, not because this module recognized a shape.
+    Algolia lists a row's type among its own `_tags`, beside tags for the
+    author and the story it belongs to, so the first tag naming an item type is
+    the row's kind. The tag is read rather than guessed at from the fields
+    present: a row is a comment because HN says so, not because this module
+    recognized a shape with a `comment_text` in it.
     """
 
     tags = hit.get(TAGS_KEY)
@@ -316,9 +325,10 @@ def _hit_record(position: int, hit: Mapping[str, Any], kind: str) -> NativeRecor
         CREATED_AT_KEY: route_instant_to_utc_iso(hit.get(CREATED_AT_KEY)),
         COMMENT_TEXT_KEY: _text(hit.get(COMMENT_TEXT_KEY)),
     }
-    # A comment's own text, or a story's own text where it has one. The parent
-    # story's title travels on a comment row too, and is deliberately not read:
-    # it is a fact about the story rather than about this row.
+    # A comment's own text, or a story's own text where it has one. A comment
+    # row also carries the title of the story it sits under, and that is
+    # deliberately read nowhere here: it is a fact about the story, and a
+    # comment titled with its story's title is a record that claims to be one.
     body = row[COMMENT_TEXT_KEY] if kind in TEXT_TYPES else _text(hit.get(STORY_TEXT_KEY))
     named: List[Tuple[str, str]] = []
     link = _text(hit.get(URL_KEY))
@@ -334,7 +344,7 @@ def _hit_record(position: int, hit: Mapping[str, Any], kind: str) -> NativeRecor
         canonical_locator=item_locator(item_id),
         native_item_id=item_id,
         native_parent_id=id_text(hit.get(PARENT_ID_KEY)),
-        title="" if kind in TEXT_TYPES else row[TITLE_KEY],
+        title=row[TITLE_KEY],
         body=body,
         author=row[AUTHOR_KEY],
         published_at=row[CREATED_AT_KEY],
@@ -508,10 +518,14 @@ def _search_page(
                 operation, untyped, TAGS_KEY, OBJECT_ID_KEY
             )
         )
-    if not records:
+    if not records and not untyped:
+        # Said out loud, and only when it is true: an index that returned rows
+        # this adapter cannot read matched something, and calling that "nothing
+        # matched" would hide a shape this package does not handle behind an
+        # ordinary empty answer. The warning above is what that case gets.
         warnings.append(
-            "{0} answered 200 with a {1} list holding nothing this adapter could"
-            " read: this query matched nothing".format(operation, HITS_KEY)
+            "{0} answered 200 with an empty {1} list: this query matched"
+            " nothing".format(operation, HITS_KEY)
         )
     return _answered(
         SEARCH_DESCRIPTOR,
