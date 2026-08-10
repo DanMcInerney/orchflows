@@ -789,7 +789,15 @@ def outbound_blob(outbound):
 
 
 class GuestActivationRouteTest(unittest.TestCase):
-    """The one non-read operation: minting an anonymous guest token."""
+    """The two non-read operations, and the gate that keeps them two.
+
+    Minting an anonymous guest token needs a POST, and so does asking InnerTube
+    a question it only takes in a JSON body. Neither creates anything at an
+    origin: they are reads spelled in an awkward verb. What separates that from
+    a write-capable channel is not the verb but the enumeration — each is named
+    by route id in one of two closed sets, asserted below in both directions,
+    and no route anywhere reaches PUT, PATCH or DELETE.
+    """
 
     def test_the_activation_route_carries_the_shape_the_evidence_measured(self):
         route = transport.route_constant(transport.X_GUEST_ACTIVATE_ROUTE)
@@ -805,24 +813,46 @@ class GuestActivationRouteTest(unittest.TestCase):
     def test_the_activation_route_needs_no_user_credential(self):
         self.assertTrue(transport.route_admissions()[transport.X_GUEST_ACTIVATE_ROUTE])
 
-    def test_it_is_the_only_route_declaring_a_method_that_is_not_a_read(self):
+    def test_the_routes_declaring_a_non_read_method_are_exactly_the_declared_exceptions(self):
+        # Both directions. A route declaring a non-read method and named in
+        # neither set fails here; a route named in a set while declaring a read
+        # fails here too, because an exception nothing needs must not be held.
+        declared = sorted(transport.TOKEN_ACTIVATION_ROUTES + transport.QUERY_BODY_ROUTES)
         non_read = sorted(
             route_id
             for route_id, route in transport.ROUTE_CONSTANTS.items()
             if route.method not in transport.READ_METHODS
         )
 
-        self.assertEqual(non_read, [transport.X_GUEST_ACTIVATE_ROUTE])
+        self.assertEqual(non_read, declared)
+        # Spelled as well as derived: an allowlist compared only against itself
+        # would admit a third member silently.
+        self.assertEqual(
+            declared, [transport.X_GUEST_ACTIVATE_ROUTE, transport.YOUTUBE_INNERTUBE_ROUTE]
+        )
+        # Two exceptions, one verb between them, and no route in both.
+        self.assertEqual(transport.TOKEN_ACTIVATION_METHODS, ("POST",))
+        self.assertEqual(transport.QUERY_BODY_METHODS, ("POST",))
+        self.assertEqual(
+            sorted(set(transport.TOKEN_ACTIVATION_ROUTES) & set(transport.QUERY_BODY_ROUTES)),
+            [],
+        )
 
-    def test_only_the_activation_route_may_use_a_method_that_is_not_a_read(self):
+    def test_only_a_declared_exception_route_may_use_a_method_that_is_not_a_read(self):
+        declared = transport.TOKEN_ACTIVATION_ROUTES + transport.QUERY_BODY_ROUTES
+
         for route_id in sorted(transport.ROUTE_CONSTANTS):
             with self.subTest(route=route_id):
                 admitted = transport.admitted_methods(route_id)
 
-                if route_id == transport.X_GUEST_ACTIVATE_ROUTE:
+                if route_id in declared:
                     self.assertEqual(admitted, transport.READ_METHODS + ("POST",))
                 else:
                     self.assertEqual(admitted, transport.READ_METHODS)
+                # Unconditional, and true of the exceptions too: the widening
+                # is one more way to ask, never a way to change anything.
+                for method in ("PUT", "PATCH", "DELETE"):
+                    self.assertNotIn(method, admitted)
 
 
 class WriteVerbRefusalTest(unittest.TestCase):
@@ -847,14 +877,23 @@ class WriteVerbRefusalTest(unittest.TestCase):
                         "refusing a write-capable method", self._refusal_for(route_id, method)
                     )
 
-    def test_post_is_refused_on_every_route_but_the_activation_route(self):
+    def test_post_is_refused_on_every_route_but_the_two_declared_exceptions(self):
+        declared = transport.TOKEN_ACTIVATION_ROUTES + transport.QUERY_BODY_ROUTES
+        refused = []
+
         for route_id in sorted(transport.ROUTE_CONSTANTS):
-            if route_id == transport.X_GUEST_ACTIVATE_ROUTE:
+            if route_id in declared:
                 continue
             with self.subTest(route=route_id):
                 self.assertIn(
                     "refusing a write-capable method", self._refusal_for(route_id, "POST")
                 )
+                refused.append(route_id)
+
+        # The skip list is what a widening grows, so the loop states how much
+        # it still covers: every route but the two, and never zero.
+        self.assertEqual(len(refused), len(transport.ROUTE_CONSTANTS) - len(declared))
+        self.assertGreater(len(refused), 0)
 
     def test_a_non_https_url_is_still_refused_before_any_socket(self):
         request = transport.TransportRequest(

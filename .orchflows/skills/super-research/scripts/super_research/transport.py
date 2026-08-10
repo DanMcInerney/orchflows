@@ -10,9 +10,11 @@ so a caller can never record this network's block as a platform gap.
 
 Reliability bar: read-only. The default opener refuses any URL that is not
 ``https://`` and any method outside :func:`admitted_methods` — reads
-everywhere, plus one closed exception for minting an anonymous guest token,
-which creates nothing at the origin. No code path here can mutate a remote
-resource, and the offline ``fake`` route can never leave the process.
+everywhere, plus two closed exceptions named by route id: minting an anonymous
+guest token, and asking a question InnerTube only takes in a JSON body. Both
+are POSTs that create nothing at the origin. PUT, PATCH and DELETE are admitted
+nowhere, no code path here can mutate a remote resource, and the offline
+``fake`` route can never leave the process.
 """
 
 from __future__ import annotations
@@ -23,7 +25,7 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Callable, Dict, List, Mapping, Optional, Tuple
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 
 DDG_HTML_ROUTE = "ddg_html"
 ARCTIC_SHIFT_POSTS_ROUTE = "arctic_shift_posts_ids"
@@ -32,6 +34,8 @@ X_SYNDICATION_TIMELINE_ROUTE = "x_syndication_timeline"
 X_GUEST_GRAPHQL_ROUTE = "x_guest_graphql"
 LINKEDIN_JOBS_GUEST_SEARCH_ROUTE = "linkedin_jobs_guest_search"
 LINKEDIN_PUBLIC_PROFILE_ROUTE = "linkedin_public_profile"
+YOUTUBE_INNERTUBE_ROUTE = "youtube_innertube"
+INSTAGRAM_WEB_PROFILE_ROUTE = "instagram_web_profile"
 FAKE_OFFLINE_ROUTE = "fake_offline"
 
 YOUTUBE_INNERTUBE_WEB_KEY = "youtube_innertube_web_key"
@@ -52,11 +56,25 @@ READ_METHODS = ("GET", "HEAD")
 RATE_LIMITED_STATUS = 429
 RATE_LIMITED = "rate_limited"
 
-# The one closed exception to reads-only, named by route id: minting an
+# The first closed exception to reads-only, named by route id: minting an
 # anonymous guest token needs a POST, and that POST creates no account,
-# session, or content at the origin. Nothing else may leave a read.
+# session, or content at the origin.
 TOKEN_ACTIVATION_ROUTES = (X_GUEST_ACTIVATE_ROUTE,)
 TOKEN_ACTIVATION_METHODS = ("POST",)
+
+# The second, and the last. InnerTube takes its query as a JSON body and has
+# no GET form, so this is a read spelled in an awkward verb rather than a write
+# — it asks a question and creates nothing. What keeps that true is not the
+# verb but the body: it is rendered from the route's own `body_params` and from
+# nothing else, so a caller supplies values into a shape this module declares
+# and can never choose the shape. A route absent from both sets above reaches
+# no method outside `READ_METHODS` by any path, and no route anywhere reaches
+# PUT, PATCH or DELETE.
+QUERY_BODY_ROUTES = (YOUTUBE_INNERTUBE_ROUTE,)
+QUERY_BODY_METHODS = ("POST",)
+
+# What a rendered body is sent as, and the only content type this module emits.
+JSON_CONTENT_TYPE = "application/json"
 
 # What an activation route issues, and where the route that needs it carries
 # it. A guest token is not a vendor-published constant: the origin mints a new
@@ -156,6 +174,12 @@ class RouteConstant:
     names are the route's, so the endpoint's shape stays owned here; only the
     values come from the caller. A route that takes none has none.
 
+    ``body_params`` does for a JSON body what ``path_params`` does for a path:
+    it names the inputs this endpoint takes there, each paired with the key
+    path it occupies inside the body. The nesting is the endpoint's shape and
+    stays owned here; only the values come from the caller, and a param the
+    route does not name here never reaches the body at all.
+
     ``token_route_id`` names the activation route that mints the token this
     one needs. It is what makes an authorized read still one read to everyone
     above this module: the mint happens at send time, inside the opener,
@@ -171,6 +195,7 @@ class RouteConstant:
     operator_identity: str = ""
     credential_id: str = ""
     path_params: Tuple[str, ...] = ()
+    body_params: Tuple[Tuple[str, Tuple[str, ...]], ...] = ()
     token_route_id: str = ""
 
 
@@ -264,6 +289,58 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         operator_identity="linkedin",
         path_params=("slug",),
     ),
+    # findings.md §1 (YouTube): `youtubei/v1/search` answered 200 with 2.27 MB
+    # in 1.4 s, `youtubei/v1/next` 200 with 1.12 MB in 2.2 s, and
+    # `youtubei/v1/player` 200 with 21 KB in 0.3 s — all three keyless, under
+    # the web key youtube.com embeds in its own page source. The endpoint is a
+    # path segment, so three operations are one route with one budget, the way
+    # the X GraphQL operations are.
+    #
+    # This is the one route in the table whose read is spelled POST: InnerTube
+    # takes its query in a JSON body and publishes no GET form. The body is
+    # rendered from `body_params` alone. `context.client` is InnerTube's own
+    # required envelope and carries the client version that rotates, which is
+    # why the adapter declares that version as a volatile identifier rather
+    # than this module pinning one.
+    #
+    # The origin is the host the evidence names youtubei as living under, and
+    # like the web key's elided middle it is unproven until criterion 12's
+    # live smoke.
+    YOUTUBE_INNERTUBE_ROUTE: RouteConstant(
+        route_id=YOUTUBE_INNERTUBE_ROUTE,
+        access_class="K1",
+        method="POST",
+        origin="https://www.youtube.com",
+        path="/youtubei/v1",
+        accept=JSON_CONTENT_TYPE,
+        operator_identity="youtube",
+        credential_id=YOUTUBE_INNERTUBE_WEB_KEY,
+        path_params=("endpoint",),
+        body_params=(
+            ("client_name", ("context", "client", "clientName")),
+            ("client_version", ("context", "client", "clientVersion")),
+            ("query", ("query",)),
+            ("video_id", ("videoId",)),
+            ("continuation", ("continuation",)),
+        ),
+    ),
+    # findings.md §1 (Instagram): `api/v1/users/web_profile_info/?username=`
+    # under `x-ig-app-id: 936619743392459` answered 200 with 455 KB in 2.9 s,
+    # carrying username, biography, followers, post count and 12 recent posts.
+    # The evidence records the path and the header and not the host, so the
+    # origin here is this package's belief — Instagram's own web client asks
+    # this of `www.instagram.com` — and it is unproven until criterion 12's
+    # live smoke, exactly as the X GraphQL origin is.
+    INSTAGRAM_WEB_PROFILE_ROUTE: RouteConstant(
+        route_id=INSTAGRAM_WEB_PROFILE_ROUTE,
+        access_class="K1",
+        method="GET",
+        origin="https://www.instagram.com",
+        path="/api/v1/users/web_profile_info/",
+        accept=JSON_CONTENT_TYPE,
+        operator_identity="instagram",
+        credential_id=INSTAGRAM_WEB_APP_ID,
+    ),
     FAKE_OFFLINE_ROUTE: RouteConstant(
         route_id=FAKE_OFFLINE_ROUTE,
         access_class="offline",
@@ -278,10 +355,19 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
 
 @dataclass(frozen=True)
 class TransportRequest:
+    """One read, spelled completely, before any credential is attached.
+
+    ``body`` is the JSON a query-body route asks its question in, rendered from
+    that route's declared ``body_params``. Every other route carries none, and
+    no caller can put anything in one: the shape is the route's and only the
+    values are the caller's.
+    """
+
     route_id: str
     method: str
     url: str
     headers: Tuple[Tuple[str, str], ...] = ()
+    body: str = ""
 
 
 @dataclass(frozen=True)
@@ -348,11 +434,38 @@ def route_admissions() -> Dict[str, bool]:
 
 
 def admitted_methods(route_id: str) -> Tuple[str, ...]:
-    """Every method this route may use: reads, plus token activation where declared."""
+    """Every method this route may use: reads, plus the two closed exceptions.
+
+    A route named in neither exception set reads and nothing else, and no
+    route in either one gains a verb that could change anything at an origin:
+    both exceptions are the same POST, on a named route, for an operation that
+    creates nothing.
+    """
 
     if route_id in TOKEN_ACTIVATION_ROUTES:
         return READ_METHODS + TOKEN_ACTIVATION_METHODS
+    if route_id in QUERY_BODY_ROUTES:
+        return READ_METHODS + QUERY_BODY_METHODS
     return READ_METHODS
+
+
+def origin_locator(route_id: str, published: str) -> str:
+    """One address on a route's own origin, resolved where hosts are spelled.
+
+    Both `K1` platforms in the roster publish an item's address relative to
+    themselves — a ``/watch?v=`` path — or not at all, leaving a caller to
+    address a post by the shortcode the payload carries. An adapter may name no
+    route host, so either the resolution happens here or every record on those
+    routes carries no address. An address that is already absolute is handed
+    back untouched: resolving one somebody else resolved would be this module
+    rewriting what an origin said.
+    """
+
+    if not published:
+        return ""
+    if urllib.parse.urlsplit(published).scheme:
+        return published
+    return urllib.parse.urljoin(route_constant(route_id).origin, published)
 
 
 def route_credential(route_id: str) -> Optional[PublicClientCredential]:
@@ -401,6 +514,33 @@ def path_segments(route: RouteConstant, params: Dict[str, str]) -> str:
             break
         spent = spent + "/" + urllib.parse.quote(value, safe="")
     return spent
+
+
+def json_body(route: RouteConstant, params: Dict[str, str]) -> str:
+    """Spend this route's declared body params into the JSON it asks in.
+
+    The keys are the route's, taken from ``body_params`` and from nothing else,
+    so a param the endpoint never declared cannot reach the body — it stays an
+    ordinary query parameter, in the open, on a url the run records. A route
+    that declares none carries no body whatever it is handed, which is what
+    keeps this from being a generic HTTP primitive.
+
+    Serialized with sorted keys and no spaces, so one request is one string and
+    two identical reads are identical bytes.
+    """
+
+    if not route.body_params:
+        return ""
+    body: Dict[str, Any] = {}
+    for name, key_path in route.body_params:
+        value = params.pop(name, "")
+        if not value:
+            continue
+        held = body
+        for key in key_path[:-1]:
+            held = held.setdefault(key, {})
+        held[key_path[-1]] = value
+    return json.dumps(body, separators=(",", ":"), sort_keys=True) if body else ""
 
 
 def mint_guest_token(token_route_id: str) -> str:
@@ -473,15 +613,16 @@ def build_transport_request(
     route = route_constant(route_id)
     supplied = dict(params or {})
     path = route.path + path_segments(route, supplied)
+    body = json_body(route, supplied)
     pairs = [(key, value) for key, value in sorted(supplied.items()) if value != ""]
     url = route.origin + path
     if pairs:
         url = url + "?" + urllib.parse.urlencode(pairs)
+    headers = (("User-Agent", USER_AGENT), ("Accept", route.accept))
+    if body:
+        headers = headers + (("Content-Type", JSON_CONTENT_TYPE),)
     return TransportRequest(
-        route_id=route_id,
-        method=route.method,
-        url=url,
-        headers=(("User-Agent", USER_AGENT), ("Accept", route.accept)),
+        route_id=route_id, method=route.method, url=url, headers=headers, body=body
     )
 
 
@@ -505,7 +646,9 @@ def urlopen_response(request: TransportRequest) -> Tuple[int, str, str]:
 
     credential = route_credential(request.route_id)
     outbound = urllib.request.Request(
-        credentialed_url(request.url, credential), method=request.method
+        credentialed_url(request.url, credential),
+        data=request.body.encode("utf-8") if request.body else None,
+        method=request.method,
     )
     headers = tokened_headers(
         credentialed_headers(request.headers, credential),
