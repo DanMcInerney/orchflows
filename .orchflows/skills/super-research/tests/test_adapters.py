@@ -3825,5 +3825,132 @@ class YoutubeInstagramOneCallOnePageTest(unittest.TestCase):
                 self.assertEqual(len(opener.opened), 1)
 
 
+# findings.md §1 (Instagram): 455 KB per answer. Held against `MAX_ENTRY_BYTES`
+# below, because whether a route's declared window can ever bind depends on it.
+MEASURED_INSTAGRAM_BYTES = 455 * 1024
+
+
+class YoutubeInstagramRouteTtlTest(unittest.TestCase):
+    """How long each route's answer may stand in for a fresh read.
+
+    One of these two declares a window and one cannot have one, and the
+    difference is not a preference. A TTL belongs to a route's own volatility,
+    and `cache.py`'s default is deliberately short — a route nobody has
+    measured is not one to trust for long — so a declared window is proven from
+    both sides here: a re-read inside it that the default would have sent back
+    to the origin, and one outside it that comes back.
+    """
+
+    def _paced(self, clock, route_id, body):
+        carrier, opener = helpers.offline_transport(
+            clock, {route_id: (200, body, "application/json")}
+        )
+        governor = runner.RateGovernor(
+            carrier,
+            run_cache=cache.RunCache(clock=clock.monotonic),
+            clock=clock.monotonic,
+            sleep=clock.sleep,
+        )
+        return governor, opener
+
+    def test_a_profile_reread_inside_the_window_is_answered_from_memory(self):
+        clock = helpers.FakeClock()
+        governor, opener = self._paced(
+            clock,
+            transport.INSTAGRAM_WEB_PROFILE_ROUTE,
+            read_instagram("web_profile_info.json"),
+        )
+
+        first = instagram_public.fetch_native_page(governor, INSTAGRAM_REQUEST)
+        clock.advance(120)
+        held = instagram_public.fetch_native_page(governor, INSTAGRAM_REQUEST)
+        clock.advance(240)
+        expired = instagram_public.fetch_native_page(governor, INSTAGRAM_REQUEST)
+
+        self.assertNotIn(cache.CACHE_HIT, first.loss)
+        # Two minutes, which the inherited default would have sent back to the
+        # origin at a cost of 2.9 s — the slowest read in the roster.
+        self.assertIn(cache.CACHE_HIT, held.loss)
+        self.assertNotIn(cache.CACHE_HIT, expired.loss)
+        self.assertEqual(len(opener.opened), 2)
+        # The mark moves, the moment does not: a served page still states when
+        # the origin was really read.
+        self.assertEqual(held.observed_at, first.observed_at)
+        self.assertEqual(len(held.records), 13)
+
+    def test_the_route_carrying_counts_holds_them_for_less_time_than_a_block_with_none(self):
+        # A profile page's ld+json block carries no counter at all and changes
+        # when a member edits it, so LinkedIn's window is the roster's longest.
+        # This payload carries a follower count and twelve pairs of like and
+        # comment counts, all of which move while nobody edits anything, so it
+        # cannot hold them that long however expensive the read is.
+        self.assertLess(
+            cache.ttl_seconds(transport.INSTAGRAM_WEB_PROFILE_ROUTE),
+            cache.ttl_seconds(transport.LINKEDIN_PUBLIC_PROFILE_ROUTE),
+        )
+        self.assertGreater(
+            cache.ttl_seconds(transport.INSTAGRAM_WEB_PROFILE_ROUTE),
+            cache.DEFAULT_TTL_SECONDS,
+        )
+
+    def test_a_body_the_size_the_evidence_measured_is_held_rather_than_served_through(self):
+        # The mirror of the LinkedIn profile route, and the reason that check
+        # exists: at 577 KB that one exceeds `MAX_ENTRY_BYTES` and its window
+        # never binds. At 455 KB this one fits, so the window above is real at
+        # the size the evidence actually measured — with 57 KB of headroom, and
+        # not a byte more.
+        clock = helpers.FakeClock()
+        payload = read_instagram("web_profile_info.json")
+        measured = payload + " " * (MEASURED_INSTAGRAM_BYTES - len(payload.encode("utf-8")))
+        governor, opener = self._paced(
+            clock, transport.INSTAGRAM_WEB_PROFILE_ROUTE, measured
+        )
+
+        first = instagram_public.fetch_native_page(governor, INSTAGRAM_REQUEST)
+        clock.advance(60)
+        held = instagram_public.fetch_native_page(governor, INSTAGRAM_REQUEST)
+
+        self.assertEqual(len(measured.encode("utf-8")), MEASURED_INSTAGRAM_BYTES)
+        self.assertLess(MEASURED_INSTAGRAM_BYTES, cache.MAX_ENTRY_BYTES)
+        self.assertIn(cache.CACHE_HIT, held.loss)
+        self.assertEqual(len(opener.opened), 1)
+        self.assertEqual(len(first.records), 13)
+        self.assertEqual(len(held.records), 13)
+
+    def test_an_innertube_answer_is_never_held_because_the_read_is_not_a_get(self):
+        # The InnerTube route declares no window, and the reason is structural
+        # rather than a judgment about volatility: `cache.cacheable` holds only
+        # what came back from a read method, and this route asks its question
+        # in a POST body. A second identical read one second later still
+        # reaches the origin, so no window it could declare would ever bind.
+        clock = helpers.FakeClock()
+        governor, opener = self._paced(
+            clock, transport.YOUTUBE_INNERTUBE_ROUTE, read_youtube("player_metadata.json")
+        )
+        request = youtube_request("player:" + YOUTUBE_VIDEO_ID)
+
+        first = youtube_innertube.fetch_native_page(governor, request)
+        clock.advance(1)
+        second = youtube_innertube.fetch_native_page(governor, request)
+
+        self.assertNotIn(cache.CACHE_HIT, first.loss)
+        self.assertNotIn(cache.CACHE_HIT, second.loss)
+        self.assertEqual(len(opener.opened), 2)
+        self.assertNotIn(
+            transport.route_constant(transport.YOUTUBE_INNERTUBE_ROUTE).method,
+            transport.READ_METHODS,
+        )
+        self.assertNotIn(transport.YOUTUBE_INNERTUBE_ROUTE, cache.ROUTE_TTL_SECONDS)
+
+    def test_two_of_the_three_innertube_answers_are_too_large_to_hold_anyway(self):
+        # And the window would not bind even if the verb changed: findings.md
+        # §1 measured search at 2.27 MB and next at 1.12 MB against a 512 KiB
+        # entry cap, so only the 21 KB player answer could ever be held.
+        for measured_bytes in (2270 * 1024, 1120 * 1024):
+            with self.subTest(body_bytes=measured_bytes):
+                self.assertGreater(measured_bytes, cache.MAX_ENTRY_BYTES)
+        self.assertLess(21 * 1024, cache.MAX_ENTRY_BYTES)
+
+
 if __name__ == "__main__":  # pragma: no cover - convenience runner
     unittest.main()

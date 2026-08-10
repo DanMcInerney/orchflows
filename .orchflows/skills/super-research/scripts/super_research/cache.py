@@ -63,6 +63,26 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # read — 27 KB in 0.7 s, so holding an answer longer buys less and risks
     # handing back a page of results that has moved on.
     transport.LINKEDIN_JOBS_GUEST_SEARCH_ROUTE: 300.0,
+    # The most expensive read in the roster — 455 KB in 2.9 s (findings.md §1)
+    # — so remembering earns more here per request than anywhere else, and a
+    # run asking for the same account twice is asking the same question. It
+    # still cannot take the LinkedIn profile's window: that block carries no
+    # counter at all and changes only when a member edits it, while this
+    # payload carries a follower count and twelve pairs of like and comment
+    # counts, every one of which moves while nobody edits anything. Five
+    # minutes is the syndication timeline's window, and for the same reason —
+    # one author's recent posts with the platform's own counts on them. Unlike
+    # that profile route, this one fits: 455 KB is inside `MAX_ENTRY_BYTES`,
+    # with 57 KB of headroom, so this window binds on the body the evidence
+    # measured rather than only on a smaller one.
+    transport.INSTAGRAM_WEB_PROFILE_ROUTE: 300.0,
+    # `transport.YOUTUBE_INNERTUBE_ROUTE` declares no window on purpose, and it
+    # is the one route here where that is structural rather than a judgment:
+    # it asks its question in a POST body, and `cacheable` holds only what came
+    # back from a read method. No number written here could ever bind, so
+    # writing one would state a freshness guarantee nothing honours. Two of its
+    # three operations answer at 2.27 MB and 1.12 MB besides, well past
+    # `MAX_ENTRY_BYTES`. Proved behaviourally in `test_adapters`, not asserted.
 }
 
 # The two halves of one bound. Every route in the roster answers in kilobytes,
