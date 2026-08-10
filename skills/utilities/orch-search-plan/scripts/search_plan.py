@@ -151,6 +151,29 @@ ADMITTED_KEYS = {
     "dimension_vector",
     "feedback",
 }
+INELIGIBLE_KEYS = {
+    "kind",
+    "outcome_identity",
+    "slot_identity",
+    "cost",
+    "candidate_identity",
+    "parent_identities",
+    "target_owner_identity",
+    "mutation_surface_identities",
+    "benchmark_revision",
+    "result_identity",
+    "evidence_identity",
+    "eligibility_status",
+    "eligibility_verdict_identity",
+    "disposition",
+}
+NO_CANDIDATE_KEYS = {
+    "kind",
+    "outcome_identity",
+    "slot_identity",
+    "cost",
+    "disposition",
+}
 PROJECTION_KEYS = {
     "schema",
     "identity",
@@ -323,6 +346,71 @@ def _validate_origin(outcome, policy, surfaces, feedback_sources, dimension_ids,
     )
 
 
+def _validate_ineligible(outcome, policy, surfaces, units):
+    _closed(outcome, INELIGIBLE_KEYS, "ineligible outcome")
+    if outcome["kind"] != "ineligible":
+        raise ProtocolError("outcome kind is invalid")
+    for key in (
+        "outcome_identity",
+        "slot_identity",
+        "candidate_identity",
+        "result_identity",
+        "evidence_identity",
+        "eligibility_verdict_identity",
+        "disposition",
+    ):
+        _string(outcome[key], "outcome." + key)
+    parents = outcome["parent_identities"]
+    if not isinstance(parents, list) or len(parents) not in (1, 2):
+        raise ProtocolError("produced candidate requires one or two parents")
+    for parent in parents:
+        _string(parent, "outcome parent")
+    if outcome["target_owner_identity"] != policy["target_owner_identity"]:
+        raise ProtocolError("outcome owner drift")
+    if outcome["mutation_surface_identities"] != surfaces:
+        raise ProtocolError("outcome mutation-surface drift")
+    if outcome["benchmark_revision"] != policy["benchmark_revision"]:
+        raise ProtocolError("outcome benchmark drift")
+    if outcome["eligibility_status"] not in ("FAIL", "UNVERIFIED"):
+        raise ProtocolError("ineligible outcome must be covered non-PASS")
+    _closed(outcome["cost"], units, "outcome cost")
+    for unit in units:
+        _integer(outcome["cost"][unit], "outcome cost")
+
+
+def _validate_no_candidate(outcome, units):
+    _closed(outcome, NO_CANDIDATE_KEYS, "no-candidate outcome")
+    if outcome["kind"] != "no_candidate":
+        raise ProtocolError("outcome kind is invalid")
+    for key in ("outcome_identity", "slot_identity", "disposition"):
+        _string(outcome[key], "outcome." + key)
+    _closed(outcome["cost"], units, "outcome cost")
+    for unit in units:
+        _integer(outcome["cost"][unit], "outcome cost")
+
+
+def _validate_outcome(
+    outcome, policy, surfaces, feedback_sources, dimension_ids, units
+):
+    if not isinstance(outcome, dict):
+        raise ProtocolError("outcome is not an object")
+    if outcome.get("kind") == "admitted":
+        _validate_admitted(
+            outcome,
+            policy,
+            surfaces,
+            feedback_sources,
+            dimension_ids,
+            units,
+        )
+    elif outcome.get("kind") == "ineligible":
+        _validate_ineligible(outcome, policy, surfaces, units)
+    elif outcome.get("kind") == "no_candidate":
+        _validate_no_candidate(outcome, units)
+    else:
+        raise ProtocolError("outcome kind is invalid")
+
+
 def _decimal_parts(value):
     negative = value.startswith("-")
     unsigned = value[1:] if negative else value
@@ -403,6 +491,14 @@ def _validate_slot(slot, policy, surfaces, feedback_sources, dimension_ids, unit
     elif slot["kind"] == "merge":
         if len(parents) != 2 or slot["focus_dimension_identity"] is not None:
             raise ProtocolError("merge slot is invalid")
+        complementary = slot["complementary_dimension_identities"]
+        if (
+            not isinstance(complementary, list)
+            or not complementary
+            or len(complementary) != len(set(complementary))
+            or any(item not in dimension_ids for item in complementary)
+        ):
+            raise ProtocolError("merge complementary dimensions are invalid")
     else:
         raise ProtocolError("slot kind is invalid")
     _validate_feedback(slot["feedback"], feedback_sources, dimension_ids)
@@ -471,15 +567,21 @@ def _validate_projection(
     candidates = set()
     outcomes = set()
     for index, node in enumerate(nodes):
-        _validate_admitted(
-            node,
-            policy,
-            surfaces,
-            feedback_sources,
-            dimension_ids,
-            units,
-            origin=index == 0,
-        )
+        if index == 0:
+            _validate_origin(
+                node, policy, surfaces, feedback_sources, dimension_ids, units
+            )
+        elif isinstance(node, dict) and node.get("kind") == "admitted":
+            _validate_admitted(
+                node,
+                policy,
+                surfaces,
+                feedback_sources,
+                dimension_ids,
+                units,
+            )
+        else:
+            _validate_ineligible(node, policy, surfaces, units)
         candidate = node["candidate_identity"]
         if candidate in candidates or node["outcome_identity"] in outcomes:
             raise ProtocolError("projection node identity is duplicated")
@@ -569,6 +671,111 @@ def _reflection_slots(policy, nodes, archive, preferred, count, generation):
     return slots
 
 
+def _merge_pairs(policy, nodes, archive):
+    by_candidate = {node["candidate_identity"]: node for node in nodes}
+    ordered = sorted(
+        archive,
+        key=lambda candidate: _stable_key(policy["ordering_seed"], candidate),
+    )
+    pairs = []
+    for left_index, left_identity in enumerate(ordered):
+        left = by_candidate[left_identity]
+        for right_identity in ordered[left_index + 1 :]:
+            right = by_candidate[right_identity]
+            if (
+                left["target_owner_identity"] != right["target_owner_identity"]
+                or left["mutation_surface_identities"]
+                != right["mutation_surface_identities"]
+            ):
+                continue
+            relations = []
+            for dimension in policy["dimensions"]:
+                dimension_id = dimension["identity"]
+                relations.append(
+                    _relation(
+                        _vector(left)[dimension_id],
+                        _vector(right)[dimension_id],
+                        dimension["resolution"],
+                        dimension["direction"],
+                    )
+                )
+            if 1 in relations and -1 in relations:
+                pairs.append((left_identity, right_identity, relations))
+    pairs.sort(
+        key=lambda item: _stable_key(policy["ordering_seed"], item[0], item[1])
+    )
+    return pairs
+
+
+def _merge_feedback(policy, left, right, relations):
+    source_order = {
+        source: index
+        for index, source in enumerate(policy["feedback_source_identities"])
+    }
+    feedback = []
+    for parent, wanted_relation in ((left, 1), (right, -1)):
+        for dimension, relation in zip(policy["dimensions"], relations):
+            if relation != wanted_relation:
+                continue
+            matching = [
+                copy.deepcopy(item)
+                for item in parent["feedback"]
+                if item["dimension_identity"] == dimension["identity"]
+            ]
+            matching.sort(
+                key=lambda item: (
+                    source_order[item["source_identity"]],
+                    item["reference_identity"],
+                )
+            )
+            feedback.extend(matching)
+    return feedback
+
+
+def _proposed_slots(policy, nodes, archive, preferred, generation):
+    by_candidate = {node["candidate_identity"]: node for node in nodes}
+    pairs = _merge_pairs(policy, nodes, archive)
+    merge_count = min(policy["merge_slots"], len(pairs))
+    reflection_count = policy["generation_width"] - merge_count
+    slots = _reflection_slots(
+        policy,
+        nodes,
+        archive,
+        preferred,
+        reflection_count,
+        generation,
+    )
+    for pair_index in range(merge_count):
+        left_identity, right_identity, relations = pairs[pair_index]
+        complementary = [
+            dimension["identity"]
+            for dimension, relation in zip(policy["dimensions"], relations)
+            if relation != 0
+        ]
+        payload = {
+            "generation": generation,
+            "ordinal": len(slots),
+            "kind": "merge",
+            "parent_identities": [left_identity, right_identity],
+            "focus_dimension_identity": None,
+            "complementary_dimension_identities": complementary,
+            "feedback": _merge_feedback(
+                policy,
+                by_candidate[left_identity],
+                by_candidate[right_identity],
+                relations,
+            ),
+            "target_owner_identity": policy["target_owner_identity"],
+            "mutation_surface_identities": copy.deepcopy(
+                policy["mutation_surface_identities"]
+            ),
+            "benchmark_revision": policy["benchmark_revision"],
+            "reservation": copy.deepcopy(policy["reservations"]["merge"]),
+        }
+        slots.append(_identified("search-slot/v1", payload))
+    return slots
+
+
 def _pending_response(projection, missing):
     return {
         "schema": "search-advance/v1",
@@ -601,8 +808,23 @@ def _advance_later(request, policy, surfaces, feedback_sources, dimension_ids, u
     by_slot = {}
     seen_candidates = set(candidates)
     incorporated = set(projection["incorporated_outcome_identities"])
+    fresh_fields = (
+        "candidate_identity",
+        "result_identity",
+        "evidence_identity",
+        "eligibility_verdict_identity",
+    )
+    used_fresh = {
+        field: {node[field] for node in nodes}
+        for field in fresh_fields
+    }
+    used_scores = {
+        node["score_card_identity"]
+        for node in nodes
+        if node["kind"] == "admitted"
+    }
     for outcome in outcomes:
-        _validate_admitted(
+        _validate_outcome(
             outcome,
             policy,
             surfaces,
@@ -614,20 +836,33 @@ def _advance_later(request, policy, surfaces, feedback_sources, dimension_ids, u
         if slot_identity not in slots or slot_identity in by_slot:
             raise ProtocolError("settled slot is extra or duplicated")
         slot = slots[slot_identity]
-        if outcome["parent_identities"] != slot["parent_identities"]:
-            raise ProtocolError("settled lineage does not match the plan")
-        if outcome["candidate_identity"] in seen_candidates:
-            raise ProtocolError("produced candidate identity is reused")
+        if outcome["kind"] != "no_candidate":
+            if outcome["parent_identities"] != slot["parent_identities"]:
+                raise ProtocolError("settled lineage does not match the plan")
+            if outcome["candidate_identity"] in seen_candidates:
+                raise ProtocolError("produced candidate identity is reused")
+            for field in fresh_fields:
+                if outcome[field] in used_fresh[field]:
+                    raise ProtocolError("produced result identity is reused")
+                used_fresh[field].add(outcome[field])
+            if outcome["kind"] == "admitted":
+                if outcome["score_card_identity"] in used_scores:
+                    raise ProtocolError("score-card identity is reused")
+                used_scores.add(outcome["score_card_identity"])
+            seen_candidates.add(outcome["candidate_identity"])
         if outcome["outcome_identity"] in incorporated:
             raise ProtocolError("outcome identity is reused")
-        seen_candidates.add(outcome["candidate_identity"])
         incorporated.add(outcome["outcome_identity"])
         by_slot[slot_identity] = outcome
     missing = [slot["identity"] for slot in prior_plan["slots"] if slot["identity"] not in by_slot]
     if missing:
         return _pending_response(projection, missing)
     normalized_outcomes = [by_slot[slot["identity"]] for slot in prior_plan["slots"]]
-    updated_nodes = copy.deepcopy(nodes) + copy.deepcopy(normalized_outcomes)
+    updated_nodes = copy.deepcopy(nodes) + [
+        copy.deepcopy(outcome)
+        for outcome in normalized_outcomes
+        if outcome["kind"] != "no_candidate"
+    ]
     admitted_candidates = {
         node["candidate_identity"]
         for node in updated_nodes
@@ -642,12 +877,11 @@ def _advance_later(request, policy, surfaces, feedback_sources, dimension_ids, u
     for unit in units:
         _integer(remaining_bound[unit], "remaining bound")
     generation = prior_plan["generation"] + 1
-    proposed = _reflection_slots(
+    proposed = _proposed_slots(
         policy,
         updated_nodes,
         archive,
         preferred,
-        policy["generation_width"],
         generation,
     )
     spent = {unit: 0 for unit in units}

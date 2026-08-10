@@ -192,6 +192,28 @@ def admitted_outcome(slot, candidate, quality, cost, suffix=None):
     }
 
 
+def ineligible_outcome(slot, candidate, suffix=None):
+    suffix = suffix or candidate.rsplit(":", 1)[-1]
+    return {
+        "kind": "ineligible",
+        "outcome_identity": f"outcome:{suffix}",
+        "slot_identity": slot["identity"],
+        "cost": {"runs": 1},
+        "candidate_identity": candidate,
+        "parent_identities": copy.deepcopy(slot["parent_identities"]),
+        "target_owner_identity": slot["target_owner_identity"],
+        "mutation_surface_identities": copy.deepcopy(
+            slot["mutation_surface_identities"]
+        ),
+        "benchmark_revision": slot["benchmark_revision"],
+        "result_identity": f"result:{suffix}",
+        "evidence_identity": f"evidence:{suffix}",
+        "eligibility_status": "FAIL",
+        "eligibility_verdict_identity": f"verdict:{suffix}",
+        "disposition": "failed-required-check",
+    }
+
+
 def settled_request(policy, response, outcomes, preferred, remaining=20):
     return {
         "policy": copy.deepcopy(policy),
@@ -532,6 +554,174 @@ class TestParetoReflection(unittest.TestCase):
                 ]
         response = self.run_ok(request)
         self.assertNotIn("candidate:dominated", response["projection"]["archive"])
+
+
+class TestMergeLineage(unittest.TestCase):
+    def run_ok(self, request):
+        result = run_advance(request)
+        self.assertEqual(0, result.returncode, result.stderr.decode())
+        self.assertEqual(b"", result.stderr)
+        return json.loads(result.stdout)
+
+    def assert_rejected(self, request):
+        result = run_advance(request)
+        self.assertEqual(2, result.returncode)
+        self.assertEqual(b"", result.stdout)
+
+    def merge_fixture(self):
+        initial_request = two_dimension_request()
+        initial = self.run_ok(initial_request)
+        slots = initial["plan"]["slots"]
+        outcomes = [
+            admitted_outcome(slots[0], "candidate:a", "0.8", "0.6", "a"),
+            admitted_outcome(slots[1], "candidate:b", "0.4", "0.2", "b"),
+            admitted_outcome(slots[2], "candidate:dominated", "0.3", "0.8", "d"),
+        ]
+        request = settled_request(
+            initial_request["policy"],
+            initial,
+            outcomes,
+            "candidate:dominated",
+        )
+        return initial_request["policy"], self.run_ok(request)
+
+    def test_complementary_merge_and_complete_fresh_lineage(self):
+        policy, generation_two = self.merge_fixture()
+        slots = generation_two["plan"]["slots"]
+        self.assertEqual(["reflect", "reflect", "merge"], [s["kind"] for s in slots])
+        merge = slots[-1]
+        self.assertEqual(2, len(merge["parent_identities"]))
+        self.assertEqual(
+            {"dimension:quality", "dimension:cost"},
+            set(merge["complementary_dimension_identities"]),
+        )
+
+        outcomes = [
+            admitted_outcome(slots[0], "candidate:reflected", "0.7", "0.4", "r"),
+            ineligible_outcome(slots[1], "candidate:ineligible", "i"),
+            admitted_outcome(merge, "candidate:merged", "0.9", "0.1", "m"),
+        ]
+        request = settled_request(
+            policy, generation_two, outcomes, "candidate:merged"
+        )
+        advanced = self.run_ok(request)
+        nodes = advanced["projection"]["nodes"]
+        self.assertEqual(7, len(nodes))
+        self.assertIn("candidate:ineligible", [node["candidate_identity"] for node in nodes])
+        self.assertNotIn("candidate:ineligible", advanced["projection"]["archive"])
+        seen = set()
+        for node in nodes:
+            self.assertTrue(set(node["parent_identities"]) <= seen)
+            self.assertNotIn(node["candidate_identity"], seen)
+            seen.add(node["candidate_identity"])
+
+        merged = next(node for node in nodes if node["candidate_identity"] == "candidate:merged")
+        parents = [
+            node for node in nodes if node["candidate_identity"] in merged["parent_identities"]
+        ]
+        for field in (
+            "candidate_identity",
+            "result_identity",
+            "evidence_identity",
+            "eligibility_verdict_identity",
+            "score_card_identity",
+        ):
+            self.assertNotIn(merged[field], [parent[field] for parent in parents])
+
+        for slot in generation_two["plan"]["slots"]:
+            self.assertEqual(
+                slot["identity"],
+                tagged_identity(
+                    "search-slot/v1",
+                    {key: value for key, value in slot.items() if key != "identity"},
+                ),
+            )
+            self.assertNotIn("plan_identity", slot)
+        self.assertEqual(
+            generation_two["plan"]["identity"],
+            tagged_identity(
+                "search-plan/v1",
+                {
+                    key: value
+                    for key, value in generation_two["plan"].items()
+                    if key != "identity"
+                },
+            ),
+        )
+        projection = advanced["projection"]
+        self.assertEqual(
+            projection["identity"],
+            tagged_identity(
+                "search-projection/v1",
+                {key: value for key, value in projection.items() if key != "identity"},
+            ),
+        )
+
+    def test_settlement_is_exact_and_atomic(self):
+        policy, generation_two = self.merge_fixture()
+        slots = generation_two["plan"]["slots"]
+        partial = settled_request(
+            policy,
+            generation_two,
+            [admitted_outcome(slots[0], "candidate:partial", "0.6", "0.4", "p")],
+            "candidate:partial",
+        )
+        pending = self.run_ok(partial)
+        self.assertEqual("pending", pending["status"])
+        self.assertEqual(generation_two["projection"], pending["projection"])
+        self.assertEqual(
+            generation_two["projection"]["identity"],
+            pending["output_projection_identity"],
+        )
+        self.assertIsNone(pending["plan"])
+        self.assertEqual([slot["identity"] for slot in slots[1:]], pending["missing_slot_identities"])
+
+        malformed = copy.deepcopy(partial)
+        malformed["settled"]["atomic"] = True
+        self.assert_rejected(malformed)
+
+    def test_cycle_dangling_reuse_and_inherited_score_are_rejected(self):
+        policy, generation_two = self.merge_fixture()
+        slots = generation_two["plan"]["slots"]
+        outcomes = [
+            admitted_outcome(slots[0], "candidate:reflected", "0.7", "0.4", "r"),
+            ineligible_outcome(slots[1], "candidate:ineligible", "i"),
+            admitted_outcome(slots[2], "candidate:merged", "0.9", "0.1", "m"),
+        ]
+
+        reused = settled_request(policy, generation_two, outcomes, "candidate:merged")
+        reused["settled"]["outcomes"][0]["candidate_identity"] = "candidate:origin"
+        self.assert_rejected(reused)
+
+        inherited = settled_request(policy, generation_two, outcomes, "candidate:merged")
+        merge_outcome = inherited["settled"]["outcomes"][2]
+        parent_identity = merge_outcome["parent_identities"][0]
+        parent = next(
+            node
+            for node in inherited["projection"]["nodes"]
+            if node["candidate_identity"] == parent_identity
+        )
+        merge_outcome["score_card_identity"] = parent["score_card_identity"]
+        self.assert_rejected(inherited)
+
+        valid = settled_request(policy, generation_two, outcomes, "candidate:merged")
+        advanced = self.run_ok(valid)
+        for replacement in ("candidate:missing", "candidate:merged"):
+            broken = copy.deepcopy(advanced)
+            broken_node = broken["projection"]["nodes"][1]
+            broken_node["parent_identities"] = [replacement]
+            payload = {
+                key: value
+                for key, value in broken["projection"].items()
+                if key != "identity"
+            }
+            broken["projection"]["identity"] = tagged_identity(
+                "search-projection/v1", payload
+            )
+            next_request = settled_request(
+                policy, broken, [], "candidate:merged"
+            )
+            self.assert_rejected(next_request)
 
 
 if __name__ == "__main__":
