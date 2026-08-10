@@ -539,6 +539,63 @@ class CacheabilityTest(unittest.TestCase):
         self.assertEqual(len(opener.opened), 2)
 
 
+class BoundedCacheTest(unittest.TestCase):
+    """Criterion 3, bound half: the cache is bounded and eviction is observable.
+
+    A cache with no bound is a memory leak that lives as long as the run. The
+    entry a run keeps asking for is the last one worth dropping, so the entry
+    dropped at the bound is the one least recently served.
+    """
+
+    def filled_cache(self, count):
+        clock = FakeClock()
+        carrier, opener = offline_transport(
+            clock, {transport.DDG_HTML_ROUTE: (200, "<html></html>", "text/html")}
+        )
+        run_cache = cache.RunCache(clock=clock.monotonic)
+        requests = tuple(
+            transport.build_transport_request(
+                transport.DDG_HTML_ROUTE, {"q": "query {0}".format(index)}
+            )
+            for index in range(count)
+        )
+        return run_cache, carrier, opener, requests
+
+    def test_the_cache_never_holds_more_than_its_bound(self):
+        run_cache, carrier, opener, requests = self.filled_cache(cache.MAX_ENTRIES + 8)
+
+        for request in requests:
+            run_cache.serve(request, carrier.fetch)
+            self.assertLessEqual(len(run_cache), cache.MAX_ENTRIES)
+
+        self.assertEqual(len(run_cache), cache.MAX_ENTRIES)
+        self.assertEqual(len(opener.opened), len(requests))
+
+    def test_the_entry_dropped_at_the_bound_is_the_least_recently_served(self):
+        run_cache, carrier, opener, requests = self.filled_cache(cache.MAX_ENTRIES + 1)
+        oldest, next_oldest, newcomer = requests[0], requests[1], requests[-1]
+        for request in requests[:-1]:
+            run_cache.serve(request, carrier.fetch)
+
+        self.assertTrue(run_cache.serve(oldest, carrier.fetch).cache_hit)
+        run_cache.serve(newcomer, carrier.fetch)
+
+        self.assertEqual(len(run_cache), cache.MAX_ENTRIES)
+        self.assertFalse(run_cache.serve(next_oldest, carrier.fetch).cache_hit)
+        self.assertTrue(run_cache.serve(oldest, carrier.fetch).cache_hit)
+
+    def test_a_working_set_at_the_bound_never_thrashes(self):
+        run_cache, carrier, opener, requests = self.filled_cache(cache.MAX_ENTRIES)
+        for request in requests:
+            run_cache.serve(request, carrier.fetch)
+
+        for _ in range(3):
+            for request in requests:
+                self.assertTrue(run_cache.serve(request, carrier.fetch).cache_hit)
+
+        self.assertEqual(len(opener.opened), cache.MAX_ENTRIES)
+
+
 class OracleCanFailTest(unittest.TestCase):
     """Criterion 5: the row-1 oracle rejects each specific way of being wrong.
 

@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import time
 import urllib.parse
+from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Callable, Dict, Tuple
 
@@ -31,10 +32,12 @@ CACHE_HIT = "cache_hit"
 # bounds how stale an observation a caller may be handed, so it is a property
 # of the route's own volatility, not of the run.
 DEFAULT_TTL_SECONDS = 60.0
-# The largest single answer worth holding in a run's memory. Every route in the
-# roster answers in kilobytes; a body past this is served through rather than
-# held, so one oversized answer cannot dominate the run's footprint.
+# The two halves of one bound. Every route in the roster answers in kilobytes,
+# so a body past `MAX_ENTRY_BYTES` is served through rather than held, and no
+# more than `MAX_ENTRIES` answers are held at once: a run's cache can therefore
+# cost no more than their product, 32 MiB, however long the run goes on.
 MAX_ENTRY_BYTES = 512 * 1024
+MAX_ENTRIES = 64
 ROUTE_TTL_SECONDS: Dict[str, float] = {
     # A web index's answer to one query is stable across a run's discovery
     # phase; findings.md §1 observed no throttle here, so this TTL exists to
@@ -139,7 +142,14 @@ class RunCache:
 
     def __init__(self, clock: Callable[[], float] = time.monotonic) -> None:
         self._clock = clock
-        self._entries: Dict[CacheKey, Tuple[float, transport.TransportResponse]] = {}
+        # Ordered least-recently-served first, which is eviction order.
+        self._entries: "OrderedDict[CacheKey, Tuple[float, transport.TransportResponse]]"
+        self._entries = OrderedDict()
+
+    def __len__(self) -> int:
+        """How many answers are held right now — the bound, observable."""
+
+        return len(self._entries)
 
     def serve(
         self,
@@ -160,9 +170,14 @@ class RunCache:
             # The window runs from the read that produced the entry, never from
             # the last serve: a hot entry must still expire.
             if self._clock() - stored_at < ttl_seconds(request.route_id):
+                self._entries.move_to_end(key)
                 return CacheServe(response=response, cache_hit=True)
             del self._entries[key]
         response = fetch(request)
         if cacheable(request, response):
             self._entries[key] = (self._clock(), response)
+            # Assignment to an existing key keeps its old position, so say it.
+            self._entries.move_to_end(key)
+            while len(self._entries) > MAX_ENTRIES:
+                self._entries.popitem(last=False)
         return CacheServe(response=response, cache_hit=False)
