@@ -4000,6 +4000,64 @@ class YoutubeInstagramRouteTtlTest(unittest.TestCase):
         self.assertLess(21 * 1024, cache.MAX_ENTRY_BYTES)
 
 
+class KeylessCredentialTest(unittest.TestCase):
+    """Criterion 4: the two K1 credentials live in one module and reach no record.
+
+    Both are vendor-published client credentials rather than user secrets —
+    the key youtube.com embeds in its own page source, and the app id
+    Instagram's own web client sends — so the question is not whether they are
+    kept safe but whether they stay route constants. A credential that reached
+    a manifest or an artifact would make a keyless route look credentialed to
+    everything downstream, which is the same false capability this pair's
+    other checks defend from the opposite direction.
+    """
+
+    def _values(self):
+        return (
+            transport.PUBLIC_CLIENT_CREDENTIALS[transport.YOUTUBE_INNERTUBE_WEB_KEY].value,
+            transport.PUBLIC_CLIENT_CREDENTIALS[transport.INSTAGRAM_WEB_APP_ID].value,
+        )
+
+    def test_neither_credential_is_spelled_in_any_package_module_but_transport(self):
+        named = sorted(
+            (path.name, value)
+            for path in PACKAGE_DIR.rglob("*.py")
+            if path.name != "transport.py"
+            for value in self._values()
+            if value in path.read_text(encoding="utf-8")
+        )
+
+        self.assertEqual(named, [])
+
+    def test_neither_credential_reaches_an_artifact_either_route_produced(self):
+        clock = helpers.FakeClock()
+        carrier, _ = helpers.offline_transport(
+            clock,
+            {
+                transport.YOUTUBE_INNERTUBE_ROUTE: [
+                    (200, read_youtube("search_results.json"), "application/json"),
+                    (200, read_youtube("player_metadata.json"), "application/json"),
+                ],
+                transport.INSTAGRAM_WEB_PROFILE_ROUTE: (
+                    200,
+                    read_instagram("web_profile_info.json"),
+                    "application/json",
+                ),
+            },
+        )
+
+        artifact = runner.run_acquisition(
+            youtube_instagram_manifest(), carrier, clock=clock.monotonic
+        )
+
+        self.assertTrue(artifact.records)
+        for value in self._values():
+            with self.subTest(credential=value[:8]):
+                self.assertNotIn(value, repr(artifact))
+                self.assertNotIn(value, repr(carrier.calls))
+                self.assertNotIn(value, repr(youtube_instagram_manifest()))
+
+
 def youtube_instagram_manifest():
     """One dispatch reading both platforms, and YouTube twice about one video."""
 
