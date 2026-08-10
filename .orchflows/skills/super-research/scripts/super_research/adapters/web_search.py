@@ -56,6 +56,12 @@ NEXT_OFFSET_FIELD = "s"
 # both arrive as an empty index, and only one of them is about the query.
 RESULTS_CONTAINER_CLASS = "results"
 RESULT_BLOCK_CLASS = "result"
+
+# The redirect wrapper this route puts every result behind, and the field it
+# keeps the real address in.
+REDIRECT_PATH = "/l/"
+REDIRECT_TARGET_FIELD = "uddg"
+REDIRECT_HOST_SUFFIX = "duckduckgo.com"
 SCHEMA_DRIFT = "schema_drift"
 HTTP_STATUS = "http_status"
 FIELD_OMITTED = "field_omitted"
@@ -103,13 +109,28 @@ class _DuckDuckGoResultParser(HTMLParser):
 
 
 def unwrap_result_url(href: str) -> str:
-    """Return the target URL behind DuckDuckGo's ``/l/?uddg=`` redirect wrapper."""
+    """Return the target URL behind DuckDuckGo's ``/l/?uddg=`` redirect wrapper.
+
+    The wrapper arrives in three shapes and only two of them name a host:
+    protocol-relative ``//duckduckgo.com/l/?uddg=``, absolute
+    ``https://duckduckgo.com/l/?uddg=``, and root-relative ``/l/?uddg=``. A
+    root-relative link on a page this adapter just read is a link on this
+    route's own origin, so requiring a host left the third shape wrapped.
+
+    That failure is silent and it lands on the one route criterion 7 exists to
+    protect. A still-wrapped locator is host-less, ``normalize.normalized_locator``
+    keeps it host-less, and ``normalize.link_discovery_hydration`` matches a
+    caller-frozen locator exactly — so the K4 discovery-to-hydration edge simply
+    never forms. It fails as an absent edge and never as a merge, which is the
+    one shape of K4 breakage no wrong_merge_law test would catch.
+    """
 
     if href.startswith("//"):
         href = "https:" + href
     parts = urllib.parse.urlsplit(href)
-    if parts.netloc.endswith("duckduckgo.com") and parts.path == "/l/":
-        targets = urllib.parse.parse_qs(parts.query).get("uddg", [])
+    on_this_route = not parts.netloc or parts.netloc.endswith(REDIRECT_HOST_SUFFIX)
+    if on_this_route and parts.path == REDIRECT_PATH:
+        targets = urllib.parse.parse_qs(parts.query).get(REDIRECT_TARGET_FIELD, [])
         return targets[0] if targets else ""
     return href
 

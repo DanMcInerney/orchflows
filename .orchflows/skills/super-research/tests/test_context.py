@@ -848,6 +848,24 @@ class K4HybridNeverMergesTest(unittest.TestCase):
 
         assert_linked_never_merged(self, artifact, X_POST_LOCATOR, "x")
 
+    def test_a_root_relative_redirect_wrapper_still_yields_the_target_locator(self):
+        # The wrapper arrives in three shapes and `unwrap_result_url` unwrapped
+        # only the two that name a host, so `/l/?uddg=` was published unchanged
+        # as the canonical locator. `normalized_locator` keeps a host-less
+        # string host-less, `link_discovery_hydration` matches exactly, and the
+        # edge this criterion is about silently never forms — as an absence, so
+        # no merge test would have caught it, on the one route it protects.
+        rewritten = read_fixture("ddg_html_results.html").replace(
+            'href="//duckduckgo.com/l/?uddg=', 'href="/l/?uddg='
+        )
+        self.assertIn('href="/l/?uddg=', rewritten)
+        responses = dict(tracer_responses(), ddg_html=(200, rewritten, "text/html"))
+        carrier, _ = tracer_transport(responses)
+
+        artifact = runner.run_acquisition(schema.parse_manifest(TRACER_MANIFEST), carrier)
+
+        assert_linked_never_merged(self, artifact, REDDIT_THREAD_LOCATOR, "reddit")
+
     def test_hydration_happens_even_though_a_hit_already_names_that_locator(self):
         artifact, carrier, _ = run_tracer(TRACER_MANIFEST)
 
