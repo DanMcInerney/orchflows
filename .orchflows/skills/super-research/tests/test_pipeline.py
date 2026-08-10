@@ -1091,6 +1091,24 @@ class BurstAndCooldownTest(unittest.TestCase):
         self.assertEqual(artifact.records, ())
         self.assertEqual({request.route_id for request in opener.opened}, {transport.DDG_HTML_ROUTE})
 
+    def test_the_page_s_own_account_of_the_read_reaches_the_artifact(self):
+        # Forty-five write sites across the package and, until this seam
+        # carried them, no reader anywhere: `run_step` copied `outcome` and
+        # `loss` and dropped `warnings`, so every explanatory sentence an
+        # adapter wrote died between the page and the artifact and a typed
+        # failure arrived naming only its kind.
+        clock = helpers.FakeClock()
+        carrier, _ = helpers.offline_transport(
+            clock, {transport.DDG_HTML_ROUTE: RATE_LIMITED_ANSWER}
+        )
+        governor = runner.RateGovernor(carrier, clock=clock.monotonic, sleep=clock.sleep)
+
+        artifact = runner.run_acquisition(schema.parse_manifest(DISCOVERY_MANIFEST), governor)
+        said = " ".join(artifact.steps[0].warnings)
+
+        self.assertIn(transport.DDG_HTML_ROUTE, said)
+        self.assertIn(str(transport.RATE_LIMITED_STATUS), said)
+
     def test_no_package_module_can_become_a_different_client(self):
         # The structural half of "respected, never evaded": the package holds
         # one static identity and one channel, and nothing in it spells a way

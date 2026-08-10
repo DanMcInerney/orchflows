@@ -278,6 +278,7 @@ def run_step(
     page_outcomes: List[str] = []
     page_routes: List[str] = []
     loss: List[str] = []
+    warnings: List[str] = []
     received = 0
     pages = 0
     truncated = False
@@ -293,6 +294,9 @@ def run_step(
         page_outcomes.append(page.outcome)
         page_routes.append(page.route_id)
         loss.extend(page.loss)
+        # The page's own account of itself, carried rather than dropped: it is
+        # the only part of a typed failure that names where to look next.
+        warnings.extend(page.warnings)
         received += len(page.records)
         operations.append(
             PlannedOperation(
@@ -345,6 +349,7 @@ def run_step(
             records_kept=len(records),
             outcome=outcome,
             loss=tuple(loss),
+            warnings=tuple(warnings),
         ),
         tuple(records),
         tuple(operations),

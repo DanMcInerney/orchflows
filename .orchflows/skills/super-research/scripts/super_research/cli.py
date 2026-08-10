@@ -179,6 +179,15 @@ def smoke_lines(
             ", ".join(observation.loss) if observation.loss else "none",
         ),
     ]
+    # The adapter's own account of what it read, before any reading of what it
+    # means. A loss code names the kind of thing that happened; this is the
+    # sentence that says which container moved or which identifier needs
+    # renewing, and an operator re-proving a perishable route needs it.
+    # Whole, not shortened: a warning is the recovery procedure, and FACT_WIDTH
+    # exists to keep a kilobyte of record body off one line, not to clip a
+    # sentence whose last clause names what to go and check.
+    for warning in observation.warnings:
+        lines.append("  the read reported: {0}".format(" ".join(warning.split())))
     if observation.channel == ANSWERED_BY_LOCAL_NETWORK:
         # Nothing about the platform is said here, including about its field
         # set: there was no origin answer to assert one against, and reporting

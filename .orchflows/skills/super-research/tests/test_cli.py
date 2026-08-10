@@ -24,6 +24,7 @@ import contextlib
 import dataclasses
 import importlib.util
 import io
+import json
 import socket
 import tempfile
 import unittest
@@ -815,6 +816,26 @@ class SmokeSubcommandTest(LedgerHoldingCase):
         self.assertEqual(code, cli.EXIT_ROW_UNMET)
         self.assertIn(cli.UNVERIFIED, printed)
         self.assertEqual(cli.read_ledger(self.path), {})
+
+    def test_the_reason_the_adapter_gave_reaches_the_operator_whole(self):
+        # Every adapter writes a warning saying what it saw, and until this
+        # seam carried them the whole set was discarded between the page and
+        # the artifact: a drifted read printed `loss schema_drift` and not one
+        # word about which container moved. A loss code is a kind; the warning
+        # is the recovery procedure.
+        seeds = probe_seeds()
+        seeds["github_rest"] = (
+            200,
+            json.dumps({"full_name": "python/cpython"}),
+            "application/json",
+        )
+
+        code, printed, _ = run_cli(self, ["smoke", "--adapter", ADAPTER], seeds=seeds)
+
+        self.assertEqual(code, cli.EXIT_ROW_UNMET)
+        self.assertIn("schema_drift", printed)
+        self.assertIn("the read reported:", printed)
+        self.assertIn("the payload has changed shape", printed)
 
     def test_an_intercepted_run_says_local_network_and_changes_nothing(self):
         held = {ADAPTER: stamp_at(-3600)}

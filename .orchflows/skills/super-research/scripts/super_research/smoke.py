@@ -91,6 +91,12 @@ class SmokeObservation:
     ``facts`` is the evidence it was satisfied against — the declared names
     with the values the route actually returned, so the claim is auditable in
     the smoke's own output rather than only in this suite.
+
+    ``warnings`` is the step's own account of the read, carried verbatim from
+    the page. A loss code tells an operator which kind of thing happened; the
+    warning is the part that says which container moved or which identifier
+    needs renewing, and a smoke whose whole purpose is re-proving a perishable
+    route is the one place that sentence is worth most.
     """
 
     adapter_id: str
@@ -102,6 +108,7 @@ class SmokeObservation:
     missing: Tuple[Tuple[str, str], ...]
     facts: Tuple[Tuple[str, str], ...]
     observed_at: str
+    warnings: Tuple[str, ...] = ()
 
 
 def probe_step(probe: SmokeProbe) -> schema.AcquisitionStep:
@@ -249,6 +256,7 @@ def observe(
         missing=missing,
         facts=facts,
         observed_at=artifact.records[0].observed_at if artifact.records else now(),
+        warnings=step.warnings,
     )
 @dataclass(frozen=True)
 class Disposition:

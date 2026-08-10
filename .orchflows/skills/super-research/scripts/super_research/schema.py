@@ -166,7 +166,16 @@ class RecordGroup:
 
 @dataclass(frozen=True)
 class StepResult:
-    """What one manifest step consumed and produced."""
+    """What one manifest step consumed and produced.
+
+    ``warnings`` is every page's own account of itself, in the order the step's
+    calls returned them. A loss code says which kind of thing went wrong and a
+    warning says what the adapter actually saw — which container it looked for,
+    which status the origin named, which identifier it would need renewed. The
+    two are not interchangeable: `schema_drift` alone leaves a reader to guess
+    where to look, and dropping the sentence that says so at this seam would
+    discard the only part of the page that names a recovery.
+    """
 
     step_id: str
     adapter_id: str
@@ -176,6 +185,7 @@ class StepResult:
     records_kept: int
     outcome: str
     loss: Tuple[str, ...] = ()
+    warnings: Tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
