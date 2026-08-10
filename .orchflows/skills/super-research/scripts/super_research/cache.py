@@ -72,6 +72,10 @@ def canonical_request(request: transport.TransportRequest) -> str:
 
     Everything else is kept verbatim. A different method, path, parameter, or
     header value is a different read and earns its own entry.
+
+    Every part is percent-encoded into the result, so no value can impersonate
+    a separator: this package's own ``User-Agent`` contains spaces, and a form
+    that merely joined values would let one header stand in for two.
     """
 
     parts = urllib.parse.urlsplit(request.url)
@@ -82,12 +86,18 @@ def canonical_request(request: transport.TransportRequest) -> str:
             if value != ""
         )
     )
-    location = urllib.parse.urlunsplit((parts.scheme, parts.netloc, parts.path, query, ""))
-    headers = " ".join(
-        "{0}:{1}".format(name, value)
-        for name, value in sorted((name.lower(), value) for name, value in request.headers)
+    headers = urllib.parse.urlencode(
+        sorted((name.lower(), value) for name, value in request.headers)
     )
-    return "{0} {1} {2}".format(request.method, location, headers)
+    return urllib.parse.urlencode(
+        (
+            ("method", request.method),
+            ("location", urllib.parse.urlunsplit(
+                (parts.scheme, parts.netloc, parts.path, query, "")
+            )),
+            ("headers", headers),
+        )
+    )
 
 
 def cache_key(request: transport.TransportRequest) -> CacheKey:

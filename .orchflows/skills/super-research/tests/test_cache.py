@@ -375,6 +375,21 @@ class CacheKeyTest(unittest.TestCase):
             with self.subTest(normalized_away=spelling):
                 self.assertEqual(cache.cache_key(variant), cache.cache_key(ddg_request()))
 
+    def test_no_read_can_impersonate_another_by_where_a_separator_falls(self):
+        # A canonical form that joins values with a separator collides when a
+        # value contains that separator, and this package's own User-Agent
+        # contains spaces. Two different reads sharing one entry is the worst
+        # thing a cache key can do, so the encoding must be unambiguous.
+        one = ddg_request(
+            headers=(("User-Agent", transport.USER_AGENT), ("Accept", "text/html"))
+        )
+        other = ddg_request(
+            headers=(("Accept", "text/html user-agent:" + transport.USER_AGENT),)
+        )
+        self.assertIn(" ", transport.USER_AGENT)
+
+        self.assertNotEqual(cache.cache_key(one), cache.cache_key(other))
+
     def test_any_other_difference_is_a_different_entry(self):
         archive_url = ARCHIVE_ROUTE.origin + ARCHIVE_ROUTE.path
         distinct_reads = {
