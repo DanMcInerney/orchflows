@@ -36,6 +36,10 @@ LINKEDIN_JOBS_GUEST_SEARCH_ROUTE = "linkedin_jobs_guest_search"
 LINKEDIN_PUBLIC_PROFILE_ROUTE = "linkedin_public_profile"
 YOUTUBE_INNERTUBE_ROUTE = "youtube_innertube"
 INSTAGRAM_WEB_PROFILE_ROUTE = "instagram_web_profile"
+HN_ALGOLIA_SEARCH_ROUTE = "hn_algolia_search"
+HN_FIREBASE_ITEM_ROUTE = "hn_firebase_item"
+GITHUB_REST_ROUTE = "github_rest"
+GITHUB_SEARCH_ROUTE = "github_search"
 FAKE_OFFLINE_ROUTE = "fake_offline"
 
 YOUTUBE_INNERTUBE_WEB_KEY = "youtube_innertube_web_key"
@@ -180,6 +184,13 @@ class RouteConstant:
     stays owned here; only the values come from the caller, and a param the
     route does not name here never reaches the body at all.
 
+    ``path_suffix`` is what an endpoint spells after its last segment. Firebase
+    v0 names a resource's representation that way — ``/v0/item/8863.json`` —
+    rather than by an Accept header, and that is the endpoint's shape too, so
+    it is owned here for the same reason the segments are. It is spent only
+    when every declared segment was, because a half-filled path with a suffix
+    on it would name a different resource.
+
     ``token_route_id`` names the activation route that mints the token this
     one needs. It is what makes an authorized read still one read to everyone
     above this module: the mint happens at send time, inside the opener,
@@ -195,6 +206,7 @@ class RouteConstant:
     operator_identity: str = ""
     credential_id: str = ""
     path_params: Tuple[str, ...] = ()
+    path_suffix: str = ""
     body_params: Tuple[Tuple[str, Tuple[str, ...]], ...] = ()
     token_route_id: str = ""
 
@@ -340,6 +352,82 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         accept=JSON_CONTENT_TYPE,
         operator_identity="instagram",
         credential_id=INSTAGRAM_WEB_APP_ID,
+    ),
+    # findings.md §1 (carry-over routes): `hn.algolia.com/api/v1/search_by_date`
+    # answered 200 with full-text HN search, and `.../search?tags=comment`
+    # answered 200 for comments. The endpoint is a path segment, so both are one
+    # route with one budget, the way the InnerTube operations are; the tag that
+    # selects comments is an ordinary query parameter, because it selects rows
+    # rather than an endpoint.
+    #
+    # HN's own search is operated by Algolia and published by HN — the platform
+    # indexing itself, not an independent mirror of it — which is why the
+    # evidence classes it `K0` documented-keyless rather than `K3`, and why
+    # nothing read here carries `third_party_archive`.
+    HN_ALGOLIA_SEARCH_ROUTE: RouteConstant(
+        route_id=HN_ALGOLIA_SEARCH_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://hn.algolia.com",
+        path="/api/v1",
+        accept="application/json",
+        operator_identity="algolia",
+        path_params=("endpoint",),
+    ),
+    # findings.md §1 (carry-over routes): `hacker-news.firebaseio.com/v0/item/<id>`
+    # answered 200 with `by`, `descendants` and the `kids` tree — the one
+    # surface that carries a story's comment tree, and the one with no search.
+    # Firebase names a resource's representation with a path suffix rather than
+    # with an Accept header, so `.json` is part of the endpoint and is spelled
+    # here; an adapter composing it would own the endpoint's shape.
+    HN_FIREBASE_ITEM_ROUTE: RouteConstant(
+        route_id=HN_FIREBASE_ITEM_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://hacker-news.firebaseio.com",
+        path="/v0/item",
+        accept="application/json",
+        operator_identity="hacker-news",
+        path_params=("item_id",),
+        path_suffix=".json",
+    ),
+    # findings.md §1 (carry-over routes): `api.github.com` answered anonymously,
+    # and `api.github.com/rate_limit` reported the anonymous ceiling as 60/hr
+    # for **core** and 60/hr for **code_search** — two buckets, measured apart.
+    # They are two routes here for that reason and for one more: a repository's
+    # path and a search index's path do not share a shape, and one route with a
+    # generic leading segment would hand the endpoint's shape to the caller.
+    #
+    # This is the origin in the roster with the largest write surface, and none
+    # of it is reachable: the route declares a read, `admitted_methods` returns
+    # reads only for any route outside the two closed exceptions above, and the
+    # opener refuses everything else before a socket exists.
+    GITHUB_REST_ROUTE: RouteConstant(
+        route_id=GITHUB_REST_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://api.github.com",
+        path="/repos",
+        # GitHub's own documented media type for its REST API.
+        accept="application/vnd.github+json",
+        operator_identity="github",
+        # `/repos/<owner>/<repo>` is the repository itself; the third segment is
+        # the collection under it, and a request that leaves it empty asks about
+        # the repository.
+        path_params=("owner", "repo", "resource"),
+    ),
+    # findings.md §1 (carry-over routes): `api.github.com/search/repositories`
+    # answered 200 anonymously. The index is a path segment and the question is
+    # `q`, which is how GitHub spells both.
+    GITHUB_SEARCH_ROUTE: RouteConstant(
+        route_id=GITHUB_SEARCH_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://api.github.com",
+        path="/search",
+        accept="application/vnd.github+json",
+        operator_identity="github",
+        path_params=("index",),
     ),
     FAKE_OFFLINE_ROUTE: RouteConstant(
         route_id=FAKE_OFFLINE_ROUTE,
@@ -504,16 +592,18 @@ def path_segments(route: RouteConstant, params: Dict[str, str]) -> str:
 
     Segments stop at the first one the caller left empty: a later segment
     appended past a missing earlier one would name a different endpoint, and
-    guessing which is not this module's to do.
+    guessing which is not this module's to do. A declared ``path_suffix``
+    follows the last segment, and only a complete path takes one — for the
+    same reason, and it is the same mistake one character further along.
     """
 
     values = [params.pop(name, "") for name in route.path_params]
     spent = ""
     for value in values:
         if not value:
-            break
+            return spent
         spent = spent + "/" + urllib.parse.quote(value, safe="")
-    return spent
+    return spent + route.path_suffix
 
 
 def json_body(route: RouteConstant, params: Dict[str, str]) -> str:
