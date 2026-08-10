@@ -56,7 +56,7 @@ SHIPPED_ADAPTERS = (web_search, reddit_archive, fake)
 # listed adapter declares none, and one declaring a rotating id without being on
 # this list is declaring a dependency it does not have. In `ADAPTER_IDS` order,
 # because that is the order the check below collects them in.
-ADAPTERS_WITH_ROTATING_IDENTIFIERS = ("x_guest",)
+ADAPTERS_WITH_ROTATING_IDENTIFIERS = ("x_guest", "youtube_innertube")
 
 IDENTITY_ROTATION_NAMES = (
     "ProxyHandler",

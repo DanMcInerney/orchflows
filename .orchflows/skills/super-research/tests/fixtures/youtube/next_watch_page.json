@@ -1,0 +1,44 @@
+{
+  "responseContext": {
+    "visitorData": "CgtIYXJib3VybGlnaHQSBAgBGAA%3D"
+  },
+  "contents": {
+    "twoColumnWatchNextResults": {
+      "results": {
+        "results": {
+          "contents": [
+            {
+              "videoPrimaryInfoRenderer": {
+                "title": {"runs": [{"text": "Running a 70B locally on two consumer GPUs"}]},
+                "viewCount": {
+                  "videoViewCountRenderer": {"viewCount": {"simpleText": "1,284,553 views"}}
+                }
+              }
+            },
+            {
+              "videoSecondaryInfoRenderer": {
+                "owner": {
+                  "videoOwnerRenderer": {"title": {"runs": [{"text": "Harbourlight Optics"}]}}
+                }
+              }
+            },
+            {
+              "itemSectionRenderer": {
+                "sectionIdentifier": "comment-item-section",
+                "contents": [
+                  {
+                    "continuationItemRenderer": {
+                      "continuationEndpoint": {
+                        "continuationCommand": {"token": "Eg0SC2RRdzR3OVdnWGNRGAYyJSIRIgtkUXc0dzlXZ1hjUTAA"}
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

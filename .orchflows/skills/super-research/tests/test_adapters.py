@@ -67,7 +67,7 @@ from unittest import mock
 
 from super_research import adapters, cache, normalize, runner, schema, transport
 from super_research.adapters import instagram_public, linkedin_jobs, linkedin_public
-from super_research.adapters import x_guest, x_syndication
+from super_research.adapters import x_guest, x_syndication, youtube_innertube
 from tests import helpers
 
 
@@ -3007,6 +3007,412 @@ class InstagramDescriptorTest(unittest.TestCase):
         page = runner.call_adapter("instagram_public", carrier, INSTAGRAM_REQUEST)
 
         self.assertEqual(len(page.records), 13)
+        self.assertEqual(len(opener.opened), 1)
+
+
+YOUTUBE_VIDEO_ID = "dQw4w9WgXcQ"
+YOUTUBE_SEARCH_TARGET = "search:local models"
+YOUTUBE_COMMENT_CURSOR = "Eg0SC2RRdzR3OVdnWGNRGAYyJSIRIgtkUXc0dzlXZ1hjUTAA"
+
+# findings.md §1 (YouTube): the roster row records a field set for `player` and
+# names only the capability for the other two. These are the three the evidence
+# enumerates, named as it names them.
+YOUTUBE_PLAYER_ROSTER_FIELDS = ("title", "viewCount", "publishDate")
+
+
+def read_youtube(name):
+    """Read one offline YouTube fixture."""
+
+    return YOUTUBE_FIXTURE_DIR.joinpath(name).read_text(encoding="utf-8")
+
+
+def youtube_cases():
+    """The measured case table: a status, a body, and the loss its evidence names."""
+
+    return tuple(json.loads(read_youtube("attestation_cases.json"))["cases"])
+
+
+def youtube_request(target_id, cursor=""):
+    return adapters.AdapterRequest(step_id="s1-yt", target_ids=(target_id,), cursor=cursor)
+
+
+def youtube_page(fixture, status=200, target_id=None, cursor=""):
+    """Run ``youtube_innertube`` over one canned answer for one named operation."""
+
+    return adapter_page(
+        youtube_innertube,
+        status,
+        read_youtube(fixture),
+        content_type="application/json",
+        request=youtube_request(
+            "player:" + YOUTUBE_VIDEO_ID if target_id is None else target_id, cursor=cursor
+        ),
+    )
+
+
+def attributes_of(record):
+    """One record's named string facts, grouped under the names the route used."""
+
+    named = {}
+    for name, value in record.attributes:
+        named.setdefault(name, []).append(value)
+    return named
+
+
+class InnerTubeSearchTest(unittest.TestCase):
+    """Criterion 1, search: the platform's own results, keyless.
+
+    The prior spec priced YouTube search behind an API key. Measured, one
+    request under the web key youtube.com embeds in its own page source
+    answers with the results themselves.
+    """
+
+    def setUp(self):
+        self.page, self.opener = youtube_page(
+            "search_results.json", target_id=YOUTUBE_SEARCH_TARGET
+        )
+
+    def test_one_page_carries_the_results_the_section_listed(self):
+        self.assertEqual(self.page.outcome, "ok")
+        self.assertEqual(self.page.loss, ())
+        self.assertEqual(len(self.page.records), 5)
+        self.assertEqual(len(self.opener.opened), 1)
+
+    def test_a_result_names_the_video_its_channel_and_the_address_youtube_published(self):
+        first = self.page.records[0]
+
+        self.assertEqual(first.canonical_content_kind, "video")
+        self.assertEqual(first.native_item_id, YOUTUBE_VIDEO_ID)
+        self.assertEqual(first.title, "Running a 70B locally on two consumer GPUs")
+        self.assertEqual(first.author, "Harbourlight Optics")
+        # The address the payload published, resolved against the origin that
+        # published it. YouTube writes it relative, so it is resolved where
+        # hosts are spelled rather than composed here.
+        self.assertEqual(
+            first.canonical_locator, "https://www.youtube.com/watch?v=" + YOUTUBE_VIDEO_ID
+        )
+        self.assertEqual(first.native_position, 0)
+
+    def test_a_row_that_is_not_a_video_is_not_read_as_one(self):
+        # The section carries a shelf between the results. A parser that took
+        # every row would report a heading as a video.
+        self.assertEqual(
+            [record.canonical_content_kind for record in self.page.records],
+            ["video"] * 5,
+        )
+        self.assertEqual(
+            [record.native_position for record in self.page.records], [0, 1, 2, 3, 4]
+        )
+
+    def test_a_count_the_route_wrote_for_a_reader_is_carried_and_never_parsed(self):
+        # "1,284,553 views" and "2 weeks ago" are strings YouTube formatted for
+        # a person. Turning either into a number or an instant would be this
+        # package inventing a fact: the separators are locale-shaped, "1.2M" is
+        # lossy, and "2 weeks ago" is only an instant if you read a clock. So
+        # they travel verbatim, under the route's own names, and the record
+        # states no engagement and no publication time at all.
+        first = self.page.records[0]
+        named = attributes_of(first)
+
+        self.assertEqual(named[youtube_innertube.VIEW_COUNT_TEXT_KEY], ["1,284,553 views"])
+        self.assertEqual(named[youtube_innertube.PUBLISHED_TIME_TEXT_KEY], ["2 weeks ago"])
+        self.assertEqual(first.engagement, ())
+        self.assertEqual(first.published_at, "")
+
+    def test_the_continuation_is_surfaced_for_the_core_and_never_followed(self):
+        self.assertEqual(
+            self.page.cursor_out, "EpcDEgxsb2NhbCBtb2RlbHMaggNTQlNDQVE"
+        )
+        self.assertEqual(len(self.opener.opened), 1)
+
+    def test_a_result_the_payload_left_incomplete_is_marked_and_never_filled(self):
+        page, _ = youtube_page(
+            "search_partial_result.json", target_id=YOUTUBE_SEARCH_TARGET
+        )
+        complete, partial = page.records
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(complete.loss, ())
+        self.assertEqual(partial.loss, ("field_omitted",))
+        self.assertEqual(partial.author, "")
+        self.assertEqual(attributes_of(partial), {})
+
+    def test_a_row_the_payload_gave_no_video_id_is_not_a_result_at_all(self):
+        # The third row of that fixture has a title and a channel and no id, so
+        # it can be neither identified nor addressed. Keeping it would put a
+        # record in the artifact that names nothing.
+        page, _ = youtube_page(
+            "search_partial_result.json", target_id=YOUTUBE_SEARCH_TARGET
+        )
+
+        self.assertEqual(len(page.records), 2)
+        self.assertTrue(all(record.native_item_id for record in page.records))
+
+    def test_the_query_is_read_from_the_target_or_from_the_step_that_searched(self):
+        # A step naming a target is hydrating one; a step naming only a query
+        # is searching. Neither is inferred from the argument's characters.
+        for request in (
+            adapters.AdapterRequest(step_id="s1-yt", target_ids=(YOUTUBE_SEARCH_TARGET,)),
+            adapters.AdapterRequest(step_id="s1-yt", query="local models"),
+        ):
+            with self.subTest(request=request):
+                page, opener = adapter_page(
+                    youtube_innertube,
+                    200,
+                    read_youtube("search_results.json"),
+                    content_type="application/json",
+                    request=request,
+                )
+
+                self.assertTrue(opener.opened[0].url.endswith("/search"), opener.opened[0].url)
+                self.assertEqual(
+                    json.loads(opener.opened[0].body)["query"], "local models"
+                )
+                self.assertEqual(len(page.records), 5)
+
+
+class InnerTubeCommentThreadTest(unittest.TestCase):
+    """Criterion 1, next: comment threads, and the token that reaches them.
+
+    The first call names a video and comes back with the watch page, whose
+    comment section holds a token and no thread yet. The token is surfaced for
+    the core to spend, exactly as a timeline cursor is: following it here would
+    make one adapter call two reads.
+    """
+
+    def test_a_call_spending_the_token_carries_the_threads_it_returned(self):
+        page, opener = youtube_page(
+            "next_comment_threads.json",
+            target_id="next:" + YOUTUBE_VIDEO_ID,
+            cursor=YOUTUBE_COMMENT_CURSOR,
+        )
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(page.loss, ())
+        self.assertEqual(len(page.records), 3)
+        self.assertEqual(len(opener.opened), 1)
+        self.assertEqual(
+            json.loads(opener.opened[0].body)["continuation"], YOUTUBE_COMMENT_CURSOR
+        )
+
+    def test_a_comment_names_itself_its_author_the_video_and_its_reply_count(self):
+        page, _ = youtube_page(
+            "next_comment_threads.json",
+            target_id="next:" + YOUTUBE_VIDEO_ID,
+            cursor=YOUTUBE_COMMENT_CURSOR,
+        )
+        first = page.records[0]
+
+        self.assertEqual(first.canonical_content_kind, "comment")
+        self.assertEqual(first.native_item_id, "UgxK1rTn9pQwLmXaZ4h4AaABAg")
+        self.assertEqual(first.native_parent_id, YOUTUBE_VIDEO_ID)
+        self.assertEqual(first.author, "@northsea.dev")
+        # The runs are one text the route split at its own formatting, so they
+        # join back into the comment rather than into a list of fragments.
+        self.assertEqual(
+            first.body,
+            "The two settings were n_batch and rope scaling, not the quantisation.",
+        )
+        self.assertEqual(dict(first.engagement), {youtube_innertube.REPLY_COUNT_METRIC: 14})
+        self.assertEqual(first.native_position, 0)
+
+    def test_a_vote_count_the_route_abbreviated_is_carried_and_never_parsed(self):
+        # "1.2K" is not a number this route reported; it is a number it
+        # rounded for a reader. Reading 1200 off it would be a count nobody
+        # published, and the record would rank against exact ones.
+        page, _ = youtube_page(
+            "next_comment_threads.json",
+            target_id="next:" + YOUTUBE_VIDEO_ID,
+            cursor=YOUTUBE_COMMENT_CURSOR,
+        )
+        named = attributes_of(page.records[0])
+
+        self.assertEqual(named[youtube_innertube.VOTE_COUNT_TEXT_KEY], ["1.2K"])
+        self.assertEqual(named[youtube_innertube.PUBLISHED_TIME_TEXT_KEY], ["3 days ago"])
+        self.assertNotIn(
+            youtube_innertube.VOTE_COUNT_TEXT_KEY, dict(page.records[0].engagement)
+        )
+
+    def test_a_comment_carries_no_publication_time_because_the_route_states_none(self):
+        # "3 days ago" is an interval from a moment this package did not
+        # observe. Turning it into an instant needs a wall clock, and a record
+        # dated from the read would look exactly as fresh as the read.
+        page, _ = youtube_page(
+            "next_comment_threads.json",
+            target_id="next:" + YOUTUBE_VIDEO_ID,
+            cursor=YOUTUBE_COMMENT_CURSOR,
+        )
+
+        for record in page.records:
+            with self.subTest(item=record.native_item_id):
+                self.assertEqual(record.published_at, "")
+
+    def test_a_comment_carries_no_address_because_the_payload_publishes_none(self):
+        page, _ = youtube_page(
+            "next_comment_threads.json",
+            target_id="next:" + YOUTUBE_VIDEO_ID,
+            cursor=YOUTUBE_COMMENT_CURSOR,
+        )
+
+        self.assertEqual([record.canonical_locator for record in page.records], [""] * 3)
+
+    def test_the_next_continuation_is_surfaced_for_the_core(self):
+        page, _ = youtube_page(
+            "next_comment_threads.json",
+            target_id="next:" + YOUTUBE_VIDEO_ID,
+            cursor=YOUTUBE_COMMENT_CURSOR,
+        )
+
+        self.assertEqual(page.cursor_out, YOUTUBE_COMMENT_CURSOR)
+
+    def test_the_first_call_names_the_video_and_comes_back_holding_only_the_token(self):
+        page, opener = youtube_page(
+            "next_watch_page.json", target_id="next:" + YOUTUBE_VIDEO_ID
+        )
+
+        self.assertEqual(page.outcome, "empty")
+        self.assertEqual(page.loss, ())
+        self.assertEqual(page.records, ())
+        self.assertEqual(page.cursor_out, YOUTUBE_COMMENT_CURSOR)
+        self.assertIn("comment", " ".join(page.warnings))
+        self.assertEqual(json.loads(opener.opened[0].body)["videoId"], YOUTUBE_VIDEO_ID)
+        self.assertEqual(len(opener.opened), 1)
+
+
+class InnerTubePlayerTest(unittest.TestCase):
+    """Criterion 1, player: the three fields the evidence measured, and no fourth."""
+
+    def setUp(self):
+        self.page, self.opener = youtube_page("player_metadata.json")
+
+    def test_one_page_carries_the_one_video_this_operation_asks_for(self):
+        self.assertEqual(self.page.outcome, "ok")
+        self.assertEqual(len(self.page.records), 1)
+        self.assertEqual(len(self.opener.opened), 1)
+
+    def test_the_record_carries_every_field_its_roster_row_names(self):
+        record = self.page.records[0]
+        carried = {
+            "title": record.title,
+            "viewCount": dict(record.engagement).get(youtube_innertube.VIEW_COUNT_METRIC),
+            "publishDate": record.published_at,
+        }
+
+        self.assertEqual(sorted(carried), sorted(YOUTUBE_PLAYER_ROSTER_FIELDS))
+        for name in YOUTUBE_PLAYER_ROSTER_FIELDS:
+            self.assertTrue(carried[name], name)
+        self.assertEqual(carried["title"], "Running a 70B locally on two consumer GPUs")
+        # An exact count the route published as digits, read as the integer it
+        # is. "1,284,553 views" on the search row is a different thing and
+        # stays a string.
+        self.assertEqual(carried["viewCount"], 1284553)
+        self.assertIsInstance(carried["viewCount"], int)
+        self.assertEqual(carried["publishDate"], "2026-07-26T00:00:00Z")
+
+    def test_a_day_the_route_reported_is_a_day_and_the_record_says_so(self):
+        # The route states a date and the artifact's instant carries seconds,
+        # so the record reads midnight UTC and carries the precision it has
+        # rather than letting a reader assume a video appeared at 00:00.
+        record = self.page.records[0]
+
+        self.assertIn("date_precision_only", record.loss)
+
+    def test_the_record_names_the_video_and_the_address_the_payload_published(self):
+        record = self.page.records[0]
+
+        self.assertEqual(record.canonical_content_kind, "video")
+        self.assertEqual(record.native_item_id, YOUTUBE_VIDEO_ID)
+        self.assertEqual(record.author, "Harbourlight Optics")
+        # The player payload publishes one address for the video and it is
+        # already absolute, so it is carried as published rather than rebuilt.
+        self.assertEqual(
+            record.canonical_locator, "https://www.youtube.com/embed/" + YOUTUBE_VIDEO_ID
+        )
+        self.assertIn("benchmarks", record.body)
+
+    def test_the_page_speaks_for_youtube_at_the_class_the_ladder_gives_it(self):
+        self.assertEqual(self.page.adapter_id, "youtube_innertube")
+        self.assertEqual(self.page.platform, "youtube")
+        self.assertEqual(self.page.native_identity_namespace, "youtube")
+        self.assertEqual(self.page.access_class, "K1")
+        self.assertEqual(self.page.representation_kind, "native")
+        self.assertEqual(self.page.route_id, transport.YOUTUBE_INNERTUBE_ROUTE)
+
+    def test_a_bare_target_id_names_a_video_and_never_a_guess_at_its_shape(self):
+        _, opener = youtube_page("player_metadata.json", target_id=YOUTUBE_VIDEO_ID)
+
+        self.assertTrue(opener.opened[0].url.endswith("/player"), opener.opened[0].url)
+        self.assertEqual(json.loads(opener.opened[0].body)["videoId"], YOUTUBE_VIDEO_ID)
+
+
+class InnerTubeDescriptorTest(unittest.TestCase):
+    """The descriptor T04's seam reads, and the identifier that rotates under it."""
+
+    def test_the_route_is_paced_by_the_interval_the_evidence_measured(self):
+        # findings.md §1 (YouTube): 1.4 s for search, which is the roster row's
+        # declared ceiling. `next` at 2.2 s and `player` at 0.3 s are those
+        # operations' latencies and not second ceilings: one route, one budget.
+        descriptor = youtube_innertube.DESCRIPTOR
+
+        self.assertEqual(descriptor.min_interval_ms, 1400)
+        self.assertEqual(descriptor.burst, adapters.DEFAULT_BURST)
+        self.assertEqual(descriptor.cooldown_ms, adapters.DEFAULT_COOLDOWN_MS)
+        self.assertEqual(
+            runner.route_budgets()[transport.YOUTUBE_INNERTUBE_ROUTE],
+            runner.RouteBudget(min_interval_ms=1400, burst=1, cooldown_ms=60000),
+        )
+
+    def test_the_client_version_is_declared_rotating_with_a_way_back_to_a_current_one(self):
+        declared = youtube_innertube.DESCRIPTOR.volatile_identifiers
+
+        self.assertEqual(len(declared), 1)
+        self.assertIn(youtube_innertube.CLIENT_VERSION, declared[0].name)
+        self.assertIn(youtube_innertube.CLIENT_NAME, declared[0].name)
+        # The procedure travels with the identifier rather than living
+        # somewhere a reader would have to already know to look.
+        recovery = declared[0].recovery
+        self.assertIn("ytcfg", recovery)
+        self.assertIn("INNERTUBE_CLIENT_VERSION", recovery)
+
+    def test_the_client_version_goes_out_in_the_body_the_route_shapes(self):
+        _, opener = youtube_page("player_metadata.json")
+        client = json.loads(opener.opened[0].body)["context"]["client"]
+
+        self.assertEqual(client["clientName"], youtube_innertube.CLIENT_NAME)
+        self.assertEqual(client["clientVersion"], youtube_innertube.CLIENT_VERSION)
+
+    def test_it_declares_the_reply_metric_it_reports_and_no_comment_metric(self):
+        # A comment carries a count of its replies; nothing in these three
+        # operations reports a count of comments on a video. Declaring the one
+        # under both names would make two of the five views identical.
+        self.assertEqual(
+            youtube_innertube.DESCRIPTOR.reply_count_metric,
+            youtube_innertube.REPLY_COUNT_METRIC,
+        )
+        self.assertEqual(youtube_innertube.DESCRIPTOR.comment_count_metric, "")
+
+    def test_the_core_can_reach_it_by_both_of_its_literal_branches(self):
+        self.assertIn("youtube_innertube", runner.ADAPTER_IDS)
+        self.assertIs(
+            runner.descriptor_for("youtube_innertube"), youtube_innertube.DESCRIPTOR
+        )
+
+        clock = helpers.FakeClock()
+        carrier, opener = helpers.offline_transport(
+            clock,
+            {
+                transport.YOUTUBE_INNERTUBE_ROUTE: (
+                    200,
+                    read_youtube("player_metadata.json"),
+                    "application/json",
+                )
+            },
+        )
+        page = runner.call_adapter(
+            "youtube_innertube", carrier, youtube_request("player:" + YOUTUBE_VIDEO_ID)
+        )
+
+        self.assertEqual(len(page.records), 1)
         self.assertEqual(len(opener.opened), 1)
 
 

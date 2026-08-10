@@ -39,6 +39,7 @@ from . import cache, normalize, router, schema, transport
 from .adapters import AdapterDescriptor, AdapterRequest, NativePage
 from .adapters import fake, instagram_public, linkedin_jobs, linkedin_public
 from .adapters import reddit_archive, web_search, x_guest, x_syndication
+from .adapters import youtube_innertube
 
 US_PER_SECOND = 1000000
 US_PER_MS = 1000
@@ -61,6 +62,7 @@ ADAPTER_IDS = (
     "web_search",
     "x_guest",
     "x_syndication",
+    "youtube_innertube",
 )
 
 
@@ -87,6 +89,8 @@ def descriptor_for(adapter_id: str) -> Optional[AdapterDescriptor]:
         return x_guest.DESCRIPTOR
     if adapter_id == "x_syndication":
         return x_syndication.DESCRIPTOR
+    if adapter_id == "youtube_innertube":
+        return youtube_innertube.DESCRIPTOR
     return None
 
 
@@ -111,6 +115,8 @@ def call_adapter(
         return x_guest.fetch_native_page(carrier, request)
     if adapter_id == "x_syndication":
         return x_syndication.fetch_native_page(carrier, request)
+    if adapter_id == "youtube_innertube":
+        return youtube_innertube.fetch_native_page(carrier, request)
     raise RunnerError("no adapter branch for " + adapter_id)
 
 

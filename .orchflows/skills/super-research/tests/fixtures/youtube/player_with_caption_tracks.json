@@ -1,0 +1,56 @@
+{
+  "responseContext": {
+    "visitorData": "CgtIYXJib3VybGlnaHQSBAgBGAA%3D"
+  },
+  "playabilityStatus": {
+    "status": "OK",
+    "playableInEmbed": true
+  },
+  "videoDetails": {
+    "videoId": "7pQm3nXkT2a",
+    "title": "Quantisation, measured rather than argued",
+    "lengthSeconds": "1447",
+    "channelId": "UCf2Jd8Nz1QrLb5wY3mKpXeT",
+    "author": "Kestrel Systems",
+    "viewCount": "402118",
+    "shortDescription": "Six quantisations, one harness, and the results nobody wanted.",
+    "isPrivate": false,
+    "isLiveContent": false
+  },
+  "microformat": {
+    "playerMicroformatRenderer": {
+      "publishDate": "2026-07-04",
+      "uploadDate": "2026-07-04",
+      "ownerChannelName": "Kestrel Systems",
+      "viewCount": "402118",
+      "embed": {
+        "iframeUrl": "https://www.youtube.com/embed/7pQm3nXkT2a",
+        "width": 1280,
+        "height": 720
+      }
+    }
+  },
+  "captions": {
+    "playerCaptionsTracklistRenderer": {
+      "captionTracks": [
+        {
+          "baseUrl": "https://www.youtube.com/api/timedtext?v=7pQm3nXkT2a&lang=en",
+          "name": {"simpleText": "English"},
+          "vssId": ".en",
+          "languageCode": "en",
+          "kind": "asr",
+          "isTranslatable": true
+        },
+        {
+          "baseUrl": "https://www.youtube.com/api/timedtext?v=7pQm3nXkT2a&lang=sv",
+          "name": {"simpleText": "Svenska"},
+          "vssId": ".sv",
+          "languageCode": "sv",
+          "isTranslatable": true
+        }
+      ],
+      "audioTracks": [],
+      "translationLanguages": []
+    }
+  }
+}
