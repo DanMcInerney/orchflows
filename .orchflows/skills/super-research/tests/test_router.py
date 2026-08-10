@@ -14,12 +14,12 @@ read.
 The second is that no first-release capability is reachable only through `K5`.
 That is trivially true today — nothing in the roster is `K5` — and a check that
 can only pass over an empty set proves nothing. So the law is stated over a
-roster it is handed rather than over the one that ships, and rosters written
-beside the tree are put through it: a credentialed adapter with no keyless
-surface, a credentialed surface whose capability nothing keyless serves, a
-credentialed upgrade of another credentialed route, and the one lawful shape —
-a credentialed surface beside a keyless one answering the same question more
-slowly.
+roster it is handed rather than over the one that ships, and eleven rosters
+written beside the tree are put through it: a credentialed adapter with no
+keyless surface, a credentialed surface whose capability nothing keyless
+serves, a credentialed route twinned only by another credentialed one, and
+the two that say what the law is for — one more keyless adapter, admitted,
+and the shape the spec calls an optional throughput upgrade, refused.
 
 Two narrower claims sit beside them. A `K1` public client credential is a
 route constant ``transport.py`` owns, and it reaches no manifest and no
@@ -41,9 +41,10 @@ from tests import helpers
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "router"
 PACKAGE_DIR = Path(__file__).resolve().parent.parent / "scripts" / "super_research"
-# The measured payloads the roster's two Reddit surfaces were built against,
-# read rather than copied: an archive's label has to be proven on the bytes the
-# archive actually sent, not on a shape written to make the point.
+# Where the measured payloads each surface was built against live. Read rather
+# than copied: what an archive labels, and what a credentialed route's artifact
+# ends up holding, have to be proven on the bytes the origin actually sent and
+# not on a shape written to make the point.
 TRACER_FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "tracer"
 REDDIT_FEED_FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "reddit_feed"
 YOUTUBE_FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "youtube"
@@ -230,11 +231,11 @@ def assert_the_access_ladder_holds(case, roster):
 def strings_in(value, path="emitted"):
     """Every string one emitted value holds, paired with where it sits.
 
-    Exhaustive by construction rather than by field list. An artifact gains
-    fields — `attributes` and `final_url` both arrived after the first release
-    of the record — and a scan written against the fields it had would quietly
-    stop covering the ones it gains, which is the failure mode a credential
-    leak needs to survive.
+    Exhaustive by construction rather than by field list. These values gain
+    fields — `attributes` arrived on the record after its first release, and
+    `final_url` on the response after that — and a scan written against the
+    fields they had would quietly stop covering the ones they gain, which is
+    the failure mode a credential leak needs to survive.
     """
 
     if isinstance(value, str):
@@ -449,9 +450,10 @@ class UnclassedDescriptorTest(unittest.TestCase):
             shipped_descriptor(access_class="k5")
 
     def test_every_class_on_the_ladder_still_constructs(self):
-        # The other direction, so the law is a filter rather than a wall: each
-        # of the seven builds, including `K5`, which nothing in the roster
-        # declares and which a later throughput upgrade may.
+        # The other direction, so the law is a filter rather than a wall: all
+        # seven build, `K5` included. Whether a credentialed route may exist is
+        # the keyless law's question, two classes below; this one refuses only
+        # a class the ladder does not name.
         for access_class in LADDER:
             with self.subTest(access_class=access_class):
                 self.assertEqual(
@@ -528,7 +530,10 @@ class KeylessCapabilityTest(unittest.TestCase):
         # fails the one-class half, which is why both are laws and not one.
         for surface in self.roster:
             with self.subTest(route=surface.route_id):
-                with self.assertRaises(AssertionError):
+                with self.assertRaisesRegex(
+                    AssertionError,
+                    "reachable only with a credential|answers at more than one access class",
+                ):
                     assert_the_access_ladder_holds(
                         self, credentialed(self.roster, {surface.route_id})
                     )

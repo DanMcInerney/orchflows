@@ -1,4 +1,7 @@
-"""Rosters beside the tree: nine ways a capability could come to need a credential.
+"""Rosters beside the tree: the ways a capability could come to need a credential.
+
+Eleven of them: eight things going wrong, the empty roster that proves nothing
+either way, and the two that say what the law is for.
 
 The keyless law is true of the shipped roster by construction — nothing in it
 is `K5` — so a check that only ever sees that roster passes over an empty set
