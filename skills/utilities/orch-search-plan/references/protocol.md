@@ -6,6 +6,8 @@ The sole command reads one closed UTF-8 JSON request
 orders below; integers are JSON integers; dimension values and resolutions are
 finite canonical decimal strings. Duplicate keys, unknown fields, floats,
 noncanonical decimals, and invalid identities or references are invalid.
+The request is at most 1,000,000 UTF-8 bytes; every identity string is at most
+256 Unicode code points; every decimal string is at most 128 characters.
 
 ## Policy
 

@@ -16,13 +16,13 @@ count per candidate, promotion done-check and rule, required margin, and
 regression criteria; `bound` and packet `bounds` cap the campaign.
 
 Steps:
-- eligibility — Verify the incumbent's fixed evidence against required
+- eligibility — `orch-verify` checks the incumbent's fixed evidence against required
   eligibility and regression criteria. Only covered PASS permits generation
   direction from its score card; expose no protected item-level evidence.
 - campaign — `orch-loop` over the generation body mapped by the
   [generation protocol](references/evolve-generation.md), which calls
-  `orch-search-plan`, `orch-worklog`, `orch-delegate`, `orch-integrate`,
-  `orch-verify`, and `orch-panel` around the frozen writer and runner.
+  `orch-search-plan`, `orch-worklog`, `orch-delegate`, `orch-integrate`, and
+  `orch-panel` around the frozen writer and runner, reusing the eligibility Verify binding.
 
 Edges:
 - seq eligibility → campaign.
