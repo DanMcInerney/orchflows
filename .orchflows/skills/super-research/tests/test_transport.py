@@ -5,6 +5,10 @@ findings.md §0's: this host sits behind an appliance that answers some
 domains with a failure status and a captive-portal body, and a route blocked
 that way is UNVERIFIED, never rejected. Confusing that with a platform
 response would record a local block as a platform gap.
+
+It is defended twice, because classifying correctly and recording correctly
+are different claims: at the transport seam, where the channel verdict is
+made, and at the adapter and artifact seams, where it is what a caller keeps.
 """
 
 from __future__ import annotations
@@ -294,14 +298,14 @@ def load_adapter_fixture(name):
 
 
 def assert_interception_reaches_the_page(case, adapter_id, pages):
-    """The artifact oracle: the page a caller keeps names the party that answered.
+    """The page oracle: the record an adapter emits names the party that answered.
 
     ``pages`` maps a measured case name to the ``NativePage`` some adapter
     produced for it. A local block must arrive as `network_intercepted` and
     never as an http status — findings.md §0's rule is about what gets
-    recorded, not only about what transport can tell. An origin's own response
-    must never be blamed on the network. Each assertion names the confusion it
-    caught.
+    recorded, not only about what transport can tell — and an origin's own
+    response must never be blamed on the network. Each assertion names the
+    confusion it caught.
     """
 
     for row in interception_cases():
@@ -311,7 +315,7 @@ def assert_interception_reaches_the_page(case, adapter_id, pages):
         detail = " {0} typed case {1} as loss {2}".format(adapter_id, name, loss)
         if row["expected_verdict"] == transport.NETWORK_INTERCEPTED:
             if transport.NETWORK_INTERCEPTED not in loss:
-                case.fail("a local network block reached the artifact as a platform gap:" + detail)
+                case.fail("a local network block reached the page as a platform gap:" + detail)
             if "http_status" in loss:
                 case.fail("a local network block was recorded as an http status:" + detail)
         elif transport.NETWORK_INTERCEPTED in loss:
@@ -344,34 +348,30 @@ class InterceptionReachesThePageTest(unittest.TestCase):
                 self.assertEqual(page.route_id, module.DESCRIPTOR.route_id)
                 self.assertEqual(len(opener.opened), 1)
 
-    def test_no_shipped_adapter_reads_the_channel_or_calls_the_carrier_itself(self):
-        # Criterion 2 as a structure, not only as a behavior: the branch lives
-        # in the protocol, so an adapter added later inherits it by writing
-        # nothing. Naming any of these is how the distinction would get lost
-        # again, one adapter at a time.
-        self.assertEqual(sources_naming(PROTOCOL_OWNED_NAMES, adapter_sources()), [])
-
     def test_an_adapter_that_writes_no_interception_branch_still_types_the_block(self):
         minimal = load_adapter_fixture("minimal_adapter")
 
         assert_interception_reaches_the_page(self, "minimal_adapter", adapter_pages(minimal))
 
-    def test_that_adapter_names_nothing_the_protocol_owns(self):
+        page, opener = adapter_page(minimal, 503, read_fixture("captive_portal.html"))
+        self.assertEqual(page.loss, (transport.NETWORK_INTERCEPTED,))
+        self.assertEqual(page.outcome, "failed")
+        self.assertEqual(page.records, ())
+        self.assertEqual(len(opener.opened), 1)
+
+    def test_the_minimal_adapter_names_nothing_the_protocol_owns(self):
         # Which is what makes the case above worth anything: the inheritance
         # is free, not a branch the fixture quietly wrote for itself.
         self.assertEqual(
             sources_naming(PROTOCOL_OWNED_NAMES, [FIXTURE_DIR / "minimal_adapter.py"]), []
         )
 
-    def test_the_inherited_page_names_the_block_and_keeps_no_records(self):
-        minimal = load_adapter_fixture("minimal_adapter")
-
-        page, opener = adapter_page(minimal, 503, read_fixture("captive_portal.html"))
-
-        self.assertEqual(page.loss, (transport.NETWORK_INTERCEPTED,))
-        self.assertEqual(page.outcome, "failed")
-        self.assertEqual(page.records, ())
-        self.assertEqual(len(opener.opened), 1)
+    def test_no_shipped_adapter_reads_the_channel_or_calls_the_carrier_itself(self):
+        # Criterion 2 as a structure, not only as a behavior: the branch lives
+        # in the protocol, so an adapter added later inherits it by writing
+        # nothing. Naming any of these is how the distinction would get lost
+        # again, one adapter at a time.
+        self.assertEqual(sources_naming(PROTOCOL_OWNED_NAMES, adapter_sources()), [])
 
 
 class OriginBehaviorSurvivesTest(unittest.TestCase):
@@ -972,7 +972,7 @@ class InterceptionOracleCanFailTest(unittest.TestCase):
         # change: the local block arrives as the platform's own http failure.
         self._assert_oracle_rejects(
             "status_first_adapter",
-            "a local network block reached the artifact as a platform gap",
+            "a local network block reached the page as a platform gap",
         )
 
     def test_an_adapter_that_blames_the_network_for_every_failure_fails_the_oracle(self):
