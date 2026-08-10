@@ -1,0 +1,6 @@
+{"ts": "2026-01-01T00:20:00Z", "run": "run-gamma", "ticket": "G4", "agent": "fixture-agent", "event": "tool_pre", "tool": "Read", "detail": "scripts/ui.py"}
+{"ts": "2026-01-01T00:20:03Z", "run": "run-gamma", "ticket": "G4", "agent": "fixture-agent", "event": "tool_post", "tool": "Read", "detail": "a detail carrying <b>markup</b>"}
+a half-written line is what a killed writer leaves behind
+{"ts": "2026-01-01T00:21:00Z", "run": "run-gamma", "ticket": null, "agent": "fixture-agent", "event": "subagent_stop", "tool": null, "detail": null}
+["ts", "an array is valid JSON and still not an event"]
+

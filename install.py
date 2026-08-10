@@ -98,7 +98,7 @@ CANONICAL_DIRS = (
     "compositions",
     "templates",
 )
-SCRIPT_NAMES = ("friction.py", "tickets.py", "trace.py")
+SCRIPT_NAMES = ("friction.py", "tickets.py", "trace.py", "ui.py")
 CLAUDE_CLI_CANDIDATES = ("claude", "claude.exe", "claude.cmd")
 CODEX_CLI_CANDIDATES = ("codex", "codex.exe", "codex.cmd")
 PROFILES_MD = REPO_ROOT / "skills" / "kernel" / "orch-delegate" / "references" / "profiles.md"

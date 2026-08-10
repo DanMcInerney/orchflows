@@ -1,0 +1,6 @@
+{"ts": "2026-08-01T07:40:00Z", "observed": "install.py --dry-run named three scripts", "expected": "four, once SCRIPT_NAMES carried the new module", "category": "surprising-output", "host": "claude-code"}
+this line is not JSON at all and a half-written log ends exactly like it
+{"ts": "2026-08-02T22:34:54Z", "observed": "a route added by branching inside the dispatcher was invisible to the whole-page guards", "expected": "every served route to be reached by a concrete example", "category": "contract-gap", "host": "claude-code"}
+["ts", "an array is valid JSON and still not a friction entry"]
+
+{"ts": "2026-08-03T11:00:00Z", "observed": "an entry written by an older logger carried neither a category nor a host", "expected": "the feed to render the keys it has rather than drop the entry"}
