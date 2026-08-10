@@ -23,6 +23,8 @@ skill, select and follow the smallest orchflows skill that fully owns
 the request; if none fits, continue without orchflows. On user request,
 `orch-off` suspends this routing for the session.
 
+- Project-scope custom item: `super-research` — keyless read-only acquisition from public surfaces — at `.orchflows/skills/super-research/SKILL.md`, mirrored at `.claude/skills/super-research/SKILL.md`.
+
 ## Required checks
 
 Resolve the interpreter verified for this host first — e.g. `uv run
