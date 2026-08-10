@@ -356,6 +356,13 @@ class InterceptionReachesThePageTest(unittest.TestCase):
 
         assert_interception_reaches_the_page(self, "minimal_adapter", adapter_pages(minimal))
 
+    def test_that_adapter_names_nothing_the_protocol_owns(self):
+        # Which is what makes the case above worth anything: the inheritance
+        # is free, not a branch the fixture quietly wrote for itself.
+        self.assertEqual(
+            sources_naming(PROTOCOL_OWNED_NAMES, [FIXTURE_DIR / "minimal_adapter.py"]), []
+        )
+
     def test_the_inherited_page_names_the_block_and_keeps_no_records(self):
         minimal = load_adapter_fixture("minimal_adapter")
 
@@ -885,6 +892,66 @@ class OracleCanFailTest(unittest.TestCase):
     def test_the_same_oracle_passes_on_the_real_detector(self):
         assert_channel_verdicts(self, detected_verdicts())
         assert_channel_verdicts(self, fetched_verdicts())
+
+
+class InterceptionReachesThePageOracleCanFailTest(unittest.TestCase):
+    """Completion criterion 4: the artifact oracle fails on a wrong adapter.
+
+    Both adapters below are written beside the tree and loaded by path: they
+    are the two ways this claim can be false, one in each direction. Nothing
+    in the package produces them and nothing under test is mutated to obtain
+    them.
+    """
+
+    def _assert_oracle_rejects(self, name, reason):
+        wrong = load_adapter_fixture(name)
+
+        with self.assertRaises(AssertionError) as caught:
+            assert_interception_reaches_the_page(self, name, adapter_pages(wrong))
+
+        self.assertIn(reason, str(caught.exception))
+
+    def test_an_adapter_that_tests_status_before_the_verdict_fails_the_oracle(self):
+        # Row 4's named case, and the shape every adapter had before this
+        # change: the local block arrives as the platform's own http failure.
+        self._assert_oracle_rejects(
+            "status_first_adapter",
+            "a local network block reached the artifact as a platform gap",
+        )
+
+    def test_an_adapter_that_blames_the_network_for_every_failure_fails_the_oracle(self):
+        # The opposite error. Without this side the oracle could be satisfied
+        # by typing everything as a local block, which erases every platform
+        # gap the run exists to record.
+        self._assert_oracle_rejects(
+            "intercept_every_failure_adapter",
+            "an origin response was recorded as a network interception",
+        )
+
+    def test_the_protocol_scan_can_fail(self):
+        found = sources_naming(
+            PROTOCOL_OWNED_NAMES,
+            [
+                FIXTURE_DIR / "intercept_every_failure_adapter.py",
+                FIXTURE_DIR / "status_first_adapter.py",
+            ],
+        )
+
+        self.assertEqual(
+            found,
+            [
+                ("intercept_every_failure_adapter.py", "NETWORK_INTERCEPTED"),
+                ("intercept_every_failure_adapter.py", "carrier.fetch"),
+                ("status_first_adapter.py", "carrier.fetch"),
+            ],
+        )
+
+    def test_the_same_oracle_passes_on_every_shipped_adapter(self):
+        for module in SHIPPED_ADAPTERS:
+            with self.subTest(adapter=module.DESCRIPTOR.adapter_id):
+                assert_interception_reaches_the_page(
+                    self, module.DESCRIPTOR.adapter_id, adapter_pages(module)
+                )
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner
