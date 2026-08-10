@@ -11,8 +11,13 @@ worktree's ``.git`` pointer is dereferenced to it, per
 ``contracts/work-item.md`` -- so every worktree of a repository shows one
 run's tickets at one path. Binds loopback only, never ``0.0.0.0``.
 
+It also lists the Claude Code sessions under ``~/.claude/projects``, as
+labels and structure alone: a transcript holds the operator's prompts,
+file contents and command output for every project on the machine, and
+this is not a transcript reader. That tree is read-only, forever.
+
 Usage:
-    ui.py [--root <path>] [--port <n>]
+    ui.py [--root <path>] [--port <n>] [--transcripts <path>]
 """
 
 from __future__ import annotations
@@ -54,10 +59,19 @@ INDEX_ROUTE = "/"
 TICKET_ROUTE = "/ticket"
 GRAPH_ROUTE = "/graph"
 FRICTION_ROUTE = "/friction"
+SESSIONS_ROUTE = "/sessions"
+SESSION_ROUTE = "/session"
 # Every served path lives here. The read-only and no-network tests iterate
 # this tuple, so a route added by branching inside ``render_route`` instead
 # would be silently unguarded.
-ROUTES = (INDEX_ROUTE, TICKET_ROUTE, GRAPH_ROUTE, FRICTION_ROUTE)
+ROUTES = (
+    INDEX_ROUTE,
+    TICKET_ROUTE,
+    GRAPH_ROUTE,
+    FRICTION_ROUTE,
+    SESSIONS_ROUTE,
+    SESSION_ROUTE,
+)
 
 # Every directory the reader reads, named once. The conditional request's
 # digest and the readers that render these have to agree about what is
@@ -82,6 +96,15 @@ EMPTY_NO_METER = "no elapsed meter"
 EMPTY_NO_RUN = "no run by that name under this root"
 EMPTY_NO_FRICTION = "no friction log under this root"
 EMPTY_UNSET = "unset"
+EMPTY_NO_TRANSCRIPTS = "no transcript root at this path"
+EMPTY_NO_SESSIONS = "no sessions under this transcript root"
+EMPTY_NO_TITLE = "no title recorded"
+EMPTY_NO_CWD = "no working directory recorded"
+EMPTY_NO_SESSION = "no session by that id under this transcript root"
+EMPTY_NO_AGENTS = "this session spawned no subagents"
+EMPTY_NO_TYPE = "no agent type recorded"
+EMPTY_NO_DESCRIPTION = "no description recorded"
+EMPTY_NO_DEPTH = "no spawn depth recorded"
 
 # `contracts/work-item.md`: `suspended` "stays claimed", so the lease keeps
 # running and elapsed-against-bound still measures something. Under every
@@ -180,6 +203,36 @@ def status_presentation(status: str) -> StatusPresentation:
     return STATUS_PRESENTATION.get(status, STATUS_FALLBACK)
 
 
+# A subagent's activity is not a ticket status: nobody writes it down, and
+# it is read off whatever evidence the session transcript happens to carry.
+# `unknown` is the honest answer for most of a real tree and it is a state,
+# not a failure to have one, so it reuses the fallback's own presentation
+# rather than being dressed as a wait.
+ACTIVITY_RUNNING = "running"
+ACTIVITY_FINISHED = "finished"
+ACTIVITY_UNKNOWN = STATUS_FALLBACK.word
+ACTIVITY_STATES = (ACTIVITY_RUNNING, ACTIVITY_FINISHED, ACTIVITY_UNKNOWN)
+
+# Four channels and the same closed set of hue tokens as above; no palette
+# is invented here. U+25D0 and cyan for in flight, U+2713 and green for
+# terminal-good -- what both families already mean elsewhere on the page.
+ACTIVITY_PRESENTATION = {
+    ACTIVITY_RUNNING: StatusPresentation(
+        "◐", ACTIVITY_RUNNING, "--st-running", "2px solid"
+    ),
+    ACTIVITY_FINISHED: StatusPresentation(
+        "✓", ACTIVITY_FINISHED, "--st-ok", "1px solid"
+    ),
+    ACTIVITY_UNKNOWN: STATUS_FALLBACK,
+}
+
+
+def activity_presentation(state: str) -> StatusPresentation:
+    """Total over every state, and over anything that is not one."""
+
+    return ACTIVITY_PRESENTATION.get(state, STATUS_FALLBACK)
+
+
 # An SVG rect has no `border`, so the border style that separates the two
 # pairs sharing a hue is restated as a stroke pattern. Same four channels,
 # same owner: both renderings are generated from STATUS_PRESENTATION.
@@ -194,8 +247,10 @@ def _svg_stroke(presentation: StatusPresentation) -> tuple:
 
 
 def _status_css() -> str:
-    """Derived from STATUS_PRESENTATION so a status cannot carry one hue in
-    the module and another in the stylesheet."""
+    """Derived from both presentation tables, so neither a ticket status nor
+    a subagent's activity can carry one hue in the module and another in the
+    stylesheet -- and so a state cannot be drawn in a class the stylesheet
+    never declares, which renders as no state at all."""
 
     lines = [
         "  /* Hue tokens are names, not colours: the palette is the design",
@@ -206,7 +261,9 @@ def _status_css() -> str:
         "        white-space: nowrap; }",
         "  .st .glyph { font-style: normal; }",
     ]
-    for presentation in [STATUS_FALLBACK] + list(STATUS_PRESENTATION.values()):
+    every = [STATUS_FALLBACK] + list(STATUS_PRESENTATION.values())
+    every += [seen for seen in ACTIVITY_PRESENTATION.values() if seen not in every]
+    for presentation in every:
         stroke_width, dash = _svg_stroke(presentation)
         lines.append(
             "  .st-{word} {{ border: {border} var({hue}); }}".format(
@@ -259,6 +316,12 @@ PAGE_CSS = (
   .graph text { font: 12px/1 ui-monospace, monospace; fill: currentColor; }
   .graph .nd-state { font-size: 11px; }
   .graph a { text-decoration: none; }
+  /* An edge that is a guess is drawn like one. The page says so in words
+     too: a dash pattern alone is not a channel a reader can decode. */
+  .graph .edge-inferred { stroke-dasharray: 5 3; }
+  /* The session flowchart's own node. It is not in an activity state, so
+     it borrows no state's presentation. */
+  .graph .nd-root rect { stroke: currentColor; stroke-width: 2; }
 """
     + _status_css()
 )
@@ -670,30 +733,41 @@ def _stamp_order(entry: dict) -> tuple:
     return (stamp is not None, stamp or _EPOCH)
 
 
+def _json_object(line: str):
+    """One JSONL line as a JSON object, or ``None`` when it is not one.
+
+    Every JSONL this module reads -- the friction log, the events seam, a
+    Claude Code transcript -- is append-only and written by a process that
+    may be killed mid-line, so a half-written tail is expected rather than
+    exceptional, and so is a line that parses to something other than a
+    record. A blank line is neither: the caller drops those before asking.
+    """
+
+    try:
+        entry = json.loads(line)
+    except ValueError:
+        return None
+    return entry if isinstance(entry, dict) else None
+
+
 def _read_jsonl(text: str, entries: list) -> int:
     """Append every JSON object in ``text`` to ``entries``; return the count
     of lines that were not one.
 
-    Both logs this reader shows are append-only JSONL written by a process
-    that may be killed mid-line, so a half-written tail is expected rather
-    than exceptional. One bad line costs that line and nothing else: the
-    friction law's whole point is that observations survive, and the events
-    seam is held to the same handling by sharing this code rather than by
-    resembling it.
+    One bad line costs that line and nothing else: the friction law's whole
+    point is that observations survive, and the events seam is held to the
+    same handling by sharing this code rather than by resembling it.
     """
 
     skipped = 0
     for line in text.splitlines():
         if not line.strip():
             continue
-        try:
-            entry = json.loads(line)
-        except ValueError:
-            entry = None
-        if isinstance(entry, dict):
-            entries.append(entry)
-        else:
+        entry = _json_object(line)
+        if entry is None:
             skipped += 1
+        else:
+            entries.append(entry)
     return skipped
 
 
@@ -1028,25 +1102,785 @@ LAYOUT_CACHE = {}
 LAYOUT_CACHE_LIMIT = 32
 
 
+def _make_room(cache: dict, limit: int):
+    """Evict oldest-first until one insertion fits under ``limit``.
+
+    Insertion-ordered and bounded, because the process outlives every run
+    and every session it is ever asked about. A cache already below its
+    limit evicts nothing: a negative slice here would drop the *newest*
+    entries instead, which is the opposite of the policy.
+    """
+
+    excess = len(cache) - limit + 1
+    for stale in list(cache)[:excess] if excess > 0 else ():
+        cache.pop(stale, None)
+
+
 def cached_layout(node_ids, edges) -> dict:
     """``graph_layout`` memoized on the node-and-edge set alone.
 
     Status is deliberately absent from the key: a poll that repaints a
     ticket from claimed to complete moved no node, so it must not pay for
-    a layout. Bounded and insertion-ordered, because the process outlives
-    every run it is asked about.
+    a layout.
     """
 
     key = layout_key(node_ids, edges)
     layout = LAYOUT_CACHE.get(key)
     if layout is None:
         layout = graph_layout(node_ids, edges)
-        if len(LAYOUT_CACHE) >= LAYOUT_CACHE_LIMIT:
-            excess = len(LAYOUT_CACHE) - LAYOUT_CACHE_LIMIT + 1
-            for stale in list(LAYOUT_CACHE)[:excess]:
-                LAYOUT_CACHE.pop(stale, None)
+        _make_room(LAYOUT_CACHE, LAYOUT_CACHE_LIMIT)
         LAYOUT_CACHE[key] = layout
     return layout
+
+
+# --- Claude Code sessions -----------------------------------------------------
+
+# A second data source, and a far more dangerous one than ``.orch/``. A
+# transcript holds the operator's prompts, the contents of the files they
+# opened and the output of the commands they ran, for every project on the
+# machine. The spec's `binding_constraints` close the renderable set to
+# labels and structure: ``sessionId``, ``aiTitle``, the ``worktree-state``
+# fields, timestamps, sizes, counts, and a subagent's own metadata. So the
+# reader below parses *for* the two record types it renders and drops every
+# other line before anything is taken from it -- there is no render-time
+# filter to get wrong, because nothing else is ever held.
+#
+# The layout is an undocumented implementation detail of another program,
+# not a contract. Every field access degrades to a named diagnostic, so a
+# Claude Code release that moves a key produces a visibly degraded page
+# rather than a traceback or a silently empty one that looks correct.
+
+DEFAULT_TRANSCRIPTS = (".claude", "projects")
+SUBAGENTS_DIR = "subagents"
+# Two files carry one subagent: its metadata, which is read, and its own
+# conversation, which is only ever stat'd. Both are listed, because the
+# later of the two mtimes is when the subagent was last heard from.
+AGENT_FILE_GLOB = "agent-*"
+AGENT_META_SUFFIX = ".meta.json"
+
+RECORD_TYPE_KEY = "type"
+AI_TITLE_RECORD = "ai-title"
+AI_TITLE_KEY = "aiTitle"
+WORKTREE_RECORD = "worktree-state"
+# Observed on a live host: the worktree fields sit one level down under
+# ``worktreeSession``, though the spec's evidence records them flat. Both
+# shapes are read, because neither is anybody's contract.
+WORKTREE_SESSION_KEY = "worktreeSession"
+# ``worktreePath`` first: a session inside a linked worktree runs there, and
+# that is the path the project directory name encodes.
+WORKTREE_CWD_KEYS = ("worktreePath", "originalCwd")
+
+# The one piece of evidence in the tree that a subagent ever ran. Observed
+# on a live host over 305 subagents, and nobody's contract: an `assistant`
+# record carries a `tool_use` block named `Agent` whose `id` is the
+# subagent's `toolUseId`, and a later `user` record carries a `tool_result`
+# block quoting that same id back once it has returned. Nothing else says
+# it -- `tool-results/` names no subagent's id at all.
+MESSAGE_KEY = "message"
+CONTENT_KEY = "content"
+TOOL_USE_BLOCK = "tool_use"
+TOOL_RESULT_BLOCK = "tool_result"
+TOOL_USE_ID_KEY = "tool_use_id"
+BLOCK_ID_KEY = "id"
+BLOCK_NAME_KEY = "name"
+AGENT_TOOL_NAME = "Agent"
+
+DIAGNOSTIC_UNREADABLE_TRANSCRIPT = "transcript could not be read"
+DIAGNOSTIC_UNREADABLE_LINES = "unreadable transcript lines"
+DIAGNOSTIC_NO_RECORDS = "transcript holds no records"
+DIAGNOSTIC_UNDECODABLE_SLUG = "project directory name is not an encoded path"
+DIAGNOSTIC_UNRENDERABLE_STAMP = "last activity time is outside the calendar"
+# A row is a promise that the link on it opens. `/session` takes its id in a
+# query string and `_safe_name` is the boundary that query crosses, so a
+# filename the walk finds and the boundary refuses is named here instead of
+# being listed under a link that answers "no such session" about a file this
+# very page just drew.
+DIAGNOSTIC_UNADDRESSABLE_SESSION = "session file cannot be addressed by name"
+
+# Where a working directory came from, said on the page. The two are not
+# equally trustworthy and the difference is not the reader's to hide.
+CWD_FROM_RECORD = "from worktree-state"
+CWD_FROM_NAME = "decoded from the directory name"
+
+# The row, named once. Widening it is how the content wall gets breached, so
+# it is a constant a test can hold rather than a shape spread over a format
+# string.
+SESSION_COLUMNS = ("sid", "title", "cwd", "when", "size", "agents", "notes")
+SESSION_HEADINGS = (
+    "session",
+    "title",
+    "working directory",
+    "last activity",
+    "bytes",
+    "subagents",
+    "notes",
+)
+
+# The subagent metadata this reader draws, named once for the same reason
+# as SESSION_COLUMNS. `parentAgentId` is read and is deliberately not here:
+# what it resolves to is drawn as an edge between two nodes already on the
+# page, so the field's own value never reaches a reader.
+AGENT_TYPE_KEY = "agentType"
+AGENT_DESCRIPTION_KEY = "description"
+AGENT_TOOL_USE_KEY = "toolUseId"
+AGENT_DEPTH_KEY = "spawnDepth"
+AGENT_PARENT_KEY = "parentAgentId"
+
+AGENT_COLUMNS = ("agent", "type", "description", "depth", "state", "attached", "when")
+AGENT_HEADINGS = (
+    "subagent",
+    "agent type",
+    "description",
+    "spawn depth",
+    "activity",
+    "attached to",
+    "last activity",
+)
+
+DIAGNOSTIC_UNREADABLE_AGENT = "subagent metadata could not be read"
+DIAGNOSTIC_INFERRED_EDGE = (
+    "a dashed edge is inferred: the subagent records no parent, so it is "
+    "drawn on the orchestrator by its spawn depth alone"
+)
+# The second guess, which is not the first one. Saying "records no parent"
+# of a subagent that recorded one would be a false statement about another
+# program's data, and it is the reader who would go looking for the parent
+# that was supposedly never written down. No clause about spawn depth here
+# either: a depth-3 record drawn on the orchestrator is not drawn by its
+# depth, and a sentence claiming so contradicts the number beside it.
+DIAGNOSTIC_UNRESOLVED_PARENT = (
+    "a dashed edge is inferred: the subagent records a parent that names no "
+    "other subagent of this session, so it is drawn on the orchestrator"
+)
+
+# The flowchart's own node, which is the session itself. Every subagent
+# node is named for a file matching ``agent-*``, so no metadata file can
+# collide with it.
+ORCHESTRATOR_NODE = "orchestrator"
+ORCHESTRATOR_ANCHOR = "session"
+
+# What an edge was read off, said on the row it belongs to. A subagent at
+# depth 1 was spawned by the session and nothing else could have spawned
+# it; a recorded parent that resolves to a node on this page is a fact; a
+# depth-2 subagent that records no parent is neither, and the guess is
+# labelled a guess.
+EDGE_FROM_DEPTH = "spawn depth 1"
+EDGE_FROM_PARENT = "recorded parent"
+EDGE_INFERRED = "inferred: no parent recorded"
+# A fourth case, and the one the other three are not: a pointer was
+# written down and resolved to nothing on this page. One sentence covers
+# every shape that reaches here -- a stranger, the agent itself, and the
+# orchestrator, which `agent_ids` deliberately withholds.
+EDGE_PARENT_UNRESOLVED = (
+    "inferred: recorded parent names no other subagent of this session"
+)
+
+# What the state was read off, said beside it. A state whose evidence is
+# not on the page is indistinguishable from a guess.
+EVIDENCE_CALLED = "called, no result yet"
+EVIDENCE_RETURNED = "result recorded"
+EVIDENCE_NONE = "no call in this transcript"
+
+
+def transcript_root(value=None) -> Path:
+    """The transcript root: ``value`` when given, else ``~/.claude/projects``.
+
+    Path arithmetic and nothing else -- the tree is never opened here. This
+    is also the only place the default is resolved, and ``main`` is its only
+    caller, so a reader handed no root renders a named empty state instead
+    of falling back to the operator's real transcripts.
+    """
+
+    if value:
+        return Path(value).expanduser()
+    return Path.home().joinpath(*DEFAULT_TRANSCRIPTS)
+
+
+def decode_slug(slug) -> str:
+    """A project directory name as the working directory it encodes, or ``""``.
+
+    Claude Code names the directory after the working directory with every
+    separator replaced by ``-``, which is not invertible: ``.`` encodes to
+    ``-`` as well, and a ``-`` already in a directory name is
+    indistinguishable from either, so ``…-orchflows--claude-worktrees-a-b``
+    decodes wrong in three places. What comes back is a guess, named as one
+    wherever it is the only source; a name that does not even open with the
+    separator marker is refused rather than guessed at.
+    """
+
+    if not isinstance(slug, str) or not slug.startswith("-"):
+        return ""
+    return "/" + slug[1:].replace("-", "/")
+
+
+def _stat_identity(path: Path):
+    """``(name, size, mtime)`` for one file, or ``None`` when the path layer
+    will not answer. The parse cache's key and the validator's contribution
+    are these same three facts, so the page and the tag it is served under
+    cannot disagree about which file they saw."""
+
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+    return (str(path), stat.st_size, stat.st_mtime_ns)
+
+
+def _worktree_cwd(record: dict) -> str:
+    """The working directory one ``worktree-state`` record states, or ``""``."""
+
+    nested = record.get(WORKTREE_SESSION_KEY)
+    holders = (nested, record) if isinstance(nested, dict) else (record,)
+    for holder in holders:
+        for key in WORKTREE_CWD_KEYS:
+            value = holder.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+    return ""
+
+
+def _content_blocks(record: dict) -> list:
+    """The content blocks of one conversation record, or none.
+
+    Observed shape: the blocks sit under ``message.content``. The record is
+    another program's JSON, so anything else there is not a block list.
+    """
+
+    message = record.get(MESSAGE_KEY)
+    blocks = message.get(CONTENT_KEY) if isinstance(message, dict) else None
+    if not isinstance(blocks, list):
+        return []
+    return [block for block in blocks if isinstance(block, dict)]
+
+
+def _agent_evidence(record: dict, calls: set, returns: set) -> None:
+    """Fold one record into the call and return sets.
+
+    The tool *name* is the discriminator and dropping it is the whole bug
+    this guards: a subagent's ``toolUseId`` is a tool-use id like any other,
+    and a finished ``Bash`` command under that id is not a finished
+    subagent. A return is only counted for a call already seen, which is
+    also the order a transcript writes them in.
+    """
+
+    for block in _content_blocks(record):
+        kind = block.get(RECORD_TYPE_KEY)
+        if kind == TOOL_USE_BLOCK and block.get(BLOCK_NAME_KEY) == AGENT_TOOL_NAME:
+            identifier = block.get(BLOCK_ID_KEY)
+            if isinstance(identifier, str) and identifier:
+                calls.add(identifier)
+        elif kind == TOOL_RESULT_BLOCK:
+            identifier = block.get(TOOL_USE_ID_KEY)
+            if identifier in calls:
+                returns.add(identifier)
+
+
+def _transcript_summary(path: Path) -> dict:
+    """The two labels the index draws from one transcript, the evidence that
+    each subagent ever ran, and nothing else.
+
+    Streamed a line at a time, and every line that is not one of the
+    rendered record types is dropped before a single value is taken from it.
+    A real transcript is megabytes of conversation; none of it is ever held
+    long enough to be filtered later, and what survives this pass is a
+    handful of tool-use ids -- one per subagent the session spawned.
+    """
+
+    calls, returns = set(), set()
+    summary = {
+        "title": "",
+        "cwd": "",
+        "records": 0,
+        "skipped": 0,
+        "unreadable": False,
+        "agent_calls": calls,
+        "agent_returns": returns,
+    }
+    try:
+        with path.open(encoding="utf-8", errors="replace") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                record = _json_object(line)
+                if record is None:
+                    summary["skipped"] += 1
+                    continue
+                summary["records"] += 1
+                kind = record.get(RECORD_TYPE_KEY)
+                if kind == AI_TITLE_RECORD:
+                    title = record.get(AI_TITLE_KEY)
+                    # Last one wins: the title is rewritten as the session
+                    # goes on, and the reader wants the current one.
+                    if isinstance(title, str) and title.strip():
+                        summary["title"] = title.strip()
+                elif kind == WORKTREE_RECORD:
+                    cwd = _worktree_cwd(record)
+                    if cwd:
+                        summary["cwd"] = cwd
+                else:
+                    _agent_evidence(record, calls, returns)
+    except OSError:
+        # Unreadable, or gone between the listing and the open. Whatever was
+        # read before that stands; the absence is named, not guessed at.
+        summary["unreadable"] = True
+    return summary
+
+
+TRANSCRIPT_CACHE = {}
+TRANSCRIPT_CACHE_LIMIT = 256
+
+
+def cached_transcript(path: Path, identity) -> dict:
+    """``_transcript_summary`` memoized on the file's stat identity.
+
+    The index draws one title and one working directory out of a file that
+    is routinely megabytes, for every session on the machine, and the poll
+    asks for the page every second. Keyed on name, size and mtime -- the
+    same three facts the page's own validator is built from -- so an
+    unchanged transcript is parsed once and a changed one is parsed again.
+    """
+
+    summary = TRANSCRIPT_CACHE.get(identity)
+    if summary is None:
+        summary = _transcript_summary(path)
+        _make_room(TRANSCRIPT_CACHE, TRANSCRIPT_CACHE_LIMIT)
+        TRANSCRIPT_CACHE[identity] = summary
+    return summary
+
+
+def _subagent_files(path: Path) -> tuple:
+    """Every subagent file beside one transcript, metadata and conversation
+    alike.
+
+    The conversation is listed and never opened: it is megabytes of the
+    same content the transcript holds, and the only thing read off it is
+    the mtime the flowchart draws as a last activity. A session directory
+    that does not exist is no subagents, not an error -- most sessions
+    spawn nothing.
+    """
+
+    directory = _in_tree(path.parent, path.stem, SUBAGENTS_DIR)
+    if directory is None:
+        return ()
+    try:
+        return tuple(sorted(directory.glob(AGENT_FILE_GLOB))) if directory.is_dir() else ()
+    except OSError:
+        return ()
+
+
+def _agent_id(path: Path) -> str:
+    """The subagent one of its files is named for: ``agent-aa11.meta.json``
+    and ``agent-aa11.jsonl`` are two files about one subagent."""
+
+    for suffix in (AGENT_META_SUFFIX, JSONL_SUFFIX):
+        if path.name.endswith(suffix):
+            return path.name[: -len(suffix)]
+    return path.name
+
+
+def _subagent_identities(files) -> tuple:
+    """The stat identity of every subagent file beside one transcript.
+
+    This is the validator's contribution for the subagent tree, so it
+    covers what the pages read: the metadata they parse and the mtime they
+    draw. A narrower basis would answer 304 to a flowchart that has moved.
+    """
+
+    return tuple(
+        identity
+        for identity in (_stat_identity(file) for file in files)
+        if identity is not None
+    )
+
+
+def _agent_count(files) -> int:
+    """How many subagents one session spawned: one per metadata file, not
+    one per file."""
+
+    return sum(1 for file in files if file.name.endswith(AGENT_META_SUFFIX))
+
+
+def _agent_text(value) -> str:
+    """One metadata string field, or ``""``. Another program's undocumented
+    JSON can hold anything at any key, so a value of the wrong type is an
+    absence rather than something to render."""
+
+    return value.strip() if isinstance(value, str) and value.strip() else ""
+
+
+def _agent_depth(value):
+    """``spawnDepth`` as an integer, or ``None``. ``True`` is an ``int`` in
+    Python and is not a depth."""
+
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _agent_record(meta: Path, modified: int) -> dict:
+    """The named metadata fields of one subagent, each degrading to an
+    absence rather than to a traceback."""
+
+    record = {
+        "id": _agent_id(meta),
+        "type": "",
+        "description": "",
+        "tool_use_id": "",
+        "depth": None,
+        "parent": "",
+        "modified": modified,
+        "unreadable": False,
+    }
+    try:
+        parsed = _json_object(meta.read_text(encoding="utf-8", errors="replace"))
+    except OSError:
+        parsed = None
+    if parsed is None:
+        record["unreadable"] = True
+        return record
+    record["type"] = _agent_text(parsed.get(AGENT_TYPE_KEY))
+    record["description"] = _agent_text(parsed.get(AGENT_DESCRIPTION_KEY))
+    record["tool_use_id"] = _agent_text(parsed.get(AGENT_TOOL_USE_KEY))
+    record["depth"] = _agent_depth(parsed.get(AGENT_DEPTH_KEY))
+    record["parent"] = _agent_text(parsed.get(AGENT_PARENT_KEY))
+    return record
+
+
+def read_agents(path: Path) -> list:
+    """Every subagent recorded beside one transcript, in the tree's order.
+
+    A metadata file is a few hundred bytes and a session has a few dozen of
+    them, so this is the one place the detail view reads that the index
+    does not. Its cost is a directory listing plus one small read per
+    subagent -- no transcript is opened here at all.
+    """
+
+    activity = {}
+    metas = []
+    for file in _subagent_files(path):
+        identity = _stat_identity(file)
+        if identity is not None:
+            agent = _agent_id(file)
+            activity[agent] = max(activity.get(agent, 0), identity[2])
+        if file.name.endswith(AGENT_META_SUFFIX):
+            metas.append(file)
+    return [_agent_record(meta, activity.get(_agent_id(meta), 0)) for meta in metas]
+
+
+def _project_directories(root: Path) -> list:
+    """Every project directory that is actually inside the transcript root.
+
+    A directory *entry* is not the same thing as a directory in this tree.
+    `~/.claude/projects` is a path anything on the machine can be linked
+    into, and a symlink there answers ``is_dir`` like any other project and
+    would then be walked for transcripts -- which is how a viewer whose whole
+    defence is a closed renderable set starts rendering titles out of files
+    outside its own root. Containment is the same question `_subagent_files`
+    asks one level down, so it is asked with the same helper. The entry's own
+    name is what is kept: that is the name the operator sees in the listing
+    and the slug this reader decodes.
+    """
+
+    try:
+        entries = sorted(path for path in root.iterdir() if path.is_dir())
+    except OSError:
+        return []
+    return [path for path in entries if _in_tree(root, path.name) is not None]
+
+
+def discover_sessions(transcripts=None) -> dict:
+    """Every session under one transcript root, newest activity first.
+
+    Listing only: no transcript is opened here, so this is what the
+    validator can afford to walk on a request it answers 304. ``None`` is
+    the case where no root was configured at all, and it reads nothing.
+    """
+
+    if transcripts is None:
+        return {
+            "root": None,
+            "present": False,
+            "projects": (),
+            "sessions": [],
+            "unaddressable": (),
+            "diagnostics": [],
+            "empty": EMPTY_NO_TRANSCRIPTS,
+        }
+    root = Path(transcripts)
+    try:
+        present = root.is_dir()
+    except OSError:
+        present = False
+    if not present:
+        return {
+            "root": root,
+            "present": False,
+            "projects": (),
+            "sessions": [],
+            "unaddressable": (),
+            "diagnostics": [],
+            "empty": EMPTY_NO_TRANSCRIPTS,
+        }
+    projects = _project_directories(root)
+    sessions = []
+    unaddressable = []
+    diagnostics = []
+    for project in projects:
+        cwd = decode_slug(project.name)
+        if not cwd:
+            diagnostics.append(
+                "{0}: {1}".format(DIAGNOSTIC_UNDECODABLE_SLUG, project.name)
+            )
+        for path in sorted(project.glob("*" + JSONL_SUFFIX)):
+            identity = _stat_identity(path)
+            if identity is None:
+                continue
+            if not _safe_name(path.stem):
+                # The detail route looks a session up by this id and
+                # `find_session` refuses the name before it gets there, so
+                # listing the row would offer a link to a 404 about a file
+                # this walk just found. Named once, here, where the name is.
+                unaddressable.append(identity)
+                diagnostics.append(
+                    "{0}: {1}".format(DIAGNOSTIC_UNADDRESSABLE_SESSION, path.name)
+                )
+                continue
+            files = _subagent_files(path)
+            sessions.append(
+                {
+                    "id": path.stem,
+                    "path": path,
+                    "project": project.name,
+                    "named_cwd": cwd,
+                    "identity": identity,
+                    "size": identity[1],
+                    "modified": identity[2],
+                    "subagents": _subagent_identities(files),
+                    "agent_count": _agent_count(files),
+                }
+            )
+    # Newest first, and on the id where two files share a timestamp, so the
+    # order is a property of the tree rather than of the walk.
+    sessions.sort(key=lambda session: (-session["modified"], session["id"]))
+    return {
+        "root": root,
+        "present": True,
+        "projects": tuple(project.name for project in projects),
+        "sessions": sessions,
+        # Not sessions, and not nothing: a file whose diagnostic is on the
+        # page is part of what the page was rendered from, so the validator
+        # has to be able to see it arrive and leave.
+        "unaddressable": tuple(unaddressable),
+        "diagnostics": diagnostics,
+        "empty": "" if sessions else EMPTY_NO_SESSIONS,
+    }
+
+
+def _session_diagnostics(summary: dict) -> list:
+    """What one transcript could not be read to say."""
+
+    diagnostics = []
+    if summary["unreadable"]:
+        diagnostics.append(DIAGNOSTIC_UNREADABLE_TRANSCRIPT)
+    if summary["skipped"]:
+        diagnostics.append(
+            "{0}: {1}".format(DIAGNOSTIC_UNREADABLE_LINES, summary["skipped"])
+        )
+    # An empty transcript and a healthy one must not look alike: a layout
+    # change that stopped every line parsing would otherwise render a page
+    # of blanks that reads as "nothing happened here".
+    if not summary["records"] and not summary["unreadable"]:
+        diagnostics.append(DIAGNOSTIC_NO_RECORDS)
+    return diagnostics
+
+
+def _label_session(session: dict) -> dict:
+    """One session's labels, from the cached parse of its own transcript.
+    Returns the summary, so a caller that needs more than the labels does
+    not parse the file a second time."""
+
+    summary = cached_transcript(session["path"], session["identity"])
+    session["title"] = summary["title"]
+    session["cwd"] = summary["cwd"] or session["named_cwd"]
+    if summary["cwd"]:
+        session["cwd_source"] = CWD_FROM_RECORD
+    else:
+        session["cwd_source"] = CWD_FROM_NAME if session["named_cwd"] else ""
+    session["diagnostics"] = _session_diagnostics(summary)
+    return summary
+
+
+def read_sessions(transcripts=None) -> dict:
+    """Every session under one transcript root, labelled.
+
+    ``discover_sessions`` lists; this labels. The parse is the expensive
+    half and it is cached on each transcript's stat identity, so a poll over
+    an unchanged root costs one directory listing and no parse at all.
+    """
+
+    found = discover_sessions(transcripts)
+    for session in found["sessions"]:
+        _label_session(session)
+    return found
+
+
+def find_session(transcripts, session_id: str):
+    """One session by id, or ``None``.
+
+    The listing is the lookup: a session id names a file, but the project
+    directory it sits under is not derivable from the id, and the slug is
+    not invertible. Listing costs no parse, which is what the detail view
+    can afford -- it then parses exactly the one transcript it draws.
+    """
+
+    if not _safe_name(session_id):
+        return None
+    for session in discover_sessions(transcripts)["sessions"]:
+        if session["id"] == session_id:
+            return session
+    return None
+
+
+def _agent_activity(agent: dict, summary: dict) -> tuple:
+    """``(state, what it was read off)`` for one subagent.
+
+    Ordered by strength of evidence, and it runs out fast: a result quoting
+    the call is the only thing that says finished, an unanswered call is the
+    only thing that says running, and everything else is `unknown`. Nothing
+    here has a default branch that claims a state -- the absence of evidence
+    is the third state, not a reason to pick one of the other two.
+    """
+
+    called = agent["tool_use_id"]
+    if called and called in summary["agent_returns"]:
+        return ACTIVITY_FINISHED, EVIDENCE_RETURNED
+    if called and called in summary["agent_calls"]:
+        return ACTIVITY_RUNNING, EVIDENCE_CALLED
+    return ACTIVITY_UNKNOWN, EVIDENCE_NONE
+
+
+def read_session(session: dict) -> dict:
+    """One session, labelled, with every subagent recorded beside it and
+    each subagent's activity read off the session's own transcript.
+
+    The parse is the one ``_label_session`` already made and cached, so the
+    states cost no second pass over the file.
+    """
+
+    summary = _label_session(session)
+    session["agents"] = read_agents(session["path"])
+    for agent in session["agents"]:
+        agent["state"], agent["evidence"] = _agent_activity(agent, summary)
+    return session
+
+
+def agent_ids(agents) -> frozenset:
+    """The nodes a recorded parent is allowed to resolve to: the session's
+    own subagents, and not the orchestrator, which no metadata names."""
+
+    return frozenset(agent["id"] for agent in agents)
+
+
+def _recorded_parent(agent: dict, known: frozenset) -> str:
+    """The node one subagent's own ``parentAgentId`` resolves to, or ``""``.
+
+    ``parentAgentId`` was observed on every depth-2 record and no depth-1
+    one, holding the bare id whose file is ``agent-<id>``; both spellings
+    are accepted because neither is anybody's contract. A pointer to an
+    agent this session does not have, or to the agent itself, resolves to
+    nothing rather than to a node that is not there or an edge nobody can
+    lay out.
+    """
+
+    for candidate in (agent["parent"], "agent-" + agent["parent"]):
+        if agent["parent"] and candidate in known and candidate != agent["id"]:
+            return candidate
+    return ""
+
+
+def _agent_parent(agent: dict, known: frozenset) -> str:
+    """The node one subagent hangs off, or ``""`` when nothing says.
+
+    Depth 1 is read before the pointer and outranks it: the session spawned
+    it and nothing else could have, so spec criterion 8's edge from the
+    orchestrator to *every* depth-1 agent holds even where the metadata also
+    names a sibling. Ordering the two the other way makes that criterion
+    hold only for the records that happen to omit the key.
+    """
+
+    if agent["depth"] == 1:
+        return ORCHESTRATOR_NODE
+    return _recorded_parent(agent, known)
+
+
+def session_graph(agents) -> tuple:
+    """``(node ids, edges, the subset of edges that is inferred)``.
+
+    The orchestrator is the session itself. A subagent at depth 1 was
+    spawned by it and nothing else could have been; a recorded parent that
+    resolves to a node on this page is a fact. Everything left over -- a
+    subagent that names no parent, and one whose named parent is not on this
+    page -- hangs off the orchestrator too, and that edge is returned as a
+    guess so the page can draw it as one. Inventing a parent for it would be
+    the one lie a flowchart of another program's tree must not tell. Which
+    of the two guesses was made is `edge_source`'s to say; the shape here is
+    the same either way.
+    """
+
+    nodes = (ORCHESTRATOR_NODE,) + tuple(agent["id"] for agent in agents)
+    known = agent_ids(agents)
+    edges, inferred = [], []
+    for agent in agents:
+        parent = _agent_parent(agent, known)
+        edges.append((parent or ORCHESTRATOR_NODE, agent["id"]))
+        if not parent:
+            inferred.append(edges[-1])
+    return nodes, tuple(edges), tuple(inferred)
+
+
+def edge_source(agent: dict, known: frozenset) -> str:
+    """What one subagent's edge was read off, said on its own row.
+
+    Two of the four are guesses and they are not the same guess. A record
+    that never named a parent and a record whose named parent is on no other
+    row here both land on the orchestrator; calling the second the first is
+    a false statement about another program's data, and the reader it
+    misleads goes looking for a pointer that was written down all along.
+    """
+
+    parent = _agent_parent(agent, known)
+    if parent == ORCHESTRATOR_NODE:
+        return EDGE_FROM_DEPTH
+    if parent:
+        return EDGE_FROM_PARENT
+    return EDGE_PARENT_UNRESOLVED if agent["parent"] else EDGE_INFERRED
+
+
+def transcript_state(transcripts=None) -> tuple:
+    """The stat identity of everything the session views read.
+
+    The same three facts per file the ``.orch/`` walk contributes, over the
+    set this reader actually opens -- and the project directory names, so a
+    directory appearing empty is a change too. Naming the validator's basis
+    as the route's whole read set, rather than one directory, is `U3`'s
+    lesson from the friction feed.
+    """
+
+    found = discover_sessions(transcripts)
+    # Configured or not, and present or not, before any file: three pages
+    # differ here -- no root configured, a root that is not there yet, and a
+    # root holding nothing -- and none of the three has a file to stat, so a
+    # walk alone cannot tell them apart. The middle-to-last transition is the
+    # ordinary one: a viewer left open from before Claude Code first ran.
+    root = found["root"]
+    state = [("transcripts", int(found["present"]), "" if root is None else str(root))]
+    state.extend(("projects", 0, name) for name in found["projects"])
+    for session in found["sessions"]:
+        state.append(session["identity"])
+        state.extend(session["subagents"])
+    # A file that is not a session still renders: it renders a diagnostic.
+    # No directory is stat'd on this walk, so without these the row-shaped
+    # hole in the page appears and disappears under an unchanged tag.
+    state.extend(found["unaddressable"])
+    return tuple(state)
 
 
 # --- rendering ---------------------------------------------------------------
@@ -1064,9 +1898,54 @@ def _cell(value: str, fallback: str) -> str:
     return '<span class="empty">{0}</span>'.format(html.escape(fallback))
 
 
+def _row(columns, values: dict, anchor: str = "") -> str:
+    """One table row, its cells derived from the tuple that closes the
+    renderable set.
+
+    The row is built *from* the constant rather than beside it, so a column
+    cannot reach the page without being admitted to the closed set first --
+    which is the whole mechanism behind the content wall. A tuple that
+    names a column with no value here fails at the first render rather than
+    emitting a blank cell nobody asked about; the two are module state and
+    can only disagree by a mistake made in this file.
+
+    ``anchor``, where given, is the element id the row's first cell carries
+    -- the target a flowchart node links to.
+    """
+
+    cells = []
+    for name in columns:
+        identifier = (
+            ' id="{0}"'.format(html.escape(anchor))
+            if anchor and name == columns[0]
+            else ""
+        )
+        cells.append(
+            '<td class="{name}"{id}>{value}</td>'.format(
+                name=name, id=identifier, value=values[name]
+            )
+        )
+    return "<tr>{0}</tr>\n".format("".join(cells))
+
+
+def _pill(seen: StatusPresentation, text: str) -> str:
+    """One state pill: glyph, word, and a class binding the hue token and
+    the border style.
+
+    The glyph is aria-hidden because the word beside it says the same
+    thing; a screen reader announcing the code point would only add noise.
+    ``text`` arrives escaped -- a caller that appends an untrusted value to
+    the word is the only reason this takes one at all.
+    """
+
+    return (
+        '<span class="st st-{word}">'
+        '<span class="glyph" aria-hidden="true">{glyph}</span> {text}</span>'
+    ).format(word=seen.word, glyph=seen.glyph, text=text)
+
+
 def render_status(status: str) -> str:
-    """The status pill: glyph, word, and a class binding the hue token and
-    the border style. A value outside the contract's set keeps its own
+    """The status pill. A value outside the contract's set keeps its own
     text, escaped, beside the named fallback -- hiding an unrecognized
     status would hide exactly the state a reader came to see. An absent
     status is an empty state rather than a state."""
@@ -1077,12 +1956,7 @@ def render_status(status: str) -> str:
     text = html.escape(seen.word)
     if status not in STATUS_PRESENTATION:
         text = "{0} {1}".format(text, html.escape(status))
-    # The glyph is aria-hidden because the word beside it says the same
-    # thing; a screen reader announcing the code point would only add noise.
-    return (
-        '<span class="st st-{word}">'
-        '<span class="glyph" aria-hidden="true">{glyph}</span> {text}</span>'
-    ).format(word=seen.word, glyph=seen.glyph, text=text)
+    return _pill(seen, text)
 
 
 def is_live(tickets) -> bool:
@@ -1126,6 +2000,21 @@ def graph_href(run: str) -> str:
     return html.escape(
         "{route}?run={run}".format(route=GRAPH_ROUTE, run=quote(run, safe=""))
     )
+
+
+def session_href(session_id: str) -> str:
+    """A session id is a file name from another program's tree, so it is
+    percent-encoded whole and then escaped as markup, like a ticket id."""
+
+    return html.escape(
+        "{route}?id={id}".format(route=SESSION_ROUTE, id=quote(session_id, safe=""))
+    )
+
+
+def anchor_href(anchor: str) -> str:
+    """A link to a row on this same page."""
+
+    return html.escape("#{0}".format(quote(anchor, safe="")))
 
 
 def _meter(ticket: dict) -> str:
@@ -1191,6 +2080,7 @@ def render_index(discovery: dict) -> str:
         "<h1>orchflows runs</h1>\n",
         '<p class="root">{0}</p>\n'.format(html.escape(str(discovery["root"]))),
         '<p class="back"><a href="{0}">friction log</a></p>\n'.format(FRICTION_ROUTE),
+        '<p class="back"><a href="{0}">claude sessions</a></p>\n'.format(SESSIONS_ROUTE),
         render_active_band(active_claims(discovery)),
     ]
     if discovery["empty"]:
@@ -1408,6 +2298,359 @@ def render_friction(log: dict) -> str:
     return _page("friction", "".join(body))
 
 
+def _stamp(mtime_ns: int) -> str:
+    """A file's mtime as a UTC instant, or a named diagnostic.
+
+    Rendered in UTC rather than local time because the sessions listed here
+    were opened in whatever zone the machine was in at the time, and a stamp
+    that silently means two things is worse than one that plainly means one.
+
+    An mtime is the filesystem's number, not this process's: APFS clamps at
+    2262, but an NTFS FILETIME reaches the year 30828 and ``datetime``
+    refuses anything past 9999. Unguarded that is a ``ValueError`` inside the
+    handler -- no HTTP response on the wire at all and the absolute module
+    path on stderr, which is the failure `U3` already shipped once. A time
+    that cannot be rendered is a named diagnostic like every other absence
+    on these pages.
+    """
+
+    try:
+        seconds = mtime_ns // 1000000000
+        return datetime.fromtimestamp(seconds, timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
+    except (OSError, OverflowError, ValueError):
+        return DIAGNOSTIC_UNRENDERABLE_STAMP
+
+
+def _session_cwd(session: dict) -> str:
+    """The working directory cell: the path, and where it came from.
+
+    The provenance is on the page because the two sources are not equally
+    good. A ``worktree-state`` record states the path; a directory name only
+    encodes it, through a substitution that is not invertible. Presenting a
+    guess as a fact is how a reader ends up looking for a repository that
+    was never there.
+    """
+
+    if not session["cwd"]:
+        return _cell("", EMPTY_NO_CWD)
+    return '{path} <span class="src">{source}</span>'.format(
+        path=html.escape(session["cwd"]), source=html.escape(session["cwd_source"])
+    )
+
+
+def render_sessions(found: dict) -> str:
+    """The Claude Code session index: one row per session, newest first.
+
+    Every cell here is a label, a count or a file fact. Nothing a session
+    said is on this page, and the reader behind it never held any of it --
+    see the section comment on the parser.
+    """
+
+    root = found["root"]
+    body = [
+        "<h1>claude sessions</h1>\n",
+        '<p class="root">{0}</p>\n'.format(
+            html.escape(str(root)) if root is not None else html.escape(EMPTY_UNSET)
+        ),
+    ]
+    sessions = found["sessions"]
+    if sessions:
+        body.append(
+            '<p class="count">{0} · {1}</p>\n'.format(
+                html.escape(_plural(len(sessions), "session", "sessions")),
+                html.escape(
+                    _plural(len(found["projects"]), "project directory", "project directories")
+                ),
+            )
+        )
+    body.append(render_diagnostics(found["diagnostics"]))
+    if found["empty"]:
+        body.append('<p class="empty">{0}</p>\n'.format(html.escape(found["empty"])))
+    else:
+        body.append(
+            "<table>\n<thead>\n<tr>{0}</tr>\n</thead>\n<tbody>\n".format(
+                "".join("<th>{0}</th>".format(html.escape(h)) for h in SESSION_HEADINGS)
+            )
+        )
+        for session in sessions:
+            body.append(
+                _row(
+                    SESSION_COLUMNS,
+                    {
+                        "sid": '<a href="{href}">{sid}</a>'.format(
+                            href=session_href(session["id"]),
+                            sid=html.escape(session["id"]),
+                        ),
+                        "title": _cell(session["title"], EMPTY_NO_TITLE),
+                        "cwd": _session_cwd(session),
+                        "when": html.escape(_stamp(session["modified"])),
+                        "size": session["size"],
+                        "agents": session["agent_count"],
+                        # Empty on a healthy session: a permanent warning
+                        # slot would train the reader to stop reading it.
+                        "notes": html.escape(" · ".join(session["diagnostics"])),
+                    },
+                )
+            )
+        body.append("</tbody>\n</table>\n")
+    body.append('<p class="back"><a href="/">all runs</a></p>\n')
+    return _page("claude sessions", "".join(body))
+
+
+# A node box is NODE_WIDTH wide in a 12px monospace face, so this is what
+# fits on its first line. Everything cut here is on the row the node links
+# to, untruncated.
+NODE_LABEL_CHARS = 16
+
+
+def _clipped(value: str) -> str:
+    """A label cut to what a node box holds, with the cut marked.
+
+    Cut before escaping, never after: an escape sequence sliced in half is
+    not markup, but it is not the value either.
+    """
+
+    if len(value) <= NODE_LABEL_CHARS:
+        return value
+    return value[: NODE_LABEL_CHARS - 1] + "…"
+
+
+def _depth_label(agent: dict) -> str:
+    """One subagent's spawn depth, spelled out, or the named absence."""
+
+    if agent["depth"] is None:
+        return EMPTY_NO_DEPTH
+    return "depth {0}".format(agent["depth"])
+
+
+def _node_faces(session: dict, agents) -> dict:
+    """What each flowchart node draws, by node id.
+
+    Built here rather than inside the drawing loop: the orchestrator and a
+    subagent carry different facts through the same four presentation
+    channels, and the SVG must not be where that difference is decided.
+    ``label`` is the accessible name, and it is what makes the truncation
+    on the face of the node safe to do at all.
+    """
+
+    faces = {
+        ORCHESTRATOR_NODE: {
+            "anchor": ORCHESTRATOR_ANCHOR,
+            "css": "root",
+            "top": ORCHESTRATOR_NODE,
+            "bottom": _plural(len(agents), "subagent", "subagents"),
+            "label": "{0}: {1}".format(
+                ORCHESTRATOR_NODE, session["title"] or EMPTY_NO_TITLE
+            ),
+        }
+    }
+    for agent in agents:
+        seen = activity_presentation(agent["state"])
+        kind = agent["type"] or EMPTY_NO_TYPE
+        faces[agent["id"]] = {
+            "anchor": agent["id"],
+            "css": seen.word,
+            "top": _clipped(kind),
+            "bottom": "{0} {1} · d{2}".format(
+                seen.glyph, seen.word, "?" if agent["depth"] is None else agent["depth"]
+            ),
+            "label": "{0}: {1} · {2} · {3} ({4})".format(
+                kind,
+                agent["description"] or EMPTY_NO_DESCRIPTION,
+                _depth_label(agent),
+                seen.word,
+                agent["evidence"],
+            ),
+        }
+    return faces
+
+
+def render_session_svg(session: dict, layout: dict, inferred) -> str:
+    """One session's flowchart, drawn with the dependency graph's own
+    geometry, node idiom and arrow marker. An inferred edge is dashed and
+    the page says what a dashed edge means -- a guess drawn like a fact is
+    the failure this whole view exists to avoid."""
+
+    at = dict((node.id, node) for node in layout["nodes"])
+    faces = _node_faces(session, session["agents"])
+    parts = [
+        '<div class="canvas">\n<svg class="graph" viewBox="0 0 {width} {height}" '
+        'width="{width}" height="{height}" role="img" '
+        'aria-label="subagents of session {id}: {title}">\n'.format(
+            width=layout["width"],
+            height=layout["height"],
+            id=html.escape(session["id"]),
+            title=html.escape(session["title"] or EMPTY_NO_TITLE),
+        ),
+        '<defs><marker id="dep-arrow" viewBox="0 0 8 8" refX="8" refY="4" '
+        'markerWidth="6" markerHeight="6" orient="auto">'
+        '<path class="arrow" d="M0 0 L8 4 L0 8 z" /></marker></defs>\n',
+    ]
+    for source, target in layout["edges"]:
+        tail, head = at[source], at[target]
+        parts.append(
+            '<line class="edge{guess}" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" '
+            'marker-end="url(#dep-arrow)" />\n'.format(
+                guess=" edge-inferred" if (source, target) in inferred else "",
+                x1=tail.x + NODE_WIDTH // 2,
+                y1=tail.y + NODE_HEIGHT,
+                x2=head.x + NODE_WIDTH // 2,
+                y2=head.y,
+            )
+        )
+    for node in layout["nodes"]:
+        face = faces[node.id]
+        parts.append(
+            '<a href="{href}" aria-label="{label}">'
+            '<g class="nd nd-{css}" transform="translate({x},{y})">'
+            '<rect width="{w}" height="{h}" rx="5" />'
+            '<text class="nd-id" x="10" y="19">{top}</text>'
+            '<text class="nd-state" x="10" y="35">{bottom}</text>'
+            "</g></a>\n".format(
+                href=anchor_href(face["anchor"]),
+                label=html.escape(face["label"]),
+                css=face["css"],
+                x=node.x,
+                y=node.y,
+                w=NODE_WIDTH,
+                h=NODE_HEIGHT,
+                top=html.escape(face["top"]),
+                bottom=html.escape(face["bottom"]),
+            )
+        )
+    parts.append("</svg>\n</div>\n")
+    return "".join(parts)
+
+
+def _attachment(agent: dict, known: frozenset) -> str:
+    """The attachment cell: the node this subagent hangs off, and how that
+    was known -- the same provenance idiom, and for the same reason, as the
+    working directory's."""
+
+    return '{parent} <span class="src">{source}</span>'.format(
+        parent=html.escape(_agent_parent(agent, known) or ORCHESTRATOR_NODE),
+        source=html.escape(edge_source(agent, known)),
+    )
+
+
+def render_agents(session: dict) -> str:
+    """The row behind each node: everything the box was too small to hold,
+    untruncated, and the anchor its node links to."""
+
+    agents = session["agents"]
+    if not agents:
+        return '<p class="agents empty">{0}</p>\n'.format(html.escape(EMPTY_NO_AGENTS))
+    known = agent_ids(agents)
+    rows = [
+        "<table>\n<thead>\n<tr>{0}</tr>\n</thead>\n<tbody>\n".format(
+            "".join("<th>{0}</th>".format(html.escape(h)) for h in AGENT_HEADINGS)
+        )
+    ]
+    for agent in agents:
+        seen = activity_presentation(agent["state"])
+        rows.append(
+            _row(
+                AGENT_COLUMNS,
+                {
+                    "agent": html.escape(agent["id"]),
+                    "type": _cell(agent["type"], EMPTY_NO_TYPE),
+                    "description": _cell(agent["description"], EMPTY_NO_DESCRIPTION),
+                    "depth": _cell(
+                        "" if agent["depth"] is None else str(agent["depth"]),
+                        EMPTY_NO_DEPTH,
+                    ),
+                    "state": _pill(seen, html.escape(seen.word))
+                    + ' <span class="src">{0}</span>'.format(
+                        html.escape(agent["evidence"])
+                    ),
+                    "attached": _attachment(agent, known),
+                    "when": html.escape(_stamp(agent["modified"])),
+                },
+                agent["id"],
+            )
+        )
+    rows.append("</tbody>\n</table>\n")
+    return "".join(rows)
+
+
+def _agent_diagnostics(agents) -> list:
+    """What a subagent's metadata could not be read to say, how much of the
+    tree below is therefore a guess, and which guess it was.
+
+    Counted off the same ``edge_source`` the rows carry rather than off the
+    graph's edge list, so the sentence at the top of the page and the cell
+    partway down it cannot come to disagree.
+    """
+
+    lines = [
+        "{0}: {1}".format(DIAGNOSTIC_UNREADABLE_AGENT, agent["id"])
+        for agent in agents
+        if agent["unreadable"]
+    ]
+    known = agent_ids(agents)
+    guesses = [edge_source(agent, known) for agent in agents]
+    for label, diagnostic in (
+        (EDGE_INFERRED, DIAGNOSTIC_INFERRED_EDGE),
+        (EDGE_PARENT_UNRESOLVED, DIAGNOSTIC_UNRESOLVED_PARENT),
+    ):
+        drawn = guesses.count(label)
+        if drawn:
+            lines.append(
+                "{0} ({1})".format(diagnostic, _plural(drawn, "edge", "edges"))
+            )
+    return lines
+
+
+def render_session(session: dict) -> str:
+    """One Claude Code session as a flowchart: the orchestrator, every
+    subagent it spawned, and what each of them is doing.
+
+    Same content wall as the index. Every value here is a label, a count or
+    a file fact out of the subagent metadata; nothing any session or any
+    subagent said is on this page.
+    """
+
+    nodes, edges, inferred = session_graph(session["agents"])
+    layout = cached_layout(nodes, edges)
+    body = [
+        "<h1>{0}</h1>\n".format(html.escape(session["id"])),
+        '<p class="title" id="{anchor}">{title}</p>\n'.format(
+            anchor=ORCHESTRATOR_ANCHOR, title=_cell(session["title"], EMPTY_NO_TITLE)
+        ),
+        '<p class="root">{0}</p>\n'.format(_session_cwd(session)),
+        '<p class="count">{0} · {1}</p>\n'.format(
+            html.escape(_plural(len(session["agents"]), "subagent", "subagents")),
+            html.escape(_stamp(session["modified"])),
+        ),
+        render_diagnostics(
+            session["diagnostics"]
+            + _agent_diagnostics(session["agents"])
+            + layout["diagnostics"]
+        ),
+        render_session_svg(session, layout, inferred),
+        render_agents(session),
+        '<p class="back"><a href="{0}">all sessions</a></p>\n'.format(SESSIONS_ROUTE),
+    ]
+    return _page("{0} · session".format(session["id"]), "".join(body))
+
+
+def render_missing_session(session_id: str) -> str:
+    """The id comes from the query string, so it is escaped before it is
+    echoed back."""
+
+    return _page(
+        "not found",
+        "<h1>not found</h1>\n<p>{empty}: {id}</p>\n"
+        '<p class="back"><a href="{route}">all sessions</a></p>\n'.format(
+            empty=html.escape(EMPTY_NO_SESSION),
+            id=_cell(session_id, EMPTY_UNSET),
+            route=SESSIONS_ROUTE,
+        ),
+    )
+
+
 def _prose(body: str) -> str:
     """Ticket bodies are markdown, and rendering untrusted markdown as
     markup is what ``rules/visibility.md`` §6 forbids. The text goes out
@@ -1526,8 +2769,13 @@ def render_not_found(route: str) -> str:
     )
 
 
-def render_route(start, path: str) -> tuple:
-    """``(status, html)`` for one request path. Pure: reads, never writes."""
+def render_route(start, path: str, transcripts=None) -> tuple:
+    """``(status, html)`` for one request path. Pure: reads, never writes.
+
+    ``transcripts`` is threaded rather than resolved: passing ``None`` reads
+    no transcript at all, so nothing short of the entry point can reach the
+    operator's real ``~/.claude/projects``.
+    """
 
     parsed = urlsplit(path)
     if parsed.path == INDEX_ROUTE:
@@ -1549,6 +2797,14 @@ def render_route(start, path: str) -> tuple:
         return 200, render_graph(run, tickets, read_events(root, run))
     if parsed.path == FRICTION_ROUTE:
         return 200, render_friction(read_friction(_resolve_root(start)))
+    if parsed.path == SESSIONS_ROUTE:
+        return 200, render_sessions(read_sessions(transcripts))
+    if parsed.path == SESSION_ROUTE:
+        session_id = parse_qs(parsed.query).get("id", [""])[0]
+        session = find_session(transcripts, session_id)
+        if session is None:
+            return 404, render_missing_session(session_id)
+        return 200, render_session(read_session(session))
     return 404, render_not_found(parsed.path)
 
 
@@ -1597,7 +2853,7 @@ def live_meter_state(root, now=None) -> tuple:
     return tuple(measured)
 
 
-def state_digest(root, now=None) -> str:
+def state_digest(root, now=None, transcripts=None) -> str:
     """A fingerprint of everything the served page depends on under ``root``.
 
     Each file contributes its name, its size and its ``st_mtime_ns``. Size
@@ -1610,6 +2866,11 @@ def state_digest(root, now=None) -> str:
     an absence and an empty presence are two different pages. Each live
     elapsed meter contributes the minute it currently renders, because the
     clock is an input the filesystem does not record.
+
+    The transcript root contributes on the same terms. `U3` recorded the
+    lesson: a validator built over one directory while the reader had grown
+    a route reading another served a 304 to a page that had moved. The
+    basis is the whole read set, not the first tree that needed one.
     """
 
     base = Path(root)
@@ -1638,15 +2899,42 @@ def state_digest(root, now=None) -> str:
             )
     for name, elapsed in live_meter_state(base, now):
         digest.update("{0}\0{1}\n".format(name, elapsed).encode("utf-8"))
+    for entry in transcript_state(transcripts):
+        digest.update(
+            "{0}\0{1}\0{2}\n".format(entry[0], entry[1], entry[2]).encode("utf-8")
+        )
     return digest.hexdigest()
 
 
-def entity_tag(root, path: str, now=None) -> str:
-    """One page's validator: the state of everything read, bound to the
-    resource it was read for, quoted as RFC 7232 requires."""
+# The routes whose body is a function of the transcript tree. Every other
+# route renders `.orch/` alone.
+TRANSCRIPT_ROUTES = (SESSIONS_ROUTE, SESSION_ROUTE)
+
+
+def reads_transcripts(path: str) -> bool:
+    """Whether the page served for one request path reads the transcript
+    tree at all. ``render_route`` is the owner of that fact and this is the
+    same dispatch on the same parsed path."""
+
+    return urlsplit(path).path in TRANSCRIPT_ROUTES
+
+
+def entity_tag(root, path: str, now=None, transcripts=None) -> str:
+    """One page's validator: the state of everything *this page* read, bound
+    to the resource it was read for, quoted as RFC 7232 requires.
+
+    `U3`'s lesson cuts both ways. A basis narrower than the route's read set
+    serves a 304 to a page that has already moved. A basis wider than it
+    denies the 304 to a page that has not -- and here that is not a corner:
+    a live Claude Code session rewrites its transcript continuously, so a
+    `.orch/` page carrying the whole tree in its tag would never answer 304
+    again, and the one-second poll would swap `main` once a second over a
+    byte-identical body for as long as the viewer is open.
+    """
 
     digest = hashlib.sha256(path.encode("utf-8"))
-    digest.update(state_digest(root, now).encode("ascii"))
+    read = transcripts if reads_transcripts(path) else None
+    digest.update(state_digest(root, now, read).encode("ascii"))
     return '"{0}"'.format(digest.hexdigest()[:32])
 
 
@@ -1670,7 +2958,7 @@ def _etag_matches(header, etag: str) -> bool:
     return any(_unweighted(item) == _unweighted(etag) for item in sent)
 
 
-def respond(start, path: str, if_none_match=None) -> tuple:
+def respond(start, path: str, if_none_match=None, transcripts=None) -> tuple:
     """``(status, etag, html)`` for one request.
 
     A page whose validator the client already holds costs no ticket read
@@ -1680,10 +2968,10 @@ def respond(start, path: str, if_none_match=None) -> tuple:
     """
 
     root = _resolve_root(start)
-    etag = entity_tag(root, path)
+    etag = entity_tag(root, path, None, transcripts)
     if _etag_matches(if_none_match, etag):
         return 304, etag, ""
-    status, page = render_route(root, path)
+    status, page = render_route(root, path, transcripts)
     return (status, etag, page) if status == 200 else (status, "", page)
 
 
@@ -1691,12 +2979,15 @@ def respond(start, path: str, if_none_match=None) -> tuple:
 
 
 class ReaderServer(ThreadingHTTPServer):
-    """Carries the root, so the handler needs neither a global nor a closure."""
+    """Carries the roots, so the handler needs neither a global nor a
+    closure. ``transcripts`` is ``None`` where none was configured, and the
+    session views read nothing at all in that case."""
 
     daemon_threads = True
 
-    def __init__(self, address, handler_class, root: Path):
+    def __init__(self, address, handler_class, root: Path, transcripts=None):
         self.root = root
+        self.transcripts = transcripts
         ThreadingHTTPServer.__init__(self, address, handler_class)
 
 
@@ -1706,7 +2997,10 @@ class ReaderHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         status, etag, page = respond(
-            self.server.root, self.path, self.headers.get("If-None-Match")
+            self.server.root,
+            self.path,
+            self.headers.get("If-None-Match"),
+            self.server.transcripts,
         )
         self.send_response(status)
         if etag:
@@ -1729,14 +3023,14 @@ class ReaderHandler(BaseHTTPRequestHandler):
         """Silent. The one line worth reading is the URL printed at start."""
 
 
-def create_server(root, port: int) -> ReaderServer:
-    """Bind loopback only. Nothing here authenticates a request and
-    ``.orch/`` is not public data, so the socket never leaves this host.
-    Port 0 asks the OS for a free port; the caller reads back
-    ``server_address``.
+def create_server(root, port: int, transcripts=None) -> ReaderServer:
+    """Bind loopback only. Nothing here authenticates a request, and neither
+    ``.orch/`` nor a transcript is public data -- the second emphatically so
+    -- therefore the socket never leaves this host. Port 0 asks the OS for a
+    free port; the caller reads back ``server_address``.
     """
 
-    return ReaderServer((LOOPBACK_HOST, port), ReaderHandler, Path(root))
+    return ReaderServer((LOOPBACK_HOST, port), ReaderHandler, Path(root), transcripts)
 
 
 def main(argv=None):
@@ -1749,9 +3043,16 @@ def main(argv=None):
     parser.add_argument(
         "--port", type=int, default=DEFAULT_PORT, help="loopback port; 0 picks a free one"
     )
+    parser.add_argument(
+        "--transcripts",
+        default=None,
+        help="Claude Code transcript root; defaults to ~/.claude/projects",
+    )
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
     try:
-        server = create_server(Path(args.root), args.port)
+        server = create_server(
+            Path(args.root), args.port, transcript_root(args.transcripts)
+        )
     except OSError as error:
         # DEFAULT_PORT is fixed, so a second viewer on one host lands here.
         print(

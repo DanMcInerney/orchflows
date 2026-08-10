@@ -4,9 +4,11 @@ read-only, no-network and loopback-only guarantees."""
 
 import ast
 import contextlib
+import html
 import http.client
 import io
 import ipaddress
+import json
 import os
 import re
 import shutil
@@ -41,6 +43,74 @@ EMPTY_RUN = "run-empty"
 # interval must not be the live one.
 SETTLED_RUN = "run-delta"
 CYCLIC_RUN = "run-epsilon"
+
+# The synthetic `~/.claude/projects` tree. `tests/fixtures/transcripts/README.md`
+# records what each fixture carries and why.
+FIXTURE_TRANSCRIPTS = Path(__file__).resolve().parent / "fixtures" / "transcripts"
+ALPHA_PROJECT = "-Users-dmcinerney-tools-alpha"
+BETA_PROJECT = "-Users-dmcinerney-tools-beta-repo"
+WORKTREE_PROJECT = "-Users-dmcinerney-tools-beta-repo--claude-worktrees-wt-one"
+UNDECODABLE_PROJECT = "not-an-encoded-path"
+
+TITLED_SESSION = "11111111-1111-4111-8111-111111111111"
+UNTITLED_SESSION = "22222222-2222-4222-8222-222222222222"
+MARKUP_SESSION = "33333333-3333-4333-8333-333333333333"
+MALFORMED_SESSION = "44444444-4444-4444-8444-444444444444"
+TRUNCATED_SESSION = "55555555-5555-4555-8555-555555555555"
+EMPTY_SESSION = "66666666-6666-4666-8666-666666666666"
+
+SESSION_PROJECT = {
+    TITLED_SESSION: ALPHA_PROJECT,
+    UNTITLED_SESSION: ALPHA_PROJECT,
+    MARKUP_SESSION: BETA_PROJECT,
+    MALFORMED_SESSION: BETA_PROJECT,
+    TRUNCATED_SESSION: WORKTREE_PROJECT,
+    EMPTY_SESSION: UNDECODABLE_PROJECT,
+}
+
+# Deliberately interleaved across the project directories: an index that
+# grouped by directory and ordered within it would still satisfy an
+# ordering assertion made over one directory's sessions.
+SESSIONS_NEWEST_FIRST = (
+    MARKUP_SESSION,
+    TITLED_SESSION,
+    TRUNCATED_SESSION,
+    UNTITLED_SESSION,
+    MALFORMED_SESSION,
+    EMPTY_SESSION,
+)
+# An hour apart from a fixed instant, so an ordering assertion never
+# depends on the second the copy happened to run in.
+SESSION_EPOCH = 1780000000
+SESSION_STEP = 3600
+# Subagent files sit after every session file and a minute apart, so a
+# subagent's rendered last activity is distinguishable from its session's
+# and from every other subagent's.
+AGENT_EPOCH = SESSION_EPOCH + 1800
+AGENT_STEP = 60
+
+# Present in every `user` and `assistant` body, every `last-prompt`,
+# attachment, tool input, tool result and file-history record in the
+# fixture corpus, and in none of its renderable fields.
+TRANSCRIPT_SENTINEL = "ZQXJVWNTRPKB-transcript-content-must-not-render"
+LAST_AI_TITLE = "Alpha, the last title recorded"
+SUPERSEDED_AI_TITLE = "Alpha, the title that was superseded"
+
+# The corpus's subagents, by the shape each one is here to carry.
+RETURNED_AGENT = "agent-aa11"
+CALLED_AGENT = "agent-aa12"
+UNEVIDENCED_AGENT = "agent-aa13"
+ALPHA_AGENTS = (RETURNED_AGENT, CALLED_AGENT, UNEVIDENCED_AGENT)
+MARKUP_AGENT = "agent-bb21"
+BAD_FIELDS_AGENT = "agent-bb22"
+UNREADABLE_AGENT = "agent-bb23"
+PARENT_AGENT = "agent-cc31"
+CHILD_AGENT = "agent-cc32"
+MARKUP_AGENT_TYPE = PAYLOAD
+# Quote characters as well as angle brackets: an attribute context breaks
+# on the quote alone, and `html.escape` is only proved by a value that
+# would break both contexts differently.
+MARKUP_AGENT_DESCRIPTION = '<img src="x" onerror="alert(1)">'
 
 
 def contract_statuses() -> tuple:
@@ -108,6 +178,88 @@ def make_worktree(tmp: Path, main_root: Path) -> Path:
     return worktree
 
 
+def fixture_agent_files() -> list:
+    """Every subagent file in the corpus, by tree-relative name.
+
+    Derived from the tree rather than listed, so adding a fixture subagent
+    never needs a table here kept in step with it.
+    """
+
+    return sorted(
+        path.relative_to(FIXTURE_TRANSCRIPTS).as_posix()
+        for path in FIXTURE_TRANSCRIPTS.rglob("agent-*")
+        if path.is_file()
+    )
+
+
+def make_transcripts(tmp: Path) -> Path:
+    """The synthetic transcript root, materialized under a temporary
+    directory with a deterministic last-activity time per session.
+
+    The index orders on the transcript's mtime and a copy takes whatever
+    the clock says, so the order is stamped here rather than inherited from
+    the order `copytree` happened to walk in. A subagent's stamp is its own
+    file's, for the same reason: the flowchart draws it as a last activity.
+    """
+
+    dest = tmp / "transcripts"
+    shutil.copytree(str(FIXTURE_TRANSCRIPTS), str(dest))
+    for index, session in enumerate(SESSIONS_NEWEST_FIRST):
+        stamp = SESSION_EPOCH - index * SESSION_STEP
+        path = dest / SESSION_PROJECT[session] / (session + ".jsonl")
+        os.utime(str(path), (stamp, stamp))
+    for index, name in enumerate(fixture_agent_files()):
+        stamp = AGENT_EPOCH + index * AGENT_STEP
+        os.utime(str(dest / name), (stamp, stamp))
+    return dest
+
+
+# The year 30828, which is where an NTFS FILETIME runs out. No filesystem
+# this suite can write reaches it -- APFS clamps at 2262 -- so the mtime is
+# substituted at the one seam that reads one.
+FAR_FUTURE_MTIME_NS = 910692730085000000000
+
+
+@contextlib.contextmanager
+def far_future_mtimes():
+    """Every file the session views stat, dated past the calendar."""
+
+    real = ui._stat_identity
+
+    def stamped(path):
+        identity = real(path)
+        return None if identity is None else identity[:2] + (FAR_FUTURE_MTIME_NS,)
+
+    with patch.object(ui, "_stat_identity", stamped):
+        yield
+
+
+def utc_stamp(seconds: int) -> str:
+    return datetime.fromtimestamp(seconds, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def session_stamp(session: str) -> str:
+    """The last-activity stamp `make_transcripts` gave one session."""
+
+    return utc_stamp(SESSION_EPOCH - SESSIONS_NEWEST_FIRST.index(session) * SESSION_STEP)
+
+
+def agent_stamp(agent: str) -> str:
+    """The newest stamp `make_transcripts` gave any file of one subagent.
+
+    Two files carry one subagent -- its metadata and its own transcript --
+    and the later of them is when it was last heard from.
+    """
+
+    names = fixture_agent_files()
+    newest = max(
+        index
+        for index, name in enumerate(names)
+        if name.rsplit("/", 1)[-1].startswith(agent + ".")
+    )
+    return utc_stamp(AGENT_EPOCH + newest * AGENT_STEP)
+
+
 def ticket_paths(discovery: dict) -> list:
     return [ticket["path"] for run in discovery["runs"] for ticket in run["tickets"]]
 
@@ -130,6 +282,45 @@ def row_for(page: str, ticket_id: str) -> str:
     return ""
 
 
+# The id is a link now that `/session` exists, and an empty cell is still a
+# cell: both shapes have to reach `session_ids` or an ordering assertion
+# quietly stops seeing rows.
+SESSION_ID_RE = re.compile(r'<td class="sid">(?:<a [^>]*>)?([^<]*)')
+
+
+def session_ids(page: str) -> list:
+    """The session index's rows, in the order it drew them."""
+
+    return SESSION_ID_RE.findall(page)
+
+
+def session_cell(page: str, session: str, name: str) -> str:
+    """One named cell of one session's own row.
+
+    The page inlines its own stylesheet and its own script, so a substring
+    search over it is weak in both directions -- `U3`'s `node_for` exists
+    for the same reason.
+    """
+
+    row = row_for(page, session)
+    found = re.search(r'<td class="{0}">(.*?)</td>'.format(name), row, re.S)
+    return found.group(1) if found else ""
+
+
+ROW_COLUMN_RE = re.compile(r'<td class="([a-z-]+)"')
+
+
+def row_columns(page: str, row_id: str) -> list:
+    """The column names one rendered row actually carried, in order.
+
+    Read off the page rather than off the constant that is supposed to fix
+    it: a cell written beside the closed renderable set is invisible to a
+    guard that only ever reads the set.
+    """
+
+    return ROW_COLUMN_RE.findall(row_for(page, row_id))
+
+
 def block_for(page: str, class_name: str, close: str = "</section>") -> str:
     """The element carrying ``class_name``, so an assertion about one part
     of the page cannot be satisfied by another part of it."""
@@ -146,6 +337,10 @@ def graph_url(run: str) -> str:
     return "/graph?run={0}".format(run)
 
 
+def session_url(session: str) -> str:
+    return "/session?id={0}".format(session)
+
+
 NODE_RE = re.compile(
     r'<g class="nd (nd-[a-z]+)"[^>]*>.*?<text class="nd-id"[^>]*>([^<]+)</text>'
 )
@@ -160,6 +355,33 @@ def node_for(page: str, ticket_id: str) -> str:
         if drawn == ticket_id:
             return status_class
     return ""
+
+
+SESSION_NODE_RE = re.compile(
+    r'<a href="#(?P<anchor>[^"]*)" aria-label="(?P<label>[^"]*)">'
+    r'<g class="nd (?P<state>nd-[a-z-]+)"[^>]*>(?P<body>.*?)</g></a>',
+    re.S,
+)
+INFERRED_EDGE_RE = re.compile(r'<line class="edge edge-inferred"')
+EDGE_RE = re.compile(r'<line class="edge')
+
+
+def session_anchors(page: str) -> list:
+    """What the flowchart drew, in order, by the row each node links to."""
+
+    return [found.group("anchor") for found in SESSION_NODE_RE.finditer(page)]
+
+
+def session_node(page: str, anchor: str) -> dict:
+    """One flowchart node by the row it links to: its state class, its
+    accessible label and the text drawn inside it. Every state word also
+    appears in the stylesheet and every label also appears in the table, so
+    a substring search over the page proves nothing about what was drawn."""
+
+    for found in SESSION_NODE_RE.finditer(page):
+        if found.group("anchor") == anchor:
+            return found.groupdict()
+    return {}
 
 
 def section_for(page: str, run: str) -> str:
@@ -194,6 +416,16 @@ ROUTE_EXAMPLES = {
         graph_url("no-such-run"),
     ),
     ui.FRICTION_ROUTE: ("/friction",),
+    ui.SESSIONS_ROUTE: ("/sessions",),
+    ui.SESSION_ROUTE: (
+        "/session",
+        session_url(TITLED_SESSION),
+        session_url(MARKUP_SESSION),
+        session_url(TRUNCATED_SESSION),
+        session_url(UNTITLED_SESSION),
+        session_url(EMPTY_SESSION),
+        session_url("no-such-session"),
+    ),
 }
 
 
@@ -235,10 +467,15 @@ def freeze(case, now=FROZEN_NOW):
 
 
 @contextlib.contextmanager
-def serving(root: Path):
-    """The real server on an ephemeral loopback port."""
+def serving(root: Path, transcripts=None):
+    """The real server on an ephemeral loopback port.
 
-    server = ui.create_server(root, 0)
+    ``transcripts`` is passed explicitly or not at all: the reader resolves
+    the `~/.claude/projects` default in `main` alone, so a caller that omits
+    it gets the named empty state rather than the operator's real tree.
+    """
+
+    server = ui.create_server(root, 0, transcripts)
     thread = threading.Thread(target=server.serve_forever)
     thread.daemon = True
     thread.start()
@@ -2315,8 +2552,11 @@ class TestRouteCoverage(unittest.TestCase):
     def test_the_examples_reach_a_rendered_ticket_not_only_its_error_paths(self):
         with tempfile.TemporaryDirectory() as tmp:
             main = make_checkout(Path(tmp))
+            transcripts = make_transcripts(Path(tmp))
 
-            served = [ui.render_route(main, url)[0] for url in every_route()]
+            served = [
+                ui.render_route(main, url, transcripts)[0] for url in every_route()
+            ]
 
             self.assertIn(200, served)
             self.assertIn(404, served)
@@ -2328,11 +2568,12 @@ class TestReadOnly(unittest.TestCase):
     def test_exercising_every_route_writes_nothing_under_orch(self):
         with tempfile.TemporaryDirectory() as tmp:
             main = make_checkout(Path(tmp))
+            transcripts = make_transcripts(Path(tmp))
             orch = main / ".orch"
             before = snapshot(orch)
             self.assertTrue(before)
 
-            with serving(main) as server:
+            with serving(main, transcripts) as server:
                 for route in every_route():
                     status, page = get(server, route)
                     self.assertIn(status, (200, 404))
@@ -2347,11 +2588,12 @@ class TestReadOnly(unittest.TestCase):
         freeze(self)
         with tempfile.TemporaryDirectory() as tmp:
             main = make_checkout(Path(tmp))
+            transcripts = make_transcripts(Path(tmp))
             orch = main / ".orch"
             before = snapshot(orch)
             revalidated = 0
 
-            with serving(main) as server:
+            with serving(main, transcripts) as server:
                 for route in every_route():
                     etag = fetch(server, route)[1].get("ETag")
                     if etag is None:
@@ -2378,7 +2620,8 @@ class TestNoNetworkAssets(unittest.TestCase):
     def test_no_route_emits_a_remote_src_or_href(self):
         with tempfile.TemporaryDirectory() as tmp:
             main = make_checkout(Path(tmp))
-            with serving(main) as server:
+            transcripts = make_transcripts(Path(tmp))
+            with serving(main, transcripts) as server:
                 for route in every_route():
                     _, page = get(server, route)
                     self.assertIsNone(REMOTE_ASSET_RE.search(page), route)
@@ -2539,6 +2782,1541 @@ class TestModuleFloor(unittest.TestCase):
             ("__future__", "annotations"),
             first_import("import os\nfrom __future__ import annotations\n"),
         )
+
+
+class TranscriptCase(unittest.TestCase):
+    """A fixture transcript root and a fixture checkout, plus a clean parse
+    cache -- the cache is module state that outlives a test, so a case that
+    counts parses must not inherit another case's hits."""
+
+    def setUp(self):
+        ui.TRANSCRIPT_CACHE.clear()
+        self.addCleanup(ui.TRANSCRIPT_CACHE.clear)
+        stack = contextlib.ExitStack()
+        self.addCleanup(stack.close)
+        tmp = Path(stack.enter_context(tempfile.TemporaryDirectory()))
+        self.tmp = tmp
+        self.main = make_checkout(tmp)
+        self.transcripts = make_transcripts(tmp)
+
+    def sessions(self, transcripts=True) -> str:
+        root = self.transcripts if transcripts is True else transcripts
+        status, page = ui.render_route(self.main, ui.SESSIONS_ROUTE, root)
+        self.assertEqual(200, status)
+        return page
+
+
+class TestTranscriptRoot(TranscriptCase):
+    """`S1` completion test 2, spec criterion 5."""
+
+    def test_the_flag_selects_the_root_the_index_reads(self):
+        page = self.sessions()
+
+        self.assertEqual(list(SESSIONS_NEWEST_FIRST), session_ids(page))
+        self.assertIn(str(self.transcripts), block_for(page, "root", "</p>"))
+
+    def test_the_default_is_the_operators_projects_directory(self):
+        self.assertEqual(
+            Path.home() / ".claude" / "projects", ui.transcript_root(None)
+        )
+        # Derived from the running user's home rather than a literal, and
+        # by arithmetic alone: the directory patched in here does not exist,
+        # and resolving the default must not care.
+        with patch.object(Path, "home", return_value=self.tmp / "elsewhere"):
+            self.assertEqual(
+                self.tmp / "elsewhere" / ".claude" / "projects", ui.transcript_root(None)
+            )
+        self.assertFalse((self.tmp / "elsewhere").exists())
+
+    def test_the_flag_overrides_the_default(self):
+        self.assertEqual(self.transcripts, ui.transcript_root(str(self.transcripts)))
+
+    def test_the_entry_point_hands_the_resolved_root_to_the_server(self):
+        seen = {}
+
+        def capture(root, port, transcripts=None):
+            seen["transcripts"] = transcripts
+            raise OSError("stopped before serving")
+
+        with patch.object(ui, "create_server", capture):
+            with contextlib.redirect_stderr(io.StringIO()):
+                flagged = ui.main(
+                    ["--root", str(self.main), "--transcripts", str(self.transcripts)]
+                )
+                self.assertEqual(2, flagged)
+                self.assertEqual(self.transcripts, seen["transcripts"])
+
+                self.assertEqual(2, ui.main(["--root", str(self.main)]))
+
+        self.assertEqual(Path.home() / ".claude" / "projects", seen["transcripts"])
+
+    def test_no_root_configured_reads_nothing_at_all(self):
+        # The guarantee that keeps this suite off the operator's machine: a
+        # caller that supplies no root gets the named empty state, so a test
+        # that forgets one cannot fall back to `~/.claude/projects`.
+        with patch.object(ui, "_transcript_summary") as parsed:
+            page = self.sessions(None)
+
+        parsed.assert_not_called()
+        self.assertIn(ui.EMPTY_NO_TRANSCRIPTS, block_for(page, "empty", "</p>"))
+
+    def test_only_the_entry_point_resolves_the_default(self):
+        callers = set()
+        for node in ast.walk(ast.parse(UI_PY.read_text(encoding="utf-8"))):
+            if not isinstance(node, ast.FunctionDef):
+                continue
+            for inner in ast.walk(node):
+                if (
+                    isinstance(inner, ast.Call)
+                    and isinstance(inner.func, ast.Name)
+                    and inner.func.id == "transcript_root"
+                ):
+                    callers.add(node.name)
+
+        self.assertEqual({"main"}, callers)
+
+
+class TestSessionIndex(TranscriptCase):
+    """`S1` completion test 3, spec criterion 6."""
+
+    def test_every_project_directory_contributes_to_one_index(self):
+        page = self.sessions()
+
+        self.assertEqual(sorted(SESSIONS_NEWEST_FIRST), sorted(session_ids(page)))
+        self.assertEqual(4, len(set(SESSION_PROJECT.values())))
+
+    def test_sessions_are_ordered_by_last_activity_newest_first(self):
+        page = self.sessions()
+
+        self.assertEqual(list(SESSIONS_NEWEST_FIRST), session_ids(page))
+
+    def test_the_ordering_is_the_activity_time_and_not_the_directory_walk(self):
+        # Two directories interleave in the expected order, so an index that
+        # grouped by directory could not produce it.
+        drawn = session_ids(self.sessions())
+        projects = [SESSION_PROJECT[session] for session in drawn]
+
+        self.assertNotEqual(sorted(projects), projects)
+
+    def test_each_row_carries_its_last_activity_stamp(self):
+        page = self.sessions()
+
+        for session in SESSIONS_NEWEST_FIRST:
+            self.assertIn(session_stamp(session), session_cell(page, session, "when"))
+
+    def test_a_worktree_state_record_supplies_the_working_directory(self):
+        page = self.sessions()
+
+        self.assertIn(
+            "/Users/dmcinerney/tools/alpha", session_cell(page, TITLED_SESSION, "cwd")
+        )
+        self.assertIn(ui.CWD_FROM_RECORD, session_cell(page, TITLED_SESSION, "cwd"))
+
+    def test_the_worktree_path_wins_over_the_directory_it_was_opened_from(self):
+        self.assertIn(
+            "/Users/dmcinerney/tools/beta-repo/.claude/worktrees/wt-one",
+            session_cell(self.sessions(), TRUNCATED_SESSION, "cwd"),
+        )
+
+    def test_a_session_with_no_record_decodes_the_directory_name(self):
+        cell = session_cell(self.sessions(), UNTITLED_SESSION, "cwd")
+
+        self.assertIn("/Users/dmcinerney/tools/alpha", cell)
+        self.assertIn(ui.CWD_FROM_NAME, cell)
+
+    def test_the_decode_is_named_as_a_guess_where_it_provably_is_one(self):
+        # Both sessions sit in `-Users-dmcinerney-tools-beta-repo`. The
+        # record says `/Users/dmcinerney/tools/beta-repo`; the name decodes
+        # to `/Users/dmcinerney/tools/beta/repo`, because a `-` already in a
+        # directory name is indistinguishable from an encoded separator.
+        page = self.sessions()
+        recorded = session_cell(page, MARKUP_SESSION, "cwd")
+        guessed = session_cell(page, MALFORMED_SESSION, "cwd")
+
+        self.assertIn("/Users/dmcinerney/tools/beta-repo", recorded)
+        self.assertIn(ui.CWD_FROM_RECORD, recorded)
+        self.assertIn("/Users/dmcinerney/tools/beta/repo", guessed)
+        self.assertIn(ui.CWD_FROM_NAME, guessed)
+
+    def test_a_directory_name_that_is_not_a_path_is_a_named_diagnostic(self):
+        page = self.sessions()
+
+        self.assertIn(ui.DIAGNOSTIC_UNDECODABLE_SLUG, block_for(page, "diagnostics", "</ul>"))
+        self.assertIn(UNDECODABLE_PROJECT, block_for(page, "diagnostics", "</ul>"))
+        self.assertIn(ui.EMPTY_NO_CWD, session_cell(page, EMPTY_SESSION, "cwd"))
+
+    def test_each_row_carries_its_subagent_count(self):
+        page = self.sessions()
+
+        self.assertIn("3", session_cell(page, TITLED_SESSION, "agents"))
+        self.assertIn("0", session_cell(page, UNTITLED_SESSION, "agents"))
+
+    def test_a_subagent_transcript_is_not_itself_a_session(self):
+        self.assertNotIn("agent-aa11", session_ids(self.sessions()))
+
+    def test_the_run_index_offers_the_session_index(self):
+        page = ui.render_route(self.main, "/")[1]
+
+        self.assertIn('href="{0}"'.format(ui.SESSIONS_ROUTE), page)
+
+
+class TestSessionLabel(TranscriptCase):
+    """`S1` completion test 4, spec criterion 7."""
+
+    def test_the_label_is_the_last_ai_title_record(self):
+        page = self.sessions()
+
+        self.assertIn(LAST_AI_TITLE, session_cell(page, TITLED_SESSION, "title"))
+        self.assertNotIn(SUPERSEDED_AI_TITLE, page)
+
+    def test_a_session_with_no_ai_title_renders_a_named_fallback(self):
+        cell = session_cell(self.sessions(), UNTITLED_SESSION, "title")
+
+        self.assertIn(ui.EMPTY_NO_TITLE, cell)
+
+    def test_a_title_carrying_markup_reaches_the_page_escaped(self):
+        cell = session_cell(self.sessions(), MARKUP_SESSION, "title")
+
+        self.assertIn(html.escape(PAYLOAD), cell)
+        self.assertNotIn(PAYLOAD, cell)
+
+
+class TestContentWall(TranscriptCase):
+    """`S1` completion test 5, spec criterion 10. A transcript holds the
+    operator's prompts, file contents and command output for every project
+    on the machine. The renderable set is closed and this is its guard."""
+
+    def carriers(self) -> list:
+        return [
+            path
+            for path in sorted(self.transcripts.rglob("*"))
+            if path.is_file()
+            and TRANSCRIPT_SENTINEL in path.read_text(encoding="utf-8", errors="replace")
+        ]
+
+    def test_the_fixture_really_carries_the_sentinel(self):
+        # Without this the sweep below passes over a corpus that never had
+        # anything to leak.
+        carriers = self.carriers()
+
+        self.assertGreaterEqual(len(carriers), 6)
+        self.assertIn(
+            "agent-aa11.jsonl", [path.name for path in carriers]
+        )
+
+    def test_the_sentinel_reaches_no_route(self):
+        with serving(self.main, self.transcripts) as server:
+            for route in every_route():
+                status, page = get(server, route)
+
+                self.assertIn(status, (200, 404), route)
+                self.assertNotIn(TRANSCRIPT_SENTINEL, page, route)
+
+    def test_the_sweep_still_renders_what_it_is_allowed_to(self):
+        # The sweep above would also pass on a page that rendered nothing.
+        page = self.sessions()
+
+        self.assertIn(LAST_AI_TITLE, session_cell(page, TITLED_SESSION, "title"))
+        self.assertEqual(len(SESSIONS_NEWEST_FIRST), len(session_ids(page)))
+
+    def test_the_index_emits_only_the_fields_the_spec_admits(self):
+        # Named here so widening the row is a decision rather than a slip.
+        self.assertEqual(
+            ("sid", "title", "cwd", "when", "size", "agents", "notes"),
+            ui.SESSION_COLUMNS,
+        )
+        self.assertEqual(len(ui.SESSION_COLUMNS), len(ui.SESSION_HEADINGS))
+
+    def test_the_rendered_row_carries_exactly_the_closed_set(self):
+        # The tuple above is only a wall if the page is built from it. An
+        # eighth cell written beside it renders a transcript field the spec
+        # does not admit, and the tuple still reads as correct.
+        page = self.sessions()
+
+        for session in SESSIONS_NEWEST_FIRST:
+            self.assertEqual(
+                list(ui.SESSION_COLUMNS), row_columns(page, session), session
+            )
+
+    def test_narrowing_the_closed_set_narrows_the_row_it_renders(self):
+        # Proves the row derives from the tuple rather than merely agreeing
+        # with it: a row spelled out in a format string is unmoved by this.
+        with patch.object(ui, "SESSION_COLUMNS", ("sid", "title")):
+            page = self.sessions()
+
+        self.assertEqual(["sid", "title"], row_columns(page, TITLED_SESSION))
+
+
+class TestTranscriptsAreReadOnly(TranscriptCase):
+    """`S1` completion test 6, spec criterion 11."""
+
+    def test_exercising_every_route_writes_nothing_under_the_transcript_root(self):
+        before = snapshot(self.transcripts)
+        self.assertTrue(before)
+
+        with serving(self.main, self.transcripts) as server:
+            for route in every_route():
+                status, page = get(server, route)
+                self.assertIn(status, (200, 404), route)
+                self.assertTrue(page, route)
+
+        self.assertEqual(before, snapshot(self.transcripts))
+
+    def test_the_snapshot_would_notice_a_write(self):
+        before = snapshot(self.transcripts)
+        (self.transcripts / ALPHA_PROJECT / "intruder.jsonl").write_text(
+            "{}\n", encoding="utf-8"
+        )
+
+        self.assertNotEqual(before, snapshot(self.transcripts))
+
+
+class TestTranscriptDegradation(TranscriptCase):
+    """`S1` completion test 7, spec criterion 12. The layout is another
+    program's undocumented implementation detail: it must degrade visibly,
+    never silently and never by raising."""
+
+    def notes(self, session: str) -> str:
+        return session_cell(self.sessions(), session, "notes")
+
+    def test_a_malformed_transcript_names_its_unreadable_lines_and_still_lists(self):
+        notes = self.notes(MALFORMED_SESSION)
+
+        self.assertIn(ui.DIAGNOSTIC_UNREADABLE_LINES, notes)
+        self.assertIn(MALFORMED_SESSION, session_ids(self.sessions()))
+
+    def test_a_truncated_transcript_names_its_unreadable_line(self):
+        self.assertIn(ui.DIAGNOSTIC_UNREADABLE_LINES, self.notes(TRUNCATED_SESSION))
+
+    def test_a_truncated_transcript_still_yields_the_records_before_the_cut(self):
+        page = self.sessions()
+
+        self.assertIn(
+            "Worktree session, cut short", session_cell(page, TRUNCATED_SESSION, "title")
+        )
+
+    def test_an_empty_transcript_names_a_diagnostic_rather_than_looking_healthy(self):
+        notes = self.notes(EMPTY_SESSION)
+
+        self.assertIn(ui.DIAGNOSTIC_NO_RECORDS, notes)
+
+    def test_a_healthy_transcript_carries_no_diagnostic_at_all(self):
+        # Otherwise every assertion above is satisfied by a page that warns
+        # about everything.
+        self.assertEqual("", self.notes(TITLED_SESSION).strip())
+
+    def test_a_session_with_no_subagents_directory_still_lists(self):
+        page = self.sessions()
+
+        self.assertFalse((self.transcripts / ALPHA_PROJECT / UNTITLED_SESSION).exists())
+        self.assertIn(UNTITLED_SESSION, session_ids(page))
+        self.assertIn("0", session_cell(page, UNTITLED_SESSION, "agents"))
+
+    def test_a_transcript_that_cannot_be_opened_is_named_rather_than_raised(self):
+        with patch.object(Path, "open", side_effect=OSError("gone")):
+            page = self.sessions()
+
+        self.assertEqual(len(SESSIONS_NEWEST_FIRST), len(session_ids(page)))
+        self.assertIn(
+            ui.DIAGNOSTIC_UNREADABLE_TRANSCRIPT, session_cell(page, TITLED_SESSION, "notes")
+        )
+
+    def test_a_record_of_the_wrong_shape_is_dropped_rather_than_believed(self):
+        path = self.transcripts / ALPHA_PROJECT / (TITLED_SESSION + ".jsonl")
+        path.write_text(
+            '{"type":"ai-title","aiTitle":["not","a","string"]}\n'
+            '{"type":"worktree-state","worktreeSession":"not an object"}\n',
+            encoding="utf-8",
+        )
+        cell = session_cell(self.sessions(), TITLED_SESSION, "title")
+
+        self.assertIn(ui.EMPTY_NO_TITLE, cell)
+
+
+class TestTranscriptParseCache(TranscriptCase):
+    """`S1` completion test 8, spec criterion 13. A transcript is megabytes
+    of conversation and the poll asks for the page every second."""
+
+    def counted(self):
+        seen = []
+        real = ui._transcript_summary
+
+        def counting(path):
+            seen.append(str(path))
+            return real(path)
+
+        return seen, counting
+
+    def test_two_requests_over_an_unchanged_root_parse_each_session_once(self):
+        seen, counting = self.counted()
+
+        with patch.object(ui, "_transcript_summary", counting):
+            first = self.sessions()
+            second = self.sessions()
+
+        self.assertEqual(first, second)
+        self.assertEqual(sorted(set(seen)), sorted(seen))
+        self.assertEqual(len(SESSIONS_NEWEST_FIRST), len(seen))
+
+    def test_a_changed_transcript_is_parsed_again(self):
+        # A cache with no invalidation would satisfy the count above and
+        # serve a label the transcript no longer carries.
+        path = self.transcripts / ALPHA_PROJECT / (TITLED_SESSION + ".jsonl")
+        self.sessions()
+        path.write_text(
+            '{"type":"ai-title","aiTitle":"Alpha, renamed"}\n', encoding="utf-8"
+        )
+        seen, counting = self.counted()
+
+        with patch.object(ui, "_transcript_summary", counting):
+            page = self.sessions()
+
+        self.assertEqual([str(path)], seen)
+        self.assertIn("Alpha, renamed", session_cell(page, TITLED_SESSION, "title"))
+
+    def test_the_cache_is_bounded_so_a_long_lived_viewer_cannot_grow_forever(self):
+        for index in range(ui.TRANSCRIPT_CACHE_LIMIT + 10):
+            ui.cached_transcript(Path("/nowhere"), ("/nowhere", index, index))
+
+        self.assertLessEqual(len(ui.TRANSCRIPT_CACHE), ui.TRANSCRIPT_CACHE_LIMIT)
+
+
+class TestTranscriptValidatorBasis(TranscriptCase):
+    """`U3`'s lesson, applied to the tree this ticket adds. A validator whose
+    basis is narrower than the route's read set answers 304 to a page that
+    has already moved, and a 304 is indistinguishable from nothing having
+    happened. `S2` owns the `/session` tag end to end; what is held here is
+    the narrower claim that the transcript root is inside the basis at all."""
+
+    def digest(self, transcripts=True) -> str:
+        root = self.transcripts if transcripts is True else transcripts
+        with frozen_clock():
+            return ui.state_digest(self.main, None, root)
+
+    def test_a_transcript_that_changes_moves_the_validator(self):
+        before = self.digest()
+        (self.transcripts / ALPHA_PROJECT / (TITLED_SESSION + ".jsonl")).write_text(
+            '{"type":"ai-title","aiTitle":"Alpha, renamed"}\n', encoding="utf-8"
+        )
+
+        self.assertNotEqual(before, self.digest())
+
+    def test_a_session_appearing_moves_the_validator(self):
+        before = self.digest()
+        (self.transcripts / ALPHA_PROJECT / "77777777-7777-4777-8777-777777777777.jsonl").write_text(
+            '{"type":"ai-title","aiTitle":"newly opened"}\n', encoding="utf-8"
+        )
+
+        self.assertNotEqual(before, self.digest())
+
+    def test_a_subagent_appearing_moves_the_validator(self):
+        # The count is on the page, so the metadata beside the transcript is
+        # part of the read set even though no line of it is ever rendered.
+        before = self.digest()
+        (self.transcripts / ALPHA_PROJECT / TITLED_SESSION / "subagents" / "agent-aa14.meta.json").write_text(
+            '{"agentType":"orch-worker","spawnDepth":1}\n', encoding="utf-8"
+        )
+
+        self.assertNotEqual(before, self.digest())
+
+    def test_an_unchanged_root_holds_the_validator_still(self):
+        # Otherwise the 304 is unreachable and the poll re-renders forever.
+        self.assertEqual(self.digest(), self.digest())
+
+    def test_the_orch_root_alone_no_longer_determines_the_tag(self):
+        bare = self.tmp / "bare"
+        bare.mkdir()
+
+        self.assertNotEqual(self.digest(), self.digest(bare))
+        self.assertNotEqual(self.digest(bare), self.digest(None))
+
+    def test_a_root_that_appears_moves_the_validator(self):
+        # Three pages with no file between them: no root configured, a root
+        # that is not there yet, and a root holding nothing. A viewer opened
+        # before Claude Code first ran sits on the middle one.
+        absent = self.tmp / "not-yet"
+        before = self.digest(absent)
+        absent.mkdir()
+
+        self.assertNotEqual(before, self.digest(absent))
+
+    def test_a_reader_with_no_transcript_root_reads_no_tree_for_its_tag(self):
+        # The unconfigured case contributes that it is unconfigured and
+        # nothing else -- there is no path it could have walked.
+        self.assertEqual((("transcripts", 0, ""),), ui.transcript_state(None))
+
+    # Every route that renders no transcript at all. On a host with a live
+    # Claude Code session -- the normal case, and the case this viewer is
+    # opened for -- the transcript root is rewritten every second.
+    ORCH_ONLY = ("/", ui.FRICTION_ROUTE, graph_url("run-gamma"), detail_url("run-gamma", "G1"))
+
+    def rename_a_transcript(self):
+        (self.transcripts / ALPHA_PROJECT / (TITLED_SESSION + ".jsonl")).write_text(
+            '{"type":"ai-title","aiTitle":"Alpha, renamed"}\n', encoding="utf-8"
+        )
+
+    def tags(self, routes) -> dict:
+        return dict(
+            (route, ui.entity_tag(self.main, route, None, self.transcripts))
+            for route in routes
+        )
+
+    def bodies(self, routes) -> dict:
+        return dict(
+            (route, ui.render_route(self.main, route, self.transcripts)[1])
+            for route in routes
+        )
+
+    def test_a_route_that_renders_no_transcript_holds_its_tag_across_a_write(self):
+        # The basis is the route's read set, which is `U3`'s lesson in both
+        # directions: too narrow serves a 304 to a page that moved, and too
+        # wide denies the 304 to a page that did not. Too wide is what a
+        # live session makes permanent -- the poll then swaps `main` once a
+        # second over a byte-identical body, churning scroll and focus.
+        with frozen_clock():
+            before, drawn = self.tags(self.ORCH_ONLY), self.bodies(self.ORCH_ONLY)
+            self.rename_a_transcript()
+
+            self.assertEqual(before, self.tags(self.ORCH_ONLY))
+            self.assertEqual(drawn, self.bodies(self.ORCH_ONLY))
+
+    def test_the_session_routes_still_see_the_write_the_others_ignore(self):
+        # Otherwise the narrowing above is satisfied by a validator that
+        # observes the transcript tree nowhere at all.
+        polled = (ui.SESSIONS_ROUTE, session_url(TITLED_SESSION))
+        with frozen_clock():
+            before = self.tags(polled)
+            self.rename_a_transcript()
+            after = self.tags(polled)
+
+        for route in polled:
+            self.assertNotEqual(before[route], after[route], route)
+
+    def test_an_orch_page_is_answered_304_while_a_session_writes(self):
+        with frozen_clock():
+            with serving(self.main, self.transcripts) as server:
+                status, headers, _body = fetch(server, ui.FRICTION_ROUTE)
+                self.assertEqual(200, status)
+                held = {"If-None-Match": headers["ETag"]}
+                self.rename_a_transcript()
+                status, _headers, body = fetch(server, ui.FRICTION_ROUTE, held)
+
+        self.assertEqual(304, status)
+        self.assertEqual("", body)
+
+    def test_the_poll_is_not_answered_304_after_a_transcript_moves(self):
+        with serving(self.main, self.transcripts) as server:
+            status, headers, _body = fetch(server, ui.SESSIONS_ROUTE)
+            self.assertEqual(200, status)
+            tag = headers["ETag"]
+            held = {"If-None-Match": tag}
+            self.assertEqual(304, fetch(server, ui.SESSIONS_ROUTE, held)[0])
+
+            (self.transcripts / ALPHA_PROJECT / (TITLED_SESSION + ".jsonl")).write_text(
+                '{"type":"ai-title","aiTitle":"Alpha, renamed"}\n', encoding="utf-8"
+            )
+
+            status, _headers, body = fetch(server, ui.SESSIONS_ROUTE, held)
+
+        self.assertEqual(200, status)
+        self.assertIn("Alpha, renamed", session_cell(body, TITLED_SESSION, "title"))
+
+
+class TestAbsentTranscriptRoot(TranscriptCase):
+    """`S1` completion test 9, spec criterion 16."""
+
+    def missing(self) -> Path:
+        absent = self.tmp / "no-transcripts-here"
+        self.assertFalse(absent.exists())
+        return absent
+
+    def test_every_pre_existing_route_still_answers(self):
+        with serving(self.main, self.missing()) as server:
+            served = {}
+            for route in every_route():
+                served[route] = get(server, route)
+
+        self.assertEqual({200, 404}, set(status for status, _ in served.values()))
+        self.assertIn(SETTLED_RUN, served["/"][1])
+
+    def test_the_session_index_names_an_empty_state(self):
+        page = self.sessions(self.missing())
+
+        self.assertIn(ui.EMPTY_NO_TRANSCRIPTS, block_for(page, "empty", "</p>"))
+        self.assertEqual([], session_ids(page))
+
+    def test_a_present_but_sessionless_root_is_a_different_empty_state(self):
+        bare = self.tmp / "bare"
+        bare.mkdir()
+
+        page = self.sessions(bare)
+
+        self.assertIn(ui.EMPTY_NO_SESSIONS, block_for(page, "empty", "</p>"))
+
+
+class TestTranscriptContainment(TranscriptCase):
+    """`_in_tree`'s guarantee, over the tree it was not yet applied to.
+
+    The transcript root is the entire scope of what this viewer may open, and
+    `~/.claude/projects` is a directory anything on the machine can be linked
+    into. `_subagent_files` already checks containment; the project walk one
+    level above it is the same question about the same tree.
+    """
+
+    LEAKED_TITLE = "LEAKED-TITLE"
+
+    def link_out(self, name: str = "-Users-dmcinerney-tools-leaked") -> Path:
+        """A project-shaped symlink under the root, pointing out of it."""
+
+        outside = self.tmp / "outside"
+        outside.mkdir()
+        (outside / "1e6f0000-0000-4000-8000-00000000beef.jsonl").write_text(
+            '{"type":"ai-title","aiTitle":"%s"}\n' % self.LEAKED_TITLE,
+            encoding="utf-8",
+        )
+        link = self.transcripts / name
+        try:
+            link.symlink_to(outside, target_is_directory=True)
+        except (OSError, NotImplementedError) as error:
+            # Windows only permits this under Developer Mode or admin.
+            self.skipTest("cannot create a directory symlink here: %s" % error)
+        return link
+
+    def test_the_link_is_an_entry_the_walk_would_otherwise_take(self):
+        # The premise. Without it the two cases below are proved by a link
+        # `iterdir` never returned or `is_dir` already rejected.
+        link = self.link_out()
+
+        self.assertIn(link, list(self.transcripts.iterdir()))
+        self.assertTrue(link.is_dir())
+
+    def test_a_project_linked_out_of_the_root_is_not_a_project(self):
+        link = self.link_out()
+
+        self.assertNotIn(link, ui._project_directories(self.transcripts))
+        # Not by returning nothing: the real projects are still walked.
+        self.assertEqual(
+            sorted(set(SESSION_PROJECT.values())),
+            sorted(path.name for path in ui._project_directories(self.transcripts)),
+        )
+
+    def test_nothing_outside_the_root_reaches_any_route(self):
+        self.link_out()
+
+        with serving(self.main, self.transcripts) as server:
+            for route in every_route():
+                self.assertNotIn(self.LEAKED_TITLE, get(server, route)[1], route)
+
+        self.assertEqual(list(SESSIONS_NEWEST_FIRST), session_ids(self.sessions()))
+
+
+class TestUnaddressableSessions(TranscriptCase):
+    """A row is a promise that the link on it opens.
+
+    `/session` takes its id in a query string and `_safe_name` is the
+    boundary that query crosses, so a filename the walk finds and the
+    boundary refuses cannot be both listed and linked: the reader clicks it
+    and is told there is no such session, about a file this page just drew.
+    """
+
+    # `Path("..jsonl").stem` is `"."`, which `_safe_name` refuses outright.
+    # An ordinary filename on every filesystem this suite runs on, Windows
+    # included -- not a traversal, and not a control character Windows
+    # forbids.
+    UNADDRESSABLE = "..jsonl"
+
+    def plant(self) -> Path:
+        path = self.transcripts / ALPHA_PROJECT / self.UNADDRESSABLE
+        path.write_text('{"type":"ai-title","aiTitle":"Nameless"}\n', encoding="utf-8")
+        return path
+
+    def test_the_walk_finds_it_and_the_lookup_boundary_refuses_it(self):
+        # The premise, on both sides. Without it the cases below are proved
+        # by a file the glob never returned or a name the boundary allows.
+        path = self.plant()
+
+        self.assertIn(path, list((self.transcripts / ALPHA_PROJECT).glob("*.jsonl")))
+        self.assertEqual("", ui._safe_name(path.stem))
+        self.assertIsNone(ui.find_session(self.transcripts, path.stem))
+
+    def test_a_session_that_cannot_be_opened_is_not_offered_as_a_link(self):
+        self.plant()
+
+        self.assertEqual(list(SESSIONS_NEWEST_FIRST), session_ids(self.sessions()))
+
+    def test_the_page_says_why_rather_than_dropping_it_in_silence(self):
+        self.plant()
+        notes = block_for(self.sessions(), "diagnostics", "</ul>")
+
+        self.assertIn(ui.DIAGNOSTIC_UNADDRESSABLE_SESSION, notes)
+        self.assertIn(self.UNADDRESSABLE, notes)
+
+    def test_a_healthy_root_carries_no_such_diagnostic(self):
+        # Otherwise the case above is satisfied by a page that warns about
+        # every session it lists.
+        self.assertNotIn(
+            ui.DIAGNOSTIC_UNADDRESSABLE_SESSION,
+            block_for(self.sessions(), "diagnostics", "</ul>"),
+        )
+
+    def test_the_validator_moves_when_such_a_file_appears(self):
+        # The diagnostic is part of the page, so a basis blind to the file
+        # behind it serves a 304 to a page that has moved -- `U3` again. No
+        # directory is stat'd by this walk, so nothing else here would notice.
+        with frozen_clock():
+            before = ui.entity_tag(self.main, ui.SESSIONS_ROUTE, None, self.transcripts)
+            self.plant()
+            after = ui.entity_tag(self.main, ui.SESSIONS_ROUTE, None, self.transcripts)
+
+        self.assertNotEqual(before, after)
+
+
+class TestSessionRouteRegistration(TranscriptCase):
+    """`S1` completion test 10. `U1`'s tuple is what makes the read-only,
+    no-network and escaping guards sweep a route at all."""
+
+    def test_the_route_is_declared_and_carries_concrete_examples(self):
+        self.assertIn(ui.SESSIONS_ROUTE, ui.ROUTES)
+        self.assertTrue(ROUTE_EXAMPLES[ui.SESSIONS_ROUTE])
+        self.assertIn(ui.SESSIONS_ROUTE, every_route())
+
+    def test_the_route_is_not_branched_in_behind_the_tuple(self):
+        # A route served but undeclared is a route no whole-corpus guard
+        # visits, which is the failure `U1` recorded against itself.
+        status, page = ui.render_route(self.main, ui.SESSIONS_ROUTE, self.transcripts)
+
+        self.assertEqual(200, status)
+        self.assertIn(ui.SESSIONS_ROUTE, ui.ROUTES)
+
+
+class SessionCase(TranscriptCase):
+    """One session's flowchart, fetched through the route rather than built
+    from the renderer, so every assertion below is about a served page."""
+
+    def flowchart(self, session=TITLED_SESSION, transcripts=True) -> str:
+        root = self.transcripts if transcripts is True else transcripts
+        status, page = ui.render_route(self.main, session_url(session), root)
+        self.assertEqual(200, status)
+        return page
+
+    def read(self, session=TITLED_SESSION) -> dict:
+        found = ui.find_session(self.transcripts, session)
+        self.assertIsNotNone(found, session)
+        return ui.read_session(found)
+
+    def graph(self, session=TITLED_SESSION) -> tuple:
+        return ui.session_graph(self.read(session)["agents"])
+
+    def subagents(self, session: str) -> Path:
+        return self.transcripts / SESSION_PROJECT[session] / session / "subagents"
+
+
+class TestSessionRoute(SessionCase):
+    """`S2` completion test 9. `U1`'s tuple is what makes the read-only,
+    no-network, escaping and conditional-request guards sweep a route."""
+
+    def test_the_route_is_declared_and_carries_concrete_examples(self):
+        self.assertIn(ui.SESSION_ROUTE, ui.ROUTES)
+        self.assertTrue(ROUTE_EXAMPLES[ui.SESSION_ROUTE])
+        for url in ROUTE_EXAMPLES[ui.SESSION_ROUTE]:
+            self.assertIn(url, every_route(), url)
+
+    def test_the_examples_reach_a_drawn_flowchart_and_not_only_its_errors(self):
+        served = [
+            ui.render_route(self.main, url, self.transcripts)[0]
+            for url in ROUTE_EXAMPLES[ui.SESSION_ROUTE]
+        ]
+
+        self.assertIn(200, served)
+        self.assertIn(404, served)
+
+    def test_the_session_index_links_each_row_to_its_own_flowchart(self):
+        # `S1` left the id unlinked deliberately: there was nowhere to go.
+        page = self.sessions()
+
+        self.assertIn('href="/session?id={0}"'.format(TITLED_SESSION), page)
+        self.assertEqual(list(SESSIONS_NEWEST_FIRST), session_ids(page))
+
+
+class TestSessionFlowchart(SessionCase):
+    """`S2` completion test 2, spec criterion 8."""
+
+    def test_one_node_for_the_orchestrator_and_one_for_each_subagent(self):
+        drawn = session_anchors(self.flowchart())
+
+        self.assertEqual(
+            sorted(ALPHA_AGENTS + (ui.ORCHESTRATOR_ANCHOR,)), sorted(drawn)
+        )
+
+    def test_the_node_set_is_the_metadata_files_and_not_the_agent_transcripts(self):
+        # `agent-aa11.jsonl` sits beside `agent-aa11.meta.json`; two files
+        # about one subagent must not draw two nodes.
+        subagents = self.transcripts / ALPHA_PROJECT / TITLED_SESSION / "subagents"
+        drawn = session_anchors(self.flowchart())
+
+        self.assertEqual(4, len(list(subagents.glob("agent-*"))))
+        self.assertEqual(len(set(drawn)), len(drawn))
+        self.assertEqual(1 + len(ALPHA_AGENTS), len(drawn))
+
+    def test_each_node_carries_its_type_description_and_depth(self):
+        page = self.flowchart()
+
+        self.assertIn("orch-worker", session_cell(page, RETURNED_AGENT, "type"))
+        self.assertIn(
+            "Implement the session index",
+            session_cell(page, RETURNED_AGENT, "description"),
+        )
+        self.assertIn("1", session_cell(page, RETURNED_AGENT, "depth"))
+        self.assertIn("2", session_cell(page, UNEVIDENCED_AGENT, "depth"))
+        self.assertIn("Explore", session_cell(page, UNEVIDENCED_AGENT, "type"))
+
+    def test_the_drawn_node_names_the_agent_rather_than_only_its_row(self):
+        # A table under an anonymous picture is not a flowchart of anything.
+        node = session_node(self.flowchart(), RETURNED_AGENT)
+
+        self.assertIn("orch-worker", node["body"])
+        self.assertIn("orch-worker", node["label"])
+        self.assertIn("Implement the session index", node["label"])
+
+    def test_the_orchestrator_node_names_itself_and_what_it_spawned(self):
+        node = session_node(self.flowchart(), ui.ORCHESTRATOR_ANCHOR)
+
+        self.assertIn("orchestrator", node["body"])
+        self.assertIn("3", node["body"])
+        self.assertIn(LAST_AI_TITLE, node["label"])
+
+    def test_every_depth_one_agent_is_drawn_from_the_orchestrator(self):
+        nodes, edges, _inferred = self.graph()
+
+        self.assertIn(ui.ORCHESTRATOR_NODE, nodes)
+        self.assertIn((ui.ORCHESTRATOR_NODE, RETURNED_AGENT), edges)
+        self.assertIn((ui.ORCHESTRATOR_NODE, CALLED_AGENT), edges)
+        self.assertEqual(len(nodes) - 1, len(edges))
+
+    def test_the_page_names_the_session_it_drew(self):
+        page = self.flowchart()
+
+        self.assertIn(TITLED_SESSION, page)
+        self.assertIn(LAST_AI_TITLE, page)
+        self.assertIn("/Users/dmcinerney/tools/alpha", page)
+
+
+class TestSubagentEdges(SessionCase):
+    """`S2` completion test 3. Most subagent metadata records no parent at
+    all, so most of this tree is a guess -- and a guess drawn like a fact is
+    the one failure a flowchart of somebody else's process can commit."""
+
+    def test_a_depth_two_agent_with_no_recorded_parent_hangs_off_the_root(self):
+        # There is nowhere else to hang it: depth says a parent exists and
+        # nothing says which agent it is.
+        _nodes, edges, inferred = self.graph()
+
+        self.assertIn((ui.ORCHESTRATOR_NODE, UNEVIDENCED_AGENT), edges)
+        self.assertEqual(((ui.ORCHESTRATOR_NODE, UNEVIDENCED_AGENT),), tuple(inferred))
+
+    def test_that_edge_is_dashed_and_the_page_says_what_a_dashed_edge_means(self):
+        page = self.flowchart()
+
+        self.assertEqual(1, len(INFERRED_EDGE_RE.findall(page)))
+        self.assertEqual(len(ALPHA_AGENTS), len(EDGE_RE.findall(page)))
+        self.assertIn(
+            ui.DIAGNOSTIC_INFERRED_EDGE, block_for(page, "diagnostics", "</ul>")
+        )
+
+    def test_each_row_names_what_its_agent_hangs_off_and_how_that_was_known(self):
+        page = self.flowchart()
+        proven = session_cell(page, RETURNED_AGENT, "attached")
+        guessed = session_cell(page, UNEVIDENCED_AGENT, "attached")
+
+        self.assertIn(ui.EDGE_FROM_DEPTH, proven)
+        self.assertNotIn(ui.EDGE_INFERRED, proven)
+        self.assertIn(ui.EDGE_INFERRED, guessed)
+
+    def test_an_unprovable_depth_two_agent_still_says_it_is_at_depth_two(self):
+        # It cannot be nested under anything: nothing records what. Its
+        # depth is on the node's own face as well as on its row, so the
+        # picture does not read as three siblings of equal standing.
+        page = self.flowchart()
+
+        self.assertIn("d2", session_node(page, UNEVIDENCED_AGENT)["body"])
+        self.assertIn("depth 2", session_node(page, UNEVIDENCED_AGENT)["label"])
+        self.assertIn("2", session_cell(page, UNEVIDENCED_AGENT, "depth"))
+
+    def test_a_recorded_parent_attaches_the_child_to_that_agent_as_a_fact(self):
+        _nodes, edges, inferred = self.graph(TRUNCATED_SESSION)
+
+        self.assertIn((ui.ORCHESTRATOR_NODE, PARENT_AGENT), edges)
+        self.assertIn((PARENT_AGENT, CHILD_AGENT), edges)
+        self.assertNotIn((ui.ORCHESTRATOR_NODE, CHILD_AGENT), edges)
+        self.assertEqual((), tuple(inferred))
+
+    def test_the_recorded_child_is_drawn_a_layer_below_its_own_parent(self):
+        # Nesting is the picture, not the prose: a child drawn beside its
+        # parent is not nested however its row reads.
+        nodes, edges, _inferred = self.graph(TRUNCATED_SESSION)
+        layers = dict(
+            (node.id, node.layer) for node in ui.cached_layout(nodes, edges)["nodes"]
+        )
+
+        self.assertEqual(0, layers[ui.ORCHESTRATOR_NODE])
+        self.assertEqual(1, layers[PARENT_AGENT])
+        self.assertEqual(2, layers[CHILD_AGENT])
+
+    def test_a_parent_pointer_naming_nobody_falls_back_to_an_inferred_edge(self):
+        # The pointer's spelling is undocumented and observed, never
+        # promised: one that resolves to no sibling is not a node.
+        meta = self.subagents(TRUNCATED_SESSION) / (CHILD_AGENT + ".meta.json")
+        meta.write_text(
+            '{"agentType":"Explore","spawnDepth":2,"parentAgentId":"nobody"}',
+            encoding="utf-8",
+        )
+        _nodes, edges, inferred = self.graph(TRUNCATED_SESSION)
+
+        self.assertIn((ui.ORCHESTRATOR_NODE, CHILD_AGENT), edges)
+        self.assertEqual(((ui.ORCHESTRATOR_NODE, CHILD_AGENT),), tuple(inferred))
+
+    # The three shapes a recorded `parentAgentId` takes that resolve to no
+    # node on the page: a stranger, the agent itself, and the orchestrator,
+    # which no subagent's metadata is allowed to name.
+    UNRESOLVED_PARENTS = (
+        ("a stranger", "nobody"),
+        ("its own agent", "cc32"),
+        ("the orchestrator", ui.ORCHESTRATOR_NODE),
+    )
+
+    def unresolved(self, recorded: str, depth: int = 2) -> str:
+        """`TRUNCATED_SESSION`'s child, rewritten to record a parent that
+        resolves to nothing, and its flowchart."""
+
+        meta = self.subagents(TRUNCATED_SESSION) / (CHILD_AGENT + ".meta.json")
+        meta.write_text(
+            json.dumps(
+                {"agentType": "Explore", "spawnDepth": depth, "parentAgentId": recorded}
+            ),
+            encoding="utf-8",
+        )
+        return self.flowchart(TRUNCATED_SESSION)
+
+    def test_a_recorded_parent_that_did_not_resolve_is_not_called_an_absent_one(self):
+        # `inferred: no parent recorded` states two things about another
+        # program's data and both are false here: a parent *was* recorded,
+        # and it failed to resolve. The edge shape is the same for either;
+        # the sentence is not, and the sentence is what a reader acts on.
+        for shape, recorded in self.UNRESOLVED_PARENTS:
+            cell = session_cell(self.unresolved(recorded), CHILD_AGENT, "attached")
+
+            self.assertIn(ui.EDGE_PARENT_UNRESOLVED, cell, shape)
+            self.assertNotIn(ui.EDGE_INFERRED, cell, shape)
+
+    def test_the_page_names_which_of_the_two_guesses_it_made(self):
+        for shape, recorded in self.UNRESOLVED_PARENTS:
+            notes = block_for(self.unresolved(recorded), "diagnostics", "</ul>")
+
+            self.assertIn(ui.DIAGNOSTIC_UNRESOLVED_PARENT, notes, shape)
+            self.assertNotIn(ui.DIAGNOSTIC_INFERRED_EDGE, notes, shape)
+
+    def test_the_sentence_does_not_contradict_the_depth_it_is_drawn_at(self):
+        # A depth-3 record drawn on the orchestrator is not drawn "by its
+        # spawn depth alone": its own depth says two agents stand between
+        # the two, and the page must not say otherwise in the same breath.
+        page = self.unresolved("nobody", depth=3)
+
+        self.assertNotIn("spawn depth alone", page)
+        self.assertIn("3", session_cell(page, CHILD_AGENT, "depth"))
+        self.assertIn(
+            ui.DIAGNOSTIC_UNRESOLVED_PARENT, block_for(page, "diagnostics", "</ul>")
+        )
+
+    def test_a_record_that_truly_names_no_parent_still_says_exactly_that(self):
+        # Otherwise the distinction above is bought by renaming the honest
+        # case rather than by naming the case that was missing.
+        page = self.flowchart()
+        cell = session_cell(page, UNEVIDENCED_AGENT, "attached")
+        notes = block_for(page, "diagnostics", "</ul>")
+
+        self.assertIn(ui.EDGE_INFERRED, cell)
+        self.assertNotIn(ui.EDGE_PARENT_UNRESOLVED, cell)
+        self.assertIn(ui.DIAGNOSTIC_INFERRED_EDGE, notes)
+        self.assertNotIn(ui.DIAGNOSTIC_UNRESOLVED_PARENT, notes)
+
+    def test_a_depth_one_agent_hangs_off_the_orchestrator_whatever_it_records(self):
+        # Spec criterion 8 is unconditional. Depth 1 means the session
+        # spawned it and nothing else could have, so a pointer at a sibling
+        # is a contradiction the depth wins; without this the criterion
+        # holds only for the records that happen to omit the key.
+        meta = self.subagents(TRUNCATED_SESSION) / (CHILD_AGENT + ".meta.json")
+        meta.write_text(
+            '{"agentType":"Explore","spawnDepth":1,"parentAgentId":"cc31"}',
+            encoding="utf-8",
+        )
+        _nodes, edges, inferred = self.graph(TRUNCATED_SESSION)
+        cell = session_cell(self.flowchart(TRUNCATED_SESSION), CHILD_AGENT, "attached")
+
+        self.assertIn((ui.ORCHESTRATOR_NODE, CHILD_AGENT), edges)
+        self.assertNotIn((PARENT_AGENT, CHILD_AGENT), edges)
+        self.assertEqual((), tuple(inferred))
+        self.assertIn(ui.EDGE_FROM_DEPTH, cell)
+
+    def test_a_parent_pointer_naming_its_own_agent_still_draws_a_graph(self):
+        # `graph_layout` breaks cycles, but a self-edge is not a dependency
+        # anybody can lay out, and the metadata is another program's.
+        meta = self.subagents(TRUNCATED_SESSION) / (CHILD_AGENT + ".meta.json")
+        meta.write_text(
+            '{"agentType":"Explore","spawnDepth":2,"parentAgentId":"cc32"}',
+            encoding="utf-8",
+        )
+        nodes, edges, _inferred = self.graph(TRUNCATED_SESSION)
+
+        self.assertNotIn((CHILD_AGENT, CHILD_AGENT), edges)
+        self.assertEqual(sorted(set(nodes)), sorted(nodes))
+        self.assertEqual(
+            sorted((ui.ORCHESTRATOR_NODE, PARENT_AGENT, CHILD_AGENT)), sorted(nodes)
+        )
+
+
+class TestActivityState(SessionCase):
+    """`S2` completion test 4, spec criterion 9. `running` is a claim about
+    a process this reader cannot see, and the only evidence of one anywhere
+    in the tree is the call and the return in the parent's own transcript."""
+
+    def states(self, session=TITLED_SESSION) -> dict:
+        return dict((agent["id"], agent["state"]) for agent in self.read(session)["agents"])
+
+    def test_a_call_whose_result_came_back_is_the_only_thing_read_as_finished(self):
+        page = self.flowchart()
+
+        self.assertEqual(ui.ACTIVITY_FINISHED, self.states()[RETURNED_AGENT])
+        self.assertIn(ui.ACTIVITY_FINISHED, session_cell(page, RETURNED_AGENT, "state"))
+        self.assertIn(ui.EVIDENCE_RETURNED, session_cell(page, RETURNED_AGENT, "state"))
+
+    def test_a_call_with_no_result_yet_is_read_as_running(self):
+        page = self.flowchart()
+
+        self.assertEqual(ui.ACTIVITY_RUNNING, self.states()[CALLED_AGENT])
+        self.assertIn(ui.ACTIVITY_RUNNING, session_cell(page, CALLED_AGENT, "state"))
+        self.assertIn(ui.EVIDENCE_CALLED, session_cell(page, CALLED_AGENT, "state"))
+
+    def test_an_agent_the_transcript_never_calls_is_unknown_with_its_last_time(self):
+        page = self.flowchart()
+
+        self.assertEqual(ui.ACTIVITY_UNKNOWN, self.states()[UNEVIDENCED_AGENT])
+        self.assertIn(ui.EVIDENCE_NONE, session_cell(page, UNEVIDENCED_AGENT, "state"))
+        self.assertIn(
+            agent_stamp(UNEVIDENCED_AGENT), session_cell(page, UNEVIDENCED_AGENT, "when")
+        )
+
+    def test_a_tool_call_that_is_not_an_agent_call_is_evidence_of_nothing(self):
+        # `toolu_alpha_03` is `agent-aa13`'s id, and the transcript carries a
+        # `Bash` call and a `Bash` result under it. A reader matching on the
+        # id alone reads a finished shell command as a finished subagent.
+        found = ui.find_session(self.transcripts, TITLED_SESSION)
+        summary = ui.cached_transcript(found["path"], found["identity"])
+
+        self.assertIn("toolu_alpha_03", found["path"].read_text(encoding="utf-8"))
+        self.assertEqual({"toolu_alpha_01", "toolu_alpha_02"}, set(summary["agent_calls"]))
+        self.assertEqual({"toolu_alpha_01"}, set(summary["agent_returns"]))
+
+    def test_no_agent_in_the_corpus_is_running_without_a_call_behind_it(self):
+        running = 0
+        for session in SESSIONS_NEWEST_FIRST:
+            found = self.read(session)
+            calls = ui.cached_transcript(found["path"], found["identity"])["agent_calls"]
+            for agent in found["agents"]:
+                if agent["state"] != ui.ACTIVITY_UNKNOWN:
+                    running += 1
+                    self.assertIn(agent["tool_use_id"], calls, agent["id"])
+        # Six sessions of `unknown` would satisfy the sweep above and prove
+        # nothing at all.
+        self.assertEqual(2, running)
+
+    def test_no_agent_defaults_to_finished_when_no_result_was_recorded(self):
+        # Every `tool_result` gone, and the calls left standing: nothing on
+        # the page may still read as done.
+        path = self.transcripts / ALPHA_PROJECT / (TITLED_SESSION + ".jsonl")
+        path.write_text(
+            "".join(
+                line
+                for line in path.read_text(encoding="utf-8").splitlines(True)
+                if "tool_result" not in line
+            ),
+            encoding="utf-8",
+        )
+        states = self.states()
+
+        self.assertNotIn(ui.ACTIVITY_FINISHED, states.values())
+        self.assertEqual(ui.ACTIVITY_RUNNING, states[RETURNED_AGENT])
+        self.assertEqual(ui.ACTIVITY_UNKNOWN, states[UNEVIDENCED_AGENT])
+
+    def test_a_result_for_a_call_that_never_happened_is_not_a_finished_agent(self):
+        path = self.transcripts / ALPHA_PROJECT / (TITLED_SESSION + ".jsonl")
+        path.write_text(
+            "".join(
+                line
+                for line in path.read_text(encoding="utf-8").splitlines(True)
+                if '"name":"Agent"' not in line
+            ),
+            encoding="utf-8",
+        )
+        found = ui.find_session(self.transcripts, TITLED_SESSION)
+        summary = ui.cached_transcript(found["path"], found["identity"])
+
+        self.assertEqual(set(), set(summary["agent_returns"]))
+        self.assertEqual({ui.ACTIVITY_UNKNOWN}, set(self.states().values()))
+
+    def test_the_node_is_drawn_in_the_state_its_row_reports(self):
+        page = self.flowchart()
+
+        self.assertEqual("nd-running", session_node(page, CALLED_AGENT)["state"])
+        self.assertIn(ui.ACTIVITY_RUNNING, session_node(page, CALLED_AGENT)["body"])
+        self.assertIn(ui.ACTIVITY_FINISHED, session_node(page, RETURNED_AGENT)["body"])
+        self.assertIn(ui.ACTIVITY_UNKNOWN, session_node(page, UNEVIDENCED_AGENT)["body"])
+
+    def test_every_state_the_view_can_draw_has_a_declared_presentation(self):
+        # `U2`'s hue tokens are a closed set, so a state drawn in a colour
+        # family the stylesheet does not declare renders as nothing at all.
+        for state in ui.ACTIVITY_STATES:
+            seen = ui.activity_presentation(state)
+
+            self.assertIn(seen.hue, ui.HUE_TOKENS, state)
+            self.assertTrue(seen.glyph, state)
+            self.assertEqual(state, seen.word)
+            self.assertIn(".st-{0} {{".format(state), ui.PAGE_CSS)
+            self.assertIn(".nd-{0} rect {{".format(state), ui.PAGE_CSS)
+
+
+class TestSessionPolling(SessionCase):
+    """`S2` completion test 5, spec criterion 14. The flowchart is the page
+    an orchestrator leaves open while the work it is watching runs."""
+
+    def setUp(self):
+        super(TestSessionPolling, self).setUp()
+        # The fixtures also carry a live elapsed meter, which honestly moves
+        # the tag on each minute boundary.
+        freeze(self)
+
+    def polled(self) -> tuple:
+        return (ui.SESSIONS_ROUTE, session_url(TITLED_SESSION))
+
+    def test_both_session_routes_answer_304_over_an_unchanged_root(self):
+        with serving(self.main, self.transcripts) as server:
+            for route in self.polled():
+                status, headers, body = fetch(server, route)
+                self.assertEqual(200, status, route)
+                self.assertTrue(body, route)
+
+                again = fetch(server, route, {"If-None-Match": headers["ETag"]})
+
+                self.assertEqual((304, ""), (again[0], again[2]), route)
+
+    def test_a_subagent_appearing_answers_200_with_a_new_tag_on_both(self):
+        with serving(self.main, self.transcripts) as server:
+            held = dict(
+                (route, fetch(server, route)[1]["ETag"]) for route in self.polled()
+            )
+            (self.subagents(TITLED_SESSION) / "agent-aa14.meta.json").write_text(
+                '{"agentType":"Plan","description":"just spawned",'
+                '"toolUseId":"toolu_alpha_04","spawnDepth":1}',
+                encoding="utf-8",
+            )
+            served = dict(
+                (route, fetch(server, route, {"If-None-Match": held[route]}))
+                for route in self.polled()
+            )
+
+        for route in self.polled():
+            status, headers, _body = served[route]
+            self.assertEqual(200, status, route)
+            self.assertNotEqual(held[route], headers["ETag"], route)
+        self.assertIn("agent-aa14", session_anchors(served[self.polled()[1]][2]))
+
+    def test_a_subagent_returning_answers_200_with_a_new_tag(self):
+        # The node set has not moved and the picture has: an ETag over the
+        # listing alone would sit on a page that says `running` forever.
+        path = self.transcripts / ALPHA_PROJECT / (TITLED_SESSION + ".jsonl")
+        route = session_url(TITLED_SESSION)
+        with serving(self.main, self.transcripts) as server:
+            held = {"If-None-Match": fetch(server, route)[1]["ETag"]}
+            with path.open("a", encoding="utf-8") as handle:
+                handle.write(
+                    '{"type":"user","message":{"role":"user","content":'
+                    '[{"type":"tool_result","tool_use_id":"toolu_alpha_02",'
+                    '"content":"%s"}]}}\n' % TRANSCRIPT_SENTINEL
+                )
+            status, _headers, body = fetch(server, route, held)
+
+        self.assertEqual(200, status)
+        self.assertEqual("nd-finished", session_node(body, CALLED_AGENT)["state"])
+
+    def test_one_session_never_answers_another_sessions_tag(self):
+        with serving(self.main, self.transcripts) as server:
+            first = fetch(server, session_url(TITLED_SESSION))[1]["ETag"]
+            other = fetch(server, session_url(MARKUP_SESSION))
+            status, _headers, body = fetch(
+                server, session_url(MARKUP_SESSION), {"If-None-Match": first}
+            )
+
+        self.assertNotEqual(first, other[1]["ETag"])
+        self.assertEqual(200, status)
+        self.assertIn(MARKUP_SESSION, body)
+
+    def test_a_missing_session_offers_no_tag_to_be_cached_against(self):
+        with serving(self.main, self.transcripts) as server:
+            status, headers, _body = fetch(server, session_url("no-such-session"))
+
+        self.assertEqual(404, status)
+        self.assertIsNone(headers.get("ETag"))
+
+
+class TestSessionEscaping(SessionCase):
+    """`S2` completion test 6, spec criterion 15. Every value on this page
+    is another program's undocumented JSON, and it reaches three contexts:
+    a table cell, an SVG text node, and an attribute."""
+
+    def markup(self) -> str:
+        return self.flowchart(MARKUP_SESSION)
+
+    def test_the_fixture_really_carries_markup_in_all_three_fields(self):
+        # Without this the assertions below sweep a page that never had
+        # anything on it to escape.
+        source = self.subagents(MARKUP_SESSION) / (MARKUP_AGENT + ".meta.json")
+        recorded = json.loads(source.read_text(encoding="utf-8"))
+        transcript = self.transcripts / BETA_PROJECT / (MARKUP_SESSION + ".jsonl")
+
+        self.assertEqual(MARKUP_AGENT_TYPE, recorded["agentType"])
+        self.assertEqual(MARKUP_AGENT_DESCRIPTION, recorded["description"])
+        self.assertIn(PAYLOAD, transcript.read_text(encoding="utf-8"))
+
+    def test_none_of_the_three_reaches_the_page_as_markup(self):
+        page = self.markup()
+
+        self.assertNotIn(PAYLOAD, page)
+        self.assertNotIn('onerror="alert(1)"', page)
+        self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", page)
+
+    def test_the_agent_type_is_escaped_in_the_cell_and_in_the_svg_text_node(self):
+        page = self.markup()
+        node = session_node(page, MARKUP_AGENT)
+
+        self.assertIn("&lt;script&gt;", session_cell(page, MARKUP_AGENT, "type"))
+        self.assertIn("&lt;", node["body"])
+        self.assertNotIn("<script", node["body"])
+
+    def test_the_description_is_escaped_in_the_attribute_it_is_carried_in(self):
+        # An unescaped quote here closes `aria-label` early and everything
+        # after it becomes attributes of the anchor.
+        node = session_node(self.markup(), MARKUP_AGENT)
+
+        self.assertIn("&quot;", node["label"])
+        self.assertNotIn("onerror", node["label"].split("&quot;")[0])
+        self.assertIn(
+            "&lt;img src=&quot;x&quot;",
+            session_cell(self.markup(), MARKUP_AGENT, "description"),
+        )
+
+    def test_the_session_title_is_escaped_in_the_heading_and_in_the_svg_label(self):
+        page = self.markup()
+
+        self.assertIn("&lt;script&gt;", block_for(page, "title", "</p>"))
+        self.assertIn("&lt;script&gt;", session_node(page, ui.ORCHESTRATOR_ANCHOR)["label"])
+
+    def test_removing_the_escaping_breaks_every_assertion_above(self):
+        # The guards are only worth what their mutation says they are: with
+        # `html.escape` neutered the same page carries the live payload in
+        # all three contexts.
+        with patch.object(ui.html, "escape", lambda value, quote=True: value):
+            page = self.markup()
+
+        self.assertIn(PAYLOAD, page)
+        self.assertIn('onerror="alert(1)"', page)
+        self.assertIn("<script>alert(1)</script>", block_for(page, "title", "</p>"))
+
+
+class TestSessionLayoutCache(SessionCase):
+    """`S2` completion test 7. `U3`'s cache, and `U3`'s reason: at a
+    one-second poll a layout recomputed for a picture that did not move is
+    paid for once a second forever. A second layout algorithm in this module
+    would be the same defect wearing a different name."""
+
+    def setUp(self):
+        super(TestSessionLayoutCache, self).setUp()
+        ui.LAYOUT_CACHE.clear()
+        self.addCleanup(ui.LAYOUT_CACHE.clear)
+
+    @contextlib.contextmanager
+    def counting(self):
+        with patch.object(ui, "graph_layout", side_effect=ui.graph_layout) as computed:
+            yield computed
+
+    def test_two_requests_over_an_unchanged_subagent_set_lay_out_exactly_once(self):
+        with self.counting() as computed:
+            first = self.flowchart()
+            second = self.flowchart()
+
+        self.assertEqual(1, computed.call_count)
+        self.assertEqual(first, second)
+        # The counter can reach two, so one is a measurement rather than a
+        # mock that was never wired to anything.
+        with self.counting() as recomputed:
+            ui.LAYOUT_CACHE.clear()
+            self.flowchart()
+            ui.LAYOUT_CACHE.clear()
+            self.flowchart()
+
+        self.assertEqual(2, recomputed.call_count)
+
+    def test_an_activity_change_repaints_without_laying_the_graph_out_again(self):
+        path = self.transcripts / ALPHA_PROJECT / (TITLED_SESSION + ".jsonl")
+        with self.counting() as computed:
+            before = self.flowchart()
+            with path.open("a", encoding="utf-8") as handle:
+                handle.write(
+                    '{"type":"user","message":{"role":"user","content":'
+                    '[{"type":"tool_result","tool_use_id":"toolu_alpha_02",'
+                    '"content":"%s"}]}}\n' % TRANSCRIPT_SENTINEL
+                )
+            after = self.flowchart()
+
+        self.assertEqual(1, computed.call_count)
+        self.assertEqual("nd-running", session_node(before, CALLED_AGENT)["state"])
+        self.assertEqual("nd-finished", session_node(after, CALLED_AGENT)["state"])
+
+    def test_a_subagent_appearing_does_lay_the_graph_out_again(self):
+        with self.counting() as computed:
+            self.flowchart()
+            (self.subagents(TITLED_SESSION) / "agent-aa14.meta.json").write_text(
+                '{"agentType":"Plan","spawnDepth":1}', encoding="utf-8"
+            )
+            page = self.flowchart()
+
+        self.assertEqual(2, computed.call_count)
+        self.assertIn("agent-aa14", session_anchors(page))
+
+    def test_the_run_graph_and_the_flowchart_share_the_one_cache(self):
+        self.flowchart()
+        ui.render_route(self.main, graph_url(SETTLED_RUN))
+
+        self.assertEqual(2, len(ui.LAYOUT_CACHE))
+
+    def test_one_layout_function_serves_both_views(self):
+        # The structural half of the claim above: a private copy of the
+        # algorithm would pass every count in this class.
+        calls = set()
+        for node in ast.walk(ast.parse(UI_PY.read_text(encoding="utf-8"))):
+            if not isinstance(node, ast.FunctionDef):
+                continue
+            for inner in ast.walk(node):
+                if isinstance(inner, ast.Call) and isinstance(inner.func, ast.Name):
+                    if inner.func.id in ("graph_layout", "cached_layout"):
+                        calls.add((node.name, inner.func.id))
+
+        self.assertEqual(
+            {("cached_layout", "graph_layout")},
+            set(call for call in calls if call[1] == "graph_layout"),
+        )
+        self.assertEqual(
+            {"render_graph", "render_session"},
+            set(call[0] for call in calls if call[1] == "cached_layout"),
+        )
+
+
+class TestSessionEmptyStates(SessionCase):
+    """`S2` completion test 8. A session that spawned nothing is the common
+    case on a real host, and an id that names no session is one keystroke
+    away from every id that does."""
+
+    def test_a_session_that_spawned_nothing_draws_the_orchestrator_alone(self):
+        page = self.flowchart(UNTITLED_SESSION)
+
+        self.assertEqual([ui.ORCHESTRATOR_ANCHOR], session_anchors(page))
+        self.assertEqual([], EDGE_RE.findall(page))
+        self.assertIn(ui.EMPTY_NO_AGENTS, block_for(page, "agents empty", "</p>"))
+
+    def test_an_unknown_session_id_is_a_named_404_rather_than_a_traceback(self):
+        status, page = ui.render_route(
+            self.main, session_url("no-such-session"), self.transcripts
+        )
+
+        self.assertEqual(404, status)
+        self.assertIn(ui.EMPTY_NO_SESSION, page)
+        self.assertIn("no-such-session", page)
+
+    def test_an_id_that_is_not_a_name_at_all_is_refused_the_same_way(self):
+        for identifier in ("", "..", "../" + TITLED_SESSION, "a/b", PAYLOAD):
+            status, page = ui.render_route(
+                self.main, "/session?id=" + identifier, self.transcripts
+            )
+
+            self.assertEqual(404, status, identifier)
+            self.assertNotIn(PAYLOAD, page, identifier)
+
+    def test_a_traversal_shaped_id_is_refused_before_any_directory_is_read(self):
+        # The listing would refuse it too, by never matching -- so without
+        # this the guard is untested and its removal changes no page. It is
+        # here to keep a query-string value from reaching the filesystem at
+        # all, and that is a claim about what was read, not what was drawn.
+        with patch.object(ui, "discover_sessions") as listed:
+            found = ui.find_session(self.transcripts, "../" + TITLED_SESSION)
+
+        self.assertIsNone(found)
+        listed.assert_not_called()
+
+    def test_no_transcript_root_configured_reads_nothing_and_says_so(self):
+        with patch.object(ui, "_transcript_summary") as parsed:
+            status, page = ui.render_route(self.main, session_url(TITLED_SESSION), None)
+
+        parsed.assert_not_called()
+        self.assertEqual(404, status)
+        self.assertIn(ui.EMPTY_NO_SESSION, page)
+
+    def test_metadata_that_cannot_be_read_still_draws_its_node_and_says_so(self):
+        page = self.flowchart(MARKUP_SESSION)
+
+        self.assertIn(UNREADABLE_AGENT, session_anchors(page))
+        self.assertIn(
+            ui.DIAGNOSTIC_UNREADABLE_AGENT, block_for(page, "diagnostics", "</ul>")
+        )
+
+    def test_a_field_of_the_wrong_type_is_a_named_absence_rather_than_a_value(self):
+        page = self.flowchart(MARKUP_SESSION)
+
+        self.assertIn(ui.EMPTY_NO_TYPE, session_cell(page, BAD_FIELDS_AGENT, "type"))
+        self.assertIn(
+            ui.EMPTY_NO_DESCRIPTION, session_cell(page, BAD_FIELDS_AGENT, "description")
+        )
+        self.assertIn(ui.EMPTY_NO_DEPTH, session_cell(page, BAD_FIELDS_AGENT, "depth"))
+        self.assertEqual(
+            "nd-" + ui.ACTIVITY_UNKNOWN, session_node(page, BAD_FIELDS_AGENT)["state"]
+        )
+
+
+class TestUnrenderableTimestamps(SessionCase):
+    """Spec criterion 12 over the one field that comes from the filesystem
+    rather than from a transcript. `U3` shipped a traceback in the handler
+    once already: the client gets no HTTP response at all and the absolute
+    module path goes to stderr. A stamp is the remaining door."""
+
+    def test_a_time_beyond_the_calendar_is_a_named_diagnostic_not_a_raise(self):
+        # APFS clamps at 2262 and cannot reach this; an NTFS FILETIME
+        # reaches the year 30828, so the Windows leg can.
+        self.assertEqual(
+            ui.DIAGNOSTIC_UNRENDERABLE_STAMP, ui._stamp(FAR_FUTURE_MTIME_NS)
+        )
+
+    def test_an_ordinary_time_is_untouched_by_the_guard(self):
+        # Otherwise the assertion above is satisfied by a stamp that never
+        # renders anything.
+        self.assertEqual(utc_stamp(SESSION_EPOCH), ui._stamp(SESSION_EPOCH * 1000000000))
+
+    def test_both_session_routes_still_answer_over_such_a_file(self):
+        with far_future_mtimes():
+            with serving(self.main, self.transcripts) as server:
+                index = get(server, ui.SESSIONS_ROUTE)
+                detail = get(server, session_url(TITLED_SESSION))
+
+        self.assertEqual(200, index[0])
+        self.assertEqual(200, detail[0])
+        self.assertIn(
+            ui.DIAGNOSTIC_UNRENDERABLE_STAMP,
+            session_cell(index[1], TITLED_SESSION, "when"),
+        )
+        self.assertIn(
+            ui.DIAGNOSTIC_UNRENDERABLE_STAMP,
+            session_cell(detail[1], RETURNED_AGENT, "when"),
+        )
+
+
+class TestSubagentContentWall(SessionCase):
+    """`S2`'s half of spec criterion 10. The flowchart reads the one file
+    the index does not, and the evidence it reads the activity off is a
+    prompt -- the single most sensitive thing in the tree."""
+
+    def test_the_flowchart_emits_only_the_fields_the_spec_admits(self):
+        # Named here so widening the row is a decision rather than a slip.
+        self.assertEqual(
+            ("agent", "type", "description", "depth", "state", "attached", "when"),
+            ui.AGENT_COLUMNS,
+        )
+        self.assertEqual(len(ui.AGENT_COLUMNS), len(ui.AGENT_HEADINGS))
+
+    def test_the_rendered_row_carries_exactly_the_closed_set(self):
+        # `agentType`, `description`, `toolUseId` and `spawnDepth` are the
+        # whole of what a subagent's metadata may render. An eighth cell is
+        # a field off a transcript, and the tuple above would not see it.
+        page = self.flowchart()
+
+        for agent in ALPHA_AGENTS:
+            self.assertEqual(list(ui.AGENT_COLUMNS), row_columns(page, agent), agent)
+
+    def test_narrowing_the_closed_set_narrows_the_row_it_renders(self):
+        with patch.object(ui, "AGENT_COLUMNS", ("agent", "type")):
+            page = self.flowchart()
+
+        self.assertEqual(["agent", "type"], row_columns(page, RETURNED_AGENT))
+
+    def test_no_flowchart_in_the_corpus_leaks_a_line_of_any_transcript(self):
+        for session in SESSIONS_NEWEST_FIRST:
+            status, page = ui.render_route(
+                self.main, session_url(session), self.transcripts
+            )
+
+            self.assertEqual(200, status, session)
+            self.assertNotIn(TRANSCRIPT_SENTINEL, page, session)
+
+    def test_the_state_is_read_off_a_prompt_the_page_never_shows(self):
+        # The `Agent` call carrying `toolu_alpha_01` holds the subagent's
+        # whole prompt. What comes off it is one word.
+        page = self.flowchart()
+
+        self.assertIn(ui.ACTIVITY_FINISHED, session_cell(page, RETURNED_AGENT, "state"))
+        self.assertIn(TRANSCRIPT_SENTINEL, (self.transcripts / ALPHA_PROJECT / (
+            TITLED_SESSION + ".jsonl")).read_text(encoding="utf-8"))
+        self.assertNotIn(TRANSCRIPT_SENTINEL, page)
+
+    def test_the_sweep_still_renders_what_it_is_allowed_to(self):
+        # The sweep above would also pass on a page that rendered nothing.
+        page = self.flowchart()
+
+        self.assertIn("orch-worker", session_cell(page, RETURNED_AGENT, "type"))
+        self.assertEqual(1 + len(ALPHA_AGENTS), len(session_anchors(page)))
+
+    def test_a_subagents_own_transcript_is_listed_and_never_opened(self):
+        opened = []
+        real = Path.open
+
+        def watching(self, *args, **kwargs):
+            opened.append(self.name)
+            return real(self, *args, **kwargs)
+
+        with patch.object(Path, "open", watching):
+            self.flowchart()
+
+        self.assertNotIn(RETURNED_AGENT + ".jsonl", opened)
+        self.assertIn(TITLED_SESSION + ".jsonl", opened)
+
+
+class TestSessionRouteIsReadOnly(SessionCase):
+    """`S2` completion test 10, spec criterion 11 over the routes this
+    ticket adds."""
+
+    def test_drawing_every_flowchart_writes_nothing_under_the_transcript_root(self):
+        before = snapshot(self.transcripts)
+        self.assertTrue(before)
+
+        with serving(self.main, self.transcripts) as server:
+            for session in SESSIONS_NEWEST_FIRST:
+                status, _headers, body = fetch(server, session_url(session))
+
+                self.assertEqual(200, status, session)
+                self.assertTrue(body, session)
+
+        self.assertEqual(before, snapshot(self.transcripts))
+
+    def test_the_new_route_is_inside_the_sweeps_that_already_exist(self):
+        # The read-only, no-network and content-wall guards all walk
+        # `every_route()`; a route absent from it is a route none of them
+        # ever visits, which is the failure `U1` recorded against itself.
+        self.assertTrue(set(ROUTE_EXAMPLES[ui.SESSION_ROUTE]) <= set(every_route()))
+        self.assertIn(session_url(TITLED_SESSION), every_route())
 
 
 if __name__ == "__main__":

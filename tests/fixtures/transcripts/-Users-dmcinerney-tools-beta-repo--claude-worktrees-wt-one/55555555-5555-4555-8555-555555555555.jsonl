@@ -1,0 +1,4 @@
+{"type":"worktree-state","sessionId":"55555555-5555-4555-8555-555555555555","worktreeSession":{"sessionId":"55555555-5555-4555-8555-555555555555","originalCwd":"/Users/dmcinerney/tools/beta-repo","worktreePath":"/Users/dmcinerney/tools/beta-repo/.claude/worktrees/wt-one","worktreeName":"wt-one","worktreeBranch":"worktree-wt-one","originalBranch":"main","originalHeadCommit":"0f9641d5c1a2b3c4d5e6f708192a3b4c5d6e7f80"}}
+{"type":"ai-title","sessionId":"55555555-5555-4555-8555-555555555555","aiTitle":"Worktree session, cut short"}
+{"type":"user","sessionId":"55555555-5555-4555-8555-555555555555","message":{"role":"user","content":"ZQXJVWNTRPKB-transcript-content-must-not-render"}}
+{"type":"assistant","sessionId":"55555555-5555-4555-8555-5555555
