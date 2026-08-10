@@ -1,0 +1,5 @@
+this line is not JSON at all: ZQXJVWNTRPKB-transcript-content-must-not-render
+{"type":"ai-title","sessionId":"44444444-4444-4444-8444-444444444444","aiTitle":"Malformed but still labelled"}
+["json","but","not","an","object","ZQXJVWNTRPKB-transcript-content-must-not-render"]
+
+{"type":"user","sessionId":"44444444-4444-4444-8444-444444444444","message":{"role":"user","content":"ZQXJVWNTRPKB-transcript-content-must-not-render"}}

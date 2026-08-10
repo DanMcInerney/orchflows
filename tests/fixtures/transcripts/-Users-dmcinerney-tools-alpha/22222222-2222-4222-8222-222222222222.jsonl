@@ -1,0 +1,4 @@
+{"type":"mode","sessionId":"22222222-2222-4222-8222-222222222222","mode":"default"}
+{"type":"user","sessionId":"22222222-2222-4222-8222-222222222222","message":{"role":"user","content":"ZQXJVWNTRPKB-transcript-content-must-not-render"}}
+{"type":"assistant","sessionId":"22222222-2222-4222-8222-222222222222","message":{"role":"assistant","content":[{"type":"text","text":"ZQXJVWNTRPKB-transcript-content-must-not-render"}]}}
+{"type":"last-prompt","sessionId":"22222222-2222-4222-8222-222222222222","prompt":"ZQXJVWNTRPKB-transcript-content-must-not-render"}

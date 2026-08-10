@@ -1,0 +1,6 @@
+{"type":"worktree-state","sessionId":"33333333-3333-4333-8333-333333333333","worktreeSession":{"sessionId":"33333333-3333-4333-8333-333333333333","originalCwd":"/Users/dmcinerney/tools/beta-repo","originalBranch":"main","originalHeadCommit":"0f9641d5c1a2b3c4d5e6f708192a3b4c5d6e7f80"}}
+{"type":"ai-title","sessionId":"33333333-3333-4333-8333-333333333333","aiTitle":"Beta <script>alert(1)</script> title"}
+{"type":"user","sessionId":"33333333-3333-4333-8333-333333333333","message":{"role":"user","content":"ZQXJVWNTRPKB-transcript-content-must-not-render"}}
+{"type":"assistant","sessionId":"33333333-3333-4333-8333-333333333333","message":{"role":"assistant","content":[{"type":"text","text":"ZQXJVWNTRPKB-transcript-content-must-not-render"}]}}
+{"type":"last-prompt","sessionId":"33333333-3333-4333-8333-333333333333","prompt":"ZQXJVWNTRPKB-transcript-content-must-not-render"}
+{"type":"user","sessionId":"33333333-3333-4333-8333-333333333333","toolUseResult":{"stdout":"ZQXJVWNTRPKB-transcript-content-must-not-render"}}

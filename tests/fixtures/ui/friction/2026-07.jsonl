@@ -1,0 +1,2 @@
+{"ts": "2026-07-30T09:15:00Z", "observed": "tools/validate.py discovered no file under scripts/", "expected": "a new script to be admitted by the validator like any other artifact", "category": "missing-doc", "host": "claude-code"}
+{"ts": "2026-07-31T18:02:11Z", "observed": "the logger refused a path under a shared .orch/ and the entry carried <b>markup</b>", "expected": "an untrusted value to reach the feed escaped, never as live markup", "category": "workaround", "host": "claude-code"}
