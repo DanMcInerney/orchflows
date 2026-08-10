@@ -187,11 +187,11 @@ def probe_request(route_id, index=0):
     )
 
 
-def paced_governor(clock, responses, latencies=None, budgets=None):
+def paced_governor(clock, responses, latencies=None, budgets=None, governor_class=None):
     """A governor over an offline carrier, paced by the clock the suite drives."""
 
     carrier, opener = helpers.offline_transport(clock, responses, latencies=latencies)
-    governor = runner.RateGovernor(
+    governor = (runner.RateGovernor if governor_class is None else governor_class)(
         carrier,
         budgets=SEEDED_BUDGETS if budgets is None else budgets,
         clock=clock.monotonic,
@@ -373,7 +373,15 @@ class RateBudgetTest(unittest.TestCase):
             runner.budgets_from((declared, disagreeing))
 
 
-def tracer_governor(governor_class=None, clock=None, run_cache=None):
+def real_governor(carrier, run_cache, clock):
+    """The governor under test, built the way every caller of it should."""
+
+    return runner.RateGovernor(
+        carrier, run_cache=run_cache, clock=clock.monotonic, sleep=clock.sleep
+    )
+
+
+def tracer_governor(make_governor=real_governor, clock=None, run_cache=None):
     """A governor over the tracer's two routes, on one clock at the frozen start.
 
     The clock comes back with it because the governor and the run it paces must
@@ -382,23 +390,19 @@ def tracer_governor(governor_class=None, clock=None, run_cache=None):
     be an artefact of how fast this suite happens to execute.
     """
 
-    governor_class = runner.RateGovernor if governor_class is None else governor_class
     clock = helpers.FakeClock() if clock is None else clock
     carrier, opener = helpers.offline_transport(
         clock, tracer_responses(), latencies=ROUTE_LATENCIES
     )
-    governor = governor_class(
-        carrier, run_cache=run_cache, clock=clock.monotonic, sleep=clock.sleep
-    )
-    return governor, opener, clock
+    return make_governor(carrier, run_cache, clock), opener, clock
 
 
-def cached_run(governor_class, clock=None):
+def cached_run(make_governor, clock=None):
     """One run cache behind one governor, over the tracer's own two routes."""
 
     clock = helpers.FakeClock() if clock is None else clock
     return tracer_governor(
-        governor_class, clock=clock, run_cache=cache.RunCache(clock=clock.monotonic)
+        make_governor, clock=clock, run_cache=cache.RunCache(clock=clock.monotonic)
     )
 
 
@@ -414,7 +418,7 @@ def run_on(clock, governor, payload, dispatch_ordinal=0, start_tick_us=0):
     )
 
 
-def assert_cache_hit_reaches_the_record(case, governor_class):
+def assert_cache_hit_reaches_the_record(case, make_governor):
     """Row 9's oracle: a served record says it was served, and when it was read.
 
     Both halves fail in opposite directions and both are checked on the
@@ -424,7 +428,7 @@ def assert_cache_hit_reaches_the_record(case, governor_class):
     staleness judgment then rests on a moment nothing ever observed.
     """
 
-    governor, opener, clock = cached_run(governor_class)
+    governor, opener, clock = cached_run(make_governor)
     manifest = schema.parse_manifest(TWO_STEP_MANIFEST)
 
     first = runner.run_acquisition(manifest, governor, clock=clock.monotonic)
@@ -473,7 +477,7 @@ class CacheHitOnTheRecordTest(unittest.TestCase):
     """Criterion 9: the mark and the moment both survive as far as a caller reads."""
 
     def test_a_served_record_carries_the_mark_and_the_moment_it_was_read(self):
-        assert_cache_hit_reaches_the_record(self, runner.RateGovernor)
+        assert_cache_hit_reaches_the_record(self, real_governor)
 
     def test_the_mark_is_installed_once_and_no_adapter_writes_it(self):
         # The same inheritance claim T02b made for the channel verdict: every
@@ -484,7 +488,7 @@ class CacheHitOnTheRecordTest(unittest.TestCase):
     def test_a_cache_hit_costs_the_routes_rate_budget_nothing(self):
         # Pacing lives inside the callable a hit never invokes, so a run that
         # remembers what it read never pays a wait for reading it again.
-        governor, opener, clock = cached_run(runner.RateGovernor)
+        governor, opener, clock = cached_run(real_governor)
         manifest = schema.parse_manifest(TWO_STEP_MANIFEST)
 
         runner.run_acquisition(manifest, governor, clock=clock.monotonic)
@@ -497,14 +501,16 @@ class CacheHitOnTheRecordTest(unittest.TestCase):
                          [True] * origin_reads)
 
 
-def fused_run(governor_class=None):
+def fused_run(run_fused=None):
     """One invocation carrying both steps."""
 
-    governor, _, clock = tracer_governor(governor_class)
-    return run_on(clock, governor, FUSED_MANIFEST)
+    governor, _, clock = tracer_governor()
+    if run_fused is None:
+        return run_on(clock, governor, FUSED_MANIFEST)
+    return run_fused(schema.parse_manifest(FUSED_MANIFEST), governor, clock)
 
 
-def staged_pair(case, governor_class=None):
+def staged_pair(case):
     """Discovery, a caller's round trip, then hydration: two invocations, two artifacts.
 
     The round trip is given away free — the second dispatch starts the instant
@@ -512,7 +518,7 @@ def staged_pair(case, governor_class=None):
     likely to win, and it still loses.
     """
 
-    governor, _, clock = tracer_governor(governor_class)
+    governor, _, clock = tracer_governor()
     first = run_on(clock, governor, DISCOVERY_MANIFEST)
     discovered = [record.normalized_locator for record in first.artifact.records]
     case.assertIn(
@@ -710,7 +716,7 @@ class WorkLedgerTest(unittest.TestCase):
     def test_a_served_read_costs_a_page_and_no_call(self):
         # The distinction the two metrics exist to draw: a run that remembers
         # what it read still produced the page, and did not spend the call.
-        governor, opener, clock = cached_run(runner.RateGovernor)
+        governor, opener, clock = cached_run(real_governor)
 
         first = run_on(clock, governor, FUSED_MANIFEST)
         clock.advance(min(cache.ttl_seconds(route) for route in REPEAT_ROUTES) / 2.0)
@@ -1113,6 +1119,90 @@ class VolatileIdentifierTest(unittest.TestCase):
         for adapter_id in runner.ADAPTER_IDS:
             with self.subTest(adapter=adapter_id):
                 self.assertEqual(runner.descriptor_for(adapter_id).volatile_identifiers, ())
+
+
+class OracleCanFailTest(unittest.TestCase):
+    """Criteria 6 and 10: every oracle above is shown to reject, and to accept.
+
+    Each wrong result is a file beside the tree — the real governor with one
+    method overridden, or the real fused run with one property of its output
+    spoiled — so a rejection is attributable to that one difference and nothing
+    under test was mutated to produce it.
+    """
+
+    def setUp(self):
+        self.wrong = load_module_beside_the_tree(FIXTURE_DIR / "wrong_pipelines.py")
+
+    def test_a_governor_that_ignores_its_declared_interval_is_rejected(self):
+        clock = helpers.FakeClock()
+        governor, _ = paced_governor(
+            clock,
+            {REDDIT_FEED_ROUTE: OK_JSON},
+            latencies={REDDIT_FEED_ROUTE: 0.5},
+            governor_class=self.wrong.UnpacedGovernor,
+        )
+
+        for index in range(3):
+            governor.fetch(probe_request(REDDIT_FEED_ROUTE, index))
+
+        with self.assertRaisesRegex(AssertionError, "outran its route's declared budget"):
+            assert_rate_budget_respected(self, governor, SEEDED_BUDGETS)
+
+    def test_the_same_budget_oracle_accepts_the_real_governor(self):
+        clock = helpers.FakeClock()
+        governor, _ = paced_governor(
+            clock, {REDDIT_FEED_ROUTE: OK_JSON}, latencies={REDDIT_FEED_ROUTE: 0.5}
+        )
+
+        for index in range(3):
+            governor.fetch(probe_request(REDDIT_FEED_ROUTE, index))
+
+        assert_rate_budget_respected(self, governor, SEEDED_BUDGETS)
+
+    def test_a_fused_path_that_folds_the_pair_into_one_record_is_rejected(self):
+        with self.assertRaisesRegex(AssertionError, "different numbers of records"):
+            assert_fused_collapses_latency_and_not_lineage(
+                self, fused_run(self.wrong.merged_fused_run), staged_pair(self)
+            )
+
+    def test_a_fused_path_that_drops_the_link_between_the_pair_is_rejected(self):
+        with self.assertRaisesRegex(AssertionError, "linked its records differently"):
+            assert_fused_collapses_latency_and_not_lineage(
+                self, fused_run(self.wrong.unlinked_fused_run), staged_pair(self)
+            )
+
+    def test_a_fused_path_that_collapses_no_latency_is_rejected(self):
+        with self.assertRaisesRegex(AssertionError, "did not collapse any latency"):
+            assert_fused_collapses_latency_and_not_lineage(
+                self, fused_run(self.wrong.serialized_fused_run), staged_pair(self)
+            )
+
+    def test_a_governor_that_restamps_a_served_answer_is_rejected(self):
+        with self.assertRaisesRegex(AssertionError, "restamped with the serve time"):
+            assert_cache_hit_reaches_the_record(self, self.wrong.restamping)
+
+    def test_a_governor_that_drops_the_mark_before_the_record_is_rejected(self):
+        with self.assertRaisesRegex(AssertionError, "carries no cache_hit mark"):
+            assert_cache_hit_reaches_the_record(self, self.wrong.unmarked)
+
+    def test_the_same_record_oracle_accepts_the_fixtures_own_correct_governor(self):
+        # Which is what makes the two rejections above attributable: the
+        # correct fixture is the same construction with nothing overridden.
+        assert_cache_hit_reaches_the_record(self, self.wrong.correct)
+
+    def test_nothing_in_the_package_can_reach_a_wrong_pipeline(self):
+        self.assertEqual(
+            sources_naming(
+                (
+                    "wrong_pipelines",
+                    "UnpacedGovernor",
+                    "RestampingGovernor",
+                    "UnmarkedGovernor",
+                ),
+                package_sources(),
+            ),
+            [],
+        )
 
 
 class AdapterBranchTest(unittest.TestCase):
