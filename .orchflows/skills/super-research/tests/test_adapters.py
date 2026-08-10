@@ -91,7 +91,8 @@ from pathlib import Path
 from unittest import mock
 
 from super_research import adapters, cache, normalize, runner, schema, transport
-from super_research.adapters import instagram_public, linkedin_jobs, linkedin_public
+from super_research.adapters import hacker_news, instagram_public, linkedin_jobs
+from super_research.adapters import linkedin_public
 from super_research.adapters import x_guest, x_syndication, youtube_innertube
 from tests import helpers
 
@@ -4483,6 +4484,517 @@ class HackerNewsGithubRouteConstantTest(unittest.TestCase):
                 resolved = transport.origin_locator(route_id, "/item?id=" + HN_STORY_ID)
 
                 self.assertNotIn("news.ycombinator.com", resolved)
+
+
+HN_FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "hacker_news"
+
+# findings.md §1 (carry-over routes): the three fields the evidence names the
+# Firebase item route returning, named as the evidence names them rather than
+# as a record spells them.
+HN_ITEM_ROSTER_FIELDS = ("by", "descendants", "kids")
+HN_COMMENT_ID = "44831402"
+HN_ABSENT_ID = "44899999"
+HN_PERMALINK = "https://news.ycombinator.com/item?id="
+
+
+def read_hacker_news(name):
+    """Read one offline Hacker News fixture."""
+
+    return HN_FIXTURE_DIR.joinpath(name).read_text(encoding="utf-8")
+
+
+def hacker_news_cases():
+    """The measured case table: a request, a status, a body, and what it means."""
+
+    return tuple(json.loads(read_hacker_news("item_cases.json"))["cases"])
+
+
+def hn_request(query="", target_id="", cursor=""):
+    return adapters.AdapterRequest(
+        step_id="s1-hn",
+        query=query,
+        target_ids=(target_id,) if target_id else (),
+        cursor=cursor,
+    )
+
+
+def hn_page(
+    fixture,
+    status=200,
+    query="",
+    target_id="",
+    cursor="",
+    content_type="application/json",
+    module=None,
+):
+    """Run the adapter over one canned answer, with both surfaces seeded.
+
+    Both routes answer, so a call that reached the wrong one is a wrong url
+    rather than a missing fixture, and a call that reached both is two entries
+    in one opener — which is what "two surfaces, never fused" is checked
+    against.
+    """
+
+    clock = helpers.FakeClock()
+    answer = (status, read_hacker_news(fixture), content_type)
+    carrier, opener = helpers.offline_transport(
+        clock,
+        {
+            transport.HN_ALGOLIA_SEARCH_ROUTE: answer,
+            transport.HN_FIREBASE_ITEM_ROUTE: answer,
+        },
+    )
+    reading = hacker_news if module is None else module
+    return (
+        reading.fetch_native_page(carrier, hn_request(query, target_id, cursor)),
+        opener,
+    )
+
+
+def attribute_pairs(record, name):
+    """Every value one record carries under one attribute name, in its own order."""
+
+    return tuple(value for carried, value in record.attributes if carried == name)
+
+
+class HackerNewsSearchTest(unittest.TestCase):
+    """The half the prior spec did not have: HN, searchable.
+
+    Firebase v0 lists and hydrates and cannot search at all, which is why the
+    superseded spec's `hacker_news` adapter could only walk ids it was already
+    given. Algolia is HN's own index of itself, and it is what makes a query
+    answerable — so these checks read a query's answer, row by row, in the
+    order the index listed them.
+    """
+
+    def test_a_step_naming_only_a_query_asks_the_endpoint_the_evidence_measured(self):
+        _, opener = hn_page("algolia_search_by_date.json", query="local models")
+
+        # findings.md §1: `hn.algolia.com/api/v1/search_by_date` answered 200
+        # with full-text HN search. A caller wanting relevance names `search:`.
+        self.assertEqual(len(opener.opened), 1)
+        self.assertEqual(opener.opened[0].route_id, transport.HN_ALGOLIA_SEARCH_ROUTE)
+        self.assertEqual(
+            urllib.parse.urlsplit(opener.opened[0].url).path, "/api/v1/search_by_date"
+        )
+
+    def test_comment_search_is_that_endpoint_asked_under_the_tag_that_selects_them(self):
+        _, opener = hn_page("algolia_comment_search.json", query="comments:kv cache")
+        asked = urllib.parse.urlsplit(opener.opened[0].url)
+
+        # findings.md §1: `.../search?tags=comment` answered 200 for comments.
+        self.assertEqual(asked.path, "/api/v1/search")
+        self.assertEqual(
+            sorted(urllib.parse.parse_qsl(asked.query)),
+            [("query", "kv cache"), ("tags", "comment")],
+        )
+
+    def test_the_index_rows_arrive_in_the_order_the_index_listed_them(self):
+        page, _ = hn_page("algolia_search_by_date.json", query="local models")
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(
+            [record.native_item_id for record in page.records],
+            ["44831234", "44830011", "44829903", "44829502"],
+        )
+        self.assertEqual(
+            [record.canonical_content_kind for record in page.records],
+            ["story", "story", "comment", "story"],
+        )
+        self.assertEqual([record.native_position for record in page.records], [0, 1, 2, 3])
+
+    def test_a_story_hit_carries_its_own_address_and_the_link_it_points_at(self):
+        page, _ = hn_page("algolia_search_by_date.json", query="local models")
+        story = page.records[0]
+
+        # Two different things, and conflating them would merge every story
+        # that ever linked to one article: the item's address is on HN, and the
+        # link it points at is the story's own reported field.
+        self.assertEqual(story.canonical_locator, HN_PERMALINK + "44831234")
+        self.assertEqual(
+            attribute_pairs(story, "url"), ("https://harbourlight.example/70b-two-gpus",)
+        )
+        self.assertEqual(story.title, "Running a 70B locally on two consumer GPUs")
+        self.assertEqual(story.author, "kessel_run")
+        self.assertEqual(story.published_at, "2026-08-09T16:41:52Z")
+
+    def test_a_story_that_links_to_nothing_carries_its_own_text_and_no_link(self):
+        page, _ = hn_page("algolia_search_by_date.json", query="local models")
+        ask = page.records[1]
+
+        self.assertEqual(attribute_pairs(ask, "url"), ())
+        self.assertEqual(
+            ask.body, "Mine was a cache key that stopped including the lockfile."
+        )
+
+    def test_a_comment_hit_names_the_parent_it_answers_and_no_title_of_its_own(self):
+        page, _ = hn_page("algolia_search_by_date.json", query="local models")
+        comment = page.records[2]
+
+        self.assertEqual(comment.native_parent_id, "44829870")
+        self.assertEqual(
+            comment.body,
+            "The two settings that mattered were batch size and the KV cache dtype.",
+        )
+        # Algolia reports the parent story's title on a comment. It is a fact
+        # about the story, so it is not this record's title.
+        self.assertEqual(comment.title, "")
+        self.assertEqual(comment.engagement, ())
+
+    def test_the_counts_a_hit_reports_travel_under_algolias_own_names(self):
+        page, _ = hn_page("algolia_search_by_date.json", query="local models")
+
+        self.assertEqual(counts_of(page.records[0]), {"points": 412, "num_comments": 233})
+        self.assertEqual(counts_of(page.records[3]), {"points": 58, "num_comments": 12})
+
+    def test_the_next_page_is_surfaced_for_the_core_and_never_followed(self):
+        page, opener = hn_page("algolia_search_by_date.json", query="local models")
+
+        # The index states how many pages it has, so the next one is its claim
+        # and not this adapter's arithmetic about whether more exist.
+        self.assertEqual(page.cursor_out, "1")
+        self.assertEqual(len(opener.opened), 1)
+
+    def test_the_last_page_the_index_states_surfaces_no_next_one(self):
+        page, _ = hn_page("algolia_comment_search.json", query="comments:kv cache")
+
+        self.assertEqual(page.cursor_out, "")
+        self.assertEqual(len(page.records), 2)
+        self.assertEqual(
+            [record.canonical_content_kind for record in page.records],
+            ["comment", "comment"],
+        )
+
+    def test_a_reply_names_the_comment_it_answers_and_the_story_it_sits_under(self):
+        # Two different facts, and only one of them is `native_parent_id`: this
+        # reply hangs off another comment, and the story it belongs to is the
+        # index's own separate field.
+        page, _ = hn_page("algolia_comment_search.json", query="comments:kv cache")
+        reply = page.records[0]
+
+        self.assertEqual(reply.native_parent_id, HN_COMMENT_ID)
+        self.assertEqual(attribute_pairs(reply, "story_id"), (HN_STORY_ID,))
+
+    def test_a_cursor_the_core_hands_back_is_spent_as_the_index_own_page(self):
+        _, opener = hn_page(
+            "algolia_search_by_date.json", query="local models", cursor="3"
+        )
+
+        self.assertEqual(len(opener.opened), 1)
+        self.assertIn(("page", "3"), urllib.parse.parse_qsl(opener.opened[0].url.split("?")[1]))
+
+    def test_a_row_short_of_its_fields_says_so_and_a_row_of_no_type_is_not_a_row(self):
+        page, _ = hn_page("algolia_partial_hit.json", query="short row")
+
+        self.assertEqual(len(page.records), 1)
+        self.assertEqual(page.records[0].loss, ("field_omitted",))
+        # Zero is a count the index reported, not a field it left out.
+        self.assertEqual(counts_of(page.records[0]), {"points": 0, "num_comments": 0})
+        self.assertEqual(page.outcome, "ok")
+        self.assertIn("1", " ".join(page.warnings))
+        self.assertIn("no item type", " ".join(page.warnings))
+
+
+class HackerNewsItemTest(unittest.TestCase):
+    """The other surface: one item, its counts, and the tree under it.
+
+    Firebase v0 is where a story's comment tree lives — `kids` is the only
+    field in either surface that says which items hang off this one. The
+    traversal itself is the core's: this adapter reads one item per call and
+    hands back the ids, because walking them here would make one call a crawl.
+    """
+
+    def test_an_item_answer_carries_every_field_the_evidence_names(self):
+        page, opener = hn_page("firebase_story.json", target_id=HN_STORY_ID)
+        story = page.records[0]
+
+        # findings.md §1: `by`, `descendants`, and the `kids` tree.
+        self.assertEqual(len(page.records), 1)
+        self.assertEqual(story.author, "kessel_run")
+        self.assertEqual(counts_of(story)["descendants"], 233)
+        self.assertEqual(
+            attribute_pairs(story, hacker_news.KIDS_KEY),
+            ("44831402", "44831377", "44831301"),
+        )
+        self.assertEqual(len(opener.opened), 1)
+
+    def test_the_item_is_asked_for_on_the_route_that_has_the_tree(self):
+        _, opener = hn_page("firebase_story.json", target_id=HN_STORY_ID)
+
+        self.assertEqual(opener.opened[0].route_id, transport.HN_FIREBASE_ITEM_ROUTE)
+        self.assertEqual(
+            urllib.parse.urlsplit(opener.opened[0].url).path,
+            "/v0/item/" + HN_STORY_ID + ".json",
+        )
+
+    def test_an_item_states_its_kind_its_time_and_its_own_address(self):
+        page, _ = hn_page("firebase_story.json", target_id=HN_STORY_ID)
+        story = page.records[0]
+
+        self.assertEqual(story.canonical_content_kind, "story")
+        self.assertEqual(story.native_item_id, HN_STORY_ID)
+        self.assertEqual(story.published_at, "2026-08-09T16:41:52Z")
+        self.assertEqual(story.canonical_locator, HN_PERMALINK + HN_STORY_ID)
+        self.assertEqual(counts_of(story)["score"], 412)
+
+    def test_a_kid_read_by_its_own_id_names_the_item_it_hangs_off(self):
+        page, _ = hn_page("firebase_comment.json", target_id="item:" + HN_COMMENT_ID)
+        comment = page.records[0]
+
+        self.assertEqual(comment.canonical_content_kind, "comment")
+        self.assertEqual(comment.native_item_id, HN_COMMENT_ID)
+        self.assertEqual(comment.native_parent_id, HN_STORY_ID)
+        self.assertEqual(attribute_pairs(comment, hacker_news.KIDS_KEY), ("44831500",))
+        # A comment reports no score and no descendant count, and neither is
+        # invented as a zero here.
+        self.assertEqual(counts_of(comment), {})
+
+    def test_one_story_seen_on_both_surfaces_states_one_identity(self):
+        # What makes the two surfaces one adapter: Algolia's `objectID` is HN's
+        # own item id, so a search hit and an item read name the same thing and
+        # will group on it rather than being two unrelated rows.
+        found, _ = hn_page("algolia_search_by_date.json", query="local models")
+        read, _ = hn_page("firebase_story.json", target_id=HN_STORY_ID)
+
+        self.assertEqual(found.records[0].native_item_id, read.records[0].native_item_id)
+        self.assertEqual(
+            found.records[0].canonical_content_kind, read.records[0].canonical_content_kind
+        )
+        self.assertEqual(
+            found.records[0].canonical_locator, read.records[0].canonical_locator
+        )
+        self.assertNotEqual(found.route_id, read.route_id)
+
+
+def typed_hacker_news_pages(module):
+    """Type every measured case through one adapter's own ``fetch_native_page``."""
+
+    return {
+        row["case_name"]: hn_page(
+            row["body_fixture"],
+            status=row["status"],
+            query=row["query"],
+            target_id=row["target_id"],
+            cursor=row["cursor"],
+            content_type=(
+                "text/html" if row["body_fixture"].endswith(".txt") else "application/json"
+            ),
+            module=module,
+        )[0]
+        for row in hacker_news_cases()
+    }
+
+
+def assert_an_absence_is_never_a_moved_payload(case, adapter_id, pages):
+    """The oracle: nothing here is both an answer of no rows and a shape change.
+
+    ``pages`` maps a measured case name to the ``NativePage`` some adapter
+    produced for it. Two confusions, one per direction. HN answers a request
+    for an item it does not have with 200 and `null`, and Algolia answers a
+    query nothing matched with 200 and an empty list; typing either as
+    `schema_drift` sends a reader hunting a payload change over an ordinary
+    answer. And a payload that really did move must never arrive as one of
+    those, because then the platform looks quiet while this package reads the
+    wrong keys.
+    """
+
+    for row in hacker_news_cases():
+        name = row["case_name"]
+        case.assertIn(name, pages, "{0} produced no page for case {1}".format(adapter_id, name))
+        page = pages[name]
+        loss = tuple(page.loss)
+        detail = " {0} typed case {1} as outcome {2} loss {3}".format(
+            adapter_id, name, page.outcome, loss
+        )
+        if row["answer_kind"] in ("absent", "no_matches"):
+            if hacker_news.SCHEMA_DRIFT in loss:
+                case.fail(
+                    "an answer stating there is nothing there was recorded as a payload"
+                    " that moved:" + detail
+                )
+            if page.records:
+                case.fail("an answer stating there is nothing there carried rows:" + detail)
+            if not page.warnings:
+                case.fail("an empty answer was returned with nothing said about it:" + detail)
+        elif row["answer_kind"] == "drifted":
+            if page.outcome != "failed":
+                case.fail("a payload that moved was recorded as an answer:" + detail)
+            if page.records:
+                case.fail("a payload that moved still produced rows:" + detail)
+        elif row["answer_kind"] == "records" and not page.records:
+            case.fail("an answer carrying rows produced none:" + detail)
+        case.assertEqual(
+            page.outcome,
+            row["expected_outcome"],
+            "case {0} came back {1}, its evidence says {2}".format(
+                name, page.outcome, row["expected_outcome"]
+            ),
+        )
+        case.assertEqual(
+            loss, (row["expected_loss"],) if row["expected_loss"] else (), detail
+        )
+
+
+class HackerNewsAbsenceIsNotDriftTest(unittest.TestCase):
+    """Criterion 1's other half: an answer of nothing is an answer."""
+
+    def test_every_measured_case_is_typed_as_its_evidence_says(self):
+        assert_an_absence_is_never_a_moved_payload(
+            self, "hacker_news", typed_hacker_news_pages(hacker_news)
+        )
+
+    def test_an_item_hn_does_not_have_is_an_answer_and_never_a_failure(self):
+        page, _ = hn_page("firebase_absent_item.json", target_id=HN_ABSENT_ID)
+
+        self.assertEqual(page.outcome, "empty")
+        self.assertEqual(page.loss, ())
+        self.assertEqual(page.records, ())
+        self.assertIn(HN_ABSENT_ID, " ".join(page.warnings))
+
+    def test_a_query_that_matched_nothing_is_not_an_index_that_moved(self):
+        matched, _ = hn_page("algolia_no_matches.json", query="a phrase")
+        moved, _ = hn_page("algolia_reshaped.json", query="local models")
+
+        self.assertEqual(matched.outcome, "empty")
+        self.assertEqual(matched.loss, ())
+        self.assertEqual(moved.outcome, "failed")
+        self.assertEqual(moved.loss, (hacker_news.SCHEMA_DRIFT,))
+        # The drift names the container it looked for, so a reader knows which
+        # shape to go and check.
+        self.assertIn(hacker_news.HITS_KEY, " ".join(moved.warnings))
+
+    def test_neither_surface_calls_a_keyless_route_credentialed(self):
+        # Criterion 1: with no credential store anywhere in this run, no answer
+        # either surface can give is `auth_required`.
+        typed = typed_hacker_news_pages(hacker_news)
+
+        for name, page in sorted(typed.items()):
+            with self.subTest(case=name):
+                self.assertNotIn("auth_required", page.loss)
+
+
+WRONG_HN_ADAPTERS = ("absent_item_as_drift_adapter", "drift_as_no_matches_adapter")
+
+
+class HackerNewsOracleCanFailTest(unittest.TestCase):
+    """The oracle above rejects each confusion, and accepts the shipped adapter.
+
+    Each wrong adapter is the shipped one with a single conclusion changed,
+    written beside the tree and loaded by path, so a rejection is attributable
+    to that conclusion and nothing under test was mutated to produce it.
+    """
+
+    def _pages(self, name):
+        return typed_hacker_news_pages(load_adapter_fixture(name, directory=HN_FIXTURE_DIR))
+
+    def test_an_absent_item_read_as_a_moved_payload_fails_the_oracle(self):
+        with self.assertRaisesRegex(AssertionError, "recorded as a payload that moved"):
+            assert_an_absence_is_never_a_moved_payload(
+                self, "absent_item_as_drift_adapter", self._pages(WRONG_HN_ADAPTERS[0])
+            )
+
+    def test_a_moved_payload_read_as_a_search_with_no_matches_fails_the_oracle(self):
+        with self.assertRaisesRegex(AssertionError, "recorded as an answer"):
+            assert_an_absence_is_never_a_moved_payload(
+                self, "drift_as_no_matches_adapter", self._pages(WRONG_HN_ADAPTERS[1])
+            )
+
+    def test_the_same_oracle_passes_on_the_shipped_adapter(self):
+        assert_an_absence_is_never_a_moved_payload(
+            self, "hacker_news", typed_hacker_news_pages(hacker_news)
+        )
+
+    def test_nothing_in_the_package_can_reach_either_wrong_adapter(self):
+        named = sorted(
+            path.name
+            for path in PACKAGE_DIR.rglob("*.py")
+            for wrong in WRONG_HN_ADAPTERS
+            if wrong in path.read_text(encoding="utf-8")
+        )
+
+        self.assertEqual(named, [])
+
+
+class HackerNewsDescriptorTest(unittest.TestCase):
+    """One adapter, two surfaces, and a budget for each route it can reach."""
+
+    def test_each_surface_declares_the_route_it_reads_under_one_adapter_id(self):
+        self.assertEqual(
+            [descriptor.route_id for descriptor in hacker_news.SURFACE_DESCRIPTORS],
+            [transport.HN_FIREBASE_ITEM_ROUTE, transport.HN_ALGOLIA_SEARCH_ROUTE],
+        )
+        for descriptor in hacker_news.SURFACE_DESCRIPTORS:
+            with self.subTest(route=descriptor.route_id):
+                self.assertEqual(descriptor.adapter_id, "hacker_news")
+                self.assertEqual(descriptor.access_class, "K0")
+                self.assertEqual(descriptor.platform, "hackernews")
+                self.assertEqual(descriptor.native_identity_namespace, "hackernews")
+                self.assertEqual(descriptor.representation_kind, "native")
+                # `K3` carries `third_party_archive`; this is HN's own index of
+                # itself and HN's own item store, so neither surface does.
+                self.assertEqual(descriptor.standing_loss, ())
+                self.assertEqual(descriptor.volatile_identifiers, ())
+
+    def test_nothing_was_measured_here_so_nothing_is_declared(self):
+        # findings.md §1 records "no throttle observed" and no latency for
+        # either surface. An unmeasured ceiling is not one to spend, so both
+        # keep the protocol's conservative defaults rather than a number this
+        # ticket would have had to invent.
+        for descriptor in hacker_news.SURFACE_DESCRIPTORS:
+            with self.subTest(route=descriptor.route_id):
+                self.assertEqual(
+                    runner.route_budgets()[descriptor.route_id],
+                    runner.RouteBudget(
+                        min_interval_ms=adapters.DEFAULT_MIN_INTERVAL_MS,
+                        burst=adapters.DEFAULT_BURST,
+                        cooldown_ms=adapters.DEFAULT_COOLDOWN_MS,
+                    ),
+                )
+
+    def test_each_surface_declares_the_comment_count_its_own_route_reports(self):
+        # The same quantity under two surfaces' own names: Firebase calls a
+        # story's comment count `descendants` and Algolia calls it
+        # `num_comments`. Declaring either under the other's name would be this
+        # package inventing a vocabulary; declaring neither would leave
+        # `most_commented` ranking on a number nobody reported.
+        by_route = {
+            descriptor.route_id: descriptor for descriptor in hacker_news.SURFACE_DESCRIPTORS
+        }
+
+        self.assertEqual(
+            by_route[transport.HN_FIREBASE_ITEM_ROUTE].comment_count_metric,
+            hacker_news.DESCENDANTS_METRIC,
+        )
+        self.assertEqual(
+            by_route[transport.HN_ALGOLIA_SEARCH_ROUTE].comment_count_metric,
+            hacker_news.NUM_COMMENTS_METRIC,
+        )
+        for descriptor in hacker_news.SURFACE_DESCRIPTORS:
+            with self.subTest(route=descriptor.route_id):
+                self.assertEqual(descriptor.reply_count_metric, "")
+
+    def test_the_core_reaches_it_by_both_literal_branches_and_sees_both_surfaces(self):
+        self.assertIn("hacker_news", runner.ADAPTER_IDS)
+        self.assertIs(runner.descriptor_for("hacker_news"), hacker_news.DESCRIPTOR)
+        self.assertEqual(
+            runner.surface_descriptors("hacker_news"), hacker_news.SURFACE_DESCRIPTORS
+        )
+
+        clock = helpers.FakeClock()
+        carrier, opener = helpers.offline_transport(
+            clock,
+            {
+                transport.HN_FIREBASE_ITEM_ROUTE: (
+                    200,
+                    read_hacker_news("firebase_story.json"),
+                    "application/json",
+                )
+            },
+        )
+        page = runner.call_adapter("hacker_news", carrier, hn_request(target_id=HN_STORY_ID))
+
+        self.assertEqual(len(page.records), 1)
+        self.assertEqual(len(opener.opened), 1)
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner

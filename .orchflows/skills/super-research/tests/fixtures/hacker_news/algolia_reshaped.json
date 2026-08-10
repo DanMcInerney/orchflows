@@ -1,0 +1,15 @@
+{
+  "results": [
+    {
+      "records": [
+        {
+          "objectID": "44831234",
+          "title": "Running a 70B locally on two consumer GPUs"
+        }
+      ],
+      "nbRecords": 4212
+    }
+  ],
+  "query": "local models",
+  "processingTimeMS": 3
+}

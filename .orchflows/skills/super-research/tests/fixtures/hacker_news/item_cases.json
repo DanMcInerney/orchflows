@@ -1,0 +1,150 @@
+{
+  "source": "findings.md §1 (carry-over routes), measured 2026-08-10",
+  "note": "The confusion this half exists to prevent, in both directions. HN answers a request for an item it does not have with 200 and the body `null`, and Algolia answers a query nothing matched with 200 and an empty `hits` list. Both are the origin saying 'there is nothing here', and both are one character away from looking like a payload that moved. An adapter that typed either as `schema_drift` would send someone hunting a shape change every time a search came up short or an id was wrong; one that typed a moved payload as an empty answer would report the platform as quiet while this package was reading the wrong keys. `answer_kind` is the column the oracle reads. The payload shapes are this package's belief: findings.md records statuses and field names, not bodies, and offline determinism forbids capturing one here.",
+  "cases": [
+    {
+      "case_name": "search_by_date_200",
+      "query": "local models",
+      "target_id": "",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "algolia_search_by_date.json",
+      "answer_kind": "records",
+      "expected_outcome": "ok",
+      "expected_loss": "",
+      "evidence": "measured: hn.algolia.com/api/v1/search_by_date answered 200 with full-text HN search — the capability the prior spec's Firebase-only adapter did not have at all"
+    },
+    {
+      "case_name": "relevance_search_200",
+      "query": "search:local models",
+      "target_id": "",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "algolia_search_by_date.json",
+      "answer_kind": "records",
+      "expected_outcome": "ok",
+      "expected_loss": "",
+      "evidence": "the same endpoint the comment search was measured on, asked without the tag filter: `search` ranks by relevance where `search_by_date` ranks by recency"
+    },
+    {
+      "case_name": "comment_search_200",
+      "query": "comments:kv cache",
+      "target_id": "",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "algolia_comment_search.json",
+      "answer_kind": "records",
+      "expected_outcome": "ok",
+      "expected_loss": "",
+      "evidence": "measured: hn.algolia.com/api/v1/search?tags=comment answered 200 for comment search"
+    },
+    {
+      "case_name": "search_matched_nothing_200",
+      "query": "a phrase nobody on this site has written",
+      "target_id": "",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "algolia_no_matches.json",
+      "answer_kind": "no_matches",
+      "expected_outcome": "empty",
+      "expected_loss": "",
+      "evidence": "a query that matched nothing still answers with the container: this is the index speaking, not the index having moved"
+    },
+    {
+      "case_name": "search_row_came_back_short_200",
+      "query": "short row",
+      "target_id": "",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "algolia_partial_hit.json",
+      "answer_kind": "records",
+      "expected_outcome": "ok",
+      "expected_loss": "",
+      "evidence": "a hit short of its declared fields is an incomplete row and says so on the record; a hit whose tags name no item type is not a row this adapter can type at all"
+    },
+    {
+      "case_name": "search_shape_moved_200",
+      "query": "local models",
+      "target_id": "",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "algolia_reshaped.json",
+      "answer_kind": "drifted",
+      "expected_outcome": "failed",
+      "expected_loss": "schema_drift",
+      "evidence": "200 with no `hits` container at all: the payload this adapter reads has changed shape, which is not a search that matched nothing"
+    },
+    {
+      "case_name": "item_story_200",
+      "query": "",
+      "target_id": "44831234",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "firebase_story.json",
+      "answer_kind": "records",
+      "expected_outcome": "ok",
+      "expected_loss": "",
+      "evidence": "measured: hacker-news.firebaseio.com/v0/item/<id> answered 200 with `by`, `descendants` and the `kids` tree"
+    },
+    {
+      "case_name": "item_comment_200",
+      "query": "",
+      "target_id": "item:44831402",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "firebase_comment.json",
+      "answer_kind": "records",
+      "expected_outcome": "ok",
+      "expected_loss": "",
+      "evidence": "one kid of the story above, hydrated by its own id: the traversal is one call per item and the core owns the sequence"
+    },
+    {
+      "case_name": "item_absent_200",
+      "query": "",
+      "target_id": "44899999",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "firebase_absent_item.json",
+      "answer_kind": "absent",
+      "expected_outcome": "empty",
+      "expected_loss": "",
+      "evidence": "Firebase answers a request for an item it does not have with 200 and the body `null`: HN has no such item, which is an answer and not a failure"
+    },
+    {
+      "case_name": "item_shape_moved_200",
+      "query": "",
+      "target_id": "44831234",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "firebase_reshaped.json",
+      "answer_kind": "drifted",
+      "expected_outcome": "failed",
+      "expected_loss": "schema_drift",
+      "evidence": "200 with an object that states no `type` and no `id`: the payload moved, and this is not HN having no such item"
+    },
+    {
+      "case_name": "item_answered_in_html_200",
+      "query": "",
+      "target_id": "44831234",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "firebase_not_json.txt",
+      "answer_kind": "drifted",
+      "expected_outcome": "failed",
+      "expected_loss": "malformed_json",
+      "evidence": "a 200 that is not json at all is something answering in place of the route, and is neither an absent item nor a moved payload"
+    },
+    {
+      "case_name": "item_route_answered_404",
+      "query": "",
+      "target_id": "44831234",
+      "cursor": "",
+      "status": 404,
+      "body_fixture": "firebase_reshaped.json",
+      "answer_kind": "refused",
+      "expected_outcome": "failed",
+      "expected_loss": "http_status",
+      "evidence": "the origin's own status, carried as itself: a wrong path answers 404 where a missing item answers 200 with `null`"
+    }
+  ]
+}

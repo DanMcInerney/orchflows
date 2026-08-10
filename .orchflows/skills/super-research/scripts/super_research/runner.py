@@ -37,9 +37,9 @@ from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 from . import cache, normalize, router, schema, transport
 from .adapters import AdapterDescriptor, AdapterRequest, NativePage
-from .adapters import fake, instagram_public, linkedin_jobs, linkedin_public
-from .adapters import reddit_archive, web_search, x_guest, x_syndication
-from .adapters import youtube_innertube
+from .adapters import fake, hacker_news, instagram_public, linkedin_jobs
+from .adapters import linkedin_public, reddit_archive, web_search, x_guest
+from .adapters import x_syndication, youtube_innertube
 
 US_PER_SECOND = 1000000
 US_PER_MS = 1000
@@ -55,6 +55,7 @@ def tick_us(clock: Callable[[], float]) -> int:
 # later adapter listed here without both of them fails loudly.
 ADAPTER_IDS = (
     "fake",
+    "hacker_news",
     "instagram_public",
     "linkedin_jobs",
     "linkedin_public",
@@ -75,6 +76,8 @@ def descriptor_for(adapter_id: str) -> Optional[AdapterDescriptor]:
 
     if adapter_id == "fake":
         return fake.DESCRIPTOR
+    if adapter_id == "hacker_news":
+        return hacker_news.DESCRIPTOR
     if adapter_id == "instagram_public":
         return instagram_public.DESCRIPTOR
     if adapter_id == "linkedin_jobs":
@@ -101,6 +104,8 @@ def call_adapter(
 
     if adapter_id == "fake":
         return fake.fetch_native_page(carrier, request)
+    if adapter_id == "hacker_news":
+        return hacker_news.fetch_native_page(carrier, request)
     if adapter_id == "instagram_public":
         return instagram_public.fetch_native_page(carrier, request)
     if adapter_id == "linkedin_jobs":
@@ -161,6 +166,23 @@ def budgets_from(descriptors: Iterable[AdapterDescriptor]) -> Dict[str, RouteBud
     return budgets
 
 
+def surface_descriptors(adapter_id: str) -> Tuple[AdapterDescriptor, ...]:
+    """Every route one adapter can reach, one descriptor each.
+
+    Almost every adapter reads one route and this is its one descriptor.
+    ``hacker_news`` reads two origins — Algolia for search, Firebase for the
+    item tree — and a budget belongs to the origin that sets it, so a
+    two-surface adapter declares one descriptor per route and this is where the
+    second becomes reachable. Literal branches, like the two above: a surface
+    the core cannot see here is a route the scheduler would refuse to pace.
+    """
+
+    if adapter_id == "hacker_news":
+        return hacker_news.SURFACE_DESCRIPTORS
+    descriptor = descriptor_for(adapter_id)
+    return () if descriptor is None else (descriptor,)
+
+
 def declared_descriptors() -> Dict[str, AdapterDescriptor]:
     """Every adapter this core lists, by id."""
 
@@ -175,7 +197,11 @@ def declared_descriptors() -> Dict[str, AdapterDescriptor]:
 def route_budgets() -> Dict[str, RouteBudget]:
     """Every route this core can read, paired with the ceiling its adapter declares."""
 
-    return budgets_from(declared_descriptors().values())
+    return budgets_from(
+        descriptor
+        for adapter_id in ADAPTER_IDS
+        for descriptor in surface_descriptors(adapter_id)
+    )
 
 
 @dataclass(frozen=True)

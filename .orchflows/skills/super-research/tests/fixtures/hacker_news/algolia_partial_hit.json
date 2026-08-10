@@ -1,0 +1,34 @@
+{
+  "hits": [
+    {
+      "created_at": null,
+      "title": "A story whose row came back short",
+      "url": "https://harbourlight.example/short-row",
+      "author": null,
+      "points": 0,
+      "num_comments": 0,
+      "story_id": null,
+      "parent_id": null,
+      "_tags": ["story", "story_44827001"],
+      "objectID": "44827001"
+    },
+    {
+      "created_at": "2026-08-09T10:02:00.000Z",
+      "title": "A row this adapter cannot type",
+      "url": "https://harbourlight.example/untypable",
+      "author": "petrel",
+      "points": 4,
+      "num_comments": 0,
+      "_tags": ["author_petrel", "front_page"],
+      "objectID": "44826500"
+    }
+  ],
+  "nbHits": 2,
+  "page": 0,
+  "nbPages": 1,
+  "hitsPerPage": 20,
+  "exhaustiveNbHits": true,
+  "query": "short row",
+  "params": "query=short+row&page=0",
+  "processingTimeMS": 1
+}
