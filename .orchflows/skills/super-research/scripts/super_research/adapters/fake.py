@@ -14,7 +14,14 @@ import json
 from typing import Any, Mapping, Tuple
 
 from .. import transport
-from . import AdapterDescriptor, AdapterRequest, NativePage, NativeRecord, build_native_page
+from . import (
+    AdapterDescriptor,
+    AdapterRequest,
+    NativePage,
+    NativeRecord,
+    build_native_page,
+    fetch_one_page,
+)
 
 DESCRIPTOR = AdapterDescriptor(
     adapter_id="fake",
@@ -68,14 +75,9 @@ def _declaration_from(payload: Mapping[str, Any]) -> AdapterDescriptor:
     )
 
 
-def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> NativePage:
-    """Return exactly one NativePage built from the named offline fixture."""
+def _page_from(response: transport.TransportResponse) -> NativePage:
+    """Turn one fixture response into exactly one page."""
 
-    response = carrier.fetch(
-        transport.build_transport_request(
-            DESCRIPTOR.route_id, {"target": ",".join(request.target_ids)}
-        )
-    )
     try:
         payload = json.loads(response.body)
         rows = payload["records"]
@@ -100,4 +102,15 @@ def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> 
         native_order=payload.get("native_order", ""),
         outcome=payload.get("outcome", "ok" if records else "empty"),
         loss=tuple(payload.get("loss", ())),
+    )
+
+
+def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> NativePage:
+    """Return exactly one NativePage built from the named offline fixture."""
+
+    return fetch_one_page(
+        DESCRIPTOR,
+        carrier,
+        params={"target": ",".join(request.target_ids)},
+        parse=_page_from,
     )

@@ -34,6 +34,9 @@ FROZEN_OBSERVED_AT = "2026-08-10T09:00:00Z"
 # Only the transport seam may reach the network.
 NETWORK_MODULES = ("urllib.request", "http.client", "socket", "ssl")
 
+# Only the shared adapter protocol makes the call and reads the channel.
+PROTOCOL_OWNED_NAMES = ("carrier.fetch", "channel_verdict", "NETWORK_INTERCEPTED")
+
 # Every adapter the package ships today. One request serves all three: each
 # reads only the fields its own route needs.
 SHIPPED_ADAPTERS = (web_search, reddit_archive, fake)
@@ -323,6 +326,31 @@ class InterceptionReachesThePageTest(unittest.TestCase):
     response's verdict.
     """
 
+    def test_every_shipped_adapter_records_a_local_block_as_a_local_one(self):
+        for module in SHIPPED_ADAPTERS:
+            with self.subTest(adapter=module.DESCRIPTOR.adapter_id):
+                assert_interception_reaches_the_page(
+                    self, module.DESCRIPTOR.adapter_id, adapter_pages(module)
+                )
+
+    def test_an_intercepted_call_yields_one_typed_page_and_no_second_call(self):
+        for module in SHIPPED_ADAPTERS:
+            with self.subTest(adapter=module.DESCRIPTOR.adapter_id):
+                page, opener = adapter_page(module, 503, read_fixture("captive_portal.html"))
+
+                self.assertEqual(page.loss, (transport.NETWORK_INTERCEPTED,))
+                self.assertEqual(page.outcome, "failed")
+                self.assertEqual(page.records, ())
+                self.assertEqual(page.route_id, module.DESCRIPTOR.route_id)
+                self.assertEqual(len(opener.opened), 1)
+
+    def test_no_shipped_adapter_reads_the_channel_or_calls_the_carrier_itself(self):
+        # Criterion 2 as a structure, not only as a behavior: the branch lives
+        # in the protocol, so an adapter added later inherits it by writing
+        # nothing. Naming any of these is how the distinction would get lost
+        # again, one adapter at a time.
+        self.assertEqual(sources_naming(PROTOCOL_OWNED_NAMES, adapter_sources()), [])
+
     def test_an_adapter_that_writes_no_interception_branch_still_types_the_block(self):
         minimal = load_adapter_fixture("minimal_adapter")
 
@@ -566,6 +594,12 @@ def package_sources():
     """Every package module except the transport seam itself."""
 
     return sorted(path for path in PACKAGE_DIR.rglob("*.py") if path.name != "transport.py")
+
+
+def adapter_sources():
+    """Every adapter module the package ships, the shared protocol excluded."""
+
+    return sorted(path for path in ADAPTER_DIR.glob("*.py") if path.name != "__init__.py")
 
 
 def owned_route_literals():

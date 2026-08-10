@@ -19,7 +19,14 @@ from datetime import datetime, timezone
 from typing import Any, Mapping, Tuple
 
 from .. import transport
-from . import AdapterDescriptor, AdapterRequest, NativePage, NativeRecord, build_native_page
+from . import (
+    AdapterDescriptor,
+    AdapterRequest,
+    NativePage,
+    NativeRecord,
+    build_native_page,
+    fetch_one_page,
+)
 
 DESCRIPTOR = AdapterDescriptor(
     adapter_id="reddit_archive",
@@ -75,14 +82,9 @@ def _record_for(position: int, post: Mapping[str, Any]) -> NativeRecord:
     )
 
 
-def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> NativePage:
-    """Hydrate the requested thread ids and return exactly one NativePage."""
+def _page_from(response: transport.TransportResponse) -> NativePage:
+    """Turn one response the archive itself sent into exactly one page."""
 
-    response = carrier.fetch(
-        transport.build_transport_request(
-            DESCRIPTOR.route_id, {"ids": ",".join(request.target_ids)}
-        )
-    )
     if response.status != 200:
         return build_native_page(
             DESCRIPTOR,
@@ -119,4 +121,16 @@ def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> 
         observed_at=response.observed_at,
         native_order=NATIVE_ORDER,
         outcome="ok" if records else "empty",
+    )
+
+
+def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> NativePage:
+    """Hydrate the requested thread ids and return exactly one NativePage."""
+
+    return fetch_one_page(
+        DESCRIPTOR,
+        carrier,
+        params={"ids": ",".join(request.target_ids)},
+        parse=_page_from,
+        native_order=NATIVE_ORDER,
     )

@@ -18,7 +18,14 @@ from html.parser import HTMLParser
 from typing import List, Optional, Tuple
 
 from .. import transport
-from . import AdapterDescriptor, AdapterRequest, NativePage, NativeRecord, build_native_page
+from . import (
+    AdapterDescriptor,
+    AdapterRequest,
+    NativePage,
+    NativeRecord,
+    build_native_page,
+    fetch_one_page,
+)
 
 DESCRIPTOR = AdapterDescriptor(
     adapter_id="web_search",
@@ -99,14 +106,9 @@ def _record_for(position: int, locator: str, title: str, snippet: str) -> Native
     )
 
 
-def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> NativePage:
-    """Fetch one DuckDuckGo HTML page and return exactly one NativePage."""
+def _page_from(response: transport.TransportResponse) -> NativePage:
+    """Turn one response the origin itself sent into exactly one page."""
 
-    response = carrier.fetch(
-        transport.build_transport_request(
-            DESCRIPTOR.route_id, {"q": request.query, "s": request.cursor}
-        )
-    )
     if response.status != 200:
         return build_native_page(
             DESCRIPTOR,
@@ -134,4 +136,16 @@ def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> 
         cursor_out=parser.next_offset,
         native_order=NATIVE_ORDER,
         outcome="ok" if records else "empty",
+    )
+
+
+def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> NativePage:
+    """Fetch one DuckDuckGo HTML page and return exactly one NativePage."""
+
+    return fetch_one_page(
+        DESCRIPTOR,
+        carrier,
+        params={"q": request.query, "s": request.cursor},
+        parse=_page_from,
+        native_order=NATIVE_ORDER,
     )
