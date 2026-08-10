@@ -257,6 +257,60 @@ def normalized(text: str) -> str:
     return " ".join(text.lower().split())
 
 
+def worklog_restart_errors(generation: str):
+    contract = normalized(generation)
+    errors = []
+    if (
+        "latest worklog entry persists the accepted response's complete projection, "
+        "including every archive member"
+        not in contract
+    ):
+        errors.append("archive-persistence")
+    if "`in_flight` in the same worklog entry before delegation" not in contract:
+        errors.append("in-flight-order")
+    if "a `pending` response launches nothing" not in contract:
+        errors.append("pending-replan")
+    if "never redispatch a live slot" not in contract:
+        errors.append("duplicate-restart-dispatch")
+    return errors
+
+
+def plan_shape(response):
+    return [
+        {
+            key: copy.deepcopy(value)
+            for key, value in slot.items()
+            if key not in {"identity", "target_owner_identity"}
+        }
+        for slot in response["plan"]["slots"]
+    ]
+
+
+def recursive_target_errors(evolve: str, generation: str, tournament: str):
+    evolve_contract = normalized(evolve)
+    generation_contract = normalized(generation)
+    tournament_contract = normalized(tournament)
+    errors = []
+    if (
+        "active controller and planner revisions remain outside candidate mutation authority"
+        not in generation_contract
+    ):
+        errors.append("active-revision-authority")
+    if (
+        "a self-target candidate remains non-control and cannot become the active campaign "
+        "controller or planner"
+        not in generation_contract
+    ):
+        errors.append("self-target-control")
+    if (
+        "activate a selected candidate" not in evolve_contract
+        or "selected result is never activated by this campaign" not in generation_contract
+        or "separate authorized integration before activation" not in tournament_contract
+    ):
+        errors.append("activation")
+    return errors
+
+
 def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str):
     errors = []
     combined_evolve = evolve + generation
@@ -722,6 +776,247 @@ class TestMergeLineage(unittest.TestCase):
                 policy, broken, [], "candidate:merged"
             )
             self.assert_rejected(next_request)
+
+
+class TestBoundedResume(unittest.TestCase):
+    def run_ok(self, request):
+        result = run_advance(request)
+        self.assertEqual(0, result.returncode, result.stderr.decode())
+        self.assertEqual(b"", result.stderr)
+        return json.loads(result.stdout)
+
+    def bounded_request(self, remaining):
+        request = generation_zero_request()
+        policy = request["policy"]
+        policy["generation_width"] = 3
+        policy["bound_unit_names"] = ["runs", "tokens"]
+        policy["reservations"] = {
+            "reflect": {"runs": 2, "tokens": 3},
+            "merge": {"runs": 1, "tokens": 1},
+        }
+        policy["identity"] = tagged_identity(
+            "search-policy/v1",
+            {key: value for key, value in policy.items() if key != "identity"},
+        )
+        request["settled"]["outcomes"][0]["cost"] = {"runs": 0, "tokens": 0}
+        request["remaining_bound"] = remaining
+        return request
+
+    def assert_within_bound(self, response, remaining):
+        spent = {unit: 0 for unit in remaining}
+        plan = response["plan"]
+        if plan is not None:
+            for slot in plan["slots"]:
+                for unit in remaining:
+                    spent[unit] += slot["reservation"][unit]
+        self.assertTrue(
+            all(spent[unit] <= remaining[unit] for unit in remaining),
+            f"reservation {spent} exceeds {remaining}",
+        )
+
+    def test_componentwise_maximal_prefix_exact_fit_and_no_fit(self):
+        for remaining in ({"runs": 4, "tokens": 100}, {"runs": 100, "tokens": 6}):
+            with self.subTest(remaining=remaining):
+                response = self.run_ok(self.bounded_request(remaining))
+                self.assertEqual("planned", response["status"])
+                self.assertEqual(2, len(response["plan"]["slots"]))
+                self.assert_within_bound(response, remaining)
+                reservation = response["plan"]["slots"][0]["reservation"]
+                spent = {
+                    unit: sum(slot["reservation"][unit] for slot in response["plan"]["slots"])
+                    for unit in remaining
+                }
+                self.assertTrue(
+                    any(spent[unit] + reservation[unit] > remaining[unit] for unit in remaining)
+                )
+
+        exact_bound = {"runs": 6, "tokens": 9}
+        exact = self.run_ok(self.bounded_request(exact_bound))
+        self.assertEqual(3, len(exact["plan"]["slots"]))
+        self.assert_within_bound(exact, exact_bound)
+        self.assertEqual(
+            exact_bound,
+            {
+                unit: sum(slot["reservation"][unit] for slot in exact["plan"]["slots"])
+                for unit in exact_bound
+            },
+        )
+
+        no_fit = self.run_ok(self.bounded_request({"runs": 1, "tokens": 100}))
+        self.assertEqual("no_fit", no_fit["status"])
+        self.assertIsNone(no_fit["plan"])
+        self.assertIsNone(no_fit["projection"]["last_plan"])
+        self.assertEqual(["candidate:origin"], no_fit["projection"]["archive"])
+
+        over_reserved = copy.deepcopy(exact)
+        over_reserved["plan"]["slots"].append(
+            copy.deepcopy(over_reserved["plan"]["slots"][-1])
+        )
+        with self.assertRaises(AssertionError):
+            self.assert_within_bound(over_reserved, exact_bound)
+
+    def test_partial_settlement_keeps_projection_and_complete_archive(self):
+        initial_request = two_dimension_request()
+        initial = self.run_ok(initial_request)
+        slots = initial["plan"]["slots"]
+        outcomes = [
+            admitted_outcome(slots[0], "candidate:a", "0.8", "0.6", "a"),
+            admitted_outcome(slots[1], "candidate:b", "0.4", "0.2", "b"),
+            admitted_outcome(slots[2], "candidate:dominated", "0.3", "0.8", "d"),
+        ]
+        generation_two = self.run_ok(
+            settled_request(
+                initial_request["policy"], initial, outcomes, "candidate:origin"
+            )
+        )
+        generation_two_slots = generation_two["plan"]["slots"]
+        partial = settled_request(
+            initial_request["policy"],
+            generation_two,
+            [
+                admitted_outcome(
+                    generation_two_slots[0], "candidate:partial", "0.7", "0.4", "p"
+                )
+            ],
+            "candidate:origin",
+        )
+        pending = self.run_ok(partial)
+        self.assertEqual("pending", pending["status"])
+        self.assertIsNone(pending["plan"])
+        self.assertEqual(generation_two["projection"], pending["projection"])
+        self.assertEqual(
+            generation_two["projection"]["archive"], pending["projection"]["archive"]
+        )
+        self.assertEqual(
+            [slot["identity"] for slot in generation_two_slots[1:]],
+            pending["missing_slot_identities"],
+        )
+
+    def test_worklog_launch_and_restart_contract_has_failure_controls(self):
+        generation = read(EVOLVE_GENERATION)
+        self.assertEqual([], worklog_restart_errors(generation))
+
+        controls = {
+            "archive-persistence": generation.replace(
+                "complete projection, including every archive member",
+                "projection without the full archive",
+            ),
+            "in-flight-order": generation.replace(
+                "same Worklog entry before delegation",
+                "same Worklog entry after delegation",
+            ),
+            "pending-replan": generation.replace(
+                "a `pending` response launches nothing",
+                "a `pending` response launches a replacement",
+            ),
+            "duplicate-restart-dispatch": generation.replace(
+                "never redispatch a live slot",
+                "redispatch a live slot",
+            ),
+        }
+        for expected, wrong in controls.items():
+            with self.subTest(control=expected):
+                self.assertIn(expected, worklog_restart_errors(wrong))
+
+
+class TestVisibilityAndSelfTarget(unittest.TestCase):
+    def run_ok(self, request):
+        result = run_advance(request)
+        self.assertEqual(0, result.returncode, result.stderr.decode())
+        self.assertEqual(b"", result.stderr)
+        return json.loads(result.stdout)
+
+    def assert_rejected(self, request):
+        result = run_advance(request)
+        self.assertEqual(2, result.returncode)
+        self.assertEqual(b"", result.stdout)
+
+    def test_closed_schema_rejects_protected_inputs(self):
+        cases = []
+
+        request_field = generation_zero_request()
+        request_field["protected_locator"] = "protected:item"
+        cases.append(request_field)
+
+        policy_field = generation_zero_request()
+        policy_field["policy"]["held_back_result_identity"] = "result:held-back"
+        cases.append(policy_field)
+
+        outcome_field = generation_zero_request()
+        outcome_field["settled"]["outcomes"][0][
+            "closing_verdict_identity"
+        ] = "verdict:closing"
+        cases.append(outcome_field)
+
+        feedback_field = generation_zero_request()
+        feedback_field["settled"]["outcomes"][0]["feedback"][0][
+            "protected_derived"
+        ] = True
+        cases.append(feedback_field)
+
+        for case in cases:
+            with self.subTest(field=cases.index(case)):
+                self.assert_rejected(case)
+
+    def test_target_renaming_preserves_plan_shape(self):
+        original_request = two_dimension_request()
+        original = self.run_ok(original_request)
+
+        renamed_request = copy.deepcopy(original_request)
+        renamed_request["policy"]["target_owner_identity"] = "owner:self-target"
+        renamed_request["policy"]["identity"] = tagged_identity(
+            "search-policy/v1",
+            {
+                key: value
+                for key, value in renamed_request["policy"].items()
+                if key != "identity"
+            },
+        )
+        renamed_request["settled"]["outcomes"][0][
+            "target_owner_identity"
+        ] = "owner:self-target"
+        renamed = self.run_ok(renamed_request)
+
+        self.assertEqual(plan_shape(original), plan_shape(renamed))
+        self.assertNotEqual(original["plan"]["identity"], renamed["plan"]["identity"])
+
+        target_branched = copy.deepcopy(renamed)
+        target_branched["plan"]["slots"][0][
+            "focus_dimension_identity"
+        ] = "dimension:target-special"
+        with self.assertRaises(AssertionError):
+            self.assertEqual(plan_shape(original), plan_shape(target_branched))
+
+    def test_recursive_target_authority_and_activation_have_failure_controls(self):
+        evolve = read(EVOLVE)
+        generation = read(EVOLVE_GENERATION)
+        tournament = read(TOURNAMENT)
+        self.assertEqual([], recursive_target_errors(evolve, generation, tournament))
+
+        controls = {
+            "active-revision-authority": generation.replace(
+                "remain outside candidate mutation authority",
+                "enter candidate mutation authority",
+            ),
+            "self-target-control": generation.replace(
+                "remains non-control and cannot become the active campaign controller or planner",
+                "becomes the active campaign controller",
+            ),
+            "activation": tournament.replace(
+                "separate authorized integration before activation",
+                "activation inside the campaign",
+            ),
+        }
+        for expected, wrong in controls.items():
+            with self.subTest(control=expected):
+                candidate_generation = wrong if expected != "activation" else generation
+                candidate_tournament = wrong if expected == "activation" else tournament
+                self.assertIn(
+                    expected,
+                    recursive_target_errors(
+                        evolve, candidate_generation, candidate_tournament
+                    ),
+                )
 
 
 if __name__ == "__main__":
