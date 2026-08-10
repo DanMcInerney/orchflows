@@ -8,8 +8,10 @@ enumeration is shown to reject a module beside the tree that breaks it.
 
 Four things are enumerated, and only the first is transcribed by hand:
 
-*The module set.* The core's eleven modules are spelled out, so a new sibling
-joins by editing this file or not at all. The adapter modules are not spelled
+*The module set.* The core's fourteen modules are spelled out, so a new sibling
+joins by editing this file or not at all. The count is in the sentence and in
+`CORE_MODULES`, and a test below compares them: this docstring said eleven for
+three modules longer than it was true. The adapter modules are not spelled
 out — they are derived from ``runner.ADAPTER_IDS`` and checked against what is
 on disk, because `test_router` and `test_adapters` already carry two
 independent transcriptions of that roster and a third would only be a third
@@ -723,14 +725,33 @@ def loss_code_spelling(codes):
     return (spelling, declaring)
 
 
-# Number words the shortfall heading may count in, which is every count this
-# list could plausibly reach before it stops being a list.
-NUMBER_WORDS = ("One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten")
+# Number words a heading or a docstring in this delivery may count in. Two
+# checks read it: the shortfall heading in `protocol.md`, and this file's own
+# module count.
+NUMBER_WORDS = (
+    "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
+    "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen",
+)
 
 
 ITEM_DIR = Path(__file__).resolve().parent.parent
 HOST_MIRROR = ITEM_DIR.parent.parent.parent / ".claude" / "skills" / "super-research" / "SKILL.md"
 SCOPE_ROUTING_FILE = ITEM_DIR.parent.parent.parent / "AGENTS.md"
+
+
+class ThisSuiteCountsItsOwnModuleSetTest(unittest.TestCase):
+    """The module count in this file's docstring, against the tuple it describes.
+
+    It said eleven over fourteen entries: `ledger`, `ordering` and `pacing`
+    joined the core and the sentence above them did not. A count in prose beside
+    a list is the cheapest thing in a repository to leave behind, and this file
+    exists to enumerate — so its own enumeration is counted too.
+    """
+
+    def test_the_docstring_names_the_number_of_core_modules_there_are(self):
+        counted = NUMBER_WORDS[len(CORE_MODULES) - 1].lower()
+
+        self.assertIn("core's " + counted + " modules", __doc__)
 
 
 class TheHostMirrorSaysWhereItResolvesTest(unittest.TestCase):
