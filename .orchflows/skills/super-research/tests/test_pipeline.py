@@ -1210,6 +1210,31 @@ class OracleCanFailTest(unittest.TestCase):
 
         assert_rate_budget_respected(self, governor, SEEDED_BUDGETS)
 
+    def test_a_governor_that_changes_identity_between_reads_is_rejected(self):
+        # The evasion case, and the one that would otherwise pass every timing
+        # clause: this governor waits out every interval it is given, under a
+        # different name each time.
+        clock = helpers.FakeClock()
+        governor, _ = paced_governor(
+            clock,
+            {REDDIT_FEED_ROUTE: OK_JSON},
+            latencies={REDDIT_FEED_ROUTE: 0.5},
+            governor_class=self.wrong.RotatingGovernor,
+        )
+
+        for index in range(2):
+            governor.fetch(probe_request(REDDIT_FEED_ROUTE, index))
+
+        with self.assertRaisesRegex(AssertionError, "the identity changed between reads"):
+            assert_rate_budget_respected(self, governor, SEEDED_BUDGETS)
+
+    def test_the_identity_rotation_scan_can_fail(self):
+        # Pointed at a source that does name them — this one, which names them
+        # in order to forbid them — the scan finds every one.
+        found = sources_naming(IDENTITY_ROTATION_NAMES, [Path(__file__).resolve()])
+
+        self.assertEqual([name for _, name in found], sorted(IDENTITY_ROTATION_NAMES))
+
     def test_a_fused_path_that_folds_the_pair_into_one_record_is_rejected(self):
         with self.assertRaisesRegex(AssertionError, "different numbers of records"):
             assert_fused_collapses_latency_and_not_lineage(
@@ -1247,6 +1272,7 @@ class OracleCanFailTest(unittest.TestCase):
                 (
                     "wrong_pipelines",
                     "UnpacedGovernor",
+                    "RotatingGovernor",
                     "RestampingGovernor",
                     "UnmarkedGovernor",
                 ),

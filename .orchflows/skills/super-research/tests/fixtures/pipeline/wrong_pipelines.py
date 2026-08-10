@@ -28,6 +28,27 @@ class UnpacedGovernor(runner.RateGovernor):
         return 0
 
 
+class RotatingGovernor(runner.RateGovernor):
+    """Becomes a different client on every read, which is the one thing forbidden.
+
+    It respects every interval and every cooldown. That is the point: evasion
+    does not look like impatience, it looks like a scheduler that waits
+    politely under a name it keeps changing.
+    """
+
+    def _paced_fetch(self, request):
+        rotated = replace(
+            request,
+            headers=tuple(
+                (name, "{0}-{1}".format(value, len(self.log)))
+                if name.lower() == "user-agent"
+                else (name, value)
+                for name, value in request.headers
+            ),
+        )
+        return runner.RateGovernor._paced_fetch(self, rotated)
+
+
 class RestampingGovernor(runner.RateGovernor):
     """Hands a served answer the moment it served it, in place of the moment it was read."""
 
