@@ -665,6 +665,7 @@ def run_step(
     records: List[schema.AcquisitionRecord] = []
     operations: List[PlannedOperation] = []
     page_outcomes: List[str] = []
+    page_routes: List[str] = []
     loss: List[str] = []
     received = 0
     pages = 0
@@ -679,13 +680,19 @@ def run_step(
         page = call_adapter(step.adapter_id, carrier, request)
         pages += 1
         page_outcomes.append(page.outcome)
+        page_routes.append(page.route_id)
         loss.extend(page.loss)
         received += len(page.records)
         operations.append(
             PlannedOperation(
                 step_id=step.step_id,
                 adapter_id=step.adapter_id,
-                route_id=descriptor.route_id,
+                # The route the page says answered, which is the route the read
+                # actually left on. For an adapter reading one route that is
+                # the descriptor's; for one reading two it is whichever surface
+                # this call used, and charging both to the descriptor's would
+                # bill one origin for another's read.
+                route_id=page.route_id or descriptor.route_id,
                 page_index=page_index,
                 duration_us=tick_us(clock) - began_us,
                 reached_origin=cache.CACHE_HIT not in page.loss,
@@ -711,11 +718,17 @@ def run_step(
         # A raw cap counts every received record and may drop unseen uniques.
         loss.append("recall_window_partial")
     outcome = "partial" if truncated else schema.reduce_outcomes(tuple(page_outcomes))
+    # The route this step actually read, when its pages agree on one. They
+    # always do for an adapter with one surface, and they do for a two-surface
+    # adapter whose calls all hydrate or all search; a step that mixed both
+    # falls back to the route it was admitted on, because no single route is
+    # what it read and the records carry the exact one each came from.
+    read = {route_id for route_id in page_routes if route_id}
     return (
         schema.StepResult(
             step_id=step.step_id,
             adapter_id=step.adapter_id,
-            route_id=decision.route_id,
+            route_id=next(iter(read)) if len(read) == 1 else decision.route_id,
             pages=pages,
             records_received=received,
             records_kept=len(records),
@@ -835,12 +848,35 @@ def _metric_key(
     return (MISSING, 0) if snapshot is None else (PRESENT, -snapshot.value)
 
 
+def _surface_descriptor(
+    record: schema.AcquisitionRecord, descriptors: Dict[str, AdapterDescriptor]
+) -> Optional[AdapterDescriptor]:
+    """The descriptor of the surface that produced this record.
+
+    Almost always the one the caller handed in, and for an adapter reading one
+    route it is always that one. It matters for an adapter reading two: HN's
+    item store calls a story's comment count ``descendants`` and HN's index
+    calls the same quantity ``num_comments``, and a metric name belongs to the
+    surface that published it. Reading one surface's name off the other's rows
+    would leave half a view unranked — and renaming either would be this
+    package inventing a vocabulary neither origin uses.
+    """
+
+    declared = descriptors.get(record.adapter_id)
+    if declared is not None and declared.route_id == record.route_id:
+        return declared
+    for surface in surface_descriptors(record.adapter_id):
+        if surface.route_id == record.route_id:
+            return surface
+    return declared
+
+
 def _declared_metric(
     record: schema.AcquisitionRecord,
     descriptors: Dict[str, AdapterDescriptor],
     order: str,
 ) -> str:
-    descriptor = descriptors.get(record.adapter_id)
+    descriptor = _surface_descriptor(record, descriptors)
     if descriptor is None:
         return ""
     return (
