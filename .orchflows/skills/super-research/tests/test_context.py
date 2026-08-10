@@ -345,6 +345,27 @@ class ManifestSchemaTest(unittest.TestCase):
 
         self.assertIn("turbo", str(caught.exception))
 
+    def test_an_as_of_the_ordering_cannot_parse_is_refused_at_the_manifest(self):
+        # `schema.py` says validation is total, and `as_of` was checked only for
+        # being a nonempty string. `ordering.instant_seconds` returns nothing
+        # for any other spelling, so `2026-08-10T09:00:00+00:00` left the
+        # horizon unset, made every snapshot eligible, and stopped the replay
+        # being frozen without saying anything.
+        for spelling in (
+            "2026-08-10T09:00:00+00:00",
+            "2026-08-10 09:00:00Z",
+            "2026-08-10",
+            "yesterday",
+        ):
+            with self.subTest(as_of=spelling):
+                with self.assertRaises(schema.ManifestError) as caught:
+                    schema.parse_manifest(dict(TRACER_MANIFEST, as_of=spelling))
+
+                self.assertIn(spelling, str(caught.exception))
+
+        parsed = schema.parse_manifest(TRACER_MANIFEST)
+        self.assertIsNotNone(runner.instant_seconds(parsed.as_of))
+
     def test_unknown_step_field_is_refused(self):
         steps = [dict(TRACER_MANIFEST["steps"][0], follow_pagination=True)]
         payload = dict(TRACER_MANIFEST, steps=steps)

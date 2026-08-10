@@ -103,12 +103,14 @@ Step keys are exactly `step_id`, `kind`, `adapter_id`, `query`, `prior_step_id`,
   page through, and until one does, "the core owns pagination" names an owner
   rather than a behaviour.
 
-`as_of` must be spelled `YYYY-MM-DDTHH:MM:SSZ`. Nothing rejects another spelling
-at parse time, but `ordering.instant_seconds` returns nothing for it, and an
-`as_of` that does not parse silently stops bounding which engagement snapshots
-are eligible — the replay is then no longer frozen. The same format governs every
-instant the ordering reads, so a `published_at` carrying an offset or a fractional
-second sorts as missing rather than as a time.
+`as_of` must be spelled `YYYY-MM-DDTHH:MM:SSZ` and `parse_manifest` refuses any
+other spelling, because `ordering.instant_seconds` returns nothing for one and an
+`as_of` that does not parse silently stops bounding which engagement snapshots are
+eligible — the replay is then no longer frozen. `schema.INSTANT_FORMAT` is the one
+definition; `ordering` reads it from there. The same format governs every instant
+the ordering reads, but only `as_of` is refused: a `published_at` carrying an
+offset or a fractional second is an origin's own spelling and sorts as missing
+rather than as a time.
 
 ## The record: `AcquisitionArtifact v2` field families
 

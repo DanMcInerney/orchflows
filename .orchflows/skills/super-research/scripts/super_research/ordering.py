@@ -38,7 +38,10 @@ FAMILY_SCOPED_ORDERS = ("newest", "native_top", "most_commented", "most_replied"
 # locale or on how a string happened to be composed.
 PRESENT = 0
 MISSING = 1
-INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+# One spelling, one definition. `schema` owns it because `schema` is what
+# refuses a manifest written in another one, and this module is what would
+# silently return nothing for it.
+INSTANT_FORMAT = schema.INSTANT_FORMAT
 
 
 class OrderingError(ValueError):
