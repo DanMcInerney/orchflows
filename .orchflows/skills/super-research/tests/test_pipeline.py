@@ -1321,10 +1321,10 @@ class AdapterBranchTest(unittest.TestCase):
         clock = helpers.FakeClock()
         carrier, _ = helpers.offline_transport(clock, {})
 
-        self.assertNotIn("reddit_feed", runner.ADAPTER_IDS)
-        self.assertIsNone(runner.descriptor_for("reddit_feed"))
+        self.assertNotIn("not_an_adapter", runner.ADAPTER_IDS)
+        self.assertIsNone(runner.descriptor_for("not_an_adapter"))
         with self.assertRaises(runner.RunnerError):
-            runner.call_adapter("reddit_feed", carrier, PROBE_REQUEST)
+            runner.call_adapter("not_an_adapter", carrier, PROBE_REQUEST)
 
 
 if __name__ == "__main__":

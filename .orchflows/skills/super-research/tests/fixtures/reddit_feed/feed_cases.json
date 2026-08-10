@@ -1,0 +1,68 @@
+{
+  "_note": [
+    "Every answer this route can give, and what each one costs an operator.",
+    "findings.md §1 (Reddit) measures two of these directly: `www.reddit.com/r/<sub>.rss`",
+    "answered 200 with 32 KB in 1.4 s carrying title, link, author and updated, and four",
+    "requests back to back answered 1x 200 then 3x 429. The 403 row and the two 200 rows",
+    "that are not the happy path are this adapter's declared handling rather than",
+    "measurements: the evidence records no body for any of them, and offline determinism",
+    "forbids making one. What they prove is that this code says the right thing when a",
+    "route says these things, which is the claim criterion 12's live smoke then tests."
+  ],
+  "cases": [
+    {
+      "case_name": "newest_entries",
+      "measured": true,
+      "subreddit": "LocalLLaMA",
+      "status": 200,
+      "body_fixture": "subreddit_new.xml",
+      "expected_outcome": "ok",
+      "expected_loss": ""
+    },
+    {
+      "case_name": "subreddit_that_has_published_nothing",
+      "measured": false,
+      "subreddit": "EmptyPlaceHolder",
+      "status": 200,
+      "body_fixture": "subreddit_empty.xml",
+      "expected_outcome": "empty",
+      "expected_loss": ""
+    },
+    {
+      "case_name": "an_entry_short_of_a_roster_field",
+      "measured": false,
+      "subreddit": "LocalLLaMA",
+      "status": 200,
+      "body_fixture": "entry_missing_updated.xml",
+      "expected_outcome": "ok",
+      "expected_loss": ""
+    },
+    {
+      "case_name": "a_feed_that_moved",
+      "measured": false,
+      "subreddit": "LocalLLaMA",
+      "status": 200,
+      "body_fixture": "subreddit_reshaped.xml",
+      "expected_outcome": "failed",
+      "expected_loss": "schema_drift"
+    },
+    {
+      "case_name": "a_community_reddit_will_not_serve",
+      "measured": false,
+      "subreddit": "PrivatePlaceHolder",
+      "status": 403,
+      "body_fixture": "refused.html",
+      "expected_outcome": "failed",
+      "expected_loss": "http_status"
+    },
+    {
+      "case_name": "asked_for_fewer_requests",
+      "measured": true,
+      "subreddit": "LocalLLaMA",
+      "status": 429,
+      "body_fixture": "too_many_requests.txt",
+      "expected_outcome": "failed",
+      "expected_loss": "rate_limited"
+    }
+  ]
+}

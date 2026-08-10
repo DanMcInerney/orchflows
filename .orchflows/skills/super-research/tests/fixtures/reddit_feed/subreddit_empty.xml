@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <category term="EmptyPlaceHolder" label="r/EmptyPlaceHolder"/>
+  <updated>2026-08-10T08:52:11+00:00</updated>
+  <id>/r/EmptyPlaceHolder/.rss</id>
+  <link rel="self" href="https://www.reddit.com/r/EmptyPlaceHolder.rss" type="application/atom+xml"/>
+  <link rel="alternate" href="https://www.reddit.com/r/EmptyPlaceHolder" type="text/html"/>
+  <title>EmptyPlaceHolder</title>
+</feed>
