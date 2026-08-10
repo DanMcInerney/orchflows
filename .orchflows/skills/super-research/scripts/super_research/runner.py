@@ -39,7 +39,7 @@ from . import cache, normalize, router, schema, transport
 from .adapters import AdapterDescriptor, AdapterRequest, NativePage
 from .adapters import fake, github_rest, hacker_news, instagram_public
 from .adapters import linkedin_jobs, linkedin_public, reddit_archive, reddit_feed
-from .adapters import web_search
+from .adapters import rss_atom, web_search
 from .adapters import x_guest, x_syndication, youtube_innertube
 
 US_PER_SECOND = 1000000
@@ -63,6 +63,7 @@ ADAPTER_IDS = (
     "linkedin_public",
     "reddit_archive",
     "reddit_feed",
+    "rss_atom",
     "web_search",
     "x_guest",
     "x_syndication",
@@ -93,6 +94,8 @@ def descriptor_for(adapter_id: str) -> Optional[AdapterDescriptor]:
         return reddit_archive.DESCRIPTOR
     if adapter_id == "reddit_feed":
         return reddit_feed.DESCRIPTOR
+    if adapter_id == "rss_atom":
+        return rss_atom.DESCRIPTOR
     if adapter_id == "web_search":
         return web_search.DESCRIPTOR
     if adapter_id == "x_guest":
@@ -125,6 +128,8 @@ def call_adapter(
         return reddit_archive.fetch_native_page(carrier, request)
     if adapter_id == "reddit_feed":
         return reddit_feed.fetch_native_page(carrier, request)
+    if adapter_id == "rss_atom":
+        return rss_atom.fetch_native_page(carrier, request)
     if adapter_id == "web_search":
         return web_search.fetch_native_page(carrier, request)
     if adapter_id == "x_guest":
