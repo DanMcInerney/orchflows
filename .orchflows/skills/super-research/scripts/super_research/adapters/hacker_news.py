@@ -50,7 +50,9 @@ from . import (
 # `transport.origin_locator` cannot resolve it — that function resolves against
 # the route that answered, which here would name Algolia or Firebase. Neither
 # payload publishes an item's address in any form, so it is composed from the
-# id, the way `x_syndication` composes a post's address from a handle and an id.
+# id, the way the X syndication reader composes a post's address from a handle
+# and an id: a host no route in this package reads is not a host the transport
+# seam owns.
 HN_ITEM_ORIGIN = "https://news.ycombinator.com"
 HN_ITEM_PATH = "/item?id="
 
