@@ -23,9 +23,24 @@ class AdapterError(RuntimeError):
     """An adapter could not turn a response into a NativePage."""
 
 
+# What one route's ceiling is until its adapter declares a measured one. Every
+# measured ceiling in the roster is looser than this, so an undeclared route is
+# paced conservatively rather than freely: a limit nobody has measured is not
+# one to spend.
+DEFAULT_MIN_INTERVAL_MS = 1000
+DEFAULT_BURST = 1
+DEFAULT_COOLDOWN_MS = 60000
+
+
 @dataclass(frozen=True)
 class AdapterDescriptor:
-    """The static declaration a route's adapter makes about itself."""
+    """The static declaration a route's adapter makes about itself.
+
+    ``min_interval_ms``, ``burst`` and ``cooldown_ms`` are that route's
+    measured ceiling, declared here and enforced by the scheduler per route:
+    the ceiling belongs to the origin, so two adapters reading one route must
+    declare the same three numbers.
+    """
 
     adapter_id: str
     adapter_version: str
@@ -36,6 +51,9 @@ class AdapterDescriptor:
     representation_kind: str
     operator_identity: str = ""
     standing_loss: Tuple[str, ...] = ()
+    min_interval_ms: int = DEFAULT_MIN_INTERVAL_MS
+    burst: int = DEFAULT_BURST
+    cooldown_ms: int = DEFAULT_COOLDOWN_MS
 
 
 @dataclass(frozen=True)
