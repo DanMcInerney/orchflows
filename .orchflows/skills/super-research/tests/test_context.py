@@ -512,6 +512,35 @@ class RedditArchiveHydrationTest(unittest.TestCase):
         self.assertIn("http_status", page.loss)
         self.assertEqual(len(opener.opened), 1)
 
+    def test_a_submission_the_archive_named_no_id_for_carries_no_identity(self):
+        # wrong_merge_law rule 1: the prefix alone is not an identity. Two
+        # submissions the archive answered without an `id` would otherwise both
+        # be `t3_`, present one strong identity, and be folded into one group —
+        # a merge of two distinct threads on a key neither of them has.
+        payload = json.dumps(
+            {
+                "data": [
+                    {"title": "first", "permalink": "/r/a/comments/x1/first/"},
+                    {"title": "second", "permalink": "/r/a/comments/x2/second/"},
+                ]
+            }
+        )
+        page, _, _ = self._page((200, payload, "application/json"))
+
+        self.assertEqual([record.native_item_id for record in page.records], ["", ""])
+        for record in page.records:
+            self.assertIn("field_omitted", record.loss)
+            self.assertIn("third_party_archive", record.loss)
+
+        step = schema.AcquisitionStep(
+            step_id="s2-hydrate", kind="discovery", adapter_id="reddit_archive", max_items=8
+        )
+        records = normalize.normalize_page(page, step, "artifact:x", "x")
+        for record in records:
+            self.assertIsNone(normalize.strong_identity(record))
+        self.assertEqual(len(normalize.group_records(records)), 2)
+
+
 class AdapterCallBoundaryTest(unittest.TestCase):
     """Completion criterion 3, for every adapter the tracer crosses.
 

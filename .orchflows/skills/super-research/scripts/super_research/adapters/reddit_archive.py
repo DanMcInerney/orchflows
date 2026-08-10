@@ -47,6 +47,12 @@ REDDIT_ORIGIN = transport.REDDIT_SITE_ORIGIN
 POST_FULLNAME_PREFIX = "t3_"
 ENGAGEMENT_FIELDS = ("score", "num_comments")
 
+# Every code this module can attach, spelled once each so a search over a name
+# finds the branch that emits it.
+HTTP_STATUS = "http_status"
+MALFORMED_JSON = "malformed_json"
+FIELD_OMITTED = "field_omitted"
+
 
 def epoch_to_utc_iso(created_utc: Any) -> str:
     if not isinstance(created_utc, (int, float)) or isinstance(created_utc, bool):
@@ -65,12 +71,30 @@ def _engagement_of(post: Mapping[str, Any]) -> Tuple[Tuple[str, int], ...]:
     )
 
 
+def submission_fullname(post: Mapping[str, Any]) -> str:
+    """This submission's Reddit fullname, or nothing when it named no id.
+
+    The prefix alone is not an identity. Two submissions the archive answered
+    without an ``id`` would both be ``t3_``, would present the same strong
+    identity, and ``normalize.group_records`` would fold two distinct threads
+    into one group on a key neither of them has — the merge wrong_merge_law
+    rule 1 exists to forbid. A row that named no id keeps everything else it
+    reported and says the id is the field it is short of.
+    """
+
+    post_id = post.get("id")
+    if not isinstance(post_id, str) or not post_id:
+        return ""
+    return POST_FULLNAME_PREFIX + post_id
+
+
 def _record_for(position: int, post: Mapping[str, Any]) -> NativeRecord:
     permalink = post.get("permalink") or ""
+    fullname = submission_fullname(post)
     return NativeRecord(
         canonical_content_kind="post",
         canonical_locator=REDDIT_ORIGIN + permalink if permalink else (post.get("url") or ""),
-        native_item_id=POST_FULLNAME_PREFIX + (post.get("id") or ""),
+        native_item_id=fullname,
         title=post.get("title") or "",
         body=post.get("selftext") or "",
         author=post.get("author") or "",
@@ -78,7 +102,7 @@ def _record_for(position: int, post: Mapping[str, Any]) -> NativeRecord:
         published_at=epoch_to_utc_iso(post.get("created_utc")),
         engagement=_engagement_of(post),
         native_position=position,
-        loss=DESCRIPTOR.standing_loss,
+        loss=DESCRIPTOR.standing_loss + (() if fullname else (FIELD_OMITTED,)),
     )
 
 
@@ -93,7 +117,7 @@ def _page_from(response: transport.TransportResponse) -> NativePage:
             native_order=NATIVE_ORDER,
             warnings=("http status {0} from {1}".format(response.status, DESCRIPTOR.route_id),),
             outcome="failed",
-            loss=("http_status",),
+            loss=(HTTP_STATUS,),
         )
 
     try:
@@ -107,7 +131,7 @@ def _page_from(response: transport.TransportResponse) -> NativePage:
             native_order=NATIVE_ORDER,
             warnings=("archive payload was not a data-bearing json object",),
             outcome="failed",
-            loss=("malformed_json",),
+            loss=(MALFORMED_JSON,),
         )
 
     records = tuple(
