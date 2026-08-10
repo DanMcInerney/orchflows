@@ -29,9 +29,13 @@ suite exercises this module with both replaced.
 
 from __future__ import annotations
 
+import json
 import time
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional, Tuple
+from datetime import datetime, timezone
+from pathlib import Path
+from tempfile import gettempdir
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from . import runner, schema, transport
 
@@ -50,6 +54,41 @@ NO_RECORD_OF_THIS_KIND = "no record of this kind"
 # local block from the origin's own refusal.
 ANSWERED_BY_ORIGIN = "origin"
 ANSWERED_BY_LOCAL_NETWORK = "local_network"
+
+# What a smoke can conclude about an adapter, and there is no third word. A
+# read that did not carry its row leaves the adapter unverified, which is a
+# statement about what has been proven; rejecting a platform is not something
+# this package does from one read.
+VERIFIED = "verified"
+UNVERIFIED = "unverified"
+SMOKE_DISPOSITIONS = (VERIFIED, UNVERIFIED)
+
+FRESH_SUCCESS = "fresh_success"
+NEVER_SMOKED = "never_smoked"
+STALE_SUCCESS = "stale_success"
+UNREADABLE_LAST_SUCCESS = "unreadable_last_success"
+LAST_SUCCESS_AHEAD_OF_NOW = "last_success_ahead_of_now"
+SMOKE_REASONS = (
+    FRESH_SUCCESS,
+    NEVER_SMOKED,
+    STALE_SUCCESS,
+    UNREADABLE_LAST_SUCCESS,
+    LAST_SUCCESS_AHEAD_OF_NOW,
+)
+
+# How long one live read stands for. A week, because every route in the roster
+# depends on markup or on a vendor identifier that rotates without notice, and
+# evidence older than that is a claim about a platform as it used to be. The
+# spec's own words for this posture: re-proved rather than assumed.
+SMOKE_MAX_AGE_SECONDS = 7 * 24 * 60 * 60
+LEDGER_STAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+
+# Where the last-success stamps are kept. Outside every working tree on
+# purpose: a smoke is run by hand from wherever the operator happens to be, and
+# a state file that appeared inside a checkout would read as an uncommitted
+# change to whoever looked next. It is a constant, so no argument can point
+# this anywhere; the suite reaches it by parameter and never writes this path.
+LEDGER_PATH = Path(gettempdir()) / "super-research" / "smoke-ledger.json"
 
 
 @dataclass(frozen=True)
@@ -467,13 +506,15 @@ def field_set_report(
     return (tuple(missing), tuple(facts))
 
 
-def channel_of(loss: Tuple[str, ...]) -> str:
+def channel_of(outcome: str, loss: Tuple[str, ...]) -> str:
     """Who answered: the origin, or this host's own network.
 
-    On ``loss`` and never on ``outcome``. A blocked route reports ``failed``
-    because the outcome vocabulary has no member for "never reached", so an
-    outcome cannot tell an intercepted read from a platform's own refusal, and
-    only the loss code can.
+    Both halves of the result are in hand and only ``loss`` decides. That is
+    the whole rule, and the parameter it does not read is why it is spelled
+    out: a blocked route reports ``failed`` because the outcome vocabulary has
+    no member for "the origin was never reached", so an outcome cannot tell an
+    intercepted read from a platform's own refusal and a reader who assumed it
+    could would find nothing here to correct them.
     """
 
     if transport.NETWORK_INTERCEPTED in loss:
@@ -509,8 +550,124 @@ def observe(
         outcome=artifact.outcome,
         loss=artifact.loss,
         records_kept=len(artifact.records),
-        channel=channel_of(artifact.loss),
+        channel=channel_of(artifact.outcome, artifact.loss),
         missing=missing,
         facts=facts,
         observed_at=artifact.records[0].observed_at if artifact.records else now(),
+    )
+
+
+@dataclass(frozen=True)
+class Disposition:
+    """What one adapter's smokes have proven, as of one moment.
+
+    ``last_success`` is kept even when it is too old to count. "Unverified"
+    asks for a re-proof, and a renderer that erased the stamp would leave
+    nobody able to say how long ago the last one was.
+    """
+
+    adapter_id: str
+    state: str
+    reason: str
+    last_success: str
+
+
+def seconds_since(stamp: str, now: str) -> Optional[int]:
+    """How long ago ``stamp`` was, or nothing at all if either is unreadable.
+
+    A stamp this module cannot parse is not a moment, and guessing one would
+    turn a corrupted ledger into evidence.
+    """
+
+    try:
+        then = datetime.strptime(stamp, LEDGER_STAMP_FORMAT).replace(tzinfo=timezone.utc)
+        moment = datetime.strptime(now, LEDGER_STAMP_FORMAT).replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+    return int((moment - then).total_seconds())
+
+
+def disposition_of(
+    ledger: Dict[str, str],
+    adapter_id: str,
+    now: str,
+    max_age_seconds: int = SMOKE_MAX_AGE_SECONDS,
+) -> Disposition:
+    """One adapter's standing, from the ledger alone.
+
+    Every way of not holding a current success lands on ``unverified``, and
+    each says which way it was. A stamp ahead of ``now`` is one of them: a
+    skewed clock or a hand-edited file would otherwise read as verified for as
+    long as it stayed in the future, which is the silent success this whole
+    disposition exists to refuse.
+    """
+
+    def held(state: str, reason: str, last_success: str = "") -> Disposition:
+        return Disposition(
+            adapter_id=adapter_id, state=state, reason=reason, last_success=last_success
+        )
+
+    last_success = ledger.get(adapter_id, "")
+    if not last_success:
+        return held(UNVERIFIED, NEVER_SMOKED)
+    age = seconds_since(last_success, now)
+    if age is None:
+        return held(UNVERIFIED, UNREADABLE_LAST_SUCCESS, last_success)
+    if age < 0:
+        return held(UNVERIFIED, LAST_SUCCESS_AHEAD_OF_NOW, last_success)
+    if age > max_age_seconds:
+        return held(UNVERIFIED, STALE_SUCCESS, last_success)
+    return held(VERIFIED, FRESH_SUCCESS, last_success)
+
+
+def ledger_after(
+    ledger: Dict[str, str], observation: SmokeObservation, at: str
+) -> Dict[str, str]:
+    """The ledger this observation leaves behind.
+
+    One thing can change here and it only ever adds: a read that carried its
+    whole roster row, from the origin, stamps that adapter. Nothing removes an
+    entry and nothing ages one — which is what "a smoke degrades nothing" means
+    where it has to be true. A blocked read is not a finding about the
+    platform, a failed read has not disproved a success that was already
+    proven, and expiry belongs to the window in :func:`disposition_of`, where
+    it happens by the clock moving rather than by a later read revoking it.
+    """
+
+    kept = dict(ledger)
+    if satisfied(observation) and observation.channel == ANSWERED_BY_ORIGIN:
+        kept[observation.adapter_id] = at
+    return kept
+
+
+def read_ledger(path: Path) -> Dict[str, str]:
+    """Every last-success stamp on disk, or nothing readable at all.
+
+    Anything unreadable answers empty, and empty means every adapter is
+    unverified. That is the only safe direction: a corrupted file that reported
+    thirteen working platforms would be the silent success this package is
+    built to refuse, and one that reports none costs a re-proof.
+    """
+
+    if not path.exists():
+        return {}
+    try:
+        payload: Any = json.loads(path.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    return {
+        adapter_id: stamp
+        for adapter_id, stamp in payload.items()
+        if isinstance(adapter_id, str) and isinstance(stamp, str)
+    }
+
+
+def write_ledger(path: Path, ledger: Dict[str, str]) -> None:
+    """Record the stamps, sorted, so two identical ledgers are identical bytes."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(ledger, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )

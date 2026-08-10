@@ -22,9 +22,12 @@ from __future__ import annotations
 
 import contextlib
 import dataclasses
+import importlib.util
 import socket
+import tempfile
 import unittest
 import urllib.request
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -33,6 +36,21 @@ from tests import helpers
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
 CLI_FIXTURE_DIR = FIXTURE_DIR / "cli"
+REPOSITORY_ROOT = Path(__file__).resolve().parents[4]
+
+# One frozen moment for every ledger row, and one adapter to hold the laws
+# against. `rejected` is the word no disposition may ever be; it is spelled
+# here so the checks can look for it.
+NOW = helpers.FROZEN_START
+ADAPTER = "github_rest"
+REJECTED = "rejected"
+
+
+def stamp_at(offset_seconds):
+    """One instant relative to the frozen moment, in the ledger's own format."""
+
+    moment = datetime.strptime(NOW, helpers.STAMP_FORMAT).replace(tzinfo=timezone.utc)
+    return (moment + timedelta(seconds=offset_seconds)).strftime(helpers.STAMP_FORMAT)
 
 # One measured payload per route a smoke reads, by the route that answered with
 # it. These are the same bytes the adapters were built against — a smoke proven
@@ -298,6 +316,342 @@ class TheSuiteReachesNoNetworkTest(unittest.TestCase):
 
         with self.assertRaises(transport.TransportError):
             observe_offline(probe, seeds={})
+
+
+def load_beside_the_tree(name):
+    """Load one wrong implementation written beside the tree, by path."""
+
+    path = CLI_FIXTURE_DIR / (name + ".py")
+    spec = importlib.util.spec_from_file_location("cli_fixture_" + name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def observation(adapter_id="github_rest", outcome="ok", loss=(), missing=(), records=1):
+    """One observation, spelled by hand, so a law can be checked without a read."""
+
+    return cli.SmokeObservation(
+        adapter_id=adapter_id,
+        route_id="github_rest",
+        outcome=outcome,
+        loss=loss,
+        records_kept=records,
+        channel=cli.channel_of(outcome, loss),
+        missing=missing,
+        facts=(),
+        observed_at=NOW,
+    )
+
+
+def intercepted(adapter_id="github_rest"):
+    """What this host's own appliance answering looks like by the time it lands.
+
+    `failed`, with no rows, and the loss code as the only thing saying the
+    origin was never reached. findings.md §0 measured it: 503 with a login
+    portal in the body, for domains this network intercepts.
+    """
+
+    return observation(
+        adapter_id=adapter_id,
+        outcome="failed",
+        loss=(transport.NETWORK_INTERCEPTED,),
+        missing=(("repository", cli.NO_RECORD_OF_THIS_KIND),),
+        records=0,
+    )
+
+
+def origin_failure(adapter_id="github_rest"):
+    """A refusal the platform itself sent: same outcome, no interception code."""
+
+    return observation(
+        adapter_id=adapter_id,
+        outcome="failed",
+        loss=("http_status",),
+        missing=(("repository", cli.NO_RECORD_OF_THIS_KIND),),
+        records=0,
+    )
+
+
+def assert_stale_degrades_to_unverified(case, disposition_of):
+    """Row 2, over whatever renderer it is handed.
+
+    Five ledgers and one clock. The window is the only thing that may turn a
+    recorded success into a current one, and every way of not having a current
+    success lands on `unverified` — never on silent success, and never on a
+    word that blames the platform.
+    """
+
+    fresh = {ADAPTER: stamp_at(-3600)}
+    stale = {ADAPTER: stamp_at(-(cli.SMOKE_MAX_AGE_SECONDS + 3600))}
+    edge = {ADAPTER: stamp_at(-(cli.SMOKE_MAX_AGE_SECONDS - 60))}
+    ahead = {ADAPTER: stamp_at(3600)}
+    unreadable = {ADAPTER: "last Tuesday"}
+
+    current = disposition_of(fresh, ADAPTER, NOW)
+    case.assertEqual(current.state, cli.VERIFIED)
+    case.assertEqual(current.reason, cli.FRESH_SUCCESS)
+    case.assertEqual(disposition_of(edge, ADAPTER, NOW).state, cli.VERIFIED)
+
+    aged = disposition_of(stale, ADAPTER, NOW)
+    case.assertEqual(aged.state, cli.UNVERIFIED, "a stale success was not degraded")
+    case.assertEqual(aged.reason, cli.STALE_SUCCESS)
+    # The evidence is kept, not erased: unverified says "re-prove this", and a
+    # renderer that dropped the stamp would leave nothing to say how long ago.
+    case.assertEqual(aged.last_success, stale[ADAPTER])
+
+    never = disposition_of({}, ADAPTER, NOW)
+    case.assertEqual(never.state, cli.UNVERIFIED)
+    case.assertEqual(never.reason, cli.NEVER_SMOKED)
+
+    # A stamp ahead of now cannot buy freshness: a hand-edited or skewed ledger
+    # would otherwise read as verified for as long as it stayed in the future.
+    case.assertEqual(disposition_of(ahead, ADAPTER, NOW).state, cli.UNVERIFIED)
+    case.assertEqual(disposition_of(unreadable, ADAPTER, NOW).state, cli.UNVERIFIED)
+
+    for ledger in (fresh, stale, edge, ahead, unreadable, {}):
+        rendered = disposition_of(ledger, ADAPTER, NOW)
+        case.assertIn(rendered.state, cli.SMOKE_DISPOSITIONS)
+        case.assertIn(rendered.reason, cli.SMOKE_REASONS)
+        case.assertNotEqual(rendered.state, REJECTED)
+
+
+def assert_interception_degrades_nothing(case, channel_of, ledger_after):
+    """Row 3, over whatever pair it is handed.
+
+    Both halves. The local block has to be *named* as one — an implementation
+    that called everything local would pass a check that only looked at the
+    intercepted case — and it has to leave the adapter's standing evidence
+    exactly as it found it.
+    """
+
+    case.assertEqual(
+        channel_of("failed", (transport.NETWORK_INTERCEPTED,)),
+        cli.ANSWERED_BY_LOCAL_NETWORK,
+        "an intercepted read was not named as a local-network answer",
+    )
+    case.assertEqual(channel_of("failed", ("http_status",)), cli.ANSWERED_BY_ORIGIN)
+    case.assertEqual(channel_of("ok", ()), cli.ANSWERED_BY_ORIGIN)
+    case.assertEqual(
+        channel_of("failed", ("rate_limited",)),
+        cli.ANSWERED_BY_ORIGIN,
+        "an origin asking for fewer requests is the origin answering",
+    )
+
+    held = {ADAPTER: stamp_at(-3600), "reddit_feed": stamp_at(-7200)}
+
+    case.assertEqual(
+        ledger_after(held, intercepted(ADAPTER), NOW),
+        held,
+        "a local block changed what the ledger holds",
+    )
+    case.assertEqual(
+        ledger_after(held, origin_failure(ADAPTER), NOW),
+        held,
+        "a failed read revoked a success that had already been proven",
+    )
+    # A local answer can never be recorded as a success, even if something
+    # upstream handed one that claimed its field set was satisfied.
+    case.assertEqual(
+        ledger_after(
+            held,
+            cli.SmokeObservation(
+                adapter_id=ADAPTER,
+                route_id="github_rest",
+                outcome="failed",
+                loss=(transport.NETWORK_INTERCEPTED,),
+                records_kept=0,
+                channel=cli.ANSWERED_BY_LOCAL_NETWORK,
+                missing=(),
+                facts=(),
+                observed_at=NOW,
+            ),
+            NOW,
+        ),
+        held,
+    )
+    # And the positive control: a renderer that changed nothing ever would
+    # satisfy every line above.
+    recorded = ledger_after(held, observation(ADAPTER), NOW)
+    case.assertEqual(recorded[ADAPTER], NOW)
+    case.assertEqual(recorded["reddit_feed"], held["reddit_feed"])
+
+
+class StaleSmokeDegradesTest(unittest.TestCase):
+    """Row 2: a recorded success expires, and expiry is proven on a fake clock."""
+
+    def test_the_disposition_renderer_degrades_a_stale_success(self):
+        assert_stale_degrades_to_unverified(self, cli.disposition_of)
+
+    def test_staleness_is_the_window_and_nothing_else(self):
+        # Proven by moving the clock rather than by waiting: the same ledger
+        # is current a second inside the window and stale a second outside it.
+        last_success = stamp_at(-cli.SMOKE_MAX_AGE_SECONDS)
+        ledger = {ADAPTER: last_success}
+
+        inside = cli.disposition_of(ledger, ADAPTER, stamp_at(-1))
+        outside = cli.disposition_of(ledger, ADAPTER, stamp_at(1))
+
+        self.assertEqual(inside.state, cli.VERIFIED)
+        self.assertEqual(outside.state, cli.UNVERIFIED)
+        self.assertEqual(outside.reason, cli.STALE_SUCCESS)
+
+    def test_the_window_is_declared_in_days_a_reader_can_check(self):
+        self.assertEqual(cli.SMOKE_MAX_AGE_SECONDS, 7 * 24 * 60 * 60)
+
+    def test_no_disposition_this_module_can_render_rejects_a_platform(self):
+        self.assertEqual(cli.SMOKE_DISPOSITIONS, (cli.VERIFIED, cli.UNVERIFIED))
+        self.assertNotIn(REJECTED, cli.SMOKE_DISPOSITIONS)
+
+
+class InterceptionDegradesNothingTest(unittest.TestCase):
+    """Row 3: the local network answering is not a finding about the platform."""
+
+    def test_the_channel_and_the_ledger_both_hold_the_line(self):
+        assert_interception_degrades_nothing(self, cli.channel_of, cli.ledger_after)
+
+    def test_an_intercepted_read_reaches_the_observation_as_a_local_answer(self):
+        # End to end rather than by hand: the measured captive-portal body,
+        # through the real transport, the real adapter, and the real runner.
+        probe = cli.probe_for("github_rest")
+        seeds = probe_seeds()
+        seeds[probe.route_id] = (503, payload("transport/captive_portal.html"), "text/html")
+
+        observed, _ = observe_offline(probe, seeds=seeds)
+
+        self.assertEqual(observed.channel, cli.ANSWERED_BY_LOCAL_NETWORK)
+        self.assertIn(transport.NETWORK_INTERCEPTED, observed.loss)
+        self.assertEqual(observed.outcome, "failed")
+        self.assertFalse(cli.satisfied(observed))
+
+    def test_the_same_status_without_the_marker_stays_the_origins_own(self):
+        # The difference is the body, not the status: a 503 the platform itself
+        # sent is a platform answer, and calling it local would be the mirror
+        # of the mistake row 3 forbids.
+        probe = cli.probe_for("github_rest")
+        seeds = probe_seeds()
+        seeds[probe.route_id] = (
+            503, payload("transport/origin_service_unavailable.html"), "text/html"
+        )
+
+        observed, _ = observe_offline(probe, seeds=seeds)
+
+        self.assertEqual(observed.channel, cli.ANSWERED_BY_ORIGIN)
+        self.assertNotIn(transport.NETWORK_INTERCEPTED, observed.loss)
+
+
+class WrongImplementationsAreRejectedTest(unittest.TestCase):
+    """Row 6: both oracles are shown rejecting, on code beside the tree.
+
+    Neither fixture is imported by the package and nothing under test is
+    mutated to obtain them. Each is the mistake its row exists for, written the
+    way it would really be written.
+    """
+
+    def test_a_renderer_that_calls_a_stale_success_current_fails_row_two(self):
+        wrong = load_beside_the_tree("stale_as_success")
+
+        with self.assertRaises(AssertionError) as caught:
+            assert_stale_degrades_to_unverified(self, wrong.disposition_of)
+
+        self.assertIn("a stale success was not degraded", str(caught.exception))
+
+    def test_a_smoke_that_reads_a_local_block_as_a_platform_gap_fails_row_three(self):
+        wrong = load_beside_the_tree("interception_as_gap")
+
+        with self.assertRaises(AssertionError) as caught:
+            assert_interception_degrades_nothing(self, wrong.channel_of, wrong.ledger_after)
+
+        self.assertIn("not named as a local-network answer", str(caught.exception))
+
+    def test_the_same_wrong_smoke_also_revokes_evidence_it_never_disproved(self):
+        # Its second mistake, checked apart from its first so that fixing one
+        # does not quietly hide the other.
+        wrong = load_beside_the_tree("interception_as_gap")
+        held = {ADAPTER: stamp_at(-3600)}
+
+        self.assertEqual(wrong.ledger_after(held, intercepted(ADAPTER), NOW), {})
+        self.assertEqual(cli.ledger_after(held, intercepted(ADAPTER), NOW), held)
+
+    def test_both_wrong_implementations_pass_nothing_by_accident(self):
+        # Each fixture is wrong in its own row and correct enough elsewhere to
+        # be a real alternative rather than a broken module: a fixture that
+        # failed everything would prove only that the checks run.
+        stale = load_beside_the_tree("stale_as_success")
+        gap = load_beside_the_tree("interception_as_gap")
+
+        self.assertEqual(stale.disposition_of({}, ADAPTER, NOW).state, cli.UNVERIFIED)
+        self.assertEqual(gap.channel_of("ok", ()), cli.ANSWERED_BY_ORIGIN)
+        self.assertEqual(
+            gap.ledger_after({}, observation(ADAPTER), NOW), {ADAPTER: NOW}
+        )
+
+
+class SmokeLedgerTest(unittest.TestCase):
+    """What "records its last-success timestamp" is made of."""
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.path = Path(self.directory.name) / "held" / "smoke-ledger.json"
+
+    def test_a_ledger_round_trips_through_one_file(self):
+        held = {ADAPTER: NOW, "reddit_feed": stamp_at(-60)}
+
+        with forbid_network():
+            cli.write_ledger(self.path, held)
+            read_back = cli.read_ledger(self.path)
+
+        self.assertEqual(read_back, held)
+        self.assertTrue(self.path.exists())
+
+    def test_the_default_path_is_outside_any_repository_working_tree(self):
+        # A human running a smoke must not dirty a checkout. The path is a
+        # constant no argument can name, and it is absolute so it does not
+        # follow whoever ran the command into their own tree.
+        self.assertTrue(cli.LEDGER_PATH.is_absolute())
+        self.assertNotIn(REPOSITORY_ROOT, cli.LEDGER_PATH.parents)
+        for parent in cli.LEDGER_PATH.parents:
+            self.assertNotEqual(parent, REPOSITORY_ROOT)
+
+    def test_a_ledger_that_is_not_there_is_empty_rather_than_an_error(self):
+        with forbid_network():
+            self.assertEqual(cli.read_ledger(self.path), {})
+
+    def test_a_ledger_this_run_cannot_read_degrades_every_adapter(self):
+        # The safe direction, stated: an unreadable ledger is no evidence, and
+        # no evidence is `unverified`. The other direction would be a file
+        # corruption that silently reported thirteen working platforms.
+        for body in ("{not json", '["github_rest"]', '{"github_rest": 17}', ""):
+            with self.subTest(body=body):
+                self.path.parent.mkdir(parents=True, exist_ok=True)
+                self.path.write_text(body, encoding="utf-8")
+
+                held = cli.read_ledger(self.path)
+
+                self.assertEqual(held, {})
+                self.assertEqual(
+                    cli.disposition_of(held, ADAPTER, NOW).state, cli.UNVERIFIED
+                )
+
+    def test_recording_one_success_leaves_every_other_adapter_alone(self):
+        held = {"reddit_feed": stamp_at(-7200)}
+
+        with forbid_network():
+            cli.write_ledger(self.path, cli.ledger_after(held, observation(ADAPTER), NOW))
+            read_back = cli.read_ledger(self.path)
+
+        self.assertEqual(read_back, {ADAPTER: NOW, "reddit_feed": held["reddit_feed"]})
+
+    def test_a_smoke_that_did_not_carry_its_row_records_nothing(self):
+        held = {}
+
+        after = cli.ledger_after(
+            held, observation(ADAPTER, missing=(("repository", "title"),)), NOW
+        )
+
+        self.assertEqual(after, {})
+        self.assertEqual(cli.disposition_of(after, ADAPTER, NOW).reason, cli.NEVER_SMOKED)
 
 
 if __name__ == "__main__":
