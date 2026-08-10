@@ -1,0 +1,136 @@
+{
+  "as_of": "2026-08-10T00:00:00Z",
+  "note": "Frozen seeds for the ordering contract. Every row names the confusion it exists to catch. The as_of is frozen so a replay is the same replay whenever it runs, and no wall clock participates in any ordering.",
+  "records": [
+    {
+      "case": "stale",
+      "why": "an old observation is still an observation: staleness never disqualifies a snapshot, it only loses to a newer eligible one",
+      "adapter_id": "reddit_archive",
+      "platform": "reddit",
+      "native_identity_namespace": "reddit",
+      "canonical_content_kind": "post",
+      "representation_kind": "native",
+      "native_item_id": "t3_stale",
+      "native_position": 0,
+      "published_at": "2026-08-03T00:00:00Z",
+      "engagement": [
+        ["num_comments", 120, "2026-07-01T00:00:00Z"],
+        ["reply_count", 3, "2026-07-01T00:00:00Z"]
+      ]
+    },
+    {
+      "case": "changing",
+      "why": "a metric that moved: the replay takes the greatest observation at or before as_of, not the first one it meets",
+      "adapter_id": "reddit_archive",
+      "platform": "reddit",
+      "native_identity_namespace": "reddit",
+      "canonical_content_kind": "post",
+      "representation_kind": "native",
+      "native_item_id": "t3_change",
+      "native_position": 1,
+      "published_at": "2026-08-06T00:00:00Z",
+      "engagement": [
+        ["num_comments", 10, "2026-08-01T00:00:00Z"],
+        ["num_comments", 80, "2026-08-09T00:00:00Z"],
+        ["reply_count", 7, "2026-08-09T00:00:00Z"]
+      ]
+    },
+    {
+      "case": "future",
+      "why": "an observation after the frozen as_of is not eligible: a comparator that took the latest snapshot would rank this row first on a number the as_of cannot see",
+      "adapter_id": "reddit_archive",
+      "platform": "reddit",
+      "native_identity_namespace": "reddit",
+      "canonical_content_kind": "post",
+      "representation_kind": "native",
+      "native_item_id": "t3_future",
+      "native_position": 2,
+      "published_at": "2026-08-07T00:00:00Z",
+      "engagement": [
+        ["num_comments", 5, "2026-08-09T00:00:00Z"],
+        ["num_comments", 9999, "2026-08-20T00:00:00Z"]
+      ]
+    },
+    {
+      "case": "equal_time",
+      "why": "two observations at one moment: the tie is the smallest stable snapshot id, never the larger value",
+      "adapter_id": "reddit_archive",
+      "platform": "reddit",
+      "native_identity_namespace": "reddit",
+      "canonical_content_kind": "post",
+      "representation_kind": "native",
+      "native_item_id": "t3_equal",
+      "native_position": 3,
+      "published_at": "2026-08-02T00:00:00Z",
+      "engagement": [
+        ["num_comments", 40, "2026-08-08T00:00:00Z"],
+        ["num_comments", 41, "2026-08-08T00:00:00Z"]
+      ]
+    },
+    {
+      "case": "missing",
+      "why": "no observation of the declared metric at all: the row sorts terminal rather than being given a zero it never reported",
+      "adapter_id": "reddit_archive",
+      "platform": "reddit",
+      "native_identity_namespace": "reddit",
+      "canonical_content_kind": "post",
+      "representation_kind": "native",
+      "native_item_id": "t3_missing",
+      "native_position": 4,
+      "published_at": "2026-08-05T00:00:00Z",
+      "engagement": [["score", 900, "2026-08-09T00:00:00Z"]]
+    },
+    {
+      "case": "wrong_name",
+      "why": "a metric the route spells differently: names are never inferred or aliased, so this is a missing metric and not a comment count",
+      "adapter_id": "reddit_archive",
+      "platform": "reddit",
+      "native_identity_namespace": "reddit",
+      "canonical_content_kind": "post",
+      "representation_kind": "native",
+      "native_item_id": "t3_wrongname",
+      "native_position": 5,
+      "published_at": "2026-08-04T00:00:00Z",
+      "engagement": [["comment_count", 777, "2026-08-09T00:00:00Z"]]
+    },
+    {
+      "case": "untimed",
+      "why": "no usable basis time and no native ordinal: every terminal sentinel at once",
+      "adapter_id": "reddit_archive",
+      "platform": "reddit",
+      "native_identity_namespace": "reddit",
+      "canonical_content_kind": "post",
+      "representation_kind": "native",
+      "native_item_id": "t3_untimed",
+      "native_position": -1,
+      "published_at": "",
+      "engagement": []
+    },
+    {
+      "case": "hit_reddit",
+      "why": "an index hit crosses source roles in chronology and belongs to no native family",
+      "adapter_id": "web_search",
+      "platform": "duckduckgo",
+      "native_identity_namespace": "",
+      "canonical_content_kind": "web_hit",
+      "representation_kind": "index",
+      "native_item_id": "",
+      "native_position": 0,
+      "published_at": "",
+      "engagement": []
+    },
+    {
+      "case": "hit_x",
+      "why": "a second index hit: two rows alike to the last component prove record_id is the terminal tie",
+      "adapter_id": "web_search",
+      "platform": "duckduckgo",
+      "native_identity_namespace": "",
+      "canonical_content_kind": "web_hit",
+      "representation_kind": "index",
+      "native_item_id": "",
+      "native_position": 1,
+      "published_at": "",
+      "engagement": []
+    }
+  ]
+}

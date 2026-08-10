@@ -53,6 +53,12 @@ class AdapterDescriptor:
     measured ceiling, declared here and enforced by the scheduler per route:
     the ceiling belongs to the origin, so two adapters reading one route must
     declare the same three numbers.
+
+    ``comment_count_metric`` and ``reply_count_metric`` name at most one exact
+    native metric each, for the two orders that rank by engagement. A name is
+    never inferred, aliased, summed, or compared across platforms — an adapter
+    that declares neither has no eligible metric, which is a stated absence
+    rather than a zero nobody reported.
     """
 
     adapter_id: str
@@ -68,6 +74,8 @@ class AdapterDescriptor:
     burst: int = DEFAULT_BURST
     cooldown_ms: int = DEFAULT_COOLDOWN_MS
     volatile_identifiers: Tuple[VolatileIdentifier, ...] = ()
+    comment_count_metric: str = ""
+    reply_count_metric: str = ""
 
     def __post_init__(self) -> None:
         for identifier in self.volatile_identifiers:

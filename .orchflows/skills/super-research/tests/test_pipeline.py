@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import dataclasses
 import importlib.util
+import json
 import unittest
 from pathlib import Path
 
@@ -750,6 +751,227 @@ class WorkLedgerTest(unittest.TestCase):
             span,
             max(event.stop_tick_us for event in fused.ledger if event.metric != "stop"),
         )
+
+
+def replay_seeds():
+    """The frozen ordering seeds, as data."""
+
+    return json.loads(
+        FIXTURE_DIR.joinpath("engagement_as_of_replay.json").read_text(encoding="utf-8")
+    )
+
+
+def seeded_record(row):
+    """One artifact record built from one frozen seed row."""
+
+    return schema.AcquisitionRecord(
+        record_id="seed#" + row["case"],
+        artifact_id="artifact:ordering",
+        manifest_id="ordering",
+        step_id="s1-seed",
+        adapter_id=row["adapter_id"],
+        adapter_version="1",
+        route_id="",
+        access_class="",
+        operator_identity="",
+        platform=row["platform"],
+        native_identity_namespace=row["native_identity_namespace"],
+        group_scope=row["platform"],
+        representation_kind=row["representation_kind"],
+        canonical_content_kind=row["canonical_content_kind"],
+        native_item_id=row["native_item_id"],
+        native_parent_id="",
+        canonical_locator="",
+        normalized_locator="",
+        exact_content_hash="",
+        title="",
+        body="",
+        author="",
+        community="",
+        published_at=row["published_at"],
+        observed_at=helpers.FROZEN_START,
+        time_confidence="reported" if row["published_at"] else "unknown",
+        usable_basis_time=row["published_at"],
+        engagement=tuple(
+            schema.EngagementSnapshot(metric_name=name, value=value, observed_at=observed)
+            for name, value, observed in row["engagement"]
+        ),
+        page_index=0,
+        list_index=0,
+        native_position=row["native_position"],
+        discovery_locator="",
+        outcome="ok",
+        loss=(),
+    )
+
+
+def seeded_records():
+    """Every seed row, in the order the fixture declares them."""
+
+    return tuple(seeded_record(row) for row in replay_seeds()["records"])
+
+
+def cases_of(records):
+    return [record.record_id.split("#", 1)[1] for record in records]
+
+
+# The two metric names a Reddit route reports, declared on a descriptor rather
+# than inferred from a snapshot. The shipped descriptor declares neither, which
+# is what the "never inferred" case turns on.
+DECLARING_DESCRIPTORS = {
+    "web_search": runner.descriptor_for("web_search"),
+}
+
+
+def declaring_descriptors():
+    return dict(
+        DECLARING_DESCRIPTORS,
+        reddit_archive=dataclasses.replace(
+            runner.descriptor_for("reddit_archive"),
+            comment_count_metric="num_comments",
+            reply_count_metric="reply_count",
+        ),
+    )
+
+
+class OrderingContractTest(unittest.TestCase):
+    """Criterion 4, ordering half: five total orders over one frozen ``as_of``.
+
+    The expected order of every view is written out case by case, so the check
+    is what the contract says the answer is and not what the comparator
+    happens to produce.
+    """
+
+    def setUp(self):
+        self.seeds = replay_seeds()
+        self.records = seeded_records()
+        self.as_of = self.seeds["as_of"]
+        self.native = tuple(
+            record for record in self.records if record.representation_kind == "native"
+        )
+        self.descriptors = declaring_descriptors()
+
+    def ordered(self, order, records=None):
+        return cases_of(
+            runner.order_records(
+                self.native if records is None else records,
+                order,
+                self.as_of,
+                descriptors=self.descriptors,
+            )
+        )
+
+    def test_newest_ranks_by_usable_basis_time_with_the_untimed_terminal(self):
+        self.assertEqual(
+            self.ordered("newest"),
+            ["future", "changing", "missing", "wrong_name", "stale", "equal_time", "untimed"],
+        )
+
+    def test_native_top_ranks_by_the_routes_own_ordinal_lower_first(self):
+        self.assertEqual(
+            self.ordered("native_top"),
+            ["stale", "changing", "future", "equal_time", "missing", "wrong_name", "untimed"],
+        )
+
+    def test_most_commented_replays_engagement_against_the_frozen_as_of(self):
+        # stale 120, changing 80 (not its earlier 10), equal_time 40 (the
+        # smaller of two at one moment), future 5 (not the 9999 the as_of
+        # cannot see), then the rows with no eligible metric at all.
+        self.assertEqual(
+            self.ordered("most_commented"),
+            ["stale", "changing", "equal_time", "future", "missing", "wrong_name", "untimed"],
+        )
+
+    def test_most_replied_uses_its_own_declared_metric_and_never_the_other(self):
+        self.assertEqual(
+            self.ordered("most_replied"),
+            ["changing", "stale", "future", "missing", "wrong_name", "equal_time", "untimed"],
+        )
+
+    def test_cross_source_chronology_crosses_roles_and_keeps_one_total_order(self):
+        self.assertEqual(
+            cases_of(
+                runner.order_records(
+                    self.records,
+                    "cross_source_chronology",
+                    self.as_of,
+                    descriptors=self.descriptors,
+                )
+            ),
+            [
+                "future",
+                "changing",
+                "missing",
+                "wrong_name",
+                "stale",
+                "equal_time",
+                "hit_reddit",
+                "hit_x",
+                "untimed",
+            ],
+        )
+
+    def test_a_metric_name_is_never_inferred_from_the_snapshot_that_carries_it(self):
+        # With nothing declared, every row's comment count is missing — even
+        # the row whose snapshot is literally called `comment_count`. The order
+        # collapses to the time-and-id tail, which is the whole tell.
+        undeclared = cases_of(
+            runner.order_records(
+                self.native, "most_commented", self.as_of, descriptors=DECLARING_DESCRIPTORS
+            )
+        )
+
+        self.assertEqual(
+            undeclared,
+            ["future", "changing", "missing", "wrong_name", "stale", "equal_time", "untimed"],
+        )
+        self.assertEqual(undeclared, self.ordered("newest"))
+
+    def test_a_family_scoped_order_refuses_to_compare_across_families(self):
+        for order in ("newest", "native_top", "most_commented", "most_replied"):
+            with self.subTest(order=order):
+                with self.assertRaises(runner.OrderingError):
+                    runner.order_records(
+                        self.records, order, self.as_of, descriptors=self.descriptors
+                    )
+
+    def test_an_order_the_contract_does_not_name_is_refused(self):
+        self.assertEqual(
+            runner.ORDERING_CONTRACT,
+            (
+                "newest",
+                "cross_source_chronology",
+                "native_top",
+                "most_commented",
+                "most_replied",
+            ),
+        )
+        with self.assertRaises(runner.OrderingError):
+            runner.order_records(self.native, "most_upvoted", self.as_of)
+
+    def test_no_wall_clock_participates_and_the_replay_is_repeatable(self):
+        first = self.ordered("most_commented")
+        again = self.ordered("most_commented")
+
+        self.assertEqual(first, again)
+        self.assertEqual(
+            sources_naming(("datetime.now", "time.time", "utcnow"), package_sources()),
+            [("transport.py", "datetime.now")],
+        )
+
+    def test_the_artifacts_own_record_order_is_step_then_page_then_list(self):
+        fused = fused_run()
+
+        positions = [
+            (
+                [step.step_id for step in fused.artifact.steps].index(record.step_id),
+                record.page_index,
+                record.list_index,
+            )
+            for record in fused.artifact.records
+        ]
+
+        self.assertEqual(positions, sorted(positions))
 
 
 class BurstAndCooldownTest(unittest.TestCase):
