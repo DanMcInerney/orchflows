@@ -9,9 +9,10 @@ names the party that answered it — the origin, or a local network appliance �
 so a caller can never record this network's block as a platform gap.
 
 Reliability bar: read-only. The default opener refuses any URL that is not
-``https://`` and any method that is not ``GET`` or ``HEAD``, so no code
-path here can mutate a remote resource, and the offline ``fake`` route can
-never leave the process.
+``https://`` and any method outside :func:`admitted_methods` — reads
+everywhere, plus one closed exception for minting an anonymous guest token,
+which creates nothing at the origin. No code path here can mutate a remote
+resource, and the offline ``fake`` route can never leave the process.
 """
 
 from __future__ import annotations
@@ -25,6 +26,7 @@ from typing import Callable, Dict, List, Mapping, Optional, Tuple
 
 DDG_HTML_ROUTE = "ddg_html"
 ARCTIC_SHIFT_POSTS_ROUTE = "arctic_shift_posts_ids"
+X_GUEST_ACTIVATE_ROUTE = "x_guest_activate"
 FAKE_OFFLINE_ROUTE = "fake_offline"
 
 YOUTUBE_INNERTUBE_WEB_KEY = "youtube_innertube_web_key"
@@ -37,6 +39,11 @@ USER_AGENT = "super-research/0.1 (keyless read-only acquisition)"
 REQUEST_TIMEOUT_SECONDS = 20
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 READ_METHODS = ("GET", "HEAD")
+
+# The one closed exception to reads-only, named by route id: minting an
+# anonymous guest token needs a POST, and that POST creates no account,
+# session, or content at the origin. Nothing else may leave a read.
+TOKEN_ACTIVATION_ROUTES = (X_GUEST_ACTIVATE_ROUTE,)
 
 # Where a public client credential goes on the wire.
 CREDENTIAL_PLACEMENTS = ("query", "header")
@@ -149,6 +156,16 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         accept="application/json",
         operator_identity="arctic-shift",
     ),
+    X_GUEST_ACTIVATE_ROUTE: RouteConstant(
+        route_id=X_GUEST_ACTIVATE_ROUTE,
+        access_class="K1",
+        method="POST",
+        origin="https://api.twitter.com",
+        path="/1.1/guest/activate.json",
+        accept="application/json",
+        operator_identity="x",
+        credential_id=X_GUEST_PUBLIC_BEARER,
+    ),
     FAKE_OFFLINE_ROUTE: RouteConstant(
         route_id=FAKE_OFFLINE_ROUTE,
         access_class="offline",
@@ -208,6 +225,14 @@ def route_constant(route_id: str) -> RouteConstant:
     if route is None:
         raise TransportError("unknown route " + route_id)
     return route
+
+
+def admitted_methods(route_id: str) -> Tuple[str, ...]:
+    """Every method this route may use: reads, plus token activation where declared."""
+
+    if route_id in TOKEN_ACTIVATION_ROUTES:
+        return READ_METHODS + ("POST",)
+    return READ_METHODS
 
 
 def route_credential(route_id: str) -> Optional[PublicClientCredential]:
@@ -275,8 +300,12 @@ def urlopen_response(request: TransportRequest) -> Tuple[int, str, str]:
 
     if not request.url.startswith("https://"):
         raise TransportError("refusing a non-https url for route " + request.route_id)
-    if request.method not in READ_METHODS:
-        raise TransportError("refusing a write-capable method " + request.method)
+    if request.method not in admitted_methods(request.route_id):
+        raise TransportError(
+            "refusing a write-capable method {0} on route {1}".format(
+                request.method, request.route_id
+            )
+        )
 
     credential = route_credential(request.route_id)
     outbound = urllib.request.Request(

@@ -399,6 +399,163 @@ class CredentialStaysInsideTransportTest(unittest.TestCase):
                     self.assertNotIn(value, repr(carrier.calls))
 
 
+class FakeHTTPResponse:
+    """The little of an http response that ``urlopen_response`` reads."""
+
+    def __init__(self, status, body, content_type):
+        self.status = status
+        self.headers = {"Content-Type": content_type}
+        self._body = body.encode("utf-8")
+
+    def read(self, limit):
+        return self._body[:limit]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exception):
+        return False
+
+
+class RecordingUrlopen:
+    """Stand in for ``urllib.request.urlopen`` and keep what would go on the wire."""
+
+    def __init__(self, status=200, body="{}", content_type="application/json"):
+        self.status = status
+        self.body = body
+        self.content_type = content_type
+        self.requests = []
+
+    def __call__(self, outbound, timeout=None):
+        self.requests.append(outbound)
+        return FakeHTTPResponse(self.status, self.body, self.content_type)
+
+
+def outbound_blob(outbound):
+    """Everything a urllib request would put on the wire, as one string."""
+
+    return " ".join(
+        [outbound.full_url, repr(sorted(outbound.header_items())), repr(outbound.data)]
+    )
+
+
+class GuestActivationRouteTest(unittest.TestCase):
+    """The one non-read operation: minting an anonymous guest token."""
+
+    def test_the_activation_route_carries_the_shape_the_evidence_measured(self):
+        route = transport.route_constant(transport.X_GUEST_ACTIVATE_ROUTE)
+
+        # findings.md §1 (X): POST api.twitter.com/1.1/guest/activate.json
+        # returned 200 with a guest token, keylessly.
+        self.assertEqual(route.access_class, "K1")
+        self.assertEqual(route.method, "POST")
+        self.assertEqual(route.origin, "https://api.twitter.com")
+        self.assertEqual(route.path, "/1.1/guest/activate.json")
+        self.assertEqual(route.credential_id, transport.X_GUEST_PUBLIC_BEARER)
+
+    def test_the_activation_route_needs_no_user_credential(self):
+        self.assertTrue(transport.route_admissions()[transport.X_GUEST_ACTIVATE_ROUTE])
+
+    def test_it_is_the_only_route_declaring_a_method_that_is_not_a_read(self):
+        non_read = sorted(
+            route_id
+            for route_id, route in transport.ROUTE_CONSTANTS.items()
+            if route.method not in transport.READ_METHODS
+        )
+
+        self.assertEqual(non_read, [transport.X_GUEST_ACTIVATE_ROUTE])
+
+    def test_only_the_activation_route_may_use_a_method_that_is_not_a_read(self):
+        for route_id in sorted(transport.ROUTE_CONSTANTS):
+            with self.subTest(route=route_id):
+                admitted = transport.admitted_methods(route_id)
+
+                if route_id == transport.X_GUEST_ACTIVATE_ROUTE:
+                    self.assertEqual(admitted, transport.READ_METHODS + ("POST",))
+                else:
+                    self.assertEqual(admitted, transport.READ_METHODS)
+
+
+class WriteVerbRefusalTest(unittest.TestCase):
+    """Read-only bar: no code path here can mutate a remote resource."""
+
+    def _refusal_for(self, route_id, method):
+        request = transport.TransportRequest(
+            route_id=route_id, method=method, url="https://example.test/probe"
+        )
+
+        with forbid_io():
+            with self.assertRaises(transport.TransportError) as caught:
+                transport.urlopen_response(request)
+
+        return str(caught.exception)
+
+    def test_every_write_verb_is_refused_on_every_route(self):
+        for method in ("PUT", "DELETE", "PATCH", "OPTIONS"):
+            for route_id in sorted(transport.ROUTE_CONSTANTS):
+                with self.subTest(method=method, route=route_id):
+                    self.assertIn(
+                        "refusing a write-capable method", self._refusal_for(route_id, method)
+                    )
+
+    def test_post_is_refused_on_every_route_but_the_activation_route(self):
+        for route_id in sorted(transport.ROUTE_CONSTANTS):
+            if route_id == transport.X_GUEST_ACTIVATE_ROUTE:
+                continue
+            with self.subTest(route=route_id):
+                self.assertIn(
+                    "refusing a write-capable method", self._refusal_for(route_id, "POST")
+                )
+
+    def test_a_non_https_url_is_still_refused_before_any_socket(self):
+        request = transport.TransportRequest(
+            route_id=transport.X_GUEST_ACTIVATE_ROUTE,
+            method="POST",
+            url="http://api.twitter.com/1.1/guest/activate.json",
+        )
+
+        with forbid_io():
+            with self.assertRaises(transport.TransportError) as caught:
+                transport.urlopen_response(request)
+
+        self.assertIn("non-https", str(caught.exception))
+
+
+class OutboundRequestTest(unittest.TestCase):
+    """What the default opener would put on the wire, captured without a socket."""
+
+    def _sent(self, request, recorder):
+        with mock.patch.object(urllib.request, "urlopen", recorder):
+            result = transport.urlopen_response(request)
+        return result, recorder.requests[0]
+
+    def test_the_activation_post_carries_the_public_bearer_and_no_body(self):
+        recorder = RecordingUrlopen(200, '{"guest_token": "1234567890"}', "application/json")
+        request = transport.build_transport_request(transport.X_GUEST_ACTIVATE_ROUTE)
+
+        (status, body, content_type), outbound = self._sent(request, recorder)
+
+        bearer = transport.PUBLIC_CLIENT_CREDENTIALS[transport.X_GUEST_PUBLIC_BEARER].value
+        self.assertEqual(outbound.get_method(), "POST")
+        self.assertIsNone(outbound.data)
+        self.assertIn(bearer, outbound_blob(outbound))
+        self.assertEqual(status, 200)
+        self.assertIn("guest_token", body)
+        self.assertEqual(content_type, "application/json")
+
+    def test_a_keyless_route_sends_no_credential_at_all(self):
+        recorder = RecordingUrlopen(200, "<html></html>", "text/html")
+        request = transport.build_transport_request(transport.DDG_HTML_ROUTE, {"q": "probe"})
+
+        _, outbound = self._sent(request, recorder)
+
+        blob = outbound_blob(outbound)
+        for credential in transport.PUBLIC_CLIENT_CREDENTIALS.values():
+            self.assertNotIn(credential.value, blob)
+        self.assertEqual(outbound.get_method(), "GET")
+        self.assertIn(transport.USER_AGENT, blob)
+
+
 class OracleCanFailTest(unittest.TestCase):
     """Completion criterion 4: the interception oracle fails on a wrong result.
 
