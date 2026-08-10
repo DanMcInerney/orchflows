@@ -140,6 +140,28 @@ TRACER_X_MANIFEST = {
 }
 
 
+ADAPTER_CALLS = (
+    (
+        web_search,
+        adapters.AdapterRequest(step_id="s1-discover", query="best local model"),
+        "ddg_html_results.html",
+        "text/html",
+    ),
+    (
+        reddit_archive,
+        adapters.AdapterRequest(step_id="s2-hydrate", target_ids=("1abc234",)),
+        "arctic_shift_posts_ids.json",
+        "application/json",
+    ),
+    (
+        fake,
+        adapters.AdapterRequest(step_id="s2-hydrate-x", target_ids=("1799990000000000001",)),
+        "fake_x_native_page.json",
+        "application/json",
+    ),
+)
+
+
 def tracer_responses():
     return {
         "ddg_html": (200, read_fixture("ddg_html_results.html"), "text/html"),
@@ -396,24 +418,6 @@ class WebSearchDiscoveryTest(unittest.TestCase):
         self.assertEqual(page.cursor_out, "30")
         self.assertEqual(len(opener.opened), 1)
 
-    def test_transport_failure_is_not_retried(self):
-        failure = transport.TransportError("connection reset")
-        carrier, opener = tracer_transport({"ddg_html": failure})
-
-        with self.assertRaises(transport.TransportError):
-            web_search.fetch_native_page(carrier, self.request)
-
-        self.assertEqual(len(opener.opened), 1)
-        self.assertEqual(len(carrier.calls), 1)
-
-    def test_discovery_performs_no_filesystem_or_socket_io(self):
-        carrier, _ = tracer_transport({"ddg_html": (200, self.html, "text/html")})
-
-        with forbid_io():
-            page = web_search.fetch_native_page(carrier, self.request)
-
-        self.assertEqual(len(page.records), 6)
-
     def test_non_success_status_is_typed_and_never_a_silent_empty(self):
         carrier, _ = tracer_transport({"ddg_html": (503, "<html>Service Unavailable</html>", "text/html")})
 
@@ -495,15 +499,54 @@ class RedditArchiveHydrationTest(unittest.TestCase):
         self.assertIn("http_status", page.loss)
         self.assertEqual(len(opener.opened), 1)
 
-    def test_hydration_performs_no_filesystem_or_socket_io(self):
-        carrier, _ = tracer_transport(
-            {"arctic_shift_posts_ids": (200, self.payload, "application/json")}
+class AdapterCallBoundaryTest(unittest.TestCase):
+    """Completion criterion 3, for every adapter the tracer crosses.
+
+    One call, one page, one route: no pagination, no retry, no fallback, no
+    cross-adapter call, no persistence.
+    """
+
+    def _seeded(self, module, fixture, content_type):
+        return tracer_transport(
+            {module.DESCRIPTOR.route_id: (200, read_fixture(fixture), content_type)}
         )
 
-        with forbid_io():
-            page = reddit_archive.fetch_native_page(carrier, self.request)
+    def test_one_call_yields_one_page_over_the_adapters_own_route_only(self):
+        for module, request, fixture, content_type in ADAPTER_CALLS:
+            with self.subTest(adapter=module.DESCRIPTOR.adapter_id):
+                carrier, opener = self._seeded(module, fixture, content_type)
 
-        self.assertEqual(len(page.records), 1)
+                page = module.fetch_native_page(carrier, request)
+
+                self.assertEqual(len(opener.opened), 1)
+                self.assertEqual(
+                    {call.route_id for call in carrier.calls}, {module.DESCRIPTOR.route_id}
+                )
+                self.assertEqual(page.route_id, module.DESCRIPTOR.route_id)
+                self.assertTrue(page.records)
+
+    def test_a_raising_transport_is_never_retried(self):
+        for module, request, _, _ in ADAPTER_CALLS:
+            with self.subTest(adapter=module.DESCRIPTOR.adapter_id):
+                carrier, opener = tracer_transport(
+                    {module.DESCRIPTOR.route_id: transport.TransportError("connection reset")}
+                )
+
+                with self.assertRaises(transport.TransportError):
+                    module.fetch_native_page(carrier, request)
+
+                self.assertEqual(len(opener.opened), 1)
+                self.assertEqual(len(carrier.calls), 1)
+
+    def test_no_adapter_touches_the_filesystem_or_a_socket(self):
+        for module, request, fixture, content_type in ADAPTER_CALLS:
+            with self.subTest(adapter=module.DESCRIPTOR.adapter_id):
+                carrier, _ = self._seeded(module, fixture, content_type)
+
+                with forbid_io():
+                    page = module.fetch_native_page(carrier, request)
+
+                self.assertTrue(page.records)
 
 
 class FakeAdapterTest(unittest.TestCase):
