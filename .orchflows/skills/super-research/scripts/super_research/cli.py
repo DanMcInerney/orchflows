@@ -236,6 +236,26 @@ def smoke_lines(
     return lines
 
 
+def unreachable_lines(error: transport.TransportError) -> List[str]:
+    """What to say when no answer came back at all, from anyone.
+
+    A refused connection, an unresolvable name, or a TLS handshake that failed
+    is the same news as this host's appliance answering: nothing about the
+    platform was concluded, because nothing of the platform was read. It takes
+    the same exit code for that reason. Reporting it as `1` would file a cable
+    nobody plugged in as a row the origin declined to carry, which is the exact
+    error findings.md section 0 exists to prevent, arriving by a different door.
+    """
+
+    return [
+        "the read did not complete: {0}".format(error),
+        "  no answer came back from anyone — not the origin, and not an"
+        " appliance in front of it. This is a statement about this host's"
+        " connection: nothing about the platform is concluded, nothing is"
+        " degraded, and nothing was recorded.",
+    ]
+
+
 def status_lines(ledger: Dict[str, str], now: str) -> List[str]:
     """Every live adapter's standing. It reports and never judges.
 
@@ -313,6 +333,12 @@ def main(
             code, lines = (EXIT_OK, status_lines(read_ledger(held), now()))
         else:
             code, lines = (EXIT_OK, adapter_lines())
+    except transport.TransportError as error:
+        # The one failure that reaches here rather than becoming a typed page:
+        # the read never got an answer to type. Uncaught it left as a traceback
+        # and exit `1`, the code that means the origin answered and the row was
+        # not carried — a local network condition reported as a platform gap.
+        code, lines = (EXIT_LOCAL_NETWORK, unreachable_lines(error))
     finally:
         # The run ends here, so the guest token this process may have minted
         # ends here too. It lives in a module-level store for as long as the

@@ -854,6 +854,27 @@ class SmokeSubcommandTest(LedgerHoldingCase):
         self.assertIn(cli.VERIFIED, printed)
         self.assertEqual(self.path.read_text(encoding="utf-8"), before)
 
+    def test_a_read_that_never_got_an_answer_is_not_a_row_the_origin_declined(self):
+        # A refused connection, an unresolvable name, or a TLS failure raises
+        # `TransportError` out of the opener. `main` was try/finally with no
+        # except, so it left as a traceback and exit `1` — the code
+        # protocol.md's own table assigns to "the origin answered and the row
+        # was not carried". That is findings.md section 0's error arriving by
+        # a different door: a local condition recorded as a platform gap.
+        held = {ADAPTER: stamp_at(-3600)}
+        cli.write_ledger(self.path, held)
+        before = self.path.read_text(encoding="utf-8")
+        seeds = probe_seeds()
+        seeds["github_rest"] = transport.TransportError("transport failed for github_rest")
+
+        code, printed, _ = run_cli(self, ["smoke", "--adapter", ADAPTER], seeds=seeds)
+
+        self.assertEqual(code, cli.EXIT_LOCAL_NETWORK)
+        self.assertIn("no answer came back from anyone", printed)
+        self.assertNotIn("platform gap", printed)
+        # Nothing recorded, nothing degraded, and the file is the bytes it was.
+        self.assertEqual(self.path.read_text(encoding="utf-8"), before)
+
     def test_a_platform_refusal_and_a_local_block_do_not_read_alike(self):
         seeds = probe_seeds()
         seeds["github_rest"] = (

@@ -514,8 +514,13 @@ unreachable from a command line, which is how the whole path is exercised offlin
 
 Exit codes: `0` the roster row was carried; `1` the origin answered and the row was
 not carried; `2` argparse's own usage error, taken by nothing else here; `3` this
-host's local network answered, so nothing about the platform was concluded. `1`
-and `3` are separate doors because they are not the same news.
+host's local network answered, **or nothing answered at all**, so nothing about
+the platform was concluded. `1` and `3` are separate doors because they are not
+the same news. A refused connection, an unresolvable name, or a TLS failure
+raises `TransportError` out of the opener rather than becoming a typed page,
+because there was no answer to type; `cli.main` catches it and takes `3`, and
+records nothing. Letting it leave as a traceback would take `1` — a cable
+nobody plugged in, filed as a row the origin declined to carry.
 
 Two dispositions and no third: `verified` and `unverified`. Rejecting a platform
 is not something this package does from one read, so `rejected` is not in the
