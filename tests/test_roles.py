@@ -38,6 +38,7 @@ ROLE_TABLE = {
     "orch-worklog": "none",
     # none: named utility
     "orch-off": "none",
+    "orch-search-plan": "none",
     # planner
     "orch-critique": "planner",
     "orch-judge": "planner",
