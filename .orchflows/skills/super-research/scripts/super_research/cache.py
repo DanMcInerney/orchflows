@@ -48,6 +48,10 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
 }
 
 
+class CacheError(RuntimeError):
+    """A run's cache was asked to serve after the run that owns it ended."""
+
+
 @dataclass(frozen=True)
 class CacheKey:
     """What makes two reads the same read: the route, and the canonical request."""
@@ -145,6 +149,7 @@ class RunCache:
         # Ordered least-recently-served first, which is eviction order.
         self._entries: "OrderedDict[CacheKey, Tuple[float, transport.TransportResponse]]"
         self._entries = OrderedDict()
+        self._closed = False
 
     def __len__(self) -> int:
         """How many answers are held right now — the bound, observable."""
@@ -163,6 +168,8 @@ class RunCache:
         hit, and no caller can forget to remember what it just read.
         """
 
+        if self._closed:
+            raise CacheError("this run's cache ended; a later run makes its own")
         key = cache_key(request)
         entry = self._entries.get(key)
         if entry is not None:
@@ -181,3 +188,15 @@ class RunCache:
             while len(self._entries) > MAX_ENTRIES:
                 self._entries.popitem(last=False)
         return CacheServe(response=response, cache_hit=False)
+
+    def close(self) -> None:
+        """End this run's cache. Idempotent, and there is no reopening it.
+
+        Dropping the reference would free the memory just as well. Closing says
+        the run ended, and makes the saying enforceable: a second run that
+        reaches for this one is refused rather than quietly served a first
+        run's reads.
+        """
+
+        self._entries = OrderedDict()
+        self._closed = True

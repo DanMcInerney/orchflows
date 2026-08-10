@@ -21,10 +21,16 @@ the clock, not by waiting.
 
 from __future__ import annotations
 
+import ast
+import builtins
 import contextlib
 import importlib.util
+import io
+import os
+import socket
 import time
 import unittest
+import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
@@ -182,6 +188,62 @@ class CachingCarrier:
         serve = self._cache.serve(request, self._carrier.fetch)
         self.serves.append(serve)
         return serve.response
+
+
+class RefusingSocket(socket.socket):
+    """A socket that cannot be opened.
+
+    It stays a *subclass* on purpose: ``ssl`` does ``class SSLSocket(socket)``
+    at import time, so a guard that swaps ``socket.socket`` for a plain
+    function breaks any stdlib module that has not been imported yet.
+    """
+
+    def __init__(self, *args, **kwargs):
+        raise AssertionError("a socket was opened inside a zero-I/O guard")
+
+
+@contextlib.contextmanager
+def forbid_io():
+    """Make every filesystem and socket primitive raise for the guarded block."""
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("I/O attempted inside a zero-I/O guard")
+
+    with contextlib.ExitStack() as stack:
+        stack.enter_context(mock.patch.object(builtins, "open", refuse))
+        stack.enter_context(mock.patch.object(io, "open", refuse))
+        stack.enter_context(mock.patch.object(os, "open", refuse))
+        stack.enter_context(mock.patch.object(socket, "socket", RefusingSocket))
+        stack.enter_context(mock.patch.object(socket, "create_connection", refuse))
+        stack.enter_context(mock.patch.object(urllib.request, "urlopen", refuse))
+        yield
+
+
+def imported_names(path):
+    """Every module and imported symbol path one source file names in an import."""
+
+    names = set()
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                names.add(alias.name)
+        elif isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            if module:
+                names.add(module)
+            for alias in node.names:
+                names.add(module + "." + alias.name if module else alias.name)
+    return names
+
+
+def called_builtins(path):
+    """Every bare function name one source file calls."""
+
+    return {
+        node.func.id
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
 
 
 @contextlib.contextmanager
@@ -537,6 +599,137 @@ class CacheabilityTest(unittest.TestCase):
         self.assertFalse(run_cache.serve(request, carrier.fetch).cache_hit)
         self.assertTrue(run_cache.serve(request, carrier.fetch).cache_hit)
         self.assertEqual(len(opener.opened), 2)
+
+
+class RunLocalTest(unittest.TestCase):
+    """Criterion 2: cross-run persistence is unreachable, not merely unused.
+
+    Three legs, because "nothing was written" and "nothing could be" are
+    different claims. The import scan rules out every module a cache would
+    need to reach a store; the zero-I/O guard rules out the builtins too, at
+    runtime, over the whole seam; and the cache's whole state being instance
+    state is shown by two caches, and two runs, sharing nothing.
+    """
+
+    # Every module a cache would have to reach for to outlive its process.
+    PERSISTENCE_MODULES = (
+        "os",
+        "io",
+        "pathlib",
+        "tempfile",
+        "shutil",
+        "shelve",
+        "pickle",
+        "marshal",
+        "dbm",
+        "sqlite3",
+        "socket",
+        "ssl",
+        "subprocess",
+        "multiprocessing",
+        "http.client",
+        "urllib.request",
+    )
+
+    def one_request(self):
+        return transport.build_transport_request(
+            transport.DDG_HTML_ROUTE, {"q": "local model"}
+        )
+
+    def test_the_cache_imports_nothing_that_can_outlive_the_process(self):
+        named = imported_names(CACHE_SOURCE)
+
+        for module in self.PERSISTENCE_MODULES:
+            with self.subTest(module=module):
+                self.assertNotIn(module, named)
+
+    def test_the_cache_calls_no_builtin_that_can_write(self):
+        self.assertNotIn("open", called_builtins(CACHE_SOURCE))
+
+    def test_the_persistence_scan_can_fail(self):
+        # A cache that does persist, written beside the tree, so the scan is
+        # shown to discriminate rather than to match nothing at all.
+        disk = FIXTURE_DIR / "disk_backed_cache.py"
+
+        found = sorted(
+            module for module in self.PERSISTENCE_MODULES if module in imported_names(disk)
+        )
+
+        self.assertEqual(found, ["os", "pathlib"])
+        self.assertIn("open", called_builtins(disk))
+
+    def test_the_whole_seam_runs_with_every_io_primitive_refused(self):
+        clock = FakeClock()
+        carrier, opener = offline_transport(clock)
+        run_cache = cache.RunCache(clock=clock.monotonic)
+        caching = CachingCarrier(carrier, run_cache)
+        manifest = schema.parse_manifest(REPEAT_MANIFEST)
+
+        with forbid_io():
+            first = runner.run_acquisition(manifest, caching)
+            clock.advance(30.0)
+            second = runner.run_acquisition(manifest, caching)
+            run_cache.close()
+
+        self.assertEqual(second.records, first.records)
+        self.assertEqual(len(opener.opened), 2)
+
+    def test_the_zero_io_guard_stops_a_cache_that_writes_to_disk(self):
+        clock = FakeClock()
+        carrier, _ = offline_transport(clock)
+        store = FIXTURE_DIR / "never-created" / "entries.json"
+        wrong = load_cache_fixture("disk_backed_cache").DiskBackedCache(clock.monotonic, store)
+
+        with forbid_io():
+            with self.assertRaises(AssertionError):
+                wrong.serve(self.one_request(), carrier.fetch)
+
+        self.assertFalse(store.parent.exists())
+
+    def test_two_caches_in_one_process_never_share_an_entry(self):
+        clock = FakeClock()
+        carrier, opener = offline_transport(clock)
+        request = self.one_request()
+        one = cache.RunCache(clock=clock.monotonic)
+        other = cache.RunCache(clock=clock.monotonic)
+
+        one.serve(request, carrier.fetch)
+
+        self.assertEqual(len(other), 0)
+        self.assertFalse(other.serve(request, carrier.fetch).cache_hit)
+        self.assertEqual(len(opener.opened), 2)
+
+    def test_a_second_run_starts_with_nothing_the_first_run_read(self):
+        clock = FakeClock()
+        carrier, opener = offline_transport(clock)
+        request = self.one_request()
+
+        first_run = cache.RunCache(clock=clock.monotonic)
+        first_run.serve(request, carrier.fetch)
+        self.assertTrue(first_run.serve(request, carrier.fetch).cache_hit)
+        first_run.close()
+
+        second_run = cache.RunCache(clock=clock.monotonic)
+
+        self.assertEqual(len(second_run), 0)
+        self.assertFalse(second_run.serve(request, carrier.fetch).cache_hit)
+        self.assertEqual(len(opener.opened), 2)
+
+    def test_a_closed_cache_holds_nothing_and_refuses_to_serve(self):
+        clock = FakeClock()
+        carrier, _ = offline_transport(clock)
+        request = self.one_request()
+        run_cache = cache.RunCache(clock=clock.monotonic)
+        run_cache.serve(request, carrier.fetch)
+        self.assertEqual(len(run_cache), 1)
+
+        run_cache.close()
+
+        self.assertEqual(len(run_cache), 0)
+        with self.assertRaises(cache.CacheError):
+            run_cache.serve(request, carrier.fetch)
+        run_cache.close()
+        self.assertEqual(len(run_cache), 0)
 
 
 class BoundedCacheTest(unittest.TestCase):
