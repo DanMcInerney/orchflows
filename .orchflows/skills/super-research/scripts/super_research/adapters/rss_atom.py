@@ -19,10 +19,10 @@ address.
 **A generic reader stays generic.** The measured feed carries
 ``media:statistics views=`` in a vendor namespace, and this module does not read
 it. Mining it would publish a count under a name this roster row does not name,
-about a platform this adapter does not know it is reading, beside
-``youtube_innertube``, which reports that quantity from the platform's own API.
-The line is that this reader speaks the syndication vocabularies and no
-vendor's extension of them, apart from the podcast transcript the row names.
+about a platform this adapter does not know it is reading, beside the adapter
+that reads that platform's own API and reports the quantity from there. The
+line is that this reader speaks the syndication vocabularies and no vendor's
+extension of them, apart from the podcast transcript the row names.
 
 **A syndication identity is recorded and never used to merge.** A ``guid`` is
 unique inside its own feed and nowhere else, and nothing here can say which

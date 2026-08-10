@@ -8,7 +8,7 @@ may select between.
 
 **This is the one adapter in the roster that could have been a generic HTTP
 primitive, and the spec's non-goals forbid one.** Every other adapter here is
-pinned to a vendor's endpoint shape: a caller cannot point ``github_rest`` at
+pinned to a vendor's endpoint shape: a caller cannot point the GitHub reader at
 Wikipedia, because ``/repos/<owner>/<repo>`` is GitHub's shape and the host is
 ``transport.py``'s. This one takes an argument, and an argument is one bad
 branch away from being an address. If that branch existed, every other
