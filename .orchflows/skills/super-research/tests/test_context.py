@@ -9,6 +9,7 @@ from __future__ import annotations
 import builtins
 import contextlib
 import io
+import json
 import os
 import socket
 import unittest
@@ -16,7 +17,7 @@ import urllib.request
 from pathlib import Path
 from unittest import mock
 
-from super_research import adapters, normalize, router, runner, schema, transport
+from super_research import adapters, normalize, project, router, runner, schema, transport
 from super_research.adapters import fake, reddit_archive, web_search
 
 
@@ -157,6 +158,120 @@ def run_tracer(payload):
     carrier, opener = tracer_transport(tracer_responses())
     artifact = runner.run_acquisition(schema.parse_manifest(payload), carrier)
     return artifact, carrier, opener
+
+
+def load_wrong_artifact(case_name):
+    """Build one deliberately wrong artifact from the fixture beside the tree.
+
+    Nothing in the package produces these. They exist so the K4 hybrid
+    oracle can be shown to fail when the claim it stands for is false.
+    """
+
+    fixture = json.loads(read_fixture("wrong_merged_artifacts.json"))
+    defaults = fixture["record_defaults"]
+    case = fixture["cases"][case_name]
+    records = []
+    for row in case["records"]:
+        fields = dict(defaults)
+        fields.update(row)
+        fields["engagement"] = tuple(
+            schema.EngagementSnapshot(name, value, observed_at)
+            for name, value, observed_at in fields["engagement"]
+        )
+        fields["loss"] = tuple(fields["loss"])
+        records.append(schema.AcquisitionRecord(**fields))
+    return schema.AcquisitionArtifact(
+        artifact_id="artifact:wrong",
+        manifest_id="wrong",
+        mode="staged",
+        as_of="2026-08-10T00:00:00Z",
+        records=tuple(records),
+        steps=(),
+        edges=tuple(schema.ProvenanceEdge(**edge) for edge in case["edges"]),
+        groups=tuple(
+            schema.RecordGroup(
+                key_kind=group["key_kind"],
+                key=tuple(group["key"]),
+                member_record_ids=tuple(group["member_record_ids"]),
+            )
+            for group in case["groups"]
+        ),
+    )
+
+
+def sample_record(**overrides):
+    """Build one record beside the tree, from the wrong-result fixture's defaults."""
+
+    fields = dict(json.loads(read_fixture("wrong_merged_artifacts.json"))["record_defaults"])
+    fields.update(overrides)
+    fields["engagement"] = tuple(
+        schema.EngagementSnapshot(name, value, observed_at)
+        for name, value, observed_at in fields["engagement"]
+    )
+    fields["loss"] = tuple(fields["loss"])
+    return schema.AcquisitionRecord(**fields)
+
+
+def assert_linked_never_merged(case, artifact, discovery_locator, native_platform):
+    """The K4 hybrid oracle: one index hit, its native target, linked, unmerged.
+
+    Every assertion carries its own message so a failure names which part of
+    ``wrong_merge_law`` the artifact broke.
+    """
+
+    locator = normalize.normalized_locator(discovery_locator)
+    hits = [
+        record
+        for record in artifact.records
+        if record.representation_kind == "index" and record.normalized_locator == locator
+    ]
+    targets = [
+        record
+        for record in artifact.records
+        if record.representation_kind == "native" and record.platform == native_platform
+    ]
+    case.assertEqual(len(hits), 1, "expected exactly one index record for the pair")
+    case.assertTrue(targets, "expected at least one native record for the pair")
+    hit = hits[0]
+    target = targets[0]
+
+    case.assertNotEqual(
+        hit.record_id, target.record_id, "the pair collapsed into a single record"
+    )
+    case.assertEqual(hit.representation_kind, "index")
+    case.assertEqual(target.representation_kind, "native")
+
+    edges = [
+        edge
+        for edge in artifact.edges
+        if edge.edge_kind == "discovery_hydration"
+        and edge.from_record_id == hit.record_id
+        and edge.to_record_id == target.record_id
+    ]
+    case.assertEqual(len(edges), 1, "expected exactly one discovery_hydration edge")
+
+    for group in artifact.groups:
+        case.assertFalse(
+            hit.record_id in group.member_record_ids
+            and target.record_id in group.member_record_ids,
+            "a group merged the index hit with its hydrated target",
+        )
+
+    case.assertEqual(hit.engagement, (), "the index hit was given native engagement")
+    case.assertTrue(target.engagement, "the native record lost its engagement")
+    case.assertEqual(hit.native_item_id, "", "the index hit was given a native identity")
+    case.assertTrue(target.native_item_id, "the native record lost its identity")
+    case.assertNotEqual(hit.body, target.body, "one record's body was folded into the other")
+    case.assertNotEqual(
+        hit.exact_content_hash,
+        target.exact_content_hash,
+        "one record's content hash was folded into the other",
+    )
+    case.assertEqual(hit.time_confidence, "unknown", "the index hit was given a target time")
+    case.assertTrue(target.usable_basis_time, "the native record lost its usable basis time")
+    case.assertNotEqual(
+        hit.access_class, target.access_class, "the pair collapsed onto one access class"
+    )
 
 
 class ManifestSchemaTest(unittest.TestCase):
@@ -633,6 +748,262 @@ class StagedRunTest(unittest.TestCase):
         self.assertEqual(hydrated[1].canonical_content_kind, "reply")
         self.assertEqual(hydrated[1].native_parent_id, "1799990000000000001")
         self.assertEqual(len(carrier.calls), 2)
+
+
+class K4HybridNeverMergesTest(unittest.TestCase):
+    """Completion criterion 1: the pair stays two linked records, in both shapes."""
+
+    def test_reddit_pair_is_linked_and_never_merged(self):
+        artifact, _, _ = run_tracer(TRACER_MANIFEST)
+
+        assert_linked_never_merged(self, artifact, REDDIT_THREAD_LOCATOR, "reddit")
+
+    def test_x_pair_is_linked_and_never_merged(self):
+        artifact, _, _ = run_tracer(TRACER_X_MANIFEST)
+
+        assert_linked_never_merged(self, artifact, X_POST_LOCATOR, "x")
+
+    def test_hydration_happens_even_though_a_hit_already_names_that_locator(self):
+        artifact, carrier, _ = run_tracer(TRACER_MANIFEST)
+
+        # wrong_merge_law rule 2: locator equality never authorizes reuse in
+        # place of hydration, and the discovery edge is still emitted.
+        self.assertEqual(
+            [call.route_id for call in carrier.calls], ["ddg_html", "arctic_shift_posts_ids"]
+        )
+        self.assertEqual(len(artifact.edges), 1)
+
+    def test_a_selection_that_matches_no_hit_produces_no_invented_edge(self):
+        hit = {"discovery_locator": "https://www.reddit.com/r/other/comments/zzz/", "target_id": "zzz"}
+        steps = [
+            TRACER_MANIFEST["steps"][0],
+            dict(TRACER_MANIFEST["steps"][1], selected_hits=[hit]),
+        ]
+        artifact, _, _ = run_tracer(dict(TRACER_MANIFEST, steps=steps))
+
+        self.assertTrue(
+            [record for record in artifact.records if record.step_id == "s2-hydrate"]
+        )
+        self.assertEqual(artifact.edges, ())
+
+
+class WrongMergeLawTest(unittest.TestCase):
+    """Completion criterion 2: rules 1-8 over the tracer's own records."""
+
+    def setUp(self):
+        self.artifact, _, _ = run_tracer(TRACER_MANIFEST)
+        self.x_artifact, _, _ = run_tracer(TRACER_X_MANIFEST)
+        self.by_id = {record.record_id: record for record in self.artifact.records}
+
+    def _group_of(self, artifact, record_id):
+        for group in artifact.groups:
+            if record_id in group.member_record_ids:
+                return group
+        raise AssertionError("record {0} belongs to no group".format(record_id))
+
+    def test_rule_1_strong_identity_is_the_retained_triple(self):
+        target = [r for r in self.artifact.records if r.representation_kind == "native"][0]
+
+        self.assertEqual(
+            normalize.strong_identity(target), ("reddit", "t3_1abc234", "post")
+        )
+        self.assertIsNone(normalize.strong_identity(self.by_id["s1-discover#0.0"]))
+
+    def test_rule_1_grouping_holds_duplicates_side_by_side_without_overwriting(self):
+        group = self._group_of(self.artifact, "s1-discover#0.2")
+
+        self.assertEqual(group.member_record_ids, ("s1-discover#0.2", "s1-discover#0.3"))
+        first = self.by_id["s1-discover#0.2"]
+        second = self.by_id["s1-discover#0.3"]
+        self.assertEqual(first.exact_content_hash, second.exact_content_hash)
+        self.assertNotEqual(first.record_id, second.record_id)
+        self.assertNotEqual(first.list_index, second.list_index)
+
+    def test_rule_3_weak_key_needs_every_component(self):
+        grouped = self.by_id["s1-discover#0.2"]
+        snippetless = self.by_id["s1-discover#0.5"]
+
+        self.assertEqual(len(normalize.weak_group_key(grouped)), 5)
+        self.assertEqual(
+            normalize.weak_group_key(grouped),
+            (
+                "duckduckgo",
+                "index",
+                grouped.normalized_locator,
+                "web_hit",
+                grouped.exact_content_hash,
+            ),
+        )
+        self.assertEqual(snippetless.exact_content_hash, "")
+        self.assertIsNone(normalize.weak_group_key(snippetless))
+        self.assertEqual(
+            self._group_of(self.artifact, snippetless.record_id).key_kind, "ungrouped"
+        )
+
+    def test_rule_4_a_reply_never_joins_its_parent_post(self):
+        post = self.x_artifact.records[-2]
+        reply = self.x_artifact.records[-1]
+
+        self.assertEqual(reply.native_parent_id, post.native_item_id)
+        self.assertNotIn(
+            reply.record_id, self._group_of(self.x_artifact, post.record_id).member_record_ids
+        )
+
+    def test_rule_5_changed_content_at_one_locator_is_a_distinct_observation(self):
+        duplicate = self.by_id["s1-discover#0.3"]
+        rewritten = self.by_id["s1-discover#0.4"]
+
+        self.assertEqual(duplicate.normalized_locator, rewritten.normalized_locator)
+        self.assertNotEqual(duplicate.exact_content_hash, rewritten.exact_content_hash)
+        self.assertNotIn(
+            rewritten.record_id,
+            self._group_of(self.artifact, duplicate.record_id).member_record_ids,
+        )
+
+    def test_rule_6_reddit_platform_identity_includes_the_fullname_prefix(self):
+        target = [r for r in self.artifact.records if r.representation_kind == "native"][0]
+
+        self.assertEqual(target.native_item_id, "t3_1abc234")
+        self.assertEqual(target.native_identity_namespace, "reddit")
+
+    def test_rule_7_no_group_spans_two_representation_kinds(self):
+        for artifact in (self.artifact, self.x_artifact):
+            by_id = {record.record_id: record for record in artifact.records}
+            for group in artifact.groups:
+                kinds = {by_id[member].representation_kind for member in group.member_record_ids}
+                self.assertEqual(len(kinds), 1, "group {0} spans {1}".format(group.key, kinds))
+
+    def test_rule_7_partitions_grouping_even_under_one_shared_strong_identity(self):
+        # Built beside the tree: an index hit that wrongly claims the target's
+        # own native identity. Rule 7 must still keep the two apart.
+        hit = sample_record(
+            record_id="hand#0.0",
+            representation_kind="index",
+            native_identity_namespace="reddit",
+            native_item_id="t3_1abc234",
+            canonical_content_kind="post",
+        )
+        target = sample_record(
+            record_id="hand#1.0",
+            representation_kind="native",
+            native_identity_namespace="reddit",
+            native_item_id="t3_1abc234",
+            canonical_content_kind="post",
+        )
+
+        self.assertEqual(normalize.strong_identity(hit), normalize.strong_identity(target))
+        groups = normalize.group_records((hit, target))
+        self.assertEqual(len(groups), 2)
+        for group in groups:
+            self.assertEqual(len(group.member_record_ids), 1)
+
+    def test_rule_8_a_raw_cap_counts_every_received_record(self):
+        steps = [dict(TRACER_MANIFEST["steps"][0], max_items=2), TRACER_MANIFEST["steps"][1]]
+        capped, _, _ = run_tracer(dict(TRACER_MANIFEST, steps=steps))
+
+        self.assertEqual(capped.steps[0].records_received, 6)
+        self.assertEqual(capped.steps[0].records_kept, 2)
+        self.assertIn("recall_window_partial", capped.loss)
+
+
+class ProjectionTest(unittest.TestCase):
+    """Completion criterion 2, projection half: pure, bounded, zero I/O."""
+
+    def setUp(self):
+        self.artifact, _, _ = run_tracer(TRACER_MANIFEST)
+        self.pair = (
+            [r for r in self.artifact.records if r.representation_kind == "index"][0].record_id,
+            [r for r in self.artifact.records if r.representation_kind == "native"][0].record_id,
+        )
+
+    def _manifest(self, record_ids, max_records=8, artifact_id=None):
+        return project.ProjectionManifest(
+            projection_id="proj-1",
+            source_artifact_id=(
+                self.artifact.artifact_id if artifact_id is None else artifact_id
+            ),
+            record_ids=tuple(record_ids),
+            max_records=max_records,
+        )
+
+    def test_projection_keeps_both_records_and_their_edge(self):
+        projected = project.project_context(self._manifest(self.pair), self.artifact)
+
+        self.assertEqual(
+            [record.record_id for record in projected.records], list(self.pair)
+        )
+        self.assertEqual(len(projected.edges), 1)
+        self.assertEqual(projected.source_artifact_id, self.artifact.artifact_id)
+
+    def test_projecting_only_the_hydrated_record_keeps_its_lineage(self):
+        projected = project.project_context(self._manifest(self.pair[1:]), self.artifact)
+
+        self.assertEqual([record.record_id for record in projected.records], [self.pair[1]])
+        self.assertEqual(projected.edges[0].from_record_id, self.pair[0])
+
+    def test_a_foreign_source_artifact_is_refused(self):
+        with self.assertRaises(project.ProjectionError):
+            project.project_context(
+                self._manifest(self.pair, artifact_id="artifact:somewhere-else"), self.artifact
+            )
+
+    def test_an_unknown_record_id_is_refused_rather_than_dropped(self):
+        with self.assertRaises(project.ProjectionError):
+            project.project_context(self._manifest(("s9-nope#0.0",)), self.artifact)
+
+    def test_a_selection_larger_than_the_cap_is_refused(self):
+        with self.assertRaises(project.ProjectionError):
+            project.project_context(self._manifest(self.pair, max_records=1), self.artifact)
+
+    def test_projection_performs_no_io_at_all(self):
+        manifest = self._manifest(self.pair)
+
+        with forbid_io():
+            projected = project.project_context(manifest, self.artifact)
+
+        self.assertEqual(len(projected.records), 2)
+
+
+class OracleCanFailTest(unittest.TestCase):
+    """Completion criterion 4: the K4 hybrid oracle fails on a wrong result.
+
+    Each artifact here is built beside the tree from
+    ``fixtures/tracer/wrong_merged_artifacts.json``. Nothing under test is
+    mutated to produce them.
+    """
+
+    def _assert_oracle_rejects(self, case_name, expected_reason):
+        wrong = load_wrong_artifact(case_name)
+
+        with self.assertRaises(AssertionError) as caught:
+            assert_linked_never_merged(self, wrong, REDDIT_THREAD_LOCATOR, "reddit")
+
+        self.assertIn(expected_reason, str(caught.exception))
+
+    def test_a_merged_single_record_fails_the_oracle(self):
+        self._assert_oracle_rejects(
+            "merged_into_one_record", "expected exactly one index record for the pair"
+        )
+
+    def test_a_grouped_pair_fails_the_oracle(self):
+        self._assert_oracle_rejects(
+            "grouped_pair", "a group merged the index hit with its hydrated target"
+        )
+
+    def test_folded_engagement_fails_the_oracle(self):
+        self._assert_oracle_rejects(
+            "folded_engagement", "the index hit was given native engagement"
+        )
+
+    def test_a_pair_with_no_provenance_edge_fails_the_oracle(self):
+        self._assert_oracle_rejects(
+            "unlinked_pair", "expected exactly one discovery_hydration edge"
+        )
+
+    def test_the_same_oracle_passes_on_the_real_tracer_result(self):
+        artifact, _, _ = run_tracer(TRACER_MANIFEST)
+
+        assert_linked_never_merged(self, artifact, REDDIT_THREAD_LOCATOR, "reddit")
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner

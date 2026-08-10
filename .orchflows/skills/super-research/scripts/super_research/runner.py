@@ -180,6 +180,8 @@ def run_acquisition(
         as_of=manifest.as_of,
         records=tuple(records),
         steps=tuple(steps),
+        edges=normalize.link_discovery_hydration(records),
+        groups=normalize.group_records(records),
         outcome=schema.reduce_outcomes(tuple(step.outcome for step in steps)),
         loss=loss,
     )
