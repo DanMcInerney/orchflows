@@ -669,6 +669,12 @@ class OracleCanFailTest(unittest.TestCase):
     def test_a_portal_marked_503_read_as_a_platform_gap_fails_the_oracle(self):
         self._assert_oracle_rejects("portal_read_as_platform_gap")
 
+    def test_a_detector_with_no_portal_branch_at_all_fails_the_oracle(self):
+        # The whole output of a status-only detector — one that types every
+        # failure as the origin's. The oracle discriminates on the mechanism,
+        # not only on a single doctored cell.
+        self._assert_oracle_rejects("portal_blind_detector")
+
     def test_a_case_sensitive_detector_that_misses_the_marker_fails_the_oracle(self):
         self._assert_oracle_rejects("uppercase_marker_missed")
 
