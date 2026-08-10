@@ -28,7 +28,7 @@ import importlib.util
 import unittest
 from pathlib import Path
 
-from super_research import adapters, cache, runner, schema, transport
+from super_research import adapters, cache, normalize, runner, schema, transport
 from super_research.adapters import fake, reddit_archive, web_search
 from tests import helpers
 
@@ -132,7 +132,28 @@ TWO_STEP_MANIFEST = {
     "as_of": "2026-08-10T00:00:00Z",
     "steps": [DISCOVERY_STEP, HYDRATION_STEP],
 }
+FUSED_MANIFEST = dict(TWO_STEP_MANIFEST, manifest_id="pipeline-fused", mode="fused")
+# The staged half of the pair. It names no `prior_step_id`, because the step it
+# followed is in a different manifest — which is the point: what ties a
+# hydration record to the hit that found it is the locator the caller froze,
+# never an execution graph.
+STAGED_HYDRATION_MANIFEST = {
+    "schema_version": 2,
+    "manifest_id": "pipeline-hydrate",
+    "mode": "staged",
+    "as_of": "2026-08-10T00:00:00Z",
+    "steps": [dict(HYDRATION_STEP, prior_step_id="")],
+}
 REPEAT_ROUTES = (transport.DDG_HTML_ROUTE, transport.ARCTIC_SHIFT_POSTS_ROUTE)
+
+# findings.md §1: Arctic Shift's `/api/posts/ids` was measured at 1.5 s. No
+# latency was recorded for the DuckDuckGo HTML endpoint, so the helper's own
+# default stands in for it; what the comparison needs is two routes that cost
+# visibly different amounts, and these are the two the tracer already reads.
+ROUTE_LATENCIES = {
+    transport.DDG_HTML_ROUTE: helpers.DEFAULT_LATENCY_SECONDS,
+    transport.ARCTIC_SHIFT_POSTS_ROUTE: 1.5,
+}
 
 
 def tracer_responses():
@@ -351,18 +372,45 @@ class RateBudgetTest(unittest.TestCase):
             runner.budgets_from((declared, disagreeing))
 
 
+def tracer_governor(governor_class=None, clock=None, run_cache=None):
+    """A governor over the tracer's two routes, on one clock at the frozen start.
+
+    The clock comes back with it because the governor and the run it paces must
+    read the same one: a run reading a different clock would measure real time
+    while the governor spends fake time, and every duration in its ledger would
+    be an artefact of how fast this suite happens to execute.
+    """
+
+    governor_class = runner.RateGovernor if governor_class is None else governor_class
+    clock = helpers.FakeClock() if clock is None else clock
+    carrier, opener = helpers.offline_transport(
+        clock, tracer_responses(), latencies=ROUTE_LATENCIES
+    )
+    governor = governor_class(
+        carrier, run_cache=run_cache, clock=clock.monotonic, sleep=clock.sleep
+    )
+    return governor, opener, clock
+
+
 def cached_run(governor_class, clock=None):
     """One run cache behind one governor, over the tracer's own two routes."""
 
     clock = helpers.FakeClock() if clock is None else clock
-    carrier, opener = helpers.offline_transport(clock, tracer_responses())
-    governor = governor_class(
-        carrier,
-        run_cache=cache.RunCache(clock=clock.monotonic),
-        clock=clock.monotonic,
-        sleep=clock.sleep,
+    return tracer_governor(
+        governor_class, clock=clock, run_cache=cache.RunCache(clock=clock.monotonic)
     )
-    return governor, opener, clock
+
+
+def run_on(clock, governor, payload, dispatch_ordinal=0, start_tick_us=0):
+    """One dispatch of one manifest, on the clock its governor is paced by."""
+
+    return runner.run_scheduled(
+        schema.parse_manifest(payload),
+        governor,
+        clock=clock.monotonic,
+        dispatch_ordinal=dispatch_ordinal,
+        start_tick_us=start_tick_us,
+    )
 
 
 def assert_cache_hit_reaches_the_record(case, governor_class):
@@ -378,7 +426,7 @@ def assert_cache_hit_reaches_the_record(case, governor_class):
     governor, opener, clock = cached_run(governor_class)
     manifest = schema.parse_manifest(TWO_STEP_MANIFEST)
 
-    first = runner.run_acquisition(manifest, governor)
+    first = runner.run_acquisition(manifest, governor, clock=clock.monotonic)
     reads = len(opener.opened)
     if reads == 0 or not first.records:
         raise AssertionError("the first read never reached the origin: nothing to serve later")
@@ -389,7 +437,7 @@ def assert_cache_hit_reaches_the_record(case, governor_class):
         )
 
     clock.advance(min(cache.ttl_seconds(route) for route in REPEAT_ROUTES) / 2.0)
-    second = runner.run_acquisition(manifest, governor)
+    second = runner.run_acquisition(manifest, governor, clock=clock.monotonic)
 
     if len(opener.opened) != reads:
         raise AssertionError(
@@ -438,14 +486,270 @@ class CacheHitOnTheRecordTest(unittest.TestCase):
         governor, opener, clock = cached_run(runner.RateGovernor)
         manifest = schema.parse_manifest(TWO_STEP_MANIFEST)
 
-        runner.run_acquisition(manifest, governor)
+        runner.run_acquisition(manifest, governor, clock=clock.monotonic)
         origin_reads = len(governor.log)
-        runner.run_acquisition(manifest, governor)
+        runner.run_acquisition(manifest, governor, clock=clock.monotonic)
 
         self.assertEqual(len(governor.log), origin_reads)
         self.assertEqual(len(opener.opened), origin_reads)
         self.assertEqual([serve.cache_hit for serve in governor.serves[origin_reads:]],
                          [True] * origin_reads)
+
+
+def fused_run(governor_class=None):
+    """One invocation carrying both steps."""
+
+    governor, _, clock = tracer_governor(governor_class)
+    return run_on(clock, governor, FUSED_MANIFEST)
+
+
+def staged_pair(case, governor_class=None):
+    """Discovery, a caller's round trip, then hydration: two invocations, two artifacts.
+
+    The round trip is given away free — the second dispatch starts the instant
+    the first one ends — so the makespan comparison is the one staged is most
+    likely to win, and it still loses.
+    """
+
+    governor, _, clock = tracer_governor(governor_class)
+    first = run_on(clock, governor, DISCOVERY_MANIFEST)
+    discovered = [record.normalized_locator for record in first.artifact.records]
+    case.assertIn(
+        normalize.normalized_locator(REDDIT_THREAD_LOCATOR),
+        discovered,
+        "the caller could not have frozen a selection it never discovered",
+    )
+    second = run_on(
+        clock,
+        governor,
+        STAGED_HYDRATION_MANIFEST,
+        dispatch_ordinal=1,
+        start_tick_us=runner.fake_makespan_us(first.ledger),
+    )
+    return (first, second)
+
+
+def filed_nowhere(record):
+    """One record with the artifact it was filed under removed, so two runs compare."""
+
+    return dataclasses.replace(record, artifact_id="", manifest_id="")
+
+
+def assert_linked_and_never_merged(case, records, edges, label):
+    """Discovery and hydration stay two records, linked, whatever mode produced them."""
+
+    index = [record for record in records if record.representation_kind == "index"]
+    native = [record for record in records if record.representation_kind == "native"]
+    if not index or not native:
+        raise AssertionError(
+            "{0} lost one half of the pair: {1} index, {2} native".format(
+                label, len(index), len(native)
+            )
+        )
+    hydrated = native[0]
+    hit = [record for record in index if record.normalized_locator == hydrated.discovery_locator]
+    if len(hit) != 1:
+        raise AssertionError(
+            "{0} has no single discovery record for the locator its hydration"
+            " names: {1}".format(label, hydrated.discovery_locator)
+        )
+    if hit[0].record_id == hydrated.record_id:
+        raise AssertionError("{0} merged the hit into its hydrated target".format(label))
+    if hit[0].access_class == hydrated.access_class:
+        raise AssertionError(
+            "{0} gave the pair one provenance: both records are {1}".format(
+                label, hydrated.access_class
+            )
+        )
+    links = [
+        edge
+        for edge in edges
+        if edge.from_record_id == hit[0].record_id and edge.to_record_id == hydrated.record_id
+    ]
+    if len(links) != 1:
+        raise AssertionError(
+            "{0} produced {1} provenance edges for the pair, expected one".format(
+                label, len(links)
+            )
+        )
+
+
+def assert_fused_collapses_latency_and_not_lineage(case, fused, staged):
+    """Row 3's oracle: same records, groups and edges; strictly shorter schedule.
+
+    The staged side is a *pair* of dispatches, so its lineage has to be
+    reconstructed across both artifacts — which is exactly the claim: freezing
+    the same selection in one manifest yields the same records and the same
+    links, and only the placement of the work changes.
+    """
+
+    staged_records = tuple(record for run in staged for record in run.artifact.records)
+    fused_records = fused.artifact.records
+    if not fused_records:
+        raise AssertionError("the fused run produced no records: nothing to compare")
+
+    if len(fused_records) != len(staged_records):
+        raise AssertionError(
+            "fused and staged yielded different numbers of records: {0} against {1}".format(
+                len(fused_records), len(staged_records)
+            )
+        )
+    for fused_record, staged_record in zip(fused_records, staged_records):
+        if filed_nowhere(fused_record) != filed_nowhere(staged_record):
+            raise AssertionError(
+                "a fused record differs from the staged record it repeats: {0}".format(
+                    fused_record.record_id
+                )
+            )
+
+    staged_groups = normalize.group_records(staged_records)
+    if fused.artifact.groups != staged_groups:
+        raise AssertionError(
+            "fused grouped its records differently from the staged pair: {0} against"
+            " {1}".format(fused.artifact.groups, staged_groups)
+        )
+    staged_edges = normalize.link_discovery_hydration(staged_records)
+    if not staged_edges:
+        raise AssertionError("the staged pair reconstructed no lineage: nothing to compare")
+    if fused.artifact.edges != staged_edges:
+        raise AssertionError(
+            "fused linked its records differently from the staged pair: {0} against"
+            " {1}".format(fused.artifact.edges, staged_edges)
+        )
+
+    assert_linked_and_never_merged(case, fused_records, fused.artifact.edges, "fused")
+    assert_linked_and_never_merged(case, staged_records, staged_edges, "the staged pair")
+
+    fused_span = runner.fake_makespan_us(fused.ledger)
+    staged_span = runner.fake_makespan_us(
+        tuple(event for run in staged for event in run.ledger)
+    )
+    if fused_span >= staged_span:
+        raise AssertionError(
+            "fused did not collapse any latency: {0} us against staged {1} us".format(
+                fused_span, staged_span
+            )
+        )
+
+
+class FusedModeTest(unittest.TestCase):
+    """Criterion 3: fused collapses latency and never lineage."""
+
+    def test_a_fused_manifest_matches_the_staged_pair_and_finishes_sooner(self):
+        assert_fused_collapses_latency_and_not_lineage(self, fused_run(), staged_pair(self))
+
+    def test_a_hydration_steps_calls_come_from_the_frozen_manifest_alone(self):
+        # Which is what makes overlapping the two steps sound: the hydration
+        # step reads nothing this run produced, so `prior_step_id` records
+        # where the caller's selection came from rather than a dependency the
+        # scheduler has to serialize.
+        fused = schema.parse_manifest(FUSED_MANIFEST)
+        staged = schema.parse_manifest(STAGED_HYDRATION_MANIFEST)
+
+        self.assertEqual(fused.steps[1].prior_step_id, "s1-discover")
+        self.assertEqual(staged.steps[0].prior_step_id, "")
+        self.assertEqual(runner.planned_calls(fused.steps[1]), runner.planned_calls(staged.steps[0]))
+
+    def test_the_two_modes_place_the_same_work_differently_and_only_that(self):
+        fused = fused_run()
+        first, second = staged_pair(self)
+
+        self.assertEqual(fused.artifact.mode, "fused")
+        self.assertEqual(
+            [operation.route_id for operation in runner.planned_operations(fused.ledger)],
+            [transport.DDG_HTML_ROUTE, transport.ARCTIC_SHIFT_POSTS_ROUTE],
+        )
+        self.assertEqual(
+            runner.ledger_sums(fused.ledger),
+            runner.ledger_sums(first.ledger + second.ledger),
+        )
+
+
+class WorkLedgerTest(unittest.TestCase):
+    """Criterion 4, ledger half: causal order is total, and the sums are the artifact's."""
+
+    def test_the_causal_key_serializes_the_ledger_exactly_as_it_happened(self):
+        fused = fused_run()
+
+        keys = [runner.causal_key(event) for event in fused.ledger]
+
+        self.assertEqual(keys, sorted(keys))
+        self.assertEqual(len(set(keys)), len(keys))
+        self.assertEqual(
+            [runner.causal_key(event) for event in sorted(fused.ledger, key=runner.causal_key)],
+            keys,
+        )
+
+    def test_within_one_step_the_causal_order_agrees_with_the_schedule(self):
+        fused = fused_run()
+
+        for step_id in ("s1-discover", "s2-hydrate"):
+            with self.subTest(step=step_id):
+                ticks = [
+                    event.start_tick_us
+                    for event in fused.ledger
+                    if event.step_id == step_id and event.metric != "stop"
+                ]
+
+                self.assertEqual(ticks, sorted(ticks))
+
+    def test_the_ledger_sums_are_what_the_artifact_says_it_consumed(self):
+        governor, opener, clock = tracer_governor()
+
+        run = run_on(clock, governor, FUSED_MANIFEST)
+        sums = runner.ledger_sums(run.ledger)
+
+        self.assertEqual(sums["pages"], sum(step.pages for step in run.artifact.steps))
+        self.assertEqual(
+            sums["items"], sum(step.records_received for step in run.artifact.steps)
+        )
+        self.assertEqual(sums["calls"], len(opener.opened))
+        self.assertEqual(sums["calls"], len(governor.log))
+
+    def test_a_served_read_costs_a_page_and_no_call(self):
+        # The distinction the two metrics exist to draw: a run that remembers
+        # what it read still produced the page, and did not spend the call.
+        governor, opener, clock = cached_run(runner.RateGovernor)
+
+        first = run_on(clock, governor, FUSED_MANIFEST)
+        clock.advance(min(cache.ttl_seconds(route) for route in REPEAT_ROUTES) / 2.0)
+        second = run_on(clock, governor, FUSED_MANIFEST, dispatch_ordinal=1)
+
+        self.assertEqual(runner.ledger_sums(first.ledger)["calls"], len(opener.opened))
+        self.assertEqual(runner.ledger_sums(second.ledger)["calls"], 0)
+        self.assertEqual(
+            runner.ledger_sums(second.ledger)["pages"],
+            runner.ledger_sums(first.ledger)["pages"],
+        )
+
+    def test_the_stop_marker_adds_to_nothing_and_nothing_starts_after_it(self):
+        fused = fused_run()
+
+        markers = [event for event in fused.ledger if event.metric == "stop"]
+        operations = [event for event in fused.ledger if event.metric != "stop"]
+
+        self.assertEqual(len(markers), 1)
+        self.assertEqual(markers[0].delta, 0)
+        self.assertNotIn("stop", runner.ADDITIVE_METRICS)
+        self.assertNotIn("stop", runner.ledger_sums(fused.ledger))
+        self.assertLessEqual(
+            max(event.start_tick_us for event in operations), markers[0].start_tick_us
+        )
+
+    def test_the_makespan_is_derived_and_is_never_a_sum_of_deltas(self):
+        fused = fused_run()
+
+        durations = runner.ledger_sums(fused.ledger)["fake_duration"]
+        span = runner.fake_makespan_us(fused.ledger)
+
+        self.assertNotIn("fake_makespan_us", runner.METRIC_ORDINALS)
+        self.assertEqual(runner.fake_makespan_us(()), 0)
+        # Two routes that overlap: the schedule is shorter than the work in it.
+        self.assertLess(span, durations)
+        self.assertEqual(
+            span,
+            max(event.stop_tick_us for event in fused.ledger if event.metric != "stop"),
+        )
 
 
 class BurstAndCooldownTest(unittest.TestCase):
