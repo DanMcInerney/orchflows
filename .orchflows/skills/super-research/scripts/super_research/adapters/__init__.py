@@ -86,7 +86,6 @@ class NativePage:
     warnings: Tuple[str, ...] = ()
     outcome: str = "ok"
     loss: Tuple[str, ...] = ()
-    page_index: int = 0
 
 
 def build_native_page(
@@ -98,7 +97,6 @@ def build_native_page(
     warnings: Tuple[str, ...] = (),
     outcome: str = "ok",
     loss: Tuple[str, ...] = (),
-    page_index: int = 0,
 ) -> NativePage:
     """Stamp one page with the declaration the calling adapter is making."""
 
@@ -118,5 +116,4 @@ def build_native_page(
         warnings=warnings,
         outcome=outcome,
         loss=loss,
-        page_index=page_index,
     )
