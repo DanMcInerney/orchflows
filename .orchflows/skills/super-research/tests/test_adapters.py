@@ -16,12 +16,80 @@ Every test here runs offline against fixtures under `fixtures/x/`.
 
 from __future__ import annotations
 
+import json
 import unittest
+import urllib.request
+from unittest import mock
 
 from super_research import transport
 
 
 GUEST_QUERY_ID = "V7H0Ap3_Hh2FyS75OCDO3Q"
+MINTED_GUEST_TOKEN = "1804400000000000000"
+
+
+class FakeHTTPResponse:
+    """The little of an http response that ``urlopen_response`` reads."""
+
+    def __init__(self, status, body, content_type):
+        self.status = status
+        self.headers = {"Content-Type": content_type}
+        self._body = body.encode("utf-8")
+
+    def read(self, limit):
+        return self._body[:limit]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exception):
+        return False
+
+
+class RoutingUrlopen:
+    """Stand in for ``urllib.request.urlopen``, answering by url and keeping the wire.
+
+    Two answers are needed at once here, which is the whole point: minting a
+    guest token and spending it are two different requests to two different
+    endpoints, and only one of them is a route read.
+    """
+
+    def __init__(self, answers, default=(200, "{}", "application/json")):
+        self.answers = list(answers)  # [(url_fragment, status, body, content_type)]
+        self.default = default
+        self.requests = []
+
+    def __call__(self, outbound, timeout=None):
+        self.requests.append(outbound)
+        for fragment, status, body, content_type in self.answers:
+            if fragment in outbound.full_url:
+                return FakeHTTPResponse(status, body, content_type)
+        return FakeHTTPResponse(*self.default)
+
+    def urls(self):
+        return [outbound.full_url for outbound in self.requests]
+
+    def headers_of(self, index):
+        return {name.lower(): value for name, value in self.requests[index].header_items()}
+
+
+ACTIVATION_ANSWER = (
+    "guest/activate",
+    200,
+    json.dumps({"guest_token": MINTED_GUEST_TOKEN}),
+    "application/json",
+)
+
+
+def guest_read_request():
+    return transport.build_transport_request(
+        transport.X_GUEST_GRAPHQL_ROUTE,
+        {
+            "query_id": GUEST_QUERY_ID,
+            "operation_name": "UserByScreenName",
+            "variables": '{"screen_name":"simonw"}',
+        },
+    )
 
 
 class XRouteConstantTest(unittest.TestCase):
@@ -85,6 +153,85 @@ class XRouteConstantTest(unittest.TestCase):
         self.assertIsNone(
             transport.route_credential(transport.X_SYNDICATION_TIMELINE_ROUTE)
         )
+
+
+class GuestTokenMintTest(unittest.TestCase):
+    """The two-call mint lives here, so an adapter stays a one-read shape.
+
+    A guest token is a credential the origin issues rather than one the vendor
+    publishes, so it is applied exactly where the published bearer is applied —
+    at send time, by the opener — and never earlier. That keeps one adapter
+    call at one ``carrier.fetch``, and keeps the token off every value the run
+    keeps.
+    """
+
+    def setUp(self):
+        transport.GUEST_TOKENS.clear()
+        self.addCleanup(transport.GUEST_TOKENS.clear)
+
+    def _sent(self, requests, answers):
+        opener = RoutingUrlopen(answers)
+        results = []
+        with mock.patch.object(urllib.request, "urlopen", opener):
+            for request in requests:
+                results.append(transport.urlopen_response(request))
+        return results, opener
+
+    def test_a_guest_read_is_preceded_by_one_activation_and_carries_its_token(self):
+        _, opener = self._sent([guest_read_request()], [ACTIVATION_ANSWER])
+
+        self.assertEqual(len(opener.requests), 2)
+        self.assertIn("guest/activate", opener.urls()[0])
+        self.assertEqual(opener.requests[0].get_method(), "POST")
+        self.assertIn("/graphql/", opener.urls()[1])
+        self.assertEqual(
+            opener.headers_of(1)[transport.GUEST_TOKEN_HEADER], MINTED_GUEST_TOKEN
+        )
+
+    def test_the_token_is_minted_once_and_spent_on_every_later_read(self):
+        _, opener = self._sent(
+            [guest_read_request(), guest_read_request()], [ACTIVATION_ANSWER]
+        )
+
+        activations = [url for url in opener.urls() if "guest/activate" in url]
+        self.assertEqual(len(activations), 1)
+        self.assertEqual(len(opener.requests), 3)
+        self.assertEqual(
+            opener.headers_of(2)[transport.GUEST_TOKEN_HEADER], MINTED_GUEST_TOKEN
+        )
+
+    def test_a_keyless_route_is_never_preceded_by_an_activation(self):
+        _, opener = self._sent(
+            [transport.build_transport_request(transport.DDG_HTML_ROUTE, {"q": "probe"})],
+            [ACTIVATION_ANSWER],
+        )
+
+        self.assertEqual(len(opener.requests), 1)
+        self.assertNotIn(transport.GUEST_TOKEN_HEADER, opener.headers_of(0))
+
+    def test_a_refused_mint_yields_no_token_rather_than_an_exception(self):
+        # The read still goes out, unauthorized, and the origin answers 401 or
+        # 403 — which the adapter records as the platform's own refusal.
+        # Inventing a token, or turning a failed mint into a retry, are the two
+        # wrong answers.
+        refused = ("guest/activate", 403, "forbidden", "text/plain")
+
+        results, opener = self._sent([guest_read_request()], [refused])
+
+        self.assertEqual(len(opener.requests), 2)
+        self.assertNotIn(transport.GUEST_TOKEN_HEADER, opener.headers_of(1))
+        self.assertEqual(results[0][0], 200)
+
+    def test_the_minted_token_reaches_no_request_the_run_records(self):
+        opener = RoutingUrlopen([ACTIVATION_ANSWER])
+        carrier = transport.Transport(now=lambda: "2026-08-10T09:00:00Z")
+
+        with mock.patch.object(urllib.request, "urlopen", opener):
+            response = carrier.fetch(guest_read_request())
+
+        self.assertNotIn(MINTED_GUEST_TOKEN, repr(carrier.calls))
+        self.assertNotIn(MINTED_GUEST_TOKEN, repr(response))
+        self.assertEqual(len(carrier.calls), 1)
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner

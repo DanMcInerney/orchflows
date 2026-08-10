@@ -17,6 +17,7 @@ resource, and the offline ``fake`` route can never leave the process.
 
 from __future__ import annotations
 
+import json
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -54,6 +55,13 @@ RATE_LIMITED = "rate_limited"
 # session, or content at the origin. Nothing else may leave a read.
 TOKEN_ACTIVATION_ROUTES = (X_GUEST_ACTIVATE_ROUTE,)
 TOKEN_ACTIVATION_METHODS = ("POST",)
+
+# What an activation route issues, and where the route that needs it carries
+# it. A guest token is not a vendor-published constant: the origin mints a new
+# one on request, it names no user, and it lives in memory for as long as the
+# process reading with it does.
+GUEST_TOKEN_FIELD = "guest_token"
+GUEST_TOKEN_HEADER = "x-guest-token"
 
 # Where a public client credential goes on the wire.
 QUERY_PLACEMENT = "query"
@@ -145,6 +153,11 @@ class RouteConstant:
     rather than as query parameters, in the order they appear. The segment
     names are the route's, so the endpoint's shape stays owned here; only the
     values come from the caller. A route that takes none has none.
+
+    ``token_route_id`` names the activation route that mints the token this
+    one needs. It is what makes an authorized read still one read to everyone
+    above this module: the mint happens at send time, inside the opener,
+    beside every other credential.
     """
 
     route_id: str
@@ -156,6 +169,7 @@ class RouteConstant:
     operator_identity: str = ""
     credential_id: str = ""
     path_params: Tuple[str, ...] = ()
+    token_route_id: str = ""
 
 
 ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
@@ -217,6 +231,7 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         operator_identity="x",
         credential_id=X_GUEST_PUBLIC_BEARER,
         path_params=("query_id", "operation_name"),
+        token_route_id=X_GUEST_ACTIVATE_ROUTE,
     ),
     FAKE_OFFLINE_ROUTE: RouteConstant(
         route_id=FAKE_OFFLINE_ROUTE,
@@ -357,6 +372,70 @@ def path_segments(route: RouteConstant, params: Dict[str, str]) -> str:
     return spent
 
 
+def mint_guest_token(token_route_id: str) -> str:
+    """One activation request, returning the token it issued or nothing at all.
+
+    A mint that does not produce a token yields an empty string rather than an
+    exception: the read that needed it then goes out unauthorized and the
+    origin answers 401 or 403, which the adapter records as the platform's own
+    refusal. Inventing a token, or turning a failed mint into a retry of the
+    read, are the two wrong answers.
+    """
+
+    try:
+        status, body, _ = urlopen_response(build_transport_request(token_route_id))
+    except TransportError:
+        return ""
+    if status != 200:
+        return ""
+    try:
+        payload = json.loads(body)
+    except ValueError:
+        return ""
+    token = payload.get(GUEST_TOKEN_FIELD) if isinstance(payload, dict) else None
+    return token if isinstance(token, str) else ""
+
+
+class GuestTokenStore:
+    """Anonymous guest tokens, held in memory for as long as the process reads.
+
+    One token per activation route, minted on first use and spent on every
+    later read: a run that minted per read would spend two requests where the
+    origin expects one, and one that persisted a token would carry state
+    across runs. There is no file, no environment variable, and no artifact
+    field here — a token exists only in this object.
+    """
+
+    def __init__(self) -> None:
+        self._tokens: Dict[str, str] = {}
+
+    def token_for(self, token_route_id: str) -> str:
+        held = self._tokens.get(token_route_id)
+        if held is None:
+            held = mint_guest_token(token_route_id)
+            self._tokens[token_route_id] = held
+        return held
+
+    def clear(self) -> None:
+        self._tokens.clear()
+
+
+GUEST_TOKENS = GuestTokenStore()
+
+
+def tokened_headers(
+    headers: Tuple[Tuple[str, str], ...], token_route_id: str
+) -> Tuple[Tuple[str, str], ...]:
+    """Attach this route's guest token, minting one if the process holds none."""
+
+    if not token_route_id:
+        return tuple(headers)
+    token = GUEST_TOKENS.token_for(token_route_id)
+    if not token:
+        return tuple(headers)
+    return tuple(headers) + ((GUEST_TOKEN_HEADER, token),)
+
+
 def build_transport_request(
     route_id: str, params: Optional[Mapping[str, str]] = None
 ) -> TransportRequest:
@@ -376,7 +455,13 @@ def build_transport_request(
 
 
 def urlopen_response(request: TransportRequest) -> Tuple[int, str, str]:
-    """Default opener: one bounded HTTPS request on an admitted method, no redirect games."""
+    """Default opener: one bounded HTTPS read on an admitted method, no redirect games.
+
+    Credentials are attached here and nowhere earlier, which is why a
+    ``TransportRequest`` a caller holds can never carry one. A route that
+    declares a ``token_route_id`` also mints its guest token here, at most once
+    per process — one more request on the wire, still one read to every caller.
+    """
 
     if not request.url.startswith("https://"):
         raise TransportError("refusing a non-https url for route " + request.route_id)
@@ -391,7 +476,11 @@ def urlopen_response(request: TransportRequest) -> Tuple[int, str, str]:
     outbound = urllib.request.Request(
         credentialed_url(request.url, credential), method=request.method
     )
-    for name, value in credentialed_headers(request.headers, credential):
+    headers = tokened_headers(
+        credentialed_headers(request.headers, credential),
+        route_constant(request.route_id).token_route_id,
+    )
+    for name, value in headers:
         outbound.add_header(name, value)
     try:
         with urllib.request.urlopen(outbound, timeout=REQUEST_TIMEOUT_SECONDS) as response:
