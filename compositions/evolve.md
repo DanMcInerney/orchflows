@@ -1,81 +1,66 @@
 ---
 name: evolve
-description: Evolve one target through bounded candidate generations against one frozen qualified benchmark. Manual-only campaign.
+description: Evolve one target through bounded candidate generations against one frozen evaluation. Manual-only campaign.
 entry: named
 ---
 
 Require: one complete [delegation packet](../contracts/delegation.md)
 whose `inputs` carry one frozen evolve spec governed by the
-[spec contract](../contracts/spec.md). The spec's `evidence`
-identifies the incumbent identity, its fixed benchmark
-result/evidence, covered eligibility verdict and Judge-owned score
-card, plus one qualified benchmark revision and covered-PASS
-qualification verdict. `affected_surfaces` names candidate-mutable
-target surfaces; packet `authority` names write scope and exclusions.
-Mutation authority is their intersection. Spec `acceptance` fixes
-generation width, lane count per candidate, promotion done-check and
-rule, required margin, and regression criteria; spec `bound` and
-packet `bounds` cap the campaign.
+[spec contract](../contracts/spec.md). Its `evidence` identifies the incumbent
+identity and fixed result/evidence identity for the artifact; a supplied frozen evaluation adds
+the frozen evaluation identity, mode, scoring contract, and covered incumbent
+verdict and score card.
+`affected_surfaces` and packet `authority` name candidate scope; their
+intersection is mutation authority. `acceptance` freezes evaluation setup,
+search policy, candidate-accessible dimensions and feedback, writer, lane count per candidate,
+promotion done-check and rule, required margin, and regression criteria;
+`bound` and packet `bounds` cap the campaign.
+When no evaluation is supplied, the packet also carries the inputs, disjoint
+evaluation-design write scope, and reserved bound mapped by the
+[evaluation-open protocol](references/evolve-evaluation.md).
 
 Steps:
-- eligibility — `orch-verify`: the incumbent's fixed result/evidence
-  identity and frozen required eligibility and regression criteria,
-  with named oracles and `oracle_class`. Only covered PASS permits the
-  Judge-owned incumbent score card to supply generation direction;
-  expose no protected item-level evidence.
-- generation — the loop body, a caller-owned composite: independent
-  variants through `orch-delegate` within mutation authority; every
-  child return crosses `orch-integrate` with caller write scope; the
-  frozen runner produces one fixed result/evidence identity per
-  integrated candidate, submitted with the same frozen criteria to
-  `orch-verify`; verified survivors, including the incumbent, go as a
-  fixed set — each candidate bound to its covered-PASS result/evidence
-  identity and the frozen benchmark revision and scoring identity —
-  with frozen criteria, predeclared aggregation, and lane count to
-  `orch-panel`.
-  Promote only a survivor whose score card cites the admitted evidence
-  and satisfies the frozen rule and margin; promotion alone never
-  completes.
-- closing — a fresh `orch-judge` over the final incumbent, its
-  admitted result/evidence identity, and frozen scoring criteria.
+- evaluation — use the supplied frozen evaluation. When no frozen evaluation is
+  supplied, `orch-eval-design` creates one candidate-blind Judge brief under the
+  evaluation-open protocol before generation; this is judged mode. A qualified
+  benchmark plus runner is benchmark mode.
+- eligibility — `orch-verify` checks fixed incumbent evidence against the
+  evaluation's required admission and regression criteria. Only covered PASS
+  permits generation direction; expose no protected item-level evidence.
+- campaign — `orch-loop` over the body mapped by the
+  [generation protocol](references/evolve-generation.md). It uses one frozen
+  `orch-panel` binding before the first plan and after each candidate set, then
+  calls `orch-search-plan`, `orch-worklog`, `orch-delegate`, and `orch-integrate`
+  around the frozen writer and evaluation, reusing the eligibility Verify binding.
 
-Edges:
-- seq eligibility → campaign → closing.
-- loop campaign — body `generation`, the promotion done-check, the
-  frozen bound, dispatched through `orch-loop` with the frozen goal
-  and a context packet carrying campaign constants, incumbent identity
-  and score card, promotion/kill log, disagreement, and failed
-  approaches.
+Edges: seq evaluation → eligibility → campaign; loop campaign — generation body,
+frozen bound, and a fresh `orch-judge` done-check over the final incumbent and
+its admitted result/evidence.
 
 Invariants:
-- Freeze the benchmark revision, runner, scoring, protected evidence
-  policy, mutation authority, promotion rule, required margin, and
-  bound. A campaign comparing candidates across a moving benchmark
-  measures nothing.
-- A changed benchmark starts a new campaign in which every retained
-  candidate is evaluated again.
-- Kill any candidate lacking PASS on every required deterministic
-  criterion; deterministic failure blocks eligibility and judged score
-  cannot compensate.
-- Judge lanes are blind per `orch-panel`; they cite the admitted
-  evidence without re-execution or substitution.
-- A judged done-check PASS is provisional; only a closing score card
-  citing the final incumbent's admitted evidence can satisfy the
-  done-check.
-- An ambiguous or non-discriminating benchmark returns a blocked
-  partial result, evidence, and feedback for a separate BenchMaker
-  run. Terminal states and partial-result law follow
-  [rules/loops.md](../rules/loops.md).
-- Never: change campaign constants; rank an ineligible candidate;
-  re-execute or substitute admitted evidence for judging; expose
-  protected evidence; call evaluation design or BenchMaker; treat a
-  changed benchmark as continuity.
+- Freeze the evaluation identity, evaluation mode, scoring, criteria, evidence
+  adapter, optional runner, protected evidence policy, controller and planner
+  revisions, mutation authority, search policy, promotion rule, margin, and
+  bound. A changed constant starts a new campaign and reevaluates every retained
+  candidate; benchmark mode also freezes its benchmark revision.
+- Benchmark mode runs the qualified runner. Judged mode scores each fixed
+  artifact snapshot through the same candidate-blind Judge brief and Panel.
+- Kill any candidate lacking PASS on every required admission criterion; judged
+  score cannot compensate. Every Panel score card cites admitted evidence.
+- The archive supplies exploration parents only; Evolve alone applies the
+  promotion rule and margin. Promotion alone never completes.
+- A missing public numeric mapping returns a blocked partial result with an
+  evaluation-design gap.
+- Never: change evaluation after campaign open; rank an ineligible candidate;
+  re-execute or substitute admitted evidence; expose protected evidence; call
+  Benchmaker; activate a selected candidate; add a closing wrapper.
 
-Done check: the closing `orch-judge` score card, citing the final
-incumbent's admitted result/evidence identity, satisfies the frozen
-promotion done-check.
+Done check: Loop's final score card cites the final incumbent identity and its
+admitted result/evidence and satisfies the frozen promotion done-check.
 
-Return: status, result — the final incumbent identity, verification —
-the closing score card and eligibility verdicts; then the frozen
-benchmark revision, generation count, promotion/kill log, disagreement,
-partial evidence, feedback and gaps, and bounds spent.
+Return: status, result — the final incumbent identity, verification — the final
+score card and admission verdicts; then frozen evaluation identity and mode,
+benchmark revision when used, accepted projection and plan identities,
+generation count, promotion/kill log, disagreement, partial evidence, feedback
+and gaps, bounds spent, and cumulative changed artifacts including Worklog and
+accepted descendant changes.

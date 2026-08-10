@@ -51,6 +51,7 @@ Name the bricks yourself when you want a specific shape:
 
     > orch-loop orch-deliver until `pytest -q` exits 0
     > orch-panel these three cache designs — blind judges, pick one
+    > evolve this blog post — no benchmark, derive a blind judge panel
     > evolve the summarizer prompt against the frozen benchmark
 
 Or build your own workflow in plain English:
@@ -110,8 +111,9 @@ all sessions in a project, then point a second run at the first one.
 The `benchmaker` composition builds a qualified benchmark for any
 target with an observable outcome — a prompt, a skill, a script. The
 `evolve` composition then runs a tournament against it:
-bounded generations of candidates, blind judges, promotion only when a
-frozen rule and margin are beaten. Together they turn "make this
+bounded generations planned deterministically from settled public outcomes,
+blind judges, and promotion only when a frozen rule and margin are beaten.
+Together they turn "make this
 better" into a measured campaign instead of vibes. The dataflow is in
 [docs/benchmaker.md](docs/benchmaker.md); `skill-tournament` applies
 the same loop to the library's own skills.
@@ -246,8 +248,9 @@ bricks either way.
     │   │   └── orch-render            — Builds a screen and checks how it actually looks and behaves
     │   │
     │   └── utilities/ — Small optional helpers
-    │       ├── orch-visualize — Turns supplied information into a visual page
-    │       └── orch-off       — Stops orchflows from automatically choosing skills
+    │       ├── orch-visualize   — Turns supplied information into a visual page
+    │       ├── orch-search-plan — Produces replayable candidate-search plans
+    │       └── orch-off         — Stops orchflows from automatically choosing skills
     │
     ├── Layer 2 · packs/ — Setups for different kinds of projects
     │   ├── orch-code-pack     — Tells the system how to organize, save, and check software work
