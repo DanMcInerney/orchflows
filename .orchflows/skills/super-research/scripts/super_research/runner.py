@@ -8,7 +8,10 @@ search over an adapter's name finds every place the core can call it.
 
 *The run.* One validated manifest becomes one immutable artifact and the
 ledger of how: steps in declared order whatever the mode, one native page per
-adapter call, and the core alone owning pagination, caps and stop.
+adapter call, and the core alone owning the caps and the stop. Nothing here
+runs concurrently and nothing here pages: :func:`planned_calls` is the only
+production constructor of an ``AdapterRequest`` and never sets a cursor, so a
+discovery step authorizes exactly one call.
 
 Three concerns this module used to own were moved to one-read-size siblings
 and are re-exported below under the names they have always had —

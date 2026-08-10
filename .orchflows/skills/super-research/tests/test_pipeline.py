@@ -319,6 +319,63 @@ def assert_rate_budget_respected(case, governor, budgets):
         )
 
 
+CONCURRENCY_MODULES = ("asyncio", "concurrent", "multiprocessing", "threading", "_thread")
+
+
+class NothingOverlapsAndNothingPagesTest(unittest.TestCase):
+    """Two mechanisms the documents called core-owned, pinned to what ships.
+
+    `protocol.md` said `fused` lets two steps overlap and `adapters/__init__.py`
+    said the core owns pagination and concurrency. Neither exists: the package
+    imports no concurrency primitive at all, and `runner.planned_calls` is the
+    only production constructor of an `AdapterRequest` and never sets a cursor.
+    What `fused` really collapses is the round-trip — discovery and bounded
+    hydration in one invocation — and `fake_makespan_us` is the span of a
+    modeled placement rather than a wall clock. Both claims are now written down
+    as what they are, and pinned here so the next edit cannot quietly restore
+    the stronger one.
+    """
+
+    def test_the_package_imports_no_concurrency_primitive(self):
+        # By import rather than by spelling: this file's own prose says the
+        # word, and a scan that could not tell an import from a sentence would
+        # make writing the truth down impossible.
+        taken = sorted(
+            (path.name, name)
+            for path in package_sources()
+            for name in helpers.imported_names(path)
+            if name.split(".")[0] in CONCURRENCY_MODULES
+        )
+
+        self.assertEqual(taken, [])
+
+    def test_the_only_request_the_core_builds_carries_no_cursor(self):
+        for payload in (DISCOVERY_MANIFEST, TWO_STEP_MANIFEST, FUSED_MANIFEST):
+            for step in schema.parse_manifest(payload).steps:
+                with self.subTest(manifest=payload["manifest_id"], step=step.step_id):
+                    planned = runner.planned_calls(step)
+
+                    self.assertEqual([request.cursor for request, _ in planned], [""] * len(planned))
+                    if step.kind == "discovery":
+                        self.assertEqual(len(planned), 1)
+
+    def test_a_fused_run_makes_the_same_calls_in_the_same_order_as_a_staged_one(self):
+        # The execution half: the mode reaches the ledger's placement and
+        # nothing else. If `fused` overlapped anything, this is where the two
+        # would stop agreeing.
+        staged_governor, staged_opener, staged_clock = tracer_governor()
+        fused_governor, fused_opener, fused_clock = tracer_governor()
+
+        staged = run_on(staged_clock, staged_governor, TWO_STEP_MANIFEST)
+        fused = run_on(fused_clock, fused_governor, FUSED_MANIFEST)
+
+        self.assertEqual(
+            [request.route_id for request in staged_opener.opened],
+            [request.route_id for request in fused_opener.opened],
+        )
+        self.assertEqual(len(staged.artifact.records), len(fused.artifact.records))
+
+
 class TheDocumentedPathPacesAndRemembersTest(unittest.TestCase):
     """Criterion 4's other half: the governor is on the path, not only in a fixture.
 

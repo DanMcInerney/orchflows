@@ -284,10 +284,12 @@ def _page_from(response: transport.TransportResponse) -> NativePage:
 def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> NativePage:
     """Read one page of guest job search and return exactly one NativePage.
 
-    ``start=`` is the caller's: the core owns pagination, so the cursor it
+    ``start=`` is the caller's: pagination is the core's to own, so a cursor it
     froze is spent here and no next offset is derived. This fragment states
     none, and inventing one from the count returned would make the adapter the
-    thing that decides there is another page.
+    thing that decides there is another page. Nothing in this release freezes
+    one — ``runner.planned_calls`` sets no cursor — so the parameter is the
+    seam and every call starts at the top.
     """
 
     return fetch_one_page(

@@ -273,8 +273,10 @@ def _record_from_user(result: Any) -> Optional[NativeRecord]:
 def _timeline_rows(instructions: Sequence[Any]) -> Tuple[Tuple[NativeRecord, ...], str]:
     """This timeline's posts, in the order it listed them, and its bottom cursor.
 
-    The cursor is surfaced and never followed: the core owns pagination, so
-    what an adapter finds is something for the caller to decide on.
+    The cursor is surfaced and never followed: pagination is the core's to own,
+    so what an adapter finds is something for the caller to decide on. Nothing
+    in this release decides on it — ``runner.planned_calls`` sets no cursor —
+    so this is the seam and not yet a behaviour.
     """
 
     records = []

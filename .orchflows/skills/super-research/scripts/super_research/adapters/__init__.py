@@ -3,9 +3,17 @@
 Every adapter module exposes exactly two public names: ``DESCRIPTOR`` and
 ``fetch_native_page(carrier, request)``. An adapter parses one response
 and stops. It never paginates, retries, falls back, calls another adapter,
-or persists anything — the core owns pagination, caps, concurrency, and
-stop, and a cursor an adapter finds is surfaced through ``cursor_out`` for
-the core to decide on.
+or persists anything — the core owns the cap and the stop, and a cursor an
+adapter finds is surfaced through ``cursor_out`` for the core to decide on.
+
+**Nothing spends one in this release.** ``runner.planned_calls`` is the only
+production constructor of an ``AdapterRequest`` and never sets ``cursor``, so a
+discovery step authorizes exactly one call and ``max_items`` truncates inside
+that one page. Six adapters read a cursor and five surface one; the reading and
+the surfacing are the seam a later core would page through, and until one does,
+"the core owns pagination" names an owner rather than a behaviour. There is no
+concurrency here either: no thread, task, coroutine, or process anywhere in the
+package.
 
 It also never makes the call itself: :func:`fetch_one_page` does, so the
 channel verdict is read in one place for every adapter there will ever be.

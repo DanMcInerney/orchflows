@@ -69,9 +69,16 @@ Manifest keys are exactly `schema_version`, `manifest_id`, `mode`, `as_of`,
 - `manifest_id` and `as_of` are nonempty strings.
 - `mode` is `staged` or `fused`. Steps execute in declared order either way, so
   the artifact is the same artifact; the mode reaches only the schedule the
-  ledger records. `fused` lets two steps overlap because no step reads what
-  another step produced — a hydration step's calls come from hits the caller
-  already froze. It collapses latency, never lineage.
+  ledger records. **Nothing in this package runs concurrently** — there is no
+  thread, task, coroutine, or process anywhere in it — so `fused` overlaps
+  nothing at execution time. What it collapses is the round-trip: discovery and
+  bounded hydration happen in **one invocation**, where `staged` puts a caller
+  between one step's output and the next step's input. That is real and it is
+  the whole of the difference a caller feels. In the ledger the two are placed
+  under different models — `fused` on per-step lanes bounded by each route's
+  budget, `staged` on one serial line — and `fake_makespan_us` is the span of
+  that placement: a modeled counterfactual, never wall clock. Either way it
+  collapses latency, never lineage.
 - `steps` is a nonempty sequence of steps with unique `step_id`s; a
   `prior_step_id` must name a step in the same manifest.
 
@@ -89,6 +96,12 @@ Step keys are exactly `step_id`, `kind`, `adapter_id`, `query`, `prior_step_id`,
 - `max_items` is a hard positive integer cap. It is required — there is no
   default and no unbounded step. The core owns stop: no further call is made once
   the cap is met, and a step that truncated emits `recall_window_partial`.
+  **Nothing pages.** `runner.planned_calls` is the only production constructor of
+  an `AdapterRequest` and never sets `cursor`, so a discovery step's one call is
+  its only call and `max_items` truncates inside that one page. Six adapters read
+  a cursor and five surface `cursor_out`; that is the seam a later core would
+  page through, and until one does, "the core owns pagination" names an owner
+  rather than a behaviour.
 
 `as_of` must be spelled `YYYY-MM-DDTHH:MM:SSZ`. Nothing rejects another spelling
 at parse time, but `ordering.instant_seconds` returns nothing for it, and an
@@ -307,9 +320,10 @@ operation_id)`. This core schedules one operation kind, `native_page`, and emits
 `calls`, `pages`, `items` and `fake_duration`, plus one zero-delta `stop` marker
 per dispatch naming why the run ended. `pages` is emitted exactly once per
 operation, because one native page per adapter call is the law. `fake_makespan_us`
-is derived over the schedule and is deliberately not a metric: two overlapping
-operations count once between them, which is the only quantity that tells `fused`
-from `staged`.
+is derived over the schedule and is deliberately not a metric: two operations the
+model places overlapping count once between them, which is the only quantity that
+tells `fused` from `staged`. It is a counterfactual over a placement, not a
+measurement of a run — nothing in this package executes two operations at once.
 
 ## Failure and loss vocabulary
 

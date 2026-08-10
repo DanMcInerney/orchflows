@@ -115,9 +115,9 @@ class ScheduledRun:
 def causal_key(event: WorkLedgerEvent) -> Tuple[int, int, int, int, str]:
     """The retained contract's serialization key, verbatim.
 
-    Ordinals rather than ticks, because a fused schedule deliberately overlaps
-    two lanes: the order work happened in is a fact about the dispatch, and the
-    order it was placed in is a fact about the mode.
+    Ordinals rather than ticks, because a fused schedule deliberately places
+    two lanes overlapping: the order work happened in is a fact about the
+    dispatch, and the order it was placed in is a fact about the mode.
     """
 
     return (
@@ -170,18 +170,23 @@ def schedule_of(
 ) -> Tuple[ScheduledOperation, ...]:
     """Place each operation where this mode admits it.
 
-    ``staged`` puts a caller between one step's output and the next step's
-    input, so every step waits for the one before it and the schedule is a
+    This places; it does not run. Every operation has already happened, in
+    declared order, one at a time — nothing in this package executes two at
+    once — and what this function produces is where a scheduler *could* have
+    put them, which is what ``fake_makespan_us`` is the span of.
+
+    ``staged`` models a caller between one step's output and the next step's
+    input, so every step waits for the one before it and the placement is a
     single line. ``fused`` freezes both steps' inputs in one manifest, so a
     step waits only for its own earlier pages and for its own route — one
     route's budget never overlaps itself, whatever the mode.
 
-    Overlapping two steps is sound because no step here reads what another step
-    produced: a hydration step's calls come from ``selected_hits`` the caller
-    froze, as :func:`planned_calls` shows, so ``prior_step_id`` records where a
-    selection came from rather than a dependency a scheduler must serialize.
-    That is the whole of the difference between the modes — placement moves,
-    and nothing a step produces does.
+    Placing two steps side by side is sound because no step here reads what
+    another step produced: a hydration step's calls come from ``selected_hits``
+    the caller froze, as :func:`planned_calls` shows, so ``prior_step_id``
+    records where a selection came from rather than a dependency a scheduler
+    must serialize. That is the whole of the difference between the modes —
+    placement moves, and nothing a step produces does.
     """
 
     placed: List[ScheduledOperation] = []
