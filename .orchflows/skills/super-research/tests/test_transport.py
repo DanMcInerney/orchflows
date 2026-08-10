@@ -16,12 +16,14 @@ from __future__ import annotations
 import ast
 import builtins
 import contextlib
+import email
 import importlib.util
 import io
 import json
 import os
 import socket
 import unittest
+import urllib.error
 import urllib.request
 from pathlib import Path
 from unittest import mock
@@ -919,6 +921,100 @@ class WriteVerbRefusalTest(unittest.TestCase):
                 transport.urlopen_response(request)
 
         self.assertIn("non-https", str(caught.exception))
+
+
+class RaisingUrlopen:
+    """Stand in for ``urllib.request.urlopen`` the way it really answers a non-2xx.
+
+    ``FakeHTTPResponse`` returns every status, which no real ``urlopen`` does:
+    urllib raises :class:`urllib.error.HTTPError` for every response outside
+    2xx, and the opener's own ``except`` is what turns that back into a status,
+    a body, a content type, and an answering address. Nothing in the suite
+    constructed one, so every failure path in this package — `stale_identifier`,
+    `auth_required`, `rate_limited`, `network_intercepted` — reached production
+    through a branch no test executed. ``HTTPError`` is also a response object
+    in its own right, which is why the branch can read it at all.
+    """
+
+    def __init__(self, status, body, content_type, url=""):
+        self.status = status
+        self.body = body
+        self.content_type = content_type
+        self.url = url
+        self.requests = []
+
+    def __call__(self, outbound, timeout=None):
+        self.requests.append(outbound)
+        raise urllib.error.HTTPError(
+            self.url or outbound.full_url,
+            self.status,
+            "an origin's own refusal",
+            email.message_from_string("Content-Type: " + self.content_type),
+            io.BytesIO(self.body.encode("utf-8")),
+        )
+
+
+class TheOpenerReadsARealHTTPErrorTest(unittest.TestCase):
+    """Fidelity: the branch every non-2xx in production goes through, executed.
+
+    Nothing under test changes here. This exists because the stand-in that
+    every other row uses is more forgiving than urllib is, and the last time an
+    offline stand-in was gentler than the real thing it hid the `final_url`
+    credential leak for ten tickets.
+    """
+
+    def _read(self, status, body, content_type="text/html", route=None):
+        recorder = RaisingUrlopen(status, body, content_type)
+        request = transport.build_transport_request(
+            transport.DDG_HTML_ROUTE if route is None else route, {"q": "local model"}
+        )
+        with mock.patch.object(urllib.request, "urlopen", recorder):
+            return transport.urlopen_read(request), recorder.requests[0]
+
+    def test_a_raised_status_comes_back_as_a_status_and_not_as_a_tool_failure(self):
+        (status, body, content_type, final_url), outbound = self._read(
+            404, "<html>not found</html>"
+        )
+
+        self.assertEqual(status, 404)
+        self.assertIn("not found", body)
+        self.assertEqual(content_type, "text/html")
+        self.assertEqual(final_url, outbound.full_url)
+
+    def test_the_channel_verdict_still_tells_this_network_from_the_origin(self):
+        portal = read_fixture("captive_portal.html")
+        blocked, _ = self._read(503, portal)
+        refused, _ = self._read(503, "<html>Service Unavailable</html>")
+
+        self.assertEqual(
+            transport.channel_verdict(blocked[0], blocked[1]), transport.NETWORK_INTERCEPTED
+        )
+        self.assertEqual(
+            transport.channel_verdict(refused[0], refused[1]), transport.ORIGIN_FAILURE
+        )
+
+    def test_a_credential_placed_in_the_query_does_not_ride_out_on_the_error(self):
+        # T02, on the path that raises. `HTTPError.url` is the address the
+        # request actually went out on — credential and all — so this is the
+        # one branch where the answering address could carry one back out.
+        route = transport.YOUTUBE_INNERTUBE_ROUTE
+        (_, _, _, final_url), outbound = self._read(401, "{}", "application/json", route=route)
+
+        for _, value in credential_strings():
+            with self.subTest(secret=value):
+                self.assertNotIn(value, final_url)
+        self.assertTrue(outbound.full_url)
+
+    def test_an_oserror_is_still_a_tool_failure_and_never_a_status(self):
+        # The other half of the same try: a refused connection has no status to
+        # report, so it must stay a `TransportError` rather than becoming one.
+        def refuse(outbound, timeout=None):
+            raise OSError("connection refused")
+
+        request = transport.build_transport_request(transport.DDG_HTML_ROUTE, {"q": "x"})
+        with mock.patch.object(urllib.request, "urlopen", refuse):
+            with self.assertRaises(transport.TransportError):
+                transport.urlopen_read(request)
 
 
 class OutboundRequestTest(unittest.TestCase):
