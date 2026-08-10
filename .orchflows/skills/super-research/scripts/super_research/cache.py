@@ -51,6 +51,18 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # read costs 0.5 s, so holding an answer longer buys less here than
     # anywhere else on X.
     transport.X_GUEST_GRAPHQL_ROUTE: 120.0,
+    # The least volatile thing in the roster and the most expensive to read:
+    # 577 KB in 1.3 s (findings.md §1) for a block that changes when a member
+    # edits their profile and carries no counter at all, so nothing in it goes
+    # stale on a run's timescale. Note that at the measured size this route's
+    # answers exceed `MAX_ENTRY_BYTES` and are served through, so this window
+    # binds only on a page smaller than the one measured.
+    transport.LINKEDIN_PUBLIC_PROFILE_ROUTE: 900.0,
+    # A third as long as the profile beside it, because a search list changes
+    # as postings arrive where a profile does not, and because it is the cheap
+    # read — 27 KB in 0.7 s, so holding an answer longer buys less and risks
+    # handing back a page of results that has moved on.
+    transport.LINKEDIN_JOBS_GUEST_SEARCH_ROUTE: 300.0,
 }
 
 # The two halves of one bound. Every route in the roster answers in kilobytes,

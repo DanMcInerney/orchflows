@@ -2106,5 +2106,102 @@ class LinkedInOneCallOnePageTest(unittest.TestCase):
                 self.assertEqual(page.outcome, "failed")
 
 
+class LinkedInRouteTtlTest(unittest.TestCase):
+    """How long each LinkedIn route's answer may stand in for a fresh read.
+
+    A TTL belongs to a route's own volatility, and `cache.py`'s default is
+    deliberately short — a route nobody has measured is not one to trust for
+    long. Both of these were measured, so both declare their own, and the proof
+    is behavioral from both sides: a re-read inside the window that the default
+    would have sent back to the origin, and one outside it that comes back.
+    """
+
+    def _paced(self, clock, route_id, body):
+        carrier, opener = helpers.offline_transport(
+            clock, {route_id: (200, body, "text/html")}
+        )
+        governor = runner.RateGovernor(
+            carrier,
+            run_cache=cache.RunCache(clock=clock.monotonic),
+            clock=clock.monotonic,
+            sleep=clock.sleep,
+        )
+        return governor, opener
+
+    def test_a_profile_reread_inside_the_window_is_answered_from_memory(self):
+        clock = helpers.FakeClock()
+        governor, opener = self._paced(
+            clock,
+            transport.LINKEDIN_PUBLIC_PROFILE_ROUTE,
+            read_linkedin("profile_person.html"),
+        )
+
+        first = linkedin_public.fetch_native_page(governor, LINKEDIN_PROFILE_REQUEST)
+        clock.advance(600)
+        held = linkedin_public.fetch_native_page(governor, LINKEDIN_PROFILE_REQUEST)
+        clock.advance(400)
+        expired = linkedin_public.fetch_native_page(governor, LINKEDIN_PROFILE_REQUEST)
+
+        self.assertNotIn(cache.CACHE_HIT, first.loss)
+        self.assertIn(cache.CACHE_HIT, held.loss)
+        self.assertNotIn(cache.CACHE_HIT, expired.loss)
+        self.assertEqual(len(opener.opened), 2)
+        # The mark moves, the moment does not: a served page still states when
+        # the origin was really read.
+        self.assertEqual(held.observed_at, first.observed_at)
+        self.assertEqual(len(held.records), 1)
+
+    def test_the_route_serving_the_more_volatile_thing_holds_it_for_the_least_time(self):
+        # A profile changes when a member edits it and its block carries no
+        # counter, and it is the most expensive read in the roster per item —
+        # 577 KB and 1.3 s. A jobs search changes as postings arrive and costs
+        # 27 KB and 0.7 s, so holding it longer buys less and risks more.
+        clock = helpers.FakeClock()
+        governor, opener = self._paced(
+            clock,
+            transport.LINKEDIN_JOBS_GUEST_SEARCH_ROUTE,
+            read_linkedin("jobs_search_page.html"),
+        )
+
+        linkedin_jobs.fetch_native_page(governor, JOBS_REQUEST)
+        clock.advance(120)
+        held = linkedin_jobs.fetch_native_page(governor, JOBS_REQUEST)
+        clock.advance(240)
+        expired = linkedin_jobs.fetch_native_page(governor, JOBS_REQUEST)
+
+        self.assertIn(cache.CACHE_HIT, held.loss)
+        self.assertNotIn(cache.CACHE_HIT, expired.loss)
+        self.assertEqual(len(opener.opened), 2)
+        self.assertLess(
+            cache.ttl_seconds(transport.LINKEDIN_JOBS_GUEST_SEARCH_ROUTE),
+            cache.ttl_seconds(transport.LINKEDIN_PUBLIC_PROFILE_ROUTE),
+        )
+
+    def test_a_body_the_size_the_evidence_measured_is_served_through_and_never_held(self):
+        # findings.md §1 measured this route at 577 KB, and the run cache holds
+        # nothing over MAX_ENTRY_BYTES (512 KiB) — so a real profile page is
+        # served through and the declared TTL never binds on it. The window
+        # above is real, and it is real for a smaller page than the one the
+        # evidence measured. Stated here rather than in prose so it cannot rot.
+        clock = helpers.FakeClock()
+        oversized = read_linkedin("profile_person.html") + "<!--{0}-->".format(
+            "x" * cache.MAX_ENTRY_BYTES
+        )
+        governor, opener = self._paced(
+            clock, transport.LINKEDIN_PUBLIC_PROFILE_ROUTE, oversized
+        )
+
+        first = linkedin_public.fetch_native_page(governor, LINKEDIN_PROFILE_REQUEST)
+        clock.advance(1)
+        second = linkedin_public.fetch_native_page(governor, LINKEDIN_PROFILE_REQUEST)
+
+        self.assertGreater(len(oversized.encode("utf-8")), cache.MAX_ENTRY_BYTES)
+        self.assertNotIn(cache.CACHE_HIT, second.loss)
+        self.assertEqual(len(opener.opened), 2)
+        # Served through, and still correct: the page is parsed both times.
+        self.assertEqual(len(first.records), 1)
+        self.assertEqual(len(second.records), 1)
+
+
 if __name__ == "__main__":  # pragma: no cover - convenience runner
     unittest.main()
