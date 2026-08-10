@@ -70,10 +70,12 @@ CORE_MODULES = (
     "normalize",
     "ordering",
     "pacing",
+    "probes",
     "project",
     "router",
     "runner",
     "schema",
+    "smoke",
     "transport",
 )
 
@@ -85,11 +87,12 @@ CORE_MODULES = (
 CORE_IMPORT_EDGES = {
     "__init__": (),
     "cache": ("transport",),
-    "cli": ("runner", "schema", "transport"),
+    "cli": ("probes", "runner", "smoke", "transport"),
     "ledger": ("schema",),
     "normalize": ("adapters", "schema"),
     "ordering": ("adapters", "runner", "schema"),
     "pacing": ("adapters", "cache", "runner", "transport"),
+    "probes": ("transport",),
     "project": ("schema",),
     "router": ("adapters", "schema"),
     "runner": (
@@ -104,6 +107,7 @@ CORE_IMPORT_EDGES = {
         "transport",
     ),
     "schema": (),
+    "smoke": ("probes", "runner", "schema", "transport"),
     "transport": (),
 }
 
