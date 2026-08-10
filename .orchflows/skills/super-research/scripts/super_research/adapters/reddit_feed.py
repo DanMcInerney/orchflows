@@ -87,7 +87,6 @@ CONTENT_KIND = "post"
 FEED_TAG = "feed"
 ENTRY_TAG = "entry"
 AUTHOR_TAG = "author"
-LINK_TAG = "link"
 HREF_ATTRIBUTE = "href"
 
 # The four fields findings.md §1 records this route returning, plus the entry's
@@ -98,17 +97,17 @@ TITLE_FIELD = "title"
 UPDATED_FIELD = "updated"
 ID_FIELD = "id"
 NAME_FIELD = "name"
-LINK_FIELD = "link"
+LINK_TAG = "link"
 
 # Text between tags, captured only inside an entry. `title`, `updated` and `id`
 # all appear at feed level too, and a feed's own title is not a post's.
 ENTRY_TEXT_TAGS = (TITLE_FIELD, UPDATED_FIELD, ID_FIELD)
-ENTRY_KEYS = (TITLE_FIELD, UPDATED_FIELD, ID_FIELD, NAME_FIELD, LINK_FIELD)
+ENTRY_KEYS = (TITLE_FIELD, UPDATED_FIELD, ID_FIELD, NAME_FIELD, LINK_TAG)
 
 # Every field a record must have for the roster row to be complete. The entry's
 # id is absent from this list on purpose: a row short of it is not a row of this
 # kind at all, and it is dropped rather than marked.
-ROSTER_FIELDS = (TITLE_FIELD, LINK_FIELD, NAME_FIELD, UPDATED_FIELD)
+ROSTER_FIELDS = (TITLE_FIELD, LINK_TAG, NAME_FIELD, UPDATED_FIELD)
 
 # Reddit spells one thing two ways across its own surfaces, and the rule for
 # which prefix survives is whether it is an identity or an address. `t3_` is
@@ -159,8 +158,8 @@ class _AtomEntryParser(HTMLParser):
             # The entry's own address, as the feed published it, and the first
             # one wins: Reddit states one per entry and a document that states
             # two has not said which is the post.
-            if not self.entries[-1][LINK_FIELD]:
-                self.entries[-1][LINK_FIELD] = dict(attrs).get(HREF_ATTRIBUTE) or ""
+            if not self.entries[-1][LINK_TAG]:
+                self.entries[-1][LINK_TAG] = dict(attrs).get(HREF_ATTRIBUTE) or ""
         elif tag == NAME_FIELD and self._in_author:
             self._field = NAME_FIELD
         elif tag in ENTRY_TEXT_TAGS:
@@ -216,7 +215,7 @@ def roster_row_of(entry: Dict[str, str]) -> Dict[str, str]:
 
     return {
         TITLE_FIELD: entry[TITLE_FIELD].strip(),
-        LINK_FIELD: entry[LINK_FIELD].strip(),
+        LINK_TAG: entry[LINK_TAG].strip(),
         NAME_FIELD: author_handle(entry[NAME_FIELD]),
         UPDATED_FIELD: atom_instant_to_utc_iso(entry[UPDATED_FIELD]),
     }
@@ -227,7 +226,7 @@ def _record_for(position: int, entry: Dict[str, str]) -> NativeRecord:
     missing = tuple(name for name in ROSTER_FIELDS if not roster[name])
     return NativeRecord(
         canonical_content_kind=CONTENT_KIND,
-        canonical_locator=roster[LINK_FIELD],
+        canonical_locator=roster[LINK_TAG],
         # The fullname Reddit identifies a submission by, carried exactly as the
         # feed spells it. No body travels with it: this route publishes an
         # entry's rendered chrome rather than the post's own text, and a body

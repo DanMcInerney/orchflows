@@ -48,7 +48,7 @@ from __future__ import annotations
 
 import urllib.parse
 from html.parser import HTMLParser
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 from .. import transport
 from . import (
@@ -179,36 +179,45 @@ def names_an_address(value: str) -> bool:
     return bool(parts.scheme or parts.netloc)
 
 
-def selected_read(named: str) -> Tuple[str, str, str]:
-    """Which selection this call reads and what fills it, or why it is refused.
+def named_selection(named: str) -> Tuple[str, str]:
+    """The selection this target names and the value it offers, before judging either.
 
-    Returns ``(selection, value, refusal)`` with exactly one of the first and
-    the last set. A caller names a selection outright, names one with a value
-    after a colon, or names nothing and takes the primary — and in every case
-    the value has to be a document's name rather than an address.
+    A caller names a selection outright, names one with a value after a colon,
+    or names nothing and takes the primary. Resolved before the value is
+    judged, so a refusal can still say which selection it refused — the core
+    reads a page's route into the step and into the work ledger, and a refused
+    ``control`` recorded against the article route would attribute a read to an
+    origin nobody asked.
     """
 
     target = named.strip()
     if target in PAGE_SELECTIONS:
-        selection, value = target, ""
-    else:
-        kind, separator, argument = target.partition(":")
-        if separator and kind in PAGE_SELECTIONS:
-            selection, value = kind, argument.strip()
-        else:
-            selection, value = PRIMARY_SELECTION, target
+        return (target, "")
+    kind, separator, argument = target.partition(":")
+    if separator and kind in PAGE_SELECTIONS:
+        return (kind, argument.strip())
+    return (PRIMARY_SELECTION, target)
 
+
+def selected_read(named: str) -> Tuple[str, str, str]:
+    """Which selection this call reads and what fills it, or why it is refused.
+
+    Returns ``(selection, value, refusal)``. The selection is always set, so a
+    refusal is attributable; the value is set only when the read may happen.
+    """
+
+    selection, value = named_selection(named)
     _, parameter = PAGE_SELECTIONS[selection]
     if not parameter:
         if value:
-            return ("", "", "selection {0} takes no argument, and {1!r} is one".format(
+            return (selection, "", "selection {0} takes no argument, and {1!r} is one".format(
                 selection, value
             ))
         return (selection, "", "")
     if not value:
-        return ("", "", "selection {0} names no document".format(selection))
+        return (selection, "", "selection {0} names no document".format(selection))
     if names_an_address(value):
-        return ("", "", (
+        return (selection, "", (
             "{0!r} names an address rather than a document inside a selection."
             " This adapter reads one of {1} and cannot be pointed anywhere: a"
             " host belongs to the route table.".format(value, sorted(PAGE_SELECTIONS))
@@ -285,11 +294,16 @@ def _page_from(
     return _page(descriptor, response.observed_at, records=(_record_for(response),))
 
 
-def _refused(reason: str) -> NativePage:
-    """A target this adapter will not read, refused without touching the network."""
+def _refused(descriptor: AdapterDescriptor, reason: str) -> NativePage:
+    """A target this adapter will not read, refused without touching the network.
+
+    It carries the selection the caller named, so a refusal is charged to the
+    surface it was asked of rather than to whichever one happens to be primary.
+    There is no observation time on it because nothing was observed.
+    """
 
     return _page(
-        DESCRIPTOR,
+        descriptor,
         "",
         warnings=(reason,),
         outcome="refused",
@@ -308,10 +322,9 @@ def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> 
 
     named = request.target_ids[0] if request.target_ids else request.query
     selection, value, refusal = selected_read(named)
-    if refusal:
-        return _refused(refusal)
-
     descriptor, parameter = PAGE_SELECTIONS[selection]
+    if refusal:
+        return _refused(descriptor, refusal)
 
     def parse(response: transport.TransportResponse) -> NativePage:
         return _page_from(descriptor, response)

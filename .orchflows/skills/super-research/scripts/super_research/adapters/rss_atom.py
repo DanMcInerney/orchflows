@@ -112,6 +112,10 @@ TITLE_TAG = "title"
 ATOM_PUBLISHED_TAG = "published"
 ATOM_UPDATED_TAG = "updated"
 RSS_PUBLISHED_TAG = "pubdate"
+# Where a resolved address is held while an item is being read. Not a tag:
+# both vocabularies state the address somewhere else and this is the slot
+# whichever one arrived lands in.
+LOCATOR_FIELD = "locator"
 
 # Text between tags, captured only inside an item. Every one of these also
 # appears at feed level, where it describes the feed rather than an entry.
@@ -126,7 +130,7 @@ ITEM_TEXT_TAGS = (
     LINK_TAG,
     NAME_TAG,
 )
-ITEM_KEYS = ITEM_TEXT_TAGS + ("locator",)
+ITEM_KEYS = ITEM_TEXT_TAGS + (LOCATOR_FIELD,)
 
 # The names an entry's media travels under. Each pair repeats in step — one
 # `enclosure` and one `enclosure_type` per enclosure, in the feed's own order —
@@ -143,7 +147,6 @@ TRANSCRIPT_TYPE_ATTRIBUTE = "transcript_type"
 # marking every ordinary entry incomplete would make the mark meaningless.
 IDENTITY_FIELD = "identity"
 DATE_FIELD = "published"
-LOCATOR_FIELD = "locator"
 ROSTER_FIELDS = (IDENTITY_FIELD, TITLE_TAG, LOCATOR_FIELD, DATE_FIELD)
 
 RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"

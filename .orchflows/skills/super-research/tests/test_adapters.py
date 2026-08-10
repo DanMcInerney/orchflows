@@ -7825,6 +7825,68 @@ class PublicPageIsSelectedNotGenericTest(unittest.TestCase):
         self.assertEqual(public_page.AUTH_REQUIRED, "auth_required")
         self.assertEqual(names_read(ADAPTER_DIR / "public_page.py", "AUTH_REQUIRED"), 0)
 
+    def test_a_refusal_names_the_selection_the_caller_asked_for(self):
+        # A two-surface adapter can charge a refusal to a surface nobody named:
+        # the core reads `page.route_id` into the step and into the work
+        # ledger, so a refused `control` would otherwise be recorded against
+        # the article route — a read attributed to an origin that was never
+        # asked, which is the defect a two-surface adapter makes visible.
+        refused_control, _ = selected_page("control.html", target="control:something")
+        refused_article, _ = selected_page("article.html", target="article:a/b")
+        refused_unknown, _ = selected_page("article.html", target="https://evil.example/x")
+
+        self.assertEqual(refused_control.outcome, "refused")
+        self.assertEqual(refused_control.route_id, transport.PUBLIC_PAGE_CONTROL_ROUTE)
+        self.assertEqual(refused_article.route_id, transport.PUBLIC_PAGE_ARTICLE_ROUTE)
+        # A target naming no selection at all is the primary's to report: there
+        # is no better answer, and the warning says what was asked for.
+        self.assertEqual(refused_unknown.route_id, transport.PUBLIC_PAGE_ARTICLE_ROUTE)
+
+    def test_a_refusal_reaches_the_work_ledger_charged_to_no_read(self):
+        clock = helpers.FakeClock()
+        carrier, opener = helpers.offline_transport(
+            clock,
+            {
+                route_id: (200, read_public_page("control.html"), "text/html")
+                for route_id in transport.ROUTE_CONSTANTS
+            },
+        )
+        run = runner.run_scheduled(
+            schema.AcquisitionManifest(
+                manifest_id="m-refused",
+                mode="staged",
+                as_of="2026-08-10T09:05:00Z",
+                steps=(
+                    schema.AcquisitionStep(
+                        step_id="s1-refused",
+                        kind="hydration",
+                        adapter_id="public_page",
+                        selected_hits=(
+                            schema.SelectedHit(
+                                discovery_locator=CONTROL_LOCATOR,
+                                target_id="control:something",
+                            ),
+                        ),
+                        max_items=5,
+                    ),
+                ),
+            ),
+            carrier,
+            clock=clock.monotonic,
+        )
+
+        self.assertEqual(opener.opened, [])
+        self.assertEqual(run.artifact.records, ())
+        self.assertEqual(run.artifact.steps[0].outcome, "refused")
+        self.assertEqual(
+            [event.route_id for event in runner.planned_operations(run.ledger)],
+            [transport.PUBLIC_PAGE_CONTROL_ROUTE],
+        )
+        # A page was produced and no call was spent, which is exactly what a
+        # refusal costs.
+        self.assertEqual(runner.ledger_sums(run.ledger)["calls"], 0)
+        self.assertEqual(runner.ledger_sums(run.ledger)["pages"], 1)
+
 
 class PublicPageOracleCanFailTest(unittest.TestCase):
     """Row 5: the oracle above rejects an adapter a caller can point anywhere."""

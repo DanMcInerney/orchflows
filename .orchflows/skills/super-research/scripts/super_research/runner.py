@@ -664,6 +664,21 @@ def _refused_step(step: schema.AcquisitionStep, route_id: str, reason: str) -> s
     )
 
 
+def reached_origin(page: NativePage) -> bool:
+    """Whether this page cost the origin a read.
+
+    Two ways it did not, and until an adapter could refuse there was only one.
+    A run's own memory answered, which is what ``cache_hit`` says. Or the
+    adapter refused before making a call at all — a target it does not serve
+    costs a page and no read — and billing that as a call would put work in the
+    ledger that no origin ever saw. ``refused`` is the one outcome that means
+    the read never left: every other one, including a failure, describes
+    something an origin or the local network actually answered.
+    """
+
+    return page.outcome != "refused" and cache.CACHE_HIT not in page.loss
+
+
 def run_step(
     step: schema.AcquisitionStep,
     carrier: transport.Transport,
@@ -714,7 +729,7 @@ def run_step(
                 route_id=page.route_id or descriptor.route_id,
                 page_index=page_index,
                 duration_us=tick_us(clock) - began_us,
-                reached_origin=cache.CACHE_HIT not in page.loss,
+                reached_origin=reached_origin(page),
                 records_received=len(page.records),
             )
         )
