@@ -161,7 +161,7 @@ def _locator_for(screen_name: str, tweet_id: str) -> str:
 
 
 def _record_for(position: int, tweet: Mapping[str, Any]) -> NativeRecord:
-    author = tweet.get("user") or {}
+    author = tweet.get("user")
     screen_name = author.get("screen_name") or "" if isinstance(author, Mapping) else ""
     tweet_id = tweet.get("id_str") or ""
     missing = tuple(name for name in ROSTER_FIELDS if tweet.get(name) is None)

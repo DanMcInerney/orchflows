@@ -749,6 +749,21 @@ class StaleIdentifierTest(unittest.TestCase):
         # somewhere else.
         self.assertEqual(len(opener.opened), 1)
 
+    def test_the_one_legitimate_empty_says_why_it_is_empty(self):
+        # A result the graph holds but has no profile in it is a real empty —
+        # a suspended account, not a rotated id and not a page that moved. It
+        # still may not be silent: an empty nobody explained is the shape every
+        # other case here exists to keep this adapter out of.
+        page, _ = guest_page(
+            read_fixture("guest_user_unavailable.json"), target_id="user:simonw"
+        )
+
+        self.assertEqual(page.outcome, "empty")
+        self.assertEqual(page.loss, ())
+        self.assertEqual(page.records, ())
+        self.assertIn("UserUnavailable", " ".join(page.warnings))
+        self.assertIn("UserByScreenName", " ".join(page.warnings))
+
     def test_a_refusal_is_the_platforms_and_never_a_rotated_id(self):
         page, _ = guest_page(read_fixture("guest_blocked_operation.json"), status=403)
 

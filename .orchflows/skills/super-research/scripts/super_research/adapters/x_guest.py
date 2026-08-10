@@ -127,6 +127,10 @@ BOTTOM_CURSOR = "Bottom"
 
 ENGAGEMENT_FIELDS = ("favorite_count", "retweet_count", "reply_count", "quote_count")
 FOLLOWERS_FIELD = "followers_count"
+# What the route calls a row it is returning. A result that holds no row still
+# names its own kind, which is the difference between a suspended account and
+# an answer nobody can account for.
+TYPENAME_FIELD = "__typename"
 
 # The statuses that separate a rotated identifier from a refusal. findings.md
 # §1 measured both: the stale ids answered 404, and the evidence states that a
@@ -199,9 +203,19 @@ def _integers_of(
     )
 
 
+def _typename_of(result: Any) -> str:
+    """What the route said this row is, for a page that holds no row at all."""
+
+    if not isinstance(result, Mapping):
+        return "no result object"
+    return result.get(TYPENAME_FIELD) or "no " + TYPENAME_FIELD
+
+
 def _screen_name_of(result: Mapping[str, Any]) -> str:
     author = dig(result, ("core", "user_results", "result", "legacy"))
-    return author.get("screen_name") or "" if isinstance(author, Mapping) else ""
+    if not isinstance(author, Mapping):
+        return ""
+    return author.get("screen_name") or ""
 
 
 def _record_from_tweet(position: int, result: Any) -> Optional[NativeRecord]:
@@ -360,12 +374,22 @@ def _page_from(response: transport.TransportResponse, operation: str) -> NativeP
         records = tuple(record for record in (_record_from_tweet(0, result),) if record)
 
     if not records:
+        # The one empty this route can legitimately answer with: the container
+        # is there and holds no row, which is a suspended account or a timeline
+        # with nothing in it. It is still said out loud, naming what was found,
+        # because an empty nobody explained is indistinguishable at a glance
+        # from the ones every branch above exists to keep apart from it.
         return build_native_page(
             DESCRIPTOR,
             (),
             observed_at=response.observed_at,
             cursor_out=cursor,
             native_order=NATIVE_ORDER,
+            warnings=(
+                "{0} answered 200 with no row this adapter could read: {1}".format(
+                    operation, _typename_of(result)
+                ),
+            ),
             outcome="empty",
         )
     return build_native_page(
