@@ -1,15 +1,30 @@
-"""Runner seam: the core owns route selection, pacing, caps, page count, and stop.
+"""Runner seam: the core owns dispatch, pacing, the work ledger, and ordering.
 
-Adapters are reached only through the literal branches in
+Four concerns, in the order they appear below, because each one needs the one
+before it.
+
+*Dispatch.* Adapters are reached only through the literal branches in
 :func:`descriptor_for` and :func:`call_adapter` — one ``if`` per adapter
-module, statically imported. There is no registry, no dynamic import, and
-no ``getattr`` dispatch, so exact search over an adapter's name finds every
-place the core can call it.
+module, statically imported, both covering exactly :data:`ADAPTER_IDS`. There
+is no registry, no dynamic import, and no ``getattr`` dispatch, so exact
+search over an adapter's name finds every place the core can call it.
 
-This module also owns the rate governor. A measured ceiling is a constraint
-this package waits out, never one it works around: there is no proxy pool, no
-address rotation, no second identity, and no substituted route anywhere in it.
-The one lever it has is time.
+*Pacing.* A measured ceiling is a constraint this package waits out, never one
+it works around: there is no proxy pool, no address rotation, no second
+identity, and no substituted route anywhere in it. The one lever
+:class:`RateGovernor` has is time.
+
+*The work ledger.* What a dispatch consumed, as additive per-operation deltas
+in one causal order, plus the schedule a mode admits. ``staged`` and ``fused``
+produce the same artifact and differ only in that schedule, which is what
+"collapses latency, never lineage" means arithmetically.
+
+*Ordering.* The five named views over a frozen ``as_of``. No wall clock
+participates, and an engagement metric is read by the exact name its adapter
+declares.
+
+Reliability bar: nothing here reaches the network or the filesystem. The
+carrier is injected, the clock is injected, and both have offline stand-ins.
 """
 
 from __future__ import annotations
@@ -26,6 +41,12 @@ from .adapters import fake, reddit_archive, web_search
 
 US_PER_SECOND = 1000000
 US_PER_MS = 1000
+
+
+def tick_us(clock: Callable[[], float]) -> int:
+    """One clock reading as whole microseconds, which is the unit a tick is in."""
+
+    return int(round(clock() * US_PER_SECOND))
 
 # Every adapter this core can reach, spelled once. It is a literal tuple, not a
 # registry: exact search over an id still finds the two branches below, and a
@@ -162,7 +183,7 @@ class RateGovernor:
         self._budgets = dict(route_budgets() if budgets is None else budgets)
         self._clock = clock
         self._sleep = sleep
-        self._origin_us = int(round(clock() * US_PER_SECOND))
+        self._origin_us = tick_us(clock)
         # Per route: the arrival time the declared interval implies, and the
         # moment a refusal's cooldown ends. They are separate because a burst
         # allowance may be spent against the first and never against the
@@ -249,7 +270,7 @@ class RateGovernor:
             )
 
     def _elapsed_us(self) -> int:
-        return int(round(self._clock() * US_PER_SECOND)) - self._origin_us
+        return tick_us(self._clock) - self._origin_us
 
     def _wait_until(self, ready_us: int) -> int:
         """Spend time, and only time, to come inside a route's budget."""
@@ -259,10 +280,6 @@ class RateGovernor:
             return 0
         self._sleep(waited_us / float(US_PER_SECOND))
         return waited_us
-
-
-def artifact_id_for(manifest_id: str) -> str:
-    return "artifact:" + manifest_id
 
 
 # The retained work-ledger contract's two closed sets, verbatim. Their ordinals
@@ -541,6 +558,10 @@ def planned_calls(step: schema.AcquisitionStep) -> Tuple[Tuple[AdapterRequest, s
     )
 
 
+def artifact_id_for(manifest_id: str) -> str:
+    return "artifact:" + manifest_id
+
+
 def _refused_step(step: schema.AcquisitionStep, route_id: str, reason: str) -> schema.StepResult:
     return schema.StepResult(
         step_id=step.step_id,
@@ -552,10 +573,6 @@ def _refused_step(step: schema.AcquisitionStep, route_id: str, reason: str) -> s
         outcome="refused",
         loss=(reason,),
     )
-
-
-def _tick_us(clock: Callable[[], float]) -> int:
-    return int(round(clock() * US_PER_SECOND))
 
 
 def run_step(
@@ -588,7 +605,7 @@ def run_step(
             # The core owns stop: no further call is made once the cap is met.
             truncated = True
             break
-        began_us = _tick_us(clock)
+        began_us = tick_us(clock)
         page = call_adapter(step.adapter_id, carrier, request)
         pages += 1
         page_outcomes.append(page.outcome)
@@ -600,7 +617,7 @@ def run_step(
                 adapter_id=step.adapter_id,
                 route_id=descriptor.route_id,
                 page_index=page_index,
-                duration_us=_tick_us(clock) - began_us,
+                duration_us=tick_us(clock) - began_us,
                 reached_origin=cache.CACHE_HIT not in page.loss,
                 records_received=len(page.records),
             )

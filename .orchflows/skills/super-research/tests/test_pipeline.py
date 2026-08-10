@@ -1,6 +1,6 @@
 """Pipeline suite: a measured ceiling is respected, and fused collapses only latency.
 
-Three claims are defended here, and they fail in different directions.
+Four claims are defended here, and they fail in different directions.
 
 The first is that a rate limit is an observed constraint this package obeys,
 never one it works around. Measured ceilings differ by three orders of
@@ -19,6 +19,12 @@ placed, never what the work produced.
 The third is that the frozen ``as_of`` ordering is total and replayable, and
 that the work ledger's causal order and additive sums agree with the artifact
 they describe.
+
+The fourth is smaller and holds the other three up: a record served from a
+run's own memory says so, and still states the moment the origin was really
+read. A mark that goes missing under-reports cache use; a moment that moves
+fabricates freshness, and every recency judgment downstream then rests on a
+time nothing ever observed.
 """
 
 from __future__ import annotations
@@ -1119,6 +1125,51 @@ class VolatileIdentifierTest(unittest.TestCase):
         for adapter_id in runner.ADAPTER_IDS:
             with self.subTest(adapter=adapter_id):
                 self.assertEqual(runner.descriptor_for(adapter_id).volatile_identifiers, ())
+
+
+class FakeClockOnlyTest(unittest.TestCase):
+    """Criterion 5: every wait here is a number, and nothing in the suite waits."""
+
+    def test_the_whole_pacing_proof_runs_with_every_wall_clock_wait_forbidden(self):
+        clock = helpers.FakeClock()
+        governor, _ = paced_governor(
+            clock,
+            {REDDIT_FEED_ROUTE: [OK_JSON, RATE_LIMITED_ANSWER, OK_JSON]},
+            latencies={REDDIT_FEED_ROUTE: 0.5},
+        )
+
+        with helpers.forbid_sleep():
+            for index in range(3):
+                governor.fetch(probe_request(REDDIT_FEED_ROUTE, index))
+
+        assert_rate_budget_respected(self, governor, SEEDED_BUDGETS)
+        # A minute of interval and half a minute of cooldown, none of it spent.
+        self.assertGreaterEqual(clock.seconds, 60.0)
+        self.assertGreater(sum(read.waited_us for read in governor.log), 0)
+
+    def test_neither_this_suite_nor_its_helpers_reach_a_wall_clock_wait(self):
+        for path in (Path(__file__).resolve(), Path(helpers.__file__).resolve()):
+            with self.subTest(module=path.name):
+                self.assertNotIn("time.sleep", helpers.attribute_names(path))
+
+    def test_the_governor_still_waits_for_real_when_nobody_injects_a_clock(self):
+        # The other half of the same claim, and the one a fake clock could
+        # quietly destroy: deleting the production wait would make every proof
+        # above pass and every rate limit in production go unrespected.
+        self.assertIn("time.sleep", helpers.attribute_names(PACKAGE_DIR / "runner.py"))
+        self.assertIn("time.monotonic", helpers.attribute_names(PACKAGE_DIR / "runner.py"))
+
+    def test_the_whole_pipeline_runs_with_every_io_primitive_refused(self):
+        governor, _, clock = tracer_governor()
+        guarded_governor, _, guarded_clock = tracer_governor()
+
+        expected = run_on(clock, governor, FUSED_MANIFEST)
+        with helpers.forbid_io():
+            guarded = run_on(guarded_clock, guarded_governor, FUSED_MANIFEST)
+
+        self.assertTrue(expected.artifact.records)
+        self.assertEqual(guarded.artifact, expected.artifact)
+        self.assertEqual(guarded.ledger, expected.ledger)
 
 
 class OracleCanFailTest(unittest.TestCase):
