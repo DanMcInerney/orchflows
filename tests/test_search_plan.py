@@ -257,6 +257,24 @@ def normalized(text: str) -> str:
     return " ".join(text.lower().split())
 
 
+def worklog_restart_errors(generation: str):
+    contract = normalized(generation)
+    errors = []
+    if (
+        "latest worklog entry persists the accepted response's complete projection, "
+        "including every archive member"
+        not in contract
+    ):
+        errors.append("archive-persistence")
+    if "`in_flight` in the same worklog entry before delegation" not in contract:
+        errors.append("in-flight-order")
+    if "a `pending` response launches nothing" not in contract:
+        errors.append("pending-replan")
+    if "never redispatch a live slot" not in contract:
+        errors.append("duplicate-restart-dispatch")
+    return errors
+
+
 def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str):
     errors = []
     combined_evolve = evolve + generation
@@ -722,6 +740,147 @@ class TestMergeLineage(unittest.TestCase):
                 policy, broken, [], "candidate:merged"
             )
             self.assert_rejected(next_request)
+
+
+class TestBoundedResume(unittest.TestCase):
+    def run_ok(self, request):
+        result = run_advance(request)
+        self.assertEqual(0, result.returncode, result.stderr.decode())
+        self.assertEqual(b"", result.stderr)
+        return json.loads(result.stdout)
+
+    def bounded_request(self, remaining):
+        request = generation_zero_request()
+        policy = request["policy"]
+        policy["generation_width"] = 3
+        policy["bound_unit_names"] = ["runs", "tokens"]
+        policy["reservations"] = {
+            "reflect": {"runs": 2, "tokens": 3},
+            "merge": {"runs": 1, "tokens": 1},
+        }
+        policy["identity"] = tagged_identity(
+            "search-policy/v1",
+            {key: value for key, value in policy.items() if key != "identity"},
+        )
+        request["settled"]["outcomes"][0]["cost"] = {"runs": 0, "tokens": 0}
+        request["remaining_bound"] = remaining
+        return request
+
+    def assert_within_bound(self, response, remaining):
+        spent = {unit: 0 for unit in remaining}
+        plan = response["plan"]
+        if plan is not None:
+            for slot in plan["slots"]:
+                for unit in remaining:
+                    spent[unit] += slot["reservation"][unit]
+        self.assertTrue(
+            all(spent[unit] <= remaining[unit] for unit in remaining),
+            f"reservation {spent} exceeds {remaining}",
+        )
+
+    def test_componentwise_maximal_prefix_exact_fit_and_no_fit(self):
+        for remaining in ({"runs": 4, "tokens": 100}, {"runs": 100, "tokens": 6}):
+            with self.subTest(remaining=remaining):
+                response = self.run_ok(self.bounded_request(remaining))
+                self.assertEqual("planned", response["status"])
+                self.assertEqual(2, len(response["plan"]["slots"]))
+                self.assert_within_bound(response, remaining)
+                reservation = response["plan"]["slots"][0]["reservation"]
+                spent = {
+                    unit: sum(slot["reservation"][unit] for slot in response["plan"]["slots"])
+                    for unit in remaining
+                }
+                self.assertTrue(
+                    any(spent[unit] + reservation[unit] > remaining[unit] for unit in remaining)
+                )
+
+        exact_bound = {"runs": 6, "tokens": 9}
+        exact = self.run_ok(self.bounded_request(exact_bound))
+        self.assertEqual(3, len(exact["plan"]["slots"]))
+        self.assert_within_bound(exact, exact_bound)
+        self.assertEqual(
+            exact_bound,
+            {
+                unit: sum(slot["reservation"][unit] for slot in exact["plan"]["slots"])
+                for unit in exact_bound
+            },
+        )
+
+        no_fit = self.run_ok(self.bounded_request({"runs": 1, "tokens": 100}))
+        self.assertEqual("no_fit", no_fit["status"])
+        self.assertIsNone(no_fit["plan"])
+        self.assertIsNone(no_fit["projection"]["last_plan"])
+        self.assertEqual(["candidate:origin"], no_fit["projection"]["archive"])
+
+        over_reserved = copy.deepcopy(exact)
+        over_reserved["plan"]["slots"].append(
+            copy.deepcopy(over_reserved["plan"]["slots"][-1])
+        )
+        with self.assertRaises(AssertionError):
+            self.assert_within_bound(over_reserved, exact_bound)
+
+    def test_partial_settlement_keeps_projection_and_complete_archive(self):
+        initial_request = two_dimension_request()
+        initial = self.run_ok(initial_request)
+        slots = initial["plan"]["slots"]
+        outcomes = [
+            admitted_outcome(slots[0], "candidate:a", "0.8", "0.6", "a"),
+            admitted_outcome(slots[1], "candidate:b", "0.4", "0.2", "b"),
+            admitted_outcome(slots[2], "candidate:dominated", "0.3", "0.8", "d"),
+        ]
+        generation_two = self.run_ok(
+            settled_request(
+                initial_request["policy"], initial, outcomes, "candidate:origin"
+            )
+        )
+        generation_two_slots = generation_two["plan"]["slots"]
+        partial = settled_request(
+            initial_request["policy"],
+            generation_two,
+            [
+                admitted_outcome(
+                    generation_two_slots[0], "candidate:partial", "0.7", "0.4", "p"
+                )
+            ],
+            "candidate:origin",
+        )
+        pending = self.run_ok(partial)
+        self.assertEqual("pending", pending["status"])
+        self.assertIsNone(pending["plan"])
+        self.assertEqual(generation_two["projection"], pending["projection"])
+        self.assertEqual(
+            generation_two["projection"]["archive"], pending["projection"]["archive"]
+        )
+        self.assertEqual(
+            [slot["identity"] for slot in generation_two_slots[1:]],
+            pending["missing_slot_identities"],
+        )
+
+    def test_worklog_launch_and_restart_contract_has_failure_controls(self):
+        generation = read(EVOLVE_GENERATION)
+        self.assertEqual([], worklog_restart_errors(generation))
+
+        controls = {
+            "archive-persistence": generation.replace(
+                "complete projection, including every archive member",
+                "projection without the full archive",
+            ),
+            "in-flight-order": generation.replace(
+                "same Worklog entry before delegation",
+                "same Worklog entry after delegation",
+            ),
+            "pending-replan": generation.replace(
+                "a `pending` response launches nothing",
+                "a `pending` response launches a replacement",
+            ),
+            "duplicate-restart-dispatch": generation.replace(
+                "never redispatch a live slot",
+                "redispatch a live slot",
+            ),
+        }
+        for expected, wrong in controls.items():
+            with self.subTest(control=expected):
+                self.assertIn(expected, worklog_restart_errors(wrong))
 
 
 if __name__ == "__main__":

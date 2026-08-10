@@ -9,7 +9,8 @@ promotion judgment.
    planner; return the blocked Benchmaker gap.
 2. Accept only the planner's canonical response. Append it to the current
    iteration through the Worklog owner; only its plan and projection identities
-   ride the next Loop context.
+   ride the next Loop context. The latest Worklog entry persists the accepted
+   response's complete projection, including every archive member.
 3. For each ordered slot, map focus and public feedback or complementary parents
    to the frozen writer. Record slot, handoff, reservation, and `in_flight` in
    the same Worklog entry before delegation; pass every return through the join
