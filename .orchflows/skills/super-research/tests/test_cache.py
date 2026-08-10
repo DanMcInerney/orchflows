@@ -22,6 +22,7 @@ the clock, not by waiting.
 from __future__ import annotations
 
 import contextlib
+import importlib.util
 import time
 import unittest
 from datetime import datetime, timedelta, timezone
@@ -31,9 +32,9 @@ from unittest import mock
 from super_research import cache, runner, schema, transport
 
 
-CACHE_SOURCE = (
-    Path(__file__).resolve().parent.parent / "scripts" / "super_research" / "cache.py"
-)
+PACKAGE_DIR = Path(__file__).resolve().parent.parent / "scripts" / "super_research"
+CACHE_SOURCE = PACKAGE_DIR / "cache.py"
+FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "cache"
 # T01's tracer fixtures, read rather than copied: the strongest repeat-read
 # claim is over the run's own end-to-end path, on the run's own data.
 TRACER_FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "tracer"
@@ -72,6 +73,22 @@ REPEAT_MANIFEST = {
         },
     ],
 }
+
+
+def load_cache_fixture(name):
+    """Load one wrong-result module by path.
+
+    These are not package modules: nothing in the package imports them and no
+    discovery pattern matches them. They exist so the oracles here can be shown
+    to reject a wrong cache without mutating the tree under test.
+    """
+
+    spec = importlib.util.spec_from_file_location(
+        "cache_fixture_" + name, FIXTURE_DIR / (name + ".py")
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def tracer_responses():
@@ -419,6 +436,64 @@ class TtlServeTest(unittest.TestCase):
 
     def test_the_cache_cannot_wait_out_a_ttl(self):
         self.assertNotIn("sleep", CACHE_SOURCE.read_text(encoding="utf-8"))
+
+
+class OracleCanFailTest(unittest.TestCase):
+    """Criterion 5: the row-1 oracle rejects each specific way of being wrong.
+
+    Its other half is ``TtlServeTest.test_the_run_cache_serves_a_repeat_read_unrestamped``,
+    which shows the same oracle accepts the real cache. Every wrong cache is a
+    file beside the tree; nothing under test is mutated to produce one.
+    """
+
+    def wrong_caches(self):
+        return load_cache_fixture("wrong_caches")
+
+    def test_a_cache_that_stamps_the_serve_time_fails_the_oracle(self):
+        clock = FakeClock()
+        wrong = self.wrong_caches().RestampingCache(clock.monotonic, clock.stamp)
+
+        with self.assertRaisesRegex(AssertionError, "restamped with the serve time"):
+            assert_repeat_read_is_served_unrestamped(wrong, clock)
+
+    def test_a_cache_that_serves_without_saying_so_fails_the_oracle(self):
+        clock = FakeClock()
+        wrong = self.wrong_caches().UnmarkedCache(clock.monotonic)
+
+        with self.assertRaisesRegex(AssertionError, "was not marked cache_hit"):
+            assert_repeat_read_is_served_unrestamped(wrong, clock)
+
+    def test_a_cache_whose_entries_never_expire_fails_the_oracle(self):
+        clock = FakeClock()
+        wrong = self.wrong_caches().NeverExpiringCache(clock.monotonic)
+
+        with self.assertRaisesRegex(AssertionError, "outlived its TTL"):
+            assert_repeat_read_is_served_unrestamped(wrong, clock)
+
+    def test_a_cache_that_never_serves_fails_the_oracle(self):
+        clock = FakeClock()
+        wrong = self.wrong_caches().PassThroughCache(clock.monotonic)
+
+        with self.assertRaisesRegex(AssertionError, "did not serve a repeat read inside its TTL"):
+            assert_repeat_read_is_served_unrestamped(wrong, clock)
+
+    def test_the_correct_fixture_cache_passes_the_same_oracle(self):
+        # Each wrong cache above is this one with a single method overridden,
+        # so its rejection is attributable to that override and nothing else.
+        clock = FakeClock()
+
+        assert_repeat_read_is_served_unrestamped(
+            self.wrong_caches().CorrectCache(clock.monotonic), clock
+        )
+
+    def test_nothing_in_the_package_can_reach_a_wrong_cache(self):
+        named = [
+            path.name
+            for path in PACKAGE_DIR.rglob("*.py")
+            if "wrong_caches" in path.read_text(encoding="utf-8")
+        ]
+
+        self.assertEqual(named, [])
 
 
 class RouteTtlTableTest(unittest.TestCase):
