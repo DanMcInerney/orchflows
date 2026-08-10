@@ -238,12 +238,14 @@ def observe(
 ) -> SmokeObservation:
     """Make this adapter's one bounded read and report what came back.
 
-    The carrier defaults to the real one and is built here rather than at
-    import, so importing this module reaches nothing.
+    No carrier is the real case, and the core composes it: a rate governor over
+    a run-local cache, built at call time so importing this module reaches
+    nothing. A smoke is one read, so it never waits and never hits — but it is
+    the only live path the package itself drives, and building a bare carrier
+    here was how the delivery came to pace nothing at all.
     """
 
-    reached = transport.Transport() if carrier is None else carrier
-    artifact = runner.run_acquisition(probe_manifest(probe, now()), reached, clock=clock)
+    artifact = runner.run_acquisition(probe_manifest(probe, now()), carrier, clock=clock)
     step = artifact.steps[0]
     missing, facts = field_set_report(artifact.records, probe.field_sets)
     return SmokeObservation(

@@ -72,6 +72,7 @@ from .pacing import (
     RouteBudget,
     budget_of,
     budgets_from,
+    paced_carrier,
     route_budgets,
     tick_us,
 )
@@ -358,7 +359,7 @@ def run_step(
 
 def run_scheduled(
     manifest: schema.AcquisitionManifest,
-    carrier: transport.Transport,
+    carrier: Optional[transport.Transport] = None,
     clock: Callable[[], float] = time.monotonic,
     dispatch_ordinal: int = 0,
     start_tick_us: int = 0,
@@ -368,15 +369,23 @@ def run_scheduled(
     Steps are executed in declared order whatever the mode, so an artifact is
     the same artifact either way; the mode reaches only the schedule the ledger
     records.
+
+    Naming no carrier is the documented call, and it gets the composed one:
+    :func:`pacing.paced_carrier`, a rate governor over a run-local cache. A
+    caller reaches an unpaced origin only by constructing a carrier and handing
+    it in, which is an act rather than a default — the measured extreme in the
+    roster is one read per thirty seconds, and a run that spends it twice by
+    omission has evaded a limit nobody chose to evade.
     """
 
+    reached = paced_carrier(clock=clock) if carrier is None else carrier
     artifact_id = artifact_id_for(manifest.manifest_id)
     steps: List[schema.StepResult] = []
     records: List[schema.AcquisitionRecord] = []
     operations: List[PlannedOperation] = []
     for step in manifest.steps:
         result, step_records, step_operations = run_step(
-            step, carrier, artifact_id, manifest.manifest_id, clock=clock
+            step, reached, artifact_id, manifest.manifest_id, clock=clock
         )
         steps.append(result)
         records.extend(step_records)
@@ -409,9 +418,13 @@ def run_scheduled(
 
 def run_acquisition(
     manifest: schema.AcquisitionManifest,
-    carrier: transport.Transport,
+    carrier: Optional[transport.Transport] = None,
     clock: Callable[[], float] = time.monotonic,
 ) -> schema.AcquisitionArtifact:
-    """Run one validated manifest to one immutable artifact."""
+    """Run one validated manifest to one immutable artifact.
+
+    Naming no carrier composes the paced, caching one; see
+    :func:`run_scheduled`.
+    """
 
     return run_scheduled(manifest, carrier, clock=clock).artifact

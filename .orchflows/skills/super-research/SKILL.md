@@ -22,7 +22,12 @@ bounded read that carries that adapter's row.
 
 Then write one manifest — `staged` where the caller selects between discovery
 and hydration, `fused` where it does not — and run it through
-`super_research.runner.run_acquisition`. Read each `StepResult`'s `outcome` and
+`super_research.runner.run_acquisition(manifest)`. Name no carrier: the core
+then composes the one the routes require — a rate governor over a run-local
+cache, `runner.paced_carrier` — and a run that spends Reddit's one-per-30 s
+twice by omission has evaded a limit nobody chose to evade. Passing a carrier
+is how a caller takes that over deliberately.
+Read each `StepResult`'s `outcome` and
 `loss` before any record: a typed loss is the finding, and an empty answer
 carrying one is not an absence. Order with one of the five named views at the
 manifest's own `as_of`; narrow with `super_research.project`.

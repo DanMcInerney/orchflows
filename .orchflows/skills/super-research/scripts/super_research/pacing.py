@@ -220,6 +220,34 @@ class RateGovernor:
         return waited_us
 
 
+def paced_carrier(
+    carrier: Optional[transport.Transport] = None,
+    clock: Callable[[], float] = time.monotonic,
+    sleep: Callable[[float], None] = time.sleep,
+) -> RateGovernor:
+    """The carrier a run gets when it does not build one: paced, and remembering.
+
+    One constructor, because the composition is not optional. Spec change 1
+    calls the run-local cache mandatory and change 2 says the scheduler enforces
+    each route's budget; a `RateGovernor` that passes its own unit test while
+    nothing in the delivery ever builds one satisfies neither. This is the one
+    place the two are put together, so "a rate limit is respected, never evaded"
+    is a property of the shipped path rather than of a test fixture.
+
+    The cache takes the same clock the governor paces on, so a TTL and an
+    interval cannot disagree about how much time has passed. Building the real
+    :class:`transport.Transport` here rather than at import keeps importing this
+    module free of I/O.
+    """
+
+    return RateGovernor(
+        transport.Transport() if carrier is None else carrier,
+        run_cache=cache.RunCache(clock=clock),
+        clock=clock,
+        sleep=sleep,
+    )
+
+
 # Imported last, and as a module rather than by name. This module reads the
 # core's adapter table at call time, and the core re-exports every public name
 # above, so the two import each other. Binding the module object down here —

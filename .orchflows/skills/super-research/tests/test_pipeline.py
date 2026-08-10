@@ -34,6 +34,7 @@ import importlib.util
 import json
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from super_research import adapters, cache, normalize, runner, schema, transport
 from super_research.adapters import fake, reddit_archive, web_search
@@ -316,6 +317,73 @@ def assert_rate_budget_respected(case, governor, budgets):
             "the identity changed between reads, which is evasion rather than"
             " respect: {0}".format(identities)
         )
+
+
+class TheDocumentedPathPacesAndRemembersTest(unittest.TestCase):
+    """Criterion 4's other half: the governor is on the path, not only in a fixture.
+
+    Every pacing proof below runs against a governor the test itself built.
+    That proves the class and says nothing about the delivery: until this seam
+    existed, `RateGovernor` and `RunCache` were constructed nowhere outside
+    `tests/`, `smoke.observe` made its one live read through a bare
+    `transport.Transport`, and a caller following `SKILL.md` to
+    `run_acquisition` paced nothing and remembered nothing. Spec change 1 calls
+    the cache mandatory and the binding constraint says a rate limit is
+    respected, never evaded — neither of which a green unit test on an
+    unreachable class delivers.
+    """
+
+    def test_the_composed_carrier_is_a_governor_over_a_run_cache(self):
+        clock = helpers.FakeClock()
+        carrier, opener = helpers.offline_transport(
+            clock, tracer_responses(), latencies=ROUTE_LATENCIES
+        )
+
+        composed = runner.paced_carrier(carrier, clock=clock.monotonic, sleep=clock.sleep)
+
+        self.assertIsInstance(composed, runner.RateGovernor)
+        composed.fetch(probe_request(transport.DDG_HTML_ROUTE))
+        composed.fetch(probe_request(transport.DDG_HTML_ROUTE))
+        # One origin read behind two identical asks is the cache; the governor
+        # is what the second ask went through to find it.
+        self.assertEqual(len(opener.opened), 1)
+        self.assertEqual([serve.cache_hit for serve in composed.serves], [False, True])
+
+    def test_a_run_that_names_no_carrier_is_paced_and_remembers(self):
+        # The whole point: this is the call `SKILL.md` documents, made the way
+        # it is documented, with nothing composed by the caller.
+        clock = helpers.FakeClock()
+        carrier, opener = helpers.offline_transport(
+            clock, tracer_responses(), latencies=ROUTE_LATENCIES
+        )
+        manifest = schema.parse_manifest(TWO_STEP_MANIFEST)
+
+        with mock.patch.object(transport, "Transport", lambda *a, **k: carrier):
+            artifact = runner.run_acquisition(manifest, clock=clock.monotonic)
+            reads = len(opener.opened)
+            clock.advance(min(cache.ttl_seconds(route) for route in REPEAT_ROUTES) / 2.0)
+            repeat = runner.run_acquisition(manifest, clock=clock.monotonic)
+
+        self.assertTrue(artifact.records)
+        self.assertGreater(reads, 0)
+        # A second run makes a second cache, so it reaches the origin again —
+        # the cache is run-local and never crosses runs. What this pins is that
+        # the composed carrier is what a carrier-less run gets at all.
+        self.assertEqual(len(opener.opened), reads * 2)
+        self.assertEqual(len(repeat.records), len(artifact.records))
+
+    def test_no_module_but_the_composition_builds_its_own_carrier(self):
+        # A second `transport.Transport()` anywhere in the package is a second
+        # unpaced door, and the last one was `smoke.observe`'s. Stated as the
+        # set of modules that build one, for the same reason the wall-clock
+        # wait above is: naming one path would not notice a new one.
+        building = sorted(
+            path.name
+            for path in PACKAGE_DIR.rglob("*.py")
+            if "transport.Transport(" in path.read_text(encoding="utf-8")
+        )
+
+        self.assertEqual(building, ["pacing.py"])
 
 
 class RateBudgetTest(unittest.TestCase):

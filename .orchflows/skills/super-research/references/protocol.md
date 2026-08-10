@@ -276,6 +276,14 @@ limit nobody has measured is not one to spend. The measured extremes are
 is sixty reads in each of two separately counted buckets — which is why its two
 surfaces are two routes rather than one.
 
+**The composition is the default, not an option a caller assembles.**
+`runner.run_acquisition(manifest)` and `run_scheduled` name no carrier and get
+`pacing.paced_carrier`: a `RateGovernor` over a `RunCache` over a real
+`transport.Transport`, all three on the run's own clock. It is the only place in
+the package that builds a carrier, which is checkable from outside — a second
+one is a second unpaced door. Handing in a carrier is how a caller takes pacing
+over deliberately; there is no way to reach an origin unpaced by omission.
+
 An HTTP 429 is typed `rate_limited` on the page, sets that route's cooldown, and
 ends the call. It never triggers a second read, another route, or a changed
 identity: `transport.USER_AGENT` is one static string, and a rate limit is a
