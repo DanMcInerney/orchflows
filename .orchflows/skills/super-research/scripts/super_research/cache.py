@@ -16,10 +16,29 @@ miss, so pacing, retry, and route policy stay with whoever owns them.
 
 from __future__ import annotations
 
+import time
 import urllib.parse
 from dataclasses import dataclass
+from typing import Callable, Dict, Tuple
 
 from . import transport
+
+# The typed loss code a served-from-cache record carries, spelled once here so
+# the record and the run's own accounting cannot disagree about it.
+CACHE_HIT = "cache_hit"
+
+# How long one route's answer may stand in for a fresh read, in seconds. A TTL
+# bounds how stale an observation a caller may be handed, so it is a property
+# of the route's own volatility, not of the run.
+DEFAULT_TTL_SECONDS = 60.0
+ROUTE_TTL_SECONDS: Dict[str, float] = {
+    # A web index's answer to one query is stable across a run's discovery
+    # phase; findings.md §1 observed no throttle here, so this TTL exists to
+    # stop a run asking the same question twice, not to dodge a limit.
+    transport.DDG_HTML_ROUTE: 300.0,
+    # An archive lookup by fixed id changes only as the archive backfills.
+    transport.ARCTIC_SHIFT_POSTS_ROUTE: 900.0,
+}
 
 
 @dataclass(frozen=True)
@@ -64,3 +83,62 @@ def cache_key(request: transport.TransportRequest) -> CacheKey:
     """The one key this cache is allowed to have."""
 
     return CacheKey(route_id=request.route_id, canonical_request=canonical_request(request))
+
+
+def ttl_seconds(route_id: str) -> float:
+    """This route's declared freshness window, or the bounded default."""
+
+    return ROUTE_TTL_SECONDS.get(route_id, DEFAULT_TTL_SECONDS)
+
+
+@dataclass(frozen=True)
+class CacheServe:
+    """One answer to one request, and which party it actually came from."""
+
+    response: transport.TransportResponse
+    cache_hit: bool
+
+    @property
+    def loss(self) -> Tuple[str, ...]:
+        """The typed loss a record built from this answer carries."""
+
+        return (CACHE_HIT,) if self.cache_hit else ()
+
+
+class RunCache:
+    """One run's memory of reads it already made. It dies with the run.
+
+    The clock is monotonic seconds, never a wall clock: a TTL must not be
+    shortened or extended by a clock adjustment. Nothing here reads or writes a
+    wall-clock time — the served response carries the transport's own
+    ``observed_at``, which is the moment the origin was really read.
+    """
+
+    def __init__(self, clock: Callable[[], float] = time.monotonic) -> None:
+        self._clock = clock
+        self._entries: Dict[CacheKey, Tuple[float, transport.TransportResponse]] = {}
+
+    def serve(
+        self,
+        request: transport.TransportRequest,
+        fetch: Callable[[transport.TransportRequest], transport.TransportResponse],
+    ) -> CacheServe:
+        """Answer one request, reaching ``fetch`` only when memory cannot.
+
+        Read-through on purpose: the caller supplies the fetch, so a caller
+        that paces or refuses reads pays that cost on a miss and never on a
+        hit, and no caller can forget to remember what it just read.
+        """
+
+        key = cache_key(request)
+        entry = self._entries.get(key)
+        if entry is not None:
+            stored_at, response = entry
+            # The window runs from the read that produced the entry, never from
+            # the last serve: a hot entry must still expire.
+            if self._clock() - stored_at < ttl_seconds(request.route_id):
+                return CacheServe(response=response, cache_hit=True)
+            del self._entries[key]
+        response = fetch(request)
+        self._entries[key] = (self._clock(), response)
+        return CacheServe(response=response, cache_hit=False)
