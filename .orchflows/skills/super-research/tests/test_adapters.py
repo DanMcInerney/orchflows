@@ -1,6 +1,12 @@
-"""Adapter suite: X reaches its measured capability with no credential.
+"""Adapter suite: X and LinkedIn reach their measured capability, keyless.
 
-The claim this module exists to defend is that a stale vendor identifier is
+Two platforms, and one shape of claim twice. Each has a way of failing that
+looks exactly like having nothing to say, and each half of this suite exists
+to keep those two apart — for X a rotated identifier, for LinkedIn a page
+whose structured block moved, and beside that a page whose navigation chrome
+merely looks like a wall.
+
+The claim the X half exists to defend is that a stale vendor identifier is
 never silence. X rotates its GraphQL query ids per web release, and the id
 sits in the request path, so a rotated id answers 404 — the same status a
 missing page answers, and one status away from the 401/403 a blocked
@@ -22,11 +28,30 @@ authorization is still exactly one read. The third is that a structured page
 that moved is `schema_drift` and never an empty profile, which is the same
 distinction as the first claim at the other access class.
 
-Every test here runs offline against fixtures under `fixtures/x/`. Those
-fixtures carry the shape and field set findings.md §1 records; the evidence
-records no captured bodies, and this package may not reach the network to
-make one, so what they prove is that this code reads that shape correctly.
-Criterion 12's live smoke is what proves the shape.
+The claim the LinkedIn half exists to defend is that navigation chrome is not
+an authwall. The superseded spec placed the whole platform outside the roster
+on an assumed 999; measured, `linkedin.com/in/<slug>` answers 200 with a
+complete `ld+json` Person block, and "Sign in to" and "Join now" sit in that
+same page above the block and below it. An adapter that read those strings
+would re-create exactly the false negative the measurement overturned. Its
+counterweight is that a page which genuinely lost its block is `schema_drift`
+and never a member with nothing to show — a `K2` route reads a shape the
+vendor may rewrite without notice, and typed drift is the whole mitigation.
+That pair is checked over its own case table and shown to be falsifiable by
+three more wrong adapters, one per confusion, including one that types the
+chrome as a refusal.
+
+Two smaller claims hold it up. The capability is real: ten dated postings a
+page with stable URNs, and a Person block whose every roster field reaches the
+artifact. And the strings the ticket turns on are declared in the adapter and
+read nowhere in it, which an AST scan states as a count of zero.
+
+Every test here runs offline against fixtures under `fixtures/x/` and
+`fixtures/linkedin/`. Those fixtures carry the shape and field set
+findings.md §1 records; the evidence records no captured bodies, and this
+package may not reach the network to make one, so what they prove is that this
+code reads that shape correctly. Criterion 12's live smoke is what proves the
+shape.
 """
 
 from __future__ import annotations

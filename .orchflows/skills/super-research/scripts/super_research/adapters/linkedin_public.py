@@ -223,6 +223,15 @@ def _attributes_of(row: Mapping[str, Any]) -> Tuple[Tuple[str, str], ...]:
 
 
 def _record_for(slug: str, person: Mapping[str, Any]) -> NativeRecord:
+    """One profile as the block reported it.
+
+    ``published_at`` is left unset because a public profile page states no
+    publication time. An unset one becomes `unknown` time confidence and sorts
+    last under `newest`, which is what a caller should see; the moment the page
+    was read is already on the record as ``observed_at`` and is not a claim
+    about when anything was written.
+    """
+
     row = roster_row_of(person)
     missing = tuple(key for key in ROSTER_FIELDS if not row[key])
     return NativeRecord(
@@ -236,8 +245,6 @@ def _record_for(slug: str, person: Mapping[str, Any]) -> NativeRecord:
         title=row[NAME_KEY],
         body=row[DESCRIPTION_KEY],
         author=slug,
-        # A public profile page states no publication time, so this record
-        # states none rather than borrowing the moment it was read.
         attributes=_attributes_of(row),
         native_position=0,
         loss=("field_omitted",) if missing else (),
