@@ -64,6 +64,18 @@ def tracer_transport(responses):
     return transport.Transport(opener=opener, now=lambda: FROZEN_OBSERVED_AT), opener
 
 
+class RefusingSocket(socket.socket):
+    """A socket that cannot be opened.
+
+    It stays a *subclass* on purpose: ``ssl`` does ``class SSLSocket(socket)``
+    at import time, so a guard that swaps ``socket.socket`` for a plain
+    function breaks any stdlib module that has not been imported yet.
+    """
+
+    def __init__(self, *args, **kwargs):
+        raise AssertionError("a socket was opened inside a zero-I/O guard")
+
+
 @contextlib.contextmanager
 def forbid_io():
     """Make every filesystem and socket primitive raise for the guarded block."""
@@ -75,7 +87,8 @@ def forbid_io():
         stack.enter_context(mock.patch.object(builtins, "open", refuse))
         stack.enter_context(mock.patch.object(io, "open", refuse))
         stack.enter_context(mock.patch.object(os, "open", refuse))
-        stack.enter_context(mock.patch.object(socket, "socket", refuse))
+        stack.enter_context(mock.patch.object(socket, "socket", RefusingSocket))
+        stack.enter_context(mock.patch.object(socket, "create_connection", refuse))
         stack.enter_context(mock.patch.object(urllib.request, "urlopen", refuse))
         yield
 
