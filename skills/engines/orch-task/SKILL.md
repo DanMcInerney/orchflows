@@ -19,7 +19,9 @@ scope — before dispatch. Dispatch exactly one fresh child through
 [rules/delegation.md](../../../rules/delegation.md) §2's independence
 condition; the ladder's cheaper rungs apply inside the child — naming
 the ticket's executor as the applied skill, with the ticket path plus
-the derived workspace identity as the packet.
+the derived workspace identity as the packet. `tickets.py packet`
+emits that packet or names the part the ticket is missing; a refusal
+here is the cut's defect, never read the body to repair it yourself.
 
 When a criterion's oracle carries `authored-here` provenance and the
 ticket's `independence` reads `checker`, dispatch `orch-check` as one
