@@ -746,11 +746,18 @@ def _page_from(
 def operation_for(request: AdapterRequest) -> Tuple[str, str]:
     """The operation this call performs, and the argument it performs it on.
 
-    A caller names the operation, because one route serves three. Absent a
-    name, the step's own shape decides: a step naming a target is hydrating
-    one, and a step naming only a query is searching. Neither is inferred from
-    the characters in the argument, so a query that happens to contain a colon
-    stays a query.
+    A caller names the operation, because one route serves three. The name is a
+    prefix off :data:`INNERTUBE_OPERATIONS` before the first colon and nothing
+    else: a colon anywhere later in the text is text, so ``"ratio 16:9"`` is a
+    search for those characters. Absent a name, the step's own shape decides —
+    a step naming a target is hydrating one, a step naming only a query is
+    searching — and nothing is inferred from the rest of the argument.
+
+    The one thing a caller cannot express is a query whose own first word is
+    ``search``, ``next`` or ``player`` followed immediately by a colon: that
+    reads as the prefix, because the prefix is checked before the shape. The
+    selector is a closed three-name list rather than a general escape, so
+    stating the collision is the whole of the remedy.
     """
 
     named = request.target_ids[0] if request.target_ids else request.query

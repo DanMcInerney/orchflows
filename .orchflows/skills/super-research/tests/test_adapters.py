@@ -3396,6 +3396,39 @@ class InnerTubePlayerTest(unittest.TestCase):
         self.assertEqual(json.loads(opener.opened[0].body)["videoId"], YOUTUBE_VIDEO_ID)
 
 
+class InnerTubeOperationSelectorTest(unittest.TestCase):
+    """What the colon means here, which the docstring used to have backwards.
+
+    It said a query containing a colon stays a query. It does not, when its
+    first word is one of the three operation names — `player: sonata no. 14`
+    reads as a `player` hydration of ` sonata no. 14`. What is true is the
+    narrower rule, and both halves of it are pinned here so the sentence and
+    the branch cannot part company again.
+    """
+
+    def test_a_colon_after_the_first_word_is_text(self):
+        for query in ("ratio 16:9", "a plain query", "note: this is not an operation"):
+            with self.subTest(query=query):
+                self.assertEqual(
+                    youtube_innertube.operation_for(
+                        adapters.AdapterRequest(step_id="s1-yt", query=query)
+                    ),
+                    (youtube_innertube.SEARCH_OPERATION, query),
+                )
+
+    def test_one_of_the_three_names_before_the_first_colon_is_the_selector(self):
+        for name in youtube_innertube.INNERTUBE_OPERATIONS:
+            with self.subTest(operation=name):
+                self.assertEqual(
+                    youtube_innertube.operation_for(
+                        adapters.AdapterRequest(
+                            step_id="s1-yt", query=name + ": sonata no. 14"
+                        )
+                    ),
+                    (name, " sonata no. 14"),
+                )
+
+
 class InnerTubeDescriptorTest(unittest.TestCase):
     """The descriptor T04's seam reads, and the identifier that rotates under it."""
 
