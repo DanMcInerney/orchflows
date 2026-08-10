@@ -29,15 +29,11 @@ from . import transport
 CACHE_HIT = "cache_hit"
 
 # How long one route's answer may stand in for a fresh read, in seconds. A TTL
-# bounds how stale an observation a caller may be handed, so it is a property
-# of the route's own volatility, not of the run.
+# bounds how stale an observation a caller may be handed, so it belongs to the
+# route's own volatility and not to the run. A route with no entry gets the
+# default, which is short: a route nobody has measured is not one to trust for
+# long. Whoever adds a route adds its TTL here.
 DEFAULT_TTL_SECONDS = 60.0
-# The two halves of one bound. Every route in the roster answers in kilobytes,
-# so a body past `MAX_ENTRY_BYTES` is served through rather than held, and no
-# more than `MAX_ENTRIES` answers are held at once: a run's cache can therefore
-# cost no more than their product, 32 MiB, however long the run goes on.
-MAX_ENTRY_BYTES = 512 * 1024
-MAX_ENTRIES = 64
 ROUTE_TTL_SECONDS: Dict[str, float] = {
     # A web index's answer to one query is stable across a run's discovery
     # phase; findings.md §1 observed no throttle here, so this TTL exists to
@@ -46,6 +42,13 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # An archive lookup by fixed id changes only as the archive backfills.
     transport.ARCTIC_SHIFT_POSTS_ROUTE: 900.0,
 }
+
+# The two halves of one bound. Every route in the roster answers in kilobytes,
+# so a body past `MAX_ENTRY_BYTES` is served through rather than held, and no
+# more than `MAX_ENTRIES` answers are held at once: a run's cache can therefore
+# cost no more than their product, 32 MiB, however long the run goes on.
+MAX_ENTRY_BYTES = 512 * 1024
+MAX_ENTRIES = 64
 
 
 class CacheError(RuntimeError):
@@ -58,6 +61,10 @@ class CacheKey:
 
     route_id: str
     canonical_request: str
+
+
+# What is held against a key: the moment the read happened, and its answer.
+CacheEntry = Tuple[float, transport.TransportResponse]
 
 
 def canonical_request(request: transport.TransportRequest) -> str:
@@ -117,11 +124,11 @@ def cacheable(
 ) -> bool:
     """Whether this answer may stand in for a later read of the same thing.
 
-    Three ways an answer must not: it was not a read, so replaying it would be
-    this package answering for the origin; the origin did not produce it, so it
-    says nothing about the origin and re-serving a local block or a transient
-    failure would make recovery inside the window unreachable; or it is too
-    large to hold, which the run's footprint, not its correctness, forbids.
+    Three kinds of answer may not. One that was not a read: replaying it would
+    be this package answering for the origin. One the origin did not produce:
+    findings.md §0's local block, or a transient failure, says nothing about
+    the origin, and holding it would make recovery inside the window
+    unreachable. And one too large to hold, which the run's footprint forbids.
     """
 
     return (
@@ -157,8 +164,7 @@ class RunCache:
     def __init__(self, clock: Callable[[], float] = time.monotonic) -> None:
         self._clock = clock
         # Ordered least-recently-served first, which is eviction order.
-        self._entries: "OrderedDict[CacheKey, Tuple[float, transport.TransportResponse]]"
-        self._entries = OrderedDict()
+        self._entries: OrderedDict[CacheKey, CacheEntry] = OrderedDict()
         self._closed = False
 
     def __len__(self) -> int:

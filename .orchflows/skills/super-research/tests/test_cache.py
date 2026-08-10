@@ -236,8 +236,8 @@ def imported_names(path):
     return names
 
 
-def called_builtins(path):
-    """Every bare function name one source file calls."""
+def called_names(path):
+    """Every bare function name one source file calls, builtins included."""
 
     return {
         node.func.id
@@ -659,7 +659,7 @@ class RunLocalTest(unittest.TestCase):
                 self.assertNotIn(module, named)
 
     def test_the_cache_calls_no_builtin_that_can_write(self):
-        self.assertNotIn("open", called_builtins(CACHE_SOURCE))
+        self.assertNotIn("open", called_names(CACHE_SOURCE))
 
     def test_the_persistence_scan_can_fail(self):
         # A cache that does persist, written beside the tree, so the scan is
@@ -671,7 +671,7 @@ class RunLocalTest(unittest.TestCase):
         )
 
         self.assertEqual(found, ["os", "pathlib"])
-        self.assertIn("open", called_builtins(disk))
+        self.assertIn("open", called_names(disk))
 
     def test_the_whole_seam_runs_with_every_io_primitive_refused(self):
         clock = FakeClock()
