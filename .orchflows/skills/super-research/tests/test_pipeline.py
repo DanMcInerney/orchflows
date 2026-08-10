@@ -1166,7 +1166,20 @@ class FakeClockOnlyTest(unittest.TestCase):
         # The other half of the same claim, and the one a fake clock could
         # quietly destroy: deleting the production wait would make every proof
         # above pass and every rate limit in production go unrespected.
-        self.assertIn("time.sleep", helpers.attribute_names(PACKAGE_DIR / "runner.py"))
+        #
+        # Stated as the set of modules that wait rather than as one path. T11
+        # moved the governor out of `runner.py`, and following the assertion to
+        # `pacing.py` alone would say only what the original said. The set says
+        # it and one more thing the path form cannot: a second module quietly
+        # acquiring a real wall-clock wait is as wrong as no module having one,
+        # because a wait outside the governor is paced by nothing.
+        waiting = sorted(
+            path.name
+            for path in PACKAGE_DIR.rglob("*.py")
+            if "time.sleep" in helpers.attribute_names(path)
+        )
+
+        self.assertEqual(waiting, ["pacing.py"])
         self.assertIn("time.monotonic", helpers.attribute_names(PACKAGE_DIR / "runner.py"))
 
     def test_the_whole_pipeline_runs_with_every_io_primitive_refused(self):
