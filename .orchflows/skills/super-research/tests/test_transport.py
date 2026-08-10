@@ -9,6 +9,7 @@ response would record a local block as a platform gap.
 
 from __future__ import annotations
 
+import ast
 import builtins
 import contextlib
 import io
@@ -24,7 +25,11 @@ from super_research import transport
 
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "transport"
+PACKAGE_DIR = Path(__file__).resolve().parent.parent / "scripts" / "super_research"
 FROZEN_OBSERVED_AT = "2026-08-10T09:00:00Z"
+
+# Only the transport seam may reach the network.
+NETWORK_MODULES = ("urllib.request", "http.client", "socket", "ssl")
 
 
 def read_fixture(name):
@@ -397,6 +402,95 @@ class CredentialStaysInsideTransportTest(unittest.TestCase):
                 for value in self._credential_values():
                     self.assertNotIn(value, repr(response))
                     self.assertNotIn(value, repr(carrier.calls))
+
+
+def package_sources():
+    """Every package module except the transport seam itself."""
+
+    return sorted(path for path in PACKAGE_DIR.rglob("*.py") if path.name != "transport.py")
+
+
+def owned_route_literals():
+    """Every string only ``transport.py`` may name: a route's host, its endpoint, a credential."""
+
+    literals = set()
+    for route in transport.ROUTE_CONSTANTS.values():
+        literals.add(route.origin)
+        literals.add(route.origin + route.path)
+    for credential in transport.PUBLIC_CLIENT_CREDENTIALS.values():
+        literals.add(credential.value)
+    return sorted(literals)
+
+
+def sources_naming(literals, paths):
+    """Every (file name, literal) pair where a source names something it must not."""
+
+    found = []
+    for path in paths:
+        source = path.read_text(encoding="utf-8")
+        for literal in literals:
+            if literal in source:
+                found.append((path.name, literal))
+    return sorted(found)
+
+
+def imported_names(path):
+    """Every module and imported symbol path one source file names in an import."""
+
+    names = set()
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                names.add(alias.name)
+        elif isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            if module:
+                names.add(module)
+            for alias in node.names:
+                names.add(module + "." + alias.name if module else alias.name)
+    return names
+
+
+class RouteOwnershipScanTest(unittest.TestCase):
+    """Criterion 3: one owner for the route table, booleans for the router.
+
+    The scan covers the package's own modules. Tests are excluded on purpose:
+    naming a route constant to assert it is exactly what a test is for.
+    """
+
+    def test_no_package_module_but_transport_names_a_route_host_or_a_credential(self):
+        self.assertEqual(sources_naming(owned_route_literals(), package_sources()), [])
+
+    def test_the_ownership_scan_can_fail(self):
+        # A module that names a route origin and a credential, written beside
+        # the tree so the scan is shown to discriminate rather than to match
+        # nothing at all.
+        rogue = FIXTURE_DIR / "rogue_module_source.txt"
+
+        found = sources_naming(owned_route_literals(), [rogue])
+
+        self.assertEqual(
+            [literal for _, literal in found],
+            [
+                transport.PUBLIC_CLIENT_CREDENTIALS[transport.INSTAGRAM_WEB_APP_ID].value,
+                transport.ROUTE_CONSTANTS[transport.DDG_HTML_ROUTE].origin,
+                transport.ROUTE_CONSTANTS[transport.DDG_HTML_ROUTE].origin
+                + transport.ROUTE_CONSTANTS[transport.DDG_HTML_ROUTE].path,
+            ],
+        )
+
+    def test_no_package_module_but_transport_reaches_the_network(self):
+        for path in package_sources():
+            with self.subTest(module=path.name):
+                named = imported_names(path)
+
+                for module in NETWORK_MODULES:
+                    self.assertNotIn(module, named)
+
+    def test_the_router_never_sees_the_transport_module(self):
+        named = imported_names(PACKAGE_DIR / "router.py")
+
+        self.assertEqual([name for name in sorted(named) if "transport" in name], [])
 
 
 class FakeHTTPResponse:
