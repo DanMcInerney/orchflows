@@ -56,6 +56,10 @@ that needs a different meaning needs a different word.
 
 ## Work
 
+- **identity** — what fixes a thing across change: a revision, a content
+  digest, a symbol, a run or item id. A coordinate another context can
+  move — a line number, a list index, a path into a tree being edited —
+  is not one.
 - **run** — one execution of a workflow against one spec; owns a run id
   (`<utc-stamp>-<slug>`), a worklog, and a ticket directory. An ad-hoc
   run executes one ad-hoc ticket — or an ad-hoc set — instead: the
@@ -174,6 +178,11 @@ The benchmark pipeline has exactly four artifact roles:
   expressed in the pack's workspace semantics.
 - **attenuation** — a child's write scope is a subset of its caller's,
   at every depth; `rules/delegation.md` §4.
+- **independent lanes** — concurrently dispatched work whose write scopes
+  and whose workspaces are both disjoint. Lanes sharing a workspace are
+  one lane with two authors: neither one's oracle output is attributable
+  to its own change. Distinct from **independence**, which is a property
+  of acceptance evidence.
 - **join** — the single point where a caller integrates one child result,
   always `orch-integrate`; per `rules/delegation.md` §5.
 - **disposition** — the ruled outcome of one adjudication; each

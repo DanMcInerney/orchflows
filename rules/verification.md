@@ -22,9 +22,8 @@
    the entries that cover it.
 8. An oracle must be able to fail: a check that cannot FAIL when the
    claim it stands for is false decides nothing, and its PASS is void.
-   Show it against a wrong result built beside the tree — a fixture, a
-   parameter, a stub, a copy — never by mutating the tree under test,
-   which an interrupted pass leaves mutated.
+   Show it against a wrong result built beside the tree, never by
+   mutating the tree under test, which an interrupted pass leaves mutated.
 9. A correction consumes causes, not findings: one fix per shared
    cause, the smallest set that closes the validated findings,
    preferring the fix that simplifies. A cause whose coherent fix

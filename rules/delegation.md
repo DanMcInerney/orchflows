@@ -22,8 +22,8 @@
 5. Every child return crosses `orch-integrate` — the single join,
    strictness graded by dispatch type — before the caller trusts any of
    it; no caller states a parallel prose join.
-6. Every failed join records its blame class — caller under-supplied or
-   child under-delivered — per the delegation contract.
+6. Every join records its blame class — caller under-supplied or child
+   under-delivered — per the delegation contract.
 7. Fan out only independent breadth-first work; dependent work runs
    through `orch-frontier` or sequentially.
 8. Dispatch names carry behavioral weight: bind executors by their exact

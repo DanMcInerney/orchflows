@@ -40,9 +40,8 @@
    current text qualifies alone. An `environment` cluster qualifies on
    a probe — the exact command whose failure reproduces the defect;
    the probe is its oracle. Other one-off friction is noise until
-   it repeats. A cluster recurring across mining cycles with no new
-   information qualifies a `consolidate` proposal instead, targeting
-   bloat rather than incorrectness.
+   it repeats. A recurring cluster qualifies a `consolidate` proposal
+   instead, targeting bloat rather than incorrectness.
 5. Replay: a proposal whose friction cluster includes a replayable item
    (its ticket and the run's frozen statement still present) must
    re-run that item against the amended owner and pass before it is
