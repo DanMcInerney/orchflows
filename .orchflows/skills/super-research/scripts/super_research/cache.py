@@ -103,6 +103,42 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # reorders the answer, where the repository's own row does not. Five
     # minutes is the window every other search in this table holds.
     transport.GITHUB_SEARCH_ROUTE: 300.0,
+    # The route this whole module exists for, and the only one where a window
+    # shorter than the interval that paces it could never bind at all: at one
+    # read per 30 s the governor would already have made a caller wait longer
+    # than the window before the second read arrived. Six intervals is enough
+    # that a run polling several subreddits never pays twice for one, and short
+    # enough that a freshness probe is still about now — a feed answered from
+    # five-minute-old memory is reporting staleness as freshness. It is the
+    # window the web index of a fast-moving front page holds, for that same
+    # reason, and here the saving is a third of a minute rather than a second.
+    transport.REDDIT_FEED_ROUTE: 180.0,
+    # The cheapest read in the roster — 39 KB in 0.35 s (findings.md §1) — so
+    # this window earns the least of any here per request, and it exists to
+    # stop a run asking one channel twice rather than to dodge a limit nobody
+    # measured. Five minutes is what every "the same question twice" route in
+    # this table holds. Volatility is low in an unusual way: an entry carries no
+    # counter, and nothing in one changes after publication. What changes is
+    # that a new entry appears at the head, so what a held answer risks is
+    # completeness rather than accuracy.
+    transport.YOUTUBE_CHANNEL_FEED_ROUTE: 300.0,
+    # A reference document changes when somebody edits it and carries no
+    # counter at all, so nothing in it goes stale on a run's timescale. That is
+    # the same argument, and so the same window, as the roster's other
+    # counter-free document. Note the same caveat as that one: a substantial
+    # article exceeds `MAX_ENTRY_BYTES` and is served through, so this window
+    # binds only on a page smaller than the largest ones this route serves.
+    transport.PUBLIC_PAGE_ARTICLE_ROUTE: 900.0,
+    # Zero, and it is the one entry in this table that is not a judgment about
+    # volatility. A control read exists to answer "is this network answering
+    # for the origin right now", and an answer out of a run's own memory cannot
+    # answer that about now: it would report the channel healthy on the
+    # strength of a read made before the appliance woke up. Every other route
+    # here trades freshness for cost; this one has nothing to trade, because a
+    # hit is a wrong answer rather than a stale one. Declared rather than left
+    # to the default for exactly that reason — the default is a bound on
+    # staleness, and this route wants none.
+    transport.PUBLIC_PAGE_CONTROL_ROUTE: 0.0,
     # `transport.YOUTUBE_INNERTUBE_ROUTE` declares no window on purpose, and it
     # is the one route here where that is structural rather than a judgment:
     # it asks its question in a POST body, and `cacheable` holds only what came

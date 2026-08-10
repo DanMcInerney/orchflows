@@ -8186,5 +8186,187 @@ class FeedPageOneCallOnePageTest(unittest.TestCase):
         )
 
 
+class FeedPageRouteTtlTest(unittest.TestCase):
+    """How long each of the four answers may stand in for a fresh read.
+
+    This is the ticket where the cache stops being an optimization. Reddit's
+    feed admits three reads a minute, so a run that asks twice does not run
+    slowly — it spends a third of its minute on a question it already asked.
+    Every window here is argued from that route's own measured cost and its own
+    volatility, and proven from both sides: a re-read inside it that the
+    inherited default would have sent back to the origin, and one outside it
+    that goes back.
+
+    The control is the interesting one, and it is argued the other way. Its
+    whole job is to answer "is this network answering for the origin right
+    now", and an answer from a run's own memory cannot answer that about now.
+    So it declares a window of zero and is never served from memory — the only
+    route in the table where holding an answer would defeat the read.
+    """
+
+    def _served(self, clock, route_id, body, content_type="text/html"):
+        carrier, opener = helpers.offline_transport(
+            clock, {route_id: (200, body, content_type)}
+        )
+        governor = runner.RateGovernor(
+            carrier,
+            run_cache=cache.RunCache(clock=clock.monotonic),
+            clock=clock.monotonic,
+            sleep=clock.sleep,
+        )
+        return (governor, opener)
+
+    def _window(self, route_id, body, module, request, inside, outside):
+        """Read, re-read inside the window, re-read past it."""
+
+        clock = helpers.FakeClock()
+        governor, opener = self._served(clock, route_id, body)
+
+        first = module.fetch_native_page(governor, request)
+        clock.advance(inside)
+        held = module.fetch_native_page(governor, request)
+        clock.advance(outside - inside)
+        expired = module.fetch_native_page(governor, request)
+
+        self.assertNotIn(cache.CACHE_HIT, first.loss)
+        self.assertIn(cache.CACHE_HIT, held.loss)
+        self.assertNotIn(cache.CACHE_HIT, expired.loss)
+        self.assertEqual(len(opener.opened), 2)
+        # The mark moves, the moment does not: a served page still states when
+        # the origin was really read.
+        self.assertEqual(held.observed_at, first.observed_at)
+        self.assertEqual(len(held.records), len(first.records))
+        # And the window it was held for is longer than the one an undeclared
+        # route would have got, so the hit above is this table's doing.
+        self.assertGreater(inside, cache.DEFAULT_TTL_SECONDS)
+        self.assertLess(inside, cache.ttl_seconds(route_id))
+        self.assertGreater(outside, cache.ttl_seconds(route_id))
+
+    def test_a_subreddit_feed_reread_inside_its_window_is_answered_from_memory(self):
+        self._window(
+            transport.REDDIT_FEED_ROUTE,
+            read_reddit_feed("subreddit_new.xml"),
+            reddit_feed,
+            feed_request(),
+            inside=120,
+            outside=200,
+        )
+
+    def test_a_channel_feed_reread_inside_its_window_is_answered_from_memory(self):
+        self._window(
+            transport.YOUTUBE_CHANNEL_FEED_ROUTE,
+            read_rss_atom("youtube_channel_feed.xml"),
+            rss_atom,
+            syndication_request(),
+            inside=200,
+            outside=400,
+        )
+
+    def test_an_article_reread_inside_its_window_is_answered_from_memory(self):
+        self._window(
+            transport.PUBLIC_PAGE_ARTICLE_ROUTE,
+            read_public_page("article.html"),
+            public_page,
+            page_request(ARTICLE_TARGET),
+            inside=700,
+            outside=1000,
+        )
+
+    def test_the_channel_control_is_never_answered_from_memory(self):
+        # Not a short window: no window. A control read exists to say whether
+        # the channel is answering, and memory cannot answer that about now. It
+        # is the one route in the table where a hit would be a wrong answer
+        # rather than a stale one.
+        clock = helpers.FakeClock()
+        governor, opener = self._served(
+            clock, transport.PUBLIC_PAGE_CONTROL_ROUTE, read_public_page("control.html")
+        )
+        request = page_request("control")
+
+        first = public_page.fetch_native_page(governor, request)
+        again = public_page.fetch_native_page(governor, request)
+
+        self.assertEqual(cache.ttl_seconds(transport.PUBLIC_PAGE_CONTROL_ROUTE), 0.0)
+        self.assertNotIn(cache.CACHE_HIT, first.loss)
+        self.assertNotIn(cache.CACHE_HIT, again.loss)
+        self.assertEqual(len(opener.opened), 2)
+        # And it is the shortest declared window in the whole table, by
+        # construction rather than by comparison.
+        self.assertEqual(min(cache.ROUTE_TTL_SECONDS.values()), 0.0)
+
+    def test_the_freshness_probe_is_held_longer_than_the_interval_that_paces_it(self):
+        # A window shorter than a route's interval could never bind: the
+        # governor would already have made the caller wait longer than the
+        # window before the second read arrived. Reddit's is the only route
+        # where the two numbers are close enough for that to be a real risk.
+        window_ms = cache.ttl_seconds(transport.REDDIT_FEED_ROUTE) * 1000
+
+        self.assertGreater(
+            window_ms, runner.route_budgets()[transport.REDDIT_FEED_ROUTE].min_interval_ms
+        )
+        # Six intervals: enough that a run polling several subreddits never
+        # pays twice for one, and short enough that a freshness probe is still
+        # about now. It is the window the roster's other "a list that has moved
+        # on" route holds, for the same reason.
+        self.assertEqual(
+            cache.ttl_seconds(transport.REDDIT_FEED_ROUTE),
+            cache.ttl_seconds(transport.HN_ALGOLIA_SEARCH_ROUTE),
+        )
+
+    def test_the_document_that_changes_only_when_edited_is_held_longest_of_the_four(self):
+        # Volatility, not cost. An article carries no counter at all and
+        # changes when somebody edits it, so nothing in it goes stale on a
+        # run's timescale — which is the argument the roster's other
+        # counter-free document is held for the same length of time on.
+        declared = {
+            route_id: cache.ttl_seconds(route_id) for route_id in FEED_PAGE_ROUTES
+        }
+
+        self.assertEqual(
+            max(declared, key=lambda route_id: declared[route_id]),
+            transport.PUBLIC_PAGE_ARTICLE_ROUTE,
+        )
+        self.assertEqual(
+            cache.ttl_seconds(transport.PUBLIC_PAGE_ARTICLE_ROUTE),
+            cache.ttl_seconds(transport.LINKEDIN_PUBLIC_PROFILE_ROUTE),
+        )
+
+    def test_three_of_the_four_are_longer_than_a_route_nobody_measured_gets(self):
+        held = [
+            route_id
+            for route_id in FEED_PAGE_ROUTES
+            if cache.ttl_seconds(route_id) > cache.DEFAULT_TTL_SECONDS
+        ]
+
+        self.assertEqual(
+            sorted(held),
+            [
+                transport.PUBLIC_PAGE_ARTICLE_ROUTE,
+                transport.REDDIT_FEED_ROUTE,
+                transport.YOUTUBE_CHANNEL_FEED_ROUTE,
+            ],
+        )
+
+    def test_the_bodies_these_routes_answer_with_fit_inside_the_run_footprint(self):
+        # A window on a body over the entry cap never binds — the LinkedIn
+        # profile route is the roster's example. These fixtures fit, so the
+        # windows above bind on them. The cap itself is untouched: this ticket
+        # declares windows, not a run footprint.
+        for fixture, read in (
+            ("subreddit_new.xml", read_reddit_feed),
+            ("youtube_channel_feed.xml", read_rss_atom),
+            ("article.html", read_public_page),
+            ("control.html", read_public_page),
+        ):
+            with self.subTest(body=fixture):
+                self.assertLess(len(read(fixture).encode("utf-8")), cache.MAX_ENTRY_BYTES)
+        self.assertEqual(cache.MAX_ENTRY_BYTES, 512 * 1024)
+
+    def test_every_route_this_ticket_declares_has_a_window_argued_for_it(self):
+        for route_id in sorted(FEED_PAGE_ROUTES):
+            with self.subTest(route=route_id):
+                self.assertIn(route_id, cache.ROUTE_TTL_SECONDS)
+
+
 if __name__ == "__main__":  # pragma: no cover - convenience runner
     unittest.main()
