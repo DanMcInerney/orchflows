@@ -31,6 +31,10 @@ CACHE_HIT = "cache_hit"
 # bounds how stale an observation a caller may be handed, so it is a property
 # of the route's own volatility, not of the run.
 DEFAULT_TTL_SECONDS = 60.0
+# The largest single answer worth holding in a run's memory. Every route in the
+# roster answers in kilobytes; a body past this is served through rather than
+# held, so one oversized answer cannot dominate the run's footprint.
+MAX_ENTRY_BYTES = 512 * 1024
 ROUTE_TTL_SECONDS: Dict[str, float] = {
     # A web index's answer to one query is stable across a run's discovery
     # phase; findings.md §1 observed no throttle here, so this TTL exists to
@@ -91,6 +95,25 @@ def ttl_seconds(route_id: str) -> float:
     return ROUTE_TTL_SECONDS.get(route_id, DEFAULT_TTL_SECONDS)
 
 
+def cacheable(
+    request: transport.TransportRequest, response: transport.TransportResponse
+) -> bool:
+    """Whether this answer may stand in for a later read of the same thing.
+
+    Three ways an answer must not: it was not a read, so replaying it would be
+    this package answering for the origin; the origin did not produce it, so it
+    says nothing about the origin and re-serving a local block or a transient
+    failure would make recovery inside the window unreachable; or it is too
+    large to hold, which the run's footprint, not its correctness, forbids.
+    """
+
+    return (
+        request.method in transport.READ_METHODS
+        and response.channel_verdict == transport.ORIGIN_CONTENT
+        and len(response.body.encode("utf-8")) <= MAX_ENTRY_BYTES
+    )
+
+
 @dataclass(frozen=True)
 class CacheServe:
     """One answer to one request, and which party it actually came from."""
@@ -140,5 +163,6 @@ class RunCache:
                 return CacheServe(response=response, cache_hit=True)
             del self._entries[key]
         response = fetch(request)
-        self._entries[key] = (self._clock(), response)
+        if cacheable(request, response):
+            self._entries[key] = (self._clock(), response)
         return CacheServe(response=response, cache_hit=False)
