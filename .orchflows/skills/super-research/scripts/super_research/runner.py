@@ -174,7 +174,10 @@ class RateGovernor:
             return self._paced_fetch(request)
         serve = self._cache.serve(request, self._paced_fetch)
         self.serves.append(serve)
-        return serve.response
+        # Copied with the flag raised, never rebuilt: ``observed_at`` stays the
+        # moment the origin was really read, which is the whole point of
+        # holding the response verbatim in the first place.
+        return replace(serve.response, cache_hit=serve.cache_hit)
 
     def _paced_fetch(
         self, request: transport.TransportRequest

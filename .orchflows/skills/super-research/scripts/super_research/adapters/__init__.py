@@ -13,10 +13,10 @@ channel verdict is read in one place for every adapter there will ever be.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Callable, Mapping, Tuple
 
-from .. import transport
+from .. import cache, transport
 
 
 class AdapterError(RuntimeError):
@@ -214,4 +214,24 @@ def fetch_one_page(
             outcome="failed",
             loss=(transport.RATE_LIMITED,),
         )
-    return parse(response)
+    page = parse(response)
+    return _served_from_cache(page) if response.cache_hit else page
+
+
+def _served_from_cache(page: NativePage) -> NativePage:
+    """Mark one page, and every record on it, as answered from a run's own memory.
+
+    The record carries it as well as the page because a record's loss is built
+    from the record's own, never from the page's: a caller reading one record
+    would otherwise have to correlate it back to a step to learn that what it
+    holds is a repeat of a read made earlier. The moment is untouched — a
+    cached record states when the origin was read, not when memory answered.
+    """
+
+    return replace(
+        page,
+        records=tuple(
+            replace(record, loss=record.loss + (cache.CACHE_HIT,)) for record in page.records
+        ),
+        loss=page.loss + (cache.CACHE_HIT,),
+    )

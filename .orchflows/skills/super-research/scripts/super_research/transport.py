@@ -198,6 +198,14 @@ class TransportRequest:
 
 @dataclass(frozen=True)
 class TransportResponse:
+    """One answer, and everything a caller needs to know about how it got here.
+
+    ``cache_hit`` says a run's own memory answered rather than the origin.
+    Nothing in this module ever sets it: only a caller holding a cache knows,
+    and it says so by copying the response with the flag raised — which is why
+    ``observed_at`` stays the moment the origin was really read.
+    """
+
     route_id: str
     url: str
     status: int
@@ -205,6 +213,7 @@ class TransportResponse:
     content_type: str
     observed_at: str
     channel_verdict: str
+    cache_hit: bool = False
 
 
 def utc_now_iso() -> str:

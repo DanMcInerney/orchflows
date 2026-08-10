@@ -28,7 +28,7 @@ import importlib.util
 import unittest
 from pathlib import Path
 
-from super_research import adapters, runner, schema, transport
+from super_research import adapters, cache, runner, schema, transport
 from super_research.adapters import fake, reddit_archive, web_search
 from tests import helpers
 
@@ -125,6 +125,14 @@ DISCOVERY_MANIFEST = {
     "as_of": "2026-08-10T00:00:00Z",
     "steps": [DISCOVERY_STEP],
 }
+TWO_STEP_MANIFEST = {
+    "schema_version": 2,
+    "manifest_id": "pipeline-two-step",
+    "mode": "staged",
+    "as_of": "2026-08-10T00:00:00Z",
+    "steps": [DISCOVERY_STEP, HYDRATION_STEP],
+}
+REPEAT_ROUTES = (transport.DDG_HTML_ROUTE, transport.ARCTIC_SHIFT_POSTS_ROUTE)
 
 
 def tracer_responses():
@@ -196,6 +204,14 @@ def package_sources():
     """Every source file the package ships."""
 
     return sorted(PACKAGE_DIR.rglob("*.py"))
+
+
+def adapter_sources():
+    """Every adapter module the package ships, the shared protocol excluded."""
+
+    return sorted(
+        path for path in (PACKAGE_DIR / "adapters").glob("*.py") if path.name != "__init__.py"
+    )
 
 
 def sources_naming(names, paths):
@@ -333,6 +349,103 @@ class RateBudgetTest(unittest.TestCase):
         )
         with self.assertRaises(runner.RunnerError):
             runner.budgets_from((declared, disagreeing))
+
+
+def cached_run(governor_class, clock=None):
+    """One run cache behind one governor, over the tracer's own two routes."""
+
+    clock = helpers.FakeClock() if clock is None else clock
+    carrier, opener = helpers.offline_transport(clock, tracer_responses())
+    governor = governor_class(
+        carrier,
+        run_cache=cache.RunCache(clock=clock.monotonic),
+        clock=clock.monotonic,
+        sleep=clock.sleep,
+    )
+    return governor, opener, clock
+
+
+def assert_cache_hit_reaches_the_record(case, governor_class):
+    """Row 9's oracle: a served record says it was served, and when it was read.
+
+    Both halves fail in opposite directions and both are checked on the
+    ``AcquisitionRecord`` a caller keeps, never on the response behind it. A
+    record that loses the mark under-reports cache use; a record restamped
+    with the serve time fabricates freshness, and every later recency and
+    staleness judgment then rests on a moment nothing ever observed.
+    """
+
+    governor, opener, clock = cached_run(governor_class)
+    manifest = schema.parse_manifest(TWO_STEP_MANIFEST)
+
+    first = runner.run_acquisition(manifest, governor)
+    reads = len(opener.opened)
+    if reads == 0 or not first.records:
+        raise AssertionError("the first read never reached the origin: nothing to serve later")
+    premarked = [record.record_id for record in first.records if cache.CACHE_HIT in record.loss]
+    if premarked:
+        raise AssertionError(
+            "a record read from the origin was marked cache_hit: {0}".format(premarked)
+        )
+
+    clock.advance(min(cache.ttl_seconds(route) for route in REPEAT_ROUTES) / 2.0)
+    second = runner.run_acquisition(manifest, governor)
+
+    if len(opener.opened) != reads:
+        raise AssertionError(
+            "the cache did not serve a repeat read inside its TTL: {0} origin reads"
+            " repeating {1}".format(len(opener.opened) - reads, reads)
+        )
+    if len(second.records) != len(first.records):
+        raise AssertionError("a repeat run yielded a different number of records")
+    unmarked = [
+        record.record_id for record in second.records if cache.CACHE_HIT not in record.loss
+    ]
+    if unmarked:
+        raise AssertionError(
+            "a served-from-cache record carries no cache_hit mark: {0} of {1} records,"
+            " starting at {2}".format(len(unmarked), len(second.records), unmarked[0])
+        )
+    restamped = [
+        (before.record_id, before.observed_at, after.observed_at)
+        for before, after in zip(first.records, second.records)
+        if before.observed_at != after.observed_at
+    ]
+    if restamped:
+        raise AssertionError(
+            "a served-from-cache record was restamped with the serve time:"
+            " record {0} observed at {1} came back observed at {2}".format(*restamped[0])
+        )
+    if clock.stamp() == first.records[0].observed_at:
+        raise AssertionError("the clock never moved, so the unrestamped clause proves nothing")
+
+
+class CacheHitOnTheRecordTest(unittest.TestCase):
+    """Criterion 9: the mark and the moment both survive as far as a caller reads."""
+
+    def test_a_served_record_carries_the_mark_and_the_moment_it_was_read(self):
+        assert_cache_hit_reaches_the_record(self, runner.RateGovernor)
+
+    def test_the_mark_is_installed_once_and_no_adapter_writes_it(self):
+        # The same inheritance claim T02b made for the channel verdict: every
+        # adapter gets this for free, and an adapter that spelled it for itself
+        # would be the beginning of the drift.
+        self.assertEqual(sources_naming([cache.CACHE_HIT], adapter_sources()), [])
+
+    def test_a_cache_hit_costs_the_routes_rate_budget_nothing(self):
+        # Pacing lives inside the callable a hit never invokes, so a run that
+        # remembers what it read never pays a wait for reading it again.
+        governor, opener, clock = cached_run(runner.RateGovernor)
+        manifest = schema.parse_manifest(TWO_STEP_MANIFEST)
+
+        runner.run_acquisition(manifest, governor)
+        origin_reads = len(governor.log)
+        runner.run_acquisition(manifest, governor)
+
+        self.assertEqual(len(governor.log), origin_reads)
+        self.assertEqual(len(opener.opened), origin_reads)
+        self.assertEqual([serve.cache_hit for serve in governor.serves[origin_reads:]],
+                         [True] * origin_reads)
 
 
 class BurstAndCooldownTest(unittest.TestCase):
