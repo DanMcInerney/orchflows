@@ -195,6 +195,24 @@ def _tweets_of(entries: Sequence[Any]) -> Tuple[Mapping[str, Any], ...]:
     return tuple(found)
 
 
+def entry_types_of(entries: Sequence[Any]) -> Tuple[str, ...]:
+    """The distinct ``type`` values this page's entries declared, in page order.
+
+    Read only to say what a page carried instead of posts. A page whose entries
+    are all some other type is a page whose discriminator moved, and naming the
+    types it used is the whole recovery procedure: the next reader knows what
+    to compare ``TWEET_ENTRY_TYPE`` against.
+    """
+
+    seen = []
+    for entry in entries:
+        declared = entry.get("type") if isinstance(entry, Mapping) else None
+        name = declared if isinstance(declared, str) and declared else "unnamed"
+        if name not in seen:
+            seen.append(name)
+    return tuple(seen)
+
+
 def _drifted(response: transport.TransportResponse, detail: str) -> NativePage:
     return build_native_page(
         DESCRIPTOR,
@@ -247,12 +265,32 @@ def _page_from(response: transport.TransportResponse) -> NativePage:
     records = tuple(
         _record_for(position, tweet) for position, tweet in enumerate(_tweets_of(entries))
     )
+    if entries and not records:
+        # The container is where it was declared and holds rows, and not one of
+        # them is a post this adapter can read. That is the discriminator or the
+        # entry shape moving, which is exactly the drift a `K2` route is exposed
+        # to — and reporting it as a quiet timeline would say the handle went
+        # silent. An empty `entries` list still means what it says.
+        return _drifted(
+            response,
+            "listed {0} timeline entry(s) of type(s) {1} and no {2}".format(
+                len(entries), ", ".join(entry_types_of(entries)), TWEET_ENTRY_TYPE
+            ),
+        )
     return build_native_page(
         DESCRIPTOR,
         records,
         observed_at=response.observed_at,
         native_order=NATIVE_ORDER,
         outcome="ok" if records else "empty",
+        warnings=()
+        if records
+        else (
+            "route {0} answered 200 with an empty timeline at {1}: this handle"
+            " has posted nothing the page carries".format(
+                DESCRIPTOR.route_id, ".".join(TIMELINE_PATH)
+            ),
+        ),
     )
 
 

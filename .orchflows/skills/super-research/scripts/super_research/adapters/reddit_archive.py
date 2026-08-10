@@ -51,7 +51,14 @@ ENGAGEMENT_FIELDS = ("score", "num_comments")
 # finds the branch that emits it.
 HTTP_STATUS = "http_status"
 MALFORMED_JSON = "malformed_json"
+SCHEMA_DRIFT = "schema_drift"
 FIELD_OMITTED = "field_omitted"
+
+# Where this archive keeps the submissions it answered with. Declared, never
+# searched for: a parser that hunts the payload for something list-shaped is
+# inferring by similarity, and the point of a typed drift is to say the archive
+# changed shape rather than that these ids have nothing behind them.
+POSTS_KEY = "data"
 
 
 def epoch_to_utc_iso(created_utc: Any) -> str:
@@ -106,6 +113,28 @@ def _record_for(position: int, post: Mapping[str, Any]) -> NativeRecord:
     )
 
 
+def _drifted(response: transport.TransportResponse, detail: str) -> NativePage:
+    """The archive answered, and what it answered with is not what it answers with.
+
+    Never `empty`: "these ids have nothing behind them" and "the archive
+    reshaped its answer" are the two readings a caller cannot tell apart, and
+    only one of them is a fact about Reddit.
+    """
+
+    return build_native_page(
+        DESCRIPTOR,
+        (),
+        observed_at=response.observed_at,
+        native_order=NATIVE_ORDER,
+        warnings=(
+            "route {0} answered {1} and {2}: the archive this adapter reads has"
+            " changed shape".format(DESCRIPTOR.route_id, response.status, detail),
+        ),
+        outcome="failed",
+        loss=(SCHEMA_DRIFT,),
+    )
+
+
 def _page_from(response: transport.TransportResponse) -> NativePage:
     """Turn one response the archive itself sent into exactly one page."""
 
@@ -122,7 +151,7 @@ def _page_from(response: transport.TransportResponse) -> NativePage:
 
     try:
         payload = json.loads(response.body)
-        posts = payload["data"]
+        posts = payload[POSTS_KEY]
     except (ValueError, KeyError, TypeError):
         return build_native_page(
             DESCRIPTOR,
@@ -134,17 +163,35 @@ def _page_from(response: transport.TransportResponse) -> NativePage:
             loss=(MALFORMED_JSON,),
         )
 
+    if not isinstance(posts, list):
+        return _drifted(
+            response, "kept a {0} that is not a list of submissions".format(POSTS_KEY)
+        )
+
     records = tuple(
         _record_for(position, post)
         for position, post in enumerate(posts)
         if isinstance(post, Mapping)
     )
+    if posts and not records:
+        return _drifted(
+            response,
+            "listed {0} entry(s) under {1} and not one of them is a submission".format(
+                len(posts), POSTS_KEY
+            ),
+        )
     return build_native_page(
         DESCRIPTOR,
         records,
         observed_at=response.observed_at,
         native_order=NATIVE_ORDER,
         outcome="ok" if records else "empty",
+        warnings=()
+        if records
+        else (
+            "route {0} answered 200 with an empty {1}: the archive holds none of"
+            " the requested ids".format(DESCRIPTOR.route_id, POSTS_KEY),
+        ),
     )
 
 

@@ -49,19 +49,41 @@ RESULT_LINK_CLASS = "result__a"
 RESULT_SNIPPET_CLASS = "result__snippet"
 NEXT_OFFSET_FIELD = "s"
 
+# The two markup names this route's shape rests on, above the anchor class.
+# Declared so the parser can say which one went missing: a page keeping neither
+# is a page this adapter no longer reads, and a page keeping the container and
+# no result block is a search that matched nothing. Without the distinction
+# both arrive as an empty index, and only one of them is about the query.
+RESULTS_CONTAINER_CLASS = "results"
+RESULT_BLOCK_CLASS = "result"
+SCHEMA_DRIFT = "schema_drift"
+HTTP_STATUS = "http_status"
+FIELD_OMITTED = "field_omitted"
+
 
 class _DuckDuckGoResultParser(HTMLParser):
-    """Collect one HTML page's result anchors, snippets, and next-page offset."""
+    """Collect one HTML page's result anchors, snippets, and next-page offset.
+
+    It also counts the two enclosing markup names, because what a page did
+    *not* carry is the only way to tell a rotated class from a query nobody
+    matched.
+    """
 
     def __init__(self) -> None:
         HTMLParser.__init__(self, convert_charrefs=True)
         self.hits: List[List[str]] = []  # [locator, title, snippet]
         self.next_offset = ""
+        self.results_containers = 0
+        self.result_blocks = 0
         self._capturing: Optional[int] = None  # index 1 (title) or 2 (snippet)
 
     def handle_starttag(self, tag, attrs):
         attributes = dict(attrs)
         classes = (attributes.get("class") or "").split()
+        if RESULTS_CONTAINER_CLASS in classes:
+            self.results_containers += 1
+        if RESULT_BLOCK_CLASS in classes:
+            self.result_blocks += 1
         if tag == "a" and RESULT_LINK_CLASS in classes:
             self.hits.append([unwrap_result_url(attributes.get("href") or ""), "", ""])
             self._capturing = 1
@@ -95,7 +117,7 @@ def unwrap_result_url(href: str) -> str:
 def _record_for(position: int, locator: str, title: str, snippet: str) -> NativeRecord:
     loss: Tuple[str, ...] = DESCRIPTOR.standing_loss
     if not snippet:
-        loss = loss + ("field_omitted",)
+        loss = loss + (FIELD_OMITTED,)
     return NativeRecord(
         canonical_content_kind="web_hit",
         canonical_locator=locator,
@@ -103,6 +125,30 @@ def _record_for(position: int, locator: str, title: str, snippet: str) -> Native
         body=snippet,
         native_position=position,
         loss=loss,
+    )
+
+
+def _drifted(response: transport.TransportResponse, detail: str) -> NativePage:
+    """The origin answered 200, and what it answered with is not a result page.
+
+    Never `empty`: an index that matched nothing and an index whose markup this
+    adapter no longer reads arrive at the same door, and only the first is a
+    statement about the query. findings.md §1 recorded three of the nine engines
+    probed answering 200 with a challenge or a wall, so a 200 that is not a
+    result page is a shape this route can genuinely produce.
+    """
+
+    return build_native_page(
+        DESCRIPTOR,
+        (),
+        observed_at=response.observed_at,
+        native_order=NATIVE_ORDER,
+        warnings=(
+            "route {0} answered {1} and {2}: the page this adapter reads has"
+            " changed shape".format(DESCRIPTOR.route_id, response.status, detail),
+        ),
+        outcome="failed",
+        loss=(SCHEMA_DRIFT,),
     )
 
 
@@ -117,7 +163,7 @@ def _page_from(response: transport.TransportResponse) -> NativePage:
             native_order=NATIVE_ORDER,
             warnings=("http status {0} from {1}".format(response.status, DESCRIPTOR.route_id),),
             outcome="failed",
-            loss=("http_status",),
+            loss=(HTTP_STATUS,),
         )
 
     parser = _DuckDuckGoResultParser()
@@ -129,6 +175,18 @@ def _page_from(response: transport.TransportResponse) -> NativePage:
         for position, (locator, title, snippet) in enumerate(parser.hits)
         if locator
     )
+    if not records:
+        if not parser.results_containers:
+            return _drifted(
+                response, "carried no ." + RESULTS_CONTAINER_CLASS + " container"
+            )
+        if parser.result_blocks:
+            return _drifted(
+                response,
+                "carried {0} .{1} block(s) and no readable .{2} locator".format(
+                    parser.result_blocks, RESULT_BLOCK_CLASS, RESULT_LINK_CLASS
+                ),
+            )
     return build_native_page(
         DESCRIPTOR,
         records,
@@ -136,6 +194,14 @@ def _page_from(response: transport.TransportResponse) -> NativePage:
         cursor_out=parser.next_offset,
         native_order=NATIVE_ORDER,
         outcome="ok" if records else "empty",
+        warnings=()
+        if records
+        else (
+            "route {0} answered 200 with a .{1} container holding no .{2}"
+            " block: the index matched nothing".format(
+                DESCRIPTOR.route_id, RESULTS_CONTAINER_CLASS, RESULT_BLOCK_CLASS
+            ),
+        ),
     )
 
 

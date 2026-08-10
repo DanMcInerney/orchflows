@@ -488,14 +488,19 @@ def _page_from(
             records.append(build(len(records), row))
     if records:
         return _answered(descriptor, response, native_order, records=tuple(records))
-    if operation == REPO_OPERATION:
+    if rows:
+        # The container is present and holds rows, and not one of them names an
+        # id. That is the payload reshaping, not an answer with nothing in it:
+        # a search stating `total_count: 2` over two rows this adapter cannot
+        # identify would otherwise be reported as "this query has none", which
+        # is the one thing a caller cannot tell from a real absence.
         return _failed(
             descriptor,
             response,
             native_order,
             SCHEMA_DRIFT,
-            "{0} answered 200 with an object stating no {1}: the payload has"
-            " changed shape".format(operation, ID_KEY),
+            "{0} answered 200 with {1} row(s) and no {2} on any of them: the"
+            " payload has changed shape".format(operation, len(rows), ID_KEY),
         )
     return _answered(
         descriptor,

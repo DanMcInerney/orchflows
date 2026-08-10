@@ -8705,6 +8705,129 @@ class FeedPageArtifactSeamTest(unittest.TestCase):
         self.assertEqual(entries[0].native_item_id, FEED_VIDEO_ID)
 
 
+def _next_data(entries):
+    """One `__NEXT_DATA__` page holding exactly the timeline entries given."""
+
+    payload = {"props": {"pageProps": {"timeline": {"entries": entries}}}}
+    return (
+        '<html><body><script id="__NEXT_DATA__">'
+        + json.dumps(payload)
+        + "</script></body></html>"
+    )
+
+
+# One row per adapter that reads a container out of a 200. Each names a body
+# whose container is present and holds nothing this adapter recognizes, and a
+# body whose container is present and genuinely holds nothing. The pair is the
+# point: an adapter that types both the same way has stopped distinguishing
+# "the route changed" from "there is nothing there", and only the second is a
+# statement about the platform.
+UNRECOGNIZED_CONTAINER_CASES = (
+    {
+        "adapter": "web_search",
+        "request": adapters.AdapterRequest(step_id="s1", query="rate limiting"),
+        "content_type": "text/html",
+        "unrecognized": (
+            '<html><body><div class="results">'
+            '<div class="result web-result"><h2 class="result__title">'
+            '<a class="result__link" href="https://ex.test/a">A title</a>'
+            "</h2></div></div></body></html>"
+        ),
+        "names": "result__a",
+        "empty": '<html><body><div class="results"></div></body></html>',
+    },
+    {
+        "adapter": "reddit_archive",
+        "request": adapters.AdapterRequest(step_id="s1", target_ids=("1abc234",)),
+        "content_type": "application/json",
+        "unrecognized": json.dumps({"data": {"t3_1abc234": {"id": "1abc234"}}}),
+        "names": "data",
+        "empty": json.dumps({"data": []}),
+    },
+    {
+        "adapter": "x_syndication",
+        "request": adapters.AdapterRequest(step_id="s1", target_ids=("simonw",)),
+        "content_type": "text/html",
+        "unrecognized": _next_data(
+            [
+                {"type": "TimelineTweet", "content": {"tweet": {"id_str": "1"}}},
+                {"type": "TimelineTweet", "content": {"tweet": {"id_str": "2"}}},
+            ]
+        ),
+        "names": "TimelineTweet",
+        "empty": _next_data([]),
+    },
+    {
+        "adapter": "github_rest",
+        "request": adapters.AdapterRequest(step_id="s1", query="search:local models"),
+        "content_type": "application/json",
+        "unrecognized": json.dumps(
+            {"total_count": 2, "items": [{"full_name": "a/b"}, {"full_name": "c/d"}]}
+        ),
+        "names": "id",
+        "empty": json.dumps({"total_count": 0, "items": []}),
+    },
+)
+
+
+class UnrecognizedContainerIsNeverAnEmptySuccessTest(unittest.TestCase):
+    """Criterion 8, widened to every adapter that reads a container out of a 200.
+
+    `hacker_news` already proves this shape as `HackerNewsAbsenceIsNotDriftTest`
+    and the four adapters here did not. Each answered a present-but-unreadable
+    container with `outcome='empty'` and `loss=()` — indistinguishable, at the
+    artifact, from a query that matched nothing. The frozen spec says it twice:
+    a stale identifier produces typed `schema_drift` or `stale_identifier` and
+    never an empty success, and structured-data drift is typed rather than
+    silently empty.
+
+    The empty half of each row is what keeps the fix honest. Typing every
+    unreadable answer as drift is easy; typing only the unreadable ones is the
+    property, so each adapter is shown answering a real absence as `empty` in
+    the same test.
+    """
+
+    def _page(self, row, body):
+        clock = helpers.FakeClock()
+        carrier, opener = helpers.offline_transport(
+            clock,
+            {
+                descriptor.route_id: (200, body, row["content_type"])
+                for descriptor in runner.surface_descriptors(row["adapter"])
+            },
+        )
+        module = getattr(runner, row["adapter"])
+        return module.fetch_native_page(carrier, row["request"]), opener
+
+    def test_a_container_holding_nothing_this_adapter_reads_is_typed_drift(self):
+        for row in UNRECOGNIZED_CONTAINER_CASES:
+            with self.subTest(adapter=row["adapter"]):
+                page, opener = self._page(row, row["unrecognized"])
+
+                self.assertEqual(page.outcome, "failed")
+                self.assertEqual(tuple(page.loss), ("schema_drift",))
+                self.assertEqual(page.records, ())
+                # The warning names what it looked for, so a reader knows which
+                # shape to go and check rather than which platform to blame.
+                self.assertIn(row["names"], " ".join(page.warnings))
+                # And it cost exactly one read: drift is an answer, not a
+                # reason to look somewhere else.
+                self.assertEqual(len(opener.opened), 1)
+
+    def test_a_container_that_genuinely_holds_nothing_stays_an_empty_answer(self):
+        for row in UNRECOGNIZED_CONTAINER_CASES:
+            with self.subTest(adapter=row["adapter"]):
+                page, _ = self._page(row, row["empty"])
+
+                self.assertEqual(page.outcome, "empty")
+                self.assertEqual(page.records, ())
+                self.assertNotIn("schema_drift", page.loss)
+                self.assertTrue(
+                    page.warnings,
+                    "an empty answer was returned with nothing said about it",
+                )
+
+
 class RosterIsCompleteTest(unittest.TestCase):
     """Thirteen live adapters plus `fake`, and every one reachable four ways.
 
