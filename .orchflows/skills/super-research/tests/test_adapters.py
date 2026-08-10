@@ -66,7 +66,8 @@ from pathlib import Path
 from unittest import mock
 
 from super_research import adapters, cache, normalize, runner, schema, transport
-from super_research.adapters import linkedin_jobs, linkedin_public, x_guest, x_syndication
+from super_research.adapters import instagram_public, linkedin_jobs, linkedin_public
+from super_research.adapters import x_guest, x_syndication
 from tests import helpers
 
 
@@ -2648,6 +2649,365 @@ class YoutubeInstagramRouteConstantTest(unittest.TestCase):
             transport.origin_locator(transport.YOUTUBE_INNERTUBE_ROUTE, published), published
         )
         self.assertEqual(transport.origin_locator(transport.YOUTUBE_INNERTUBE_ROUTE, ""), "")
+
+
+INSTAGRAM_USERNAME = "harbourlight.optics"
+INSTAGRAM_REQUEST = adapters.AdapterRequest(step_id="s1-ig", target_ids=(INSTAGRAM_USERNAME,))
+
+# findings.md §1 (Instagram): every field the roster row records this route
+# returning, for the profile and for each of the 12 recent posts, named as the
+# evidence names them rather than as a record spells them.
+INSTAGRAM_PROFILE_ROSTER_FIELDS = ("username", "biography", "followers", "post_count")
+INSTAGRAM_POST_ROSTER_FIELDS = (
+    "shortcode",
+    "taken_at_timestamp",
+    "like_count",
+    "comment_count",
+)
+
+
+def read_instagram(name):
+    """Read one offline Instagram fixture."""
+
+    return INSTAGRAM_FIXTURE_DIR.joinpath(name).read_text(encoding="utf-8")
+
+
+def instagram_cases():
+    """The measured case table: a status, a body, and the loss its evidence names."""
+
+    return tuple(json.loads(read_instagram("profile_cases.json"))["cases"])
+
+
+def counts_of(record):
+    """One record's metrics by name, on whichever side of normalize it sits.
+
+    A native record carries pairs and an artifact record carries snapshots. The
+    roster row is the same row either way, and reading it at both ends is how
+    "the route reaches its capability" stops being a claim about an
+    intermediate value.
+    """
+
+    named = {}
+    for metric in record.engagement:
+        if isinstance(metric, schema.EngagementSnapshot):
+            named[metric.metric_name] = metric.value
+        else:
+            named[metric[0]] = metric[1]
+    return named
+
+
+def instagram_profile_row(record):
+    """One profile's roster row exactly as a caller reads it off the record."""
+
+    counts = counts_of(record)
+    return {
+        "username": record.author,
+        "biography": record.body,
+        "followers": counts.get(instagram_public.FOLLOWERS_METRIC, 0),
+        "post_count": counts.get(instagram_public.POST_COUNT_METRIC, 0),
+    }
+
+
+def instagram_post_row(record):
+    """One post's roster row exactly as a caller reads it off the record."""
+
+    counts = counts_of(record)
+    return {
+        "shortcode": record.native_item_id,
+        "taken_at_timestamp": record.published_at,
+        "like_count": counts.get(instagram_public.LIKE_METRIC, 0),
+        "comment_count": counts.get(instagram_public.COMMENT_METRIC, 0),
+    }
+
+
+def instagram_page(fixture, status=200, request=None):
+    """Run ``instagram_public`` over one canned answer."""
+
+    return adapter_page(
+        instagram_public,
+        status,
+        read_instagram(fixture),
+        content_type="application/json",
+        request=INSTAGRAM_REQUEST if request is None else request,
+    )
+
+
+def instagram_posts(page):
+    return [record for record in page.records if record.canonical_content_kind == "post"]
+
+
+class InstagramProfileTest(unittest.TestCase):
+    """Criterion 1, Instagram half: a profile and its twelve posts, keyless.
+
+    The prior synthesis listed Instagram as a flat gap. Measured, one request
+    under a vendor-published app id returns the bio, the follower count, and
+    twelve recent posts each carrying the platform's own engagement and its own
+    timestamp — which is the whole roster row, at zero cost and with no account.
+    """
+
+    def setUp(self):
+        self.page, self.opener = instagram_page("web_profile_info.json")
+
+    def test_one_page_carries_the_profile_and_the_twelve_posts_measured(self):
+        self.assertEqual(self.page.outcome, "ok")
+        self.assertEqual(self.page.loss, ())
+        self.assertEqual(len(self.page.records), 13)
+        self.assertEqual(len(instagram_posts(self.page)), 12)
+        self.assertEqual(len(self.opener.opened), 1)
+
+    def test_the_profile_record_carries_every_field_its_roster_row_names(self):
+        carried = instagram_profile_row(self.page.records[0])
+
+        self.assertEqual(sorted(carried), sorted(INSTAGRAM_PROFILE_ROSTER_FIELDS))
+        for name in INSTAGRAM_PROFILE_ROSTER_FIELDS:
+            self.assertTrue(carried[name], name)
+        self.assertEqual(carried["username"], INSTAGRAM_USERNAME)
+        self.assertIn("north Atlantic", carried["biography"])
+        self.assertEqual(carried["followers"], 104262608)
+        self.assertEqual(carried["post_count"], 4231)
+
+    def test_every_post_carries_every_field_its_roster_row_names(self):
+        for record in instagram_posts(self.page):
+            with self.subTest(item=record.native_item_id):
+                carried = instagram_post_row(record)
+
+                self.assertEqual(sorted(carried), sorted(INSTAGRAM_POST_ROSTER_FIELDS))
+                for name in INSTAGRAM_POST_ROSTER_FIELDS:
+                    self.assertTrue(carried[name], name)
+                for name in ("like_count", "comment_count"):
+                    self.assertIsInstance(carried[name], int)
+                self.assertEqual(record.loss, ())
+
+    def test_a_post_names_itself_its_author_and_the_moment_the_platform_reported(self):
+        first = instagram_posts(self.page)[0]
+
+        self.assertEqual(first.canonical_content_kind, "post")
+        # The shortcode is what Instagram addresses a post by, so it is the
+        # record's own id and the address is built from it where hosts are
+        # spelled — the payload publishes no address of its own.
+        self.assertEqual(first.native_item_id, "C9xR2mQLpQz")
+        self.assertEqual(
+            first.canonical_locator, "https://www.instagram.com/p/C9xR2mQLpQz/"
+        )
+        self.assertEqual(first.native_parent_id, "528817151")
+        self.assertEqual(first.author, INSTAGRAM_USERNAME)
+        self.assertIn("blue hour", first.body)
+        self.assertEqual(first.published_at, "2026-08-09T18:20:00Z")
+        self.assertEqual(first.native_position, 0)
+        self.assertEqual(
+            counts_of(first),
+            {
+                instagram_public.LIKE_METRIC: 412873,
+                instagram_public.COMMENT_METRIC: 1904,
+            },
+        )
+
+    def test_the_profile_record_names_the_account_and_its_published_address(self):
+        profile = self.page.records[0]
+
+        self.assertEqual(profile.canonical_content_kind, "profile")
+        self.assertEqual(profile.native_item_id, "528817151")
+        self.assertEqual(profile.title, "Harbourlight Optics")
+        self.assertEqual(
+            profile.canonical_locator, "https://www.instagram.com/harbourlight.optics/"
+        )
+        # A profile states no publication time, so the record states none
+        # rather than borrowing the moment it was read.
+        self.assertEqual(profile.published_at, "")
+
+    def test_the_posts_arrive_in_the_order_the_payload_listed_them(self):
+        posts = instagram_posts(self.page)
+
+        self.assertEqual([record.native_position for record in posts], list(range(12)))
+        self.assertEqual(
+            [record.published_at for record in posts[:3]],
+            ["2026-08-09T18:20:00Z", "2026-08-08T15:05:00Z", "2026-08-07T12:00:00Z"],
+        )
+
+    def test_a_post_the_payload_left_incomplete_is_marked_and_never_zero_filled(self):
+        page, _ = instagram_page(
+            "web_profile_info_partial_post.json",
+            request=adapters.AdapterRequest(
+                step_id="s1-ig", target_ids=("kestrel.field.notes",)
+            ),
+        )
+        complete, partial = instagram_posts(page)
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(complete.loss, ())
+        self.assertEqual(partial.loss, ("field_omitted",))
+        # Absent, not invented: no comment count at all and no time, instead of
+        # a zero that reads as "nobody commented" and a moment nobody observed.
+        self.assertNotIn(instagram_public.COMMENT_METRIC, counts_of(partial))
+        self.assertEqual(partial.published_at, "")
+        self.assertEqual(counts_of(partial)[instagram_public.LIKE_METRIC], 611)
+
+    def test_the_metric_names_are_the_ones_the_payload_publishes_them_under(self):
+        # A metric name is never inferred and never translated. Instagram
+        # reports these three at these exact key paths; spelling them
+        # `like_count` and `comment_count` would be this package inventing a
+        # cross-platform vocabulary the spec's non-goals forbid.
+        self.assertEqual(instagram_public.LIKE_METRIC, "edge_liked_by.count")
+        self.assertEqual(instagram_public.COMMENT_METRIC, "edge_media_to_comment.count")
+        self.assertEqual(instagram_public.FOLLOWERS_METRIC, "edge_followed_by.count")
+        self.assertEqual(
+            instagram_public.POST_COUNT_METRIC, "edge_owner_to_timeline_media.count"
+        )
+
+    def test_the_page_speaks_for_instagram_at_the_class_the_ladder_gives_it(self):
+        self.assertEqual(self.page.adapter_id, "instagram_public")
+        self.assertEqual(self.page.platform, "instagram")
+        self.assertEqual(self.page.native_identity_namespace, "instagram")
+        self.assertEqual(self.page.access_class, "K1")
+        self.assertEqual(self.page.representation_kind, "native")
+        self.assertEqual(self.page.route_id, transport.INSTAGRAM_WEB_PROFILE_ROUTE)
+
+    def test_the_username_is_read_from_the_target_or_from_the_query(self):
+        for request in (
+            adapters.AdapterRequest(step_id="s1-ig", target_ids=(INSTAGRAM_USERNAME,)),
+            adapters.AdapterRequest(step_id="s1-ig", query="@" + INSTAGRAM_USERNAME),
+        ):
+            with self.subTest(request=request):
+                _, opener = instagram_page("web_profile_info.json", request=request)
+
+                self.assertTrue(
+                    opener.opened[0].url.endswith("username=harbourlight.optics"),
+                    opener.opened[0].url,
+                )
+
+
+class InstagramAnswersWithNoProfileTest(unittest.TestCase):
+    """The four ways this route answers with no profile, told apart.
+
+    The one that matters is the login page. It arrives at HTTP 200 saying "Log
+    in" in plain words, and reading that as a refusal is exactly the false
+    negative the LinkedIn measurement overturned. Only a status line may make
+    this route `auth_required`; a body may not, whatever it says.
+    """
+
+    def _typed(self, case_name):
+        row = next(case for case in instagram_cases() if case["case_name"] == case_name)
+        page, _ = instagram_page(
+            row["body_fixture"],
+            status=row["status"],
+            request=adapters.AdapterRequest(step_id="s1-ig", target_ids=(row["username"],)),
+        )
+        return page, row
+
+    def test_a_username_nobody_holds_is_empty_and_says_so(self):
+        page, _ = self._typed("no_such_username_200")
+
+        self.assertEqual(page.outcome, "empty")
+        self.assertEqual(page.loss, ())
+        self.assertEqual(page.records, ())
+        self.assertIn("nobody.holds.this.name", " ".join(page.warnings))
+
+    def test_a_payload_whose_container_moved_is_drift_and_not_an_absent_profile(self):
+        page, _ = self._typed("payload_container_moved_200")
+
+        self.assertEqual(page.outcome, "failed")
+        self.assertEqual(page.loss, ("schema_drift",))
+        self.assertEqual(page.records, ())
+        # Names what was looked for, so an operator learns the shape changed
+        # rather than only that nothing came back.
+        self.assertIn(
+            ".".join(instagram_public.PROFILE_PATH), " ".join(page.warnings)
+        )
+
+    def test_a_login_page_at_two_hundred_is_not_read_as_a_refusal(self):
+        page, _ = self._typed("login_page_at_200")
+
+        self.assertEqual(page.loss, ("malformed_json",))
+        self.assertNotIn(instagram_public.AUTH_REQUIRED, page.loss)
+
+    def test_the_same_bytes_at_two_statuses_are_two_different_answers(self):
+        # The sharpest form of the rule. One body, twice: at 200 it is a route
+        # that stopped answering in JSON, at 401 it is the origin refusing.
+        # Nothing in the body moved, so nothing in the body decided.
+        at_two_hundred, _ = self._typed("login_page_at_200")
+        refused, _ = self._typed("origin_refused_401")
+
+        self.assertEqual(at_two_hundred.loss, ("malformed_json",))
+        self.assertEqual(refused.loss, (instagram_public.AUTH_REQUIRED,))
+        self.assertIn("401", " ".join(refused.warnings))
+
+    def test_every_measured_case_is_typed_as_its_evidence_says(self):
+        for row in instagram_cases():
+            with self.subTest(case=row["case_name"]):
+                page, _ = self._typed(row["case_name"])
+
+                self.assertEqual(page.outcome, row["expected_outcome"])
+                self.assertEqual(
+                    tuple(page.loss),
+                    (row["expected_loss"],) if row["expected_loss"] else (),
+                )
+
+    def test_the_route_returns_no_auth_required_with_an_empty_credential_store(self):
+        # Criterion 1's other half. The route carries a vendor-published app
+        # id, which is not a user credential and is never asked of anyone: the
+        # only way `auth_required` appears is the origin's own status line.
+        page, _ = instagram_page("web_profile_info.json")
+
+        self.assertNotIn(instagram_public.AUTH_REQUIRED, page.loss)
+        self.assertEqual(page.outcome, "ok")
+        self.assertTrue(
+            transport.route_admissions()[transport.INSTAGRAM_WEB_PROFILE_ROUTE]
+        )
+
+
+class InstagramDescriptorTest(unittest.TestCase):
+    """The descriptor T04's seam reads: measured ceiling, class, declared metric."""
+
+    def test_the_route_is_paced_by_the_interval_the_evidence_measured(self):
+        # findings.md §1 (Instagram): 2.9 s per request, the slowest read in
+        # the roster. Nothing here was measured refusing, so burst and cooldown
+        # keep the conservative defaults rather than a ceiling nobody observed.
+        descriptor = instagram_public.DESCRIPTOR
+
+        self.assertEqual(descriptor.min_interval_ms, 2900)
+        self.assertEqual(descriptor.burst, adapters.DEFAULT_BURST)
+        self.assertEqual(descriptor.cooldown_ms, adapters.DEFAULT_COOLDOWN_MS)
+        self.assertEqual(
+            runner.route_budgets()[transport.INSTAGRAM_WEB_PROFILE_ROUTE],
+            runner.RouteBudget(min_interval_ms=2900, burst=1, cooldown_ms=60000),
+        )
+
+    def test_it_declares_the_comment_metric_it_reports_and_no_reply_metric(self):
+        # Instagram reports a count of comments on a post and nothing named for
+        # replies. Declaring the one under both names would make two of the
+        # five views silently identical on a number reported once.
+        self.assertEqual(
+            instagram_public.DESCRIPTOR.comment_count_metric,
+            instagram_public.COMMENT_METRIC,
+        )
+        self.assertEqual(instagram_public.DESCRIPTOR.reply_count_metric, "")
+
+    def test_it_declares_no_rotating_identifier_because_it_depends_on_none(self):
+        # The app id is a vendor-published constant, not a rotating one: it is
+        # the same value every client sends and the evidence records it in
+        # full. Declaring it volatile would attach a recovery procedure to
+        # something that has not been observed to move.
+        self.assertEqual(instagram_public.DESCRIPTOR.volatile_identifiers, ())
+
+    def test_the_core_can_reach_it_by_both_of_its_literal_branches(self):
+        self.assertIn("instagram_public", runner.ADAPTER_IDS)
+        self.assertIs(runner.descriptor_for("instagram_public"), instagram_public.DESCRIPTOR)
+
+        clock = helpers.FakeClock()
+        carrier, opener = helpers.offline_transport(
+            clock,
+            {
+                transport.INSTAGRAM_WEB_PROFILE_ROUTE: (
+                    200,
+                    read_instagram("web_profile_info.json"),
+                    "application/json",
+                )
+            },
+        )
+        page = runner.call_adapter("instagram_public", carrier, INSTAGRAM_REQUEST)
+
+        self.assertEqual(len(page.records), 13)
+        self.assertEqual(len(opener.opened), 1)
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner
