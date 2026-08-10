@@ -12,6 +12,7 @@ from __future__ import annotations
 import ast
 import builtins
 import contextlib
+import importlib.util
 import io
 import json
 import os
@@ -261,6 +262,81 @@ def adapter_page(module, status, body, content_type="text/html"):
         {module.DESCRIPTOR.route_id: (status, body, content_type)}
     )
     return module.fetch_native_page(carrier, PROBE_REQUEST), opener
+
+
+def adapter_pages(module):
+    """Type every measured case through one adapter's own ``fetch_native_page``."""
+
+    return {
+        row["case_name"]: adapter_page(module, row["status"], case_body(row))[0]
+        for row in interception_cases()
+    }
+
+
+def load_adapter_fixture(name):
+    """Load one adapter written beside the tree, by path.
+
+    These are not package modules: nothing in the package imports them and no
+    discovery pattern matches them. They exist so the protocol can be shown to
+    carry — or, for a wrong one, to fail to carry — the channel verdict on an
+    adapter's behalf, without mutating the tree under test.
+    """
+
+    spec = importlib.util.spec_from_file_location(
+        "adapter_fixture_" + name, FIXTURE_DIR / (name + ".py")
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def assert_interception_reaches_the_page(case, adapter_id, pages):
+    """The artifact oracle: the page a caller keeps names the party that answered.
+
+    ``pages`` maps a measured case name to the ``NativePage`` some adapter
+    produced for it. A local block must arrive as `network_intercepted` and
+    never as an http status — findings.md §0's rule is about what gets
+    recorded, not only about what transport can tell. An origin's own response
+    must never be blamed on the network. Each assertion names the confusion it
+    caught.
+    """
+
+    for row in interception_cases():
+        name = row["case_name"]
+        case.assertIn(name, pages, "{0} produced no page for case {1}".format(adapter_id, name))
+        loss = tuple(pages[name].loss)
+        detail = " {0} typed case {1} as loss {2}".format(adapter_id, name, loss)
+        if row["expected_verdict"] == transport.NETWORK_INTERCEPTED:
+            if transport.NETWORK_INTERCEPTED not in loss:
+                case.fail("a local network block reached the artifact as a platform gap:" + detail)
+            if "http_status" in loss:
+                case.fail("a local network block was recorded as an http status:" + detail)
+        elif transport.NETWORK_INTERCEPTED in loss:
+            case.fail("an origin response was recorded as a network interception:" + detail)
+
+
+class InterceptionReachesThePageTest(unittest.TestCase):
+    """Completion criteria 1 and 2: the verdict reaches the page, from one place.
+
+    The distinction `transport.py` draws is worth nothing until it is what an
+    adapter records, so every case here reads a ``NativePage``'s loss, not a
+    response's verdict.
+    """
+
+    def test_an_adapter_that_writes_no_interception_branch_still_types_the_block(self):
+        minimal = load_adapter_fixture("minimal_adapter")
+
+        assert_interception_reaches_the_page(self, "minimal_adapter", adapter_pages(minimal))
+
+    def test_the_inherited_page_names_the_block_and_keeps_no_records(self):
+        minimal = load_adapter_fixture("minimal_adapter")
+
+        page, opener = adapter_page(minimal, 503, read_fixture("captive_portal.html"))
+
+        self.assertEqual(page.loss, (transport.NETWORK_INTERCEPTED,))
+        self.assertEqual(page.outcome, "failed")
+        self.assertEqual(page.records, ())
+        self.assertEqual(len(opener.opened), 1)
 
 
 class OriginBehaviorSurvivesTest(unittest.TestCase):
