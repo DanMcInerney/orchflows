@@ -178,13 +178,19 @@ def call_adapter(
 def surface_descriptors(adapter_id: str) -> Tuple[AdapterDescriptor, ...]:
     """Every route one adapter can reach, one descriptor each.
 
-    Most adapters read one route and this is its one descriptor. Two do not:
-    ``hacker_news`` reads two origins, and ``github_rest`` reads one origin
-    whose anonymous hour is counted in two separate buckets. A budget belongs
-    to whoever sets it, so an adapter like those declares one descriptor per
-    route and this is where the second becomes reachable. Literal branches,
-    like the two above: a surface the core cannot see here is a route the
-    scheduler would refuse to pace.
+    Most adapters read one route and this is its one descriptor. Four do not:
+    ``hacker_news`` reads two origins, ``github_rest`` reads one origin whose
+    anonymous hour is counted in two separate buckets, ``public_page`` selects
+    between two documents, and ``x_guest`` spends an activation to authorize
+    the route it reads. A budget belongs to whoever sets it, so an adapter like
+    those declares one descriptor per route and this is where the second
+    becomes reachable. Literal branches, like the two above: a surface the core
+    cannot see here is a route the scheduler would refuse to pace.
+
+    A surface is not always something a caller reads. ``x_guest``'s activation
+    returns a token rather than a record, so it appears here — where budgets
+    are collected — and never in :func:`descriptor_for`, which answers what an
+    adapter reads.
     """
 
     if adapter_id == "github_rest":
@@ -193,6 +199,8 @@ def surface_descriptors(adapter_id: str) -> Tuple[AdapterDescriptor, ...]:
         return hacker_news.SURFACE_DESCRIPTORS
     if adapter_id == "public_page":
         return public_page.SURFACE_DESCRIPTORS
+    if adapter_id == "x_guest":
+        return x_guest.SURFACE_DESCRIPTORS
     descriptor = descriptor_for(adapter_id)
     return () if descriptor is None else (descriptor,)
 

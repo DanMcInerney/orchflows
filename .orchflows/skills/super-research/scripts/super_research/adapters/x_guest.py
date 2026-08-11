@@ -97,6 +97,34 @@ DESCRIPTOR = AdapterDescriptor(
     reply_count_metric="reply_count",
 )
 
+# The activation the reads above are authorized by, declared so the scheduler
+# can pace it. A budget belongs to whoever sets it, and until this row existed
+# the mint was the one request in the package that left under no ceiling at
+# all — the governor refuses to pace a route no adapter declares.
+#
+# Same three numbers as the read: findings.md §1 measured this origin at 0.5 s
+# per request and the activation is a request to it. Nothing here was measured
+# refusing, so burst and cooldown keep the conservative defaults, exactly as
+# the read's do.
+#
+# It is a surface with a budget and not a surface a caller reads: no record
+# ever comes back from an activation, which is why `descriptor_for` still
+# names the GraphQL route alone and this one is reachable only through
+# `SURFACE_DESCRIPTORS`.
+ACTIVATION_DESCRIPTOR = AdapterDescriptor(
+    adapter_id="x_guest",
+    adapter_version="1",
+    access_class="K1",
+    route_id=transport.X_GUEST_ACTIVATE_ROUTE,
+    platform="x",
+    native_identity_namespace="x",
+    representation_kind="native",
+    operator_identity="x",
+    min_interval_ms=500,
+)
+
+SURFACE_DESCRIPTORS = (DESCRIPTOR, ACTIVATION_DESCRIPTOR)
+
 NATIVE_ORDER = "x_guest_route_order"
 X_ORIGIN = "https://x.com"
 POST_KIND = "post"

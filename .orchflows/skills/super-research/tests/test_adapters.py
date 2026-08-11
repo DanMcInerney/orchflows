@@ -761,6 +761,35 @@ class GuestDescriptorTest(unittest.TestCase):
         self.assertEqual(x_guest.DESCRIPTOR.reply_count_metric, "reply_count")
         self.assertEqual(x_guest.DESCRIPTOR.comment_count_metric, "")
 
+    def test_the_activation_it_spends_declares_a_budget_of_its_own(self):
+        # The governor refuses to pace a route no adapter declares, and an
+        # activation is a request of its own — so it needs its own row. Same
+        # ceiling as the reads it authorizes: findings.md §1 measured one
+        # origin at 0.5 s per request, and the activation is a request there.
+        surfaces = {
+            descriptor.route_id: descriptor
+            for descriptor in runner.surface_descriptors("x_guest")
+        }
+
+        self.assertEqual(
+            sorted(surfaces),
+            sorted((transport.X_GUEST_ACTIVATE_ROUTE, transport.X_GUEST_GRAPHQL_ROUTE)),
+        )
+        self.assertEqual(
+            runner.route_budgets()[transport.X_GUEST_ACTIVATE_ROUTE],
+            runner.budget_of(x_guest.DESCRIPTOR),
+        )
+
+    def test_the_activation_surface_is_not_a_surface_a_caller_reads(self):
+        # It carries a budget and nothing else: no record comes back from an
+        # activation, so `descriptor_for` — the adapter's one readable surface
+        # — still names the GraphQL route and only that.
+        self.assertIs(runner.descriptor_for("x_guest"), x_guest.DESCRIPTOR)
+        self.assertEqual(x_guest.DESCRIPTOR.route_id, transport.X_GUEST_GRAPHQL_ROUTE)
+        self.assertEqual(
+            x_guest.ACTIVATION_DESCRIPTOR.route_id, transport.X_GUEST_ACTIVATE_ROUTE
+        )
+
     def test_the_core_can_reach_it_by_both_of_its_literal_branches(self):
         self.assertIn("x_guest", runner.ADAPTER_IDS)
         self.assertIs(runner.descriptor_for("x_guest"), x_guest.DESCRIPTOR)
