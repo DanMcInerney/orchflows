@@ -330,6 +330,18 @@ ends the call. It never triggers a second read, another route, or a changed
 identity: `transport.USER_AGENT` is one static string, and a rate limit is a
 constraint this package respects rather than evades.
 
+**The cooldown is the origin's own interval whenever it states one.**
+`Retry-After` in both RFC 7231 spellings and `X-RateLimit-Reset` are read off the
+headers `TransportResponse` carries, matched without regard to case and resolved
+against that answer's own `observed_at`; `RateGovernor` then holds the route for
+the longer of that and the declared `cooldown_ms`. Longer only — a stated
+interval that shortened a wait would be evasion wearing the shape of obedience —
+so an elapsed deadline, an unreadable value and an absent header alike leave the
+declared constant governing, and none of them raises. `transport.rate_refused`
+opens a cooldown for one status besides 429: a 403 whose body says the refusal is
+about rate, which is how GitHub spells its secondary limit. A 403 about who is
+asking opens none, and neither changes how the page is typed.
+
 **The run-local cache is a correctness requirement**, not an optimization: at one
 to two reads per thirty seconds, a run that re-reads a Reddit feed starves.
 `cache.RunCache` is keyed by `(route_id, canonical_request)`, holds at most
