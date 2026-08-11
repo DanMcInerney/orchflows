@@ -942,6 +942,22 @@ class GuestTokenStore:
 
         return self._tokens.get(token_route_id, "")
 
+    def claim(self, token_route_id: str) -> bool:
+        """Take this route's one activation, or report that it is already taken.
+
+        Claimed before the activation goes out rather than after it comes back,
+        which is what makes two rules one line. A refused mint is remembered as
+        a refusal, so the read that needed a token goes out unauthorized once
+        instead of paying for an activation the origin already declined; and an
+        activation route that named a token route of its own finds this route
+        claimed when it re-enters, so the mint cannot recurse without end.
+        """
+
+        if token_route_id in self._tokens:
+            return False
+        self._tokens[token_route_id] = ""
+        return True
+
     def remember(self, token_route_id: str, token: str) -> None:
         """Hold what one activation issued, empty answer included."""
 
@@ -1140,7 +1156,7 @@ class Transport:
         # this carrier. It runs ahead of the read it authorizes, which is the
         # order the origin expects.
         token_route_id = route_constant(request.route_id).token_route_id
-        if token_route_id and not GUEST_TOKENS.token_for(token_route_id):
+        if token_route_id and GUEST_TOKENS.claim(token_route_id):
             GUEST_TOKENS.remember(
                 token_route_id, mint_guest_token(self.fetch, token_route_id)
             )

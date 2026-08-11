@@ -1971,6 +1971,52 @@ class GuestMintCrossesTheRecordedSeamTest(unittest.TestCase):
         )
         self.assertEqual(response.status, 401)
 
+    def test_a_refused_mint_sends_the_read_unauthorized_and_is_never_retried(self):
+        # The rule :func:`mint_guest_token` states, now under test at the seam:
+        # a mint that produced nothing is not turned into a second activation,
+        # and the origin's own 401 is what the run records. A refusal
+        # re-attempted per read would spend two requests on every one the
+        # origin already refused.
+        carrier, _ = self.guest_carrier(
+            activation=(403, "forbidden", "text/plain"),
+            read=(401, "unauthorized", "application/json"),
+        )
+
+        first = carrier.fetch(guest_read_request())
+        second = carrier.fetch(guest_read_request())
+
+        self.assertEqual(
+            transport.GUEST_TOKENS._tokens, {transport.X_GUEST_ACTIVATE_ROUTE: ""}
+        )
+        self.assertEqual(
+            [call.route_id for call in carrier.calls],
+            [
+                transport.X_GUEST_ACTIVATE_ROUTE,
+                transport.X_GUEST_GRAPHQL_ROUTE,
+                transport.X_GUEST_GRAPHQL_ROUTE,
+            ],
+        )
+        self.assertEqual((first.status, second.status), (401, 401))
+
+    def test_an_activation_route_that_named_a_token_route_cannot_recurse(self):
+        # Minting at the seam is re-entrant: the activation is itself a fetch.
+        # Nothing in the table declares this today, so the guard is proven
+        # against a table that does.
+        looping = dict(transport.ROUTE_CONSTANTS)
+        looping[transport.X_GUEST_ACTIVATE_ROUTE] = dataclasses.replace(
+            looping[transport.X_GUEST_ACTIVATE_ROUTE],
+            token_route_id=transport.X_GUEST_ACTIVATE_ROUTE,
+        )
+        carrier, _ = self.guest_carrier()
+
+        with mock.patch.object(transport, "ROUTE_CONSTANTS", looping):
+            carrier.fetch(guest_read_request())
+
+        self.assertEqual(
+            [call.route_id for call in carrier.calls],
+            [transport.X_GUEST_ACTIVATE_ROUTE, transport.X_GUEST_GRAPHQL_ROUTE],
+        )
+
     def test_the_opener_attaches_what_the_seam_minted_and_mints_nothing_itself(self):
         carrier, _ = self.guest_carrier()
         carrier.fetch(guest_read_request())
