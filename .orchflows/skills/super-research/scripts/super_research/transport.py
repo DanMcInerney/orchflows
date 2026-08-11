@@ -906,13 +906,31 @@ def answering_address(response: Any, request: TransportRequest) -> str:
     return without_query_credential(answered, route_credential(request.route_id))
 
 
-def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str]:
+def answered_headers(headers: Any) -> Tuple[Tuple[str, str], ...]:
+    """What an answer carried, as the ordered pairs a request's headers are in.
+
+    Asked for rather than indexed, because an error response can carry none at
+    all — and because a mapping keyed the way this origin happened to spell a
+    name is a mapping the next origin cannot be looked up in.
+    """
+
+    if not headers:
+        return ()
+    return tuple((str(name), str(value)) for name, value in headers.items())
+
+
+def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str, Tuple[Tuple[str, str], ...]]:
     """Default opener: one bounded HTTPS read on an admitted method, no redirect games.
 
     Credentials are attached here and nowhere earlier, which is why a
     ``TransportRequest`` a caller holds can never carry one. A route that
     declares a ``token_route_id`` also mints its guest token here, at most once
     per process — one more request on the wire, still one read to every caller.
+
+    The fifth value is what the origin sent back. It is reported on both
+    branches: `Retry-After` rides on a 429, urllib raises every non-2xx, so
+    headers read only off the returning branch would be absent from the one
+    status a scheduler exists to answer.
     """
 
     if not request.url.startswith("https://"):
@@ -943,6 +961,7 @@ def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str]:
                 response.read(MAX_RESPONSE_BYTES).decode("utf-8", errors="replace"),
                 response.headers.get("Content-Type", ""),
                 answering_address(response, request),
+                answered_headers(response.headers),
             )
     except urllib.error.HTTPError as error:
         # A status-bearing error is data, not a tool failure: `channel_verdict`
@@ -953,6 +972,7 @@ def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str]:
             error.read(MAX_RESPONSE_BYTES).decode("utf-8", errors="replace"),
             error.headers.get("Content-Type", "") if error.headers else "",
             answering_address(error, request),
+            answered_headers(error.headers),
         )
     except OSError as error:
         raise TransportError("transport failed for " + request.route_id) from error
@@ -961,8 +981,9 @@ def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str]:
 def urlopen_response(request: TransportRequest) -> Tuple[int, str, str]:
     """The three-value view of :func:`urlopen_read`, for callers that ask nowhere else.
 
-    Most reads do not care which address answered, and the two forms exist so
-    that adding the fourth value changed no caller that did not want it.
+    Most reads do not care which address answered or what else it said, and
+    the two forms exist so that adding a fourth value, and then a fifth,
+    changed no caller that did not want them.
     """
 
     return urlopen_read(request)[:3]

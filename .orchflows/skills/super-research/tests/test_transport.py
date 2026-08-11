@@ -750,6 +750,22 @@ class RouteOwnershipScanTest(unittest.TestCase):
         self.assertEqual([name for name in sorted(named) if "transport" in name], [])
 
 
+def sent_headers(content_type, headers=()):
+    """What an origin sent back, in the ``email.message.Message`` urllib hands over.
+
+    One builder for both stand-ins, the one that returns and the one that
+    raises, so a header can never arrive on one path and be forgotten on the
+    other — which is the whole failure `RaisingUrlopen` exists to catch.
+    """
+
+    return email.message_from_string(
+        "".join(
+            name + ": " + value + "\n"
+            for name, value in (("Content-Type", content_type),) + tuple(headers)
+        )
+    )
+
+
 class FakeHTTPResponse:
     """The little of an http response that ``urlopen_read`` reads.
 
@@ -758,12 +774,17 @@ class FakeHTTPResponse:
     actually went out on — credential and all. A stand-in that omitted it made
     `final_url` fall back to the uncredentialed url a caller had built, which
     is the one shape in which the T02 leak below is invisible.
+
+    ``headers`` is an ``email.message.Message`` because that is what urllib
+    answers with: it keeps the origin's own casing rather than a tidier one a
+    stand-in chose, and casing is exactly what the lookup under test must not
+    depend on.
     """
 
-    def __init__(self, status, body, content_type, url=""):
+    def __init__(self, status, body, content_type, url="", headers=()):
         self.status = status
         self.url = url
-        self.headers = {"Content-Type": content_type}
+        self.headers = sent_headers(content_type, headers)
         self._body = body.encode("utf-8")
 
     def read(self, limit):
@@ -779,10 +800,11 @@ class FakeHTTPResponse:
 class RecordingUrlopen:
     """Stand in for ``urllib.request.urlopen`` and keep what would go on the wire."""
 
-    def __init__(self, status=200, body="{}", content_type="application/json"):
+    def __init__(self, status=200, body="{}", content_type="application/json", headers=()):
         self.status = status
         self.body = body
         self.content_type = content_type
+        self.headers = tuple(headers)
         self.requests = []
 
     def __call__(self, outbound, timeout=None):
@@ -790,7 +812,11 @@ class RecordingUrlopen:
         # Answered from the address it was asked at, which is what an origin
         # that did not redirect reports.
         return FakeHTTPResponse(
-            self.status, self.body, self.content_type, url=outbound.full_url
+            self.status,
+            self.body,
+            self.content_type,
+            url=outbound.full_url,
+            headers=self.headers,
         )
 
 
@@ -936,11 +962,12 @@ class RaisingUrlopen:
     in its own right, which is why the branch can read it at all.
     """
 
-    def __init__(self, status, body, content_type, url=""):
+    def __init__(self, status, body, content_type, url="", headers=()):
         self.status = status
         self.body = body
         self.content_type = content_type
         self.url = url
+        self.headers = tuple(headers)
         self.requests = []
 
     def __call__(self, outbound, timeout=None):
@@ -949,7 +976,7 @@ class RaisingUrlopen:
             self.url or outbound.full_url,
             self.status,
             "an origin's own refusal",
-            email.message_from_string("Content-Type: " + self.content_type),
+            sent_headers(self.content_type, self.headers),
             io.BytesIO(self.body.encode("utf-8")),
         )
 
@@ -963,8 +990,8 @@ class TheOpenerReadsARealHTTPErrorTest(unittest.TestCase):
     credential leak for ten tickets.
     """
 
-    def _read(self, status, body, content_type="text/html", route=None):
-        recorder = RaisingUrlopen(status, body, content_type)
+    def _read(self, status, body, content_type="text/html", route=None, headers=()):
+        recorder = RaisingUrlopen(status, body, content_type, headers=headers)
         request = transport.build_transport_request(
             transport.DDG_HTML_ROUTE if route is None else route, {"q": "local model"}
         )
@@ -972,7 +999,7 @@ class TheOpenerReadsARealHTTPErrorTest(unittest.TestCase):
             return transport.urlopen_read(request), recorder.requests[0]
 
     def test_a_raised_status_comes_back_as_a_status_and_not_as_a_tool_failure(self):
-        (status, body, content_type, final_url), outbound = self._read(
+        (status, body, content_type, final_url, _), outbound = self._read(
             404, "<html>not found</html>"
         )
 
@@ -998,12 +1025,28 @@ class TheOpenerReadsARealHTTPErrorTest(unittest.TestCase):
         # request actually went out on — credential and all — so this is the
         # one branch where the answering address could carry one back out.
         route = transport.YOUTUBE_INNERTUBE_ROUTE
-        (_, _, _, final_url), outbound = self._read(401, "{}", "application/json", route=route)
+        (_, _, _, final_url, _), outbound = self._read(
+            401, "{}", "application/json", route=route
+        )
 
         for _, value in credential_strings():
             with self.subTest(secret=value):
                 self.assertNotIn(value, final_url)
         self.assertTrue(outbound.full_url)
+
+    def test_the_headers_arrive_on_the_branch_that_raises(self):
+        # Where `Retry-After` actually lives. A 429 is a raise, so headers read
+        # only off the returning branch would be headers the scheduler never
+        # sees on the one status it exists to answer.
+        answered, _ = self._read(
+            transport.RATE_LIMITED_STATUS,
+            "slow down",
+            headers=((transport.RETRY_AFTER_HEADER, "120"),),
+        )
+
+        self.assertEqual(
+            transport.header_value(answered[4], transport.RETRY_AFTER_HEADER), "120"
+        )
 
     def test_an_oserror_is_still_a_tool_failure_and_never_a_status(self):
         # The other half of the same try: a refused connection has no status to
@@ -1015,6 +1058,85 @@ class TheOpenerReadsARealHTTPErrorTest(unittest.TestCase):
         with mock.patch.object(urllib.request, "urlopen", refuse):
             with self.assertRaises(transport.TransportError):
                 transport.urlopen_read(request)
+
+
+class TheAnswerCarriesWhatTheOriginSaidTest(unittest.TestCase):
+    """Criterion 1: an origin's own headers reach a caller, or say it sent none.
+
+    Until they did, the one thing an origin can say about how long it wants to
+    be left alone died inside the opener, and every wait this package took was
+    a constant it had guessed rather than an interval it had been told.
+    """
+
+    def _fetched(self, answer):
+        carrier, _ = offline_transport({transport.DDG_HTML_ROUTE: answer})
+        return carrier.fetch(
+            transport.build_transport_request(transport.DDG_HTML_ROUTE, {"q": "local model"})
+        )
+
+    def test_the_headers_an_opener_reports_reach_the_response(self):
+        response = self._fetched(
+            (
+                transport.RATE_LIMITED_STATUS,
+                "slow down",
+                "text/plain",
+                "https://asked.invalid/html/",
+                ((transport.RETRY_AFTER_HEADER, "120"),),
+            )
+        )
+
+        self.assertEqual(response.headers, ((transport.RETRY_AFTER_HEADER, "120"),))
+
+    def test_an_opener_that_reports_no_headers_says_the_origin_sent_none(self):
+        # The four-value opener contract every stand-in in this suite was
+        # written against, unchanged: it reports no headers and gets an empty
+        # set rather than an error.
+        response = self._fetched((200, "<html></html>", "text/html"))
+
+        self.assertEqual(response.headers, ())
+
+    def test_a_header_is_found_whatever_case_the_origin_spelled_it_in(self):
+        for spelling in ("Retry-After", "retry-after", "RETRY-AFTER", "ReTrY-aFtEr"):
+            with self.subTest(spelling=spelling):
+                self.assertEqual(
+                    transport.header_value(
+                        ((spelling, "120"),), transport.RETRY_AFTER_HEADER
+                    ),
+                    "120",
+                )
+
+    def test_a_header_nobody_sent_reads_as_nothing_rather_than_raising(self):
+        self.assertEqual(transport.header_value((), transport.RETRY_AFTER_HEADER), "")
+        self.assertEqual(
+            transport.header_value(
+                (("Content-Type", "text/html"),), transport.RETRY_AFTER_HEADER
+            ),
+            "",
+        )
+
+    def test_the_real_opener_reports_what_the_origin_sent(self):
+        recorder = RecordingUrlopen(
+            200, "{}", "application/json", headers=(("x-ratelimit-remaining", "59"),)
+        )
+        request = transport.build_transport_request(
+            transport.GITHUB_REST_ROUTE, {"owner": "o"}
+        )
+
+        with mock.patch.object(urllib.request, "urlopen", recorder):
+            answered = transport.urlopen_read(request)
+
+        self.assertEqual(
+            transport.header_value(answered[4], "X-RateLimit-Remaining"), "59"
+        )
+
+    def test_the_three_value_view_is_still_three_values(self):
+        recorder = RecordingUrlopen(200, "{}", "application/json")
+        request = transport.build_transport_request(
+            transport.GITHUB_REST_ROUTE, {"owner": "o"}
+        )
+
+        with mock.patch.object(urllib.request, "urlopen", recorder):
+            self.assertEqual(len(transport.urlopen_response(request)), 3)
 
 
 class OutboundRequestTest(unittest.TestCase):
