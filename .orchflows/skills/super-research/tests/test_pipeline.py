@@ -117,6 +117,12 @@ SECONDARY_LIMIT_BODY = (
 )
 FORBIDDEN_BODY = '{"message": "Must have admin rights to Repository."}'
 
+# Header values an origin should not send and sometimes does. `²` is the sharp
+# one: Python calls it a digit and refuses to make a number of it, so a reader
+# that trusted `isdigit` alone would raise out of the governor on a refusal.
+UNREADABLE_STATED_INTERVALS = ("", "   ", "soon", "-5", "9.5", "1e3", "²",
+                               "Tue, 32 Foo 2026 25:99:99 GMT")
+
 # One body every shipped adapter can parse into an empty page: no result
 # anchors for the HTML index, a data array for the archive, a records array for
 # the offline fixture. It lets the core's two literal branches be exercised for
@@ -1485,6 +1491,25 @@ class OriginStatedCooldownTest(unittest.TestCase):
         )
 
         self.assertEqual(held_us, 0)
+
+    def test_a_header_it_cannot_read_leaves_the_local_budget_governing(self):
+        # And leaves it governing rather than raising: a refusal is the worst
+        # moment to turn a header nobody could parse into a tool failure, and
+        # an origin that stated nothing readable stated nothing.
+        for stated in UNREADABLE_STATED_INTERVALS:
+            for header in (
+                transport.RETRY_AFTER_HEADER,
+                transport.RATE_LIMIT_RESET_HEADER,
+            ):
+                with self.subTest(header=header, stated=stated):
+                    held_us = self._held_after(((header, stated),))
+
+                    self.assertEqual(held_us, REDDIT_FEED_BUDGET.cooldown_ms * US_PER_MS)
+
+    def test_an_answer_that_states_nothing_is_paced_exactly_as_it_always_was(self):
+        held_us = self._held_after(())
+
+        self.assertEqual(held_us, REDDIT_FEED_BUDGET.cooldown_ms * US_PER_MS)
 
 
 class VolatileIdentifierTest(unittest.TestCase):
