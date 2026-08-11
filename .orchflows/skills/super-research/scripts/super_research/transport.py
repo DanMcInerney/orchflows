@@ -94,6 +94,11 @@ SECONDARY_RATE_LIMIT_MARKERS = ("secondary rate limit",)
 # absolute interval an origin states is measured against that field.
 OBSERVED_AT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
+# What an origin sent back, in the order it sent it. Named once because three
+# places pass it around: the opener reports it, the response holds it, and
+# :func:`header_value` answers questions about it.
+AnsweredHeaders = Tuple[Tuple[str, str], ...]
+
 # The first closed exception to reads-only, named by route id: minting an
 # anonymous guest token needs a POST, and that POST creates no account,
 # session, or content at the origin.
@@ -598,7 +603,7 @@ class TransportResponse:
     channel_verdict: str
     cache_hit: bool = False
     final_url: str = ""
-    headers: Tuple[Tuple[str, str], ...] = ()
+    headers: AnsweredHeaders = ()
 
 
 def utc_now_iso() -> str:
@@ -644,7 +649,7 @@ def rate_refused(status: int, body: str) -> bool:
     return False
 
 
-def header_value(headers: Tuple[Tuple[str, str], ...], name: str) -> str:
+def header_value(headers: AnsweredHeaders, name: str) -> str:
     """One header off an answer, matched without regard to case.
 
     The first match wins and a header nobody sent reads as an empty string, so
@@ -1012,20 +1017,20 @@ def answering_address(response: Any, request: TransportRequest) -> str:
     return without_query_credential(answered, route_credential(request.route_id))
 
 
-def answered_headers(headers: Any) -> Tuple[Tuple[str, str], ...]:
+def answered_headers(carried: Any) -> AnsweredHeaders:
     """What an answer carried, as the ordered pairs a request's headers are in.
 
-    Asked for rather than indexed, because an error response can carry none at
-    all — and because a mapping keyed the way this origin happened to spell a
-    name is a mapping the next origin cannot be looked up in.
+    Read out rather than held, because what urllib hands over differs between
+    the branch that returns and the branch that raises, and an error response
+    can carry nothing at all.
     """
 
-    if not headers:
+    if not carried:
         return ()
-    return tuple((str(name), str(value)) for name, value in headers.items())
+    return tuple((str(name), str(value)) for name, value in carried.items())
 
 
-def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str, Tuple[Tuple[str, str], ...]]:
+def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str, AnsweredHeaders]:
     """Default opener: one bounded HTTPS read on an admitted method, no redirect games.
 
     Credentials are attached here and nowhere earlier, which is why a
