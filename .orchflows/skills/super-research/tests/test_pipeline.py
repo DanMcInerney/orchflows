@@ -232,19 +232,31 @@ def answer_stating(route_id, index, status, body, headers, content_type="text/pl
     return (status, body, content_type, probe_request(route_id, index).url, headers)
 
 
-def http_date_after(seconds):
-    """The RFC 7231 HTTP-date that many seconds after the suite's frozen start.
+def moment_after(seconds):
+    """The moment that many seconds after the suite's frozen start.
 
     Composed from `helpers.FROZEN_START` rather than transcribed. An origin
     states an absolute moment, and the only moment it can honestly be resolved
-    against is the one the answer carries — so the date and the response's
-    ``observed_at`` have to come off one clock, and here they do.
+    against is the one the answer carries — so a stated deadline and the
+    response's ``observed_at`` have to come off one clock, and here they do.
     """
 
-    moment = datetime.strptime(helpers.FROZEN_START, helpers.STAMP_FORMAT).replace(
+    started = datetime.strptime(helpers.FROZEN_START, helpers.STAMP_FORMAT).replace(
         tzinfo=timezone.utc
     )
-    return email.utils.format_datetime(moment + timedelta(seconds=seconds), usegmt=True)
+    return started + timedelta(seconds=seconds)
+
+
+def http_date_after(seconds):
+    """That moment in the RFC 7231 spelling `Retry-After` also takes."""
+
+    return email.utils.format_datetime(moment_after(seconds), usegmt=True)
+
+
+def epoch_after(seconds):
+    """That moment as the UTC epoch second `X-RateLimit-Reset` states."""
+
+    return str(int(moment_after(seconds).timestamp()))
 
 
 def cooldown_us(governor, index=0):
@@ -1402,6 +1414,34 @@ class OriginStatedCooldownTest(unittest.TestCase):
         )
 
         self.assertEqual(held_us, REDDIT_FEED_BUDGET.cooldown_ms * US_PER_MS)
+
+    def test_a_stated_reset_window_is_read_under_the_same_floor_rule(self):
+        held_us = self._held_after(
+            ((transport.RATE_LIMIT_RESET_HEADER, epoch_after(STATED_WAIT_SECONDS)),)
+        )
+
+        self.assertGreaterEqual(held_us, REDDIT_FEED_BUDGET.cooldown_ms * US_PER_MS)
+        self.assertGreaterEqual(held_us, STATED_WAIT_SECONDS * US_PER_SECOND)
+
+    def test_a_reset_window_already_come_round_leaves_the_local_budget_governing(self):
+        held_us = self._held_after(
+            ((transport.RATE_LIMIT_RESET_HEADER, epoch_after(-STATED_WAIT_SECONDS)),)
+        )
+
+        self.assertEqual(held_us, REDDIT_FEED_BUDGET.cooldown_ms * US_PER_MS)
+
+    def test_an_origin_that_states_two_intervals_is_obeyed_at_the_longer_one(self):
+        # Both headers on one answer is a real shape, and choosing between them
+        # by precedence is the trap: a client that preferred the shorter would
+        # be reading a stated limit and evading it in the same move.
+        held_us = self._held_after(
+            (
+                (transport.RETRY_AFTER_HEADER, "1"),
+                (transport.RATE_LIMIT_RESET_HEADER, epoch_after(STATED_WAIT_SECONDS)),
+            )
+        )
+
+        self.assertGreaterEqual(held_us, STATED_WAIT_SECONDS * US_PER_SECOND)
 
 
 class VolatileIdentifierTest(unittest.TestCase):

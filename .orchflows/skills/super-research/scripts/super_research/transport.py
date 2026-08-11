@@ -657,6 +657,18 @@ def http_date_moment(stated: str) -> Optional[datetime]:
     return moment if moment.tzinfo is not None else moment.replace(tzinfo=timezone.utc)
 
 
+def epoch_moment(stated: str) -> Optional[datetime]:
+    """One UTC epoch second — how `X-RateLimit-Reset` states a window's end."""
+
+    held = stated.strip()
+    if not held:
+        return None
+    try:
+        return datetime.fromtimestamp(int(held), timezone.utc)
+    except (ValueError, OverflowError, OSError):
+        return None
+
+
 def remaining_seconds(deadline: Optional[datetime], read_at: Optional[datetime]) -> float:
     """Seconds from when an answer was read until an absolute moment it named.
 
@@ -670,6 +682,19 @@ def remaining_seconds(deadline: Optional[datetime], read_at: Optional[datetime])
     return max(0.0, (deadline - read_at).total_seconds())
 
 
+def retry_after_seconds(stated: str, read_at: Optional[datetime]) -> float:
+    """`Retry-After` in either spelling RFC 7231 gives it, as seconds remaining."""
+
+    held = stated.strip()
+    if not held:
+        return 0.0
+    # The two spellings are marked by nothing: whole seconds is `1*DIGIT`, and
+    # anything else the origin meant as an absolute date.
+    if held.isascii() and held.isdigit():
+        return float(held)
+    return remaining_seconds(http_date_moment(held), read_at)
+
+
 def stated_cooldown_seconds(response: TransportResponse) -> float:
     """How long this origin itself asked to be left alone, in seconds.
 
@@ -678,22 +703,23 @@ def stated_cooldown_seconds(response: TransportResponse) -> float:
     the local budget still governs — which is the only safe direction, because
     a wait this function shortened would be a limit evaded rather than read.
 
+    Two headers can state an interval and an origin may send both. It gets the
+    longest of what it said: deciding between them by precedence would let this
+    package read the shorter of two stated waits, which is evasion wearing the
+    shape of obedience.
+
     An absolute moment is measured against ``observed_at``, the moment this
-    very answer was read, and never against a clock read now: the two can be
-    minutes apart on a run that queued, and the difference would come off the
-    wait.
+    very answer was read, and never against a clock read now: the two are
+    different moments, and the difference would come off the wait.
     """
 
-    stated = header_value(response.headers, RETRY_AFTER_HEADER).strip()
-    if stated:
-        # RFC 7231 spells `Retry-After` two ways and marks neither: whole
-        # seconds as `1*DIGIT`, or an absolute HTTP-date. Only one is digits.
-        if stated.isascii() and stated.isdigit():
-            return float(stated)
-        return remaining_seconds(
-            http_date_moment(stated), observed_moment(response.observed_at)
-        )
-    return 0.0
+    read_at = observed_moment(response.observed_at)
+    return max(
+        retry_after_seconds(header_value(response.headers, RETRY_AFTER_HEADER), read_at),
+        remaining_seconds(
+            epoch_moment(header_value(response.headers, RATE_LIMIT_RESET_HEADER)), read_at
+        ),
+    )
 
 
 def route_constant(route_id: str) -> RouteConstant:
