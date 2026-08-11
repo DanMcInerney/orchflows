@@ -60,9 +60,10 @@ def _record_for(position: int, row: Mapping[str, Any]) -> NativeRecord:
     return NativeRecord(
         engagement=tuple((name, value) for name, value in row.get("engagement", ())),
         # A route's own named facts, in the order the payload states them and
-        # with a name repeated as often as it repeated there: the two routes
-        # whose whole roster row is named attributes can only be stood in for
-        # if both survive.
+        # with a name repeated as often as it repeated there. Two roster rows
+        # are named attributes almost entirely, and order and repetition are
+        # what they carry, so a stand-in that kept the family but not those two
+        # properties would still not be standing in for them.
         attributes=tuple((name, value) for name, value in row.get("attributes", ())),
         loss=tuple(row.get("loss", ())),
         **fields
