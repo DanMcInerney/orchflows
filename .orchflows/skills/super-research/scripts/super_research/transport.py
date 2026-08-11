@@ -72,12 +72,6 @@ READ_METHODS = ("GET", "HEAD")
 RATE_LIMITED_STATUS = 429
 RATE_LIMITED = "rate_limited"
 
-# The header an origin states its own wait in, in HTTP's own spelling. It is
-# matched without regard to case wherever it is read: origins do not agree on
-# casing, and the same limit arrives as `Retry-After` from one and
-# `retry-after` from the next.
-RETRY_AFTER_HEADER = "Retry-After"
-
 # The first closed exception to reads-only, named by route id: minting an
 # anonymous guest token needs a POST, and that POST creates no account,
 # session, or content at the origin.
@@ -564,13 +558,6 @@ class TransportResponse:
     opener that reports no address answered from the one it was asked, which is
     what every offline stand-in in the suite does and what a read that never
     left the process means.
-
-    ``headers`` is the header block the origin sent, as pairs in the order they
-    arrived. It is the one place an origin states how long it wants to be left
-    alone, which is why reading a rate limit costs no second request. An opener
-    that reports no header block sent none — the same thing an opener reporting
-    no address means, one position further along the same contract. Read one
-    with :func:`header_value` and never by exact case.
     """
 
     route_id: str
@@ -582,7 +569,6 @@ class TransportResponse:
     channel_verdict: str
     cache_hit: bool = False
     final_url: str = ""
-    headers: Tuple[Tuple[str, str], ...] = ()
 
 
 def utc_now_iso() -> str:
@@ -606,49 +592,6 @@ def channel_verdict(status: int, body: str) -> str:
         if marker in lowered:
             return NETWORK_INTERCEPTED
     return ORIGIN_FAILURE
-
-
-def header_value(headers: Tuple[Tuple[str, str], ...], name: str) -> str:
-    """One header's value, matched without regard to case, or "" for none.
-
-    Origins do not agree on casing, so a caller that matched exactly would obey
-    one origin's stated limit and miss the next one's — which is evasion by
-    typography. The first match wins: an origin that sent a header twice stated
-    that one first.
-    """
-
-    wanted = name.lower()
-    for header, value in headers:
-        if header.lower() == wanted:
-            return value
-    return ""
-
-
-def delta_seconds(stated: str) -> float:
-    """A header stating a count of seconds, or 0.0 when it states anything else.
-
-    Anything else is an empty header, a header nobody sent, `Retry-After`'s
-    other spelling, and whatever a misconfigured origin emits. None of them is
-    an error here: a value this cannot read states no wait at all, and the
-    caller's own measured budget is what then governs.
-    """
-
-    try:
-        return float(int(stated.strip()))
-    except ValueError:
-        return 0.0
-
-
-def stated_wait_seconds(response: TransportResponse) -> float:
-    """How long the origin itself asked to be left alone, counted from its answer.
-
-    Never negative and never an exception: an unreadable, absent, or already
-    elapsed statement is 0.0, which leaves the caller's own budget standing.
-    The one direction an origin's own words may move a wait is longer, so this
-    is a number to take the maximum with and never one to take instead.
-    """
-
-    return max(0.0, delta_seconds(header_value(response.headers, RETRY_AFTER_HEADER)))
 
 
 def route_constant(route_id: str) -> RouteConstant:
@@ -997,10 +940,6 @@ class Transport:
         # left the process means, and it keeps the three-value opener contract
         # every caller here was written against.
         final_url = answered[3] if len(answered) > 3 else request.url
-        # And an opener that reports no header block sent none. Same growth,
-        # same guard, one position along: every stand-in written against the
-        # shorter contract keeps answering exactly as it did.
-        headers = answered[4] if len(answered) > 4 else ()
         return TransportResponse(
             route_id=request.route_id,
             url=request.url,
@@ -1010,5 +949,4 @@ class Transport:
             observed_at=self._now(),
             channel_verdict=channel_verdict(status, body),
             final_url=final_url,
-            headers=headers,
         )
