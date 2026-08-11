@@ -231,10 +231,10 @@ class RouteConstant:
     on it would name a different resource.
 
     ``token_route_id`` names the activation route that mints the token this
-    one needs. The mint is a request like any other and is spelled as one: it
-    crosses :meth:`Transport.fetch`, so the run's call log holds it and the
-    injected opener answers it. Only the attach happens at send time, inside
-    the opener, beside every other credential.
+    one needs, and the activation is a route here like any other — it declares
+    its own budget and the scheduler spends it. Only the attach happens at send
+    time, inside the opener, beside every other credential; the mint itself
+    belongs to whoever paces this run.
     """
 
     route_id: str
@@ -896,8 +896,11 @@ def mint_guest_token(
 
     The request goes out through the caller's own ``fetch`` rather than through
     an opener reached from here, which is what makes an activation a call the
-    run can see: it is recorded in that carrier's log and answered by whatever
-    opener that carrier holds.
+    run can see: recorded in that carrier's log, answered by whatever opener it
+    holds, and charged against this route's own budget by whoever paces it.
+    Nothing in this module calls this function — a caller holding only a bare
+    :class:`Transport` has chosen a carrier that does not mint, and its reads
+    go out unauthorized.
 
     A mint that does not produce a token yields an empty string rather than an
     exception: the read that needed it then goes out unauthorized and the
@@ -931,7 +934,8 @@ class GuestTokenStore:
 
     Lookup only. Nothing here reaches an origin, because a store that minted on
     lookup would mint wherever it was first read from — which is below the seam
-    that records and paces a request, and out of sight of both.
+    that records a request and below the one that paces it, and out of sight of
+    both. The mint lives at the governor; this holds what it issued.
     """
 
     def __init__(self) -> None:
@@ -1072,8 +1076,9 @@ def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str, Answere
     Credentials are attached here and nowhere earlier, which is why a
     ``TransportRequest`` a caller holds can never carry one. A route that
     declares a ``token_route_id`` gets its guest token attached here too, from
-    whatever the process is already holding — the mint itself happens above,
-    at the seam that records it.
+    whatever the process is already holding — the mint itself happens above, at
+    the governor that records and paces it. A process holding none sends the
+    read unauthorized.
 
     The fifth value is what the origin sent back. It is reported on both
     branches: `Retry-After` rides on a 429, urllib raises every non-2xx, so
@@ -1150,15 +1155,6 @@ class Transport:
         self.calls: List[TransportRequest] = []
 
     def fetch(self, request: TransportRequest) -> TransportResponse:
-        # The one site in the package that mints, and it mints here because an
-        # activation is a request like any other: crossing this seam is what
-        # puts it in the call log and on the injected opener. It runs ahead of
-        # the read it authorizes, which is the order the origin expects.
-        token_route_id = route_constant(request.route_id).token_route_id
-        if token_route_id and GUEST_TOKENS.claim(token_route_id):
-            GUEST_TOKENS.remember(
-                token_route_id, mint_guest_token(self.fetch, token_route_id)
-            )
         # Recorded before the opener runs, so a raising opener still leaves the
         # attempt visible: "an adapter never retries" is checked against this log.
         self.calls.append(request)

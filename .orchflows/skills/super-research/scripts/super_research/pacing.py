@@ -154,6 +154,7 @@ class RateGovernor:
     ) -> transport.TransportResponse:
         """Reached only on a cache miss, which is what makes a hit free."""
 
+        self._mint_for(request.route_id)
         budget = self._budget_for(request.route_id)
         waited_us = self._wait_until(self._ready_at(request.route_id, budget))
         began_us = self._elapsed_us()
@@ -170,6 +171,36 @@ class RateGovernor:
             )
         )
         return response
+
+    def _mint_for(self, route_id: str) -> None:
+        """Mint this route's guest token, once per process, as one paced read.
+
+        The only site in the package that mints. It runs here rather than at
+        the carrier because an activation is a read like any other: it belongs
+        in the call log, on the injected opener, and inside a budget of its
+        own. The carrier cannot give it the third — a request the carrier makes
+        for itself is nested inside the one this governor is already timing, so
+        it would be charged to no route at all.
+
+        On the miss path with the pacing, so a read a run already remembers
+        costs no activation: a token buys an origin read, and a cache hit
+        reaches no origin.
+
+        A caller who hands in a bare :class:`transport.Transport` instead of the
+        composed carrier gets no mint, the same way it gets no pacing and no
+        cache — one choice, named in :func:`runner.run_scheduled`, not three.
+        Its read then goes out unauthorized and the origin's own 401 or 403 is
+        what the run records: never an invented token and never a retry, which
+        is the rule :func:`transport.mint_guest_token` states.
+        """
+
+        token_route_id = transport.route_constant(route_id).token_route_id
+        if not token_route_id or not transport.GUEST_TOKENS.claim(token_route_id):
+            return
+        transport.GUEST_TOKENS.remember(
+            token_route_id,
+            transport.mint_guest_token(self._paced_fetch, token_route_id),
+        )
 
     def _budget_for(self, route_id: str) -> RouteBudget:
         budget = self._budgets.get(route_id)
