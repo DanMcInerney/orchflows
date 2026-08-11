@@ -231,8 +231,9 @@ class RouteConstant:
     on it would name a different resource.
 
     ``token_route_id`` names the activation route that mints the token this
-    one needs. It is what makes an authorized read still one read to everyone
-    above this module: the mint happens at send time, inside the opener,
+    one needs. The mint is a request like any other and is spelled as one: it
+    crosses :meth:`Transport.fetch`, so it is recorded, opened by the injected
+    opener, and paced. Only the attach happens at send time, inside the opener,
     beside every other credential.
     """
 
@@ -888,8 +889,15 @@ def json_body(route: RouteConstant, params: Dict[str, str]) -> str:
     return json.dumps(body, separators=(",", ":"), sort_keys=True) if body else ""
 
 
-def mint_guest_token(token_route_id: str) -> str:
+def mint_guest_token(
+    fetch: Callable[["TransportRequest"], "TransportResponse"], token_route_id: str
+) -> str:
     """One activation request, returning the token it issued or nothing at all.
+
+    The request goes out through the caller's own ``fetch`` rather than through
+    an opener reached from here, which is what makes an activation a call the
+    run can see: it is recorded, opened by whatever opener that carrier holds,
+    and paced by whatever paces it.
 
     A mint that does not produce a token yields an empty string rather than an
     exception: the read that needed it then goes out unauthorized and the
@@ -899,13 +907,13 @@ def mint_guest_token(token_route_id: str) -> str:
     """
 
     try:
-        status, body, _ = urlopen_response(build_transport_request(token_route_id))
+        response = fetch(build_transport_request(token_route_id))
     except TransportError:
         return ""
-    if status != 200:
+    if response.status != 200:
         return ""
     try:
-        payload = json.loads(body)
+        payload = json.loads(response.body)
     except ValueError:
         return ""
     token = payload.get(GUEST_TOKEN_FIELD) if isinstance(payload, dict) else None
@@ -915,22 +923,29 @@ def mint_guest_token(token_route_id: str) -> str:
 class GuestTokenStore:
     """Anonymous guest tokens, held in memory for as long as the process reads.
 
-    One token per activation route, minted on first use and spent on every
-    later read: a run that minted per read would spend two requests where the
-    origin expects one, and one that persisted a token would carry state
+    One token per activation route, minted once above this store and spent on
+    every later read: a run that minted per read would spend two requests where
+    the origin expects one, and one that persisted a token would carry state
     across runs. There is no file, no environment variable, and no artifact
     field here — a token exists only in this object.
+
+    Lookup only. Nothing here reaches an origin, because a store that minted on
+    lookup would mint wherever it was first read from — which is below the seam
+    that records and paces a request, and out of sight of both.
     """
 
     def __init__(self) -> None:
         self._tokens: Dict[str, str] = {}
 
     def token_for(self, token_route_id: str) -> str:
-        held = self._tokens.get(token_route_id)
-        if held is None:
-            held = mint_guest_token(token_route_id)
-            self._tokens[token_route_id] = held
-        return held
+        """The token this process holds for a route, or nothing. Never a mint."""
+
+        return self._tokens.get(token_route_id, "")
+
+    def remember(self, token_route_id: str, token: str) -> None:
+        """Hold what one activation issued, empty answer included."""
+
+        self._tokens[token_route_id] = token
 
     def clear(self) -> None:
         self._tokens.clear()
@@ -942,7 +957,12 @@ GUEST_TOKENS = GuestTokenStore()
 def tokened_headers(
     headers: Tuple[Tuple[str, str], ...], token_route_id: str
 ) -> Tuple[Tuple[str, str], ...]:
-    """Attach this route's guest token, minting one if the process holds none."""
+    """Attach this route's guest token, when the process is holding one.
+
+    An attach, never a mint: a process holding none sends the read
+    unauthorized, which is the outcome :func:`mint_guest_token` already names
+    as the honest one.
+    """
 
     if not token_route_id:
         return tuple(headers)
@@ -1035,8 +1055,9 @@ def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str, Answere
 
     Credentials are attached here and nowhere earlier, which is why a
     ``TransportRequest`` a caller holds can never carry one. A route that
-    declares a ``token_route_id`` also mints its guest token here, at most once
-    per process — one more request on the wire, still one read to every caller.
+    declares a ``token_route_id`` gets its guest token attached here too, from
+    whatever the process is already holding — the mint itself happens above,
+    at the seam that records it.
 
     The fifth value is what the origin sent back. It is reported on both
     branches: `Retry-After` rides on a 429, urllib raises every non-2xx, so
@@ -1113,6 +1134,16 @@ class Transport:
         self.calls: List[TransportRequest] = []
 
     def fetch(self, request: TransportRequest) -> TransportResponse:
+        # The one site in the package that mints, and it mints here because an
+        # activation is a request like any other: crossing this seam is what
+        # puts it in the log, on the injected opener, and under whatever paces
+        # this carrier. It runs ahead of the read it authorizes, which is the
+        # order the origin expects.
+        token_route_id = route_constant(request.route_id).token_route_id
+        if token_route_id and not GUEST_TOKENS.token_for(token_route_id):
+            GUEST_TOKENS.remember(
+                token_route_id, mint_guest_token(self.fetch, token_route_id)
+            )
         # Recorded before the opener runs, so a raising opener still leaves the
         # attempt visible: "an adapter never retries" is checked against this log.
         self.calls.append(request)

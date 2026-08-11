@@ -16,6 +16,7 @@ from __future__ import annotations
 import ast
 import builtins
 import contextlib
+import dataclasses
 import email
 import importlib.util
 import io
@@ -1826,6 +1827,203 @@ class AbsentMachineryTest(unittest.TestCase):
         transport.GUEST_TOKENS.clear()
 
         self.assertEqual(transport.GUEST_TOKENS._tokens, {})
+
+
+MINTED_GUEST_TOKEN = "a-token-this-run-minted"
+ACTIVATION_ANSWER = (
+    200,
+    json.dumps({transport.GUEST_TOKEN_FIELD: MINTED_GUEST_TOKEN}),
+    "application/json",
+)
+GUEST_READ_ANSWER = (200, "{}", "application/json")
+
+# The one function that turns an activation into a token. A place that calls it
+# is a place that mints, which is what the site scan below counts.
+MINTER = "mint_guest_token"
+
+
+def guest_read_request():
+    """One read on the route that declares an activation route of its own."""
+
+    return transport.build_transport_request(
+        transport.X_GUEST_GRAPHQL_ROUTE,
+        {"query_id": "abc123", "operation_name": "UserByScreenName"},
+    )
+
+
+def called_name(func):
+    """The bare name a call node spells, whether it was reached plainly or dotted."""
+
+    if isinstance(func, ast.Name):
+        return func.id
+    return func.attr if isinstance(func, ast.Attribute) else ""
+
+
+def sites_calling(node, owners, module_name, found):
+    """Collect every enclosing function in one tree that calls the minter."""
+
+    for child in ast.iter_child_nodes(node):
+        if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            sites_calling(child, owners + (child.name,), module_name, found)
+            continue
+        if isinstance(child, ast.Call) and called_name(child.func) == MINTER:
+            found.add(module_name + ":" + ".".join(owners))
+        sites_calling(child, owners, module_name, found)
+
+
+def minting_sites():
+    """Every place in the package that mints, as ``module:qualified name``.
+
+    Stated as the set of sites for the reason `test_pipeline` states the set of
+    modules that build a carrier as a set: naming one site would not notice a
+    second one appearing beside it, and a count would not say which.
+    """
+
+    found = set()
+    for path in sorted(PACKAGE_DIR.rglob("*.py")):
+        sites_calling(ast.parse(path.read_text(encoding="utf-8")), (), path.name, found)
+    return sorted(found)
+
+
+class GuestMintCrossesTheRecordedSeamTest(unittest.TestCase):
+    """The mint is one recorded call on whatever opener the carrier was given.
+
+    It used to run inside ``urlopen_read``, below the seam: invisible to the
+    call log, unreachable by an injected opener, and unpaceable. The store is
+    module-level, so every test here clears it — ordering would otherwise
+    decide which of them minted.
+    """
+
+    def setUp(self):
+        transport.GUEST_TOKENS.clear()
+        self.addCleanup(transport.GUEST_TOKENS.clear)
+
+    def guest_carrier(self, activation=ACTIVATION_ANSWER, read=GUEST_READ_ANSWER):
+        return offline_transport({
+            transport.X_GUEST_ACTIVATE_ROUTE: activation,
+            transport.X_GUEST_GRAPHQL_ROUTE: read,
+        })
+
+    def test_the_activation_is_in_the_call_log_ahead_of_the_read_it_authorizes(self):
+        carrier, _ = self.guest_carrier()
+
+        carrier.fetch(guest_read_request())
+
+        self.assertEqual(
+            [call.route_id for call in carrier.calls],
+            [transport.X_GUEST_ACTIVATE_ROUTE, transport.X_GUEST_GRAPHQL_ROUTE],
+        )
+
+    def test_the_injected_opener_answers_the_activation_and_urllib_never_does(self):
+        carrier, opener = self.guest_carrier()
+
+        # Bypassing the injected opener means reaching urllib, which this guard
+        # turns into an assertion failure rather than an egress.
+        with forbid_io():
+            carrier.fetch(guest_read_request())
+
+        self.assertEqual(
+            [request.route_id for request in opener.opened],
+            [transport.X_GUEST_ACTIVATE_ROUTE, transport.X_GUEST_GRAPHQL_ROUTE],
+        )
+        self.assertEqual(
+            transport.GUEST_TOKENS._tokens,
+            {transport.X_GUEST_ACTIVATE_ROUTE: MINTED_GUEST_TOKEN},
+        )
+
+    def test_the_token_is_minted_once_and_the_store_answers_every_later_read(self):
+        carrier, _ = self.guest_carrier()
+
+        carrier.fetch(guest_read_request())
+        carrier.fetch(guest_read_request())
+
+        self.assertEqual(
+            [call.route_id for call in carrier.calls],
+            [
+                transport.X_GUEST_ACTIVATE_ROUTE,
+                transport.X_GUEST_GRAPHQL_ROUTE,
+                transport.X_GUEST_GRAPHQL_ROUTE,
+            ],
+        )
+
+    def test_a_route_declaring_no_activation_route_mints_nothing(self):
+        carrier, _ = offline_transport({transport.DDG_HTML_ROUTE: GUEST_READ_ANSWER})
+
+        carrier.fetch(
+            transport.build_transport_request(transport.DDG_HTML_ROUTE, {"q": "probe"})
+        )
+
+        self.assertEqual([call.route_id for call in carrier.calls], [transport.DDG_HTML_ROUTE])
+        self.assertEqual(transport.GUEST_TOKENS._tokens, {})
+
+    def test_an_activation_the_opener_refuses_outright_yields_no_token(self):
+        # The opener raises rather than answering, so the read that needed a
+        # token goes out without one and the origin's own 401 is what the run
+        # records — never an invented token.
+        carrier, _ = offline_transport(
+            {transport.X_GUEST_GRAPHQL_ROUTE: (401, "unauthorized", "application/json")}
+        )
+
+        response = carrier.fetch(guest_read_request())
+
+        self.assertEqual(
+            transport.GUEST_TOKENS._tokens, {transport.X_GUEST_ACTIVATE_ROUTE: ""}
+        )
+        self.assertEqual(response.status, 401)
+
+    def test_the_opener_attaches_what_the_seam_minted_and_mints_nothing_itself(self):
+        carrier, _ = self.guest_carrier()
+        carrier.fetch(guest_read_request())
+
+        # Under the guard on purpose: a lookup that still minted would reach
+        # urllib here, and a store the seam filled needs no network to answer.
+        with forbid_io():
+            held = transport.tokened_headers((), transport.X_GUEST_ACTIVATE_ROUTE)
+            transport.GUEST_TOKENS.clear()
+            empty = transport.tokened_headers((), transport.X_GUEST_ACTIVATE_ROUTE)
+
+        self.assertEqual(held, ((transport.GUEST_TOKEN_HEADER, MINTED_GUEST_TOKEN),))
+        self.assertEqual(empty, ())
+
+    def test_the_minted_token_reaches_no_call_no_response_and_no_environment(self):
+        carrier, opener = self.guest_carrier()
+
+        # The guard is half the claim: no file was written because none could be.
+        with forbid_io():
+            response = carrier.fetch(guest_read_request())
+
+        # A token really was minted, so the four claims below are about
+        # something rather than about nothing.
+        self.assertEqual(
+            transport.GUEST_TOKENS._tokens,
+            {transport.X_GUEST_ACTIVATE_ROUTE: MINTED_GUEST_TOKEN},
+        )
+        self.assertNotIn(MINTED_GUEST_TOKEN, repr(carrier.calls))
+        self.assertNotIn(MINTED_GUEST_TOKEN, repr(opener.opened))
+        self.assertNotIn(MINTED_GUEST_TOKEN, repr(response))
+        self.assertEqual(
+            [name for name, value in os.environ.items() if MINTED_GUEST_TOKEN in value], []
+        )
+
+    def test_exactly_one_site_in_the_package_mints(self):
+        self.assertEqual(minting_sites(), ["transport.py:Transport.fetch"])
+
+    def test_the_minting_site_scan_notices_a_site_it_was_not_told_about(self):
+        # The scan is shown to discriminate rather than to match nothing at all.
+        found = set()
+
+        sites_calling(
+            ast.parse(
+                "class Rogue:\n"
+                "    def read(self):\n"
+                "        return mint_guest_token(self.fetch, 'r')\n"
+            ),
+            (),
+            "rogue.py",
+            found,
+        )
+
+        self.assertEqual(sorted(found), ["rogue.py:Rogue.read"])
 
 
 class UntrustedContentTest(unittest.TestCase):
