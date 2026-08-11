@@ -81,6 +81,15 @@ RATE_LIMITED = "rate_limited"
 RETRY_AFTER_HEADER = "Retry-After"
 RATE_LIMIT_RESET_HEADER = "X-RateLimit-Reset"
 
+# The other status an origin uses to ask for fewer requests, and how it says
+# so. A 403 is normally about who is asking rather than how often — an authwall
+# and a private repository are both 403 — so the status alone decides nothing:
+# it is a rate refusal only when the answer says the refusal is about rate.
+# GitHub's secondary limit is the roster's measured case, and it says it in the
+# body rather than in a status of its own.
+SECONDARY_RATE_LIMITED_STATUS = 403
+SECONDARY_RATE_LIMIT_MARKERS = ("secondary rate limit",)
+
 # The moment format `observed_at` is written and read in. One name, because an
 # absolute interval an origin states is measured against that field.
 OBSERVED_AT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
@@ -613,6 +622,26 @@ def channel_verdict(status: int, body: str) -> str:
         if marker in lowered:
             return NETWORK_INTERCEPTED
     return ORIGIN_FAILURE
+
+
+def rate_refused(status: int, body: str) -> bool:
+    """Whether this answer is the origin asking for fewer requests.
+
+    A 429 always is. A 403 is one only when the answer says the refusal is
+    about rate: read the way the portal marker is read — the origin's own
+    words, case folded — and only on the refusing status, so a page that
+    quotes the sentence is still content rather than a limit.
+    """
+
+    if status == RATE_LIMITED_STATUS:
+        return True
+    if status != SECONDARY_RATE_LIMITED_STATUS:
+        return False
+    lowered = body.lower()
+    for marker in SECONDARY_RATE_LIMIT_MARKERS:
+        if marker in lowered:
+            return True
+    return False
 
 
 def header_value(headers: Tuple[Tuple[str, str], ...], name: str) -> str:

@@ -108,6 +108,15 @@ US_PER_SECOND = 1000000
 # interval and a governor that ignored it cannot produce the same schedule.
 STATED_WAIT_SECONDS = 900
 
+# The two 403s GitHub answers with, spelled the way it spells them. They share
+# a status and mean opposite things: the first asks for fewer requests, the
+# second says this reader may not have this resource however long it waits.
+SECONDARY_LIMIT_BODY = (
+    '{"message": "You have exceeded a secondary rate limit. Please wait a few'
+    ' minutes before you try again."}'
+)
+FORBIDDEN_BODY = '{"message": "Must have admin rights to Repository."}'
+
 # One body every shipped adapter can parse into an empty page: no result
 # anchors for the HTML index, a data array for the archive, a records array for
 # the offline fixture. It lets the core's two literal branches be exercised for
@@ -1442,6 +1451,40 @@ class OriginStatedCooldownTest(unittest.TestCase):
         )
 
         self.assertGreaterEqual(held_us, STATED_WAIT_SECONDS * US_PER_SECOND)
+
+    def test_a_secondary_limit_403_opens_the_cooldown_the_status_alone_opened_none(self):
+        held_us = self._held_after(
+            (),
+            status=transport.SECONDARY_RATE_LIMITED_STATUS,
+            body=SECONDARY_LIMIT_BODY,
+            route_id=GITHUB_REST_ROUTE,
+        )
+
+        self.assertGreaterEqual(held_us, GITHUB_REST_BUDGET.cooldown_ms * US_PER_MS)
+
+    def test_a_403_about_who_is_asking_opens_no_cooldown_at_all(self):
+        # The other direction, and the one that keeps the first from being a
+        # blanket. An authwall and a private repository are both 403, and
+        # holding a route for an hour because it is unreadable would be waiting
+        # out a limit nobody stated.
+        held_us = self._held_after(
+            (),
+            status=transport.SECONDARY_RATE_LIMITED_STATUS,
+            body=FORBIDDEN_BODY,
+            route_id=GITHUB_REST_ROUTE,
+        )
+
+        self.assertEqual(held_us, 0)
+
+    def test_a_success_that_quotes_the_sentence_is_content_and_not_a_refusal(self):
+        # The same trap the portal marker has: this package reads pages about
+        # rate limiting, and one of them saying the words is not the origin
+        # saying them about this read.
+        held_us = self._held_after(
+            (), status=200, body=SECONDARY_LIMIT_BODY, route_id=GITHUB_REST_ROUTE
+        )
+
+        self.assertEqual(held_us, 0)
 
 
 class VolatileIdentifierTest(unittest.TestCase):

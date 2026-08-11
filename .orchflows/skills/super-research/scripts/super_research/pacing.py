@@ -214,7 +214,7 @@ class RateGovernor:
         self._route_arrival_us[route_id] = (
             max(arrival_us, began_us) + budget.min_interval_ms * US_PER_MS
         )
-        if response.status != transport.RATE_LIMITED_STATUS:
+        if not transport.rate_refused(response.status, response.body):
             return
         stated_us = int(round(transport.stated_cooldown_seconds(response) * US_PER_SECOND))
         self._route_blocked_until_us[route_id] = stopped_us + max(
