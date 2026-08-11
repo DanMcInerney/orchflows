@@ -159,7 +159,7 @@ class RateGovernor:
         began_us = self._elapsed_us()
         response = self._carrier.fetch(request)
         stopped_us = self._elapsed_us()
-        self._charge(request.route_id, budget, began_us, stopped_us, response.status)
+        self._charge(request.route_id, budget, began_us, stopped_us, response)
         self.log.append(
             OriginRead(
                 route_id=request.route_id,
@@ -194,18 +194,32 @@ class RateGovernor:
         return ready_us
 
     def _charge(
-        self, route_id: str, budget: RouteBudget, began_us: int, stopped_us: int, status: int
+        self,
+        route_id: str,
+        budget: RouteBudget,
+        began_us: int,
+        stopped_us: int,
+        response: transport.TransportResponse,
     ) -> None:
-        """Spend one read against this route, and open a cooldown if it was refused."""
+        """Spend one read against this route, and open a cooldown if it was refused.
+
+        The cooldown is the longer of the two intervals on offer: the ceiling
+        this package measured, and the one the origin stated in its own answer.
+        A ``max``, never a substitution — reading a stated interval is how a
+        client obeys a longer wait than it would have chosen, and it is never
+        how one talks itself into a shorter one.
+        """
 
         arrival_us = self._route_arrival_us.get(route_id, began_us)
         self._route_arrival_us[route_id] = (
             max(arrival_us, began_us) + budget.min_interval_ms * US_PER_MS
         )
-        if status == transport.RATE_LIMITED_STATUS:
-            self._route_blocked_until_us[route_id] = (
-                stopped_us + budget.cooldown_ms * US_PER_MS
-            )
+        if response.status != transport.RATE_LIMITED_STATUS:
+            return
+        stated_us = int(round(transport.stated_cooldown_seconds(response) * US_PER_SECOND))
+        self._route_blocked_until_us[route_id] = stopped_us + max(
+            budget.cooldown_ms * US_PER_MS, stated_us
+        )
 
     def _elapsed_us(self) -> int:
         return tick_us(self._clock) - self._origin_us

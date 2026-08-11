@@ -72,6 +72,18 @@ READ_METHODS = ("GET", "HEAD")
 RATE_LIMITED_STATUS = 429
 RATE_LIMITED = "rate_limited"
 
+# Where an origin states how long it wants to be left alone, named here for the
+# same reason the status is. Both are matched without regard to case: HTTP
+# header names are case-insensitive and origins do not agree on the spelling,
+# so a lookup that matched one casing would read a stated interval as an absent
+# one — which is how a limit gets evaded by accident rather than by intent.
+RETRY_AFTER_HEADER = "Retry-After"
+RATE_LIMIT_RESET_HEADER = "X-RateLimit-Reset"
+
+# The moment format `observed_at` is written and read in. One name, because an
+# absolute interval an origin states is measured against that field.
+OBSERVED_AT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+
 # The first closed exception to reads-only, named by route id: minting an
 # anonymous guest token needs a POST, and that POST creates no account,
 # session, or content at the origin.
@@ -558,6 +570,13 @@ class TransportResponse:
     opener that reports no address answered from the one it was asked, which is
     what every offline stand-in in the suite does and what a read that never
     left the process means.
+
+    ``headers`` is what the origin sent back, in the order it sent it. It is
+    the only place an origin can say how long it wants to be left alone, so a
+    scheduler that never saw it could wait no interval but the one this package
+    guessed. An opener that reports none sent none. Names are asked for through
+    :func:`header_value` and never indexed, because origins do not agree on
+    casing.
     """
 
     route_id: str
@@ -569,10 +588,11 @@ class TransportResponse:
     channel_verdict: str
     cache_hit: bool = False
     final_url: str = ""
+    headers: Tuple[Tuple[str, str], ...] = ()
 
 
 def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(timezone.utc).strftime(OBSERVED_AT_FORMAT)
 
 
 def channel_verdict(status: int, body: str) -> str:
@@ -592,6 +612,37 @@ def channel_verdict(status: int, body: str) -> str:
         if marker in lowered:
             return NETWORK_INTERCEPTED
     return ORIGIN_FAILURE
+
+
+def header_value(headers: Tuple[Tuple[str, str], ...], name: str) -> str:
+    """One header off an answer, matched without regard to case.
+
+    The first match wins and a header nobody sent reads as an empty string, so
+    a caller asks a question rather than indexing a mapping whose keys it would
+    have to spell exactly the way this origin happened to.
+    """
+
+    wanted = name.lower()
+    for held, value in headers:
+        if held.lower() == wanted:
+            return value
+    return ""
+
+
+def stated_cooldown_seconds(response: TransportResponse) -> float:
+    """How long this origin itself asked to be left alone, in seconds.
+
+    Zero when it asked for nothing and never negative. Nothing here raises: a
+    header this module cannot read is a header the origin did not state, and
+    the local budget still governs — which is the only safe direction, because
+    a wait this function shortened would be a limit evaded rather than read.
+    """
+
+    stated = header_value(response.headers, RETRY_AFTER_HEADER).strip()
+    # RFC 7231 spells `Retry-After` as whole seconds, `1*DIGIT`.
+    if stated.isascii() and stated.isdigit():
+        return float(stated)
+    return 0.0
 
 
 def route_constant(route_id: str) -> RouteConstant:
@@ -940,6 +991,10 @@ class Transport:
         # left the process means, and it keeps the three-value opener contract
         # every caller here was written against.
         final_url = answered[3] if len(answered) > 3 else request.url
+        # And an opener that reports no headers received none, which is the
+        # same courtesy the address gets and for the same reason: the four-value
+        # opener contract every stand-in here was written against still holds.
+        headers = answered[4] if len(answered) > 4 else ()
         return TransportResponse(
             route_id=request.route_id,
             url=request.url,
@@ -949,4 +1004,5 @@ class Transport:
             observed_at=self._now(),
             channel_verdict=channel_verdict(status, body),
             final_url=final_url,
+            headers=headers,
         )

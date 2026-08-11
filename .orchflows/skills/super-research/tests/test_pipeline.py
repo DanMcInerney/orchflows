@@ -99,6 +99,12 @@ SEEDED_BUDGETS = {
 OK_JSON = (200, '{"data": []}', "application/json")
 RATE_LIMITED_ANSWER = (transport.RATE_LIMITED_STATUS, "slow down", "text/plain")
 US_PER_MS = 1000
+US_PER_SECOND = 1000000
+
+# What an origin states when it wants a specific amount of quiet. Thirty times
+# `reddit_feed`'s declared cooldown, so a governor that read the origin's own
+# interval and a governor that ignored it cannot produce the same schedule.
+STATED_WAIT_SECONDS = 900
 
 # One body every shipped adapter can parse into an empty page: no result
 # anchors for the HTML index, a data array for the archive, a records array for
@@ -211,6 +217,29 @@ def paced_governor(clock, responses, latencies=None, budgets=None, governor_clas
         sleep=clock.sleep,
     )
     return governor, opener
+
+
+def answer_stating(route_id, index, status, body, headers, content_type="text/plain"):
+    """One canned origin answer that also carries the headers the origin sent.
+
+    The address is the one this read was asked at, which is what an origin that
+    did not redirect reports. A stand-in gentler than the real opener is how a
+    defect stayed invisible on this seam before, so this one states both.
+    """
+
+    return (status, body, content_type, probe_request(route_id, index).url, headers)
+
+
+def cooldown_us(governor, index=0):
+    """How long a route was held after the refusal at ``index`` finished.
+
+    Read off the governor's own log rather than its bookkeeping: the moment a
+    refusal ended and the moment the next read on that route left are the two
+    facts the origin actually experienced.
+    """
+
+    refusal = governor.log[index]
+    return governor.log[index + 1].at_us - (refusal.at_us + refusal.duration_us)
 
 
 def load_module_beside_the_tree(path):
@@ -1289,6 +1318,43 @@ class BurstAndCooldownTest(unittest.TestCase):
             if name.lower() == "user-agent"
         }
         self.assertEqual(identities, {transport.USER_AGENT})
+
+
+class OriginStatedCooldownTest(unittest.TestCase):
+    """Criterion 2: the wait is the origin's own, and the local budget is its floor.
+
+    Every row here asserts a floor and never a value. A stated interval read as
+    a *replacement* for the declared cooldown inverts the constraint this whole
+    module exists for — a stated five seconds would shorten a thirty-second
+    wait, and the package would be evading a limit while appearing to obey one.
+    """
+
+    def test_a_stated_retry_after_lengthens_the_wait_the_budget_alone_would_take(self):
+        clock = helpers.FakeClock()
+        governor, _ = paced_governor(
+            clock,
+            {
+                REDDIT_FEED_ROUTE: [
+                    answer_stating(
+                        REDDIT_FEED_ROUTE,
+                        0,
+                        transport.RATE_LIMITED_STATUS,
+                        "slow down",
+                        ((transport.RETRY_AFTER_HEADER, str(STATED_WAIT_SECONDS)),),
+                    ),
+                    OK_JSON,
+                ]
+            },
+            latencies={REDDIT_FEED_ROUTE: 0.0},
+        )
+
+        governor.fetch(probe_request(REDDIT_FEED_ROUTE, 0))
+        governor.fetch(probe_request(REDDIT_FEED_ROUTE, 1))
+
+        assert_rate_budget_respected(self, governor, SEEDED_BUDGETS)
+        held_us = cooldown_us(governor)
+        self.assertGreaterEqual(held_us, REDDIT_FEED_BUDGET.cooldown_ms * US_PER_MS)
+        self.assertGreaterEqual(held_us, STATED_WAIT_SECONDS * US_PER_SECOND)
 
 
 class VolatileIdentifierTest(unittest.TestCase):
