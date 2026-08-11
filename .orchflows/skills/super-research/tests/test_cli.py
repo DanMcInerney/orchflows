@@ -995,8 +995,15 @@ class NothingTheRunHoldsReachesTheOutputTest(LedgerHoldingCase):
         self.addCleanup(transport.GUEST_TOKENS.clear)
 
     def mint_one_token(self):
-        with mock.patch.object(transport, "mint_guest_token", lambda route: GUEST_TOKEN):
-            transport.tokened_headers((), transport.X_GUEST_ACTIVATE_ROUTE)
+        """Put the process in the state a run that minted leaves it in.
+
+        Stated as what the store holds rather than by driving the mint: the
+        mint is one paced call the governor makes, and what this suite is about
+        is the other end — that whatever a run held, no line it printed carries
+        it and nothing survives the run.
+        """
+
+        transport.GUEST_TOKENS.remember(transport.X_GUEST_ACTIVATE_ROUTE, GUEST_TOKEN)
 
     def test_no_line_any_subcommand_prints_carries_a_public_client_credential(self):
         self.mint_one_token()

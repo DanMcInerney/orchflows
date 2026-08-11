@@ -363,21 +363,26 @@ class XRouteConstantTest(unittest.TestCase):
         )
 
 
-class GuestTokenMintTest(unittest.TestCase):
-    """The two-call mint lives here, so an adapter stays a one-read shape.
+class GuestTokenAttachTest(unittest.TestCase):
+    """The attach lives here, at send time, so an adapter stays a one-read shape.
 
     A guest token is a credential the origin issues rather than one the vendor
-    publishes, so it is applied exactly where the published bearer is applied —
-    at send time, by the opener — and never earlier. That keeps one adapter
+    publishes, and it goes on the wire exactly where the published bearer goes
+    — at send time, by the opener — and never earlier. That keeps one adapter
     call at one ``carrier.fetch``, and keeps the token off every value the run
     keeps.
+
+    The *mint* is not here and is not the opener's: it is one paced call the
+    governor makes, and `test_transport.GuestMintIsOnePacedRecordedCallTest`
+    owns it. What this suite pins is the other half — what the wire carries
+    when the run holds a token, and what it carries when the run holds none.
     """
 
     def setUp(self):
         transport.GUEST_TOKENS.clear()
         self.addCleanup(transport.GUEST_TOKENS.clear)
 
-    def _sent(self, requests, answers):
+    def _sent(self, requests, answers=()):
         opener = RoutingUrlopen(answers)
         results = []
         with mock.patch.object(urllib.request, "urlopen", opener):
@@ -385,58 +390,76 @@ class GuestTokenMintTest(unittest.TestCase):
                 results.append(transport.urlopen_response(request))
         return results, opener
 
-    def test_a_guest_read_is_preceded_by_one_activation_and_carries_its_token(self):
-        _, opener = self._sent([guest_read_request()], [ACTIVATION_ANSWER])
+    def test_a_read_carries_the_token_the_run_is_holding(self):
+        transport.GUEST_TOKENS.remember(
+            transport.X_GUEST_ACTIVATE_ROUTE, MINTED_GUEST_TOKEN
+        )
+
+        _, opener = self._sent([guest_read_request()])
+
+        # One request, not two: the activation that produced this token was the
+        # governor's, and by send time it has already happened.
+        self.assertEqual(len(opener.requests), 1)
+        self.assertIn("/graphql/", opener.urls()[0])
+        self.assertEqual(
+            opener.headers_of(0)[transport.GUEST_TOKEN_HEADER], MINTED_GUEST_TOKEN
+        )
+
+    def test_the_one_token_is_spent_on_every_later_read(self):
+        transport.GUEST_TOKENS.remember(
+            transport.X_GUEST_ACTIVATE_ROUTE, MINTED_GUEST_TOKEN
+        )
+
+        _, opener = self._sent([guest_read_request(), guest_read_request()])
 
         self.assertEqual(len(opener.requests), 2)
-        self.assertIn("guest/activate", opener.urls()[0])
-        self.assertEqual(opener.requests[0].get_method(), "POST")
-        self.assertIn("/graphql/", opener.urls()[1])
         self.assertEqual(
-            opener.headers_of(1)[transport.GUEST_TOKEN_HEADER], MINTED_GUEST_TOKEN
+            [opener.headers_of(index)[transport.GUEST_TOKEN_HEADER] for index in (0, 1)],
+            [MINTED_GUEST_TOKEN, MINTED_GUEST_TOKEN],
         )
 
-    def test_the_token_is_minted_once_and_spent_on_every_later_read(self):
+    def test_a_keyless_route_never_carries_one(self):
+        transport.GUEST_TOKENS.remember(
+            transport.X_GUEST_ACTIVATE_ROUTE, MINTED_GUEST_TOKEN
+        )
+
         _, opener = self._sent(
-            [guest_read_request(), guest_read_request()], [ACTIVATION_ANSWER]
-        )
-
-        activations = [url for url in opener.urls() if "guest/activate" in url]
-        self.assertEqual(len(activations), 1)
-        self.assertEqual(len(opener.requests), 3)
-        self.assertEqual(
-            opener.headers_of(2)[transport.GUEST_TOKEN_HEADER], MINTED_GUEST_TOKEN
-        )
-
-    def test_a_keyless_route_is_never_preceded_by_an_activation(self):
-        _, opener = self._sent(
-            [transport.build_transport_request(transport.DDG_HTML_ROUTE, {"q": "probe"})],
-            [ACTIVATION_ANSWER],
+            [transport.build_transport_request(transport.DDG_HTML_ROUTE, {"q": "probe"})]
         )
 
         self.assertEqual(len(opener.requests), 1)
         self.assertNotIn(transport.GUEST_TOKEN_HEADER, opener.headers_of(0))
 
-    def test_a_refused_mint_yields_no_token_rather_than_an_exception(self):
-        # The read still goes out, unauthorized, and the origin answers 401 or
-        # 403 — which the adapter records as the platform's own refusal.
-        # Inventing a token, or turning a failed mint into a retry, are the two
-        # wrong answers.
-        refused = ("guest/activate", 403, "forbidden", "text/plain")
+    def test_a_run_holding_no_token_sends_the_read_unauthorized(self):
+        # A process that never minted — because nothing paced it, or because
+        # the origin refused the activation — still sends the read, once, with
+        # no token on it. The origin's own 401 or 403 is then what the adapter
+        # records as the platform's refusal. Inventing a token, or turning a
+        # failed mint into a retry, are the two wrong answers.
+        results, opener = self._sent(
+            [guest_read_request()], [("/graphql/", 401, "unauthorized", "application/json")]
+        )
 
-        results, opener = self._sent([guest_read_request()], [refused])
+        self.assertEqual(transport.GUEST_TOKENS._tokens, {})
+        self.assertEqual(len(opener.requests), 1)
+        self.assertNotIn(transport.GUEST_TOKEN_HEADER, opener.headers_of(0))
+        self.assertEqual(results[0][0], 401)
 
-        self.assertEqual(len(opener.requests), 2)
-        self.assertNotIn(transport.GUEST_TOKEN_HEADER, opener.headers_of(1))
-        self.assertEqual(results[0][0], 200)
-
-    def test_the_minted_token_reaches_no_request_the_run_records(self):
-        opener = RoutingUrlopen([ACTIVATION_ANSWER])
+    def test_the_token_the_run_holds_reaches_no_request_the_run_records(self):
+        transport.GUEST_TOKENS.remember(
+            transport.X_GUEST_ACTIVATE_ROUTE, MINTED_GUEST_TOKEN
+        )
+        opener = RoutingUrlopen([])
         carrier = transport.Transport(now=lambda: "2026-08-10T09:00:00Z")
 
         with mock.patch.object(urllib.request, "urlopen", opener):
             response = carrier.fetch(guest_read_request())
 
+        # It is on the wire and nowhere else: the request the run recorded and
+        # the response it kept both have to be free of it.
+        self.assertIn(
+            transport.GUEST_TOKEN_HEADER, opener.headers_of(0)
+        )
         self.assertNotIn(MINTED_GUEST_TOKEN, repr(carrier.calls))
         self.assertNotIn(MINTED_GUEST_TOKEN, repr(response))
         self.assertEqual(len(carrier.calls), 1)
@@ -1091,6 +1114,13 @@ class RouteTtlTest(unittest.TestCase):
     would have sent back to the origin.
     """
 
+    def setUp(self):
+        # The guest route declares an activation route, and a governor mints
+        # one per process. Cleared so this suite's reads are the same reads
+        # whatever ran before it.
+        transport.GUEST_TOKENS.clear()
+        self.addCleanup(transport.GUEST_TOKENS.clear)
+
     def _paced(self, clock, route_id, body, content_type):
         carrier, opener = helpers.offline_transport(
             clock, {route_id: (200, body, content_type)}
@@ -1102,6 +1132,16 @@ class RouteTtlTest(unittest.TestCase):
             sleep=clock.sleep,
         )
         return governor, opener
+
+    def _origin_reads(self, opener, route_id):
+        """How many times the origin was reached on one route.
+
+        Counted per route rather than over every open, because the guest route
+        spends an activation as well as the read it authorizes and a TTL is a
+        claim about one route's own answers.
+        """
+
+        return [request.route_id for request in opener.opened].count(route_id)
 
     def test_a_timeline_reread_inside_the_window_is_answered_from_memory(self):
         clock = helpers.FakeClock()
@@ -1150,7 +1190,10 @@ class RouteTtlTest(unittest.TestCase):
 
         self.assertIn(cache.CACHE_HIT, held.loss)
         self.assertNotIn(cache.CACHE_HIT, expired.loss)
-        self.assertEqual(len(opener.opened), 2)
+        self.assertEqual(self._origin_reads(opener, transport.X_GUEST_GRAPHQL_ROUTE), 2)
+        # And the activation authorizing them is one, not one per read: three
+        # adapter calls, two origin reads, one mint.
+        self.assertEqual(self._origin_reads(opener, transport.X_GUEST_ACTIVATE_ROUTE), 1)
         self.assertLess(
             cache.ttl_seconds(transport.X_GUEST_GRAPHQL_ROUTE),
             cache.ttl_seconds(transport.X_SYNDICATION_TIMELINE_ROUTE),
@@ -8989,15 +9032,24 @@ class RosterIsCompleteTest(unittest.TestCase):
             with self.subTest(route=route_id):
                 self.assertIn(route_id, budgets)
                 self.assertIn(route_id, transport.ROUTE_CONSTANTS)
-        # And the other way round: the only route in the table no adapter
-        # reaches is the one no adapter is supposed to — a guest token is
-        # minted inside the opener, at send time, so an authorized read is
-        # still exactly one read to everyone above the transport seam.
-        self.assertEqual(
-            sorted(set(transport.ROUTE_CONSTANTS) - set(reachable)),
-            [transport.X_GUEST_ACTIVATE_ROUTE],
-        )
+        # And the other way round: every route in the table is now reachable
+        # by some adapter, the activation included. It used to be the one
+        # exception, on the reasoning that a token minted inside the opener was
+        # nobody's route — which is exactly what left it outside every budget.
+        self.assertEqual(sorted(set(transport.ROUTE_CONSTANTS) - set(reachable)), [])
         self.assertIn(transport.X_GUEST_ACTIVATE_ROUTE, transport.TOKEN_ACTIVATION_ROUTES)
+        # Reachable is not readable: the activation returns a token rather than
+        # a record, so no adapter names it as the surface it reads.
+        self.assertEqual(
+            [
+                adapter_id
+                for adapter_id in runner.ADAPTER_IDS
+                if runner.descriptor_for(adapter_id) is not None
+                and runner.descriptor_for(adapter_id).route_id
+                == transport.X_GUEST_ACTIVATE_ROUTE
+            ],
+            [],
+        )
 
     def test_every_listed_adapter_resolves_to_a_descriptor_and_to_a_call(self):
         for adapter_id in sorted(ROSTER):

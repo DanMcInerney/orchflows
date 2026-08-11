@@ -450,15 +450,23 @@ class KeylessRosterTest(unittest.TestCase):
     def test_the_dispatch_read_every_route_the_roster_can_reach(self):
         # Seventeen steps, seventeen reads, seventeen distinct routes: the
         # oracle below cannot pass by leaving a surface out of the run.
-        reachable = sorted(
+        #
+        # Reachable is not readable. A step reads a surface an adapter names as
+        # the one it reads, and the guest-token activation is not one — it
+        # returns a token rather than a record, and only the composed carrier
+        # spends it. This dispatch hands in a bare carrier, so no activation
+        # goes out here at all; `test_transport` owns that half.
+        readable = sorted(
             surface.route_id
             for adapter_id in runner.ADAPTER_IDS
             for surface in runner.surface_descriptors(adapter_id)
+            if surface.route_id not in transport.TOKEN_ACTIVATION_ROUTES
         )
 
         self.assertEqual(len(roster_manifest().steps), 17)
-        self.assertEqual(sorted(request.route_id for request in self.opener.opened), reachable)
-        self.assertEqual(sorted(ROSTER_PAYLOADS), reachable)
+        self.assertEqual(sorted(request.route_id for request in self.opener.opened), readable)
+        self.assertEqual(sorted(ROSTER_PAYLOADS), readable)
+        self.assertEqual(transport.GUEST_TOKENS._tokens, {})
 
     def test_the_artifact_holds_every_row_all_seventeen_steps_returned(self):
         # Written out rather than summed, so a step that quietly stopped
