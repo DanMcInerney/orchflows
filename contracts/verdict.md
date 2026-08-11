@@ -11,7 +11,8 @@ Per criterion:
   rubric reference, or a source-resolution procedure.
 - `oracle_class`: `deterministic` | `judged` | `evidence`.
 - `evidence`: what the oracle actually produced, quoted or cited by
-  identity. A verdict without evidence is UNVERIFIED.
+  identity. A verdict without evidence is UNVERIFIED, and so is a
+  criterion frozen without the reading its oracle produced at baseline.
 - `covers`: the base, result, and dependency identities the verdict holds
   for. A verdict is invalidated when anything it covers changes.
 

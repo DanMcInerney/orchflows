@@ -51,10 +51,10 @@ never propagating to a descendant dispatch; its absence defers role
 resolution to rules/roles.md §4's remaining order. Only a missing part
 among the six refuses a dispatch; a missing `profile` never does.
 
-Blame rule, recorded at every failed join: a failure traceable to a
-missing or false packet field is the caller's defect; a failure to
-deliver the return contract inside authority and bounds is the child's.
-The blame class routes the finding to its causal owner.
+Blame rule, recorded at every join: work the child had to do because a
+packet field was missing or false is the caller's defect, delivered or
+not; failure to deliver the return contract inside authority and bounds
+is the child's. The blame class routes the finding to its causal owner.
 
 A child never re-dispatches its primary work, and may sub-delegate only
 with authority attenuated to a subset of its own.
