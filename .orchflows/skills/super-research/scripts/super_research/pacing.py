@@ -80,6 +80,24 @@ def route_budgets() -> Dict[str, RouteBudget]:
     )
 
 
+def cooldown_us(
+    response: transport.TransportResponse, budget: RouteBudget
+) -> int:
+    """How long a refused route waits: the interval the origin stated, or the budget's.
+
+    Whichever is longer, and never anything else. Reading a stated interval is
+    how this package obeys a limit it was told about rather than only the one
+    it measured, and there is exactly one direction the reading may move a
+    wait: longer. An interval shorter than the measured ceiling, one already
+    elapsed, and one nobody sent all leave the measured ceiling standing —
+    taking the origin's number *instead* would be evasion wearing the shape of
+    compliance, and it would look identical in a log.
+    """
+
+    stated_us = int(round(transport.stated_wait_seconds(response) * US_PER_SECOND))
+    return max(budget.cooldown_ms * US_PER_MS, stated_us)
+
+
 @dataclass(frozen=True)
 class OriginRead:
     """One read that actually reached an origin, on the clock that paced it.
@@ -159,7 +177,7 @@ class RateGovernor:
         began_us = self._elapsed_us()
         response = self._carrier.fetch(request)
         stopped_us = self._elapsed_us()
-        self._charge(request.route_id, budget, began_us, stopped_us, response.status)
+        self._charge(request.route_id, budget, began_us, stopped_us, response)
         self.log.append(
             OriginRead(
                 route_id=request.route_id,
@@ -194,18 +212,26 @@ class RateGovernor:
         return ready_us
 
     def _charge(
-        self, route_id: str, budget: RouteBudget, began_us: int, stopped_us: int, status: int
+        self,
+        route_id: str,
+        budget: RouteBudget,
+        began_us: int,
+        stopped_us: int,
+        response: transport.TransportResponse,
     ) -> None:
-        """Spend one read against this route, and open a cooldown if it was refused."""
+        """Spend one read against this route, and open a cooldown if it was refused.
+
+        The whole response is charged rather than its status alone, because an
+        origin that refuses usually says how long for, and it says it in a
+        header. A governor holding only the status has no way to hear that.
+        """
 
         arrival_us = self._route_arrival_us.get(route_id, began_us)
         self._route_arrival_us[route_id] = (
             max(arrival_us, began_us) + budget.min_interval_ms * US_PER_MS
         )
-        if status == transport.RATE_LIMITED_STATUS:
-            self._route_blocked_until_us[route_id] = (
-                stopped_us + budget.cooldown_ms * US_PER_MS
-            )
+        if response.status == transport.RATE_LIMITED_STATUS:
+            self._route_blocked_until_us[route_id] = stopped_us + cooldown_us(response, budget)
 
     def _elapsed_us(self) -> int:
         return tick_us(self._clock) - self._origin_us

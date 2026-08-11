@@ -100,6 +100,14 @@ OK_JSON = (200, '{"data": []}', "application/json")
 RATE_LIMITED_ANSWER = (transport.RATE_LIMITED_STATUS, "slow down", "text/plain")
 US_PER_MS = 1000
 
+# The interval the origin states in the rows below. Far longer than any budget
+# in this file declares — Reddit's measured cooldown is thirty seconds, this is
+# ten minutes — so a wait that took the origin's number is unmistakable from one
+# that took the local budget's. Every assertion on it is a floor: the point is
+# the wait is never shorter than what was stated, and a suite that pinned the
+# value would pass just as happily on a governor that halved it.
+ORIGIN_STATED_SECONDS = 600
+
 # One body every shipped adapter can parse into an empty page: no result
 # anchors for the HTML index, a data array for the archive, a records array for
 # the offline fixture. It lets the core's two literal branches be exercised for
@@ -198,6 +206,30 @@ def probe_request(route_id, index=0):
         url="probe://{0}/{1}".format(route_id, index),
         headers=(("User-Agent", transport.USER_AGENT), ("Accept", "application/json")),
     )
+
+
+def refusal_answer(route_id, headers, status=transport.RATE_LIMITED_STATUS, body="slow down"):
+    """One refusal on a route's first probe, spelled the way an opener answers it.
+
+    Five values, because that is what the default opener returns: a status, a
+    body, a content type, the address that answered, and the header block the
+    origin sent. The address is the first probe's own rather than an empty
+    string, so the stand-in states what a real opener states — the last time an
+    offline stand-in was thinner than urllib, it hid a leak for ten tickets.
+    """
+
+    return (status, body, "text/plain", probe_request(route_id, 0).url, headers)
+
+
+def stated_wait_us(governor):
+    """How long the governor actually left between a refusal and the read after it.
+
+    Measured from the moment the refusal finished, which is where a cooldown
+    starts, so the answer is comparable to an interval an origin stated.
+    """
+
+    refusal, after = governor.log[0], governor.log[1]
+    return after.at_us - (refusal.at_us + refusal.duration_us)
 
 
 def paced_governor(clock, responses, latencies=None, budgets=None, governor_class=None):
@@ -1207,6 +1239,37 @@ class BurstAndCooldownTest(unittest.TestCase):
         self.assertGreater(
             governor.log[2].at_us - refusal.at_us,
             REDDIT_FEED_BUDGET.min_interval_ms * US_PER_MS,
+        )
+
+    def test_an_interval_the_origin_stated_is_waited_out_and_not_the_shorter_local_one(self):
+        # The whole seam in one row: an opener states an interval, the header
+        # rides the response the carrier builds, and the governor waits the
+        # longer of the two. Both assertions are floors, and the first is the
+        # one that matters — the way this criterion inverts is a `Retry-After`
+        # that *shortens* a wait while wearing the shape of obedience.
+        clock = helpers.FakeClock()
+        governor, _ = paced_governor(
+            clock,
+            {
+                REDDIT_FEED_ROUTE: [
+                    refusal_answer(
+                        REDDIT_FEED_ROUTE, (("Retry-After", str(ORIGIN_STATED_SECONDS)),)
+                    ),
+                    OK_JSON,
+                ]
+            },
+            latencies={REDDIT_FEED_ROUTE: 0.5},
+        )
+
+        governor.fetch(probe_request(REDDIT_FEED_ROUTE, 0))
+        governor.fetch(probe_request(REDDIT_FEED_ROUTE, 1))
+
+        assert_rate_budget_respected(self, governor, SEEDED_BUDGETS)
+        self.assertGreaterEqual(
+            stated_wait_us(governor), ORIGIN_STATED_SECONDS * helpers.US_PER_SECOND
+        )
+        self.assertGreaterEqual(
+            stated_wait_us(governor), REDDIT_FEED_BUDGET.cooldown_ms * US_PER_MS
         )
 
     def test_the_whole_of_the_governors_answer_to_a_429_is_to_wait(self):

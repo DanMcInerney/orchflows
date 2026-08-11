@@ -91,6 +91,7 @@ from pathlib import Path
 from unittest import mock
 
 from super_research import adapters, cache, normalize, runner, schema, transport
+from super_research.adapters import fake
 from super_research.adapters import github_rest, hacker_news, instagram_public
 from super_research.adapters import public_page, reddit_archive, reddit_feed, rss_atom
 from super_research.adapters import linkedin_jobs
@@ -8989,6 +8990,69 @@ class RosterIsCompleteTest(unittest.TestCase):
                 self.assertEqual(page.adapter_id, adapter_id)
                 self.assertEqual(page.route_id, descriptor.route_id)
                 self.assertEqual(len(opener.opened), 1)
+
+
+def fake_page(records, **declaration):
+    """Run the offline adapter over one fixture payload written here."""
+
+    payload = dict(declaration)
+    payload["records"] = list(records)
+    return adapter_page(fake, 200, json.dumps(payload), "application/json")[0]
+
+
+class FakeReplaysNamedAttributesTest(unittest.TestCase):
+    """The fourteenth member replays a route's own vocabulary, or stands in for less.
+
+    `attributes` is a family of `(name, value)` pairs — the shape `engagement`
+    has, not the shape a flat field has — so the fixture adapter replays it the
+    way it replays `engagement`. A name repeats when the payload repeated it
+    and the order is the payload's, because repetition and order are exactly
+    what two of the roster's rows carry and what a set or a mapping would eat.
+    """
+
+    def test_every_pair_a_payload_states_reaches_the_record_in_its_own_order(self):
+        page = fake_page([
+            {
+                "canonical_content_kind": "profile",
+                "canonical_locator": "https://example.test/in/avery",
+                "attributes": [
+                    ["jobTitle", "Principal Reliability Engineer"],
+                    ["worksFor", "Northwind Analytics"],
+                    ["jobTitle", "Board Advisor"],
+                    ["addressLocality", "Gothenburg, Vastra Gotaland County, Sweden"],
+                ],
+            }
+        ])
+
+        # One tuple equality against the payload's own order is the whole
+        # check: a dropped pair, an invented one, a reordering, a collapsed
+        # repeat, and a list of lists left unconverted each fail it.
+        self.assertEqual(
+            page.records[0].attributes,
+            (
+                ("jobTitle", "Principal Reliability Engineer"),
+                ("worksFor", "Northwind Analytics"),
+                ("jobTitle", "Board Advisor"),
+                ("addressLocality", "Gothenburg, Vastra Gotaland County, Sweden"),
+            ),
+        )
+
+    def test_a_payload_stating_no_attribute_carries_an_empty_family(self):
+        # Both spellings of nothing. Neither becomes a `None` every caller
+        # would have to test for, and neither becomes a pair this adapter made.
+        page = fake_page([
+            {
+                "canonical_content_kind": "post",
+                "canonical_locator": "https://example.test/1",
+            },
+            {
+                "canonical_content_kind": "post",
+                "canonical_locator": "https://example.test/2",
+                "attributes": [],
+            },
+        ])
+
+        self.assertEqual([record.attributes for record in page.records], [(), ()])
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner

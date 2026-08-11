@@ -34,6 +34,12 @@ DESCRIPTOR = AdapterDescriptor(
     operator_identity="super-research-fixture",
 )
 
+# The flat fields a fixture row states under their own names, copied across as
+# written. The two pair families and `loss` are absent on purpose: a payload
+# spells them as lists, and a list copied by name would reach a caller as a
+# list of lists where the record promises a tuple of pairs. `_record_for`
+# builds those three, so a family added to this tuple is a family replayed in
+# the wrong shape.
 RECORD_FIELDS = (
     "canonical_content_kind",
     "canonical_locator",
@@ -53,6 +59,11 @@ def _record_for(position: int, row: Mapping[str, Any]) -> NativeRecord:
     fields.setdefault("native_position", position)
     return NativeRecord(
         engagement=tuple((name, value) for name, value in row.get("engagement", ())),
+        # A route's own named facts, in the order the payload states them and
+        # with a name repeated as often as it repeated there: the two routes
+        # whose whole roster row is named attributes can only be stood in for
+        # if both survive.
+        attributes=tuple((name, value) for name, value in row.get("attributes", ())),
         loss=tuple(row.get("loss", ())),
         **fields
     )
