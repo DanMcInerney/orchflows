@@ -19,6 +19,7 @@ nowhere, no code path here can mutate a remote resource, and the offline
 
 from __future__ import annotations
 
+import email.utils
 import json
 import urllib.error
 import urllib.parse
@@ -629,6 +630,46 @@ def header_value(headers: Tuple[Tuple[str, str], ...], name: str) -> str:
     return ""
 
 
+def observed_moment(observed_at: str) -> Optional[datetime]:
+    """The moment an answer says it was read, or None when it says nothing usable."""
+
+    try:
+        return datetime.strptime(observed_at, OBSERVED_AT_FORMAT).replace(
+            tzinfo=timezone.utc
+        )
+    except ValueError:
+        return None
+
+
+def http_date_moment(stated: str) -> Optional[datetime]:
+    """One RFC 7231 HTTP-date, or None for anything this module cannot read.
+
+    A date without a zone is read as UTC, which is the only zone RFC 7231
+    admits and the only one an origin obeying it can mean.
+    """
+
+    try:
+        moment = email.utils.parsedate_to_datetime(stated)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if moment is None:
+        return None
+    return moment if moment.tzinfo is not None else moment.replace(tzinfo=timezone.utc)
+
+
+def remaining_seconds(deadline: Optional[datetime], read_at: Optional[datetime]) -> float:
+    """Seconds from when an answer was read until an absolute moment it named.
+
+    Zero when either moment is unreadable, and zero when the deadline has
+    already passed: an interval that ran out states no remaining wait, and a
+    negative one would shorten a local budget rather than lengthen it.
+    """
+
+    if deadline is None or read_at is None:
+        return 0.0
+    return max(0.0, (deadline - read_at).total_seconds())
+
+
 def stated_cooldown_seconds(response: TransportResponse) -> float:
     """How long this origin itself asked to be left alone, in seconds.
 
@@ -636,12 +677,22 @@ def stated_cooldown_seconds(response: TransportResponse) -> float:
     header this module cannot read is a header the origin did not state, and
     the local budget still governs — which is the only safe direction, because
     a wait this function shortened would be a limit evaded rather than read.
+
+    An absolute moment is measured against ``observed_at``, the moment this
+    very answer was read, and never against a clock read now: the two can be
+    minutes apart on a run that queued, and the difference would come off the
+    wait.
     """
 
     stated = header_value(response.headers, RETRY_AFTER_HEADER).strip()
-    # RFC 7231 spells `Retry-After` as whole seconds, `1*DIGIT`.
-    if stated.isascii() and stated.isdigit():
-        return float(stated)
+    if stated:
+        # RFC 7231 spells `Retry-After` two ways and marks neither: whole
+        # seconds as `1*DIGIT`, or an absolute HTTP-date. Only one is digits.
+        if stated.isascii() and stated.isdigit():
+            return float(stated)
+        return remaining_seconds(
+            http_date_moment(stated), observed_moment(response.observed_at)
+        )
     return 0.0
 
 

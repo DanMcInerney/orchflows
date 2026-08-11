@@ -30,9 +30,11 @@ time nothing ever observed.
 from __future__ import annotations
 
 import dataclasses
+import email.utils
 import importlib.util
 import json
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -228,6 +230,21 @@ def answer_stating(route_id, index, status, body, headers, content_type="text/pl
     """
 
     return (status, body, content_type, probe_request(route_id, index).url, headers)
+
+
+def http_date_after(seconds):
+    """The RFC 7231 HTTP-date that many seconds after the suite's frozen start.
+
+    Composed from `helpers.FROZEN_START` rather than transcribed. An origin
+    states an absolute moment, and the only moment it can honestly be resolved
+    against is the one the answer carries — so the date and the response's
+    ``observed_at`` have to come off one clock, and here they do.
+    """
+
+    moment = datetime.strptime(helpers.FROZEN_START, helpers.STAMP_FORMAT).replace(
+        tzinfo=timezone.utc
+    )
+    return email.utils.format_datetime(moment + timedelta(seconds=seconds), usegmt=True)
 
 
 def cooldown_us(governor, index=0):
@@ -1329,32 +1346,62 @@ class OriginStatedCooldownTest(unittest.TestCase):
     wait, and the package would be evading a limit while appearing to obey one.
     """
 
-    def test_a_stated_retry_after_lengthens_the_wait_the_budget_alone_would_take(self):
+    def _held_after(
+        self,
+        headers,
+        status=transport.RATE_LIMITED_STATUS,
+        body="slow down",
+        route_id=REDDIT_FEED_ROUTE,
+    ):
+        """The wait one refusal bought, on a route read twice with no latency.
+
+        Latency is zero so the answer's own ``observed_at`` is the suite's
+        frozen start exactly. An absolute interval an origin states is resolved
+        against that field, and a fraction of a fake second between them would
+        leave every date row asserting against a moment nobody can name.
+        """
+
         clock = helpers.FakeClock()
         governor, _ = paced_governor(
             clock,
-            {
-                REDDIT_FEED_ROUTE: [
-                    answer_stating(
-                        REDDIT_FEED_ROUTE,
-                        0,
-                        transport.RATE_LIMITED_STATUS,
-                        "slow down",
-                        ((transport.RETRY_AFTER_HEADER, str(STATED_WAIT_SECONDS)),),
-                    ),
-                    OK_JSON,
-                ]
-            },
-            latencies={REDDIT_FEED_ROUTE: 0.0},
+            {route_id: [answer_stating(route_id, 0, status, body, headers), OK_JSON]},
+            latencies={route_id: 0.0},
         )
 
-        governor.fetch(probe_request(REDDIT_FEED_ROUTE, 0))
-        governor.fetch(probe_request(REDDIT_FEED_ROUTE, 1))
+        governor.fetch(probe_request(route_id, 0))
+        governor.fetch(probe_request(route_id, 1))
 
         assert_rate_budget_respected(self, governor, SEEDED_BUDGETS)
-        held_us = cooldown_us(governor)
+        return cooldown_us(governor)
+
+    def test_a_stated_retry_after_lengthens_the_wait_the_budget_alone_would_take(self):
+        held_us = self._held_after(
+            ((transport.RETRY_AFTER_HEADER, str(STATED_WAIT_SECONDS)),)
+        )
+
         self.assertGreaterEqual(held_us, REDDIT_FEED_BUDGET.cooldown_ms * US_PER_MS)
         self.assertGreaterEqual(held_us, STATED_WAIT_SECONDS * US_PER_SECOND)
+
+    def test_the_http_date_spelling_states_the_same_wait_as_the_seconds_one(self):
+        # RFC 7231 gives `Retry-After` two spellings and marks neither. An
+        # origin picks; a client that read only the numeric one would take the
+        # other origin's stated interval for an absent one.
+        held_us = self._held_after(
+            ((transport.RETRY_AFTER_HEADER, http_date_after(STATED_WAIT_SECONDS)),)
+        )
+
+        self.assertGreaterEqual(held_us, REDDIT_FEED_BUDGET.cooldown_ms * US_PER_MS)
+        self.assertGreaterEqual(held_us, STATED_WAIT_SECONDS * US_PER_SECOND)
+
+    def test_a_stated_moment_already_past_leaves_the_local_budget_governing(self):
+        # The inversion this criterion can silently suffer, in its sharpest
+        # form: an elapsed deadline is a negative interval, and a negative one
+        # added to a cooldown would end the wait before the refusal did.
+        held_us = self._held_after(
+            ((transport.RETRY_AFTER_HEADER, http_date_after(-STATED_WAIT_SECONDS)),)
+        )
+
+        self.assertEqual(held_us, REDDIT_FEED_BUDGET.cooldown_ms * US_PER_MS)
 
 
 class VolatileIdentifierTest(unittest.TestCase):
