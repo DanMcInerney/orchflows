@@ -1372,6 +1372,177 @@ class StatusSaysWhatWasReadTest(LedgerHoldingCase):
         )
 
 
+# The only live reads this package has ever made, transcribed verbatim from the
+# run that made them: thirteen adapters, one bounded read each, in roster order,
+# no retries, on 2026-08-12. That run's own record is not tracked and the
+# authorization to read again is spent, so these two blocks are the durable copy
+# of it. They are parsed rather than restated, and cross-checked against each
+# other before either is believed.
+LIVENESS_ROLL_UP = """
+| # | adapter | exit | verdict | disposition | wall |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `web_search` | `1` | row unmet | origin refused this client (`202` challenge), correctly typed | 0.813 s |
+| 2 | `public_page` | `0` | **verified** | proven live | 1.638 s |
+| 3 | `reddit_archive` | `0` | **verified** | proven live | 1.817 s |
+| 4 | `reddit_feed` | `0` | **verified** | proven live | 1.641 s |
+| 5 | `x_syndication` | `1` | row unmet | **parser defect `D1`** — origin carried the field, package dropped it | 3.241 s |
+| 6 | `x_guest` | `1` | row unmet | origin refused (`401`), correctly typed; 2 requests (activation + read) | 1.478 s |
+| 7 | `linkedin_public` | `0` | **verified** | proven live | 1.851 s |
+| 8 | `linkedin_jobs` | `0` | **verified** | proven live | 0.918 s |
+| 9 | `youtube_innertube` | `1` | row unmet | origin refused this unattested client, typed `attestation_required` | 0.792 s |
+| 10 | `instagram_public` | `0` | **verified** | proven live | 2.151 s |
+| 11 | `hacker_news` | `0` | **verified** | proven live | 1.159 s |
+| 12 | `github_rest` | `0` | **verified** | proven live | 0.888 s |
+| 13 | `rss_atom` | `0` | **verified** | proven live | 1.084 s |
+"""
+
+# The ledger those thirteen reads left on disk, read back through
+# `smoke.LEDGER_PATH` at the end of that run.
+LIVENESS_LEDGER = """
+{
+  "github_rest": "2026-08-12T02:36:40Z",
+  "hacker_news": "2026-08-12T02:36:25Z",
+  "instagram_public": "2026-08-12T02:36:09Z",
+  "linkedin_jobs": "2026-08-12T02:34:03Z",
+  "linkedin_public": "2026-08-12T02:33:47Z",
+  "public_page": "2026-08-12T02:30:24Z",
+  "reddit_archive": "2026-08-12T02:30:40Z",
+  "reddit_feed": "2026-08-12T02:30:59Z",
+  "rss_atom": "2026-08-12T02:36:57Z"
+}
+"""
+
+# The moment `status` was rendered after the last of the thirteen. The four
+# reads that carried no row printed an outcome and no instant of their own, so
+# this is what they are replayed at: the earliest moment the record proves every
+# one of the thirteen had already happened.
+LIVENESS_CLOSED_AT = "2026-08-12T02:40:08Z"
+
+# What one recorded exit code says, per this module's own table.
+CARRIED_THE_ROW = "0"
+ORIGIN_ANSWERED_ROW_UNMET = "1"
+LOCAL_NETWORK_ANSWERED = "3"
+
+
+def recorded_reads():
+    """The thirteen recorded outcomes, as (adapter id, exit code) in read order."""
+
+    reads = []
+    for line in LIVENESS_ROLL_UP.strip().splitlines():
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if not cells[0].isdigit():
+            continue
+        reads.append((cells[1].strip("`"), cells[2].strip("`")))
+    return reads
+
+
+class TheRecordedLivenessReplaysTest(unittest.TestCase):
+    """The night's own thirteen outcomes, put back through the two records.
+
+    The exit code is the whole of what those records read, which is why a replay
+    off it is not a lossy reconstruction: `run_smoke` takes `3` when this host's
+    network answered, `0` when the roster row was carried, and `1` otherwise —
+    the same two facts, the channel and the field set, that decide which record
+    a read lands in. The outcome word and the loss codes differ across these
+    thirteen and neither record reads either, so the replay sets them to the
+    least it can rather than inventing detail the roll-up does not carry.
+
+    What makes this a check on the machinery rather than on a transcription: the
+    nine successes are replayed at the instants the ledger block records, so a
+    faithful replay reproduces that block exactly — nine keys, nine stamps.
+    """
+
+    def setUp(self):
+        self.reads = recorded_reads()
+        self.ledger = json.loads(LIVENESS_LEDGER)
+
+    def test_the_two_transcribed_blocks_agree_before_either_is_believed(self):
+        codes = {code for _, code in self.reads}
+        carried = sorted(adapter for adapter, code in self.reads if code == CARRIED_THE_ROW)
+
+        self.assertEqual(len(self.reads), 13)
+        self.assertEqual(
+            sorted(adapter for adapter, _ in self.reads),
+            sorted(probe.adapter_id for probe in cli.SMOKE_PROBES),
+        )
+        # Nine exit `0` in one block, nine stamps in the other, and the same
+        # nine adapters. Either block mistranscribed reddens here.
+        self.assertEqual(carried, sorted(self.ledger))
+        self.assertEqual(len(carried), 9)
+        # No read that night was answered by this host's own appliance, so
+        # nothing in this replay stands on the local-network branch.
+        self.assertEqual(codes, {CARRIED_THE_ROW, ORIGIN_ANSWERED_ROW_UNMET})
+        self.assertNotIn(LOCAL_NETWORK_ANSWERED, codes)
+
+    def replayed(self):
+        """The two records the thirteen recorded outcomes leave behind."""
+
+        ledger = {}
+        unmet = {}
+        for adapter_id, code in self.reads:
+            carried = code == CARRIED_THE_ROW
+            kind = cli.probe_for(adapter_id).field_sets[0][0]
+            read = cli.SmokeObservation(
+                adapter_id=adapter_id,
+                route_id=cli.probe_for(adapter_id).route_id,
+                outcome="ok" if carried else "failed",
+                loss=(),
+                records_kept=1 if carried else 0,
+                channel=(
+                    cli.ANSWERED_BY_LOCAL_NETWORK
+                    if code == LOCAL_NETWORK_ANSWERED
+                    else cli.ANSWERED_BY_ORIGIN
+                ),
+                missing=() if carried else ((kind, cli.NO_RECORD_OF_THIS_KIND),),
+                facts=(),
+                observed_at=self.ledger.get(adapter_id, LIVENESS_CLOSED_AT),
+            )
+            at = self.ledger.get(adapter_id, LIVENESS_CLOSED_AT)
+            ledger = cli.ledger_after(ledger, read, at)
+            unmet = cli.unmet_after(unmet, read, at)
+        return (ledger, unmet)
+
+    def test_the_replay_reproduces_the_ledger_that_was_read_off_disk(self):
+        ledger, unmet = self.replayed()
+
+        self.assertEqual(ledger, self.ledger)
+        self.assertEqual(
+            sorted(unmet),
+            sorted(adapter for adapter, code in self.reads if code != CARRIED_THE_ROW),
+        )
+        # The two records hold no adapter in common: a read lands in one.
+        self.assertEqual(set(ledger) & set(unmet), set())
+
+    def test_no_adapter_read_that_night_is_reported_as_never_read(self):
+        ledger, unmet = self.replayed()
+
+        printed = "\n".join(cli.status_lines(ledger, LIVENESS_CLOSED_AT, unmet))
+        reasons = [status_row(self, printed, adapter)[2] for adapter, _ in self.reads]
+
+        self.assertEqual(len(reasons), 13)
+        self.assertEqual(reasons.count(cli.FRESH_SUCCESS), 9)
+        self.assertEqual(reasons.count(cli.READ_AND_ROW_UNMET), 4)
+        self.assertEqual(reasons.count(cli.NEVER_SMOKED), 0)
+
+    def test_the_expiry_of_those_nine_stamps_re_merges_nothing(self):
+        # The window is seven days, so every stamp above is spent by the 19th.
+        # What was read is not a claim that expires: the four stay read.
+        ledger, unmet = self.replayed()
+        expired = "2026-08-19T02:40:09Z"
+
+        printed = "\n".join(cli.status_lines(ledger, expired, unmet))
+        reasons = [status_row(self, printed, adapter)[2] for adapter, _ in self.reads]
+
+        self.assertEqual(reasons.count(cli.STALE_SUCCESS), 9)
+        self.assertEqual(reasons.count(cli.READ_AND_ROW_UNMET), 4)
+        self.assertEqual(reasons.count(cli.NEVER_SMOKED), 0)
+        self.assertEqual(reasons.count(cli.FRESH_SUCCESS), 0)
+        # And every one of the thirteen still carries the instant it was read.
+        for adapter, _ in self.reads:
+            with self.subTest(adapter=adapter):
+                self.assertNotEqual(status_row(self, printed, adapter)[3], "-")
+
+
 class AdaptersSubcommandTest(LedgerHoldingCase):
     """The roster, its access classes, and what each smoke will assert."""
 
