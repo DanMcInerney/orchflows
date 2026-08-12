@@ -788,6 +788,124 @@ class SmokeLedgerTest(unittest.TestCase):
         self.assertEqual(cli.disposition_of(after, ADAPTER, NOW).reason, cli.NEVER_SMOKED)
 
 
+class AReadThatHappenedIsNotNeverSmokedTest(unittest.TestCase):
+    """`never_smoked` is the word for never read, and it is now only that.
+
+    Thirteen adapters were read live on 2026-08-12. Nine carried their row; four
+    reached an origin and did not — a `202` challenge, a parser that dropped a
+    field, a `401`, a playability refusal — and `status` reported all four as
+    `never_smoked`, which was false about every one of them. The cause was that
+    the ledger records successes, so the *absence* of a success was what got
+    named. The absence of a success and the absence of a read are two facts
+    here, kept in two records, and each is named for itself.
+    """
+
+    def test_a_read_that_went_unmet_says_so_and_carries_the_instant_it_happened(self):
+        read_at = stamp_at(-3600)
+
+        held = cli.disposition_of({}, ADAPTER, NOW, unmet={ADAPTER: read_at})
+
+        self.assertEqual(held.state, cli.UNVERIFIED)
+        self.assertEqual(held.reason, cli.READ_AND_ROW_UNMET)
+        self.assertNotEqual(held.reason, cli.NEVER_SMOKED)
+        self.assertEqual(held.last_unmet_read, read_at)
+        self.assertEqual(held.last_success, "")
+        # Unverified is right and well earned: nothing was proven. What is new
+        # is only that the read is no longer denied.
+        self.assertIn(held.state, cli.SMOKE_DISPOSITIONS)
+        self.assertIn(held.reason, cli.SMOKE_REASONS)
+        self.assertNotEqual(held.state, REJECTED)
+
+    def test_an_adapter_no_read_ever_reached_still_says_never_smoked(self):
+        # The distinction is the deliverable, so the new reason must not swallow
+        # the old one. Another adapter's read is not this one's, either.
+        for unmet in ({}, {"reddit_feed": stamp_at(-60)}):
+            with self.subTest(unmet=sorted(unmet)):
+                held = cli.disposition_of({}, ADAPTER, NOW, unmet=unmet)
+
+                self.assertEqual(held.state, cli.UNVERIFIED)
+                self.assertEqual(held.reason, cli.NEVER_SMOKED)
+                self.assertEqual(held.last_unmet_read, "")
+                self.assertEqual(cli.stated_instant(held), "")
+
+    def test_a_carried_row_still_reads_the_way_it_always_did(self):
+        # "A smoke degrades nothing", at the one place this record could have
+        # broken it: a current success outranks a later read that failed, and
+        # the instant it reports is its own.
+        ledger = {ADAPTER: stamp_at(-3600)}
+
+        held = cli.disposition_of(ledger, ADAPTER, NOW, unmet={ADAPTER: stamp_at(-60)})
+
+        self.assertEqual(held.state, cli.VERIFIED)
+        self.assertEqual(held.reason, cli.FRESH_SUCCESS)
+        self.assertEqual(held.last_success, ledger[ADAPTER])
+        self.assertEqual(cli.stated_instant(held), ledger[ADAPTER])
+
+    def test_the_window_passing_does_not_re_merge_what_the_reason_separates(self):
+        # `SMOKE_MAX_AGE_SECONDS` is seven days, so the nine stamps recorded on
+        # 2026-08-12 expire on the 19th and the authorization to read again is
+        # spent. Both sides are given the *same* instant, so the reason is the
+        # only thing that can tell a success that aged out from a read that
+        # never carried its row.
+        long_ago = stamp_at(-(cli.SMOKE_MAX_AGE_SECONDS + 3600))
+        for later in (1, cli.SMOKE_MAX_AGE_SECONDS, 365 * 24 * 60 * 60):
+            with self.subTest(seconds_past_expiry=later):
+                now = stamp_at(later)
+
+                proven = cli.disposition_of({ADAPTER: long_ago}, ADAPTER, now, unmet={})
+                read = cli.disposition_of({}, ADAPTER, now, unmet={ADAPTER: long_ago})
+
+                self.assertEqual(proven.state, cli.UNVERIFIED)
+                self.assertEqual(read.state, cli.UNVERIFIED)
+                self.assertEqual(proven.reason, cli.STALE_SUCCESS)
+                self.assertEqual(read.reason, cli.READ_AND_ROW_UNMET)
+                self.assertNotEqual(read.reason, cli.NEVER_SMOKED)
+                self.assertEqual(cli.stated_instant(proven), long_ago)
+                self.assertEqual(cli.stated_instant(read), long_ago)
+
+    def test_only_a_read_the_origin_answered_and_did_not_carry_is_recorded(self):
+        held = {"reddit_feed": stamp_at(-7200)}
+
+        self.assertEqual(
+            cli.unmet_after(held, origin_failure(ADAPTER), NOW),
+            {"reddit_feed": held["reddit_feed"], ADAPTER: NOW},
+        )
+        # A read that carried its row is a success and is recorded as one,
+        # nowhere else.
+        self.assertEqual(cli.unmet_after(held, observation(ADAPTER), NOW), held)
+        # This host's own appliance answering is not the platform being read at
+        # all, so it leaves no trace of one — the same line findings.md §0 draws
+        # for the success ledger, drawn once more here.
+        self.assertEqual(cli.unmet_after(held, intercepted(ADAPTER), NOW), held)
+
+    def test_a_read_that_went_unmet_is_still_a_success_nowhere(self):
+        # The tempting wrong fix is to stamp the success ledger on failure too,
+        # which would make a failed read look like a success to anything reading
+        # only for presence. Two records, and the distinction survives in the
+        # reason rather than being erased into it.
+        ledger = cli.ledger_after({}, origin_failure(ADAPTER), NOW)
+        unmet = cli.unmet_after({}, origin_failure(ADAPTER), NOW)
+
+        self.assertEqual(ledger, {})
+        self.assertEqual(unmet, {ADAPTER: NOW})
+
+        held = cli.disposition_of(ledger, ADAPTER, NOW, unmet=unmet)
+
+        self.assertEqual(held.state, cli.UNVERIFIED)
+        self.assertEqual(held.reason, cli.READ_AND_ROW_UNMET)
+
+    def test_the_unmet_record_sits_beside_the_ledger_it_qualifies(self):
+        # One path is handed in and both files are under it, so a suite that
+        # points the ledger at a temporary directory never writes the real one.
+        beside = cli.unmet_path_beside(cli.LEDGER_PATH)
+
+        self.assertNotEqual(beside, cli.LEDGER_PATH)
+        self.assertEqual(beside.parent, cli.LEDGER_PATH.parent)
+        self.assertTrue(beside.is_absolute())
+        for parent in beside.parents:
+            self.assertNotEqual(parent, REPOSITORY_ROOT)
+
+
 def run_cli(case, argv, seeds=None, ledger_path=None, clock=None):
     """One whole invocation, argv in and printed lines out, reaching no socket."""
 

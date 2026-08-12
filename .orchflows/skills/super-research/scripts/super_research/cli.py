@@ -52,6 +52,7 @@ from .smoke import (
     LEDGER_PATH,
     NEVER_SMOKED,
     NO_RECORD_OF_THIS_KIND,
+    READ_AND_ROW_UNMET,
     SMOKE_DISPOSITIONS,
     SMOKE_MAX_AGE_SECONDS,
     SMOKE_REASONS,
@@ -68,6 +69,9 @@ from .smoke import (
     read_ledger,
     satisfied,
     seconds_since,
+    stated_instant,
+    unmet_after,
+    unmet_path_beside,
     write_ledger,
 )
 

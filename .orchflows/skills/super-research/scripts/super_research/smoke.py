@@ -20,9 +20,17 @@ capability. The one branch that matters most reads ``loss`` and never
 was never reached. Recording that as a platform gap is the exact error
 findings.md §0 exists to prevent.
 
+Two records, and the second is why the first can be believed. The ledger holds
+successes and only ever gains one, so the absence of a stamp there used to be
+the only thing ``status`` had to go on and got *named* ``never_smoked`` — false
+about every adapter an origin answered without carrying its row. Beside it sits
+one stamp per read that reached an origin and went unmet, which is the fact the
+ledger cannot hold, and neither record can be mistaken for the other because a
+read only ever lands in one of them.
+
 Reliability bar: the carrier is injected and defaults to the real one, the
-clock and the moment are injected, and the only file this module touches is the
-ledger whose path it is handed.
+clock and the moment are injected, and the only files this module touches are
+the two stamp records, both derived from the one path it is handed.
 """
 
 from __future__ import annotations
@@ -57,12 +65,14 @@ SMOKE_DISPOSITIONS = (VERIFIED, UNVERIFIED)
 
 FRESH_SUCCESS = "fresh_success"
 NEVER_SMOKED = "never_smoked"
+READ_AND_ROW_UNMET = "read_and_row_unmet"
 STALE_SUCCESS = "stale_success"
 UNREADABLE_LAST_SUCCESS = "unreadable_last_success"
 LAST_SUCCESS_AHEAD_OF_NOW = "last_success_ahead_of_now"
 SMOKE_REASONS = (
     FRESH_SUCCESS,
     NEVER_SMOKED,
+    READ_AND_ROW_UNMET,
     STALE_SUCCESS,
     UNREADABLE_LAST_SUCCESS,
     LAST_SUCCESS_AHEAD_OF_NOW,
@@ -90,6 +100,12 @@ LEDGER_STAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 # change to whoever looked next. It is a constant, so no argument can point
 # this anywhere; the suite reaches it by parameter and never writes this path.
 LEDGER_PATH = Path(gettempdir()) / "super-research" / "smoke-ledger.json"
+
+# What the second record's name is made of. It sits beside the ledger it
+# qualifies and is derived from it, so one path is still the only thing a
+# caller hands in and a suite pointing that at a temporary directory cannot
+# reach the real one by writing the other half.
+UNMET_SUFFIX = "-unmet"
 
 
 @dataclass(frozen=True)
@@ -287,12 +303,31 @@ class Disposition:
     ``last_success`` is kept even when it is too old to count. "Unverified"
     asks for a re-proof, and a renderer that erased the stamp would leave
     nobody able to say how long ago the last one was.
+
+    ``last_unmet_read`` is the other half of the same courtesy, and it is why
+    ``never_smoked`` can be believed: an adapter the origin answered without
+    carrying its row has an instant, so the reason can say the read happened
+    instead of denying it. Both are carried at once when both are known —
+    which is which never has to be guessed, because each has its own field.
     """
 
     adapter_id: str
     state: str
     reason: str
     last_success: str
+    last_unmet_read: str = ""
+
+
+def stated_instant(disposition: Disposition) -> str:
+    """The instant this disposition's own reason names, or nothing at all.
+
+    Every reason but two is about a success and reports the success stamp;
+    ``read_and_row_unmet`` is about a read that carried nothing and reports
+    when that read happened; ``never_smoked`` has no instant to report, which
+    is the whole of what it now claims.
+    """
+
+    return disposition.last_success or disposition.last_unmet_read
 
 
 def seconds_since(stamp: str, now: str) -> Optional[int]:
@@ -315,23 +350,40 @@ def disposition_of(
     adapter_id: str,
     now: str,
     max_age_seconds: int = SMOKE_MAX_AGE_SECONDS,
+    unmet: Optional[Dict[str, str]] = None,
 ) -> Disposition:
-    """One adapter's standing, from the ledger alone.
+    """One adapter's standing, from the two records and the clock.
 
     Every way of not holding a current success lands on ``unverified``, and
     each says which way it was. A stamp ahead of ``now`` is one of them: a
     skewed clock or a hand-edited file would otherwise read as verified for as
     long as it stayed in the future, which is the silent success this whole
     disposition exists to refuse.
+
+    The ledger answers first and answers everything it can, so a success is
+    never overruled by a later read that failed — a smoke degrades nothing.
+    ``unmet`` is consulted at the one point the ledger has nothing to say,
+    where the absence of a success used to be *named* ``never_smoked``: an
+    adapter an origin answered without carrying its row was read, and saying it
+    was not is the one thing this function may not do. A caller with no unmet
+    record hands none and gets the ledger's own answer.
     """
+
+    read_unmet = {} if unmet is None else unmet
 
     def held(state: str, reason: str, last_success: str = "") -> Disposition:
         return Disposition(
-            adapter_id=adapter_id, state=state, reason=reason, last_success=last_success
+            adapter_id=adapter_id,
+            state=state,
+            reason=reason,
+            last_success=last_success,
+            last_unmet_read=read_unmet.get(adapter_id, ""),
         )
 
     last_success = ledger.get(adapter_id, "")
     if not last_success:
+        if read_unmet.get(adapter_id, ""):
+            return held(UNVERIFIED, READ_AND_ROW_UNMET)
         return held(UNVERIFIED, NEVER_SMOKED)
     age = seconds_since(last_success, now)
     if age is None:
@@ -363,13 +415,52 @@ def ledger_after(
     return kept
 
 
+def unmet_after(
+    unmet: Dict[str, str], observation: SmokeObservation, at: str
+) -> Dict[str, str]:
+    """The unmet-read record this observation leaves behind.
+
+    Kept apart from the ledger rather than folded into it, and that separation
+    is the whole design: a read the origin answered without carrying its row
+    stamps *this* record and never the other one, so nothing reading the ledger
+    for presence can mistake a failure for a success. What this file adds is
+    one fact the ledger cannot hold — that the read happened — and it is what
+    lets ``never_smoked`` go back to meaning never read.
+
+    The same two conditions as the ledger's, one of them inverted. The origin
+    has to have answered, because a response this host's own appliance produced
+    is not the platform being read at all and records nothing here either. And
+    the row has to have gone unmet, because a read that carried it is a success
+    and is already recorded as one.
+    """
+
+    kept = dict(unmet)
+    if not satisfied(observation) and observation.channel == ANSWERED_BY_ORIGIN:
+        kept[observation.adapter_id] = at
+    return kept
+
+
+def unmet_path_beside(ledger_path: Path) -> Path:
+    """Where the unmet-read stamps sit for a given ledger: next to it.
+
+    Derived rather than declared, so the one path a caller hands in still
+    governs both files — a suite pointing the ledger at a temporary directory
+    cannot reach the real record by writing the other half, and an operator
+    finds the two facts about one adapter in one directory.
+    """
+
+    return ledger_path.with_name(ledger_path.stem + UNMET_SUFFIX + ledger_path.suffix)
+
+
 def read_ledger(path: Path) -> Dict[str, str]:
-    """Every last-success stamp on disk, or nothing readable at all.
+    """Every stamp one of the two records holds, or nothing readable at all.
 
     Anything unreadable answers empty, and empty means every adapter is
     unverified. That is the only safe direction: a corrupted file that reported
     thirteen working platforms would be the silent success this package is
-    built to refuse, and one that reports none costs a re-proof.
+    built to refuse, and one that reports none costs a re-proof. An unreadable
+    unmet record costs the same way and no more — an adapter falls back to
+    ``never_smoked``, which is the reading that claims least.
     """
 
     if not path.exists():
