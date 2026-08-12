@@ -1,0 +1,105 @@
+{
+  "source": "findings.md §1 (YouTube), measured 2026-08-10",
+  "note": "The false-capability trap this whole half exists for. Across WEB, MWEB, TVHTML5, ANDROID and IOS on three videos, captionTracks came back empty every time, and playability degraded to UNPLAYABLE after the first metadata call. The evidence names the cause: PoToken/BotGuard attestation. An adapter that reported that as 'this video has no captions' would assert something false about the video, and one that reported the UNPLAYABLE as a credential problem would call a keyless route credentialed. `captions_withheld` is the column the caption oracle reads: true where the response listed no caption track, false where it listed some, and null where the case is not a player call at all. The row listing tracks is not a shape this package has ever measured - it exists so that 'empty means withheld' can be false, without which the claim would be satisfied by typing every player response the same way.",
+  "cases": [
+    {
+      "case_name": "search_results_200",
+      "target_id": "search:local models",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "search_results.json",
+      "captions_withheld": null,
+      "expected_loss": "",
+      "expected_outcome": "ok",
+      "evidence": "measured: youtubei/v1/search answered 200 with 2.27 MB in 1.4 s, keylessly, under the web key youtube.com embeds in its own page source"
+    },
+    {
+      "case_name": "comment_threads_200",
+      "target_id": "next:dQw4w9WgXcQ",
+      "cursor": "Eg0SC2RRdzR3OVdnWGNRGAYyJSIRIgtkUXc0dzlXZ1hjUTAA",
+      "status": 200,
+      "body_fixture": "next_comment_threads.json",
+      "captions_withheld": null,
+      "expected_loss": "",
+      "expected_outcome": "ok",
+      "evidence": "measured: youtubei/v1/next answered 200 with 1.12 MB in 2.2 s carrying comment threads"
+    },
+    {
+      "case_name": "watch_page_carries_only_the_token_200",
+      "target_id": "next:dQw4w9WgXcQ",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "next_watch_page.json",
+      "captions_withheld": null,
+      "expected_loss": "",
+      "expected_outcome": "empty",
+      "evidence": "the first `next` call names a video and comes back with the watch page, whose comment section holds a token and no thread yet. That is an empty this route can honestly answer with, and the token is surfaced for the core to spend — following it here would make one adapter call two reads"
+    },
+    {
+      "case_name": "player_first_call_200",
+      "target_id": "player:dQw4w9WgXcQ",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "player_metadata.json",
+      "captions_withheld": true,
+      "expected_loss": "attestation_required",
+      "expected_outcome": "ok",
+      "evidence": "measured: the first player call answered 200 with 21 KB carrying title, viewCount and publishDate — and captionTracks empty, as on every client and every video probed. The metadata arrived, so the page is ok; the captions were withheld by attestation, so the page says that and never that the video has none"
+    },
+    {
+      "case_name": "player_listing_caption_tracks_200",
+      "target_id": "player:7pQm3nXkT2a",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "player_with_caption_tracks.json",
+      "captions_withheld": false,
+      "expected_loss": "",
+      "expected_outcome": "ok",
+      "evidence": "not a shape this package has measured: it is what an attested client sees. It is here so the row above can be false — without it, an adapter that typed every player response attested would satisfy the claim"
+    },
+    {
+      "case_name": "player_unplayable_200",
+      "target_id": "player:dQw4w9WgXcQ",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "player_unplayable.json",
+      "captions_withheld": true,
+      "expected_loss": "attestation_required",
+      "expected_outcome": "failed",
+      "evidence": "measured: later player calls answered 200 with UNPLAYABLE across five clients and three videos, and the evidence names the cause. The body carries a full videoDetails and the words 'Sign in to confirm you're not a bot'; neither is read — a degraded response is not mined for metadata, and a keyless route is not called credentialed because a body used the word sign in"
+    },
+    {
+      "case_name": "stale_client_version_400",
+      "target_id": "player:dQw4w9WgXcQ",
+      "cursor": "",
+      "status": 400,
+      "body_fixture": "innertube_invalid_argument.json",
+      "captions_withheld": null,
+      "expected_loss": "stale_identifier",
+      "expected_outcome": "failed",
+      "evidence": "spec item 4: the InnerTube client version rotates with each web release and is the one rotating thing in this request. A refused request is never an empty result, which is the whole reason this row exists"
+    },
+    {
+      "case_name": "search_container_moved_200",
+      "target_id": "search:local models",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "search_reshaped.json",
+      "captions_withheld": null,
+      "expected_loss": "schema_drift",
+      "expected_outcome": "failed",
+      "evidence": "spec item 4's other half: an answer that still arrives but has moved is drift, and it is not a search that matched nothing"
+    },
+    {
+      "case_name": "origin_refused_403",
+      "target_id": "player:dQw4w9WgXcQ",
+      "cursor": "",
+      "status": 403,
+      "body_fixture": "innertube_invalid_argument.json",
+      "captions_withheld": null,
+      "expected_loss": "auth_required",
+      "expected_outcome": "failed",
+      "evidence": "the same bytes as the 400 row, at a different status: only the origin's own status line may make this route auth_required, and the body decides neither answer"
+    }
+  ]
+}

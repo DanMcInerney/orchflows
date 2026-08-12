@@ -1,0 +1,55 @@
+{
+  "_note": [
+    "findings.md §0 measured both selections as control probes: `example.com` and",
+    "`wikipedia.org` answered 200 with genuine origin content from this host, while the",
+    "network appliance answered `tiktok.com` and `ecosia.org` with a 503 login portal. Those",
+    "are the two static documents the evidence records, and they are what this adapter may",
+    "select between.",
+    "",
+    "The bodies are this package's belief about those documents' shape rather than captures:",
+    "offline determinism forbids making one. What they prove is that this code reads a page",
+    "correctly and says the right thing when a page is not there."
+  ],
+  "cases": [
+    {
+      "case_name": "the_selected_article",
+      "measured": true,
+      "selection": "article",
+      "target": "article:Rate_limiting",
+      "status": 200,
+      "body_fixture": "article.html",
+      "expected_outcome": "ok",
+      "expected_loss": ""
+    },
+    {
+      "case_name": "the_channel_control",
+      "measured": true,
+      "selection": "control",
+      "target": "control",
+      "status": 200,
+      "body_fixture": "control.html",
+      "expected_outcome": "ok",
+      "expected_loss": ""
+    },
+    {
+      "case_name": "an_article_that_is_not_there",
+      "measured": false,
+      "selection": "article",
+      "target": "article:Rate_limiting_that_does_not_exist",
+      "status": 404,
+      "body_fixture": "article_absent.html",
+      "expected_outcome": "failed",
+      "expected_loss": "http_status"
+    },
+    {
+      "case_name": "asked_for_fewer_requests",
+      "measured": false,
+      "selection": "article",
+      "target": "article:Rate_limiting",
+      "status": 429,
+      "body_fixture": "article_absent.html",
+      "expected_outcome": "failed",
+      "expected_loss": "rate_limited"
+    }
+  ]
+}

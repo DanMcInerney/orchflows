@@ -1,0 +1,76 @@
+{
+  "source": "findings.md §1 (LinkedIn), measured 2026-08-10",
+  "note": "The confusion this table exists to catch. The prior spec placed LinkedIn entirely outside the roster on an assumed 999 authwall; measured, linkedin.com/in/<slug> answers 200 with a complete ld+json Person block, and the 'sign in to' / 'join now' strings sit in that same page as navigation chrome. So the chrome cannot decide anything: at 200 with a block the answer is the profile, at 200 without one it is schema_drift, and the only thing that may make this route a refusal is the origin's own status line. Six of the seven bodies below carry the chrome, and the answers differ anyway.",
+  "cases": [
+    {
+      "case_name": "populated_block_with_chrome_200",
+      "slug": "avery-lindqvist-8a41b207",
+      "status": 200,
+      "body_fixture": "profile_person.html",
+      "chrome_present": true,
+      "expected_loss": "",
+      "expected_outcome": "ok",
+      "evidence": "measured: 200, 577 KB, 1.3 s, with a complete ld+json Person block, not the 999 authwall commonly assumed. The chrome is in this page too, which is the whole finding. Without this row the table could be satisfied by refusing everything."
+    },
+    {
+      "case_name": "no_block_with_chrome_200",
+      "slug": "avery-lindqvist-8a41b207",
+      "status": 200,
+      "body_fixture": "profile_chrome_only.html",
+      "chrome_present": true,
+      "expected_loss": "schema_drift",
+      "expected_outcome": "failed",
+      "evidence": "spec Risks, 'Structured-data drift': a K2 route reads a shape the vendor may rewrite without notice, so a page that no longer embeds the block is the page changing. Both wrong answers are reachable from here - auth_required off the chrome, or an empty profile off the missing block - and the evidence supports neither."
+    },
+    {
+      "case_name": "reshaped_graph_200",
+      "slug": "avery-lindqvist-8a41b207",
+      "status": 200,
+      "body_fixture": "profile_reshaped_graph.html",
+      "chrome_present": true,
+      "expected_loss": "schema_drift",
+      "expected_outcome": "failed",
+      "evidence": "the harder half of the same rule: the block is present and valid and holds no node of @type Person. A parser reading by similarity would find the Organization's name and report a profile."
+    },
+    {
+      "case_name": "partial_block_with_chrome_200",
+      "slug": "mira-okonkwo-4d90c113",
+      "status": 200,
+      "body_fixture": "profile_partial_person.html",
+      "chrome_present": true,
+      "expected_loss": "",
+      "expected_outcome": "ok",
+      "evidence": "a block the origin populated in part is still the origin's answer. The page is ok and the record says which fields were missing; a partial profile is not a page that changed shape."
+    },
+    {
+      "case_name": "malformed_block_200",
+      "slug": "avery-lindqvist-8a41b207",
+      "status": 200,
+      "body_fixture": "profile_malformed_block.html",
+      "chrome_present": true,
+      "expected_loss": "malformed_json",
+      "expected_outcome": "failed",
+      "evidence": "a third distinct fact: something arrived under application/ld+json that no reader can parse. Folding it into schema_drift would send an operator after a markup change when the body was truncated."
+    },
+    {
+      "case_name": "origin_refused_403",
+      "slug": "avery-lindqvist-8a41b207",
+      "status": 403,
+      "body_fixture": "profile_chrome_only.html",
+      "chrome_present": true,
+      "expected_loss": "auth_required",
+      "expected_outcome": "failed",
+      "evidence": "the same bytes as no_block_with_chrome_200, and a different answer, because the status is different. This is the one lawful way this adapter may say auth_required: the origin said so. It is never read off a string in the page."
+    },
+    {
+      "case_name": "origin_refused_999",
+      "slug": "avery-lindqvist-8a41b207",
+      "status": 999,
+      "body_fixture": "profile_request_denied_999.html",
+      "chrome_present": false,
+      "expected_loss": "http_status",
+      "expected_outcome": "failed",
+      "evidence": "LinkedIn's own refusal status, and the one the prior spec assumed this route always answered. Carried as the status it is: no credential was withheld, so it is not auth_required, and nothing about the page's shape is in evidence at 999, so it is not schema_drift. This body carries no chrome at all and still fails, which is the mirror of the first row."
+    }
+  ]
+}

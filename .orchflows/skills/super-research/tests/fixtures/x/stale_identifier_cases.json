@@ -1,0 +1,66 @@
+{
+  "source": "findings.md §1 (X), measured 2026-08-10",
+  "note": "The two statuses that must never be confused, and the two ways a 200 can go. X puts the rotating query id in the request path, so a rotated id names an endpoint that is not there and the origin answers 404; a guest token that does not authorize an operation is answered 403 or 401 instead. Reading either as the other is the failure this table exists to catch.",
+  "cases": [
+    {
+      "case_name": "stale_query_id_404",
+      "target_id": "tweet:1799990000000000001",
+      "operation": "TweetResultByRestId",
+      "status": 404,
+      "body_fixture": "guest_stale_query_id.json",
+      "expected_loss": "stale_identifier",
+      "expected_outcome": "failed",
+      "evidence": "measured: SearchTimeline and TweetDetail answered 404 while the three operations whose ids were current answered 200, which is why the evidence names this a stale id and not an authorization failure"
+    },
+    {
+      "case_name": "stale_query_id_404_on_a_timeline",
+      "target_id": "user_tweets:12497",
+      "operation": "UserTweets",
+      "status": 404,
+      "body_fixture": "guest_stale_query_id.json",
+      "expected_loss": "stale_identifier",
+      "expected_outcome": "failed",
+      "evidence": "design rule, wider than the measured row: every operation on this route carries a rotating id in its path, so every one of them can go stale the same way"
+    },
+    {
+      "case_name": "guest_blocked_403",
+      "target_id": "tweet:1799990000000000001",
+      "operation": "TweetResultByRestId",
+      "status": 403,
+      "body_fixture": "guest_blocked_operation.json",
+      "expected_loss": "auth_required",
+      "expected_outcome": "failed",
+      "evidence": "findings.md §1: a guest-blocked operation returns 403 or 401, which is the distinction that makes the 404 above a stale id"
+    },
+    {
+      "case_name": "guest_blocked_401",
+      "target_id": "user:simonw",
+      "operation": "UserByScreenName",
+      "status": 401,
+      "body_fixture": "guest_blocked_operation.json",
+      "expected_loss": "auth_required",
+      "expected_outcome": "failed",
+      "evidence": "the other half of the same measured statement"
+    },
+    {
+      "case_name": "drifted_result_container_200",
+      "target_id": "tweet:1799990000000000001",
+      "operation": "TweetResultByRestId",
+      "status": 200,
+      "body_fixture": "guest_drifted_container.json",
+      "expected_loss": "schema_drift",
+      "expected_outcome": "failed",
+      "evidence": "spec item 4's other half: an id that still resolves but an answer that moved is drift, and it is not an account with nothing in it"
+    },
+    {
+      "case_name": "current_query_id_200",
+      "target_id": "tweet:1799990000000000001",
+      "operation": "TweetResultByRestId",
+      "status": 200,
+      "body_fixture": "guest_tweet_result.json",
+      "expected_loss": "",
+      "expected_outcome": "ok",
+      "evidence": "measured: TweetResultByRestId answered 200 with a full tweet object in 0.5 s. Without this row the table could be satisfied by typing every answer as a failure"
+    }
+  ]
+}

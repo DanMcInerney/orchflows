@@ -1,0 +1,54 @@
+{
+  "source": "findings.md §0, measured 2026-08-10 from this host",
+  "cases": [
+    {
+      "case_name": "appliance_portal_503",
+      "status": 503,
+      "body_fixture": "captive_portal.html",
+      "expected_verdict": "network_intercepted",
+      "evidence": "measured: tiktok.com and ecosia.org answered 503 with the portal marker"
+    },
+    {
+      "case_name": "appliance_portal_502",
+      "status": 502,
+      "body_fixture": "captive_portal.html",
+      "expected_verdict": "network_intercepted",
+      "evidence": "design rule, wider than the measured row: the portal body is the appliance's signature, so the same body behind another failure status is the same local block"
+    },
+    {
+      "case_name": "appliance_portal_uppercase_tag",
+      "status": 503,
+      "body_fixture": "captive_portal_uppercase_tag.html",
+      "expected_verdict": "network_intercepted",
+      "evidence": "design rule: HTML tag and attribute names are case-insensitive, so an uppercase base tag is the measured marker"
+    },
+    {
+      "case_name": "origin_service_unavailable",
+      "status": 503,
+      "body_fixture": "origin_service_unavailable.html",
+      "expected_verdict": "origin_failure",
+      "evidence": "the platform's own 503; typing it as a local block would erase a real platform failure"
+    },
+    {
+      "case_name": "origin_authwall",
+      "status": 403,
+      "body_fixture": "origin_authwall.html",
+      "expected_verdict": "origin_failure",
+      "evidence": "measured shape: Reddit's .json surfaces answered 403 to every User-Agent tried (findings.md §1)"
+    },
+    {
+      "case_name": "origin_content",
+      "status": 200,
+      "body_fixture": "origin_page.html",
+      "expected_verdict": "origin_content",
+      "evidence": "measured: example.com and wikipedia.org returned 200 genuine origin content"
+    },
+    {
+      "case_name": "origin_login_page",
+      "status": 200,
+      "body_fixture": "origin_login_page.html",
+      "expected_verdict": "origin_content",
+      "evidence": "design rule: no measured interception answered 2xx, and a platform's own login page is platform behavior"
+    }
+  ]
+}

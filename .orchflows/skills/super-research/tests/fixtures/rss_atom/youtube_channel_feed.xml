@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns:yt="http://www.youtube.com/xml/schemas/2015"
+      xmlns:media="http://search.yahoo.com/mrss/"
+      xmlns="http://www.w3.org/2005/Atom">
+  <link rel="self" href="https://www.youtube.com/feeds/videos.xml?channel_id=UCharbourlight0000000000"/>
+  <id>yt:channel:UCharbourlight0000000000</id>
+  <yt:channelId>UCharbourlight0000000000</yt:channelId>
+  <title>Harbourlight Benchmarks</title>
+  <link rel="alternate" href="https://www.youtube.com/channel/UCharbourlight0000000000"/>
+  <author>
+    <name>Harbourlight Benchmarks</name>
+    <uri>https://www.youtube.com/channel/UCharbourlight0000000000</uri>
+  </author>
+  <published>2019-04-02T11:00:00+00:00</published>
+  <entry>
+    <id>yt:video:dQw4w9WgXcQ</id>
+    <yt:videoId>dQw4w9WgXcQ</yt:videoId>
+    <yt:channelId>UCharbourlight0000000000</yt:channelId>
+    <title>70B on two 3090s: the numbers</title>
+    <link rel="alternate" href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"/>
+    <author>
+      <name>Harbourlight Benchmarks</name>
+      <uri>https://www.youtube.com/channel/UCharbourlight0000000000</uri>
+    </author>
+    <published>2026-08-09T15:30:12+00:00</published>
+    <updated>2026-08-10T04:02:55+00:00</updated>
+    <media:group>
+      <media:title>70B on two 3090s: the numbers</media:title>
+      <media:content url="https://www.youtube.com/v/dQw4w9WgXcQ?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+      <media:thumbnail url="https://i4.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" width="480" height="360"/>
+      <media:description>Tokens per second, power draw, and where it falls over.</media:description>
+      <media:community>
+        <media:starRating count="1841" average="4.94" min="1" max="5"/>
+        <media:statistics views="128455"/>
+      </media:community>
+    </media:group>
+  </entry>
+  <entry>
+    <id>yt:video:aBcDeFgHiJk</id>
+    <yt:videoId>aBcDeFgHiJk</yt:videoId>
+    <yt:channelId>UCharbourlight0000000000</yt:channelId>
+    <title>AWQ versus GPTQ, measured</title>
+    <link rel="alternate" href="https://www.youtube.com/watch?v=aBcDeFgHiJk"/>
+    <author>
+      <name>Harbourlight Benchmarks</name>
+      <uri>https://www.youtube.com/channel/UCharbourlight0000000000</uri>
+    </author>
+    <published>2026-08-04T09:11:00+00:00</published>
+    <updated>2026-08-04T09:44:31+00:00</updated>
+    <media:group>
+      <media:title>AWQ versus GPTQ, measured</media:title>
+      <media:content url="https://www.youtube.com/v/aBcDeFgHiJk?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+      <media:community>
+        <media:statistics views="41022"/>
+      </media:community>
+    </media:group>
+  </entry>
+</feed>

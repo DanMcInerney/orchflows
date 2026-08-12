@@ -1,0 +1,138 @@
+{
+  "source": "findings.md §1 (carry-over routes), measured 2026-08-10",
+  "note": "Every answer this adapter can be given, and what each one means. Two of them carry the claims that matter. A repository with no open issue and a search that matched nothing are the origin saying there is nothing there, and neither is a payload that moved. And GitHub's documented answer to an anonymous client that has spent its hour is 403 with a message about rate limits — so a 403 here is never `auth_required`: waiting fixes it and a credential is not required to have the capability at all, which is the whole of criterion 1. The payload shapes are this package's belief; findings.md records statuses and a ceiling, not bodies, and offline determinism forbids capturing one here.",
+  "cases": [
+    {
+      "case_name": "repository_200",
+      "query": "",
+      "target_id": "harbourlight/gpu-bench",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "repo.json",
+      "answer_kind": "records",
+      "expected_outcome": "ok",
+      "expected_loss": "",
+      "evidence": "measured: api.github.com answered anonymously"
+    },
+    {
+      "case_name": "issues_200",
+      "query": "",
+      "target_id": "issues:harbourlight/gpu-bench",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "issues.json",
+      "answer_kind": "records",
+      "expected_outcome": "ok",
+      "expected_loss": "",
+      "evidence": "the roster row names issues; the collection is a path segment under the repository"
+    },
+    {
+      "case_name": "releases_200",
+      "query": "",
+      "target_id": "releases:harbourlight/gpu-bench",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "releases.json",
+      "answer_kind": "records",
+      "expected_outcome": "ok",
+      "expected_loss": "",
+      "evidence": "the roster row names releases; the same route at a different collection"
+    },
+    {
+      "case_name": "search_200",
+      "query": "gpu benchmark",
+      "target_id": "",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "search_repositories.json",
+      "answer_kind": "records",
+      "expected_outcome": "ok",
+      "expected_loss": "",
+      "evidence": "measured: api.github.com/search/repositories answered 200 anonymously, on the code_search bucket"
+    },
+    {
+      "case_name": "search_matched_nothing_200",
+      "query": "a phrase nobody has ever committed",
+      "target_id": "",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "search_no_matches.json",
+      "answer_kind": "no_matches",
+      "expected_outcome": "empty",
+      "expected_loss": "",
+      "evidence": "the index still answers with its container and a total of zero: nothing matched, and nothing moved"
+    },
+    {
+      "case_name": "no_open_issue_200",
+      "query": "",
+      "target_id": "issues:harbourlight/gpu-bench",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "issues_none_open.json",
+      "answer_kind": "no_matches",
+      "expected_outcome": "empty",
+      "expected_loss": "",
+      "evidence": "an empty list is a repository with nothing open, which is a fact about the repository rather than about this read"
+    },
+    {
+      "case_name": "repository_row_came_back_short_200",
+      "query": "",
+      "target_id": "quilling/kvcache-notes",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "repo_partial.json",
+      "answer_kind": "records",
+      "expected_outcome": "ok",
+      "expected_loss": "",
+      "evidence": "a row short of its declared fields says so on the record; a star count of zero is a count and not an omission"
+    },
+    {
+      "case_name": "repository_shape_moved_200",
+      "query": "",
+      "target_id": "harbourlight/gpu-bench",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "repo_reshaped.json",
+      "answer_kind": "drifted",
+      "expected_outcome": "failed",
+      "expected_loss": "schema_drift",
+      "evidence": "200 with an object naming neither `id` nor `full_name`: the payload this adapter reads has changed shape"
+    },
+    {
+      "case_name": "search_shape_moved_200",
+      "query": "gpu benchmark",
+      "target_id": "",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "search_reshaped.json",
+      "answer_kind": "drifted",
+      "expected_outcome": "failed",
+      "expected_loss": "schema_drift",
+      "evidence": "200 with no `items` list: not a search that matched nothing"
+    },
+    {
+      "case_name": "repository_not_found_404",
+      "query": "",
+      "target_id": "harbourlight/no-such-repo",
+      "cursor": "",
+      "status": 404,
+      "body_fixture": "not_found.json",
+      "answer_kind": "refused",
+      "expected_outcome": "failed",
+      "expected_loss": "http_status",
+      "evidence": "the origin's own status for a repository it will not show an anonymous client, carried as itself"
+    },
+    {
+      "case_name": "hour_spent_403",
+      "query": "",
+      "target_id": "harbourlight/gpu-bench",
+      "cursor": "",
+      "status": 403,
+      "body_fixture": "rate_limit_exceeded.json",
+      "answer_kind": "refused",
+      "expected_outcome": "failed",
+      "expected_loss": "http_status",
+      "evidence": "GitHub answers an anonymous client that has spent its 60/hr with 403 and a message about rate limits. Waiting fixes it, so it is never `auth_required`: a keyless route reported as credentialed is the false capability this whole spec exists to prevent"
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "_note": [
+    "findings.md §1 measures exactly one row here: `feeds/videos.xml?channel_id=` answered",
+    "200 with 39 KB in 0.35 s. That is the Atom case, and it is the only route this adapter",
+    "declares.",
+    "",
+    "`podcast_rss.xml` is the other half of the roster row — RSS 2.0, enclosures, and",
+    "podcast transcript links — and it is a parser proof rather than a route proof. No route",
+    "this package declares is known to send a document of that shape. The reopen condition",
+    "is measuring a podcast feed and adding a route constant for it; until then the honest",
+    "claim is that the parser reads RSS 2.0 correctly, not that this package fetches one."
+  ],
+  "cases": [
+    {
+      "case_name": "an_atom_channel_feed",
+      "measured": true,
+      "status": 200,
+      "body_fixture": "youtube_channel_feed.xml",
+      "expected_outcome": "ok",
+      "expected_loss": ""
+    },
+    {
+      "case_name": "an_rss_two_feed_with_enclosures",
+      "measured": false,
+      "status": 200,
+      "body_fixture": "podcast_rss.xml",
+      "expected_outcome": "ok",
+      "expected_loss": ""
+    },
+    {
+      "case_name": "a_channel_that_has_published_nothing",
+      "measured": false,
+      "status": 200,
+      "body_fixture": "channel_with_no_entries.xml",
+      "expected_outcome": "empty",
+      "expected_loss": ""
+    },
+    {
+      "case_name": "a_document_that_is_not_a_feed",
+      "measured": false,
+      "status": 200,
+      "body_fixture": "not_a_feed.html",
+      "expected_outcome": "failed",
+      "expected_loss": "schema_drift"
+    },
+    {
+      "case_name": "a_channel_that_is_not_there",
+      "measured": false,
+      "status": 404,
+      "body_fixture": "not_a_feed.html",
+      "expected_outcome": "failed",
+      "expected_loss": "http_status"
+    },
+    {
+      "case_name": "asked_for_fewer_requests",
+      "measured": false,
+      "status": 429,
+      "body_fixture": "not_a_feed.html",
+      "expected_outcome": "failed",
+      "expected_loss": "rate_limited"
+    }
+  ]
+}

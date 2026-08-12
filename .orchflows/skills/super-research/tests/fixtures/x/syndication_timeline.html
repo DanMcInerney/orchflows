@@ -1,0 +1,2359 @@
+<!--
+  Fixture: one profile-timeline page as syndication.twitter.com serves it.
+
+  findings.md 1 (X) measured this route at 200, 378 KB, 2.5 s, carrying 100
+  timeline entries with full_text, created_at, favorite_count, retweet_count,
+  reply_count, quote_count, conversation_id_str, lang, and an author with
+  followers_count. It records that field set and that count; it does not
+  record a captured body, and this package may not reach the network to make
+  one. So this page is authored to carry exactly the shape and field set the
+  evidence names, at the entry count the evidence names, and nothing else is
+  claimed for it. The container path props.pageProps.timeline.entries is the
+  shape this package believes and is unproven here; a wrong one is typed
+  schema_drift rather than answered empty, and criterion 12 is what proves it.
+
+  Entry 2 of every 5 is a reply, so conversation_id_str differs from id_str
+  on some rows and matches it on the rest, which is what X itself reports.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>simonw on X</title>
+</head>
+<body>
+<div id="__next"></div>
+<script id="__NEXT_DATA__" type="application/json">{
+ "props": {
+  "pageProps": {
+   "timeline": {
+    "entries": [
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000001",
+      "sort_index": "1799990000000000001",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000001",
+        "conversation_id_str": "1799990000000000001",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (0)",
+        "created_at": "2026-08-09T07:00:00.000Z",
+        "favorite_count": 412,
+        "retweet_count": 57,
+        "reply_count": 23,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000002",
+      "sort_index": "1799990000000000002",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000002",
+        "conversation_id_str": "1799990000000000002",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (1)",
+        "created_at": "2026-08-09T07:01:07.000Z",
+        "favorite_count": 409,
+        "retweet_count": 57,
+        "reply_count": 23,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000003",
+      "sort_index": "1799990000000000003",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000003",
+        "conversation_id_str": "1799990000000000002",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (2)",
+        "created_at": "2026-08-09T07:02:14.000Z",
+        "favorite_count": 406,
+        "retweet_count": 57,
+        "reply_count": 23,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000002"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000004",
+      "sort_index": "1799990000000000004",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000004",
+        "conversation_id_str": "1799990000000000004",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (3)",
+        "created_at": "2026-08-09T07:03:21.000Z",
+        "favorite_count": 403,
+        "retweet_count": 56,
+        "reply_count": 23,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000005",
+      "sort_index": "1799990000000000005",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000005",
+        "conversation_id_str": "1799990000000000005",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (4)",
+        "created_at": "2026-08-09T07:04:28.000Z",
+        "favorite_count": 400,
+        "retweet_count": 56,
+        "reply_count": 23,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000006",
+      "sort_index": "1799990000000000006",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000006",
+        "conversation_id_str": "1799990000000000006",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (5)",
+        "created_at": "2026-08-09T07:05:35.000Z",
+        "favorite_count": 397,
+        "retweet_count": 56,
+        "reply_count": 23,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000007",
+      "sort_index": "1799990000000000007",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000007",
+        "conversation_id_str": "1799990000000000007",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (6)",
+        "created_at": "2026-08-09T07:06:42.000Z",
+        "favorite_count": 394,
+        "retweet_count": 55,
+        "reply_count": 23,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000008",
+      "sort_index": "1799990000000000008",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000008",
+        "conversation_id_str": "1799990000000000007",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (7)",
+        "created_at": "2026-08-09T07:07:49.000Z",
+        "favorite_count": 391,
+        "retweet_count": 55,
+        "reply_count": 23,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000007"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000009",
+      "sort_index": "1799990000000000009",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000009",
+        "conversation_id_str": "1799990000000000009",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (8)",
+        "created_at": "2026-08-09T07:08:56.000Z",
+        "favorite_count": 388,
+        "retweet_count": 55,
+        "reply_count": 22,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000010",
+      "sort_index": "1799990000000000010",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000010",
+        "conversation_id_str": "1799990000000000010",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (9)",
+        "created_at": "2026-08-09T07:09:03.000Z",
+        "favorite_count": 385,
+        "retweet_count": 54,
+        "reply_count": 22,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000011",
+      "sort_index": "1799990000000000011",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000011",
+        "conversation_id_str": "1799990000000000011",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (10)",
+        "created_at": "2026-08-09T07:10:10.000Z",
+        "favorite_count": 382,
+        "retweet_count": 54,
+        "reply_count": 22,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000012",
+      "sort_index": "1799990000000000012",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000012",
+        "conversation_id_str": "1799990000000000012",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (11)",
+        "created_at": "2026-08-09T07:11:17.000Z",
+        "favorite_count": 379,
+        "retweet_count": 54,
+        "reply_count": 22,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000013",
+      "sort_index": "1799990000000000013",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000013",
+        "conversation_id_str": "1799990000000000012",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (12)",
+        "created_at": "2026-08-09T08:12:24.000Z",
+        "favorite_count": 376,
+        "retweet_count": 53,
+        "reply_count": 22,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000012"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000014",
+      "sort_index": "1799990000000000014",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000014",
+        "conversation_id_str": "1799990000000000014",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (13)",
+        "created_at": "2026-08-09T08:13:31.000Z",
+        "favorite_count": 373,
+        "retweet_count": 53,
+        "reply_count": 22,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000015",
+      "sort_index": "1799990000000000015",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000015",
+        "conversation_id_str": "1799990000000000015",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (14)",
+        "created_at": "2026-08-09T08:14:38.000Z",
+        "favorite_count": 370,
+        "retweet_count": 53,
+        "reply_count": 22,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000016",
+      "sort_index": "1799990000000000016",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000016",
+        "conversation_id_str": "1799990000000000016",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (15)",
+        "created_at": "2026-08-09T08:15:45.000Z",
+        "favorite_count": 367,
+        "retweet_count": 52,
+        "reply_count": 22,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000017",
+      "sort_index": "1799990000000000017",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000017",
+        "conversation_id_str": "1799990000000000017",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (16)",
+        "created_at": "2026-08-09T08:16:52.000Z",
+        "favorite_count": 364,
+        "retweet_count": 52,
+        "reply_count": 21,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000018",
+      "sort_index": "1799990000000000018",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000018",
+        "conversation_id_str": "1799990000000000017",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (17)",
+        "created_at": "2026-08-09T08:17:59.000Z",
+        "favorite_count": 361,
+        "retweet_count": 52,
+        "reply_count": 21,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000017"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000019",
+      "sort_index": "1799990000000000019",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000019",
+        "conversation_id_str": "1799990000000000019",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (18)",
+        "created_at": "2026-08-09T08:18:06.000Z",
+        "favorite_count": 358,
+        "retweet_count": 51,
+        "reply_count": 21,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000020",
+      "sort_index": "1799990000000000020",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000020",
+        "conversation_id_str": "1799990000000000020",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (19)",
+        "created_at": "2026-08-09T08:19:13.000Z",
+        "favorite_count": 355,
+        "retweet_count": 51,
+        "reply_count": 21,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000021",
+      "sort_index": "1799990000000000021",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000021",
+        "conversation_id_str": "1799990000000000021",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (20)",
+        "created_at": "2026-08-09T08:20:20.000Z",
+        "favorite_count": 352,
+        "retweet_count": 51,
+        "reply_count": 21,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000022",
+      "sort_index": "1799990000000000022",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000022",
+        "conversation_id_str": "1799990000000000022",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (21)",
+        "created_at": "2026-08-09T08:21:27.000Z",
+        "favorite_count": 349,
+        "retweet_count": 50,
+        "reply_count": 21,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000023",
+      "sort_index": "1799990000000000023",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000023",
+        "conversation_id_str": "1799990000000000022",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (22)",
+        "created_at": "2026-08-09T08:22:34.000Z",
+        "favorite_count": 346,
+        "retweet_count": 50,
+        "reply_count": 21,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000022"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000024",
+      "sort_index": "1799990000000000024",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000024",
+        "conversation_id_str": "1799990000000000024",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (23)",
+        "created_at": "2026-08-09T08:23:41.000Z",
+        "favorite_count": 343,
+        "retweet_count": 50,
+        "reply_count": 21,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000025",
+      "sort_index": "1799990000000000025",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000025",
+        "conversation_id_str": "1799990000000000025",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (24)",
+        "created_at": "2026-08-09T09:24:48.000Z",
+        "favorite_count": 340,
+        "retweet_count": 49,
+        "reply_count": 20,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000026",
+      "sort_index": "1799990000000000026",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000026",
+        "conversation_id_str": "1799990000000000026",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (25)",
+        "created_at": "2026-08-09T09:25:55.000Z",
+        "favorite_count": 337,
+        "retweet_count": 49,
+        "reply_count": 20,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000027",
+      "sort_index": "1799990000000000027",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000027",
+        "conversation_id_str": "1799990000000000027",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (26)",
+        "created_at": "2026-08-09T09:26:02.000Z",
+        "favorite_count": 334,
+        "retweet_count": 49,
+        "reply_count": 20,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000028",
+      "sort_index": "1799990000000000028",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000028",
+        "conversation_id_str": "1799990000000000027",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (27)",
+        "created_at": "2026-08-09T09:27:09.000Z",
+        "favorite_count": 331,
+        "retweet_count": 48,
+        "reply_count": 20,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000027"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000029",
+      "sort_index": "1799990000000000029",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000029",
+        "conversation_id_str": "1799990000000000029",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (28)",
+        "created_at": "2026-08-09T09:28:16.000Z",
+        "favorite_count": 328,
+        "retweet_count": 48,
+        "reply_count": 20,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000030",
+      "sort_index": "1799990000000000030",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000030",
+        "conversation_id_str": "1799990000000000030",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (29)",
+        "created_at": "2026-08-09T09:29:23.000Z",
+        "favorite_count": 325,
+        "retweet_count": 48,
+        "reply_count": 20,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000031",
+      "sort_index": "1799990000000000031",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000031",
+        "conversation_id_str": "1799990000000000031",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (30)",
+        "created_at": "2026-08-09T09:30:30.000Z",
+        "favorite_count": 322,
+        "retweet_count": 47,
+        "reply_count": 20,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000032",
+      "sort_index": "1799990000000000032",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000032",
+        "conversation_id_str": "1799990000000000032",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (31)",
+        "created_at": "2026-08-09T09:31:37.000Z",
+        "favorite_count": 319,
+        "retweet_count": 47,
+        "reply_count": 20,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000033",
+      "sort_index": "1799990000000000033",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000033",
+        "conversation_id_str": "1799990000000000032",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (32)",
+        "created_at": "2026-08-09T09:32:44.000Z",
+        "favorite_count": 316,
+        "retweet_count": 47,
+        "reply_count": 19,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000032"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000034",
+      "sort_index": "1799990000000000034",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000034",
+        "conversation_id_str": "1799990000000000034",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (33)",
+        "created_at": "2026-08-09T09:33:51.000Z",
+        "favorite_count": 313,
+        "retweet_count": 46,
+        "reply_count": 19,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000035",
+      "sort_index": "1799990000000000035",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000035",
+        "conversation_id_str": "1799990000000000035",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (34)",
+        "created_at": "2026-08-09T09:34:58.000Z",
+        "favorite_count": 310,
+        "retweet_count": 46,
+        "reply_count": 19,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000036",
+      "sort_index": "1799990000000000036",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000036",
+        "conversation_id_str": "1799990000000000036",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (35)",
+        "created_at": "2026-08-09T09:35:05.000Z",
+        "favorite_count": 307,
+        "retweet_count": 46,
+        "reply_count": 19,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000037",
+      "sort_index": "1799990000000000037",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000037",
+        "conversation_id_str": "1799990000000000037",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (36)",
+        "created_at": "2026-08-09T10:36:12.000Z",
+        "favorite_count": 304,
+        "retweet_count": 45,
+        "reply_count": 19,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000038",
+      "sort_index": "1799990000000000038",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000038",
+        "conversation_id_str": "1799990000000000037",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (37)",
+        "created_at": "2026-08-09T10:37:19.000Z",
+        "favorite_count": 301,
+        "retweet_count": 45,
+        "reply_count": 19,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000037"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000039",
+      "sort_index": "1799990000000000039",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000039",
+        "conversation_id_str": "1799990000000000039",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (38)",
+        "created_at": "2026-08-09T10:38:26.000Z",
+        "favorite_count": 298,
+        "retweet_count": 45,
+        "reply_count": 19,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000040",
+      "sort_index": "1799990000000000040",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000040",
+        "conversation_id_str": "1799990000000000040",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (39)",
+        "created_at": "2026-08-09T10:39:33.000Z",
+        "favorite_count": 295,
+        "retweet_count": 44,
+        "reply_count": 19,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000041",
+      "sort_index": "1799990000000000041",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000041",
+        "conversation_id_str": "1799990000000000041",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (40)",
+        "created_at": "2026-08-09T10:40:40.000Z",
+        "favorite_count": 292,
+        "retweet_count": 44,
+        "reply_count": 18,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000042",
+      "sort_index": "1799990000000000042",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000042",
+        "conversation_id_str": "1799990000000000042",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (41)",
+        "created_at": "2026-08-09T10:41:47.000Z",
+        "favorite_count": 289,
+        "retweet_count": 44,
+        "reply_count": 18,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000043",
+      "sort_index": "1799990000000000043",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000043",
+        "conversation_id_str": "1799990000000000042",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (42)",
+        "created_at": "2026-08-09T10:42:54.000Z",
+        "favorite_count": 286,
+        "retweet_count": 43,
+        "reply_count": 18,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000042"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000044",
+      "sort_index": "1799990000000000044",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000044",
+        "conversation_id_str": "1799990000000000044",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (43)",
+        "created_at": "2026-08-09T10:43:01.000Z",
+        "favorite_count": 283,
+        "retweet_count": 43,
+        "reply_count": 18,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000045",
+      "sort_index": "1799990000000000045",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000045",
+        "conversation_id_str": "1799990000000000045",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (44)",
+        "created_at": "2026-08-09T10:44:08.000Z",
+        "favorite_count": 280,
+        "retweet_count": 43,
+        "reply_count": 18,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000046",
+      "sort_index": "1799990000000000046",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000046",
+        "conversation_id_str": "1799990000000000046",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (45)",
+        "created_at": "2026-08-09T10:45:15.000Z",
+        "favorite_count": 277,
+        "retweet_count": 42,
+        "reply_count": 18,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000047",
+      "sort_index": "1799990000000000047",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000047",
+        "conversation_id_str": "1799990000000000047",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (46)",
+        "created_at": "2026-08-09T10:46:22.000Z",
+        "favorite_count": 274,
+        "retweet_count": 42,
+        "reply_count": 18,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000048",
+      "sort_index": "1799990000000000048",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000048",
+        "conversation_id_str": "1799990000000000047",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (47)",
+        "created_at": "2026-08-09T10:47:29.000Z",
+        "favorite_count": 271,
+        "retweet_count": 42,
+        "reply_count": 18,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000047"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000049",
+      "sort_index": "1799990000000000049",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000049",
+        "conversation_id_str": "1799990000000000049",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (48)",
+        "created_at": "2026-08-09T11:48:36.000Z",
+        "favorite_count": 268,
+        "retweet_count": 41,
+        "reply_count": 17,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000050",
+      "sort_index": "1799990000000000050",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000050",
+        "conversation_id_str": "1799990000000000050",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (49)",
+        "created_at": "2026-08-09T11:49:43.000Z",
+        "favorite_count": 265,
+        "retweet_count": 41,
+        "reply_count": 17,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000051",
+      "sort_index": "1799990000000000051",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000051",
+        "conversation_id_str": "1799990000000000051",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (50)",
+        "created_at": "2026-08-09T11:50:50.000Z",
+        "favorite_count": 262,
+        "retweet_count": 41,
+        "reply_count": 17,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000052",
+      "sort_index": "1799990000000000052",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000052",
+        "conversation_id_str": "1799990000000000052",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (51)",
+        "created_at": "2026-08-09T11:51:57.000Z",
+        "favorite_count": 259,
+        "retweet_count": 40,
+        "reply_count": 17,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000053",
+      "sort_index": "1799990000000000053",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000053",
+        "conversation_id_str": "1799990000000000052",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (52)",
+        "created_at": "2026-08-09T11:52:04.000Z",
+        "favorite_count": 256,
+        "retweet_count": 40,
+        "reply_count": 17,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000052"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000054",
+      "sort_index": "1799990000000000054",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000054",
+        "conversation_id_str": "1799990000000000054",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (53)",
+        "created_at": "2026-08-09T11:53:11.000Z",
+        "favorite_count": 253,
+        "retweet_count": 40,
+        "reply_count": 17,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000055",
+      "sort_index": "1799990000000000055",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000055",
+        "conversation_id_str": "1799990000000000055",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (54)",
+        "created_at": "2026-08-09T11:54:18.000Z",
+        "favorite_count": 250,
+        "retweet_count": 39,
+        "reply_count": 17,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000056",
+      "sort_index": "1799990000000000056",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000056",
+        "conversation_id_str": "1799990000000000056",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (55)",
+        "created_at": "2026-08-09T11:55:25.000Z",
+        "favorite_count": 247,
+        "retweet_count": 39,
+        "reply_count": 17,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000057",
+      "sort_index": "1799990000000000057",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000057",
+        "conversation_id_str": "1799990000000000057",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (56)",
+        "created_at": "2026-08-09T11:56:32.000Z",
+        "favorite_count": 244,
+        "retweet_count": 39,
+        "reply_count": 16,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000058",
+      "sort_index": "1799990000000000058",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000058",
+        "conversation_id_str": "1799990000000000057",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (57)",
+        "created_at": "2026-08-09T11:57:39.000Z",
+        "favorite_count": 241,
+        "retweet_count": 38,
+        "reply_count": 16,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000057"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000059",
+      "sort_index": "1799990000000000059",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000059",
+        "conversation_id_str": "1799990000000000059",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (58)",
+        "created_at": "2026-08-09T11:58:46.000Z",
+        "favorite_count": 238,
+        "retweet_count": 38,
+        "reply_count": 16,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000060",
+      "sort_index": "1799990000000000060",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000060",
+        "conversation_id_str": "1799990000000000060",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (59)",
+        "created_at": "2026-08-09T11:59:53.000Z",
+        "favorite_count": 235,
+        "retweet_count": 38,
+        "reply_count": 16,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000061",
+      "sort_index": "1799990000000000061",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000061",
+        "conversation_id_str": "1799990000000000061",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (60)",
+        "created_at": "2026-08-09T12:00:00.000Z",
+        "favorite_count": 232,
+        "retweet_count": 37,
+        "reply_count": 16,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000062",
+      "sort_index": "1799990000000000062",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000062",
+        "conversation_id_str": "1799990000000000062",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (61)",
+        "created_at": "2026-08-09T12:01:07.000Z",
+        "favorite_count": 229,
+        "retweet_count": 37,
+        "reply_count": 16,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000063",
+      "sort_index": "1799990000000000063",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000063",
+        "conversation_id_str": "1799990000000000062",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (62)",
+        "created_at": "2026-08-09T12:02:14.000Z",
+        "favorite_count": 226,
+        "retweet_count": 37,
+        "reply_count": 16,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000062"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000064",
+      "sort_index": "1799990000000000064",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000064",
+        "conversation_id_str": "1799990000000000064",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (63)",
+        "created_at": "2026-08-09T12:03:21.000Z",
+        "favorite_count": 223,
+        "retweet_count": 36,
+        "reply_count": 16,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000065",
+      "sort_index": "1799990000000000065",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000065",
+        "conversation_id_str": "1799990000000000065",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (64)",
+        "created_at": "2026-08-09T12:04:28.000Z",
+        "favorite_count": 220,
+        "retweet_count": 36,
+        "reply_count": 15,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000066",
+      "sort_index": "1799990000000000066",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000066",
+        "conversation_id_str": "1799990000000000066",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (65)",
+        "created_at": "2026-08-09T12:05:35.000Z",
+        "favorite_count": 217,
+        "retweet_count": 36,
+        "reply_count": 15,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000067",
+      "sort_index": "1799990000000000067",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000067",
+        "conversation_id_str": "1799990000000000067",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (66)",
+        "created_at": "2026-08-09T12:06:42.000Z",
+        "favorite_count": 214,
+        "retweet_count": 35,
+        "reply_count": 15,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000068",
+      "sort_index": "1799990000000000068",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000068",
+        "conversation_id_str": "1799990000000000067",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (67)",
+        "created_at": "2026-08-09T12:07:49.000Z",
+        "favorite_count": 211,
+        "retweet_count": 35,
+        "reply_count": 15,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000067"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000069",
+      "sort_index": "1799990000000000069",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000069",
+        "conversation_id_str": "1799990000000000069",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (68)",
+        "created_at": "2026-08-09T12:08:56.000Z",
+        "favorite_count": 208,
+        "retweet_count": 35,
+        "reply_count": 15,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000070",
+      "sort_index": "1799990000000000070",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000070",
+        "conversation_id_str": "1799990000000000070",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (69)",
+        "created_at": "2026-08-09T12:09:03.000Z",
+        "favorite_count": 205,
+        "retweet_count": 34,
+        "reply_count": 15,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000071",
+      "sort_index": "1799990000000000071",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000071",
+        "conversation_id_str": "1799990000000000071",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (70)",
+        "created_at": "2026-08-09T12:10:10.000Z",
+        "favorite_count": 202,
+        "retweet_count": 34,
+        "reply_count": 15,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000072",
+      "sort_index": "1799990000000000072",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000072",
+        "conversation_id_str": "1799990000000000072",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (71)",
+        "created_at": "2026-08-09T12:11:17.000Z",
+        "favorite_count": 199,
+        "retweet_count": 34,
+        "reply_count": 15,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000073",
+      "sort_index": "1799990000000000073",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000073",
+        "conversation_id_str": "1799990000000000072",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (72)",
+        "created_at": "2026-08-09T13:12:24.000Z",
+        "favorite_count": 196,
+        "retweet_count": 33,
+        "reply_count": 14,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000072"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000074",
+      "sort_index": "1799990000000000074",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000074",
+        "conversation_id_str": "1799990000000000074",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (73)",
+        "created_at": "2026-08-09T13:13:31.000Z",
+        "favorite_count": 193,
+        "retweet_count": 33,
+        "reply_count": 14,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000075",
+      "sort_index": "1799990000000000075",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000075",
+        "conversation_id_str": "1799990000000000075",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (74)",
+        "created_at": "2026-08-09T13:14:38.000Z",
+        "favorite_count": 190,
+        "retweet_count": 33,
+        "reply_count": 14,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000076",
+      "sort_index": "1799990000000000076",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000076",
+        "conversation_id_str": "1799990000000000076",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (75)",
+        "created_at": "2026-08-09T13:15:45.000Z",
+        "favorite_count": 187,
+        "retweet_count": 32,
+        "reply_count": 14,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000077",
+      "sort_index": "1799990000000000077",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000077",
+        "conversation_id_str": "1799990000000000077",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (76)",
+        "created_at": "2026-08-09T13:16:52.000Z",
+        "favorite_count": 184,
+        "retweet_count": 32,
+        "reply_count": 14,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000078",
+      "sort_index": "1799990000000000078",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000078",
+        "conversation_id_str": "1799990000000000077",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (77)",
+        "created_at": "2026-08-09T13:17:59.000Z",
+        "favorite_count": 181,
+        "retweet_count": 32,
+        "reply_count": 14,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000077"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000079",
+      "sort_index": "1799990000000000079",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000079",
+        "conversation_id_str": "1799990000000000079",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (78)",
+        "created_at": "2026-08-09T13:18:06.000Z",
+        "favorite_count": 178,
+        "retweet_count": 31,
+        "reply_count": 14,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000080",
+      "sort_index": "1799990000000000080",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000080",
+        "conversation_id_str": "1799990000000000080",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (79)",
+        "created_at": "2026-08-09T13:19:13.000Z",
+        "favorite_count": 175,
+        "retweet_count": 31,
+        "reply_count": 14,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000081",
+      "sort_index": "1799990000000000081",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000081",
+        "conversation_id_str": "1799990000000000081",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (80)",
+        "created_at": "2026-08-09T13:20:20.000Z",
+        "favorite_count": 172,
+        "retweet_count": 31,
+        "reply_count": 13,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000082",
+      "sort_index": "1799990000000000082",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000082",
+        "conversation_id_str": "1799990000000000082",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (81)",
+        "created_at": "2026-08-09T13:21:27.000Z",
+        "favorite_count": 169,
+        "retweet_count": 30,
+        "reply_count": 13,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000083",
+      "sort_index": "1799990000000000083",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000083",
+        "conversation_id_str": "1799990000000000082",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (82)",
+        "created_at": "2026-08-09T13:22:34.000Z",
+        "favorite_count": 166,
+        "retweet_count": 30,
+        "reply_count": 13,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000082"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000084",
+      "sort_index": "1799990000000000084",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000084",
+        "conversation_id_str": "1799990000000000084",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (83)",
+        "created_at": "2026-08-09T13:23:41.000Z",
+        "favorite_count": 163,
+        "retweet_count": 30,
+        "reply_count": 13,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000085",
+      "sort_index": "1799990000000000085",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000085",
+        "conversation_id_str": "1799990000000000085",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (84)",
+        "created_at": "2026-08-09T14:24:48.000Z",
+        "favorite_count": 160,
+        "retweet_count": 29,
+        "reply_count": 13,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000086",
+      "sort_index": "1799990000000000086",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000086",
+        "conversation_id_str": "1799990000000000086",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (85)",
+        "created_at": "2026-08-09T14:25:55.000Z",
+        "favorite_count": 157,
+        "retweet_count": 29,
+        "reply_count": 13,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000087",
+      "sort_index": "1799990000000000087",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000087",
+        "conversation_id_str": "1799990000000000087",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (86)",
+        "created_at": "2026-08-09T14:26:02.000Z",
+        "favorite_count": 154,
+        "retweet_count": 29,
+        "reply_count": 13,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000088",
+      "sort_index": "1799990000000000088",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000088",
+        "conversation_id_str": "1799990000000000087",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (87)",
+        "created_at": "2026-08-09T14:27:09.000Z",
+        "favorite_count": 151,
+        "retweet_count": 28,
+        "reply_count": 13,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000087"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000089",
+      "sort_index": "1799990000000000089",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000089",
+        "conversation_id_str": "1799990000000000089",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (88)",
+        "created_at": "2026-08-09T14:28:16.000Z",
+        "favorite_count": 148,
+        "retweet_count": 28,
+        "reply_count": 12,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000090",
+      "sort_index": "1799990000000000090",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000090",
+        "conversation_id_str": "1799990000000000090",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (89)",
+        "created_at": "2026-08-09T14:29:23.000Z",
+        "favorite_count": 145,
+        "retweet_count": 28,
+        "reply_count": 12,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000091",
+      "sort_index": "1799990000000000091",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000091",
+        "conversation_id_str": "1799990000000000091",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (90)",
+        "created_at": "2026-08-09T14:30:30.000Z",
+        "favorite_count": 142,
+        "retweet_count": 27,
+        "reply_count": 12,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000092",
+      "sort_index": "1799990000000000092",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000092",
+        "conversation_id_str": "1799990000000000092",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (91)",
+        "created_at": "2026-08-09T14:31:37.000Z",
+        "favorite_count": 139,
+        "retweet_count": 27,
+        "reply_count": 12,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000093",
+      "sort_index": "1799990000000000093",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000093",
+        "conversation_id_str": "1799990000000000092",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (92)",
+        "created_at": "2026-08-09T14:32:44.000Z",
+        "favorite_count": 136,
+        "retweet_count": 27,
+        "reply_count": 12,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000092"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000094",
+      "sort_index": "1799990000000000094",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000094",
+        "conversation_id_str": "1799990000000000094",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (93)",
+        "created_at": "2026-08-09T14:33:51.000Z",
+        "favorite_count": 133,
+        "retweet_count": 26,
+        "reply_count": 12,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000095",
+      "sort_index": "1799990000000000095",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000095",
+        "conversation_id_str": "1799990000000000095",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (94)",
+        "created_at": "2026-08-09T14:34:58.000Z",
+        "favorite_count": 130,
+        "retweet_count": 26,
+        "reply_count": 12,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000096",
+      "sort_index": "1799990000000000096",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000096",
+        "conversation_id_str": "1799990000000000096",
+        "full_text": "Ran the same eleven prompts through the new local build this morning. (95)",
+        "created_at": "2026-08-09T14:35:05.000Z",
+        "favorite_count": 127,
+        "retweet_count": 26,
+        "reply_count": 12,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000097",
+      "sort_index": "1799990000000000097",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000097",
+        "conversation_id_str": "1799990000000000097",
+        "full_text": "Numbers in the thread, and the harness is in the repo if you want to redo it. (96)",
+        "created_at": "2026-08-09T15:36:12.000Z",
+        "favorite_count": 124,
+        "retweet_count": 25,
+        "reply_count": 11,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000098",
+      "sort_index": "1799990000000000098",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000098",
+        "conversation_id_str": "1799990000000000097",
+        "full_text": "Second run on identical hardware came out three percent slower, same outputs. (97)",
+        "created_at": "2026-08-09T15:37:19.000Z",
+        "favorite_count": 121,
+        "retweet_count": 25,
+        "reply_count": 11,
+        "quote_count": 5,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        },
+        "in_reply_to_status_id_str": "1799990000000000097"
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000099",
+      "sort_index": "1799990000000000099",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000099",
+        "conversation_id_str": "1799990000000000099",
+        "full_text": "The interesting part is not the speed, it is that the outputs did not move. (98)",
+        "created_at": "2026-08-09T15:38:26.000Z",
+        "favorite_count": 118,
+        "retweet_count": 25,
+        "reply_count": 11,
+        "quote_count": 6,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     },
+     {
+      "type": "tweet",
+      "entry_id": "tweet-1799990000000000100",
+      "sort_index": "1799990000000000100",
+      "content": {
+       "tweet": {
+        "id_str": "1799990000000000100",
+        "conversation_id_str": "1799990000000000100",
+        "full_text": "Someone asked for the quantisation settings, so here they are in full. (99)",
+        "created_at": "2026-08-09T15:39:33.000Z",
+        "favorite_count": 115,
+        "retweet_count": 24,
+        "reply_count": 11,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {
+         "screen_name": "simonw",
+         "name": "Simon Willison",
+         "followers_count": 61234
+        }
+       }
+      }
+     }
+    ]
+   }
+  }
+ },
+ "page": "/timeline-profile/screen-name/[screenName]",
+ "buildId": "x-web-2026.08.1"
+}</script>
+</body>
+</html>

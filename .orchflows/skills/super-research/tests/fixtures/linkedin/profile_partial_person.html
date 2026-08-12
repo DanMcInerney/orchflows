@@ -1,0 +1,50 @@
+<!--
+  Fixture: a Person block the origin populated only in part.
+
+  Not every public profile fills every field: a member who has set no location
+  and written no summary still has a page, and LinkedIn omits the keys rather
+  than sending them empty. The block below is the measured shape with
+  jobTitle, address and description left out, which is what the origin does.
+
+  The record this produces must say the fields are missing and must not fill
+  them. An empty string in place of a description is a claim that the member
+  wrote nothing; a locality nobody reported is worse. Marked field_omitted,
+  and absent.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mira Okonkwo | LinkedIn</title>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav__button-tertiary" href="/signup">Join now</a>
+  <a class="nav__button-secondary" href="/login">Sign in to view Mira's full profile</a>
+</nav>
+
+<script type="application/ld+json">
+{
+ "@context": "http://schema.org",
+ "@graph": [
+  {
+   "@type": "Person",
+   "name": "Mira Okonkwo",
+   "url": "https://www.linkedin.com/in/mira-okonkwo-4d90c113",
+   "worksFor": [
+    {
+     "@type": "Organization",
+     "name": "Kestrel Systems"
+    }
+   ],
+   "alumniOf": []
+  }
+ ]
+}
+</script>
+
+<main class="profile">
+  <h1 class="top-card-layout__title">Mira Okonkwo</h1>
+</main>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "data": {
+    "tweetResultByRestId": {
+      "tweet": {
+        "__typename": "Tweet",
+        "rest_id": "1799990000000000001",
+        "legacy": {
+          "id_str": "1799990000000000001",
+          "conversation_id_str": "1799990000000000001",
+          "full_text": "Ran the same eleven prompts through the new local build this morning.",
+          "created_at": "Sun Aug 09 07:00:00 +0000 2026",
+          "favorite_count": 412,
+          "retweet_count": 57,
+          "reply_count": 23,
+          "quote_count": 4,
+          "lang": "en"
+        }
+      }
+    }
+  }
+}
