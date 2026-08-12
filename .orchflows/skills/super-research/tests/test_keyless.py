@@ -114,15 +114,41 @@ X_POST_ID = "1799990000000000001"
 SENTINEL = "SUPER_RESEARCH_T10_SENTINEL"
 
 
+# Three of the captures above say the index holds more than the page they
+# carry: DDG's own "Next" offset, Algolia's `page`/`nbPages` pair, and
+# InnerTube's continuation token. Each is the origin's claim and none of them is
+# this double's — it answers every read of a route with the one canned page it
+# was seeded with, so a core that spends a cursor would be asking for a page
+# nothing here can serve. No page two of any of these routes has ever been
+# measured (findings.md §1 measured page one), so this dispatch seeds what it
+# can honestly stand for: a search whose one page is its last. The claim is what
+# moves; every count below is one page's, unchanged.
+NEXT_PAGE_CLAIMS = (
+    ('<input type="hidden" name="s" value="30" />', ""),
+    ('"nbPages": 50', '"nbPages": 1'),
+    ('"continuationCommand": {"token": "EpcDEgxsb2NhbCBtb2RlbHMaggNTQlNDQVE"}',
+     '"continuationCommand": {}'),
+)
+
+
 def read_payload(name):
     return FIXTURE_DIR.joinpath(name).read_text(encoding="utf-8")
+
+
+def as_a_last_page(body):
+    """One capture with the next-page claim it makes dropped, if it makes one."""
+
+    for claim, replacement in NEXT_PAGE_CLAIMS:
+        if claim in body:
+            return body.replace(claim, replacement)
+    return body
 
 
 def roster_seeds():
     """One canned origin answer per route the roster can reach."""
 
     return {
-        route_id: (200, read_payload(name), content_type)
+        route_id: (200, as_a_last_page(read_payload(name)), content_type)
         for route_id, (name, content_type) in ROSTER_PAYLOADS.items()
     }
 

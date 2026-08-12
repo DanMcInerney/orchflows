@@ -3136,6 +3136,29 @@ def read_youtube(name):
     return YOUTUBE_FIXTURE_DIR.joinpath(name).read_text(encoding="utf-8")
 
 
+# The two claims a capture in this file makes about a page after the one it
+# carries: InnerTube's continuation token and Algolia's `page`/`nbPages` pair.
+# Both are the origin's, and a dispatch below that seeds one canned answer per
+# route cannot stand behind either — a core that spends the cursor asks for a
+# page this opener would answer with the same one. No page two of either route
+# has ever been measured, so a whole-dispatch seed states what it can honestly
+# stand for, and the page-level rows above keep reading the capture as it came.
+NEXT_PAGE_CLAIMS = (
+    ('"continuationCommand": {"token": "EpcDEgxsb2NhbCBtb2RlbHMaggNTQlNDQVE"}',
+     '"continuationCommand": {}'),
+    ('"nbPages": 50', '"nbPages": 1'),
+)
+
+
+def as_a_last_page(body):
+    """One capture with the next-page claim it makes dropped."""
+
+    for claim, replacement in NEXT_PAGE_CLAIMS:
+        if claim in body:
+            return body.replace(claim, replacement)
+    raise AssertionError("this capture states no next page to drop")
+
+
 def youtube_cases():
     """The measured case table: a status, a body, and the loss its evidence names."""
 
@@ -4265,7 +4288,8 @@ class YoutubeInstagramArtifactSeamTest(unittest.TestCase):
             {
                 # One route, two operations, in the order the steps run them.
                 transport.YOUTUBE_INNERTUBE_ROUTE: [
-                    (200, read_youtube("search_results.json"), "application/json"),
+                    (200, as_a_last_page(read_youtube("search_results.json")),
+                     "application/json"),
                     (200, read_youtube("player_metadata.json"), "application/json"),
                 ],
                 transport.INSTAGRAM_WEB_PROFILE_ROUTE: (
@@ -6357,7 +6381,7 @@ class HackerNewsGithubArtifactSeamTest(unittest.TestCase):
             {
                 transport.HN_ALGOLIA_SEARCH_ROUTE: (
                     200,
-                    read_hacker_news("algolia_search_by_date.json"),
+                    as_a_last_page(read_hacker_news("algolia_search_by_date.json")),
                     "application/json",
                 ),
                 # One route, two items, in the order the steps read them.
@@ -6485,7 +6509,7 @@ class HackerNewsGithubArtifactSeamTest(unittest.TestCase):
                 {
                     transport.HN_ALGOLIA_SEARCH_ROUTE: (
                         200,
-                        read_hacker_news("algolia_search_by_date.json"),
+                        as_a_last_page(read_hacker_news("algolia_search_by_date.json")),
                         "application/json",
                     ),
                     transport.HN_FIREBASE_ITEM_ROUTE: (

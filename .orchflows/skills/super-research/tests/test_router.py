@@ -692,7 +692,18 @@ def k1_seeds():
     return {
         transport.YOUTUBE_INNERTUBE_ROUTE: (
             200,
-            YOUTUBE_FIXTURE_DIR.joinpath("search_results.json").read_text(encoding="utf-8"),
+            # Without the continuation token the capture carries. That token is
+            # InnerTube's claim that the search holds another page, and this
+            # double cannot serve one: it answers every read of the route with
+            # the one canned page. No page two of this route has ever been
+            # measured, so the seed stands for a search whose one page is its
+            # last, and the three reads below stay this dispatch's three.
+            YOUTUBE_FIXTURE_DIR.joinpath("search_results.json")
+            .read_text(encoding="utf-8")
+            .replace(
+                '"continuationCommand": {"token": "EpcDEgxsb2NhbCBtb2RlbHMaggNTQlNDQVE"}',
+                '"continuationCommand": {}',
+            ),
             "application/json",
         ),
         transport.INSTAGRAM_WEB_PROFILE_ROUTE: (
