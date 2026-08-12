@@ -228,8 +228,10 @@ before any I/O.
 
 ## Adapter roster
 
-Fourteen adapters, thirteen live plus `fake`; seventeen route surfaces, because
-three adapters read more than one. Read back off `runner.surface_descriptors`.
+Fourteen adapters, thirteen live plus `fake`; eighteen route surfaces, because
+four adapters reach more than one. Seventeen of the eighteen are read; `x_guest`'s
+activation is spent rather than read, so it carries a budget and never a record.
+Read back off `runner.surface_descriptors`.
 
 | adapter | class | route surfaces | what ships |
 | --- | --- | --- | --- |
@@ -238,7 +240,7 @@ three adapters read more than one. Read back off `runner.surface_descriptors`.
 | `reddit_archive` | `K3` | `arctic_shift_posts_ids` | Arctic Shift hydration by submission id: title, author, subreddit, permalink, created time, `score`, `num_comments` |
 | `reddit_feed` | `K0` | `reddit_feed` | subreddit RSS freshness probe: title, locator, author, updated. No engagement |
 | `x_syndication` | `K2` | `x_syndication_timeline` | one handle's timeline from the page's own `__NEXT_DATA__`, with the platform's four counts |
-| `x_guest` | `K1` | `x_guest_graphql` | guest token then `TweetResultByRestId`, `UserByScreenName`, `UserTweets` |
+| `x_guest` | `K1` | `x_guest_activate`, `x_guest_graphql` | a guest-token activation, then `TweetResultByRestId`, `UserByScreenName`, `UserTweets` on the token it minted. One read costs two calls, and both are budgeted |
 | `linkedin_public` | `K2` | `linkedin_public_profile` | `/in/<slug>` `ld+json` Person: name, description, `jobTitle`, `addressLocality`, `worksFor`, `alumniOf` |
 | `linkedin_jobs` | `K0` | `linkedin_jobs_guest_search` | `jobs-guest` search: URN id, title, company, posted date |
 | `youtube_innertube` | `K1` | `youtube_innertube` | `search`, `next` comment threads, `player` metadata. No captions |
@@ -324,6 +326,13 @@ surfaces are two routes rather than one.
 the package that builds a carrier, which is checkable from outside — a second
 one is a second unpaced door. Handing in a carrier is how a caller takes pacing
 over deliberately; there is no way to reach an origin unpaced by omission.
+
+That choice is one choice and not three. A caller who hands in a bare
+`transport.Transport` gets no pacing, no cache, and **no mint**: the guest-token
+activation a `K1` route needs is minted inside `RateGovernor`, because an
+activation is a read like any other and belongs in a budget of its own. A bare
+carrier's `x_guest` read therefore goes out unauthorized, and the origin's own
+401 or 403 is what the run records — never an invented token and never a retry.
 
 An HTTP 429 is typed `rate_limited` on the page, sets that route's cooldown, and
 ends the call. It never triggers a second read, another route, or a changed
