@@ -925,6 +925,24 @@ def run_cli(case, argv, seeds=None, ledger_path=None, clock=None):
     return code, printed.getvalue(), opener
 
 
+def status_row(case, printed, adapter_id):
+    """One adapter's row of `status` output, as its four columns.
+
+    Read by column rather than by substring: `verified` is a substring of
+    `unverified`, so a row asserted with ``assertIn`` passes on the word that
+    means the opposite of what it was checking for.
+    """
+
+    rows = [
+        line.split()
+        for line in printed.splitlines()
+        if line.strip() and line.split()[0] == adapter_id
+    ]
+    case.assertEqual(len(rows), 1, "status printed {0} rows for {1}".format(len(rows), adapter_id))
+    case.assertEqual(len(rows[0]), 4, "a status row is four columns: " + " ".join(rows[0]))
+    return rows[0]
+
+
 def refused(case, argv):
     """One invocation the surface must refuse before anything is read."""
 
@@ -1075,7 +1093,7 @@ class SmokeSubcommandTest(LedgerHoldingCase):
         self.assertIn("one bounded read on route " + transport.DDG_HTML_ROUTE, printed)
         self.assertIn("loss none", printed)
 
-    def test_a_run_that_did_not_carry_its_row_says_so_and_records_nothing(self):
+    def test_a_run_that_did_not_carry_its_row_says_so_and_records_no_success(self):
         seeds = probe_seeds()
         seeds["github_rest"] = (404, payload("github/not_found.json"), "application/json")
 
@@ -1227,6 +1245,131 @@ class StatusSubcommandTest(LedgerHoldingCase):
         code, _, _ = run_cli(self, ["status"])
 
         self.assertEqual(code, cli.EXIT_OK)
+
+
+class StatusSaysWhatWasReadTest(LedgerHoldingCase):
+    """The whole path, at the surface an operator reads it on.
+
+    One read against an origin that answers without carrying the row, and then
+    the report. The four adapters read on 2026-08-12 arrive here: each was read
+    exactly once, against a real origin, and `status` said of each that it never
+    had been.
+    """
+
+    def unmet_path(self):
+        return cli.unmet_path_beside(self.path)
+
+    def answered_without_the_row(self):
+        """The origin's own answer, carrying no row this adapter's roster names."""
+
+        seeds = probe_seeds()
+        seeds["github_rest"] = (404, payload("github/not_found.json"), "application/json")
+        return seeds
+
+    def test_a_read_that_went_unmet_is_reported_as_read_and_never_as_unread(self):
+        code, printed, _ = run_cli(
+            self, ["smoke", "--adapter", ADAPTER], seeds=self.answered_without_the_row()
+        )
+
+        self.assertEqual(code, cli.EXIT_ROW_UNMET)
+        self.assertIn(cli.READ_AND_ROW_UNMET, printed)
+        self.assertNotIn(cli.NEVER_SMOKED, printed)
+
+        _, after, _ = run_cli(self, ["status"])
+
+        self.assertEqual(
+            status_row(self, after, ADAPTER),
+            [
+                ADAPTER,
+                cli.UNVERIFIED,
+                cli.READ_AND_ROW_UNMET,
+                cli.read_ledger(self.unmet_path())[ADAPTER],
+            ],
+        )
+
+    def test_the_read_that_went_unmet_is_recorded_as_no_kind_of_success(self):
+        run_cli(self, ["smoke", "--adapter", ADAPTER], seeds=self.answered_without_the_row())
+
+        # The ledger is where a proven row is recorded, and nothing proved one.
+        # It is not written at all, so a reader who only asks whether an adapter
+        # is in it gets the same answer it always gave.
+        self.assertFalse(self.path.exists())
+        self.assertEqual(cli.read_ledger(self.path), {})
+        self.assertEqual(sorted(cli.read_ledger(self.unmet_path())), [ADAPTER])
+
+    def test_the_twelve_adapters_this_read_did_not_touch_are_untouched(self):
+        run_cli(self, ["smoke", "--adapter", ADAPTER], seeds=self.answered_without_the_row())
+
+        _, printed, _ = run_cli(self, ["status"])
+
+        for probe in cli.SMOKE_PROBES:
+            if probe.adapter_id == ADAPTER:
+                continue
+            with self.subTest(adapter=probe.adapter_id):
+                self.assertEqual(
+                    status_row(self, printed, probe.adapter_id),
+                    [probe.adapter_id, cli.UNVERIFIED, cli.NEVER_SMOKED, "-"],
+                )
+
+    def test_a_carried_row_reports_verified_with_its_own_instant_and_nothing_else(self):
+        code, _, _ = run_cli(self, ["smoke", "--adapter", ADAPTER])
+
+        _, printed, _ = run_cli(self, ["status"])
+
+        self.assertEqual(code, cli.EXIT_OK)
+        self.assertEqual(
+            status_row(self, printed, ADAPTER),
+            [ADAPTER, cli.VERIFIED, cli.FRESH_SUCCESS, cli.read_ledger(self.path)[ADAPTER]],
+        )
+        self.assertFalse(self.unmet_path().exists())
+
+    def test_this_hosts_own_network_answering_is_not_a_read_of_the_platform(self):
+        seeds = probe_seeds()
+        seeds["github_rest"] = (503, payload("transport/captive_portal.html"), "text/html")
+
+        code, _, _ = run_cli(self, ["smoke", "--adapter", ADAPTER], seeds=seeds)
+        _, printed, _ = run_cli(self, ["status"])
+
+        self.assertEqual(code, cli.EXIT_LOCAL_NETWORK)
+        # Neither record moves. The origin was never reached, so there is no
+        # read to report and `never_smoked` is still the true word — the same
+        # line findings.md section 0 draws, drawn at the second record too.
+        self.assertFalse(self.path.exists())
+        self.assertFalse(self.unmet_path().exists())
+        self.assertEqual(
+            status_row(self, printed, ADAPTER),
+            [ADAPTER, cli.UNVERIFIED, cli.NEVER_SMOKED, "-"],
+        )
+
+    def test_a_read_that_never_got_an_answer_records_no_read_either(self):
+        seeds = probe_seeds()
+        seeds["github_rest"] = transport.TransportError("transport failed for github_rest")
+
+        code, _, _ = run_cli(self, ["smoke", "--adapter", ADAPTER], seeds=seeds)
+
+        self.assertEqual(code, cli.EXIT_LOCAL_NETWORK)
+        self.assertFalse(self.path.exists())
+        self.assertFalse(self.unmet_path().exists())
+
+    def test_after_the_window_the_two_records_still_read_apart(self):
+        # The nine stamps recorded on 2026-08-12 expire on the 19th, and the
+        # authorization to read again is spent. Both rows below carry the *same*
+        # instant, so the reason is the only thing left that tells a success
+        # that aged out from a read that never carried its row.
+        long_ago = stamp_at(-(cli.SMOKE_MAX_AGE_SECONDS + 3600))
+        cli.write_ledger(self.path, {ADAPTER: long_ago})
+        cli.write_ledger(self.unmet_path(), {"web_search": long_ago})
+
+        _, printed, _ = run_cli(self, ["status"])
+
+        self.assertEqual(
+            status_row(self, printed, ADAPTER),
+            [ADAPTER, cli.UNVERIFIED, cli.STALE_SUCCESS, long_ago],
+        )
+        self.assertEqual(
+            status_row(self, printed, "web_search"),
+            ["web_search", cli.UNVERIFIED, cli.READ_AND_ROW_UNMET, long_ago],
+        )
 
 
 class AdaptersSubcommandTest(LedgerHoldingCase):

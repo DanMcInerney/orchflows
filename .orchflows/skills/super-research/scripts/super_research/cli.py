@@ -168,6 +168,19 @@ def adapter_lines() -> List[str]:
     return lines
 
 
+def instant_word(disposition: Disposition) -> str:
+    """What the instant this disposition reports is the instant *of*.
+
+    A stamp with no word for what it stamps is the ambiguity this delivery is
+    about: the same position once read "last success" or nothing at all, and
+    an adapter whose last read carried no row had nothing to print there.
+    """
+
+    if disposition.last_success:
+        return "last success"
+    return "read and row unmet at"
+
+
 def smoke_lines(
     probe: SmokeProbe, observation: SmokeObservation, disposition: Disposition
 ) -> List[str]:
@@ -229,12 +242,13 @@ def smoke_lines(
                     probe.target, probe.target_recovery
                 )
             )
+    instant = stated_instant(disposition)
     lines.append(
         "  {0} is {1} ({2}{3})".format(
             disposition.adapter_id,
             disposition.state,
             disposition.reason,
-            ", last success " + disposition.last_success if disposition.last_success else "",
+            ", {0} {1}".format(instant_word(disposition), instant) if instant else "",
         )
     )
     return lines
@@ -260,23 +274,29 @@ def unreachable_lines(error: transport.TransportError) -> List[str]:
     ]
 
 
-def status_lines(ledger: Dict[str, str], now: str) -> List[str]:
+def status_lines(
+    ledger: Dict[str, str], now: str, unmet: Optional[Dict[str, str]] = None
+) -> List[str]:
     """Every live adapter's standing. It reports and never judges.
 
     No exit code turns on what is in here: on a fresh checkout nothing has been
     smoked, and a command that called that a failure would report this
     package's own state as thirteen broken platforms.
+
+    The instant in the last column is the one this row's own reason names, so
+    the column and the word beside it can never disagree — and an adapter with
+    no instant at all is one no read has ever reached.
     """
 
     lines = ["as of {0}, against a {1}-day window:".format(now, SMOKE_MAX_AGE_SECONDS // 86400)]
     for probe in SMOKE_PROBES:
-        disposition = disposition_of(ledger, probe.adapter_id, now)
+        disposition = disposition_of(ledger, probe.adapter_id, now, unmet=unmet)
         lines.append(
             "  {0:20} {1:11} {2:26} {3}".format(
                 disposition.adapter_id,
                 disposition.state,
                 disposition.reason,
-                disposition.last_success or "-",
+                stated_instant(disposition) or "-",
             )
         )
     return lines
@@ -299,7 +319,15 @@ def run_smoke(
     # it with what it already said.
     if ledger != held:
         write_ledger(ledger_path, ledger)
-    disposition = disposition_of(ledger, probe.adapter_id, at)
+    # The second record, on the same terms and at the same instant. One read
+    # can only ever move one of the two, so an operator reading either file
+    # alone is reading one fact and never a mixture of both.
+    unmet_path = unmet_path_beside(ledger_path)
+    held_unmet = read_ledger(unmet_path)
+    unmet = unmet_after(held_unmet, observation, at)
+    if unmet != held_unmet:
+        write_ledger(unmet_path, unmet)
+    disposition = disposition_of(ledger, probe.adapter_id, at, unmet=unmet)
     if observation.channel == ANSWERED_BY_LOCAL_NETWORK:
         code = EXIT_LOCAL_NETWORK
     elif satisfied(observation):
@@ -334,7 +362,12 @@ def main(
         if parsed.operation == "smoke":
             code, lines = run_smoke(probe_for(parsed.adapter), carrier, clock, now, held)
         elif parsed.operation == "status":
-            code, lines = (EXIT_OK, status_lines(read_ledger(held), now()))
+            code, lines = (
+                EXIT_OK,
+                status_lines(
+                    read_ledger(held), now(), read_ledger(unmet_path_beside(held))
+                ),
+            )
         else:
             code, lines = (EXIT_OK, adapter_lines())
     except transport.TransportError as error:
