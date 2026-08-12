@@ -463,16 +463,23 @@ def run_scheduled(
         records.extend(step_records)
         operations.extend(step_operations)
 
+    # The one place the run's records and its links meet, and therefore the one
+    # place a fact about the gap between them can be attached. A record is built
+    # from one page and is frozen when it is built, so it cannot know at
+    # construction whether another step discovered it; `type_discovery_gaps`
+    # answers that across the finished set and types what it finds. Ids do not
+    # change, so the links and groups below are the same either side of it.
+    typed = normalize.type_discovery_gaps(tuple(records))
     loss = tuple(sorted({code for step in steps for code in step.loss}))
     artifact = schema.AcquisitionArtifact(
         artifact_id=artifact_id,
         manifest_id=manifest.manifest_id,
         mode=manifest.mode,
         as_of=manifest.as_of,
-        records=tuple(records),
+        records=typed,
         steps=tuple(steps),
-        edges=normalize.link_discovery_hydration(records),
-        groups=normalize.group_records(records),
+        edges=normalize.link_discovery_hydration(typed),
+        groups=normalize.group_records(typed),
         outcome=schema.reduce_outcomes(tuple(step.outcome for step in steps)),
         loss=loss,
     )

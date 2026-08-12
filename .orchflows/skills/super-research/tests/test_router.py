@@ -293,6 +293,7 @@ def assert_no_credential_reaches_what_the_run_keeps(case, emitted, secrets):
 
 
 THIRD_PARTY_ARCHIVE = "third_party_archive"
+DISCOVERY_NOT_RECORDED = "discovery_not_recorded"
 ARCHIVE_CLASS = "K3"
 
 
@@ -659,8 +660,32 @@ class ThirdPartyArchiveTest(unittest.TestCase):
             with self.subTest(record=record.record_id):
                 self.assertEqual(record.operator_identity, "arctic-shift")
                 self.assertEqual(record.platform, "reddit")
-                self.assertEqual(record.loss, (THIRD_PARTY_ARCHIVE,))
+                self.assertEqual(
+                    record.loss, (THIRD_PARTY_ARCHIVE, DISCOVERY_NOT_RECORDED)
+                )
                 self.assertEqual(record.time_confidence, "reported")
+
+    def test_the_archive_row_says_this_runs_feed_did_not_discover_it(self):
+        # The second code is this manifest's own shape, not an archive property.
+        # One dispatch reads Reddit's feed and hydrates from the archive, and
+        # `link_discovery_hydration` sources an edge from an `index` record and
+        # from nothing else — a feed entry is a `feed`. So the pair is held as
+        # two unlinked records, which is a real gap in the linking rule and is
+        # deferred to its own spec. Deferred, now, with the gap said out loud
+        # rather than legible only to a caller who counts edges.
+        self.assertEqual(self.artifact.edges, ())
+        self.assertEqual(
+            sorted({record.representation_kind for record in self.artifact.records}),
+            ["feed", "native"],
+        )
+        self.assertEqual(
+            [
+                record.record_id
+                for record in self.artifact.records
+                if DISCOVERY_NOT_RECORDED in record.loss
+            ],
+            [record.record_id for record in self.archived],
+        )
 
     def test_reddits_own_feed_about_the_same_post_is_not_wearing_the_label(self):
         # Same platform, same post, one artifact. The feed's row states an

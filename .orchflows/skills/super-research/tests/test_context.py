@@ -30,6 +30,10 @@ REDDIT_THREAD_LOCATOR = (
 )
 X_POST_LOCATOR = "https://x.com/simonw/status/1799990000000000001"
 
+# Spelled here rather than imported, so the spelling is pinned from outside the
+# module that owns it — the same way `test_router` holds `third_party_archive`.
+DISCOVERY_NOT_RECORDED = "discovery_not_recorded"
+
 
 def read_fixture(name):
     """Read one offline fixture; the only filesystem read the suite performs."""
@@ -931,6 +935,97 @@ class K4HybridNeverMergesTest(unittest.TestCase):
             [record for record in artifact.records if record.step_id == "s2-hydrate"]
         )
         self.assertEqual(artifact.edges, ())
+
+
+def gap_carriers(artifact):
+    """Every record in one artifact that says its discovery went unrecorded."""
+
+    return [
+        record.record_id
+        for record in artifact.records
+        if DISCOVERY_NOT_RECORDED in record.loss
+    ]
+
+
+class LineageGapIsTypedTest(unittest.TestCase):
+    """The absence beside `test_a_selection_that_matches_no_hit_produces_no_invented_edge`.
+
+    That test pins the right half of the call: an unmatched selection invents no
+    edge. This class pins the other half — the gap is *said*, because a caller
+    learns of it by counting edges otherwise, and a caller that does not count
+    never learns of it at all.
+
+    The rule has a second clause, and the last two tests here are what make it
+    more than a preference. Only a run that itself discovered may report a
+    hydration unaccounted for. The same hydration step, against the same frozen
+    locator, carries the code when this run's discovery did not produce the hit
+    and stays silent when this run performed no discovery at all — because a
+    `staged` hydration dispatch missed nothing: its discovery is in the artifact
+    the caller froze the selection from. Stamping it there would be a false
+    claim on the ordinary staged path, which is the whole reason this rule is
+    written the way it is.
+    """
+
+    def test_a_selection_that_matches_no_hit_says_so_by_type(self):
+        hit = {
+            "discovery_locator": "https://www.reddit.com/r/other/comments/zzz/",
+            "target_id": "zzz",
+        }
+        steps = [
+            TRACER_MANIFEST["steps"][0],
+            dict(TRACER_MANIFEST["steps"][1], selected_hits=[hit]),
+        ]
+        artifact, _, _ = run_tracer(dict(TRACER_MANIFEST, steps=steps))
+
+        hydrated = [r for r in artifact.records if r.step_id == "s2-hydrate"]
+        self.assertTrue(hydrated)
+        self.assertEqual(artifact.edges, ())
+        # On the record that has the gap, and on no other: the discovery hits
+        # are what the hydration failed to match, not things that failed.
+        self.assertEqual(gap_carriers(artifact), [r.record_id for r in hydrated])
+        for record in hydrated:
+            self.assertEqual(record.loss[-1], DISCOVERY_NOT_RECORDED)
+
+    def test_a_hydration_that_matches_its_hit_says_nothing(self):
+        # The type says something, so it has to be absent when that thing is
+        # false. This is the same manifest as the linked-pair tests above, whose
+        # one edge is exactly what makes the silence meaningful.
+        artifact, _, _ = run_tracer(TRACER_MANIFEST)
+
+        self.assertEqual(len(artifact.edges), 1)
+        self.assertEqual(gap_carriers(artifact), [])
+
+    def test_a_run_that_hydrates_nothing_says_nothing(self):
+        artifact, _, _ = run_tracer(dict(TRACER_MANIFEST, steps=[TRACER_MANIFEST["steps"][0]]))
+
+        self.assertTrue(artifact.records)
+        self.assertEqual(gap_carriers(artifact), [])
+
+    def test_a_staged_hydration_dispatch_reports_no_gap_it_could_not_have_closed(self):
+        # The staged pair: discovery is one dispatch, hydration is another, and
+        # the caller carries the selection between them. The second artifact
+        # holds a hydration and no discovery, so it links nothing — and that is
+        # `staged` working, not a gap. Compare with the first test in this
+        # class: same step, same frozen locator, opposite verdict, and the only
+        # difference is whether this run discovered.
+        discovery = dict(TRACER_MANIFEST, steps=[TRACER_MANIFEST["steps"][0]])
+        hydration = dict(
+            TRACER_MANIFEST,
+            manifest_id="tracer-k4-reddit-hydrate",
+            steps=[dict(TRACER_MANIFEST["steps"][1], prior_step_id="")],
+        )
+        first, _, _ = run_tracer(discovery)
+        second, _, _ = run_tracer(hydration)
+
+        # The caller could not have frozen a selection it never discovered.
+        self.assertIn(
+            normalize.normalized_locator(REDDIT_THREAD_LOCATOR),
+            [record.normalized_locator for record in first.records],
+        )
+        self.assertTrue([r for r in second.records if r.discovery_locator])
+        self.assertEqual(second.edges, ())
+        self.assertEqual(gap_carriers(second), [])
+        self.assertEqual(gap_carriers(first), [])
 
 
 class WrongMergeLawTest(unittest.TestCase):
