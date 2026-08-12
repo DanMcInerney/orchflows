@@ -204,14 +204,40 @@ class SmokeProbeTableTest(unittest.TestCase):
 # The two probes whose measured first page states that the index holds another:
 # DDG answers with its own "Next" offset, Algolia with `page` and `nbPages`.
 # A smoke is one ordinary discovery step and has no private path into an
-# adapter, so the core now spends that cursor here as it does anywhere. What
-# bounded a smoke to one call was that a discovery step authorized exactly one;
-# `probes.py`'s `max_items=200` — set above every measured page size so a whole
-# answer is never called truncated — now reads as an appetite for two hundred
-# rows, and it is that module's to narrow. Named here rather than asserted away,
-# because a liveness read that quietly costs five is the thing a reader of this
-# suite most needs to see.
+# adapter, so the core would spend that cursor here as it does anywhere. What
+# stops it is the step's own page bound: `smoke.probe_step` declares one page,
+# and every row below runs over all thirteen probes rather than over these two,
+# so a fourteenth arrives already bounded. They are named because they are
+# where the bound is load-bearing — the eleven others would cost one read
+# whatever the core did, and a suite that proved it only on them would be
+# proving nothing.
 PROBES_WHOSE_FIRST_PAGE_CLAIMS_ANOTHER = ("web_search", "hacker_news")
+
+# The measured DDG page's forward offset, and the seed built by moving it. Six
+# answers, each naming an offset no earlier one named, is the one shape that
+# defeats every stop but a page bound: the index never stops offering and never
+# repeats itself. Six because the core's own backstop is five, so a read that
+# got past the bound is visible as five reads rather than as running out of
+# answers.
+NEXT_OFFSET_MARKUP = '<input type="hidden" name="s" value="{0}" />'
+OFFERS_A_NEW_PAGE_EVERY_TIME = 6
+
+
+def ddg_pages_each_offering_a_new_one():
+    """The measured search page, six times, each pointing somewhere new."""
+
+    name, content_type = PROBE_PAYLOADS[transport.DDG_HTML_ROUTE]
+    body = payload(name)
+    return [
+        (
+            200,
+            body.replace(
+                NEXT_OFFSET_MARKUP.format(30), NEXT_OFFSET_MARKUP.format(30 * (index + 1))
+            ),
+            content_type,
+        )
+        for index in range(OFFERS_A_NEW_PAGE_EVERY_TIME)
+    ]
 
 
 class SmokeAssertsTheRosterFieldSetTest(unittest.TestCase):
@@ -228,37 +254,28 @@ class SmokeAssertsTheRosterFieldSetTest(unittest.TestCase):
                 self.assertEqual(observation.route_id, probe.route_id)
                 self.assertEqual(observation.channel, cli.ANSWERED_BY_ORIGIN)
                 self.assertGreater(observation.records_kept, 0)
-                # On the probe's own route and on no other, and inside the
-                # core's page cap. Eleven spend one read, because their page
-                # claims nothing after it. The other two spend a second on the
-                # page their first one named — two here rather than the cap,
-                # because this double answers every read with the same page and
-                # the repeated cursor is what stops it.
+                # On the probe's own route and on no other, and exactly once.
+                # Thirteen probes, thirteen origin reads — including the two
+                # whose first page says the index holds more, which is what the
+                # user authorizing this egress was told it would cost.
                 self.assertEqual(
                     {request.route_id for request in opener.opened}, {probe.route_id}
                 )
-                self.assertLessEqual(len(opener.opened), runner.MAX_PAGES_PER_STEP)
-                self.assertEqual(
-                    len(opener.opened),
-                    2 if probe.adapter_id in PROBES_WHOSE_FIRST_PAGE_CLAIMS_ANOTHER else 1,
-                )
+                self.assertEqual(len(opener.opened), 1)
 
-    def test_a_read_is_reported_partial_only_where_the_index_held_more(self):
-        # A cap under a measured page size would report a whole answer as a
-        # truncated one, and none of the thirteen does that. The two that do
-        # report partial are reporting something else, and reporting it
-        # correctly: their index went on offering pages after the ones the read
-        # took, so the recall window closed with the origin still offering.
+    def test_no_smoke_is_reported_partial_for_stopping_where_it_meant_to(self):
+        # A bound the step declared is the caller's own, so reaching it is the
+        # read finishing. Two of the thirteen stop with the index still
+        # offering and neither is a recall window cut short: one page is the
+        # whole of what a liveness read asked for. A cap under a measured page
+        # size would be the other way to report a whole answer as a truncated
+        # one, and none of the thirteen does that either.
         for probe in cli.SMOKE_PROBES:
             with self.subTest(adapter=probe.adapter_id):
                 observation, _ = observe_offline(probe)
 
-                if probe.adapter_id in PROBES_WHOSE_FIRST_PAGE_CLAIMS_ANOTHER:
-                    self.assertEqual(observation.outcome, "partial")
-                    self.assertIn("recall_window_partial", observation.loss)
-                else:
-                    self.assertIn(observation.outcome, ("ok", "empty"))
-                    self.assertNotIn("recall_window_partial", observation.loss)
+                self.assertIn(observation.outcome, ("ok", "empty"))
+                self.assertNotIn("recall_window_partial", observation.loss)
 
     def test_the_field_set_check_names_what_a_thinned_answer_dropped(self):
         # The oracle can fail: the same read, with one roster field emptied in
@@ -317,6 +334,88 @@ class SmokeAssertsTheRosterFieldSetTest(unittest.TestCase):
         self.assertEqual(observation.outcome, "ok")
         self.assertTrue(cli.satisfied(observation))
         self.assertEqual(observation.channel, cli.ANSWERED_BY_ORIGIN)
+
+
+class ASmokeIsOneReadTest(unittest.TestCase):
+    """The spec's binding constraint: no probe exceeds what the smoke authorizes.
+
+    The rows above already cost one origin read each, and eleven of them would
+    whatever the core did — their measured page names nothing after it. What is
+    left to prove is the case that would page: an index that goes on offering,
+    somewhere new every time, so that neither a cursor it has already spent nor
+    a page that names none can be what ends the step. On that seed the bound is
+    the only thing standing between a liveness check and five reads of a real
+    origin's budget, and the second row here is what says so by measuring the
+    same seed without it.
+    """
+
+    def bounded_and_unbounded(self):
+        """One probe's step as a smoke declares it, and as an ordinary step does."""
+
+        probe = cli.probe_for("web_search")
+        seeds = probe_seeds()
+        seeds[probe.route_id] = ddg_pages_each_offering_a_new_one()
+        return (probe, seeds)
+
+    def test_a_smoke_reads_one_page_of_an_index_that_offers_a_new_one_every_time(self):
+        probe, seeds = self.bounded_and_unbounded()
+
+        observation, opener = observe_offline(probe, seeds=seeds)
+
+        self.assertEqual(len(opener.opened), 1)
+        self.assertEqual(observation.outcome, "ok")
+        self.assertNotIn("recall_window_partial", observation.loss)
+        self.assertTrue(cli.satisfied(observation))
+
+    def test_the_same_index_pages_to_the_core_cap_for_a_step_that_declared_none(self):
+        # The half that makes the row above mean something: same adapter, same
+        # seeds, same cap, and the one difference is the page bound the smoke's
+        # step declares. It is also what proves the seed is what it claims — if
+        # the offsets came back identical, the repeated-cursor stop would end
+        # this step at two and this row would redden rather than the bound
+        # quietly going untested.
+        probe, seeds = self.bounded_and_unbounded()
+        clock = helpers.FakeClock()
+        carrier, opener = helpers.offline_transport(clock, seeds)
+
+        with helpers.forbid_io():
+            result, _, _ = runner.run_step(
+                schema.AcquisitionStep(
+                    step_id="declares-no-page-bound",
+                    kind="discovery",
+                    adapter_id=probe.adapter_id,
+                    query=probe.target,
+                    max_items=probe.max_items,
+                ),
+                carrier,
+                "artifact:declares-no-page-bound",
+                "m-declares-no-page-bound",
+                clock=clock.monotonic,
+            )
+
+        self.assertEqual(len(opener.opened), runner.MAX_PAGES_PER_STEP)
+        self.assertEqual(result.outcome, "partial")
+        self.assertIn("recall_window_partial", result.loss)
+
+    def test_a_probe_this_table_has_never_held_inherits_the_bound(self):
+        # The bound is not a column of the probe table — it is what a smoke is,
+        # applied where the step is built — so a probe declared later gets it
+        # without knowing anything about paging. This one is declared here and
+        # never reaches `SMOKE_PROBES`.
+        _, seeds = self.bounded_and_unbounded()
+        later = cli.SmokeProbe(
+            adapter_id="web_search",
+            kind="discovery",
+            target="rate limiting",
+            route_id=transport.DDG_HTML_ROUTE,
+            field_sets=(("web_hit", ("title", "canonical_locator")),),
+        )
+
+        observation, opener = observe_offline(later, seeds=seeds)
+
+        self.assertEqual(len(opener.opened), 1)
+        self.assertEqual(observation.missing, ())
+        self.assertNotIn("recall_window_partial", observation.loss)
 
 
 class TheSuiteReachesNoNetworkTest(unittest.TestCase):

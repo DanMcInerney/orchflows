@@ -54,8 +54,12 @@ class SmokeProbe:
     field_sets: Tuple[Tuple[str, Tuple[str, ...]], ...]
     target_recovery: str = ""
     # Set above every page size the roster measured, so a whole answer is never
-    # reported as a truncated one. The bound on a smoke is that it makes one
-    # call; this only says how much of that one answer is kept.
+    # reported as a truncated one. It says only how much of that one answer is
+    # kept, and it bounds nothing about what the read costs: what holds a smoke
+    # to one call is `smoke.PAGES_PER_SMOKE`, the page bound the step this probe
+    # becomes declares. Until the core could page, that bound was an emergent
+    # property of a discovery step authorizing exactly one call and was written
+    # down nowhere; it is a stated one now, and no probe can opt out of it.
     max_items: int = 200
 
 

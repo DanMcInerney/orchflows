@@ -68,6 +68,15 @@ SMOKE_REASONS = (
     LAST_SUCCESS_AHEAD_OF_NOW,
 )
 
+# What a smoke costs the origin, and the number is the whole point. One read
+# per adapter is what the spec authorizes a liveness check to spend, so the step
+# below declares it: the core reads one page and stops, whatever cursor the
+# index came back offering. It is set here rather than on a probe because it is
+# what a smoke *is* — a probe added to the table later cannot spend more, and a
+# run's ordinary discovery steps, which declare no bound at all, still page to
+# `runner.MAX_PAGES_PER_STEP` as they should.
+PAGES_PER_SMOKE = 1
+
 # How long one live read stands for. A week, because every route in the roster
 # depends on markup or on a vendor identifier that rotates without notice, and
 # evidence older than that is a claim about a platform as it used to be. The
@@ -112,7 +121,16 @@ class SmokeObservation:
 
 
 def probe_step(probe: SmokeProbe) -> schema.AcquisitionStep:
-    """One ordinary manifest step. A smoke has no private path into an adapter."""
+    """One ordinary manifest step, bounded to one page.
+
+    A smoke has no private path into an adapter: this is the same step kind a
+    manifest names, run by the same core. The one thing it says that a
+    manifest's step cannot is :data:`PAGES_PER_SMOKE` — how many pages it
+    wants — and that is what holds a liveness read to the single call this
+    module's callers have always been told it makes. Declared on both kinds,
+    though only a discovery step can page, so the bound is a property of the
+    step a smoke builds rather than of the branch it took.
+    """
 
     if probe.kind == "discovery":
         return schema.AcquisitionStep(
@@ -121,6 +139,7 @@ def probe_step(probe: SmokeProbe) -> schema.AcquisitionStep:
             adapter_id=probe.adapter_id,
             query=probe.target,
             max_items=probe.max_items,
+            max_pages=PAGES_PER_SMOKE,
         )
     return schema.AcquisitionStep(
         step_id="smoke",
@@ -130,6 +149,7 @@ def probe_step(probe: SmokeProbe) -> schema.AcquisitionStep:
             schema.SelectedHit(discovery_locator=probe.target, target_id=probe.target),
         ),
         max_items=probe.max_items,
+        max_pages=PAGES_PER_SMOKE,
     )
 
 
