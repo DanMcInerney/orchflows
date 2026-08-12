@@ -27,6 +27,7 @@ import contextlib
 import importlib.util
 import io
 import os
+import re
 import socket
 import time
 import unittest
@@ -40,6 +41,7 @@ from super_research import cache, runner, schema, transport
 
 PACKAGE_DIR = Path(__file__).resolve().parent.parent / "scripts" / "super_research"
 CACHE_SOURCE = PACKAGE_DIR / "cache.py"
+PROTOCOL_SOURCE = Path(__file__).resolve().parent.parent / "references" / "protocol.md"
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "cache"
 # T01's tracer fixtures, read rather than copied: the strongest repeat-read
 # claim is over the run's own end-to-end path, on the run's own data.
@@ -244,6 +246,90 @@ def called_names(path):
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
     }
+
+
+# A byte count as this package's own prose writes one, and what it means. The
+# package spells a measured body in KB and MB and the cap in KiB, and means
+# binary multiples throughout — `MEASURED_INSTAGRAM_BYTES` in `test_adapters`
+# is `455 * 1024` for the "455 KB" findings.md records.
+SIZE_UNIT_BYTES = {"KB": 1024, "KiB": 1024, "MB": 1024 * 1024, "MiB": 1024 * 1024}
+STATED_SIZE = re.compile(r"(\d+(?:\.\d+)?)\s*(KB|KiB|MB|MiB)\b")
+STATED_HEADROOM = re.compile(r"(\d+(?:\.\d+)?)\s*(KB|KiB|MB|MiB) of headroom")
+STATED_PRODUCT = re.compile(r"product,\s*(\d+(?:\.\d+)?)\s*(KB|KiB|MB|MiB)")
+STATED_ENTRIES = re.compile(r"MAX_ENTRIES=(\d+)")
+STATED_ENTRY_BYTES = re.compile(r"MAX_ENTRY_BYTES=(\d+(?:\.\d+)?)\s*(KB|KiB|MB|MiB)")
+# How a comment can place a body against the entry cap. A comment claiming
+# neither is reasoning about something else and is left alone.
+OVER_THE_CAP = ("exceed", "past", "too large")
+UNDER_THE_CAP = ("is inside", "fits")
+
+
+def as_bytes(amount, unit):
+    """One stated size in bytes."""
+
+    return int(round(float(amount) * SIZE_UNIT_BYTES[unit]))
+
+
+def stated_sizes(text):
+    """Every byte count this prose states, in bytes, in the order stated."""
+
+    return [as_bytes(amount, unit) for amount, unit in STATED_SIZE.findall(text)]
+
+
+def comment_blocks(lines):
+    """Each contiguous run of ``#`` lines, joined into one string."""
+
+    blocks = []
+    current = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            current.append(stripped.lstrip("#").strip())
+        elif current:
+            blocks.append(" ".join(current))
+            current = []
+    if current:
+        blocks.append(" ".join(current))
+    return blocks
+
+
+def route_table_comments():
+    """The per-route comments inside ``ROUTE_TTL_SECONDS``, one string each.
+
+    Read off the source rather than restated here, because the thing under
+    test is what the comment actually says.
+    """
+
+    lines = CACHE_SOURCE.read_text(encoding="utf-8").splitlines()
+    start = next(
+        index for index, line in enumerate(lines) if line.startswith("ROUTE_TTL_SECONDS")
+    )
+    end = next(index for index, line in enumerate(lines) if index > start and line == "}")
+    return comment_blocks(lines[start + 1 : end])
+
+
+def footprint_comment():
+    """The comment block declaring the footprint law, above the constants."""
+
+    lines = CACHE_SOURCE.read_text(encoding="utf-8").splitlines()
+    end = next(
+        index for index, line in enumerate(lines) if line.startswith("MAX_ENTRY_BYTES")
+    )
+    start = end
+    while start > 0 and lines[start - 1].strip().startswith("#"):
+        start -= 1
+    return " ".join(comment_blocks(lines[start:end]))
+
+
+def protocol_footprint_paragraphs():
+    """Every paragraph in ``protocol.md`` that states the footprint law."""
+
+    text = PROTOCOL_SOURCE.read_text(encoding="utf-8")
+    return [
+        " ".join(block.split())
+        for block in text.split("\n\n")
+        if "MAX_ENTRIES=" in block
+    ]
 
 
 @contextlib.contextmanager
@@ -888,6 +974,112 @@ class RouteTtlTableTest(unittest.TestCase):
             with self.subTest(route=route_id):
                 self.assertEqual(cache.ttl_seconds(route_id), cache.DEFAULT_TTL_SECONDS)
                 self.assertGreater(cache.ttl_seconds(route_id), 0.0)
+
+
+class FootprintLawTest(unittest.TestCase):
+    """Criterion 4: the declared footprint law says what the constants do.
+
+    The law is stated twice — once beside the constants in `cache.py`, once in
+    `protocol.md` for a reader who never opens the source — and a run's whole
+    memory ceiling is the product of two numbers. Either sentence drifting from
+    the constants turns a bound a caller relies on into a wrong number that
+    nothing reddens to report, so both are parsed here rather than restated.
+    """
+
+    def protocol_sentence(self):
+        stated = protocol_footprint_paragraphs()
+
+        self.assertEqual(len(stated), 1, "the footprint law is stated once in protocol.md")
+        return stated[0]
+
+    def test_the_source_sentence_names_both_halves_of_the_bound(self):
+        stated = footprint_comment()
+
+        self.assertIn("MAX_ENTRY_BYTES", stated)
+        self.assertIn("MAX_ENTRIES", stated)
+
+    def test_the_protocol_sentence_states_the_constants_the_package_holds(self):
+        stated = self.protocol_sentence()
+        entries = STATED_ENTRIES.findall(stated)
+        entry_bytes = STATED_ENTRY_BYTES.findall(stated)
+
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(len(entry_bytes), 1)
+        self.assertEqual(int(entries[0]), cache.MAX_ENTRIES)
+        self.assertEqual(as_bytes(*entry_bytes[0]), cache.MAX_ENTRY_BYTES)
+
+    def test_both_sentences_state_a_product_the_constants_multiply_to(self):
+        # The bound is the product, so a sentence may state the two halves
+        # correctly and still state the ceiling wrong.
+        for where, stated in (
+            ("cache.py", footprint_comment()),
+            ("protocol.md", self.protocol_sentence()),
+        ):
+            with self.subTest(sentence=where):
+                product = STATED_PRODUCT.findall(stated)
+
+                self.assertEqual(len(product), 1, "states no product: " + stated)
+                self.assertEqual(
+                    as_bytes(*product[0]), cache.MAX_ENTRIES * cache.MAX_ENTRY_BYTES
+                )
+
+
+class RouteCommentTest(unittest.TestCase):
+    """Criterion 6: a route comment's arithmetic agrees with the entry cap.
+
+    These comments argue about which measured answers the cache can hold, so a
+    cap that moves underneath one turns an argument into a false statement.
+    That is the worse half of the hazard: a wrong comment beside a green suite
+    is a claim nothing will ever redden to report. Read off the source here so
+    the cap and the prose cannot drift apart silently.
+    """
+
+    def claiming(self, phrases):
+        """Every route comment placing a measured body against the cap."""
+
+        return [
+            block
+            for block in route_table_comments()
+            if "MAX_ENTRY_BYTES" in block
+            and any(phrase in block for phrase in phrases)
+            and stated_sizes(block)
+        ]
+
+    def test_a_comment_calling_a_body_too_large_names_one_that_is(self):
+        claims = self.claiming(OVER_THE_CAP)
+        self.assertNotEqual(claims, [])
+
+        for block in claims:
+            for size in stated_sizes(block):
+                with self.subTest(claim=block[:70], body_bytes=size):
+                    self.assertGreater(size, cache.MAX_ENTRY_BYTES)
+
+    def test_a_comment_calling_a_body_small_enough_names_one_that_is(self):
+        claims = self.claiming(UNDER_THE_CAP)
+        self.assertNotEqual(claims, [])
+
+        for block in claims:
+            for size in stated_sizes(block):
+                with self.subTest(claim=block[:70], body_bytes=size):
+                    self.assertLessEqual(size, cache.MAX_ENTRY_BYTES)
+
+    def test_a_comment_stating_headroom_states_what_the_cap_really_leaves(self):
+        # "with N KB of headroom, and not a byte more" is the most precise
+        # claim in the table and the first one a cap change falsifies.
+        claims = [
+            block for block in route_table_comments() if STATED_HEADROOM.search(block)
+        ]
+        self.assertNotEqual(claims, [])
+
+        for block in claims:
+            stated = STATED_HEADROOM.search(block)
+            body = min(
+                size for size in stated_sizes(block) if size != as_bytes(*stated.groups())
+            )
+            with self.subTest(claim=block[:70]):
+                self.assertEqual(
+                    as_bytes(*stated.groups()), cache.MAX_ENTRY_BYTES - body
+                )
 
 
 if __name__ == "__main__":

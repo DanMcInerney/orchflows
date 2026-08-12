@@ -363,7 +363,8 @@ to two reads per thirty seconds, a run that re-reads a Reddit feed starves.
 `cache.RunCache` is keyed by `(route_id, canonical_request)`, holds at most
 `MAX_ENTRIES=64` bodies of at most `MAX_ENTRY_BYTES=512 KiB`, runs on a monotonic
 clock, and dies with the run — `close()` makes a later run's reach for it an error
-rather than a quiet hit. Per-route TTLs are declared in `ROUTE_TTL_SECONDS`;
+rather than a quiet hit. Their product, 32 MiB, is what a run's cache can cost
+however long the run goes on. Per-route TTLs are declared in `ROUTE_TTL_SECONDS`;
 `public_page_control` declares `0.0`, because a channel control answered from
 memory would report the network healthy on the strength of a read made before the
 appliance woke. A served entry carries `cache_hit` on the page and on every
