@@ -6279,7 +6279,7 @@ class HackerNewsGithubRouteTtlTest(unittest.TestCase):
                 self.assertLess(
                     len(read(fixture).encode("utf-8")), cache.MAX_ENTRY_BYTES
                 )
-        self.assertEqual(cache.MAX_ENTRY_BYTES, 512 * 1024)
+        self.assertEqual(cache.MAX_ENTRY_BYTES, 1024 * 1024)
 
 
 HN_KID_ID = "44831402"
@@ -8591,7 +8591,7 @@ class FeedPageRouteTtlTest(unittest.TestCase):
         ):
             with self.subTest(body=fixture):
                 self.assertLess(len(read(fixture).encode("utf-8")), cache.MAX_ENTRY_BYTES)
-        self.assertEqual(cache.MAX_ENTRY_BYTES, 512 * 1024)
+        self.assertEqual(cache.MAX_ENTRY_BYTES, 1024 * 1024)
 
     def test_every_route_this_ticket_declares_has_a_window_argued_for_it(self):
         for route_id in sorted(FEED_PAGE_ROUTES):

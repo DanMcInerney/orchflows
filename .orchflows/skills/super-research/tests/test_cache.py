@@ -976,6 +976,72 @@ class RouteTtlTableTest(unittest.TestCase):
                 self.assertGreater(cache.ttl_seconds(route_id), 0.0)
 
 
+# What findings.md §1 actually measured, in the sizes it recorded them. The
+# first two are the largest answers in the roster; the third is the smallest
+# measurement above the cap, so it is the one that fixes the cap's ceiling.
+MEASURED_LINKEDIN_BYTES = 577 * 1024
+MEASURED_INSTAGRAM_BYTES = 455 * 1024
+MEASURED_INNERTUBE_NEXT_BYTES = 1120 * 1024
+MEASURED_INNERTUBE_SEARCH_BYTES = 2270 * 1024
+
+
+class MeasuredBodyTest(unittest.TestCase):
+    """Criteria 1-3: the cap sits above the measurements, not below them.
+
+    A declared TTL on a body the cache refuses to hold is a freshness window
+    that never binds: the route is read in full every time, and the window
+    states something about the run that is not true of it. So the two largest
+    answers the evidence records are held at the size it recorded them, and the
+    guard still refuses what is genuinely too large.
+
+    Asserted as the guard's decision on one body rather than by filling a
+    cache: the question here is where the cap sits, and thirty-two megabyte
+    bodies would answer it no better.
+    """
+
+    def held(self, body_bytes):
+        """Whether a body of this size survives to answer the next read."""
+
+        clock = FakeClock()
+        carrier, opener = offline_transport(
+            clock, {transport.DDG_HTML_ROUTE: (200, "x" * body_bytes, "text/html")}
+        )
+        run_cache = cache.RunCache(clock=clock.monotonic)
+        request = transport.build_transport_request(
+            transport.DDG_HTML_ROUTE, {"q": "local model"}
+        )
+
+        run_cache.serve(request, carrier.fetch)
+        return run_cache.serve(request, carrier.fetch).cache_hit
+
+    def test_the_largest_answer_the_evidence_measured_is_held(self):
+        # findings.md §1: LinkedIn's public profile, 577 KB in 1.3 s — the
+        # roster's most expensive read and its longest declared window. A cap
+        # below this meant that window had never once bound on a real page.
+        self.assertTrue(self.held(MEASURED_LINKEDIN_BYTES))
+
+    def test_the_second_largest_answer_the_evidence_measured_is_held(self):
+        # findings.md §1: Instagram's web profile, 455 KB in 2.9 s.
+        self.assertTrue(self.held(MEASURED_INSTAGRAM_BYTES))
+
+    def test_a_body_past_the_cap_is_still_served_through(self):
+        # The guard still guards. It guards at a higher number.
+        self.assertFalse(self.held(cache.MAX_ENTRY_BYTES + 1))
+
+    def test_the_measurements_above_the_cap_are_still_served_through(self):
+        # The cap's ceiling, held as behaviour rather than as arithmetic: a cap
+        # raised past the smaller of these would begin holding an answer this
+        # package has always served through. Both are InnerTube measurements,
+        # and `cacheable` refuses that route on its method as well — this asks
+        # the size guard alone, on a route whose method it would otherwise hold.
+        for measured in (
+            MEASURED_INNERTUBE_NEXT_BYTES,
+            MEASURED_INNERTUBE_SEARCH_BYTES,
+        ):
+            with self.subTest(body_bytes=measured):
+                self.assertFalse(self.held(measured))
+
+
 class FootprintLawTest(unittest.TestCase):
     """Criterion 4: the declared footprint law says what the constants do.
 

@@ -361,7 +361,7 @@ asking opens none, and neither changes how the page is typed.
 **The run-local cache is a correctness requirement**, not an optimization: at one
 to two reads per thirty seconds, a run that re-reads a Reddit feed starves.
 `cache.RunCache` is keyed by `(route_id, canonical_request)`, holds at most
-`MAX_ENTRIES=64` bodies of at most `MAX_ENTRY_BYTES=512 KiB`, runs on a monotonic
+`MAX_ENTRIES=32` bodies of at most `MAX_ENTRY_BYTES=1 MiB`, runs on a monotonic
 clock, and dies with the run — `close()` makes a later run's reach for it an error
 rather than a quiet hit. Their product, 32 MiB, is what a run's cache can cost
 however long the run goes on. Per-route TTLs are declared in `ROUTE_TTL_SECONDS`;

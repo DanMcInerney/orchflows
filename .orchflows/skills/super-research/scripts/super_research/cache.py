@@ -54,9 +54,10 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # The least volatile thing in the roster and the most expensive to read:
     # 577 KB in 1.3 s (findings.md §1) for a block that changes when a member
     # edits their profile and carries no counter at all, so nothing in it goes
-    # stale on a run's timescale. Note that at the measured size this route's
-    # answers exceed `MAX_ENTRY_BYTES` and are served through, so this window
-    # binds only on a page smaller than the one measured.
+    # stale on a run's timescale. It is also the largest answer the evidence
+    # has measured, and it fits: 577 KB is inside `MAX_ENTRY_BYTES`, so this
+    # window binds on the body the evidence measured rather than only on a
+    # smaller one.
     transport.LINKEDIN_PUBLIC_PROFILE_ROUTE: 900.0,
     # A third as long as the profile beside it, because a search list changes
     # as postings arrive where a profile does not, and because it is the cheap
@@ -71,9 +72,9 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # payload carries a follower count and twelve pairs of like and comment
     # counts, every one of which moves while nobody edits anything. Five
     # minutes is the syndication timeline's window, and for the same reason —
-    # one author's recent posts with the platform's own counts on them. Unlike
+    # one author's recent posts with the platform's own counts on them. Like
     # that profile route, this one fits: 455 KB is inside `MAX_ENTRY_BYTES`,
-    # with 57 KB of headroom, so this window binds on the body the evidence
+    # with 569 KB of headroom, so this window binds on the body the evidence
     # measured rather than only on a smaller one.
     transport.INSTAGRAM_WEB_PROFILE_ROUTE: 300.0,
     # HN's index answers a query about a site whose front page turns over in
@@ -125,9 +126,7 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # A reference document changes when somebody edits it and carries no
     # counter at all, so nothing in it goes stale on a run's timescale. That is
     # the same argument, and so the same window, as the roster's other
-    # counter-free document. Note the same caveat as that one: a substantial
-    # article exceeds `MAX_ENTRY_BYTES` and is served through, so this window
-    # binds only on a page smaller than the largest ones this route serves.
+    # counter-free document.
     transport.PUBLIC_PAGE_ARTICLE_ROUTE: 900.0,
     # Zero, and it is the one entry in this table that is not a judgment about
     # volatility. A control read exists to answer "is this network answering
@@ -144,16 +143,17 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # it asks its question in a POST body, and `cacheable` holds only what came
     # back from a read method. No number written here could ever bind, so
     # writing one would state a freshness guarantee nothing honours. Two of its
-    # three operations answer at 2.27 MB and 1.12 MB besides, well past
-    # `MAX_ENTRY_BYTES`. Proved behaviourally in `test_adapters`, not asserted.
+    # three operations answer at 2.27 MB and 1.12 MB besides, both past
+    # `MAX_ENTRY_BYTES` — the smaller of them only just, which is what fixes
+    # the ceiling on that constant. Proved behaviourally, not asserted.
 }
 
 # The two halves of one bound. Every route in the roster answers in kilobytes,
 # so a body past `MAX_ENTRY_BYTES` is served through rather than held, and no
 # more than `MAX_ENTRIES` answers are held at once: a run's cache can therefore
 # cost no more than their product, 32 MiB, however long the run goes on.
-MAX_ENTRY_BYTES = 512 * 1024
-MAX_ENTRIES = 64
+MAX_ENTRY_BYTES = 1024 * 1024
+MAX_ENTRIES = 32
 
 
 class CacheError(RuntimeError):
