@@ -201,10 +201,23 @@ class SmokeProbeTableTest(unittest.TestCase):
                     self.assertTrue(probe.target_recovery)
 
 
-class SmokeAssertsTheRosterFieldSetTest(unittest.TestCase):
-    """Row 1: thirteen smokes, one bounded read each, against measured bytes."""
+# The two probes whose measured first page states that the index holds another:
+# DDG answers with its own "Next" offset, Algolia with `page` and `nbPages`.
+# A smoke is one ordinary discovery step and has no private path into an
+# adapter, so the core now spends that cursor here as it does anywhere. What
+# bounded a smoke to one call was that a discovery step authorized exactly one;
+# `probes.py`'s `max_items=200` — set above every measured page size so a whole
+# answer is never called truncated — now reads as an appetite for two hundred
+# rows, and it is that module's to narrow. Named here rather than asserted away,
+# because a liveness read that quietly costs five is the thing a reader of this
+# suite most needs to see.
+PROBES_WHOSE_FIRST_PAGE_CLAIMS_ANOTHER = ("web_search", "hacker_news")
 
-    def test_every_smoke_asserts_its_roster_field_set_on_one_read(self):
+
+class SmokeAssertsTheRosterFieldSetTest(unittest.TestCase):
+    """Row 1: thirteen smokes, each bounded, against measured bytes."""
+
+    def test_every_smoke_asserts_its_roster_field_set_on_the_reads_it_spends(self):
         for probe in cli.SMOKE_PROBES:
             with self.subTest(adapter=probe.adapter_id):
                 observation, opener = observe_offline(probe)
@@ -215,21 +228,37 @@ class SmokeAssertsTheRosterFieldSetTest(unittest.TestCase):
                 self.assertEqual(observation.route_id, probe.route_id)
                 self.assertEqual(observation.channel, cli.ANSWERED_BY_ORIGIN)
                 self.assertGreater(observation.records_kept, 0)
-                # One bounded read: one request, on the probe's own route, and
-                # no second call to fill a page out.
+                # On the probe's own route and on no other, and inside the
+                # core's page cap. Eleven spend one read, because their page
+                # claims nothing after it. The other two spend a second on the
+                # page their first one named — two here rather than the cap,
+                # because this double answers every read with the same page and
+                # the repeated cursor is what stops it.
                 self.assertEqual(
-                    [request.route_id for request in opener.opened], [probe.route_id]
+                    {request.route_id for request in opener.opened}, {probe.route_id}
+                )
+                self.assertLessEqual(len(opener.opened), runner.MAX_PAGES_PER_STEP)
+                self.assertEqual(
+                    len(opener.opened),
+                    2 if probe.adapter_id in PROBES_WHOSE_FIRST_PAGE_CLAIMS_ANOTHER else 1,
                 )
 
-    def test_a_healthy_read_is_never_reported_partial_by_its_own_cap(self):
-        # The bound is one call, not the cap; a cap under a measured page size
-        # would report a whole answer as a truncated one.
+    def test_a_read_is_reported_partial_only_where_the_index_held_more(self):
+        # A cap under a measured page size would report a whole answer as a
+        # truncated one, and none of the thirteen does that. The two that do
+        # report partial are reporting something else, and reporting it
+        # correctly: their index went on offering pages after the ones the read
+        # took, so the recall window closed with the origin still offering.
         for probe in cli.SMOKE_PROBES:
             with self.subTest(adapter=probe.adapter_id):
                 observation, _ = observe_offline(probe)
 
-                self.assertIn(observation.outcome, ("ok", "empty"))
-                self.assertNotIn("recall_window_partial", observation.loss)
+                if probe.adapter_id in PROBES_WHOSE_FIRST_PAGE_CLAIMS_ANOTHER:
+                    self.assertEqual(observation.outcome, "partial")
+                    self.assertIn("recall_window_partial", observation.loss)
+                else:
+                    self.assertIn(observation.outcome, ("ok", "empty"))
+                    self.assertNotIn("recall_window_partial", observation.loss)
 
     def test_the_field_set_check_names_what_a_thinned_answer_dropped(self):
         # The oracle can fail: the same read, with one roster field emptied in

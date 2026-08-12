@@ -101,6 +101,18 @@ ADAPTER_IDS = (
 )
 
 
+# The most pages one discovery step may read, whatever the origin keeps
+# offering. Every other way out of the page loop is the origin's own statement —
+# it stopped naming a cursor, or it named one this step already spent — and an
+# origin that never makes either statement would spend a budget nobody set, so
+# the last stop is the core's. Five, because the roster's measured pages hold
+# ten to twenty-five rows, which reaches fifty to a hundred and twenty-five
+# records; and because at the slowest measured ceiling, one read per thirty
+# seconds, five reads is the most a single step can cost before it is a session
+# rather than a step.
+MAX_PAGES_PER_STEP = 5
+
+
 class RunnerError(RuntimeError):
     """The core was asked for something it refuses to guess at."""
 
@@ -267,6 +279,23 @@ def reached_origin(page: NativePage) -> bool:
     return page.outcome != "refused" and cache.CACHE_HIT not in page.loss
 
 
+def _offers_another_page(
+    step: schema.AcquisitionStep, page: NativePage, kept: int
+) -> bool:
+    """Whether this page leaves a next one the step could still want.
+
+    Three questions, and only the first is about the page. A hydration step
+    never pages: its calls are one per hit the caller froze, which is what makes
+    each hydration record's provenance exact rather than inferred, and a page
+    read off a cursor was authorized by nobody. A page that names no cursor is
+    the origin saying there is nothing after it. And a step whose cap is already
+    met wants nothing further — that is the caller's own bound reached, not a
+    recall cut short, so it is the one stop here that is never a loss.
+    """
+
+    return step.kind == "discovery" and bool(page.cursor_out) and kept < step.max_items
+
+
 def run_step(
     step: schema.AcquisitionStep,
     carrier: transport.Transport,
@@ -294,7 +323,15 @@ def run_step(
     pages = 0
     truncated = False
 
-    for page_index, (request, discovery_locator) in enumerate(planned_calls(step)):
+    # Every call this step will make. A discovery step's continuations are
+    # appended as they are earned, one per page that offers a cursor worth
+    # spending, so the loop below is the one place a step's calls are counted.
+    calls = list(planned_calls(step))
+    spent_cursors = {""}
+    page_index = 0
+
+    while page_index < len(calls):
+        request, discovery_locator = calls[page_index]
         if len(records) >= step.max_items:
             # The core owns stop: no further call is made once the cap is met.
             truncated = True
@@ -339,6 +376,15 @@ def run_step(
                 discovery_locator=discovery_locator,
             )
         )
+        if _offers_another_page(step, page, len(records)):
+            if page.cursor_out in spent_cursors or len(calls) >= MAX_PAGES_PER_STEP:
+                # The origin had more and the core would not spend it: a
+                # cursor it has already asked on, or one page past its own cap.
+                truncated = True
+            else:
+                spent_cursors.add(page.cursor_out)
+                calls.append((replace(request, cursor=page.cursor_out), discovery_locator))
+        page_index += 1
 
     if truncated:
         # A raw cap counts every received record and may drop unseen uniques.

@@ -395,18 +395,21 @@ def assert_rate_budget_respected(case, governor, budgets):
 CONCURRENCY_MODULES = ("asyncio", "concurrent", "multiprocessing", "threading", "_thread")
 
 
-class NothingOverlapsAndNothingPagesTest(unittest.TestCase):
+class NothingOverlapsAndTheCoreOwnsPagingTest(unittest.TestCase):
     """Two mechanisms the documents called core-owned, pinned to what ships.
 
     `protocol.md` said `fused` lets two steps overlap and `adapters/__init__.py`
-    said the core owns pagination and concurrency. Neither exists: the package
-    imports no concurrency primitive at all, and `runner.planned_calls` is the
-    only production constructor of an `AdapterRequest` and never sets a cursor.
-    What `fused` really collapses is the round-trip — discovery and bounded
-    hydration in one invocation — and `fake_makespan_us` is the span of a
-    modeled placement rather than a wall clock. Both claims are now written down
-    as what they are, and pinned here so the next edit cannot quietly restore
-    the stronger one.
+    said the core owns pagination and concurrency. One of the two is now a
+    behaviour: `run_step` spends a cursor a page offers, and `PagingIsTheCoresTest`
+    below is what holds it to its bounds. The other is still only a name — the
+    package imports no concurrency primitive at all, what `fused` really
+    collapses is the round-trip, and `fake_makespan_us` is the span of a modeled
+    placement rather than a wall clock.
+
+    What survives here of the pagination half is the part that was never about
+    whether the core pages: a step's own authorized calls carry no cursor, so
+    every cursor in the package comes from a page the core has just read and
+    from nowhere else.
     """
 
     def test_the_package_imports_no_concurrency_primitive(self):
@@ -422,7 +425,7 @@ class NothingOverlapsAndNothingPagesTest(unittest.TestCase):
 
         self.assertEqual(taken, [])
 
-    def test_the_only_request_the_core_builds_carries_no_cursor(self):
+    def test_no_call_a_manifest_authorizes_carries_a_cursor(self):
         for payload in (DISCOVERY_MANIFEST, TWO_STEP_MANIFEST, FUSED_MANIFEST):
             for step in schema.parse_manifest(payload).steps:
                 with self.subTest(manifest=payload["manifest_id"], step=step.step_id):
@@ -431,6 +434,20 @@ class NothingOverlapsAndNothingPagesTest(unittest.TestCase):
                     self.assertEqual([request.cursor for request, _ in planned], [""] * len(planned))
                     if step.kind == "discovery":
                         self.assertEqual(len(planned), 1)
+
+    def test_a_cursor_enters_a_request_in_exactly_one_place(self):
+        # The claim that outlived "nothing pages": a manifest never states a
+        # cursor and neither does an adapter, so the only way one reaches a
+        # request is the continuation `run_step` builds from the page it has
+        # just read. A second site would be a second policy on how far a step
+        # goes, and the page cap would bound only one of them.
+        building = sorted(
+            (path.name, path.read_text(encoding="utf-8").count("cursor="))
+            for path in package_sources()
+            if "cursor=" in path.read_text(encoding="utf-8")
+        )
+
+        self.assertEqual(building, [("runner.py", 1)])
 
     def test_a_fused_run_makes_the_same_calls_in_the_same_order_as_a_staged_one(self):
         # The execution half: the mode reaches the ledger's placement and
@@ -447,6 +464,292 @@ class NothingOverlapsAndNothingPagesTest(unittest.TestCase):
             [request.route_id for request in fused_opener.opened],
         )
         self.assertEqual(len(staged.artifact.records), len(fused.artifact.records))
+
+
+def fixture_page(rows, cursor_out="", first=0):
+    """One offline fixture answer: ``rows`` records, and what it says comes next.
+
+    The `fake` adapter takes its whole declaration from its payload, so a page
+    of it is the one place a paging proof can state both halves — the rows and
+    the cursor — without a live route's markup in the way. Locators carry a
+    running number, because "records from every page reached the artifact" is a
+    claim two identical pages cannot make.
+    """
+
+    payload = {
+        "platform": "fixture",
+        "cursor_out": cursor_out,
+        "records": [
+            {
+                "canonical_content_kind": "post",
+                "canonical_locator": "https://fixture.invalid/p/{0}".format(first + index),
+                "native_item_id": str(first + index),
+                "title": "row {0}".format(first + index),
+            }
+            for index in range(rows)
+        ],
+    }
+    return (200, json.dumps(payload), "application/json")
+
+
+def fixture_pages(count, rows=3, last_offers_more=False):
+    """``count`` distinct answers, each naming a cursor no earlier one named."""
+
+    return [
+        fixture_page(
+            rows,
+            cursor_out=""
+            if index == count - 1 and not last_offers_more
+            else "c{0}".format(index + 1),
+            first=index * rows,
+        )
+        for index in range(count)
+    ]
+
+
+def fixture_step(kind="discovery", max_items=100, hits=1):
+    """One step on the offline adapter, in the shape its kind requires."""
+
+    if kind == "discovery":
+        return schema.AcquisitionStep(
+            step_id="s1-fixture", kind="discovery", adapter_id="fake",
+            query="local models", max_items=max_items,
+        )
+    return schema.AcquisitionStep(
+        step_id="s1-fixture",
+        kind="hydration",
+        adapter_id="fake",
+        selected_hits=tuple(
+            schema.SelectedHit(
+                discovery_locator="https://fixture.invalid/p/{0}".format(index),
+                target_id=str(index),
+            )
+            for index in range(hits)
+        ),
+        max_items=max_items,
+    )
+
+
+def fixture_run(answers, step=None):
+    """One step over canned offline answers; its result, records, ledger, opener."""
+
+    clock = helpers.FakeClock()
+    carrier, opener = helpers.offline_transport(clock, {transport.FAKE_OFFLINE_ROUTE: answers})
+    resolved = fixture_step() if step is None else step
+    result, records, operations = runner.run_step(
+        resolved, carrier, "artifact:paging", "m-paging", clock=clock.monotonic
+    )
+    return result, records, operations, opener
+
+
+class PagingIsTheCoresTest(unittest.TestCase):
+    """Spec criterion 4: a step reads the page after the one it was given.
+
+    Five adapters surface a `cursor_out` and six read a `cursor`, and until this
+    seam existed nothing joined them: `planned_calls` authorized one call for a
+    discovery step, so three roster rows named a paginated capability no caller
+    could reach. What makes it safe rather than merely reachable is that every
+    way out of the loop is written down. An origin decides when to stop offering;
+    the core decides everything else, and an unbounded call count is the failure
+    this class exists to make impossible — a cursor that repeats and a cursor
+    that never ends are both stopped, and neither by the same rule.
+
+    Both branches run on the offline `fake` adapter, whose page states its own
+    rows and its own cursor, so what is under test is the core's arithmetic and
+    never a live route's markup.
+    """
+
+    def test_a_page_that_offers_a_cursor_is_read_and_so_is_the_one_it_offers(self):
+        result, records, _, opener = fixture_run(fixture_pages(2))
+
+        self.assertEqual(len(opener.opened), 2)
+        self.assertEqual(result.pages, 2)
+        self.assertEqual(
+            [record.native_item_id for record in records], ["0", "1", "2", "3", "4", "5"]
+        )
+        # Nothing was left on the table: the second page named no next one, so
+        # the step ends complete rather than cut short.
+        self.assertEqual(result.outcome, "ok")
+        self.assertEqual(result.loss, ())
+
+    def test_records_from_every_page_reach_the_artifact_in_the_order_read(self):
+        clock = helpers.FakeClock()
+        carrier, opener = helpers.offline_transport(
+            clock, {transport.FAKE_OFFLINE_ROUTE: fixture_pages(3)}
+        )
+
+        artifact = runner.run_acquisition(
+            schema.AcquisitionManifest(
+                manifest_id="m-paging",
+                mode="staged",
+                as_of="2026-08-10T09:30:00Z",
+                steps=(fixture_step(),),
+            ),
+            carrier,
+            clock=clock.monotonic,
+        )
+
+        self.assertEqual(len(opener.opened), 3)
+        self.assertEqual(len(artifact.records), 9)
+        self.assertEqual(
+            [(record.page_index, record.list_index) for record in artifact.records],
+            [(0, 0), (0, 1), (0, 2), (1, 3), (1, 4), (1, 5), (2, 6), (2, 7), (2, 8)],
+        )
+        self.assertEqual(artifact.steps[0].records_received, 9)
+
+    def test_a_page_that_offers_no_cursor_is_the_only_call_the_step_makes(self):
+        result, records, _, opener = fixture_run(fixture_pages(1))
+
+        self.assertEqual(len(opener.opened), 1)
+        self.assertEqual(result.pages, 1)
+        self.assertEqual(len(records), 3)
+        self.assertEqual(result.outcome, "ok")
+
+    def test_the_cap_bounds_the_whole_step_and_never_one_page_of_it(self):
+        # Four wanted, three to a page: the cap has to be met across two pages
+        # or it is a per-page cap wearing a step's name. The second page brings
+        # three and one of them is dropped, which is what `truncated` has always
+        # meant and still does.
+        result, records, _, opener = fixture_run(
+            fixture_pages(4), step=fixture_step(max_items=4)
+        )
+
+        self.assertEqual(len(opener.opened), 2)
+        self.assertEqual(len(records), 4)
+        self.assertEqual(result.records_received, 6)
+        self.assertEqual(result.outcome, "partial")
+        self.assertIn("recall_window_partial", result.loss)
+
+    def test_a_step_that_meets_its_cap_exactly_asks_for_no_further_page(self):
+        # The cap is the caller's own bound, so meeting it is the step finishing
+        # rather than the step being cut: six wanted, six kept, and the page the
+        # origin went on offering was never authorized in the first place.
+        result, records, _, opener = fixture_run(
+            fixture_pages(3), step=fixture_step(max_items=6)
+        )
+
+        self.assertEqual(len(opener.opened), 2)
+        self.assertEqual(len(records), 6)
+        self.assertEqual(result.outcome, "ok")
+        self.assertEqual(result.loss, ())
+
+    def test_a_declared_page_cap_stops_an_origin_that_keeps_offering(self):
+        # The named failure mode: every page names a cursor no page named
+        # before, so no stop the origin controls will ever fire. The cap is the
+        # core's own, and it is a constant a reader can find rather than a
+        # number in the loop.
+        result, _, _, opener = fixture_run(fixture_pages(12, last_offers_more=True))
+
+        self.assertGreater(runner.MAX_PAGES_PER_STEP, 1)
+        self.assertEqual(len(opener.opened), runner.MAX_PAGES_PER_STEP)
+        self.assertEqual(result.pages, runner.MAX_PAGES_PER_STEP)
+        # Stopped by a bound of the core's own while the origin was still
+        # offering, which is a recall window that closed early and says so.
+        self.assertEqual(result.outcome, "partial")
+        self.assertIn("recall_window_partial", result.loss)
+
+    def test_a_cursor_that_repeats_ends_the_step_rather_than_spinning(self):
+        # One answer seeded, so every read of the route returns the same page
+        # naming the same cursor. Spending it again would ask for a page this
+        # step already has, forever.
+        result, records, _, opener = fixture_run([fixture_page(3, cursor_out="c1")])
+
+        self.assertEqual(len(opener.opened), 2)
+        self.assertLess(result.pages, runner.MAX_PAGES_PER_STEP)
+        self.assertEqual(len(records), 6)
+        self.assertEqual(result.outcome, "partial")
+        self.assertIn("recall_window_partial", result.loss)
+
+    def test_a_hydration_step_still_spends_one_call_per_frozen_hit(self):
+        # Pagination is a discovery behaviour. A hydration record's provenance
+        # is exact because its call was authorized by a hit the caller froze,
+        # and a page read off a cursor was authorized by nobody.
+        step = fixture_step(kind="hydration", hits=2)
+        result, records, _, opener = fixture_run(
+            [fixture_page(1, cursor_out="c1"), fixture_page(1, cursor_out="c2", first=1)],
+            step=step,
+        )
+
+        self.assertEqual([request.cursor for request, _ in runner.planned_calls(step)], ["", ""])
+        self.assertEqual(len(opener.opened), 2)
+        self.assertEqual(result.pages, 2)
+        self.assertEqual(len(records), 2)
+
+    def test_each_page_is_billed_as_its_own_planned_operation(self):
+        result, _, operations, opener = fixture_run(fixture_pages(3))
+
+        self.assertEqual(len(operations), len(opener.opened))
+        self.assertEqual([operation.page_index for operation in operations], [0, 1, 2])
+        self.assertEqual(
+            [operation.records_received for operation in operations], [3, 3, 3]
+        )
+        self.assertEqual([operation.reached_origin for operation in operations], [True] * 3)
+        self.assertEqual(sum(operation.records_received for operation in operations),
+                         result.records_received)
+
+    def test_the_ledger_charges_one_native_page_per_call_across_the_pages(self):
+        clock = helpers.FakeClock()
+        carrier, opener = helpers.offline_transport(
+            clock, {transport.FAKE_OFFLINE_ROUTE: fixture_pages(3)}
+        )
+
+        run = runner.run_scheduled(
+            schema.AcquisitionManifest(
+                manifest_id="m-paging",
+                mode="staged",
+                as_of="2026-08-10T09:30:00Z",
+                steps=(fixture_step(),),
+            ),
+            carrier,
+            clock=clock.monotonic,
+        )
+        sums = runner.ledger_sums(run.ledger)
+
+        self.assertEqual(sums["pages"], len(opener.opened))
+        self.assertEqual(sums["calls"], len(opener.opened))
+        self.assertEqual(sums["items"], 9)
+
+    def test_the_cursor_a_page_offered_is_the_cursor_the_next_call_goes_out_with(self):
+        # `fake` cannot show this half: it sends its target and nothing else, so
+        # a cursor never reaches its opener. `web_search` sends one as DDG's own
+        # `s`, which is what surfacing a cursor was for. What page two holds is
+        # not this row's subject — nothing has ever measured DDG's page two, so
+        # the double answers with page one again and only the request is read
+        # off it.
+        html = TRACER_FIXTURE_DIR.joinpath("ddg_html_results.html").read_text(
+            encoding="utf-8"
+        )
+        clock = helpers.FakeClock()
+        carrier, opener = helpers.offline_transport(
+            clock,
+            {
+                transport.DDG_HTML_ROUTE: [
+                    (200, html, "text/html"),
+                    (200, html.replace('<input type="hidden" name="s" value="30" />', ""),
+                     "text/html"),
+                ]
+            },
+        )
+
+        runner.run_acquisition(
+            schema.AcquisitionManifest(
+                manifest_id="m-paging-ddg",
+                mode="staged",
+                as_of="2026-08-10T09:30:00Z",
+                steps=(
+                    schema.AcquisitionStep(
+                        step_id="s1-discover", kind="discovery", adapter_id="web_search",
+                        query="site:reddit.com best local model", max_items=100,
+                    ),
+                ),
+            ),
+            carrier,
+            clock=clock.monotonic,
+        )
+
+        self.assertEqual(len(opener.opened), 2)
+        self.assertNotIn("s=30", opener.opened[0].url)
+        self.assertIn("s=30", opener.opened[1].url)
 
 
 class TheDocumentedPathPacesAndRemembersTest(unittest.TestCase):
