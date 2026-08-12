@@ -2233,6 +2233,12 @@ class LinkedInOneCallOnePageTest(unittest.TestCase):
                 self.assertEqual(page.outcome, "failed")
 
 
+# findings.md §1 (LinkedIn public profile): 577 KB per answer, the largest in
+# the roster. Held against `MAX_ENTRY_BYTES` below, because whether a route's
+# declared window can ever bind depends on it.
+MEASURED_LINKEDIN_BYTES = 577 * 1024
+
+
 class LinkedInRouteTtlTest(unittest.TestCase):
     """How long each LinkedIn route's answer may stand in for a fresh read.
 
@@ -2304,12 +2310,35 @@ class LinkedInRouteTtlTest(unittest.TestCase):
             cache.ttl_seconds(transport.LINKEDIN_PUBLIC_PROFILE_ROUTE),
         )
 
-    def test_a_body_the_size_the_evidence_measured_is_served_through_and_never_held(self):
-        # findings.md §1 measured this route at 577 KB, and the run cache holds
-        # nothing over MAX_ENTRY_BYTES (512 KiB) — so a real profile page is
-        # served through and the declared TTL never binds on it. The window
-        # above is real, and it is real for a smaller page than the one the
-        # evidence measured. Stated here rather than in prose so it cannot rot.
+    def test_a_body_the_size_the_evidence_measured_is_held_rather_than_served_through(self):
+        # findings.md §1 measured this route at 577 KB — the largest answer in
+        # the roster, and the one its 900 s window exists for. The window is
+        # real at the size the evidence actually measured, not only at some
+        # smaller page. Stated here rather than in prose so it cannot rot.
+        clock = helpers.FakeClock()
+        payload = read_linkedin("profile_person.html")
+        measured = payload + "<!--{0}-->".format(
+            "x" * (MEASURED_LINKEDIN_BYTES - len(payload.encode("utf-8")) - 7)
+        )
+        governor, opener = self._paced(
+            clock, transport.LINKEDIN_PUBLIC_PROFILE_ROUTE, measured
+        )
+
+        first = linkedin_public.fetch_native_page(governor, LINKEDIN_PROFILE_REQUEST)
+        clock.advance(1)
+        second = linkedin_public.fetch_native_page(governor, LINKEDIN_PROFILE_REQUEST)
+
+        self.assertEqual(len(measured.encode("utf-8")), MEASURED_LINKEDIN_BYTES)
+        self.assertLess(MEASURED_LINKEDIN_BYTES, cache.MAX_ENTRY_BYTES)
+        self.assertIn(cache.CACHE_HIT, second.loss)
+        self.assertEqual(len(opener.opened), 1)
+        self.assertEqual(len(first.records), 1)
+        self.assertEqual(len(second.records), 1)
+
+    def test_a_body_past_the_cap_is_still_served_through(self):
+        # The guard still guards; it guards at a higher number. A page this
+        # far past the cap has never been measured on this route — the point
+        # is that the cap binds when something does reach it.
         clock = helpers.FakeClock()
         oversized = read_linkedin("profile_person.html") + "<!--{0}-->".format(
             "x" * cache.MAX_ENTRY_BYTES
@@ -4113,11 +4142,10 @@ class YoutubeInstagramRouteTtlTest(unittest.TestCase):
         )
 
     def test_a_body_the_size_the_evidence_measured_is_held_rather_than_served_through(self):
-        # The mirror of the LinkedIn profile route, and the reason that check
-        # exists: at 577 KB that one exceeds `MAX_ENTRY_BYTES` and its window
-        # never binds. At 455 KB this one fits, so the window above is real at
-        # the size the evidence actually measured — with 57 KB of headroom, and
-        # not a byte more.
+        # The mirror of the LinkedIn profile route, which makes the same claim
+        # at 577 KB. At 455 KB this one fits with more room to spare, so the
+        # window above is real at the size the evidence actually measured —
+        # with 569 KB of headroom, and not a byte more.
         clock = helpers.FakeClock()
         payload = read_instagram("web_profile_info.json")
         measured = payload + " " * (MEASURED_INSTAGRAM_BYTES - len(payload.encode("utf-8")))
@@ -4163,8 +4191,10 @@ class YoutubeInstagramRouteTtlTest(unittest.TestCase):
 
     def test_two_of_the_three_innertube_answers_are_too_large_to_hold_anyway(self):
         # And the window would not bind even if the verb changed: findings.md
-        # §1 measured search at 2.27 MB and next at 1.12 MB against a 512 KiB
-        # entry cap, so only the 21 KB player answer could ever be held.
+        # §1 measured search at 2.27 MB and next at 1.12 MB, both past
+        # `MAX_ENTRY_BYTES`, so only the 21 KB player answer could ever be
+        # held. The smaller of the two is what fixes the ceiling on that
+        # constant — a cap above 1.12 MB would start holding it.
         for measured_bytes in (2270 * 1024, 1120 * 1024):
             with self.subTest(body_bytes=measured_bytes):
                 self.assertGreater(measured_bytes, cache.MAX_ENTRY_BYTES)
@@ -6265,10 +6295,9 @@ class HackerNewsGithubRouteTtlTest(unittest.TestCase):
                 self.assertGreater(window, cache.DEFAULT_TTL_SECONDS)
 
     def test_all_four_answers_are_small_enough_for_a_window_to_mean_anything(self):
-        # The LinkedIn profile route declares a window that never binds because
-        # its measured body is over the entry cap. These four answer in
-        # kilobytes, so nothing here is served through — and the cap itself is
-        # untouched: this ticket declares windows, not a run footprint.
+        # A window on a body over the entry cap would never bind. These four
+        # answer in kilobytes, so nothing here is served through and every
+        # window above binds on the body the fixture holds.
         for fixture, read in (
             ("algolia_search_by_date.json", read_hacker_news),
             ("firebase_story.json", read_hacker_news),
@@ -8579,10 +8608,8 @@ class FeedPageRouteTtlTest(unittest.TestCase):
         )
 
     def test_the_bodies_these_routes_answer_with_fit_inside_the_run_footprint(self):
-        # A window on a body over the entry cap never binds — the LinkedIn
-        # profile route is the roster's example. These fixtures fit, so the
-        # windows above bind on them. The cap itself is untouched: this ticket
-        # declares windows, not a run footprint.
+        # A window on a body over the entry cap would never bind. These
+        # fixtures fit, so the windows above bind on them.
         for fixture, read in (
             ("subreddit_new.xml", read_reddit_feed),
             ("youtube_channel_feed.xml", read_rss_atom),
