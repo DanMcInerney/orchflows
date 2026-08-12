@@ -5,8 +5,15 @@ file solely owns default model mappings and the child-naming algorithm.
 
 | Profile | Role | Codex | Claude Code |
 | --- | --- | --- | --- |
-| `orch-planner` | planner | agent_type `orch_planner`, model `gpt-5.6-sol`, model_reasoning_effort `ultra` | model `claude-opus-5`, effort `xhigh` |
-| `orch-worker` | worker | agent_type `orch_worker`, model `gpt-5.6-sol`, model_reasoning_effort `high`, service_tier `fast` | model `claude-opus-5`, effort `xhigh` |
+| `orch-planner` | planner | agent_type `orch_planner`, model `gpt-5.6-sol`, model_reasoning_effort `ultra` | model `claude-fable-5`, effort `high` |
+| `orch-worker` | worker | agent_type `orch_worker`, model `gpt-5.6-sol`, model_reasoning_effort `high`, service_tier `fast` | model `claude-opus-5`, effort `high` |
+
+A machine whose bindings differ states only the differing cells in
+`~/.orchflows/profiles.local.md` — the same four-column table, an empty
+cell inheriting the row above. The installer merges it over this file, so
+the rendered agent is what the receipt records and a reinstall stays
+clean. Editing a generated role agent instead sets the same value and
+blocks every later install.
 
 Use native invocation fields when available; a prompt-only request is
 requested, not verified. An unsupported or blocked model binding stops

@@ -274,6 +274,117 @@ class TestScopedHostConfiguration(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "invalid Codex agent_type"):
                 install.load_role_profiles(profiles)
 
+    def test_shipped_claude_bindings_are_the_documented_defaults(self):
+        profiles = install.load_role_profiles()
+
+        self.assertEqual(
+            {"model": "claude-fable-5", "effort": "high"}, profiles["orch-planner"]["claude"]
+        )
+        self.assertEqual(
+            {"model": "claude-opus-5", "effort": "high"}, profiles["orch-worker"]["claude"]
+        )
+
+    def test_bare_load_reads_no_machine_overlay(self):
+        # The default is no overlay, so this suite never inherits the
+        # bindings of whichever machine happens to run it -- an overlay
+        # sitting at the real path must not reach a bare call.
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".orchflows").mkdir(parents=True)
+            (home / ".orchflows" / install.PROFILES_LOCAL_NAME).write_text(
+                "| Profile | Role | Codex | Claude Code |\n"
+                "| --- | --- | --- | --- |\n"
+                "| `orch-worker` | worker |  | model `claude-opus-5`, effort `max` |\n",
+                encoding="utf-8",
+            )
+
+            with patch.object(install.Path, "home", return_value=home):
+                profiles = install.load_role_profiles()
+
+            self.assertEqual(
+                {"model": "claude-opus-5", "effort": "high"}, profiles["orch-worker"]["claude"]
+            )
+
+    def test_local_overlay_replaces_only_the_cells_it_states(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            overlay = Path(tmp) / install.PROFILES_LOCAL_NAME
+            overlay.write_text(
+                "| Profile | Role | Codex | Claude Code |\n"
+                "| --- | --- | --- | --- |\n"
+                "| `orch-planner` | planner |  | model `claude-opus-5`, effort `max` |\n"
+                "| `orch-worker` | worker |  | model `claude-opus-5`, effort `xhigh` |\n",
+                encoding="utf-8",
+            )
+
+            shipped = install.load_role_profiles()
+            merged = install.load_role_profiles(local_path=overlay)
+
+            self.assertEqual(
+                {"model": "claude-opus-5", "effort": "max"}, merged["orch-planner"]["claude"]
+            )
+            self.assertEqual(
+                {"model": "claude-opus-5", "effort": "xhigh"}, merged["orch-worker"]["claude"]
+            )
+            # An empty Codex cell inherits rather than blanking the row.
+            for name in ("orch-planner", "orch-worker"):
+                self.assertEqual(shipped[name]["codex"], merged[name]["codex"])
+
+    def test_absent_overlay_leaves_the_shipped_table(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            absent = Path(tmp) / install.PROFILES_LOCAL_NAME
+
+            self.assertEqual(
+                install.load_role_profiles(),
+                install.load_role_profiles(local_path=absent),
+            )
+
+    def test_overlay_naming_an_unknown_profile_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            overlay = Path(tmp) / install.PROFILES_LOCAL_NAME
+            overlay.write_text(
+                "| Profile | Role | Codex | Claude Code |\n"
+                "| --- | --- | --- | --- |\n"
+                "| `orch-reviewer` | planner |  | model `claude-opus-5`, effort `max` |\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "unknown role profile: orch-reviewer"):
+                install.load_role_profiles(local_path=overlay)
+
+    def test_overlay_binding_without_a_model_names_the_overlay_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            overlay = Path(tmp) / install.PROFILES_LOCAL_NAME
+            overlay.write_text(
+                "| Profile | Role | Codex | Claude Code |\n"
+                "| --- | --- | --- | --- |\n"
+                "| `orch-worker` | worker |  | effort `max` |\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, rf"{re.escape(str(overlay))}: incomplete Claude"):
+                install.load_role_profiles(local_path=overlay)
+
+    def test_rendered_claude_agent_carries_the_overlaid_effort(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".claude").mkdir(parents=True)
+            (home / ".orchflows").mkdir(parents=True)
+            (home / ".orchflows" / install.PROFILES_LOCAL_NAME).write_text(
+                "| Profile | Role | Codex | Claude Code |\n"
+                "| --- | --- | --- | --- |\n"
+                "| `orch-planner` | planner |  | model `claude-opus-5`, effort `max` |\n",
+                encoding="utf-8",
+            )
+
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis("claude"):
+                plan = install.build_plan("user", None)
+
+            planner = next(
+                content for dest, content in plan.claude_agents if dest.name == "orch-planner.md"
+            )
+            self.assertIn("model: claude-opus-5", planner)
+            self.assertIn("effort: max", planner)
+
     @requires_tomllib
     def test_codex_role_agent_names_follow_spawn_identifier_grammar(self):
         with tempfile.TemporaryDirectory() as tmp:

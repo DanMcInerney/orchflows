@@ -106,6 +106,8 @@ HOST_BLOCK_TEMPLATE = REPO_ROOT / "templates" / "host-block.md"
 CODEX_LIMITS_START = "# BEGIN ORCHFLOWS AGENT LIMITS"
 CODEX_LIMITS_END = "# END ORCHFLOWS AGENT LIMITS"
 PROFILE_ROLES = ("planner", "worker")
+HOST_BINDINGS = ("codex", "claude")
+PROFILES_LOCAL_NAME = "profiles.local.md"
 # The routed composition ``fix`` replaced the demoted ``orch-fix`` skill.
 CODEX_SKILL_REDIRECT_NAMES = ("orch-spec", "orch-task", "fix", "orch-build")
 AUTO_REMOVE_KINDS = frozenset(("adapter", "prompt", "codex-skill"))
@@ -346,9 +348,8 @@ def _parse_binding(cell: str) -> dict:
     return {match.group("key"): match.group("value") for match in _BINDING_RE.finditer(cell)}
 
 
-def load_role_profiles(profiles_md_path: Path = PROFILES_MD):
-    text = profiles_md_path.read_text(encoding="utf-8")
-    profiles = {}
+def _profile_rows(text: str) -> dict:
+    rows = {}
     for line in text.splitlines():
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
         if len(cells) != 4 or not cells[0].startswith("`orch-"):
@@ -357,22 +358,64 @@ def load_role_profiles(profiles_md_path: Path = PROFILES_MD):
         role = cells[1]
         if role not in PROFILE_ROLES:
             continue
-        profiles[name] = {"role": role, "codex": _parse_binding(cells[2]), "claude": _parse_binding(cells[3])}
+        rows[name] = {"role": role, "codex": _parse_binding(cells[2]), "claude": _parse_binding(cells[3])}
+    return rows
+
+
+def local_profiles_path() -> Path:
+    """This machine's optional binding overlay: never generated, never removed.
+
+    A host whose bindings differ from the shipped defaults states only the
+    differing cells here, so the rest keeps tracking the library. The
+    rendered agent then equals what the installer expects and the receipt
+    stays consistent, which a hand-edit of a generated agent cannot do.
+    """
+
+    return Path.home() / ".orchflows" / PROFILES_LOCAL_NAME
+
+
+def load_role_profiles(profiles_md_path: Path = PROFILES_MD, local_path: Path | None = None):
+    """The shipped bindings, optionally overlaid by one machine's own.
+
+    ``local_path`` defaults to no overlay rather than to this machine's,
+    so the shipped table is what a bare call reads and a test never
+    inherits the developer's own bindings. ``build_plan`` is what opts a
+    real install in, by naming :func:`local_profiles_path`.
+    """
+
+    profiles = _profile_rows(profiles_md_path.read_text(encoding="utf-8"))
     missing = [f"orch-{role}" for role in PROFILE_ROLES if f"orch-{role}" not in profiles]
     if missing:
         raise ValueError(f"{profiles_md_path}: missing role profile row(s) for {', '.join(missing)}")
+
+    # Which file each host binding came from, so a rejected cell names the
+    # file its author would open rather than the one it was merged into.
+    origin = {name: dict.fromkeys(HOST_BINDINGS, profiles_md_path) for name in profiles}
+    overlay = local_path
+    if overlay is not None and overlay.is_file():
+        for name, row in _profile_rows(overlay.read_text(encoding="utf-8")).items():
+            if name not in profiles:
+                raise ValueError(f"{overlay}: unknown role profile: {name}")
+            for host in HOST_BINDINGS:
+                # An empty cell inherits; a stated one replaces that host
+                # outright, since a half-stated binding names no model.
+                if row[host]:
+                    profiles[name][host] = row[host]
+                    origin[name][host] = overlay
+
     codex_agent_types = set()
     for name, profile in profiles.items():
+        codex_from, claude_from = origin[name]["codex"], origin[name]["claude"]
         if not {"agent_type", "model", "model_reasoning_effort"} <= set(profile["codex"]):
-            raise ValueError(f"{profiles_md_path}: incomplete Codex binding for {name}")
+            raise ValueError(f"{codex_from}: incomplete Codex binding for {name}")
         agent_type = profile["codex"]["agent_type"]
         if _CODEX_AGENT_TYPE_RE.fullmatch(agent_type) is None:
-            raise ValueError(f"{profiles_md_path}: invalid Codex agent_type for {name}: {agent_type}")
+            raise ValueError(f"{codex_from}: invalid Codex agent_type for {name}: {agent_type}")
         if agent_type in codex_agent_types:
-            raise ValueError(f"{profiles_md_path}: duplicate Codex agent_type: {agent_type}")
+            raise ValueError(f"{codex_from}: duplicate Codex agent_type: {agent_type}")
         codex_agent_types.add(agent_type)
         if "model" not in profile["claude"]:
-            raise ValueError(f"{profiles_md_path}: incomplete Claude binding for {name}")
+            raise ValueError(f"{claude_from}: incomplete Claude binding for {name}")
     return profiles
 
 
@@ -883,7 +926,7 @@ def _build_user_plan() -> Plan:
                 )
 
     roles_path = (lib_home / "rules" / "roles.md").resolve()
-    profiles = load_role_profiles()
+    profiles = load_role_profiles(local_path=local_profiles_path())
     claude_agents = []
     codex_agents = []
     for name in (f"orch-{role}" for role in PROFILE_ROLES):
