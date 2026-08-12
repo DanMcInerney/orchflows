@@ -411,7 +411,7 @@ The seven codes this delivery adds to the retained vocabulary:
 | --- | --- | --- |
 | `third_party_archive` | an independent archive answered, not the platform | `reddit_archive` |
 | `stale_identifier` | a vendor identifier rotated; the read was refused, not empty | `x_guest` (404), `youtube_innertube` (400) |
-| `attestation_required` | the origin withheld a payload behind an attestation this package does not perform | `youtube_innertube`, for the two playability statuses findings.md §1 measured and for a withheld caption list |
+| `attestation_required` | the origin withheld a payload behind an attestation this package does not perform | `youtube_innertube`, for the two playability statuses findings.md §1 measured and for a withheld caption list; `cli`, which reads it |
 | `network_intercepted` | the local network answered, not the origin | `transport`, `adapters`, `smoke` |
 | `cache_hit` | this run's own memory answered | `adapters`, `runner` |
 | `archive_lag` | an archive's coverage trails the platform | nothing: **absent from the source entirely** |
@@ -463,7 +463,7 @@ The retained codes, and every module that spells one:
 
 | code | named by |
 | --- | --- |
-| `auth_required` | `router`, `x_guest`, `linkedin_public`, `instagram_public`, `youtube_innertube` — the router for a K5 route, the four adapters for an origin's own refusal |
+| `auth_required` | `router`, `x_guest`, `linkedin_public`, `instagram_public`, `youtube_innertube`, `cli` — the router for a K5 route, the four adapters for an origin's own refusal, `cli` reading it |
 | `no_route` | `router`, `runner`, for an adapter or route the core does not declare |
 | `rate_limited` | `adapters`, on HTTP 429 |
 | `schema_drift` | `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `reddit_archive`, `reddit_feed`, `rss_atom`, `web_search`, `x_guest`, `x_syndication`, `youtube_innertube` |
@@ -479,10 +479,12 @@ The retained codes, and every module that spells one:
 | `target_not_hydrated` | `web_search`, standing on every index hit |
 | `recall_window_partial` | `runner`, when a cap truncated |
 
-Two of the names above are readers rather than emitters, and the distinction is
+Three of the names above are readers rather than emitters, and the distinction is
 worth keeping: `runner.reached_origin` reads `cache_hit` to decide whether a page
-cost an origin a read, and `smoke.channel_of` reads `network_intercepted` to
-decide which exit code an operator gets. Everywhere else, naming the code is
+cost an origin a read, `smoke.channel_of` reads `network_intercepted` to
+decide which exit code an operator gets, and `cli.target_may_be_the_problem`
+reads `auth_required` and `attestation_required` to decide whether advice to
+replace a probe target could possibly help. Everywhere else, naming the code is
 attaching it. Two modules declare a code as a constant and never load it, which
 is the same shape the four keyless adapters have for `auth_required`:
 `transport` owns `rate_limited` for `adapters.fetch_one_page` to attach, and

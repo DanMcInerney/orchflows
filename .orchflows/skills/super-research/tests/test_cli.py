@@ -1372,6 +1372,93 @@ class StatusSaysWhatWasReadTest(LedgerHoldingCase):
         )
 
 
+class TheRecoveryLineFitsTheLossTest(LedgerHoldingCase):
+    """Advice that cannot help, on the two reads most likely to be misread.
+
+    "Replace the target" printed whenever a read kept no records and the probe
+    declared a recovery. Two of the thirteen reads made on 2026-08-12 printed
+    it, and in both the loss code says the target was never the problem: the
+    origin refused the client, once for want of an identity it would accept and
+    once for want of an attestation this package does not perform. `simonw` is
+    not missing and `dQw4w9WgXcQ` is not missing.
+
+    The rule cannot be "print only when nothing was typed", because a `404` on a
+    named target is the strongest evidence there is that a target really has
+    gone — which is why both directions are rows here.
+    """
+
+    RECOVERY_LINE = "no row came back for the probe target"
+
+    def test_an_origin_refusing_this_client_is_not_a_target_to_replace(self):
+        # Read 6 of the thirteen, at the status the origin answered with.
+        seeds = probe_seeds()
+        seeds["x_guest_graphql"] = (
+            401, payload("x/guest_blocked_operation.json"), "application/json"
+        )
+
+        code, printed, _ = run_cli(self, ["smoke", "--adapter", "x_guest"], seeds=seeds)
+
+        self.assertEqual(code, cli.EXIT_ROW_UNMET)
+        self.assertIn("auth_required", printed)
+        self.assertIn("records kept 0", printed)
+        # The probe does declare a way back to a current target, so nothing but
+        # the loss code is keeping the line off this read.
+        self.assertTrue(cli.probe_for("x_guest").target_recovery)
+        self.assertNotIn(self.RECOVERY_LINE, printed)
+        # The read is still reported in full. What went is the advice, not the
+        # finding: an origin that refused this client is news.
+        self.assertIn(cli.READ_AND_ROW_UNMET, printed)
+
+    def test_an_origin_withholding_from_an_unattested_client_is_not_one_either(self):
+        # Read 9 of the thirteen.
+        seeds = probe_seeds()
+        seeds["youtube_innertube"] = (
+            200, payload("youtube/player_unplayable.json"), "application/json"
+        )
+
+        code, printed, _ = run_cli(
+            self, ["smoke", "--adapter", "youtube_innertube"], seeds=seeds
+        )
+
+        self.assertEqual(code, cli.EXIT_ROW_UNMET)
+        self.assertIn("attestation_required", printed)
+        self.assertIn("records kept 0", printed)
+        self.assertTrue(cli.probe_for("youtube_innertube").target_recovery)
+        self.assertNotIn(self.RECOVERY_LINE, printed)
+        self.assertIn(cli.READ_AND_ROW_UNMET, printed)
+
+    def test_a_target_the_origin_says_it_does_not_have_still_gets_the_line(self):
+        # The case the line exists for, and the one a rule drawn too wide would
+        # silence: the origin answered about this exact target and said it has
+        # no such thing. Nothing here refuses the client.
+        seeds = probe_seeds()
+        seeds["github_rest"] = (404, payload("github/not_found.json"), "application/json")
+
+        code, printed, _ = run_cli(self, ["smoke", "--adapter", ADAPTER], seeds=seeds)
+
+        self.assertEqual(code, cli.EXIT_ROW_UNMET)
+        self.assertIn("http_status", printed)
+        self.assertIn(self.RECOVERY_LINE, printed)
+        self.assertIn(cli.probe_for(ADAPTER).target_recovery, printed)
+
+    def test_an_answer_that_simply_held_no_row_still_gets_the_line(self):
+        # The other half of the same control: the origin answered, typed
+        # nothing, and the thing the probe named was not in what came back.
+        seeds = probe_seeds()
+        seeds["arctic_shift_posts_ids"] = (200, '{"data": []}', "application/json")
+
+        _, printed, _ = run_cli(self, ["smoke", "--adapter", "reddit_archive"], seeds=seeds)
+
+        self.assertIn(self.RECOVERY_LINE, printed)
+
+    def test_the_rule_is_a_named_pair_of_codes_and_not_a_guess(self):
+        # Both name the origin refusing *this client*; neither says anything
+        # about whether the thing asked for is still there.
+        self.assertEqual(
+            cli.TARGET_NOT_THE_PROBLEM, ("auth_required", "attestation_required")
+        )
+
+
 # The only live reads this package has ever made, transcribed verbatim from the
 # run that made them: thirteen adapters, one bounded read each, in roster order,
 # no retries, on 2026-08-12. That run's own record is not tracked and the

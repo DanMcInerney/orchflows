@@ -88,6 +88,21 @@ EXIT_LOCAL_NETWORK = 3
 # and the claim being made about it is that it is there.
 FACT_WIDTH = 72
 
+# The loss codes that say the probe target was never the problem. Both name the
+# origin refusing *this client* — one for want of an identity it will accept,
+# one for want of an attestation this package does not perform — and neither is
+# an answer about whether the thing asked for is still there. Advice to replace
+# the target cannot help on either, and it printed on both.
+#
+# Read here rather than attached, which is why `protocol.md`'s two rows name
+# this module: the codes belong to the adapters that type them, and what this
+# module does with them is decide whether one sentence is worth printing.
+#
+# The set is closed at two on purpose. `http_status` is not in it and must not
+# be: a `404` about a named target is the strongest evidence there is that a
+# target has really gone, and it is the case the sentence exists for.
+TARGET_NOT_THE_PROBLEM = ("auth_required", "attestation_required")
+
 
 @dataclass(frozen=True)
 class Operation:
@@ -168,6 +183,18 @@ def adapter_lines() -> List[str]:
     return lines
 
 
+def target_may_be_the_problem(observation: SmokeObservation) -> bool:
+    """Whether a rotted probe target is still one of the ways this read failed.
+
+    Read off the loss and never off the outcome or the record count, for the
+    reason :func:`smoke.channel_of` is written the same way: a read that kept no
+    records reports the same emptiness whatever emptied it, and only the code
+    says who was refused what.
+    """
+
+    return not [code for code in observation.loss if code in TARGET_NOT_THE_PROBLEM]
+
+
 def instant_word(disposition: Disposition) -> str:
     """What the instant this disposition reports is the instant *of*.
 
@@ -231,7 +258,11 @@ def smoke_lines(
         lines.append("  roster field set: not carried")
         for kind, name in observation.missing:
             lines.append("    missing on {0}: {1}".format(kind, name))
-        if not observation.records_kept and probe.target_recovery:
+        if (
+            not observation.records_kept
+            and probe.target_recovery
+            and target_may_be_the_problem(observation)
+        ):
             # Said conditionally, because this line cannot tell which of the
             # two happened: a route that stopped working and a probe target
             # that was deleted both come back with no row, and only one of them
