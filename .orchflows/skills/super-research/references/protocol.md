@@ -644,7 +644,7 @@ parser was made from.
 | operation | argument | reaches an origin | writes | exit |
 | --- | --- | --- | --- | --- |
 | `adapters` | none | no | nothing | 0 |
-| `smoke` | `--adapter <one of thirteen>`, required | one bounded read | its own ledger, only on success | 0 / 1 / 3 |
+| `smoke` | `--adapter <one of thirteen>`, required | one bounded read | one of its two records: the ledger on success, the unmet record on a row the origin answered and did not carry, neither otherwise | 0 / 1 / 3 |
 | `status` | none | no | nothing | 0 always |
 
 No operation takes an address, a route, a path, a manifest, or a command;
@@ -668,18 +668,39 @@ Two dispositions and no third: `verified` and `unverified`. Rejecting a platform
 is not something this package does from one read, so `rejected` is not in the
 vocabulary at all and "never degrades to rejected" is structural rather than a
 branch someone has to remember. Reasons are `fresh_success`, `never_smoked`,
-`stale_success`, `unreadable_last_success`, `last_success_ahead_of_now`. The
-window is seven days, because every route here depends on markup or on a vendor
-identifier that rotates without notice. The ledger is one JSON object of adapter
-id to ISO stamp at `<tempdir>/super-research/smoke-ledger.json`, a constant no
-argument can point elsewhere.
+`read_and_row_unmet`, `stale_success`, `unreadable_last_success`,
+`last_success_ahead_of_now`. The window is seven days, because every route here
+depends on markup or on a vendor identifier that rotates without notice.
 
-The ledger only ever gains an entry. A read that carried its whole row, from the
-origin, stamps that adapter; a blocked read is not a finding about the platform,
-and a failed read has not undone a success already recorded. Expiry happens by the
-window passing, never by a later read revoking an earlier one. An unreadable
-ledger reads as empty, which makes every adapter `unverified` — the only safe
-direction.
+`never_smoked` asserts that no read has ever reached this adapter's origin, and
+`read_and_row_unmet` that one did — at the instant it reports — and came back
+without the row. It claims no cause: a challenge status, a refused
+authorization, a withheld payload and a parser that dropped a field all reach it
+alike, and the state stays `unverified` for all of them. Nothing about a
+platform is concluded by either.
+
+**Two records, and each holds one fact.** The ledger is one JSON object of
+adapter id to ISO stamp at `<tempdir>/super-research/smoke-ledger.json`, holding
+the last read that carried an adapter's whole row. Beside it, at
+`smoke-ledger-unmet.json`, one more of the same shape, holding the last read
+that reached an origin and did not. Both are constants no argument can point
+elsewhere: the second is derived from the path handed to `main`, so a caller who
+redirects the ledger cannot leave half the state behind in the other directory.
+
+Each record only ever gains an entry, and a read lands in exactly one of them. A
+read that carried its whole row, from the origin, stamps the ledger; one the
+origin answered without the row stamps the unmet record; a read this host's own
+network answered stamps neither, because the origin was never reached and that is
+not a read of the platform at all. A blocked read is not a finding about the
+platform, and a failed read has not undone a success already recorded — the
+ledger is never written by a failure, so a reader that only asks whether an
+adapter is in it gets the answer it always gave. Expiry happens by the window
+passing, never by a later read revoking an earlier one, and it expires a success
+rather than the fact of a read: seven days on, a stale success and a read that
+went unmet still report different reasons. Either record unreadable reads as
+empty, which costs an adapter its evidence and never invents any — `unverified`
+where the ledger is lost, `never_smoked` where the unmet record is, both the
+safe direction.
 
 ## Smoke inventory
 
