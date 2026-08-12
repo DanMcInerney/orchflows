@@ -86,9 +86,11 @@ Step keys are exactly `step_id`, `kind`, `adapter_id`, `query`, `prior_step_id`,
 `selected_hits`, `max_items`.
 
 - `kind` is `discovery` or `hydration`. A discovery step forbids `selected_hits`
-  and authorizes exactly one call. A hydration step requires them and authorizes
-  one call per hit, which is what makes each hydration record's provenance exact
-  rather than inferred.
+  and authorizes one call, plus a continuation of it per page that offers a
+  cursor, bounded below. A hydration step requires them and authorizes one call
+  per hit and nothing further, which is what makes each hydration record's
+  provenance exact rather than inferred: a page read off a cursor was authorized
+  by nobody.
 - Each hit is exactly `{discovery_locator, target_id}`, both nonempty.
   `discovery_locator` is the normalized locator the caller saw in the discovery
   step's output; it is the only thing that ties a hydration record back to its
@@ -96,12 +98,17 @@ Step keys are exactly `step_id`, `kind`, `adapter_id`, `query`, `prior_step_id`,
 - `max_items` is a hard positive integer cap. It is required — there is no
   default and no unbounded step. The core owns stop: no further call is made once
   the cap is met, and a step that truncated emits `recall_window_partial`.
-  **Nothing pages.** `runner.planned_calls` is the only production constructor of
-  an `AdapterRequest` and never sets `cursor`, so a discovery step's one call is
-  its only call and `max_items` truncates inside that one page. Six adapters read
-  a cursor and five surface `cursor_out`; that is the seam a later core would
-  page through, and until one does, "the core owns pagination" names an owner
-  rather than a behaviour.
+  **The core pages.** `runner.planned_calls` is still the only place a manifest
+  becomes an `AdapterRequest` and still sets no `cursor`; `run_step` builds the
+  continuation from the page it has just read, so a discovery step reads the page
+  its `cursor_out` names and `max_items` bounds the step across its pages rather
+  than inside one of them. Four stops, and two of them are the step finishing:
+  the origin names no cursor, or the caller's `max_items` is met. The other two
+  end it early and emit `recall_window_partial` — a cursor this step already
+  spent, and `runner.MAX_PAGES_PER_STEP` pages read while the origin goes on
+  offering. The page cap is the core's own and the only stop the origin does not
+  control, because a cursor that never ends would otherwise spend a budget
+  nobody set.
 
 `as_of` must be spelled `YYYY-MM-DDTHH:MM:SSZ` and `parse_manifest` refuses any
 other spelling, because `ordering.instant_seconds` returns nothing for one and an

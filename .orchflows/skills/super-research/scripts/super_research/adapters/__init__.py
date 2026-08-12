@@ -6,12 +6,14 @@ and stops. It never paginates, retries, falls back, calls another adapter,
 or persists anything — the core owns the cap and the stop, and a cursor an
 adapter finds is surfaced through ``cursor_out`` for the core to decide on.
 
-**Nothing spends one in this release.** ``runner.planned_calls`` is the only
-production constructor of an ``AdapterRequest`` and never sets ``cursor``, so a
-discovery step authorizes exactly one call and ``max_items`` truncates inside
-that one page. Six adapters read a cursor and five surface one; the reading and
-the surfacing are the seam a later core would page through, and until one does,
-"the core owns pagination" names an owner rather than a behaviour. There is no
+**The core spends one.** ``runner.planned_calls`` is still the only place a
+manifest becomes an ``AdapterRequest`` and still sets no ``cursor``; the
+continuation is ``runner.run_step``'s, built from the page it has just read. A
+discovery step therefore reads the page its ``cursor_out`` names, and the page
+that one names, to ``runner.MAX_PAGES_PER_STEP``, with ``max_items`` bounding
+the whole step rather than one page of it. Six adapters read a cursor and five
+surface one, and neither half decides anything: an adapter that followed its own
+would be deciding how far a step goes, which is the core's to bound. There is no
 concurrency here either: no thread, task, coroutine, or process anywhere in the
 package.
 
