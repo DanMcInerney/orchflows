@@ -935,6 +935,28 @@ class SmokeSubcommandTest(LedgerHoldingCase):
             sorted(probe.adapter_id for probe in cli.SMOKE_PROBES),
         )
 
+    def test_a_smoke_of_an_index_that_never_stops_offering_still_reports_verified(self):
+        # What the page bound reaches, and what it does not. The verdict has
+        # never read a loss code — `satisfied` reads the field set alone — so
+        # the probe that would page arrives at the same `verified` and the same
+        # stamp it did when it cost five reads. What changes is the cost and
+        # what the operator is told about it: the header line has claimed one
+        # bounded read since this subcommand existed, and on this probe it is
+        # now true.
+        seeds = probe_seeds()
+        seeds[transport.DDG_HTML_ROUTE] = ddg_pages_each_offering_a_new_one()
+
+        code, printed, opener = run_cli(
+            self, ["smoke", "--adapter", "web_search"], seeds=seeds
+        )
+
+        self.assertEqual(code, cli.EXIT_OK)
+        self.assertIn(cli.VERIFIED, printed)
+        self.assertEqual(sorted(cli.read_ledger(self.path)), ["web_search"])
+        self.assertEqual(len(opener.opened), 1)
+        self.assertIn("one bounded read on route " + transport.DDG_HTML_ROUTE, printed)
+        self.assertIn("loss none", printed)
+
     def test_a_run_that_did_not_carry_its_row_says_so_and_records_nothing(self):
         seeds = probe_seeds()
         seeds["github_rest"] = (404, payload("github/not_found.json"), "application/json")
