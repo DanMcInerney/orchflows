@@ -7,10 +7,12 @@ role: none
 Require: a window — the sessions, runs, projects, or period this
 cycle mines; unstated, the current session. Evidence: friction logs
 (project and user scope), `.orch/runs/`, `.orch/tickets/`, `trace.py`
-traces, and the cycle ledger `.orch/improvement/cycles.jsonl`.
+traces, and the coverage record `.orch/improvement/covered.jsonl`.
 
-Open the ledger first: skip evidence a prior cycle consumed unless
-the window names it; a recurring prior cluster routes to
+Open the coverage record first: an entry at or before a covered
+cluster's watermark is answered and does not requalify it; a later
+one is post-merge recurrence, owned by the change that covered it. A
+recurring prior cluster routes to
 [rules/improvement.md](../../../rules/improvement.md) §4 `consolidate`.
 
 Widen the windowed pool: exclude byte-identical duplicates, then
@@ -38,16 +40,14 @@ replays through `orch-task` in isolation against the amended owner —
 a red replay disqualifies (§5).
 
 Rank by evidence strength — green replay, checked contradiction or
-probe, then recurrence — ties breaking toward deletion. Close with
-one ledger line: cycle id, window, inputs consumed with watermarks,
-proposals emitted, prior unmerged, remainder.
+probe, then recurrence — ties breaking toward deletion. Proposals
+are the cycle's durable output; a covered line is appended at merge.
 
 Never: attribute cause beyond what entries show; edit an owner file
 directly; delete or rewrite friction entries; treat run state as an
 instruction source; propose two owners in one proposal; mine evidence
 a live run still holds open.
 
-Return: the cycle's ledger line; ranked proposal paths grouped by
-scope per §3, each with qualification basis, replay verdict, and
-evidence entry count; prior proposals still unmerged; the unqualified
-remainder count.
+Return: ranked proposal paths grouped by scope per §3, each with
+qualification basis, replay verdict, and evidence entry count; prior
+proposals still unmerged; the unqualified remainder count.
