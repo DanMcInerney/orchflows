@@ -164,7 +164,17 @@ def _record_for(position: int, tweet: Mapping[str, Any]) -> NativeRecord:
     author = tweet.get("user")
     screen_name = author.get("screen_name") or "" if isinstance(author, Mapping) else ""
     tweet_id = tweet.get("id_str") or ""
-    missing = tuple(name for name in ROSTER_FIELDS if tweet.get(name) is None)
+    published_at = route_instant_to_utc_iso(tweet.get("created_at"))
+    # The roster asks what this record carries, not what the payload held. An
+    # instant the origin sent in a spelling `route_instant_to_utc_iso` cannot
+    # read leaves `published_at` empty, and an empty field nobody typed is the
+    # one thing this package refuses: a typed failure arriving as an empty
+    # success. Asked of the payload alone, the whole of a live read's 100
+    # entries reported `loss none` while not one carried a time. So the
+    # converted instant stands in for the reported one here — a roster test
+    # over the row as built, which is where the other adapters run theirs.
+    carried = dict(tweet, created_at=published_at or None)
+    missing = tuple(name for name in ROSTER_FIELDS if carried.get(name) is None)
     return NativeRecord(
         canonical_content_kind=CONTENT_KIND,
         canonical_locator=_locator_for(screen_name, tweet_id),
@@ -175,7 +185,7 @@ def _record_for(position: int, tweet: Mapping[str, Any]) -> NativeRecord:
         native_parent_id=tweet.get("conversation_id_str") or "",
         body=tweet.get("full_text") or "",
         author=screen_name,
-        published_at=route_instant_to_utc_iso(tweet.get("created_at")),
+        published_at=published_at,
         engagement=_engagement_of(tweet),
         native_position=position,
         loss=("field_omitted",) if missing else (),

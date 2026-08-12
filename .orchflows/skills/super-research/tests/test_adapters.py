@@ -586,6 +586,111 @@ class SyndicationTimelineTest(unittest.TestCase):
                 self.assertTrue(opener.opened[0].url.endswith("/simonw"), opener.opened[0].url)
 
 
+# A spelling `route_instant_to_utc_iso` returns nothing for. It is this test's
+# own construction and not a reading of the origin: what the route actually
+# sends was unmeasured when this row was written, and guessing it here is the
+# defect below one spelling out. The property does not depend on which
+# unreadable spelling it is, so the test asserts the rejection before it
+# asserts anything else.
+UNREADABLE_SYNDICATION_INSTANT = "9 Aug 2026 07:00 GMT"
+
+
+def syndication_entry(created_at, item_id="1799990000000000001"):
+    """One whole roster row off this route, with only its instant varying.
+
+    ``created_at=None`` omits the key, which is the shape the origin not
+    sending it has. Every other field its roster row names is present, so a
+    loss on the record can only be about the instant.
+    """
+
+    tweet = {
+        "id_str": item_id,
+        "conversation_id_str": item_id,
+        "full_text": "Ran the same eleven prompts through the new local build this morning.",
+        "favorite_count": 412,
+        "retweet_count": 57,
+        "reply_count": 23,
+        "quote_count": 4,
+        "lang": "en",
+        "user": {"screen_name": "simonw", "name": "Simon Willison", "followers_count": 61234},
+    }
+    if created_at is not None:
+        tweet["created_at"] = created_at
+    return {"type": "tweet", "entry_id": "tweet-" + item_id, "content": {"tweet": tweet}}
+
+
+def syndication_record(created_at):
+    """The one record this route's parser makes of one entry carrying that instant."""
+
+    page, _ = adapter_page(x_syndication, 200, _next_data([syndication_entry(created_at)]))
+    return page.records[0]
+
+
+class SyndicationUnreadableInstantIsTypedTest(unittest.TestCase):
+    """`D1a`: an instant this package cannot read is a typed loss, never a bare empty field.
+
+    Measured, not supposed. The first live read of this route
+    (`liveness.md`, read 5) answered `200` with 100 entries, `loss none`, and
+    `published_at` on **none** of them. `field_omitted` is computed against
+    `tweet.get(name) is None` over the payload, so `loss none` is itself the
+    proof that `created_at` was present and non-`None` on all 100: a value the
+    origin sent became an empty field, and nothing said so.
+
+    That is a typed failure arriving as an empty success at field level, which
+    is the one shape this package refuses — and it is what made the wrong
+    format string silent for ten tickets and a thousand offline tests. The row
+    stands on its own: it is right whatever spelling the origin turns out to
+    use, because it is about the parser returning nothing rather than about
+    what it returns nothing for.
+
+    `field_omitted` is the code because it is the one this package already
+    attaches to exactly this fact. `instagram_public._missing` and
+    `github_rest._missing` both run over the row **after** conversion, so an
+    instant they cannot read is `field_omitted` there today; `x_syndication`
+    tested the payload instead of the record, which is the whole of the
+    difference. What the code does not do is separate "the origin omitted it"
+    from "the origin sent a spelling this package cannot read" — that
+    distinction would need a code the vocabulary does not have, which is the
+    caller's ruling and not this ticket's.
+    """
+
+    def test_the_parser_rejects_the_spelling_these_rows_stand_on(self):
+        # The premise, asserted rather than assumed: a parser that later learns
+        # to read this value reddens here instead of leaving the rows below
+        # passing on a premise that stopped holding.
+        self.assertEqual(
+            x_syndication.route_instant_to_utc_iso(UNREADABLE_SYNDICATION_INSTANT), ""
+        )
+
+    def test_an_instant_the_parser_cannot_read_is_typed_and_not_a_bare_empty_field(self):
+        record = syndication_record(UNREADABLE_SYNDICATION_INSTANT)
+
+        self.assertEqual(record.published_at, "")
+        self.assertEqual(record.loss, ("field_omitted",))
+
+    def test_an_instant_the_origin_sent_empty_is_typed_the_same_way(self):
+        # The other shape `liveness.md` read 5 still admitted: an empty string
+        # is not `None`, so the payload-side test passed it through untyped too.
+        record = syndication_record("")
+
+        self.assertEqual(record.published_at, "")
+        self.assertEqual(record.loss, ("field_omitted",))
+
+    def test_an_instant_the_origin_never_sent_stays_the_omission_it_always_was(self):
+        record = syndication_record(None)
+
+        self.assertEqual(record.published_at, "")
+        self.assertEqual(record.loss, ("field_omitted",))
+
+    def test_an_instant_the_parser_reads_carries_no_loss_at_all(self):
+        # The half that keeps the typing honest: typing every instant is easy,
+        # typing only the unreadable ones is the property.
+        record = syndication_record("2026-08-09T07:00:00.000Z")
+
+        self.assertEqual(record.published_at, "2026-08-09T07:00:00Z")
+        self.assertEqual(record.loss, ())
+
+
 class SyndicationDescriptorTest(unittest.TestCase):
     """The descriptor T04's seam reads: measured ceiling, class, declared metric."""
 
