@@ -31,19 +31,48 @@ COMPONENT_FIELDS = (
     "runner",
     "scoring",
     "provenance",
+    "reference_audit",
+    "attack_audit",
+    "measurement",
     "qualification",
 )
 DECLARATION_FIELDS = ("expected_cost", "gaps", "protected_evidence")
 POST_QUALIFICATION_FIELDS = (
     "anchors",
     "builders",
-    "reference_audit",
-    "attack_audit",
-    "measurement",
+    "qualifier",
+    "attacker",
     "resolution",
     "retirement_trigger",
     "incomparability",
 )
+# The done check reaches every component and stops there, so which block a
+# field sits in is the rule, not presentation. The three stage records are
+# components; each keeps the substance it carried as a value.
+NOT_RE_DERIVABLE = "None of the following is re-derivable afterwards"
+STAGE_RECORD_SUBSTANCE = {
+    "reference_audit": (
+        "auditing context identity",
+        "method per case",
+        "defect **count**",
+        "Never a rate",
+    ),
+    "attack_audit": ("dated checklist identity", "the attack that works"),
+    "measurement": (
+        "candidate identities",
+        "per-case status",
+        "count of distinct failure signatures",
+        "margin",
+    ),
+}
+# `builders`' shape, which `qualifier` and `attacker` are recorded in.
+CONTEXT_AXES = ("model id", "effort", "host binding")
+# The audit-and-measure step's own stages. Triage measurement is the
+# measurement stage's cheap first pass, not a fourth stage
+# (`benchmaker-protocol.md`, "Two measurement passes, not one"), so the count
+# the step declares is three and the stages it names are these.
+AUDIT_STAGES = ("reference audit", "attack pass", "measurement")
+COUNT_WORDS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five"}
 # Package-relative, so the deletion check and the by-path grep below both
 # derive from this one list rather than re-listing it.
 RETIRED_SEAL_PATHS = ("benchmark.lock", "SEALS.md", "tools/seal_set.py")
@@ -273,6 +302,13 @@ def markdown_section(text: str, heading: str) -> str:
 
 def squashed(text: str) -> str:
     return " ".join(text.split())
+
+
+def contract_bullet(contract: str, field: str) -> str:
+    """One field's bullet from the squashed manifest contract."""
+    start = contract.index(f"- `{field}` — ")
+    end = contract.find("- `", start + 3)
+    return contract[start:] if end == -1 else contract[start:end]
 
 
 def sha256_identity(path: Path) -> str:
@@ -578,8 +614,16 @@ class TestCanonicalBenchmaker(unittest.TestCase):
 
     def test_manifest_owner_lists_every_field_and_rule(self):
         manifest = squashed(self.manifest_contract)
-        for field in COMPONENT_FIELDS + DECLARATION_FIELDS:
-            self.assertIn(f"`{field}`", manifest)
+        components, _, values = manifest.partition(NOT_RE_DERIVABLE)
+        for field in COMPONENT_FIELDS:
+            self.assertIn(f"- `{field}` — locator", components, field)
+            self.assertNotIn(f"`{field}`", values, field)
+        for field in DECLARATION_FIELDS:
+            self.assertIn(f"`{field}`", components)
+        for field, substance in STAGE_RECORD_SUBSTANCE.items():
+            bullet = contract_bullet(components, field)
+            for phrase in substance:
+                self.assertIn(phrase, bullet, field)
         for rule in (
             "locator",
             "oracle_class",
@@ -590,15 +634,16 @@ class TestCanonicalBenchmaker(unittest.TestCase):
 
     def test_manifest_owner_carries_every_post_qualification_field(self):
         manifest = squashed(self.manifest_contract)
+        values = manifest.partition(NOT_RE_DERIVABLE)[2]
         for field in POST_QUALIFICATION_FIELDS:
-            self.assertIn(f"`{field}`", manifest)
-        self.assertIn("A declared `none` is legal; silence is not", manifest)
-        self.assertIn("defect **count**", manifest)
-        self.assertIn("Never a rate", manifest)
-        self.assertIn("the attack that works", manifest)
-        self.assertIn("count of distinct failure signatures", manifest)
-        self.assertIn("`max(measured rerun spread, one case)`", manifest)
-        self.assertIn("the declaration only. Its firing is recorded", manifest)
+            self.assertIn(f"- `{field}` — ", values, field)
+        for field in ("builders", "qualifier", "attacker"):
+            bullet = contract_bullet(values, field)
+            for axis in CONTEXT_AXES:
+                self.assertIn(axis, bullet, field)
+        self.assertIn("A declared `none` is legal; silence is not", values)
+        self.assertIn("`max(measured rerun spread, one case)`", values)
+        self.assertIn("the declaration only. Its firing is recorded", values)
 
     def test_benchmark_identity_is_retired_from_law_manifest_and_tooling(self):
         """A benchmark's version is its git revision; no field digests it."""
@@ -774,8 +819,19 @@ class TestCanonicalBenchmaker(unittest.TestCase):
     def test_composition_runs_the_audit_stages_and_records_the_manifest(self):
         body = squashed(self.body)
         self.assertIn("- audit-and-measure —", body)
-        self.assertLess(body.index("- materialize —"), body.index("- audit-and-measure —"))
-        self.assertIn("materialize → audit-and-measure", body)
+        self.assertLess(body.index("- materialize —"), body.index("- qualify —"))
+        self.assertLess(body.index("- qualify —"), body.index("- audit-and-measure —"))
+        self.assertIn("materialize → qualify → audit-and-measure", body)
+        # The new seam carries an identity, as every other join does.
+        self.assertIn("the assembled case set is qualify's evidence", body)
+        self.assertIn("the qualified assembly is audit-and-measure's", body)
+        step = body[body.index("- audit-and-measure —") : body.index("Edges:")]
+        # The count the step declares equals the stages it names, and triage
+        # is the measurement stage's own first pass, never a fourth stage.
+        named = [stage for stage in AUDIT_STAGES if stage in step]
+        self.assertEqual(list(AUDIT_STAGES), named)
+        self.assertIn(f"the protocol's {COUNT_WORDS[len(named)]} stages", step)
+        self.assertEqual([], re.findall(r"triage(?! pass)", step))
         self.assertIn("Record the manifest after they close", body)
         self.assertIn("declared coverage floor never moves", body)
 

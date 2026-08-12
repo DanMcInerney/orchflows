@@ -36,21 +36,23 @@ Steps:
   declared gap forward.
 - materialize — the same Spec and Deliver owners under the carrier
   rule: materialize the selected case specifications exactly, one
-  applicable pack per internal spec. In a disjoint independent
-  delivery, qualify the assembled benchmark.
-- audit-and-measure — the protocol's three stages in order, each in its
-  own allocation: triage measurement, then a reference audit in a context
-  disjoint from every builder and from the qualifier, then the attack
-  pass, then the recorded measurement. Each repairs or declares a gap;
+  applicable pack per internal spec.
+- qualify — the same Deliver owner under the carrier rule, in a
+  disjoint independent delivery: qualify the assembled benchmark.
+- audit-and-measure — the protocol's three stages, each in its own
+  allocation: a reference audit in a context disjoint from every builder
+  and from the qualifier, then the attack pass, then the measurement —
+  whose cheap triage pass precedes the audit it targets and whose second
+  pass produces the recorded figure. Each repairs or declares a gap;
   none renders a verdict on the benchmark. Record the manifest after
   they close.
 
-Edges: seq acquire-spec → acquire → design → materialize →
+Edges: seq acquire-spec → acquire → design → materialize → qualify →
 audit-and-measure, each join carried by frozen evidence identity — the
 frozen synthesis identity is design's evidence, the design identity is
-materialization's evidence, the qualified assembly is
-audit-and-measure's; when cases span domains, materialization chains
-single-pack deliveries by the same rule.
+materialization's evidence, the assembled case set is qualify's
+evidence, the qualified assembly is audit-and-measure's; when cases span
+domains, materialization chains single-pack deliveries by the same rule.
 
 Invariants:
 - The declared coverage floor never moves with the target's execution
