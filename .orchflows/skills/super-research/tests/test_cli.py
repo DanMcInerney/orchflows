@@ -25,6 +25,7 @@ import dataclasses
 import importlib.util
 import io
 import json
+import re
 import socket
 import tempfile
 import unittest
@@ -943,6 +944,35 @@ def status_row(case, printed, adapter_id):
     return rows[0]
 
 
+# The two shapes a smoke's last line takes, from the two branches that print
+# one: an ordinary read says what the adapter *is*, and a read this host's own
+# network answered says what standing it *kept*.
+SMOKE_STANDING = re.compile(
+    r"^  (?P<adapter>[a-z_]+) (?:is|keeps the standing it had:) "
+    r"(?P<state>[a-z]+) \((?P<reason>[a-z_]+)"
+)
+
+
+def smoke_standing(case, printed, adapter_id):
+    """The state and reason a smoke's own report leaves this adapter at.
+
+    Read by position rather than by substring, because `verified` is a
+    substring of `unverified`: every row that asserted the first with
+    ``assertIn`` also passed on the second, which is the word meaning the
+    opposite of what it was checking for.
+    """
+
+    found = [
+        (match.group("state"), match.group("reason"))
+        for match in (SMOKE_STANDING.match(line) for line in printed.splitlines())
+        if match and match.group("adapter") == adapter_id
+    ]
+    case.assertEqual(
+        len(found), 1, "the smoke printed {0} standings for {1}".format(len(found), adapter_id)
+    )
+    return found[0]
+
+
 def refused(case, argv):
     """One invocation the surface must refuse before anything is read."""
 
@@ -1053,7 +1083,9 @@ class SmokeSubcommandTest(LedgerHoldingCase):
         code, printed, opener = run_cli(self, ["smoke", "--adapter", ADAPTER])
 
         self.assertEqual(code, cli.EXIT_OK)
-        self.assertIn(cli.VERIFIED, printed)
+        self.assertEqual(
+            smoke_standing(self, printed, ADAPTER), (cli.VERIFIED, cli.FRESH_SUCCESS)
+        )
         self.assertEqual([request.route_id for request in opener.opened], ["github_rest"])
         self.assertEqual(sorted(cli.read_ledger(self.path)), [ADAPTER])
 
@@ -1087,7 +1119,9 @@ class SmokeSubcommandTest(LedgerHoldingCase):
         )
 
         self.assertEqual(code, cli.EXIT_OK)
-        self.assertIn(cli.VERIFIED, printed)
+        self.assertEqual(
+            smoke_standing(self, printed, "web_search"), (cli.VERIFIED, cli.FRESH_SUCCESS)
+        )
         self.assertEqual(sorted(cli.read_ledger(self.path)), ["web_search"])
         self.assertEqual(len(opener.opened), 1)
         self.assertIn("one bounded read on route " + transport.DDG_HTML_ROUTE, printed)
@@ -1137,7 +1171,9 @@ class SmokeSubcommandTest(LedgerHoldingCase):
         self.assertNotIn("platform gap", printed)
         # Nothing degraded: the adapter keeps the standing it had, and the file
         # on disk is the same bytes it was.
-        self.assertIn(cli.VERIFIED, printed)
+        self.assertEqual(
+            smoke_standing(self, printed, ADAPTER), (cli.VERIFIED, cli.FRESH_SUCCESS)
+        )
         self.assertEqual(self.path.read_text(encoding="utf-8"), before)
 
     def test_a_read_that_never_got_an_answer_is_not_a_row_the_origin_declined(self):
@@ -1160,6 +1196,43 @@ class SmokeSubcommandTest(LedgerHoldingCase):
         self.assertNotIn("platform gap", printed)
         # Nothing recorded, nothing degraded, and the file is the bytes it was.
         self.assertEqual(self.path.read_text(encoding="utf-8"), before)
+
+    def test_the_intercepted_row_would_catch_the_degradation_it_guards(self):
+        # The row above asserts an intercepted read *kept* a proven standing,
+        # which is only worth something if the surface would say so when one is
+        # lost. Driven with the wrong `ledger_after` written beside the tree —
+        # the one that revokes an adapter's evidence on any failed read — the
+        # same invocation prints a degraded standing and the row rejects it.
+        wrong = load_beside_the_tree("interception_as_gap")
+        cli.write_ledger(self.path, {ADAPTER: stamp_at(-3600)})
+        seeds = probe_seeds()
+        seeds["github_rest"] = (503, payload("transport/captive_portal.html"), "text/html")
+
+        with mock.patch.object(cli, "ledger_after", wrong.ledger_after):
+            _, printed, _ = run_cli(self, ["smoke", "--adapter", ADAPTER], seeds=seeds)
+
+        self.assertEqual(
+            smoke_standing(self, printed, ADAPTER), (cli.UNVERIFIED, cli.NEVER_SMOKED)
+        )
+        # And the hazard itself, on this very output: `verified` is a substring
+        # of `unverified`, so the assertion this row used to make passes here —
+        # on the one reading it exists to reject.
+        self.assertIn(cli.VERIFIED, printed)
+
+    def test_the_standing_reader_rejects_the_word_the_old_rows_accepted(self):
+        # Both wordings, because the two shapes are printed by different
+        # branches: an ordinary read says "is", and a local-network answer says
+        # what standing was kept. The dangerous one was the second.
+        kept = "  github_rest keeps the standing it had: unverified (never_smoked)"
+        proven = "  github_rest is verified (fresh_success, last success 2026-08-12T02:36:40Z)"
+
+        self.assertEqual(
+            smoke_standing(self, kept, ADAPTER), (cli.UNVERIFIED, cli.NEVER_SMOKED)
+        )
+        self.assertEqual(
+            smoke_standing(self, proven, ADAPTER), (cli.VERIFIED, cli.FRESH_SUCCESS)
+        )
+        self.assertNotEqual(smoke_standing(self, kept, ADAPTER)[0], cli.VERIFIED)
 
     def test_a_platform_refusal_and_a_local_block_do_not_read_alike(self):
         seeds = probe_seeds()
@@ -1193,7 +1266,10 @@ class SmokeSubcommandTest(LedgerHoldingCase):
 
         self.assertEqual(code, cli.EXIT_OK)
         self.assertIn("attestation_required", printed)
-        self.assertIn(cli.VERIFIED, printed)
+        self.assertEqual(
+            smoke_standing(self, printed, "youtube_innertube"),
+            (cli.VERIFIED, cli.FRESH_SUCCESS),
+        )
         self.assertEqual(sorted(cli.read_ledger(self.path)), ["youtube_innertube"])
 
     def test_a_second_smoke_replaces_only_its_own_stamp(self):
