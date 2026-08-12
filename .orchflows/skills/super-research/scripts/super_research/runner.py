@@ -9,9 +9,11 @@ search over an adapter's name finds every place the core can call it.
 *The run.* One validated manifest becomes one immutable artifact and the
 ledger of how: steps in declared order whatever the mode, one native page per
 adapter call, and the core alone owning the caps and the stop. Nothing here
-runs concurrently and nothing here pages: :func:`planned_calls` is the only
-production constructor of an ``AdapterRequest`` and never sets a cursor, so a
-discovery step authorizes exactly one call.
+runs concurrently. Paging is here and nowhere else: :func:`planned_calls` is
+the only place a manifest becomes an ``AdapterRequest`` and never sets a
+cursor, so the continuation :func:`run_step` builds from the page it just read
+is the single site one enters a request at, bounded by the step's ``max_items``
+and by :data:`MAX_PAGES_PER_STEP`.
 
 Three concerns this module used to own were moved to one-read-size siblings
 and are re-exported below under the names they have always had —
@@ -387,7 +389,8 @@ def run_step(
         page_index += 1
 
     if truncated:
-        # A raw cap counts every received record and may drop unseen uniques.
+        # A raw cap counts every received record and may drop unseen uniques,
+        # and so does a step that stopped while the origin was still offering.
         loss.append("recall_window_partial")
     outcome = "partial" if truncated else schema.reduce_outcomes(tuple(page_outcomes))
     # The route this step actually read, when its pages agree on one. They
