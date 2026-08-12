@@ -3868,6 +3868,78 @@ class AttestationIsNotAnAbsenceTest(unittest.TestCase):
                 )
 
 
+class TheUnheldVideoIsNotToldFromTheWithheldOneTest(unittest.TestCase):
+    """The measured negative, pinned: these two answers arrive as one answer.
+
+    Measured 2026-08-12, the only live player reads this package has ever made.
+    An id the origin does not hold answered 200 with playability ``ERROR``;
+    ``dQw4w9WgXcQ``, attested, answered 200 with ``UNPLAYABLE``. The reason
+    string was byte-identical on both sides. ``videoDetails`` was absent from
+    the unheld answer and its presence on the attested one was never observed —
+    :func:`_player_page` returns at the playability branch before it reads that
+    key — so that axis has one measured side and no comparison.
+
+    So this package does not tell a video the origin no longer holds from one it
+    withholds, and nothing here may imply that it does. ``ERROR`` is not a
+    signature of "gone": findings.md §1 measured it across five clients and
+    three videos that existed. One observation of one id is not a law either,
+    which is why these rows pin the fusion and nothing beyond it — **no loss
+    code is named**, so a later, better-warranted typing that moves both
+    statuses together stays green here, and one that moves only one of them
+    reddens.
+
+    Reopening it takes one bounded read of a video the origin certainly holds,
+    capturing ``videoDetails`` presence beside ``playabilityStatus.status`` in
+    the raw payload. Until that read is made, this is the record of what is not
+    known.
+    """
+
+    # Both sides of the probe answered with this string, byte for byte.
+    MEASURED_REASON = "Video unavailable"
+
+    def refusal(self, status, details=None):
+        """One player answer at a refused playability, as the probe recorded it."""
+
+        playability = {"status": status, "reason": self.MEASURED_REASON}
+        payload = {youtube_innertube.PLAYABILITY_KEY: playability}
+        if details is not None:
+            payload[youtube_innertube.VIDEO_DETAILS_KEY] = details
+        page, _ = adapter_page(
+            youtube_innertube,
+            200,
+            json.dumps(payload),
+            content_type="application/json",
+            request=youtube_request("player:" + YOUTUBE_VIDEO_ID),
+        )
+        return page
+
+    def test_the_two_measured_statuses_reach_a_caller_as_one_answer(self):
+        unheld = self.refusal("ERROR")
+        attested = self.refusal("UNPLAYABLE")
+
+        self.assertEqual(unheld.outcome, attested.outcome)
+        self.assertEqual(tuple(unheld.loss), tuple(attested.loss))
+        self.assertEqual(unheld.records, ())
+        self.assertEqual(attested.records, ())
+        # And the operator is told, on both, that the status does not decide it.
+        for page in (unheld, attested):
+            self.assertIn("a video it no longer holds", " ".join(page.warnings))
+
+    def test_the_axis_measured_on_one_side_only_is_not_branched_on(self):
+        # A refused playability carrying `videoDetails` is a shape nobody has
+        # measured, constructed for the same reason
+        # `player_with_caption_tracks.json` is: so that "this package reads that
+        # key to decide which refusal this is" can be false. Presence is the
+        # candidate signal the probe could only see one side of, and reading it
+        # here would be the mirror of the inference this module refuses.
+        absent = self.refusal("ERROR")
+        present = self.refusal("ERROR", details={youtube_innertube.VIDEO_ID_KEY: "x"})
+
+        self.assertEqual(tuple(present.loss), tuple(absent.loss))
+        self.assertEqual(present.outcome, absent.outcome)
+        self.assertEqual(present.records, ())
+
+
 class AttestationOracleCanFailTest(unittest.TestCase):
     """Criterion 6: the oracle above rejects a wrong result, in every direction.
 
