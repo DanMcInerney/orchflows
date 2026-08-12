@@ -2,8 +2,12 @@
 
 Normalization derives; it never invents. Every field here comes from the
 page that reported it, from the step that requested it, or from a rule
-stated in this module. Nothing is inferred by similarity, and no record is
-ever rewritten from another record.
+stated in this module. Nothing is inferred by similarity, and no record ever
+takes a value from another record. One field is derived across the whole set
+rather than from one page — ``type_discovery_gaps`` types the lineage gap a
+hydration leaves when this run recorded no discovery for it — and it states
+an absence rather than borrowing a value, which is the line that keeps
+"linked, never merged" true.
 """
 
 from __future__ import annotations
@@ -12,6 +16,7 @@ import hashlib
 import unicodedata
 import urllib.parse
 from collections import OrderedDict
+from dataclasses import replace
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from . import schema
@@ -20,6 +25,11 @@ from .adapters import NativePage
 # A third-party archive reports the platform's time; it is not the platform
 # speaking, so its times are `reported` rather than `authoritative`.
 REPORTED_ACCESS_CLASSES = ("K3",)
+
+# The lineage gap, typed. A hydration this run's own discovery does not account
+# for; the mirror of `target_not_hydrated`, which says the same thing about a
+# hit nobody hydrated. Both describe what one artifact holds, never a platform.
+DISCOVERY_NOT_RECORDED = "discovery_not_recorded"
 
 
 class NormalizeError(ValueError):
@@ -198,6 +208,43 @@ def link_discovery_hydration(
             )
         )
     return tuple(edges)
+
+
+def type_discovery_gaps(
+    records: Sequence[schema.AcquisitionRecord],
+) -> Tuple[schema.AcquisitionRecord, ...]:
+    """Say the absence ``link_discovery_hydration`` leaves behind.
+
+    A hydration matching no hit yields no edge, and refusing to invent one is
+    the right half of that call — but an absence nobody states is unreadable. A
+    caller learns of the gap by counting edges, and a caller that does not count
+    never learns of it at all. So the record that has the gap says so.
+
+    **Only a run that discovered may say it.** A ``staged`` hydration is its own
+    dispatch against a selection the caller froze from an artifact this one has
+    never seen: it holds no discovery, so it established no lineage, so it
+    missed nothing, and every record comes back untouched. Whether this run
+    discovered is read off the records themselves — a record with no
+    ``discovery_locator`` is a discovery record, because ``schema`` requires a
+    nonempty one on every selected hit. A discovery step that returned nothing
+    is indistinguishable from a hydration-only dispatch by that test and stays
+    silent too, which is a gap this code leaves uncovered rather than one it
+    hides: that step's own failure is typed on its ``StepResult``.
+
+    Edges are read here; how they are sourced is not touched. Which pairs
+    ``link_discovery_hydration`` links is that function's rule, and this one
+    reports only on what the rule left over.
+    """
+
+    if all(record.discovery_locator for record in records):
+        return tuple(records)
+    linked = {edge.to_record_id for edge in link_discovery_hydration(records)}
+    return tuple(
+        replace(record, loss=record.loss + (DISCOVERY_NOT_RECORDED,))
+        if record.discovery_locator and record.record_id not in linked
+        else record
+        for record in records
+    )
 
 
 def normalize_page(

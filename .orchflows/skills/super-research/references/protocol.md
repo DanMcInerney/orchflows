@@ -432,6 +432,33 @@ window would be observable — are not shipped. The two codes are named here so 
 later route adds a code the vocabulary already has, and so nobody reads their
 absence from the source as the vocabulary being smaller than the spec says.
 
+Added after those seven, and the only code here derived across the record set
+rather than read off a page:
+
+| code | means | named by |
+| --- | --- | --- |
+| `discovery_not_recorded` | this run discovered, and the discovery record this hydration names is not in this artifact | `normalize` |
+
+The clause before the comma is half the claim, and dropping it would make the
+code lie in the ordinary case. A `staged` hydration runs as its own dispatch,
+against a selection the caller froze from an artifact this one has never seen —
+so an artifact holding hydrations and no discovery at all has established no
+lineage and missed nothing, and says nothing. Only a run that discovered can
+report that its own discovery does not account for what it hydrated. The two
+cases are indistinguishable from a step list, which is why the rule is written
+against the records: a record with no `discovery_locator` is a discovery record,
+because the schema requires a nonempty one on every selected hit.
+
+A discovery step that returned no rows at all reads, from the records alone,
+exactly like a hydration-only dispatch, so that run stays silent too. That is a
+gap this code does not cover rather than one it hides: the step's own failure is
+already typed on its `StepResult`.
+
+`discovery_not_recorded` is the mirror of `target_not_hydrated` below, which
+states the same relation in the other direction — a hit nobody hydrated. The
+pair is deliberate. Neither is evidence about the platform: they describe what
+one artifact does and does not hold.
+
 The retained codes, and every module that spells one:
 
 | code | named by |
