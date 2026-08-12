@@ -73,9 +73,9 @@ Runs survive session death: specs, tickets, and worklogs are files in
 Team setup: `python install.py --project PATH` writes a committable
 routing block for a repo. Uninstall: `python install.py --user
 --uninstall` removes only what it generated; `--dry-run` previews
-either. Default model bindings: the planner/reviewer is Fable 5 on
-high effort (Claude Code) or GPT-5.6 Sol on ultra (Codex); workers are
-Sonnet 5 on xhigh and GPT-5.6 Sol on high.
+either. Default model bindings: the planner/reviewer is Opus 5 on max
+effort (Claude Code) or GPT-5.6 Sol on ultra (Codex); workers are
+Opus 5 on xhigh and GPT-5.6 Sol on high.
 
 ## The interesting parts
 
