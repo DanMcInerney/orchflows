@@ -9,7 +9,9 @@
    UNVERIFIED; overall PASS requires every required criterion and states
    its weakest oracle_class.
 3. Freeze criteria and their oracles before the first unit of work; a
-   criterion added mid-run is queued scope, not a moving target.
+   criterion added mid-run is queued scope, not a moving target. A
+   criterion states the condition its oracle decides, never a reading of
+   current state — a frozen count is a target, not a check.
 4. Verification never edits its target. A verifier that fixes what it
    checks has become an executor and its verdicts are void.
 5. The class policy in [contracts/verdict.md](../contracts/verdict.md)

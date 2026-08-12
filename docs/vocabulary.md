@@ -59,7 +59,8 @@ that needs a different meaning needs a different word.
 - **identity** — what fixes a thing across change: a revision, a content
   digest, a symbol, a run or item id. A coordinate another context can
   move — a line number, a list index, a path into a tree being edited —
-  is not one.
+  is not one, and neither is a count nor a reading taken from the
+  environment.
 - **run** — one execution of a workflow against one spec; owns a run id
   (`<utc-stamp>-<slug>`), a worklog, and a ticket directory. An ad-hoc
   run executes one ad-hoc ticket — or an ad-hoc set — instead: the

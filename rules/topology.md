@@ -43,7 +43,10 @@
    is forced only by parallelism, disjoint write scopes, isolation, or
    resumption — never made to look thorough. A decomposition that
    cannot cover most acceptance criteria under the stamped slicing
-   returns a decision gap, never a forced slicing.
+   returns a decision gap, never a forced slicing. A cut's write scope
+   covers every artifact its own objective and completion test name,
+   resolved against the workspace before issue; a cut that cannot cover
+   them is widened or re-cut, never issued.
 4. At most one terminal assembly item per run, depending on every unit
    item. Assembly rewrites its inputs, so unit verification upstream of
    it is invalidated at the join; the final gate re-verifies the
