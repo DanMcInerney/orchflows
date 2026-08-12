@@ -15,27 +15,27 @@ the window names it; a recurring prior cluster routes to
 
 Widen the windowed pool: exclude byte-identical duplicates, then
 synthesize one entry-shaped observation, citing its file, per silent
-signal — a non-terminal worklog, a bounced or abandoned ticket, a
-trace's repeated failure — each lacking a matching friction entry.
+signal lacking a matching friction entry — a non-terminal worklog, a
+trace's repeated failure, and every correction a
+[ticket](../../../contracts/work-item.md) records: a bounce, its
+`## Feedback`, a checker's appended `## Result` pass, a `## Handoff`,
+a criterion reading FAIL before the join wrote `complete`. List
+tickets with `scripts/tickets.py list`.
 
 Cluster by observed-text similarity and assign each cluster its one
-causal owner and scope per [§3](../../../rules/improvement.md)
-yourself: the entry's `skill` field records where friction was hit,
-not what owns the defect; a trace-carrying cluster records its model
-distribution for §3's routing. Apply §4's qualification, checking any
-claimed contradiction against the owner's current text yourself; the
-rest stays noise, untouched in the log.
+causal owner and scope per §3 yourself: the entry's `skill` field and
+a correction's own named cause record where the defect was felt, not
+what owns it. Apply §4's qualification yourself; the rest stays
+noise, untouched in the log.
 
 For each qualified cluster, write one proposal to
-`.orch/improvement/proposals/<date>-<slug>.md`, typed `fix` or
-[§4](../../../rules/improvement.md) `consolidate`: the single causal
-owner and its scope; the exact change (for `environment`, the remedy
-and its reproducing probe); every evidence entry verbatim; the blame
-class where a join recorded one. An amendment verifies the owner's
-dependents still hold and says so. A ticket-naming entry whose run's
-frozen statement survives replays through `orch-task` in isolation
-against the amended owner — a red replay disqualifies
-([§5](../../../rules/improvement.md)); one that cannot replay says so.
+`.orch/improvement/proposals/<date>-<slug>.md`, typed `fix` or §4
+`consolidate`: the single causal owner and its scope; the exact
+change; every evidence entry verbatim; the blame class where a join
+recorded one. An amendment verifies the owner's dependents still
+hold. A ticket-naming entry whose run's frozen statement survives
+replays through `orch-task` in isolation against the amended owner —
+a red replay disqualifies (§5).
 
 Rank by evidence strength — green replay, checked contradiction or
 probe, then recurrence — ties breaking toward deletion. Close with
