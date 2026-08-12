@@ -77,6 +77,13 @@ fixtures carry the shape and field set findings.md §1 records; the evidence
 records no captured bodies, and this package may not reach the network to make
 one, so what they prove is that this code reads that shape correctly.
 Criterion 12's live smoke is what proves the shape.
+
+One of those shapes has since been measured wrong, and the correction is
+`CAPTURED_SYNDICATION_INSTANT` below — the only literal in this file taken off
+a live origin. Every `created_at` in `fixtures/x/` is spelled
+`2026-08-09T07:00:00.000Z`, which is what this package assumed; the route sends
+`Sun Jul 13 04:58:11 +0000 2025`. Reading the route's spelling back off the
+corpus is how `D1` was written, so read it off the capture instead.
 """
 
 from __future__ import annotations
@@ -84,6 +91,7 @@ from __future__ import annotations
 import ast
 import importlib.util
 import json
+import locale
 import unittest
 import urllib.parse
 import urllib.request
@@ -689,6 +697,82 @@ class SyndicationUnreadableInstantIsTypedTest(unittest.TestCase):
 
         self.assertEqual(record.published_at, "2026-08-09T07:00:00Z")
         self.assertEqual(record.loss, ())
+
+
+# Measured 2026-08-12 on the one read this ticket was authorized to make
+# (`liveness.md`, "The sixteenth request"): the exact bytes this route sent as
+# `created_at` for entry 1944260043001737216 of `simonw`'s timeline. Copied out
+# of that transcript, not reconstructed from a description of it — the whole
+# reason the read was spent is that a spelling nobody had seen is what produced
+# `D1`.
+CAPTURED_SYNDICATION_INSTANT = "Sun Jul 13 04:58:11 +0000 2025"
+
+
+class SyndicationReadsTheStampTheRouteSendsTest(unittest.TestCase):
+    """`D1`: the format string, against the spelling the origin was measured sending.
+
+    The route sends `%a %b %d %H:%M:%S %z %Y` and this module was written for
+    `%Y-%m-%dT%H:%M:%S`, so `route_instant_to_utc_iso` returned nothing for
+    every entry of every live read — 100 of 100 on `liveness.md` read 5, and
+    100 of 100 again on the capture read, where the empty result was at last
+    typed. One captured value licenses one spelling and no more, which is why
+    the unreadable-instant rows above are the load-bearing half: a second
+    spelling this parser has never seen announces itself as a typed loss rather
+    than as a timeline with no times in it.
+    """
+
+    def test_the_captured_literal_parses_to_the_instant_it_states(self):
+        self.assertEqual(
+            x_syndication.route_instant_to_utc_iso(CAPTURED_SYNDICATION_INSTANT),
+            "2025-07-13T04:58:11Z",
+        )
+
+    def test_a_record_carrying_the_captured_literal_carries_its_whole_roster_row(self):
+        record = syndication_record(CAPTURED_SYNDICATION_INSTANT)
+
+        self.assertEqual(record.published_at, "2025-07-13T04:58:11Z")
+        self.assertEqual(record.loss, ())
+
+    def test_the_stamp_the_offline_corpus_is_written_in_is_still_read(self):
+        # No live entry has ever been seen in this spelling: it is the one this
+        # module was written against and the one every fixture under
+        # `fixtures/x/` carries. It is kept because dropping it would redden a
+        # corpus this ticket may not rewrite, and that retention is a statement
+        # for the caller rather than a measurement of the route.
+        self.assertEqual(
+            x_syndication.route_instant_to_utc_iso("2026-08-09T07:00:00.000Z"),
+            "2026-08-09T07:00:00Z",
+        )
+
+    def test_an_offset_is_converted_and_never_relabelled(self):
+        # A property of the parser, not a measurement of the route: every one
+        # of the 100 entries measured carried `+0000`. The stamp states an
+        # offset, so reading one and then stamping the result `Z` unconverted
+        # would move the instant by the offset and say nothing about it.
+        self.assertEqual(
+            x_syndication.route_instant_to_utc_iso("Sun Jul 13 04:58:11 +0200 2025"),
+            "2025-07-13T02:58:11Z",
+        )
+
+    def test_a_process_locale_does_not_decide_whether_this_route_can_be_read(self):
+        # `%a` and `%b` read their names out of `LC_TIME`, so a `strptime`
+        # spelled that way returns nothing for X's own English stamp under any
+        # non-English locale — every record on the page losing its time, for a
+        # reason that has nothing to do with the origin. The ordering contract
+        # already refuses to let a locale decide an order; it may not decide a
+        # time either.
+        previous = locale.setlocale(locale.LC_TIME)
+        try:
+            try:
+                locale.setlocale(locale.LC_TIME, "de_DE.UTF-8")
+            except locale.Error:
+                self.skipTest("no non-English LC_TIME available on this host")
+            self.assertEqual(
+                x_syndication.route_instant_to_utc_iso(CAPTURED_SYNDICATION_INSTANT),
+                "2025-07-13T04:58:11Z",
+            )
+        finally:
+            locale.setlocale(locale.LC_TIME, previous)
 
 
 class SyndicationDescriptorTest(unittest.TestCase):

@@ -77,8 +77,24 @@ ROSTER_FIELDS = (
 )
 ENGAGEMENT_FIELDS = ("favorite_count", "retweet_count", "reply_count", "quote_count")
 
-# The stamp this route emits, and the one an artifact record holds.
-ROUTE_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%S"
+# The stamps this route has been measured emitting, and the one an artifact
+# record holds. Measured 2026-08-12, on one authorized read, off entry
+# 1944260043001737216: `Sun Jul 13 04:58:11 +0000 2025`. The ISO spelling beside
+# it is the one this module was written against and the one the whole offline
+# corpus is written in; no live entry has ever been seen in it, and it is kept
+# because the corpus is.
+#
+# The month is numbered before either spelling is tried, because `%a` and `%b`
+# read their names out of `LC_TIME`: a process that set a locale would stop
+# reading this route's own English stamp and lose the time on every record of
+# the page, for a reason that has nothing to do with the origin. The weekday is
+# dropped rather than checked — it is derivable from the date, and auditing the
+# origin's arithmetic is not this parser's job.
+ROUTE_MONTHS = (
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+)
+ROUTE_INSTANT_FORMATS = ("%m %d %H:%M:%S %z %Y", "%Y-%m-%dT%H:%M:%S")
 RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
@@ -123,13 +139,24 @@ def dig(payload: Any, path: Sequence[str]) -> Any:
     return found
 
 
-def route_instant_to_utc_iso(created_at: Any) -> str:
-    """This route's ISO-8601 stamp as the artifact's instant, or nothing.
+def _month_numbered(text: str) -> str:
+    """This route's own stamp, with its weekday dropped and its month numbered."""
 
-    Fractional seconds and a trailing ``Z`` are the two shapes the route emits.
-    Anything else is unparseable rather than approximated: a time nobody can
-    read is a missing time, and every ordering downstream is entitled to know
-    the difference.
+    parts = text.split(" ")
+    if len(parts) != 6 or parts[1] not in ROUTE_MONTHS:
+        return text
+    return " ".join((str(ROUTE_MONTHS.index(parts[1]) + 1),) + tuple(parts[2:]))
+
+
+def route_instant_to_utc_iso(created_at: Any) -> str:
+    """This route's own stamp as the artifact's instant, or nothing.
+
+    A spelling none of ``ROUTE_INSTANT_FORMATS`` reads is unparseable rather
+    than approximated: a time nobody can read is a missing time, and every
+    ordering downstream is entitled to know the difference. Which is only true
+    if someone says so — an empty return here is what ``_record_for`` types,
+    because for one live read of 100 entries this function returned nothing
+    100 times and the page reported no loss at all.
     """
 
     if not isinstance(created_at, str) or not created_at:
@@ -137,12 +164,18 @@ def route_instant_to_utc_iso(created_at: Any) -> str:
     text = created_at.strip()
     if text.endswith("Z"):
         text = text[:-1]
-    text = text.split(".")[0]
-    try:
-        moment = datetime.strptime(text, ROUTE_INSTANT_FORMAT)
-    except ValueError:
-        return ""
-    return moment.replace(tzinfo=timezone.utc).strftime(RECORD_INSTANT_FORMAT)
+    text = _month_numbered(text.split(".")[0])
+    for spelling in ROUTE_INSTANT_FORMATS:
+        try:
+            moment = datetime.strptime(text, spelling)
+        except ValueError:
+            continue
+        # A stamp stating an offset states an instant. Relabelling it `Z`
+        # unconverted would move that instant by the offset, silently.
+        if moment.tzinfo is None:
+            moment = moment.replace(tzinfo=timezone.utc)
+        return moment.astimezone(timezone.utc).strftime(RECORD_INSTANT_FORMAT)
+    return ""
 
 
 def _engagement_of(tweet: Mapping[str, Any]) -> Tuple[Tuple[str, int], ...]:
