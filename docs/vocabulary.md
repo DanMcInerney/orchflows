@@ -249,13 +249,13 @@ The benchmark pipeline has exactly four artifact roles:
   expected budget a fixture declares beside the trace
   (`<trace>.budget.json`).
 - **mining cycle** — one windowed execution of `orch-self-improve` over
-  the evidence pool, recorded in the cycle ledger.
-- **cycle ledger** — the append-only record of each mining cycle — id,
-  window, consumed inputs with watermarks, proposals emitted,
-  remainder; owned by `orch-self-improve`.
-- **watermark** — the last-consumed position a mining cycle records
-  per evidence input; later cycles skip evidence at or before it
-  unless the scope names it.
+  the evidence pool; its proposals are its durable output.
+- **coverage record** — the append-only record of which merged change
+  answers which cluster, and from when — one line per change and
+  cluster, appended at merge and never by a cycle.
+- **watermark** — the position in an evidence input at or before which
+  a covered cluster is answered; a later matching entry is post-merge
+  recurrence, owned by the change that covered it.
 - **proposal** — one qualified improvement (per `rules/improvement.md`
   §4) with a single causal owner, one scope — environment | project |
   workflow, per §3 — and its evidence entries; passive until a human

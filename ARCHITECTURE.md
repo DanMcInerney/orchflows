@@ -69,7 +69,7 @@ dependencies point. Terms: `docs/vocabulary.md`.
   repository — linked worktrees share the main checkout's: `tickets/`
   (the local tracker, ticket `## Handoff` sections included), `runs/`
   (worklogs), `friction/` (JSONL logs), `improvement/proposals/`,
-  `improvement/cycles.jsonl` (the mining-cycle ledger),
+  `improvement/covered.jsonl` (the coverage record),
   `canary/` (tracked golden fixture), `bin/` (installed run-local
   scripts).
 
