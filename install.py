@@ -1123,14 +1123,20 @@ def _remove_stale(old_receipt, kind: str, keep_paths: set, boundary: Path) -> No
         _prune_empty_dirs(path.parent, boundary)
 
 
-def _preflight_role_agents(plan: Plan, old_receipt: dict | None) -> None:
-    """Refuse to replace native role profiles not owned by an unchanged receipt."""
+def _diverged_role_agents(plan: Plan, old_receipt: dict | None) -> list:
+    """Role agents on disk whose content is not what this install would write.
+
+    Returned rather than raised: the ordinary reason is a machine
+    deliberately running different bindings, and the caller asks before
+    replacing one. A path that is not a regular file still raises, since
+    writing through it would clobber something this installer never made.
+    """
 
     old_entries = {
         (entry.get("path"), entry.get("kind")): entry
         for entry in (old_receipt or {}).get("files", [])
     }
-    conflicts = []
+    unwritable, diverged = [], []
     for kind, files in (
         ("claude-agent", plan.claude_agents),
         ("codex-agent", plan.codex_agents),
@@ -1139,30 +1145,53 @@ def _preflight_role_agents(plan: Plan, old_receipt: dict | None) -> None:
             if not path.exists() and not path.is_symlink():
                 continue
             if not path.is_file() or path.is_symlink():
-                conflicts.append(f"{path} (not a regular file)")
+                unwritable.append(f"{path} (not a regular file)")
                 continue
-            current = path.read_text(encoding="utf-8")
-            if current == desired:
+            if path.read_text(encoding="utf-8") == desired:
                 continue
             old_entry = old_entries.get((str(path), kind))
             recorded_hash = old_entry.get("sha256") if old_entry else None
             if not recorded_hash:
-                conflicts.append(f"{path} (not owned by this install receipt)")
-                continue
-            if _sha256_file(path) != recorded_hash:
-                conflicts.append(f"{path} (changed since the recorded install)")
+                diverged.append((path, kind, "not written by this installer"))
+            elif _sha256_file(path) != recorded_hash:
+                diverged.append((path, kind, "edited since the last install"))
 
-    if conflicts:
-        rendered = "\n  ".join(conflicts)
+    if unwritable:
         raise FileExistsError(
-            "refusing to overwrite native role profile(s):\n  "
-            f"{rendered}\nMove or remove the conflicting files, then reinstall."
+            "refusing to write role profile(s) that are not regular files:\n  "
+            + "\n  ".join(unwritable)
+            + "\nMove or remove them, then reinstall."
         )
+    return diverged
 
 
-def apply_plan(plan: Plan) -> dict:
+def _prompt_keep_role_agents(diverged: list) -> bool:
+    print("These orchflows role agents differ from the shipped bindings:")
+    for path, _kind, reason in diverged:
+        print(f"  {path} ({reason})")
+    print("Keep them? [Y] keep this machine's  [n] overwrite with the defaults")
+    try:
+        choice = input("> ").strip().lower()
+    except EOFError:
+        # Non-interactive: keep, because reverting a deliberate binding
+        # unasked is the one outcome nobody can undo from the receipt.
+        choice = ""
+    return choice != "n"
+
+
+def apply_plan(plan: Plan, keep_role_agents: bool | None = None) -> dict:
     old_receipt = _load_json(plan.receipt_path)
-    _preflight_role_agents(plan, old_receipt)
+    diverged = _diverged_role_agents(plan, old_receipt)
+    # A kept agent stays in the plan so ``_remove_stale`` still counts it as
+    # wanted; only its write is skipped. Dropping it from the plan would
+    # delete the very file the answer asked to keep. It is left out of the
+    # receipt too, so the next install asks again rather than silently
+    # reverting a binding whose hash it had adopted as its own.
+    kept_role_agents = set()
+    if diverged:
+        keep = _prompt_keep_role_agents(diverged) if keep_role_agents is None else keep_role_agents
+        if keep:
+            kept_role_agents = {(str(path), kind) for path, kind, _ in diverged}
     old_entries = {
         (entry.get("path"), entry.get("kind")): entry
         for entry in (old_receipt or {}).get("files", [])
@@ -1236,6 +1265,9 @@ def apply_plan(plan: Plan) -> dict:
         ):
             _remove_stale(old_receipt, kind, {str(dest) for dest, _ in files}, boundary)
             for dest, content in files:
+                if (str(dest), kind) in kept_role_agents:
+                    print(f"keeping this machine's {dest}")
+                    continue
                 action = install_action(dest, kind, dest.is_file())
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_text(content, encoding="utf-8")
@@ -1549,7 +1581,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
         metavar="PATH",
         help="Install scope: project, optionally at PATH (default: current directory).",
     )
-    parser.add_argument("--yes", action="store_true", help="Skip the interactive scope prompt (defaults to user).")
+    parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="Skip the prompts: user scope, and keep any role agent this machine has changed.",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Print the full plan; write nothing.")
     parser.add_argument(
         "--uninstall",
@@ -1633,7 +1669,7 @@ def main(argv=None) -> int:
 
     old_receipt = _load_json(plan.receipt_path)
     try:
-        receipt = apply_plan(plan)
+        receipt = apply_plan(plan, keep_role_agents=True if args.yes else None)
     except Exception as error:
         print(f"error: install failed: {error}", file=sys.stderr)
         return 1
