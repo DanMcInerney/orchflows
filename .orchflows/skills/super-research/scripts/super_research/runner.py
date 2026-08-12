@@ -12,8 +12,9 @@ adapter call, and the core alone owning the caps and the stop. Nothing here
 runs concurrently. Paging is here and nowhere else: :func:`planned_calls` is
 the only place a manifest becomes an ``AdapterRequest`` and never sets a
 cursor, so the continuation :func:`run_step` builds from the page it just read
-is the single site one enters a request at, bounded by the step's ``max_items``
-and by :data:`MAX_PAGES_PER_STEP`.
+is the single site one enters a request at, bounded by the step's ``max_items``,
+by its own ``max_pages`` where it declares one, and by
+:data:`MAX_PAGES_PER_STEP` where it does not.
 
 Three concerns this module used to own were moved to one-read-size siblings
 and are re-exported below under the names they have always had —
@@ -104,7 +105,9 @@ ADAPTER_IDS = (
 
 
 # The most pages one discovery step may read, whatever the origin keeps
-# offering. Every other way out of the page loop is the origin's own statement —
+# offering and whatever the step asked for: a step declaring its own
+# `max_pages` lowers the count, and one declaring more than this still stops
+# here. Every other way out of the page loop is the origin's own statement —
 # it stopped naming a cursor, or it named one this step already spent — and an
 # origin that never makes either statement would spend a budget nobody set, so
 # the last stop is the core's. Five, because the roster's measured pages hold
@@ -282,19 +285,29 @@ def reached_origin(page: NativePage) -> bool:
 
 
 def _offers_another_page(
-    step: schema.AcquisitionStep, page: NativePage, kept: int
+    step: schema.AcquisitionStep, page: NativePage, kept: int, calls_made: int
 ) -> bool:
     """Whether this page leaves a next one the step could still want.
 
-    Three questions, and only the first is about the page. A hydration step
+    Four questions, and only the first is about the page. A hydration step
     never pages: its calls are one per hit the caller froze, which is what makes
     each hydration record's provenance exact rather than inferred, and a page
     read off a cursor was authorized by nobody. A page that names no cursor is
     the origin saying there is nothing after it. And a step whose cap is already
-    met wants nothing further — that is the caller's own bound reached, not a
-    recall cut short, so it is the one stop here that is never a loss.
+    met wants nothing further, nor does one that has read every page it asked
+    for — both of those are the caller's own bound reached, and every stop this
+    function makes is therefore a step finishing rather than a recall cut short.
+    That is the whole difference between here and the two refusals in the loop:
+    those stop a step that still wanted more, and say so with a loss code.
+
+    ``max_pages`` only ever lowers the count. A step declaring more than
+    :data:`MAX_PAGES_PER_STEP` is stopped by the core's backstop in the loop,
+    where stopping is a loss, because a bound the core imposed is not one the
+    caller reached.
     """
 
+    if step.max_pages and calls_made >= step.max_pages:
+        return False
     return step.kind == "discovery" and bool(page.cursor_out) and kept < step.max_items
 
 
@@ -378,7 +391,7 @@ def run_step(
                 discovery_locator=discovery_locator,
             )
         )
-        if _offers_another_page(step, page, len(records)):
+        if _offers_another_page(step, page, len(records), len(calls)):
             if page.cursor_out in spent_cursors or len(calls) >= MAX_PAGES_PER_STEP:
                 # The origin had more and the core would not spend it: a
                 # cursor it has already asked on, or one page past its own cap.

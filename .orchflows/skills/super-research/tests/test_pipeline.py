@@ -752,6 +752,61 @@ class PagingIsTheCoresTest(unittest.TestCase):
         self.assertIn("s=30", opener.opened[1].url)
 
 
+class AStepMayDeclareItsOwnPageBoundTest(unittest.TestCase):
+    """A step can say how many pages it wants, and one is a legal answer.
+
+    `MAX_PAGES_PER_STEP` is the core's backstop: it stops an origin that never
+    stops offering, nobody asked for it, and reaching it is a recall window
+    that closed early. A bound the step declares is the other kind — the
+    caller's own, exactly like `max_items`, so meeting it is the step
+    finishing. The two are told apart by who set them and not by the number.
+
+    Every row seeds distinct cursors past anything the core would spend, so no
+    stop the origin controls can fire and the bound under test is the only one
+    that can end the step.
+    """
+
+    def bounded_run(self, pages, max_pages):
+        return fixture_run(
+            fixture_pages(pages, last_offers_more=True),
+            step=dataclasses.replace(fixture_step(), max_pages=max_pages),
+        )
+
+    def test_a_step_that_declares_one_page_reads_exactly_one(self):
+        result, records, _, opener = self.bounded_run(6, 1)
+
+        self.assertEqual(len(opener.opened), 1)
+        self.assertEqual(result.pages, 1)
+        self.assertEqual(len(records), 3)
+
+    def test_stopping_at_a_bound_the_step_declared_is_not_a_recall_cut_short(self):
+        result, _, _, _ = self.bounded_run(6, 1)
+
+        self.assertEqual(result.outcome, "ok")
+        self.assertEqual(result.loss, ())
+
+    def test_the_number_the_step_declares_is_the_number_it_reads(self):
+        # Three, so the bound is read as the number it is rather than as a
+        # switch between one page and all of them.
+        result, records, _, opener = self.bounded_run(6, 3)
+
+        self.assertEqual(len(opener.opened), 3)
+        self.assertEqual(result.pages, 3)
+        self.assertEqual(len(records), 9)
+        self.assertEqual(result.outcome, "ok")
+
+    def test_a_declared_bound_lowers_the_core_cap_and_never_raises_it(self):
+        # The direction that matters the moment anything but the smoke sets
+        # this: declaring twelve pages does not buy twelve reads. The core
+        # still owns the last stop, and stopping there is still a recall
+        # window that closed with the origin offering.
+        result, _, _, opener = self.bounded_run(12, 12)
+
+        self.assertEqual(len(opener.opened), runner.MAX_PAGES_PER_STEP)
+        self.assertEqual(result.outcome, "partial")
+        self.assertIn("recall_window_partial", result.loss)
+
+
 class TheDocumentedPathPacesAndRemembersTest(unittest.TestCase):
     """Criterion 4's other half: the governor is on the path, not only in a fixture.
 

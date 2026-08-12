@@ -85,6 +85,18 @@ class AcquisitionStep:
     prior_step_id: str = ""
     selected_hits: Tuple[SelectedHit, ...] = ()
     max_items: int = 0
+    # How many pages this step wants, where it wants a particular number. Zero
+    # is the ordinary case: the step named none, and `runner.MAX_PAGES_PER_STEP`
+    # — the core's backstop against an origin that never stops offering — is
+    # the only page bound it has. A number here is the caller's own bound, like
+    # `max_items`: reaching it is the step finishing rather than a recall cut
+    # short, and it only ever lowers the count, because the backstop still
+    # stops a step that declared more than the core will spend.
+    #
+    # No `STEP_KEYS` entry names it, so no manifest can set one. The caller
+    # that declares a bound is this package's own smoke, in process, where one
+    # read is the whole of what a liveness check is authorized to cost.
+    max_pages: int = 0
 
 
 @dataclass(frozen=True)
