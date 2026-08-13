@@ -1,0 +1,36 @@
+<!--
+  Fixture: a login page served at HTTP 200 where JSON was asked for.
+
+  findings.md 1 (Instagram) measured this route answering 200 with a JSON
+  profile payload. It does not measure this page, and this package may not
+  reach the network to capture one; what is recorded here is the shape of a
+  200 that is not the answer - Instagram serves its logged-out web page from
+  the same origin, and a route that stopped answering in JSON would look like
+  this rather than like a status line.
+
+  The load-bearing part is what an adapter must NOT do with it. The body says
+  "Log in", "Sign up" and "Forgot password" in plain words. Reading any of them
+  as a refusal is exactly the error the LinkedIn measurement overturned: an
+  authwall is the origin's own status line and never a string in a body. So
+  this case is malformed_json - a 200 that is not the JSON this route answers
+  in - and it is never auth_required.
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Login &bull; Instagram</title>
+  </head>
+  <body>
+    <main>
+      <h1>Log in</h1>
+      <form method="post" action="/accounts/login/">
+        <label>Phone number, username, or email</label>
+        <label>Password</label>
+        <button type="submit">Log in</button>
+      </form>
+      <p><a href="/accounts/password/reset/">Forgot password?</a></p>
+      <p>Don't have an account? <a href="/accounts/emailsignup/">Sign up</a></p>
+    </main>
+  </body>
+</html>

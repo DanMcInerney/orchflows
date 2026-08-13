@@ -1,0 +1,51 @@
+{
+  "source": "findings.md §1 (Instagram), measured 2026-08-10",
+  "note": "One measured success and the four ways this route can answer with no profile on it. Each is a different fact and none of them is the others: a username nobody holds is the origin saying so, a payload whose container moved is the shape changing under a K1 client, a 200 that is not JSON is this route no longer answering in JSON, and 401 is the origin's own refusal. The one that matters most is the login page: it says 'Log in' in plain words at HTTP 200, and reading that as a refusal is the false negative the LinkedIn measurement overturned. Only a status line may make this route auth_required.",
+  "cases": [
+    {
+      "case_name": "profile_and_twelve_posts_200",
+      "username": "harbourlight.optics",
+      "status": 200,
+      "body_fixture": "web_profile_info.json",
+      "expected_loss": "",
+      "expected_outcome": "ok",
+      "evidence": "measured: 200, 455 KB in 2.9 s, carrying username, biography, followers, post count and 12 recent posts each with shortcode, taken_at_timestamp, like count and comment count"
+    },
+    {
+      "case_name": "no_such_username_200",
+      "username": "nobody.holds.this.name",
+      "status": 200,
+      "body_fixture": "profile_absent.json",
+      "expected_loss": "",
+      "expected_outcome": "empty",
+      "evidence": "the one empty this route can honestly answer with: the container is there and holds a null where a profile would be, which is the origin stating that nobody holds the name. Typing it as drift would send an operator hunting a payload change every time a handle was misspelled"
+    },
+    {
+      "case_name": "payload_container_moved_200",
+      "username": "harbourlight.optics",
+      "status": 200,
+      "body_fixture": "profile_reshaped.json",
+      "expected_loss": "schema_drift",
+      "expected_outcome": "failed",
+      "evidence": "spec Risks, structured-data drift: a K1 payload the vendor may reshape without notice. A profile that is somewhere else is not a profile that is not there"
+    },
+    {
+      "case_name": "login_page_at_200",
+      "username": "harbourlight.optics",
+      "status": 200,
+      "body_fixture": "login_page.html",
+      "expected_loss": "malformed_json",
+      "expected_outcome": "failed",
+      "evidence": "a 200 carrying words that look like a wall. What is true of it is that this route answered in something other than JSON; what is not true is that a credential was withheld, and only the origin's status line may say that"
+    },
+    {
+      "case_name": "origin_refused_401",
+      "username": "harbourlight.optics",
+      "status": 401,
+      "body_fixture": "login_page.html",
+      "expected_loss": "auth_required",
+      "expected_outcome": "failed",
+      "evidence": "the sharpest form of the rule, and the same bytes as the row above: at 200 the body decides nothing and at 401 the status line decides everything"
+    }
+  ]
+}

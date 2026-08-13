@@ -1,0 +1,26 @@
+<!--
+  Fixture: the 999 the prior spec assumed this route always answered.
+
+  Measured, it does not: findings.md 1 (LinkedIn) records 200 with a complete
+  Person block. But 999 is LinkedIn's own refusal status and an operator may
+  meet it at volume, so the adapter has to say something about it, and what it
+  says has to come from the status line rather than from the page.
+
+  That is the whole of this fixture's job. The body below carries none of the
+  navigation chrome at all - not one of the two strings the suite scans for -
+  and the answer is still a failure, because the origin refused. Its mirror is
+  profile_person.html, which is full of that chrome and is still ok. Between
+  them, the only thing this adapter reads to decide whether the origin refused
+  is the origin's own status.
+
+  Typed http_status, naming the status: it is not schema_drift, because
+  nothing about the page's shape is in evidence at 999, and it is not
+  auth_required, because no credential was withheld and none would help.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Request Denied</title></head>
+<body>
+<p>We are unable to complete this request at this time.</p>
+</body>
+</html>

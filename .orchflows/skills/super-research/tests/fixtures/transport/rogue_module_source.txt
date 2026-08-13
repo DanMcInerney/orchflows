@@ -1,0 +1,11 @@
+# A module that took the route table into its own hands: it names a host,
+# an endpoint, and a public client credential that only transport.py may
+# name. It is stored with a .txt suffix so it can never be imported or
+# discovered; it exists only to prove the ownership scan discriminates.
+
+SEARCH_ENDPOINT = "https://html.duckduckgo.com/html/"
+PROFILE_APP_ID = "936619743392459"
+
+
+def fetch(query):
+    return SEARCH_ENDPOINT + "?q=" + query

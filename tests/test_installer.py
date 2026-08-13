@@ -137,7 +137,19 @@ class TestInstallReceipt(unittest.TestCase):
                 self.assertEqual(digest(Path(entry["path"])), entry["sha256"])
             self.assertEqual("added-block", receipt["blocks"][0]["install_action"])
 
-    def test_unowned_role_profile_blocks_install_before_any_write(self):
+    def _role_agent_plan(self, project: Path, **kwargs) -> "install.Plan":
+        defaults = dict(
+            scope="project",
+            project_root=project,
+            lib_home=project / ".orchflows" / "lib",
+            scope_home=project / ".orchflows",
+            bin_dir=project / ".orch" / "bin",
+            receipt_path=project / ".orchflows" / "receipt.json",
+        )
+        defaults.update(kwargs)
+        return install.Plan(**defaults)
+
+    def test_unowned_role_profile_is_kept_and_the_install_proceeds(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)
             source = project / "source.md"
@@ -146,32 +158,33 @@ class TestInstallReceipt(unittest.TestCase):
             agent = project / ".codex" / "agents" / "orch-worker.toml"
             agent.parent.mkdir(parents=True)
             agent.write_text("personal = true\n", encoding="utf-8")
-            plan = install.Plan(
-                scope="project",
-                project_root=project,
-                lib_home=project / ".orchflows" / "lib",
-                scope_home=project / ".orchflows",
-                bin_dir=project / ".orch" / "bin",
-                receipt_path=project / ".orchflows" / "receipt.json",
+            plan = self._role_agent_plan(
+                project,
                 lib_copies=[(source, lib_dest)],
                 codex_agents=[(agent, 'name = "orch-worker"\n')],
             )
 
-            with self.assertRaisesRegex(FileExistsError, "not owned"):
-                install.apply_plan(plan)
+            receipt = install.apply_plan(plan, keep_role_agents=True)
 
             self.assertEqual("personal = true\n", agent.read_text(encoding="utf-8"))
-            self.assertFalse(lib_dest.exists())
+            # The rest of the install is no longer collateral of one
+            # diverged agent: the library still lands.
+            self.assertTrue(lib_dest.exists())
+            # ...and the kept agent is left out of the receipt, so the next
+            # install asks again instead of adopting its hash as its own.
+            self.assertNotIn(
+                str(agent), {entry["path"] for entry in receipt["files"]}
+            )
 
-    def test_modified_receipt_owned_role_profile_blocks_reinstall(self):
+    def test_modified_receipt_owned_role_profile_is_kept(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)
             agent = project / ".claude" / "agents" / "orch-planner.md"
             agent.parent.mkdir(parents=True)
             agent.write_text("modified\n", encoding="utf-8")
-            receipt = project / ".orchflows" / "receipt.json"
-            receipt.parent.mkdir(parents=True)
-            receipt.write_text(
+            receipt_path = project / ".orchflows" / "receipt.json"
+            receipt_path.parent.mkdir(parents=True)
+            receipt_path.write_text(
                 json.dumps(
                     {
                         "files": [
@@ -185,20 +198,40 @@ class TestInstallReceipt(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            plan = install.Plan(
-                scope="project",
-                project_root=project,
-                lib_home=project / ".orchflows" / "lib",
-                scope_home=project / ".orchflows",
-                bin_dir=project / ".orch" / "bin",
-                receipt_path=receipt,
-                claude_agents=[(agent, "updated\n")],
+            plan = self._role_agent_plan(
+                project, receipt_path=receipt_path, claude_agents=[(agent, "updated\n")]
             )
 
-            with self.assertRaisesRegex(FileExistsError, "changed since"):
-                install.apply_plan(plan)
+            install.apply_plan(plan, keep_role_agents=True)
 
-    def test_legacy_header_role_profile_without_receipt_blocks_install(self):
+            # A receipt-owned path dropped from the plan would be deleted as
+            # stale; keeping it must not mean losing it.
+            self.assertTrue(agent.is_file())
+            self.assertEqual("modified\n", agent.read_text(encoding="utf-8"))
+
+    def test_modified_role_profile_is_replaced_when_overwrite_is_chosen(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            agent = project / ".claude" / "agents" / "orch-planner.md"
+            agent.parent.mkdir(parents=True)
+            agent.write_text("modified\n", encoding="utf-8")
+            plan = self._role_agent_plan(project, claude_agents=[(agent, "updated\n")])
+
+            install.apply_plan(plan, keep_role_agents=False)
+
+            self.assertEqual("updated\n", agent.read_text(encoding="utf-8"))
+
+    def test_role_profile_that_is_not_a_regular_file_still_refuses(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            agent = project / ".claude" / "agents" / "orch-planner.md"
+            agent.mkdir(parents=True)
+            plan = self._role_agent_plan(project, claude_agents=[(agent, "updated\n")])
+
+            with self.assertRaisesRegex(FileExistsError, "not a regular file"):
+                install.apply_plan(plan, keep_role_agents=True)
+
+    def test_legacy_header_role_profile_without_receipt_is_kept(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)
             agent = project / ".codex" / "agents" / "orch-worker.toml"
@@ -208,20 +241,23 @@ class TestInstallReceipt(unittest.TestCase):
                 "# This complete file is replaced on every orchflows install.\n"
             )
             agent.write_text(legacy_header + "old = true\n", encoding="utf-8")
-            plan = install.Plan(
-                scope="project",
-                project_root=project,
-                lib_home=project / ".orchflows" / "lib",
-                scope_home=project / ".orchflows",
-                bin_dir=project / ".orch" / "bin",
-                receipt_path=project / ".orchflows" / "receipt.json",
-                codex_agents=[(agent, 'name = "orch-worker"\n')],
+            plan = self._role_agent_plan(
+                project, codex_agents=[(agent, 'name = "orch-worker"\n')]
             )
 
-            with self.assertRaisesRegex(FileExistsError, "not owned"):
-                install.apply_plan(plan)
+            install.apply_plan(plan, keep_role_agents=True)
 
             self.assertEqual(legacy_header + "old = true\n", agent.read_text(encoding="utf-8"))
+
+    def test_shipped_claude_bindings_are_the_documented_defaults(self):
+        profiles = install.load_role_profiles()
+
+        self.assertEqual(
+            {"model": "claude-fable-5", "effort": "high"}, profiles["orch-planner"]["claude"]
+        )
+        self.assertEqual(
+            {"model": "claude-opus-5", "effort": "high"}, profiles["orch-worker"]["claude"]
+        )
 
     def test_reinstall_removes_receipt_owned_hyphenated_codex_agent(self):
         with tempfile.TemporaryDirectory() as tmp:

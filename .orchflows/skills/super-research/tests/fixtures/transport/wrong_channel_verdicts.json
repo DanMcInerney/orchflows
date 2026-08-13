@@ -1,0 +1,88 @@
+{
+  "note": "Verdict maps a broken detector would produce, written out in full so each one stands on its own rather than being derived from the tree under test. Nothing in the package emits these; they exist so the interception oracle can be shown to fail when the claim it stands for is false.",
+  "cases": {
+    "portal_read_as_platform_gap": {
+      "expected_oracle_reason": "a captive-portal response was recorded as a platform response",
+      "verdicts": {
+        "appliance_portal_503": "origin_failure",
+        "appliance_portal_502": "network_intercepted",
+        "appliance_portal_uppercase_tag": "network_intercepted",
+        "origin_service_unavailable": "origin_failure",
+        "origin_authwall": "origin_failure",
+        "origin_content": "origin_content",
+        "origin_login_page": "origin_content"
+      }
+    },
+    "portal_blind_detector": {
+      "expected_oracle_reason": "a captive-portal response was recorded as a platform response",
+      "verdicts": {
+        "appliance_portal_503": "origin_failure",
+        "appliance_portal_502": "origin_failure",
+        "appliance_portal_uppercase_tag": "origin_failure",
+        "origin_service_unavailable": "origin_failure",
+        "origin_authwall": "origin_failure",
+        "origin_content": "origin_content",
+        "origin_login_page": "origin_content"
+      }
+    },
+    "uppercase_marker_missed": {
+      "expected_oracle_reason": "a captive-portal response was recorded as a platform response",
+      "verdicts": {
+        "appliance_portal_503": "network_intercepted",
+        "appliance_portal_502": "network_intercepted",
+        "appliance_portal_uppercase_tag": "origin_failure",
+        "origin_service_unavailable": "origin_failure",
+        "origin_authwall": "origin_failure",
+        "origin_content": "origin_content",
+        "origin_login_page": "origin_content"
+      }
+    },
+    "origin_failure_read_as_interception": {
+      "expected_oracle_reason": "an origin response was recorded as a network interception",
+      "verdicts": {
+        "appliance_portal_503": "network_intercepted",
+        "appliance_portal_502": "network_intercepted",
+        "appliance_portal_uppercase_tag": "network_intercepted",
+        "origin_service_unavailable": "network_intercepted",
+        "origin_authwall": "origin_failure",
+        "origin_content": "origin_content",
+        "origin_login_page": "origin_content"
+      }
+    },
+    "login_page_read_as_interception": {
+      "expected_oracle_reason": "an origin response was recorded as a network interception",
+      "verdicts": {
+        "appliance_portal_503": "network_intercepted",
+        "appliance_portal_502": "network_intercepted",
+        "appliance_portal_uppercase_tag": "network_intercepted",
+        "origin_service_unavailable": "origin_failure",
+        "origin_authwall": "origin_failure",
+        "origin_content": "origin_content",
+        "origin_login_page": "network_intercepted"
+      }
+    },
+    "success_read_as_failure": {
+      "expected_oracle_reason": "case origin_content was typed origin_failure, its evidence says origin_content",
+      "verdicts": {
+        "appliance_portal_503": "network_intercepted",
+        "appliance_portal_502": "network_intercepted",
+        "appliance_portal_uppercase_tag": "network_intercepted",
+        "origin_service_unavailable": "origin_failure",
+        "origin_authwall": "origin_failure",
+        "origin_content": "origin_failure",
+        "origin_login_page": "origin_content"
+      }
+    },
+    "portal_case_never_classified": {
+      "expected_oracle_reason": "case appliance_portal_503 was never classified",
+      "verdicts": {
+        "appliance_portal_502": "network_intercepted",
+        "appliance_portal_uppercase_tag": "network_intercepted",
+        "origin_service_unavailable": "origin_failure",
+        "origin_authwall": "origin_failure",
+        "origin_content": "origin_content",
+        "origin_login_page": "origin_content"
+      }
+    }
+  }
+}

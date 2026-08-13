@@ -1,0 +1,44 @@
+<!--
+  Fixture: the same route answering 200 with the chrome and no structured
+  block at all.
+
+  This is the counterweight to profile_person.html, and the two only mean
+  something together. That page proves the chrome is not a refusal; this one
+  proves that removing the block is still not a refusal. It carries every
+  string an authwall guess would fire on - "Sign in to", "Join now", a login
+  form, a signup modal - and no application/ld+json script anywhere.
+
+  The right answer is schema_drift: the page this adapter reads has changed
+  shape. The two wrong answers are the ones the ticket exists to prevent.
+  auth_required calls a keyless route credentialed and re-creates the assumed
+  authwall the measurement overturned. An empty result says this profile has
+  nothing in it, off a page the origin never made that claim on.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Avery Lindqvist | LinkedIn</title>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav__button-tertiary" href="/signup">Join now</a>
+  <a class="nav__button-secondary" href="/login">Sign in to view Avery's full profile</a>
+</nav>
+
+<main class="profile">
+  <section class="top-card-layout">
+    <h1 class="top-card-layout__title">Avery Lindqvist</h1>
+  </section>
+  <section class="sign-up-modal">
+    <p>Sign in to see who you already know.</p>
+    <form action="/checkpoint/lg/login-submit" method="post">
+      <input name="session_key" type="text">
+      <input name="session_password" type="password">
+      <button type="submit">Sign in</button>
+    </form>
+    <a class="sign-up-modal__outlet" href="/signup">Join now</a>
+  </section>
+</main>
+</body>
+</html>

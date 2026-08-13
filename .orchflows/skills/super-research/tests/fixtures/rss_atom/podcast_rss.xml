@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:podcast="https://podcastindex.org/namespace/1.0"
+     xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>The Harbourlight Tape</title>
+    <link>https://harbourlight.example/podcast</link>
+    <description>Interviews about measurement.</description>
+    <item>
+      <title>Measuring what a rate limit actually is</title>
+      <link>https://harbourlight.example/podcast/014</link>
+      <guid isPermaLink="false">harbourlight-tape-014</guid>
+      <author>ada@harbourlight.example (Ada Fenwick)</author>
+      <pubDate>Mon, 10 Aug 2026 08:41:03 +0000</pubDate>
+      <enclosure url="https://cdn.harbourlight.example/tape/014.mp3" length="48210331" type="audio/mpeg"/>
+      <podcast:transcript url="https://cdn.harbourlight.example/tape/014.vtt" type="text/vtt"/>
+      <podcast:transcript url="https://cdn.harbourlight.example/tape/014.srt" type="application/x-subrip"/>
+    </item>
+    <item>
+      <title>Two hosts, one appliance</title>
+      <link>https://harbourlight.example/podcast/013</link>
+      <guid isPermaLink="false">harbourlight-tape-013</guid>
+      <author>ada@harbourlight.example (Ada Fenwick)</author>
+      <pubDate>Mon, 03 Aug 2026 08:00:00 +0000</pubDate>
+      <enclosure url="https://cdn.harbourlight.example/tape/013.mp3" length="41118002" type="audio/mpeg"/>
+    </item>
+    <item>
+      <title>An episode nobody dated</title>
+      <link>https://harbourlight.example/podcast/012</link>
+      <guid isPermaLink="false">harbourlight-tape-012</guid>
+      <pubDate>whenever we got round to it</pubDate>
+      <enclosure length="9001" type="audio/mpeg"/>
+    </item>
+  </channel>
+</rss>

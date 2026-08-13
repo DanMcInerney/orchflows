@@ -1,0 +1,50 @@
+{
+  "total_count": 1184,
+  "incomplete_results": false,
+  "items": [
+    {
+      "id": 704212099,
+      "name": "gpu-bench",
+      "full_name": "harbourlight/gpu-bench",
+      "private": false,
+      "owner": {
+        "login": "harbourlight",
+        "id": 18422107,
+        "type": "Organization"
+      },
+      "html_url": "https://github.com/harbourlight/gpu-bench",
+      "description": "Reproducible local inference benchmarks for consumer GPUs.",
+      "created_at": "2024-11-03T09:14:22Z",
+      "updated_at": "2026-08-09T07:41:10Z",
+      "stargazers_count": 8241,
+      "watchers_count": 8241,
+      "language": "Python",
+      "forks_count": 512,
+      "open_issues_count": 47,
+      "topics": ["benchmarks", "inference", "gpu"],
+      "score": 1.0
+    },
+    {
+      "id": 512900744,
+      "name": "kvcache-notes",
+      "full_name": "quilling/kvcache-notes",
+      "private": false,
+      "owner": {
+        "login": "quilling",
+        "id": 771230,
+        "type": "User"
+      },
+      "html_url": "https://github.com/quilling/kvcache-notes",
+      "description": "Notes on KV cache dtypes and what they cost.",
+      "created_at": "2022-07-14T16:20:41Z",
+      "updated_at": "2026-08-01T19:55:02Z",
+      "stargazers_count": 933,
+      "watchers_count": 933,
+      "language": "Markdown",
+      "forks_count": 61,
+      "open_issues_count": 3,
+      "topics": ["inference"],
+      "score": 0.81
+    }
+  ]
+}

@@ -75,7 +75,8 @@ routing block for a repo. Uninstall: `python install.py --user
 --uninstall` removes only what it generated; `--dry-run` previews
 either. Default model bindings: the planner/reviewer is Fable 5 on
 high effort (Claude Code) or GPT-5.6 Sol on ultra (Codex); workers are
-Sonnet 5 on xhigh and GPT-5.6 Sol on high.
+Opus 5 on high and GPT-5.6 Sol on high. Edit a rendered role agent to
+run your own; installs ask before replacing it and keep it by default.
 
 ## The interesting parts
 
