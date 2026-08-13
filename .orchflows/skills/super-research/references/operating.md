@@ -16,6 +16,17 @@ parser was made from.
 | `smoke` | `--adapter <one of thirteen>`, required | one bounded read | one of its two records: the ledger on success, the unmet record on a row the origin answered and did not carry, neither otherwise | 0 / 1 / 3 |
 | `status` | none | no | nothing | 0 always |
 
+`python3 -m super_research.cli adapters` prints the thirteen live adapters, the
+access class each declares, and the field set its smoke asserts; the offline
+`fake` adapter has no smoke and is not on that list. The roster's routes were
+measured from one host on 2026-08-10, and two sweeps on 2026-08-12 read all
+thirteen adapters against real origins, nine carrying their whole roster row on
+each sweep — [evidence.md](evidence.md) §"Route measurements of 2026-08-10" and
+§"The two liveness sweeps of 2026-08-12". `status` still reports every adapter
+`unverified` until `smoke --adapter <id>` makes one bounded read that carries
+that adapter's row: the smoke ledger lives in a tempdir and never travels with a
+checkout.
+
 No operation takes an address, a route, a path, a manifest, or a command;
 `--adapter` is a closed `choices` list of the thirteen live ids. `fake` is refused
 with everything else: reading a fixture and printing it as liveness is the one

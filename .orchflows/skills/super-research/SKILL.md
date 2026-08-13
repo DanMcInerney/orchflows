@@ -8,20 +8,12 @@ Require: one bounded question naming the platforms it reaches, a frozen `as_of`,
 and a hard per-step item cap.
 
 Detail — manifest grammar, field families, the access ladder, the typed loss
-vocabulary, the five orders — is in [references/protocol.md](references/protocol.md).
+vocabulary, the five orders — is in [references/protocol.md](references/protocol.md),
+and the module layout in [references/internals.md](references/internals.md).
 
-Every command and import below needs this item's `scripts/` directory on `PYTHONPATH`.
-
-`python3 -m super_research.cli adapters` prints the thirteen live adapters, the
-access class each declares, and the field set its smoke asserts; the offline
-`fake` adapter has no smoke and is not on that list. The roster's routes were
-measured from one host on 2026-08-10, and two sweeps on 2026-08-12 read all
-thirteen adapters against real origins, nine carrying their whole roster row on
-each sweep — [references/evidence.md](references/evidence.md) §"Route
-measurements of 2026-08-10" and §"The two liveness sweeps of 2026-08-12".
-`status` still reports every adapter `unverified` until `smoke --adapter <id>`
-makes one bounded read that carries that adapter's row: the smoke ledger lives
-in a tempdir and never travels with a checkout.
+Every import below needs this item's `scripts/` directory on `PYTHONPATH`. The
+adapter roster and `status` are the operator's contract, in
+[references/operating.md](references/operating.md).
 
 Then write one manifest — `staged` where the caller selects between discovery
 and hydration, `fused` where it does not — and run it through
