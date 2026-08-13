@@ -44,6 +44,18 @@ FROZEN_OBSERVED_AT = "2026-08-10T09:00:00Z"
 # Only the transport seam may reach the network.
 NETWORK_MODULES = ("urllib.request", "http.client", "socket", "ssl")
 
+# Which modules may spell a route's host, its endpoint, or a credential value.
+# Declared, rather than matched by filename: the route table can be split across
+# a second module without any scan having to learn its name, so admitting one is
+# a one-line reviewable edit here and impossible anywhere else.
+ROUTE_OWNING_MODULES = ("transport",)
+
+# Which modules hold the outbound read on everybody's behalf. A second
+# declaration and deliberately not the same list: owning a route's address is
+# not permission to open a socket, so widening the set above must never widen
+# what the network scan tolerates.
+NETWORK_SEAM_MODULES = ("transport",)
+
 # Only the shared adapter protocol makes the call and reads the channel.
 PROTOCOL_OWNED_NAMES = ("carrier.fetch", "channel_verdict", "NETWORK_INTERCEPTED")
 
@@ -659,10 +671,22 @@ class CredentialStaysInsideTransportTest(unittest.TestCase):
                     self.assertNotIn(value, repr(carrier.calls))
 
 
-def package_sources():
-    """Every package module except the transport seam itself."""
+def package_sources_but(declared):
+    """Every package module a declaration does not name.
 
-    return sorted(path for path in PACKAGE_DIR.rglob("*.py") if path.name != "transport.py")
+    The declaration names core modules by stem, so it excludes the one file the
+    package root holds under that name and never an adapter that happens to
+    share it.
+    """
+
+    excluded = {PACKAGE_DIR / (name + ".py") for name in declared}
+    return sorted(path for path in PACKAGE_DIR.rglob("*.py") if path not in excluded)
+
+
+def package_sources():
+    """Every package module but the ones declared to own a route."""
+
+    return package_sources_but(ROUTE_OWNING_MODULES)
 
 
 def adapter_sources():
@@ -672,7 +696,7 @@ def adapter_sources():
 
 
 def owned_route_literals():
-    """Every string only ``transport.py`` may name: a route's host, its endpoint, a credential."""
+    """Every string only a declared route owner may name: a host, an endpoint, a credential."""
 
     literals = set()
     for route in transport.ROUTE_CONSTANTS.values():
@@ -719,7 +743,7 @@ class RouteOwnershipScanTest(unittest.TestCase):
     naming a route constant to assert it is exactly what a test is for.
     """
 
-    def test_no_package_module_but_transport_names_a_route_host_or_a_credential(self):
+    def test_no_module_outside_the_declared_owners_names_a_route_host_or_a_credential(self):
         self.assertEqual(sources_naming(owned_route_literals(), package_sources()), [])
 
     def test_the_ownership_scan_can_fail(self):
@@ -750,8 +774,11 @@ class RouteOwnershipScanTest(unittest.TestCase):
 
         self.assertEqual(sources_naming(credentials, [EVIDENCE_DOC]), [])
 
-    def test_no_package_module_but_transport_reaches_the_network(self):
-        for path in package_sources():
+    def test_no_module_outside_the_declared_seam_reaches_the_network(self):
+        # Quantified over the seam declaration and not the route one, because
+        # the two answer different questions: a module admitted to the route
+        # table is admitted to spell an address, never to open a socket.
+        for path in package_sources_but(NETWORK_SEAM_MODULES):
             with self.subTest(module=path.name):
                 named = imported_names(path)
 

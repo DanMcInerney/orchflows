@@ -36,6 +36,10 @@ The execution-surface vocabulary is imported from ``test_adapters`` rather
 than restated: that suite pins the same names against the one adapter that
 takes an argument, this one pins them against the whole package, and two
 copies of one list is how the wider claim quietly stops covering something.
+Which modules may spell a route and which may open a socket come from
+``test_transport`` for the same reason, and they are two declarations rather
+than one because admitting a module to the route table is not admitting it to
+the network.
 """
 
 from __future__ import annotations
@@ -55,6 +59,7 @@ from tests.test_adapters import (
     WRITE_VERBS,
     code_strings,
 )
+from tests.test_transport import NETWORK_SEAM_MODULES, ROUTE_OWNING_MODULES
 
 PACKAGE_DIR = Path(__file__).resolve().parent.parent / "scripts" / "super_research"
 ADAPTER_DIR = PACKAGE_DIR / "adapters"
@@ -491,11 +496,13 @@ class NoRunSomethingSurfaceTest(unittest.TestCase):
     def test_no_module_imports_a_dynamic_import_surface(self):
         self.assertEqual(imports_naming(package_sources(), DYNAMIC_IMPORT_MODULES), [])
 
-    def test_no_module_but_transport_imports_an_execution_or_network_surface(self):
-        # `transport.py` is excluded for the one reason `test_transport`
-        # excludes it: it is the seam that owns the outbound read, and it holds
-        # `urllib.request` on everybody's behalf.
-        others = [path for path in package_sources() if path.name != "transport.py"]
+    def test_no_module_outside_the_declared_seam_imports_an_execution_surface(self):
+        # The exclusion stands for the one reason it always did — the seam owns
+        # the outbound read and holds `urllib.request` on everybody's behalf —
+        # and is read off the seam declaration rather than a filename, so a
+        # module admitted to the route table is still scanned here.
+        seam = {PACKAGE_DIR / (name + ".py") for name in NETWORK_SEAM_MODULES}
+        others = [path for path in package_sources() if path not in seam]
 
         self.assertEqual(imports_naming(others, EXECUTION_MODULES), [])
 
@@ -508,11 +515,20 @@ class NoRunSomethingSurfaceTest(unittest.TestCase):
     def test_no_module_spells_a_command(self):
         self.assertEqual(strings_spelling(package_sources(), SHELL_SPELLINGS), [])
 
-    def test_the_only_non_read_verb_the_package_spells_is_transports_one_post(self):
+    def test_the_only_non_read_verb_the_package_spells_is_a_declared_post(self):
         # Both directions, and the tighter half is the second: PUT, PATCH and
-        # DELETE are spelled nowhere at all, and the single POST is in the one
-        # module that owns the two closed exceptions to reads-only.
-        self.assertEqual(non_read_verb_findings(package_sources()), [("transport.py", "POST")])
+        # DELETE are spelled nowhere at all, and POST nowhere but where one of
+        # the two closed exceptions to reads-only lives — the seam, which
+        # admits the method, and the route owners, which spell it on the two
+        # rows that carry it. Derived from those two declarations, so which
+        # module holds the table is something to declare and never a filename
+        # this assertion has to be told about.
+        spelling_post = sorted(set(ROUTE_OWNING_MODULES) | set(NETWORK_SEAM_MODULES))
+
+        self.assertEqual(
+            non_read_verb_findings(package_sources()),
+            [(name + ".py", "POST") for name in spelling_post],
+        )
 
 
 class BoundaryOracleCanFailTest(unittest.TestCase):
