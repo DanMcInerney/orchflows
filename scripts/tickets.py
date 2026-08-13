@@ -17,6 +17,7 @@ Subcommands:
     claim <run> <id> --by <name>
     set-status <run> <id> <status>
     packet <run> <id> --reply-to <name> [--workspace <path>]
+    result <run> <id> --section <name> (--file <path> | --text <string>)
 """
 
 from __future__ import annotations
@@ -58,6 +59,12 @@ PACKET_SECTIONS = (
     ("inputs", "Fixed inputs"),
     ("return_contract", "Return fields"),
 )
+# contracts/work-item.md: the closed set of sections an executor writes.
+# Every other heading is cut-time content, and terminal `status` is the
+# join's alone — which is why `result` writes no frontmatter at all.
+EXECUTOR_SECTIONS = ("Result", "Verification", "Feedback", "Risks", "Handoff")
+EXECUTOR_SECTIONS_BY_KEY = {name.lower(): name for name in EXECUTOR_SECTIONS}
+RESULT_USAGE = "result <run> <id> --section <name> (--file <path> | --text <string>)"
 
 
 # --- repository / filesystem helpers ---------------------------------------
@@ -214,6 +221,42 @@ def _sections(text: str) -> dict:
     if heading is not None:
         sections[heading] = "\n".join(body).strip()
     return sections
+
+
+def _body_block(body: str, newline: str) -> str:
+    """Normalize a body to the file's line ending, ending in exactly one."""
+
+    normalized = body.replace("\r\n", "\n").replace("\r", "\n").strip("\n")
+    if not normalized:
+        return ""
+    return newline.join(normalized.split("\n")) + newline
+
+
+def _write_section(text: str, heading: str, body: str) -> str:
+    """Replace or create one ``## Heading`` body, leaving every other byte alone."""
+
+    lines = text.splitlines(keepends=True)
+    newline = "\r\n" if lines and lines[0].endswith("\r\n") else "\n"
+    starts = [i for i, line in enumerate(lines) if line.startswith("## ")]
+    found = None
+    for i in starts:
+        if lines[i][3:].strip().lower() == heading.lower():
+            found = i
+            break
+    block = _body_block(body, newline)
+    if found is None:
+        prefix = "".join(lines).rstrip("\r\n")
+        if prefix:
+            prefix += newline + newline
+        return f"{prefix}## {heading}{newline}{newline}{block}"
+    end = next((i for i in starts if i > found), len(lines))
+    head = lines[found]
+    if not head.endswith("\n"):
+        head += newline
+    segment = head + newline + block
+    if end < len(lines):
+        segment += newline
+    return "".join(lines[:found]) + segment + "".join(lines[end:])
 
 
 def _load_ticket(path: Path) -> dict:
@@ -532,9 +575,64 @@ def _cmd_packet(rest):
     }
 
 
+def _cmd_result(rest):
+    """Write one reserved section of a ticket at the main repository root.
+
+    The executor runs this from inside its own isolated worktree: ``--file``
+    reads the body from that workspace while ``_tickets_root()`` resolves the
+    worktree's ``.git`` pointer to the one main-root ticket path every
+    workspace agrees on (contracts/work-item.md).
+    """
+
+    args = list(rest)
+    section = _extract_flag(args, "--section")
+    file_arg = _extract_flag(args, "--file")
+    text_arg = _extract_flag(args, "--text")
+    if len(args) != 2:
+        return {"error": f"usage: {RESULT_USAGE}"}
+    run, ticket_id = args
+    if section is None:
+        return {"error": f"result requires --section <name>, one of {list(EXECUTOR_SECTIONS)}"}
+    canonical = EXECUTOR_SECTIONS_BY_KEY.get(section.strip().strip("#").strip().lower())
+    if canonical is None:
+        return {
+            "error": f"section '{section}' is not one of the sections an executor "
+            f"writes: {list(EXECUTOR_SECTIONS)}"
+        }
+    if file_arg is not None:
+        try:
+            body = Path(file_arg).read_text(encoding="utf-8")
+        except OSError as error:
+            return {"error": f"unreadable body file: {error}"}
+    else:
+        body = text_arg
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {"error": "not inside a git repository"}
+    ticket_path = tickets_root / run / f"{ticket_id}.md"
+    if not ticket_path.is_file():
+        return {"error": f"ticket not found: {run}/{ticket_id}"}
+    try:
+        text = ticket_path.read_text(encoding="utf-8")
+        ticket_path.write_text(_write_section(text, canonical, body), encoding="utf-8")
+    except OSError as error:
+        return {"error": f"unwritable ticket: {error}"}
+    return {
+        "result": {
+            "run": run,
+            "id": ticket_id,
+            "path": str(ticket_path),
+            "section": canonical,
+            "mode": "replace",
+        }
+    }
+
+
 def _dispatch(argv):
     if not argv:
-        return {"error": "missing subcommand: list | ready | claim | set-status | packet"}
+        return {
+            "error": "missing subcommand: list | ready | claim | set-status | packet | result"
+        }
     command, rest = argv[0], argv[1:]
     if command == "list":
         return _cmd_list(rest)
@@ -546,6 +644,8 @@ def _dispatch(argv):
         return _cmd_set_status(rest)
     if command == "packet":
         return _cmd_packet(rest)
+    if command == "result":
+        return _cmd_result(rest)
     return {"error": f"unknown subcommand: {command}"}
 
 

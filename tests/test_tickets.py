@@ -442,5 +442,67 @@ class TestPacket(unittest.TestCase):
             )
 
 
+def make_worktree(tmp: Path, tickets: dict):
+    """A main checkout plus a linked worktree whose ``.git`` is a pointer file.
+
+    The shape `make_repo` cannot produce: `.git` as a file holding a
+    `gitdir:` line, which is what an executor's isolated workspace has and
+    what the result channel must dereference to the main checkout.
+    """
+
+    main = tmp / "main"
+    main.mkdir()
+    run_dir = make_repo(main, tickets)
+    (main / ".git" / "worktrees" / "wt").mkdir(parents=True)
+    worktree = tmp / "wt"
+    worktree.mkdir()
+    (worktree / ".git").write_text(
+        f"gitdir: {main / '.git' / 'worktrees' / 'wt'}\n", encoding="utf-8"
+    )
+    return main, worktree, run_dir
+
+
+class TestResultWorktreeCrossing(unittest.TestCase):
+    """contracts/work-item.md: one run's tickets have one path, identical
+    from every executor workspace. The executor files its result there from
+    inside its own worktree, reading its body from that worktree."""
+
+    def test_result_from_a_worktree_lands_in_the_main_checkout(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            body = worktree / "result-body.md"
+            body.write_text("Landed at the main root.\n", encoding="utf-8")
+            payload = run_cmd(
+                worktree, "result", "testrun", "T1",
+                "--section", "Result", "--file", str(body),
+            )
+            self.assertEqual("Result", payload["result"]["section"])
+            self.assertEqual(
+                str((run_dir / "T1.md").resolve()), payload["result"]["path"]
+            )
+            self.assertIn(
+                "## Result\n\nLanded at the main root.\n",
+                (run_dir / "T1.md").read_text(encoding="utf-8"),
+            )
+            # nothing was created in the worktree: the ticket tree is the
+            # main checkout's alone
+            self.assertFalse((worktree / ".orch").exists())
+
+    def test_text_form_writes_the_same_body(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            payload = run_cmd(
+                worktree, "result", "testrun", "T1",
+                "--section", "verification", "--text", "1. PASS.",
+            )
+            self.assertEqual("Verification", payload["result"]["section"])
+            self.assertIn(
+                "## Verification\n\n1. PASS.\n",
+                (run_dir / "T1.md").read_text(encoding="utf-8"),
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
