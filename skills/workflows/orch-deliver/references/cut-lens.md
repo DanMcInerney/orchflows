@@ -5,7 +5,8 @@ issued items alone.
 
 - Scope coverage: each item's `write_scope` covers every artifact its
   own objective and completion test name, resolved against the
-  workspace before issue
+  workspace before issue; an artifact the test only observes —
+  asserting it unchanged included — is not named
   ([rules/topology.md](../../../../rules/topology.md) §3).
 - Self-contradiction: `excluded_actions` against `write_scope`
   ([contracts/work-item.md](../../../../contracts/work-item.md)),
