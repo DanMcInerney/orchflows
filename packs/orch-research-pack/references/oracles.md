@@ -13,6 +13,4 @@ Green is measured at the synthesized result for the evidence rows and
 at the gate for the two judged rows — contradiction handling and rigor
 — which no evidence row's passing carries. Evidence rows are compared
 against the sources they cite, the judged rows against the lane packets
-and the spec's rigor bar. No deviation from
-[verdict.md](../../../contracts/verdict.md)'s class policy: follow it
-for how each class decides.
+and the spec's rigor bar.

@@ -50,9 +50,12 @@ PACK_SIGNATURE_CELLS = (
 )
 CRAFT_CELLS_BY_POINTER = ("slicing", "lens", "oracle_policy", "craft")
 CRAFT_BUDGET = 60
-# Cross-pack cell linter. Both figures are normative: the pair set the
-# check reports is a function of them, so moving either changes what the
-# check means, not only what it finds.
+# Cross-pack cell linter. Both figures are normative: with autojunk off
+# at the ratio call below, the reported pair set is a function of them
+# alone, so moving either changes what the check means, not only what it
+# finds. SequenceMatcher's default autojunk would break that — it drops
+# characters common in any sequence over 200 characters, suppressing the
+# ratio on exactly the longest clauses.
 CELL_SIMILARITY_THRESHOLD = 0.55
 CELL_CLAUSE_MIN_WORDS = 5
 
@@ -942,7 +945,9 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
                     for right in right_clauses:
                         if left == right:
                             continue
-                        ratio = difflib.SequenceMatcher(None, left, right).ratio()
+                        ratio = difflib.SequenceMatcher(
+                            None, left, right, autojunk=False
+                        ).ratio()
                         if ratio >= CELL_SIMILARITY_THRESHOLD:
                             diag.warn(
                                 left_label,

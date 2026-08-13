@@ -12,6 +12,4 @@ Green is measured at the assembled document for the deterministic and
 evidence rows and at the gate for the judged rows, compared against the
 spec's own targets — its word and section counts, its evidence set, its
 voice contract — and never against a prior revision, since the document
-is the subject. No deviation from
-[verdict.md](../../../contracts/verdict.md)'s class policy: follow it
-for how each class decides.
+is the subject.
