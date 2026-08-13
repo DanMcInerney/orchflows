@@ -38,6 +38,7 @@ from tests import helpers
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "transport"
 PACKAGE_DIR = Path(__file__).resolve().parent.parent / "scripts" / "super_research"
 ADAPTER_DIR = PACKAGE_DIR / "adapters"
+EVIDENCE_DOC = Path(__file__).resolve().parent.parent / "references" / "evidence.md"
 FROZEN_OBSERVED_AT = "2026-08-10T09:00:00Z"
 
 # Only the transport seam may reach the network.
@@ -738,6 +739,16 @@ class RouteOwnershipScanTest(unittest.TestCase):
                 + transport.ROUTE_CONSTANTS[transport.DDG_HTML_ROUTE].path,
             ],
         )
+
+    def test_no_credential_value_reaches_the_tracked_evidence_document(self):
+        # `references/evidence.md` distils records of live reads, and a
+        # transcript is exactly where a credential value would be copied from.
+        # The scan above, the same literals, one surface that is prose.
+        credentials = sorted(
+            credential.value for credential in transport.PUBLIC_CLIENT_CREDENTIALS.values()
+        )
+
+        self.assertEqual(sources_naming(credentials, [EVIDENCE_DOC]), [])
 
     def test_no_package_module_but_transport_reaches_the_network(self):
         for path in package_sources():
