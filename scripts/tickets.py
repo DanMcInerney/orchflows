@@ -17,7 +17,7 @@ Subcommands:
     claim <run> <id> --by <name>
     set-status <run> <id> <status>
     packet <run> <id> --reply-to <name> [--workspace <path>]
-    result <run> <id> --section <name> (--file <path> | --text <string>)
+    result <run> <id> --section <name> (--file <path> | --text <string>) [--append]
 """
 
 from __future__ import annotations
@@ -64,7 +64,18 @@ PACKET_SECTIONS = (
 # join's alone — which is why `result` writes no frontmatter at all.
 EXECUTOR_SECTIONS = ("Result", "Verification", "Feedback", "Risks", "Handoff")
 EXECUTOR_SECTIONS_BY_KEY = {name.lower(): name for name in EXECUTOR_SECTIONS}
-RESULT_USAGE = "result <run> <id> --section <name> (--file <path> | --text <string>)"
+# contracts/work-item.md states the sections in this order; a created section
+# takes its place in it, never the end of the file.
+SECTION_ORDER = (
+    "Objective",
+    "Fixed inputs",
+    "Completion test",
+    "Return fields",
+) + EXECUTOR_SECTIONS
+SECTION_RANK = {name.lower(): i for i, name in enumerate(SECTION_ORDER)}
+RESULT_USAGE = (
+    "result <run> <id> --section <name> (--file <path> | --text <string>) [--append]"
+)
 
 
 # --- repository / filesystem helpers ---------------------------------------
@@ -232,7 +243,7 @@ def _body_block(body: str, newline: str) -> str:
     return newline.join(normalized.split("\n")) + newline
 
 
-def _write_section(text: str, heading: str, body: str) -> str:
+def _write_section(text: str, heading: str, body: str, append: bool = False) -> str:
     """Replace or create one ``## Heading`` body, leaving every other byte alone."""
 
     lines = text.splitlines(keepends=True)
@@ -254,17 +265,35 @@ def _write_section(text: str, heading: str, body: str) -> str:
         if lines[i][3:].strip().lower() == heading.lower():
             found = i
             break
-    block = _body_block(body, newline)
+
     if found is None:
-        prefix = "".join(lines).rstrip("\r\n")
-        if prefix:
-            prefix += newline + newline
-        return f"{prefix}## {heading}{newline}{newline}{block}"
+        block = _body_block(body, newline)
+        segment = f"## {heading}{newline}{newline}{block}" if block else f"## {heading}{newline}"
+        insert_at = None
+        target_rank = SECTION_RANK.get(heading.lower())
+        if target_rank is not None:
+            for i in starts:
+                rank = SECTION_RANK.get(lines[i][3:].strip().lower())
+                if rank is not None and rank > target_rank:
+                    insert_at = i
+                    break
+        if insert_at is None:
+            prefix = "".join(lines).rstrip("\r\n")
+            if prefix:
+                prefix += newline + newline
+            return prefix + segment
+        return "".join(lines[:insert_at]) + segment + newline + "".join(lines[insert_at:])
+
     end = next((i for i in starts if i > found), len(lines))
+    if append:
+        prior = "".join(lines[found + 1 : end]).rstrip().lstrip("\r\n")
+        if prior:
+            body = f"{prior}\n\n{body}"
+    block = _body_block(body, newline)
     head = lines[found]
     if not head.endswith("\n"):
         head += newline
-    segment = head + newline + block
+    segment = head + newline + block if block else head
     if end < len(lines):
         segment += newline
     return "".join(lines[:found]) + segment + "".join(lines[end:])
@@ -599,6 +628,9 @@ def _cmd_result(rest):
     section = _extract_flag(args, "--section")
     file_arg = _extract_flag(args, "--file")
     text_arg = _extract_flag(args, "--text")
+    append = "--append" in args
+    while "--append" in args:
+        args.remove("--append")
     stray = next((arg for arg in args if arg.startswith("-")), None)
     if stray is not None:
         return {
@@ -638,7 +670,9 @@ def _cmd_result(rest):
         return {"error": f"ticket not found: {run}/{ticket_id}"}
     try:
         text = ticket_path.read_text(encoding="utf-8")
-        ticket_path.write_text(_write_section(text, canonical, body), encoding="utf-8")
+        ticket_path.write_text(
+            _write_section(text, canonical, body, append), encoding="utf-8"
+        )
     except OSError as error:
         return {"error": f"unwritable ticket: {error}"}
     return {
@@ -647,7 +681,7 @@ def _cmd_result(rest):
             "id": ticket_id,
             "path": str(ticket_path),
             "section": canonical,
-            "mode": "replace",
+            "mode": "append" if append else "replace",
         }
     }
 

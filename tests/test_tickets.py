@@ -680,5 +680,87 @@ class TestResultScriptContract(unittest.TestCase):
             )
 
 
+def headings_of(text: str) -> list:
+    return [line[3:].strip() for line in text.splitlines() if line.startswith("## ")]
+
+
+class TestResultSectionOrder(unittest.TestCase):
+    """A created section takes its place in the order contracts/work-item.md
+    states. The sparse `TICKET` fixture is the one that can tell the
+    difference: on a fuller ticket, blind appending is right by accident."""
+
+    def test_a_created_section_lands_in_contract_order_not_append_order(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            run_cmd(worktree, "result", "testrun", "T1", "--section", "Feedback", "--text", "[]")
+            run_cmd(worktree, "result", "testrun", "T1", "--section", "Result", "--text", "did it")
+            text = (run_dir / "T1.md").read_text(encoding="utf-8")
+            self.assertEqual(["Objective", "Result", "Feedback"], headings_of(text))
+            self.assertEqual("did it", tickets_mod._sections(text)["Result"])
+            self.assertEqual("[]", tickets_mod._sections(text)["Feedback"])
+
+    def test_handoff_lands_last_however_the_sections_arrive(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            for name in ("Handoff", "Risks", "Verification"):
+                run_cmd(worktree, "result", "testrun", "T1", "--section", name, "--text", name)
+            self.assertEqual(
+                ["Objective", "Verification", "Risks", "Handoff"],
+                headings_of((run_dir / "T1.md").read_text(encoding="utf-8")),
+            )
+
+
+class TestResultAppend(unittest.TestCase):
+    """contracts/work-item.md:91-93: a rules/verification.md §10 checker
+    appends its own pass and never rewrites the executor's."""
+
+    def test_append_keeps_the_prior_body_and_adds_after_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            ticket = run_dir / "T1.md"
+            run_cmd(worktree, "result", "testrun", "T1", "--section", "Result",
+                    "--text", "executor pass")
+            run_cmd(worktree, "result", "testrun", "T1", "--section", "Feedback", "--text", "[]")
+            before = ticket.read_text(encoding="utf-8")
+            payload = run_cmd(worktree, "result", "testrun", "T1", "--section", "Result",
+                              "--text", "checker pass", "--append")
+            self.assertEqual("append", payload["result"]["mode"])
+            text = ticket.read_text(encoding="utf-8")
+            self.assertEqual("executor pass\n\nchecker pass", tickets_mod._sections(text)["Result"])
+            self.assertLess(text.index("executor pass"), text.index("checker pass"))
+            # every other section is byte-unchanged
+            self.assertEqual(headings_of(before), headings_of(text))
+            for name in ("Objective", "Feedback"):
+                self.assertEqual(
+                    tickets_mod._sections(before)[name], tickets_mod._sections(text)[name]
+                )
+            self.assertEqual(frontmatter_of(ticket), frontmatter_of(ticket))
+
+    def test_append_to_an_absent_section_creates_it_in_order(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            run_cmd(worktree, "result", "testrun", "T1", "--section", "Risks",
+                    "--text", "[]", "--append")
+            text = (run_dir / "T1.md").read_text(encoding="utf-8")
+            self.assertEqual(["Objective", "Risks"], headings_of(text))
+            self.assertEqual("[]", tickets_mod._sections(text)["Risks"])
+
+    def test_default_replaces_rather_than_appends(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            run_cmd(worktree, "result", "testrun", "T1", "--section", "Result", "--text", "first")
+            payload = run_cmd(worktree, "result", "testrun", "T1", "--section", "Result",
+                              "--text", "second")
+            self.assertEqual("replace", payload["result"]["mode"])
+            text = (run_dir / "T1.md").read_text(encoding="utf-8")
+            self.assertEqual("second", tickets_mod._sections(text)["Result"])
+            self.assertNotIn("first", text)
+
+
 if __name__ == "__main__":
     unittest.main()
