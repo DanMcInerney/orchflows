@@ -36,7 +36,8 @@ oracles where the scope provides them.
 Never: create a near-duplicate of an existing skill; exceed the tier's
 budget to avoid splitting a reference; touch a T0 contract outside a
 supersession change; land at canonical scope what the request placed
-at user or project scope.
+at user or project scope; give a custom item the `orch-` prefix,
+which is reserved for canonical skills.
 
 Return: the item and adapter paths, admission evidence, boundary
 findings, and oracle output — or the existing routing when no item is

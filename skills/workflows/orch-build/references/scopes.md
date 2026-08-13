@@ -26,8 +26,6 @@ repository itself and needs no install.
 - The scope's named oracle (library lens) is the only oracle for a
   custom item. Host skill tooling (e.g. skill-creator validators) does
   not apply to orchflows items and is never consulted.
-- Custom items never carry the `orch-` prefix; the prefix is reserved
-  for canonical skills.
 - Custom workflows instantiate from compositions: pick the nearest
   composition in `compositions/`, pin its open decisions (benchmark,
   bounds, defaults, schedule), and land the result at scope. A proven
