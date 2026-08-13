@@ -735,8 +735,33 @@ NUMBER_WORDS = (
 
 
 ITEM_DIR = Path(__file__).resolve().parent.parent
+OWNER_SKILL = ITEM_DIR / "SKILL.md"
 HOST_MIRROR = ITEM_DIR.parent.parent.parent / ".claude" / "skills" / "super-research" / "SKILL.md"
 SCOPE_ROUTING_FILE = ITEM_DIR.parent.parent.parent / "AGENTS.md"
+
+# `rules/composition.md` §5. Restated rather than imported because
+# `tools/validate.py`, which enforces it for every library skill, does not read
+# `.orchflows/` at all: a project-scope item's frontmatter has no other oracle.
+DESCRIPTION_BUDGET = 140
+
+
+def frontmatter_description(path):
+    """One skill's ``description:`` field, read out of its frontmatter alone.
+
+    The block, not the file: the mirror's body is prose *about* the include, and
+    a sentence there beginning with the word would otherwise answer for a field
+    the frontmatter had lost.
+    """
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if not lines or lines[0].strip() != "---":
+        return None
+    for line in lines[1:]:
+        if line.strip() == "---":
+            return None
+        if line.startswith("description:"):
+            return line.split(":", 1)[1].strip()
+    return None
 
 
 class ThisSuiteCountsItsOwnModuleSetTest(unittest.TestCase):
@@ -781,6 +806,18 @@ class TheHostMirrorSaysWhereItResolvesTest(unittest.TestCase):
         self.assertIn("machine-specific", body)
         # And it points at the file that does resolve, from any checkout.
         self.assertIn(".orchflows/skills/super-research/SKILL.md", body)
+
+    def test_the_owner_and_the_mirror_describe_the_item_with_one_string(self):
+        # A Claude host routes on the mirror's copy and never reads the owner's,
+        # so drift here costs the item every invocation while both files still
+        # read correctly on their own — the one failure nobody thinks to check.
+        # Nothing else pins the pair: the two assertions above are about the
+        # include, and `tools/validate.py` does not walk this tree.
+        owner = frontmatter_description(OWNER_SKILL)
+
+        self.assertIsNotNone(owner, "the owner's frontmatter names no description")
+        self.assertEqual(frontmatter_description(HOST_MIRROR), owner)
+        self.assertLessEqual(len(owner), DESCRIPTION_BUDGET)
 
     def test_the_routing_line_does_not_read_as_a_working_mirror(self):
         line = [
