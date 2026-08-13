@@ -2422,5 +2422,125 @@ class RefusalThreatTest(unittest.TestCase):
         self.assertEqual(len(opener.opened), 1)
 
 
+INTERNALS_PATH = Path(__file__).resolve().parent.parent / "references" / "internals.md"
+
+# The one table in `internals.md` that restates `THREAT_REMAP`, named by its
+# header row. Only this table is read; every other table in that file belongs
+# to someone else.
+THREAT_TABLE_HEADER = "| threat | applies to | form here |"
+
+
+def threat_table_rows():
+    """`internals.md`'s threat table, as `(threat, applies, form)` cells in document order.
+
+    Parsed rather than transcribed: the table a reader meets is the one the
+    assertions run against, so a row corrected in the document and left in
+    `THREAT_REMAP` — or the reverse — is a red test rather than two statements
+    nobody compared.
+    """
+
+    rows = []
+    inside = False
+    for line in INTERNALS_PATH.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped == THREAT_TABLE_HEADER:
+            inside = True
+            continue
+        if not inside:
+            continue
+        if not stripped.startswith("|"):
+            break
+        cells = tuple(cell.strip() for cell in stripped.strip("|").split("|"))
+        if set(cells[0]) <= set("- "):
+            continue
+        rows.append(cells)
+    return tuple(rows)
+
+
+def documented_classes(cell):
+    """The access classes one `applies to` cell names, `K0`–`K5` read as a range.
+
+    The ladder the range is expanded over is `schema.ACCESS_CLASSES`, so the
+    shorthand means whatever the package says it means and not a second list.
+    """
+
+    named = tuple(piece for index, piece in enumerate(cell.split("`")) if index % 2 and piece)
+    if not named or "–" not in cell:
+        return named
+    ladder = list(schema.ACCESS_CLASSES)
+    return tuple(ladder[ladder.index(named[0]) : ladder.index(named[-1]) + 1])
+
+
+def comparable(prose):
+    """One form statement with the document's typography taken off, and nothing else.
+
+    Backticks and line breaks are how a cell is written, not what it claims.
+    Every word survives, so a clause dropped on either side stays a difference.
+    """
+
+    return " ".join(prose.replace("`", "").split())
+
+
+class ThreatTableIsReadOffTheDocumentTest(unittest.TestCase):
+    """`internals.md`'s sixteen threat rows, checked against `THREAT_REMAP`.
+
+    `THREAT_REMAP` is guarded three ways above. The copy of it a reader
+    actually meets was guarded not at all, and it restates **two** hand-kept
+    judgments per row: the classes a threat applies to, and the form it takes
+    here. `protocol.md` tells that reader this table gets the treatment the
+    loss tables get, so it gets it — both columns of all sixteen rows are
+    parsed out of the document and compared, and neither side can be corrected
+    while the other is left.
+    """
+
+    def setUp(self):
+        self.rows = threat_table_rows()
+
+    def test_the_table_was_found_and_every_row_is_three_cells(self):
+        # A parse that silently found nothing passes every assertion below
+        # while checking no table at all.
+        self.assertEqual(len(self.rows), 16)
+        self.assertEqual(len(self.rows), len(THREAT_REMAP))
+        for row in self.rows:
+            self.assertEqual(len(row), 3, "a threat row is {0} cells".format(len(row)))
+
+    def test_the_table_names_every_remapped_threat_exactly_once(self):
+        self.assertEqual([row[0] for row in self.rows], sorted(THREAT_REMAP))
+
+    def test_each_row_applies_to_exactly_the_classes_the_remap_gives_it(self):
+        for threat, applies, _ in self.rows:
+            with self.subTest(threat=threat):
+                self.assertEqual(
+                    documented_classes(applies),
+                    THREAT_REMAP[threat][0],
+                    "internals.md says {0} applies to {1}; THREAT_REMAP says {2}".format(
+                        threat, applies, THREAT_REMAP[threat][0]
+                    ),
+                )
+
+    def test_each_row_states_exactly_the_form_the_remap_gives_it(self):
+        for threat, _, form in self.rows:
+            with self.subTest(threat=threat):
+                self.assertEqual(
+                    comparable(form),
+                    comparable(THREAT_REMAP[threat][1]),
+                    "internals.md states {0} as {1!r}; THREAT_REMAP states it as {2!r}".format(
+                        threat, comparable(form), comparable(THREAT_REMAP[threat][1])
+                    ),
+                )
+
+    def test_the_parse_can_tell_two_cells_apart(self):
+        # The oracle can fail. A class reader that collapsed the range, or a
+        # form comparison that normalized the words away, would pass over any
+        # table at all — so both are shown distinguishing, on hand-built cells.
+        self.assertEqual(documented_classes("`K0`–`K5`"), EVERY_CLASS)
+        self.assertEqual(documented_classes("`K1`, `K5`"), CREDENTIAL_CLASSES)
+        self.assertEqual(documented_classes("`K4`"), ("K4",))
+        self.assertEqual(documented_classes("no class"), NO_CLASS)
+        self.assertNotEqual(documented_classes("`K1`, `K5`"), EVERY_CLASS)
+        self.assertEqual(comparable("a `K1`\n  credential"), "a K1 credential")
+        self.assertNotEqual(comparable("no fallback"), comparable("no fallbacks"))
+
+
 if __name__ == "__main__":  # pragma: no cover - convenience runner
     unittest.main()

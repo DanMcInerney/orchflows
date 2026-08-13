@@ -86,24 +86,29 @@ named once, every class one the ladder declares, and every class the roster
 answers at covered by at least one threat. `offline` is not on the ladder; nothing
 about `fake` is a claim about a route.
 
+The sixteen rows below are that remap and not a second copy of it:
+`test_transport.ThreatTableIsReadOffTheDocumentTest` parses **both** columns out
+of this file and compares each against `THREAT_REMAP`, so a row corrected here
+and left there is a red test rather than two statements nobody compared.
+
 | threat | applies to | form here |
 | --- | --- | --- |
 | T01 | `K1`, `K5` | no credential id or value reaches a request, a response, a call log, or an artifact |
-| T02 | `K1`, `K5` | the address a query-placed key was appended to comes back stripped |
+| T02 | `K1`, `K5` | an echoed credential — the address a query-placed key was appended to — comes back stripped |
 | T03 | `K1`, `K5` | a credential is attached at send time from the route's own constant, so it reaches that origin and no other |
-| T04 | `K0`–`K5` | no route admits a state-changing verb |
-| T05 | no class | no process is launched, because none can be |
+| T04 | `K0`–`K5` | no route admits a state-changing verb: PUT, PATCH and DELETE nowhere, POST only for two named reads |
+| T05 | no class | no process is launched, because none can be: nothing here imports one or spells a command |
 | T06 | `K0`–`K5` | a caller cannot escape a route's admitted method set, and a body is the route's shape with the caller's values |
-| T07 | no class | no session state to export: the one token a run mints lives in memory |
-| T08 | no class | nothing navigates, clicks, or submits |
-| T09 | `K0`–`K5` | acquired text is `untrusted_content`: it changes no plan, no grant, no write set |
+| T07 | no class | there is no session state to export: the one token a run mints lives in memory and nowhere else |
+| T08 | no class | nothing navigates, clicks or submits: the only outbound operation is one bounded read |
+| T09 | `K0`–`K5` | acquired text is `untrusted_content`: it changes no plan, no grant, and no write set |
 | T10 | `K1`, `K5` | a `K1` credential names no user, so there is no principal to mismatch; the operator that answered is declared |
-| T11 | `K0`–`K5` | a refusal is typed `rate_limited` on one call, and no identity changes |
+| T11 | `K0`–`K5` | a refusal is typed `rate_limited` on one call, and no identity changes because of it |
 | T12 | `K0`–`K5` | a route the run cannot reach is refused with a typed reason and never probed |
-| T13 | `K4` | an index surface declares itself an index, and is the only surface that does |
-| T14 | `K0`–`K5` | no delete primitive: the only stores are in memory |
-| T15 | `K0`–`K5` | a refusal costs the origin nothing: it is decided before any call |
-| T16 | `K0`–`K5` | no fallback: a failed read is a typed failure, never a second read elsewhere |
+| T13 | `K4` | an index surface declares itself an index, and it is the only surface in the roster that does |
+| T14 | `K0`–`K5` | the package has no delete primitive: its only stores are in memory and clearing one is all there is |
+| T15 | `K0`–`K5` | a refusal costs the origin nothing: it is decided before any call is made |
+| T16 | `K0`–`K5` | no fallback: a failed read is a typed failure, never a second read somewhere else |
 
 T05, T07 and T08 apply to no class because the `K0`–`K5` ladder has neither an
 ambient-identity CLI nor an exported browser session; they are answered by absent
