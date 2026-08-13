@@ -2,8 +2,10 @@
 
 The run's persistent state file: what makes fresh-context iteration,
 resumption, and post-hoc improvement possible. One per run, at
-`.orch/runs/<run>/worklog.md`. Iterations read it instead of transcripts;
-transcripts are never state.
+`<main-repository-root>/.orch/runs/<run>/worklog.md`, where the main
+repository root is the shared root a linked worktree's `.git` pointer
+resolves to — never the worktree's own root. Iterations read it instead
+of transcripts; transcripts are never state.
 
 - `goal` — the frozen objective and acceptance — or the done-check for
   a loop run — verbatim; never edited after iteration 1.
