@@ -15,11 +15,23 @@
 5. Return named fields, never transcripts, over the channel
    [rules/delegation.md](delegation.md) §10 owns; everything beyond the
    contracted fields is waste.
-6. Universal procedure lives in `SKILL.md`; detail needed in under a
-   fifth of invocations lives in the owning package's `references/`.
-7. Models route by descriptions, so a description states when to
+6. Placement is the second question: §1–§2 decide the first, and what
+   they delete is never placed. What survives goes by kind — universal
+   procedure, and the exact contract an executor must reproduce for its
+   result to be accepted, in `SKILL.md`; expandable method and domain
+   data behind the link, in the owning package's `references/` or pack
+   cell. [composition.md](composition.md) §11 draws that line. The
+   cells [contracts/pack-signature.md](../contracts/pack-signature.md)
+   mandates are the standing exception: the contract requires them to
+   state their content, and the supersession PR that would let them
+   cite instead is queued.
+7. A link states at its call site when to follow it. A new one lands on
+   the answer, not on a further pointer; the existing `SKILL.md` →
+   `references/` → `rules/` two-hop path is not retrofitted. Copy or
+   cite is [visibility.md](visibility.md) §3's call.
+8. Models route by descriptions, so a description states when to
    invoke, not what the skill is; the character budget is composition
    rule 5's.
-8. Spend the multi-agent premium on glue only; the conditions and
+9. Spend the multi-agent premium on glue only; the conditions and
    deliverable work's dispatch are [rules/delegation.md](delegation.md)
    §2's own. Default to the fast path.
