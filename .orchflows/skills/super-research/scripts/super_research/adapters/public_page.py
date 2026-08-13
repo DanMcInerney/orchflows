@@ -10,7 +10,7 @@ may select between.
 primitive, and the spec's non-goals forbid one.** Every other adapter here is
 pinned to a vendor's endpoint shape: a caller cannot point the GitHub reader at
 Wikipedia, because ``/repos/<owner>/<repo>`` is GitHub's shape and the host is
-``transport.py``'s. This one takes an argument, and an argument is one bad
+``routes.py``'s. This one takes an argument, and an argument is one bad
 branch away from being an address. If that branch existed, every other
 constraint in this package would be decorative — any route at all could be
 reached through it, under any verb the opener admits, with none of the pacing,
@@ -18,7 +18,7 @@ typing or ownership the route table exists to impose.
 
 So the reachable target set is a **closed table**, :data:`PAGE_SELECTIONS`, and
 it is enumerable in the literal sense: two names, each resolving to a route
-``transport.py`` owns. A caller names a selection and fills the one segment
+``routes.py`` owns. A caller names a selection and fills the one segment
 that selection declares. A caller string that names an *address* rather than a
 document — anything carrying a scheme, an authority, or a path separator — is
 refused as ``unselected_target``, and refused **before any call is made**, so

@@ -19,9 +19,9 @@ parser was made from.
 `python3 -m super_research.cli adapters` prints the thirteen live adapters, the
 access class each declares, and the field set its smoke asserts; the offline
 `fake` adapter has no smoke and is not on that list. The roster's routes were
-measured from one host on 2026-08-10, and two sweeps on 2026-08-12 read all
-thirteen adapters against real origins, nine carrying their whole roster row on
-each sweep — [evidence.md](evidence.md) §"Route measurements of 2026-08-10" and
+measured from one host on 2026-08-10, and two sweeps on 2026-08-12 read them
+against real origins; what each of those found is in
+[evidence.md](evidence.md) §"Route measurements of 2026-08-10" and
 §"The two liveness sweeps of 2026-08-12". `status` still reports every adapter
 `unverified` until `smoke --adapter <id>` makes one bounded read that carries
 that adapter's row: the smoke ledger lives in a tempdir and never travels with a

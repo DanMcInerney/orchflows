@@ -13,12 +13,12 @@ carried. [evidence.md](evidence.md) §"Route measurements of 2026-08-10" holds
 what this file cites of that record. It predates this package, so every ceiling,
 field list, and route constant here traces to that one host at that one moment.
 
-**The parsers have since read live origins.** Two sweeps on 2026-08-12 read all
-thirteen adapters against real origins, and nine carried their whole roster row
-on each sweep — [evidence.md](evidence.md) §"The two liveness sweeps of
-2026-08-12". What the offline suite proves is narrower and unchanged: it runs the
-parsers against the payloads the 2026-08-10 probes recorded, which is a statement
-about those fixtures and not about any origin today.
+**The parsers have since read live origins.** Two sweeps on 2026-08-12 put every
+live adapter against its real route; which of them reached an origin and which
+carried a whole roster row is in [evidence.md](evidence.md) §"The two liveness
+sweeps of 2026-08-12". What the offline suite proves is narrower and unchanged:
+it runs the parsers against the payloads the 2026-08-10 probes recorded, which is
+a statement about those fixtures and not about any origin today.
 
 Two consequences a caller must carry:
 
@@ -243,8 +243,9 @@ Deferred, each with a reopen condition rather than a silent drop: `youtube_capti
 videos) until attestation is solved or a caller opts into `K5`; `x_search` (the
 current `SearchTimeline` query id is unrecovered behind an ESM import map) with
 `K4` as the interim route; `tiktok_public`, unverified because this network
-answered 503 with a login portal and §0 forbids reading that as platform
-behaviour; `reddit_oauth` and `youtube_data_api` as `K5` throughput upgrades.
+answered 503 with a login portal and `evidence.md` §"The captive-portal caveat"
+forbids reading that as platform behaviour; `reddit_oauth` and
+`youtube_data_api` as `K5` throughput upgrades.
 
 ## Five capabilities that ship smaller than their roster row
 

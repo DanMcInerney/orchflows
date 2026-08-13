@@ -1,0 +1,16 @@
+# A module that tells the next maintainer the wrong thing: it names the
+# seam as the owner of the route table, which `routes.py` declares and
+# `transport.py` only re-exports. Stored with a .txt suffix so it can never
+# be imported or discovered; it exists only to prove the prose scan
+# discriminates. It spells no host, no endpoint and no credential, so the
+# literal scan beside it reads this file as clean.
+
+
+def locator_for(path):
+    """Compose nothing.
+
+    Taken from the payload and not composed here, because a route's host
+    belongs to `transport.py`.
+    """
+
+    return path

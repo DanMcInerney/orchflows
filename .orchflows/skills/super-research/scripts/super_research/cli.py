@@ -4,7 +4,7 @@ Three operations and nothing else — list the roster, smoke one adapter, report
 what the smokes have proven. There is no operation that takes an address, a
 route, a command, or a manifest from a caller: the one argument the whole
 surface accepts is an adapter id off a closed list, and everything a smoke
-sends is a route constant :mod:`.transport` owns applied to a probe declared in
+sends is a route constant :mod:`.routes` owns applied to a probe declared in
 :mod:`.probes`. That is what keeps a convenience entry point from becoming the
 generic HTTP or exec primitive the spec's non-goals refuse.
 

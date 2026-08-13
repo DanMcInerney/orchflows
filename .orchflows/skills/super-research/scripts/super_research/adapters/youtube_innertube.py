@@ -416,7 +416,7 @@ def _search_record(position: int, renderer: Mapping[str, Any]) -> NativeRecord:
         canonical_content_kind=VIDEO_KIND,
         # The address the payload published, resolved against the origin that
         # published it. YouTube writes it relative to itself, and a route's
-        # host belongs to `transport.py`.
+        # host belongs to `routes.py`.
         canonical_locator=transport.origin_locator(
             DESCRIPTOR.route_id, _text(dig(renderer, NAVIGATION_URL_PATH))
         ),
