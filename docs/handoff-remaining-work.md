@@ -34,16 +34,6 @@ are recorded as absent, not as zero: the rerun spread in the manifest's
 `resolution`, the judged class in the measurement record the manifest's
 `measurement` locator names.
 
-## Queued from other runs
-
-**`contracts/pack-signature.md` — let the mandated cells cite their owner.**
-Owner: [contracts/pack-signature.md](../contracts/pack-signature.md).
-The slicing and `oracle_policy` cells are the ones at issue, and
-[rules/token-economy.md](../rules/token-economy.md) §6's standing exception
-exists for them until this lands. T0: a supersession PR only
-([AGENTS.md](../AGENTS.md)). Queued by the `place-by-kind-not-by-rate`
-amendment, which took the exception branch instead.
-
 ## Recorded, not scheduled
 
 The suspected case defects listed in `awaiting_confirmation`, in the

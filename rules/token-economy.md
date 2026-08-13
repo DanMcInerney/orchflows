@@ -27,8 +27,9 @@
    detail is the obligation's own operand, the two stay together. The
    cells [contracts/pack-signature.md](../contracts/pack-signature.md)
    mandates are the standing exception: the contract requires them to
-   state their content, and the supersession PR that would let them
-   cite instead is queued.
+   state their content. The tension was resolved by narrowing what a
+   cell must state to what varies by domain, not by letting a cell cite
+   the owner of content it must state.
 7. A link states at its call site when to follow it. A new one lands on
    the answer, not on a further pointer; the existing `SKILL.md` →
    `references/` → `rules/` two-hop path is not retrofitted. Copy or
