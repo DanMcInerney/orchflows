@@ -15,7 +15,8 @@ repository itself and needs no install.
 | project | `<repo>/.orchflows/skills/<name>/SKILL.md` + host integrations | the repo's `AGENTS.md`, outside managed blocks | library lens |
 
 - User- and project-scope items are custom: outside library law,
-  binding only at their scope, written to a skill's anatomy.
+  binding only at their scope, written to a skill's anatomy. What a
+  custom item may be named is `orch-build`'s `Never:`.
 - Host integrations match the installer's own: a Claude adapter stub
   at the scope's `.claude/skills/<name>/SKILL.md`, carrying only the
   host-legal frontmatter subset (`name`, `description`) plus an
@@ -26,8 +27,6 @@ repository itself and needs no install.
 - The scope's named oracle (library lens) is the only oracle for a
   custom item. Host skill tooling (e.g. skill-creator validators) does
   not apply to orchflows items and is never consulted.
-- Custom items never carry the `orch-` prefix; the prefix is reserved
-  for canonical skills.
 - Custom workflows instantiate from compositions: pick the nearest
   composition in `compositions/`, pin its open decisions (benchmark,
   bounds, defaults, schedule), and land the result at scope. A proven

@@ -24,8 +24,8 @@ dependencies point. Terms: `docs/vocabulary.md`.
   `contracts/composition.md`; invocable; entry
   routed | named | scheduled; admitted through `orch-build`.
 - `rules/` — cross-cutting law (composition, delegation, verification,
-  loops, roles, token-economy, topology, visibility, improvement). A
-  skill links the owning rule instead of restating it.
+  loops, roles, token-economy, topology, visibility, improvement);
+  using one is `rules/visibility.md` §3's.
 - `docs/` — `vocabulary.md` (every library term of art, one owner),
   `pack-authoring.md` (the order of work when adding a pack),
   `library-review.md` (the standing full-review prompt), and this

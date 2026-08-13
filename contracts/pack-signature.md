@@ -9,27 +9,33 @@ the cell, or the judgment belongs in the workflow — never in one pack.
 Cells:
 
 - `slicing` — reference describing the decomposition strategy: how a spec
-  cuts into work items, the item extensions the domain adds, and
-  whether one terminal assembly item exists.
+  cuts into work items and the item extensions the domain adds.
 - `executor` — the named skill bound to unit work items.
-- `assembly` — the named skill bound to the terminal item, or `none`.
+- `assembly` — whether a terminal assembly item exists and what runs it,
+  in exactly one of two forms: a backticked skill name bound to that
+  item, or the bare word none followed by an em-dash gloss naming what
+  stands in for the assembly. An empty cell or free prose is malformed.
 - `lens` — the review binding: a named skill, or `orch-critique` plus a
   lens reference whose criteria are restated fresh from the spec.
 - `oracle_policy` — the oracle table: for each criterion kind, the exact
-  oracle and its oracle_class per
-  [verdict.md](verdict.md); what green means; deviations from
-  verdict.md's class policy.
+  oracle and its oracle_class per [verdict.md](verdict.md); where green
+  is measured and what it is compared against; any deviation from
+  verdict.md's class policy. The class policy and the overall verdict
+  rule stay verdict.md's: state a deviation, never a paraphrase.
 - `workspace` — what identities, baselines, and write scopes mean in this
   domain (git revisions and paths; document slots; evidence stores).
+  Where it uses a term `craft` defines, the cell cites `craft` for the
+  definition instead of restating it.
 - `required_spec_fields` — the fields a spec must carry for decomposition
   to accept it.
-- `craft` — reference owning the domain's vocabulary and shape: each
-  term defined once and used with exactly that meaning in specs,
-  tickets, lenses, and verdicts; shape principles that hold across
-  every workspace in the domain, outranked by the workspace's own
-  standards on conflict. Budget: 60 non-empty lines. A term no spec
-  field, item extension, lens criterion, or executor consumes is a
-  defect.
+- `craft` — reference owning the domain's vocabulary, and its shape where
+  the domain has one of its own. Vocabulary is mandated: each term
+  defined once and used with exactly that meaning in specs, tickets,
+  lenses, and verdicts; a term no spec field, item extension, lens
+  criterion, or executor consumes is a defect. Shape is optional and
+  carries only the principles this domain does not share with the
+  others, outranked by the workspace's own standards on conflict.
+  Budget: 60 non-empty lines.
 
 Sharing constraints, checked at pack review:
 
@@ -49,4 +55,6 @@ pack review under the library lens. A pack that wants control flow is a
 signature defect, not a pack feature.
 
 Admission: a domain earns a pack only for a new oracle class or new
-workspace semantics, read strictly.
+workspace semantics, read strictly. A cell earns its slot only when the
+content behind it would differ between two packs, and no other cell
+already carries that content.

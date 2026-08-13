@@ -10,9 +10,7 @@ frontier carries the riskiest seam's tracer.
   dependency-ordered with and sufficient for its own completion test;
   dependency edges only where one ticket's seam is another's input.
 - Item extensions beyond the core: the runnable check commands verbatim;
-  the standards owner pointer; the pack's craft reference by path.
-- No terminal assembly item: merged, green revisions are the assembled
-  deliverable.
+  the standards owner pointer.
 - A criterion needing simultaneous changes across most of the surface is
   a decision gap (the slicing cannot isolate it), not one giant ticket
   (rules/topology.md §3).

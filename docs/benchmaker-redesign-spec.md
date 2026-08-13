@@ -140,7 +140,8 @@ stays in `evaluation-design.md` §8 where it already lived; the validator
 refuses a `BC<n>` token in a candidate-facing key. Both were repaired
 for named correctness defects and neither for a score; §4.1's reference
 audit should confirm the repairs rather than trust them, which is now
-recorded in the manifest's `reference_audit.awaiting_confirmation`.
+recorded in `awaiting_confirmation`, in the reference audit record the
+manifest's `reference_audit` locator names.
 
 ## 0c. Revision — 2026-08-09, the seal removal
 

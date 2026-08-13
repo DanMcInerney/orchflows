@@ -30,15 +30,16 @@ Cost, measured: 211,834 tokens per case at two rungs.
 Owner: the same.
 Neither three-trial case ran, so `resolution` rests on the one-case
 floor and the suite's weakest oracle class is unexercised. Both figures
-are recorded as absent in the manifest's `resolution` and `measurement`,
-not as zero.
+are recorded as absent, not as zero: the rerun spread in the manifest's
+`resolution`, the judged class in the measurement record the manifest's
+`measurement` locator names.
 
 ## Recorded, not scheduled
 
-The suspected case defects listed in the manifest's
-`reference_audit.awaiting_confirmation` await
-[the spec](benchmaker-redesign-spec.md) §4.1's reference audit. In every
-case the audit confirms the repair rather than trusting it.
+The suspected case defects listed in `awaiting_confirmation`, in the
+reference audit record the manifest's `reference_audit` locator names,
+await [the spec](benchmaker-redesign-spec.md) §4.1's reference audit. In
+every case the audit confirms the repair rather than trusting it.
 
 Spec §10 steps 3 and 4 — the audit and measurement stages run for real,
 then anchors as their references arrive — and §11's standing gaps (G1

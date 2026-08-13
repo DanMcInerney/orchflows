@@ -13,13 +13,11 @@ views.
   composes another.
 - Item extensions beyond the core: the identity list verbatim; the
   render, capture, and diff commands and the accessibility bar
-  verbatim; the design language verbatim; the standards owner pointer;
-  the pack's craft reference by path.
+  verbatim; the design language verbatim; the standards owner pointer.
 - A view ticket missing a token returns `blocked` naming it — a
   token ticket precedes it as a dependency; it never hard-codes the
   value or widens its own scope.
-- No terminal assembly item: the merged revision's rendered views are
-  the assembled deliverable; cross-view consistency rides the gate's
+- No terminal assembly item; cross-view consistency rides the gate's
   lens, never a ticket of its own.
 - A criterion needing simultaneous changes across most views (a
   design-language shift) is a decision gap, not one giant ticket

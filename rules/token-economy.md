@@ -15,11 +15,35 @@
 5. Return named fields, never transcripts, over the channel
    [rules/delegation.md](delegation.md) §10 owns; everything beyond the
    contracted fields is waste.
-6. Universal procedure lives in `SKILL.md`; detail needed in under a
-   fifth of invocations lives in the owning package's `references/`.
-7. Models route by descriptions, so a description states when to
+6. Placement is the second question: §1–§2 decide the first, and what
+   they delete is never placed. What survives goes by kind — universal
+   procedure, and the exact contract an executor must reproduce for its
+   result to be accepted, in `SKILL.md`; expandable method and domain
+   data behind the link, in the owning package's `references/` or pack
+   cell. Which clauses carry that contract is
+   [composition.md](composition.md) §11's. Method is expandable when the
+   body states the obligation in one clause and the expansion can be
+   consulted separately without the obligation losing force; where the
+   detail is the obligation's own operand, the two stay together. The
+   cells [contracts/pack-signature.md](../contracts/pack-signature.md)
+   mandates are the standing exception: the contract requires them to
+   state their content. The tension was resolved by narrowing what a
+   cell must state to what varies by domain, not by letting a cell cite
+   the owner of content it must state.
+7. A link states at its call site when to follow it. A new one lands on
+   the answer, not on a further pointer; the existing `SKILL.md` →
+   `references/` → `rules/` two-hop path is not retrofitted. Copy or
+   cite is [visibility.md](visibility.md) §3's call.
+8. Models route by descriptions, so a description states when to
    invoke, not what the skill is; the character budget is composition
    rule 5's.
-8. Spend the multi-agent premium on glue only; the conditions and
+9. Spend the multi-agent premium on glue only; the conditions and
    deliverable work's dispatch are [rules/delegation.md](delegation.md)
    §2's own. Default to the fast path.
+10. Shape principles — one name per concept, searchable to every use;
+    one unit owning one concern end to end; depth only behind a
+    contract strong enough that readers never descend past it; shape
+    for what the oracle observes — live in this clause, never in a
+    pack's craft Shape. A metered, search-navigating reader pays the
+    same cost in every domain; a copy per pack only adds a place to
+    drift.

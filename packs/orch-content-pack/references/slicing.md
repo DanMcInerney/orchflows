@@ -8,7 +8,7 @@ each section one job the document needs done, no two sections doing it.
   policy; a length bound summing, with slack for the edit, to the
   document budget; write scope = its slot.
 - Item extensions beyond the core: slot position; the sibling slots it
-  must not duplicate; the pack's craft reference by path.
+  must not duplicate.
 - Terminal assembly item: `orch-edit`, depending on every section,
   completion test carrying the spec's voice, structure, length, and
   citation criteria — the final gate's criteria.

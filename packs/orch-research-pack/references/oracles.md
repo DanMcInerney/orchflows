@@ -9,4 +9,8 @@
 | independence | converging claims trace to sources with no shared upstream, per the claim-to-source trace | evidence | authored-here |
 | rigor | the lens's rigor rubric against the spec's rigor bar, via `orch-verify` | judged | authored-here |
 
-Green means: every evidence row holds at the synthesized result.
+Green is measured at the synthesized result for the evidence rows and
+at the gate for the two judged rows — contradiction handling and rigor
+— which no evidence row's passing carries. Evidence rows are compared
+against the sources they cite, the judged rows against the lane packets
+and the spec's rigor bar.

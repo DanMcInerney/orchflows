@@ -4,8 +4,8 @@ This repository is the canonical `orchflows` source: a four-tier library
 for orchestrator > subagent work. `ARCHITECTURE.md` maps boundaries,
 ownership, and dependency direction. `docs/vocabulary.md` owns every library
 term of art and a pack's craft cell owns its domain's; use terms with
-exactly their defined meanings. `rules/` owns
-cross-cutting law; link the owning rule instead of restating it.
+exactly their defined meanings. `rules/` owns cross-cutting law, and
+`rules/visibility.md` §3 governs what every other file may do with it.
 
 Every word and sentence must be load-bearing: retain only text that
 changes model behavior, preserves a necessary contract, or names its
