@@ -20,7 +20,11 @@
    procedure, and the exact contract an executor must reproduce for its
    result to be accepted, in `SKILL.md`; expandable method and domain
    data behind the link, in the owning package's `references/` or pack
-   cell. [composition.md](composition.md) §11 draws that line. The
+   cell. Which clauses carry that contract is
+   [composition.md](composition.md) §11's. Method is expandable when the
+   body states the obligation in one clause and the expansion can be
+   consulted separately without the obligation losing force; where the
+   detail is the obligation's own operand, the two stay together. The
    cells [contracts/pack-signature.md](../contracts/pack-signature.md)
    mandates are the standing exception: the contract requires them to
    state their content, and the supersession PR that would let them
