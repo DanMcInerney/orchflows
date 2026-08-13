@@ -65,8 +65,26 @@ STAGE_RECORD_SUBSTANCE = {
         "margin",
     ),
 }
-# `builders`' shape, which `qualifier` and `attacker` are recorded in.
+# `builders`' shape, which `qualifier` and `attacker` are recorded in: the
+# prose axes the contract names, and the keys a manifest records them under.
 CONTEXT_AXES = ("model id", "effort", "host binding")
+CONTEXT_AXIS_KEYS = ("model_id", "effort", "host_binding")
+# `attack-classes:2026-08-08`, class for class — the checklist the attack pass
+# walks, named in `benchmarks/benchmaker/manifest.json`'s `checklist_identity`.
+# Pinned here so a record that walked a shorter list cannot agree with itself.
+ATTACK_CLASSES = (
+    "answers shipped with the test",
+    "evaluation-logic gaps",
+    "excessive permissions",
+    "isolation failure",
+    "judge prompt injection",
+    "remote code execution",
+    "trusting untrusted output",
+    "weak string matching",
+)
+# The protocol's three attack outcomes; a fourth would be vocabulary the
+# protocol does not license.
+ATTACK_OUTCOMES = ("SUCCEEDED", "FAILED", "BLOCKED")
 # The audit-and-measure step's own stages. Triage measurement is the
 # measurement stage's cheap first pass, not a fourth stage
 # (`benchmaker-protocol.md`, "Two measurement passes, not one"), so the count
@@ -847,6 +865,10 @@ class TestBenchmarkFixture(unittest.TestCase):
         self.assertTrue(path.is_file(), f"missing {name} reference: {path}")
         return path
 
+    def _record(self, name: str) -> dict:
+        """One stage record, read through the component locator that names it."""
+        return json.loads(self._reference(name).read_text(encoding="utf-8"))
+
     def _run_fixture(
         self, fixture: Path, candidate: str
     ) -> subprocess.CompletedProcess[str]:
@@ -891,7 +913,7 @@ class TestBenchmarkFixture(unittest.TestCase):
         )
         self.assertTrue(self.manifest["gaps"])
 
-    def test_post_qualification_fields_declare_absence_rather_than_fabricate_it(self):
+    def test_stage_records_and_post_qualification_fields_state_what_ran(self):
         cases = [
             case["case_identity"]
             for case in json.loads(
@@ -906,19 +928,57 @@ class TestBenchmarkFixture(unittest.TestCase):
         for anchor in self.manifest["anchors"].values():
             if anchor.startswith("none"):
                 self.assertIn("—", anchor, "a `none` anchor carries its reason")
+        # `qualifier` and `attacker` in `builders`' shape: every axis present,
+        # each a value or a declared `none` carrying its reason.
+        for field in ("qualifier", "attacker"):
+            context = self.manifest[field]
+            self.assertEqual(set(CONTEXT_AXIS_KEYS), set(context), field)
+            for axis, value in context.items():
+                self.assertTrue(value.strip(), f"{field}.{axis}")
+                if value.startswith("none"):
+                    self.assertIn("—", value, f"{field}.{axis} carries its reason")
+        # The three stage records are components now, so each figure below is
+        # read through the locator rather than inline in the manifest.
+        audit = self._record("reference_audit")
+        attack = self._record("attack_audit")
+        measurement = self._record("measurement")
         # A count and classes, never a rate.
-        audit = self.manifest["reference_audit"]
         self.assertIsInstance(audit["defect_count"], int)
         self.assertEqual(len(audit["defect_classes"]), audit["defect_count"])
         self.assertEqual(set(cases), set(audit["method"]))
-        # A stage that did not run says so here and in gaps — never a figure.
+        self.assertTrue(audit["declared_sample"].strip())
+        # No stage is recorded as not run, here or in gaps.
         gaps = " ".join(self.manifest["gaps"])
-        for field in ("attack_audit", "measurement"):
-            self.assertIn("not run", self.manifest[field]["status"])
-        self.assertIn("attack pass not run", gaps)
-        self.assertIn("measurement pass not run", gaps)
-        self.assertEqual([], self.manifest["attack_audit"]["unrepaired"])
-        self.assertIsNone(self.manifest["measurement"]["margin_cases"])
+        for name, record in (("attack_audit", attack), ("measurement", measurement)):
+            self.assertNotIn("not run", record["status"], name)
+        self.assertNotIn("attack pass not run", gaps)
+        self.assertNotIn("measurement pass not run", gaps)
+        # Every class of the dated checklist carries one of the protocol's
+        # three outcomes, and every SUCCEEDED class is declared with the attack
+        # that works. An undeclared hole is the failure; a declared one is a gap.
+        self.assertEqual(set(ATTACK_CLASSES), set(attack["classes"]))
+        self.assertEqual(set(ATTACK_CLASSES), set(attack["outcomes"]))
+        for name, recorded in attack["outcomes"].items():
+            self.assertIn(recorded["outcome"], ATTACK_OUTCOMES, name)
+            self.assertTrue(recorded["observed"].strip(), name)
+        declared = {
+            name for hole in attack["unrepaired"] for name in hole["classes"]
+        }
+        succeeded = {
+            name
+            for name, recorded in attack["outcomes"].items()
+            if recorded["outcome"] == "SUCCEEDED"
+        }
+        self.assertTrue(succeeded, "a pass that repelled everything is a claim")
+        self.assertLessEqual(succeeded, declared)
+        for hole in attack["unrepaired"]:
+            self.assertTrue(hole["attack"].strip())
+        # The measurement separates the two rungs and says by how much: one
+        # repeated candidate habit is one signature, not one per case.
+        self.assertEqual(2, len(measurement["candidates"]))
+        self.assertEqual(set(cases), set(measurement["per_case_status"]))
+        self.assertEqual(1, measurement["distinct_failure_signatures"])
+        self.assertEqual(2, measurement["margin_cases"])
         # Resolution rests on the one-case floor while the spread is unmeasured.
         self.assertIsNone(self.manifest["resolution"]["measured_rerun_spread"])
         self.assertEqual(1, self.manifest["resolution"]["one_case"])

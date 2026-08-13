@@ -1,0 +1,55 @@
+{
+  "stage": "measurement pass",
+  "status": "run 2026-08-13 over the declared rung pair; recording only, no verdict on the benchmark",
+  "scope": "the candidate-accessible portion, which here is the whole package: `protected_evidence` holds back no file, so no rung was run against evidence a candidate cannot see",
+  "declared_before_running": {
+    "rung_pair": {
+      "stronger": "known_good.py",
+      "weaker": "known_bad.py"
+    },
+    "cost": "2 replays, 4 candidate processes, 2 s per case — charged on top of qualification's own 3 replays",
+    "authority": {
+      "delegation": "none — each rung is one process and spawns nothing",
+      "tooling": "the interpreter alone; stdin in, stdout out, no arguments",
+      "network": "unrestricted by the harness, and neither rung opens a socket",
+      "evidence": "the whole package, which is public"
+    },
+    "unreachable_criteria": [
+      "optimization_resistance — no evidence is held back, so no authority granted here could make a candidate-inaccessible check reachable; it stays UNVERIFIED and is declared in the manifest's gaps"
+    ]
+  },
+  "candidates": {
+    "known_good.py": {
+      "candidate_identity": "sha256:c7e66727fc17531ebc3f710d0306fb014c1c465d4c9c532c755f5b4da9a76f7f",
+      "verdict": "PASS",
+      "score": 1.0,
+      "per_case": {
+        "case:ascii-word-v1": "PASS",
+        "case:mixed-symbols-v1": "PASS"
+      }
+    },
+    "known_bad.py": {
+      "candidate_identity": "sha256:584b56f1980a4c5514e79f6ee30478932711c62bbfec1ed0199f62f31c6a4582",
+      "verdict": "FAIL",
+      "score": 0.0,
+      "per_case": {
+        "case:ascii-word-v1": "FAIL",
+        "case:mixed-symbols-v1": "FAIL"
+      }
+    }
+  },
+  "per_case_status": {
+    "case:ascii-word-v1": "split",
+    "case:mixed-symbols-v1": "split"
+  },
+  "discriminating_set": [
+    "case:ascii-word-v1",
+    "case:mixed-symbols-v1"
+  ],
+  "inversions": [],
+  "distinct_failure_signatures": 1,
+  "failure_signature_rule": "a failing case's signature is its error string paired with the sorted keys whose observed value differs from the declared expectation. The weaker rung fails both cases with no error and a differing `text`: one repeated habit — lowercasing where the expectation is uppercase — counted twice, not two angles discriminating.",
+  "margin_cases": 2,
+  "external_record": "none — this is a test fixture, not a campaign instrument. Its figures are cited by tests/test_benchmaker.py alone and no entry is added to benchmarks/measures/; a retirement trigger firing would be recorded there and never here.",
+  "reading": "Both cases are `split`, so the discriminating set is the whole set and the margin is 2 cases of 2 — above the declared resolution of 1 case, so the separation is reportable. One signature produced it, so the set discriminates one habit rather than two independent angles: read the margin as total separation on a single axis, not as breadth. No `inversion` and no `both-fail` case, so nothing here asks the reference audit to decide between a hard case and a broken one."
+}

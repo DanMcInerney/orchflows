@@ -1,0 +1,7 @@
+{
+  "checklist_identity": "attack-classes:2026-08-08 — isolation failure, answers shipped with the test, remote code execution, judge prompt injection, weak string matching, evaluation-logic gaps, trusting untrusted output, excessive permissions. Dated and append-only.",
+  "outcomes": {},
+  "stage": "attack pass",
+  "status": "not run — redesign-spec section 10 step 3 owns it",
+  "unrepaired": []
+}

@@ -1,0 +1,23 @@
+{
+  "stage": "reference audit",
+  "status": "run 2026-08-13 over both cases",
+  "auditor_context": {
+    "model_id": "claude-opus-5[1m]",
+    "effort": "none recorded — the host exposes no effort setting to the running context; declared rather than inferred",
+    "host_binding": "Claude Code CLI on Darwin 25.5.0; CPython 3.9.6 at /Library/Developer/CommandLineTools/usr/bin/python3"
+  },
+  "disjointness": "disjoint from every builder and from the qualifying context, as the reference audit requires: both cases were hand-authored as schema witnesses with no model builder context, and qualification is rendered by runner.py's verify_qualification, a deterministic program. This context judged the expectations; it renders no qualification verdict.",
+  "method": {
+    "case:ascii-word-v1": "re-read",
+    "case:mixed-symbols-v1": "re-read"
+  },
+  "declared_sample": "both cases — the whole set, so no sample choice can filter on difficulty",
+  "sample_rationale": "the cheap triage pass — the same two-rung replay the measurement record reports, run first to target this audit — recorded both cases `split` and no `inversion`, so no case had to be solved from the prompt; at two cases the declared sample of the rest is the whole set.",
+  "judgements": {
+    "case:ascii-word-v1": "no defect — `orchflows` uppercases to `ORCHFLOWS` under the Unicode simple-uppercase mapping; the outcome is unambiguous, the stated key is what correct execution produces, and it follows from the input alone",
+    "case:mixed-symbols-v1": "no defect — `AGENT-42!` is its own simple-uppercase image; already-cased letters, digits and punctuation are fixed points of the mapping, so the identity expectation is the correct key rather than a missing transformation"
+  },
+  "defect_count": 0,
+  "defect_classes": [],
+  "repairs": []
+}
