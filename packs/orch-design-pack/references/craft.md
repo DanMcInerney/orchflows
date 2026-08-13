@@ -3,7 +3,10 @@
 The design domain's terms and shape, per the signature's craft cell.
 Framework-free the way content craft is genre-free: each term binds a
 marketing page, a dashboard, and a component library equally; framework
-specifics live with the workspace's standards owner.
+specifics live with the workspace's standards owner. Read
+[rules/token-economy.md](../../../rules/token-economy.md) §10 for the
+shape principles every domain shares; the bullets under Shape are the
+rendered domain's own.
 
 ## Vocabulary
 
@@ -39,16 +42,12 @@ specifics live with the workspace's standards owner.
 
 ## Shape
 
-What a metered, search-navigating reader pays least for, rendered:
-
 - Token before value: every visual decision is made once, at a token,
   and referenced everywhere; a per-element exception is a defect
   unless the standards owner grants it.
-- A view owns its states end to end: all states co-located with the
-  view; understanding one component never scatters across layers.
-- Flat composition: breadth over depth; add a wrapper only behind a
-  contract strong enough that readers never descend past it.
-- Design for the capture: quality a capture at a named identity
-  cannot show is shaped wrong, whatever its elegance in source.
+- The unit is a view: all its states co-located with it; understanding
+  one component never scatters across layers.
+- Quality a capture at a named identity cannot show is shaped wrong,
+  whatever its elegance in source.
 - Empty, loading, and error are states of the view, not afterthoughts;
   a state the spec enumerates and no capture shows is unfinished work.

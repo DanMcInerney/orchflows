@@ -1,6 +1,9 @@
 # Code craft
 
-The code domain's terms and shape, per the signature's craft cell.
+The code domain's terms and shape, per the signature's craft cell. Read
+[rules/token-economy.md](../../../rules/token-economy.md) §10 for the
+shape principles every domain shares; the bullets under Shape are
+code's own.
 
 ## Vocabulary
 
@@ -15,24 +18,18 @@ The code domain's terms and shape, per the signature's craft cell.
 
 ## Shape
 
-What a metered, search-navigating reader pays least for:
-
-- One name per concept, one concept per name; symbols unique enough
-  that exact search finds every use. Never assemble an identifier by
-  string concatenation; never drift to a synonym across modules.
-- Locality: a module owns one concern end to end at roughly one-read
-  size (~100–500 lines); understanding one feature never requires a
-  scatter-gather across layers.
-- Flat application code: breadth parallelizes, depth serializes. Add
-  depth only behind a contract strong enough that readers never
-  descend past it.
+- Never assemble an identifier by string concatenation; never drift to
+  a synonym across modules.
+- Locality: the unit is a module at roughly one-read size (~100–500
+  lines); understanding one feature never requires a scatter-gather
+  across layers.
 - Explicit over clever: static, followable call sites; no runtime
   registries or metaprogrammed dispatch — they blind exact search and
   language servers at once.
 - Comments state only what code cannot: invariants, ordering
   constraints, why-not-the-obvious.
-- Design for the oracle: behavior a completion test cannot observe at
-  a seam is shaped wrong, whatever its elegance.
+- Behavior a completion test cannot observe at a seam is shaped wrong,
+  whatever its elegance.
 - Nonzero exit is data: an expected nonzero exit from a read-only
   probe (a search with no matches, `git diff --no-index` on differing
   inputs) reports a result, not a tool failure — one probe's expected

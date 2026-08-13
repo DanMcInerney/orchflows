@@ -40,3 +40,10 @@
 9. Spend the multi-agent premium on glue only; the conditions and
    deliverable work's dispatch are [rules/delegation.md](delegation.md)
    §2's own. Default to the fast path.
+10. Shape principles — one name per concept, searchable to every use;
+    one unit owning one concern end to end; depth only behind a
+    contract strong enough that readers never descend past it; shape
+    for what the oracle observes — live in this clause, never in a
+    pack's craft Shape. A metered, search-navigating reader pays the
+    same cost in every domain; a copy per pack only adds a place to
+    drift.

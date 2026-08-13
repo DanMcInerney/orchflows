@@ -2,7 +2,10 @@
 
 The content domain's terms and shape, per the signature's craft cell.
 The terms are genre-free: each names a decision every document makes,
-binding a tweet, a README, and a chapter equally.
+binding a tweet, a README, and a chapter equally. Read
+[rules/token-economy.md](../../../rules/token-economy.md) §10 for the
+shape principles every domain shares; the bullets under Shape are
+content's own.
 
 ## Vocabulary
 
@@ -29,7 +32,8 @@ binding a tweet, a README, and a chapter equally.
 
 ## Shape
 
-- One idea per unit at every level: sentence, paragraph, section.
+- Units nest — sentence, paragraph, section — and each carries one
+  idea.
 - The skim layer stands alone: a reader of first sentences only still
   gets the whole argument.
 - Concrete before abstract: an abstraction is earned by the instance
