@@ -369,11 +369,14 @@ record carrying a loss code is not a failed read — `youtube_innertube` returns
 carries the metadata it did get.
 
 **Both tables below are read back off the source, never transcribed into it.**
-`test_dependency_boundary.LOSS_VOCABULARY` parses these two tables out of this
-file and compares each row against what the package's own syntax says, so a cell
-that stops being true is a red test rather than a sentence nobody re-read. The
-same treatment `THREAT_REMAP` gets, and for the same reason: an earlier hand-kept
-count said three emitters where there were thirteen.
+`test_dependency_boundary.LossVocabularyIsReadOffTheSourceTest` parses these two
+tables out of this file and compares each row against what the package's own
+syntax says, so a cell that stops being true is a red test rather than a sentence
+nobody re-read. The threat table gets the same treatment: it lives in
+[internals.md](internals.md) §"What the package refuses", and
+`test_transport.ThreatTableIsReadOffTheDocumentTest` parses both of its columns
+out of that file and compares each against `THREAT_REMAP`. Same reason in both
+places: an earlier hand-kept count said three emitters where there were thirteen.
 
 The **named by** column is every module whose executable code spells that code,
 to attach it or to read it. Spelling is the property worth pinning, because the
