@@ -8,23 +8,29 @@ package's own — a term in `code` is a name the source spells exactly that way.
 ## What the evidence says, and what it does not
 
 The routes below were measured on 2026-08-10 from one macOS host,
-unauthenticated, and recorded in
-`.orch/runs/20260810T092133Z-keyless-acquisition/findings.md` §1: status, latency,
-and the field names each payload actually carried. That measurement predates this
-package. **The parsers in it have never read a live origin.** Every ceiling,
-field list, and route constant here traces to that one host at that one moment;
-the offline suite runs the parsers against the payloads those probes recorded,
-which is a statement about those fixtures and not about any origin today.
+unauthenticated: status, latency, and the field names each payload actually
+carried. [evidence.md](evidence.md) §"Route measurements of 2026-08-10" holds
+what this file cites of that record. It predates this package, so every ceiling,
+field list, and route constant here traces to that one host at that one moment.
+
+**The parsers have since read live origins.** Two sweeps on 2026-08-12 read all
+thirteen adapters against real origins, and nine carried their whole roster row
+on each sweep — [evidence.md](evidence.md) §"The two liveness sweeps of
+2026-08-12". What the offline suite proves is narrower and unchanged: it runs the
+parsers against the payloads the 2026-08-10 probes recorded, which is a statement
+about those fixtures and not about any origin today.
 
 Two consequences a caller must carry:
 
 - `python3 -m super_research.cli status` reports every adapter `unverified` on a
-  fresh checkout, because the smoke ledger starts empty. That is the honest
-  reading of the evidence, not a fault to route around.
-- `findings.md` §0 records that the measuring host sits behind an appliance that
-  answers some domains with HTTP 503 and a `<base href="/login/">` body. A read
-  that comes back `network_intercepted` is a statement about the asking network.
-  It never degrades an adapter and never becomes a platform gap.
+  fresh checkout, because the smoke ledger starts empty. That is the ledger's own
+  state and not a fault to route around: a sweep's standing lives in a tempdir
+  and never travels with a checkout.
+- `evidence.md` §"The captive-portal caveat" records that the measuring host sits
+  behind an appliance that answers some domains with HTTP 503 and a
+  `<base href="/login/">` body. A read that comes back `network_intercepted` is a
+  statement about the asking network. It never degrades an adapter and never
+  becomes a platform gap.
 
 ## Layout
 
@@ -278,9 +284,9 @@ that does, so `test_dependency_boundary` counts its entries against the number
 in the heading. An earlier revision said two and had five.
 
 1. **`linkedin_public` reads `/in/<slug>` only.** The spec's row reads
-   "profile/company". `findings.md` §1 records `linkedin.com/company/<slug>`
-   answering 200 with a marker name and **no field set**, so a company parser
-   would be inferred rather than measured. `linkedin.com/company/<slug>` is a
+   "profile/company". `evidence.md` §"Route measurements of 2026-08-10" records
+   `linkedin.com/company/<slug>` answering 200 with a marker name and **no field
+   set**, so a company parser would be inferred rather than measured. It is a
    different path and would be a different route constant.
 2. **`reddit_archive`'s smoke omits `upvote_ratio` and `selftext`.** The spec's
    row names both, and they fail its assertion for different reasons.
@@ -293,10 +299,11 @@ in the heading. An earlier revision said two and had five.
 3. **`web_search` ships DuckDuckGo and no second provider.** The spec's row
    commits "Brave/Bing as declared secondary providers with per-provider
    parsers". Neither ships: `transport.py` declares one web-index route and
-   `web_search.py` holds one parser. `findings.md` §1 measured both answering
-   200 and resisting extraction — Brave with obfuscated class names, Bing with
-   markup no clean triple came out of — so a parser for either would be written
-   against markup nobody has extracted from rather than against a measurement.
+   `web_search.py` holds one parser. `evidence.md` §"Route measurements of
+   2026-08-10" records both answering 200 and resisting extraction — Brave with
+   obfuscated class names, Bing with markup no clean triple came out of — so a
+   parser for either would be written against markup nobody has extracted from
+   rather than against a measurement.
    Reopen when one of them yields a title/locator/snippet triple on a probe.
 4. **`reddit_archive` ships one Arctic Shift route of the four the spec names.**
    The row names `posts/search`, `comments/search`, `posts/ids` and `comments`
@@ -411,7 +418,7 @@ The seven codes this delivery adds to the retained vocabulary:
 | --- | --- | --- |
 | `third_party_archive` | an independent archive answered, not the platform | `reddit_archive` |
 | `stale_identifier` | a vendor identifier rotated; the read was refused, not empty | `x_guest` (404), `youtube_innertube` (400) |
-| `attestation_required` | the origin withheld a payload behind an attestation this package does not perform | `youtube_innertube`, for the two playability statuses findings.md §1 measured and for a withheld caption list; `cli`, which reads it |
+| `attestation_required` | the origin withheld a payload behind an attestation this package does not perform | `youtube_innertube`, for the two playability statuses evidence.md §"Route measurements of 2026-08-10" records and for a withheld caption list; `cli`, which reads it |
 | `network_intercepted` | the local network answered, not the origin | `transport`, `adapters`, `smoke` |
 | `cache_hit` | this run's own memory answered | `adapters`, `runner` |
 | `archive_lag` | an archive's coverage trails the platform | nothing: **absent from the source entirely** |
