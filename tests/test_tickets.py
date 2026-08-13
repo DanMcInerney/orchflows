@@ -442,5 +442,325 @@ class TestPacket(unittest.TestCase):
             )
 
 
+def make_worktree(tmp: Path, tickets: dict):
+    """A main checkout plus a linked worktree whose ``.git`` is a pointer file.
+
+    The shape `make_repo` cannot produce: `.git` as a file holding a
+    `gitdir:` line, which is what an executor's isolated workspace has and
+    what the result channel must dereference to the main checkout.
+    """
+
+    main = tmp / "main"
+    main.mkdir()
+    run_dir = make_repo(main, tickets)
+    (main / ".git" / "worktrees" / "wt").mkdir(parents=True)
+    worktree = tmp / "wt"
+    worktree.mkdir()
+    (worktree / ".git").write_text(
+        f"gitdir: {main / '.git' / 'worktrees' / 'wt'}\n", encoding="utf-8"
+    )
+    return main, worktree, run_dir
+
+
+class TestResultWorktreeCrossing(unittest.TestCase):
+    """contracts/work-item.md: one run's tickets have one path, identical
+    from every executor workspace. The executor files its result there from
+    inside its own worktree, reading its body from that worktree."""
+
+    def test_result_from_a_worktree_lands_in_the_main_checkout(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            body = worktree / "result-body.md"
+            body.write_text("Landed at the main root.\n", encoding="utf-8")
+            payload = run_cmd(
+                worktree, "result", "testrun", "T1",
+                "--section", "Result", "--file", str(body),
+            )
+            self.assertEqual("Result", payload["result"]["section"])
+            self.assertEqual(
+                str((run_dir / "T1.md").resolve()), payload["result"]["path"]
+            )
+            self.assertIn(
+                "## Result\n\nLanded at the main root.\n",
+                (run_dir / "T1.md").read_text(encoding="utf-8"),
+            )
+            # nothing was created in the worktree: the ticket tree is the
+            # main checkout's alone
+            self.assertFalse((worktree / ".orch").exists())
+
+    def test_text_form_writes_the_same_body(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            payload = run_cmd(
+                worktree, "result", "testrun", "T1",
+                "--section", "verification", "--text", "1. PASS.",
+            )
+            self.assertEqual("Verification", payload["result"]["section"])
+            self.assertIn(
+                "## Verification\n\n1. PASS.\n",
+                (run_dir / "T1.md").read_text(encoding="utf-8"),
+            )
+
+
+def frontmatter_of(path: Path) -> str:
+    return path.read_text(encoding="utf-8").split("---\n", 2)[1]
+
+
+class TestResultClosedSet(unittest.TestCase):
+    """contracts/work-item.md:56-57 names exactly what an executor writes."""
+
+    def test_the_writable_set_is_the_contracts_five(self):
+        self.assertEqual(
+            ("Result", "Verification", "Feedback", "Risks", "Handoff"),
+            tickets_mod.EXECUTOR_SECTIONS,
+        )
+
+    def test_every_reserved_section_round_trips(self):
+        for name in tickets_mod.EXECUTOR_SECTIONS:
+            with tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+                payload = run_cmd(
+                    worktree, "result", "testrun", "T1",
+                    "--section", name, "--text", f"body for {name}",
+                )
+                self.assertEqual(name, payload["result"]["section"], name)
+                text = (run_dir / "T1.md").read_text(encoding="utf-8")
+                self.assertEqual(f"body for {name}", tickets_mod._sections(text)[name])
+
+    def test_a_cut_time_section_is_refused_and_the_set_is_named(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            before = (run_dir / "T1.md").read_text(encoding="utf-8")
+            payload = run_cmd(
+                worktree, "result", "testrun", "T1",
+                "--section", "Objective", "--text", "hijacked",
+            )
+            self.assertIn("Objective", payload["error"])
+            for name in tickets_mod.EXECUTOR_SECTIONS:
+                self.assertIn(name, payload["error"])
+            self.assertEqual(before, (run_dir / "T1.md").read_text(encoding="utf-8"))
+
+
+class TestResultBodySource(unittest.TestCase):
+    def test_both_file_and_text_is_an_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            body = worktree / "body.md"
+            body.write_text("from a file\n", encoding="utf-8")
+            before = (run_dir / "T1.md").read_text(encoding="utf-8")
+            result = run_full(
+                worktree, "result", "testrun", "T1", "--section", "Result",
+                "--file", str(body), "--text", "from a string",
+            )
+            self.assertEqual(0, result.returncode)
+            self.assertIn("error", json.loads(result.stdout))
+            self.assertEqual(before, (run_dir / "T1.md").read_text(encoding="utf-8"))
+
+    def test_neither_file_nor_text_is_an_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            before = (run_dir / "T1.md").read_text(encoding="utf-8")
+            result = run_full(worktree, "result", "testrun", "T1", "--section", "Result")
+            self.assertEqual(0, result.returncode)
+            self.assertIn("error", json.loads(result.stdout))
+            self.assertEqual(before, (run_dir / "T1.md").read_text(encoding="utf-8"))
+
+    def test_an_unreadable_body_file_is_an_error_not_a_traceback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, _run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            result = run_full(
+                worktree, "result", "testrun", "T1", "--section", "Result",
+                "--file", str(worktree / "absent.md"),
+            )
+            self.assertEqual(0, result.returncode)
+            self.assertIn("error", json.loads(result.stdout))
+
+
+class TestResultRefusesTerminalStatus(unittest.TestCase):
+    """Criterion 4's refusal half: terminal status is the join's alone
+    (contracts/work-item.md:31-33), so `result` writes no frontmatter."""
+
+    def test_a_status_flag_is_refused_and_names_set_status_and_the_join(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            before = (run_dir / "T1.md").read_text(encoding="utf-8")
+            result = run_full(
+                worktree, "result", "testrun", "T1", "--section", "Result",
+                "--text", "done", "--status", "complete",
+            )
+            self.assertEqual(0, result.returncode)
+            payload = json.loads(result.stdout)
+            self.assertIn("--status", payload["error"])
+            self.assertIn("set-status", payload["error"])
+            self.assertIn("orch-integrate", payload["error"])
+            self.assertEqual(before, (run_dir / "T1.md").read_text(encoding="utf-8"))
+
+    def test_any_unrecognized_flag_is_refused_the_same_way(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, _run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            payload = run_cmd(
+                worktree, "result", "testrun", "T1", "--section", "Result",
+                "--text", "done", "--claimed-by", "someone",
+            )
+            self.assertIn("--claimed-by", payload["error"])
+            self.assertIn("set-status", payload["error"])
+
+    def test_frontmatter_is_byte_unchanged_after_writing_every_section(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            ticket = run_dir / "T1.md"
+            before = frontmatter_of(ticket)
+            for name in tickets_mod.EXECUTOR_SECTIONS:
+                run_cmd(
+                    worktree, "result", "testrun", "T1",
+                    "--section", name, "--text", f"body for {name}",
+                )
+            self.assertEqual(before, frontmatter_of(ticket))
+            self.assertIn("status: claimed", ticket.read_text(encoding="utf-8"))
+
+    def test_a_heading_shaped_frontmatter_line_is_not_a_section_boundary(self):
+        # A wrapped frontmatter value can begin a line with "## ". Treating it
+        # as a heading would put the writer inside frontmatter the join owns.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            ticket = run_dir / "T1.md"
+            ticket.write_text(
+                ticket.read_text(encoding="utf-8").replace(
+                    "bound: 30m\n", "bound: 30m\nnote:\n  - suspend through\n## Risks\n"
+                ),
+                encoding="utf-8",
+            )
+            before = frontmatter_of(ticket)
+            run_cmd(
+                worktree, "result", "testrun", "T1", "--section", "Risks", "--text", "[]",
+            )
+            self.assertEqual(before, frontmatter_of(ticket))
+            self.assertEqual("[]", tickets_mod._sections(
+                ticket.read_text(encoding="utf-8").split("---\n", 2)[2]
+            )["Risks"])
+
+
+class TestResultScriptContract(unittest.TestCase):
+    def test_success_and_failure_both_exit_zero_with_one_json_document(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, _run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            ok = run_full(
+                worktree, "result", "testrun", "T1", "--section", "Result", "--text", "ok",
+            )
+            self.assertEqual(0, ok.returncode)
+            self.assertIn("result", json.loads(ok.stdout))
+            self.assertEqual(1, len(ok.stdout.strip().splitlines()))
+            bad = run_full(
+                worktree, "result", "testrun", "T9", "--section", "Result", "--text", "ok",
+            )
+            self.assertEqual(0, bad.returncode)
+            self.assertIn("ticket not found", json.loads(bad.stdout)["error"])
+            self.assertEqual(1, len(bad.stdout.strip().splitlines()))
+
+    def test_result_outside_a_repo_is_an_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result = run_full(
+                Path(tmp), "result", "testrun", "T1", "--section", "Result", "--text", "x"
+            )
+            self.assertEqual(0, result.returncode)
+            self.assertEqual(
+                {"error": "not inside a git repository"}, json.loads(result.stdout)
+            )
+
+
+def headings_of(text: str) -> list:
+    return [line[3:].strip() for line in text.splitlines() if line.startswith("## ")]
+
+
+class TestResultSectionOrder(unittest.TestCase):
+    """A created section takes its place in the order contracts/work-item.md
+    states. The sparse `TICKET` fixture is the one that can tell the
+    difference: on a fuller ticket, blind appending is right by accident."""
+
+    def test_a_created_section_lands_in_contract_order_not_append_order(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            run_cmd(worktree, "result", "testrun", "T1", "--section", "Feedback", "--text", "[]")
+            run_cmd(worktree, "result", "testrun", "T1", "--section", "Result", "--text", "did it")
+            text = (run_dir / "T1.md").read_text(encoding="utf-8")
+            self.assertEqual(["Objective", "Result", "Feedback"], headings_of(text))
+            self.assertEqual("did it", tickets_mod._sections(text)["Result"])
+            self.assertEqual("[]", tickets_mod._sections(text)["Feedback"])
+
+    def test_handoff_lands_last_however_the_sections_arrive(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            for name in ("Handoff", "Risks", "Verification"):
+                run_cmd(worktree, "result", "testrun", "T1", "--section", name, "--text", name)
+            self.assertEqual(
+                ["Objective", "Verification", "Risks", "Handoff"],
+                headings_of((run_dir / "T1.md").read_text(encoding="utf-8")),
+            )
+
+
+class TestResultAppend(unittest.TestCase):
+    """contracts/work-item.md:91-93: a rules/verification.md §10 checker
+    appends its own pass and never rewrites the executor's."""
+
+    def test_append_keeps_the_prior_body_and_adds_after_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            ticket = run_dir / "T1.md"
+            run_cmd(worktree, "result", "testrun", "T1", "--section", "Result",
+                    "--text", "executor pass")
+            run_cmd(worktree, "result", "testrun", "T1", "--section", "Feedback", "--text", "[]")
+            before = ticket.read_text(encoding="utf-8")
+            payload = run_cmd(worktree, "result", "testrun", "T1", "--section", "Result",
+                              "--text", "checker pass", "--append")
+            self.assertEqual("append", payload["result"]["mode"])
+            text = ticket.read_text(encoding="utf-8")
+            self.assertEqual("executor pass\n\nchecker pass", tickets_mod._sections(text)["Result"])
+            self.assertLess(text.index("executor pass"), text.index("checker pass"))
+            # every other section is byte-unchanged
+            self.assertEqual(headings_of(before), headings_of(text))
+            for name in ("Objective", "Feedback"):
+                self.assertEqual(
+                    tickets_mod._sections(before)[name], tickets_mod._sections(text)[name]
+                )
+            self.assertEqual(frontmatter_of(ticket), frontmatter_of(ticket))
+
+    def test_append_to_an_absent_section_creates_it_in_order(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            run_cmd(worktree, "result", "testrun", "T1", "--section", "Risks",
+                    "--text", "[]", "--append")
+            text = (run_dir / "T1.md").read_text(encoding="utf-8")
+            self.assertEqual(["Objective", "Risks"], headings_of(text))
+            self.assertEqual("[]", tickets_mod._sections(text)["Risks"])
+
+    def test_default_replaces_rather_than_appends(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            run_cmd(worktree, "result", "testrun", "T1", "--section", "Result", "--text", "first")
+            payload = run_cmd(worktree, "result", "testrun", "T1", "--section", "Result",
+                              "--text", "second")
+            self.assertEqual("replace", payload["result"]["mode"])
+            text = (run_dir / "T1.md").read_text(encoding="utf-8")
+            self.assertEqual("second", tickets_mod._sections(text)["Result"])
+            self.assertNotIn("first", text)
+
+
 if __name__ == "__main__":
     unittest.main()
