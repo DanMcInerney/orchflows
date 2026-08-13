@@ -48,7 +48,7 @@ NETWORK_MODULES = ("urllib.request", "http.client", "socket", "ssl")
 # Declared, rather than matched by filename: the route table can be split across
 # a second module without any scan having to learn its name, so admitting one is
 # a one-line reviewable edit here and impossible anywhere else.
-ROUTE_OWNING_MODULES = ("transport",)
+ROUTE_OWNING_MODULES = ("routes", "transport")
 
 # Which modules hold the outbound read on everybody's behalf. A second
 # declaration and deliberately not the same list: owning a route's address is
