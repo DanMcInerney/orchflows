@@ -71,9 +71,10 @@ degrades is a finding — this library has no fallback tier.
 
 For each sentence of rules, contracts, and skill text: which
 constitution principle requires it; who owns it; is this the only
-copy. A paraphrase beside a link is a copy. A restated definition, a
-stale count, a term used off its owner's meaning, and a reference
-loaded at a moment it changes nothing are deletion candidates. So is
+copy (`rules/visibility.md` §3). A paraphrase beside a link is a copy.
+A restated definition, a stale count, a term used off its owner's
+meaning, and a reference loaded at a moment it changes nothing are
+deletion candidates. So is
 a capability guard — prose protecting only against a model limitation
 a current executor no longer exhibits; an incentive guard —
 self-grading, laundering, scope-widening, record-smoothing —

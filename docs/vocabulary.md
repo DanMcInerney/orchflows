@@ -45,8 +45,8 @@ that needs a different meaning needs a different word.
   canonical (the library repository), user, or project. User- and
   project-scope items are custom — outside library law, binding only at
   their scope; bounds per `orch-build`'s scopes reference.
-- **rule** — a clause of cross-cutting law in `rules/`; a skill links the
-  owning rule instead of restating it.
+- **rule** — a clause of cross-cutting law in `rules/`; what any other
+  file may do with one is `rules/visibility.md` §3's.
 - **call edge** — a resolved backticked skill name in a skill body; the call
   graph is acyclic.
 - **carriage** — a `Require` item riding a named T0 field; rule 10 of
