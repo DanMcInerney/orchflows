@@ -15,6 +15,7 @@ Exit 0 clean. Exit 1 with one line per violation:
 from __future__ import annotations
 
 import argparse
+import difflib
 import hashlib
 import json
 import re
@@ -47,14 +48,28 @@ PACK_SIGNATURE_CELLS = (
     "required_spec_fields",
     "craft",
 )
+CRAFT_CELLS_BY_POINTER = ("slicing", "lens", "oracle_policy", "craft")
 CRAFT_BUDGET = 60
+# Cross-pack cell linter. Both figures are normative: the pair set the
+# check reports is a function of them, so moving either changes what the
+# check means, not only what it finds.
+CELL_SIMILARITY_THRESHOLD = 0.55
+CELL_CLAUSE_MIN_WORDS = 5
 
 CALL_TOKEN_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
 REQUIRE_RE = re.compile(r"^Require:", re.MULTILINE)
 NEVER_RE = re.compile(r"^Never:", re.MULTILINE)
 RETURN_RE = re.compile(r"^Return[ :]", re.MULTILINE)
 PACK_TABLE_CELL_RE = re.compile(r"^\|\s*([a-zA-Z_]+)\s*\|", re.MULTILINE)
+PACK_CELL_ROW_RE = re.compile(r"^\|\s*([a-zA-Z_]+)\s*\|\s*(.*?)\s*\|\s*$", re.MULTILINE)
 CRAFT_ROW_RE = re.compile(r"^\|\s*craft\s*\|\s*(.+?)\s*\|", re.MULTILINE)
+ASSEMBLY_SKILL_FORM_RE = re.compile(r"^`[a-z][a-z0-9-]*`$")
+ASSEMBLY_NONE_FORM_RE = re.compile(r"^none\s+—\s+\S.*$")
+CELL_REFERENCE_LINK_RE = re.compile(r"\]\((references/[^)]+)\)")
+TABLE_DELIM_ROW_RE = re.compile(r"^\|(?:\s*:?-{2,}:?\s*\|)+\s*$")
+LIST_MARKER_RE = re.compile(r"^(?:[-*+]|\d+[.)])\s+")
+SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s+")
+OUTSIDE_PACK_CITATION = "](../"
 MD_LINK_RE = re.compile(r"\]\(([^)]+)\)")
 LOOP_TRIGGER_RE = re.compile(r"\biterat(?:e|es|ing)\b|\brepeat until\b", re.IGNORECASE)
 BOUND_TERM_RE = re.compile(r"bound|budget", re.IGNORECASE)
@@ -758,6 +773,183 @@ def validate_pack_signature(body: str, pkg: dict, diag: Diagnostics) -> None:
     row = CRAFT_ROW_RE.search(body)
     if row and "(references/craft.md)" not in row.group(1):
         diag.error(file_label, "craft cell must bind [references/craft.md](references/craft.md)")
+    cells = dict(PACK_CELL_ROW_RE.findall(body))
+    if "assembly" in cells and not assembly_form_ok(cells["assembly"]):
+        diag.error(
+            file_label,
+            "assembly cell must be a backticked skill name or the bare word "
+            f"'none' plus an em-dash gloss, got: {cells['assembly']!r}",
+        )
+
+
+def assembly_form_ok(binding: str) -> bool:
+    """contracts/pack-signature.md admits exactly two `assembly` forms.
+    `none` is bare: backticking it would read as a skill name, and no
+    skill is called none."""
+    binding = binding.strip()
+    return bool(ASSEMBLY_SKILL_FORM_RE.match(binding) or ASSEMBLY_NONE_FORM_RE.match(binding))
+
+
+def cell_clauses(text: str) -> list:
+    """Split the content behind a cell into clauses -- the normative
+    comparison unit of validate_cell_duplication.
+
+    A clause is one assertion: a markdown table's data row, or a
+    sentence, cut again at every ';' because this library's prose joins
+    independent assertions with the semicolon (a workspace cell is one
+    such list). A ',' is not a cut point: it joins parts of one
+    assertion, and cutting there reports shared connective idiom
+    ('never by count') as duplicated content.
+
+    Structure is not content and never compares: table header and
+    delimiter rows, headings, list markers, and any clause citing an
+    owner outside the pack. That last one is the pointer or stated
+    deviation rules/visibility.md §3 and rules/token-economy.md §7
+    require every pack to share once content moves to one owner --
+    convicting it would drive packs to stop deferring.
+
+    Whitespace collapses first, so two packs whose only difference is
+    where a 75-column line wraps still read as one clause. A clause
+    under CELL_CLAUSE_MIN_WORDS words is a label or a term of art, not
+    content: the signature intends packs to name the same terms.
+    """
+    lines = text.split("\n")
+    structural = set()
+    for i, line in enumerate(lines):
+        if TABLE_DELIM_ROW_RE.match(line.strip()):
+            structural.add(i)
+            if i:
+                structural.add(i - 1)  # the header row the delimiter underlines
+    blocks = []
+    paragraph = []
+
+    def flush():
+        if paragraph:
+            blocks.append(" ".join(paragraph))
+            del paragraph[:]
+
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if i in structural or not stripped or stripped.startswith("#"):
+            flush()
+            continue
+        if stripped.startswith("|"):
+            flush()
+            blocks.append(" ".join(c.strip() for c in stripped.strip("|").split("|")))
+            continue
+        if LIST_MARKER_RE.match(stripped):
+            flush()
+        paragraph.append(LIST_MARKER_RE.sub("", stripped, count=1))
+    flush()
+
+    clauses = []
+    for block in blocks:
+        for sentence in SENTENCE_END_RE.split(block):
+            for clause in sentence.split(";"):
+                clause = re.sub(r"\s+", " ", clause).strip().strip(".").strip()
+                if OUTSIDE_PACK_CITATION in clause:
+                    continue
+                if len(clause.split()) >= CELL_CLAUSE_MIN_WORDS:
+                    clauses.append(clause)
+    return clauses
+
+
+# The one duplication this library keeps on purpose. An entry is a
+# decision on the record, not a suppression: it says what the seam is,
+# that the cost is paid consciously, and what reopens it.
+CELL_DUPLICATION_ALLOWLIST = (
+    {
+        "family": "code<->design git-workspace seam",
+        "reason": (
+            "The code and design packs both run on git, so their workspace "
+            "cells share the worktree-per-item clause and the conflict "
+            "binding, their required_spec_fields share the standards-owner "
+            "pointer, and their oracle tables share the build/type row. A "
+            "workspace-kind abstraction factoring those mechanics out is not "
+            "worth a permanent concept for two packs: this duplication is "
+            "paid consciously and revisited when a third git-workspace pack "
+            "appears -- that arrival is the trigger, not a judgment call."
+        ),
+        # Normalized clauses, matched exactly. The seam's other two halves
+        # -- 'standards owner by pointer' and 'conflict binding
+        # `orch-resolve-conflicts`' -- sit under CELL_CLAUSE_MIN_WORDS and so
+        # never reach this list; lowering the floor would surface them here.
+        "clauses": (
+            "each frontier item gets its own worktree branched from the run's "
+            "current revision at dispatch, merged at the join",
+            "build/type the workspace's build and typecheck commands "
+            "deterministic pre-existing",
+        ),
+    },
+)
+
+
+def _cell_content(pkg: dict, cell: str, binding: str):
+    """(text, label) for the content behind one cell. A pointer cell
+    resolves to its reference file -- four of the eight rows are
+    byte-identical in every pack, and :758 mandates one of them, so
+    comparing the row instead of what it points at convicts the
+    signature itself."""
+    if cell in CRAFT_CELLS_BY_POINTER:
+        match = CELL_REFERENCE_LINK_RE.search(binding)
+        if match:
+            target = pkg["path"] / match.group(1)
+            if target.is_file():
+                return _read_source(target), rel(target)
+    return binding, rel(pkg["skill_md"])
+
+
+def validate_cell_duplication(packages, diag: Diagnostics) -> None:
+    """Per signature cell, compare the content behind it across packs:
+    a clause carried verbatim by two packs is an error, a clause pair at
+    CELL_SIMILARITY_THRESHOLD or above is a warning naming both sites.
+    Allowlisted clauses are out of the comparison entirely."""
+    packs = [pkg for pkg in packages if pkg["is_pack"]]
+    if len(packs) < 2:
+        return
+    allowed = set()
+    for family in CELL_DUPLICATION_ALLOWLIST:
+        allowed.update(family["clauses"])
+
+    for cell in PACK_SIGNATURE_CELLS:
+        per_pack = []
+        for pkg in packs:
+            binding = dict(PACK_CELL_ROW_RE.findall(pkg.get("body", ""))).get(cell)
+            if binding is None:
+                continue
+            text, label = _cell_content(pkg, cell, binding)
+            per_pack.append((label, [c for c in cell_clauses(text) if c not in allowed]))
+
+        sites = {}
+        for label, clauses in per_pack:
+            for clause in clauses:
+                sites.setdefault(clause, set()).add(label)
+        for clause, labels in sorted(sites.items()):
+            if len(labels) < 2:
+                continue
+            ordered = sorted(labels)
+            diag.error(
+                ordered[0],
+                f"{cell}: cell content duplicated verbatim in "
+                f"{', '.join(ordered[1:])}: {clause!r}",
+            )
+
+        for i in range(len(per_pack)):
+            for j in range(i + 1, len(per_pack)):
+                left_label, left_clauses = per_pack[i]
+                right_label, right_clauses = per_pack[j]
+                for left in left_clauses:
+                    for right in right_clauses:
+                        if left == right:
+                            continue
+                        ratio = difflib.SequenceMatcher(None, left, right).ratio()
+                        if ratio >= CELL_SIMILARITY_THRESHOLD:
+                            diag.warn(
+                                left_label,
+                                f"{cell}: cell content near-duplicate at "
+                                f"{ratio:.2f} with {right_label}: "
+                                f"{left!r} ~ {right!r}",
+                            )
 
 
 def validate_craft_budget(pkg: dict, diag: Diagnostics) -> None:
@@ -1196,6 +1388,7 @@ def run_validation() -> Diagnostics:
 
     validate_call_graph(packages, diag)
     validate_carriage(packages, diag)
+    validate_cell_duplication(packages, diag)
     validate_envelope(packages, diag)
     validate_compositions(diag)
     validate_cross_package_links(packages, diag)
