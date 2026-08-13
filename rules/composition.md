@@ -21,10 +21,10 @@
    chars, `role` ∈ {planner, worker, none} — pack SKILL.md carries no
    `role`), then `Require:`, procedure, `Never:`, `Return:`. Body
    budgets: kernel, instances, and utilities 25 lines; engines and
-   workflows 40; pack SKILL.md 20. Detail needed in under a fifth of
-   invocations moves to the owning package's `references/`; a per-run
-   setup reference consulted once at open (a loop's packet design) is
-   the allowed exception.
+   workflows 40; pack SKILL.md 20 — enforceable because observable:
+   `wc -l` checks a line budget against the artifact and nothing checks
+   a rate. Cutoffs, not measured optima. What the body holds is
+   [token-economy.md](token-economy.md) §6's.
 6. Admission: a new skill's contract must be expressible from existing
    skill contracts; otherwise it is a kernel candidate and must show
    that omitting it forces another skill to inline its judgment. Two
