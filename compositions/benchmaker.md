@@ -39,13 +39,13 @@ Steps:
   applicable pack per internal spec.
 - qualify — the same Deliver owner under the carrier rule, in a
   disjoint independent delivery: qualify the assembled benchmark.
-- audit-and-measure — the protocol's three stages, each in its own
-  allocation: a reference audit in a context disjoint from every builder
-  and from the qualifier, then the attack pass, then the measurement —
-  whose cheap triage pass precedes the audit it targets and whose second
-  pass produces the recorded figure. Each repairs or declares a gap;
-  none renders a verdict on the benchmark. Record the manifest after
-  they close.
+- audit-and-measure — the protocol's three stages in order, each in its
+  own allocation: a reference audit in a context disjoint from every
+  builder and from the qualifier, then the attack pass, then the
+  measurement — whose cheap triage pass precedes the audit it targets
+  and is the measurement's own first pass, not a fourth stage. Each
+  repairs or declares a gap; none renders a verdict on the benchmark.
+  Record the manifest after they close.
 
 Edges: seq acquire-spec → acquire → design → materialize → qualify →
 audit-and-measure, each join carried by frozen evidence identity — the

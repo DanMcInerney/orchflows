@@ -69,9 +69,11 @@ STAGE_RECORD_SUBSTANCE = {
 # prose axes the contract names, and the keys a manifest records them under.
 CONTEXT_AXES = ("model id", "effort", "host binding")
 CONTEXT_AXIS_KEYS = ("model_id", "effort", "host_binding")
-# `attack-classes:2026-08-08`, class for class — the checklist the attack pass
-# walks, named in `benchmarks/benchmaker/manifest.json`'s `checklist_identity`.
-# Pinned here so a record that walked a shorter list cannot agree with itself.
+# The dated checklist the attack pass walks, and its classes one for one.
+# Both are pinned: a record that walked a shorter list cannot agree with
+# itself, and one naming a later checklist cannot be judged against this list.
+# `benchmarks/benchmaker/attack-audit.json` names the same eight.
+ATTACK_CHECKLIST = "attack-classes:2026-08-08"
 ATTACK_CLASSES = (
     "answers shipped with the test",
     "evaluation-logic gaps",
@@ -747,7 +749,7 @@ class TestCanonicalBenchmaker(unittest.TestCase):
                     (PACKAGE / manifest[field]["locator"]).exists(),
                     manifest[field]["locator"],
                 )
-        with self.subTest("the post-qualification field set is exactly the eight"):
+        with self.subTest("the post-qualification field set is exactly the seven"):
             self.assertEqual(
                 set(POST_QUALIFICATION_FIELDS),
                 set(manifest).difference(COMPONENT_FIELDS, DECLARATION_FIELDS),
@@ -844,11 +846,20 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         self.assertIn("the assembled case set is qualify's evidence", body)
         self.assertIn("the qualified assembly is audit-and-measure's", body)
         step = body[body.index("- audit-and-measure —") : body.index("Edges:")]
-        # The count the step declares equals the stages it names, and triage
-        # is the measurement stage's own first pass, never a fourth stage.
-        named = [stage for stage in AUDIT_STAGES if stage in step]
-        self.assertEqual(list(AUDIT_STAGES), named)
-        self.assertIn(f"the protocol's {COUNT_WORDS[len(named)]} stages", step)
+        # The count the step declares equals the number of activities the same
+        # sentence names — counted off the text, never off a list this file
+        # holds, or a fourth activity could be named under a declared three and
+        # nothing here would see it. That was the baseline defect.
+        declaration = step[step.index("the protocol's") :]
+        listed = declaration[declaration.index(":") + 1 : declaration.index(" — ")]
+        activities = [activity.strip() for activity in listed.split(", then ")]
+        self.assertIn(f"the protocol's {COUNT_WORDS[len(activities)]} stages", step)
+        self.assertEqual(len(AUDIT_STAGES), len(activities))
+        # Named in the protocol's own execution order, which the step declares.
+        self.assertIn("stages in order", step)
+        for stage, activity in zip(AUDIT_STAGES, activities):
+            self.assertIn(stage, activity)
+        # Triage is the measurement stage's own first pass, never a fourth.
         self.assertEqual([], re.findall(r"triage(?! pass)", step))
         self.assertIn("Record the manifest after they close", body)
         self.assertIn("declared coverage floor never moves", body)
@@ -947,15 +958,25 @@ class TestBenchmarkFixture(unittest.TestCase):
         self.assertEqual(len(audit["defect_classes"]), audit["defect_count"])
         self.assertEqual(set(cases), set(audit["method"]))
         self.assertTrue(audit["declared_sample"].strip())
-        # No stage is recorded as not run, here or in gaps.
+        # Who audited is the record's own first substance: a stage record
+        # naming no context is a stage that did not run, whatever it says.
+        self.assertEqual(set(CONTEXT_AXIS_KEYS), set(audit["auditor_context"]))
+        for axis, value in audit["auditor_context"].items():
+            self.assertTrue(value.strip(), f"auditor_context.{axis}")
+        # No stage is recorded as not run — all three, here and in gaps.
         gaps = " ".join(self.manifest["gaps"])
-        for name, record in (("attack_audit", attack), ("measurement", measurement)):
+        for name, record in (
+            ("reference_audit", audit),
+            ("attack_audit", attack),
+            ("measurement", measurement),
+        ):
             self.assertNotIn("not run", record["status"], name)
         self.assertNotIn("attack pass not run", gaps)
         self.assertNotIn("measurement pass not run", gaps)
         # Every class of the dated checklist carries one of the protocol's
         # three outcomes, and every SUCCEEDED class is declared with the attack
         # that works. An undeclared hole is the failure; a declared one is a gap.
+        self.assertEqual(ATTACK_CHECKLIST, attack["checklist_identity"])
         self.assertEqual(set(ATTACK_CLASSES), set(attack["classes"]))
         self.assertEqual(set(ATTACK_CLASSES), set(attack["outcomes"]))
         for name, recorded in attack["outcomes"].items():

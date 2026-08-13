@@ -22,8 +22,10 @@ REFERENCE_FIELDS = (
 # Qualification covers everything it ran against: every component but its own,
 # so `qualification` stays last.
 COVERED_FIELDS = REFERENCE_FIELDS[:-1]
-# The dated checklist the attack record walks. A record that agreed with a
-# shorter list of its own would prove nothing.
+# The dated checklist the attack record walks, and its classes one for one. A
+# record that agreed with a shorter list of its own would prove nothing, and
+# one naming a later checklist cannot be judged against this list at all.
+ATTACK_CHECKLIST = "attack-classes:2026-08-08"
 ATTACK_CLASSES = frozenset(
     {
         "answers shipped with the test",
@@ -37,6 +39,8 @@ ATTACK_CLASSES = frozenset(
     }
 )
 ATTACK_OUTCOMES = frozenset({"SUCCEEDED", "FAILED", "BLOCKED"})
+# `builders`' axes, which every recorded context carries.
+CONTEXT_AXIS_KEYS = frozenset({"model_id", "effort", "host_binding"})
 REQUIRED_QUALIFICATION_CRITERIA = {
     "oracle_failability",
     "coverage",
@@ -207,11 +211,20 @@ def verify_reference_audit(root, manifest, case_set):
         raise ValueError("reference audit method does not cover every case")
     if not str(audit["declared_sample"]).strip():
         raise ValueError("reference audit declares no sample")
+    # Who audited is the record's own first substance; a record that names no
+    # context records no audit, whatever its status says.
+    context = audit["auditor_context"]
+    if set(context) != CONTEXT_AXIS_KEYS or not all(
+        str(value).strip() for value in context.values()
+    ):
+        raise ValueError("reference audit names no auditing context")
 
 
 def verify_attack_audit(root, manifest):
     """Every class of the dated checklist answered; every hole declared."""
     attack = load_json(resolve_reference(root, manifest["attack_audit"]))
+    if attack["checklist_identity"] != ATTACK_CHECKLIST:
+        raise ValueError("attack audit names a checklist this qualifier cannot check")
     if set(attack["classes"]) != ATTACK_CLASSES:
         raise ValueError("attack audit does not walk the dated checklist")
     if set(attack["outcomes"]) != ATTACK_CLASSES:
