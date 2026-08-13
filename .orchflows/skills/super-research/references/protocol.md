@@ -264,8 +264,9 @@ in the heading. An earlier revision said two and had five.
    integers, so it is carried nowhere on the record. `selftext` *is* carried — it
    is the record's `body` — but a link submission has none, so asserting it would
    fail a healthy read. The gate may yet close the first through `attributes`;
-   until it does, the smoke asserts the seven fields the inventory below lists,
-   and the roster row names more than the shipped adapter carries.
+   until it does, the smoke asserts the seven fields the inventory in
+   [operating.md](operating.md) lists, and the roster row names more than the
+   shipped adapter carries.
 3. **`web_search` ships DuckDuckGo and no second provider.** The spec's row
    commits "Brave/Bing as declared secondary providers with per-provider
    parsers". Neither ships: `transport.py` declares one web-index route and
