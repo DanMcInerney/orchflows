@@ -24,6 +24,7 @@ import io
 import json
 import os
 import socket
+import tokenize
 import unittest
 import urllib.error
 import urllib.request
@@ -36,12 +37,30 @@ from tests import helpers
 
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "transport"
-PACKAGE_DIR = Path(__file__).resolve().parent.parent / "scripts" / "super_research"
+ITEM_DIR = Path(__file__).resolve().parent.parent
+PACKAGE_DIR = ITEM_DIR / "scripts" / "super_research"
 ADAPTER_DIR = PACKAGE_DIR / "adapters"
+EVIDENCE_DOC = ITEM_DIR / "references" / "evidence.md"
 FROZEN_OBSERVED_AT = "2026-08-10T09:00:00Z"
 
 # Only the transport seam may reach the network.
 NETWORK_MODULES = ("urllib.request", "http.client", "socket", "ssl")
+
+# Which modules may spell a route's host, its endpoint, or a credential value.
+# Declared, rather than matched by filename: the route table can be split across
+# a second module without any scan having to learn its name, so admitting one is
+# a one-line reviewable edit here and impossible anywhere else. One name, and
+# `transport` is deliberately not it: the seam re-exports these constants and
+# spells none of them, so it stays under the scan below. Admitting it would let
+# a reachable host or a credential be defined at the seam with nothing to catch
+# it, which is the whole of what the allowlist is for.
+ROUTE_OWNING_MODULES = ("routes",)
+
+# Which modules hold the outbound read on everybody's behalf. A second
+# declaration and deliberately not the same list: owning a route's address is
+# not permission to open a socket, so widening the set above must never widen
+# what the network scan tolerates.
+NETWORK_SEAM_MODULES = ("transport",)
 
 # Only the shared adapter protocol makes the call and reads the channel.
 PROTOCOL_OWNED_NAMES = ("carrier.fetch", "channel_verdict", "NETWORK_INTERCEPTED")
@@ -658,10 +677,22 @@ class CredentialStaysInsideTransportTest(unittest.TestCase):
                     self.assertNotIn(value, repr(carrier.calls))
 
 
-def package_sources():
-    """Every package module except the transport seam itself."""
+def package_sources_but(declared):
+    """Every package module a declaration does not name.
 
-    return sorted(path for path in PACKAGE_DIR.rglob("*.py") if path.name != "transport.py")
+    The declaration names core modules by stem, so it excludes the one file the
+    package root holds under that name and never an adapter that happens to
+    share it.
+    """
+
+    excluded = {PACKAGE_DIR / (name + ".py") for name in declared}
+    return sorted(path for path in PACKAGE_DIR.rglob("*.py") if path not in excluded)
+
+
+def package_sources():
+    """Every package module but the ones declared to own a route."""
+
+    return package_sources_but(ROUTE_OWNING_MODULES)
 
 
 def adapter_sources():
@@ -671,7 +702,7 @@ def adapter_sources():
 
 
 def owned_route_literals():
-    """Every string only ``transport.py`` may name: a route's host, its endpoint, a credential."""
+    """Every string only a declared route owner may name: a host, an endpoint, a credential."""
 
     literals = set()
     for route in transport.ROUTE_CONSTANTS.values():
@@ -711,6 +742,115 @@ def imported_names(path):
     return names
 
 
+# The nouns that make a sentence a claim about route data, and how wide a
+# claim reaches around the module it names.
+ROUTE_DATA_NOUNS = ("route", "host", "endpoint", "credential", "address")
+CLAIM_WINDOW = 80
+
+
+def prose_blocks(path):
+    """Everything one tracked file says in prose, each block flowed to one line.
+
+    A markdown file is prose throughout. A python file is prose in its comment
+    runs and its docstrings, and consecutive comment lines are one run: a claim
+    wraps across lines, so a scan reading each line alone would miss every claim
+    long enough to be worth making.
+    """
+
+    if path.suffix == ".md":
+        return [" ".join(path.read_text(encoding="utf-8").split())]
+
+    source = path.read_text(encoding="utf-8")
+    blocks = []
+    run = []
+    previous = None
+    for token in tokenize.generate_tokens(io.StringIO(source).readline):
+        if token.type != tokenize.COMMENT:
+            continue
+        if previous is not None and token.start[0] != previous + 1:
+            blocks.append(" ".join(run))
+            run = []
+        run.append(token.string.lstrip("#").strip())
+        previous = token.start[0]
+    if run:
+        blocks.append(" ".join(run))
+
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            text = ast.get_docstring(node)
+            if text:
+                blocks.append(" ".join(text.split()))
+    return blocks
+
+
+def module_spellings():
+    """Every way this item's prose names one of the package's core modules.
+
+    Core modules by stem, the same unit the declarations above are written in:
+    the route table is a core module and a claim about where it lives names one.
+    Adapters are out on purpose — an adapter's name is possessive all over the
+    roster, and none of those sentences is about a route's address.
+    """
+
+    spellings = {}
+    for path in sorted(PACKAGE_DIR.glob("*.py")):
+        if path.stem == "__init__":
+            continue
+        for form in (
+            "``super_research." + path.stem + "``",
+            "`super_research." + path.stem + "`",
+            "``" + path.stem + ".py``",
+            "`" + path.stem + ".py`",
+            ":mod:`." + path.stem + "`",
+            "``" + path.stem + "``",
+            "`" + path.stem + "`",
+        ):
+            spellings[form] = path.stem
+    return spellings
+
+
+def route_ownership_claims(paths):
+    """Every (file, module) where prose gives route data to a named module.
+
+    A claim is recognised by shape and never by a remembered sentence: the
+    module's name carries a possessive, or is owning something, or is what
+    something belongs to — with a route, a host, an endpoint, a credential or an
+    address inside the same window. The alternative, a list of the exact
+    sentences that were wrong once, would pass the next one written.
+    """
+
+    found = []
+    spellings = module_spellings()
+    for path in paths:
+        for block in prose_blocks(path):
+            for form, stem in spellings.items():
+                start = block.find(form)
+                while start != -1:
+                    end = start + len(form)
+                    before, after = block[:start], block[end:]
+                    claiming = (
+                        after.startswith("'s")
+                        or after.lstrip().split(" ")[0].strip(".,;:") in ("owns", "own", "owned")
+                        or "owner of" in after[:40]
+                        or before.rstrip().endswith(("belongs to", "belong to"))
+                    )
+                    window = block[max(0, start - CLAIM_WINDOW): end + CLAIM_WINDOW]
+                    if claiming and any(noun in window for noun in ROUTE_DATA_NOUNS):
+                        found.append((path.name, stem))
+                    start = block.find(form, end)
+    return sorted(set(found))
+
+
+def prose_bearing_files():
+    """Every tracked file in this item that makes a claim in prose."""
+
+    return (
+        sorted(PACKAGE_DIR.rglob("*.py"))
+        + sorted((ITEM_DIR / "references").glob("*.md"))
+        + [ITEM_DIR / "SKILL.md"]
+    )
+
+
 class RouteOwnershipScanTest(unittest.TestCase):
     """Criterion 3: one owner for the route table, booleans for the router.
 
@@ -718,7 +858,7 @@ class RouteOwnershipScanTest(unittest.TestCase):
     naming a route constant to assert it is exactly what a test is for.
     """
 
-    def test_no_package_module_but_transport_names_a_route_host_or_a_credential(self):
+    def test_no_module_outside_the_declared_owners_names_a_route_host_or_a_credential(self):
         self.assertEqual(sources_naming(owned_route_literals(), package_sources()), [])
 
     def test_the_ownership_scan_can_fail(self):
@@ -739,18 +879,73 @@ class RouteOwnershipScanTest(unittest.TestCase):
             ],
         )
 
-    def test_no_package_module_but_transport_reaches_the_network(self):
-        for path in package_sources():
+    def test_no_credential_value_reaches_the_tracked_evidence_document(self):
+        # `references/evidence.md` distils records of live reads, and a
+        # transcript is exactly where a credential value would be copied from.
+        # The scan above, the same literals, one surface that is prose.
+        credentials = sorted(
+            credential.value for credential in transport.PUBLIC_CLIENT_CREDENTIALS.values()
+        )
+
+        self.assertEqual(sources_naming(credentials, [EVIDENCE_DOC]), [])
+
+    def test_no_module_outside_the_declared_seam_reaches_the_network(self):
+        # Quantified over the seam declaration and not the route one, because
+        # the two answer different questions: a module admitted to the route
+        # table is admitted to spell an address, never to open a socket.
+        for path in package_sources_but(NETWORK_SEAM_MODULES):
             with self.subTest(module=path.name):
                 named = imported_names(path)
 
                 for module in NETWORK_MODULES:
                     self.assertNotIn(module, named)
 
-    def test_the_router_never_sees_the_transport_module(self):
+    def test_the_router_never_sees_a_module_that_holds_an_address(self):
+        # `router.py`'s own docstring states the law: it never sees a host, a
+        # path, or a credential. While one module held every address, naming
+        # that module here was the whole law. Now that the addresses are
+        # declared, this reads the declaration — because `from . import routes`
+        # would hand the router every origin in the allowlist without spelling
+        # one literal for the scan above to catch.
+        holding = sorted(set(ROUTE_OWNING_MODULES) | set(NETWORK_SEAM_MODULES))
         named = imported_names(PACKAGE_DIR / "router.py")
 
-        self.assertEqual([name for name in sorted(named) if "transport" in name], [])
+        self.assertEqual(
+            [name for name in sorted(named) if any(held in name for held in holding)], []
+        )
+
+
+class RouteOwnershipIsStatedTrulyTest(unittest.TestCase):
+    """Criterion 12: what the item says about who owns route data is true.
+
+    The scan above reads literals; this one reads sentences, and the two answer
+    different questions. Splitting the table left `transport` the seam and made
+    every comment calling it the owner of a host false — a source can pass every
+    literal scan in this file while telling the next maintainer to put the next
+    host in the wrong module. Quantified over the same declaration the literal
+    scan uses, so moving the table again moves both. Tests are excluded for the
+    reason they are above: describing a wrong arrangement is what one is for.
+    """
+
+    def test_no_prose_in_the_item_gives_route_data_to_a_module_that_does_not_declare_it(self):
+        claims = route_ownership_claims(prose_bearing_files())
+
+        # Non-empty first. A file set that went empty, or a reader that stopped
+        # recognising a claim, is how this assertion would go on passing while
+        # deciding nothing — and the item does say who owns the table.
+        self.assertNotEqual(claims, [], "the scan found no ownership claim anywhere")
+        self.assertEqual([claim for claim in claims if claim[1] not in ROUTE_OWNING_MODULES], [])
+
+    def test_the_prose_scan_can_fail(self):
+        # One source with the misattribution put back, written beside the tree
+        # with a .txt suffix so it can never be imported, so the scan is shown
+        # to discriminate rather than to match nothing at all.
+        misattributing = FIXTURE_DIR / "misattributed_ownership_source.txt"
+
+        self.assertEqual(
+            route_ownership_claims([misattributing]),
+            [(misattributing.name, "transport")],
+        )
 
 
 def sent_headers(content_type, headers=()):
@@ -2409,6 +2604,126 @@ class RefusalThreatTest(unittest.TestCase):
         self.assertEqual(artifact.loss, ("http_status",))
         self.assertEqual([call.route_id for call in carrier.calls], [transport.DDG_HTML_ROUTE])
         self.assertEqual(len(opener.opened), 1)
+
+
+INTERNALS_PATH = Path(__file__).resolve().parent.parent / "references" / "internals.md"
+
+# The one table in `internals.md` that restates `THREAT_REMAP`, named by its
+# header row. Only this table is read; every other table in that file belongs
+# to someone else.
+THREAT_TABLE_HEADER = "| threat | applies to | form here |"
+
+
+def threat_table_rows():
+    """`internals.md`'s threat table, as `(threat, applies, form)` cells in document order.
+
+    Parsed rather than transcribed: the table a reader meets is the one the
+    assertions run against, so a row corrected in the document and left in
+    `THREAT_REMAP` — or the reverse — is a red test rather than two statements
+    nobody compared.
+    """
+
+    rows = []
+    inside = False
+    for line in INTERNALS_PATH.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped == THREAT_TABLE_HEADER:
+            inside = True
+            continue
+        if not inside:
+            continue
+        if not stripped.startswith("|"):
+            break
+        cells = tuple(cell.strip() for cell in stripped.strip("|").split("|"))
+        if set(cells[0]) <= set("- "):
+            continue
+        rows.append(cells)
+    return tuple(rows)
+
+
+def documented_classes(cell):
+    """The access classes one `applies to` cell names, `K0`–`K5` read as a range.
+
+    The ladder the range is expanded over is `schema.ACCESS_CLASSES`, so the
+    shorthand means whatever the package says it means and not a second list.
+    """
+
+    named = tuple(piece for index, piece in enumerate(cell.split("`")) if index % 2 and piece)
+    if not named or "–" not in cell:
+        return named
+    ladder = list(schema.ACCESS_CLASSES)
+    return tuple(ladder[ladder.index(named[0]) : ladder.index(named[-1]) + 1])
+
+
+def comparable(prose):
+    """One form statement with the document's typography taken off, and nothing else.
+
+    Backticks and line breaks are how a cell is written, not what it claims.
+    Every word survives, so a clause dropped on either side stays a difference.
+    """
+
+    return " ".join(prose.replace("`", "").split())
+
+
+class ThreatTableIsReadOffTheDocumentTest(unittest.TestCase):
+    """`internals.md`'s sixteen threat rows, checked against `THREAT_REMAP`.
+
+    `THREAT_REMAP` is guarded three ways above. The copy of it a reader
+    actually meets was guarded not at all, and it restates **two** hand-kept
+    judgments per row: the classes a threat applies to, and the form it takes
+    here. `protocol.md` tells that reader this table gets the treatment the
+    loss tables get, so it gets it — both columns of all sixteen rows are
+    parsed out of the document and compared, and neither side can be corrected
+    while the other is left.
+    """
+
+    def setUp(self):
+        self.rows = threat_table_rows()
+
+    def test_the_table_was_found_and_every_row_is_three_cells(self):
+        # A parse that silently found nothing passes every assertion below
+        # while checking no table at all.
+        self.assertEqual(len(self.rows), 16)
+        self.assertEqual(len(self.rows), len(THREAT_REMAP))
+        for row in self.rows:
+            self.assertEqual(len(row), 3, "a threat row is {0} cells".format(len(row)))
+
+    def test_the_table_names_every_remapped_threat_exactly_once(self):
+        self.assertEqual([row[0] for row in self.rows], sorted(THREAT_REMAP))
+
+    def test_each_row_applies_to_exactly_the_classes_the_remap_gives_it(self):
+        for threat, applies, _ in self.rows:
+            with self.subTest(threat=threat):
+                self.assertEqual(
+                    documented_classes(applies),
+                    THREAT_REMAP[threat][0],
+                    "internals.md says {0} applies to {1}; THREAT_REMAP says {2}".format(
+                        threat, applies, THREAT_REMAP[threat][0]
+                    ),
+                )
+
+    def test_each_row_states_exactly_the_form_the_remap_gives_it(self):
+        for threat, _, form in self.rows:
+            with self.subTest(threat=threat):
+                self.assertEqual(
+                    comparable(form),
+                    comparable(THREAT_REMAP[threat][1]),
+                    "internals.md states {0} as {1!r}; THREAT_REMAP states it as {2!r}".format(
+                        threat, comparable(form), comparable(THREAT_REMAP[threat][1])
+                    ),
+                )
+
+    def test_the_parse_can_tell_two_cells_apart(self):
+        # The oracle can fail. A class reader that collapsed the range, or a
+        # form comparison that normalized the words away, would pass over any
+        # table at all — so both are shown distinguishing, on hand-built cells.
+        self.assertEqual(documented_classes("`K0`–`K5`"), EVERY_CLASS)
+        self.assertEqual(documented_classes("`K1`, `K5`"), CREDENTIAL_CLASSES)
+        self.assertEqual(documented_classes("`K4`"), ("K4",))
+        self.assertEqual(documented_classes("no class"), NO_CLASS)
+        self.assertNotEqual(documented_classes("`K1`, `K5`"), EVERY_CLASS)
+        self.assertEqual(comparable("a `K1`\n  credential"), "a K1 credential")
+        self.assertNotEqual(comparable("no fallback"), comparable("no fallbacks"))
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner

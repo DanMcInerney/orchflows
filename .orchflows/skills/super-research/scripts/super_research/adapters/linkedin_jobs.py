@@ -74,7 +74,7 @@ TITLE_CLASS = "base-search-card__title"
 COMPANY_CLASS = "base-search-card__subtitle"
 # The posting's own address, as the card publishes it. It is taken from the
 # card rather than assembled here for two reasons: a host belongs to
-# `transport.py` and to nothing else, and an address the origin published is a
+# `routes.py` and to nothing else, and an address the origin published is a
 # better claim than one this module composed. Its query string is dropped —
 # and only its query string — because LinkedIn hangs per-response tracking
 # parameters off it, so two reads of one posting would otherwise normalize to

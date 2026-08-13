@@ -15,6 +15,15 @@
   "provenance": {
     "locator": "provenance.json"
   },
+  "reference_audit": {
+    "locator": "reference-audit.json"
+  },
+  "attack_audit": {
+    "locator": "attack-audit.json"
+  },
+  "measurement": {
+    "locator": "measurement.json"
+  },
   "qualification": {
     "locator": "qualification.json"
   },
@@ -25,9 +34,9 @@
     "per_case_timeout_seconds": 2
   },
   "gaps": [
-    "optimization resistance is UNVERIFIED because this public fixture has no candidate-inaccessible check",
-    "attack pass not run: this public fixture ships no protected evidence, so passing without the work is its intended shape rather than a hole",
-    "measurement pass not run: the fixture has no candidate rung pair, so difficulty is UNVERIFIED and resolution rests on the one-case floor"
+    "optimization resistance is UNVERIFIED because this public fixture has no candidate-inaccessible check: the attack pass found two classes SUCCEEDED over the candidate scope, so it is not the FAILED-or-BLOCKED reading that would resolve the criterion",
+    "rerun spread unmeasured: the recorded measurement ran each rung once, so `resolution` rests on the one-case floor",
+    "two holes the attack pass left unrepaired, each named with the attack that works in the attack record: the answer key sits inside the candidate's own scope, and the candidate can write the directory it is graded from"
   ],
   "protected_evidence": {
     "files": [],
@@ -43,29 +52,15 @@
     "case:ascii-word-v1": "hand-authored as a schema witness; no model builder context",
     "case:mixed-symbols-v1": "hand-authored as a schema witness; no model builder context"
   },
-  "reference_audit": {
-    "auditor_context": "none — this fixture witnesses the manifest shape and grades no candidate",
-    "method": {
-      "case:ascii-word-v1": "re-read",
-      "case:mixed-symbols-v1": "re-read"
-    },
-    "declared_sample": "both cases",
-    "defect_count": 0,
-    "defect_classes": []
+  "qualifier": {
+    "model_id": "none — qualification here is rendered by runner.py's verify_qualification, a deterministic program with no model context; it recomputes every required verdict from a live replay rather than reading one",
+    "effort": "none — a deterministic program carries no effort setting",
+    "host_binding": "CPython 3.9.6 at /Library/Developer/CommandLineTools/usr/bin/python3 on Darwin 25.5.0, invoked as `python runner.py --manifest manifest.json --candidate <path>`"
   },
-  "attack_audit": {
-    "checklist_identity": "attack-classes:2026-08-08",
-    "outcomes": {},
-    "unrepaired": [],
-    "status": "not run — declared in gaps"
-  },
-  "measurement": {
-    "status": "not run — declared in gaps",
-    "candidates": [],
-    "scope": "candidate-accessible portion",
-    "per_case_status": {},
-    "distinct_failure_signatures": 0,
-    "margin_cases": null
+  "attacker": {
+    "model_id": "claude-opus-5[1m]",
+    "effort": "none recorded — the host exposes no effort setting to the running context; declared rather than inferred",
+    "host_binding": "Claude Code CLI on Darwin 25.5.0; the pass ran through CPython 3.9.6 at /Library/Developer/CommandLineTools/usr/bin/python3"
   },
   "resolution": {
     "measured_rerun_spread": null,

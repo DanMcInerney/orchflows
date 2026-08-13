@@ -8,7 +8,7 @@ enumeration is shown to reject a module beside the tree that breaks it.
 
 Four things are enumerated, and only the first is transcribed by hand:
 
-*The module set.* The core's fourteen modules are spelled out, so a new sibling
+*The module set.* The core's fifteen modules are spelled out, so a new sibling
 joins by editing this file or not at all. The count is in the sentence and in
 `CORE_MODULES`, and a test below compares them: this docstring said eleven for
 three modules longer than it was true. The adapter modules are not spelled
@@ -36,6 +36,10 @@ The execution-surface vocabulary is imported from ``test_adapters`` rather
 than restated: that suite pins the same names against the one adapter that
 takes an argument, this one pins them against the whole package, and two
 copies of one list is how the wider claim quietly stops covering something.
+Which modules may spell a route and which may open a socket come from
+``test_transport`` for the same reason, and they are two declarations rather
+than one because admitting a module to the route table is not admitting it to
+the network.
 """
 
 from __future__ import annotations
@@ -55,6 +59,7 @@ from tests.test_adapters import (
     WRITE_VERBS,
     code_strings,
 )
+from tests.test_transport import NETWORK_SEAM_MODULES, ROUTE_OWNING_MODULES
 
 PACKAGE_DIR = Path(__file__).resolve().parent.parent / "scripts" / "super_research"
 ADAPTER_DIR = PACKAGE_DIR / "adapters"
@@ -75,6 +80,7 @@ CORE_MODULES = (
     "probes",
     "project",
     "router",
+    "routes",
     "runner",
     "schema",
     "smoke",
@@ -97,6 +103,7 @@ CORE_IMPORT_EDGES = {
     "probes": ("transport",),
     "project": ("schema",),
     "router": ("adapters", "schema"),
+    "routes": (),
     "runner": (
         "adapters",
         "cache",
@@ -110,7 +117,7 @@ CORE_IMPORT_EDGES = {
     ),
     "schema": (),
     "smoke": ("probes", "runner", "schema", "transport"),
-    "transport": (),
+    "transport": ("routes",),
 }
 
 # Everything the package takes from outside itself. Fifteen names, and the
@@ -491,11 +498,13 @@ class NoRunSomethingSurfaceTest(unittest.TestCase):
     def test_no_module_imports_a_dynamic_import_surface(self):
         self.assertEqual(imports_naming(package_sources(), DYNAMIC_IMPORT_MODULES), [])
 
-    def test_no_module_but_transport_imports_an_execution_or_network_surface(self):
-        # `transport.py` is excluded for the one reason `test_transport`
-        # excludes it: it is the seam that owns the outbound read, and it holds
-        # `urllib.request` on everybody's behalf.
-        others = [path for path in package_sources() if path.name != "transport.py"]
+    def test_no_module_outside_the_declared_seam_imports_an_execution_surface(self):
+        # The exclusion stands for the one reason it always did — the seam owns
+        # the outbound read and holds `urllib.request` on everybody's behalf —
+        # and is read off the seam declaration rather than a filename, so a
+        # module admitted to the route table is still scanned here.
+        seam = {PACKAGE_DIR / (name + ".py") for name in NETWORK_SEAM_MODULES}
+        others = [path for path in package_sources() if path not in seam]
 
         self.assertEqual(imports_naming(others, EXECUTION_MODULES), [])
 
@@ -508,11 +517,20 @@ class NoRunSomethingSurfaceTest(unittest.TestCase):
     def test_no_module_spells_a_command(self):
         self.assertEqual(strings_spelling(package_sources(), SHELL_SPELLINGS), [])
 
-    def test_the_only_non_read_verb_the_package_spells_is_transports_one_post(self):
+    def test_the_only_non_read_verb_the_package_spells_is_a_declared_post(self):
         # Both directions, and the tighter half is the second: PUT, PATCH and
-        # DELETE are spelled nowhere at all, and the single POST is in the one
-        # module that owns the two closed exceptions to reads-only.
-        self.assertEqual(non_read_verb_findings(package_sources()), [("transport.py", "POST")])
+        # DELETE are spelled nowhere at all, and POST nowhere but where one of
+        # the two closed exceptions to reads-only lives — the seam, which
+        # admits the method, and the route owners, which spell it on the two
+        # rows that carry it. Derived from those two declarations, so which
+        # module holds the table is something to declare and never a filename
+        # this assertion has to be told about.
+        spelling_post = sorted(set(ROUTE_OWNING_MODULES) | set(NETWORK_SEAM_MODULES))
+
+        self.assertEqual(
+            non_read_verb_findings(package_sources()),
+            [(name + ".py", "POST") for name in spelling_post],
+        )
 
 
 class BoundaryOracleCanFailTest(unittest.TestCase):
@@ -735,8 +753,33 @@ NUMBER_WORDS = (
 
 
 ITEM_DIR = Path(__file__).resolve().parent.parent
+OWNER_SKILL = ITEM_DIR / "SKILL.md"
 HOST_MIRROR = ITEM_DIR.parent.parent.parent / ".claude" / "skills" / "super-research" / "SKILL.md"
 SCOPE_ROUTING_FILE = ITEM_DIR.parent.parent.parent / "AGENTS.md"
+
+# `rules/composition.md` §5. Restated rather than imported because
+# `tools/validate.py`, which enforces it for every library skill, does not read
+# `.orchflows/` at all: a project-scope item's frontmatter has no other oracle.
+DESCRIPTION_BUDGET = 140
+
+
+def frontmatter_description(path):
+    """One skill's ``description:`` field, read out of its frontmatter alone.
+
+    The block, not the file: the mirror's body is prose *about* the include, and
+    a sentence there beginning with the word would otherwise answer for a field
+    the frontmatter had lost.
+    """
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if not lines or lines[0].strip() != "---":
+        return None
+    for line in lines[1:]:
+        if line.strip() == "---":
+            return None
+        if line.startswith("description:"):
+            return line.split(":", 1)[1].strip()
+    return None
 
 
 class ThisSuiteCountsItsOwnModuleSetTest(unittest.TestCase):
@@ -781,6 +824,18 @@ class TheHostMirrorSaysWhereItResolvesTest(unittest.TestCase):
         self.assertIn("machine-specific", body)
         # And it points at the file that does resolve, from any checkout.
         self.assertIn(".orchflows/skills/super-research/SKILL.md", body)
+
+    def test_the_owner_and_the_mirror_describe_the_item_with_one_string(self):
+        # A Claude host routes on the mirror's copy and never reads the owner's,
+        # so drift here costs the item every invocation while both files still
+        # read correctly on their own — the one failure nobody thinks to check.
+        # Nothing else pins the pair: the two assertions above are about the
+        # include, and `tools/validate.py` does not walk this tree.
+        owner = frontmatter_description(OWNER_SKILL)
+
+        self.assertIsNotNone(owner, "the owner's frontmatter names no description")
+        self.assertEqual(frontmatter_description(HOST_MIRROR), owner)
+        self.assertLessEqual(len(owner), DESCRIPTION_BUDGET)
 
     def test_the_routing_line_does_not_read_as_a_working_mirror(self):
         line = [

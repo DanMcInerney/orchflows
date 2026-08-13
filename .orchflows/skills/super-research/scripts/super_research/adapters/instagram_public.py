@@ -9,8 +9,8 @@ listed this platform as a flat gap; measured, it is a profile, its recent
 posts, and the platform's own engagement, at zero cost and with no account.
 
 The app id is not a user secret and this module never sees it:
-``transport.py`` owns it as a route constant and attaches it at send time, so
-nothing recorded here can carry it.
+``routes.py`` declares it as a route constant and ``transport.py`` attaches it
+at send time, so nothing recorded here can carry it.
 
 Two things this module must not do. It must not read a wall off a body — this
 route's origin also serves a logged-out page that says "Log in" in plain words,

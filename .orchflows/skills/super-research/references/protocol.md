@@ -8,53 +8,29 @@ package's own — a term in `code` is a name the source spells exactly that way.
 ## What the evidence says, and what it does not
 
 The routes below were measured on 2026-08-10 from one macOS host,
-unauthenticated, and recorded in
-`.orch/runs/20260810T092133Z-keyless-acquisition/findings.md` §1: status, latency,
-and the field names each payload actually carried. That measurement predates this
-package. **The parsers in it have never read a live origin.** Every ceiling,
-field list, and route constant here traces to that one host at that one moment;
-the offline suite runs the parsers against the payloads those probes recorded,
-which is a statement about those fixtures and not about any origin today.
+unauthenticated: status, latency, and the field names each payload actually
+carried. [evidence.md](evidence.md) §"Route measurements of 2026-08-10" holds
+what this file cites of that record. It predates this package, so every ceiling,
+field list, and route constant here traces to that one host at that one moment.
+
+**The parsers have since read live origins.** Two sweeps on 2026-08-12 put every
+live adapter against its real route; which of them reached an origin and which
+carried a whole roster row is in [evidence.md](evidence.md) §"The two liveness
+sweeps of 2026-08-12". What the offline suite proves is narrower and unchanged:
+it runs the parsers against the payloads the 2026-08-10 probes recorded, which is
+a statement about those fixtures and not about any origin today.
 
 Two consequences a caller must carry:
 
 - `python3 -m super_research.cli status` reports every adapter `unverified` on a
-  fresh checkout, because the smoke ledger starts empty. That is the honest
-  reading of the evidence, not a fault to route around.
-- `findings.md` §0 records that the measuring host sits behind an appliance that
-  answers some domains with HTTP 503 and a `<base href="/login/">` body. A read
-  that comes back `network_intercepted` is a statement about the asking network.
-  It never degrades an adapter and never becomes a platform gap.
-
-## Layout
-
-`scripts/super_research/`, standard library only on the Python 3.9 floor, no I/O
-at import time. The module set is not the one the frozen spec's affected surfaces
-list: `ledger.py`, `ordering.py` and `pacing.py` were split out of `runner.py`,
-and `probes.py` and `smoke.py` out of `cli.py`, after the spec froze.
-
-| module | owns |
-| --- | --- |
-| `schema.py` | closed enums, the immutable manifest and artifact values, `parse_manifest` |
-| `transport.py` | every route constant, every `K1` public client credential, the guest-token store, the captive-portal detector, `route_admissions` |
-| `router.py` | one step's route decision, from per-route booleans alone |
-| `runner.py` | literal adapter dispatch, and one manifest run to one artifact plus its ledger |
-| `pacing.py` | per-route budgets and the rate governor |
-| `ledger.py` | the work ledger and the schedule a mode admits |
-| `ordering.py` | the five named views |
-| `cache.py` | one run's TTL memory of reads it already made |
-| `normalize.py` | native pages to immutable records; grouping and provenance edges |
-| `project.py` | a pure bounded subset of one artifact |
-| `probes.py` | the thirteen liveness probe declarations |
-| `smoke.py` | one probe's read, and the standing it leaves an adapter at |
-| `cli.py` | three operations, and everything an operator reads |
-| `adapters/__init__.py` | `AdapterDescriptor`, `NativeRecord`, `NativePage`, `fetch_one_page` |
-| `adapters/<id>.py` | one route's parser, one `DESCRIPTOR`, one `fetch_native_page` |
-
-`runner.py` re-exports every name moved to `ledger`, `ordering` and `pacing`, and
-`cli.py` every name moved to `probes` and `smoke`, so each name has one definition
-and one address. Tests are `tests/`, with `tests/helpers.py` and
-`tests/fixtures/**`; the whole suite runs with no network reachable.
+  fresh checkout, because the smoke ledger starts empty. That is the ledger's own
+  state and not a fault to route around: a sweep's standing lives in a tempdir
+  and never travels with a checkout.
+- `evidence.md` §"The captive-portal caveat" records that the measuring host sits
+  behind an appliance that answers some domains with HTTP 503 and a
+  `<base href="/login/">` body. A read that comes back `network_intercepted` is a
+  statement about the asking network. It never degrades an adapter and never
+  becomes a platform gap.
 
 ## Manifest grammar
 
@@ -206,9 +182,10 @@ but `K5` is uncredentialed.
 
 1. No first-release capability may depend on `K5`. Absence of a credential yields
    full capability at lower throughput, never a refusal.
-2. A `K1` public client credential is a route constant `transport.py` owns. It is
-   attached at send time, never enters a manifest or an artifact, and is stripped
-   back off the answering address before that address leaves the transport seam.
+2. A `K1` public client credential is a route constant `routes.py` declares and
+   `transport.py` re-exports. It is attached at send time, never enters a
+   manifest or an artifact, and is stripped back off the answering address
+   before that address leaves the transport seam.
 3. A `K3` route is labelled with its operator identity and carries
    `third_party_archive` on **every record**. The label has to be on the row:
    `normalize.normalize_page` builds a record's loss from that native record's
@@ -258,7 +235,7 @@ Read back off `runner.surface_descriptors`.
 | `fake` | `offline` | `fake_offline` | deterministic fixture pages. Never live evidence, and the one adapter with no smoke |
 
 `rss_atom` is a generic feed parser bound to one declared route. A second feed is
-a second route constant in `transport.py`, not a caller-supplied address; the
+a second route constant in `routes.py`, not a caller-supplied address; the
 adapter never names a host.
 
 Deferred, each with a reopen condition rather than a silent drop: `youtube_captions`
@@ -266,8 +243,9 @@ Deferred, each with a reopen condition rather than a silent drop: `youtube_capti
 videos) until attestation is solved or a caller opts into `K5`; `x_search` (the
 current `SearchTimeline` query id is unrecovered behind an ESM import map) with
 `K4` as the interim route; `tiktok_public`, unverified because this network
-answered 503 with a login portal and §0 forbids reading that as platform
-behaviour; `reddit_oauth` and `youtube_data_api` as `K5` throughput upgrades.
+answered 503 with a login portal and `evidence.md` §"The captive-portal caveat"
+forbids reading that as platform behaviour; `reddit_oauth` and
+`youtube_data_api` as `K5` throughput upgrades.
 
 ## Five capabilities that ship smaller than their roster row
 
@@ -278,9 +256,9 @@ that does, so `test_dependency_boundary` counts its entries against the number
 in the heading. An earlier revision said two and had five.
 
 1. **`linkedin_public` reads `/in/<slug>` only.** The spec's row reads
-   "profile/company". `findings.md` §1 records `linkedin.com/company/<slug>`
-   answering 200 with a marker name and **no field set**, so a company parser
-   would be inferred rather than measured. `linkedin.com/company/<slug>` is a
+   "profile/company". `evidence.md` §"Route measurements of 2026-08-10" records
+   `linkedin.com/company/<slug>` answering 200 with a marker name and **no field
+   set**, so a company parser would be inferred rather than measured. It is a
    different path and would be a different route constant.
 2. **`reddit_archive`'s smoke omits `upvote_ratio` and `selftext`.** The spec's
    row names both, and they fail its assertion for different reasons.
@@ -288,15 +266,17 @@ in the heading. An earlier revision said two and had five.
    integers, so it is carried nowhere on the record. `selftext` *is* carried — it
    is the record's `body` — but a link submission has none, so asserting it would
    fail a healthy read. The gate may yet close the first through `attributes`;
-   until it does, the smoke asserts the seven fields the inventory below lists,
-   and the roster row names more than the shipped adapter carries.
+   until it does, the smoke asserts the seven fields the inventory in
+   [operating.md](operating.md) lists, and the roster row names more than the
+   shipped adapter carries.
 3. **`web_search` ships DuckDuckGo and no second provider.** The spec's row
    commits "Brave/Bing as declared secondary providers with per-provider
-   parsers". Neither ships: `transport.py` declares one web-index route and
-   `web_search.py` holds one parser. `findings.md` §1 measured both answering
-   200 and resisting extraction — Brave with obfuscated class names, Bing with
-   markup no clean triple came out of — so a parser for either would be written
-   against markup nobody has extracted from rather than against a measurement.
+   parsers". Neither ships: `routes.py` declares one web-index route and
+   `web_search.py` holds one parser. `evidence.md` §"Route measurements of
+   2026-08-10" records both answering 200 and resisting extraction — Brave with
+   obfuscated class names, Bing with markup no clean triple came out of — so a
+   parser for either would be written against markup nobody has extracted from
+   rather than against a measurement.
    Reopen when one of them yields a title/locator/snippet triple on a probe.
 4. **`reddit_archive` ships one Arctic Shift route of the four the spec names.**
    The row names `posts/search`, `comments/search`, `posts/ids` and `comments`
@@ -309,7 +289,7 @@ in the heading. An earlier revision said two and had five.
 5. **`rss_atom` is a generic parser bound to one route.** The row reads
    "Generic RSS/Atom", and the parser is: it reads RSS 2.0 and Atom, identity,
    dates, enclosures and transcript links. What it cannot do is point anywhere
-   — a feed is a route constant `transport.py` owns, and one is declared,
+   — a feed is a route constant `routes.py` owns, and one is declared,
    `youtube_channel_feed`. The adapter names no host, so a second feed is a
    second constant and not a caller-supplied address. That is the non-goal about
    generic HTTP primitives holding, and it is still less than the row implies.
@@ -391,11 +371,14 @@ record carrying a loss code is not a failed read — `youtube_innertube` returns
 carries the metadata it did get.
 
 **Both tables below are read back off the source, never transcribed into it.**
-`test_dependency_boundary.LOSS_VOCABULARY` parses these two tables out of this
-file and compares each row against what the package's own syntax says, so a cell
-that stops being true is a red test rather than a sentence nobody re-read. The
-same treatment `THREAT_REMAP` gets, and for the same reason: an earlier hand-kept
-count said three emitters where there were thirteen.
+`test_dependency_boundary.LossVocabularyIsReadOffTheSourceTest` parses these two
+tables out of this file and compares each row against what the package's own
+syntax says, so a cell that stops being true is a red test rather than a sentence
+nobody re-read. The threat table gets the same treatment: it lives in
+[internals.md](internals.md) §"What the package refuses", and
+`test_transport.ThreatTableIsReadOffTheDocumentTest` parses both of its columns
+out of that file and compares each against `THREAT_REMAP`. Same reason in both
+places: an earlier hand-kept count said three emitters where there were thirteen.
 
 The **named by** column is every module whose executable code spells that code,
 to attach it or to read it. Spelling is the property worth pinning, because the
@@ -411,7 +394,7 @@ The seven codes this delivery adds to the retained vocabulary:
 | --- | --- | --- |
 | `third_party_archive` | an independent archive answered, not the platform | `reddit_archive` |
 | `stale_identifier` | a vendor identifier rotated; the read was refused, not empty | `x_guest` (404), `youtube_innertube` (400) |
-| `attestation_required` | the origin withheld a payload behind an attestation this package does not perform | `youtube_innertube`, for the two playability statuses findings.md §1 measured and for a withheld caption list; `cli`, which reads it |
+| `attestation_required` | the origin withheld a payload behind an attestation this package does not perform | `youtube_innertube`, for the two playability statuses evidence.md §"Route measurements of 2026-08-10" records and for a withheld caption list; `cli`, which reads it |
 | `network_intercepted` | the local network answered, not the origin | `transport`, `adapters`, `smoke` |
 | `cache_hit` | this run's own memory answered | `adapters`, `runner` |
 | `archive_lag` | an archive's coverage trails the platform | nothing: **absent from the source entirely** |
@@ -542,198 +525,3 @@ at all, so the replay answers the same way whenever it runs.
 The two counted orders read the exact metric name the surface declares in
 `comment_count_metric` or `reply_count_metric`. An adapter declaring neither has
 no eligible metric, which is a stated absence rather than a zero nobody reported.
-
-## Two laws, each bought with a defect
-
-Neither is derivable from the code by a reader who has not already made the
-mistake, so both are stated as law.
-
-### A record's route, not its adapter, identifies the surface that produced it
-
-An adapter id names a parser. A route id names the surface a read actually left
-on. Every accounting and every metric lookup keys on the route.
-
-- `StepResult.route_id` and `WorkLedgerEvent.route_id` are `page.route_id` — the
-  route the page says answered — and not the route the core routed by. A step
-  whose pages disagree on a route falls back to the route it was admitted on,
-  because no single route is what it read and each record already carries the
-  exact one it came from.
-- `ordering._surface_descriptor` resolves a metric name by matching the record's
-  `route_id` against the descriptors `runner.surface_descriptors` returns for that
-  adapter, and only then falls back to the adapter's own.
-
-Charging to the adapter is invisible until an adapter reads two surfaces. It bills
-one origin's budget for the other's read, and it resolves `most_commented` by
-adapter id alone — so one surface's rows get ranked by the other surface's metric
-name, and half a view goes unranked. Hacker News is where this shows: the item
-store calls a story's comment count `descendants` and the index calls the same
-quantity `num_comments`, and neither is this package's to rename. `github_rest`
-has the same shape, with one anonymous hour counted in two buckets.
-
-### A page is not a call
-
-A page is what an adapter returned. A call is what an origin was asked to spend.
-`runner.reached_origin` is the one place that decides, and it is false in **two**
-ways: the run's own memory answered (`cache_hit`), or the adapter refused before
-making a call at all (`outcome == "refused"`). `refused` is the one outcome
-meaning the read never left; every other one, failures included, describes
-something an origin or the local network actually answered.
-
-Inferring "reached the origin" from "not a cache hit" is indistinguishable from
-correct until an adapter can refuse *without* calling — a target it does not
-serve costs a page and no read. Once one can, the ledger bills a `calls` delta for
-a request that never went out, and every downstream sum is wrong by the number of
-refusals. `public_page`'s refusal of an unserved selection is the case that
-exposed it.
-
-## What the package refuses
-
-Threat oracles T01–T16 are retained from the superseded spec with applicability
-remapped from `A0`–`A5` to `K0`–`K5` by the rule the old mapping used: a threat
-applies to a class when that class has the machinery the threat is about. The
-remap table is `test_transport.THREAT_REMAP` and is itself checked — every threat
-named once, every class one the ladder declares, and every class the roster
-answers at covered by at least one threat. `offline` is not on the ladder; nothing
-about `fake` is a claim about a route.
-
-| threat | applies to | form here |
-| --- | --- | --- |
-| T01 | `K1`, `K5` | no credential id or value reaches a request, a response, a call log, or an artifact |
-| T02 | `K1`, `K5` | the address a query-placed key was appended to comes back stripped |
-| T03 | `K1`, `K5` | a credential is attached at send time from the route's own constant, so it reaches that origin and no other |
-| T04 | `K0`–`K5` | no route admits a state-changing verb |
-| T05 | no class | no process is launched, because none can be |
-| T06 | `K0`–`K5` | a caller cannot escape a route's admitted method set, and a body is the route's shape with the caller's values |
-| T07 | no class | no session state to export: the one token a run mints lives in memory |
-| T08 | no class | nothing navigates, clicks, or submits |
-| T09 | `K0`–`K5` | acquired text is `untrusted_content`: it changes no plan, no grant, no write set |
-| T10 | `K1`, `K5` | a `K1` credential names no user, so there is no principal to mismatch; the operator that answered is declared |
-| T11 | `K0`–`K5` | a refusal is typed `rate_limited` on one call, and no identity changes |
-| T12 | `K0`–`K5` | a route the run cannot reach is refused with a typed reason and never probed |
-| T13 | `K4` | an index surface declares itself an index, and is the only surface that does |
-| T14 | `K0`–`K5` | no delete primitive: the only stores are in memory |
-| T15 | `K0`–`K5` | a refusal costs the origin nothing: it is decided before any call |
-| T16 | `K0`–`K5` | no fallback: a failed read is a typed failure, never a second read elsewhere |
-
-T05, T07 and T08 apply to no class because the `K0`–`K5` ladder has neither an
-ambient-identity CLI nor an exported browser session; they are answered by absent
-machinery rather than by a behaviour, and recording that is the remap.
-
-**Zero writes are reachable.** `transport.admitted_methods` returns `GET` and
-`HEAD` for every route but two named exceptions, both POSTs that create nothing:
-minting an anonymous guest token, and asking InnerTube a question it publishes no
-GET form for. A query-body route's body is rendered from that route's declared
-`body_params` and from nothing else, so a caller supplies values into a shape this
-module owns and can never choose the shape — the point at which a route would
-become the generic HTTP primitive the spec's non-goals refuse. PUT, PATCH and
-DELETE are admitted by no route, unconditionally. The opener also refuses any URL
-that is not `https://`.
-
-**Everything acquired is untrusted content.** A snippet, a body, an attribute
-value, or a profile description is data. It never alters a manifest, a route, a
-cap, or a write set, however it is phrased, and the calling lane owes it the same
-treatment.
-
-## CLI surface
-
-`python3 -m super_research.cli`, with this item's `scripts/` on `PYTHONPATH`.
-Three operations, one argument, fifteen reachable invocations. The parser is built
-from the `OPERATIONS` table, so the enumeration a reader checks is the one the
-parser was made from.
-
-| operation | argument | reaches an origin | writes | exit |
-| --- | --- | --- | --- | --- |
-| `adapters` | none | no | nothing | 0 |
-| `smoke` | `--adapter <one of thirteen>`, required | one bounded read | one of its two records: the ledger on success, the unmet record on a row the origin answered and did not carry, neither otherwise | 0 / 1 / 3 |
-| `status` | none | no | nothing | 0 always |
-
-No operation takes an address, a route, a path, a manifest, or a command;
-`--adapter` is a closed `choices` list of the thirteen live ids. `fake` is refused
-with everything else: reading a fixture and printing it as liveness is the one
-result this surface must never produce. The carrier, clock, moment, ledger path
-and output stream are parameters of `main` with the real defaults and are
-unreachable from a command line, which is how the whole path is exercised offline.
-
-Exit codes: `0` the roster row was carried; `1` the origin answered and the row was
-not carried; `2` argparse's own usage error, taken by nothing else here; `3` this
-host's local network answered, **or nothing answered at all**, so nothing about
-the platform was concluded. `1` and `3` are separate doors because they are not
-the same news. A refused connection, an unresolvable name, or a TLS failure
-raises `TransportError` out of the opener rather than becoming a typed page,
-because there was no answer to type; `cli.main` catches it and takes `3`, and
-records nothing. Letting it leave as a traceback would take `1` — a cable
-nobody plugged in, filed as a row the origin declined to carry.
-
-Two dispositions and no third: `verified` and `unverified`. Rejecting a platform
-is not something this package does from one read, so `rejected` is not in the
-vocabulary at all and "never degrades to rejected" is structural rather than a
-branch someone has to remember. Reasons are `fresh_success`, `never_smoked`,
-`read_and_row_unmet`, `stale_success`, `unreadable_last_success`,
-`last_success_ahead_of_now`. The window is seven days, because every route here
-depends on markup or on a vendor identifier that rotates without notice.
-
-`never_smoked` asserts that no read has ever reached this adapter's origin, and
-`read_and_row_unmet` that one did — at the instant it reports — and came back
-without the row. It claims no cause: a challenge status, a refused
-authorization, a withheld payload and a parser that dropped a field all reach it
-alike, and the state stays `unverified` for all of them. Nothing about a
-platform is concluded by either.
-
-**Two records, and each holds one fact.** The ledger is one JSON object of
-adapter id to ISO stamp at `<tempdir>/super-research/smoke-ledger.json`, holding
-the last read that carried an adapter's whole row. Beside it, at
-`smoke-ledger-unmet.json`, one more of the same shape, holding the last read
-that reached an origin and did not. Both are constants no argument can point
-elsewhere: the second is derived from the path handed to `main`, so a caller who
-redirects the ledger cannot leave half the state behind in the other directory.
-
-Each record only ever gains an entry, and a read lands in exactly one of them. A
-read that carried its whole row, from the origin, stamps the ledger; one the
-origin answered without the row stamps the unmet record; a read this host's own
-network answered stamps neither, because the origin was never reached and that is
-not a read of the platform at all. A blocked read is not a finding about the
-platform, and a failed read has not undone a success already recorded — the
-ledger is never written by a failure, so a reader that only asks whether an
-adapter is in it gets the answer it always gave. Expiry happens by the window
-passing, never by a later read revoking an earlier one, and it expires a success
-rather than the fact of a read: seven days on, a stale success and a read that
-went unmet still report different reasons. Either record unreadable reads as
-empty, which costs an adapter its evidence and never invents any — `unverified`
-where the ledger is lost, `never_smoked` where the unmet record is, both the
-safe direction.
-
-## Smoke inventory
-
-One probe per live adapter, in `probes.py`. Each is one ordinary manifest step,
-not a private path into an adapter, and its assertion is that **one record of the
-named kind carries the whole list** — a row assembled out of several records would
-claim a completeness no single answer had. `engagement:` and `attribute:` prefixes
-name the two places a route's own vocabulary lands.
-
-| adapter | route | probe | field set asserted |
-| --- | --- | --- | --- |
-| `web_search` | `ddg_html` | discovery `rate limiting` | web_hit: title, canonical_locator, body |
-| `public_page` | `public_page_article` | hydration `article:Rate_limiting` | web_page: body, exact_content_hash, observed_at, attribute:content_type, attribute:link, attribute:requested_url, attribute:final_url |
-| `reddit_archive` | `arctic_shift_posts_ids` | hydration `z1c9z` | post: title, author, community, canonical_locator, published_at, engagement:score, engagement:num_comments |
-| `reddit_feed` | `reddit_feed` | discovery `programming` | post: title, author, canonical_locator, published_at |
-| `x_syndication` | `x_syndication_timeline` | hydration `simonw` | post: body, published_at, native_parent_id, engagement:favorite_count, engagement:retweet_count, engagement:reply_count, engagement:quote_count |
-| `x_guest` | `x_guest_graphql` | hydration `user:simonw` | profile: native_item_id, title, author, canonical_locator, published_at, engagement:followers_count |
-| `linkedin_public` | `linkedin_public_profile` | hydration `williamhgates` | profile: title, body, attribute:jobTitle, attribute:addressLocality, attribute:worksFor, attribute:alumniOf |
-| `linkedin_jobs` | `linkedin_jobs_guest_search` | discovery `reliability engineer` | job_posting: native_item_id, title, author, published_at |
-| `youtube_innertube` | `youtube_innertube` | hydration `dQw4w9WgXcQ` | video: title, published_at, engagement:viewCount |
-| `instagram_public` | `instagram_web_profile` | hydration `instagram` | profile: title, author, body, engagement:edge_followed_by.count; **and** post: native_item_id, published_at, engagement:edge_liked_by.count, engagement:edge_media_to_comment.count |
-| `hacker_news` | `hn_algolia_search` | discovery `python` | story: title, author, published_at, engagement:points, engagement:num_comments |
-| `github_rest` | `github_rest` | hydration `python/cpython` | repository: title, body, author, published_at, engagement:stargazers_count, engagement:forks_count, engagement:open_issues_count |
-| `rss_atom` | `youtube_channel_feed` | discovery `UC_x5XG1OV2P6uZZ5FSM9Ttw` | feed_entry: native_item_id, title, author, canonical_locator, published_at |
-
-Instagram's is the only row describing two content kinds, which is why a field set
-is declared per kind at all: no single record carries both the profile's follower
-count and a post's like count. Three adapters read two surfaces each and a smoke
-makes one call, so each probe names the surface it takes — Algolia search for
-`hacker_news`, the repository surface for `github_rest`, the article surface for
-`public_page`.
-
-A probe target can rot without the route changing, and a removed target and a
-broken route both come back with no row. Every probe whose target is a named item,
-slug, channel, or handle therefore declares `target_recovery`: how to obtain a
-current one. A query never goes stale and declares none.

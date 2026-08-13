@@ -9,6 +9,15 @@ these fields:
 - `scoring` — locator of required-status, scoring, and aggregation
   data.
 - `provenance` — locator of the source trace and case mappings.
+- `reference_audit` — locator of the reference audit record: the auditing
+  context identity, the method per case (solve-from-prompt or re-read), the
+  declared sample, a defect **count**, and each defect's class. Never a rate.
+- `attack_audit` — locator of the attack pass record: the dated checklist
+  identity, the outcome per class, and every hole left unrepaired named with
+  the attack that works.
+- `measurement` — locator of the recorded measurement pass: candidate
+  identities, measured scope, per-case status, the count of distinct failure
+  signatures, and the margin.
 - `qualification` — locator of the verdict set. At
   construction, before independent qualification has rendered
   anything, this component may instead be the one-entry pending
@@ -32,14 +41,8 @@ rather than recomputed by a consumer:
 - `builders` — per case, the builder context's model id, effort, and host
   binding. Recording it is what lets a successor compute a builder-family
   effect the run itself cannot.
-- `reference_audit` — the auditing context identity, the method per case
-  (solve-from-prompt or re-read), the declared sample, a defect **count**,
-  and each defect's class. Never a rate.
-- `attack_audit` — the dated checklist identity, the outcome per class, and
-  every hole left unrepaired named with the attack that works.
-- `measurement` — the recorded measurement pass: candidate identities,
-  measured scope, per-case status, the count of distinct failure signatures,
-  and the margin.
+- `qualifier` — the qualifying context's model id, effort, and host binding.
+- `attacker` — the attack pass context's model id, effort, and host binding.
 - `resolution` — the smallest reportable difference,
   `max(measured rerun spread, one case)`.
 - `retirement_trigger` — the declaration only. Its firing is recorded in the
