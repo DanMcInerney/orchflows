@@ -8,10 +8,9 @@ competing hypothesis; state which cut you used and why it covers.
   slice of the source policy; a lane store as write scope; a bound in
   sources or tool calls.
 - Item extensions beyond the core: the modality or hypothesis the lane
-  owns; what would make the lane's answer decisive; the pack's craft
-  reference by path. Every item carries its lane store path; the
-  executor's return files the store artifacts' identities into the
-  ticket's `## Result` per the filing law.
+  owns; what would make the lane's answer decisive. Every item carries
+  its lane store path; the executor's return files the store artifacts'
+  identities into the ticket's `## Result` per the filing law.
 - Terminal assembly item: `orch-synthesize`, combining the evidence
   packets from every lane, completion test carrying the spec's
   coverage and rigor criteria.

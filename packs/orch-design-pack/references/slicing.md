@@ -13,8 +13,7 @@ views.
   composes another.
 - Item extensions beyond the core: the identity list verbatim; the
   render, capture, and diff commands and the accessibility bar
-  verbatim; the design language verbatim; the standards owner pointer;
-  the pack's craft reference by path.
+  verbatim; the design language verbatim; the standards owner pointer.
 - A view ticket missing a token returns `blocked` naming it — a
   token ticket precedes it as a dependency; it never hard-codes the
   value or widens its own scope.
