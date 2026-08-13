@@ -18,10 +18,11 @@ Choose the cheapest capable rung of the ladder per
 Spawn one fresh child carrying the packet verbatim, `reply_to` set to
 your own name where you are yourself a named child, or `main` where
 you are the top-level orchestrator — computed here, at the dispatcher,
-never guessed by the child. Select the profile's native agent type and
-compatible fork mode per the profiles reference; the child task name
-never selects the profile. Name the child by normalized base-model-effort
-per that reference.
+never guessed by the child. Select the profile's native agent type,
+compatible fork mode, and — where the dispatch calls for an isolated
+workspace — the native isolation field, per the profiles reference;
+the child task name never selects the profile. Name the child by
+normalized base-model-effort per that reference.
 
 Never: widen scope; dispatch two objectives in one packet; let a child
 re-dispatch its primary work; resolve a blocked profile only per
