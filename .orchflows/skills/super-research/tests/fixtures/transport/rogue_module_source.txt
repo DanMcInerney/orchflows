@@ -1,5 +1,5 @@
 # A module that took the route table into its own hands: it names a host,
-# an endpoint, and a public client credential that only transport.py may
+# an endpoint, and a public client credential that only routes.py may
 # name. It is stored with a .txt suffix so it can never be imported or
 # discovered; it exists only to prove the ownership scan discriminates.
 

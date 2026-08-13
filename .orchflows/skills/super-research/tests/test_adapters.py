@@ -106,6 +106,7 @@ from super_research.adapters import linkedin_jobs
 from super_research.adapters import linkedin_public
 from super_research.adapters import x_guest, x_syndication, youtube_innertube
 from tests import helpers, test_pipeline
+from tests.test_transport import ROUTE_OWNING_MODULES
 
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "x"
@@ -4480,11 +4481,12 @@ class KeylessCredentialTest(unittest.TestCase):
             transport.PUBLIC_CLIENT_CREDENTIALS[transport.INSTAGRAM_WEB_APP_ID].value,
         )
 
-    def test_neither_credential_is_spelled_in_any_package_module_but_transport(self):
+    def test_neither_credential_is_spelled_in_any_module_but_a_declared_owner(self):
+        owners = {PACKAGE_DIR / (name + ".py") for name in ROUTE_OWNING_MODULES}
         named = sorted(
             (path.name, value)
             for path in PACKAGE_DIR.rglob("*.py")
-            if path.name != "transport.py"
+            if path not in owners
             for value in self._values()
             if value in path.read_text(encoding="utf-8")
         )

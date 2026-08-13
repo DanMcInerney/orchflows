@@ -237,7 +237,7 @@ def _record_for(slug: str, person: Mapping[str, Any]) -> NativeRecord:
     return NativeRecord(
         canonical_content_kind=CONTENT_KIND,
         # The address the block itself published. Taken from there and not
-        # composed here, because a route's host belongs to `transport.py`.
+        # composed here, because a route's host belongs to `routes.py`.
         canonical_locator=_text(person.get(URL_KEY)),
         # The slug this run read: the route's own path segment, and LinkedIn's
         # own public name for a member.
