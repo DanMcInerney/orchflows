@@ -5,7 +5,7 @@ file solely owns default model mappings and the child-naming algorithm.
 
 | Profile | Role | Codex | Claude Code |
 | --- | --- | --- | --- |
-| `orch-planner` | planner | agent_type `orch_planner`, model `gpt-5.6-sol`, model_reasoning_effort `ultra` | model `claude-fable-5`, effort `high` |
+| `orch-planner` | planner | agent_type `orch_planner`, model `gpt-5.6-sol`, model_reasoning_effort `ultra` | model `claude-opus-5`, effort `max` |
 | `orch-worker` | worker | agent_type `orch_worker`, model `gpt-5.6-sol`, model_reasoning_effort `high`, service_tier `fast` | model `claude-opus-5`, effort `high` |
 
 One machine runs different bindings by editing its own rendered role
