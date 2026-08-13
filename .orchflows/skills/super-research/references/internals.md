@@ -8,12 +8,14 @@ two laws a reader has to be told, and what the package refuses.
 `scripts/super_research/`, standard library only on the Python 3.9 floor, no I/O
 at import time. The module set is not the one the frozen spec's affected surfaces
 list: `ledger.py`, `ordering.py` and `pacing.py` were split out of `runner.py`,
-and `probes.py` and `smoke.py` out of `cli.py`, after the spec froze.
+`probes.py` and `smoke.py` out of `cli.py`, and `routes.py` out of
+`transport.py`, after the spec froze.
 
 | module | owns |
 | --- | --- |
 | `schema.py` | closed enums, the immutable manifest and artifact values, `parse_manifest` |
-| `transport.py` | every route constant, every `K1` public client credential, the guest-token store, the captive-portal detector, `route_admissions` |
+| `routes.py` | every route constant and every `K1` public client credential: the closed allowlist of reachable hosts, declarations only |
+| `transport.py` | the outbound request — the opener, method admission, the byte cap, refusal parsing, the guest-token store, the captive-portal detector, `route_admissions` |
 | `router.py` | one step's route decision, from per-route booleans alone |
 | `runner.py` | literal adapter dispatch, and one manifest run to one artifact plus its ledger |
 | `pacing.py` | per-route budgets and the rate governor |
@@ -28,10 +30,11 @@ and `probes.py` and `smoke.py` out of `cli.py`, after the spec froze.
 | `adapters/__init__.py` | `AdapterDescriptor`, `NativeRecord`, `NativePage`, `fetch_one_page` |
 | `adapters/<id>.py` | one route's parser, one `DESCRIPTOR`, one `fetch_native_page` |
 
-`runner.py` re-exports every name moved to `ledger`, `ordering` and `pacing`, and
-`cli.py` every name moved to `probes` and `smoke`, so each name has one definition
-and one address. Tests are `tests/`, with `tests/helpers.py` and
-`tests/fixtures/**`; the whole suite runs with no network reachable.
+`runner.py` re-exports every name moved to `ledger`, `ordering` and `pacing`,
+`cli.py` every name moved to `probes` and `smoke`, and `transport.py` every name
+moved to `routes`, so each name has one definition and one address. Tests are
+`tests/`, with `tests/helpers.py` and `tests/fixtures/**`; the whole suite runs
+with no network reachable.
 
 ## Two laws, each bought with a defect
 

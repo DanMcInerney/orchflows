@@ -182,9 +182,10 @@ but `K5` is uncredentialed.
 
 1. No first-release capability may depend on `K5`. Absence of a credential yields
    full capability at lower throughput, never a refusal.
-2. A `K1` public client credential is a route constant `transport.py` owns. It is
-   attached at send time, never enters a manifest or an artifact, and is stripped
-   back off the answering address before that address leaves the transport seam.
+2. A `K1` public client credential is a route constant `routes.py` declares and
+   `transport.py` re-exports. It is attached at send time, never enters a
+   manifest or an artifact, and is stripped back off the answering address
+   before that address leaves the transport seam.
 3. A `K3` route is labelled with its operator identity and carries
    `third_party_archive` on **every record**. The label has to be on the row:
    `normalize.normalize_page` builds a record's loss from that native record's
@@ -234,7 +235,7 @@ Read back off `runner.surface_descriptors`.
 | `fake` | `offline` | `fake_offline` | deterministic fixture pages. Never live evidence, and the one adapter with no smoke |
 
 `rss_atom` is a generic feed parser bound to one declared route. A second feed is
-a second route constant in `transport.py`, not a caller-supplied address; the
+a second route constant in `routes.py`, not a caller-supplied address; the
 adapter never names a host.
 
 Deferred, each with a reopen condition rather than a silent drop: `youtube_captions`
@@ -269,7 +270,7 @@ in the heading. An earlier revision said two and had five.
    shipped adapter carries.
 3. **`web_search` ships DuckDuckGo and no second provider.** The spec's row
    commits "Brave/Bing as declared secondary providers with per-provider
-   parsers". Neither ships: `transport.py` declares one web-index route and
+   parsers". Neither ships: `routes.py` declares one web-index route and
    `web_search.py` holds one parser. `evidence.md` §"Route measurements of
    2026-08-10" records both answering 200 and resisting extraction — Brave with
    obfuscated class names, Bing with markup no clean triple came out of — so a
@@ -287,7 +288,7 @@ in the heading. An earlier revision said two and had five.
 5. **`rss_atom` is a generic parser bound to one route.** The row reads
    "Generic RSS/Atom", and the parser is: it reads RSS 2.0 and Atom, identity,
    dates, enclosures and transcript links. What it cannot do is point anywhere
-   — a feed is a route constant `transport.py` owns, and one is declared,
+   — a feed is a route constant `routes.py` owns, and one is declared,
    `youtube_channel_feed`. The adapter names no host, so a second feed is a
    second constant and not a caller-supplied address. That is the non-goal about
    generic HTTP primitives holding, and it is still less than the row implies.
