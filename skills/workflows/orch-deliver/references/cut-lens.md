@@ -24,5 +24,8 @@ issued items alone.
   cell prescribes, terminal assembly item included
   ([contracts/pack-signature.md](../../../../contracts/pack-signature.md)).
 - Parallel safety: sibling items share no write scope and no output
-  field ([rules/composition.md](../../../../rules/composition.md) §7);
-  an overlap appears only where an edge orders them.
+  field, and an item whose completion test observes artifacts outside
+  its own write scope is safe only against siblings that change nothing
+  it observes in the workspace where it observes it
+  ([rules/composition.md](../../../../rules/composition.md) §7); an
+  overlap appears only where an edge orders them.
