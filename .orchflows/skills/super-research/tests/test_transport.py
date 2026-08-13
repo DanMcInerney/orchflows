@@ -785,10 +785,19 @@ class RouteOwnershipScanTest(unittest.TestCase):
                 for module in NETWORK_MODULES:
                     self.assertNotIn(module, named)
 
-    def test_the_router_never_sees_the_transport_module(self):
+    def test_the_router_never_sees_a_module_that_holds_an_address(self):
+        # `router.py`'s own docstring states the law: it never sees a host, a
+        # path, or a credential. While one module held every address, naming
+        # that module here was the whole law. Now that the addresses are
+        # declared, this reads the declaration — because `from . import routes`
+        # would hand the router every origin in the allowlist without spelling
+        # one literal for the scan above to catch.
+        holding = sorted(set(ROUTE_OWNING_MODULES) | set(NETWORK_SEAM_MODULES))
         named = imported_names(PACKAGE_DIR / "router.py")
 
-        self.assertEqual([name for name in sorted(named) if "transport" in name], [])
+        self.assertEqual(
+            [name for name in sorted(named) if any(held in name for held in holding)], []
+        )
 
 
 def sent_headers(content_type, headers=()):
