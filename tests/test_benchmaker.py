@@ -31,19 +31,68 @@ COMPONENT_FIELDS = (
     "runner",
     "scoring",
     "provenance",
+    "reference_audit",
+    "attack_audit",
+    "measurement",
     "qualification",
 )
 DECLARATION_FIELDS = ("expected_cost", "gaps", "protected_evidence")
 POST_QUALIFICATION_FIELDS = (
     "anchors",
     "builders",
-    "reference_audit",
-    "attack_audit",
-    "measurement",
+    "qualifier",
+    "attacker",
     "resolution",
     "retirement_trigger",
     "incomparability",
 )
+# The done check reaches every component and stops there, so which block a
+# field sits in is the rule, not presentation. The three stage records are
+# components; each keeps the substance it carried as a value.
+NOT_RE_DERIVABLE = "None of the following is re-derivable afterwards"
+STAGE_RECORD_SUBSTANCE = {
+    "reference_audit": (
+        "auditing context identity",
+        "method per case",
+        "defect **count**",
+        "Never a rate",
+    ),
+    "attack_audit": ("dated checklist identity", "the attack that works"),
+    "measurement": (
+        "candidate identities",
+        "per-case status",
+        "count of distinct failure signatures",
+        "margin",
+    ),
+}
+# `builders`' shape, which `qualifier` and `attacker` are recorded in: the
+# prose axes the contract names, and the keys a manifest records them under.
+CONTEXT_AXES = ("model id", "effort", "host binding")
+CONTEXT_AXIS_KEYS = ("model_id", "effort", "host_binding")
+# The dated checklist the attack pass walks, and its classes one for one.
+# Both are pinned: a record that walked a shorter list cannot agree with
+# itself, and one naming a later checklist cannot be judged against this list.
+# `benchmarks/benchmaker/attack-audit.json` names the same eight.
+ATTACK_CHECKLIST = "attack-classes:2026-08-08"
+ATTACK_CLASSES = (
+    "answers shipped with the test",
+    "evaluation-logic gaps",
+    "excessive permissions",
+    "isolation failure",
+    "judge prompt injection",
+    "remote code execution",
+    "trusting untrusted output",
+    "weak string matching",
+)
+# The protocol's three attack outcomes; a fourth would be vocabulary the
+# protocol does not license.
+ATTACK_OUTCOMES = ("SUCCEEDED", "FAILED", "BLOCKED")
+# The audit-and-measure step's own stages. Triage measurement is the
+# measurement stage's cheap first pass, not a fourth stage
+# (`benchmaker-protocol.md`, "Two measurement passes, not one"), so the count
+# the step declares is three and the stages it names are these.
+AUDIT_STAGES = ("reference audit", "attack pass", "measurement")
+COUNT_WORDS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five"}
 # Package-relative, so the deletion check and the by-path grep below both
 # derive from this one list rather than re-listing it.
 RETIRED_SEAL_PATHS = ("benchmark.lock", "SEALS.md", "tools/seal_set.py")
@@ -273,6 +322,13 @@ def markdown_section(text: str, heading: str) -> str:
 
 def squashed(text: str) -> str:
     return " ".join(text.split())
+
+
+def contract_bullet(contract: str, field: str) -> str:
+    """One field's bullet from the squashed manifest contract."""
+    start = contract.index(f"- `{field}` — ")
+    end = contract.find("- `", start + 3)
+    return contract[start:] if end == -1 else contract[start:end]
 
 
 def sha256_identity(path: Path) -> str:
@@ -578,8 +634,16 @@ class TestCanonicalBenchmaker(unittest.TestCase):
 
     def test_manifest_owner_lists_every_field_and_rule(self):
         manifest = squashed(self.manifest_contract)
-        for field in COMPONENT_FIELDS + DECLARATION_FIELDS:
-            self.assertIn(f"`{field}`", manifest)
+        components, _, values = manifest.partition(NOT_RE_DERIVABLE)
+        for field in COMPONENT_FIELDS:
+            self.assertIn(f"- `{field}` — locator", components, field)
+            self.assertNotIn(f"`{field}`", values, field)
+        for field in DECLARATION_FIELDS:
+            self.assertIn(f"`{field}`", components)
+        for field, substance in STAGE_RECORD_SUBSTANCE.items():
+            bullet = contract_bullet(components, field)
+            for phrase in substance:
+                self.assertIn(phrase, bullet, field)
         for rule in (
             "locator",
             "oracle_class",
@@ -590,15 +654,16 @@ class TestCanonicalBenchmaker(unittest.TestCase):
 
     def test_manifest_owner_carries_every_post_qualification_field(self):
         manifest = squashed(self.manifest_contract)
+        values = manifest.partition(NOT_RE_DERIVABLE)[2]
         for field in POST_QUALIFICATION_FIELDS:
-            self.assertIn(f"`{field}`", manifest)
-        self.assertIn("A declared `none` is legal; silence is not", manifest)
-        self.assertIn("defect **count**", manifest)
-        self.assertIn("Never a rate", manifest)
-        self.assertIn("the attack that works", manifest)
-        self.assertIn("count of distinct failure signatures", manifest)
-        self.assertIn("`max(measured rerun spread, one case)`", manifest)
-        self.assertIn("the declaration only. Its firing is recorded", manifest)
+            self.assertIn(f"- `{field}` — ", values, field)
+        for field in ("builders", "qualifier", "attacker"):
+            bullet = contract_bullet(values, field)
+            for axis in CONTEXT_AXES:
+                self.assertIn(axis, bullet, field)
+        self.assertIn("A declared `none` is legal; silence is not", values)
+        self.assertIn("`max(measured rerun spread, one case)`", values)
+        self.assertIn("the declaration only. Its firing is recorded", values)
 
     def test_benchmark_identity_is_retired_from_law_manifest_and_tooling(self):
         """A benchmark's version is its git revision; no field digests it."""
@@ -684,7 +749,7 @@ class TestCanonicalBenchmaker(unittest.TestCase):
                     (PACKAGE / manifest[field]["locator"]).exists(),
                     manifest[field]["locator"],
                 )
-        with self.subTest("the post-qualification field set is exactly the eight"):
+        with self.subTest("the post-qualification field set is exactly the seven"):
             self.assertEqual(
                 set(POST_QUALIFICATION_FIELDS),
                 set(manifest).difference(COMPONENT_FIELDS, DECLARATION_FIELDS),
@@ -774,8 +839,28 @@ class TestCanonicalBenchmaker(unittest.TestCase):
     def test_composition_runs_the_audit_stages_and_records_the_manifest(self):
         body = squashed(self.body)
         self.assertIn("- audit-and-measure —", body)
-        self.assertLess(body.index("- materialize —"), body.index("- audit-and-measure —"))
-        self.assertIn("materialize → audit-and-measure", body)
+        self.assertLess(body.index("- materialize —"), body.index("- qualify —"))
+        self.assertLess(body.index("- qualify —"), body.index("- audit-and-measure —"))
+        self.assertIn("materialize → qualify → audit-and-measure", body)
+        # The new seam carries an identity, as every other join does.
+        self.assertIn("the assembled case set is qualify's evidence", body)
+        self.assertIn("the qualified assembly is audit-and-measure's", body)
+        step = body[body.index("- audit-and-measure —") : body.index("Edges:")]
+        # The count the step declares equals the number of activities the same
+        # sentence names — counted off the text, never off a list this file
+        # holds, or a fourth activity could be named under a declared three and
+        # nothing here would see it. That was the baseline defect.
+        declaration = step[step.index("the protocol's") :]
+        listed = declaration[declaration.index(":") + 1 : declaration.index(" — ")]
+        activities = [activity.strip() for activity in listed.split(", then ")]
+        self.assertIn(f"the protocol's {COUNT_WORDS[len(activities)]} stages", step)
+        self.assertEqual(len(AUDIT_STAGES), len(activities))
+        # Named in the protocol's own execution order, which the step declares.
+        self.assertIn("stages in order", step)
+        for stage, activity in zip(AUDIT_STAGES, activities):
+            self.assertIn(stage, activity)
+        # Triage is the measurement stage's own first pass, never a fourth.
+        self.assertEqual([], re.findall(r"triage(?! pass)", step))
         self.assertIn("Record the manifest after they close", body)
         self.assertIn("declared coverage floor never moves", body)
 
@@ -790,6 +875,10 @@ class TestBenchmarkFixture(unittest.TestCase):
         path.relative_to(FIXTURE.resolve())
         self.assertTrue(path.is_file(), f"missing {name} reference: {path}")
         return path
+
+    def _record(self, name: str) -> dict:
+        """One stage record, read through the component locator that names it."""
+        return json.loads(self._reference(name).read_text(encoding="utf-8"))
 
     def _run_fixture(
         self, fixture: Path, candidate: str
@@ -835,7 +924,7 @@ class TestBenchmarkFixture(unittest.TestCase):
         )
         self.assertTrue(self.manifest["gaps"])
 
-    def test_post_qualification_fields_declare_absence_rather_than_fabricate_it(self):
+    def test_stage_records_and_post_qualification_fields_state_what_ran(self):
         cases = [
             case["case_identity"]
             for case in json.loads(
@@ -850,19 +939,67 @@ class TestBenchmarkFixture(unittest.TestCase):
         for anchor in self.manifest["anchors"].values():
             if anchor.startswith("none"):
                 self.assertIn("—", anchor, "a `none` anchor carries its reason")
+        # `qualifier` and `attacker` in `builders`' shape: every axis present,
+        # each a value or a declared `none` carrying its reason.
+        for field in ("qualifier", "attacker"):
+            context = self.manifest[field]
+            self.assertEqual(set(CONTEXT_AXIS_KEYS), set(context), field)
+            for axis, value in context.items():
+                self.assertTrue(value.strip(), f"{field}.{axis}")
+                if value.startswith("none"):
+                    self.assertIn("—", value, f"{field}.{axis} carries its reason")
+        # The three stage records are components now, so each figure below is
+        # read through the locator rather than inline in the manifest.
+        audit = self._record("reference_audit")
+        attack = self._record("attack_audit")
+        measurement = self._record("measurement")
         # A count and classes, never a rate.
-        audit = self.manifest["reference_audit"]
         self.assertIsInstance(audit["defect_count"], int)
         self.assertEqual(len(audit["defect_classes"]), audit["defect_count"])
         self.assertEqual(set(cases), set(audit["method"]))
-        # A stage that did not run says so here and in gaps — never a figure.
+        self.assertTrue(audit["declared_sample"].strip())
+        # Who audited is the record's own first substance: a stage record
+        # naming no context is a stage that did not run, whatever it says.
+        self.assertEqual(set(CONTEXT_AXIS_KEYS), set(audit["auditor_context"]))
+        for axis, value in audit["auditor_context"].items():
+            self.assertTrue(value.strip(), f"auditor_context.{axis}")
+        # No stage is recorded as not run — all three, here and in gaps.
         gaps = " ".join(self.manifest["gaps"])
-        for field in ("attack_audit", "measurement"):
-            self.assertIn("not run", self.manifest[field]["status"])
-        self.assertIn("attack pass not run", gaps)
-        self.assertIn("measurement pass not run", gaps)
-        self.assertEqual([], self.manifest["attack_audit"]["unrepaired"])
-        self.assertIsNone(self.manifest["measurement"]["margin_cases"])
+        for name, record in (
+            ("reference_audit", audit),
+            ("attack_audit", attack),
+            ("measurement", measurement),
+        ):
+            self.assertNotIn("not run", record["status"], name)
+        self.assertNotIn("attack pass not run", gaps)
+        self.assertNotIn("measurement pass not run", gaps)
+        # Every class of the dated checklist carries one of the protocol's
+        # three outcomes, and every SUCCEEDED class is declared with the attack
+        # that works. An undeclared hole is the failure; a declared one is a gap.
+        self.assertEqual(ATTACK_CHECKLIST, attack["checklist_identity"])
+        self.assertEqual(set(ATTACK_CLASSES), set(attack["classes"]))
+        self.assertEqual(set(ATTACK_CLASSES), set(attack["outcomes"]))
+        for name, recorded in attack["outcomes"].items():
+            self.assertIn(recorded["outcome"], ATTACK_OUTCOMES, name)
+            self.assertTrue(recorded["observed"].strip(), name)
+        declared = {
+            name for hole in attack["unrepaired"] for name in hole["classes"]
+        }
+        succeeded = {
+            name
+            for name, recorded in attack["outcomes"].items()
+            if recorded["outcome"] == "SUCCEEDED"
+        }
+        self.assertTrue(succeeded, "a pass that repelled everything is a claim")
+        self.assertLessEqual(succeeded, declared)
+        for hole in attack["unrepaired"]:
+            self.assertTrue(hole["attack"].strip())
+        # The measurement separates the two rungs and says by how much: one
+        # repeated candidate habit is one signature, not one per case.
+        self.assertEqual(2, len(measurement["candidates"]))
+        self.assertEqual(set(cases), set(measurement["per_case_status"]))
+        self.assertEqual(1, measurement["distinct_failure_signatures"])
+        self.assertEqual(2, measurement["margin_cases"])
         # Resolution rests on the one-case floor while the spread is unmeasured.
         self.assertIsNone(self.manifest["resolution"]["measured_rerun_spread"])
         self.assertEqual(1, self.manifest["resolution"]["one_case"])

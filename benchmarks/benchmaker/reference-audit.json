@@ -1,0 +1,14 @@
+{
+  "auditor_context": null,
+  "awaiting_confirmation": [
+    "cs-antigoodhart-2 evidence/interchange.md, repaired 2026-08-08 for an undeclared runner invocation — the audit confirms the repair rather than trusting it",
+    "the manifest's pending-qualification marker clarification, 2026-08-08 — same treatment",
+    "case.toml's bound conflation, repaired 2026-08-09 by the exec_bound split"
+  ],
+  "declared_sample": null,
+  "defect_classes": [],
+  "defect_count": null,
+  "method": {},
+  "stage": "reference audit",
+  "status": "not run — redesign-spec section 10 step 3 owns it"
+}

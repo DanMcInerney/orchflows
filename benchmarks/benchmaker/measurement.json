@@ -1,0 +1,34 @@
+{
+  "candidates": {
+    "strong": "claude-opus-5 at xhigh effort",
+    "weak": "claude-sonnet-5 at high effort"
+  },
+  "distinct_failure_signatures": 1,
+  "margin_cases": 1,
+  "note": "Every candidate was dispatched 'do not spawn subagents' while qualification requires a builder-disjoint context, so a required criterion was unreachable by the harness. Four of six rung-level FAILs are qualification-shaped in consequence, and the weak rung shipped a byte-identical qualification stub in all three cases — one systematic habit counted three times, which is why the distinct-signature count is 1 and not 3. Read the record's own preamble before citing any figure from it.",
+  "per_case_status": {
+    "cs-antigoodhart-2": "both-fail",
+    "cs-cli-fresh": "split",
+    "cs-contradiction-fresh": "both-fail"
+  },
+  "record": "benchmarks/measures/benchmaker.md, entry 2026-08-08",
+  "run": "20260808T061035Z-benchmaker-seal-measurement",
+  "scope": "candidate-accessible portion only, further narrowed to the public subset: the protected store was unresolvable in the measuring checkout",
+  "stage": "measurement pass",
+  "status": "partial — 3 of 16 cases, and confounded by its own dispatch",
+  "unmeasured_cases": [
+    "cs-cost-fresh",
+    "cs-intake-refusal",
+    "cs-judged-fresh",
+    "cs-multidomain-fresh",
+    "cs-nondet-fresh",
+    "cs-package-audit",
+    "cs-ranking-fresh",
+    "cs-ratelimit-fresh",
+    "cs-refusal-2",
+    "cs-run-conduct",
+    "cs-sparse-fresh",
+    "cs-stateful-fresh",
+    "cs-workflow-fresh"
+  ]
+}

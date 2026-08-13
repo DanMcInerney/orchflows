@@ -14,10 +14,33 @@ REFERENCE_FIELDS = (
     "runner",
     "scoring",
     "provenance",
+    "reference_audit",
+    "attack_audit",
+    "measurement",
     "qualification",
 )
-# Qualification covers everything it ran against: every component but its own.
+# Qualification covers everything it ran against: every component but its own,
+# so `qualification` stays last.
 COVERED_FIELDS = REFERENCE_FIELDS[:-1]
+# The dated checklist the attack record walks, and its classes one for one. A
+# record that agreed with a shorter list of its own would prove nothing, and
+# one naming a later checklist cannot be judged against this list at all.
+ATTACK_CHECKLIST = "attack-classes:2026-08-08"
+ATTACK_CLASSES = frozenset(
+    {
+        "answers shipped with the test",
+        "evaluation-logic gaps",
+        "excessive permissions",
+        "isolation failure",
+        "judge prompt injection",
+        "remote code execution",
+        "trusting untrusted output",
+        "weak string matching",
+    }
+)
+ATTACK_OUTCOMES = frozenset({"SUCCEEDED", "FAILED", "BLOCKED"})
+# `builders`' axes, which every recorded context carries.
+CONTEXT_AXIS_KEYS = frozenset({"model_id", "effort", "host_binding"})
 REQUIRED_QUALIFICATION_CRITERIA = {
     "oracle_failability",
     "coverage",
@@ -178,6 +201,114 @@ def evaluate_candidate(candidate_path, case_set, scoring, provenance, timeout):
     }
 
 
+def verify_reference_audit(root, manifest, case_set):
+    """A count and its classes, never a rate, over a sample declared up front."""
+    audit = load_json(resolve_reference(root, manifest["reference_audit"]))
+    if audit["defect_count"] != len(audit["defect_classes"]):
+        raise ValueError("reference audit defect count differs from its classes")
+    identities = {case["case_identity"] for case in case_set["cases"]}
+    if set(audit["method"]) != identities:
+        raise ValueError("reference audit method does not cover every case")
+    if not str(audit["declared_sample"]).strip():
+        raise ValueError("reference audit declares no sample")
+    # Who audited is the record's own first substance; a record that names no
+    # context records no audit, whatever its status says.
+    context = audit["auditor_context"]
+    if set(context) != CONTEXT_AXIS_KEYS or not all(
+        str(value).strip() for value in context.values()
+    ):
+        raise ValueError("reference audit names no auditing context")
+
+
+def verify_attack_audit(root, manifest):
+    """Every class of the dated checklist answered; every hole declared."""
+    attack = load_json(resolve_reference(root, manifest["attack_audit"]))
+    if attack["checklist_identity"] != ATTACK_CHECKLIST:
+        raise ValueError("attack audit names a checklist this qualifier cannot check")
+    if set(attack["classes"]) != ATTACK_CLASSES:
+        raise ValueError("attack audit does not walk the dated checklist")
+    if set(attack["outcomes"]) != ATTACK_CLASSES:
+        raise ValueError("attack audit leaves a checklist class unanswered")
+    if not all(
+        recorded["outcome"] in ATTACK_OUTCOMES
+        for recorded in attack["outcomes"].values()
+    ):
+        raise ValueError("attack audit records an outcome the protocol has no value for")
+    declared = {name for hole in attack["unrepaired"] for name in hole["classes"]}
+    succeeded = {
+        name
+        for name, recorded in attack["outcomes"].items()
+        if recorded["outcome"] == "SUCCEEDED"
+    }
+    # An undeclared hole is the failure; a declared one is a gap.
+    if not succeeded <= declared:
+        raise ValueError("attack audit leaves a succeeding class undeclared")
+
+
+def failure_signature(case, result):
+    """One failing case's habit: its error and the keys that came out wrong."""
+    observed = result["observed"] or {}
+    expected = case["expected"]
+    return (
+        result["error"],
+        tuple(
+            key
+            for key in sorted(set(expected) | set(observed))
+            if observed.get(key) != expected.get(key)
+        ),
+    )
+
+
+def verify_measurement(root, manifest, case_set, calibration, stronger, weaker):
+    """The record carries the replay's own figures, not a restatement of them."""
+    measurement = load_json(resolve_reference(root, manifest["measurement"]))
+    statuses = {}
+    inversions = []
+    signatures = set()
+    for case, strong, weak in zip(
+        case_set["cases"], stronger["cases"], weaker["cases"]
+    ):
+        identity = case["case_identity"]
+        passed = (strong["verdict"] == "PASS", weak["verdict"] == "PASS")
+        statuses[identity] = {
+            (True, True): "both-pass",
+            (False, False): "both-fail",
+        }.get(passed, "split")
+        if passed == (False, True):
+            inversions.append(identity)
+        if statuses[identity] == "split":
+            # One repeated habit is one signature, however many cases it fails.
+            signatures.add(failure_signature(case, weak if not passed[1] else strong))
+    passes = [
+        sum(case["verdict"] == "PASS" for case in result["cases"])
+        for result in (stronger, weaker)
+    ]
+    recomputed = {
+        "candidates": {
+            calibration[rung]["locator"]: {
+                "candidate_identity": result["candidate_identity"],
+                "verdict": result["verdict"],
+                "score": result["score"],
+                "per_case": {
+                    case["case_identity"]: case["verdict"]
+                    for case in result["cases"]
+                },
+            }
+            for rung, result in (("known_good", stronger), ("known_bad", weaker))
+        },
+        "per_case_status": statuses,
+        "discriminating_set": sorted(
+            identity for identity, status in statuses.items() if status == "split"
+        ),
+        "inversions": inversions,
+        "distinct_failure_signatures": len(signatures),
+        "margin_cases": passes[0] - passes[1],
+    }
+    for field, value in recomputed.items():
+        if measurement[field] != value:
+            raise ValueError(f"measurement record {field} differs from the replay")
+
+
 def verify_qualification(
     root, manifest, design, case_set, scoring, provenance, qualification
 ):
@@ -199,6 +330,12 @@ def verify_qualification(
         raise ValueError("qualification failability failed")
     if good_first != good_second:
         raise ValueError("qualification reproducibility failed")
+
+    # The three stage records are components, so the verdict set reaches them
+    # only if something reads them. Resolving a locator is not reading it.
+    verify_reference_audit(root, manifest, case_set)
+    verify_attack_audit(root, manifest)
+    verify_measurement(root, manifest, case_set, calibration, good_first, bad)
 
     case_coverage = {
         case["case_identity"]: set(case["coverage"])
@@ -222,8 +359,10 @@ def verify_qualification(
     covers["known_good"] = calibration["known_good"]["locator"]
     covers["known_bad"] = calibration["known_bad"]["locator"]
     expected = {
+        # An oracle a trick walks past cannot meaningfully fail, so the attack
+        # record is part of what failability is judged over.
         "oracle_failability": {
-            "covers": [covers["runner"], covers["runnable_cases"], covers["scoring"], covers["known_bad"]],
+            "covers": [covers["runner"], covers["runnable_cases"], covers["scoring"], covers["known_bad"], covers["attack_audit"]],
             "observation": {
                 "known_bad_verdict": bad["verdict"],
                 "eligible_for_ranking": bad["eligible_for_ranking"],
@@ -236,8 +375,11 @@ def verify_qualification(
                 "covered_dimensions": sorted(design["intended_coverage"]),
             },
         },
+        # Separation means something only where the expectations are right and
+        # the rungs actually separate: the audit decides the first, the
+        # measurement records the second.
         "discrimination": {
-            "covers": [covers["runner"], covers["runnable_cases"], covers["scoring"], covers["known_good"], covers["known_bad"]],
+            "covers": [covers["runner"], covers["runnable_cases"], covers["scoring"], covers["known_good"], covers["known_bad"], covers["reference_audit"], covers["measurement"]],
             "observation": {
                 "known_good_verdict": good_first["verdict"],
                 "known_bad_verdict": bad["verdict"],

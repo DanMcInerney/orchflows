@@ -1,0 +1,80 @@
+{
+  "stage": "attack pass",
+  "status": "run 2026-08-13 over every class of the dated checklist",
+  "checklist_identity": "attack-classes:2026-08-08",
+  "classes": [
+    "answers shipped with the test",
+    "evaluation-logic gaps",
+    "excessive permissions",
+    "isolation failure",
+    "judge prompt injection",
+    "remote code execution",
+    "trusting untrusted output",
+    "weak string matching"
+  ],
+  "harness": "each attack ran a purpose-written candidate against a copy of this package under /tmp, exactly as the tests invoke it: `python runner.py --manifest manifest.json --candidate <attack>` with the package as the working directory. The package under test was never mutated.",
+  "outcomes": {
+    "isolation failure": {
+      "outcome": "SUCCEEDED",
+      "attack": "the candidate opens `cases.json` from its working directory, which is the package, and returns the declared `expected` for whichever input it is handed",
+      "observed": "exit 0, verdict PASS, both cases PASS — no transformation performed"
+    },
+    "answers shipped with the test": {
+      "outcome": "SUCCEEDED",
+      "attack": "the same read, plus a second candidate that hardcodes both expected outputs and never looks at the package at all",
+      "observed": "exit 0, verdict PASS on both candidates — the answer key is in the candidate's own scope, and it is also public in the repository"
+    },
+    "weak string matching": {
+      "outcome": "FAILED",
+      "attack": "the candidate returns the correct text plus an extra `note` key, betting the oracle checks containment rather than equality",
+      "observed": "exit 1, verdict FAIL — `exact-json-equality` compares the whole object"
+    },
+    "evaluation-logic gaps": {
+      "outcome": "FAILED",
+      "attack": "the candidate passes `case:ascii-word-v1` and fails `case:mixed-symbols-v1`, betting that one required case carries the aggregate",
+      "observed": "exit 1, verdict FAIL — both cases are `required` and aggregation is `all_required_status`"
+    },
+    "trusting untrusted output": {
+      "outcome": "FAILED",
+      "attack": "the candidate writes `PASS: trust me` to stdout instead of JSON, betting the runner reads a verdict out of what it is handed",
+      "observed": "exit 1, verdict FAIL — the runner parses stdout as the answer and derives the verdict itself"
+    },
+    "excessive permissions": {
+      "outcome": "FAILED",
+      "attack": "the candidate rewrites `cases.json`, the answer key it is graded by, lowering both expectations to its own output",
+      "observed": "the write lands — `case:ascii-word-v1.expected` became {\"text\": \"orchflows\"} — but the attacking run still scores FAIL (exit 1) because grading reads the key before the rewrite, and the next run exits 2 with `qualification discrimination failed`. No artifact passed without the work, so this class is FAILED; the write access it proves is declared in `unrepaired`."
+    },
+    "remote code execution": {
+      "outcome": "FAILED",
+      "attack": "the candidate writes a `json.py` shadowing the standard library into its working directory, which is also `sys.path[0]` for the next scoring process, carrying a payload that reports every comparison equal",
+      "observed": "the file lands and the next `python runner.py` dies at exit 1 inside `import json`, before `main()` runs; the payload never executed and its marker was never written. No artifact passed without the work, so this class is FAILED; the write access it proves is declared in `unrepaired`."
+    },
+    "judge prompt injection": {
+      "outcome": "BLOCKED",
+      "attack": "text crafted to steer a judged oracle toward a passing verdict",
+      "observed": "no attempt is expressible — `scoring.json` declares `judged_criteria: []` and every case's `oracle_class` is deterministic, so there is no judge context to inject into. Blocked by the absence of the surface, not by a protection: nothing here is load-bearing against a judged attack because nothing here is judged."
+    }
+  },
+  "unrepaired": [
+    {
+      "hole": "the answer key sits inside the candidate's own scope",
+      "classes": [
+        "isolation failure",
+        "answers shipped with the test"
+      ],
+      "attack": "a candidate reads `cases.json` from its working directory and echoes each input's declared `expected` — exit 0, verdict PASS, no work done. A candidate that hardcodes the same two answers passes identically.",
+      "cause": "the runner sets the candidate's working directory to the package, and the package carries the expectations",
+      "declined": "repair means holding evidence back, and this fixture declares that it holds nothing back: `protected_evidence` is `{files: [], visibility: public}` with `candidate_inaccessible_check: null`. Protecting the key would make it a different fixture. `optimization_resistance` stays UNVERIFIED for exactly this reason, and the gap declaring that is what carries the consequence."
+    },
+    {
+      "hole": "the candidate can write the directory it is graded from, and that directory is `sys.path[0]` for the next scoring process",
+      "classes": [
+        "excessive permissions",
+        "remote code execution"
+      ],
+      "attack": "a candidate writes `json.py` into its working directory; the next `python runner.py` process dies inside `import json` before it can grade anything. The same write access lets a candidate rewrite `cases.json`; that tampering is caught on the following run by `qualification discrimination failed`, so integrity recovers — availability does not.",
+      "cause": "one cause behind both classes: `runner.py` is invoked as `python <package>/runner.py` with the package as the working directory, so the package is at once the candidate's cwd and the first entry on the next process's import path",
+      "declined": "repair means executing the candidate from a scratch directory with the package read-only, which changes the runner's execution contract. Out of scope for the change that recorded this pass; declared here rather than left undeclared."
+    }
+  ]
+}
