@@ -15,7 +15,8 @@ repository itself and needs no install.
 | project | `<repo>/.orchflows/skills/<name>/SKILL.md` + host integrations | the repo's `AGENTS.md`, outside managed blocks | library lens |
 
 - User- and project-scope items are custom: outside library law,
-  binding only at their scope, written to a skill's anatomy.
+  binding only at their scope, written to a skill's anatomy. What a
+  custom item may be named is `orch-build`'s `Never:`.
 - Host integrations match the installer's own: a Claude adapter stub
   at the scope's `.claude/skills/<name>/SKILL.md`, carrying only the
   host-legal frontmatter subset (`name`, `description`) plus an
