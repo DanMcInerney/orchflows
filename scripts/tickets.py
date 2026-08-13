@@ -237,7 +237,18 @@ def _write_section(text: str, heading: str, body: str) -> str:
 
     lines = text.splitlines(keepends=True)
     newline = "\r\n" if lines and lines[0].endswith("\r\n") else "\n"
-    starts = [i for i, line in enumerate(lines) if line.startswith("## ")]
+    # Headings are looked for below the frontmatter only: a wrapped
+    # frontmatter value can begin a line with "## ", and frontmatter is
+    # never this writer's to touch.
+    body_start = 0
+    if lines and lines[0].rstrip("\r\n") == "---":
+        for i in range(1, len(lines)):
+            if lines[i].rstrip("\r\n") == "---":
+                body_start = i + 1
+                break
+    starts = [
+        i for i, line in enumerate(lines) if i >= body_start and line.startswith("## ")
+    ]
     found = None
     for i in starts:
         if lines[i][3:].strip().lower() == heading.lower():
@@ -588,6 +599,13 @@ def _cmd_result(rest):
     section = _extract_flag(args, "--section")
     file_arg = _extract_flag(args, "--file")
     text_arg = _extract_flag(args, "--text")
+    stray = next((arg for arg in args if arg.startswith("-")), None)
+    if stray is not None:
+        return {
+            "error": f"result does not accept {stray}: it writes body sections only, "
+            "never frontmatter — terminal status is set by the join (orch-integrate) "
+            f"through `set-status`. usage: {RESULT_USAGE}"
+        }
     if len(args) != 2:
         return {"error": f"usage: {RESULT_USAGE}"}
     run, ticket_id = args
@@ -599,7 +617,13 @@ def _cmd_result(rest):
             "error": f"section '{section}' is not one of the sections an executor "
             f"writes: {list(EXECUTOR_SECTIONS)}"
         }
+    if file_arg is not None and text_arg is not None:
+        return {"error": "result takes one of --file <path> or --text <string>, not both"}
+    if file_arg is None and text_arg is None:
+        return {"error": f"result requires --file <path> or --text <string>. usage: {RESULT_USAGE}"}
     if file_arg is not None:
+        # read from the caller's own workspace, while the ticket written is
+        # the main checkout's — that split is the point of this subcommand
         try:
             body = Path(file_arg).read_text(encoding="utf-8")
         except OSError as error:

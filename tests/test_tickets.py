@@ -504,5 +504,181 @@ class TestResultWorktreeCrossing(unittest.TestCase):
             )
 
 
+def frontmatter_of(path: Path) -> str:
+    return path.read_text(encoding="utf-8").split("---\n", 2)[1]
+
+
+class TestResultClosedSet(unittest.TestCase):
+    """contracts/work-item.md:56-57 names exactly what an executor writes."""
+
+    def test_the_writable_set_is_the_contracts_five(self):
+        self.assertEqual(
+            ("Result", "Verification", "Feedback", "Risks", "Handoff"),
+            tickets_mod.EXECUTOR_SECTIONS,
+        )
+
+    def test_every_reserved_section_round_trips(self):
+        for name in tickets_mod.EXECUTOR_SECTIONS:
+            with tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+                payload = run_cmd(
+                    worktree, "result", "testrun", "T1",
+                    "--section", name, "--text", f"body for {name}",
+                )
+                self.assertEqual(name, payload["result"]["section"], name)
+                text = (run_dir / "T1.md").read_text(encoding="utf-8")
+                self.assertEqual(f"body for {name}", tickets_mod._sections(text)[name])
+
+    def test_a_cut_time_section_is_refused_and_the_set_is_named(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            before = (run_dir / "T1.md").read_text(encoding="utf-8")
+            payload = run_cmd(
+                worktree, "result", "testrun", "T1",
+                "--section", "Objective", "--text", "hijacked",
+            )
+            self.assertIn("Objective", payload["error"])
+            for name in tickets_mod.EXECUTOR_SECTIONS:
+                self.assertIn(name, payload["error"])
+            self.assertEqual(before, (run_dir / "T1.md").read_text(encoding="utf-8"))
+
+
+class TestResultBodySource(unittest.TestCase):
+    def test_both_file_and_text_is_an_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            body = worktree / "body.md"
+            body.write_text("from a file\n", encoding="utf-8")
+            before = (run_dir / "T1.md").read_text(encoding="utf-8")
+            result = run_full(
+                worktree, "result", "testrun", "T1", "--section", "Result",
+                "--file", str(body), "--text", "from a string",
+            )
+            self.assertEqual(0, result.returncode)
+            self.assertIn("error", json.loads(result.stdout))
+            self.assertEqual(before, (run_dir / "T1.md").read_text(encoding="utf-8"))
+
+    def test_neither_file_nor_text_is_an_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            before = (run_dir / "T1.md").read_text(encoding="utf-8")
+            result = run_full(worktree, "result", "testrun", "T1", "--section", "Result")
+            self.assertEqual(0, result.returncode)
+            self.assertIn("error", json.loads(result.stdout))
+            self.assertEqual(before, (run_dir / "T1.md").read_text(encoding="utf-8"))
+
+    def test_an_unreadable_body_file_is_an_error_not_a_traceback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, _run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            result = run_full(
+                worktree, "result", "testrun", "T1", "--section", "Result",
+                "--file", str(worktree / "absent.md"),
+            )
+            self.assertEqual(0, result.returncode)
+            self.assertIn("error", json.loads(result.stdout))
+
+
+class TestResultRefusesTerminalStatus(unittest.TestCase):
+    """Criterion 4's refusal half: terminal status is the join's alone
+    (contracts/work-item.md:31-33), so `result` writes no frontmatter."""
+
+    def test_a_status_flag_is_refused_and_names_set_status_and_the_join(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            before = (run_dir / "T1.md").read_text(encoding="utf-8")
+            result = run_full(
+                worktree, "result", "testrun", "T1", "--section", "Result",
+                "--text", "done", "--status", "complete",
+            )
+            self.assertEqual(0, result.returncode)
+            payload = json.loads(result.stdout)
+            self.assertIn("--status", payload["error"])
+            self.assertIn("set-status", payload["error"])
+            self.assertIn("orch-integrate", payload["error"])
+            self.assertEqual(before, (run_dir / "T1.md").read_text(encoding="utf-8"))
+
+    def test_any_unrecognized_flag_is_refused_the_same_way(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, _run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            payload = run_cmd(
+                worktree, "result", "testrun", "T1", "--section", "Result",
+                "--text", "done", "--claimed-by", "someone",
+            )
+            self.assertIn("--claimed-by", payload["error"])
+            self.assertIn("set-status", payload["error"])
+
+    def test_frontmatter_is_byte_unchanged_after_writing_every_section(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            ticket = run_dir / "T1.md"
+            before = frontmatter_of(ticket)
+            for name in tickets_mod.EXECUTOR_SECTIONS:
+                run_cmd(
+                    worktree, "result", "testrun", "T1",
+                    "--section", name, "--text", f"body for {name}",
+                )
+            self.assertEqual(before, frontmatter_of(ticket))
+            self.assertIn("status: claimed", ticket.read_text(encoding="utf-8"))
+
+    def test_a_heading_shaped_frontmatter_line_is_not_a_section_boundary(self):
+        # A wrapped frontmatter value can begin a line with "## ". Treating it
+        # as a heading would put the writer inside frontmatter the join owns.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            ticket = run_dir / "T1.md"
+            ticket.write_text(
+                ticket.read_text(encoding="utf-8").replace(
+                    "bound: 30m\n", "bound: 30m\nnote:\n  - suspend through\n## Risks\n"
+                ),
+                encoding="utf-8",
+            )
+            before = frontmatter_of(ticket)
+            run_cmd(
+                worktree, "result", "testrun", "T1", "--section", "Risks", "--text", "[]",
+            )
+            self.assertEqual(before, frontmatter_of(ticket))
+            self.assertEqual("[]", tickets_mod._sections(
+                ticket.read_text(encoding="utf-8").split("---\n", 2)[2]
+            )["Risks"])
+
+
+class TestResultScriptContract(unittest.TestCase):
+    def test_success_and_failure_both_exit_zero_with_one_json_document(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, _run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            ok = run_full(
+                worktree, "result", "testrun", "T1", "--section", "Result", "--text", "ok",
+            )
+            self.assertEqual(0, ok.returncode)
+            self.assertIn("result", json.loads(ok.stdout))
+            self.assertEqual(1, len(ok.stdout.strip().splitlines()))
+            bad = run_full(
+                worktree, "result", "testrun", "T9", "--section", "Result", "--text", "ok",
+            )
+            self.assertEqual(0, bad.returncode)
+            self.assertIn("ticket not found", json.loads(bad.stdout)["error"])
+            self.assertEqual(1, len(bad.stdout.strip().splitlines()))
+
+    def test_result_outside_a_repo_is_an_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result = run_full(
+                Path(tmp), "result", "testrun", "T1", "--section", "Result", "--text", "x"
+            )
+            self.assertEqual(0, result.returncode)
+            self.assertEqual(
+                {"error": "not inside a git repository"}, json.loads(result.stdout)
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
