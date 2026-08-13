@@ -11,8 +11,8 @@ judgment inside.
 Write the script in stdlib Python 3, cross-platform, to `.orch/bin/` for
 run-local steps or the owning package's `scripts/` for library steps.
 Test it against the observed repetitions before first use; the test is
-the admission. Integration detail — endpoints, flags, versions, auth —
-belongs here and never in a skill body.
+the admission. Integration detail is
+[token-economy.md](../../../rules/token-economy.md) §3's.
 
 Never: mechanize judgment; ship an untested script; hide a script's
 failure by falling back to manual repetition silently (log the friction,
