@@ -17,6 +17,13 @@ requested, not verified. An unsupported or blocked model binding stops
 the dispatch — never substitute; a missing effort control alone is
 requested in the prompt and noted unverified, never a stop.
 
+A host with no native isolation field cannot establish an isolated
+workspace at dispatch: the request rides the prompt, is graded
+requested, not verified, and is never recorded as established. Like a
+missing effort control it is no stop on its own — what an unisolated
+child then shares with its siblings is the caller's to weigh before
+dispatching them.
+
 On Codex, `agent_type` selects the installed profile; `task_name` only
 labels the child. A spawn surface that omits `agent_type` cannot apply a
 profile and stops the dispatch. Codex V2 profile selection uses a
