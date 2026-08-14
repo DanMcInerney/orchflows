@@ -2088,6 +2088,135 @@ class PackWorkspaceTest(unittest.TestCase):
             self.assertIn(token, comment, comment)
 
 
+SCRIPTS = ROOT / "scripts"
+PACKS_SEGMENT = "packs"
+# scripts/cutcheck.py reads `<worktree_root>/packs/<pack>/SKILL.md`, where the
+# root is the cut's own tree, handed in by the caller. That is a read of the
+# repository under grading, not of the tree the script was installed from, and
+# it already tolerates the tree's absence. It is the one module allowed a
+# string naming the tree, named here so a second one cannot arrive unnoticed.
+TREE_READING_SCRIPTS = {"cutcheck.py"}
+
+
+def code_strings(source: str) -> list:
+    """Every string constant in `source` that is not a docstring.
+
+    Comments never enter the AST at all, and a docstring is skipped by
+    identity here, so naming the tree in prose is outside this set by
+    construction -- which is the distinction a grep cannot draw.
+    """
+
+    tree = ast.parse(source)
+    docstrings = set()
+    for node in ast.walk(tree):
+        body = getattr(node, "body", None)
+        if not isinstance(
+            node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
+        ) or not body:
+            continue
+        first = body[0]
+        if isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant):
+            if isinstance(first.value.value, str):
+                docstrings.add(id(first.value))
+    return [
+        node.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant)
+        and isinstance(node.value, str)
+        and id(node) not in docstrings
+    ]
+
+
+def names_the_tree(source: str) -> list:
+    """The code strings in `source` carrying `packs` as a whole path segment.
+    `orch-code-pack` is not one; `packs`, `packs/x` and `a/packs` are."""
+
+    return [
+        value
+        for value in code_strings(source)
+        if PACKS_SEGMENT in value.replace("\\", "/").split("/")
+    ]
+
+
+class NoLibraryTreeReadTest(unittest.TestCase):
+    """The installed script has no library beside it: it runs from wherever
+    the installer put it, against a target repository that carries no
+    `packs/`. So the pack-to-mechanism table is a literal and nothing here
+    resolves a pack by reading the tree.
+
+    Asserted in a class rather than by a recursive grep, which exits 1 on the
+    no-match result that means success and so reads backwards as an oracle --
+    and which cannot tell a comment naming the tree from a read of it.
+
+    Note: the ticket's premise that `scripts/` carries no such string at the
+    baseline holds only for the literal `packs/`; `scripts/cutcheck.py` has
+    carried `PACKS_DIR = "packs"` and a read through it all along, of the cut's
+    own tree. That module is allowlisted by name above rather than asserted
+    away, so this stays a true statement about a tree that already has one.
+    """
+
+    def test_the_ticket_script_names_no_library_tree_path(self):
+        found = names_the_tree(TICKETS_PY.read_text(encoding="utf-8"))
+        self.assertEqual([], found, f"scripts/tickets.py names the tree: {found}")
+
+    def test_no_module_outside_the_named_one_names_it(self):
+        naming = {
+            path.name: names_the_tree(path.read_text(encoding="utf-8"))
+            for path in sorted(SCRIPTS.glob("*.py"))
+        }
+        offenders = {name: hits for name, hits in naming.items() if hits}
+        self.assertLessEqual(set(offenders), TREE_READING_SCRIPTS, offenders)
+
+    def test_prose_naming_the_tree_is_not_a_read(self):
+        """The oracle's own discrimination: it must ignore a comment and a
+        docstring and still catch a path built in code, or the two assertions
+        above pass for the wrong reason."""
+
+        prose = '"""A docstring naming packs/x."""\n# a comment naming packs/x\n'
+        self.assertEqual([], names_the_tree(prose))
+        self.assertEqual([], names_the_tree(prose + 'PACK = "orch-code-pack"\n'))
+        self.assertEqual(
+            ["packs"], names_the_tree(prose + 'P = root / "packs" / pack\n')
+        )
+        self.assertEqual(
+            ["packs/orch-code-pack"],
+            names_the_tree(prose + 'P = root / "packs/orch-code-pack"\n'),
+        )
+
+    def test_a_packet_renders_where_no_library_tree_exists(self):
+        """The behavioural half: a copy of the script somewhere with no
+        `packs/` above it or beside it still decides every pack in the table,
+        exit 0. A tree read would answer differently, or not at all."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            elsewhere = tmp / "elsewhere"
+            elsewhere.mkdir()
+            for name in ("tickets.py", "workspace.py"):
+                (elsewhere / name).write_text(
+                    (SCRIPTS / name).read_text(encoding="utf-8"), encoding="utf-8"
+                )
+            self.assertFalse((elsewhere / "packs").exists())
+            self.assertFalse((tmp / "packs").exists())
+            for pack, mechanism in sorted(
+                tickets_mod.PACK_WORKSPACE_MECHANISMS.items()
+            ):
+                repo = tmp / pack
+                repo.mkdir()
+                make_packet_repo(repo, repacked(pack))
+                completed = run_argv(
+                    [sys.executable, str(elsewhere / "tickets.py"), "packet",
+                     "testrun", "T1", "--reply-to", "main"],
+                    repo,
+                )
+                self.assertEqual(0, completed.returncode, completed.stderr)
+                prompt = json.loads(completed.stdout)["packet"]["prompt"]
+                expected = int(mechanism in tickets_mod.GIT_WORKSPACE_MECHANISMS)
+                self.assertEqual(
+                    expected, len(establishment_lines(prompt)), (pack, prompt)
+                )
+
+
 @unittest.skipUnless(git_available(), "git is not on PATH")
 class TestExecutedPacketSeam(unittest.TestCase):
     """The establishment line is not read, it is run: lifted verbatim out of
