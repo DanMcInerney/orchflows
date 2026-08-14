@@ -106,6 +106,7 @@ CANONICAL_DIRS = (
 SCRIPT_NAMES = (
     "cutcheck.py",
     "friction.py",
+    "migrate_state.py",
     "state_root.py",
     "tickets.py",
     "trace.py",
