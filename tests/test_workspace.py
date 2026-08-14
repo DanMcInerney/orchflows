@@ -22,14 +22,22 @@ import scripts.workspace as workspace  # noqa: E402
 
 WORKSPACE_PY = ROOT / "scripts" / "workspace.py"
 TICKETS_PY = ROOT / "scripts" / "tickets.py"
+STATE_ROOT_PY = ROOT / "scripts" / "state_root.py"
 CONTRACT = ROOT / "contracts" / "work-item.md"
+STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
 
-GIT_ENV = dict(
-    os.environ,
-    GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@example.invalid",
-    GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@example.invalid",
-    GIT_CONFIG_NOSYSTEM="1",
-)
+
+def git_env() -> dict:
+    """Built per call, never frozen at import: ``use_sink`` points
+    ``ORCHFLOWS_STATE_HOME`` at this test's own sink, and every child
+    process must inherit the value in force when it is launched."""
+
+    return dict(
+        os.environ,
+        GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@example.invalid",
+        GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@example.invalid",
+        GIT_CONFIG_NOSYSTEM="1",
+    )
 
 
 def git_available() -> bool:
@@ -48,7 +56,7 @@ def git(cwd: Path, *args: str) -> str:
     completed = subprocess.run(
         ["git", "-c", "commit.gpgsign=false", "-c", "init.defaultBranch=main", *args],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
-        cwd=str(cwd), env=GIT_ENV,
+        cwd=str(cwd), env=git_env(),
     )
     if completed.returncode != 0:
         raise unittest.SkipTest(f"git {args[0]} failed: {completed.stderr.strip()}")
@@ -59,7 +67,7 @@ def run_workspace(cwd: Path, *args: str):
     return subprocess.run(
         [sys.executable, str(WORKSPACE_PY), *args],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
-        cwd=str(cwd), env=GIT_ENV,
+        cwd=str(cwd), env=git_env(),
     )
 
 
@@ -96,13 +104,33 @@ def make_ticket(run_dir: Path, tid: str, *, scope=("scratch",), extra=()) -> Pat
     return path
 
 
-def make_repo(tmp: Path):
-    """A real git repository with one commit and a run of tickets at its root.
+def use_sink(tmp: Path) -> Path:
+    """Point ``ORCHFLOWS_STATE_HOME`` at a sink under this test's tempdir.
 
-    ``.orch/`` is gitignored exactly as it is in the repository this script
-    ships from, so a fixture tree with tickets in it is still clean.
+    Sets the variable for the rest of the process rather than restoring
+    it: every writing test calls this first, and ``tests/__init__.py``
+    holds the floor at a temporary directory regardless, so the worst a
+    stale value can do is fail a test, never reach the real sink.
     """
 
+    # resolved: a macOS tempdir is reached through a /var symlink, and a
+    # payload that prints the sink path must match the path a test opens
+    sink = (tmp / "state-sink").resolve()
+    os.environ[STATE_HOME_ENV_VAR] = str(sink)
+    return sink
+
+
+def make_repo(tmp: Path):
+    """A real git repository with one commit, and a run of tickets in the sink.
+
+    Tickets live in the one user-scope sink, outside every checkout, so
+    the repository is clean without needing to ignore anything — but the
+    fixture keeps ``.orch/`` gitignored anyway, matching the repository
+    this script ships from, so a stray write into the tree would still be
+    invisible to git and must be caught by asserting on the path itself.
+    """
+
+    sink = use_sink(tmp)
     main = tmp / "main"
     main.mkdir()
     git(main, "init", "--quiet")
@@ -110,7 +138,7 @@ def make_repo(tmp: Path):
     (main / "README.md").write_text("baseline\n", encoding="utf-8")
     git(main, "add", ".gitignore", "README.md")
     git(main, "commit", "--quiet", "-m", "init")
-    run_dir = main / ".orch" / "tickets" / "testrun"
+    run_dir = sink / "tickets" / "testrun"
     run_dir.mkdir(parents=True)
     return main, run_dir
 
@@ -358,7 +386,7 @@ class TestTicketsPayloadIsGradedNotItsExitStatus(unittest.TestCase):
 
             listed = subprocess.run(
                 [sys.executable, str(TICKETS_PY), "list", "--run", "testrun"],
-                capture_output=True, text=True, cwd=str(main), env=GIT_ENV,
+                capture_output=True, text=True, cwd=str(main), env=git_env(),
             )
             self.assertEqual(0, listed.returncode)
             self.assertIn("error", json.loads(listed.stdout)["tickets"][0])
@@ -389,12 +417,20 @@ class TestScriptShape(unittest.TestCase):
         self.assertIn("graded by parsing the returned payload", collapsed)
         self.assertIn("contracts/work-item.md", collapsed)
 
-    def test_the_root_resolver_is_imported_from_tickets_never_copied(self):
+    def test_the_resolvers_are_imported_never_copied(self):
         source = WORKSPACE_PY.read_text(encoding="utf-8")
-        self.assertIn("import tickets", self.collapsed(source))
+        collapsed = self.collapsed(source)
+        self.assertIn("import state_root", collapsed)
+        self.assertIn("import tickets", collapsed)
         self.assertNotIn("def _find_repo_root", source)
         self.assertNotIn("def _main_checkout_root", source)
+        self.assertNotIn("def state_root", source)
         self.assertNotIn("gitdir:", source)
+        self.assertNotIn(".orch", source)
+        self.assertEqual(
+            str(STATE_ROOT_PY.resolve()),
+            str(Path(workspace.state_root.__file__).resolve()),
+        )
         self.assertEqual(
             str(TICKETS_PY.resolve()),
             str(Path(workspace.tickets.__file__).resolve()),
@@ -410,7 +446,10 @@ class TestScriptShape(unittest.TestCase):
                 imported.add(node.module.split(".")[0])
         self.assertEqual(
             set(),
-            imported - {"__future__", "json", "subprocess", "sys", "pathlib", "tickets"},
+            imported - {
+                "__future__", "json", "subprocess", "sys", "pathlib",
+                "state_root", "tickets",
+            },
             f"unexpected import in workspace.py: {sorted(imported)}",
         )
         self.assertIn("__future__", imported, "the 3.9 floor needs the future import")

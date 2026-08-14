@@ -11,11 +11,12 @@ Usage:
     python friction.py "<observed>" "<expected>" [--category C]
         [--skill S] [--ticket T] [--run R]
 
-Log location: the main repository's ``.orch/friction/<YYYY-MM>.jsonl``
-when cwd is inside a git repository or one of its linked worktrees —
-a ``.git`` pointer file is resolved to the main checkout, so every
-worktree shares one project log — else
-``~/.orchflows/friction/<YYYY-MM>.jsonl``.
+Log location: ``<sink>/friction/<YYYY-MM>.jsonl``, where the sink is the
+one user-scope root ``scripts/state_root.py`` resolves —
+``$ORCHFLOWS_STATE_HOME`` or ``~/.orchflows/state``. One stream for
+every repository; the project an entry arose in is a field on the entry,
+never its location. There is no fallback: a write that cannot reach that
+root lands nowhere, silently, per the bar above.
 """
 
 from __future__ import annotations
@@ -40,7 +41,6 @@ SESSION_ENV_VARS = (
     "SESSION_ID",
 )
 GIT_REV_TIMEOUT_SECONDS = 2
-MAX_WALK_UP = 200
 
 
 def _parse_args(argv):
@@ -67,40 +67,23 @@ def _parse_args(argv):
     return positional[0], positional[1], options
 
 
-def _main_checkout_root(git_file: Path):
-    """Resolve a .git pointer file (worktree/submodule) to its main root."""
-    try:
-        for line in git_file.read_text(encoding="utf-8", errors="replace").splitlines():
-            if not line.startswith("gitdir:"):
-                continue
-            gitdir = Path(line.partition(":")[2].strip())
-            if not gitdir.is_absolute():
-                gitdir = git_file.parent / gitdir
-            parts = gitdir.resolve().parts
-            for i in range(len(parts) - 1, -1, -1):
-                if parts[i] == ".git":
-                    return Path(*parts[:i])
-            break
-    except Exception:
-        pass
-    return None
+def _state_root():
+    """Import the one resolver, here rather than at module scope.
 
+    rules/visibility.md §3: ``scripts/state_root.py`` owns the sink root,
+    and this script holds no second copy of it. The import sits inside a
+    function because the reliability bar above is absolute — a module-level
+    import that failed (a partial install with no ``state_root.py`` beside
+    this file) would traceback before ``main`` existed to swallow it, and
+    the logger would exit non-zero. From here, ``main``'s broad ``except``
+    still catches it.
+    """
 
-def _find_repo_root(start: Path):
-    current = start.resolve()
-    for _ in range(MAX_WALK_UP):
-        marker = current / ".git"
-        if marker.exists():
-            if marker.is_file():
-                main_root = _main_checkout_root(marker)
-                if main_root is not None:
-                    return main_root
-            return current
-        parent = current.parent
-        if parent == current:
-            return None
-        current = parent
-    return None
+    try:  # in-repo; the installed copy sits flat beside state_root.py
+        from scripts import state_root
+    except ImportError:  # pragma: no cover - the installed copy's path
+        import state_root
+    return state_root
 
 
 def _git_rev(cwd: Path):
@@ -140,10 +123,7 @@ def _detect_session():
 
 def _target_path(now: datetime):
     stamp = now.strftime("%Y-%m")
-    repo_root = _find_repo_root(Path.cwd())
-    if repo_root is not None:
-        return repo_root / ".orch" / "friction" / f"{stamp}.jsonl"
-    return Path.home() / ".orchflows" / "friction" / f"{stamp}.jsonl"
+    return _state_root().friction_root() / f"{stamp}.jsonl"
 
 
 def _build_entry(observed, expected, options, now: datetime):

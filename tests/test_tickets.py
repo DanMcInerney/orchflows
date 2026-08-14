@@ -12,6 +12,7 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -20,6 +21,9 @@ if str(ROOT) not in sys.path:
 import scripts.tickets as tickets_mod  # noqa: E402
 
 TICKETS_PY = ROOT / "scripts" / "tickets.py"
+STATE_ROOT_PY = ROOT / "scripts" / "state_root.py"
+WORKSPACE_PY = ROOT / "scripts" / "workspace.py"
+STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
 
 TICKET = """---
 id: {tid}
@@ -37,15 +41,51 @@ Test ticket.
 """
 
 
-def make_repo(tmp: Path, tickets: dict) -> Path:
-    (tmp / ".git").mkdir()
-    run_dir = tmp / ".orch" / "tickets" / "testrun"
-    run_dir.mkdir(parents=True)
+def use_sink(tmp: Path) -> Path:
+    """Point ``ORCHFLOWS_STATE_HOME`` at a sink under this test's tempdir.
+
+    Sets the variable for the rest of the process rather than restoring
+    it: every fixture below calls this before writing, and
+    ``tests/__init__.py`` holds the floor at a temporary directory
+    regardless, so the worst a stale value can do is fail a test, never
+    reach the real sink. ``run_full`` passes no ``env``, so each child
+    inherits whatever is in force when it is launched.
+    """
+
+    # resolved: a macOS tempdir is reached through a /var symlink, and a
+    # payload that prints the sink path must match the path a test opens
+    sink = (tmp / "state-sink").resolve()
+    os.environ[STATE_HOME_ENV_VAR] = str(sink)
+    return sink
+
+
+def sink_root() -> Path:
+    """Wherever ``use_sink`` last pointed. Never the real sink."""
+
+    return Path(os.environ[STATE_HOME_ENV_VAR])
+
+
+def make_tickets(run_dir: Path, tickets: dict) -> Path:
+    run_dir.mkdir(parents=True, exist_ok=True)
     for tid, (status, deps) in tickets.items():
         (run_dir / f"{tid}.md").write_text(
             TICKET.format(tid=tid, status=status, deps=deps), encoding="utf-8"
         )
     return run_dir
+
+
+def make_repo(tmp: Path, tickets: dict, *, sink: Path = None) -> Path:
+    """A repository at ``tmp``, and its run of tickets in the sink.
+
+    Tickets are user-scope state, so they land outside the checkout. Pass
+    ``sink`` when the caller has already placed one — a worktree fixture
+    puts it beside both trees rather than inside either.
+    """
+
+    (tmp / ".git").mkdir()
+    if sink is None:
+        sink = use_sink(tmp)
+    return make_tickets(sink / "tickets" / "testrun", tickets)
 
 
 def run_full(cwd: Path, *args):
@@ -175,7 +215,7 @@ class TestMalformedFrontmatter(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             (tmp / ".git").mkdir()
-            run_dir = tmp / ".orch" / "tickets" / "testrun"
+            run_dir = use_sink(tmp) / "tickets" / "testrun"
             run_dir.mkdir(parents=True)
             (run_dir / "T1.md").write_text(
                 "# Not a ticket\n\nNo frontmatter delimiters at all.\n", encoding="utf-8"
@@ -190,7 +230,7 @@ class TestMalformedFrontmatter(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             (tmp / ".git").mkdir()
-            run_dir = tmp / ".orch" / "tickets" / "testrun"
+            run_dir = use_sink(tmp) / "tickets" / "testrun"
             run_dir.mkdir(parents=True)
             (run_dir / "T1.md").write_text("---\nid: T1\nstatus: ready\n", encoding="utf-8")
             result = run_full(tmp, "set-status", "testrun", "T1", "complete")
@@ -202,7 +242,7 @@ class TestMalformedFrontmatter(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             (tmp / ".git").mkdir()
-            run_dir = tmp / ".orch" / "tickets" / "testrun"
+            run_dir = use_sink(tmp) / "tickets" / "testrun"
             run_dir.mkdir(parents=True)
             (run_dir / "T1.md").write_text("---\nid: T1\nstatus: ready\n", encoding="utf-8")
             result = run_full(tmp, "claim", "testrun", "T1", "--by", "agent-a")
@@ -216,7 +256,7 @@ class TestRunFilter(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             make_repo(tmp, {"A1": ("ready", "[]")})
-            other_dir = tmp / ".orch" / "tickets" / "otherrun"
+            other_dir = sink_root() / "tickets" / "otherrun"
             other_dir.mkdir(parents=True)
             (other_dir / "B1.md").write_text(
                 "---\nid: B1\nrun: otherrun\nstatus: ready\ndepends_on: []\n"
@@ -308,23 +348,58 @@ class TestEngineExecutorIsRejected(unittest.TestCase):
             self.assertEqual(["T1"], [t["id"] for t in run_cmd(tmp, "ready")["ready"]])
 
 
-class TestNotInsideARepo(unittest.TestCase):
-    def test_list_outside_a_repo_returns_error(self):
+class TestOutsideARepoTheSinkStillResolves(unittest.TestCase):
+    """The sink is user-scope, so being outside a checkout is no longer an
+    error: the tickets are found anyway, and only a genuinely absent one is
+    reported missing."""
+
+    def test_list_outside_a_repo_reads_the_sink(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             # deliberately no .git anywhere under this tempdir
-            result = run_full(tmp, "list")
+            make_tickets(use_sink(tmp) / "tickets" / "testrun", {"T1": ("ready", "[]")})
+            bare = tmp / "no-repo-here"
+            bare.mkdir()
+            result = run_full(bare, "list", "--run", "testrun")
             self.assertEqual(0, result.returncode)
             payload = json.loads(result.stdout)
-            self.assertEqual({"error": "not inside a git repository"}, payload)
+            self.assertEqual(["T1"], [t["id"] for t in payload["tickets"]])
 
-    def test_claim_outside_a_repo_returns_error(self):
+    def test_claim_outside_a_repo_claims_the_ticket_in_the_sink(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            result = run_full(tmp, "claim", "testrun", "T1", "--by", "agent-a")
+            run_dir = make_tickets(
+                use_sink(tmp) / "tickets" / "testrun", {"T1": ("ready", "[]")}
+            )
+            bare = tmp / "no-repo-here"
+            bare.mkdir()
+            result = run_full(bare, "claim", "testrun", "T1", "--by", "agent-a")
             self.assertEqual(0, result.returncode)
-            payload = json.loads(result.stdout)
-            self.assertEqual({"error": "not inside a git repository"}, payload)
+            self.assertNotIn("error", json.loads(result.stdout))
+            self.assertIn(
+                "status: claimed", (run_dir / "T1.md").read_text(encoding="utf-8")
+            )
+
+    def test_an_absent_ticket_is_still_reported_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            use_sink(tmp)
+            bare = tmp / "no-repo-here"
+            bare.mkdir()
+            payload = json.loads(
+                run_full(bare, "claim", "testrun", "T1", "--by", "agent-a").stdout
+            )
+            self.assertIn("ticket not found", payload["error"])
+
+    def test_a_sink_that_cannot_be_resolved_is_the_one_remaining_refusal(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            use_sink(tmp)
+            with mock.patch.object(
+                tickets_mod.state_root, "tickets_root", side_effect=RuntimeError("no home")
+            ):
+                payload = tickets_mod._cmd_list([])
+            self.assertEqual({"error": tickets_mod.NO_SINK_ERROR}, payload)
 
 
 FULL_TICKET = """---
@@ -362,7 +437,7 @@ class TestPacket(unittest.TestCase):
 
     def make(self, tmp: Path, body: str = FULL_TICKET) -> Path:
         (tmp / ".git").mkdir()
-        run_dir = tmp / ".orch" / "tickets" / "testrun"
+        run_dir = use_sink(tmp) / "tickets" / "testrun"
         run_dir.mkdir(parents=True)
         path = run_dir / "T1.md"
         path.write_text(body, encoding="utf-8")
@@ -433,17 +508,17 @@ class TestPacket(unittest.TestCase):
             payload = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")
             self.assertIn("is an engine", payload["error"])
 
-    def test_unknown_ticket_and_no_repo_are_errors_not_crashes(self):
+    def test_unknown_ticket_and_an_empty_sink_are_errors_not_crashes(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             self.make(tmp)
             self.assertIn("ticket not found", run_cmd(tmp, "packet", "testrun", "T9", "--reply-to", "main")["error"])
         with tempfile.TemporaryDirectory() as tmp:
-            result = run_full(Path(tmp), "packet", "testrun", "T1", "--reply-to", "main")
+            tmp = Path(tmp)
+            use_sink(tmp)
+            result = run_full(tmp, "packet", "testrun", "T1", "--reply-to", "main")
             self.assertEqual(0, result.returncode)
-            self.assertEqual(
-                {"error": "not inside a git repository"}, json.loads(result.stdout)
-            )
+            self.assertIn("ticket not found", json.loads(result.stdout)["error"])
 
 
 def make_worktree(tmp: Path, tickets: dict):
@@ -454,9 +529,10 @@ def make_worktree(tmp: Path, tickets: dict):
     what the result channel must dereference to the main checkout.
     """
 
+    sink = use_sink(tmp)
     main = tmp / "main"
     main.mkdir()
-    run_dir = make_repo(main, tickets)
+    run_dir = make_repo(main, tickets, sink=sink)
     (main / ".git" / "worktrees" / "wt").mkdir(parents=True)
     worktree = tmp / "wt"
     worktree.mkdir()
@@ -710,14 +786,25 @@ class TestResultScriptContract(unittest.TestCase):
             self.assertIn("ticket not found", json.loads(bad.stdout)["error"])
             self.assertEqual(1, len(bad.stdout.strip().splitlines()))
 
-    def test_result_outside_a_repo_is_an_error(self):
+    def test_result_outside_a_repo_still_reaches_the_sink(self):
+        """A result is user-scope state, so the cwd being outside a checkout
+        no longer decides anything: the ticket is found and written."""
+
         with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            run_dir = make_tickets(
+                use_sink(tmp) / "tickets" / "testrun", {"T1": ("claimed", "[]")}
+            )
+            bare = tmp / "no-repo-here"
+            bare.mkdir()
             result = run_full(
-                Path(tmp), "result", "testrun", "T1", "--section", "Result", "--text", "x"
+                bare, "result", "testrun", "T1", "--section", "Result", "--text", "x"
             )
             self.assertEqual(0, result.returncode)
-            self.assertEqual(
-                {"error": "not inside a git repository"}, json.loads(result.stdout)
+            payload = json.loads(result.stdout)
+            self.assertNotIn("error", payload)
+            self.assertIn(
+                "## Result\n\nx\n", (run_dir / "T1.md").read_text(encoding="utf-8")
             )
 
 
@@ -806,12 +893,12 @@ class TestResultAppend(unittest.TestCase):
 # --- the run-state channel ---------------------------------------------------
 
 
-def worklog_of(main: Path, run: str = "testrun") -> Path:
-    return main / ".orch" / "runs" / run / "worklog.md"
+def worklog_of(run: str = "testrun") -> Path:
+    return sink_root() / "runs" / run / "worklog.md"
 
 
-def run_dir_of(main: Path, run: str = "testrun") -> Path:
-    return main / ".orch" / "runs" / run
+def run_dir_of(run: str = "testrun") -> Path:
+    return sink_root() / "runs" / run
 
 
 def run_state_lines(prompt: str) -> list:
@@ -849,6 +936,7 @@ def make_real_worktree(tmp: Path):
         if completed.returncode != 0:
             raise unittest.SkipTest(f"git {args[0]} failed: {completed.stderr.strip()}")
 
+    use_sink(tmp)
     main = tmp / "main"
     main.mkdir()
     git("init", "--quiet")
@@ -861,23 +949,24 @@ def make_real_worktree(tmp: Path):
 
 
 class TestRunStateWorklog(unittest.TestCase):
-    """rules/visibility.md §6: run state under `.orch/` reaches the one
-    repository-wide root from any workspace, or it fails loudly."""
+    """rules/visibility.md §6: run state reaches the one user-scope sink
+    from any workspace in any repository, or it fails loudly."""
 
-    def test_a_note_from_a_worktree_appends_at_the_main_root(self):
+    def test_a_note_from_a_worktree_appends_in_the_sink(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
             payload = run_cmd(worktree, "run-state", "testrun", "--note", "slice one landed")
             self.assertEqual("note", payload["run_state"]["mode"])
             self.assertEqual(
-                str(worklog_of(main).resolve()), payload["run_state"]["path"]
+                str(worklog_of().resolve()), payload["run_state"]["path"]
             )
             self.assertEqual(
-                "slice one landed\n", worklog_of(main).read_text(encoding="utf-8")
+                "slice one landed\n", worklog_of().read_text(encoding="utf-8")
             )
-            # the run tree is the main checkout's alone
+            # the run tree is the sink's alone
             self.assertFalse((worktree / ".orch").exists())
+            self.assertFalse((main / ".orch").exists())
 
     def test_a_prior_line_and_an_outside_writer_both_survive(self):
         """Append mode, never read-modify-write: scripts/friction.py opens the
@@ -887,7 +976,7 @@ class TestRunStateWorklog(unittest.TestCase):
             tmp = Path(tmp)
             main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
             run_cmd(worktree, "run-state", "testrun", "--note", "first from the channel")
-            with open(worklog_of(main), "a", encoding="utf-8", newline="\n") as handle:
+            with open(worklog_of(), "a", encoding="utf-8", newline="\n") as handle:
                 handle.write("second from another worktree\n")
             run_cmd(worktree, "run-state", "testrun", "--note", "third from the channel")
             self.assertEqual(
@@ -896,7 +985,7 @@ class TestRunStateWorklog(unittest.TestCase):
                     "second from another worktree",
                     "third from the channel",
                 ],
-                worklog_of(main).read_text(encoding="utf-8").splitlines(),
+                worklog_of().read_text(encoding="utf-8").splitlines(),
             )
 
     def test_concurrent_notes_all_land_whole(self):
@@ -913,7 +1002,7 @@ class TestRunStateWorklog(unittest.TestCase):
                 )
             self.assertEqual(
                 sorted(notes),
-                sorted(worklog_of(main).read_text(encoding="utf-8").splitlines()),
+                sorted(worklog_of().read_text(encoding="utf-8").splitlines()),
             )
 
 
@@ -929,7 +1018,7 @@ class TestRunStateArtifact(unittest.TestCase):
                 worktree, "run-state", "testrun", "--artifact", "evidence.md",
                 "--text", "the bytes at the main root\n",
             )
-            artifact = run_dir_of(main) / "evidence.md"
+            artifact = run_dir_of() / "evidence.md"
             self.assertEqual("artifact", payload["run_state"]["mode"])
             self.assertEqual(str(artifact.resolve()), payload["run_state"]["path"])
             self.assertEqual(
@@ -949,24 +1038,24 @@ class TestRunStateArtifact(unittest.TestCase):
             )
             self.assertEqual(
                 "read inside, written outside\n",
-                (run_dir_of(main) / "checks.md").read_text(encoding="utf-8"),
+                (run_dir_of() / "checks.md").read_text(encoding="utf-8"),
             )
 
 
 class TestRunStateRootResolution(unittest.TestCase):
-    def test_the_root_comes_from_find_repo_root_with_no_subprocess(self):
+    def test_the_root_comes_from_the_one_resolver_with_no_subprocess(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
             calls = []
-            original = tickets_mod._find_repo_root
+            original = tickets_mod.state_root.runs_root
 
-            def spy(start):
-                calls.append(Path(start))
-                return original(start)
+            def spy():
+                calls.append(True)
+                return original()
 
             cwd = os.getcwd()
-            tickets_mod._find_repo_root = spy
+            tickets_mod.state_root.runs_root = spy
             try:
                 os.chdir(worktree)
                 payload = tickets_mod._dispatch(
@@ -974,11 +1063,11 @@ class TestRunStateRootResolution(unittest.TestCase):
                 )
             finally:
                 os.chdir(cwd)
-                tickets_mod._find_repo_root = original
+                tickets_mod.state_root.runs_root = original
             self.assertIn("run_state", payload)
             self.assertEqual(1, len(calls))
             self.assertEqual(
-                "resolved in process\n", worklog_of(main).read_text(encoding="utf-8")
+                "resolved in process\n", worklog_of().read_text(encoding="utf-8")
             )
             # nothing can shell out to git that never imports a way to:
             # the whole script's import set, not a word match on its prose
@@ -990,26 +1079,30 @@ class TestRunStateRootResolution(unittest.TestCase):
                     imported.add((node.module or "").split(".")[0])
             self.assertNotIn("subprocess", imported)
             self.assertEqual(
-                {"__future__", "datetime", "json", "pathlib", "re", "sys"}, imported
+                {"__future__", "datetime", "json", "pathlib", "re", "scripts",
+                 "state_root", "sys"},
+                imported,
             )
 
     @unittest.skipUnless(git_available(), "git is not on PATH")
-    def test_inside_a_real_git_worktree_the_bytes_land_at_the_main_root(self):
+    def test_inside_a_real_git_worktree_the_bytes_land_in_the_sink(self):
         with tempfile.TemporaryDirectory() as tmp:
             main, worktree = make_real_worktree(Path(tmp))
             payload = run_cmd(worktree, "run-state", "testrun", "--note", "from a real worktree")
             self.assertEqual(
-                str(worklog_of(main).resolve()), payload["run_state"]["path"]
+                str(worklog_of().resolve()), payload["run_state"]["path"]
             )
             self.assertEqual(
-                "from a real worktree\n", worklog_of(main).read_text(encoding="utf-8")
+                "from a real worktree\n", worklog_of().read_text(encoding="utf-8")
             )
             self.assertFalse((worktree / ".orch").exists())
+            self.assertFalse((main / ".orch").exists())
 
 
 class TestRunStateRefusesUnsafeNames(unittest.TestCase):
     """A run id or artifact name is one path segment. Anything that could
-    climb out of `.orch/runs/` is refused by name, never sanitized silently."""
+    climb out of the sink's `runs/` is refused by name, never sanitized
+    silently."""
 
     def test_an_unsafe_run_id_is_refused_by_name(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1019,7 +1112,7 @@ class TestRunStateRefusesUnsafeNames(unittest.TestCase):
                 payload = run_cmd(worktree, "run-state", bad, "--note", "x")
                 self.assertIn(bad, payload.get("error", ""), bad)
                 self.assertNotIn("run_state", payload)
-            self.assertFalse((main / ".orch" / "runs").exists())
+            self.assertFalse((sink_root() / "runs").exists())
 
     def test_an_unsafe_artifact_name_is_refused_by_name(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1031,7 +1124,7 @@ class TestRunStateRefusesUnsafeNames(unittest.TestCase):
                 )
                 self.assertIn(bad, payload.get("error", ""), bad)
                 self.assertNotIn("run_state", payload)
-            self.assertFalse((main / ".orch" / "runs").exists())
+            self.assertFalse((sink_root() / "runs").exists())
 
 
 class TestPacketCarriesTheRunStateCommand(unittest.TestCase):
@@ -1040,7 +1133,7 @@ class TestPacketCarriesTheRunStateCommand(unittest.TestCase):
 
     def make(self, tmp: Path) -> Path:
         (tmp / ".git").mkdir()
-        run_dir = tmp / ".orch" / "tickets" / "testrun"
+        run_dir = use_sink(tmp) / "tickets" / "testrun"
         run_dir.mkdir(parents=True)
         path = run_dir / "T1.md"
         path.write_text(FULL_TICKET, encoding="utf-8")
@@ -1093,6 +1186,11 @@ class TestPacketCarriesTheRunStateCommand(unittest.TestCase):
             elsewhere.mkdir()
             copy = elsewhere / "tickets.py"
             copy.write_text(TICKETS_PY.read_text(encoding="utf-8"), encoding="utf-8")
+            # the installed layout: the resolver sits flat beside it, and the
+            # copy reaches it by the second arm of its two-arm import
+            (elsewhere / "state_root.py").write_text(
+                STATE_ROOT_PY.read_text(encoding="utf-8"), encoding="utf-8"
+            )
             completed = subprocess.run(
                 [sys.executable, str(copy), "packet", "testrun", "T1", "--reply-to", "main"],
                 capture_output=True, text=True, encoding="utf-8",
@@ -1108,8 +1206,13 @@ class TestPacketCarriesTheRunStateCommand(unittest.TestCase):
 
 class TestRelativeGitdirPointer(unittest.TestCase):
     """`make_worktree` writes an absolute pointer; git writes a relative one
-    whenever the worktree was added with a relative path, and that branch of
-    `_main_checkout_root` had no case of its own."""
+    whenever the worktree was added with a relative path.
+
+    The bodies moved to `scripts/state_root.py`; these two names survive
+    here as re-exports, because `scripts/cutcheck.py` and `scripts/ui.py`
+    still import them from this module. What is graded is that the
+    re-export is the owner's function and not a second copy of it.
+    """
 
     def test_a_relative_pointer_resolves_against_the_pointer_files_own_parent(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1122,6 +1225,14 @@ class TestRelativeGitdirPointer(unittest.TestCase):
             pointer.write_text("gitdir: ../main/.git/worktrees/wt\n", encoding="utf-8")
             self.assertEqual(main.resolve(), tickets_mod._main_checkout_root(pointer))
             self.assertEqual(main.resolve(), tickets_mod._find_repo_root(worktree))
+
+    def test_the_two_names_are_the_resolvers_own_functions(self):
+        self.assertIs(
+            tickets_mod.state_root.main_checkout_root, tickets_mod._main_checkout_root
+        )
+        self.assertIs(
+            tickets_mod.state_root.find_repo_root, tickets_mod._find_repo_root
+        )
 
 
 FENCE_TICKET_TAIL = (
@@ -1308,7 +1419,7 @@ def establishment_lines(prompt: str) -> list:
 
 def make_packet_repo(tmp: Path, body: str, run: str = "testrun", tid: str = "T1") -> Path:
     (tmp / ".git").mkdir()
-    run_dir = tmp / ".orch" / "tickets" / run
+    run_dir = use_sink(tmp) / "tickets" / run
     run_dir.mkdir(parents=True)
     path = run_dir / f"{tid}.md"
     path.write_text(body, encoding="utf-8")
@@ -1320,6 +1431,7 @@ def make_isolated_fixture(tmp: Path, body: str = None):
     `git worktree add` tree on its own branch — the shape the emitted line is
     meant to be run in."""
 
+    use_sink(tmp)
     main = tmp / "main"
     main.mkdir()
     git_run(main, "init", "--quiet")
@@ -1327,7 +1439,7 @@ def make_isolated_fixture(tmp: Path, body: str = None):
     git_run(main, "add", "README.md")
     git_run(main, "commit", "--quiet", "-m", "init")
     base = git_run(main, "rev-parse", "HEAD")
-    run_dir = main / ".orch" / "tickets" / "testrun"
+    run_dir = sink_root() / "tickets" / "testrun"
     run_dir.mkdir(parents=True)
     ticket = run_dir / "T1.md"
     ticket.write_text(ISOLATED_TICKET if body is None else body, encoding="utf-8")
@@ -1412,7 +1524,7 @@ class TestPacketEmitsTheEstablishmentCommand(unittest.TestCase):
             make_packet_repo(tmp, ISOLATED_TICKET)
             elsewhere = tmp / "elsewhere"
             elsewhere.mkdir()
-            for name in ("tickets.py", "workspace.py"):
+            for name in ("state_root.py", "tickets.py", "workspace.py"):
                 (elsewhere / name).write_text(
                     (TICKETS_PY.parent / name).read_text(encoding="utf-8"),
                     encoding="utf-8",
@@ -1457,8 +1569,9 @@ class TestExecutedPacketSeam(unittest.TestCase):
             front = tickets_mod._parse_frontmatter(ticket.read_text(encoding="utf-8"))
             self.assertEqual("item-branch", front.get("workspace_branch"))
             self.assertEqual(f"{base} clean", front.get("workspace_baseline"))
-            # the run tree is the main checkout's alone
+            # the run tree is the sink's alone
             self.assertFalse((worktree / ".orch").exists())
+            self.assertFalse((main / ".orch").exists())
 
             # `check` reuses every token the packet supplied but the subcommand
             check_argv = [*argv[:2], "check", *argv[3:], "--base", base]
@@ -1502,10 +1615,10 @@ class TestExecutedRunStateSeam(unittest.TestCase):
             payload = json.loads(noted.stdout)
             # `tickets.py` exits 0 on error: the payload decides, not the code
             self.assertNotIn("error", payload)
-            self.assertEqual(str(worklog_of(main).resolve()), payload["run_state"]["path"])
+            self.assertEqual(str(worklog_of().resolve()), payload["run_state"]["path"])
             self.assertEqual(
                 "seam-note-from-the-linked-tree\n",
-                worklog_of(main).read_text(encoding="utf-8"),
+                worklog_of().read_text(encoding="utf-8"),
             )
 
             artifact_argv = artifact_line.split()
@@ -1516,7 +1629,7 @@ class TestExecutedRunStateSeam(unittest.TestCase):
             self.assertEqual(0, wrote.returncode, wrote.stderr)
             artifact = json.loads(wrote.stdout)
             self.assertNotIn("error", artifact)
-            landed = run_dir_of(main) / "seam-evidence.md"
+            landed = run_dir_of() / "seam-evidence.md"
             self.assertEqual(str(landed.resolve()), artifact["run_state"]["path"])
             self.assertEqual("seam-bytes-at-the-main-root", landed.read_text(encoding="utf-8"))
             self.assertFalse((worktree / ".orch").exists())

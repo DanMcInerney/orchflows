@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Mechanical ticket queries over ``.orch/tickets/<run>/*.md``.
+"""Mechanical ticket queries over ``<sink>/tickets/<run>/*.md``.
 
 Stdlib-only, cross-platform. Tickets are markdown work items per
 ``contracts/work-item.md``; frontmatter is parsed manually (no third-party
-YAML dependency). The root is the main repository root — a linked
-worktree's ``.git`` pointer is dereferenced to it — so every worktree of
-a repository reads and writes one run's tickets at one path. Every
+YAML dependency). The root is the one user-scope state sink
+``scripts/state_root.py`` resolves — ``$ORCHFLOWS_STATE_HOME`` or
+``~/.orchflows/state`` — so every workspace in every repository reads and
+writes one run's tickets at one path, and a run outlives the checkout it
+started in. Every
 subcommand exits 0 and prints exactly one JSON document to stdout —
 failures are reported as ``{"error": "..."}"``, never as a non-zero exit
 or a raised traceback, so this stays safe to call from any host without
@@ -29,6 +31,11 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+try:  # in-repo; the installed copy sits flat beside state_root.py
+    from scripts import state_root
+except ImportError:  # pragma: no cover - the installed copy's path
+    import state_root
+
 VALID_STATUSES = {
     "pending",
     "ready",
@@ -50,7 +57,9 @@ ENGINE_EXECUTORS = frozenset(
 )
 DURATION_RE = re.compile(r"^(\d+)(m|h)$")
 DEFAULT_BOUND_MINUTES = 60
-MAX_WALK_UP = 200
+NO_SINK_ERROR = (
+    "cannot resolve the state sink: no $ORCHFLOWS_STATE_HOME and no home directory"
+)
 # contracts/delegation.md: a work-item dispatch may supply the six packet
 # parts by reference to the ticket path. These are the parts that live in
 # a body section; authority and bounds live in frontmatter, and reply_to
@@ -101,57 +110,32 @@ def normalized_isolation(declared) -> str:
     return str(declared or "none").strip().strip("`").strip() or "none"
 
 
-# --- repository / filesystem helpers ---------------------------------------
+# --- sink / filesystem helpers ----------------------------------------------
 
-
-def _main_checkout_root(git_file: Path):
-    """Resolve a .git pointer file (worktree/submodule) to its main root."""
-    try:
-        for line in git_file.read_text(encoding="utf-8", errors="replace").splitlines():
-            if not line.startswith("gitdir:"):
-                continue
-            gitdir = Path(line.partition(":")[2].strip())
-            if not gitdir.is_absolute():
-                gitdir = git_file.parent / gitdir
-            parts = gitdir.resolve().parts
-            for i in range(len(parts) - 1, -1, -1):
-                if parts[i] == ".git":
-                    return Path(*parts[:i])
-            break
-    except Exception:
-        pass
-    return None
-
-
-def _find_repo_root(start: Path):
-    current = start.resolve()
-    for _ in range(MAX_WALK_UP):
-        marker = current / ".git"
-        if marker.exists():
-            if marker.is_file():
-                main_root = _main_checkout_root(marker)
-                if main_root is not None:
-                    return main_root
-            return current
-        parent = current.parent
-        if parent == current:
-            return None
-        current = parent
-    return None
+# rules/visibility.md §3: ``scripts/state_root.py`` is the single owner of both
+# the sink root and the repository a path belongs to. These are the private
+# spellings sibling scripts already import (``scripts/cutcheck.py``); the
+# bodies live in one module and no second copy survives under ``scripts/``.
+_main_checkout_root = state_root.main_checkout_root
+_find_repo_root = state_root.find_repo_root
 
 
 def _tickets_root():
-    repo_root = _find_repo_root(Path.cwd())
-    if repo_root is None:
+    """The sink's ticket tree, or ``None`` when no root can be resolved."""
+
+    try:
+        return state_root.tickets_root()
+    except Exception:
         return None
-    return repo_root / ".orch" / "tickets"
 
 
 def _runs_root():
-    repo_root = _find_repo_root(Path.cwd())
-    if repo_root is None:
+    """The sink's run tree, or ``None`` when no root can be resolved."""
+
+    try:
+        return state_root.runs_root()
+    except Exception:
         return None
-    return repo_root / ".orch" / "runs"
 
 
 def _segment_error(kind: str, value: str):
@@ -515,7 +499,7 @@ def _cmd_list(rest):
         return {"error": f"unexpected arguments: {' '.join(args)}"}
     tickets_root = _tickets_root()
     if tickets_root is None:
-        return {"error": "not inside a git repository"}
+        return {"error": NO_SINK_ERROR}
     items = []
     for run_dir in _iter_run_dirs(tickets_root, run_filter):
         for ticket_path in sorted(run_dir.glob("*.md")):
@@ -531,7 +515,7 @@ def _cmd_ready(rest):
         return {"error": f"unexpected arguments: {' '.join(args)}"}
     tickets_root = _tickets_root()
     if tickets_root is None:
-        return {"error": "not inside a git repository"}
+        return {"error": NO_SINK_ERROR}
     now = datetime.now(timezone.utc)
     ready_items = []
     for run_dir in _iter_run_dirs(tickets_root, run_filter):
@@ -617,7 +601,7 @@ def _cmd_claim(rest):
     run, ticket_id = args
     tickets_root = _tickets_root()
     if tickets_root is None:
-        return {"error": "not inside a git repository"}
+        return {"error": NO_SINK_ERROR}
     ticket_path = tickets_root / run / f"{ticket_id}.md"
     if not ticket_path.is_file():
         return {"error": f"ticket not found: {run}/{ticket_id}"}
@@ -643,7 +627,7 @@ def _cmd_set_status(rest):
         return {"error": f"invalid status '{status}'; must be one of {sorted(VALID_STATUSES)}"}
     tickets_root = _tickets_root()
     if tickets_root is None:
-        return {"error": "not inside a git repository"}
+        return {"error": NO_SINK_ERROR}
     ticket_path = tickets_root / run / f"{ticket_id}.md"
     if not ticket_path.is_file():
         return {"error": f"ticket not found: {run}/{ticket_id}"}
@@ -673,7 +657,7 @@ def _cmd_packet(rest):
     run, ticket_id = args
     tickets_root = _tickets_root()
     if tickets_root is None:
-        return {"error": "not inside a git repository"}
+        return {"error": NO_SINK_ERROR}
     ticket_path = tickets_root / run / f"{ticket_id}.md"
     if not ticket_path.is_file():
         return {"error": f"ticket not found: {run}/{ticket_id}"}
@@ -766,12 +750,12 @@ def _cmd_packet(rest):
 
 
 def _cmd_result(rest):
-    """Write one reserved section of a ticket at the main repository root.
+    """Write one reserved section of a ticket in the state sink.
 
     The executor runs this from inside its own isolated worktree: ``--file``
     reads the body from that workspace while ``_tickets_root()`` resolves the
-    worktree's ``.git`` pointer to the one main-root ticket path every
-    workspace agrees on (contracts/work-item.md).
+    user-scope sink, the one ticket path every workspace in every repository
+    agrees on (contracts/work-item.md).
     """
 
     args = list(rest)
@@ -814,7 +798,7 @@ def _cmd_result(rest):
         body = text_arg
     tickets_root = _tickets_root()
     if tickets_root is None:
-        return {"error": "not inside a git repository"}
+        return {"error": NO_SINK_ERROR}
     ticket_path = tickets_root / run / f"{ticket_id}.md"
     if not ticket_path.is_file():
         return {"error": f"ticket not found: {run}/{ticket_id}"}
@@ -841,13 +825,13 @@ def _cmd_result(rest):
 
 
 def _cmd_run_state(rest):
-    """Write this run's state into the one repository-wide ``.orch/``.
+    """Write this run's state into the one user-scope state sink.
 
     The channel rules/visibility.md §6 names. The root is resolved the way
-    every other subcommand resolves it — ``_find_repo_root`` dereferencing a
-    worktree's ``.git`` pointer, no subprocess — so a child in its own
-    workspace reaches the main checkout's ``.orch/`` without a git call it
-    may not be allowed to make.
+    every other subcommand resolves it — ``scripts/state_root.py``, an
+    environment variable and a home directory, no subprocess — so a child in
+    its own workspace, in any repository or none, reaches the run's state
+    without a git call it may not be allowed to make.
 
     ``--note`` appends to one shared log, so it opens in append mode with an
     explicit ``newline`` (``scripts/friction.py``) and writes one line in one
@@ -905,7 +889,7 @@ def _cmd_run_state(rest):
 
     runs_root = _runs_root()
     if runs_root is None:
-        return {"error": "not inside a git repository"}
+        return {"error": NO_SINK_ERROR}
     run_dir = runs_root / run
     try:
         run_dir.mkdir(parents=True, exist_ok=True)

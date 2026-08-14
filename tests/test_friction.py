@@ -1,4 +1,4 @@
-"""friction.py resolves .orch to the main checkout, one per repository."""
+"""friction.py logs to the one user-scope sink, from every repository."""
 from __future__ import annotations
 
 import contextlib
@@ -6,17 +6,27 @@ import importlib.util
 import io
 import json
 import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
+# friction.py imports its resolver as `scripts.state_root` in-repo, falling
+# back to a flat `state_root` beside it once installed. Neither name is
+# importable from `tests/` alone, so put the repository root on the path
+# before the module body runs.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 _spec = importlib.util.spec_from_file_location(
     "friction", ROOT / "scripts" / "friction.py"
 )
 friction = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_spec and friction)
+
+STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
 
 REQUIRED_ENTRY_KEYS = {
     "ts", "cwd", "git_rev", "host", "session",
@@ -24,101 +34,92 @@ REQUIRED_ENTRY_KEYS = {
 }
 
 
-class TestFindRepoRoot(unittest.TestCase):
+class TestTargetPath(unittest.TestCase):
+    """The target is the sink's, and the cwd has no say in it.
+
+    ``scripts/state_root.py`` owns the resolver itself and
+    ``tests/test_state_root.py`` grades it; what belongs here is that
+    friction.py asks it, rather than deciding for itself.
+    """
+
     def setUp(self):
-        self._tmp = tempfile.TemporaryDirectory()
-        self.tmp = Path(self._tmp.name).resolve()
+        # Register the tempdir cleanup via addCleanup (not a `with` block):
+        # addCleanup runs LIFO, so a chdir-back registered after it fires
+        # first. A `with tempfile.TemporaryDirectory()` wrapping a chdir
+        # into itself has its own __exit__ run before any addCleanup, and on
+        # Windows rmtree of the current working directory raises
+        # PermissionError — that ordering bug is what this guards against.
+        tmp_ctx = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp_ctx.cleanup)
+        self.tmp = Path(tmp_ctx.name).resolve()
+        self.sink = self.tmp / "sink"
+        patcher = mock.patch.dict(os.environ, {STATE_HOME_ENV_VAR: str(self.sink)})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.stamp = friction.datetime.now(friction.timezone.utc).strftime("%Y-%m")
 
-    def tearDown(self):
-        self._tmp.cleanup()
+    def _chdir(self, target: Path):
+        before = os.getcwd()
+        os.chdir(target)
+        self.addCleanup(os.chdir, before)
 
-    def _make_main(self, name="main"):
-        main = self.tmp / name
-        (main / ".git").mkdir(parents=True)
-        return main
+    def _target(self) -> Path:
+        return friction._target_path(friction.datetime.now(friction.timezone.utc))
 
-    def test_main_checkout_resolves_to_itself(self):
-        main = self._make_main()
-        sub = main / "skills" / "kernel"
-        sub.mkdir(parents=True)
-        self.assertEqual(friction._find_repo_root(sub), main)
+    def test_the_target_is_the_sinks_friction_stream(self):
+        self.assertEqual(self.sink / "friction" / f"{self.stamp}.jsonl", self._target())
 
-    def test_linked_worktree_resolves_to_main_checkout(self):
-        main = self._make_main()
+    def test_a_worktree_a_main_checkout_and_no_repository_agree(self):
+        main = self.tmp / "main"
         (main / ".git" / "worktrees" / "wt").mkdir(parents=True)
         wt = self.tmp / "wt"
         wt.mkdir()
         (wt / ".git").write_text(
             f"gitdir: {main / '.git' / 'worktrees' / 'wt'}\n", encoding="utf-8"
         )
-        self.assertEqual(friction._find_repo_root(wt), main)
-
-    def test_relative_gitdir_pointer_resolves_to_superproject(self):
-        super_repo = self._make_main("super")
-        (super_repo / ".git" / "modules" / "mod").mkdir(parents=True)
-        mod = super_repo / "mod"
-        mod.mkdir()
-        (mod / ".git").write_text("gitdir: ../.git/modules/mod\n", encoding="utf-8")
-        self.assertEqual(friction._find_repo_root(mod), super_repo)
-
-    def test_unparseable_git_file_falls_back_to_walk_up_result(self):
-        main = self._make_main()
-        wt = main / "vendored"
-        wt.mkdir()
-        (wt / ".git").write_text("not a gitdir pointer\n", encoding="utf-8")
-        self.assertEqual(friction._find_repo_root(wt), wt)
-
-    def test_no_repository_returns_none(self):
         bare = self.tmp / "bare"
         bare.mkdir()
-        self.assertIsNone(friction._find_repo_root(bare))
+        seen = []
+        for cwd in (main, wt, bare):
+            before = os.getcwd()
+            os.chdir(cwd)
+            try:
+                seen.append(self._target())
+            finally:
+                os.chdir(before)
+        self.assertEqual([self.sink / "friction" / f"{self.stamp}.jsonl"] * 3, seen)
 
-
-class TestTargetPath(unittest.TestCase):
-    def test_entry_from_worktree_lands_in_main_checkout(self):
-        # Register the tempdir cleanup via addCleanup too (not a `with`
-        # block): addCleanup runs LIFO, so the chdir-back registered after
-        # it fires first. A `with tempfile.TemporaryDirectory()` wrapping a
-        # chdir into itself has its own __exit__ run before any addCleanup,
-        # and on Windows rmtree of the current working directory raises
-        # PermissionError — that ordering bug is what this guards against.
-        tmp_ctx = tempfile.TemporaryDirectory()
-        self.addCleanup(tmp_ctx.cleanup)
-        tmp_path = Path(tmp_ctx.name).resolve()
-        main = tmp_path / "main"
-        (main / ".git" / "worktrees" / "wt").mkdir(parents=True)
-        wt = tmp_path / "wt"
-        wt.mkdir()
-        (wt / ".git").write_text(
-            f"gitdir: {main / '.git' / 'worktrees' / 'wt'}\n", encoding="utf-8"
-        )
-        before = os.getcwd()
-        os.chdir(wt)
-        self.addCleanup(os.chdir, before)
-        target = friction._target_path(friction.datetime.now(friction.timezone.utc))
-        self.assertEqual(target.parent.parent.parent, main)
+    def test_the_override_is_honoured_after_the_module_was_imported(self):
+        moved = self.tmp / "moved-sink"
+        os.environ[STATE_HOME_ENV_VAR] = str(moved)
+        self.assertEqual(moved / "friction" / f"{self.stamp}.jsonl", self._target())
 
 
 class _IsolatedRepoTestCase(unittest.TestCase):
     """Base for tests that run friction.main() against a synthetic repo root.
 
-    Never touches the real .orch/ — cwd is pinned to a fresh tempdir
-    containing its own fake .git, and restored via addCleanup even if
-    the test body raises.
+    Never touches the real sink — ``ORCHFLOWS_STATE_HOME`` is pointed at a
+    fresh tempdir for the duration, and cwd is pinned to a repository
+    inside it and restored via addCleanup even if the test body raises.
     """
 
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self._tmp.cleanup)
-        self.repo = Path(self._tmp.name).resolve() / "repo"
+        self.tmp = Path(self._tmp.name).resolve()
+        self.repo = self.tmp / "repo"
         (self.repo / ".git").mkdir(parents=True)
+        self.sink = self.tmp / "sink"
+        patcher = mock.patch.dict(os.environ, {STATE_HOME_ENV_VAR: str(self.sink)})
+        patcher.start()
+        self.addCleanup(patcher.stop)
         before = os.getcwd()
         os.chdir(self.repo)
         self.addCleanup(os.chdir, before)
 
     def _log_path(self):
         stamp = friction.datetime.now(friction.timezone.utc).strftime("%Y-%m")
-        return self.repo / ".orch" / "friction" / f"{stamp}.jsonl"
+        return self.sink / "friction" / f"{stamp}.jsonl"
 
     def _run_main(self, argv):
         buf = io.StringIO()
@@ -200,25 +201,34 @@ class TestMainWritesEntry(_IsolatedRepoTestCase):
         entry = json.loads(self._log_path().read_text(encoding="utf-8").splitlines()[-1])
         self.assertIsNone(entry["git_rev"])
 
-    def test_worktree_cwd_resolves_log_to_main_checkout(self):
-        # Reshape self.repo into a linked worktree of a separate main checkout,
-        # and confirm main() writes to the main checkout's log, not the worktree.
-        base = self.repo.parent
-        main = base / "main-checkout"
+    def test_a_worktree_and_its_main_checkout_append_to_one_stream(self):
+        # Build a linked worktree of a separate main checkout and log from
+        # both: one stream, two lines, and no `.orch/` in either tree.
+        main = self.tmp / "main-checkout"
         (main / ".git" / "worktrees" / "wt").mkdir(parents=True)
-        wt = base / "wt"
+        wt = self.tmp / "wt"
         wt.mkdir()
         (wt / ".git").write_text(
             f"gitdir: {main / '.git' / 'worktrees' / 'wt'}\n", encoding="utf-8"
         )
+        os.chdir(main)
+        self.assertEqual(0, self._run_main(["from the main checkout", "e"])[0])
         os.chdir(wt)
-        rc, _ = self._run_main(["o", "e"])
-        self.assertEqual(rc, 0)
-        stamp = friction.datetime.now(friction.timezone.utc).strftime("%Y-%m")
-        main_log = main / ".orch" / "friction" / f"{stamp}.jsonl"
-        wt_log = wt / ".orch" / "friction" / f"{stamp}.jsonl"
-        self.assertTrue(main_log.exists())
-        self.assertFalse(wt_log.exists())
+        self.assertEqual(0, self._run_main(["from the worktree", "e"])[0])
+        lines = self._log_path().read_text(encoding="utf-8").splitlines()
+        self.assertEqual(
+            ["from the main checkout", "from the worktree"],
+            [json.loads(line)["observed"] for line in lines],
+        )
+        self.assertFalse((main / ".orch").exists())
+        self.assertFalse((wt / ".orch").exists())
+
+    def test_the_entry_carries_the_project_it_arose_in_as_a_field(self):
+        # One stream for every repository, so the cwd is how an entry says
+        # where it came from. It is a field, never the location.
+        self._run_main(["o", "e"])
+        entry = json.loads(self._log_path().read_text(encoding="utf-8").splitlines()[-1])
+        self.assertEqual(str(self.repo), entry["cwd"])
 
 
 class TestMainMalformedArgvIsSilentNoop(_IsolatedRepoTestCase):
@@ -249,10 +259,30 @@ class TestMainMalformedArgvIsSilentNoop(_IsolatedRepoTestCase):
 
 class TestMainAdversarialFailuresStaySilentAndExitZero(_IsolatedRepoTestCase):
     def test_unwritable_target_directory(self):
-        # Pre-create `.orch` as a plain file so mkdir(parents=True) for the
-        # friction/ subdirectory raises FileExistsError.
-        (self.repo / ".orch").write_text("blocked", encoding="utf-8")
+        # Pre-create the sink root as a plain file so mkdir(parents=True)
+        # for the friction/ subdirectory raises FileExistsError.
+        self.sink.write_text("blocked", encoding="utf-8")
         rc, out = self._run_main(["o", "e"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(out, "")
+
+    def test_an_unwritable_sink_is_never_traded_for_a_writable_cwd(self):
+        # There is no fallback at this seam. A blocked sink loses the entry;
+        # it does not resurrect the per-repository `.orch/` this run retired.
+        self.sink.write_text("blocked", encoding="utf-8")
+        before = sorted(p.name for p in self.repo.iterdir())
+        self._run_main(["o", "e"])
+        self.assertEqual(before, sorted(p.name for p in self.repo.iterdir()))
+        self.assertFalse((self.repo / ".orch").exists())
+
+    def test_a_resolver_that_cannot_be_imported_is_swallowed(self):
+        # The two-arm import lives inside a function precisely so main()'s
+        # broad except can catch its failure. At module scope this would
+        # traceback before there was a main() to swallow it.
+        with mock.patch.object(
+            friction, "_state_root", side_effect=ImportError("no state_root")
+        ):
+            rc, out = self._run_main(["o", "e"])
         self.assertEqual(rc, 0)
         self.assertEqual(out, "")
 

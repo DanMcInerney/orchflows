@@ -82,6 +82,47 @@ class TestScriptNames(unittest.TestCase):
                 source = install.REPO_ROOT / "scripts" / name
                 self.assertEqual(source.read_bytes(), installed.read_bytes())
 
+    def test_the_installed_writers_resolve_their_sink_from_the_flat_layout(self):
+        """The scripts land flat in one bin dir, with no ``scripts`` package
+        above them. Copying the files is not enough: the two-arm import in
+        ``tickets.py`` and ``friction.py`` has to find ``state_root.py``
+        beside it, which only the installed layout proves."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp).resolve()
+            (home / ".claude").mkdir(parents=True)
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis("claude"):
+                plan = install.build_plan("user", None)
+                install.apply_plan(plan)
+
+            sink = home / "sink"
+            elsewhere = home / "not-a-repo"
+            elsewhere.mkdir()
+            env = dict(os.environ, ORCHFLOWS_STATE_HOME=str(sink))
+
+            def run(name, *args):
+                return subprocess.run(
+                    [sys.executable, str(plan.bin_dir / name), *args],
+                    capture_output=True, text=True, encoding="utf-8",
+                    errors="replace", cwd=str(elsewhere), env=env,
+                )
+
+            noted = run("tickets.py", "run-state", "testrun", "--note", "installed")
+            self.assertEqual(0, noted.returncode, noted.stderr)
+            payload = json.loads(noted.stdout)
+            self.assertNotIn("error", payload)
+            worklog = sink / "runs" / "testrun" / "worklog.md"
+            self.assertEqual(str(worklog), payload["run_state"]["path"])
+            self.assertEqual("installed\n", worklog.read_text(encoding="utf-8"))
+
+            logged = run("friction.py", "observed", "expected")
+            self.assertEqual(0, logged.returncode, logged.stderr)
+            self.assertEqual("friction logged", logged.stdout.strip())
+            self.assertEqual(1, len(list((sink / "friction").glob("*.jsonl"))))
+
+            self.assertFalse((elsewhere / ".orch").exists())
+            self.assertFalse((plan.bin_dir / ".orch").exists())
+
 
 class TestInstallReceipt(unittest.TestCase):
     def test_receipt_records_actions_and_hashes(self):

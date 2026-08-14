@@ -3,6 +3,7 @@
 still rejected, and a suspended ticket keeps its claim on disk."""
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -16,6 +17,7 @@ if str(ROOT) not in sys.path:
 import scripts.tickets as tickets_mod  # noqa: E402
 
 TICKETS_PY = ROOT / "scripts" / "tickets.py"
+STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
 
 TICKET = """---
 id: T1
@@ -36,8 +38,19 @@ Test ticket.
 
 
 def make_repo(tmp: Path) -> Path:
+    """A repository, and its run of tickets in the one user-scope sink.
+
+    ``ORCHFLOWS_STATE_HOME`` is set for the rest of the process rather
+    than restored; ``tests/__init__.py`` holds the floor at a temporary
+    directory, so a stale value can only fail a test, never reach the
+    real sink.
+    """
+
     (tmp / ".git").mkdir()
-    run_dir = tmp / ".orch" / "tickets" / "testrun"
+    # resolved: a macOS tempdir is reached through a /var symlink, and a
+    # payload that prints the sink path must match the path a test opens
+    os.environ[STATE_HOME_ENV_VAR] = str((tmp / "state-sink").resolve())
+    run_dir = (tmp / "state-sink").resolve() / "tickets" / "testrun"
     run_dir.mkdir(parents=True)
     (run_dir / "T1.md").write_text(TICKET, encoding="utf-8")
     return run_dir
