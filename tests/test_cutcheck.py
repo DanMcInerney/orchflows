@@ -1,5 +1,6 @@
 """Tests for scripts/cutcheck.py: family 1, oracle discrimination and shape."""
 
+import json
 import subprocess
 import sys
 import unittest
@@ -396,5 +397,50 @@ class InstallationTest(unittest.TestCase):
         self.assertIn("cutcheck.py", install.SCRIPT_NAMES)
 
 
+FIXTURES = ROOT / "tests" / "fixtures" / "cutcheck"
+VERDICTS = FIXTURES / "verdicts.json"
+
+
+def fixture_sets():
+    return sorted(path.name for path in FIXTURES.iterdir() if path.is_dir())
+
+
+def verdict(run):
+    result = run_cutcheck(run)
+    return {"exit": result.returncode, "lines": result.stdout.splitlines()}
+
+
+def record_verdicts():
+    """Rewrite the pinned verdicts from this revision's own report.
+
+    Run as ``python3 tests/test_cutcheck.py --record``, and only when a
+    completion test names the change: an unexplained diff here is a
+    suppression nobody asked for.
+    """
+
+    recorded = {run: verdict(run) for run in fixture_sets()}
+    VERDICTS.write_text(
+        json.dumps(recorded, indent=1, sort_keys=True) + "\n", encoding="utf-8"
+    )
+
+
+class RecordedVerdictTest(unittest.TestCase):
+    """Every fixture set keeps the exit status and the lines it was pinned at.
+
+    Suppressing noise removes report lines by construction, so the guard
+    against removing a true one is a recorded verdict per set, compared whole.
+    """
+
+    def test_every_fixture_set_matches_its_recorded_verdict(self):
+        recorded = json.loads(VERDICTS.read_text(encoding="utf-8"))
+        self.assertEqual(sorted(recorded), fixture_sets())
+        for run in fixture_sets():
+            with self.subTest(run=run):
+                self.assertEqual(verdict(run), recorded[run])
+
+
 if __name__ == "__main__":
-    unittest.main()
+    if "--record" in sys.argv:
+        record_verdicts()
+    else:
+        unittest.main()

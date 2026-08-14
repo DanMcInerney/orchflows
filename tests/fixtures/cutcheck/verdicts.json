@@ -1,0 +1,116 @@
+{
+ "cutcheck-carveouts": {
+  "exit": 0,
+  "lines": []
+ },
+ "cutcheck-clean": {
+  "exit": 0,
+  "lines": []
+ },
+ "cutcheck-f1-cuttime": {
+  "exit": 1,
+  "lines": [
+   "01-cuttime: family 1: no-hits-both-revisions: criterion 1: grep -rn \"zzqq-cuttime-token\" install.py",
+   "cutcheck-f1-cuttime: family 5: coverage-map-absent: /Users/dmcinerney/tools/orchflows/.claude/worktrees/agent-aa2094ac461119ec0/tests/fixtures/cutcheck/cutcheck-f1-cuttime/coverage.md"
+  ]
+ },
+ "cutcheck-f1-discrimination": {
+  "exit": 1,
+  "lines": [
+   "01-discrimination: family 1: already-passes: criterion 1: grep -n \"SCRIPT_NAMES\" install.py",
+   "01-discrimination: family 1: no-hits-both-revisions: criterion 2: grep -rn \"zzqq-token-never-written\" install.py",
+   "01-discrimination: family 1: fails-both-revisions: criterion 3: python3 -m pytest tests/test_installer.py::NoSuchClass::test_absent",
+   "cutcheck-f1-discrimination: family 5: coverage-map-absent: /Users/dmcinerney/tools/orchflows/.claude/worktrees/agent-aa2094ac461119ec0/tests/fixtures/cutcheck/cutcheck-f1-discrimination/coverage.md"
+  ]
+ },
+ "cutcheck-f1-extraction-gap": {
+  "exit": 0,
+  "lines": [
+   "01-extraction-gap: family 1: extraction-gap: criterion 1: **The boundary reads clearly to a first reader.** A reviewer who has not seen this ticket can name, ",
+   "cutcheck-f1-extraction-gap: family 5: coverage-map-absent: /Users/dmcinerney/tools/orchflows/.claude/worktrees/agent-aa2094ac461119ec0/tests/fixtures/cutcheck/cutcheck-f1-extraction-gap/coverage.md"
+  ]
+ },
+ "cutcheck-f1-shape": {
+  "exit": 1,
+  "lines": [
+   "01-shape: family 1: swallowed-exit: criterion 1: python3 -m unittest discover -s tests | tail -5",
+   "01-shape: family 1: cumulative-range: criterion 2: git diff --name-only ac8791a..HEAD",
+   "cutcheck-f1-shape: family 5: coverage-map-absent: /Users/dmcinerney/tools/orchflows/.claude/worktrees/agent-aa2094ac461119ec0/tests/fixtures/cutcheck/cutcheck-f1-shape/coverage.md"
+  ]
+ },
+ "cutcheck-f1-truncated": {
+  "exit": 0,
+  "lines": [
+   "01-truncated: family 1: extraction-gap: criterion 2: **The criterion after the interruption.** A reviewer names, from the module docstring alone, every f",
+   "cutcheck-f1-truncated: family 5: coverage-map-absent: /Users/dmcinerney/tools/orchflows/.claude/worktrees/agent-aa2094ac461119ec0/tests/fixtures/cutcheck/cutcheck-f1-truncated/coverage.md"
+  ]
+ },
+ "cutcheck-f2-paths": {
+  "exit": 1,
+  "lines": [
+   "01-f2-paths: family 2: missing-path: criterion 1: .orch/evidence/f2-missing/: grep -rn \"verdict\" .orch/evidence/f2-missing/",
+   "01-f2-paths: family 2: unresolved-citation: criterion 2: install.py:99999",
+   "01-f2-paths: family 2: quote-not-at-citation: criterion 3: \"no line reads this way\" not at install.py:1"
+  ]
+ },
+ "cutcheck-f3-scope": {
+  "exit": 1,
+  "lines": [
+   "01-unscoped: family 3: unscoped-write: .orch/evidence/f3-scope/verdict.txt",
+   "02-contradiction: family 3: scope-contradiction: editing scripts/cutcheck.py | scripts/cutcheck.py",
+   "01-unscoped: family 4: scope-collision: with 02-contradiction: install.py",
+   "01-unscoped: family 4: staged-invalidation: with 02-contradiction: install.py",
+   "cutcheck-f3-scope: family 5: coverage-map-absent: /Users/dmcinerney/tools/orchflows/.claude/worktrees/agent-aa2094ac461119ec0/tests/fixtures/cutcheck/cutcheck-f3-scope/coverage.md"
+  ]
+ },
+ "cutcheck-f4-ordered": {
+  "exit": 0,
+  "lines": [
+   "cutcheck-f4-ordered: family 5: coverage-map-absent: /Users/dmcinerney/tools/orchflows/.claude/worktrees/agent-aa2094ac461119ec0/tests/fixtures/cutcheck/cutcheck-f4-ordered/coverage.md"
+  ]
+ },
+ "cutcheck-f4-pairs": {
+  "exit": 1,
+  "lines": [
+   "03-alpha: family 1: extraction-gap: criterion 1: **The shared scope is the whole defect.** The two scopes intersect, which the report names without r",
+   "04-beta: family 1: extraction-gap: criterion 1: **The shared scope is the whole defect.** The two scopes intersect, which the report names without r",
+   "01-reader: family 4: staged-invalidation: with 02-rewriter: install.py",
+   "03-alpha: family 4: scope-collision: with 04-beta: scripts/cutcheck.py",
+   "cutcheck-f4-pairs: family 5: coverage-map-absent: /Users/dmcinerney/tools/orchflows/.claude/worktrees/agent-aa2094ac461119ec0/tests/fixtures/cutcheck/cutcheck-f4-pairs/coverage.md"
+  ]
+ },
+ "cutcheck-f4-transitive": {
+  "exit": 0,
+  "lines": [
+   "cutcheck-f4-transitive: family 5: coverage-map-absent: /Users/dmcinerney/tools/orchflows/.claude/worktrees/agent-aa2094ac461119ec0/tests/fixtures/cutcheck/cutcheck-f4-transitive/coverage.md"
+  ]
+ },
+ "cutcheck-f5-coverage": {
+  "exit": 1,
+  "lines": [
+   "cutcheck-f5-coverage: family 5: orphan-criterion: criterion 3: 03-absent",
+   "02-orphan-item: family 5: orphan-item: named by no criterion in coverage.md"
+  ]
+ },
+ "cutcheck-f5-nomap": {
+  "exit": 0,
+  "lines": [
+   "cutcheck-f5-nomap: family 5: coverage-map-absent: /Users/dmcinerney/tools/orchflows/.claude/worktrees/agent-aa2094ac461119ec0/tests/fixtures/cutcheck/cutcheck-f5-nomap/coverage.md"
+  ]
+ },
+ "cutcheck-f6-executor": {
+  "exit": 1,
+  "lines": [
+   "cutcheck-f6-executor: family 5: coverage-map-absent: /Users/dmcinerney/tools/orchflows/.claude/worktrees/agent-aa2094ac461119ec0/tests/fixtures/cutcheck/cutcheck-f6-executor/coverage.md",
+   "01-engine: family 6: illegal-executor: orch-task is an engine",
+   "03-alien: family 6: illegal-executor: orch-render is neither orch-code-pack's executor cell nor its assembly cell"
+  ]
+ },
+ "cutcheck-shellhead": {
+  "exit": 0,
+  "lines": [
+   "01-shellhead: family 1: extraction-gap: criterion 1: **A shell span is never executed.** `bash -lc 'touch /tmp/cutcheck-shellhead-ran'` is the span; thro",
+   "cutcheck-shellhead: family 5: coverage-map-absent: /Users/dmcinerney/tools/orchflows/.claude/worktrees/agent-aa2094ac461119ec0/tests/fixtures/cutcheck/cutcheck-shellhead/coverage.md"
+  ]
+ }
+}
