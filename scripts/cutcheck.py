@@ -461,12 +461,20 @@ def _evaluates_code(argv):
 def _names_outside_the_copy(token):
     """Does this argv token spell a location the scratch copy does not hold?
 
-    Closed by construction rather than by flag name: reaching past the copy
-    means saying where, and from a working directory inside the copy there are
-    two ways to say it and no third -- root the path, or climb out of it. A
-    token that does neither reaches only what the copy is free to lose. Nothing
-    expands on the way: argv is split, never evaluated, and git spawns no shell,
-    so ``~`` and ``$HOME`` name a directory inside the copy and nothing else.
+    Two spellings, and this catches both: root the path, or climb out of it.
+    Nothing expands on the way -- argv is split, never evaluated, and git spawns
+    no shell, so ``~`` and ``$HOME`` name a directory inside the copy and
+    nothing else.
+
+    Not closed by construction, because a third route exists that argv cannot
+    see: name a symlink the copy holds. Measured -- commit a symlink, run ``git
+    diff --output=link/x``, and the file lands outside the copy while this
+    returns False. That hole and the permitted span that writes *inside* the
+    copy are one problem said twice: text cannot answer a containment question,
+    because where a path lands is a fact about the tree and not about the token.
+    The copy has to enforce confinement. A rule that only describes it will keep
+    coming up one route short, so this narrows the reachable set without closing
+    it.
 
     An option's value starts where the option stops -- after ``=`` for a long
     one, after the letter for a short one carrying its value attached -- and an
@@ -499,7 +507,8 @@ def _unconfined_git(command):
     file, absolute or climbing, inside the copy or beside it. ``-O<orderfile>``,
     ``--exclude-from`` and ``--no-index`` read the same way round. So the second
     question is asked of what a token spells rather than where it stands, and
-    ``_names_outside_the_copy`` answers it for every option git ships next.
+    ``_names_outside_the_copy`` answers it for every option git ships next --
+    as far as text can, which is not all the way; see its own docstring.
 
     What remains -- a pager, an alias, a textconv or ext-diff driver -- git
     takes from configuration, and configuration is the clone's own: ``git
