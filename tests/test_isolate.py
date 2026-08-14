@@ -2,18 +2,21 @@
 
 import contextlib
 import io
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import isolate  # noqa: E402
+import state_root  # noqa: E402
 
 
 def git(repo, *args):
@@ -30,14 +33,20 @@ def write(path: Path, text: str):
     path.write_text(text, encoding="utf-8")
 
 
-class IsolateTest(unittest.TestCase):
-    """Each case builds a throwaway repository; none reads this one."""
+class IsolateFixture(unittest.TestCase):
+    """Each case builds a throwaway repository and a throwaway state sink;
+    none reads this repository or this machine's own sink."""
 
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp(prefix="isolate-test-"))
         self.addCleanup(shutil.rmtree, str(self.tmp), ignore_errors=True)
         self.repo = self.tmp / "repo"
         self.dest = self.tmp / "out"
+        self.sink = self.tmp / "sink"
+        self.sink.mkdir()
+        sink_env = mock.patch.dict(os.environ, {state_root.ENV_VAR: str(self.sink)})
+        sink_env.start()
+        self.addCleanup(sink_env.stop)
         self.repo.mkdir()
         git(self.repo, "init", "-q")
         git(self.repo, "config", "user.email", "t@example.invalid")
@@ -45,7 +54,6 @@ class IsolateTest(unittest.TestCase):
         write(self.repo / "kept.md", "committed\n")
         write(self.repo / "changed.md", "committed\n")
         write(self.repo / "gone.md", "committed\n")
-        write(self.repo / ".gitignore", ".orch/\n")
         git(self.repo, "add", "-A")
         git(self.repo, "commit", "-qm", "base")
 
@@ -54,6 +62,17 @@ class IsolateTest(unittest.TestCase):
         self.out, self.err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(self.out), contextlib.redirect_stderr(self.err):
             return isolate.main([str(self.dest), "--repo", str(self.repo)] + list(args))
+
+    def write_run(self, run: str, text: str = "state\n") -> Path:
+        """One run's worklog in the temporary sink, where the harness reads."""
+        write(self.sink / "runs" / run / "worklog.md", text)
+        return self.sink / "runs" / run
+
+    def copied(self, run: str) -> Path:
+        return self.dest / isolate.SINK_COPY / "runs" / run / "worklog.md"
+
+
+class IsolateTest(IsolateFixture):
 
     # --- the three the ticket names -----------------------------------
 
@@ -71,13 +90,10 @@ class IsolateTest(unittest.TestCase):
         self.assertFalse((self.dest / "gone.md").exists())
         self.assertEqual("committed\n", (self.dest / "kept.md").read_text())
 
-    def test_the_named_orch_run_directory_is_copied_though_git_ignores_it(self):
-        write(self.repo / ".orch" / "runs" / "R1" / "worklog.md", "state\n")
+    def test_the_named_run_is_copied_out_of_the_sink_git_never_held_it(self):
+        self.write_run("R1")
         self.assertEqual(0, self.run_isolate("--orch-run", "R1"))
-        self.assertEqual(
-            "state\n",
-            (self.dest / ".orch" / "runs" / "R1" / "worklog.md").read_text(),
-        )
+        self.assertEqual("state\n", self.copied("R1").read_text())
 
     # --- the overlay is real, not decorative --------------------------
 
@@ -143,24 +159,25 @@ class IsolateTest(unittest.TestCase):
         self.assertEqual(1, self.run_isolate("--orch-run", "absent"))
 
     def test_an_orch_run_escaping_the_run_directory_is_refused(self):
-        """`--orch-run ../../secret` wrote outside `.orch/runs/` and said 0 problems."""
-        write(self.repo / ".orch" / "runs" / "R1" / "worklog.md", "state\n")
+        """`--orch-run ../../secret` wrote outside the runs root and said 0
+        problems."""
+        self.write_run("R1")
         write(self.repo / "docs" / "a.md", "committed\n")
         git(self.repo, "add", "-A")
         git(self.repo, "commit", "-qm", "docs")
-        write(self.repo / "secret" / "s.md", "private\n")
+        write(self.sink / "secret" / "s.md", "private\n")
         self.assertEqual(1, self.run_isolate("--orch-run", "../../secret"))
         self.assertFalse((self.dest / "secret").exists())
         # The sibling variant raised an unhandled FileExistsError instead.
         self.assertEqual(1, self.run_isolate("--orch-run", "../../docs", "--force"))
 
     def test_a_run_directory_it_cannot_copy_is_refused_by_name(self):
-        """A file where the run directory goes: a named refusal, not a traceback."""
-        write(self.repo / ".orch" / "runs" / "R1", "a file, not a directory\n")
-        git(self.repo, "add", "-f", ".orch/runs/R1")
-        git(self.repo, "commit", "-qm", "run path as a file")
-        (self.repo / ".orch" / "runs" / "R1").unlink()
-        write(self.repo / ".orch" / "runs" / "R1" / "worklog.md", "state\n")
+        """A file where the snapshot goes: a named refusal, not a traceback."""
+        target = "{}/runs/R1".format(isolate.SINK_COPY)
+        write(self.repo / target, "a file, not a directory\n")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "snapshot path as a file")
+        self.write_run("R1")
         self.assertEqual(1, self.run_isolate("--orch-run", "R1"))
         self.assertIn("isolate:", self.err.getvalue())
 
@@ -185,6 +202,105 @@ class IsolateTest(unittest.TestCase):
         self.assertEqual(0, self.run_isolate())
         self.assertEqual(1, self.run_isolate())
         self.assertEqual(0, self.run_isolate("--force"))
+
+
+class TestIsolateCopiesFromSink(IsolateFixture):
+    """Item 05 criterion 3. The run state a check reads in the isolated tree
+    comes out of the one user-scope sink, not out of the repository being
+    exported -- which, after this run, holds none."""
+
+    def test_a_run_in_the_sink_alone_is_copied_into_the_tree(self):
+        self.write_run("20260814T124222Z-centralize-state", "one worklog line\n")
+        self.assertFalse((self.repo / ".orch").exists())
+
+        self.assertEqual(
+            0, self.run_isolate("--orch-run", "20260814T124222Z-centralize-state")
+        )
+
+        self.assertEqual(
+            "one worklog line\n",
+            self.copied("20260814T124222Z-centralize-state").read_text(),
+        )
+
+    def test_the_snapshot_keeps_the_sinks_own_layout(self):
+        """`ORCHFLOWS_STATE_HOME` pointed at the snapshot resolves the run
+        exactly as it resolves it in the real sink, so a check in the tree
+        needs no second recipe."""
+
+        source = self.write_run("R1")
+        self.assertEqual(0, self.run_isolate("--orch-run", "R1"))
+
+        snapshot = self.dest / isolate.SINK_COPY
+        with mock.patch.dict(os.environ, {state_root.ENV_VAR: str(snapshot)}):
+            self.assertEqual(snapshot / "runs" / "R1", state_root.runs_root() / "R1")
+        self.assertEqual(
+            source.relative_to(self.sink), (snapshot / "runs" / "R1").relative_to(snapshot)
+        )
+
+    def test_the_report_names_where_the_snapshot_landed(self):
+        self.write_run("R1")
+        self.assertEqual(0, self.run_isolate("--orch-run", "R1"))
+        self.assertIn(isolate.SINK_COPY, self.out.getvalue())
+        # Nothing copied, nothing promised: a named empty snapshot invites a
+        # check to point at one.
+        self.assertEqual(0, self.run_isolate("--force"))
+        self.assertNotIn(isolate.SINK_COPY, self.out.getvalue())
+
+    def test_several_runs_are_copied_and_each_keeps_its_own_directory(self):
+        self.write_run("R1", "first\n")
+        self.write_run("R2", "second\n")
+        self.assertEqual(0, self.run_isolate("--orch-run", "R1", "--orch-run", "R2"))
+        self.assertEqual("first\n", self.copied("R1").read_text())
+        self.assertEqual("second\n", self.copied("R2").read_text())
+
+    def test_a_run_absent_from_the_sink_is_the_named_refusal(self):
+        """Not a silent empty copy: a tree missing the state a check reads
+        grades the check against nothing and calls it green."""
+
+        self.write_run("R1")
+
+        self.assertEqual(1, self.run_isolate("--orch-run", "R2"))
+
+        self.assertIn("no run directory in the state sink", self.err.getvalue())
+        self.assertIn("runs/R2", self.err.getvalue())
+        self.assertFalse((self.dest / isolate.SINK_COPY).exists())
+
+    def test_a_run_present_only_in_the_repository_is_refused(self):
+        """The old source, kept on disk by item 08's copy-never-move rule, is
+        no longer a source: reading it would resurrect the per-repository
+        state this run removes."""
+
+        write(self.repo / ".orch" / "runs" / "R1" / "worklog.md", "stale\n")
+
+        self.assertEqual(1, self.run_isolate("--orch-run", "R1"))
+
+        self.assertIn("no run directory in the state sink", self.err.getvalue())
+
+    def test_the_sink_is_read_and_never_written(self):
+        self.write_run("R1")
+        before = sorted(
+            (p.relative_to(self.sink).as_posix(), p.is_dir())
+            for p in self.sink.rglob("*")
+        )
+
+        self.assertEqual(0, self.run_isolate("--orch-run", "R1"))
+
+        self.assertEqual(
+            before,
+            sorted(
+                (p.relative_to(self.sink).as_posix(), p.is_dir())
+                for p in self.sink.rglob("*")
+            ),
+        )
+
+    def test_the_source_names_no_state_path_of_its_own(self):
+        """Item 05 criterion 6 for this file: the sink comes from the
+        resolver, and no `.orch` literal composes a path here."""
+
+        source = (ROOT / "scripts" / "isolate.py").read_text(encoding="utf-8")
+        self.assertIn("state_root.runs_root()", source)
+        self.assertNotIn('".orch/runs"', source)
+        self.assertNotIn('".orch"', source)
 
 
 if __name__ == "__main__":

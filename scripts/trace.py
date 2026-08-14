@@ -8,8 +8,9 @@ where the source data carries them. ``request`` and ``narration`` carry
 ``text`` (user prompt / agent's user-visible explanation), clipped at
 ``TEXT_CLIP`` with a ``truncated`` flag; harness-injected text
 (system reminders, command wrappers) is never a request. The trace also
-carries top-level ``runs_touched``: run ids harvested from ``.orch``
-paths in tool calls, the join key to run state. Never writes under
+carries top-level ``runs_touched``: run ids harvested from run-state
+paths in tool calls -- the sink's and, for a session predating the
+migration, the repository's -- the join key to run state. Never writes under
 ``~/.claude`` or
 ``~/.codex``. Never raises past ``main`` and always exits 0 -- host
 schemas drift, and nothing downstream may depend on this parser being
@@ -29,7 +30,7 @@ Usage:
     trace.py --codex <rollout.jsonl-or-dir>        -> trace JSON on stdout
     trace.py --claude <path> --mermaid             -> Mermaid flowchart
     trace.py --codex <path> --mermaid              -> Mermaid flowchart
-    trace.py --observations <trace.json...> [--run-state <repo>]
+    trace.py --observations <trace.json...> [--run-state <root>]
                                                     -> one finding per
                                                        line, friction-entry
                                                        shape, on stdout
@@ -66,7 +67,16 @@ HOST_CODEX = "codex"
 EXIT_CODE_RE = re.compile(r"[Ee]xit code:?\s*(-?\d+)")
 SHELL_COMMAND_RE = re.compile(r'command["\']?\s*:\s*"((?:[^"\\]|\\.)*)"')
 PACK_KIND_RE = re.compile(r"pack `orch-([a-z]+)-pack`")
-RUN_ID_RE = re.compile(r"\.orch[/\\](?:runs|tickets)[/\\]([A-Za-z0-9][A-Za-z0-9._-]*)")
+# Both roots a run-state path can carry. The sink is where every writer
+# lands now (``scripts/state_root.py``); the repository shape stays matched
+# because a trace may cover a session that predates the migration, and
+# because item 08 copies rather than moves, so both exist on disk at once.
+# ``\.orch`` cannot swallow ``.orchflows``: the separator after it is
+# required, and ``.orchflows`` has an ``f`` there.
+STATE_ROOT_RE = r"(?:\.orch|\.orchflows[/\\]state)"
+RUN_ID_RE = re.compile(
+    STATE_ROOT_RE + r"[/\\](?:runs|tickets)[/\\]([A-Za-z0-9][A-Za-z0-9._-]*)"
+)
 TEXT_CLIP = 2000  # chars kept of request/narration text; one owner
 HARNESS_TEXT_MARKERS = ("<system-reminder>", "<command-name>", "<local-command-stdout>")
 CODE_EXTENSIONS = (".py", ".js", ".ts", ".tsx", ".jsx", ".go", ".rs", ".java", ".rb", ".c", ".cpp", ".sh", ".ps1")
@@ -75,7 +85,7 @@ CONTENT_EXTENSIONS = (".md", ".docx", ".txt")
 # observed so neither declaration false-positives. Research has no
 # extension signal at all and is never inferred.
 DESIGN_EXTENSIONS = (".html", ".css", ".scss", ".sass", ".less", ".svg")
-ORCH_STATE_RE = re.compile(r"\.orch[/\\](?:runs|tickets)[/\\]")
+ORCH_STATE_RE = re.compile(STATE_ROOT_RE + r"[/\\](?:runs|tickets)[/\\]")
 
 CODEX_BOILERPLATE_MARKERS = (
     "<recommended_plugins>",
@@ -715,9 +725,25 @@ def _find_repeated_tool_failures(traces):
     return findings
 
 
+def _spec_files(run_state: Path):
+    """Every run's spec under ``run_state``, whichever root it is.
+
+    A sink holds ``runs/<id>/``; a repository whose state predates the
+    migration holds ``.orch/runs/<id>/``, and item 08 copies rather than
+    moves, so a caller may hand either. Both are read for the same reason
+    ``RUN_ID_RE`` matches both.
+    """
+
+    found = {}
+    for pattern in ("runs/*/spec-*.md", ".orch/runs/*/spec-*.md"):
+        for spec_file in run_state.glob(pattern):
+            found[str(spec_file)] = spec_file
+    return list(found.values())
+
+
 def _declared_pack_kinds(run_state: Path, run_ids=None):
     kinds = set()
-    for spec_file in sorted(run_state.glob(".orch/runs/*/spec-*.md")):
+    for spec_file in sorted(_spec_files(run_state)):
         if run_ids is not None and spec_file.parent.name not in run_ids:
             continue
         try:
@@ -849,7 +875,7 @@ def build_parser():
     parser.add_argument("--claude", metavar="PATH", help="extract a trace from one Claude Code session")
     parser.add_argument("--codex", metavar="PATH", help="extract a trace from one Codex thread tree")
     parser.add_argument("--observations", nargs="+", metavar="TRACE", help="mine already-extracted trace JSON files")
-    parser.add_argument("--run-state", metavar="REPO", help="repo root, for pack/deliverable-kind misrouting checks")
+    parser.add_argument("--run-state", metavar="ROOT", help="state sink root (or a repository still holding one), for pack/deliverable-kind misrouting checks")
     parser.add_argument("--mermaid", action="store_true", help="render the extracted trace as a Mermaid flowchart")
     return parser
 

@@ -336,6 +336,131 @@ class TestTraceV2(unittest.TestCase):
             self.assertEqual([], [f for f in findings if f["source"] == "miner"])
 
 
+class TestTraceHarvestsSinkPaths(unittest.TestCase):
+    """Item 05 criterion 4. `runs_touched` is the join key between a trace
+    and run state, so it has to survive the move: the sink is where every
+    writer lands now, and a trace may cover a session that predates the
+    migration, whose paths are the repository's."""
+
+    SINK = "/Users/x/.orchflows/state"
+    RUN = "20260814T124222Z-centralize-state"
+
+    def harvest(self, tmp, *paths):
+        main = Path(tmp) / "session.jsonl"
+        main.write_text(
+            json.dumps({
+                "type": "assistant",
+                "timestamp": "2026-01-01T00:00:00Z",
+                "message": {"content": [
+                    {"type": "tool_use", "id": "t%d" % i, "name": "Read",
+                     "input": {"file_path": path}}
+                    for i, path in enumerate(paths)
+                ]},
+            }),
+            encoding="utf-8",
+        )
+        return trace.extract_claude(main)["runs_touched"]
+
+    def test_a_sink_path_yields_the_run_id(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(
+                [self.RUN],
+                self.harvest(
+                    tmp,
+                    "{0}/runs/{1}/worklog.md".format(self.SINK, self.RUN),
+                    "{0}/tickets/{1}/05-readers-follow-sink.md".format(
+                        self.SINK, self.RUN
+                    ),
+                ),
+            )
+
+    def test_a_windows_sink_path_yields_the_run_id(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(
+                [self.RUN],
+                self.harvest(
+                    tmp,
+                    "C:\\Users\\x\\.orchflows\\state\\runs\\{0}\\run.json".format(
+                        self.RUN
+                    ),
+                ),
+            )
+
+    def test_a_legacy_repository_path_still_yields_the_run_id(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(
+                [self.RUN],
+                self.harvest(tmp, "/repo/.orch/runs/{0}/spec.md".format(self.RUN)),
+            )
+
+    def test_both_shapes_in_one_transcript_yield_one_id(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(
+                [self.RUN],
+                self.harvest(
+                    tmp,
+                    "/repo/.orch/tickets/{0}/01.md".format(self.RUN),
+                    "{0}/tickets/{1}/01.md".format(self.SINK, self.RUN),
+                    "{0}/runs/{1}/worklog.md".format(self.SINK, self.RUN),
+                ),
+            )
+
+    def test_the_sink_branch_never_swallows_the_repository_branch(self):
+        """`.orch` is a string prefix of `.orchflows`; the separator after
+        the root is what keeps the two apart, and a path under one is never
+        read as a path under the other."""
+
+        self.assertIsNone(trace.RUN_ID_RE.search("/repo/.orchestrator/runs/R1/x.md"))
+        self.assertIsNone(trace.RUN_ID_RE.search("/x/.orchflows/runs/R1/x.md"))
+        self.assertIsNone(trace.RUN_ID_RE.search("/x/.orchflows/state/R1/x.md"))
+        for path in ("/x/.orchflows/state/runs/R1/x.md", "/repo/.orch/runs/R1/x.md"):
+            match = trace.RUN_ID_RE.search(path)
+            self.assertIsNotNone(match, path)
+            self.assertEqual("R1", match.group(1), path)
+
+    def test_state_bookkeeping_under_either_root_is_not_deliverable_work(self):
+        """The same widening on the misrouting side: writing a ticket is
+        bookkeeping wherever the ticket lives, so it contributes no kind."""
+
+        code = {"type": "tool_call", "command": "Edit:/repo/src/a.py",
+                "exit": 0, "ts": "2026-01-01T00:00:00Z"}
+        for root in (self.SINK, "/repo/.orch"):
+            bookkeeping = {
+                "type": "tool_call",
+                "command": "Edit:{0}/tickets/{1}/T1.md".format(root, self.RUN),
+                "exit": 0,
+                "ts": "2026-01-01T00:01:00Z",
+            }
+            self.assertEqual(
+                set(), trace._observed_kinds({"events": [bookkeeping]}), root
+            )
+            self.assertEqual(
+                {"code"},
+                trace._observed_kinds({"events": [bookkeeping, code]}),
+                root,
+            )
+
+    def test_a_spec_is_found_under_a_sink_and_under_a_repository(self):
+        """`--run-state` may name either root, because item 08 copies rather
+        than moves and both exist on disk at once."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sink, repo = Path(tmp) / "sink", Path(tmp) / "repo"
+            for base, run in ((sink / "runs", "sinkrun"),
+                              (repo / ".orch" / "runs", "reporun")):
+                (base / run).mkdir(parents=True)
+                (base / run / "spec-deliver.md").write_text(
+                    "stamped pack `orch-code-pack`\n", encoding="utf-8"
+                )
+
+            self.assertEqual({"code"}, trace._declared_pack_kinds(sink))
+            self.assertEqual({"code"}, trace._declared_pack_kinds(repo))
+            self.assertEqual(
+                ["spec-deliver.md"], [p.name for p in trace._spec_files(sink)]
+            )
+            self.assertEqual(set(), trace._declared_pack_kinds(Path(tmp) / "absent"))
+
+
 class TestClaudeBoundaryInputs(unittest.TestCase):
     """Boundary hardening: empty file, BOM-only, oversized line, an entirely
     empty transcript directory, and malformed JSON mixed with clean lines."""

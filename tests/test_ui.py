@@ -1,5 +1,5 @@
-"""Reader UI: main-checkout resolution, discovery, escaping, empty states,
-status presentation, verification degradation, the elapsed meter, and the
+"""Reader UI: sink resolution, discovery, escaping, empty states, status
+presentation, verification degradation, the elapsed meter, and the
 read-only, no-network and loopback-only guarantees."""
 
 import ast
@@ -18,6 +18,7 @@ import threading
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest import mock
 from unittest.mock import patch
 from urllib.parse import quote
 
@@ -30,9 +31,11 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import scripts.state_root as state_root  # noqa: E402
 import scripts.tickets as tickets_mod  # noqa: E402
 import scripts.ui as ui  # noqa: E402
 
+SINK_ENV_VAR = "ORCHFLOWS_STATE_HOME"
 UI_PY = ROOT / "scripts" / "ui.py"
 WORK_ITEM_CONTRACT = ROOT / "contracts" / "work-item.md"
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "ui"
@@ -136,23 +139,23 @@ def contract_sections() -> tuple:
 
 
 def copy_logs(source: Path, dest: Path):
-    """One fixture log directory materialized under a temporary ``.orch/``."""
+    """One fixture log directory materialized under a temporary sink."""
 
     dest.mkdir(parents=True)
     for src in sorted(source.glob("*.jsonl")):
         shutil.copyfile(str(src), str(dest / src.name))
 
 
-def make_checkout(tmp: Path, runs=FIXTURE_RUNS, friction=True, events=True) -> Path:
-    """A main checkout: a ``.git`` directory plus ``.orch/tickets/<run>/``
-    materialized from the flat tracked fixtures, one run with no tickets
-    (git tracks no empty directory, so it is built here), the friction log
-    and the deferred hooks seam's event log. ``runs`` narrows the corpus for
-    a test that needs a run set the whole corpus does not exhibit."""
+def make_sink(tmp: Path, runs=FIXTURE_RUNS, friction=True, events=True) -> Path:
+    """A state sink: ``tickets/<run>/`` materialized from the flat tracked
+    fixtures, one run with no tickets (git tracks no empty directory, so it is
+    built here), the friction log and the deferred hooks seam's event log.
+    ``runs`` narrows the corpus for a test that needs a run set the whole
+    corpus does not exhibit. No ``.git`` anywhere: the sink is not in a
+    repository, and nothing here may depend on one."""
 
-    root = tmp / "main"
-    (root / ".git").mkdir(parents=True)
-    tickets = root / ".orch" / "tickets"
+    root = tmp / "sink"
+    tickets = root / "tickets"
     for run in runs:
         dest = tickets / run
         dest.mkdir(parents=True)
@@ -160,22 +163,10 @@ def make_checkout(tmp: Path, runs=FIXTURE_RUNS, friction=True, events=True) -> P
             shutil.copyfile(str(src), str(dest / src.name))
     (tickets / EMPTY_RUN).mkdir(parents=True)
     if friction:
-        copy_logs(FIXTURES / "friction", root / ".orch" / "friction")
+        copy_logs(FIXTURES / "friction", root / "friction")
     if events:
-        copy_logs(FIXTURES / "events", root / ".orch" / "events")
+        copy_logs(FIXTURES / "events", root / "events")
     return root
-
-
-def make_worktree(tmp: Path, main_root: Path) -> Path:
-    """A linked worktree: a ``.git`` *file* pointing at
-    ``<main>/.git/worktrees/<name>``, the shape ``git worktree add`` writes."""
-
-    worktree = tmp / "wt"
-    worktree.mkdir()
-    gitdir = main_root / ".git" / "worktrees" / "wt"
-    gitdir.mkdir(parents=True)
-    (worktree / ".git").write_text("gitdir: {0}\n".format(gitdir), encoding="utf-8")
-    return worktree
 
 
 def fixture_agent_files() -> list:
@@ -530,28 +521,77 @@ def snapshot(tree: Path) -> dict:
 
 
 class TestRootResolution(unittest.TestCase):
-    """Spec criterion 5."""
+    """Spec criterion 5, at the sink: what the viewer reads no longer depends
+    on where it was launched, because run state is not in the repository."""
 
-    def test_worktree_and_main_checkout_yield_identical_ticket_paths(self):
+    def test_every_workspace_reads_the_one_sink(self):
+        """What the worktree-versus-main-checkout case used to prove, now
+        proved of the thing that decides it. The viewer is run from a main
+        checkout, from a linked worktree of it, and from a directory in no
+        repository at all: the sink resolves the same three times, and the
+        ticket set it yields is the same set."""
+
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            main = make_checkout(tmp)
-            worktree = make_worktree(tmp, main)
+            sink = make_sink(tmp)
+            main = tmp / "main"
+            (main / ".git" / "worktrees" / "wt").mkdir(parents=True)
+            worktree = tmp / "wt"
+            worktree.mkdir()
+            (worktree / ".git").write_text(
+                "gitdir: {0}\n".format(main / ".git" / "worktrees" / "wt"),
+                encoding="utf-8",
+            )
+            nowhere = tmp / "nowhere"
+            nowhere.mkdir()
 
-            from_main = ui.discover(main)
-            from_worktree = ui.discover(worktree)
+            expected = ticket_paths(ui.discover(sink))
+            self.assertEqual(fixture_ticket_count(), len(expected), expected)
+            self.assertTrue(expected)
+            with mock.patch.dict(os.environ, {SINK_ENV_VAR: str(sink)}):
+                for launched_from in (main, worktree, nowhere):
+                    with self.subTest(launched_from.name):
+                        cwd = os.getcwd()
+                        os.chdir(str(launched_from))
+                        try:
+                            root = ui.default_root()
+                        finally:
+                            os.chdir(cwd)
+                        self.assertEqual(sink, root)
+                        self.assertEqual(expected, ticket_paths(ui.discover(root)))
 
-            self.assertEqual(main.resolve(), from_worktree["root"])
-            paths = ticket_paths(from_main)
-            self.assertEqual(fixture_ticket_count(), len(paths), paths)
-            self.assertTrue(paths)
-            self.assertEqual(paths, ticket_paths(from_worktree))
-            for path in ticket_paths(from_worktree):
-                self.assertNotIn(str(worktree.resolve()), path)
+    def test_the_default_root_is_the_resolvers_sink_and_root_overrides_it(self):
+        """One owner for the path (`rules/visibility.md` §3): `ui.py` states
+        no sink path of its own, and `--root` still points the viewer at a
+        copy of a sink."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = make_sink(tmp)
+            with mock.patch.dict(os.environ, {SINK_ENV_VAR: str(sink)}):
+                self.assertEqual(state_root.state_root(), ui.default_root())
+                self.assertEqual(sink, ui.default_root())
+            elsewhere = tmp / "elsewhere"
+            shutil.copytree(str(sink), str(elsewhere))
+            self.assertEqual(
+                ticket_paths(ui.discover(sink)),
+                [p.replace(str(elsewhere), str(sink))
+                 for p in ticket_paths(ui.discover(elsewhere))],
+            )
+
+    def test_the_source_composes_no_sink_path_of_its_own(self):
+        """Criterion 6 for this file: the only `.orch` left in `scripts/ui.py`
+        is prose or the installed `~/.orchflows/bin` path, never a joined
+        run-state path."""
+
+        source = UI_PY.read_text(encoding="utf-8")
+        self.assertNotIn('".orch"', source)
+        self.assertNotIn("'.orch'", source)
+        self.assertIn("state_root.state_root()", source)
 
     def test_every_run_directory_is_discovered_including_the_empty_one(self):
         with tempfile.TemporaryDirectory() as tmp:
-            discovery = ui.discover(make_checkout(Path(tmp)))
+            discovery = ui.discover(make_sink(Path(tmp)))
             self.assertEqual(
                 sorted(FIXTURE_RUNS + (EMPTY_RUN,)),
                 [run["run"] for run in discovery["runs"]],
@@ -563,12 +603,121 @@ class TestRootResolution(unittest.TestCase):
             )
 
 
+class TestUiResolvesSink(unittest.TestCase):
+    """Item 05 criterion 2. The renderer's three data trees now hang off the
+    sink, and the two properties that made it safe against `.orch/` -- it
+    writes nothing, and it resolves no ticket outside the tickets root -- are
+    re-proved against the sink rather than assumed to have travelled."""
+
+    def test_the_three_streams_render_from_a_sink(self):
+        """Tickets, friction and events, each read from its sink-relative
+        directory: no route falls back to a repository."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = make_sink(Path(tmp))
+
+            status, index = ui.render_route(sink, "/")
+            self.assertEqual(200, status)
+            for run in FIXTURE_RUNS + (EMPTY_RUN,):
+                self.assertNotEqual("", section_for(index, run), run)
+
+            status, friction = ui.render_route(sink, "/friction")
+            self.assertEqual(200, status)
+            self.assertNotIn(ui.EMPTY_NO_FRICTION, friction)
+
+            # `run-gamma` is the one fixture run carrying an event log.
+            status, graph = ui.render_route(sink, graph_url("run-gamma"))
+            self.assertEqual(200, status)
+            self.assertIn("<h2>events</h2>", graph)
+
+    def test_a_sink_missing_a_stream_still_renders_the_other_two(self):
+        # The three directories are independent: `state_root` creates the
+        # sink, and whichever writer runs first creates its own subtree.
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = make_sink(Path(tmp), friction=False, events=False)
+
+            self.assertFalse((sink / "friction").exists())
+            status, page = ui.render_route(sink, "/friction")
+
+            self.assertEqual(200, status)
+            self.assertIn(ui.EMPTY_NO_FRICTION, page)
+            self.assertEqual(200, ui.render_route(sink, "/")[0])
+            self.assertEqual(200, ui.render_route(sink, graph_url("run-gamma"))[0])
+
+    def test_a_full_render_leaves_the_sink_byte_for_byte_unchanged(self):
+        """`scripts/ui.py:6` against the sink: every route, then the same
+        recursive listing. The renderer opens nothing for writing and makes
+        no directory, so a viewer left running never mutates run state."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = make_sink(Path(tmp))
+            transcripts = make_transcripts(Path(tmp))
+            before = snapshot(sink)
+            self.assertTrue(before)
+
+            for url in every_route():
+                status, page = ui.render_route(sink, url, transcripts)
+                self.assertIn(status, (200, 404), url)
+                self.assertTrue(page, url)
+
+            self.assertEqual(before, snapshot(sink))
+
+    def test_an_absent_sink_is_the_named_empty_state_not_a_traceback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            absent = Path(tmp) / "never-written"
+
+            for url in ("/", "/friction", graph_url("run-alpha")):
+                with self.subTest(url):
+                    status, page = ui.render_route(absent, url)
+                    # A run absent from an absent sink is the same named 404
+                    # a run absent from a populated one gets.
+                    self.assertIn(status, (200, 404))
+                    self.assertNotIn("Traceback", page)
+            self.assertIn(ui.EMPTY_NO_SINK, ui.render_route(absent, "/")[1])
+            self.assertFalse(absent.exists())
+
+    def test_no_ticket_resolves_outside_the_sinks_tickets_root(self):
+        """`scripts/ui.py:648` at the sink. The secret sits beside the
+        tickets root, reachable by a plain join and not by this one."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = make_sink(tmp)
+            secret = sink / "secret.md"
+            secret.write_text("id: S1\n", encoding="utf-8")
+            self.assertTrue((sink / "tickets" / ".." / "secret.md").exists())
+
+            for run, ticket_id in (
+                ("..", "secret"),
+                ("run-alpha", "../../secret"),
+                ("../..", "secret"),
+            ):
+                with self.subTest(run + "/" + ticket_id):
+                    self.assertIsNone(ui.find_ticket(sink, run, ticket_id))
+            self.assertIsNotNone(ui.find_ticket(sink, "run-alpha", "A1"))
+
+    def test_the_containment_root_moved_with_the_tickets_root(self):
+        # A guard still anchored to the old parent would admit anything under
+        # the sink, `secret.md` included. It is refused above; here the sink's
+        # own parent is refused too, so the root really is `<sink>/tickets`.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = make_sink(tmp)
+            (tmp / "outside.md").write_text("id: O1\n", encoding="utf-8")
+
+            self.assertIsNone(ui.find_ticket(sink, "../..", "outside"))
+            self.assertEqual(
+                (sink / "tickets" / "run-alpha" / "A1.md").resolve(),
+                ui._in_tree(sink / "tickets", "run-alpha", "A1.md"),
+            )
+
+
 class TestIndexPage(unittest.TestCase):
     """The objective: one page listing every run and its tickets."""
 
     def test_index_lists_every_run_with_each_ticket_id_status_and_executor(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             status, page = ui.render_route(main, "/")
 
             self.assertEqual(200, status)
@@ -584,7 +733,7 @@ class TestIndexPage(unittest.TestCase):
 
     def test_unknown_route_is_404_with_the_requested_path_escaped(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             status, page = ui.render_route(main, "/<script>x</script>")
 
             self.assertEqual(404, status)
@@ -600,7 +749,7 @@ class TestEscaping(unittest.TestCase):
         self.assertIn(PAYLOAD, source)
 
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             _, page = ui.render_route(main, "/")
 
             self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", row_for(page, "A2"))
@@ -608,7 +757,7 @@ class TestEscaping(unittest.TestCase):
 
     def test_the_detail_page_escapes_the_same_payload(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             status, page = ui.render_route(main, detail_url("run-alpha", "A2"))
 
             self.assertEqual(200, status)
@@ -619,30 +768,28 @@ class TestEscaping(unittest.TestCase):
 class TestEmptyStates(unittest.TestCase):
     """Spec criterion 13."""
 
-    def test_root_with_no_orch_directory_renders_a_named_empty_state(self):
+    def test_absent_sink_renders_a_named_empty_state(self):
         with tempfile.TemporaryDirectory() as tmp:
-            bare = Path(tmp) / "bare"
-            (bare / ".git").mkdir(parents=True)
+            absent = Path(tmp) / "no-sink-here"
 
-            status, page = ui.render_route(bare, "/")
+            status, page = ui.render_route(absent, "/")
 
             self.assertEqual(200, status)
-            self.assertIn("no .orch directory under this root", page)
+            self.assertIn("no state sink at this root", page)
 
-    def test_orch_directory_with_no_tickets_tree_renders_a_named_empty_state(self):
+    def test_sink_with_no_tickets_tree_renders_a_named_empty_state(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "friction-only"
-            (root / ".git").mkdir(parents=True)
-            (root / ".orch" / "friction").mkdir(parents=True)
+            (root / "friction").mkdir(parents=True)
 
             status, page = ui.render_route(root, "/")
 
             self.assertEqual(200, status)
-            self.assertIn("no runs under .orch/tickets", page)
+            self.assertIn("no runs under this sink", page)
 
     def test_run_directory_with_zero_tickets_renders_a_named_empty_state(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             _, page = ui.render_route(main, "/")
 
             self.assertIn("no tickets in this run", section_for(page, EMPTY_RUN))
@@ -650,7 +797,7 @@ class TestEmptyStates(unittest.TestCase):
 
     def test_ticket_omitting_optional_data_renders_named_empty_states(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             _, page = ui.render_route(main, "/")
 
             degenerate = row_for(page, "B1")
@@ -762,7 +909,7 @@ class TestStatusRendering(unittest.TestCase):
 
     def index(self) -> str:
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             status, page = ui.render_route(main, "/")
             self.assertEqual(200, status)
             return page
@@ -872,7 +1019,7 @@ class TestTicketDetail(unittest.TestCase):
 
     def test_the_index_links_every_ticket_to_a_detail_page_that_serves(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             _, index = ui.render_route(main, "/")
 
             self.assertIn('href="/ticket?run=run-gamma&amp;id=G1"', row_for(index, "G1"))
@@ -883,7 +1030,7 @@ class TestTicketDetail(unittest.TestCase):
 
     def test_the_table_shape_renders_every_verdict_row_with_a_count(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             block = block_for(self.detail(main, "run-gamma", "G1"), "verification")
 
@@ -894,7 +1041,7 @@ class TestTicketDetail(unittest.TestCase):
 
     def test_the_prose_shape_renders_unparsed_verbatim_and_carries_no_count(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             page = self.detail(main, "run-gamma", "G2")
             block = block_for(page, "verification")
@@ -907,7 +1054,7 @@ class TestTicketDetail(unittest.TestCase):
 
     def test_an_unresolvable_ticket_is_404_with_both_values_escaped(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             status, page = ui.render_route(main, detail_url("run-gamma", "<script>x"))
 
@@ -917,8 +1064,8 @@ class TestTicketDetail(unittest.TestCase):
 
     def test_a_query_that_climbs_out_of_the_tickets_tree_resolves_to_nothing(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
-            outside = main / ".orch" / "secret.md"
+            main = make_sink(Path(tmp))
+            outside = main / "secret.md"
             outside.write_text(
                 "---\nid: secret\n---\n\n## Objective\n\nOUTSIDE-THE-TICKETS-TREE\n",
                 encoding="utf-8",
@@ -974,7 +1121,7 @@ class TestRefusedNames(unittest.TestCase):
 
     def test_a_refused_name_is_a_named_empty_answer_never_an_exception(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             for name in REFUSED_NAMES:
                 self.assertIsNone(ui.find_ticket(main, name, "G1"), ascii(name))
@@ -989,7 +1136,7 @@ class TestRefusedNames(unittest.TestCase):
 
     def test_every_refused_name_renders_a_404_page(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             for url in self.urls():
                 status, page = ui.render_route(main, url)
@@ -1003,7 +1150,7 @@ class TestRefusedNames(unittest.TestCase):
         # of `socketserver` discloses the absolute tickets path the
         # silenced `log_message` exists to withhold.
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             with serving(main) as server:
                 for url in self.urls():
                     status, _headers, page = fetch(server, url)
@@ -1042,7 +1189,7 @@ class TestSectionRendering(unittest.TestCase):
 
     def test_only_the_sections_the_ticket_carries_are_rendered(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             page = self.detail(main, "run-gamma", "G5")
 
@@ -1052,7 +1199,7 @@ class TestSectionRendering(unittest.TestCase):
 
     def test_a_section_name_outside_the_contract_set_is_still_rendered(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             page = self.detail(main, "run-gamma", "G7")
 
@@ -1062,7 +1209,7 @@ class TestSectionRendering(unittest.TestCase):
 
     def test_a_present_but_empty_section_is_named_rather_than_blank(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             page = self.detail(main, "run-gamma", "G7")
             after = page.split("<h2>Result</h2>")[1].split("</section>")[0]
@@ -1071,7 +1218,7 @@ class TestSectionRendering(unittest.TestCase):
 
     def test_sections_render_in_the_order_the_ticket_carries_them(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             page = self.detail(main, "run-gamma", "G7")
 
@@ -1135,7 +1282,7 @@ class TestElapsedMeter(unittest.TestCase):
 
     def claim_line(self, ticket_id: str) -> tuple:
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             status, page = ui.render_route(main, detail_url("run-gamma", ticket_id))
             self.assertEqual(200, status, ticket_id)
             return block_for(page, "claim", "</p>"), page
@@ -1273,7 +1420,7 @@ class TestGraphLayout(unittest.TestCase):
 
 class TestGraphDiagnostics(unittest.TestCase):
     """Spec criterion 7. Nothing on the write path proves a `depends_on` set
-    is a DAG, and `.orch/` is untrusted data, so the layout is total over
+    is a DAG, and the sink is untrusted data, so the layout is total over
     every edge set: it terminates, it never raises, and what it cannot
     honour it names."""
 
@@ -1374,7 +1521,7 @@ class TestGraphView(unittest.TestCase):
 
     def test_the_graph_draws_one_node_per_ticket_and_one_edge_per_dependency(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             page = self.graph(main, SETTLED_RUN)
 
@@ -1389,7 +1536,7 @@ class TestGraphView(unittest.TestCase):
         # The layer law is a fact about integers; this is the fact about the
         # picture, and one sign error separates them.
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             page = self.graph(main, SETTLED_RUN)
 
@@ -1400,7 +1547,7 @@ class TestGraphView(unittest.TestCase):
 
     def test_each_node_carries_its_status_and_links_to_its_ticket(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             page = self.graph(main, SETTLED_RUN)
 
@@ -1410,7 +1557,7 @@ class TestGraphView(unittest.TestCase):
 
     def test_a_cyclic_run_displays_the_named_diagnostic_and_still_draws(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             page = self.graph(main, CYCLIC_RUN)
 
@@ -1423,7 +1570,7 @@ class TestGraphView(unittest.TestCase):
 
     def test_a_run_with_no_dependencies_draws_nodes_and_no_edges(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             page = self.graph(main, "run-beta")
 
@@ -1434,7 +1581,7 @@ class TestGraphView(unittest.TestCase):
 
     def test_a_run_with_no_tickets_names_the_empty_state_instead_of_drawing(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             page = self.graph(main, EMPTY_RUN)
 
@@ -1443,7 +1590,7 @@ class TestGraphView(unittest.TestCase):
 
     def test_an_unresolvable_run_is_404_with_the_value_escaped(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             for url in ("/graph", graph_url("no-such-run"), graph_url("..")):
                 status, page = ui.render_route(main, url)
@@ -1460,7 +1607,7 @@ class TestGraphView(unittest.TestCase):
         # -- so the fact worth holding is that the fallback was drawn, on
         # G6's own node, rather than that markup is missing from the page.
         with tempfile.TemporaryDirectory() as tmp:
-            page = self.graph(make_checkout(Path(tmp)), "run-gamma")
+            page = self.graph(make_sink(Path(tmp)), "run-gamma")
 
             self.assertEqual(
                 "nd-{0}".format(ui.STATUS_FALLBACK.word), node_for(page, "G6")
@@ -1475,8 +1622,8 @@ class TestGraphView(unittest.TestCase):
         # ends an href's query parameter early if it is not escaped.
         run = "run&sub"
         with tempfile.TemporaryDirectory() as tmp:
-            root = make_checkout(Path(tmp), runs=())
-            run_dir = root / ".orch" / "tickets" / run
+            root = make_sink(Path(tmp), runs=())
+            run_dir = root / "tickets" / run
             write_ticket(run_dir, "T&1", status="done")
             write_ticket(run_dir, "T&2", status="ready", depends_on="T&1")
 
@@ -1496,9 +1643,9 @@ class TestGraphView(unittest.TestCase):
         # free text rather than as a name the corpus vouches for: a dangling
         # target is reported verbatim and need never have been a filename.
         with tempfile.TemporaryDirectory() as tmp:
-            root = make_checkout(Path(tmp), runs=())
+            root = make_sink(Path(tmp), runs=())
             write_ticket(
-                root / ".orch" / "tickets" / "run-ghost",
+                root / "tickets" / "run-ghost",
                 "H1",
                 status="ready",
                 depends_on="<b>ghost</b>",
@@ -1513,7 +1660,7 @@ class TestGraphView(unittest.TestCase):
 
     def test_the_index_offers_a_graph_for_every_run(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             _, index = ui.render_route(main, "/")
 
@@ -1545,10 +1692,10 @@ class TestTicketIdentity(unittest.TestCase):
     RUN = "run-identity"
 
     def checkout(self, tmp: str, tickets) -> Path:
-        root = make_checkout(Path(tmp), runs=(), friction=False, events=False)
+        root = make_sink(Path(tmp), runs=(), friction=False, events=False)
         for file_name, declared_id in tickets:
             write_raw_ticket(
-                root / ".orch" / "tickets" / self.RUN,
+                root / "tickets" / self.RUN,
                 file_name,
                 declared_id,
                 status="ready",
@@ -1618,7 +1765,7 @@ class TestTicketIdentity(unittest.TestCase):
 
     def test_a_run_whose_ids_all_match_their_files_says_nothing(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             self.assertEqual([], ui.identity_diagnostics(ui.run_tickets(main, "run-gamma")))
             index = ui.render_route(main, "/")[1]
@@ -1631,8 +1778,8 @@ class TestTicketIdentity(unittest.TestCase):
         # A ticket with no `id:` at all already resolves both ways, so it
         # must not be reported as a disagreement.
         with tempfile.TemporaryDirectory() as tmp:
-            root = make_checkout(Path(tmp), runs=(), friction=False, events=False)
-            run_dir = root / ".orch" / "tickets" / self.RUN
+            root = make_sink(Path(tmp), runs=(), friction=False, events=False)
+            run_dir = root / "tickets" / self.RUN
             run_dir.mkdir(parents=True)
             (run_dir / "C9.md").write_text("no frontmatter at all\n", encoding="utf-8")
 
@@ -1659,7 +1806,7 @@ class TestLayoutCache(unittest.TestCase):
 
     def test_two_requests_over_an_unchanged_ticket_set_lay_out_exactly_once(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             with self.counting() as computed:
                 first = ui.render_route(main, graph_url(SETTLED_RUN))[1]
@@ -1678,8 +1825,8 @@ class TestLayoutCache(unittest.TestCase):
 
     def test_a_status_change_repaints_without_laying_the_graph_out_again(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
-            ticket = main / ".orch" / "tickets" / SETTLED_RUN / "D3.md"
+            main = make_sink(Path(tmp))
+            ticket = main / "tickets" / SETTLED_RUN / "D3.md"
 
             with self.counting() as computed:
                 before = ui.render_route(main, graph_url(SETTLED_RUN))[1]
@@ -1697,8 +1844,8 @@ class TestLayoutCache(unittest.TestCase):
 
     def test_a_node_or_an_edge_appearing_does_lay_the_graph_out_again(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
-            run_dir = main / ".orch" / "tickets" / SETTLED_RUN
+            main = make_sink(Path(tmp))
+            run_dir = main / "tickets" / SETTLED_RUN
 
             with self.counting() as computed:
                 ui.render_route(main, graph_url(SETTLED_RUN))
@@ -1718,7 +1865,7 @@ class TestLayoutCache(unittest.TestCase):
 
     def test_two_runs_never_serve_each_other_a_cached_layout(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             delta = ui.render_route(main, graph_url(SETTLED_RUN))[1]
             epsilon = ui.render_route(main, graph_url(CYCLIC_RUN))[1]
@@ -1770,7 +1917,7 @@ class TestActiveBand(unittest.TestCase):
     every ticket in every run."""
 
     def index(self, tmp: str, runs=FIXTURE_RUNS) -> str:
-        return ui.render_route(make_checkout(Path(tmp), runs=runs), "/")[1]
+        return ui.render_route(make_sink(Path(tmp), runs=runs), "/")[1]
 
     def test_the_band_lists_exactly_the_tickets_whose_status_is_claimed(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1795,16 +1942,16 @@ class TestActiveBand(unittest.TestCase):
 
     def test_each_entry_names_its_run_ticket_executor_and_claimant(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = make_checkout(Path(tmp), runs=())
+            root = make_sink(Path(tmp), runs=())
             write_ticket(
-                root / ".orch" / "tickets" / "run-one",
+                root / "tickets" / "run-one",
                 "K1",
                 status="claimed",
                 executor="orch-tdd",
                 claimed_by="agent-one",
             )
             write_ticket(
-                root / ".orch" / "tickets" / "run-two",
+                root / "tickets" / "run-two",
                 "K2",
                 status="claimed",
                 executor="orch-verify",
@@ -1844,17 +1991,17 @@ class TestActiveBand(unittest.TestCase):
 
     def test_an_unset_executor_or_claimant_is_named_rather_than_left_blank(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = make_checkout(Path(tmp), runs=())
-            write_ticket(root / ".orch" / "tickets" / "run-one", "K1", status="claimed")
+            root = make_sink(Path(tmp), runs=())
+            write_ticket(root / "tickets" / "run-one", "K1", status="claimed")
             entry = band_entry(ui.render_route(root, "/")[1], "K1")
 
             self.assertEqual(2, entry.count(ui.EMPTY_UNSET), entry)
 
     def test_an_untrusted_claimant_reaches_the_band_escaped(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = make_checkout(Path(tmp), runs=())
+            root = make_sink(Path(tmp), runs=())
             write_ticket(
-                root / ".orch" / "tickets" / "run-one",
+                root / "tickets" / "run-one",
                 "K1",
                 status="claimed",
                 claimed_by="<b>agent</b>",
@@ -1896,7 +2043,7 @@ class TestPolling(unittest.TestCase):
         # "5000" is inside "15000" too -- so a page that emitted only the
         # hidden interval would satisfy all three.
         with tempfile.TemporaryDirectory() as tmp:
-            source = self.script(ui.render_route(make_checkout(Path(tmp)), "/")[1])
+            source = self.script(ui.render_route(make_sink(Path(tmp)), "/")[1])
 
             for name, milliseconds in (
                 ("LIVE_MS", ui.POLL_LIVE_MS),
@@ -1937,7 +2084,7 @@ class TestPolling(unittest.TestCase):
         # `setInterval` queues a second request behind a slow first one; on a
         # serial stdlib server that is how a poll becomes a pile-up.
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             for route in every_route():
                 page = ui.render_route(main, route)[1]
                 self.assertNotIn("setInterval", page, route)
@@ -1945,14 +2092,14 @@ class TestPolling(unittest.TestCase):
 
     def test_the_poll_revalidates_with_the_tag_it_was_given(self):
         with tempfile.TemporaryDirectory() as tmp:
-            source = self.script(ui.render_route(make_checkout(Path(tmp)), "/")[1])
+            source = self.script(ui.render_route(make_sink(Path(tmp)), "/")[1])
 
             self.assertIn("If-None-Match", source)
             self.assertIn("304", source)
 
     def test_the_script_is_inline_and_names_no_remote_source(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             for route in every_route():
                 page = ui.render_route(main, route)[1]
                 self.assertNotIn("<script src", page, route)
@@ -1960,7 +2107,7 @@ class TestPolling(unittest.TestCase):
 
     def test_a_run_with_work_under_way_polls_at_the_live_interval(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             # run-gamma holds claimed tickets; run-epsilon holds a ready one.
             self.assertEqual("yes", self.live(main, graph_url("run-gamma")))
@@ -1968,21 +2115,21 @@ class TestPolling(unittest.TestCase):
 
     def test_a_run_whose_every_ticket_is_terminal_polls_at_the_idle_interval(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             self.assertEqual("no", self.live(main, graph_url(SETTLED_RUN)))
             self.assertEqual("no", self.live(main, graph_url(EMPTY_RUN)))
 
     def test_the_index_is_live_while_any_run_is(self):
         with tempfile.TemporaryDirectory() as tmp:
-            self.assertEqual("yes", self.live(make_checkout(Path(tmp)), "/"))
+            self.assertEqual("yes", self.live(make_sink(Path(tmp)), "/"))
         with tempfile.TemporaryDirectory() as tmp:
-            settled = make_checkout(Path(tmp), runs=(SETTLED_RUN,))
+            settled = make_sink(Path(tmp), runs=(SETTLED_RUN,))
             self.assertEqual("no", self.live(settled, "/"))
 
     def test_a_ticket_page_is_live_only_while_its_own_ticket_is(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             self.assertEqual("yes", self.live(main, detail_url("run-gamma", "G3")))
             self.assertEqual("no", self.live(main, detail_url("run-gamma", "G1")))
@@ -1992,7 +2139,7 @@ class TestPolling(unittest.TestCase):
 
     def test_a_page_with_no_ticket_in_view_polls_at_the_idle_interval(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             self.assertEqual("no", self.live(main, ui.FRICTION_ROUTE))
             self.assertEqual("no", self.live(main, "/no-such-route"))
@@ -2007,7 +2154,7 @@ class TestFrictionFeed(unittest.TestCase):
     half-written line is the same failure one layer up."""
 
     def feed(self, tmp: str, friction=True) -> str:
-        root = make_checkout(Path(tmp), friction=friction)
+        root = make_sink(Path(tmp), friction=friction)
         status, page = ui.render_route(root, ui.FRICTION_ROUTE)
         self.assertEqual(200, status)
         return page
@@ -2039,8 +2186,8 @@ class TestFrictionFeed(unittest.TestCase):
 
     def test_a_blank_line_is_not_a_malformed_one(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = make_checkout(Path(tmp), friction=False)
-            log = root / ".orch" / "friction" / "2026-09.jsonl"
+            root = make_sink(Path(tmp), friction=False)
+            log = root / "friction" / "2026-09.jsonl"
             log.parent.mkdir(parents=True)
             log.write_text(
                 '\n{"ts": "2026-09-01T00:00:00Z", "observed": "a", "expected": "b"}\n\n\n',
@@ -2053,8 +2200,8 @@ class TestFrictionFeed(unittest.TestCase):
 
     def test_a_clean_log_carries_no_skip_note_at_all(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = make_checkout(Path(tmp), friction=False)
-            log = root / ".orch" / "friction" / "2026-09.jsonl"
+            root = make_sink(Path(tmp), friction=False)
+            log = root / "friction" / "2026-09.jsonl"
             log.parent.mkdir(parents=True)
             log.write_text(
                 '{"ts": "2026-09-01T00:00:00Z", "observed": "a", "expected": "b"}\n',
@@ -2090,14 +2237,14 @@ class TestFrictionFeed(unittest.TestCase):
 
     def test_the_index_links_to_the_feed(self):
         with tempfile.TemporaryDirectory() as tmp:
-            page = ui.render_route(make_checkout(Path(tmp)), "/")[1]
+            page = ui.render_route(make_sink(Path(tmp)), "/")[1]
 
             self.assertIn('href="{0}"'.format(ui.FRICTION_ROUTE), page)
 
     def test_an_entry_that_is_json_but_not_an_object_never_reaches_a_key_lookup(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = make_checkout(Path(tmp), friction=False)
-            log = root / ".orch" / "friction" / "2026-09.jsonl"
+            root = make_sink(Path(tmp), friction=False)
+            log = root / "friction" / "2026-09.jsonl"
             log.parent.mkdir(parents=True)
             log.write_text('"a bare string"\n42\nnull\n[]\n', encoding="utf-8")
             read = ui.read_friction(root)
@@ -2110,7 +2257,7 @@ EVENT_RUN = "run-gamma"
 
 class TestEventsSeam(unittest.TestCase):
     """The deferred hooks seam the spec's `binding_constraints` fix so v2 is
-    additive: `.orch/events/<run>.jsonl`, one JSON object per line. No hook
+    additive: `<sink>/events/<run>.jsonl`, one JSON object per line. No hook
     writes it in this version, so the reader has to hold both halves --
     render the file where it exists, say nothing at all where it does
     not."""
@@ -2122,7 +2269,7 @@ class TestEventsSeam(unittest.TestCase):
 
     def test_a_run_with_an_event_log_renders_it(self):
         with tempfile.TemporaryDirectory() as tmp:
-            page = self.graph(make_checkout(Path(tmp)), EVENT_RUN)
+            page = self.graph(make_sink(Path(tmp)), EVENT_RUN)
 
             self.assertIn("<h2>events</h2>", page)
             block = block_for(page, "events")
@@ -2134,7 +2281,7 @@ class TestEventsSeam(unittest.TestCase):
         # The silent half. A heading over an empty feed would promise a
         # stream nothing in this version produces.
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             for run in (SETTLED_RUN, CYCLIC_RUN, EMPTY_RUN):
                 page = self.graph(main, run)
@@ -2144,14 +2291,14 @@ class TestEventsSeam(unittest.TestCase):
 
     def test_an_absent_events_directory_is_the_same_silence(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp), events=False)
+            main = make_sink(Path(tmp), events=False)
 
             self.assertIsNone(ui.read_events(main, EVENT_RUN))
             self.assertNotIn("<h2>events</h2>", self.graph(main, EVENT_RUN))
 
     def test_every_key_the_seam_fixes_reaches_the_page(self):
         with tempfile.TemporaryDirectory() as tmp:
-            block = block_for(self.graph(make_checkout(Path(tmp)), EVENT_RUN), "events")
+            block = block_for(self.graph(make_sink(Path(tmp)), EVENT_RUN), "events")
 
             for value in (
                 "2026-01-01T00:20:00Z",
@@ -2166,7 +2313,7 @@ class TestEventsSeam(unittest.TestCase):
 
     def test_a_nullable_key_left_null_is_named_rather_than_blank(self):
         with tempfile.TemporaryDirectory() as tmp:
-            block = block_for(self.graph(make_checkout(Path(tmp)), EVENT_RUN), "events")
+            block = block_for(self.graph(make_sink(Path(tmp)), EVENT_RUN), "events")
             stop = block.split('<li class="event">')[1].split("</li>")[0]
 
             self.assertIn("subagent_stop", stop)
@@ -2175,7 +2322,7 @@ class TestEventsSeam(unittest.TestCase):
 
     def test_events_are_newest_first(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             block = block_for(self.graph(main, EVENT_RUN), "events")
 
             stamps = TS_RE.findall(block)
@@ -2185,7 +2332,7 @@ class TestEventsSeam(unittest.TestCase):
 
     def test_a_malformed_line_is_skipped_and_counted_as_the_friction_feed_does(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
 
             read = ui.read_events(main, EVENT_RUN)
 
@@ -2198,15 +2345,15 @@ class TestEventsSeam(unittest.TestCase):
 
     def test_an_untrusted_event_reaches_the_page_escaped(self):
         with tempfile.TemporaryDirectory() as tmp:
-            page = self.graph(make_checkout(Path(tmp)), EVENT_RUN)
+            page = self.graph(make_sink(Path(tmp)), EVENT_RUN)
 
             self.assertIn("&lt;b&gt;markup&lt;/b&gt;", page)
             self.assertNotIn("<b>markup</b>", page)
 
     def test_the_log_is_read_from_the_run_it_is_named_for_and_no_other(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = make_checkout(Path(tmp), events=False)
-            logs = root / ".orch" / "events"
+            root = make_sink(Path(tmp), events=False)
+            logs = root / "events"
             logs.mkdir(parents=True)
             (logs / "{0}.jsonl".format(SETTLED_RUN)).write_text(
                 '{"ts": "2026-01-01T00:00:00Z", "event": "tool_pre", "detail": "OWN-RUN"}\n',
@@ -2220,10 +2367,10 @@ class TestEventsSeam(unittest.TestCase):
         # `STATE_DIRS` omitted the directory, so a log written while a
         # viewer was open would never have been noticed.
         with tempfile.TemporaryDirectory() as tmp:
-            root = make_checkout(Path(tmp), events=False)
+            root = make_sink(Path(tmp), events=False)
             with frozen_clock():
                 before = ui.state_digest(root)
-                logs = root / ".orch" / "events"
+                logs = root / "events"
                 logs.mkdir(parents=True)
                 (logs / "{0}.jsonl".format(SETTLED_RUN)).write_text(
                     '{"ts": "2026-01-01T00:00:00Z", "event": "tool_pre"}\n', encoding="utf-8"
@@ -2245,9 +2392,9 @@ class TestValidatorObservesTheWholePage(unittest.TestCase):
         """One claim, 90m bound, claimed at `CLAIMED_AT` -- the shape whose
         rendering moves with the clock and nothing else."""
 
-        root = make_checkout(Path(tmp), runs=(), friction=False, events=False)
+        root = make_sink(Path(tmp), runs=(), friction=False, events=False)
         write_ticket(
-            root / ".orch" / "tickets" / "run-live",
+            root / "tickets" / "run-live",
             "L1",
             status="claimed",
             bound="90m",
@@ -2318,7 +2465,7 @@ class TestValidatorObservesTheWholePage(unittest.TestCase):
         # Criterion 10's own case, kept: where nothing is claimed there is
         # nothing for the clock to move, so the tag must not move either.
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp), runs=(SETTLED_RUN,))
+            main = make_sink(Path(tmp), runs=(SETTLED_RUN,))
             with serving(main) as server:
                 first = self.at(server, 0)[1].get("ETag")
                 status, headers, _ = self.at(server, 74, first)
@@ -2329,48 +2476,46 @@ class TestValidatorObservesTheWholePage(unittest.TestCase):
     def test_a_meter_the_page_draws_is_a_digest_input(self):
         with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as other:
             live = self.live_root(tmp)
-            settled = make_checkout(Path(other), runs=(SETTLED_RUN,))
+            settled = make_sink(Path(other), runs=(SETTLED_RUN,))
             clock = [CLAIMED_AT + timedelta(minutes=minutes) for minutes in (1, 2, 3)]
 
             self.assertEqual(3, len({ui.state_digest(live, now) for now in clock}))
             # The clock is an input only where the page reads one.
             self.assertEqual(1, len({ui.state_digest(settled, now) for now in clock}))
 
-    def test_the_two_empty_states_of_orch_never_share_one_digest(self):
-        # `.orch/` absent and `.orch/` present-but-bare are two different
-        # named pages, so they are two different validators.
+    def test_the_two_empty_states_of_the_sink_never_share_one_digest(self):
+        # A sink that is absent and one that is present-but-bare are two
+        # different named pages, so they are two different validators.
         with tempfile.TemporaryDirectory() as tmp:
-            bare = Path(tmp) / "bare"
-            (bare / ".git").mkdir(parents=True)
+            absent = Path(tmp) / "absent"
             hollow = Path(tmp) / "hollow"
-            (hollow / ".orch").mkdir(parents=True)
-            tickets = Path(tmp) / "tickets"
-            (tickets / ".orch" / "tickets").mkdir(parents=True)
+            hollow.mkdir()
+            tickets = Path(tmp) / "with-tickets"
+            (tickets / "tickets").mkdir(parents=True)
 
-            digests = [ui.state_digest(root) for root in (bare, hollow, tickets)]
-            pages = [ui.render_route(root, "/")[1] for root in (bare, hollow, tickets)]
+            digests = [ui.state_digest(root) for root in (absent, hollow, tickets)]
+            pages = [ui.render_route(root, "/")[1] for root in (absent, hollow, tickets)]
 
             self.assertEqual(3, len(set(digests)), digests)
-            self.assertIn(ui.EMPTY_NO_ORCH, pages[0])
+            self.assertIn(ui.EMPTY_NO_SINK, pages[0])
             self.assertIn(ui.EMPTY_NO_RUNS, pages[1])
             self.assertIn(ui.EMPTY_NO_RUNS, pages[2])
 
-    def test_an_orch_directory_appearing_repaints_the_empty_state(self):
+    def test_a_sink_appearing_repaints_the_empty_state(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp) / "bare"
-            (root / ".git").mkdir(parents=True)
+            root = Path(tmp) / "absent"
             with serving(root) as server:
                 first = fetch(server, "/")
-                (root / ".orch" / "tickets").mkdir(parents=True)
+                (root / "tickets").mkdir(parents=True)
                 status, headers, body = fetch(
                     server, "/", {"If-None-Match": first[1].get("ETag")}
                 )
 
-            self.assertIn(ui.EMPTY_NO_ORCH, first[2])
+            self.assertIn(ui.EMPTY_NO_SINK, first[2])
             self.assertEqual(200, status)
             self.assertNotEqual(first[1].get("ETag"), headers.get("ETag"))
             self.assertIn(ui.EMPTY_NO_RUNS, body)
-            self.assertNotIn(ui.EMPTY_NO_ORCH, body)
+            self.assertNotIn(ui.EMPTY_NO_SINK, body)
 
 
 class TestConditionalRequests(unittest.TestCase):
@@ -2399,7 +2544,7 @@ class TestConditionalRequests(unittest.TestCase):
 
     def test_an_unchanged_ticket_directory_answers_304_to_every_data_route(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             with serving(main) as server:
                 for route in every_route():
                     status, headers, body = fetch(server, route)
@@ -2415,8 +2560,8 @@ class TestConditionalRequests(unittest.TestCase):
 
     def test_a_ticket_changing_size_answers_200_with_a_different_tag(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
-            ticket = main / ".orch" / "tickets" / SETTLED_RUN / "D1.md"
+            main = make_sink(Path(tmp))
+            ticket = main / "tickets" / SETTLED_RUN / "D1.md"
             with serving(main) as server:
                 first = fetch(server, graph_url(SETTLED_RUN))[1].get("ETag")
                 with ticket.open("a", encoding="utf-8") as handle:
@@ -2430,8 +2575,8 @@ class TestConditionalRequests(unittest.TestCase):
 
     def test_a_same_second_rewrite_of_the_same_size_answers_200_with_a_new_tag(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
-            ticket = main / ".orch" / "tickets" / SETTLED_RUN / "D1.md"
+            main = make_sink(Path(tmp))
+            ticket = main / "tickets" / SETTLED_RUN / "D1.md"
             with serving(main) as server:
                 first = fetch(server, "/")[1].get("ETag")
                 self.touch(ticket)
@@ -2443,7 +2588,7 @@ class TestConditionalRequests(unittest.TestCase):
 
     def test_a_tag_from_another_page_never_satisfies_this_one(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             with serving(main) as server:
                 index = fetch(server, "/")[1].get("ETag")
                 graph = fetch(server, graph_url(SETTLED_RUN))[1].get("ETag")
@@ -2454,7 +2599,7 @@ class TestConditionalRequests(unittest.TestCase):
 
     def test_a_stale_or_absent_validator_answers_the_whole_page(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             with serving(main) as server:
                 for header in ({}, {"If-None-Match": '"not-a-real-tag"'}):
                     status, _, body = fetch(server, "/", header)
@@ -2463,7 +2608,7 @@ class TestConditionalRequests(unittest.TestCase):
 
     def test_a_wildcard_or_weak_validator_is_honoured_as_rfc7232_requires(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             with serving(main) as server:
                 etag = fetch(server, "/")[1].get("ETag")
                 for sent in (
@@ -2476,7 +2621,7 @@ class TestConditionalRequests(unittest.TestCase):
 
     def test_a_404_carries_no_entity_tag_to_be_cached_against(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             with serving(main) as server:
                 for route in ("/nope", detail_url(SETTLED_RUN, "ZZ9"), graph_url("nope")):
                     status, headers, _ = fetch(server, route)
@@ -2488,7 +2633,7 @@ class TestConditionalRequests(unittest.TestCase):
         # nothing to revalidate and never sends `If-None-Match`: the 304 above
         # would be unreachable from a real client.
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             with serving(main) as server:
                 headers = fetch(server, "/")[1]
 
@@ -2496,7 +2641,7 @@ class TestConditionalRequests(unittest.TestCase):
 
     def test_a_304_renders_nothing_at_all(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             etag = ui.respond(main, graph_url(SETTLED_RUN))[1]
 
             with patch.object(ui, "render_route") as rendered:
@@ -2511,7 +2656,7 @@ class TestLoopbackOnly(unittest.TestCase):
 
     def test_server_binds_a_loopback_address_and_serves_there(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             with serving(main) as server:
                 host = server.server_address[0]
 
@@ -2526,7 +2671,7 @@ class TestLoopbackOnly(unittest.TestCase):
         # port: Windows honours SO_REUSEADDR on a live listener, so a real
         # collision would bind there and serve_forever would hang CI.
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             argv = ["--root", str(main), "--port", "8787"]
             stderr = io.StringIO()
             with patch.object(ui, "create_server", side_effect=OSError("in use")):
@@ -2551,7 +2696,7 @@ class TestRouteCoverage(unittest.TestCase):
 
     def test_the_examples_reach_a_rendered_ticket_not_only_its_error_paths(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             transcripts = make_transcripts(Path(tmp))
 
             served = [
@@ -2565,12 +2710,11 @@ class TestRouteCoverage(unittest.TestCase):
 class TestReadOnly(unittest.TestCase):
     """Spec criterion 11."""
 
-    def test_exercising_every_route_writes_nothing_under_orch(self):
+    def test_exercising_every_route_writes_nothing_under_the_sink(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             transcripts = make_transcripts(Path(tmp))
-            orch = main / ".orch"
-            before = snapshot(orch)
+            before = snapshot(main)
             self.assertTrue(before)
 
             with serving(main, transcripts) as server:
@@ -2579,7 +2723,7 @@ class TestReadOnly(unittest.TestCase):
                     self.assertIn(status, (200, 404))
                     self.assertTrue(page)
 
-            self.assertEqual(before, snapshot(orch))
+            self.assertEqual(before, snapshot(main))
 
     def test_revalidating_every_route_writes_nothing_either(self):
         # A 304 short-circuits before `render_route`, so the guard above
@@ -2587,10 +2731,9 @@ class TestReadOnly(unittest.TestCase):
         # every second the viewer is open.
         freeze(self)
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             transcripts = make_transcripts(Path(tmp))
-            orch = main / ".orch"
-            before = snapshot(orch)
+            before = snapshot(main)
             revalidated = 0
 
             with serving(main, transcripts) as server:
@@ -2602,7 +2745,7 @@ class TestReadOnly(unittest.TestCase):
                     self.assertEqual(304, again[0], route)
                     revalidated += 1
 
-            self.assertEqual(before, snapshot(orch))
+            self.assertEqual(before, snapshot(main))
             self.assertGreaterEqual(revalidated, len(ui.ROUTES))
 
 
@@ -2619,7 +2762,7 @@ class TestNoNetworkAssets(unittest.TestCase):
 
     def test_no_route_emits_a_remote_src_or_href(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main = make_checkout(Path(tmp))
+            main = make_sink(Path(tmp))
             transcripts = make_transcripts(Path(tmp))
             with serving(main, transcripts) as server:
                 for route in every_route():
@@ -2796,7 +2939,7 @@ class TranscriptCase(unittest.TestCase):
         self.addCleanup(stack.close)
         tmp = Path(stack.enter_context(tempfile.TemporaryDirectory()))
         self.tmp = tmp
-        self.main = make_checkout(tmp)
+        self.main = make_sink(tmp)
         self.transcripts = make_transcripts(tmp)
 
     def sessions(self, transcripts=True) -> str:

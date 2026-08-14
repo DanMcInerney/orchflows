@@ -3,10 +3,13 @@
 
 Sibling lanes share one worktree, so a required check run in it reads
 every lane at once. This exports one revision, overlays a caller-named
-path set from the working tree, and copies the `.orch/runs/<id>/`
-directories git ignores but a measurement record's artifact identities
-recompute over. `--baseline` stops after the export, so the comparison
-reading comes from the same harness rather than a second recipe.
+path set from the working tree, and copies caller-named runs out of the
+user-scope state sink into a snapshot inside the tree, which a
+measurement record's artifact identities recompute over. A check reading
+run state in the tree points `ORCHFLOWS_STATE_HOME` at that snapshot, so
+it reads the revision's state rather than whatever the live sink holds
+by then. `--baseline` stops after the export, so the comparison reading
+comes from the same harness rather than a second recipe.
 
     python scripts/isolate.py /tmp/mine --dirty --exclude docs/notes.md
     python scripts/isolate.py /tmp/base --baseline
@@ -30,7 +33,15 @@ import tarfile
 import tempfile
 from pathlib import Path
 
-ORCH_RUNS = ".orch/runs"
+try:  # in-repo; the installed copy sits flat beside tickets.py
+    from scripts import state_root
+except ImportError:  # pragma: no cover - the installed copy's path
+    import state_root
+
+# Where the snapshot lands inside the isolated tree. Not a second sink root
+# -- `scripts/state_root.py` owns that -- but a copy of one, laid out the
+# same way, so `ORCHFLOWS_STATE_HOME` can be pointed at it unchanged.
+SINK_COPY = ".orchflows-state"
 
 
 class Refused(Exception):
@@ -149,20 +160,31 @@ def overlay(repo: Path, dest: Path, paths) -> tuple:
     return copied, removed
 
 
-def copy_runs(repo: Path, dest: Path, runs) -> None:
+def copy_runs(dest: Path, runs) -> None:
+    """Snapshot each named run out of the sink into the isolated tree.
+
+    The source is the one user-scope sink, so a run is copyable from any
+    workspace in any repository -- including one whose repository never held
+    run state at all. The layout inside the snapshot is the sink's own,
+    derived from it rather than restated here.
+    """
+
+    sink = state_root.state_root()
     for declared in runs:
         run = normalize(declared)
-        source = repo / ORCH_RUNS / run
+        source = state_root.runs_root() / run
+        # `normalize` has already refused every `..`, so this stays inside.
+        relative = source.relative_to(sink).as_posix()
         if not source.is_dir():
-            raise Refused("no run directory at {}/{}".format(ORCH_RUNS, run))
-        target = dest / ORCH_RUNS / run
+            raise Refused("no run directory in the state sink at {}".format(relative))
+        target = dest / SINK_COPY / relative
         try:
             if target.exists():
                 shutil.rmtree(str(target))
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copytree(str(source), str(target))
         except OSError as error:
-            raise Refused("cannot copy {}/{}: {}".format(ORCH_RUNS, run, error))
+            raise Refused("cannot copy {}: {}".format(relative, error))
 
 
 def build(args) -> str:
@@ -189,8 +211,8 @@ def build(args) -> str:
 
     export(repo, args.rev, dest)
     copied, removed = overlay(repo, dest, paths)
-    copy_runs(repo, dest, args.orch_run)
-    return "{} at {}: {} overlaid, {} removed, {} run director{}".format(
+    copy_runs(dest, args.orch_run)
+    report = "{} at {}: {} overlaid, {} removed, {} run director{}".format(
         "baseline" if args.baseline else "isolated result",
         args.rev,
         copied,
@@ -198,6 +220,9 @@ def build(args) -> str:
         len(args.orch_run),
         "y" if len(args.orch_run) == 1 else "ies",
     )
+    # Where to point `ORCHFLOWS_STATE_HOME`; silent when nothing was copied,
+    # because naming an empty snapshot invites a check to read one.
+    return report if not args.orch_run else "{} in {}/".format(report, SINK_COPY)
 
 
 def main(argv=None) -> int:
@@ -210,7 +235,8 @@ def main(argv=None) -> int:
     parser.add_argument("--exclude", action="append", default=[],
                         help="path prefix, matched on whole segments, to leave at the revision")
     parser.add_argument("--orch-run", action="append", default=[], metavar="RUN_ID",
-                        help="gitignored .orch/runs/<RUN_ID>/ to copy in; repeatable")
+                        help="run id to copy from the state sink into "
+                             "{}/runs/<RUN_ID>/; repeatable".format(SINK_COPY))
     parser.add_argument("--baseline", action="store_true", help="export the revision alone")
     parser.add_argument("--force", action="store_true", help="replace a non-empty destination")
     args = parser.parse_args(argv)

@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Read-only local HTTP view of orchflows run state under ``.orch/``.
+"""Read-only local HTTP view of orchflows run state in the state sink.
 
 Stdlib-only, cross-platform, and offline: every CSS byte is inlined from a
 module constant, so the page fetches nothing at view time. The process
-opens no file under ``.orch/`` for writing and creates no directory there.
-``.orch/`` is untrusted data per ``rules/visibility.md`` §6, so every value
+opens no file under the sink for writing and creates no directory there.
+The sink is untrusted data per ``rules/visibility.md`` §6, so every value
 reaching the page passes ``html.escape`` and no ticket content is ever
-emitted as markup. The root is the main repository root -- a linked
-worktree's ``.git`` pointer is dereferenced to it, per
-``contracts/work-item.md`` -- so every worktree of a repository shows one
-run's tickets at one path. Binds loopback only, never ``0.0.0.0``.
+emitted as markup. The root is the one user-scope sink
+``scripts/state_root.py`` resolves, so every workspace of every repository
+shows one run's tickets at one path and a run outlives the checkout it
+started in. Binds loopback only, never ``0.0.0.0``.
 
 It also lists the Claude Code sessions under ``~/.claude/projects``, as
 labels and structure alone: a transcript holds the operator's prompts,
@@ -17,7 +17,7 @@ file contents and command output for every project on the machine, and
 this is not a transcript reader. That tree is read-only, forever.
 
 Usage:
-    ui.py [--root <path>] [--port <n>] [--transcripts <path>]
+    ui.py [--root <sink>] [--port <n>] [--transcripts <path>]
 """
 
 from __future__ import annotations
@@ -46,9 +46,9 @@ _SIBLING_DIR = str(Path(__file__).resolve().parent)
 if _SIBLING_DIR not in sys.path:
     sys.path.append(_SIBLING_DIR)
 
+import state_root  # noqa: E402
 from tickets import (  # noqa: E402
     DURATION_RE,
-    _find_repo_root,
     _parse_frontmatter,
     _parse_iso,
 )
@@ -73,22 +73,27 @@ ROUTES = (
     SESSION_ROUTE,
 )
 
-# Every directory the reader reads, named once. The conditional request's
-# digest and the readers that render these have to agree about what is
-# observed: where they disagree the page moves and the validator does not,
-# and a poll is answered 304 against state that already changed.
-ORCH_DIR = (".orch",)
-TICKETS_DIR = (".orch", "tickets")
-FRICTION_DIR = (".orch", "friction")
-EVENTS_DIR = (".orch", "events")
+# Every directory the reader reads, named once, sink-relative -- the layout
+# ``scripts/state_root.py`` owns, in the same relative shape it had inside a
+# repository's own state directory. The conditional request's digest and the
+# readers that render these have to agree about what is observed: where they
+# disagree the page moves and the validator does not, and a poll is answered
+# 304 against state that already changed. ``SINK_DIR`` is the root itself,
+# observed for its presence alone.
+SINK_DIR = ()
+TICKETS_DIR = ("tickets",)
+FRICTION_DIR = ("friction",)
+EVENTS_DIR = ("events",)
 TICKET_SUFFIX = ".md"
 JSONL_SUFFIX = ".jsonl"
 
-# Named empty states. Absent data is normal in a live ``.orch/`` -- a run
-# can be cut before any ticket lands, a ticket can predate a section -- so
-# every absence renders as one of these rather than raising or vanishing.
-EMPTY_NO_ORCH = "no .orch directory under this root"
-EMPTY_NO_RUNS = "no runs under .orch/tickets"
+# Named empty states. Absent data is normal in a live sink -- a run can be
+# cut before any ticket lands, a ticket can predate a section -- so every
+# absence renders as one of these rather than raising or vanishing. None of
+# them carries a character ``escape`` rewrites: a test asserting one of these
+# is in a page compares against the page, which is escaped.
+EMPTY_NO_SINK = "no state sink at this root"
+EMPTY_NO_RUNS = "no runs under this sink"
 EMPTY_NO_TICKETS = "no tickets in this run"
 EMPTY_NO_OBJECTIVE = "no objective recorded"
 EMPTY_SECTION = "section is empty"
@@ -191,7 +196,7 @@ STATUS_PRESENTATION = {
     "limited": StatusPresentation("▤", "limited", "--st-attention", "3px double"),
 }
 
-# `.orch/` is untrusted data, so the status field can hold anything. It gets
+# The sink is untrusted data, so the status field can hold anything. It gets
 # a hue of its own: borrowing a real state's colour would render an
 # unreadable value as a state the ticket is not in.
 STATUS_FALLBACK = StatusPresentation("?", "unknown", "--st-unknown", "1px dotted")
@@ -396,7 +401,7 @@ def _scalar(value) -> str:
 def _sequence(value) -> tuple:
     """A frontmatter list as a tuple of non-empty strings. A key written as
     a bare scalar where the contract says list is one item, not an error:
-    ``.orch/`` is untrusted data and the graph reads what is there."""
+    The sink is untrusted data and the graph reads what is there."""
 
     if isinstance(value, str):
         value = [value]
@@ -642,7 +647,7 @@ def _in_tree(base: Path, *parts):
 
 def find_ticket(root: Path, run: str, ticket_id: str):
     """One ticket by run and id, or ``None``. Never walks the whole tree,
-    and never resolves outside ``.orch/tickets/``."""
+    and never resolves outside the sink's ``tickets/``."""
 
     run, ticket_id = _safe_name(run), _safe_name(ticket_id)
     # The name a lookup uses carries the suffix, so it is that name -- not
@@ -793,7 +798,7 @@ def read_events(root, run: str):
     """One run's hook events, newest first, or ``None`` when it has no log.
 
     The deferred hooks seam the spec's ``binding_constraints`` fix so v2 is
-    additive: ``.orch/events/<run>.jsonl``, one JSON object per line,
+    additive: ``<sink>/events/<run>.jsonl``, one JSON object per line,
     carrying ``ts``, ``run``, ``ticket``, ``agent``, ``event``, ``tool`` and
     ``detail``. No hook writes it in this version, so ``None`` is the
     ordinary answer and it has to stay silent -- a heading over an empty
@@ -837,28 +842,36 @@ def active_claims(discovery: dict) -> list:
     ]
 
 
-def _resolve_root(start) -> Path:
-    """``start``'s main checkout root.
+def default_root() -> Path:
+    """The sink this viewer reads when ``--root`` names none.
 
-    ``start`` may be a linked worktree, the main checkout, or any directory
-    inside either; when it is not inside a git repository at all it is used
-    as the root itself, so the viewer can be pointed at a bare copy of an
-    ``.orch/`` tree.
+    One fact, one owner (``rules/visibility.md`` §3): the path comes from
+    ``scripts/state_root.py`` and is read at call time, never cached, so a
+    caller may redirect ``$ORCHFLOWS_STATE_HOME`` after import.
     """
 
-    start_path = Path(start)
-    root = _find_repo_root(start_path)
-    return start_path.resolve() if root is None else root
+    return state_root.state_root()
+
+
+def _resolve_root(start) -> Path:
+    """The sink root to read.
+
+    No git walk: run state is not in the repository any more, so where the
+    viewer was launched decides nothing. ``start`` is used as given, which
+    also lets the viewer be pointed at a copy of a sink.
+    """
+
+    return Path(start).resolve()
 
 
 def discover(start) -> dict:
-    """Every run and ticket under ``start``'s main checkout."""
+    """Every run and ticket in the sink at ``start``."""
 
     root = _resolve_root(start)
-    tickets_root = root / ".orch" / "tickets"
+    tickets_root = root.joinpath(*TICKETS_DIR)
     runs = []
-    if not (root / ".orch").is_dir():
-        empty = EMPTY_NO_ORCH
+    if not root.is_dir():
+        empty = EMPTY_NO_SINK
     else:
         if tickets_root.is_dir():
             for run_dir in sorted(p for p in tickets_root.iterdir() if p.is_dir()):
@@ -1135,7 +1148,7 @@ def cached_layout(node_ids, edges) -> dict:
 
 # --- Claude Code sessions -----------------------------------------------------
 
-# A second data source, and a far more dangerous one than ``.orch/``. A
+# A second data source, and a far more dangerous one than the sink. A
 # transcript holds the operator's prompts, the contents of the files they
 # opened and the output of the commands they ran, for every project on the
 # machine. The spec's `binding_constraints` close the renderable set to
@@ -1857,7 +1870,7 @@ def edge_source(agent: dict, known: frozenset) -> str:
 def transcript_state(transcripts=None) -> tuple:
     """The stat identity of everything the session views read.
 
-    The same three facts per file the ``.orch/`` walk contributes, over the
+    The same three facts per file the sink walk contributes, over the
     set this reader actually opens -- and the project directory names, so a
     directory appearing empty is a change too. Naming the validator's basis
     as the route's whole read set, rather than one directory, is `U3`'s
@@ -1891,7 +1904,7 @@ def _plural(count: int, singular: str, plural: str) -> str:
 
 
 def _cell(value: str, fallback: str) -> str:
-    """One table cell. Every branch escapes: ``.orch/`` is untrusted data."""
+    """One table cell. Every branch escapes: the sink is untrusted data."""
 
     if value:
         return html.escape(value)
@@ -2810,13 +2823,13 @@ def render_route(start, path: str, transcripts=None) -> tuple:
 
 # --- conditional requests ----------------------------------------------------
 
-# Walked for their contents. `.orch` itself is observed for its presence
-# alone: `discover` renders a different named empty state for "no `.orch/`
-# at all" than for "`.orch/` carrying neither tickets nor friction", so a
+# Walked for their contents. The sink root itself is observed for its
+# presence alone: `discover` renders a different named empty state for "no
+# sink at all" than for "a sink carrying neither tickets nor friction", so a
 # digest that could not tell the two apart would answer 304 across the very
-# transition a viewer left open on a fresh checkout is waiting for.
+# transition a viewer left open before the first write is waiting for.
 STATE_DIRS = (TICKETS_DIR, FRICTION_DIR, EVENTS_DIR)
-OBSERVED_DIRS = (ORCH_DIR,) + STATE_DIRS
+OBSERVED_DIRS = (SINK_DIR,) + STATE_DIRS
 
 
 def live_meter_state(root, now=None) -> tuple:
@@ -2907,7 +2920,7 @@ def state_digest(root, now=None, transcripts=None) -> str:
 
 
 # The routes whose body is a function of the transcript tree. Every other
-# route renders `.orch/` alone.
+# route renders the sink alone.
 TRANSCRIPT_ROUTES = (SESSIONS_ROUTE, SESSION_ROUTE)
 
 
@@ -2927,7 +2940,7 @@ def entity_tag(root, path: str, now=None, transcripts=None) -> str:
     serves a 304 to a page that has already moved. A basis wider than it
     denies the 304 to a page that has not -- and here that is not a corner:
     a live Claude Code session rewrites its transcript continuously, so a
-    `.orch/` page carrying the whole tree in its tag would never answer 304
+    sink page carrying the whole tree in its tag would never answer 304
     again, and the one-second poll would swap `main` once a second over a
     byte-identical body for as long as the viewer is open.
     """
@@ -3025,7 +3038,7 @@ class ReaderHandler(BaseHTTPRequestHandler):
 
 def create_server(root, port: int, transcripts=None) -> ReaderServer:
     """Bind loopback only. Nothing here authenticates a request, and neither
-    ``.orch/`` nor a transcript is public data -- the second emphatically so
+    the sink nor a transcript is public data -- the second emphatically so
     -- therefore the socket never leaves this host. Port 0 asks the OS for a
     free port; the caller reads back ``server_address``.
     """
@@ -3037,8 +3050,10 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
         "--root",
-        default=".",
-        help="any path inside the repository; resolved to the main checkout",
+        default=None,
+        # The default is shown, never restated: `scripts/state_root.py` owns
+        # the path, and a second statement of it here would drift from it.
+        help="the state sink to view; defaults to {0}".format(default_root()),
     )
     parser.add_argument(
         "--port", type=int, default=DEFAULT_PORT, help="loopback port; 0 picks a free one"
@@ -3050,9 +3065,8 @@ def main(argv=None):
     )
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
     try:
-        server = create_server(
-            Path(args.root), args.port, transcript_root(args.transcripts)
-        )
+        root = default_root() if args.root is None else Path(args.root)
+        server = create_server(root, args.port, transcript_root(args.transcripts))
     except OSError as error:
         # DEFAULT_PORT is fixed, so a second viewer on one host lands here.
         print(

@@ -10,7 +10,8 @@ subprocess timeout handling).
 Runs are self-cleaning. Before dispatch the probe snapshots (SHA-256 and raw
 bytes) the friction log its own run would append to. Every friction entry the
 probe writes is tagged ``--run <run id>`` with a run id unique to that
-invocation. A per-run result log is written under ``.orch/live-sweep-e2e/``.
+invocation. A per-run result log is written under ``live-sweep-e2e/`` in the
+state sink, so a probe run from any workspace logs to one place.
 In a ``finally`` block, regardless of success, failure, or timeout, the probe
 removes exactly the friction lines tagged with its run id (validating the
 untagged remainder still starts with the pre-run content, so a concurrent
@@ -37,6 +38,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
+from scripts import state_root  # noqa: E402
 from tools.live_claude_profiles import _captured_text, _claude_command, _json_events  # noqa: E402
 
 _FRICTION_SPEC = importlib.util.spec_from_file_location(
@@ -49,7 +51,18 @@ RUN_ID_PREFIX = "sweep-e2e"
 PROBE_INPUT = "SWEEP_PROBE"
 PROBE_SENTINEL = "SWEEP_PROBE_RESULT:OK"
 FRICTION_CATEGORY = "surprising-output"
-DEFAULT_LOG_DIR = REPO_ROOT / ".orch" / "live-sweep-e2e"
+LOG_DIR_NAME = "live-sweep-e2e"
+
+
+def default_log_dir() -> Path:
+    """Where a probe logs when ``--log-dir`` names nowhere.
+
+    A function, not a constant: the sink is read at call time
+    (``scripts/state_root.py``), so a test may point it somewhere temporary
+    after this module is already imported.
+    """
+
+    return state_root.state_root() / LOG_DIR_NAME
 
 
 @dataclasses.dataclass(frozen=True)
@@ -326,7 +339,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-budget-usd", type=float, default=1.0)
     parser.add_argument("--model", default="sonnet")
     parser.add_argument("--effort", default="medium")
-    parser.add_argument("--log-dir", default=str(DEFAULT_LOG_DIR))
+    parser.add_argument("--log-dir", default=None,
+                        help="per-run result logs; defaults to {}/ in the "
+                             "state sink".format(LOG_DIR_NAME))
     args = parser.parse_args(argv)
 
     claude_invocation = _claude_command()
@@ -336,7 +351,7 @@ def main(argv: list[str] | None = None) -> int:
         args.effort,
         args.timeout,
         args.max_budget_usd,
-        Path(args.log_dir),
+        default_log_dir() if args.log_dir is None else Path(args.log_dir),
     )
     print(json.dumps(result, indent=2, sort_keys=True))
     if not result["passed"] and result.get("stderr"):
