@@ -22,7 +22,8 @@ Subcommands:
     packet <run> <id> --reply-to <name> [--workspace <path>]
     result <run> <id> --section <name> (--file <path> | --text <string>)
            [--append | --replace]
-    run-state <run> (--note <line> | --artifact <name> (--file <path> | --text <string>))
+    run-state <run> (--note <line> | --artifact <name>
+             (--file <path> | --text <string>) [--replace])
 """
 
 from __future__ import annotations
@@ -88,7 +89,7 @@ RESULT_USAGE = (
 )
 RUN_STATE_USAGE = (
     "run-state <run> (--note <line> | --artifact <name> "
-    "(--file <path> | --text <string>))"
+    "(--file <path> | --text <string>) [--replace])"
 )
 SUBCOMMAND_USAGE = {
     "list": "list [--run R]",
@@ -111,7 +112,8 @@ SUBCOMMAND_SUMMARY = {
     "and the commands the child runs from its own workspace.",
     "result": f"Write one of the executor's own sections {list(EXECUTOR_SECTIONS)}; "
     "a section already carrying content is refused without --append or --replace.",
-    "run-state": "Write this run's state under the one repository-wide `.orch/`.",
+    "run-state": "Write this run's state under the one repository-wide "
+    "`.orch/`; an artifact that already exists is refused without --replace.",
 }
 HELP_FLAGS = frozenset({"--help", "-h"})
 # The bare word only heads the command line. Inside a subcommand `help` is
@@ -982,6 +984,9 @@ def _cmd_run_state(rest):
     artifact = _extract_flag(args, "--artifact")
     file_arg = _extract_flag(args, "--file")
     text_arg = _extract_flag(args, "--text")
+    replace = "--replace" in args
+    while "--replace" in args:
+        args.remove("--replace")
     stray = next((arg for arg in args if arg.startswith("-")), None)
     if stray is not None:
         return {"error": f"run-state does not accept {stray}. usage: {RUN_STATE_USAGE}"}
@@ -1024,6 +1029,21 @@ def _cmd_run_state(rest):
     if runs_root is None:
         return {"error": "not inside a git repository"}
     run_dir = runs_root / run
+    replaced = False
+    if artifact is not None:
+        target = run_dir / artifact
+        # contracts/worklog.md: "Writing an artifact that already exists is
+        # refused by default, the refusal naming the existing path." This is
+        # the one whole-file write on a channel two workspaces share, so a
+        # truncation here erases a sibling's evidence leaving no trace that
+        # it existed. The run id partitions the path, which is what makes the
+        # same artifact name under two runs two different files.
+        if target.exists() and not replace:
+            return {
+                "error": f"artifact already exists: {target}. Pass --replace to "
+                "overwrite it deliberately, or write it under another name"
+            }
+        replaced = target.exists()
     try:
         run_dir.mkdir(parents=True, exist_ok=True)
         if note is not None:
@@ -1036,13 +1056,14 @@ def _cmd_run_state(rest):
                 handle.write(body)
     except OSError as error:
         return {"error": f"unwritable run state: {error}"}
-    return {
-        "run_state": {
-            "run": run,
-            "path": str(path),
-            "mode": "note" if note is not None else "artifact",
-        }
+    written = {
+        "run": run,
+        "path": str(path),
+        "mode": "note" if note is not None else "artifact",
     }
+    if artifact is not None:
+        written["replaced"] = replaced
+    return {"run_state": written}
 
 
 def _help_requested(rest) -> bool:

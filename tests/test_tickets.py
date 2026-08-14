@@ -1104,6 +1104,102 @@ class TestRunStateArtifact(unittest.TestCase):
             )
 
 
+class ArtifactOverwriteTest(unittest.TestCase):
+    """contracts/worklog.md: "Writing an artifact that already exists is
+    refused by default, the refusal naming the existing path."
+
+    `--artifact` is the one whole-file write on this channel, and two
+    workspaces write one repository's `.orch/` at once. Truncating an
+    existing artifact is how a sibling lane's evidence leaves no trace of
+    having existed.
+    """
+
+    def test_an_existing_artifact_is_refused_and_the_refusal_names_the_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            run_cmd(worktree, "run-state", "testrun", "--artifact", "evidence.md",
+                    "--text", "the first lane's evidence\n")
+            artifact = run_dir_of(main) / "evidence.md"
+            result = run_full(worktree, "run-state", "testrun", "--artifact",
+                              "evidence.md", "--text", "a silent truncation\n")
+            self.assertEqual(1, result.returncode, result.stdout)
+            error = json.loads(result.stdout)["error"]
+            self.assertIn(str(artifact.resolve()), error)
+            self.assertIn("--replace", error)
+            # the first content stays intact
+            self.assertEqual(
+                "the first lane's evidence\n", artifact.read_text(encoding="utf-8")
+            )
+
+    def test_replace_is_what_carries_the_overwrite_through(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            run_cmd(worktree, "run-state", "testrun", "--artifact", "evidence.md",
+                    "--text", "first\n")
+            payload = run_cmd(worktree, "run-state", "testrun", "--artifact",
+                              "evidence.md", "--text", "second\n", "--replace")
+            self.assertEqual("artifact", payload["run_state"]["mode"])
+            self.assertTrue(payload["run_state"]["replaced"])
+            self.assertEqual(
+                "second\n",
+                (run_dir_of(main) / "evidence.md").read_text(encoding="utf-8"),
+            )
+
+    def test_a_first_write_needs_no_flag_and_reports_it_replaced_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            payload = run_cmd(worktree, "run-state", "testrun", "--artifact",
+                              "evidence.md", "--text", "only\n")
+            self.assertFalse(payload["run_state"]["replaced"])
+            self.assertEqual(
+                "only\n", (run_dir_of(main) / "evidence.md").read_text(encoding="utf-8")
+            )
+
+    def test_replace_on_an_absent_artifact_is_not_an_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            payload = run_cmd(worktree, "run-state", "testrun", "--artifact",
+                              "fresh.md", "--text", "only\n", "--replace")
+            self.assertEqual("artifact", payload["run_state"]["mode"])
+            self.assertEqual(
+                "only\n", (run_dir_of(main) / "fresh.md").read_text(encoding="utf-8")
+            )
+
+    def test_the_guard_is_the_run_partitioned_path_not_the_bare_name(self):
+        """The same artifact name under two run ids is two paths, and neither
+        refuses the other: the run id partitioning the path is what makes a
+        whole-file write safe here at all."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            for run in ("testrun", "otherrun"):
+                payload = run_cmd(worktree, "run-state", run, "--artifact",
+                                  "evidence.md", "--text", f"{run}\n")
+                self.assertIn("run_state", payload, run)
+            for run in ("testrun", "otherrun"):
+                self.assertEqual(
+                    f"{run}\n",
+                    (run_dir_of(main, run) / "evidence.md").read_text(encoding="utf-8"),
+                )
+
+    def test_a_note_is_an_append_and_never_trips_the_artifact_guard(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            for line in ("one", "two", "three"):
+                payload = run_cmd(worktree, "run-state", "testrun", "--note", line)
+                self.assertIn("run_state", payload, line)
+            self.assertEqual(
+                ["one", "two", "three"],
+                worklog_of(main).read_text(encoding="utf-8").splitlines(),
+            )
+
+
 class TestRunStateRootResolution(unittest.TestCase):
     def test_the_root_comes_from_find_repo_root_with_no_subprocess(self):
         with tempfile.TemporaryDirectory() as tmp:
