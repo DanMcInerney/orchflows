@@ -33,6 +33,10 @@ run each command below through it in place of `python`. It must be
 Python 3.9 or newer: that is the floor `install.py` enforces and CI
 proves on 3.9, 3.11 and 3.13 across Linux, macOS and Windows. A result
 recorded on an older interpreter says nothing about this repository.
+A green run of the four below is provisional until the matrix in
+`.github/workflows/checks.yml` agrees: locally they run on one host
+under one interpreter, and that matrix is the oracle that discriminates
+a host-specific defect from a real one.
 
 python tools/validate.py
 python -m unittest discover -s tests -v
