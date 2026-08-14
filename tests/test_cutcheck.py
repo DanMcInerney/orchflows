@@ -617,9 +617,11 @@ class EvalHeadTest(unittest.TestCase):
 
 
 GIT_ESCAPE_MARK = Path("/tmp/cutcheck-gitescape-ran")
+GIT_WROTE_MARK = Path("/tmp/cutcheck-gitescape-wrote")
 
 # Each runs a program the span itself names, or moves the run out of the copy
-# meant to confine it, or reaches the network.
+# meant to confine it, or reaches the network. Every one of them is a global
+# option or a subcommand, so position alone refuses the lot.
 GIT_ESCAPES = (
     "git -c core.pager=touch\\ /tmp/cutcheck-gitescape-ran log",
     "git -c alias.pwn='!touch /tmp/cutcheck-gitescape-ran' pwn",
@@ -630,44 +632,74 @@ GIT_ESCAPES = (
     "git --git-dir=/tmp/cutcheck-gitescape/.git log",
     "git --work-tree=/etc status",
     "git clone https://example.invalid/x",
+    "git archive HEAD",
     "git grep -O/tmp/cutcheck-gitescape-ran pattern",
+)
+
+# Each stands after a subcommand the confined set holds, where position sees
+# nothing, and names a location the copy does not hold: `--output` writes it,
+# `-O`, `-X`, `--exclude-from`, `--no-index` and `--resolve-git-dir` read it.
+# Climbing reaches as far as rooting does -- the other revision's scratch copy
+# is one `..` away, and planting a file there rewrites the half of the
+# discrimination reading it was not asked about.
+GIT_REACHES_OUT = (
+    "git log --output=/tmp/cutcheck-gitescape-wrote",
+    "git diff --output /tmp/cutcheck-gitescape-wrote",
+    "git rev-list HEAD --output=/tmp/cutcheck-gitescape-wrote",
+    "git show --output=../cutcheck-gitescape-wrote",
+    "git diff -O/tmp/cutcheck-gitescape-ran HEAD~1",
+    "git ls-files -X /etc/hosts",
+    "git ls-files --exclude-from=/etc/hosts",
+    "git diff --no-index /etc/hosts /etc/passwd",
+    "git rev-parse --resolve-git-dir /etc",
 )
 
 
 class GitEscapeTest(unittest.TestCase):
-    """A git span is untrusted content too: only a confined subcommand runs.
+    """A git span is untrusted content too: it decides neither what runs nor
+    what is written where.
 
-    The head alone excuses nothing and grants nothing. Git runs a program the
-    span names through `-c core.pager=`, `-c alias.x=!`, `--exec-path`,
-    `--upload-pack` and `--receive-pack`, and leaves the scratch copy through
-    `-C`, `--git-dir` and `--work-tree`. The subcommands that run are a closed
-    set, so the flag git ships next is refused before anyone has heard of it.
+    The head alone excuses nothing and grants nothing, and the subcommand alone
+    settles only half of it. Git runs a program the span names through
+    `-c core.pager=`, `-c alias.x=!`, `--exec-path`, `--upload-pack` and
+    `--receive-pack`, and leaves the scratch copy through `-C`, `--git-dir` and
+    `--work-tree` -- all global, all refused by standing where they stand. It
+    also writes any file `--output` names, under `log` and three other confined
+    subcommands, from after the subcommand where standing settles nothing; that
+    one is refused by what it spells. Both are closed sets, so the flag git
+    ships next is refused before anyone has heard of it.
 
     One invocation for the whole class: `setUpClass`, not `setUp`, because this
     tool's own suite is an oracle running under COMMAND_TIMEOUT and every
-    invocation added here is spent against that budget. The gate itself is
-    decided from the command text, so the rest of the claim needs no subprocess
-    at all and is asserted next door.
+    invocation added here is spent against that budget. Both spans ride that
+    one invocation. The gate itself is decided from the command text, so the
+    rest of the claim needs no subprocess at all and is asserted next door.
     """
+
+    MARKS = (GIT_ESCAPE_MARK, GIT_WROTE_MARK)
 
     @classmethod
     def setUpClass(cls):
-        GIT_ESCAPE_MARK.unlink(missing_ok=True)
+        for mark in cls.MARKS:
+            mark.unlink(missing_ok=True)
         cls.result = run_cutcheck("cutcheck-gitescape")
 
     @classmethod
     def tearDownClass(cls):
-        GIT_ESCAPE_MARK.unlink(missing_ok=True)
+        for mark in cls.MARKS:
+            mark.unlink(missing_ok=True)
 
     def test_the_injected_span_did_not_run(self):
-        self.assertFalse(GIT_ESCAPE_MARK.exists(), self.result.stdout)
+        for mark in self.MARKS:
+            self.assertFalse(mark.exists(), "{}\n{}".format(mark, self.result.stdout))
 
     def test_the_span_is_reported_rather_than_run(self):
         lines = [
             line for line in self.result.stdout.splitlines() if "01-gitescape" in line
         ]
-        self.assertEqual(len(lines), 1, self.result.stdout)
-        self.assertIn(cutcheck.UNCONFINED_ORACLE, lines[0])
+        self.assertEqual(len(lines), 2, self.result.stdout)
+        for line in lines:
+            self.assertIn(cutcheck.UNCONFINED_ORACLE, line)
 
     def test_a_refused_span_is_a_finding_and_not_a_silence(self):
         self.assertNotIn(cutcheck.UNCONFINED_ORACLE, cutcheck.ADVISORY)
@@ -682,6 +714,14 @@ class GitConfinementGateTest(unittest.TestCase):
             self.assertTrue(cutcheck._unconfined_git(command), command)
             self.assertIn(cutcheck.UNCONFINED_ORACLE, cutcheck._shape(command), command)
 
+    def test_a_confined_subcommand_reaching_out_is_refused_too(self):
+        # The subcommand is in the set and the span is still not confined: an
+        # option standing after it named somewhere the copy does not hold.
+        for command in GIT_REACHES_OUT:
+            self.assertIn(command.split()[1], cutcheck.GIT_CONFINED_SUBCOMMANDS, command)
+            self.assertTrue(cutcheck._unconfined_git(command), command)
+            self.assertIn(cutcheck.UNCONFINED_ORACLE, cutcheck._shape(command), command)
+
     def test_the_oracles_the_graded_set_states_still_run(self):
         for command in (
             "git log -1 --format=%H",
@@ -689,6 +729,13 @@ class GitConfinementGateTest(unittest.TestCase):
             "git merge-base --is-ancestor ac8791a HEAD",
             "git rev-list --count HEAD",
             "git status --porcelain",
+            # What the copy holds it may reach: the rule is about the location
+            # named, never about the flag naming it. A `..` between revisions
+            # is a range and stays one; only a whole path component reads as a
+            # climb, whatever slashes stand beside it.
+            "git log --oneline ac8791a..462ef52 -- scripts/cutcheck.py",
+            "git show ac8791a:install.py",
+            "git diff --no-index install.py tools/validate.py",
         ):
             self.assertFalse(cutcheck._unconfined_git(command), command)
             self.assertEqual(cutcheck._shape(command), [], command)
