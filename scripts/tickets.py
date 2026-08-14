@@ -21,6 +21,8 @@ Subcommands:
     packet <run> <id> --reply-to <name> [--workspace <path>]
     result <run> <id> --section <name> (--file <path> | --text <string>) [--append]
     run-state <run> (--note <line> | --artifact <name> (--file <path> | --text <string>))
+    improvement --proposal <name> (--file <path> | --text <string>)
+    improvement --covered <line>
 """
 
 from __future__ import annotations
@@ -105,6 +107,15 @@ RUN_STATE_USAGE = (
     "run-state <run> (--note <line> | --artifact <name> "
     "(--file <path> | --text <string>))"
 )
+IMPROVEMENT_USAGE = (
+    "improvement (--proposal <name> (--file <path> | --text <string>) "
+    "| --covered <line>)"
+)
+# The two improvement evidence streams, under the sink's `improvement/`.
+# One is whole-file and named; one is a shared append-only stream every
+# self-improvement pass adds a line to.
+PROPOSALS_DIR = "proposals"
+COVERAGE_RECORD_NAME = "covered.jsonl"
 
 
 def normalized_isolation(declared) -> str:
@@ -145,6 +156,15 @@ def _runs_root():
 
     try:
         return state_root.runs_root()
+    except Exception:
+        return None
+
+
+def _improvement_root():
+    """The sink's improvement tree, or ``None`` when no root can be resolved."""
+
+    try:
+        return state_root.improvement_root()
     except Exception:
         return None
 
@@ -1168,11 +1188,101 @@ def _cmd_run_state(rest):
     }
 
 
+def _cmd_improvement(rest):
+    """Write an improvement evidence record into the one user-scope sink.
+
+    ``_cmd_run_state``'s sibling, for the other two records the channel
+    rules/visibility.md §6 covers: a proposal and the coverage record.
+    Same root resolution, same two shapes — one whole-file, one
+    single-call append — and the same refusal to reach for a fallback.
+
+    ``--proposal`` is whole-file, safe because the name partitions it, and
+    the name goes through ``_segment_error`` so nothing can climb out of
+    ``proposals/``. ``--covered`` appends to a stream every pass shares, so
+    it opens in append mode with an explicit ``newline`` and writes one
+    line in one call: a read-modify-write here loses a concurrent writer's
+    line, which is the whole reason the record is JSONL.
+
+    Neither body is read, parsed or validated. This is a channel; what a
+    proposal says and what a coverage line carries belong to
+    ``orch-self-improve``.
+
+    There is no fallback. A write that cannot reach the resolved root is
+    reported as an error and lands nowhere else.
+    """
+
+    args = list(rest)
+    proposal = _extract_flag(args, "--proposal")
+    covered = _extract_flag(args, "--covered")
+    file_arg = _extract_flag(args, "--file")
+    text_arg = _extract_flag(args, "--text")
+    stray = next((arg for arg in args if arg.startswith("-")), None)
+    if stray is not None:
+        return {"error": f"improvement does not accept {stray}. usage: {IMPROVEMENT_USAGE}"}
+    if args:
+        return {
+            "error": f"improvement takes no positional argument: got {args[0]}. "
+            f"usage: {IMPROVEMENT_USAGE}"
+        }
+    if (proposal is None) == (covered is None):
+        return {
+            "error": "improvement takes one of --proposal <name> or --covered <line>. "
+            f"usage: {IMPROVEMENT_USAGE}"
+        }
+    body = None
+    if proposal is not None:
+        invalid = _segment_error("proposal name", proposal)
+        if invalid is not None:
+            return invalid
+        if (file_arg is None) == (text_arg is None):
+            return {
+                "error": "--proposal takes one of --file <path> or --text <string>. "
+                f"usage: {IMPROVEMENT_USAGE}"
+            }
+        if file_arg is not None:
+            # read from the caller's own workspace, write in the sink
+            try:
+                body = Path(file_arg).read_text(encoding="utf-8")
+            except OSError as error:
+                return {"error": f"unreadable body file: {error}"}
+        else:
+            body = text_arg
+    elif file_arg is not None or text_arg is not None:
+        return {
+            "error": "--covered carries its own line; --file and --text belong to "
+            f"--proposal. usage: {IMPROVEMENT_USAGE}"
+        }
+
+    improvement_root = _improvement_root()
+    if improvement_root is None:
+        return {"error": NO_SINK_ERROR}
+    try:
+        if proposal is not None:
+            path = improvement_root / PROPOSALS_DIR / proposal
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "w", encoding="utf-8", newline="\n") as handle:
+                handle.write(body)
+        else:
+            path = improvement_root / COVERAGE_RECORD_NAME
+            improvement_root.mkdir(parents=True, exist_ok=True)
+            with open(path, "a", encoding="utf-8", newline="\n") as handle:
+                handle.write(covered.rstrip("\r\n") + "\n")
+    except OSError as error:
+        return {"error": f"unwritable improvement record: {error}"}
+    return {
+        "improvement": {
+            "mode": "proposal" if proposal is not None else "covered",
+            "name": proposal,
+            "path": str(path),
+        }
+    }
+
+
 def _dispatch(argv):
     if not argv:
         return {
             "error": "missing subcommand: list | ready | claim | set-status | "
-            "packet | result | run-state"
+            "packet | result | run-state | improvement"
         }
     command, rest = argv[0], argv[1:]
     if command == "list":
@@ -1189,6 +1299,8 @@ def _dispatch(argv):
         return _cmd_result(rest)
     if command == "run-state":
         return _cmd_run_state(rest)
+    if command == "improvement":
+        return _cmd_improvement(rest)
     return {"error": f"unknown subcommand: {command}"}
 
 
