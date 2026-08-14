@@ -16,7 +16,12 @@ an instance inside can prove what it got. Prove provenance: record
 what the workspace derives from, by identity. Prove the baseline
 clean: run the pack's cheapest deterministic oracle (or record the
 starting identities where none exists) so later failures are
-attributable to the run, not the starting state.
+attributable to the run, not the starting state. Grade the isolation
+declaration at the join with `scripts/workspace.py check <run> <id>
+--base <rev>`, where the base is the revision the item was dispatched
+from; the check runs before the merge, because afterwards the item tip
+is already an ancestor of the run tip and a stamped item exits clean
+by design.
 
 Never: write into a shared workspace; proceed on a dirty baseline
 without recording exactly what was dirty; report a workspace as

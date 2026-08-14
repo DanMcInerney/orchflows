@@ -15,7 +15,7 @@ Claim the ticket (set `claimed_by`, `claimed_at`, status `claimed`).
 Isolate the item's workspace per the workspace cell of the pack the
 ticket names — a ticket naming none works at its plain-path write
 scope — whose establishment, when the ticket's `isolation` field
-declares one, is per orch-workspace by the step its packet emits.
+declares one, is per orch-workspace (workspace.py check) per packet.
 Dispatch exactly one fresh child through `orch-delegate` — or execute
 inline under [rules/delegation.md](../../../rules/delegation.md) §2's
 independence condition; the ladder's cheaper rungs apply inside the
