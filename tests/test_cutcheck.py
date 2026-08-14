@@ -1210,14 +1210,25 @@ class HeadHalfNonReadingTest(unittest.TestCase):
     """
 
     def _class(self, at_head):
+        baseline, head = Path("/baseline"), Path("/head")
+
         def exit_code(command, tree):
-            return 1 if str(tree) == "/baseline" else at_head
+            # Compared as paths and never as text, and a third tree raises
+            # rather than defaulting to one of the halves. `str(Path("/x"))`
+            # is `\\x` on Windows, so a text compare silently collapses the
+            # two halves into one -- and three of the four tests below still
+            # pass when it does, because they expect the same class from both
+            # halves. That is this module's own subject: the unmeasured case
+            # recorded as the measured-and-fine one.
+            if tree == baseline:
+                return 1
+            if tree == head:
+                return at_head
+            raise AssertionError(f"neither half: {tree!r}")
 
         with mock.patch.object(cutcheck, "_exit_code", side_effect=exit_code):
             return cutcheck._discrimination(
-                "python3 -m unittest tests.test_cutcheck",
-                Path("/baseline"),
-                Path("/head"),
+                "python3 -m unittest tests.test_cutcheck", baseline, head
             )
 
     def test_a_timeout_at_head_is_a_non_reading_and_not_a_failure(self):
