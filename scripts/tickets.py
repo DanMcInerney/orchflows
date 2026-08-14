@@ -240,9 +240,21 @@ def _set_frontmatter_field(text: str, key: str, value: str) -> str:
     return "".join(lines)
 
 
-def _fence_run(line: str):
-    """The ``` or ~~~ run this line opens or closes a fenced block with."""
+class TicketFormatError(ValueError):
+    """The ticket's markdown cannot be written safely as it stands."""
 
+
+def _fence_run(line: str):
+    """The ``` or ~~~ run this line opens or closes a fenced block with.
+
+    None at four or more columns of indentation: CommonMark 4.4-4.5 makes
+    that indented-code content rather than a fence, and a ticket quoting an
+    indented snippet is ordinary. Opening a block there opens one nothing
+    closes, which now costs the whole write (`_write_section`).
+    """
+
+    if line.startswith("\t") or len(line) - len(line.lstrip(" ")) >= 4:
+        return None
     stripped = line.strip()
     for char in ("`", "~"):
         if stripped.startswith(char * 3):
@@ -250,8 +262,8 @@ def _fence_run(line: str):
     return None
 
 
-def _heading_lines(lines, start: int = 0) -> list:
-    """Indices of the ``## `` lines that are section boundaries.
+def _scan_sections(lines, start: int = 0):
+    """The ``## `` boundary indices below ``start``, and any unclosed fence.
 
     A ``## `` line inside a fenced block is quoted content, not a heading:
     every deliverable in this repository is markdown with ``## `` headings
@@ -259,16 +271,23 @@ def _heading_lines(lines, start: int = 0) -> list:
     truncates the span a replacement rewrites -- deleting the opening
     fence, orphaning the closing one, and promoting the quoted heading to
     a real one that `_sections` then resolves last-writer-wins.
+
+    The second return value is the index of a fence still open at the end
+    of the scan. Below it no heading is findable, so a reader sees fewer
+    sections than the file means and a writer would create a duplicate of
+    one that is already there; only the writer treats it as fatal.
     """
 
     found = []
     fence = None
+    opened_at = None
     for i in range(start, len(lines)):
         line = lines[i]
         run = _fence_run(line)
         if fence is None:
             if run is not None:
                 fence = run  # an info string is allowed on the opener
+                opened_at = i
             elif line.startswith("## "):
                 found.append(i)
         elif (
@@ -278,7 +297,14 @@ def _heading_lines(lines, start: int = 0) -> list:
             and not line.strip()[len(run):].strip()  # a closer carries none
         ):
             fence = None
-    return found
+            opened_at = None
+    return found, opened_at
+
+
+def _heading_lines(lines, start: int = 0) -> list:
+    """Indices of the ``## `` lines that are section boundaries."""
+
+    return _scan_sections(lines, start)[0]
 
 
 def _sections(text: str) -> dict:
@@ -325,7 +351,18 @@ def _write_section(text: str, heading: str, body: str, append: bool = False) -> 
             if lines[i].rstrip("\r\n") == "---":
                 body_start = i + 1
                 break
-    starts = _heading_lines(lines, body_start)
+    starts, unclosed = _scan_sections(lines, body_start)
+    if unclosed is not None:
+        # Every heading below the open fence reads as quoted content, so the
+        # section named here looks absent however present it is: writing it
+        # would append a second `## <heading>` that `_sections` resolves to
+        # neither. Nothing this writer can do to such a file is safe.
+        raise TicketFormatError(
+            f"unterminated fence opened at line {unclosed + 1} "
+            f"({lines[unclosed].strip()}): every heading below it reads as "
+            f"quoted content, so writing '## {heading}' would create a "
+            "second one. Close the fence in the ticket, then retry"
+        )
     found = None
     for i in starts:
         if lines[i][3:].strip().lower() == heading.lower():
@@ -750,9 +787,13 @@ def _cmd_result(rest):
         return {"error": f"ticket not found: {run}/{ticket_id}"}
     try:
         text = ticket_path.read_text(encoding="utf-8")
+        # _write_section raises before any byte is written: a ticket it
+        # cannot write safely is left exactly as it was found
         ticket_path.write_text(
             _write_section(text, canonical, body, append), encoding="utf-8"
         )
+    except TicketFormatError as error:
+        return {"error": f"{error}. ticket: {ticket_path}"}
     except OSError as error:
         return {"error": f"unwritable ticket: {error}"}
     return {
