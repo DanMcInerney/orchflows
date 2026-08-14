@@ -2,6 +2,7 @@
 (claim races, malformed input, repo-boundary errors)."""
 
 import ast
+import inspect
 import json
 import os
 import subprocess
@@ -1262,6 +1263,263 @@ class TestFenceRepairHoldsBothDirections(unittest.TestCase):
             )
             self.assertIn("unterminated fence", payload.get("error", ""), payload)
             self.assertEqual(before, ticket.read_text(encoding="utf-8"))
+
+
+ISOLATED_TICKET = FULL_TICKET.replace(
+    "write_scope:", "isolation: required\nwrite_scope:"
+)
+UNISOLATED_TICKET = FULL_TICKET.replace(
+    "write_scope:", "isolation: none\nwrite_scope:"
+)
+
+GIT_ENV = dict(
+    os.environ,
+    GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@example.invalid",
+    GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@example.invalid",
+)
+
+
+def git_run(cwd: Path, *args) -> str:
+    completed = subprocess.run(
+        ["git", "-c", "commit.gpgsign=false", *args],
+        capture_output=True, text=True, encoding="utf-8",
+        errors="replace", cwd=str(cwd), env=GIT_ENV,
+    )
+    if completed.returncode != 0:
+        raise unittest.SkipTest(f"git {args[0]} failed: {completed.stderr.strip()}")
+    return completed.stdout.strip()
+
+
+def establishment_lines(prompt: str) -> list:
+    """Every emitted establishment line, found the way a child finds it: by
+    the tokens themselves, never by position and never by a literal path."""
+
+    found = []
+    for line in prompt.splitlines():
+        tokens = line.split()
+        if (
+            len(tokens) > 2
+            and Path(tokens[1]).name == "workspace.py"
+            and tokens[2] == "start"
+        ):
+            found.append(line)
+    return found
+
+
+def make_packet_repo(tmp: Path, body: str, run: str = "testrun", tid: str = "T1") -> Path:
+    (tmp / ".git").mkdir()
+    run_dir = tmp / ".orch" / "tickets" / run
+    run_dir.mkdir(parents=True)
+    path = run_dir / f"{tid}.md"
+    path.write_text(body, encoding="utf-8")
+    return path
+
+
+def make_isolated_fixture(tmp: Path, body: str = None):
+    """A real `git init` main checkout, a ticket at its root, and a linked
+    `git worktree add` tree on its own branch — the shape the emitted line is
+    meant to be run in."""
+
+    main = tmp / "main"
+    main.mkdir()
+    git_run(main, "init", "--quiet")
+    (main / "README.md").write_text("baseline\n", encoding="utf-8")
+    git_run(main, "add", "README.md")
+    git_run(main, "commit", "--quiet", "-m", "init")
+    base = git_run(main, "rev-parse", "HEAD")
+    run_dir = main / ".orch" / "tickets" / "testrun"
+    run_dir.mkdir(parents=True)
+    ticket = run_dir / "T1.md"
+    ticket.write_text(ISOLATED_TICKET if body is None else body, encoding="utf-8")
+    worktree = tmp / "wt"
+    git_run(main, "worktree", "add", "--quiet", "-b", "item-branch", str(worktree))
+    return main, worktree, ticket, base
+
+
+def run_argv(argv: list, cwd: Path):
+    return subprocess.run(
+        argv, capture_output=True, text=True, encoding="utf-8",
+        errors="replace", cwd=str(cwd),
+    )
+
+
+class TestPacketEmitsTheEstablishmentCommand(unittest.TestCase):
+    """contracts/work-item.md's `isolation` is what `packet` conditions on:
+    an isolated item is told how to establish its workspace, and a read-only
+    lane is told nothing it must not run."""
+
+    def packet_for(self, tmp: Path, body: str, run: str = "testrun", tid: str = "T1"):
+        make_packet_repo(tmp, body, run, tid)
+        return run_cmd(tmp, "packet", run, tid, "--reply-to", "main")["packet"]
+
+    def test_required_emits_the_line_and_none_or_absent_omit_it(self):
+        for body, expected in (
+            (ISOLATED_TICKET, 1), (UNISOLATED_TICKET, 0), (FULL_TICKET, 0)
+        ):
+            with tempfile.TemporaryDirectory() as tmp:
+                packet = self.packet_for(Path(tmp), body)
+                prompt = packet["prompt"]
+                self.assertEqual(expected, len(establishment_lines(prompt)), prompt)
+                if not expected:
+                    # omitted entirely: not the command, not a mention of it
+                    self.assertNotIn("workspace.py", prompt)
+
+    def test_run_and_id_are_interpolated_from_the_ticket(self):
+        for run, tid in (("testrun", "T1"), ("otherrun", "Z9")):
+            body = ISOLATED_TICKET.replace("id: T1", f"id: {tid}").replace(
+                "run: testrun", f"run: {run}"
+            )
+            with tempfile.TemporaryDirectory() as tmp:
+                packet = self.packet_for(Path(tmp), body, run, tid)
+                (line,) = establishment_lines(packet["prompt"])
+                self.assertEqual([run, tid], line.split()[3:5], line)
+
+    def test_isolation_rides_the_packet_dict_beside_pack_and_independence(self):
+        for body, expected in (
+            (ISOLATED_TICKET, "required"),
+            (UNISOLATED_TICKET, "none"),
+            (FULL_TICKET, "none"),  # contracts/work-item.md: absent reads `none`
+        ):
+            with tempfile.TemporaryDirectory() as tmp:
+                packet = self.packet_for(Path(tmp), body)
+                self.assertLessEqual(
+                    {"pack", "independence", "isolation"}, set(packet), sorted(packet)
+                )
+                self.assertEqual(expected, packet["isolation"])
+                self.assertEqual("orch-code-pack", packet["pack"])
+
+    def test_the_line_is_absolute_one_token_per_argument_and_shell_free(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            packet = self.packet_for(Path(tmp), ISOLATED_TICKET)
+            (line,) = establishment_lines(packet["prompt"])
+            for forbidden in ("|", ">", "<", "&&", "$(", '"', "'"):
+                self.assertNotIn(forbidden, line, line)
+            tokens = line.split()
+            self.assertEqual(5, len(tokens), line)
+            self.assertEqual(sys.executable, tokens[0])
+            self.assertTrue(Path(tokens[0]).is_absolute(), tokens[0])
+            self.assertEqual(str((TICKETS_PY.parent / "workspace.py").resolve()), tokens[1])
+            self.assertTrue(Path(tokens[1]).is_absolute(), tokens[1])
+            self.assertEqual(["start", "testrun", "T1"], tokens[2:])
+
+    def test_the_interpreter_and_script_path_are_derived_not_literal(self):
+        """Run a copy of both scripts from somewhere else entirely: a
+        hardcoded interpreter or a literal script path emits the same line
+        from either layout, and installed scripts do not sit in `scripts/`."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_packet_repo(tmp, ISOLATED_TICKET)
+            elsewhere = tmp / "elsewhere"
+            elsewhere.mkdir()
+            for name in ("tickets.py", "workspace.py"):
+                (elsewhere / name).write_text(
+                    (TICKETS_PY.parent / name).read_text(encoding="utf-8"),
+                    encoding="utf-8",
+                )
+            completed = run_argv(
+                [sys.executable, str(elsewhere / "tickets.py"), "packet",
+                 "testrun", "T1", "--reply-to", "main"],
+                tmp,
+            )
+            packet = json.loads(completed.stdout)["packet"]
+            (line,) = establishment_lines(packet["prompt"])
+            self.assertEqual(str((elsewhere / "workspace.py").resolve()), line.split()[1])
+            self.assertNotIn(str(TICKETS_PY.parent.resolve()), line)
+
+    def test_the_emitting_code_holds_no_literal_interpreter_or_script_path(self):
+        source = " ".join(inspect.getsource(tickets_mod._cmd_packet).split())
+        self.assertNotIn("python3", source)
+        self.assertNotIn("scripts/workspace.py", source)
+        self.assertIn("sys.executable", source)
+        self.assertIn("with_name", source)
+
+
+@unittest.skipUnless(git_available(), "git is not on PATH")
+class TestExecutedPacketSeam(unittest.TestCase):
+    """The establishment line is not read, it is run: lifted verbatim out of
+    the rendered packet, split to argv, executed against the shipped scripts
+    in a real linked worktree, and graded by what it did to the repository."""
+
+    def test_the_emitted_line_runs_from_inside_and_check_grades_the_result(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            main, worktree, ticket, base = make_isolated_fixture(Path(tmp))
+            packet = run_cmd(worktree, "packet", "testrun", "T1", "--reply-to", "main")["packet"]
+            (line,) = establishment_lines(packet["prompt"])
+            argv = line.split()
+
+            started = run_argv(argv, worktree)
+            self.assertEqual(0, started.returncode, started.stderr)
+            recorded = json.loads(started.stdout)["start"]
+            self.assertEqual(str(main.resolve()), str(Path(recorded["main_root"]).resolve()))
+            self.assertTrue(recorded["isolated"])
+
+            front = tickets_mod._parse_frontmatter(ticket.read_text(encoding="utf-8"))
+            self.assertEqual("item-branch", front.get("workspace_branch"))
+            self.assertEqual(f"{base} clean", front.get("workspace_baseline"))
+            # the run tree is the main checkout's alone
+            self.assertFalse((worktree / ".orch").exists())
+
+            # `check` reuses every token the packet supplied but the subcommand
+            check_argv = [*argv[:2], "check", *argv[3:], "--base", base]
+            (worktree / "scratch").mkdir()
+            (worktree / "scratch" / "t1.txt").write_text("in scope\n", encoding="utf-8")
+            git_run(worktree, "add", "scratch/t1.txt")
+            git_run(worktree, "commit", "--quiet", "-m", "in scope")
+            clean = run_argv(check_argv, main)
+            self.assertEqual(0, clean.returncode, clean.stdout + clean.stderr)
+            graded = json.loads(clean.stdout)["check"]
+            self.assertEqual("pass", graded["verdict"])
+            self.assertEqual("item-branch", graded["workspace_branch"])
+
+            # a deliberate scope breach, committed in the fixture
+            (worktree / "secrets.txt").write_text("out of scope\n", encoding="utf-8")
+            git_run(worktree, "add", "secrets.txt")
+            git_run(worktree, "commit", "--quiet", "-m", "breach")
+            breached = run_argv(check_argv, main)
+            self.assertEqual(4, breached.returncode, breached.stdout + breached.stderr)
+            payload = json.loads(breached.stdout)
+            self.assertEqual("scope-breach", payload["verdict"])
+            self.assertEqual(["secrets.txt"], payload["breaches"])
+
+
+@unittest.skipUnless(git_available(), "git is not on PATH")
+class TestExecutedRunStateSeam(unittest.TestCase):
+    """The same execution against the run-state line every packet carries:
+    run from inside the linked tree, the bytes land at the main root."""
+
+    def test_the_emitted_run_state_lines_run_from_inside_the_linked_tree(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            main, worktree, _, _ = make_isolated_fixture(Path(tmp))
+            packet = run_cmd(worktree, "packet", "testrun", "T1", "--reply-to", "main")["packet"]
+            note_line, artifact_line = run_state_lines(packet["prompt"])
+
+            note_argv = note_line.split()
+            self.assertEqual("TEXT", note_argv[-1])  # the one placeholder
+            note_argv[-1] = "seam-note-from-the-linked-tree"
+            noted = run_argv(note_argv, worktree)
+            self.assertEqual(0, noted.returncode, noted.stderr)
+            payload = json.loads(noted.stdout)
+            # `tickets.py` exits 0 on error: the payload decides, not the code
+            self.assertNotIn("error", payload)
+            self.assertEqual(str(worklog_of(main).resolve()), payload["run_state"]["path"])
+            self.assertEqual(
+                "seam-note-from-the-linked-tree\n",
+                worklog_of(main).read_text(encoding="utf-8"),
+            )
+
+            artifact_argv = artifact_line.split()
+            self.assertEqual(["NAME", "--text", "TEXT"], artifact_argv[-3:])
+            artifact_argv[-3] = "seam-evidence.md"
+            artifact_argv[-1] = "seam-bytes-at-the-main-root"
+            wrote = run_argv(artifact_argv, worktree)
+            self.assertEqual(0, wrote.returncode, wrote.stderr)
+            artifact = json.loads(wrote.stdout)
+            self.assertNotIn("error", artifact)
+            landed = run_dir_of(main) / "seam-evidence.md"
+            self.assertEqual(str(landed.resolve()), artifact["run_state"]["path"])
+            self.assertEqual("seam-bytes-at-the-main-root", landed.read_text(encoding="utf-8"))
+            self.assertFalse((worktree / ".orch").exists())
 
 
 if __name__ == "__main__":
