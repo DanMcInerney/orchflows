@@ -74,7 +74,7 @@ class TestSuspendedStatus(unittest.TestCase):
             tmp = Path(tmp)
             run_dir = make_repo(tmp)
             result = run_full(tmp, "set-status", "testrun", "T1", "paused")
-            self.assertEqual(0, result.returncode)
+            self.assertEqual(1, result.returncode)
             payload = json.loads(result.stdout)
             self.assertIn("error", payload)
             self.assertIn("status: claimed", (run_dir / "T1.md").read_text(encoding="utf-8"))
