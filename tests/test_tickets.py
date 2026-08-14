@@ -650,6 +650,43 @@ class TestResultRefusesTerminalStatus(unittest.TestCase):
                 ticket.read_text(encoding="utf-8").split("---\n", 2)[2]
             )["Risks"])
 
+    def test_a_fenced_heading_is_not_a_section_boundary(self):
+        # Every deliverable in this repository is markdown with "## "
+        # headings, and executors quote them at length. A heading inside a
+        # fence is quoted content: ending the replaced span there deletes
+        # the opening fence, orphans the closing one, and promotes the
+        # quotation to a second heading that `_sections` then resolves
+        # last-writer-wins -- silently reshaping sections the write never
+        # named. Both fence characters, and an info string on the opener.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            ticket = run_dir / "T1.md"
+            ticket.write_text(
+                ticket.read_text(encoding="utf-8")
+                + "\n## Result\n\nOLD BODY\n\n"
+                + "```markdown\n## Objective\nquoted heading\n```\n\n"
+                + "tail prose\n\n"
+                + "## Feedback\n\n~~~\n## Handoff\nfenced handoff\n~~~\n\n"
+                + "## Risks\n\n[]\n",
+                encoding="utf-8",
+            )
+            run_cmd(
+                worktree, "result", "testrun", "T1",
+                "--section", "Result", "--text", "REPLACED",
+            )
+            text = ticket.read_text(encoding="utf-8")
+            sections = tickets_mod._sections(text.split("---\n", 2)[2])
+            # The quotation stayed quoted: no second Objective, no orphan.
+            self.assertEqual("Test ticket.", sections["Objective"])
+            self.assertNotIn("quoted heading", text)
+            self.assertNotIn("```", text)
+            # The replaced span ran to the next real heading, and stopped.
+            self.assertEqual("REPLACED", sections["Result"])
+            self.assertIn("fenced handoff", sections["Feedback"])
+            self.assertNotIn("Handoff", sections)
+            self.assertEqual("[]", sections["Risks"])
+
 
 class TestResultScriptContract(unittest.TestCase):
     def test_success_and_failure_both_exit_zero_with_one_json_document(self):

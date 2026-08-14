@@ -215,14 +215,57 @@ def _set_frontmatter_field(text: str, key: str, value: str) -> str:
     return "".join(lines)
 
 
+def _fence_run(line: str):
+    """The ``` or ~~~ run this line opens or closes a fenced block with."""
+
+    stripped = line.strip()
+    for char in ("`", "~"):
+        if stripped.startswith(char * 3):
+            return char * (len(stripped) - len(stripped.lstrip(char)))
+    return None
+
+
+def _heading_lines(lines, start: int = 0) -> list:
+    """Indices of the ``## `` lines that are section boundaries.
+
+    A ``## `` line inside a fenced block is quoted content, not a heading:
+    every deliverable in this repository is markdown with ``## `` headings
+    and executors quote them at length. Counting a quotation as a boundary
+    truncates the span a replacement rewrites -- deleting the opening
+    fence, orphaning the closing one, and promoting the quoted heading to
+    a real one that `_sections` then resolves last-writer-wins.
+    """
+
+    found = []
+    fence = None
+    for i in range(start, len(lines)):
+        line = lines[i]
+        run = _fence_run(line)
+        if fence is None:
+            if run is not None:
+                fence = run  # an info string is allowed on the opener
+            elif line.startswith("## "):
+                found.append(i)
+        elif (
+            run is not None
+            and run[0] == fence[0]
+            and len(run) >= len(fence)
+            and not line.strip()[len(run):].strip()  # a closer carries none
+        ):
+            fence = None
+    return found
+
+
 def _sections(text: str) -> dict:
     """Map each ``## Heading`` to its stripped body text."""
 
     sections: dict = {}
     heading = None
     body: list = []
-    for line in text.splitlines():
-        if line.startswith("## "):
+    lines = text.splitlines()
+    starts = set(_heading_lines(lines))
+    for i, line in enumerate(lines):
+        if i in starts:
             if heading is not None:
                 sections[heading] = "\n".join(body).strip()
             heading = line[3:].strip()
@@ -257,9 +300,7 @@ def _write_section(text: str, heading: str, body: str, append: bool = False) -> 
             if lines[i].rstrip("\r\n") == "---":
                 body_start = i + 1
                 break
-    starts = [
-        i for i, line in enumerate(lines) if i >= body_start and line.startswith("## ")
-    ]
+    starts = _heading_lines(lines, body_start)
     found = None
     for i in starts:
         if lines[i][3:].strip().lower() == heading.lower():
