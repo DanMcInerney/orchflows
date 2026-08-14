@@ -42,3 +42,8 @@
     the downstream gate the ticket's `independence` field names.
     Acceptance resting only on checks the executing context authored
     is UNVERIFIED.
+11. A repair by the context that found the defect is accepted only on a
+    check that did no part of the repair: repairing makes that context an
+    executor from that moment (§4), claiming no verdict of its own. The
+    cut's is `cutcheck.py` re-run to exit 0 against the revision the set
+    was cut from.
