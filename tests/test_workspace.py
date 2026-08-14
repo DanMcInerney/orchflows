@@ -266,6 +266,48 @@ class TestStartFailureBehavior(unittest.TestCase):
             self.assertEqual(1, code)
             self.assertEqual(before, ticket.read_text(encoding="utf-8"))
 
+    def test_a_write_landing_during_the_git_work_is_reported_through_start(self):
+        """The snapshot the stamps are written against is taken before the
+        seconds of git work, not after them, so a ``set-status`` landing while
+        git runs is reported rather than absorbed. Neither sibling case can
+        see this: one calls ``_record`` directly with a hand-made stale
+        snapshot, the other monkeypatches ``_record`` away entirely."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            ticket = make_ticket(run_dir, "T1")
+            observe = workspace._dirty_paths
+
+            def a_write_lands_mid_git():
+                # stands in for a concurrent `set-status`, at the one moment
+                # the two reads used to straddle. `.orch/` is gitignored, so
+                # the dirty set git reports is unchanged by this write.
+                ticket.write_text(
+                    ticket.read_text(encoding="utf-8").replace(
+                        "status: claimed", "status: suspended"
+                    ),
+                    encoding="utf-8",
+                )
+                return observe()
+
+            cwd = os.getcwd()
+            noise = io.StringIO()
+            try:
+                os.chdir(str(main))
+                workspace._dirty_paths = a_write_lands_mid_git
+                with redirect_stdout(noise), redirect_stderr(noise):
+                    code = workspace.main(["start", "testrun", "T1"])
+            finally:
+                os.chdir(cwd)
+                workspace._dirty_paths = observe
+
+            self.assertEqual(1, code, noise.getvalue())
+            self.assertIn("lost the frontmatter write race", noise.getvalue())
+            after = ticket.read_text(encoding="utf-8")
+            self.assertIn("status: suspended", after)
+            self.assertNotIn(workspace.BRANCH_KEY, after)
+
     def test_an_unisolated_workspace_is_recorded_not_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
@@ -499,6 +541,34 @@ class TestCheckGradesFromTheCallersGit(unittest.TestCase):
             done = run_workspace(main, "check", "testrun", "T1", "--base", "no-such-rev")
             self.assertEqual(0, done.returncode, done.stdout)
             self.assertEqual("not required", payload_of(done)["check"]["verdict"])
+
+    def test_a_backticked_required_grades_the_same_as_a_bare_one(self):
+        """One normalizer reads `isolation` for both scripts. `tickets.py`
+        strips backticks off the same declaration when it emits the
+        establishment step, so a grader that did not would skip the grade
+        entirely at exit 0 while the join read success."""
+
+        for declared in ("required", "`required`"):
+            with self.subTest(declared=declared), tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                main, run_dir = make_repo(tmp)
+                base = git(main, "rev-parse", "HEAD").strip()
+                worktree = add_worktree(main, "wt-branch", tmp / "wt")
+                commit_in(worktree, {"docs/leak.md": "leak\n"}, "item work")
+                make_ticket(
+                    run_dir, "T1", scope=("scratch",),
+                    extra=(
+                        (workspace.ISOLATION_KEY, declared),
+                        (workspace.BRANCH_KEY, "wt-branch"),
+                    ),
+                )
+
+                done = run_workspace(main, "check", "testrun", "T1", "--base", base)
+
+                self.assertEqual(4, done.returncode, done.stdout)
+                body = payload_of(done)
+                self.assertEqual("scope-breach", body["verdict"])
+                self.assertEqual(["docs/leak.md"], body["breaches"])
 
     def test_required_with_no_recorded_branch_exits_no_record(self):
         with tempfile.TemporaryDirectory() as tmp:

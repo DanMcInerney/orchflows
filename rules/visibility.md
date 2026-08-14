@@ -26,4 +26,6 @@
    and reaches the repository by merge; run state under `.orch/` is
    written only through the installed scripts, which resolve the one
    repository-wide `.orch/` from any workspace. There is no fallback —
-   a run-state write that cannot reach that root fails loudly.
+   a run-state write that cannot reach that root reports the failure in
+   the script's JSON payload, which the caller reads: the exit status
+   alone can be 0.

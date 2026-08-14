@@ -87,6 +87,20 @@ RUN_STATE_USAGE = (
 )
 
 
+def normalized_isolation(declared) -> str:
+    """contracts/work-item.md's `isolation`, read one way by both scripts.
+
+    Absent or empty reads `none`. Backticks are ordinary frontmatter
+    punctuation here, stripped exactly as `_normalized_scope` and the
+    executor check strip them, so the value this script emits an
+    establishment step for is the value `scripts/workspace.py` grades.
+    Normalizing it in two places is how an emitted step and a skipped
+    grade can disagree behind a green suite.
+    """
+
+    return str(declared or "none").strip().strip("`").strip() or "none"
+
+
 # --- repository / filesystem helpers ---------------------------------------
 
 
@@ -710,7 +724,7 @@ def _cmd_packet(rest):
     # `required` is told to establish anything, so a lane that must not stamp
     # itself is never handed the command. The sibling resolves from this
     # file's own location, so it points at whichever copy is running.
-    isolation = str(loaded.get("isolation") or "none").strip().strip("`")
+    isolation = normalized_isolation(loaded.get("isolation"))
     if isolation == REQUIRED_ISOLATION:
         prompt.append(
             "Workspace establishment (isolation: required), your first act, "
