@@ -1,8 +1,11 @@
 """Tests for scripts/cutcheck.py: family 1, oracle discrimination and shape."""
 
 import json
+import os
+import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -15,11 +18,11 @@ import install  # noqa: E402
 import scripts.cutcheck as cutcheck  # noqa: E402
 import scripts.tickets as tickets  # noqa: E402
 
-# cutcheck archives this revision to build the tree it grades oracles in, so
+# cutcheck clones this revision to build the tree it grades oracles in, so
 # every clone that runs these tests must be able to reach it. Two invariants
 # make a candidate legal, and both are load-bearing: it is an ancestor of
 # `main`, so a fresh clone has it (the predecessor pinned an unpushed local
-# branch tip, which passed here and failed every CI leg with "cannot archive
+# branch tip, which passed here and failed every CI leg with "cannot clone
 # baseline"); and `install.py:101` there opens `SCRIPT_NAMES` without
 # `cutcheck.py`, which is what makes the fixtures' `grep -n "cutcheck.py"
 # install.py` fail at the baseline and pass at HEAD -- the discrimination the
@@ -657,19 +660,20 @@ class VerdictInOutputTest(unittest.TestCase):
             line for line in self.result.stdout.splitlines() if "01-verdict" in line
         ]
 
-    def test_the_count_is_the_one_reported_for_what_it_prints(self):
-        lines = [line for line in self.lines if cutcheck.VERDICT_IN_OUTPUT in line]
+    def test_the_text_count_is_reported_for_what_it_prints(self):
+        lines = [line for line in self.lines if "criterion 1" in line]
         self.assertEqual(len(lines), 1, self.result.stdout)
-        self.assertIn("criterion 1", lines[0])
+        self.assertIn(cutcheck.VERDICT_IN_OUTPUT, lines[0])
 
-    def test_the_archive_and_the_diff_are_reported_for_their_head(self):
-        lines = [line for line in self.lines if cutcheck.GIT_NO_HISTORY in line]
-        self.assertEqual(len(lines), 2, self.result.stdout)
-        self.assertEqual(len(self.lines), 3, self.result.stdout)
+    def test_the_revision_count_is_reported_for_its_count_and_not_its_head(self):
+        lines = [line for line in self.lines if "criterion 2" in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.VERDICT_IN_OUTPUT, lines[0])
+        self.assertIn("git rev-list --count HEAD", lines[0])
 
-    def test_both_classes_are_advisory_and_the_set_exits_zero(self):
+    def test_both_counts_are_advisory_and_the_set_exits_zero(self):
         self.assertIn(cutcheck.VERDICT_IN_OUTPUT, cutcheck.ADVISORY)
-        self.assertIn(cutcheck.GIT_NO_HISTORY, cutcheck.ADVISORY)
+        self.assertEqual(len(self.lines), 2, self.result.stdout)
         self.assertEqual(self.result.returncode, 0, self.result.stdout)
 
 
@@ -759,6 +763,74 @@ class ExecutionCacheTest(unittest.TestCase):
             self.assertEqual(run.call_count, 2)
 
 
+class BinaryOutputOracleTest(unittest.TestCase):
+    """An oracle's output is bytes, and only its exit status is ever read.
+
+    A tree with history runs git oracles, and `git archive` prints a tar.
+    Decoding that as text raised UnicodeDecodeError out of the run itself, so
+    one such span in one ticket cost the whole invocation its report.
+    """
+
+    def test_a_command_printing_binary_is_graded_on_its_exit_status(self):
+        self.assertEqual(cutcheck._run_once("git archive HEAD", ROOT), 0)
+
+
+class ScratchTreeHistoryTest(unittest.TestCase):
+    """The graded tree is a repository of its own, holding the graded revision."""
+
+    def setUp(self):
+        scratch_root = Path(tempfile.mkdtemp(prefix=".cutcheck-history-"))
+        self.addCleanup(shutil.rmtree, scratch_root, True)
+        self.tree = cutcheck._scratch_tree(BASELINE, ROOT, scratch_root)
+        self.assertIsNotNone(self.tree, "no scratch tree was built for the baseline")
+
+    def test_the_graded_revision_resolves_inside_the_tree(self):
+        # Reading a revision out of the log is the history claim: an extract
+        # carrying no `.git` answers this from whatever repository encloses it,
+        # or not at all.
+        proc = cutcheck._git(["log", "-1", "--format=%H"], self.tree)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(proc.stdout.strip(), BASELINE)
+
+    def test_the_trees_own_top_level_is_the_tree_not_the_enclosing_checkout(self):
+        here = Path.cwd()
+        self.addCleanup(os.chdir, str(here))
+        os.chdir(str(self.tree))
+        top = cutcheck._worktree_root()
+        self.assertEqual(top.resolve(), self.tree.resolve())
+        self.assertNotEqual(top.resolve(), ROOT.resolve())
+
+    def test_the_tree_carries_no_remote_to_write_back_through(self):
+        # An oracle is ticket content, and ticket content is untrusted: a clone
+        # keeping its origin is a write path from the scratch tree back out.
+        proc = cutcheck._git(["remote"], self.tree)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(proc.stdout.strip(), "")
+
+
+class GitOracleGradedTest(unittest.TestCase):
+    """A git oracle is graded on its exit status in the clone, never excused."""
+
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-git-graded")
+        self.lines = reported(self.result)
+
+    def test_the_log_read_and_the_diff_are_each_graded_on_their_exit_status(self):
+        classes = [line.split(": ")[2] for line in self.lines]
+        self.assertEqual(classes, [cutcheck.ALREADY_PASSES] * 2, self.result.stdout)
+        self.assertIn("criterion 1", self.lines[0])
+        self.assertIn("criterion 2", self.lines[1])
+
+    def test_the_ancestry_question_only_history_answers_discriminates(self):
+        self.assertNotIn("criterion 3", self.result.stdout)
+
+    def test_no_git_oracle_is_excused_for_its_head(self):
+        self.assertNotIn("git-no-history", self.result.stdout)
+
+    def test_a_graded_git_oracle_sets_the_exit_status(self):
+        self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
+
+
 FIXTURES = ROOT / "tests" / "fixtures" / "cutcheck"
 VERDICTS = FIXTURES / "verdicts.json"
 
@@ -801,18 +873,47 @@ class RecordedVerdictTest(unittest.TestCase):
                 self.assertEqual(verdict(run), recorded[run])
 
 
-class GitOracleTest(unittest.TestCase):
-    """A `git archive` copy carries no history, so no git oracle is decidable."""
+class GitNoHistoryDispositionTest(unittest.TestCase):
+    """The excuse a git head carried is gone, and nothing reaches it any more.
 
-    def test_every_git_span_is_reported_and_none_of_them_is_executed(self):
-        ticket = FIXTURES / "cutcheck-verdict-in-output" / "01-verdict.md"
-        with mock.patch.object(cutcheck, "_exit_code") as ran:
-            findings = cutcheck._check_ticket(ticket, ROOT, None, {})
-        ran.assert_not_called()
-        classes = [klass for _, _, klass, _ in findings]
-        self.assertEqual(classes.count(cutcheck.GIT_NO_HISTORY), 2, classes)
+    It went rather than stayed because the scratch copy is a clone: the class
+    fired on the head alone, and the premise the head stood for -- a copy with
+    no history -- is now unreachable by construction. What stands in its place
+    is graded execution, and a count-flagged git oracle reported for its count.
+    """
 
-    def test_the_head_decides_it_rather_than_a_second_reading_of_the_flags(self):
+    def test_the_class_name_resolves_nowhere_in_the_module(self):
+        self.assertFalse(hasattr(cutcheck, "GIT_NO_HISTORY"))
+        source = (ROOT / "scripts" / "cutcheck.py").read_text(encoding="utf-8")
+        self.assertNotIn("git-no-history", source)
+
+    def test_the_advisory_set_lost_that_one_member_and_no_other(self):
+        self.assertEqual(
+            cutcheck.ADVISORY,
+            frozenset(
+                {
+                    cutcheck.EXTRACTION_GAP,
+                    cutcheck.COVERAGE_MAP_ABSENT,
+                    cutcheck.VERDICT_IN_OUTPUT,
+                }
+            ),
+        )
+
+    def test_every_git_span_is_executed_rather_than_excused_for_its_head(self):
+        ticket = FIXTURES / "cutcheck-git-graded" / "01-git-graded.md"
+        with mock.patch.object(cutcheck, "_exit_code", return_value=1) as ran:
+            cutcheck._check_ticket(ticket, ROOT, None, {})
+        self.assertEqual(
+            [call[0][0] for call in ran.call_args_list],
+            [
+                "git log -1 --format=%H",
+                "git diff ac8791a -- install.py",
+                "git merge-base --is-ancestor ac8791a HEAD",
+            ],
+        )
+
+    def test_the_count_flag_decides_the_undecidable_one_rather_than_the_head(self):
+        self.assertTrue(cutcheck._verdict_in_output("git rev-list --count HEAD"))
         for command in ("git diff --exit-code", "git status --porcelain"):
             self.assertFalse(cutcheck._verdict_in_output(command), command)
 

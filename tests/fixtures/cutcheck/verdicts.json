@@ -144,6 +144,15 @@
    "cutcheck-f6-executor: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f6-executor/coverage.md"
   ]
  },
+ "cutcheck-git-graded": {
+  "exit": 1,
+  "lines": [
+   "01-git-graded: family 1: already-passes: criterion 1: git log -1 --format=%H",
+   "01-git-graded: family 1: already-passes: criterion 2: git diff ac8791a -- install.py",
+   "cutcheck: advisory -- reported, and never setting the exit status:",
+   "cutcheck-git-graded: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-git-graded/coverage.md"
+  ]
+ },
  "cutcheck-mention": {
   "exit": 1,
   "lines": [
@@ -184,8 +193,7 @@
   "lines": [
    "cutcheck: advisory -- reported, and never setting the exit status:",
    "01-verdict: family 1: verdict-in-output: criterion 1: grep -c \"SCRIPT_NAMES\" install.py",
-   "01-verdict: family 1: git-no-history: criterion 2: git archive ac8791a",
-   "01-verdict: family 1: git-no-history: criterion 3: git diff ac8791a -- install.py",
+   "01-verdict: family 1: verdict-in-output: criterion 2: git rev-list --count HEAD",
    "cutcheck-verdict-in-output: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-verdict-in-output/coverage.md",
    "cutcheck: no finding outside the advisory set"
   ]
