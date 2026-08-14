@@ -109,7 +109,7 @@ COMMAND_HEADS = (
 SEARCH_HEADS = ("grep", "rg")
 CITATION_RE = re.compile(r"\b([\w][\w./-]*\.[A-Za-z0-9]{1,5}):(\d+)")
 SECTION_CITATION_RE = re.compile(r"\b([\w][\w./-]*\.[A-Za-z0-9]{1,5})\s+§(\d+)")
-QUOTE_RE = re.compile(r'"([^"\n]{6,120})"')
+QUOTE_RE = re.compile(r'"([^"\n]{6,120})"|`([^`\n]{6,120})`')
 WRITE_RE = re.compile(
     r"\b(?:write|writes|writing|written|create|creates|creating|emit|emits"
     r"|append|appends|record|records)\b",
@@ -455,7 +455,12 @@ def _citations(prose):
 
 
 def _path_reality(prose, baseline_tree):
-    """Family 2 over prose: citations resolve, and a quote is where it is cited."""
+    """Family 2 over prose: citations resolve, and a quote is where it is cited.
+
+    A quotation is multi-word text in quotes or in backticks -- a single token
+    beside a citation names something, it does not quote it. Backticks count
+    because a quoted line of code carries quotes of its own.
+    """
 
     findings = []
     cites = _citations(prose)
@@ -463,17 +468,18 @@ def _path_reality(prose, baseline_tree):
         if _cited_text(baseline_tree, rel, line, section) is None:
             findings.append((UNRESOLVED_CITATION, _where(rel, line, section)))
     for match in QUOTE_RE.finditer(prose):
+        quoted = _flat(match.group(1) or match.group(2) or "")
         near = [c for c in cites if abs(c[0] - match.start()) <= QUOTE_WINDOW]
-        if not near:
+        if " " not in quoted or not near:
             continue
         _, rel, line, section = min(near, key=lambda c: abs(c[0] - match.start()))
         text = _cited_text(baseline_tree, rel, line, section)
-        if text is None or _flat(match.group(1)) in text:
+        if text is None or quoted in text:
             continue
         findings.append(
             (
                 QUOTE_NOT_AT_CITATION,
-                '"{}" not at {}'.format(match.group(1), _where(rel, line, section)),
+                '"{}" not at {}'.format(quoted, _where(rel, line, section)),
             )
         )
     return findings
