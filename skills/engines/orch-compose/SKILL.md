@@ -5,7 +5,7 @@ role: none
 ---
 
 Require: a composition — named, or the runtime instance at
-`.orch/runs/<run>/composition.md` — with its steps, edges, invariants,
+`<state-root>/runs/<run>/composition.md` — with its steps, edges, invariants,
 and done_check; the request or evidence the composition concerns.
 
 Validate the composition at load against

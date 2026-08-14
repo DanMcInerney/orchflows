@@ -5,8 +5,11 @@ shape and the description budget every skill respects: nothing moved out of
 that module. This one holds only the sink invariants — the path each
 contract states, the work-item Location invariant's four conjuncts, and
 ``run.json``'s field list — so a location supersession is provably a
-location change and not a shape change.
+location change and not a shape change. Its second half holds the prose
+invariants: the amended two-channel law, the one prose owner of the sink
+path, and which ``.orch`` mentions may survive.
 """
+import os
 import re
 import unittest
 from pathlib import Path
@@ -220,6 +223,306 @@ class TestContractShapeUnchanged(unittest.TestCase):
         for name, fields in BASELINE_FIELDS.items():
             with self.subTest(contract=name):
                 self.assertEqual(fields + ADDED_FIELDS.get(name, ()), declared_shape(name)[1])
+
+
+# --- The prose half: the law and the documentation say what the code does ---
+
+# The one file that states the sink root in prose. `scripts/state_root.py`
+# owns it in code; every other markdown file links here rather than
+# restating it (spec binding constraint 2, one owner per fact).
+PATH_OWNER = "rules/visibility.md"
+
+# What "states the path literally" means: either spelling of the root.
+LITERAL_ROOT_TOKENS = ("~/.orchflows/state", "ORCHFLOWS_STATE_HOME")
+
+# §6's load-bearing clauses, amended in place (spec binding constraint 1):
+# only the root they point at changed. The spec paraphrases the last as "a
+# write that cannot reach that root fails loudly"; §6's own words are pinned
+# instead, because asserting the paraphrase would mean rewriting the very
+# sentence the constraint preserves.
+TWO_CHANNEL_CLAUSES = (
+    "content is written with file tools inside the workspace",
+    "run state is written only through the installed scripts",
+    "There is no fallback",
+    "a run-state write that cannot reach that root",
+)
+
+# What §6 must now say about the root, so the law names the sink and not a
+# path inside some repository.
+SINK_ROOT_CLAUSES = ("user-scope state sink",) + LITERAL_ROOT_TOKENS
+
+# The two subdirectories a repository keeps, and nothing else (spec A15).
+REPOSITORY_ORCH_SUBDIRECTORIES = frozenset({"canary/", "bin/"})
+
+# Vocabulary terms whose definition names a location: each must resolve to
+# the sink, since `docs/vocabulary.md` owns every library term of art and a
+# term defined against the old place makes every correct use of it wrong.
+SINK_TERMS = ("tracker", "friction log", "run state")
+
+# The three files outside this item's `write_scope` that name `.orch`
+# legitimately — the canary is a git-tracked golden fixture and `bin/` is an
+# installed script directory, neither of them state. Their `.orch` lines are
+# pinned as the bytes they carried at this item's `run_revision`.
+CANARY_AND_BIN_LINES = {
+    "compositions/drift-canary.md": (
+        "`.orch/canary/`, spanning the kernel boundaries: one delegation, one",
+    ),
+    "skills/workflows/orch-fixture/SKILL.md": (
+        "README line. Freeze into `.orch/canary/<name>/`: the spec excerpt the",
+    ),
+    "skills/kernel/orch-mechanize/SKILL.md": (
+        "Write the script in stdlib Python 3, cross-platform, to `.orch/bin/` for",
+    ),
+}
+
+# Both files carrying the friction-law fallback: the instruction a blocked
+# agent follows when the logger cannot run. Stale, it loses evidence in
+# silence rather than failing a check.
+FALLBACK_FILES = ("AGENTS.md", "templates/host-block.md")
+FALLBACK_NEEDLE = "friction/<yyyy-mm>.jsonl"
+
+SELF_IMPROVE = "skills/workflows/orch-self-improve/SKILL.md"
+
+# The writer item 10 returned, quoted from its `subcommand` field. Both
+# improvement records reach the sink through it and through nothing else.
+IMPROVEMENT_WRITER = (
+    "scripts/tickets.py improvement --proposal",
+    "scripts/tickets.py improvement --covered",
+)
+
+# Directories holding no owner: recorded data and a dated review record.
+SKIPPED_DIRECTORIES = frozenset({"benchmarks"})
+SKIPPED_PAIRS = frozenset({("tests", "fixtures")})
+SKIPPED_FILES = frozenset({"REVIEW-2026-08-06.md"})
+
+# A run-state directory reference, and not the installed library root:
+# `~/.orchflows/` shares the first five characters and is not a mention.
+ORCH_MENTION = re.compile(r"\.orch\b")
+
+
+def doc(relpath):
+    return (ROOT / relpath).read_text(encoding="utf-8")
+
+
+def markdown_files():
+    """Every markdown file a reader could take as an owner, path and text.
+
+    Dot-directories are pruned during the walk, not filtered after it: they
+    hold runtime state (`.orch/`) and host adapters (`.claude/`,
+    `.orchflows/`), and one of them can contain a whole second checkout.
+    """
+
+    for base, dirnames, filenames in os.walk(str(ROOT)):
+        rel_base = Path(base).relative_to(ROOT)
+        dirnames[:] = [
+            name for name in sorted(dirnames)
+            if not name.startswith(".")
+            and name not in SKIPPED_DIRECTORIES
+            and (rel_base.parts + (name,))[:2] not in SKIPPED_PAIRS
+        ]
+        for filename in sorted(filenames):
+            if not filename.endswith(".md") or filename in SKIPPED_FILES:
+                continue
+            rel = (rel_base / filename).as_posix()
+            yield rel, doc(rel)
+
+
+def enclosing_block(lines, index):
+    """The bullet or paragraph carrying ``lines[index]``, whitespace collapsed.
+
+    The unit is the bullet, not the paragraph: `ARCHITECTURE.md`'s list puts
+    no blank line between items, so a paragraph there is the whole list.
+    """
+
+    start = index
+    while start > 0:
+        if lines[start].startswith(("- ", "* ")):
+            break
+        if not lines[start].strip():
+            start += 1
+            break
+        start -= 1
+    end = index + 1
+    while end < len(lines):
+        if not lines[end].strip() or lines[end].startswith(("- ", "* ")):
+            break
+        end += 1
+    return flat(" ".join(lines[start:end])).strip()
+
+
+def block_starting(relpath, marker):
+    """The block of ``relpath`` whose first line starts with ``marker``."""
+
+    lines = doc(relpath).splitlines()
+    for index, line in enumerate(lines):
+        if line.startswith(marker):
+            return enclosing_block(lines, index)
+    return ""
+
+
+def block_carrying(relpath, needle):
+    """The blank-line-delimited paragraph of ``relpath`` carrying ``needle``."""
+
+    for block in doc(relpath).split("\n\n"):
+        if needle in block:
+            return flat(block).strip()
+    return ""
+
+
+def numbered_section(relpath, number):
+    """One numbered rule, from its own number to the next one or the end."""
+
+    text = doc(relpath)
+    opening = re.search(r"^{0}\. ".format(number), text, re.M)
+    if opening is None:
+        return ""
+    tail = text[opening.start():]
+    following = re.search(r"^\d+\. ", tail[1:], re.M)
+    return flat(tail if following is None else tail[: following.start() + 1]).strip()
+
+
+class TestTwoChannelLawAmended(unittest.TestCase):
+    """Spec binding constraint 1: §6 is amended in place, never replaced."""
+
+    def setUp(self):
+        self.section = numbered_section(PATH_OWNER, 6)
+        self.assertTrue(self.section, "rules/visibility.md states no §6")
+
+    def test_both_channels_and_the_no_fallback_clause_survive(self):
+        for clause in TWO_CHANNEL_CLAUSES:
+            with self.subTest(clause=clause):
+                self.assertIn(
+                    clause, self.section,
+                    "§6 no longer carries {0!r}".format(clause),
+                )
+
+    def test_the_root_the_law_names_is_the_sink(self):
+        for clause in SINK_ROOT_CLAUSES:
+            with self.subTest(clause=clause):
+                self.assertIn(
+                    clause, self.section,
+                    "§6 does not name the sink: {0!r} is missing".format(clause),
+                )
+
+    def test_the_law_no_longer_points_into_a_repository(self):
+        self.assertIsNone(ORCH_MENTION.search(self.section))
+
+    def test_the_law_names_the_resolver_rather_than_restating_its_rule(self):
+        self.assertIn("`scripts/state_root.py`", self.section)
+
+
+class TestRepositoryKeepsTwoSubdirectories(unittest.TestCase):
+    """Spec A15: `.orch/` holds the canary and, project-scope, `bin/`."""
+
+    def setUp(self):
+        self.bullet = block_starting("ARCHITECTURE.md", "- `.orch/`")
+        self.assertTrue(self.bullet, "ARCHITECTURE.md has no `.orch/` bullet")
+
+    def test_the_bullet_names_canary_and_bin_and_no_third_subdirectory(self):
+        named = {
+            token for token in TOKEN.findall(self.bullet)
+            if token.endswith("/") and token != ".orch/"
+        }
+        self.assertEqual(REPOSITORY_ORCH_SUBDIRECTORIES, named)
+
+    def test_the_sink_has_its_own_bullet(self):
+        bullet = block_starting("ARCHITECTURE.md", "- state sink")
+        self.assertTrue(bullet, "ARCHITECTURE.md documents no state sink")
+        self.assertIn("rules/visibility.md", bullet)
+
+
+class TestVocabularyResolvesToTheSink(unittest.TestCase):
+    """`docs/vocabulary.md` owns every term of art, locations included."""
+
+    def test_each_located_term_resolves_to_the_sink(self):
+        for term in SINK_TERMS:
+            with self.subTest(term=term):
+                entry = block_starting("docs/vocabulary.md", "- **{0}** —".format(term))
+                self.assertTrue(entry, "vocabulary defines no {0!r}".format(term))
+                self.assertIn("sink", entry)
+                self.assertIsNone(ORCH_MENTION.search(entry))
+
+    def test_the_sink_itself_is_a_term_pointing_at_its_owner(self):
+        entry = block_starting("docs/vocabulary.md", "- **state sink** —")
+        self.assertTrue(entry, "vocabulary defines no state sink")
+        self.assertIn("rules/visibility.md", entry)
+
+
+class TestOneProseOwnerForThePath(unittest.TestCase):
+    """Spec binding constraint 2: one owner per fact, and it is §6."""
+
+    def test_exactly_one_markdown_file_states_the_root_literally(self):
+        stating = [
+            relpath for relpath, text in markdown_files()
+            if any(token in text for token in LITERAL_ROOT_TOKENS)
+        ]
+        self.assertEqual([PATH_OWNER], stating)
+
+
+class TestSelfImproveSelectsByScopeAndProject(unittest.TestCase):
+    """Spec A9: the sink holds every project, so selection is by field."""
+
+    def setUp(self):
+        self.text = doc(SELF_IMPROVE)
+
+    def test_the_evidence_streams_resolve_to_the_sink(self):
+        self.assertIn("improvement/covered.jsonl", self.text)
+        self.assertIn("state sink", self.text)
+        self.assertIsNone(ORCH_MENTION.search(self.text))
+
+    def test_selection_is_by_project_field_and_cluster_scope(self):
+        collapsed = flat(self.text)
+        self.assertIn("`project` field", collapsed)
+        self.assertIn("scope", collapsed)
+        self.assertIn("never by the repository the session stands in", collapsed)
+
+    def test_both_records_are_written_through_the_installed_writer(self):
+        for invocation in IMPROVEMENT_WRITER:
+            with self.subTest(invocation=invocation):
+                self.assertIn(invocation, self.text)
+
+    def test_the_coverage_record_is_named_once(self):
+        self.assertEqual(1, self.text.count("covered.jsonl"))
+
+
+class TestFrictionFallbackNamesTheSink(unittest.TestCase):
+    """The one instruction whose staleness loses evidence in silence."""
+
+    def test_a_blocked_agent_is_sent_to_the_sink_not_to_a_repository(self):
+        for relpath in FALLBACK_FILES:
+            with self.subTest(document=relpath):
+                block = block_carrying(relpath, FALLBACK_NEEDLE)
+                self.assertTrue(
+                    block, "{0} states no friction fallback".format(relpath),
+                )
+                self.assertIn("state sink", block)
+                self.assertIn("visibility.md", block)
+                self.assertIsNone(ORCH_MENTION.search(block))
+
+
+class TestOnlyCanaryAndBinMentionsSurvive(unittest.TestCase):
+    """What may still say `.orch`: a golden fixture and an install target."""
+
+    def test_the_out_of_scope_files_carry_their_run_revision_lines(self):
+        for relpath, expected in CANARY_AND_BIN_LINES.items():
+            with self.subTest(document=relpath):
+                found = tuple(
+                    line for line in doc(relpath).splitlines()
+                    if ORCH_MENTION.search(line)
+                )
+                self.assertEqual(expected, found)
+
+    def test_every_surviving_mention_names_canary_or_bin(self):
+        stray = []
+        for relpath, text in markdown_files():
+            lines = text.splitlines()
+            for index, line in enumerate(lines):
+                if not ORCH_MENTION.search(line):
+                    continue
+                block = enclosing_block(lines, index)
+                if "canary" not in block and "bin/" not in block:
+                    stray.append("{0}:{1}: {2}".format(relpath, index + 1, line.strip()))
+        self.assertEqual([], stray)
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@ description: An accepted proposal becomes a delivered, regression-guarded change
 entry: named
 ---
 
-Require: `.orch/improvement/proposals/` and the accepting maintainer's
+Require: the state sink's `improvement/proposals/` and the accepting maintainer's
 bounds.
 
 Steps:

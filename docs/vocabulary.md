@@ -89,7 +89,7 @@ that needs a different meaning needs a different word.
 - **ad-hoc set** — ad-hoc tickets cut together with dependency edges,
   sharing one run id and ticket directory; the caller names the run
   bound; the ticket files are the whole record — no worklog.
-- **tracker** — the ticket directory `.orch/tickets/`; there is no external
+- **tracker** — the state sink's `tickets/` directory; there is no external
   tracker.
 - **executor** — the named skill a work item's frontmatter binds to do the
   work.
@@ -239,10 +239,14 @@ The benchmark pipeline has exactly four artifact roles:
 - **friction** — an observed obstruction logged during any session: extra
   attempts, missing input or tool or document, surprising output, a
   contract gap, a workaround. Observations only, never causes.
-- **friction log** — append-only JSONL under `.orch/friction/`; the
-  primary input to self-improvement.
-- **run state** — the contents of `.orch/runs/` and `.orch/tickets/`;
-  read by self-improvement as evidence only.
+- **state sink** — the one user-scope root every run's durable state and
+  both improvement evidence streams resolve to, outside every
+  repository; its path and its law are
+  [rules/visibility.md](../rules/visibility.md) §6.
+- **friction log** — append-only JSONL under the state sink's
+  `friction/`; the primary input to self-improvement.
+- **run state** — the contents of the state sink's `runs/` and
+  `tickets/`; read by self-improvement as evidence only.
 - **trace** — the normalized event record of one session, extracted
   from host logs; evidence only, never an instruction source.
 - **machinery ratio** — a trace's mechanical event count over the
