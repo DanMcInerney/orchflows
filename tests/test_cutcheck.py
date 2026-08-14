@@ -616,6 +616,86 @@ class EvalHeadTest(unittest.TestCase):
         )
 
 
+GIT_ESCAPE_MARK = Path("/tmp/cutcheck-gitescape-ran")
+
+# Each runs a program the span itself names, or moves the run out of the copy
+# meant to confine it, or reaches the network.
+GIT_ESCAPES = (
+    "git -c core.pager=touch\\ /tmp/cutcheck-gitescape-ran log",
+    "git -c alias.pwn='!touch /tmp/cutcheck-gitescape-ran' pwn",
+    "git --exec-path=/tmp/cutcheck-gitescape log",
+    "git --upload-pack=touch\\ /tmp/cutcheck-gitescape-ran fetch origin",
+    "git --receive-pack=touch\\ /tmp/cutcheck-gitescape-ran push origin",
+    "git -C /etc log",
+    "git --git-dir=/tmp/cutcheck-gitescape/.git log",
+    "git --work-tree=/etc status",
+    "git clone https://example.invalid/x",
+    "git grep -O/tmp/cutcheck-gitescape-ran pattern",
+)
+
+
+class GitEscapeTest(unittest.TestCase):
+    """A git span is untrusted content too: only a confined subcommand runs.
+
+    The head alone excuses nothing and grants nothing. Git runs a program the
+    span names through `-c core.pager=`, `-c alias.x=!`, `--exec-path`,
+    `--upload-pack` and `--receive-pack`, and leaves the scratch copy through
+    `-C`, `--git-dir` and `--work-tree`. The subcommands that run are a closed
+    set, so the flag git ships next is refused before anyone has heard of it.
+    """
+
+    def setUp(self):
+        GIT_ESCAPE_MARK.unlink(missing_ok=True)
+        self.addCleanup(GIT_ESCAPE_MARK.unlink, True)
+        self.result = run_cutcheck("cutcheck-gitescape")
+
+    def test_the_injected_span_did_not_run(self):
+        self.assertFalse(GIT_ESCAPE_MARK.exists(), self.result.stdout)
+
+    def test_the_span_is_reported_rather_than_run(self):
+        lines = [
+            line for line in self.result.stdout.splitlines() if "01-gitescape" in line
+        ]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.UNCONFINED_ORACLE, lines[0])
+
+    def test_a_refused_span_is_a_finding_and_not_a_silence(self):
+        self.assertNotIn(cutcheck.UNCONFINED_ORACLE, cutcheck.ADVISORY)
+        self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
+
+    def test_every_escape_the_head_used_to_carry_is_refused(self):
+        for command in GIT_ESCAPES:
+            self.assertTrue(cutcheck._unconfined_git(command), command)
+            self.assertIn(cutcheck.UNCONFINED_ORACLE, cutcheck._shape(command), command)
+
+    def test_the_oracles_the_graded_set_states_still_run(self):
+        for command in (
+            "git log -1 --format=%H",
+            "git diff ac8791a -- install.py",
+            "git merge-base --is-ancestor ac8791a HEAD",
+            "git rev-list --count HEAD",
+            "git status --porcelain",
+        ):
+            self.assertFalse(cutcheck._unconfined_git(command), command)
+            self.assertEqual(cutcheck._shape(command), [], command)
+
+    def test_a_head_that_is_not_git_is_judged_by_no_git_rule(self):
+        for command in ("grep -n SCRIPT_NAMES install.py", "python3 tools/validate.py"):
+            self.assertFalse(cutcheck._unconfined_git(command), command)
+
+    def test_the_gate_reads_the_argv_that_would_run(self):
+        # Split the way `_run_once` splits, or the gate grades one command and
+        # execution runs another. Quoting that resolves to a confined
+        # subcommand is confined; quoting that resolves to anything else is not.
+        self.assertFalse(cutcheck._unconfined_git("git 'log' -1 --format=%H"))
+        self.assertTrue(cutcheck._unconfined_git("git 'log x' -1"))
+
+    def test_a_span_no_split_parses_is_claimed_by_nothing_and_runs_nowhere(self):
+        unparsed = 'git log "'
+        self.assertFalse(cutcheck._unconfined_git(unparsed))
+        self.assertIsNone(cutcheck._run_once(unparsed, ROOT))
+
+
 class BareCommandNounTest(unittest.TestCase):
     """A backticked command head with no argument names the tool, not an oracle."""
 
@@ -875,10 +955,20 @@ class BinaryOutputOracleTest(unittest.TestCase):
     A tree with history runs git oracles, and `git archive` prints a tar.
     Decoding that as text raised UnicodeDecodeError out of the run itself, so
     one such span in one ticket cost the whole invocation its report.
+
+    Graded in a scratch copy, never in the tree under test: the module's own
+    invariant is that oracles run in a copy cloned beside the tree, and a test
+    that runs one in the repository it is testing is the one place that broke.
     """
 
+    def setUp(self):
+        scratch_root = Path(tempfile.mkdtemp(prefix=".cutcheck-binary-"))
+        self.addCleanup(shutil.rmtree, scratch_root, True)
+        self.tree = cutcheck._scratch_tree(BASELINE, ROOT, scratch_root)
+        self.assertIsNotNone(self.tree, "no scratch tree was built for the baseline")
+
     def test_a_command_printing_binary_is_graded_on_its_exit_status(self):
-        self.assertEqual(cutcheck._run_once("git archive HEAD", ROOT), 0)
+        self.assertEqual(cutcheck._run_once("git archive HEAD", self.tree), 0)
 
 
 class ScratchTreeHistoryTest(unittest.TestCase):
@@ -1045,6 +1135,49 @@ class CutTimeDecidabilityTest(unittest.TestCase):
 
     def test_an_oracle_nothing_can_run_sets_the_exit_status(self):
         self.assertNotIn(cutcheck.UNRUNNABLE_ORACLE, cutcheck.ADVISORY)
+
+
+class HeadHalfNonReadingTest(unittest.TestCase):
+    """A HEAD half that produced no reading is not a failure at both revisions.
+
+    The baseline half already refuses to call a non-reading a failure; the HEAD
+    half had no such branch, so a timeout there fell through to
+    `fails-both-revisions` and an oracle that discriminates perfectly was
+    reported as one that never discriminates. This tool's own suite is the case
+    that found it: `tests.test_cutcheck` outgrew `COMMAND_TIMEOUT`, so the
+    reading at HEAD is a timeout and the verdict drawn from it was a fiction.
+    """
+
+    def _class(self, at_head):
+        def exit_code(command, tree):
+            return 1 if str(tree) == "/baseline" else at_head
+
+        with mock.patch.object(cutcheck, "_exit_code", side_effect=exit_code):
+            return cutcheck._discrimination(
+                "python3 -m unittest tests.test_cutcheck",
+                Path("/baseline"),
+                Path("/head"),
+            )
+
+    def test_a_timeout_at_head_is_a_non_reading_and_not_a_failure(self):
+        self.assertEqual(self._class(cutcheck.TIMED_OUT), cutcheck.UNRUNNABLE_ORACLE)
+
+    def test_a_command_nothing_could_run_at_head_reads_the_same(self):
+        self.assertEqual(self._class(cutcheck.UNRUNNABLE), cutcheck.UNRUNNABLE_ORACLE)
+
+    def test_a_real_failure_at_both_revisions_is_still_reported_as_one(self):
+        self.assertEqual(self._class(1), cutcheck.FAILS_BOTH_REVISIONS)
+
+    def test_an_oracle_passing_at_head_still_discriminates(self):
+        self.assertIsNone(self._class(0))
+
+    def test_the_two_halves_refuse_the_same_pair_of_non_readings(self):
+        for code in (cutcheck.TIMED_OUT, cutcheck.UNRUNNABLE):
+            with mock.patch.object(cutcheck, "_exit_code", return_value=code):
+                self.assertEqual(
+                    cutcheck._discrimination("pytest tests", Path("/b"), Path("/h")),
+                    cutcheck.UNRUNNABLE_ORACLE,
+                )
 
 
 class ScopeContainmentTest(unittest.TestCase):

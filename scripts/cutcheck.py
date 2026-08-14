@@ -28,7 +28,9 @@ tool cannot decide. A ``git`` oracle is no exception in either direction: the
 scratch copy carries its history, so a git command reads the revision under
 test and is graded on its exit status like any other, and the count-flagged
 one -- ``git rev-list --count`` -- is undecidable for its count, never for
-its head.
+its head. Grading a git span is still not trusting it: only a subcommand
+named as reading the revision and reaching nothing outside the scratch copy
+is run, and every other git span is refused and reported.
 
 Path reality: a path an oracle names exists at the baseline, or the item
 itself or a ``depends_on`` ancestor creates it; a ``file:line`` or
@@ -58,12 +60,14 @@ or assembly cell names, and is never an engine -- an engine dispatches
 an executor rather than being one. An item naming no pack has no cell to
 resolve against, so only the prohibition applies.
 
-Shape: the command text itself carries two defects. A pipeline through
+Shape: the command text itself carries three defects. A pipeline through
 ``tail`` or ``head`` reports that pipe's exit status, not the check's. A
 per-item scope check written against a cumulative ``<base>..HEAD`` range
-answers about the whole branch, not the item.
+answers about the whole branch, not the item. A ``git`` span the scratch copy
+does not confine is refused unrun, because ticket content decides no program
+this tool executes and no directory it executes in.
 
-Both of those set the exit status. An extraction gap, an absent coverage
+All three set the exit status. An extraction gap, an absent coverage
 map, and a class this tool reports as one it cannot decide do not: a
 criterion whose oracle no extractor recognized is reported on its own
 line so silent under-coverage stays visible, but real tickets state many
@@ -116,6 +120,7 @@ NO_HITS_BOTH_REVISIONS = "no-hits-both-revisions"
 FAILS_BOTH_REVISIONS = "fails-both-revisions"
 SWALLOWED_EXIT = "swallowed-exit"
 CUMULATIVE_RANGE = "cumulative-range"
+UNCONFINED_ORACLE = "unconfined-oracle"
 EXTRACTION_GAP = "extraction-gap"
 VERDICT_IN_OUTPUT = "verdict-in-output"
 UNRUNNABLE_ORACLE = "unrunnable-oracle"
@@ -136,6 +141,7 @@ FAMILY_OF = {
     FAILS_BOTH_REVISIONS: FAMILY,
     SWALLOWED_EXIT: FAMILY,
     CUMULATIVE_RANGE: FAMILY,
+    UNCONFINED_ORACLE: FAMILY,
     EXTRACTION_GAP: FAMILY,
     VERDICT_IN_OUTPUT: FAMILY,
     UNRUNNABLE_ORACLE: FAMILY,
@@ -197,6 +203,32 @@ COMMAND_HEADS = (
 )
 SEARCH_HEADS = ("grep", "rg")
 GIT_HEAD = "git"
+# The git subcommands a scratch copy confines: each reads the revision under
+# test, runs no program the span names, and reaches nothing outside the copy.
+# A closed set rather than a list of flags to refuse, because git's surface is
+# open at both ends -- `-c core.pager=`, `-c alias.x=!`, `--exec-path`,
+# `--upload-pack` and `--receive-pack` each run a named program by design, `-C`,
+# `--git-dir` and `--work-tree` each move the execution out of the copy meant to
+# confine it, and `clone` reaches the network. Refusing that list leaves the
+# next flag git ships unrefused; refusing everything unlisted does not.
+# `grep` is not here: `git grep -O` opens matches in a named pager, and plain
+# `grep` is already a head this tool extracts and runs.
+GIT_CONFINED_SUBCOMMANDS = frozenset(
+    {
+        "cat-file",
+        "describe",
+        "diff",
+        "log",
+        "ls-files",
+        "ls-tree",
+        "merge-base",
+        "rev-list",
+        "rev-parse",
+        "show",
+        "show-ref",
+        "status",
+    }
+)
 # An interpreter under one of these reads its program from the line, or from
 # stdin, rather than from the tree: the same hazard a shell head is refused
 # for, through a head an extractor otherwise accepts. Only these heads
@@ -421,12 +453,41 @@ def _evaluates_code(argv):
     return argv[0] in EVAL_HEADS and any(token in EVAL_ARGS for token in argv[1:])
 
 
+def _unconfined_git(command):
+    """Is this a git span the scratch copy does not confine?
+
+    A confined span is ``git <subcommand>`` with the subcommand in the confined
+    set. Position carries the whole escape question: every way git runs a named
+    program or leaves the tree it was pointed at is a global option, and a
+    global option is exactly a token standing before the subcommand, so a set
+    that holds no token beginning with ``-`` refuses all of them by shape. What
+    remains -- a pager, an alias, a textconv or ext-diff driver -- git reads
+    from configuration, which is the clone's own and which no ticket writes.
+
+    Tokenised the way ``_run_once`` tokenises, so the span read here is the argv
+    that would run: a gate splitting the text some other way grades one command
+    and executes another.
+    """
+
+    try:
+        argv = shlex.split(command)
+    except ValueError:
+        return False
+    if not argv or argv[0] != GIT_HEAD:
+        return False
+    return len(argv) < 2 or argv[1] not in GIT_CONFINED_SUBCOMMANDS
+
+
 def _shape(command):
+    """The defects the command text carries, judged without running it."""
+
     classes = []
     if SWALLOW_RE.search(command):
         classes.append(SWALLOWED_EXIT)
     if CUMULATIVE_RE.search(command):
         classes.append(CUMULATIVE_RANGE)
+    if _unconfined_git(command):
+        classes.append(UNCONFINED_ORACLE)
     return classes
 
 
@@ -499,7 +560,9 @@ def _discrimination(command, baseline_tree, head_tree):
     A baseline read that could not run at all is revision-independent -- no
     work makes an absent command exist -- so it is reported without asking
     HEAD, and at cut time, where there is no HEAD half to ask, it is reported
-    all the same.
+    all the same. Neither half's non-reading is a failure: a read that timed
+    out or could not run decided nothing, and is reported as deciding nothing
+    whichever half produced it.
     """
 
     at_baseline = _exit_code(command, baseline_tree)
@@ -514,6 +577,14 @@ def _discrimination(command, baseline_tree, head_tree):
     at_head = _exit_code(command, head_tree)
     if at_head is None or at_head == 0:
         return None
+    if at_head in (UNRUNNABLE, TIMED_OUT):
+        # The same reading the baseline half already refuses to call a failure.
+        # A command that never returned, or that nothing could run, produced no
+        # verdict at HEAD; "fails at both revisions" claims one. An oracle that
+        # discriminates perfectly reads as one that never discriminates, and
+        # the timeout that says so is the likeliest reading of all -- a suite
+        # outgrowing COMMAND_TIMEOUT is the ordinary way here.
+        return UNRUNNABLE_ORACLE
     searching = command.split(" ", 1)[0] in SEARCH_HEADS
     if searching and at_baseline == NO_MATCH and at_head == NO_MATCH:
         return NO_HITS_BOTH_REVISIONS
@@ -977,7 +1048,9 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
         for command in commands:
             shape = _shape(command)
             if shape:
-                # A swallowed pipeline cannot be run argv-only anyway.
+                # Reported and never run: a swallowed pipeline cannot be run
+                # argv-only anyway, and an unconfined git span must not be.
+                # This `continue` is the refusal -- everything below executes.
                 findings.extend((ticket_id, number, k, command) for k in shape)
                 continue
             missing = [
