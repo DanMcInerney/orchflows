@@ -408,6 +408,116 @@ class TestVerificationHomelessLaws(unittest.TestCase):
         )
 
 
+class TestWorkItemCitationLaws(unittest.TestCase):
+    """`contracts/work-item.md` resolves three collisions no other file
+    owns: whose `status` a `Return fields` list names, who sets
+    `isolation` and when the join grades it, and what a fixed input may
+    cite."""
+
+    def contract(self):
+        return read_flat("work-item.md")
+
+    def test_return_fields_status_is_the_result_envelopes(self):
+        text = self.contract()
+        self.assertIn(
+            "A `status` in this list is the result envelope's", text,
+            "work-item.md's `## Return fields` bullet does not say a `status` "
+            "named there is the result envelope's",
+        )
+        self.assertIn(
+            "[result.md](result.md)", text,
+            "work-item.md's `## Return fields` bullet does not cite result.md "
+            "as the envelope owning that `status`",
+        )
+        self.assertIn(
+            "never the ticket frontmatter key above, which only the join sets",
+            text,
+            "work-item.md's `## Return fields` bullet does not exclude the "
+            "ticket frontmatter key the join alone sets",
+        )
+
+    def test_isolation_names_its_only_setter_and_the_grading_order(self):
+        text = self.contract()
+        self.assertIn(
+            "The decomposer is the field's only setter", text,
+            "work-item.md's `isolation` bullet does not name the decomposer as "
+            "the field's only setter",
+        )
+        self.assertIn(
+            "`scripts/workspace.py check`", text,
+            "work-item.md's `isolation` bullet no longer names "
+            "`scripts/workspace.py check` as what grades the declaration",
+        )
+        self.assertIn(
+            "before the merge, because afterwards the item's tip is already an "
+            "ancestor of the run tip and a stamped item exits clean by design",
+            text,
+            "work-item.md's `isolation` bullet does not order "
+            "`scripts/workspace.py check` before the merge, nor give the "
+            "reason the check decides nothing after it",
+        )
+
+    def test_fixed_inputs_forbid_a_line_number_by_citing_identity(self):
+        text = self.contract()
+        self.assertIn(
+            "never prose copies", text,
+            "work-item.md's `## Fixed inputs` bullet lost its existing "
+            "prohibition on a prose copy",
+        )
+        self.assertIn(
+            "never a line number", text,
+            "work-item.md's `## Fixed inputs` bullet does not forbid citing a "
+            "fixed input by line number",
+        )
+        self.assertIn(
+            "[docs/vocabulary.md](../docs/vocabulary.md)'s `identity` entry",
+            text,
+            "work-item.md's `## Fixed inputs` bullet does not resolve the "
+            "line-number prohibition against the `identity` entry that owns "
+            "it; the citation is the property, never a restatement",
+        )
+
+
+class TestWorklogNoteLaws(unittest.TestCase):
+    """`contracts/worklog.md` owns note ordering, the terminal-section
+    boundary, and the refusal that keeps an artifact write from
+    overwriting silently. `scripts/tickets.py` implements them."""
+
+    def contract(self):
+        return read_flat("worklog.md")
+
+    def test_notes_append_in_occurrence_order(self):
+        self.assertIn(
+            "Notes append in occurrence order", self.contract(),
+            "worklog.md does not state that notes append in occurrence order",
+        )
+
+    def test_no_note_is_written_past_a_terminal_section(self):
+        text = self.contract()
+        self.assertIn(
+            "no note is written past a terminal section", text,
+            "worklog.md does not close the file at its terminal section",
+        )
+        self.assertIn(
+            "carries no terminal placeholder until it closes", text,
+            "worklog.md does not draw the consequence that an open run has no "
+            "terminal placeholder for a note to land past",
+        )
+
+    def test_an_existing_artifact_is_not_overwritten_silently(self):
+        text = self.contract()
+        self.assertIn(
+            "Writing an artifact that already exists is refused by default",
+            text,
+            "worklog.md does not refuse a write over an existing artifact",
+        )
+        self.assertIn(
+            "the refusal naming the existing path", text,
+            "worklog.md's overwrite refusal does not name the existing path, "
+            "so the refusal is not actionable",
+        )
+
+
 class TestSkillDescriptions(unittest.TestCase):
     def test_every_skill_description_is_at_most_140_chars(self):
         skill_files = sorted(SKILLS.glob("*/*/SKILL.md"))
