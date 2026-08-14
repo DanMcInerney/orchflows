@@ -1977,6 +1977,117 @@ class TestPacketEmitsTheEstablishmentCommand(unittest.TestCase):
         self.assertIn("with_name", source)
 
 
+def repacked(pack: str, body: str = ISOLATED_TICKET) -> str:
+    """`body` restamped onto another pack. Every fixture below differs from
+    the next in that one field, so nothing else can be what moved."""
+
+    restamped = body.replace("pack: orch-code-pack", f"pack: {pack}")
+    assert restamped != body or pack == "orch-code-pack", pack
+    return restamped
+
+
+class PackWorkspaceTest(unittest.TestCase):
+    """`isolation: required` says this item works alone; the pack's
+    `workspace` cell says what working alone is made of. Only a git mechanism
+    has a workspace `scripts/workspace.py start` can establish — it branches
+    and adds a worktree — so under a document-tree or evidence-store pack the
+    emitted command is an instruction to do something the run's mechanism has
+    no meaning for. `packet` conditions on both, never on `isolation` alone."""
+
+    def lines_for(self, body: str) -> list:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_packet_repo(tmp, body)
+            packet = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")
+            self.assertIn("packet", packet, packet)
+            return establishment_lines(packet["packet"]["prompt"])
+
+    def prompt_for(self, body: str) -> str:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_packet_repo(tmp, body)
+            return run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")[
+                "packet"
+            ]["prompt"]
+
+    def test_a_git_cell_pack_that_is_required_carries_the_invocation(self):
+        for pack in ("orch-code-pack", "orch-design-pack"):
+            lines = self.lines_for(repacked(pack))
+            self.assertEqual(1, len(lines), (pack, lines))
+            self.assertEqual(["start", "testrun", "T1"], lines[0].split()[2:], pack)
+
+    def test_a_non_git_cell_pack_that_is_required_carries_none(self):
+        for pack in ("orch-content-pack", "orch-research-pack"):
+            prompt = self.prompt_for(repacked(pack))
+            self.assertEqual([], establishment_lines(prompt), (pack, prompt))
+            # omitted entirely: not the command, not a mention of it
+            self.assertNotIn("workspace.py", prompt, pack)
+
+    def test_the_declaration_is_still_reported_faithfully(self):
+        """Suppressing the step never rewrites what the item declared: the
+        packet still reads `required`, so a join grading isolation sees the
+        item's own value and not this script's opinion of it."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_packet_repo(tmp, repacked("orch-content-pack"))
+            packet = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")[
+                "packet"
+            ]
+            self.assertEqual("required", packet["isolation"])
+            self.assertEqual("orch-content-pack", packet["pack"])
+
+    def test_a_content_pack_with_the_field_absent_carries_none(self):
+        """Coverage of the item shape a decomposer emits for a content lane —
+        no `isolation` at all — not discrimination: `packet` omitted the
+        command for an absent field before this table existed."""
+
+        prompt = self.prompt_for(repacked("orch-content-pack", FULL_TICKET))
+        self.assertNotIn("isolation:", prompt)
+        self.assertEqual([], establishment_lines(prompt), prompt)
+        self.assertNotIn("workspace.py", prompt)
+
+    def test_the_git_half_needs_the_declaration_too(self):
+        """The pack is a second condition, never a replacement for the first:
+        a git-cell pack that never declared isolation is still told nothing."""
+
+        prompt = self.prompt_for(FULL_TICKET)
+        self.assertEqual([], establishment_lines(prompt), prompt)
+        self.assertNotIn("workspace.py", prompt)
+
+    def test_a_pack_absent_from_the_table_still_gets_the_command(self):
+        """The table can only be as current as the last sync. An unknown pack
+        resolves toward emitting: a child handed a step its mechanism cannot
+        use fails at its first act, in the open, while an omitted step leaves
+        an isolated item working in the shared tree and losing it at the
+        join, with nothing to see."""
+
+        for pack in ("orch-widget-pack", ""):
+            prompt = self.prompt_for(repacked(pack))
+            self.assertEqual(1, len(establishment_lines(prompt)), (pack, prompt))
+
+    def test_the_table_is_hardcoded_beside_the_engine_list(self):
+        """The shape `ENGINE_EXECUTORS` set: a module-level literal, not a
+        tree read, because an installed copy of this script runs against a
+        target repository that carries no `packs/` at all."""
+
+        table = tickets_mod.PACK_WORKSPACE_MECHANISMS
+        self.assertIsInstance(table, dict)
+        self.assertTrue(all(isinstance(v, str) and v for v in table.values()), table)
+        lines = TICKETS_PY.read_text(encoding="utf-8").splitlines()
+        index = next(
+            i for i, line in enumerate(lines)
+            if line.startswith("PACK_WORKSPACE_MECHANISMS = ")
+        )
+        comment = []
+        while index and lines[index - 1].lstrip().startswith("#"):
+            index -= 1
+            comment.insert(0, lines[index])
+        comment = "\n".join(comment)
+        for token in ("packs/", "tests/test_sync.py", "workspace"):
+            self.assertIn(token, comment, comment)
+
+
 @unittest.skipUnless(git_available(), "git is not on PATH")
 class TestExecutedPacketSeam(unittest.TestCase):
     """The establishment line is not read, it is run: lifted verbatim out of

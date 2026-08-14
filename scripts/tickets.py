@@ -84,6 +84,20 @@ SECTION_RANK = {name.lower(): i for i, name in enumerate(SECTION_ORDER)}
 # executes in a workspace of its own. The sibling script grades the same
 # declaration; the spelling belongs to the contract, not to either script.
 REQUIRED_ISOLATION = "required"
+# Each pack's `workspace` cell names its mechanism first, before the cell's
+# colon; this is that name, per pack. Only a git mechanism has a workspace
+# `scripts/workspace.py start` can establish, so only those packs are emitted
+# a step for. Mirrors packs/; tests/test_sync.py holds the two in sync,
+# because an installed copy of this script runs against a target repository
+# with no library tree to read the cell from.
+PACK_WORKSPACE_MECHANISMS = {
+    "orch-code-pack": "git",
+    "orch-content-pack": "document tree",
+    "orch-design-pack": "git plus render",
+    "orch-research-pack": "evidence store",
+}
+# The mechanisms above that are a git ref, and so establishable from here.
+GIT_WORKSPACE_MECHANISMS = frozenset({"git", "git plus render"})
 # rules/visibility.md §6's `.orch/` trees a run writes into, as a closed set.
 # `runs/` is the worklog's own and stays the default, so every pre-existing
 # call site lands exactly where it always did. The other three are named
@@ -175,6 +189,22 @@ def normalized_isolation(declared) -> str:
     """
 
     return str(declared or "none").strip().strip("`").strip() or "none"
+
+
+def establishes_a_git_workspace(pack) -> bool:
+    """Whether `pack`'s workspace cell names a mechanism this script can
+    establish a workspace in.
+
+    A pack absent from the table answers yes. The table is only as current as
+    its last sync, and the two mistakes are not equal: a child handed a step
+    its mechanism has no meaning for fails at its first act, in the open,
+    while a child not handed one it needed works in the shared tree and loses
+    that work at the join with nothing to see.
+    """
+
+    name = str(pack or "").strip().strip("`").strip()
+    mechanism = PACK_WORKSPACE_MECHANISMS.get(name)
+    return mechanism is None or mechanism in GIT_WORKSPACE_MECHANISMS
 
 
 # --- repository / filesystem helpers ---------------------------------------
@@ -829,10 +859,15 @@ def _cmd_packet(rest):
     script = Path(__file__).resolve()
     # contracts/work-item.md's `isolation`: absent reads `none`, and only
     # `required` is told to establish anything, so a lane that must not stamp
-    # itself is never handed the command. The sibling resolves from this
+    # itself is never handed the command. The pack is the second condition:
+    # `required` says the item works alone, its pack's workspace cell says
+    # what working alone is made of, and only a git mechanism is made of
+    # something this command can establish. The sibling resolves from this
     # file's own location, so it points at whichever copy is running.
     isolation = normalized_isolation(loaded.get("isolation"))
-    if isolation == REQUIRED_ISOLATION:
+    if isolation == REQUIRED_ISOLATION and establishes_a_git_workspace(
+        loaded.get("pack")
+    ):
         prompt.append(
             "Workspace establishment (isolation: required), your first act, "
             "run from inside your own workspace:"
