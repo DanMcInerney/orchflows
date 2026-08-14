@@ -91,7 +91,7 @@ parts:
 - `## Objective` — packet `objective`: one observable end state, never
   activities.
 - `## Fixed inputs` — packet `inputs`: evidence by identity, never prose
-  copies and never a line number, which
+  copies and never an unpinned coordinate, which
   [docs/vocabulary.md](../docs/vocabulary.md)'s `identity` entry
   excludes. An item carries verbatim every spec field its executor's
   Require names.
