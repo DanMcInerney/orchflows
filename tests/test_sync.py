@@ -7,7 +7,14 @@ and AGENTS.md against rules/improvement.md rule 1's closed set and
 sentence. Follows tests/test_carriage.py's
 isolated-tmp-tree-plus-subprocess idiom, scoped to the owner/copy
 files this check reads (no skills/packs tree -- validate_sync does not
-discover packages)."""
+discover packages).
+
+Also holds the one literal copy that is not validate.py's: scripts/
+tickets.py's PACK_WORKSPACE_MECHANISMS against the packs' own workspace
+cells. That copy exists because an installed tickets.py has no library
+tree to read; nothing else then notices when a cell and the table move
+apart, which is what this module is for."""
+import ast
 import shutil
 import subprocess
 import sys
@@ -18,6 +25,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+import scripts.tickets as tickets_mod  # noqa: E402
 
 VALIDATE = ROOT / "tools" / "validate.py"
 CONTRACTS = ROOT / "contracts"
@@ -173,6 +182,73 @@ class TestSyncAgainstRepo(unittest.TestCase):
         self.assertNotIn("out of sync", result.stdout)
         self.assertNotIn("BODY_BUDGET", result.stdout)
         self.assertNotIn("ENVELOPE_UNITS", result.stdout)
+
+
+PACKS = ROOT / "packs"
+TICKETS_PY = ROOT / "scripts" / "tickets.py"
+
+
+def workspace_mechanism(skill_md: Path) -> str:
+    """The mechanism a pack's `workspace` cell names: the text before that
+    cell's first colon, which is where every pack states it."""
+
+    for line in skill_md.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        parts = stripped.split("|", 3)
+        if len(parts) < 4 or parts[1].strip() != "workspace":
+            continue
+        cell = parts[2].strip()
+        head, sep, _ = cell.partition(":")
+        if not sep:
+            raise AssertionError(f"{skill_md}: workspace cell names no mechanism: {cell}")
+        return head.strip()
+    raise AssertionError(f"{skill_md}: no `workspace` row")
+
+
+class TestPackWorkspaceTableAgainstPacks(unittest.TestCase):
+    """scripts/tickets.py's PACK_WORKSPACE_MECHANISMS against its owners, the
+    packs' own `workspace` cells. `packet` emits the establishment step only
+    for a git mechanism, so a cell that changes mechanism without the table
+    changing with it silently stops -- or starts -- stamping a lane."""
+
+    def test_the_table_covers_exactly_the_packs_that_exist(self):
+        packs = {path.name for path in PACKS.iterdir() if (path / "SKILL.md").is_file()}
+        self.assertEqual(packs, set(tickets_mod.PACK_WORKSPACE_MECHANISMS))
+
+    def test_every_entry_matches_its_cell(self):
+        for pack, mechanism in sorted(tickets_mod.PACK_WORKSPACE_MECHANISMS.items()):
+            self.assertEqual(
+                mechanism,
+                workspace_mechanism(PACKS / pack / "SKILL.md"),
+                f"{pack}: table and workspace cell disagree",
+            )
+
+    def test_the_git_set_names_only_mechanisms_the_cells_name(self):
+        named = set(tickets_mod.PACK_WORKSPACE_MECHANISMS.values())
+        self.assertLessEqual(set(tickets_mod.GIT_WORKSPACE_MECHANISMS), named)
+
+    def test_the_table_is_a_literal_not_a_read_of_the_tree(self):
+        """Without this the two checks above are vacuous: a table computed
+        from `packs/` matches `packs/` by construction, and the installed
+        script that has no `packs/` is the one that breaks."""
+
+        tree = ast.parse(TICKETS_PY.read_text(encoding="utf-8"))
+        found = [
+            node.value
+            for node in tree.body
+            if isinstance(node, ast.Assign)
+            and any(
+                isinstance(target, ast.Name)
+                and target.id == "PACK_WORKSPACE_MECHANISMS"
+                for target in node.targets
+            )
+        ]
+        self.assertEqual(1, len(found), "expected one module-level assignment")
+        self.assertIsInstance(found[0], ast.Dict)
+        for node in [*found[0].keys, *found[0].values]:
+            self.assertIsInstance(node, ast.Constant, ast.dump(node))
 
 
 if __name__ == "__main__":
