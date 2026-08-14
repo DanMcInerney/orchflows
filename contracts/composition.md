@@ -33,6 +33,6 @@ Admission through `orch-build` rejects a composition missing
 `invariants` or `done_check`, or with a step no invariant binds.
 
 Runtime instances: a multi-run request materializes an unnamed
-instance at `.orch/runs/<run>/composition.md` — chains and saved
-workflows share this one representation, and cross-session resumption
-reads it.
+instance at `<state-root>/runs/<run>/composition.md`, beside the run's
+[worklog](worklog.md) — chains and saved workflows share this one
+representation, and cross-session resumption reads it.

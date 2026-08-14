@@ -8,13 +8,14 @@ ticket in the local tracker — the one durable record of its dispatch; the
 executor writes its result into the same file. There is no external
 tracker.
 
-Location: `<main-repository-root>/.orch/tickets/<run>/<id>.md`, where the
-main repository root is the shared root a linked worktree's `.git` pointer
-resolves to — never the worktree's own root. One run's tickets have exactly
-one path, identical from the orchestrator, from every executor workspace,
-and after any workspace is removed. A dispatch names this path absolutely;
-an `excluded_actions` that forbids a directory always carves out the run's
-own `.orch/`, since the executor is required to write its Result there.
+Location: `<state-root>/tickets/<run>/<id>.md`, where the state root is the
+user-scope sink `scripts/state_root.py` resolves — one per user, outside
+every repository. One run's tickets have exactly one path, identical from
+the orchestrator, from every executor workspace, after any workspace is
+removed, and after the repository is removed. A dispatch names this path
+absolutely; an `excluded_actions` that forbids a directory always carves
+out the run's own directory in the sink, since the executor is required to
+write its Result there.
 
 Frontmatter, mapped to packet parts, lifecycle, and graph position:
 
