@@ -1123,5 +1123,146 @@ class TestRelativeGitdirPointer(unittest.TestCase):
             self.assertEqual(main.resolve(), tickets_mod._find_repo_root(worktree))
 
 
+FENCE_TICKET_TAIL = (
+    "\n## Result\n\nOLD BODY\n\n"
+    "```markdown\n## Objective\nquoted heading\n```\n\n"
+    "## Feedback\n\n[]\n"
+)
+
+
+def fence_broken(worktree_pair, tail: str) -> Path:
+    """Append `tail` to the fixture ticket and hand back its path."""
+
+    _main, _worktree, run_dir = worktree_pair
+    ticket = run_dir / "T1.md"
+    ticket.write_text(ticket.read_text(encoding="utf-8") + tail, encoding="utf-8")
+    return ticket
+
+
+class TestUnterminatedFenceIsReported(unittest.TestCase):
+    """A fence that never closes hides every heading below it from
+    `_heading_lines`, so the writer used to conclude the section was absent
+    and create a second one -- leaving two `## Result` headings that
+    `_sections` resolves to neither, since the fence swallows both. The file
+    is corrupt input at that point: the only safe write is none, reported."""
+
+    def test_an_unterminated_fence_in_an_earlier_section_is_reported_not_duplicated(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            pair = make_worktree(Path(tmp), {"T1": ("claimed", "[]")})
+            ticket = fence_broken(
+                pair,
+                "\n## Verification\n\n```text\nRan 1 test\nOK\n\n"  # never closed
+                "## Result\n\nOLD BODY\n",
+            )
+            before = ticket.read_text(encoding="utf-8")
+            payload = run_cmd(
+                pair[1], "result", "testrun", "T1", "--section", "Result",
+                "--text", "REPLACED",
+            )
+            self.assertIn("unterminated fence", payload.get("error", ""), payload)
+            self.assertNotIn("result", payload)
+            after = ticket.read_text(encoding="utf-8")
+            self.assertEqual(before, after)
+            self.assertEqual(1, after.count("\n## Result"), after)
+            self.assertNotIn("REPLACED", after)
+
+    def test_the_refusal_covers_append_a_tilde_fence_and_a_fence_below_the_target(self):
+        tails = {
+            "tilde opener": "\n## Verification\n\n~~~\nRan 1 test\n\n## Result\n\nOLD\n",
+            "opened below the target": "\n## Result\n\nOLD\n\n## Feedback\n\n```\nopen\n",
+        }
+        for name, tail in tails.items():
+            for mode in ([], ["--append"]):
+                with self.subTest(tail=name, mode=mode or ["replace"]):
+                    with tempfile.TemporaryDirectory() as tmp:
+                        pair = make_worktree(Path(tmp), {"T1": ("claimed", "[]")})
+                        ticket = fence_broken(pair, tail)
+                        before = ticket.read_text(encoding="utf-8")
+                        payload = run_cmd(
+                            pair[1], "result", "testrun", "T1", "--section", "Result",
+                            "--text", "REPLACED", *mode,
+                        )
+                        self.assertIn("unterminated fence", payload.get("error", ""), payload)
+                        self.assertEqual(before, ticket.read_text(encoding="utf-8"))
+
+
+class TestIndentedFenceIsNotAFence(unittest.TestCase):
+    """CommonMark 4.4-4.5: at four columns of indentation a ``` line is
+    indented-code content, not a fence. Opening a block there is how a
+    ticket that merely quotes an indented snippet became unwritable."""
+
+    def test_a_four_space_indented_fence_is_not_a_fence(self):
+        self.assertEqual(
+            [0, 5],
+            tickets_mod._heading_lines([
+                "## Objective",
+                "",
+                "    ```",
+                "    ## quoted inside an indented block",
+                "",
+                "## Result",
+            ]),
+        )
+        # up to three columns it is still a fence, and so is an unindented one
+        self.assertEqual([0], tickets_mod._heading_lines(["## A", "   ```", "## B", "```"]))
+        self.assertEqual([0], tickets_mod._heading_lines(["## A", "```", "## B", "```"]))
+
+    def test_a_section_below_an_indented_fence_is_replaced_not_duplicated(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            pair = make_worktree(Path(tmp), {"T1": ("claimed", "[]")})
+            ticket = fence_broken(
+                pair,
+                "\n## Verification\n\n    ```\n    ## quoted\n\n## Result\n\nOLD BODY\n",
+            )
+            payload = run_cmd(
+                pair[1], "result", "testrun", "T1", "--section", "Result",
+                "--text", "REPLACED",
+            )
+            self.assertIn("result", payload)
+            text = ticket.read_text(encoding="utf-8")
+            self.assertEqual(1, text.count("\n## Result"), text)
+            sections = tickets_mod._sections(text)
+            self.assertEqual("REPLACED", sections["Result"])
+            self.assertIn("## quoted", sections["Verification"])
+
+
+class TestFenceRepairHoldsBothDirections(unittest.TestCase):
+    """The repair `d8af1c4` made -- a balanced fenced heading is quoted
+    content, not a boundary -- and the refusal this item adds are one
+    behavior read two ways. Pinning them in one case is what keeps a later
+    change from buying either direction with the other."""
+
+    def test_the_repair_holds_in_both_directions(self):
+        # balanced: the quotation stays quoted and the span is replaced
+        with tempfile.TemporaryDirectory() as tmp:
+            pair = make_worktree(Path(tmp), {"T1": ("claimed", "[]")})
+            ticket = fence_broken(pair, FENCE_TICKET_TAIL)
+            payload = run_cmd(
+                pair[1], "result", "testrun", "T1", "--section", "Result",
+                "--text", "REPLACED",
+            )
+            self.assertIn("result", payload)
+            text = ticket.read_text(encoding="utf-8")
+            sections = tickets_mod._sections(text)
+            self.assertEqual("REPLACED", sections["Result"])
+            self.assertEqual("Test ticket.", sections["Objective"])
+            self.assertEqual("[]", sections["Feedback"])
+            self.assertNotIn("quoted heading", text)
+
+        # the same ticket with the closing fence gone: refused, bytes intact
+        with tempfile.TemporaryDirectory() as tmp:
+            pair = make_worktree(Path(tmp), {"T1": ("claimed", "[]")})
+            ticket = fence_broken(
+                pair, FENCE_TICKET_TAIL.replace("quoted heading\n```\n", "quoted heading\n")
+            )
+            before = ticket.read_text(encoding="utf-8")
+            payload = run_cmd(
+                pair[1], "result", "testrun", "T1", "--section", "Result",
+                "--text", "REPLACED",
+            )
+            self.assertIn("unterminated fence", payload.get("error", ""), payload)
+            self.assertEqual(before, ticket.read_text(encoding="utf-8"))
+
+
 if __name__ == "__main__":
     unittest.main()
