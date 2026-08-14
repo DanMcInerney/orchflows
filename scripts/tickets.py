@@ -75,7 +75,7 @@ SECTION_ORDER = (
 ) + EXECUTOR_SECTIONS
 SECTION_RANK = {name.lower(): i for i, name in enumerate(SECTION_ORDER)}
 # contracts/work-item.md: the one `isolation` value that means this item
-# executes in a workspace of its own. `scripts/workspace.py` grades the same
+# executes in a workspace of its own. The sibling script grades the same
 # declaration; the spelling belongs to the contract, not to either script.
 REQUIRED_ISOLATION = "required"
 RESULT_USAGE = (
