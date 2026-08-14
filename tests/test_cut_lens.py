@@ -13,7 +13,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LENS = ROOT / "skills" / "workflows" / "orch-deliver" / "references" / "cut-lens.md"
-CHECKER = ROOT / "scripts" / "cutcheck.py"
+CHECKER_PATH = "scripts/cutcheck.py"
+CHECKER = ROOT / CHECKER_PATH
 
 # Every finding the checker reports carries one of these labels, so a family it
 # decides is a label its source states. What each family is stays the checker's
@@ -96,6 +97,34 @@ class FamilyCorrespondenceTest(unittest.TestCase):
             "{}\n\n- {}: judged by reading, never by the tool.".format(KEPT, kept),
         )
         self.assertEqual([], correspondence(moved, self.source))
+
+
+class DelegationStatedTest(unittest.TestCase):
+    """The division the correspondence is read from is stated, not inferred."""
+
+    def setUp(self):
+        self.lens = LENS.read_text(encoding="utf-8")
+        self.division = lens_division(self.lens)
+        self.assertIsNotNone(self.division, NO_DIVISION)
+
+    def test_the_delegated_half_names_the_tool_and_the_families(self):
+        delegated = self.division[0]
+        self.assertIn(CHECKER_PATH, delegated)
+        self.assertTrue(LENS_FAMILY_RE.findall(delegated))
+
+    def test_the_kept_half_names_the_judgments_it_keeps(self):
+        judgments = [
+            line for line in self.division[1].splitlines() if line.startswith("- ")
+        ]
+        self.assertTrue(judgments)
+        for judgment in judgments:
+            self.assertIn(":", judgment)
+
+    def test_a_lens_stating_no_division_is_reported(self):
+        source = CHECKER.read_text(encoding="utf-8")
+        self.assertEqual(
+            [NO_DIVISION], correspondence(self.lens.replace(DELEGATED, ""), source)
+        )
 
 
 if __name__ == "__main__":

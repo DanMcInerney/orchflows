@@ -6,10 +6,10 @@ division.
 
 ## Delegated
 
-- The checker decides family 1, family 2, family 3, family 4, family 5
-  and family 6; its module docstring owns what each one is. Read its
-  report — a family re-derived here by eye is read twice and trusted
-  neither time.
+- [`scripts/cutcheck.py`](../../../../scripts/cutcheck.py) decides
+  family 1, family 2, family 3, family 4, family 5 and family 6; its
+  module docstring owns what each one is. Read its report — a family
+  re-derived here by eye is read twice and trusted neither time.
 
 ## Kept
 
