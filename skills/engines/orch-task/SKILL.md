@@ -14,10 +14,9 @@ part — a request that cannot name one belongs to orch-spec.
 Claim the ticket (set `claimed_by`, `claimed_at`, status `claimed`).
 Isolate the item's workspace per the workspace cell of the pack the
 ticket names — a ticket naming none works at its plain-path write
-scope — asking for it at dispatch and establishing it from inside —
-the child's first act there, per orch-workspace — with its identity,
-provenance and baseline evidence riding the result. Dispatch exactly
-one fresh child through `orch-delegate` — or execute inline under
+scope — when the ticket's `isolation` field declares one, established
+per orch-workspace by the step its packet emits. Dispatch exactly one
+fresh child through `orch-delegate` — or execute inline under
 [rules/delegation.md](../../../rules/delegation.md) §2's independence
 condition; the ladder's cheaper rungs apply inside the child — naming
 the ticket's executor as the applied skill, with the ticket path as
@@ -35,17 +34,17 @@ entries supersede what they cover, per
 Accept the result once through `orch-integrate`. On `suspended` — the
 executor has written its `## Handoff` — set status `suspended`, claim
 fields kept, for the next claim to resume from it; never the join's
-reject path. On any other disposition, integrate the result into the
-run workspace per the ticket's pack workspace cell when one is named —
-a conflict during integration routes to the cell's conflict binding;
-derived evidence the cell defines is refreshed at the fixed revision
-before any lens runs — on needs-verify run `orch-verify` for exactly
-the uncovered criteria; on rejected record the blame class. Record
-the join's terminal status in the ticket.
+reject path. On any other disposition, grade the declared isolation,
+then integrate the result into the run workspace per the ticket's pack
+workspace cell when one is named — a conflict during integration
+routes to the cell's conflict binding; derived evidence the cell
+defines is refreshed at the fixed revision before any lens runs — on
+needs-verify run `orch-verify` for exactly the uncovered criteria; on
+rejected record the blame class. Record the join's terminal status in
+the ticket.
 
 Never: run two executors for one ticket; accept a result that skipped
-the join; re-verify evidence the join already accepted; call a
-workspace established on a result carrying no such evidence.
+the join; re-verify evidence the join already accepted.
 
 Return: the completed ticket per
 [work-item.md](../../../contracts/work-item.md).
