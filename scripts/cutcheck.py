@@ -9,8 +9,8 @@ decides all six.
 Discrimination: an oracle that reads the same at the baseline as it will
 once the work has landed proves nothing. Every extractable oracle runs
 inside a scratch copy of the baseline revision and, when it fails there,
-inside a scratch copy of HEAD -- both built beside the tree by ``git
-archive``, never in the tree under test. An oracle that already passes
+inside a scratch copy of HEAD -- both cloned beside the tree, each carrying
+its own history, never in the tree under test. An oracle that already passes
 at the baseline, that finds nothing at either revision, or that fails at
 both from a missing path, class or module is reported, and so is one that no
 revision runs at all: a command that is absent or that never returns is a cut
@@ -24,9 +24,11 @@ criterion states ``provenance: pre-existing`` is an invariant -- it passed
 before the work and has to pass after -- so discrimination is not asked of it,
 and nothing else is forgiven it. A command carrying its verdict in what it
 prints rather than in its exit status -- a count -- is reported as one this
-tool cannot decide. So is every ``git`` oracle: a ``git archive`` copy carries
-no history, so no git command reads the tree under test there, and none is
-run.
+tool cannot decide. A ``git`` oracle is no exception in either direction: the
+scratch copy carries its history, so a git command reads the revision under
+test and is graded on its exit status like any other, and the count-flagged
+one -- ``git rev-list --count`` -- is undecidable for its count, never for
+its head.
 
 Path reality: a path an oracle names exists at the baseline, or the item
 itself or a ``depends_on`` ancestor creates it; a ``file:line`` or
@@ -85,7 +87,6 @@ import re
 import shlex
 import shutil
 import subprocess
-import tarfile
 import tempfile
 from pathlib import Path
 
@@ -118,7 +119,6 @@ CUMULATIVE_RANGE = "cumulative-range"
 EXTRACTION_GAP = "extraction-gap"
 VERDICT_IN_OUTPUT = "verdict-in-output"
 UNRUNNABLE_ORACLE = "unrunnable-oracle"
-GIT_NO_HISTORY = "git-no-history"
 MISSING_PATH = "missing-path"
 UNRESOLVED_CITATION = "unresolved-citation"
 QUOTE_NOT_AT_CITATION = "quote-not-at-citation"
@@ -139,7 +139,6 @@ FAMILY_OF = {
     EXTRACTION_GAP: FAMILY,
     VERDICT_IN_OUTPUT: FAMILY,
     UNRUNNABLE_ORACLE: FAMILY,
-    GIT_NO_HISTORY: FAMILY,
     MISSING_PATH: FAMILY_2,
     UNRESOLVED_CITATION: FAMILY_2,
     QUOTE_NOT_AT_CITATION: FAMILY_2,
@@ -154,9 +153,7 @@ FAMILY_OF = {
 }
 # Advisory classes are printed and never set the exit status. A map that is
 # not there is a fact about the run, not a defect of the cut.
-ADVISORY = frozenset(
-    {EXTRACTION_GAP, COVERAGE_MAP_ABSENT, VERDICT_IN_OUTPUT, GIT_NO_HISTORY}
-)
+ADVISORY = frozenset({EXTRACTION_GAP, COVERAGE_MAP_ABSENT, VERDICT_IN_OUTPUT})
 # The report's two summary lines. A reader selects finding lines by filtering
 # stdout on a family, a class name, a criterion number or a ticket id, so
 # neither summary line may carry any of those, nor the path of a script: a
@@ -211,6 +208,9 @@ EVAL_ARGS = frozenset({"-c", "-e", "--eval", "--exec", "-"})
 PRE_EXISTING_RE = re.compile(r"provenance:\s*pre-existing", re.I)
 # Counting prints the verdict rather than exiting on it.
 COUNT_FLAG_RE = re.compile(r"^-[A-Za-z]*c[A-Za-z]*$|^--count$")
+# Under `git` only the long flag counts: `git -c` sets a configuration
+# override and `git log -c` asks for a combined diff, neither one a count.
+GIT_COUNT_FLAG = "--count"
 CITATION_RE = re.compile(r"\b([\w][\w./-]*\.[A-Za-z0-9]{1,5}):(\d+)")
 SECTION_CITATION_RE = re.compile(r"\b([\w][\w./-]*\.[A-Za-z0-9]{1,5})\s+§(\d+)")
 # A quotation opens and closes at a word boundary. A span that wrapped a line
@@ -291,22 +291,34 @@ def _run_dir(run, worktree_root):
 
 
 def _scratch_tree(rev, worktree_root, scratch_root):
-    """Extract ``rev`` beside the tree, so no oracle runs in the tree itself."""
+    """Clone ``rev`` beside the tree, so no oracle runs in the tree itself.
+
+    A clone, not an extract: the copy carries its own history, so a git oracle
+    reads the revision under test rather than walking up to whichever
+    repository happens to enclose the copy. ``rev`` is resolved here, against
+    the tree being graded, so the clone's own HEAD never decides what ``HEAD``
+    meant. The clone keeps no remote: an oracle is ticket content, and ticket
+    content is untrusted, so the scratch tree offers it no path to write back
+    out of.
+    """
 
     tree = scratch_root / re.sub(r"[^A-Za-z0-9_.-]", "-", rev)
     if tree.is_dir():
         return tree
-    archive = scratch_root / "archive.tar"
-    proc = _git(["archive", "--format=tar", "-o", str(archive), rev], worktree_root)
-    if proc is None or proc.returncode != 0:
+    resolved = _git(["rev-parse", rev + "^{commit}"], worktree_root)
+    if resolved is None or resolved.returncode != 0:
         return None
-    tree.mkdir(parents=True)
-    with tarfile.open(archive) as bundle:
-        if hasattr(tarfile, "data_filter"):
-            bundle.extractall(tree, filter="data")
-        else:
-            bundle.extractall(tree)
-    archive.unlink()
+    clone = ["clone", "--quiet", "--no-checkout", str(worktree_root), str(tree)]
+    steps = (
+        (clone, scratch_root),
+        (["checkout", "--quiet", "--detach", resolved.stdout.strip()], tree),
+        (["remote", "remove", "origin"], tree),
+    )
+    for args, cwd in steps:
+        proc = _git(args, cwd)
+        if proc is None or proc.returncode != 0:
+            shutil.rmtree(tree, ignore_errors=True)
+            return None
     return tree
 
 
@@ -422,8 +434,12 @@ def _run_once(command, tree):
         proc = subprocess.run(
             argv,
             cwd=str(tree),
-            capture_output=True,
-            text=True,
+            # Discarded, never decoded: the exit status is the whole reading,
+            # and an oracle in a tree with history prints whatever it likes --
+            # `git archive` prints a tar. Text mode made one such span fatal to
+            # the invocation, and the report it was one line of.
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             timeout=COMMAND_TIMEOUT,
         )
     except subprocess.TimeoutExpired:
@@ -439,11 +455,14 @@ def _verdict_in_output(command):
     ``grep -c`` prints a count and exits on whether it printed anything. A
     criterion saying "reports 0" is judged by that text, which no exit status
     carries, so the honest report is that cutcheck cannot decide it. The git
-    commands that read the same way need no clause here: no git oracle is
-    decidable in a copy with no history, so the head decides all of them.
+    command that reads the same way is owned here now that the scratch copy
+    carries history and its head excuses nothing: ``git rev-list --count``
+    prints the number and exits 0 whatever it counted.
     """
 
     argv = command.split()
+    if argv[0] == GIT_HEAD:
+        return GIT_COUNT_FLAG in argv[1:]
     if argv[0] not in SEARCH_HEADS:
         return False
     return any(COUNT_FLAG_RE.match(token) for token in argv[1:])
@@ -950,12 +969,6 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
                     for arg in missing
                 )
                 continue
-            if command.split(" ", 1)[0] == GIT_HEAD:
-                # `git archive` writes no `.git`, so a git command run in the
-                # scratch tree walks up to whatever repository encloses it and
-                # answers about that one. No git oracle is decidable here.
-                findings.append((ticket_id, number, GIT_NO_HISTORY, command))
-                continue
             if _verdict_in_output(command):
                 findings.append((ticket_id, number, VERDICT_IN_OUTPUT, command))
                 continue
@@ -1032,7 +1045,7 @@ def main(argv=None):
     try:
         baseline_tree = _scratch_tree(args.baseline, worktree_root, scratch_root)
         if baseline_tree is None:
-            print("cutcheck: cannot archive baseline {}".format(args.baseline))
+            print("cutcheck: cannot clone baseline {}".format(args.baseline))
             return NO_TICKET_SET
         head_tree = None
         if not _same_revision(args.baseline, worktree_root):
