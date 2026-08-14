@@ -113,6 +113,15 @@ class _SinkFixture(unittest.TestCase):
         (self.repo / ".git").mkdir(parents=True)
         self.sink = self.tmp / "sink"
 
+    @staticmethod
+    def give_origin(repo: Path, url: str) -> None:
+        """Two clones of one origin are one project (spec A5); the origin url
+        is read out of `<main-root>/.git/config`, never from a `git` call."""
+
+        (repo / ".git" / "config").write_text(
+            f'[remote "origin"]\n\turl = {url}\n', encoding="utf-8"
+        )
+
     def stamp(self) -> str:
         return datetime.now(timezone.utc).strftime("%Y-%m")
 
@@ -359,21 +368,47 @@ class TestEveryWriterLandsInTheSink(_SinkFixture):
         self.assertEqual("observed thing", entry["observed"])
         self.assert_repo_untouched()
 
-    def test_two_repositories_write_one_sink(self):
+    def test_two_workspaces_of_one_project_write_one_sink(self):
         """The objective's central clause: the sink follows the user, not the
-        checkout, so a run started in one repository is reachable from
-        another."""
+        checkout, so a run started in one workspace is reachable from another
+        workspace of the same project (spec A5)."""
 
-        second = self.tmp / "other-repo"
+        origin = "https://example.invalid/acme/alpha.git"
+        self.give_origin(self.repo, origin)
+        second = self.tmp / "other-clone"
         (second / ".git").mkdir(parents=True)
-        run_script(TICKETS_PY, "run-state", "testrun", "--note", "from repo one",
+        self.give_origin(second, origin)
+        run_script(TICKETS_PY, "run-state", "testrun", "--note", "from clone one",
                    cwd=self.repo, sink=self.sink)
-        run_script(TICKETS_PY, "run-state", "testrun", "--note", "from repo two",
+        run_script(TICKETS_PY, "run-state", "testrun", "--note", "from clone two",
                    cwd=second, sink=self.sink)
         worklog = self.sink / "runs" / "testrun" / "worklog.md"
         self.assertEqual(
-            ["from repo one", "from repo two"],
+            ["from clone one", "from clone two"],
             worklog.read_text(encoding="utf-8").splitlines(),
+        )
+        self.assertFalse((second / ".orch").exists())
+        self.assert_repo_untouched()
+
+    def test_two_unrelated_projects_write_one_sink(self):
+        """The same clause for projects that share nothing. One sink holds
+        every project's runs; one run id is one project's (spec A6), so each
+        writes under its own and both land here rather than in their trees."""
+
+        second = self.tmp / "other-repo"
+        (second / ".git").mkdir(parents=True)
+        run_script(TICKETS_PY, "run-state", "run-one", "--note", "from repo one",
+                   cwd=self.repo, sink=self.sink)
+        run_script(TICKETS_PY, "run-state", "run-two", "--note", "from repo two",
+                   cwd=second, sink=self.sink)
+        runs = self.sink / "runs"
+        self.assertEqual(
+            "from repo one\n",
+            (runs / "run-one" / "worklog.md").read_text(encoding="utf-8"),
+        )
+        self.assertEqual(
+            "from repo two\n",
+            (runs / "run-two" / "worklog.md").read_text(encoding="utf-8"),
         )
         self.assertFalse((second / ".orch").exists())
         self.assert_repo_untouched()

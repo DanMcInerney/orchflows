@@ -28,6 +28,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -57,6 +58,16 @@ ENGINE_EXECUTORS = frozenset(
 )
 DURATION_RE = re.compile(r"^(\d+)(m|h)$")
 DEFAULT_BOUND_MINUTES = 60
+# The shape of every UTC instant this script writes, stated once and read
+# wherever one is stamped: a claim's `claimed_at` and a run's `opened_at`
+# cannot drift into two shapes. It is the shape `scripts/friction.py`
+# already produces for its own stream.
+UTC_STAMP = "%Y-%m-%dT%H:%M:%SZ"
+# The run's identity document, beside its worklog under the same run
+# partition. `sink_convention` says which layout wrote it; item 06 states
+# the field list in the contract.
+RUN_IDENTITY_NAME = "run.json"
+SINK_CONVENTION = 2
 NO_SINK_ERROR = (
     "cannot resolve the state sink: no $ORCHFLOWS_STATE_HOME and no home directory"
 )
@@ -158,6 +169,229 @@ def _iter_run_dirs(tickets_root: Path, run_filter):
         candidate = tickets_root / run_filter
         return [candidate] if candidate.is_dir() else []
     return sorted(p for p in tickets_root.iterdir() if p.is_dir())
+
+
+# --- run identity -----------------------------------------------------------
+
+
+def _origin_url(main_root: Path):
+    """The ``origin`` remote's url, read out of ``<main_root>/.git/config``.
+
+    Read, never asked for. This script shells out to nothing — that is what
+    lets a child in a workspace it may not run ``git`` in reach the sink at
+    all — so git's config is parsed here in the small, the way frontmatter
+    is: the ``[remote "origin"]`` section, its ``url`` key, nothing else.
+    Both spellings of the header are accepted because git accepts both.
+    """
+
+    try:
+        text = (main_root / ".git" / "config").read_text(
+            encoding="utf-8", errors="replace"
+        )
+    except OSError:
+        return None
+    in_origin = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped[0] in "#;":
+            continue
+        if stripped.startswith("[") and stripped.endswith("]"):
+            inner = stripped[1:-1].replace(".", " ")
+            in_origin = [part.strip('"') for part in inner.split()] == [
+                "remote",
+                "origin",
+            ]
+            continue
+        if in_origin:
+            key, separator, value = stripped.partition("=")
+            if separator and key.strip().lower() == "url":
+                return value.strip() or None
+    return None
+
+
+def _normalized_origin(origin) -> str:
+    """One remote, one spelling.
+
+    A trailing ``/`` and a trailing ``.git`` are the two ways one transport
+    writes one url, so both come off. Nothing tries to canonicalize ssh
+    against https: guessing that two spellings mean one repository is how a
+    run silently acquires a second project, which is what this exists to
+    refuse. Empty for a repository with no remote.
+    """
+
+    text = str(origin or "").strip().rstrip("/")
+    if text.endswith(".git"):
+        text = text[: -len(".git")]
+    return text.rstrip("/")
+
+
+def _project_key(project: dict) -> str:
+    """The name a project is refused by: its origin url, else its root."""
+
+    return _normalized_origin(project.get("origin")) or str(project.get("root"))
+
+
+def _same_project(recorded: dict, writing: dict) -> bool:
+    """Whether two writes belong to one project.
+
+    Origin first: two clones of one origin are one project with two
+    workspaces, wherever on disk they sit. When either side has no origin
+    there is nothing to compare but the main checkout root — so two
+    repositories with no remote are two projects, and one repository that
+    gained or lost its remote after the run opened is still itself rather
+    than an impostor locked out of its own run.
+    """
+
+    theirs = _normalized_origin(recorded.get("origin"))
+    mine = _normalized_origin(writing.get("origin"))
+    if theirs and mine:
+        return theirs == mine
+    return str(recorded.get("root")) == str(writing.get("root"))
+
+
+def _workspace_root(start: Path):
+    """The checkout the caller is standing in, *not* dereferenced.
+
+    ``state_root.find_repo_root`` owns the other half of a run's identity —
+    which project — and follows a linked worktree's pointer to the main
+    checkout to answer it. This one stops at the first ``.git`` instead of
+    following it, because two worktrees of one project are exactly what
+    ``workspaces[]`` distinguishes. The walk bound is the resolver's, never
+    a second one.
+    """
+
+    current = Path(start).resolve()
+    for _ in range(state_root.MAX_WALK_UP):
+        if (current / ".git").exists():
+            return current
+        if current.parent == current:
+            break
+        current = current.parent
+    return None
+
+
+def _writer_identity():
+    """``(project, workspace)`` for the caller: who is writing, from where."""
+
+    cwd = Path.cwd().resolve()
+    root = state_root.find_repo_root(cwd)
+    workspace = _workspace_root(cwd) or cwd
+    if root is None:
+        # Outside any checkout the caller's own directory is all the identity
+        # there is. A write from nowhere is still attributable to somewhere.
+        return {"root": str(cwd), "origin": None, "name": cwd.name}, str(workspace)
+    return (
+        {"root": str(root), "origin": _origin_url(root), "name": root.name},
+        str(workspace),
+    )
+
+
+def _read_identity(path: Path):
+    """``(document, error)``: the run's identity, ``(None, None)`` when absent.
+
+    A corrupt identity is refused rather than replaced. Overwriting it would
+    attribute the run to whoever wrote last, which is the confusion the
+    document exists to prevent.
+    """
+
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (FileNotFoundError, NotADirectoryError):
+        # No document, and no reachable place for one. An unreachable sink is
+        # the run-state write's own error to report, in its own words.
+        return None, None
+    except OSError as error:
+        return None, {"error": f"unreadable run identity {path}: {error}"}
+    try:
+        data = json.loads(text)
+    except ValueError as parse_error:
+        # bound to a name of its own: Python unbinds an `except ... as` name
+        # at the end of its block, and this one is read after it
+        reason = str(parse_error)
+    else:
+        if isinstance(data, dict):
+            return data, None
+        reason = "the document is not an object"
+    return None, {
+        "error": f"run identity {path} is unreadable ({reason}); repair or "
+        "remove it. Refusing to overwrite a run's identity with a guess"
+    }
+
+
+def _identity_document(run: str, path: Path, project: dict, workspace: str, now):
+    """``(document_to_write, error)`` — create, extend, or refuse.
+
+    ``project`` and ``opened_at`` are the first writer's and are never
+    rewritten; a later workspace of the same project only appends itself.
+    ``None`` for both means the identity is already correct and no write is
+    owed, so an ordinary note does not rewrite this file every time.
+    """
+
+    existing, error = _read_identity(path)
+    if error is not None:
+        return None, error
+    stamp = now.strftime(UTC_STAMP)
+    entry = {"path": workspace, "first_seen": stamp}
+    if existing is None:
+        return {
+            "run": run,
+            "sink_convention": SINK_CONVENTION,
+            "opened_at": stamp,
+            "project": project,
+            "workspaces": [entry],
+        }, None
+
+    updated = dict(existing)
+    recorded = existing.get("project")
+    if isinstance(recorded, dict) and (recorded.get("root") or recorded.get("origin")):
+        if not _same_project(recorded, project):
+            theirs, mine = _project_key(recorded), _project_key(project)
+            return None, {
+                "error": f"run '{run}' is held by project {theirs}; this write "
+                f"comes from project {mine}. One run id is one project's, so "
+                "nothing was written. Use a different run id, or write from a "
+                f"workspace of {theirs}"
+            }
+    else:
+        # An identity document with no project — an older layout, or one
+        # written before this field existed — is adopted rather than refused:
+        # there is no second project to confuse it with.
+        updated["project"] = project
+        updated.setdefault("run", run)
+        updated.setdefault("opened_at", stamp)
+        updated.setdefault("sink_convention", SINK_CONVENTION)
+
+    seen = existing.get("workspaces")
+    seen = list(seen) if isinstance(seen, list) else []
+    if not any(isinstance(w, dict) and w.get("path") == workspace for w in seen):
+        seen.append(entry)
+        updated["workspaces"] = seen
+    elif not isinstance(existing.get("workspaces"), list):
+        updated["workspaces"] = seen
+    return (updated, None) if updated != existing else (None, None)
+
+
+def _write_identity(run_dir: Path, document: dict) -> None:
+    """Whole-file, and atomically.
+
+    The run id partitions this document, but two workspaces of one project
+    still open it at once, and a reader must never meet a half-written one.
+    Written beside the target and moved over it, so the move is the only
+    thing a concurrent reader can observe.
+    """
+
+    handle = tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", newline="\n", dir=str(run_dir),
+        prefix=RUN_IDENTITY_NAME + ".", suffix=".tmp", delete=False,
+    )
+    temporary = Path(handle.name)
+    try:
+        with handle:
+            handle.write(json.dumps(document, ensure_ascii=False, indent=2) + "\n")
+        temporary.replace(run_dir / RUN_IDENTITY_NAME)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
 
 
 # --- manual frontmatter parsing ---------------------------------------------
@@ -583,7 +817,7 @@ def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime
             return {"error": f"ticket already claimed and not stale: {ticket_path.stem}"}
     elif status != "ready":
         return {"error": f"ticket is not claimable in status '{status}': {ticket_path.stem}"}
-    timestamp = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    timestamp = now.strftime(UTC_STAMP)
     updated = _set_frontmatter_field(prior_text, "status", "claimed")
     updated = _set_frontmatter_field(updated, "claimed_by", claimed_by)
     updated = _set_frontmatter_field(updated, "claimed_at", timestamp)
@@ -839,6 +1073,13 @@ def _cmd_run_state(rest):
     neither may read-modify-write it. ``--artifact`` is whole-file, which is
     safe only because the run id partitions it.
 
+    One sink holds every project's runs, so a run says which project it is:
+    the first write stamps ``run.json`` beside the worklog, a later write
+    from another workspace of the same project appends itself to it, and a
+    write from a *different* project is refused by name. Without that, two
+    projects that pick one run id interleave into one worklog and neither
+    can tell which line is whose.
+
     There is no fallback. A write that cannot reach that root is reported as
     an error and lands nowhere else: a run-state write that silently
     succeeds in the caller's own tree is the loss this channel exists to end.
@@ -891,8 +1132,23 @@ def _cmd_run_state(rest):
     if runs_root is None:
         return {"error": NO_SINK_ERROR}
     run_dir = runs_root / run
+    project, workspace = _writer_identity()
+    document, refusal = _identity_document(
+        run,
+        run_dir / RUN_IDENTITY_NAME,
+        project,
+        workspace,
+        datetime.now(timezone.utc),
+    )
+    # The identity gate runs before the payload and before the run directory
+    # exists: a refused write leaves the worklog, the artifact and the
+    # identity document all exactly as it found them, and creates nothing.
+    if refusal is not None:
+        return refusal
     try:
         run_dir.mkdir(parents=True, exist_ok=True)
+        if document is not None:
+            _write_identity(run_dir, document)
         if note is not None:
             path = run_dir / "worklog.md"
             with open(path, "a", encoding="utf-8", newline="\n") as handle:
