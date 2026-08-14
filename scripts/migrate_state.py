@@ -390,7 +390,7 @@ def _source_report(root: Path, project):
     }
 
 
-def _classify(root: Path, report):
+def _classify(root: Path, sink: Path, report):
     """Name every child of a source root: migrated, retained, or neither."""
 
     try:
@@ -399,7 +399,12 @@ def _classify(root: Path, report):
         report["unrecognised"].append(f"unreadable: {error}")
         return
     for child in children:
-        if child.name in RETAINED_DIRS:
+        if child == sink:
+            # A source may hold the sink as a child -- `~/.orchflows` holds
+            # both `friction/` and `state/`. Name it as seen and not copied
+            # rather than as something unrecognised.
+            report["retained"].append(f"{child.name}/ (the sink itself)")
+        elif child.name in RETAINED_DIRS:
             report["retained"].append(f"{child.name}/")
         elif child.name not in MIGRATED_STREAMS:
             report["unrecognised"].append(
@@ -423,10 +428,21 @@ def _resolve_roots(values, sink: Path):
         if not resolved.is_dir():
             errors.append(f"source {resolved} is not a directory")
             continue
-        if resolved == sink or sink in resolved.parents or resolved in sink.parents:
+        if resolved == sink or sink in resolved.parents:
             errors.append(
-                f"source {resolved} and the sink {sink} contain one another; "
+                f"source {resolved} is the sink {sink}, or sits inside it; "
                 "a sink cannot be migrated into itself"
+            )
+            continue
+        # A source that merely *contains* the sink is fine: `~/.orchflows`
+        # holds `friction/` beside `state/`, and the sink is skipped as a
+        # child. The hazard is a sink inside a stream that gets copied.
+        buried = [name for name in MIGRATED_STREAMS
+                  if (resolved / name) == sink or (resolved / name) in sink.parents]
+        if buried:
+            errors.append(
+                f"the sink {sink} is inside source {resolved}'s "
+                f"{buried[0]}/ stream; a sink cannot be migrated into itself"
             )
             continue
         roots.append(resolved)
@@ -494,7 +510,7 @@ def plan_migration(values, sink: Path, dry_run: bool):
     for root in roots:
         project = projects[str(root)]
         report = _source_report(root, project)
-        _classify(root, report)
+        _classify(root, sink, report)
         _plan_runs(plan, root, "runs", collided, report)
         _plan_runs(plan, root, "tickets", collided, report)
         _plan_friction(plan, root, report)

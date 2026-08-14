@@ -508,6 +508,55 @@ class TestMigrationLayout(MigrationCase):
         self.assertEqual(len(report["errors"]), 1, report["errors"])
         self.assertIn("cannot be migrated into itself", report["errors"][0])
 
+    def test_a_source_inside_the_sink_is_refused(self):
+        buried = self.sink / "runs" / "somewhere" / ".orch"
+        write(buried / "friction" / "2026-04.jsonl", legacy_entry(self.home) + "\n")
+
+        report = self.migrate(buried)
+
+        self.assertEqual(report["plan"], [])
+        self.assertIn("cannot be migrated into itself", report["errors"][0])
+
+    def test_a_sink_inside_a_migrating_stream_is_refused(self):
+        """The real hazard: copying `runs/` would copy the sink into itself."""
+
+        root = self.source_root("epsilon", origin="git@github.com:acme/epsilon.git")
+        self.sink = root / "runs" / "sink"
+        os.environ[STATE_HOME_ENV_VAR] = str(self.sink)
+        write(root / "runs" / "20260601T000000Z-e" / "worklog.md", "# e\n")
+
+        report = self.migrate(root)
+
+        self.assertEqual(report["plan"], [])
+        self.assertIn("is inside source", report["errors"][0])
+        self.assertIn("runs/ stream", report["errors"][0])
+
+    def test_a_source_that_merely_holds_the_sink_still_migrates(self):
+        """`~/.orchflows` holds `friction/` beside `state/`. The stream
+        migrates; the sink is named as seen and not copied."""
+
+        root = self.home / "userscope"
+        self.sink = root / "state"
+        os.environ[STATE_HOME_ENV_VAR] = str(self.sink)
+        self.sink.mkdir(parents=True)  # the installer seeds it; so does item 02
+        write(root / "friction" / "2026-07.jsonl", legacy_entry(self.home, "user scope") + "\n")
+        write(root / "bin" / "tickets.py", "# installed\n")
+        write(root / "receipt.json", "{}\n")
+
+        report = self.migrate(root)
+
+        # Guard before reading: a tool that refused this source writes no
+        # file, and an unguarded read would error rather than fail.
+        month = self.sink / "friction" / "2026-07.jsonl"
+        self.assertTrue(month.is_file(), f"{month} never reached the sink")
+        landed = lines_of(month)
+        self.assertEqual(len(landed), 1, landed)
+        self.assertEqual(json.loads(landed[0])["observed"], "user scope")
+        self.assertEqual(report["errors"], [])
+        self.assertIn("state/ (the sink itself)", report["sources"][0]["retained"])
+        self.assertIn("bin/", report["sources"][0]["retained"])
+        self.assertEqual(report["sources"][0]["unrecognised"], ["receipt.json"])
+
     def test_a_source_that_does_not_exist_is_reported_not_raised(self):
         missing = self.home / "nowhere" / ".orch"
         report = self.migrate(missing)
