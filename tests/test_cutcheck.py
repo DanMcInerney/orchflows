@@ -1,8 +1,11 @@
 """Tests for scripts/cutcheck.py: family 1, oracle discrimination and shape."""
 
 import json
+import os
+import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -15,11 +18,11 @@ import install  # noqa: E402
 import scripts.cutcheck as cutcheck  # noqa: E402
 import scripts.tickets as tickets  # noqa: E402
 
-# cutcheck archives this revision to build the tree it grades oracles in, so
+# cutcheck clones this revision to build the tree it grades oracles in, so
 # every clone that runs these tests must be able to reach it. Two invariants
 # make a candidate legal, and both are load-bearing: it is an ancestor of
 # `main`, so a fresh clone has it (the predecessor pinned an unpushed local
-# branch tip, which passed here and failed every CI leg with "cannot archive
+# branch tip, which passed here and failed every CI leg with "cannot clone
 # baseline"); and `install.py:101` there opens `SCRIPT_NAMES` without
 # `cutcheck.py`, which is what makes the fixtures' `grep -n "cutcheck.py"
 # install.py` fail at the baseline and pass at HEAD -- the discrimination the
@@ -44,6 +47,23 @@ def reported(result, family=cutcheck.FAMILY):
     return [line for line in result.stdout.splitlines() if family in line]
 
 
+def report(result):
+    """The report split where its own two summary lines split it.
+
+    Findings outside the advisory set first, then the advisory findings under
+    the heading, then whether the affirmative line closed the report.
+    """
+
+    lines = result.stdout.splitlines()
+    affirmed = bool(lines) and lines[-1] == cutcheck.NO_FINDING_OUTSIDE
+    if affirmed:
+        lines = lines[:-1]
+    if cutcheck.ADVISORY_HEADING in lines:
+        cut = lines.index(cutcheck.ADVISORY_HEADING)
+        return lines[:cut], lines[cut + 1:], affirmed
+    return lines, [], affirmed
+
+
 def fixture_criteria(run, name):
     path = ROOT / "tests" / "fixtures" / "cutcheck" / run / name
     section = tickets._sections(path.read_text(encoding="utf-8"))
@@ -55,6 +75,114 @@ class CleanSetTest(unittest.TestCase):
         result = run_cutcheck("cutcheck-clean")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(reported(result), [])
+
+
+class AffirmativeSummaryTest(unittest.TestCase):
+    """A set with no finding outside the advisory set says so, rather than nothing."""
+
+    def test_the_clean_set_prints_the_affirmative_line_and_exits_zero(self):
+        result = run_cutcheck("cutcheck-clean")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout.splitlines(), [cutcheck.NO_FINDING_OUTSIDE])
+
+    def test_a_set_holding_a_finding_outside_the_advisory_set_never_affirms(self):
+        violations, _, affirmed = report(run_cutcheck("cutcheck-f2-paths"))
+        self.assertTrue(violations, violations)
+        self.assertFalse(affirmed, violations)
+
+
+class AdvisoryMarkingTest(unittest.TestCase):
+    """An advisory finding is printed where the report says it decides nothing."""
+
+    def _classes(self, lines):
+        return [line.split(": ")[2] for line in lines]
+
+    def test_the_advisory_finding_is_reported_under_the_heading(self):
+        violations, advisories, _ = report(run_cutcheck("cutcheck-f1-extraction-gap"))
+        self.assertEqual(violations, [], violations)
+        self.assertIn(cutcheck.EXTRACTION_GAP, self._classes(advisories), advisories)
+
+    def test_a_finding_outside_the_advisory_set_is_never_under_the_heading(self):
+        violations, advisories, _ = report(run_cutcheck("cutcheck-provenance"))
+        self.assertTrue(violations, violations)
+        self.assertTrue(advisories, advisories)
+        for klass in self._classes(violations):
+            self.assertNotIn(klass, cutcheck.ADVISORY, violations)
+        for klass in self._classes(advisories):
+            self.assertIn(klass, cutcheck.ADVISORY, advisories)
+
+    def test_one_heading_stands_over_the_whole_advisory_block(self):
+        result = run_cutcheck("cutcheck-verdict-in-output")
+        lines = result.stdout.splitlines()
+        self.assertEqual(lines.count(cutcheck.ADVISORY_HEADING), 1, result.stdout)
+        self.assertGreater(len(report(result)[1]), 1, result.stdout)
+
+    def test_neither_summary_line_can_be_read_as_a_finding(self):
+        markers = sorted(cutcheck.FAMILY_OF) + sorted(set(cutcheck.FAMILY_OF.values()))
+        markers += ["criterion ", "scripts/cutcheck.py"]
+        for line in (cutcheck.ADVISORY_HEADING, cutcheck.NO_FINDING_OUTSIDE):
+            for marker in markers:
+                self.assertNotIn(marker, line)
+
+
+class AdvisoryExitZeroTest(unittest.TestCase):
+    """Exit 0 is no finding outside the advisory set, never a set with no finding."""
+
+    def test_an_advisory_finding_is_reported_and_the_status_is_still_zero(self):
+        result = run_cutcheck("cutcheck-verdict-in-output")
+        violations, advisories, affirmed = report(result)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(violations, [], result.stdout)
+        self.assertTrue(advisories, result.stdout)
+        self.assertTrue(affirmed, result.stdout)
+
+
+class ExitCodeEpilogTest(unittest.TestCase):
+    """`--help` names each exit status, and says a verdict stays on its host."""
+
+    def setUp(self):
+        result = subprocess.run(
+            [sys.executable, "scripts/cutcheck.py", "--help"],
+            cwd=str(ROOT),
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.help = " ".join(result.stdout.split())
+
+    def test_zero_is_no_finding_outside_the_advisory_set_and_not_a_clean_set(self):
+        self.assertIn(
+            "0 Cutcheck's exit 0 means no finding whose class lies outside the "
+            "advisory set, not that the set is clean: an advisory finding is "
+            "reported and exits 0.",
+            self.help,
+        )
+
+    def test_one_is_a_finding_outside_the_advisory_set(self):
+        self.assertIn(
+            "1 At least one finding whose class lies outside the advisory set.",
+            self.help,
+        )
+
+    def test_two_is_no_ticket_set_and_argparses_own_usage_error(self):
+        self.assertIn(
+            "2 No ticket set resolved for the run; argparse's own usage error "
+            "exits 2 as well.",
+            self.help,
+        )
+
+    def test_a_verdict_is_read_only_on_the_host_that_produced_it(self):
+        self.assertIn(
+            "A cut verdict is not portable between hosts. An oracle naming an "
+            "interpreter one host lacks is reported there as unrunnable-oracle "
+            "and is silent here, so a verdict is read only on the host that "
+            "produced it.",
+            self.help,
+        )
+
+    def test_the_epilog_leaves_the_families_to_the_module_docstring(self):
+        for family in sorted(set(cutcheck.FAMILY_OF.values())):
+            self.assertNotIn(family, self.help)
 
 
 class DiscriminationTest(unittest.TestCase):
@@ -149,6 +277,57 @@ class TruncatedListTest(unittest.TestCase):
         self.assertIn("criterion 2", gaps[0])
 
 
+class PhantomCriterionTest(unittest.TestCase):
+    """A wrapped line opening with a digit is text, not a criterion of its own."""
+
+    def setUp(self):
+        self.criteria = fixture_criteria("cutcheck-f1-phantom", "01-phantom.md")
+        self.texts = dict(self.criteria)
+
+    def test_the_wrap_opens_no_item_of_its_own(self):
+        self.assertEqual([number for number, _ in self.criteria], [1, 2, 3])
+
+    def test_the_interrupted_criterion_keeps_the_text_after_the_wrap(self):
+        text = self.texts[2]
+        self.assertIn('grep -n "SCRIPT_NAMES" install.py', text)
+        self.assertTrue(
+            text.endswith(
+                "exits 0. oracle_class: deterministic. provenance: pre-existing."
+            ),
+            text,
+        )
+
+    def test_the_wrapped_stamp_belongs_to_the_criterion_that_wrapped(self):
+        self.assertTrue(cutcheck.PRE_EXISTING_RE.search(self.texts[2]), self.texts[2])
+
+
+class NestedEnumerationTest(unittest.TestCase):
+    """Indentation is relative: a nested list continues, an indented list opens."""
+
+    def test_a_nested_enumeration_stays_inside_the_criterion_holding_it(self):
+        criteria = fixture_criteria("cutcheck-f1-phantom", "02-nested-list.md")
+        self.assertEqual([number for number, _ in criteria], [1, 2])
+        first = dict(criteria)[1]
+        self.assertIn(
+            "1. the tuple the installer opens, and 2. every script name it lists.",
+            first,
+        )
+        self.assertTrue(cutcheck.PRE_EXISTING_RE.search(first), first)
+
+    def test_a_set_whose_criteria_are_written_indented_is_still_a_list(self):
+        criteria = fixture_criteria("cutcheck-f1-truncated", "01-truncated.md")
+        self.assertEqual([number for number, _ in criteria], [1, 2])
+        self.assertIn(
+            "A reviewer names, from the module docstring alone", dict(criteria)[2]
+        )
+
+    def test_the_indented_criterion_still_surfaces_in_the_report(self):
+        lines = reported(run_cutcheck("cutcheck-f1-truncated"))
+        gaps = [line for line in lines if cutcheck.EXTRACTION_GAP in line]
+        self.assertEqual(len(gaps), 1, "\n".join(lines))
+        self.assertIn("criterion 2", gaps[0])
+
+
 class PathRealityTest(unittest.TestCase):
     def setUp(self):
         self.result = run_cutcheck("cutcheck-f2-paths")
@@ -188,7 +367,9 @@ class CarveOutTest(unittest.TestCase):
 
     def test_the_set_is_reported_clean(self):
         self.assertEqual(self.result.returncode, 0, self.result.stdout + self.result.stderr)
-        self.assertEqual(self.result.stdout.splitlines(), [])
+        # The whole report, not a line of it: nothing was found here but the
+        # affirmative line that says so.
+        self.assertEqual(self.result.stdout.splitlines(), [cutcheck.NO_FINDING_OUTSIDE])
 
     def test_a_path_the_item_only_reads_is_no_scope_defect(self):
         self.assertNotIn("01-reads-only", self.result.stdout)
@@ -435,6 +616,100 @@ class EvalHeadTest(unittest.TestCase):
         )
 
 
+GIT_ESCAPE_MARK = Path("/tmp/cutcheck-gitescape-ran")
+
+# Each runs a program the span itself names, or moves the run out of the copy
+# meant to confine it, or reaches the network.
+GIT_ESCAPES = (
+    "git -c core.pager=touch\\ /tmp/cutcheck-gitescape-ran log",
+    "git -c alias.pwn='!touch /tmp/cutcheck-gitescape-ran' pwn",
+    "git --exec-path=/tmp/cutcheck-gitescape log",
+    "git --upload-pack=touch\\ /tmp/cutcheck-gitescape-ran fetch origin",
+    "git --receive-pack=touch\\ /tmp/cutcheck-gitescape-ran push origin",
+    "git -C /etc log",
+    "git --git-dir=/tmp/cutcheck-gitescape/.git log",
+    "git --work-tree=/etc status",
+    "git clone https://example.invalid/x",
+    "git grep -O/tmp/cutcheck-gitescape-ran pattern",
+)
+
+
+class GitEscapeTest(unittest.TestCase):
+    """A git span is untrusted content too: only a confined subcommand runs.
+
+    The head alone excuses nothing and grants nothing. Git runs a program the
+    span names through `-c core.pager=`, `-c alias.x=!`, `--exec-path`,
+    `--upload-pack` and `--receive-pack`, and leaves the scratch copy through
+    `-C`, `--git-dir` and `--work-tree`. The subcommands that run are a closed
+    set, so the flag git ships next is refused before anyone has heard of it.
+
+    One invocation for the whole class: `setUpClass`, not `setUp`, because this
+    tool's own suite is an oracle running under COMMAND_TIMEOUT and every
+    invocation added here is spent against that budget. The gate itself is
+    decided from the command text, so the rest of the claim needs no subprocess
+    at all and is asserted next door.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        GIT_ESCAPE_MARK.unlink(missing_ok=True)
+        cls.result = run_cutcheck("cutcheck-gitescape")
+
+    @classmethod
+    def tearDownClass(cls):
+        GIT_ESCAPE_MARK.unlink(missing_ok=True)
+
+    def test_the_injected_span_did_not_run(self):
+        self.assertFalse(GIT_ESCAPE_MARK.exists(), self.result.stdout)
+
+    def test_the_span_is_reported_rather_than_run(self):
+        lines = [
+            line for line in self.result.stdout.splitlines() if "01-gitescape" in line
+        ]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.UNCONFINED_ORACLE, lines[0])
+
+    def test_a_refused_span_is_a_finding_and_not_a_silence(self):
+        self.assertNotIn(cutcheck.UNCONFINED_ORACLE, cutcheck.ADVISORY)
+        self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
+
+
+class GitConfinementGateTest(unittest.TestCase):
+    """Which git spans the gate runs, decided from the command text alone."""
+
+    def test_every_escape_the_head_used_to_carry_is_refused(self):
+        for command in GIT_ESCAPES:
+            self.assertTrue(cutcheck._unconfined_git(command), command)
+            self.assertIn(cutcheck.UNCONFINED_ORACLE, cutcheck._shape(command), command)
+
+    def test_the_oracles_the_graded_set_states_still_run(self):
+        for command in (
+            "git log -1 --format=%H",
+            "git diff ac8791a -- install.py",
+            "git merge-base --is-ancestor ac8791a HEAD",
+            "git rev-list --count HEAD",
+            "git status --porcelain",
+        ):
+            self.assertFalse(cutcheck._unconfined_git(command), command)
+            self.assertEqual(cutcheck._shape(command), [], command)
+
+    def test_a_head_that_is_not_git_is_judged_by_no_git_rule(self):
+        for command in ("grep -n SCRIPT_NAMES install.py", "python3 tools/validate.py"):
+            self.assertFalse(cutcheck._unconfined_git(command), command)
+
+    def test_the_gate_reads_the_argv_that_would_run(self):
+        # Split the way `_run_once` splits, or the gate grades one command and
+        # execution runs another. Quoting that resolves to a confined
+        # subcommand is confined; quoting that resolves to anything else is not.
+        self.assertFalse(cutcheck._unconfined_git("git 'log' -1 --format=%H"))
+        self.assertTrue(cutcheck._unconfined_git("git 'log x' -1"))
+
+    def test_a_span_no_split_parses_is_claimed_by_nothing_and_runs_nowhere(self):
+        unparsed = 'git log "'
+        self.assertFalse(cutcheck._unconfined_git(unparsed))
+        self.assertIsNone(cutcheck._run_once(unparsed, ROOT))
+
+
 class BareCommandNounTest(unittest.TestCase):
     """A backticked command head with no argument names the tool, not an oracle."""
 
@@ -521,6 +796,61 @@ class ProvenanceTest(unittest.TestCase):
         self.assertIn("01-pre-existing", lines[0])
 
 
+class ProvenanceNegationTest(unittest.TestCase):
+    """Quoting the stamp, or denying it, mentions it: neither one exempts."""
+
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-provenance-mention")
+        self.lines = [line for line in reported(self.result) if "01-mentioned" in line]
+
+    def test_the_quoted_mention_is_graded_as_the_phrase_were_absent(self):
+        lines = [line for line in self.lines if "criterion 1" in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.ALREADY_PASSES, lines[0])
+
+    def test_the_denied_mention_is_graded_too(self):
+        lines = [line for line in self.lines if "criterion 2" in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.ALREADY_PASSES, lines[0])
+
+    def test_no_mention_of_the_phrase_reads_as_a_stamp(self):
+        for text in (
+            "the stamp this criterion quotes, `provenance: pre-existing`, is the "
+            "one it talks about rather than one it makes.",
+            "the stamp this criterion does not carry is provenance: pre-existing.",
+            "provenance: pre-existing is never a demonstration that an oracle "
+            "can fail.",
+        ):
+            self.assertIsNone(cutcheck.PRE_EXISTING_RE.search(text), text)
+
+
+class ProvenanceStampTest(unittest.TestCase):
+    """A stamp a criterion makes of its own oracle still exempts that oracle."""
+
+    def test_the_paired_positive_is_exempt(self):
+        result = run_cutcheck("cutcheck-provenance-mention")
+        lines = [line for line in reported(result) if "02-stamped" in line]
+        self.assertEqual(lines, [], result.stdout)
+
+    def test_the_existing_provenance_fixture_is_exempt_as_it_was(self):
+        result = run_cutcheck("cutcheck-provenance")
+        lines = [line for line in reported(result) if cutcheck.ALREADY_PASSES in line]
+        self.assertEqual(len(lines), 1, result.stdout)
+        self.assertIn("02-authored-here", lines[0])
+
+    def test_every_shape_the_corpus_stamps_with_still_reads_as_a_stamp(self):
+        for text in (
+            "**A criterion.** `grep -n x install.py` returns it. oracle_class: "
+            "deterministic. provenance: pre-existing.",
+            "provenance: pre-existing",
+            "**A criterion.** oracle_class: judged. Provenance:  Pre-Existing.",
+            # A live set stamps this way: the field, then why it is the field.
+            "oracle_class: deterministic. provenance: pre-existing (the fixture "
+            "exists from item 01).",
+        ):
+            self.assertTrue(cutcheck.PRE_EXISTING_RE.search(text), text)
+
+
 class VerdictInOutputTest(unittest.TestCase):
     """A command whose verdict is in what it prints is one cutcheck cannot judge."""
 
@@ -530,19 +860,20 @@ class VerdictInOutputTest(unittest.TestCase):
             line for line in self.result.stdout.splitlines() if "01-verdict" in line
         ]
 
-    def test_the_count_is_the_one_reported_for_what_it_prints(self):
-        lines = [line for line in self.lines if cutcheck.VERDICT_IN_OUTPUT in line]
+    def test_the_text_count_is_reported_for_what_it_prints(self):
+        lines = [line for line in self.lines if "criterion 1" in line]
         self.assertEqual(len(lines), 1, self.result.stdout)
-        self.assertIn("criterion 1", lines[0])
+        self.assertIn(cutcheck.VERDICT_IN_OUTPUT, lines[0])
 
-    def test_the_archive_and_the_diff_are_reported_for_their_head(self):
-        lines = [line for line in self.lines if cutcheck.GIT_NO_HISTORY in line]
-        self.assertEqual(len(lines), 2, self.result.stdout)
-        self.assertEqual(len(self.lines), 3, self.result.stdout)
+    def test_the_revision_count_is_reported_for_its_count_and_not_its_head(self):
+        lines = [line for line in self.lines if "criterion 2" in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.VERDICT_IN_OUTPUT, lines[0])
+        self.assertIn("git rev-list --count HEAD", lines[0])
 
-    def test_both_classes_are_advisory_and_the_set_exits_zero(self):
+    def test_both_counts_are_advisory_and_the_set_exits_zero(self):
         self.assertIn(cutcheck.VERDICT_IN_OUTPUT, cutcheck.ADVISORY)
-        self.assertIn(cutcheck.GIT_NO_HISTORY, cutcheck.ADVISORY)
+        self.assertEqual(len(self.lines), 2, self.result.stdout)
         self.assertEqual(self.result.returncode, 0, self.result.stdout)
 
 
@@ -632,6 +963,84 @@ class ExecutionCacheTest(unittest.TestCase):
             self.assertEqual(run.call_count, 2)
 
 
+class BinaryOutputOracleTest(unittest.TestCase):
+    """An oracle's output is bytes, and only its exit status is ever read.
+
+    A tree with history runs git oracles, and `git archive` prints a tar.
+    Decoding that as text raised UnicodeDecodeError out of the run itself, so
+    one such span in one ticket cost the whole invocation its report.
+
+    Graded in a scratch copy, never in the tree under test: the module's own
+    invariant is that oracles run in a copy cloned beside the tree, and a test
+    that runs one in the repository it is testing is the one place that broke.
+    """
+
+    def setUp(self):
+        scratch_root = Path(tempfile.mkdtemp(prefix=".cutcheck-binary-"))
+        self.addCleanup(shutil.rmtree, scratch_root, True)
+        self.tree = cutcheck._scratch_tree(BASELINE, ROOT, scratch_root)
+        self.assertIsNotNone(self.tree, "no scratch tree was built for the baseline")
+
+    def test_a_command_printing_binary_is_graded_on_its_exit_status(self):
+        self.assertEqual(cutcheck._run_once("git archive HEAD", self.tree), 0)
+
+
+class ScratchTreeHistoryTest(unittest.TestCase):
+    """The graded tree is a repository of its own, holding the graded revision."""
+
+    def setUp(self):
+        scratch_root = Path(tempfile.mkdtemp(prefix=".cutcheck-history-"))
+        self.addCleanup(shutil.rmtree, scratch_root, True)
+        self.tree = cutcheck._scratch_tree(BASELINE, ROOT, scratch_root)
+        self.assertIsNotNone(self.tree, "no scratch tree was built for the baseline")
+
+    def test_the_graded_revision_resolves_inside_the_tree(self):
+        # Reading a revision out of the log is the history claim: an extract
+        # carrying no `.git` answers this from whatever repository encloses it,
+        # or not at all.
+        proc = cutcheck._git(["log", "-1", "--format=%H"], self.tree)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(proc.stdout.strip(), BASELINE)
+
+    def test_the_trees_own_top_level_is_the_tree_not_the_enclosing_checkout(self):
+        here = Path.cwd()
+        self.addCleanup(os.chdir, str(here))
+        os.chdir(str(self.tree))
+        top = cutcheck._worktree_root()
+        self.assertEqual(top.resolve(), self.tree.resolve())
+        self.assertNotEqual(top.resolve(), ROOT.resolve())
+
+    def test_the_tree_carries_no_remote_to_write_back_through(self):
+        # An oracle is ticket content, and ticket content is untrusted: a clone
+        # keeping its origin is a write path from the scratch tree back out.
+        proc = cutcheck._git(["remote"], self.tree)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(proc.stdout.strip(), "")
+
+
+class GitOracleGradedTest(unittest.TestCase):
+    """A git oracle is graded on its exit status in the clone, never excused."""
+
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-git-graded")
+        self.lines = reported(self.result)
+
+    def test_the_log_read_and_the_diff_are_each_graded_on_their_exit_status(self):
+        classes = [line.split(": ")[2] for line in self.lines]
+        self.assertEqual(classes, [cutcheck.ALREADY_PASSES] * 2, self.result.stdout)
+        self.assertIn("criterion 1", self.lines[0])
+        self.assertIn("criterion 2", self.lines[1])
+
+    def test_the_ancestry_question_only_history_answers_discriminates(self):
+        self.assertNotIn("criterion 3", self.result.stdout)
+
+    def test_no_git_oracle_is_excused_for_its_head(self):
+        self.assertNotIn("git-no-history", self.result.stdout)
+
+    def test_a_graded_git_oracle_sets_the_exit_status(self):
+        self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
+
+
 FIXTURES = ROOT / "tests" / "fixtures" / "cutcheck"
 VERDICTS = FIXTURES / "verdicts.json"
 
@@ -674,18 +1083,47 @@ class RecordedVerdictTest(unittest.TestCase):
                 self.assertEqual(verdict(run), recorded[run])
 
 
-class GitOracleTest(unittest.TestCase):
-    """A `git archive` copy carries no history, so no git oracle is decidable."""
+class GitNoHistoryDispositionTest(unittest.TestCase):
+    """The excuse a git head carried is gone, and nothing reaches it any more.
 
-    def test_every_git_span_is_reported_and_none_of_them_is_executed(self):
-        ticket = FIXTURES / "cutcheck-verdict-in-output" / "01-verdict.md"
-        with mock.patch.object(cutcheck, "_exit_code") as ran:
-            findings = cutcheck._check_ticket(ticket, ROOT, None, {})
-        ran.assert_not_called()
-        classes = [klass for _, _, klass, _ in findings]
-        self.assertEqual(classes.count(cutcheck.GIT_NO_HISTORY), 2, classes)
+    It went rather than stayed because the scratch copy is a clone: the class
+    fired on the head alone, and the premise the head stood for -- a copy with
+    no history -- is now unreachable by construction. What stands in its place
+    is graded execution, and a count-flagged git oracle reported for its count.
+    """
 
-    def test_the_head_decides_it_rather_than_a_second_reading_of_the_flags(self):
+    def test_the_class_name_resolves_nowhere_in_the_module(self):
+        self.assertFalse(hasattr(cutcheck, "GIT_NO_HISTORY"))
+        source = (ROOT / "scripts" / "cutcheck.py").read_text(encoding="utf-8")
+        self.assertNotIn("git-no-history", source)
+
+    def test_the_advisory_set_lost_that_one_member_and_no_other(self):
+        self.assertEqual(
+            cutcheck.ADVISORY,
+            frozenset(
+                {
+                    cutcheck.EXTRACTION_GAP,
+                    cutcheck.COVERAGE_MAP_ABSENT,
+                    cutcheck.VERDICT_IN_OUTPUT,
+                }
+            ),
+        )
+
+    def test_every_git_span_is_executed_rather_than_excused_for_its_head(self):
+        ticket = FIXTURES / "cutcheck-git-graded" / "01-git-graded.md"
+        with mock.patch.object(cutcheck, "_exit_code", return_value=1) as ran:
+            cutcheck._check_ticket(ticket, ROOT, None, {})
+        self.assertEqual(
+            [call[0][0] for call in ran.call_args_list],
+            [
+                "git log -1 --format=%H",
+                "git diff ac8791a -- install.py",
+                "git merge-base --is-ancestor ac8791a HEAD",
+            ],
+        )
+
+    def test_the_count_flag_decides_the_undecidable_one_rather_than_the_head(self):
+        self.assertTrue(cutcheck._verdict_in_output("git rev-list --count HEAD"))
         for command in ("git diff --exit-code", "git status --porcelain"):
             self.assertFalse(cutcheck._verdict_in_output(command), command)
 
@@ -711,6 +1149,49 @@ class CutTimeDecidabilityTest(unittest.TestCase):
 
     def test_an_oracle_nothing_can_run_sets_the_exit_status(self):
         self.assertNotIn(cutcheck.UNRUNNABLE_ORACLE, cutcheck.ADVISORY)
+
+
+class HeadHalfNonReadingTest(unittest.TestCase):
+    """A HEAD half that produced no reading is not a failure at both revisions.
+
+    The baseline half already refuses to call a non-reading a failure; the HEAD
+    half had no such branch, so a timeout there fell through to
+    `fails-both-revisions` and an oracle that discriminates perfectly was
+    reported as one that never discriminates. This tool's own suite is the case
+    that found it: `tests.test_cutcheck` outgrew `COMMAND_TIMEOUT`, so the
+    reading at HEAD is a timeout and the verdict drawn from it was a fiction.
+    """
+
+    def _class(self, at_head):
+        def exit_code(command, tree):
+            return 1 if str(tree) == "/baseline" else at_head
+
+        with mock.patch.object(cutcheck, "_exit_code", side_effect=exit_code):
+            return cutcheck._discrimination(
+                "python3 -m unittest tests.test_cutcheck",
+                Path("/baseline"),
+                Path("/head"),
+            )
+
+    def test_a_timeout_at_head_is_a_non_reading_and_not_a_failure(self):
+        self.assertEqual(self._class(cutcheck.TIMED_OUT), cutcheck.UNRUNNABLE_ORACLE)
+
+    def test_a_command_nothing_could_run_at_head_reads_the_same(self):
+        self.assertEqual(self._class(cutcheck.UNRUNNABLE), cutcheck.UNRUNNABLE_ORACLE)
+
+    def test_a_real_failure_at_both_revisions_is_still_reported_as_one(self):
+        self.assertEqual(self._class(1), cutcheck.FAILS_BOTH_REVISIONS)
+
+    def test_an_oracle_passing_at_head_still_discriminates(self):
+        self.assertIsNone(self._class(0))
+
+    def test_the_two_halves_refuse_the_same_pair_of_non_readings(self):
+        for code in (cutcheck.TIMED_OUT, cutcheck.UNRUNNABLE):
+            with mock.patch.object(cutcheck, "_exit_code", return_value=code):
+                self.assertEqual(
+                    cutcheck._discrimination("pytest tests", Path("/b"), Path("/h")),
+                    cutcheck.UNRUNNABLE_ORACLE,
+                )
 
 
 class ScopeContainmentTest(unittest.TestCase):
