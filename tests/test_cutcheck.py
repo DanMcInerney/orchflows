@@ -236,6 +236,26 @@ class CanarySetTest(unittest.TestCase):
         self.assertIn("extra.txt", lines[0])
 
 
+SHELL_MARK = Path("/tmp/cutcheck-shellhead-ran")
+
+
+class ShellHeadTest(unittest.TestCase):
+    """Ticket content is untrusted input: no span of one reaches a shell."""
+
+    def setUp(self):
+        SHELL_MARK.unlink(missing_ok=True)
+        self.addCleanup(SHELL_MARK.unlink, True)
+        self.result = run_cutcheck("cutcheck-shellhead")
+
+    def test_the_shell_span_did_not_run(self):
+        self.assertFalse(SHELL_MARK.exists(), self.result.stdout)
+
+    def test_the_span_is_reported_rather_than_run(self):
+        lines = [line for line in self.result.stdout.splitlines() if "01-shellhead" in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.EXTRACTION_GAP, lines[0])
+
+
 class ParserReuseTest(unittest.TestCase):
     def test_frontmatter_and_section_parsers_are_the_ticket_scripts_own(self):
         self.assertIs(cutcheck._parse_frontmatter, tickets._parse_frontmatter)

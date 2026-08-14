@@ -94,8 +94,11 @@ CRITERION_RE = re.compile(r"^\s*(\d+)\.\s+(.*)$")
 BACKTICK_RE = re.compile(r"`([^`]+)`")
 SWALLOW_RE = re.compile(r"\|\s*(?:tail|head)\b")
 CUMULATIVE_RE = re.compile(r"\S+\.\.HEAD\b")
+# No shell is a command head. A span an extractor claims is a span this tool
+# runs, and ticket content is untrusted: `bash -lc '<anything>'` split argv-only
+# still hands `<anything>` to a shell. A shell-headed span is recognized by no
+# extractor, so it runs nowhere and surfaces as an extraction gap instead.
 COMMAND_HEADS = (
-    "bash",
     "git",
     "grep",
     "node",
@@ -104,7 +107,6 @@ COMMAND_HEADS = (
     "python",
     "python3",
     "rg",
-    "sh",
 )
 SEARCH_HEADS = ("grep", "rg")
 CITATION_RE = re.compile(r"\b([\w][\w./-]*\.[A-Za-z0-9]{1,5}):(\d+)")
