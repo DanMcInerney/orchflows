@@ -18,6 +18,16 @@ def read_flat(name):
     return re.sub(r"\s+", " ", read(name))
 
 
+def read_at(relative):
+    """Any repository file, by repository-relative path."""
+    return (ROOT / relative).read_text(encoding="utf-8")
+
+
+def read_at_flat(relative):
+    """Any repository file, whitespace collapsed, so wrapped clauses match."""
+    return re.sub(r"\s+", " ", read_at(relative))
+
+
 class TestVerdictContract(unittest.TestCase):
     def test_contains_the_verdict_grammar(self):
         text = read("verdict.md")
@@ -251,6 +261,49 @@ class TestDelegationContract(unittest.TestCase):
         self.assertIn(
             "a work-item dispatch suspends through the ticket's `## Handoff`",
             text, "delegation.md does not route work-item suspension through the ticket's ## Handoff",
+        )
+
+
+class TestVocabularyDefinesShapeChange(unittest.TestCase):
+    """`docs/vocabulary.md` owns the term the T0 supersession gate in
+    `AGENTS.md` and `ARCHITECTURE.md` invokes. The subject is the entry,
+    never a corpus count of the words."""
+
+    TERM = "**shape change**"
+
+    def entry(self):
+        flat = read_at_flat("docs/vocabulary.md")
+        self.assertEqual(
+            flat.count(self.TERM), 1,
+            f"docs/vocabulary.md must carry the {self.TERM} entry exactly once",
+        )
+        return flat.split(self.TERM, 1)[1].split(" - **", 1)[0]
+
+    def test_defines_the_term(self):
+        entry = self.entry()
+        self.assertIn(
+            "a change to a named field or enum", entry,
+            "the shape change entry does not state what moves",
+        )
+        self.assertIn(
+            "T0", entry,
+            "the shape change entry does not scope the term to T0",
+        )
+
+    def test_states_the_converse_a_prose_only_edit_needs(self):
+        self.assertIn(
+            "without a supersession PR", self.entry(),
+            "the shape change entry does not state the converse: a T0 edit "
+            "moving no field or enum re-pins without a supersession PR",
+        )
+
+    def test_lands_beside_contract_under_structure(self):
+        flat = read_at_flat("docs/vocabulary.md")
+        structure = flat.split("## Structure", 1)[1].split("## Work", 1)[0]
+        self.assertIn(
+            self.TERM, structure,
+            "the shape change entry must sit under ## Structure, where a "
+            "reader of the `contract` entry finds it",
         )
 
 
