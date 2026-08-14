@@ -92,9 +92,12 @@ USAGE = (
 class Refused(Exception):
     """What the script will not do, carrying the exit code that names why."""
 
-    def __init__(self, message: str, code: int = EXIT_ERROR):
+    def __init__(self, message: str, code: int = EXIT_ERROR, **detail):
         super().__init__(message)
         self.code = code
+        # what the caller needs to act on the refusal, carried in the payload
+        # beside the exit code that names it
+        self.detail = detail
 
 
 # --- git, always the caller's own -------------------------------------------
@@ -247,9 +250,168 @@ def _cmd_start(rest):
     }, EXIT_OK
 
 
+def _extract_flag(args: list, flag: str):
+    if flag in args:
+        index = args.index(flag)
+        if index + 1 < len(args):
+            value = args[index + 1]
+            del args[index : index + 2]
+            return value
+        del args[index : index + 1]
+    return None
+
+
+def _normalized_scope(declared, root: Path) -> tuple:
+    """``write_scope`` as repository-relative POSIX paths.
+
+    An absolute entry inside the main repository root is normalized to
+    relative; one outside it is refused by name, because a scope naming
+    something this repository cannot contain grades nothing.
+    """
+
+    if isinstance(declared, str):
+        declared = [declared]
+    entries = []
+    for raw in declared or []:
+        entry = raw.strip().strip("`").strip()
+        if not entry:
+            continue
+        candidate = Path(entry)
+        if candidate.is_absolute() or (len(entry) > 1 and entry[1] == ":"):
+            try:
+                entry = candidate.resolve().relative_to(root).as_posix()
+            except ValueError:
+                raise Refused(
+                    "{} entry {!r} is an absolute path outside the main "
+                    "repository root {}: nothing in this repository can match "
+                    "it".format(WRITE_SCOPE_KEY, entry, root)
+                )
+        parts = [part for part in entry.replace("\\", "/").split("/") if part not in ("", ".")]
+        if ".." in parts:
+            raise Refused(
+                "{} entry {!r} escapes the repository".format(WRITE_SCOPE_KEY, entry)
+            )
+        if parts:
+            entries.append("/".join(parts))
+    return tuple(entries)
+
+
+def _in_scope(name: str, scope) -> bool:
+    """A path prefix compared on whole segments: `docs` never takes `docsmith`."""
+
+    return any(name == prefix or name.startswith(prefix + "/") for prefix in scope)
+
+
+def _is_ancestor(ancestor: str, descendant: str) -> bool:
+    code, _, err = _git("merge-base", "--is-ancestor", ancestor, descendant)
+    if code in (0, 1):
+        return code == 0
+    raise Refused(
+        "git merge-base --is-ancestor {} {}: {}".format(ancestor, descendant, err.strip())
+    )
+
+
+def _cmd_check(rest):
+    """Grade the item at the join, every fact re-derived from the caller's
+    own git. Nothing a child wrote in prose is read, and the branch facts —
+    not the presence of a linked tree the host may already have removed —
+    are the verdict."""
+
+    args = list(rest)
+    base = _extract_flag(args, "--base")
+    run, ticket_id = _positional(args, 2, "check")
+    if base is None:
+        raise Refused("check requires --base <rev>. {}".format(USAGE))
+    root, path = _locate(run, ticket_id)
+    data = _graded(tickets._load_ticket(path), "read {}/{}".format(run, ticket_id))
+    reported = {"run": run, "id": ticket_id, "ticket": str(path)}
+
+    isolation = str(data.get(ISOLATION_KEY) or "none").strip()
+    if isolation != REQUIRED:
+        # read-only lanes and unisolated-by-design items never reach git
+        reported.update({ISOLATION_KEY: isolation, "verdict": "not required"})
+        return {"check": reported}, EXIT_OK
+    reported[ISOLATION_KEY] = isolation
+
+    branch = str(data.get(BRANCH_KEY) or "").strip()
+    if not branch:
+        raise Refused(
+            "{} declares {}: {} and carries no {}: nothing recorded what it "
+            "was executed in".format(ticket_id, ISOLATION_KEY, REQUIRED, BRANCH_KEY),
+            EXIT_NO_RECORD,
+        )
+    scope = _normalized_scope(data.get(WRITE_SCOPE_KEY), root)
+
+    code, tip, _ = _git("rev-parse", "--verify", "--quiet", branch + "^{commit}")
+    if code != 0:
+        raise Refused(
+            "branch {!r} does not resolve in this repository".format(branch),
+            EXIT_ISOLATION_MISSING,
+        )
+    tip = tip.strip()
+    own = _git_out("rev-parse", "--abbrev-ref", "HEAD")
+    if branch == own:
+        raise Refused(
+            "branch {!r} is the caller's own branch: no distinct branch "
+            "carries the work".format(branch),
+            EXIT_ISOLATION_MISSING,
+        )
+    if _is_ancestor(tip, "HEAD"):
+        raise Refused(
+            "branch {!r} is already an ancestor of the caller's HEAD: no "
+            "distinct branch carries the work".format(branch),
+            EXIT_ISOLATION_MISSING,
+        )
+
+    code, base_commit, err = _git("rev-parse", "--verify", "--quiet", base + "^{commit}")
+    if code != 0:
+        raise Refused("base {!r} does not resolve in this repository".format(base))
+    base_commit = base_commit.strip()
+    if not _is_ancestor(base_commit, tip):
+        raise Refused(
+            "branch {!r} is not cut from {}: the base is not an ancestor of "
+            "the branch".format(branch, base),
+            EXIT_WRONG_BRANCH_POINT,
+        )
+
+    # three-dot, from the merge base: a breach that arrives inside a merge
+    # commit is invisible to `git log --name-only` and visible here
+    changed = [
+        line
+        for line in _git_out(
+            "diff", "--name-only", "--no-renames", "{}...{}".format(base_commit, tip)
+        ).splitlines()
+        if line
+    ]
+    breaches = [name for name in changed if not _in_scope(name, scope)]
+    reported.update(
+        {
+            BRANCH_KEY: branch,
+            "tip": tip,
+            "base": base_commit,
+            "changed": changed,
+            WRITE_SCOPE_KEY: list(scope),
+        }
+    )
+    if breaches:
+        raise Refused(
+            "branch {!r} changed {} path(s) outside {}: {}".format(
+                branch, len(breaches), WRITE_SCOPE_KEY, ", ".join(breaches)
+            ),
+            EXIT_SCOPE_BREACH,
+            breaches=breaches,
+            changed=changed,
+        )
+    reported["commits"] = int(
+        _git_out("rev-list", "--count", "{}..{}".format(base_commit, tip)) or 0
+    )
+    reported["verdict"] = "pass"
+    return {"check": reported}, EXIT_OK
+
+
 def main(argv=None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
-    handlers = {"start": _cmd_start}
+    handlers = {"start": _cmd_start, "check": _cmd_check}
     command = arguments[0] if arguments else None
     handler = handlers.get(command)
     if handler is None:
@@ -260,16 +422,13 @@ def main(argv=None) -> int:
     try:
         payload, code = handler(arguments[1:])
     except Refused as refusal:
-        print(
-            json.dumps(
-                {
-                    "error": str(refusal),
-                    "code": refusal.code,
-                    "verdict": VERDICTS.get(refusal.code, "error"),
-                },
-                ensure_ascii=False,
-            )
-        )
+        reported = {
+            "error": str(refusal),
+            "code": refusal.code,
+            "verdict": VERDICTS.get(refusal.code, "error"),
+        }
+        reported.update(refusal.detail)
+        print(json.dumps(reported, ensure_ascii=False))
         print("workspace: {}".format(refusal), file=sys.stderr)
         return refusal.code
     except Exception as error:  # an internal error is exit 1, never a traceback
