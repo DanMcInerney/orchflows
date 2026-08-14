@@ -40,6 +40,16 @@ def read_clause_flat(relative, number):
     return re.sub(r"\s+", " ", match.group(1))
 
 
+def read_bullet_flat(name, marker):
+    """One top-level bullet of a contract, whitespace collapsed. Scopes an
+    assertion to the bullet the criterion names, so a sentence landing in a
+    neighbouring bullet cannot satisfy it."""
+    flat = read_flat(name)
+    if marker not in flat:
+        raise AssertionError(f"contracts/{name} has no bullet {marker}")
+    return flat.split(marker, 1)[1].split(" - `", 1)[0]
+
+
 class TestVerdictContract(unittest.TestCase):
     def test_contains_the_verdict_grammar(self):
         text = read("verdict.md")
@@ -426,13 +436,14 @@ class TestWorkItemCitationLaws(unittest.TestCase):
     """`contracts/work-item.md` resolves three collisions no other file
     owns: whose `status` a `Return fields` list names, who sets
     `isolation` and when the join grades it, and what a fixed input may
-    cite."""
+    cite. Each is read from the bullet that owns it, never from the file
+    around it: placement is what these criteria assert."""
 
-    def contract(self):
-        return read_flat("work-item.md")
+    def bullet(self, marker):
+        return read_bullet_flat("work-item.md", marker)
 
     def test_return_fields_status_is_the_result_envelopes(self):
-        text = self.contract()
+        text = self.bullet("`## Return fields` — packet `return_contract`")
         self.assertIn(
             "A `status` in this list is the result envelope's", text,
             "work-item.md's `## Return fields` bullet does not say a `status` "
@@ -450,7 +461,7 @@ class TestWorkItemCitationLaws(unittest.TestCase):
         )
 
     def test_isolation_names_its_only_setter_and_the_grading_order(self):
-        text = self.contract()
+        text = self.bullet("`isolation` — packet `authority`")
         for clause, why in (
             ("The decomposer is the field's only setter",
              "work-item.md's `isolation` bullet does not name the decomposer "
@@ -468,17 +479,17 @@ class TestWorkItemCitationLaws(unittest.TestCase):
             with self.subTest(clause=clause):
                 self.assertIn(clause, text, why)
 
-    def test_fixed_inputs_forbid_a_line_number_by_citing_identity(self):
-        text = self.contract()
+    def test_fixed_inputs_forbid_an_unpinned_coordinate_by_citing_identity(self):
+        text = self.bullet("`## Fixed inputs` — packet `inputs`")
         self.assertIn(
             "never prose copies", text,
             "work-item.md's `## Fixed inputs` bullet lost its existing "
             "prohibition on a prose copy",
         )
         self.assertIn(
-            "never a line number", text,
+            "never an unpinned coordinate", text,
             "work-item.md's `## Fixed inputs` bullet does not forbid citing a "
-            "fixed input by line number",
+            "fixed input by an unpinned coordinate",
         )
         self.assertIn(
             "[docs/vocabulary.md](../docs/vocabulary.md)'s `identity` entry",
