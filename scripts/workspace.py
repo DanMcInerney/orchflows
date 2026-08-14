@@ -291,14 +291,18 @@ def _normalized_scope(declared, root: Path) -> tuple:
                 entry = candidate.resolve().relative_to(root).as_posix()
             except ValueError:
                 raise Refused(
-                    "{} entry {!r} is an absolute path outside the main "
+                    # quoted plainly, never {!r}: a Windows entry carries
+                    # backslashes, and repr doubles every one of them, so the
+                    # refusal named a path the caller never wrote and could
+                    # not grep its own ticket for
+                    "{} entry '{}' is an absolute path outside the main "
                     "repository root {}: nothing in this repository can match "
                     "it".format(WRITE_SCOPE_KEY, entry, root)
                 )
         parts = [part for part in entry.replace("\\", "/").split("/") if part not in ("", ".")]
         if ".." in parts:
             raise Refused(
-                "{} entry {!r} escapes the repository".format(WRITE_SCOPE_KEY, entry)
+                "{} entry '{}' escapes the repository".format(WRITE_SCOPE_KEY, entry)
             )
         if parts:
             entries.append("/".join(parts))
