@@ -20,7 +20,8 @@ Subcommands:
     claim <run> <id> --by <name>
     set-status <run> <id> <status>
     packet <run> <id> --reply-to <name> [--workspace <path>]
-    result <run> <id> --section <name> (--file <path> | --text <string>) [--append]
+    result <run> <id> --section <name> (--file <path> | --text <string>)
+           [--append | --replace]
     run-state <run> (--note <line> | --artifact <name> (--file <path> | --text <string>))
 """
 
@@ -82,7 +83,8 @@ SECTION_RANK = {name.lower(): i for i, name in enumerate(SECTION_ORDER)}
 # declaration; the spelling belongs to the contract, not to either script.
 REQUIRED_ISOLATION = "required"
 RESULT_USAGE = (
-    "result <run> <id> --section <name> (--file <path> | --text <string>) [--append]"
+    "result <run> <id> --section <name> (--file <path> | --text <string>) "
+    "[--append | --replace]"
 )
 RUN_STATE_USAGE = (
     "run-state <run> (--note <line> | --artifact <name> "
@@ -107,7 +109,8 @@ SUBCOMMAND_SUMMARY = {
     f"alone. One of {sorted(VALID_STATUSES)}.",
     "packet": "The by-reference dispatch packet for one ticket: path, parts, "
     "and the commands the child runs from its own workspace.",
-    "result": f"Write one of the executor's own sections {list(EXECUTOR_SECTIONS)}.",
+    "result": f"Write one of the executor's own sections {list(EXECUTOR_SECTIONS)}; "
+    "a section already carrying content is refused without --append or --replace.",
     "run-state": "Write this run's state under the one repository-wide `.orch/`.",
 }
 HELP_FLAGS = frozenset({"--help", "-h"})
@@ -394,6 +397,43 @@ def _sections(text: str) -> dict:
     return sections
 
 
+def _frontmatter_end(lines) -> int:
+    """The first index below the frontmatter block; 0 when there is none.
+
+    Both the writer and the overwrite guard look for headings only below
+    this line: a wrapped frontmatter value can begin a line with ``## ``,
+    and reading one as a section is how a guard comes to report on a
+    heading that is not a section at all.
+    """
+
+    if not lines or lines[0].rstrip("\r\n") != "---":
+        return 0
+    for i in range(1, len(lines)):
+        if lines[i].rstrip("\r\n") == "---":
+            return i + 1
+    return 0
+
+
+def _section_body(text: str, heading: str) -> str:
+    """One section's current body, found the way ``_write_section`` finds it.
+
+    Same frontmatter skip, same fence-aware scan, same case-insensitive
+    match, so the content the overwrite guard reads is the content of the
+    very span the writer is about to overwrite. A guard resolving a
+    different heading than the writer writes is a guard that passes while
+    the clobber happens.
+    """
+
+    lines = text.splitlines()
+    starts, _ = _scan_sections(lines, _frontmatter_end(lines))
+    for position, index in enumerate(starts):
+        if lines[index][3:].strip().lower() != heading.strip().lower():
+            continue
+        end = starts[position + 1] if position + 1 < len(starts) else len(lines)
+        return "\n".join(lines[index + 1 : end]).strip()
+    return ""
+
+
 def _body_block(body: str, newline: str) -> str:
     """Normalize a body to the file's line ending, ending in exactly one."""
 
@@ -411,13 +451,7 @@ def _write_section(text: str, heading: str, body: str, append: bool = False) -> 
     # Headings are looked for below the frontmatter only: a wrapped
     # frontmatter value can begin a line with "## ", and frontmatter is
     # never this writer's to touch.
-    body_start = 0
-    if lines and lines[0].rstrip("\r\n") == "---":
-        for i in range(1, len(lines)):
-            if lines[i].rstrip("\r\n") == "---":
-                body_start = i + 1
-                break
-    starts, unclosed = _scan_sections(lines, body_start)
+    starts, unclosed = _scan_sections(lines, _frontmatter_end(lines))
     if unclosed is not None:
         # Every heading below the open fence reads as quoted content, so the
         # section named here looks absent however present it is: writing it
@@ -829,6 +863,15 @@ def _cmd_result(rest):
     append = "--append" in args
     while "--append" in args:
         args.remove("--append")
+    replace = "--replace" in args
+    while "--replace" in args:
+        args.remove("--replace")
+    if append and replace:
+        return {
+            "error": "result takes one of --append or --replace, not both: they "
+            f"are the two ways to write a section that already carries content. "
+            f"usage: {RESULT_USAGE}"
+        }
     stray = next((arg for arg in args if arg.startswith("-")), None)
     if stray is not None:
         return {
@@ -868,22 +911,48 @@ def _cmd_result(rest):
         return {"error": f"ticket not found: {run}/{ticket_id}"}
     try:
         text = ticket_path.read_text(encoding="utf-8")
-        # _write_section raises before any byte is written: a ticket it
-        # cannot write safely is left exactly as it was found
-        ticket_path.write_text(
-            _write_section(text, canonical, body, append), encoding="utf-8"
-        )
+        # Rendered before the overwrite guard reads anything, and written
+        # after it: a ticket this writer cannot write safely is refused as
+        # such whatever flags were passed, and the guard never reports on a
+        # file whose headings `_sections` cannot see (an unterminated fence
+        # hides every one below it, which would read as an empty section and
+        # wave the clobber through). `_write_section` is pure, so nothing is
+        # on disk until the write below.
+        rendered = _write_section(text, canonical, body, append)
     except TicketFormatError as error:
         return {"error": f"{error}. ticket: {ticket_path}"}
     except OSError as error:
+        return {"error": f"unreadable ticket: {error}"}
+    prior = _section_body(text, canonical)
+    if prior and not append and not replace:
+        # contracts/worklog.md's closing law, read across to the ticket the
+        # same executor writes: a write over content already there is refused
+        # by default and the refusal names the path. A ticket is cut with its
+        # executor sections present and empty, so a first write is free; what
+        # is guarded is the second writer silently erasing the first — the
+        # §10 checker over the executor, or a resumed agent over its own pass.
+        return {
+            "error": f"'## {canonical}' already carries content: refusing to "
+            "overwrite it silently. Pass --append to add after it, or "
+            f"--replace to overwrite it deliberately. ticket: {ticket_path}"
+        }
+    try:
+        ticket_path.write_text(rendered, encoding="utf-8")
+    except OSError as error:
         return {"error": f"unwritable ticket: {error}"}
+    if append:
+        mode = "append"
+    elif replace:
+        mode = "replace"
+    else:
+        mode = "write"
     return {
         "result": {
             "run": run,
             "id": ticket_id,
             "path": str(ticket_path),
             "section": canonical,
-            "mode": "append" if append else "replace",
+            "mode": mode,
         }
     }
 
