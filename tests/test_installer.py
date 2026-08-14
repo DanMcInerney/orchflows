@@ -1944,6 +1944,30 @@ class TestRuntimeDirsSeedTheSink(unittest.TestCase):
                 self.assertEqual(self.sink, install._state_sink(), blank)
         self.assertEqual(SINK_ENV_VAR, install.STATE_HOME_ENV_VAR)
 
+    def test_the_sink_it_seeds_is_the_one_the_scripts_resolve(self):
+        """``install.py`` cannot import ``scripts/state_root.py``: it runs
+        before any script is installed. That duplication is only safe while
+        the two spellings agree, so they are compared against the owner
+        rather than each against a literal of its own — the shape
+        ``tests/test_suite_check.py`` already holds the other replica to."""
+
+        sys.path.insert(0, str(install.REPO_ROOT / "scripts"))
+        try:
+            import state_root
+        finally:
+            sys.path.pop(0)
+        self.assertEqual(state_root.ENV_VAR, install.STATE_HOME_ENV_VAR)
+        self.assertEqual(
+            state_root.DEFAULT_HOME_SUBPATH, install.STATE_SINK_SUBPATH
+        )
+        with patch.object(install.Path, "home", return_value=self.home), patch.dict(
+            os.environ, {}, clear=False
+        ):
+            os.environ.pop(install.STATE_HOME_ENV_VAR, None)
+            self.assertEqual(
+                Path(state_root.state_root()), install._state_sink()
+            )
+
     def test_the_bin_dir_is_unchanged_in_shape(self):
         """The one thing that stays in the repository stays there."""
 

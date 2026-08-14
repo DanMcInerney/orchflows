@@ -470,6 +470,17 @@ class TestSelfImproveSelectsByScopeAndProject(unittest.TestCase):
         self.assertIn("state sink", self.text)
         self.assertIsNone(ORCH_MENTION.search(self.text))
 
+    def test_the_sink_it_mines_points_at_the_law_that_owns_it(self):
+        """Every stream this cycle reads is agent-written. Naming the sink
+        without §6 leaves the untrusted-data law to a reader who already
+        knows it — the shape `TestFrictionFallbackNamesTheSink` holds the
+        other agent-facing sink reference to."""
+
+        block = block_carrying(SELF_IMPROVE, "state sink")
+        self.assertTrue(block, "{0} names no state sink".format(SELF_IMPROVE))
+        self.assertIn("visibility.md", block)
+        self.assertIn("untrusted", block)
+
     def test_selection_is_by_project_field_and_cluster_scope(self):
         collapsed = flat(self.text)
         self.assertIn("`project` field", collapsed)
