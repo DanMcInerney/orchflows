@@ -1200,6 +1200,116 @@ class ArtifactOverwriteTest(unittest.TestCase):
             )
 
 
+class OrchTreesTest(unittest.TestCase):
+    """`.orch/research/`, `.orch/improvement/` and `.orch/handoffs/` had no
+    writer: named in the library, reachable by no subcommand, so anything
+    meant for them was written by hand or not at all. `--tree` addresses
+    them beside `runs/`, and the run id keeps partitioning the path."""
+
+    OWNERLESS = ("research", "improvement", "handoffs")
+
+    def test_one_file_is_written_and_read_back_in_each_ownerless_tree(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            for tree in self.OWNERLESS:
+                payload = run_cmd(worktree, "run-state", "testrun", "--tree", tree,
+                                  "--artifact", "evidence.md", "--text", f"{tree} bytes\n")
+                self.assertEqual(tree, payload["run_state"]["tree"], tree)
+                landed = main / ".orch" / tree / "testrun" / "evidence.md"
+                self.assertEqual(str(landed.resolve()), payload["run_state"]["path"], tree)
+                self.assertEqual(f"{tree} bytes\n", landed.read_text(encoding="utf-8"), tree)
+            # written from the worktree, landed at the main root, every time
+            self.assertFalse((worktree / ".orch").exists())
+
+    def test_the_run_id_still_partitions_the_artifact_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            for run in ("testrun", "otherrun"):
+                run_cmd(worktree, "run-state", run, "--tree", "research",
+                        "--artifact", "evidence.md", "--text", f"{run}\n")
+            for run in ("testrun", "otherrun"):
+                self.assertEqual(
+                    f"{run}\n",
+                    (main / ".orch" / "research" / run / "evidence.md").read_text(
+                        encoding="utf-8"
+                    ),
+                )
+
+    def test_runs_stays_the_default_and_nothing_is_retired(self):
+        """Every pre-existing call site passes no `--tree` and must land
+        exactly where it always did."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            note = run_cmd(worktree, "run-state", "testrun", "--note", "a line")
+            self.assertEqual("runs", note["run_state"]["tree"])
+            self.assertEqual(str(worklog_of(main).resolve()), note["run_state"]["path"])
+            artifact = run_cmd(worktree, "run-state", "testrun", "--artifact",
+                               "evidence.md", "--text", "bytes\n")
+            self.assertEqual("runs", artifact["run_state"]["tree"])
+            self.assertEqual(
+                str((run_dir_of(main) / "evidence.md").resolve()),
+                artifact["run_state"]["path"],
+            )
+            self.assertEqual("runs", tickets_mod.DEFAULT_RUN_STATE_TREE)
+            self.assertIn("runs", tickets_mod.RUN_STATE_TREES)
+
+    def test_an_explicit_runs_tree_is_the_same_path_as_the_default(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            explicit = run_cmd(worktree, "run-state", "testrun", "--tree", "runs",
+                               "--artifact", "evidence.md", "--text", "bytes\n")
+            self.assertEqual(
+                str((run_dir_of(main) / "evidence.md").resolve()),
+                explicit["run_state"]["path"],
+            )
+
+    def test_the_overwrite_guard_holds_in_every_tree(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            for tree in self.OWNERLESS:
+                run_cmd(worktree, "run-state", "testrun", "--tree", tree,
+                        "--artifact", "evidence.md", "--text", "first\n")
+                result = run_full(worktree, "run-state", "testrun", "--tree", tree,
+                                  "--artifact", "evidence.md", "--text", "clobber\n")
+                self.assertEqual(1, result.returncode, f"{tree}: {result.stdout}")
+                landed = main / ".orch" / tree / "testrun" / "evidence.md"
+                self.assertIn(str(landed.resolve()), json.loads(result.stdout)["error"], tree)
+                self.assertEqual("first\n", landed.read_text(encoding="utf-8"), tree)
+
+    def test_an_unknown_tree_is_refused_and_the_closed_set_is_named(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            for bad in ("tickets", "friction", "../escape", "a/b", "", "canary"):
+                result = run_full(worktree, "run-state", "testrun", "--tree", bad,
+                                  "--artifact", "evidence.md", "--text", "x")
+                self.assertEqual(1, result.returncode, f"{bad!r}: {result.stdout}")
+                error = json.loads(result.stdout)["error"]
+                for tree in tickets_mod.RUN_STATE_TREES:
+                    self.assertIn(tree, error, f"{bad!r}: {tree}")
+            # a refused tree creates nothing: `.orch/` still holds only what
+            # the fixture put there, and no run-state tree was opened
+            self.assertEqual(
+                ["tickets"], sorted(p.name for p in (main / ".orch").iterdir())
+            )
+
+    def test_every_addressed_tree_is_gitignored_runtime_state(self):
+        """`.gitignore` line 3 is `.orch/*`: every tree this subcommand
+        writes is runtime state, never tracked content. A tree added to the
+        closed set that escaped that line would commit run output."""
+
+        ignore = (ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
+        self.assertIn(".orch/*", ignore)
+        for tree in tickets_mod.RUN_STATE_TREES:
+            self.assertNotIn(f"!.orch/{tree}/", ignore, tree)
+
+
 class TestRunStateRootResolution(unittest.TestCase):
     def test_the_root_comes_from_find_repo_root_with_no_subprocess(self):
         with tempfile.TemporaryDirectory() as tmp:

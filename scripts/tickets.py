@@ -22,7 +22,7 @@ Subcommands:
     packet <run> <id> --reply-to <name> [--workspace <path>]
     result <run> <id> --section <name> (--file <path> | --text <string>)
            [--append | --replace]
-    run-state <run> (--note <line> | --artifact <name>
+    run-state <run> [--tree <name>] (--note <line> | --artifact <name>
              (--file <path> | --text <string>) [--replace])
 """
 
@@ -83,12 +83,21 @@ SECTION_RANK = {name.lower(): i for i, name in enumerate(SECTION_ORDER)}
 # executes in a workspace of its own. The sibling script grades the same
 # declaration; the spelling belongs to the contract, not to either script.
 REQUIRED_ISOLATION = "required"
+# rules/visibility.md §6's `.orch/` trees a run writes into, as a closed set.
+# `runs/` is the worklog's own and stays the default, so every pre-existing
+# call site lands exactly where it always did. The other three are named
+# across the library and had no writer at all: anything meant for them was
+# written by hand at a path each author guessed, or simply lost. Closed and
+# refused by name rather than open, because `.orch/tickets/` is the tracker's
+# and `.orch/friction/` is the logger's — neither is writable from here.
+RUN_STATE_TREES = ("runs", "research", "improvement", "handoffs")
+DEFAULT_RUN_STATE_TREE = "runs"
 RESULT_USAGE = (
     "result <run> <id> --section <name> (--file <path> | --text <string>) "
     "[--append | --replace]"
 )
 RUN_STATE_USAGE = (
-    "run-state <run> (--note <line> | --artifact <name> "
+    "run-state <run> [--tree <name>] (--note <line> | --artifact <name> "
     "(--file <path> | --text <string>) [--replace])"
 )
 SUBCOMMAND_USAGE = {
@@ -113,7 +122,9 @@ SUBCOMMAND_SUMMARY = {
     "result": f"Write one of the executor's own sections {list(EXECUTOR_SECTIONS)}; "
     "a section already carrying content is refused without --append or --replace.",
     "run-state": "Write this run's state under the one repository-wide "
-    "`.orch/`; an artifact that already exists is refused without --replace.",
+    f"`.orch/`, in one of {list(RUN_STATE_TREES)} (default "
+    f"{DEFAULT_RUN_STATE_TREE}); an artifact that already exists is refused "
+    "without --replace.",
 }
 HELP_FLAGS = frozenset({"--help", "-h"})
 # The bare word only heads the command line. Inside a subcommand `help` is
@@ -200,11 +211,11 @@ def _tickets_root():
     return repo_root / ".orch" / "tickets"
 
 
-def _runs_root():
+def _run_state_root(tree: str):
     repo_root = _find_repo_root(Path.cwd())
     if repo_root is None:
         return None
-    return repo_root / ".orch" / "runs"
+    return repo_root / ".orch" / tree
 
 
 def _segment_error(kind: str, value: str):
@@ -984,6 +995,7 @@ def _cmd_run_state(rest):
     artifact = _extract_flag(args, "--artifact")
     file_arg = _extract_flag(args, "--file")
     text_arg = _extract_flag(args, "--text")
+    tree = _extract_flag(args, "--tree")
     replace = "--replace" in args
     while "--replace" in args:
         args.remove("--replace")
@@ -1001,6 +1013,13 @@ def _cmd_run_state(rest):
     invalid = _segment_error("run id", run)
     if invalid is not None:
         return invalid
+    if tree is None:
+        tree = DEFAULT_RUN_STATE_TREE
+    if tree not in RUN_STATE_TREES:
+        return {
+            "error": f"unknown run-state tree '{tree}': one of "
+            f"{list(RUN_STATE_TREES)}"
+        }
     body = None
     if artifact is not None:
         invalid = _segment_error("artifact name", artifact)
@@ -1025,10 +1044,10 @@ def _cmd_run_state(rest):
             f"--artifact. usage: {RUN_STATE_USAGE}"
         }
 
-    runs_root = _runs_root()
-    if runs_root is None:
+    tree_root = _run_state_root(tree)
+    if tree_root is None:
         return {"error": "not inside a git repository"}
-    run_dir = runs_root / run
+    run_dir = tree_root / run
     replaced = False
     if artifact is not None:
         target = run_dir / artifact
@@ -1058,6 +1077,7 @@ def _cmd_run_state(rest):
         return {"error": f"unwritable run state: {error}"}
     written = {
         "run": run,
+        "tree": tree,
         "path": str(path),
         "mode": "note" if note is not None else "artifact",
     }
