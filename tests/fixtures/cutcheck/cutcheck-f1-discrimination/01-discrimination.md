@@ -25,13 +25,13 @@ baseline as they will when the work has landed, one per reported case.
 
 1. **Already reads PASS at the baseline.**
    `grep -n "SCRIPT_NAMES" install.py` returns the tuple line. oracle_class:
-   deterministic. provenance: pre-existing.
+   deterministic. provenance: authored-here.
 2. **Zero hits at the baseline and zero hits at HEAD.**
    `grep -rn "zzqq-token-never-written" install.py` returns at least one line.
-   oracle_class: deterministic. provenance: pre-existing.
+   oracle_class: deterministic. provenance: authored-here.
 3. **A node id naming a class that does not exist.**
    `python3 -m pytest tests/test_installer.py::NoSuchClass::test_absent` exits 0.
-   oracle_class: deterministic. provenance: pre-existing.
+   oracle_class: deterministic. provenance: authored-here.
 
 ## Result
 
