@@ -35,6 +35,11 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+try:  # Windows only; POSIX append needs no lock. See _append_one_line.
+    import msvcrt
+except ImportError:
+    msvcrt = None
+
 VALID_STATUSES = {
     "pending",
     "ready",
@@ -1033,6 +1038,37 @@ def _is_terminal_heading(line: str) -> bool:
     return remainder == "" or remainder.startswith(":")
 
 
+def _append_one_line(path: Path, block: str) -> None:
+    """Append in one write, serialised where the platform does not do it.
+
+    POSIX ``O_APPEND`` places a write at end-of-file atomically, so append mode
+    alone is the whole guarantee there. The Windows CRT emulates append with a
+    seek and then a write, and those are two steps: two writers take the same
+    offset and one whole line disappears -- seen here as seven notes of eight
+    surviving, every survivor intact, on a job that had passed the run before.
+    A torn line would have been obvious; a missing one reads like a writer that
+    never ran.
+
+    So Windows locks and POSIX does not, and byte zero is the mutex: every
+    appender contends on the same byte and no reader takes it, so an append
+    blocks only another append. Nothing here read-modify-writes. The lock
+    serialises the seek the platform hides inside ``write``.
+    """
+
+    with open(path, "a", encoding="utf-8", newline="\n") as handle:
+        if msvcrt is None:
+            handle.write(block)
+            return
+        handle.seek(0)
+        msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+        try:
+            handle.write(block)
+            handle.flush()
+        finally:
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+
+
 def _worklog_terminal(path: Path):
     """The state a worklog closed with, or ``None`` while it is open.
 
@@ -1062,8 +1098,9 @@ def _cmd_run_state(rest):
 
     ``--note`` appends to one shared log, so it opens in append mode with an
     explicit ``newline`` (``scripts/friction.py``) and writes one line in one
-    call: two workspaces write one repository's worklog concurrently and
-    neither may read-modify-write it. ``--artifact`` is whole-file, which is
+    call through ``_append_one_line``, which serialises that call on the
+    platform where append is not itself atomic: two workspaces write one
+    repository's worklog concurrently and neither may read-modify-write it. ``--artifact`` is whole-file, which is
     safe only because the run id partitions it.
 
     There is no fallback. A write that cannot reach that root is reported as
@@ -1202,8 +1239,7 @@ def _cmd_run_state(rest):
                 # the section goes after what is already there, never over it.
                 evidence = body.replace("\r\n", "\n").replace("\r", "\n").strip("\n")
                 block = f"\n{TERMINAL_HEADING}: {terminal}\n\n{evidence}\n"
-            with open(path, "a", encoding="utf-8", newline="\n") as handle:
-                handle.write(block)
+            _append_one_line(path, block)
     except OSError as error:
         return {"error": f"unwritable run state: {error}"}
     if artifact is not None:

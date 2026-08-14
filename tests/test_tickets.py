@@ -1056,12 +1056,17 @@ class TestRunStateWorklog(unittest.TestCase):
             main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
             notes = [f"writer-{i} " + "x" * 2000 for i in range(8)]
             with ThreadPoolExecutor(max_workers=8) as pool:
-                list(
+                payloads = list(
                     pool.map(
                         lambda note: run_cmd(worktree, "run-state", "testrun", "--note", note),
                         notes,
                     )
                 )
+            # A writer that reported an error and a writer whose line was lost
+            # are two different defects, and the file check alone reports the
+            # second for both -- the payloads are the only place the first is
+            # visible, and this test used to throw them away.
+            self.assertEqual([], [p["error"] for p in payloads if "error" in p])
             self.assertEqual(
                 sorted(notes),
                 sorted(worklog_of(main).read_text(encoding="utf-8").splitlines()),
@@ -1183,7 +1188,13 @@ class TerminalNoteTest(unittest.TestCase):
                 ["from the channel", "from another worktree", "from the channel again"],
                 worklog_of(main).read_text(encoding="utf-8").splitlines(),
             )
-            source = " ".join(inspect.getsource(tickets_mod._cmd_run_state).split())
+            # Both halves of the note path: the subcommand and the helper it
+            # hands the write to. Reading only the subcommand made this pass
+            # for as long as the open sat there and say nothing once it moved.
+            source = " ".join(
+                inspect.getsource(tickets_mod._cmd_run_state).split()
+                + inspect.getsource(tickets_mod._append_one_line).split()
+            )
             self.assertIn('open(path, "a"', source)
 
             notes = [f"writer-{i} " + "x" * 2000 for i in range(8)]
@@ -1531,8 +1542,11 @@ class TestRunStateRootResolution(unittest.TestCase):
                 elif isinstance(node, ast.ImportFrom) and not node.level:
                     imported.add((node.module or "").split(".")[0])
             self.assertNotIn("subprocess", imported)
+            # msvcrt is absent on POSIX and imported under try/except for the
+            # one lock _append_one_line takes; it reaches no subprocess.
             self.assertEqual(
-                {"__future__", "datetime", "json", "pathlib", "re", "sys"}, imported
+                {"__future__", "datetime", "json", "msvcrt", "pathlib", "re", "sys"},
+                imported,
             )
 
     @unittest.skipUnless(git_available(), "git is not on PATH")
