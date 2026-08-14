@@ -470,6 +470,62 @@ class TestMigrationLayout(MigrationCase):
 
         self.assertEqual(report["collisions"], [])
         self.assertTrue((self.sink / "runs" / shared / "worklog.md").is_file())
+        self.assertEqual(lines_of(self.sink / "runs" / shared / "worklog.md"), ["# one"])
+        # The second workspace found the record already spoken for. Same bytes,
+        # so nothing to report beyond the count.
+        self.assertEqual(report["sources"][1]["runs"]["existing"], 1)
+        for source in report["sources"]:
+            self.assertEqual(source["differing"], [])
+
+    def test_two_workspaces_disagreeing_on_one_record_keep_the_first(self):
+        """Two workspaces of one project, one run id, one path, two contents.
+        The sink has a single slot: the first planned holds it and the second
+        is named. Whichever way it went, silently overwriting would lose a
+        record that no later run could recover."""
+
+        shared = "20260301T000000Z-shared"
+        origin = "git@github.com:acme/theta.git"
+        first = self.source_root("theta", origin=origin)
+        second = self.source_root("theta-clone", origin=origin)
+        write(first / "runs" / shared / "worklog.md", "# from theta\n")
+        write(second / "runs" / shared / "worklog.md", "# from theta-clone\n")
+
+        report = self.migrate(first, second)
+
+        landed = self.sink / "runs" / shared / "worklog.md"
+        self.assertTrue(landed.is_file(), f"{landed} never reached the sink")
+        self.assertEqual(lines_of(landed), ["# from theta"])
+        self.assertEqual(report["errors"], [])
+        self.assertEqual(report["sources"][0]["differing"], [])
+        conflict = report["sources"][1]["differing"]
+        self.assertEqual(len(conflict), 1, conflict)
+        self.assertEqual(conflict[0]["source"],
+                         str(second / "runs" / shared / "worklog.md"))
+        self.assertEqual(conflict[0]["dest"], str(landed))
+        self.assertEqual(conflict[0].get("claimed_by"),
+                         str(first / "runs" / shared / "worklog.md"))
+        # The record that did not win is still at its source, unmodified.
+        self.assertEqual(lines_of(second / "runs" / shared / "worklog.md"),
+                         ["# from theta-clone"])
+
+    def test_a_record_appearing_after_the_plan_is_refused_not_overwritten(self):
+        """The plan excludes destinations already spoken for, so this can only
+        fire if the sink changes under a run. It must still never overwrite."""
+
+        root = self.source_root("iota", origin="git@github.com:acme/iota.git")
+        write(root / "runs" / "20260401T000000Z-i" / "worklog.md", "# planned\n")
+
+        plan, document = migrate_state.plan_migration(
+            [str(root)], self.sink, dry_run=False)
+        landed = self.sink / "runs" / "20260401T000000Z-i" / "worklog.md"
+        write(landed, "# arrived first\n")  # the world moves between the two
+        migrate_state.apply_plan(plan, document)
+
+        self.assertEqual(lines_of(landed), ["# arrived first"])
+        errors = document["errors"]
+        self.assertEqual(len(errors), 1, errors)
+        self.assertIn("refused", errors[0])
+        self.assertIn(str(landed), errors[0])
 
     def test_a_dry_run_plans_exactly_what_a_real_run_does_and_writes_nothing(self):
         root = self.build_source()

@@ -224,13 +224,25 @@ class _Plan:
         self.sink = sink
         self.actions = []
         self.seen = {}  # destination -> the lines it will hold
+        self.claimed = {}  # destination -> the source already copying there
 
     def copy(self, stream, source: Path, dest: Path):
+        self.claimed[str(dest)] = source
         self.actions.append({
             "action": "copy", "stream": stream,
             "source": str(source), "dest": str(dest),
             "_source": source, "_dest": dest,
         })
+
+    def claimant_of(self, dest: Path):
+        """The source an earlier action in this plan already copies to ``dest``.
+
+        A destination two sources claim does not exist yet when the second is
+        planned, so the on-disk test cannot see it. Without this the later
+        action would overwrite the earlier one's bytes at apply time.
+        """
+
+        return self.claimed.get(str(dest))
 
     def append(self, stream, source: Path, dest: Path, lines):
         self.actions.append({
@@ -266,15 +278,22 @@ def _copy_tree(plan: _Plan, stream, source: Path, dest: Path, counts, differing)
         if not child.is_file():
             counts["skipped_other"] += 1
             continue
-        if target.exists():
+        claimant = plan.claimant_of(target)
+        held = target if target.exists() else claimant
+        if held is not None:
             counts["existing"] += 1
+            record = {"source": str(child), "dest": str(target)}
+            if claimant is not None and not target.exists():
+                # Two sources, one destination, within a single run. The first
+                # planned wins; this one is named rather than silently losing.
+                record["claimed_by"] = str(claimant)
             try:
-                if target.read_bytes() != child.read_bytes():
-                    differing.append({"source": str(child), "dest": str(target)})
+                if held.read_bytes() != child.read_bytes():
+                    differing.append(record)
             except OSError as error:
                 counts["unreadable"] += 1
-                differing.append({"source": str(child), "dest": str(target),
-                                  "error": str(error)})
+                record["error"] = str(error)
+                differing.append(record)
             continue
         plan.copy(stream, child, target)
         counts["files"] += 1
@@ -553,6 +572,14 @@ def apply_plan(plan: _Plan, document):
         try:
             dest.parent.mkdir(parents=True, exist_ok=True)
             if action["action"] == "copy":
+                if dest.exists():
+                    # The plan excludes destinations already spoken for, so
+                    # reaching here means the sink changed under the run. Never
+                    # overwrite; say so, and leave both copies where they are.
+                    document["errors"].append(
+                        f"copy {dest}: refused, a record appeared at the "
+                        f"destination after the plan was made")
+                    continue
                 shutil.copy2(str(action["_source"]), str(dest))
                 continue
             prefix = "\n" if dest.exists() and _needs_newline(dest) else ""
