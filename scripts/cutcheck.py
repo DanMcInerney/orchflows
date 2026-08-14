@@ -2,7 +2,9 @@
 """Report cut defects in an issued ticket set, before any work starts.
 
 Family 1 is oracle discrimination and oracle shape. Family 2 is path
-reality. Family 3 is scope closure. One invocation decides all three.
+reality. Family 3 is scope closure. Family 4 is pairwise safety. Family
+5 is acceptance coverage. Family 6 is executor legality. One invocation
+decides all six.
 
 Discrimination: an oracle that reads the same at the baseline as it will
 once the work has landed proves nothing. Every extractable oracle runs
@@ -25,12 +27,29 @@ writes, evidence sinks included, and no excluded action names a path the
 scope grants. A path the item only reads is no defect: observing is not
 naming.
 
+Pairwise safety: for every pair the DAG leaves unordered -- ordering is
+reachability through ``depends_on``, not adjacency -- write scopes are
+disjoint and neither item's oracle reads what the other writes, or
+whichever lands first invalidates the other's evidence.
+
+Coverage: the run's acceptance-coverage map, read beside whichever
+ticket root resolved, is checked both ways against the issued set. Every
+criterion reaches an item, the gate, or declared remainder, and every
+item is named by some criterion. A root with no map has nothing to read
+against, so the absence is all that is reported.
+
+Executor legality: an item's executor is one its stamped pack's executor
+or assembly cell names, and is never an engine -- an engine dispatches
+an executor rather than being one. An item naming no pack has no cell to
+resolve against, so only the prohibition applies.
+
 Shape: the command text itself carries two defects. A pipeline through
 ``tail`` or ``head`` reports that pipe's exit status, not the check's. A
 per-item scope check written against a cumulative ``<base>..HEAD`` range
 answers about the whole branch, not the item.
 
-Both of those set the exit status. An extraction gap does not: a
+Both of those set the exit status. An extraction gap and an absent
+coverage map do not: a
 criterion whose oracle no extractor recognized is reported on its own
 line so silent under-coverage stays visible, but real tickets state many
 criteria in prose, and a gap that failed the run would turn every clean
@@ -53,15 +72,26 @@ import tempfile
 from pathlib import Path
 
 try:  # in-repo; the installed copy sits flat beside tickets.py
-    from scripts.tickets import _find_repo_root, _parse_frontmatter, _sections
+    from scripts.tickets import (
+        ENGINE_EXECUTORS,
+        _find_repo_root,
+        _parse_frontmatter,
+        _sections,
+    )
 except ImportError:  # pragma: no cover - the installed copy's path
-    from tickets import _find_repo_root, _parse_frontmatter, _sections
+    from tickets import (
+        ENGINE_EXECUTORS,
+        _find_repo_root,
+        _parse_frontmatter,
+        _sections,
+    )
 
 FAMILY = "family 1"
 FAMILY_2 = "family 2"
 FAMILY_3 = "family 3"
 FAMILY_4 = "family 4"
 FAMILY_5 = "family 5"
+FAMILY_6 = "family 6"
 ALREADY_PASSES = "already-passes"
 NO_HITS_BOTH_REVISIONS = "no-hits-both-revisions"
 FAILS_BOTH_REVISIONS = "fails-both-revisions"
@@ -78,6 +108,7 @@ STAGED_INVALIDATION = "staged-invalidation"
 ORPHAN_CRITERION = "orphan-criterion"
 ORPHAN_ITEM = "orphan-item"
 COVERAGE_MAP_ABSENT = "coverage-map-absent"
+ILLEGAL_EXECUTOR = "illegal-executor"
 FAMILY_OF = {
     ALREADY_PASSES: FAMILY,
     NO_HITS_BOTH_REVISIONS: FAMILY,
@@ -95,6 +126,7 @@ FAMILY_OF = {
     ORPHAN_CRITERION: FAMILY_5,
     ORPHAN_ITEM: FAMILY_5,
     COVERAGE_MAP_ABSENT: FAMILY_5,
+    ILLEGAL_EXECUTOR: FAMILY_6,
 }
 # Advisory classes are printed and never set the exit status. A map that is
 # not there is a fact about the run, not a defect of the cut.
@@ -107,6 +139,12 @@ COVERAGE_OWNERS = ("gate", "remainder")
 TICKETS_DIR = "tickets"
 CANARY_DIR = "canary"
 RUNS_DIR = "runs"
+# A pack's executor and assembly cells are the only executors it binds.
+PACKS_DIR = "packs"
+PACK_CELL_RE = re.compile(r"^\|\s*(?:executor|assembly)\s*\|([^|]*)\|", re.M)
+SKILL_NAME_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
+# A pack name comes from ticket content, so it names one directory or nothing.
+PACK_NAME_RE = re.compile(r"^[\w-]+$")
 OBJECTIVE_SECTION = "Objective"
 INPUTS_SECTION = "Fixed inputs"
 COMPLETION_SECTION = "Completion test"
@@ -663,6 +701,63 @@ def _coverage(run, run_dir, issued):
     return findings
 
 
+def _pack_cells(pack, worktree_root):
+    """The skills a pack's ``executor`` and ``assembly`` cells name.
+
+    A pack this tree does not carry, or one whose cells name no skill, binds
+    nothing here -- an assembly cell reading "none" is such a cell.
+    """
+
+    if worktree_root is None or not PACK_NAME_RE.match(pack):
+        return set()
+    path = worktree_root / PACKS_DIR / pack / "SKILL.md"
+    if not path.is_file():
+        return set()
+    names = set()
+    for row in PACK_CELL_RE.findall(path.read_text(encoding="utf-8", errors="replace")):
+        names.update(SKILL_NAME_RE.findall(row))
+    return names
+
+
+def _executor_legality(siblings, worktree_root):
+    """Family 6: an executor its pack's cells name, and never an engine.
+
+    An engine dispatches a ticket's executor, so naming one as the executor is
+    a call cycle. An item naming no pack has no cell to resolve against, and
+    only the prohibition applies to it.
+    """
+
+    findings = []
+    cells = {}
+    for ticket_id in sorted(siblings):
+        frontmatter = siblings[ticket_id]
+        executor = str(frontmatter.get("executor") or "").strip()
+        if not executor:
+            continue
+        if executor in ENGINE_EXECUTORS:
+            findings.append(
+                (ticket_id, 0, ILLEGAL_EXECUTOR, "{} is an engine".format(executor))
+            )
+            continue
+        pack = str(frontmatter.get("pack") or "").strip()
+        if not pack:
+            continue
+        if pack not in cells:
+            cells[pack] = _pack_cells(pack, worktree_root)
+        if cells[pack] and executor not in cells[pack]:
+            findings.append(
+                (
+                    ticket_id,
+                    0,
+                    ILLEGAL_EXECUTOR,
+                    "{} is neither {}'s executor cell nor its assembly cell".format(
+                        executor, pack
+                    ),
+                )
+            )
+    return findings
+
+
 def _check_ticket(path, baseline_tree, head_tree, siblings):
     text = path.read_text(encoding="utf-8")
     frontmatter = _parse_frontmatter(text)
@@ -760,6 +855,7 @@ def main(argv=None):
             findings.extend(_check_ticket(path, baseline_tree, head_tree, siblings))
         findings.extend(_pairwise(siblings, reads))
         findings.extend(_coverage(args.run, run_dir, sorted(siblings)))
+        findings.extend(_executor_legality(siblings, worktree_root))
     finally:
         shutil.rmtree(scratch_root, ignore_errors=True)
 

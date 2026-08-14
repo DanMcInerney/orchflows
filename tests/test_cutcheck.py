@@ -260,6 +260,15 @@ CANARY = cutcheck._run_dir("canary", ROOT)
 class CanarySetTest(unittest.TestCase):
     """The tracked canary fixture, unmodified: its scope defect must surface."""
 
+    def test_no_coverage_or_executor_false_positive_over_the_canary(self):
+        result = run_cutcheck("canary")
+        for klass in (
+            cutcheck.ORPHAN_CRITERION,
+            cutcheck.ORPHAN_ITEM,
+            cutcheck.ILLEGAL_EXECUTOR,
+        ):
+            self.assertNotIn(klass, result.stdout)
+
     def test_the_canary_scope_defect_is_reported(self):
         result = run_cutcheck("canary")
         self.assertNotEqual(result.returncode, 0, result.stdout)
@@ -271,6 +280,33 @@ class CanarySetTest(unittest.TestCase):
         self.assertEqual(len(lines), 1, result.stdout)
         self.assertIn(cutcheck.UNSCOPED_WRITE, lines[0])
         self.assertIn("extra.txt", lines[0])
+
+
+class ExecutorLegalityTest(unittest.TestCase):
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-f6-executor")
+        self.lines = reported(self.result, cutcheck.FAMILY_6)
+
+    def test_executor_set_exits_nonzero(self):
+        self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
+
+    def test_an_engine_executor_is_reported_with_its_ticket(self):
+        lines = [line for line in self.lines if "01-engine" in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.ILLEGAL_EXECUTOR, lines[0])
+        self.assertIn("orch-task", lines[0])
+
+    def test_an_executor_no_cell_of_the_pack_names_is_reported(self):
+        lines = [line for line in self.lines if "03-alien" in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn("orch-render", lines[0])
+        self.assertIn("orch-code-pack", lines[0])
+
+    def test_the_packs_own_executor_cell_is_not_reported(self):
+        self.assertNotIn("02-legal", self.result.stdout)
+
+    def test_the_engine_set_is_the_ticket_scripts_own(self):
+        self.assertIs(cutcheck.ENGINE_EXECUTORS, tickets.ENGINE_EXECUTORS)
 
 
 class CoverageTest(unittest.TestCase):
