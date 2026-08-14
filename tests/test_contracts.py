@@ -28,6 +28,18 @@ def read_at_flat(relative):
     return re.sub(r"\s+", " ", read_at(relative))
 
 
+def read_clause_flat(relative, number):
+    """One numbered clause of a rules file, whitespace collapsed. Scopes an
+    assertion to the clause that owns the law, so a sentence landing in a
+    neighbouring clause cannot satisfy it."""
+    match = re.search(
+        rf"(?m)^{number}\. (.*?)(?=^\d+\. |\Z)", read_at(relative), re.S
+    )
+    if match is None:
+        raise AssertionError(f"{relative} has no clause {number}")
+    return re.sub(r"\s+", " ", match.group(1))
+
+
 class TestVerdictContract(unittest.TestCase):
     def test_contains_the_verdict_grammar(self):
         text = read("verdict.md")
@@ -314,7 +326,7 @@ class TestVisibilityChannelLaw(unittest.TestCase):
     only the first two merge. Its scope is all of `.orch/`."""
 
     def section(self):
-        return read_at_flat("rules/visibility.md")
+        return read_clause_flat("rules/visibility.md", 6)
 
     def test_content_channel_is_the_packs_workspace_cell(self):
         text = self.section()
@@ -344,16 +356,18 @@ class TestVisibilityChannelLaw(unittest.TestCase):
 
 class TestVerificationHomelessLaws(unittest.TestCase):
     """`rules/verification.md` owns three laws no other file states: §1's
-    truncation prohibition, which `scripts/cutcheck.py` enforces and now
-    cites; §7's reuse precondition for a gate that returns findings; and
+    truncation prohibition, which `scripts/cutcheck.py` enforces; §7's
+    reuse precondition for a gate that returns findings; and
     §11's two cross-step sentences, frozen byte-for-byte against the copy
     `S-CUT`'s spec carries. The last two are never reworded here."""
 
-    def law(self):
-        return read_at_flat("rules/verification.md")
+    def law(self, number=None):
+        if number is None:
+            return read_at_flat("rules/verification.md")
+        return read_clause_flat("rules/verification.md", number)
 
     def test_a_truncated_transcript_is_not_the_oracles_output(self):
-        text = self.law()
+        text = self.law(1)
         self.assertIn(
             "A truncated transcript is not the oracle's output", text,
             "verification.md §1 does not state that a truncated transcript "
@@ -371,7 +385,7 @@ class TestVerificationHomelessLaws(unittest.TestCase):
         )
 
     def test_a_gate_returning_findings_moves_the_result_identity(self):
-        text = self.law()
+        text = self.law(7)
         self.assertIn(
             "A gate returning findings moves the result identity", text,
             "verification.md §7 does not state that a gate returning findings "
@@ -430,32 +444,29 @@ class TestWorkItemCitationLaws(unittest.TestCase):
             "as the envelope owning that `status`",
         )
         self.assertIn(
-            "never the ticket frontmatter key above, which only the join sets",
-            text,
+            "never the ticket frontmatter key above", text,
             "work-item.md's `## Return fields` bullet does not exclude the "
-            "ticket frontmatter key the join alone sets",
+            "ticket frontmatter key",
         )
 
     def test_isolation_names_its_only_setter_and_the_grading_order(self):
         text = self.contract()
-        self.assertIn(
-            "The decomposer is the field's only setter", text,
-            "work-item.md's `isolation` bullet does not name the decomposer as "
-            "the field's only setter",
-        )
-        self.assertIn(
-            "`scripts/workspace.py check`", text,
-            "work-item.md's `isolation` bullet no longer names "
-            "`scripts/workspace.py check` as what grades the declaration",
-        )
-        self.assertIn(
-            "before the merge, because afterwards the item's tip is already an "
-            "ancestor of the run tip and a stamped item exits clean by design",
-            text,
-            "work-item.md's `isolation` bullet does not order "
-            "`scripts/workspace.py check` before the merge, nor give the "
-            "reason the check decides nothing after it",
-        )
+        for clause, why in (
+            ("The decomposer is the field's only setter",
+             "work-item.md's `isolation` bullet does not name the decomposer "
+             "as the field's only setter"),
+            ("`scripts/workspace.py check`",
+             "work-item.md's `isolation` bullet no longer names "
+             "`scripts/workspace.py check` as what grades the declaration"),
+            ("before the merge, because afterwards the item's tip is already "
+             "an ancestor of the run tip and a stamped item exits clean by "
+             "design",
+             "work-item.md's `isolation` bullet does not order "
+             "`scripts/workspace.py check` before the merge, nor give the "
+             "reason the check decides nothing after it"),
+        ):
+            with self.subTest(clause=clause):
+                self.assertIn(clause, text, why)
 
     def test_fixed_inputs_forbid_a_line_number_by_citing_identity(self):
         text = self.contract()
@@ -481,7 +492,9 @@ class TestWorkItemCitationLaws(unittest.TestCase):
 class TestWorklogNoteLaws(unittest.TestCase):
     """`contracts/worklog.md` owns note ordering, the terminal-section
     boundary, and the refusal that keeps an artifact write from
-    overwriting silently. `scripts/tickets.py` implements them."""
+    overwriting silently. Of the three, `scripts/tickets.py` today
+    implements only the append; `S-MECH` adds the terminal-section
+    boundary and the refusal, through this run's `seq` edge."""
 
     def contract(self):
         return read_flat("worklog.md")

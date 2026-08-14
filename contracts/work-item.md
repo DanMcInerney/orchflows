@@ -104,7 +104,7 @@ parts:
 - `## Return fields` — packet `return_contract`: the named fields the
   executor's result must carry. A `status` in this list is the result
   envelope's ([result.md](result.md)), never the ticket frontmatter key
-  above, which only the join sets.
+  above.
 - `## Result` — written by the executor: what changed, by identity. A
   §10 checker appends its own pass — findings, changes, invalidated
   entries — and never rewrites the executor's.

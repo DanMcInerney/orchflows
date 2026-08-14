@@ -22,8 +22,8 @@
    `role`), then `Require:`, procedure, `Never:`, `Return:`. Body
    budgets: kernel, instances, and utilities 25 lines; engines and
    workflows 40; pack SKILL.md 20 — enforceable because observable:
-   `wc -l` checks a line budget against the artifact and nothing checks
-   a rate. Cutoffs, not measured optima; the count is of non-empty
+   `tools/validate.py` counts the artifact's non-empty lines against a
+   budget and nothing checks a rate. Cutoffs, not measured optima; the count is of non-empty
    lines, and no width bound exists or is intended. What the body holds
    is [token-economy.md](token-economy.md) §6's.
 6. Admission: a new skill's contract must be expressible from existing
