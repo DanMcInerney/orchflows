@@ -136,6 +136,106 @@ class TruncatedListTest(unittest.TestCase):
         self.assertIn("criterion 2", gaps[0])
 
 
+class PathRealityTest(unittest.TestCase):
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-f2-paths")
+        self.lines = reported(self.result, cutcheck.FAMILY_2)
+
+    def test_path_set_exits_nonzero_naming_ticket_and_family(self):
+        self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
+        self.assertTrue(self.lines, self.result.stdout + self.result.stderr)
+        for line in self.lines:
+            self.assertIn("01-f2-paths", line)
+            self.assertIn(cutcheck.FAMILY_2, line)
+
+    def test_exactly_three_violations_one_per_case(self):
+        self.assertEqual(len(self.result.stdout.splitlines()), 3, self.result.stdout)
+        self.assertEqual(len(self.lines), 3, self.result.stdout)
+
+    def test_each_path_class_is_reported_once(self):
+        classes = sorted(line.split(": ")[2] for line in self.lines)
+        self.assertEqual(
+            classes,
+            sorted(
+                [
+                    cutcheck.MISSING_PATH,
+                    cutcheck.UNRESOLVED_CITATION,
+                    cutcheck.QUOTE_NOT_AT_CITATION,
+                ]
+            ),
+            self.result.stdout,
+        )
+
+
+class CarveOutTest(unittest.TestCase):
+    """Reading is not writing; an ancestor's path is present; the baseline decides."""
+
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-carveouts")
+
+    def test_the_set_is_reported_clean(self):
+        self.assertEqual(self.result.returncode, 0, self.result.stdout + self.result.stderr)
+        self.assertEqual(self.result.stdout.splitlines(), [])
+
+    def test_a_path_the_item_only_reads_is_no_scope_defect(self):
+        self.assertNotIn("01-reads-only", self.result.stdout)
+
+    def test_a_path_a_depends_on_ancestor_makes_is_present(self):
+        self.assertNotIn("02-depends", self.result.stdout)
+
+    def test_a_quote_resolves_at_the_baseline_not_the_workspace(self):
+        self.assertNotIn("03-baseline-quote", self.result.stdout)
+
+
+class ScopeClosureTest(unittest.TestCase):
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-f3-scope")
+        self.lines = reported(self.result, cutcheck.FAMILY_3)
+
+    def test_scope_set_exits_nonzero(self):
+        self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
+
+    def test_each_scope_class_is_reported_once(self):
+        classes = sorted(line.split(": ")[2] for line in self.lines)
+        self.assertEqual(
+            classes,
+            sorted([cutcheck.SCOPE_CONTRADICTION, cutcheck.UNSCOPED_WRITE]),
+            self.result.stdout,
+        )
+
+    def test_the_uncovered_sink_is_named_with_its_ticket(self):
+        lines = [line for line in self.lines if cutcheck.UNSCOPED_WRITE in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn("01-unscoped", lines[0])
+        self.assertIn(".orch/evidence/f3-scope/verdict.txt", lines[0])
+
+    def test_the_self_contradiction_names_the_shared_path(self):
+        lines = [line for line in self.lines if cutcheck.SCOPE_CONTRADICTION in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn("02-contradiction", lines[0])
+        self.assertIn("scripts/cutcheck.py", lines[0])
+
+
+CANARY = cutcheck._run_dir("canary", ROOT)
+
+
+@unittest.skipUnless(CANARY is not None, "the canary ticket set is not present")
+class CanarySetTest(unittest.TestCase):
+    """The tracked canary fixture, unmodified: its scope defect must surface."""
+
+    def test_the_canary_scope_defect_is_reported(self):
+        result = run_cutcheck("canary")
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        lines = [
+            line
+            for line in reported(result, cutcheck.FAMILY_3)
+            if "canary-scope-reject" in line
+        ]
+        self.assertEqual(len(lines), 1, result.stdout)
+        self.assertIn(cutcheck.UNSCOPED_WRITE, lines[0])
+        self.assertIn("extra.txt", lines[0])
+
+
 class ParserReuseTest(unittest.TestCase):
     def test_frontmatter_and_section_parsers_are_the_ticket_scripts_own(self):
         self.assertIs(cutcheck._parse_frontmatter, tickets._parse_frontmatter)
