@@ -16,19 +16,25 @@ import scripts.tickets as tickets  # noqa: E402
 BASELINE = "ac8791ab6d027febb2653342576b58687c99c879"
 
 
-def run_cutcheck(run):
+def run_cutcheck(run, baseline=BASELINE):
     """Invoke cutcheck exactly as the completion test states it."""
 
     return subprocess.run(
-        [sys.executable, "scripts/cutcheck.py", run, "--baseline", BASELINE],
+        [sys.executable, "scripts/cutcheck.py", run, "--baseline", baseline],
         cwd=str(ROOT),
         capture_output=True,
         text=True,
     )
 
 
-def reported(result):
-    return [line for line in result.stdout.splitlines() if cutcheck.FAMILY in line]
+def reported(result, family=cutcheck.FAMILY):
+    return [line for line in result.stdout.splitlines() if family in line]
+
+
+def fixture_criteria(run, name):
+    path = ROOT / "tests" / "fixtures" / "cutcheck" / run / name
+    section = tickets._sections(path.read_text(encoding="utf-8"))
+    return cutcheck._criteria(section[cutcheck.COMPLETION_SECTION])
 
 
 class CleanSetTest(unittest.TestCase):
@@ -100,6 +106,34 @@ class ExtractionGapTest(unittest.TestCase):
         self.assertEqual(len(gaps), 1, "\n".join(self.lines))
         self.assertIn("01-extraction-gap", gaps[0])
         self.assertIn("criterion 1", gaps[0])
+
+
+class CutTimeTest(unittest.TestCase):
+    """At cut time HEAD is the baseline, and every honest oracle fails there."""
+
+    def test_same_revision_reads_green(self):
+        result = run_cutcheck("cutcheck-f1-cuttime", baseline="HEAD")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(reported(result), [])
+
+    def test_a_baseline_behind_head_still_reports_it(self):
+        result = run_cutcheck("cutcheck-f1-cuttime")
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        lines = reported(result)
+        self.assertEqual(len(lines), 1, "\n".join(lines))
+        self.assertIn(cutcheck.NO_HITS_BOTH_REVISIONS, lines[0])
+
+
+class TruncatedListTest(unittest.TestCase):
+    def test_no_numbered_criterion_is_dropped(self):
+        numbers = [n for n, _ in fixture_criteria("cutcheck-f1-truncated", "01-truncated.md")]
+        self.assertEqual(numbers, [1, 2])
+
+    def test_the_criterion_after_the_prose_line_surfaces_as_a_gap(self):
+        lines = reported(run_cutcheck("cutcheck-f1-truncated"))
+        gaps = [line for line in lines if cutcheck.EXTRACTION_GAP in line]
+        self.assertEqual(len(gaps), 1, "\n".join(lines))
+        self.assertIn("criterion 2", gaps[0])
 
 
 class ParserReuseTest(unittest.TestCase):

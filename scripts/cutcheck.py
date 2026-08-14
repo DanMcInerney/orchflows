@@ -54,7 +54,7 @@ EXTRACTION_GAP = "extraction-gap"
 ADVISORY = frozenset({EXTRACTION_GAP})
 
 COMPLETION_SECTION = "Completion test"
-CRITERION_RE = re.compile(r"^(\d+)\.\s+(.*)$")
+CRITERION_RE = re.compile(r"^\s*(\d+)\.\s+(.*)$")
 BACKTICK_RE = re.compile(r"`([^`]+)`")
 SWALLOW_RE = re.compile(r"\|\s*(?:tail|head)\b")
 CUMULATIVE_RE = re.compile(r"\S+\.\.HEAD\b")
@@ -142,8 +142,31 @@ def _scratch_tree(rev, worktree_root, scratch_root):
     return tree
 
 
+def _same_revision(rev, worktree_root):
+    """Is ``rev`` the commit HEAD already points at?
+
+    At cut time it is: nothing has landed, so every oracle that discriminates
+    fails at the baseline and would fail again at HEAD. "Does this pass once
+    the work lands" is unanswerable before the work lands, so the honest
+    reading is to not ask -- the HEAD half is skipped and a baseline failure
+    alone is clean. Post-work the two differ and the full rule applies.
+    """
+
+    seen = set()
+    for candidate in (rev, "HEAD"):
+        proc = _git(["rev-parse", candidate + "^{commit}"], worktree_root)
+        if proc is None or proc.returncode != 0:
+            return False
+        seen.add(proc.stdout.strip())
+    return len(seen) == 1
+
+
 def _criteria(section):
-    """Numbered completion-test items; unindented prose ends the list."""
+    """Every numbered completion-test item, at any indentation.
+
+    Unindented prose ends an item's continuation, never the list: a criterion
+    written after such a line still surfaces, as an extraction gap at minimum.
+    """
 
     items = []
     current = None
@@ -274,7 +297,9 @@ def main(argv=None):
         if baseline_tree is None:
             print("cutcheck: cannot archive baseline {}".format(args.baseline))
             return NO_TICKET_SET
-        head_tree = _scratch_tree("HEAD", worktree_root, scratch_root)
+        head_tree = None
+        if not _same_revision(args.baseline, worktree_root):
+            head_tree = _scratch_tree("HEAD", worktree_root, scratch_root)
         findings = []
         for path in sorted(run_dir.glob("*.md")):
             findings.extend(_check_ticket(path, baseline_tree, head_tree))
