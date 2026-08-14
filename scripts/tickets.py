@@ -74,6 +74,10 @@ SECTION_ORDER = (
     "Return fields",
 ) + EXECUTOR_SECTIONS
 SECTION_RANK = {name.lower(): i for i, name in enumerate(SECTION_ORDER)}
+# contracts/work-item.md: the one `isolation` value that means this item
+# executes in a workspace of its own. `scripts/workspace.py` grades the same
+# declaration; the spelling belongs to the contract, not to either script.
+REQUIRED_ISOLATION = "required"
 RESULT_USAGE = (
     "result <run> <id> --section <name> (--file <path> | --text <string>) [--append]"
 )
@@ -700,14 +704,28 @@ def _cmd_packet(rest):
         "Write your result into the ticket's own sections as you produce it, "
         "never in one write at the end; the join alone sets terminal status."
     )
+    run_id = loaded.get("run") or run
+    script = Path(__file__).resolve()
+    # contracts/work-item.md's `isolation`: absent reads `none`, and only
+    # `required` is told to establish anything, so a lane that must not stamp
+    # itself is never handed the command. The sibling resolves from this
+    # file's own location, so it points at whichever copy is running.
+    isolation = str(loaded.get("isolation") or "none").strip().strip("`")
+    if isolation == REQUIRED_ISOLATION:
+        prompt.append(
+            "Workspace establishment (isolation: required), your first act, "
+            "run from inside your own workspace:"
+        )
+        prompt.append(
+            f"{sys.executable} {script.with_name('workspace.py')} "
+            f"start {run_id} {loaded['id']}"
+        )
     # Every packet carries the channel, isolated or not: a child learns how to
     # write run state from its own dispatch, never by reading a sibling's
     # ticket. Built from `sys.executable` and this file's own resolved path so
     # the tokens are absolute wherever the script was installed, and shaped one
     # token per argument — no pipe, redirect or `&&` — because a host guard may
     # refuse a command it cannot statically verify.
-    run_id = loaded.get("run") or run
-    script = Path(__file__).resolve()
     prompt.append(
         "Run-state channel (rules/visibility.md §6), from your own workspace, "
         "with TEXT and NAME replaced:"
@@ -725,6 +743,7 @@ def _cmd_packet(rest):
             "pack": loaded.get("pack"),
             "profile": loaded.get("profile"),
             "independence": loaded.get("independence") or "checker",
+            "isolation": isolation,
             "reply_to": reply_to,
             "workspace": workspace,
             "prompt": "\n".join(prompt),
