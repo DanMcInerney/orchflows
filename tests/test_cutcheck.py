@@ -424,6 +424,55 @@ class EvalHeadTest(unittest.TestCase):
         )
 
 
+class BareCommandNounTest(unittest.TestCase):
+    """A backticked command head with no argument names the tool, not an oracle."""
+
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-barenoun")
+
+    def test_a_mention_beside_a_real_oracle_leaves_that_oracle_deciding(self):
+        lines = [
+            line for line in self.result.stdout.splitlines() if "criterion 1" in line
+        ]
+        self.assertEqual(lines, [], self.result.stdout)
+
+    def test_the_real_oracle_is_the_only_span_extracted_there(self):
+        _, criterion = fixture_criteria("cutcheck-barenoun", "01-barenoun.md")[0]
+        self.assertEqual(
+            cutcheck._commands(criterion), ['grep -rn "unrunnable-oracle" scripts/']
+        )
+
+    def test_a_mention_standing_alone_is_reported_as_a_gap(self):
+        lines = [
+            line for line in self.result.stdout.splitlines() if "criterion 2" in line
+        ]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.EXTRACTION_GAP, lines[0])
+
+    def test_the_mention_reaches_no_executor(self):
+        """Unreported is not enough: the bare name must run nowhere at all."""
+
+        ticket = FIXTURES / "cutcheck-barenoun" / "01-barenoun.md"
+        with mock.patch.object(cutcheck, "_exit_code", return_value=1) as ran:
+            cutcheck._check_ticket(ticket, ROOT, None, {})
+        commands = [call[0][0] for call in ran.call_args_list]
+        self.assertIn('grep -rn "unrunnable-oracle" scripts/', commands)
+        self.assertNotIn("pytest", commands)
+
+    def test_the_oracles_real_tickets_state_still_extract(self):
+        for command in (
+            "python3 tools/validate.py",
+            "python3 install.py --dry-run",
+            "python3 -m unittest discover -s tests",
+            "git diff --check",
+            'grep -c "SCRIPT_NAMES" install.py',
+            "rg -n pattern src/",
+        ):
+            self.assertEqual(
+                cutcheck._commands("`{}`".format(command)), [command], command
+            )
+
+
 class ParserReuseTest(unittest.TestCase):
     def test_frontmatter_and_section_parsers_are_the_ticket_scripts_own(self):
         self.assertIs(cutcheck._parse_frontmatter, tickets._parse_frontmatter)

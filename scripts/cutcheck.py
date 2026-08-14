@@ -75,7 +75,9 @@ so commands run argv-only, never through a shell, under a timeout, with
 a working directory inside a scratch copy. A span whose own arguments are
 the program -- a shell, or an interpreter reading code from ``-c``, ``-e``,
 ``--eval``, ``--exec`` or a bare ``-`` -- is recognized by no extractor, so it
-runs nowhere and surfaces as an extraction gap.
+runs nowhere and surfaces as an extraction gap. So is a span carrying a
+command head and no argument at all: ticket prose names tools in backticks,
+and a bare name decides nothing about the item it is stated under.
 """
 
 import argparse
@@ -347,13 +349,21 @@ def _criteria(section):
 
 
 def _commands(criterion):
-    """Backtick spans whose first token names a command an extractor knows."""
+    """Backtick spans stating a command: a known head, carrying an argument.
+
+    A head with nothing after it is the tool's name, and no bare name is a
+    decidable cut oracle. ``git`` alone prints its usage and ``grep`` alone
+    errors, whichever revision reads them. ``pytest`` alone does run something,
+    but a whole-suite invocation naming no node id reads the same under every
+    item it is stated under, so it discriminates none of them -- a cut defect
+    either way, and the honest report of it is the gap.
+    """
 
     found = []
     for span in BACKTICK_RE.findall(criterion):
         candidate = span.strip()
         argv = candidate.split()
-        if not argv or argv[0] not in COMMAND_HEADS or _evaluates_code(argv):
+        if len(argv) < 2 or argv[0] not in COMMAND_HEADS or _evaluates_code(argv):
             continue
         found.append(candidate)
     return found

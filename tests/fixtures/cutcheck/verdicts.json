@@ -1,4 +1,11 @@
 {
+ "cutcheck-barenoun": {
+  "exit": 0,
+  "lines": [
+   "01-barenoun: family 1: extraction-gap: criterion 2: **A mention standing alone is an extraction gap.** The only command head this criterion states is `p",
+   "cutcheck-barenoun: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-barenoun/coverage.md"
+  ]
+ },
  "cutcheck-carveouts": {
   "exit": 0,
   "lines": []
