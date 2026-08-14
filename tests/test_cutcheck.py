@@ -216,6 +216,43 @@ class ScopeClosureTest(unittest.TestCase):
         self.assertIn("scripts/cutcheck.py", lines[0])
 
 
+class PairwiseSafetyTest(unittest.TestCase):
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-f4-pairs")
+        self.lines = reported(self.result, cutcheck.FAMILY_4)
+
+    def test_pair_set_exits_nonzero(self):
+        self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
+
+    def test_the_staged_invalidation_names_both_ids_and_the_path(self):
+        lines = [line for line in self.lines if cutcheck.STAGED_INVALIDATION in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn("01-reader", lines[0])
+        self.assertIn("02-rewriter", lines[0])
+        self.assertIn("install.py", lines[0])
+
+    def test_the_shared_scope_names_both_ids(self):
+        lines = [line for line in self.lines if cutcheck.SCOPE_COLLISION in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn("03-alpha", lines[0])
+        self.assertIn("04-beta", lines[0])
+
+    def test_no_other_pair_is_reported(self):
+        self.assertEqual(len(self.lines), 2, self.result.stdout)
+
+
+class OrderedPairTest(unittest.TestCase):
+    """A pair the DAG orders is no defect, by an edge or by reachability."""
+
+    def test_a_direct_edge_orders_the_pair(self):
+        result = run_cutcheck("cutcheck-f4-ordered")
+        self.assertEqual(reported(result, cutcheck.FAMILY_4), [], result.stdout)
+
+    def test_order_through_a_middle_item_is_order(self):
+        result = run_cutcheck("cutcheck-f4-transitive")
+        self.assertEqual(reported(result, cutcheck.FAMILY_4), [], result.stdout)
+
+
 CANARY = cutcheck._run_dir("canary", ROOT)
 
 

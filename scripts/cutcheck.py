@@ -60,6 +60,7 @@ except ImportError:  # pragma: no cover - the installed copy's path
 FAMILY = "family 1"
 FAMILY_2 = "family 2"
 FAMILY_3 = "family 3"
+FAMILY_4 = "family 4"
 ALREADY_PASSES = "already-passes"
 NO_HITS_BOTH_REVISIONS = "no-hits-both-revisions"
 FAILS_BOTH_REVISIONS = "fails-both-revisions"
@@ -71,6 +72,8 @@ UNRESOLVED_CITATION = "unresolved-citation"
 QUOTE_NOT_AT_CITATION = "quote-not-at-citation"
 UNSCOPED_WRITE = "unscoped-write"
 SCOPE_CONTRADICTION = "scope-contradiction"
+SCOPE_COLLISION = "scope-collision"
+STAGED_INVALIDATION = "staged-invalidation"
 FAMILY_OF = {
     ALREADY_PASSES: FAMILY,
     NO_HITS_BOTH_REVISIONS: FAMILY,
@@ -83,6 +86,8 @@ FAMILY_OF = {
     QUOTE_NOT_AT_CITATION: FAMILY_2,
     UNSCOPED_WRITE: FAMILY_3,
     SCOPE_CONTRADICTION: FAMILY_3,
+    SCOPE_COLLISION: FAMILY_4,
+    STAGED_INVALIDATION: FAMILY_4,
 }
 # Advisory classes are printed and never set the exit status.
 ADVISORY = frozenset({EXTRACTION_GAP})
@@ -517,6 +522,77 @@ def _scope_closure(frontmatter, prose):
     return findings
 
 
+def _oracle_reads(text):
+    """Every path this item's oracles reach for, across its completion test."""
+
+    found = []
+    for _, criterion in _criteria(_sections(text).get(COMPLETION_SECTION, "")):
+        for command in _commands(criterion):
+            found.extend(_path_args(command))
+    return found
+
+
+def _ancestors(item, siblings):
+    """Every item reachable from ``item`` through ``depends_on``."""
+
+    seen = set()
+    pending = _listed(siblings.get(item) or {}, "depends_on")
+    while pending:
+        node = pending.pop()
+        if node in seen or node not in siblings:
+            continue
+        seen.add(node)
+        pending.extend(_listed(siblings[node], "depends_on"))
+    return seen
+
+
+def _first_overlap(paths, scopes):
+    for path in paths:
+        for entry in scopes:
+            if _overlaps(path, entry):
+                return path
+    return None
+
+
+def _pairwise(siblings, reads):
+    """Family 4: the pairs the DAG leaves free to run at the same time.
+
+    Ordering is reachability, not adjacency -- a pair joined through a third
+    item is staged, and staging is what makes a shared path safe. For every
+    unordered pair the write scopes must be disjoint and neither item's oracle
+    may read what the other writes, or the first result to land invalidates the
+    second's evidence.
+    """
+
+    findings = []
+    ids = sorted(siblings)
+    ancestors = {item: _ancestors(item, siblings) for item in ids}
+    for index, left in enumerate(ids):
+        for right in ids[index + 1:]:
+            if right in ancestors[left] or left in ancestors[right]:
+                continue
+            scopes = {
+                item: _listed(siblings[item], "write_scope") for item in (left, right)
+            }
+            shared = _first_overlap(scopes[left], scopes[right])
+            if shared is not None:
+                findings.append(
+                    (left, 0, SCOPE_COLLISION, "with {}: {}".format(right, shared))
+                )
+            for reader, writer in ((left, right), (right, left)):
+                path = _first_overlap(reads.get(reader) or [], scopes[writer])
+                if path is not None:
+                    findings.append(
+                        (
+                            reader,
+                            0,
+                            STAGED_INVALIDATION,
+                            "with {}: {}".format(writer, path),
+                        )
+                    )
+    return findings
+
+
 def _check_ticket(path, baseline_tree, head_tree, siblings):
     text = path.read_text(encoding="utf-8")
     frontmatter = _parse_frontmatter(text)
@@ -602,12 +678,17 @@ def main(argv=None):
             head_tree = _scratch_tree("HEAD", worktree_root, scratch_root)
         issued = sorted(run_dir.glob("*.md"))
         siblings = {}
+        reads = {}
         for path in issued:
-            frontmatter = _parse_frontmatter(path.read_text(encoding="utf-8"))
-            siblings[frontmatter.get("id") or path.stem] = frontmatter
+            text = path.read_text(encoding="utf-8")
+            frontmatter = _parse_frontmatter(text)
+            ticket_id = frontmatter.get("id") or path.stem
+            siblings[ticket_id] = frontmatter
+            reads[ticket_id] = _oracle_reads(text)
         findings = []
         for path in issued:
             findings.extend(_check_ticket(path, baseline_tree, head_tree, siblings))
+        findings.extend(_pairwise(siblings, reads))
     finally:
         shutil.rmtree(scratch_root, ignore_errors=True)
 
