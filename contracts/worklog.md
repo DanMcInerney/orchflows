@@ -25,3 +25,8 @@ of transcripts; transcripts are never state.
   and the run resumes from its tickets. Parked is not in progress: no
   item is under way, and the pause names the external action awaited
   and every item queued behind it.
+
+Notes append in occurrence order, and no note is written past a terminal
+section: a worklog carries no terminal placeholder until it closes.
+Writing an artifact that already exists is refused by default, the
+refusal naming the existing path.
