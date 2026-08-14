@@ -11,16 +11,16 @@ slicing reference and oracle_policy.
 
 Cut the spec into [work items](../../../contracts/work-item.md) under the
 slicing — cut count per [rules/topology.md](../../../rules/topology.md) §3:
-each item gets its executor from the pack's binding, the spec's `pack`
-stamp, `isolation: required` when the pack workspace names a mechanism (omitted otherwise), a write scope overlapping only siblings it is dependency-ordered
-with, a bound, and a completion test whose criteria name oracles from the
-pack's oracle policy, each with its provenance; `independence: gate` when a
-`judged` criterion there rides the final gate. Resolve every deterministic
-oracle against the workspace before freezing the item. Add edges; issue
-`status: pending` for a non-empty `depends_on`, `ready` otherwise. Emit at
-most one terminal assembly item when the pack's `assembly` cell names a
-skill, depending on every unit item, its completion test carrying the
-final gate's criteria.
+each item gets its executor from the pack's binding, the spec's `pack` stamp,
+`isolation: required` per [isolation](references/isolation.md), a write scope
+overlapping only siblings it is dependency-ordered with, a bound, and a
+completion test whose criteria name oracles from the pack's oracle policy,
+each with its provenance; `independence: gate` when a `judged` criterion there
+rides the final gate. Resolve every deterministic oracle against the workspace
+before freezing the item. Add edges; issue `status: pending` for a non-empty
+`depends_on`, `ready` otherwise. Emit at most one terminal assembly item when
+the pack's `assembly` cell names a skill, depending on every unit item, its
+completion test carrying the final gate's criteria.
 
 Map every acceptance criterion to an item, to the gate when the pack's
 lens owns it, or to uncovered remainder; that map's durable home is
