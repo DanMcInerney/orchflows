@@ -342,6 +342,72 @@ class TestVisibilityChannelLaw(unittest.TestCase):
             )
 
 
+class TestVerificationHomelessLaws(unittest.TestCase):
+    """`rules/verification.md` owns three laws no other file states: §1's
+    truncation prohibition, which `scripts/cutcheck.py` enforces and now
+    cites; §7's reuse precondition for a gate that returns findings; and
+    §11's two cross-step sentences, frozen byte-for-byte against the copy
+    `S-CUT`'s spec carries. The last two are never reworded here."""
+
+    def law(self):
+        return read_at_flat("rules/verification.md")
+
+    def test_a_truncated_transcript_is_not_the_oracles_output(self):
+        text = self.law()
+        self.assertIn(
+            "A truncated transcript is not the oracle's output", text,
+            "verification.md §1 does not state that a truncated transcript "
+            "is not the oracle's output",
+        )
+        for pipe in ("`| tail`", "`| head`"):
+            self.assertIn(
+                pipe, text,
+                f"verification.md §1 does not name {pipe} as a reader that "
+                "reports the pipe's status rather than the command's",
+            )
+        self.assertIn(
+            "redirecting to a file and grepping it", text,
+            "verification.md §1 names no method in place of the pipes it forbids",
+        )
+
+    def test_a_gate_returning_findings_moves_the_result_identity(self):
+        text = self.law()
+        self.assertIn(
+            "A gate returning findings moves the result identity", text,
+            "verification.md §7 does not state that a gate returning findings "
+            "moves the result identity",
+        )
+        self.assertIn(
+            "reusable only where the correction left the covered identity "
+            "unchanged", text,
+            "verification.md §7 does not qualify reuse by what the correction "
+            "left unchanged",
+        )
+
+    def test_carries_the_frozen_cutcheck_exit_sentence_verbatim(self):
+        self.assertIn(
+            "Cutcheck's exit 0 means no finding whose class lies outside "
+            "the advisory set, not that the set is clean: an advisory "
+            "finding is reported and exits 0.",
+            self.law(),
+            "verification.md §11 lost the frozen cross-step sentence on "
+            "cutcheck's exit 0; it is byte-frozen against `S-CUT`'s copy and "
+            "is re-copied, never reworded",
+        )
+
+    def test_carries_the_frozen_host_portability_sentence_verbatim(self):
+        self.assertIn(
+            "A cut verdict is not portable between hosts. An oracle naming "
+            "an interpreter one host lacks is reported there as "
+            "`unrunnable-oracle` and is silent here, so a verdict is read "
+            "only on the host that produced it.",
+            self.law(),
+            "verification.md §11 lost the frozen cross-step sentence on host "
+            "portability; it is byte-frozen against `S-CUT`'s copy and is "
+            "re-copied, never reworded",
+        )
+
+
 class TestSkillDescriptions(unittest.TestCase):
     def test_every_skill_description_is_at_most_140_chars(self):
         skill_files = sorted(SKILLS.glob("*/*/SKILL.md"))
