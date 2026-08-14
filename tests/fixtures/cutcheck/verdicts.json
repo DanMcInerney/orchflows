@@ -161,6 +161,14 @@
    "cutcheck-git-graded: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-git-graded/coverage.md"
   ]
  },
+ "cutcheck-gitescape": {
+  "exit": 1,
+  "lines": [
+   "01-gitescape: family 1: unconfined-oracle: criterion 1: git -c alias.pwn='!touch /tmp/cutcheck-gitescape-ran' pwn",
+   "cutcheck: advisory -- reported, and never setting the exit status:",
+   "cutcheck-gitescape: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-gitescape/coverage.md"
+  ]
+ },
  "cutcheck-mention": {
   "exit": 1,
   "lines": [
