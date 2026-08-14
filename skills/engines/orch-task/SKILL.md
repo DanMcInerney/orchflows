@@ -14,15 +14,15 @@ part — a request that cannot name one belongs to orch-spec.
 Claim the ticket (set `claimed_by`, `claimed_at`, status `claimed`).
 Isolate the item's workspace per the workspace cell of the pack the
 ticket names — a ticket naming none works at its plain-path write
-scope — when the ticket's `isolation` field declares one, established
-per orch-workspace by the step its packet emits. Dispatch exactly one
-fresh child through `orch-delegate` — or execute inline under
-[rules/delegation.md](../../../rules/delegation.md) §2's independence
-condition; the ladder's cheaper rungs apply inside the child — naming
-the ticket's executor as the applied skill, with the ticket path as
-the packet. `tickets.py packet` emits that packet or names the part
-the ticket is missing; a refusal here is the cut's defect, never read
-the body to repair it yourself.
+scope — whose establishment, when the ticket's `isolation` field
+declares one, is per orch-workspace by the step its packet emits.
+Dispatch exactly one fresh child through `orch-delegate` — or execute
+inline under [rules/delegation.md](../../../rules/delegation.md) §2's
+independence condition; the ladder's cheaper rungs apply inside the
+child — naming the ticket's executor as the applied skill, with the
+ticket path as the packet. `tickets.py packet` emits that packet or
+names the part the ticket is missing; a refusal here is the cut's
+defect, never read the body to repair it yourself.
 
 When a criterion's oracle carries `authored-here` provenance and the
 ticket's `independence` reads `checker`, dispatch `orch-check` as one

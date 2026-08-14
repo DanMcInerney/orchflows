@@ -65,7 +65,11 @@ FRONTMATTER_KEYS = {
     WRITE_SCOPE_KEY: "read by check",
 }
 
-REQUIRED = "required"
+# The value and its normalization both come from ``tickets.py``, never a
+# second spelling here: that script emits the establishment step off this
+# same declaration, and a grader reading it differently skips the grade at
+# exit 0 while the join reads success.
+REQUIRED = tickets.REQUIRED_ISOLATION
 EXIT_OK = 0
 EXIT_ERROR = 1
 EXIT_ISOLATION_MISSING = 2
@@ -211,6 +215,11 @@ def _cmd_start(rest):
     run, ticket_id = _positional(rest, 2, "start")
     root, path = _locate(run, ticket_id)
     _graded(tickets._load_ticket(path), "read {}/{}".format(run, ticket_id))
+    # the snapshot the stamps are written against, taken before the git calls
+    # below and not after them: those calls are the seconds a concurrent
+    # `set-status` lands in, and a snapshot taken past them absorbs the write
+    # this guard exists to report
+    prior_text = path.read_text(encoding="utf-8")
     top = Path(_git_out("rev-parse", "--show-toplevel")).resolve()
     branch = _git_out("rev-parse", "--abbrev-ref", "HEAD")
     head = _git_out("rev-parse", "HEAD")
@@ -232,7 +241,7 @@ def _cmd_start(rest):
         if not dirty
         else "{} dirty: {}".format(head, ", ".join(dirty))
     )
-    outcome = _record(path, path.read_text(encoding="utf-8"), branch, baseline)
+    outcome = _record(path, prior_text, branch, baseline)
     if "error" in outcome:
         raise Refused(outcome["error"])
     return {
@@ -326,7 +335,7 @@ def _cmd_check(rest):
     data = _graded(tickets._load_ticket(path), "read {}/{}".format(run, ticket_id))
     reported = {"run": run, "id": ticket_id, "ticket": str(path)}
 
-    isolation = str(data.get(ISOLATION_KEY) or "none").strip()
+    isolation = tickets.normalized_isolation(data.get(ISOLATION_KEY))
     if isolation != REQUIRED:
         # read-only lanes and unisolated-by-design items never reach git
         reported.update({ISOLATION_KEY: isolation, "verdict": "not required"})
