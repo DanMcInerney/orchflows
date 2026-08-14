@@ -216,12 +216,58 @@ class ScopeClosureTest(unittest.TestCase):
         self.assertIn("scripts/cutcheck.py", lines[0])
 
 
+class PairwiseSafetyTest(unittest.TestCase):
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-f4-pairs")
+        self.lines = reported(self.result, cutcheck.FAMILY_4)
+
+    def test_pair_set_exits_nonzero(self):
+        self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
+
+    def test_the_staged_invalidation_names_both_ids_and_the_path(self):
+        lines = [line for line in self.lines if cutcheck.STAGED_INVALIDATION in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn("01-reader", lines[0])
+        self.assertIn("02-rewriter", lines[0])
+        self.assertIn("install.py", lines[0])
+
+    def test_the_shared_scope_names_both_ids(self):
+        lines = [line for line in self.lines if cutcheck.SCOPE_COLLISION in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn("03-alpha", lines[0])
+        self.assertIn("04-beta", lines[0])
+
+    def test_no_other_pair_is_reported(self):
+        self.assertEqual(len(self.lines), 2, self.result.stdout)
+
+
+class OrderedPairTest(unittest.TestCase):
+    """A pair the DAG orders is no defect, by an edge or by reachability."""
+
+    def test_a_direct_edge_orders_the_pair(self):
+        result = run_cutcheck("cutcheck-f4-ordered")
+        self.assertEqual(reported(result, cutcheck.FAMILY_4), [], result.stdout)
+
+    def test_order_through_a_middle_item_is_order(self):
+        result = run_cutcheck("cutcheck-f4-transitive")
+        self.assertEqual(reported(result, cutcheck.FAMILY_4), [], result.stdout)
+
+
 CANARY = cutcheck._run_dir("canary", ROOT)
 
 
 @unittest.skipUnless(CANARY is not None, "the canary ticket set is not present")
 class CanarySetTest(unittest.TestCase):
     """The tracked canary fixture, unmodified: its scope defect must surface."""
+
+    def test_no_coverage_or_executor_false_positive_over_the_canary(self):
+        result = run_cutcheck("canary")
+        for klass in (
+            cutcheck.ORPHAN_CRITERION,
+            cutcheck.ORPHAN_ITEM,
+            cutcheck.ILLEGAL_EXECUTOR,
+        ):
+            self.assertNotIn(klass, result.stdout)
 
     def test_the_canary_scope_defect_is_reported(self):
         result = run_cutcheck("canary")
@@ -234,6 +280,109 @@ class CanarySetTest(unittest.TestCase):
         self.assertEqual(len(lines), 1, result.stdout)
         self.assertIn(cutcheck.UNSCOPED_WRITE, lines[0])
         self.assertIn("extra.txt", lines[0])
+
+
+class ExecutorLegalityTest(unittest.TestCase):
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-f6-executor")
+        self.lines = reported(self.result, cutcheck.FAMILY_6)
+
+    def test_executor_set_exits_nonzero(self):
+        self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
+
+    def test_an_engine_executor_is_reported_with_its_ticket(self):
+        lines = [line for line in self.lines if "01-engine" in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.ILLEGAL_EXECUTOR, lines[0])
+        self.assertIn("orch-task", lines[0])
+
+    def test_an_executor_no_cell_of_the_pack_names_is_reported(self):
+        lines = [line for line in self.lines if "03-alien" in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn("orch-render", lines[0])
+        self.assertIn("orch-code-pack", lines[0])
+
+    def test_the_packs_own_executor_cell_is_not_reported(self):
+        self.assertNotIn("02-legal", self.result.stdout)
+
+    def test_the_engine_set_is_the_ticket_scripts_own(self):
+        self.assertIs(cutcheck.ENGINE_EXECUTORS, tickets.ENGINE_EXECUTORS)
+
+
+class CoverageTest(unittest.TestCase):
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-f5-coverage")
+        self.lines = reported(self.result, cutcheck.FAMILY_5)
+
+    def test_coverage_set_exits_nonzero(self):
+        self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
+
+    def test_the_orphan_criterion_is_named_by_its_number(self):
+        lines = [line for line in self.lines if cutcheck.ORPHAN_CRITERION in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn("criterion 3", lines[0])
+        self.assertIn("03-absent", lines[0])
+
+    def test_the_orphan_item_is_named_by_its_id(self):
+        lines = [line for line in self.lines if cutcheck.ORPHAN_ITEM in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn("02-orphan-item", lines[0])
+
+    def test_both_directions_and_nothing_else(self):
+        self.assertEqual(len(self.lines), 2, self.result.stdout)
+
+
+class AbsentMapTest(unittest.TestCase):
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-f5-nomap")
+        self.lines = reported(self.result, cutcheck.FAMILY_5)
+
+    def test_the_absent_map_is_one_line_and_no_violation(self):
+        self.assertEqual(len(self.lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.COVERAGE_MAP_ABSENT, self.lines[0])
+        self.assertEqual(self.result.returncode, 0, self.result.stdout)
+
+    def test_no_orphan_is_reported_in_either_direction(self):
+        self.assertNotIn(cutcheck.ORPHAN_CRITERION, self.result.stdout)
+        self.assertNotIn(cutcheck.ORPHAN_ITEM, self.result.stdout)
+
+
+class CoverageHomeTest(unittest.TestCase):
+    """The map is found beside the ticket root cutcheck resolved, not at a path."""
+
+    def test_a_fixture_set_carries_its_map_beside_its_tickets(self):
+        fixture = ROOT / "tests" / "fixtures" / "cutcheck" / "cutcheck-f5-coverage"
+        self.assertEqual(cutcheck._coverage_path(fixture), fixture / "coverage.md")
+
+    def test_a_runs_map_sits_beside_its_worklog(self):
+        self.assertEqual(
+            cutcheck._coverage_path(ROOT / ".orch" / "tickets" / "some-run"),
+            ROOT / ".orch" / "runs" / "some-run" / "coverage.md",
+        )
+
+    def test_the_canary_root_carries_no_map(self):
+        canary = ROOT / ".orch" / "canary" / "tickets" / "canary"
+        self.assertIsNone(cutcheck._coverage_path(canary))
+
+
+SHELL_MARK = Path("/tmp/cutcheck-shellhead-ran")
+
+
+class ShellHeadTest(unittest.TestCase):
+    """Ticket content is untrusted input: no span of one reaches a shell."""
+
+    def setUp(self):
+        SHELL_MARK.unlink(missing_ok=True)
+        self.addCleanup(SHELL_MARK.unlink, True)
+        self.result = run_cutcheck("cutcheck-shellhead")
+
+    def test_the_shell_span_did_not_run(self):
+        self.assertFalse(SHELL_MARK.exists(), self.result.stdout)
+
+    def test_the_span_is_reported_rather_than_run(self):
+        lines = [line for line in self.result.stdout.splitlines() if "01-shellhead" in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.EXTRACTION_GAP, lines[0])
 
 
 class ParserReuseTest(unittest.TestCase):

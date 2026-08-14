@@ -2,7 +2,9 @@
 """Report cut defects in an issued ticket set, before any work starts.
 
 Family 1 is oracle discrimination and oracle shape. Family 2 is path
-reality. Family 3 is scope closure. One invocation decides all three.
+reality. Family 3 is scope closure. Family 4 is pairwise safety. Family
+5 is acceptance coverage. Family 6 is executor legality. One invocation
+decides all six.
 
 Discrimination: an oracle that reads the same at the baseline as it will
 once the work has landed proves nothing. Every extractable oracle runs
@@ -25,12 +27,29 @@ writes, evidence sinks included, and no excluded action names a path the
 scope grants. A path the item only reads is no defect: observing is not
 naming.
 
+Pairwise safety: for every pair the DAG leaves unordered -- ordering is
+reachability through ``depends_on``, not adjacency -- write scopes are
+disjoint and neither item's oracle reads what the other writes, or
+whichever lands first invalidates the other's evidence.
+
+Coverage: the run's acceptance-coverage map, read beside whichever
+ticket root resolved, is checked both ways against the issued set. Every
+criterion reaches an item, the gate, or declared remainder, and every
+item is named by some criterion. A root with no map has nothing to read
+against, so the absence is all that is reported.
+
+Executor legality: an item's executor is one its stamped pack's executor
+or assembly cell names, and is never an engine -- an engine dispatches
+an executor rather than being one. An item naming no pack has no cell to
+resolve against, so only the prohibition applies.
+
 Shape: the command text itself carries two defects. A pipeline through
 ``tail`` or ``head`` reports that pipe's exit status, not the check's. A
 per-item scope check written against a cumulative ``<base>..HEAD`` range
 answers about the whole branch, not the item.
 
-Both of those set the exit status. An extraction gap does not: a
+Both of those set the exit status. An extraction gap and an absent
+coverage map do not: a
 criterion whose oracle no extractor recognized is reported on its own
 line so silent under-coverage stays visible, but real tickets state many
 criteria in prose, and a gap that failed the run would turn every clean
@@ -53,13 +72,26 @@ import tempfile
 from pathlib import Path
 
 try:  # in-repo; the installed copy sits flat beside tickets.py
-    from scripts.tickets import _find_repo_root, _parse_frontmatter, _sections
+    from scripts.tickets import (
+        ENGINE_EXECUTORS,
+        _find_repo_root,
+        _parse_frontmatter,
+        _sections,
+    )
 except ImportError:  # pragma: no cover - the installed copy's path
-    from tickets import _find_repo_root, _parse_frontmatter, _sections
+    from tickets import (
+        ENGINE_EXECUTORS,
+        _find_repo_root,
+        _parse_frontmatter,
+        _sections,
+    )
 
 FAMILY = "family 1"
 FAMILY_2 = "family 2"
 FAMILY_3 = "family 3"
+FAMILY_4 = "family 4"
+FAMILY_5 = "family 5"
+FAMILY_6 = "family 6"
 ALREADY_PASSES = "already-passes"
 NO_HITS_BOTH_REVISIONS = "no-hits-both-revisions"
 FAILS_BOTH_REVISIONS = "fails-both-revisions"
@@ -71,6 +103,12 @@ UNRESOLVED_CITATION = "unresolved-citation"
 QUOTE_NOT_AT_CITATION = "quote-not-at-citation"
 UNSCOPED_WRITE = "unscoped-write"
 SCOPE_CONTRADICTION = "scope-contradiction"
+SCOPE_COLLISION = "scope-collision"
+STAGED_INVALIDATION = "staged-invalidation"
+ORPHAN_CRITERION = "orphan-criterion"
+ORPHAN_ITEM = "orphan-item"
+COVERAGE_MAP_ABSENT = "coverage-map-absent"
+ILLEGAL_EXECUTOR = "illegal-executor"
 FAMILY_OF = {
     ALREADY_PASSES: FAMILY,
     NO_HITS_BOTH_REVISIONS: FAMILY,
@@ -83,10 +121,30 @@ FAMILY_OF = {
     QUOTE_NOT_AT_CITATION: FAMILY_2,
     UNSCOPED_WRITE: FAMILY_3,
     SCOPE_CONTRADICTION: FAMILY_3,
+    SCOPE_COLLISION: FAMILY_4,
+    STAGED_INVALIDATION: FAMILY_4,
+    ORPHAN_CRITERION: FAMILY_5,
+    ORPHAN_ITEM: FAMILY_5,
+    COVERAGE_MAP_ABSENT: FAMILY_5,
+    ILLEGAL_EXECUTOR: FAMILY_6,
 }
-# Advisory classes are printed and never set the exit status.
-ADVISORY = frozenset({EXTRACTION_GAP})
+# Advisory classes are printed and never set the exit status. A map that is
+# not there is a fact about the run, not a defect of the cut.
+ADVISORY = frozenset({EXTRACTION_GAP, COVERAGE_MAP_ABSENT})
 
+# The acceptance-coverage map: one row per spec criterion, naming the item,
+# the gate, or declared remainder that answers for it.
+COVERAGE_FILE = "coverage.md"
+COVERAGE_OWNERS = ("gate", "remainder")
+TICKETS_DIR = "tickets"
+CANARY_DIR = "canary"
+RUNS_DIR = "runs"
+# A pack's executor and assembly cells are the only executors it binds.
+PACKS_DIR = "packs"
+PACK_CELL_RE = re.compile(r"^\|\s*(?:executor|assembly)\s*\|([^|]*)\|", re.M)
+SKILL_NAME_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
+# A pack name comes from ticket content, so it names one directory or nothing.
+PACK_NAME_RE = re.compile(r"^[\w-]+$")
 OBJECTIVE_SECTION = "Objective"
 INPUTS_SECTION = "Fixed inputs"
 COMPLETION_SECTION = "Completion test"
@@ -94,8 +152,11 @@ CRITERION_RE = re.compile(r"^\s*(\d+)\.\s+(.*)$")
 BACKTICK_RE = re.compile(r"`([^`]+)`")
 SWALLOW_RE = re.compile(r"\|\s*(?:tail|head)\b")
 CUMULATIVE_RE = re.compile(r"\S+\.\.HEAD\b")
+# No shell is a command head. A span an extractor claims is a span this tool
+# runs, and ticket content is untrusted: `bash -lc '<anything>'` split argv-only
+# still hands `<anything>` to a shell. A shell-headed span is recognized by no
+# extractor, so it runs nowhere and surfaces as an extraction gap instead.
 COMMAND_HEADS = (
-    "bash",
     "git",
     "grep",
     "node",
@@ -104,7 +165,6 @@ COMMAND_HEADS = (
     "python",
     "python3",
     "rg",
-    "sh",
 )
 SEARCH_HEADS = ("grep", "rg")
 CITATION_RE = re.compile(r"\b([\w][\w./-]*\.[A-Za-z0-9]{1,5}):(\d+)")
@@ -515,6 +575,189 @@ def _scope_closure(frontmatter, prose):
     return findings
 
 
+def _oracle_reads(text):
+    """Every path this item's oracles reach for, across its completion test."""
+
+    found = []
+    for _, criterion in _criteria(_sections(text).get(COMPLETION_SECTION, "")):
+        for command in _commands(criterion):
+            found.extend(_path_args(command))
+    return found
+
+
+def _ancestors(item, siblings):
+    """Every item reachable from ``item`` through ``depends_on``."""
+
+    seen = set()
+    pending = _listed(siblings.get(item) or {}, "depends_on")
+    while pending:
+        node = pending.pop()
+        if node in seen or node not in siblings:
+            continue
+        seen.add(node)
+        pending.extend(_listed(siblings[node], "depends_on"))
+    return seen
+
+
+def _first_overlap(paths, scopes):
+    for path in paths:
+        for entry in scopes:
+            if _overlaps(path, entry):
+                return path
+    return None
+
+
+def _pairwise(siblings, reads):
+    """Family 4: the pairs the DAG leaves free to run at the same time.
+
+    Ordering is reachability, not adjacency -- a pair joined through a third
+    item is staged, and staging is what makes a shared path safe. For every
+    unordered pair the write scopes must be disjoint and neither item's oracle
+    may read what the other writes, or the first result to land invalidates the
+    second's evidence.
+    """
+
+    findings = []
+    ids = sorted(siblings)
+    ancestors = {item: _ancestors(item, siblings) for item in ids}
+    for index, left in enumerate(ids):
+        for right in ids[index + 1:]:
+            if right in ancestors[left] or left in ancestors[right]:
+                continue
+            scopes = {
+                item: _listed(siblings[item], "write_scope") for item in (left, right)
+            }
+            shared = _first_overlap(scopes[left], scopes[right])
+            if shared is not None:
+                findings.append(
+                    (left, 0, SCOPE_COLLISION, "with {}: {}".format(right, shared))
+                )
+            for reader, writer in ((left, right), (right, left)):
+                path = _first_overlap(reads.get(reader) or [], scopes[writer])
+                if path is not None:
+                    findings.append(
+                        (
+                            reader,
+                            0,
+                            STAGED_INVALIDATION,
+                            "with {}: {}".format(writer, path),
+                        )
+                    )
+    return findings
+
+
+def _coverage_path(run_dir):
+    """Where the acceptance-coverage map lives for a resolved ticket root.
+
+    The map is found beside the root cutcheck already resolved, never at one
+    fixed path: a run keeps it with its worklog, a fixture set carries its own
+    beside its tickets, and the canary set has none to carry.
+    """
+
+    if run_dir.parent.name != TICKETS_DIR:
+        return run_dir / COVERAGE_FILE
+    if run_dir.parent.parent.name == CANARY_DIR:
+        return None
+    return run_dir.parent.parent / RUNS_DIR / run_dir.name / COVERAGE_FILE
+
+
+def _coverage_rows(path):
+    """Each ``| criterion | owner |`` row: a number, and what answers for it."""
+
+    rows = []
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        cells = [cell.strip().strip("`") for cell in line.strip().strip("|").split("|")]
+        if len(cells) >= 2 and cells[0].isdigit():
+            rows.append((int(cells[0]), cells[1]))
+    return rows
+
+
+def _coverage(run, run_dir, issued):
+    """Family 5: the map and the issued set answer for each other, both ways.
+
+    A criterion reaches an item, the gate, or declared remainder; an item is
+    named by some criterion. With no map there is nothing to read either
+    direction against, so the absence is the only thing reported.
+    """
+
+    path = _coverage_path(run_dir)
+    if path is None or not path.is_file():
+        where = str(path) if path is not None else "none for this ticket root"
+        return [(run, 0, COVERAGE_MAP_ABSENT, where)]
+    findings = []
+    owned = set()
+    for number, owner in _coverage_rows(path):
+        if owner in COVERAGE_OWNERS:
+            continue
+        if owner in issued:
+            owned.add(owner)
+            continue
+        findings.append((run, number, ORPHAN_CRITERION, owner))
+    findings.extend(
+        (item, 0, ORPHAN_ITEM, "named by no criterion in {}".format(path.name))
+        for item in issued
+        if item not in owned
+    )
+    return findings
+
+
+def _pack_cells(pack, worktree_root):
+    """The skills a pack's ``executor`` and ``assembly`` cells name.
+
+    A pack this tree does not carry, or one whose cells name no skill, binds
+    nothing here -- an assembly cell reading "none" is such a cell.
+    """
+
+    if worktree_root is None or not PACK_NAME_RE.match(pack):
+        return set()
+    path = worktree_root / PACKS_DIR / pack / "SKILL.md"
+    if not path.is_file():
+        return set()
+    names = set()
+    for row in PACK_CELL_RE.findall(path.read_text(encoding="utf-8", errors="replace")):
+        names.update(SKILL_NAME_RE.findall(row))
+    return names
+
+
+def _executor_legality(siblings, worktree_root):
+    """Family 6: an executor its pack's cells name, and never an engine.
+
+    An engine dispatches a ticket's executor, so naming one as the executor is
+    a call cycle. An item naming no pack has no cell to resolve against, and
+    only the prohibition applies to it.
+    """
+
+    findings = []
+    cells = {}
+    for ticket_id in sorted(siblings):
+        frontmatter = siblings[ticket_id]
+        executor = str(frontmatter.get("executor") or "").strip()
+        if not executor:
+            continue
+        if executor in ENGINE_EXECUTORS:
+            findings.append(
+                (ticket_id, 0, ILLEGAL_EXECUTOR, "{} is an engine".format(executor))
+            )
+            continue
+        pack = str(frontmatter.get("pack") or "").strip()
+        if not pack:
+            continue
+        if pack not in cells:
+            cells[pack] = _pack_cells(pack, worktree_root)
+        if cells[pack] and executor not in cells[pack]:
+            findings.append(
+                (
+                    ticket_id,
+                    0,
+                    ILLEGAL_EXECUTOR,
+                    "{} is neither {}'s executor cell nor its assembly cell".format(
+                        executor, pack
+                    ),
+                )
+            )
+    return findings
+
+
 def _check_ticket(path, baseline_tree, head_tree, siblings):
     text = path.read_text(encoding="utf-8")
     frontmatter = _parse_frontmatter(text)
@@ -598,14 +841,21 @@ def main(argv=None):
         head_tree = None
         if not _same_revision(args.baseline, worktree_root):
             head_tree = _scratch_tree("HEAD", worktree_root, scratch_root)
-        issued = sorted(run_dir.glob("*.md"))
+        issued = sorted(p for p in run_dir.glob("*.md") if p.name != COVERAGE_FILE)
         siblings = {}
+        reads = {}
         for path in issued:
-            frontmatter = _parse_frontmatter(path.read_text(encoding="utf-8"))
-            siblings[frontmatter.get("id") or path.stem] = frontmatter
+            text = path.read_text(encoding="utf-8")
+            frontmatter = _parse_frontmatter(text)
+            ticket_id = frontmatter.get("id") or path.stem
+            siblings[ticket_id] = frontmatter
+            reads[ticket_id] = _oracle_reads(text)
         findings = []
         for path in issued:
             findings.extend(_check_ticket(path, baseline_tree, head_tree, siblings))
+        findings.extend(_pairwise(siblings, reads))
+        findings.extend(_coverage(args.run, run_dir, sorted(siblings)))
+        findings.extend(_executor_legality(siblings, worktree_root))
     finally:
         shutil.rmtree(scratch_root, ignore_errors=True)
 

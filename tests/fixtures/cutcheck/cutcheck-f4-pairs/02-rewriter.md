@@ -1,11 +1,11 @@
 ---
-id: 03-baseline-quote
-run: cutcheck-carveouts
+id: 02-rewriter
+run: cutcheck-f4-pairs
 status: issued
 executor: orch-tdd
 pack: orch-code-pack
 independence: gate
-depends_on: [01-reads-only]
+depends_on: []
 bound: 20 tool calls
 write_scope:
   - install.py
@@ -14,14 +14,11 @@ excluded_actions:
 ---
 ## Objective
 
-Fixture ticket quoting text that is present at the baseline and absent at the
-workspace revision. Citations resolve in the baseline scratch copy, so this
-ticket is clean; resolving them at the workspace revision would report it.
+Fixture item for pairwise safety: `install.py` is this item's whole scope, and the oracle of item `01-reader` reads it. No edge joins the two.
 
 ## Fixed inputs
 
-- Baseline: `ac8791a`, where `install.py:101` opens the script tuple
-  `SCRIPT_NAMES = ("friction.py"`.
+- Baseline: the revision cutcheck is invoked with.
 
 ## Completion test
 
