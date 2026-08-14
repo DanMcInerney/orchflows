@@ -277,6 +277,57 @@ class TruncatedListTest(unittest.TestCase):
         self.assertIn("criterion 2", gaps[0])
 
 
+class PhantomCriterionTest(unittest.TestCase):
+    """A wrapped line opening with a digit is text, not a criterion of its own."""
+
+    def setUp(self):
+        self.criteria = fixture_criteria("cutcheck-f1-phantom", "01-phantom.md")
+        self.texts = dict(self.criteria)
+
+    def test_the_wrap_opens_no_item_of_its_own(self):
+        self.assertEqual([number for number, _ in self.criteria], [1, 2, 3])
+
+    def test_the_interrupted_criterion_keeps_the_text_after_the_wrap(self):
+        text = self.texts[2]
+        self.assertIn('grep -n "SCRIPT_NAMES" install.py', text)
+        self.assertTrue(
+            text.endswith(
+                "exits 0. oracle_class: deterministic. provenance: pre-existing."
+            ),
+            text,
+        )
+
+    def test_the_wrapped_stamp_belongs_to_the_criterion_that_wrapped(self):
+        self.assertTrue(cutcheck.PRE_EXISTING_RE.search(self.texts[2]), self.texts[2])
+
+
+class NestedEnumerationTest(unittest.TestCase):
+    """Indentation is relative: a nested list continues, an indented list opens."""
+
+    def test_a_nested_enumeration_stays_inside_the_criterion_holding_it(self):
+        criteria = fixture_criteria("cutcheck-f1-phantom", "02-nested-list.md")
+        self.assertEqual([number for number, _ in criteria], [1, 2])
+        first = dict(criteria)[1]
+        self.assertIn(
+            "1. the tuple the installer opens, and 2. every script name it lists.",
+            first,
+        )
+        self.assertTrue(cutcheck.PRE_EXISTING_RE.search(first), first)
+
+    def test_a_set_whose_criteria_are_written_indented_is_still_a_list(self):
+        criteria = fixture_criteria("cutcheck-f1-truncated", "01-truncated.md")
+        self.assertEqual([number for number, _ in criteria], [1, 2])
+        self.assertIn(
+            "A reviewer names, from the module docstring alone", dict(criteria)[2]
+        )
+
+    def test_the_indented_criterion_still_surfaces_in_the_report(self):
+        lines = reported(run_cutcheck("cutcheck-f1-truncated"))
+        gaps = [line for line in lines if cutcheck.EXTRACTION_GAP in line]
+        self.assertEqual(len(gaps), 1, "\n".join(lines))
+        self.assertIn("criterion 2", gaps[0])
+
+
 class PathRealityTest(unittest.TestCase):
     def setUp(self):
         self.result = run_cutcheck("cutcheck-f2-paths")
@@ -649,6 +700,61 @@ class ProvenanceTest(unittest.TestCase):
         lines = [line for line in self.lines if cutcheck.VERDICT_IN_OUTPUT in line]
         self.assertEqual(len(lines), 1, self.result.stdout)
         self.assertIn("01-pre-existing", lines[0])
+
+
+class ProvenanceNegationTest(unittest.TestCase):
+    """Quoting the stamp, or denying it, mentions it: neither one exempts."""
+
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-provenance-mention")
+        self.lines = [line for line in reported(self.result) if "01-mentioned" in line]
+
+    def test_the_quoted_mention_is_graded_as_the_phrase_were_absent(self):
+        lines = [line for line in self.lines if "criterion 1" in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.ALREADY_PASSES, lines[0])
+
+    def test_the_denied_mention_is_graded_too(self):
+        lines = [line for line in self.lines if "criterion 2" in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.ALREADY_PASSES, lines[0])
+
+    def test_no_mention_of_the_phrase_reads_as_a_stamp(self):
+        for text in (
+            "the stamp this criterion quotes, `provenance: pre-existing`, is the "
+            "one it talks about rather than one it makes.",
+            "the stamp this criterion does not carry is provenance: pre-existing.",
+            "provenance: pre-existing is never a demonstration that an oracle "
+            "can fail.",
+        ):
+            self.assertIsNone(cutcheck.PRE_EXISTING_RE.search(text), text)
+
+
+class ProvenanceStampTest(unittest.TestCase):
+    """A stamp a criterion makes of its own oracle still exempts that oracle."""
+
+    def test_the_paired_positive_is_exempt(self):
+        result = run_cutcheck("cutcheck-provenance-mention")
+        lines = [line for line in reported(result) if "02-stamped" in line]
+        self.assertEqual(lines, [], result.stdout)
+
+    def test_the_existing_provenance_fixture_is_exempt_as_it_was(self):
+        result = run_cutcheck("cutcheck-provenance")
+        lines = [line for line in reported(result) if cutcheck.ALREADY_PASSES in line]
+        self.assertEqual(len(lines), 1, result.stdout)
+        self.assertIn("02-authored-here", lines[0])
+
+    def test_every_shape_the_corpus_stamps_with_still_reads_as_a_stamp(self):
+        for text in (
+            "**A criterion.** `grep -n x install.py` returns it. oracle_class: "
+            "deterministic. provenance: pre-existing.",
+            "provenance: pre-existing",
+            "**A criterion.** oracle_class: judged. Provenance:  Pre-Existing.",
+            # A live set stamps this way: the field, then why it is the field.
+            "oracle_class: deterministic. provenance: pre-existing (the fixture "
+            "exists from item 01).",
+        ):
+            self.assertTrue(cutcheck.PRE_EXISTING_RE.search(text), text)
 
 
 class VerdictInOutputTest(unittest.TestCase):

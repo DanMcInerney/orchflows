@@ -204,8 +204,17 @@ GIT_HEAD = "git"
 EVAL_HEADS = ("node", "npm", "python", "python3")
 EVAL_ARGS = frozenset({"-c", "-e", "--eval", "--exec", "-"})
 # A criterion states the provenance of its own oracle; an oracle stated
-# pre-existing is an invariant, and holding still is what it is for.
-PRE_EXISTING_RE = re.compile(r"provenance:\s*pre-existing", re.I)
+# pre-existing is an invariant, and holding still is what it is for. Stating it
+# is writing the field and nothing else: a sentence boundary opens the phrase,
+# and no word continues it -- a parenthetical may follow, a predicate may not.
+# A criterion that quotes the phrase, denies carrying it, or discusses what it
+# means mentions the stamp instead of making one, and every such mention either
+# sits behind a backtick, an article or a verb, or runs on into the clause that
+# denies it. Grading is the default here, so a stamp written any other way is
+# graded rather than believed.
+PRE_EXISTING_RE = re.compile(
+    r"(?:\A|[.;])\s*provenance:\s*pre-existing(?!\s*[A-Za-z])", re.I
+)
 # Counting prints the verdict rather than exiting on it.
 COUNT_FLAG_RE = re.compile(r"^-[A-Za-z]*c[A-Za-z]*$|^--count$")
 # Under `git` only the long flag counts: `git -c` sets a configuration
@@ -345,15 +354,29 @@ def _same_revision(rev, worktree_root):
 def _criteria(section):
     """Every numbered completion-test item, at any indentation.
 
+    Indentation is the signal and it is relative: a numbered line indented
+    deeper than the line that opened the item now open is that item's own
+    text -- a sentence wrapping onto a digit and a period, or a list nested
+    under it -- and opens nothing. A numbered line at that opening line's
+    indentation or less opens the next item, so a set whose criteria are
+    themselves written indented is still a list; and one met while no item is
+    open always opens one.
+
     Unindented prose ends an item's continuation, never the list: a criterion
     written after such a line still surfaces, as an extraction gap at minimum.
     """
 
     items = []
     current = None
+    opened_at = 0
     for line in section.splitlines():
         match = CRITERION_RE.match(line)
         if match:
+            depth = len(line) - len(line.lstrip())
+            if current is not None and depth > opened_at:
+                current[1].append(line.strip())
+                continue
+            opened_at = depth
             current = (int(match.group(1)), [match.group(2)])
             items.append(current)
             continue
