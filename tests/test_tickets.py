@@ -1104,6 +1104,191 @@ class TestRunStateArtifact(unittest.TestCase):
             )
 
 
+class TerminalNoteTest(unittest.TestCase):
+    """contracts/worklog.md: "Notes append in occurrence order, and no note
+    is written past a terminal section: a worklog carries no terminal
+    placeholder until it closes."
+
+    Both halves are one law. A placeholder written at creation would make
+    every note a note past a terminal section; a terminal section written
+    at the close makes the notes after it the error they are.
+    """
+
+    def test_creation_writes_no_terminal_placeholder(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            run_cmd(worktree, "run-state", "testrun", "--note", "the first line")
+            text = worklog_of(main).read_text(encoding="utf-8")
+            self.assertEqual("the first line\n", text)
+            self.assertNotIn(tickets_mod.TERMINAL_HEADING, text)
+            for state in tickets_mod.TERMINAL_STATES:
+                self.assertNotIn(state, text, state)
+
+    def test_note_note_terminal_note_refuses_the_fourth_in_occurrence_order(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            for line in ("note one", "note two"):
+                self.assertIn(
+                    "run_state", run_cmd(worktree, "run-state", "testrun", "--note", line)
+                )
+            closed = run_cmd(worktree, "run-state", "testrun", "--terminal", "complete",
+                             "--text", "every criterion passed")
+            self.assertEqual("terminal", closed["run_state"]["mode"])
+            self.assertEqual("complete", closed["run_state"]["terminal"])
+
+            result = run_full(worktree, "run-state", "testrun", "--note", "note four")
+            self.assertEqual(1, result.returncode, result.stdout)
+            error = json.loads(result.stdout)["error"]
+            self.assertIn("terminal", error)
+            self.assertIn("complete", error)
+            self.assertIn(str(worklog_of(main).resolve()), error)
+
+            lines = worklog_of(main).read_text(encoding="utf-8").splitlines()
+            # the notes are in occurrence order, the close is after them, and
+            # the fourth note is nowhere in the file
+            self.assertEqual(["note one", "note two"], lines[:2])
+            self.assertLess(lines.index("note two"), lines.index("## terminal: complete"))
+            self.assertNotIn("note four", lines)
+            self.assertIn("every criterion passed", lines)
+
+    def test_a_second_close_is_refused_and_the_first_stands(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            run_cmd(worktree, "run-state", "testrun", "--terminal", "complete",
+                    "--text", "the deciding evidence")
+            before = worklog_of(main).read_text(encoding="utf-8")
+            result = run_full(worktree, "run-state", "testrun", "--terminal", "failed",
+                              "--text", "a second close")
+            self.assertEqual(1, result.returncode, result.stdout)
+            self.assertIn("complete", json.loads(result.stdout)["error"])
+            self.assertEqual(before, worklog_of(main).read_text(encoding="utf-8"))
+
+    def test_the_note_stays_a_pure_append_never_a_read_modify_write(self):
+        """Two workspaces write one repository's worklog at once. The
+        terminal check reads the file, but the write is still one append in
+        one call: a line another writer added between the read and the
+        append survives untouched."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            run_cmd(worktree, "run-state", "testrun", "--note", "from the channel")
+            with open(worklog_of(main), "a", encoding="utf-8", newline="\n") as handle:
+                handle.write("from another worktree\n")
+            run_cmd(worktree, "run-state", "testrun", "--note", "from the channel again")
+            self.assertEqual(
+                ["from the channel", "from another worktree", "from the channel again"],
+                worklog_of(main).read_text(encoding="utf-8").splitlines(),
+            )
+            source = " ".join(inspect.getsource(tickets_mod._cmd_run_state).split())
+            self.assertIn('open(path, "a"', source)
+
+            notes = [f"writer-{i} " + "x" * 2000 for i in range(8)]
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                list(pool.map(
+                    lambda note: run_cmd(worktree, "run-state", "otherrun", "--note", note),
+                    notes,
+                ))
+            self.assertEqual(
+                sorted(notes),
+                sorted(worklog_of(main, "otherrun").read_text(encoding="utf-8").splitlines()),
+            )
+
+    def test_the_close_requires_a_known_state_and_its_deciding_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            # a ticket-level status is not a run-level terminal state
+            for bad in ("suspended", "ready", "done", ""):
+                result = run_full(worktree, "run-state", "testrun", "--terminal", bad,
+                                  "--text", "x")
+                self.assertEqual(1, result.returncode, f"{bad!r}: {result.stdout}")
+                error = json.loads(result.stdout)["error"]
+                for state in tickets_mod.TERMINAL_STATES:
+                    self.assertIn(state, error, f"{bad!r}: {state}")
+            # the deciding evidence is not optional
+            result = run_full(worktree, "run-state", "testrun", "--terminal", "complete")
+            self.assertEqual(1, result.returncode, result.stdout)
+            self.assertIn("--text", json.loads(result.stdout)["error"])
+            self.assertFalse(worklog_of(main).exists())
+
+    def test_every_run_level_terminal_state_closes_and_the_states_are_the_contract(self):
+        for state in tickets_mod.TERMINAL_STATES:
+            with tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+                run_cmd(worktree, "run-state", "testrun", "--terminal", state,
+                        "--text", "the deciding evidence")
+                self.assertIn(
+                    f"## terminal: {state}",
+                    worklog_of(main).read_text(encoding="utf-8"),
+                )
+                result = run_full(worktree, "run-state", "testrun", "--note", "past it")
+                self.assertEqual(1, result.returncode, f"{state}: {result.stdout}")
+        self.assertEqual(
+            ("complete", "blocked", "stalled", "limited", "failed"),
+            tickets_mod.TERMINAL_STATES,
+        )
+
+    def test_a_note_may_not_forge_the_terminal_heading(self):
+        """The marker is only trustworthy if a note cannot write one. A note
+        that would read as a close is refused, so the guard can never be
+        walked past by a line that merely looks like the close."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            for forged in ("## terminal: complete", "  ## terminal", "## Terminal: failed"):
+                result = run_full(worktree, "run-state", "testrun", "--note", forged)
+                self.assertEqual(1, result.returncode, f"{forged!r}: {result.stdout}")
+                self.assertIn("--terminal", json.loads(result.stdout)["error"])
+            self.assertFalse(worklog_of(main).exists())
+
+    def test_the_close_is_per_run_and_per_tree(self):
+        """A closed run does not close another run, and a closed research
+        worklog does not close the run's own."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            run_cmd(worktree, "run-state", "testrun", "--terminal", "complete",
+                    "--text", "closed")
+            self.assertIn(
+                "run_state", run_cmd(worktree, "run-state", "otherrun", "--note", "still open")
+            )
+            self.assertIn(
+                "run_state",
+                run_cmd(worktree, "run-state", "testrun", "--tree", "research",
+                        "--note", "a research lane's own log"),
+            )
+            self.assertEqual(
+                "a research lane's own log\n",
+                (main / ".orch" / "research" / "testrun" / "worklog.md").read_text(
+                    encoding="utf-8"
+                ),
+            )
+
+    def test_an_artifact_is_not_a_note_and_survives_the_close(self):
+        """The law is about notes past a terminal section. Evidence written
+        under a name is not a note and stays writable after the close."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            run_cmd(worktree, "run-state", "testrun", "--terminal", "complete",
+                    "--text", "closed")
+            payload = run_cmd(worktree, "run-state", "testrun", "--artifact",
+                              "post-close.md", "--text", "the join's own record\n")
+            self.assertEqual("artifact", payload["run_state"]["mode"])
+            self.assertEqual(
+                "the join's own record\n",
+                (run_dir_of(main) / "post-close.md").read_text(encoding="utf-8"),
+            )
+
+
 class ArtifactOverwriteTest(unittest.TestCase):
     """contracts/worklog.md: "Writing an artifact that already exists is
     refused by default, the refusal naming the existing path."

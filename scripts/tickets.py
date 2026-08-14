@@ -22,8 +22,9 @@ Subcommands:
     packet <run> <id> --reply-to <name> [--workspace <path>]
     result <run> <id> --section <name> (--file <path> | --text <string>)
            [--append | --replace]
-    run-state <run> [--tree <name>] (--note <line> | --artifact <name>
-             (--file <path> | --text <string>) [--replace])
+    run-state <run> [--tree <name>] (--note <line> |
+             (--artifact <name> [--replace] | --terminal <state>)
+             (--file <path> | --text <string>))
 """
 
 from __future__ import annotations
@@ -92,13 +93,23 @@ REQUIRED_ISOLATION = "required"
 # and `.orch/friction/` is the logger's — neither is writable from here.
 RUN_STATE_TREES = ("runs", "research", "improvement", "handoffs")
 DEFAULT_RUN_STATE_TREE = "runs"
+# contracts/worklog.md's run-level `terminal` set, in the contract's order.
+# Deliberately not VALID_STATUSES: the contract states the two are not one
+# set — `stalled` exists only at run level, `suspended` only at ticket level.
+TERMINAL_STATES = ("complete", "blocked", "stalled", "limited", "failed")
+WORKLOG_NAME = "worklog.md"
+# The heading that closes a worklog. Written only by `--terminal`, so a
+# worklog carries no terminal placeholder until it closes and the marker
+# means what it says: while it is absent the run is open.
+TERMINAL_HEADING = "## terminal"
 RESULT_USAGE = (
     "result <run> <id> --section <name> (--file <path> | --text <string>) "
     "[--append | --replace]"
 )
 RUN_STATE_USAGE = (
-    "run-state <run> [--tree <name>] (--note <line> | --artifact <name> "
-    "(--file <path> | --text <string>) [--replace])"
+    "run-state <run> [--tree <name>] (--note <line> | "
+    "(--artifact <name> [--replace] | --terminal <state>) "
+    "(--file <path> | --text <string>))"
 )
 SUBCOMMAND_USAGE = {
     "list": "list [--run R]",
@@ -124,7 +135,8 @@ SUBCOMMAND_SUMMARY = {
     "run-state": "Write this run's state under the one repository-wide "
     f"`.orch/`, in one of {list(RUN_STATE_TREES)} (default "
     f"{DEFAULT_RUN_STATE_TREE}); an artifact that already exists is refused "
-    "without --replace.",
+    f"without --replace. --terminal closes the worklog, one of "
+    f"{list(TERMINAL_STATES)}, after which no note is written.",
 }
 HELP_FLAGS = frozenset({"--help", "-h"})
 # The bare word only heads the command line. Inside a subcommand `help` is
@@ -970,6 +982,40 @@ def _cmd_result(rest):
     }
 
 
+def _is_terminal_heading(line: str) -> bool:
+    """Whether one line closes a worklog.
+
+    Case-insensitive, and the prefix must end the word: ``## terminal`` and
+    ``## terminal: complete`` close, ``## terminals`` is an ordinary
+    heading. A note that would read as one is refused rather than written,
+    so nothing but ``--terminal`` can ever put this marker in the file.
+    """
+
+    stripped = line.strip()
+    if not stripped.lower().startswith(TERMINAL_HEADING):
+        return False
+    remainder = stripped[len(TERMINAL_HEADING) :]
+    return remainder == "" or remainder.startswith(":")
+
+
+def _worklog_terminal(path: Path):
+    """The state a worklog closed with, or ``None`` while it is open.
+
+    A read, never a read-modify-write: the note that follows is still one
+    append in one call, so a line another workspace added in between
+    survives untouched.
+    """
+
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    for line in text.splitlines():
+        if _is_terminal_heading(line):
+            return line.strip()[len(TERMINAL_HEADING) :].strip(" :")
+    return None
+
+
 def _cmd_run_state(rest):
     """Write this run's state into the one repository-wide ``.orch/``.
 
@@ -993,6 +1039,7 @@ def _cmd_run_state(rest):
     args = list(rest)
     note = _extract_flag(args, "--note")
     artifact = _extract_flag(args, "--artifact")
+    terminal = _extract_flag(args, "--terminal")
     file_arg = _extract_flag(args, "--file")
     text_arg = _extract_flag(args, "--text")
     tree = _extract_flag(args, "--tree")
@@ -1005,9 +1052,17 @@ def _cmd_run_state(rest):
     if len(args) != 1:
         return {"error": f"usage: {RUN_STATE_USAGE}"}
     run = args[0]
-    if (note is None) == (artifact is None):
+    chosen = [
+        name
+        for name, value in (
+            ("--note", note), ("--artifact", artifact), ("--terminal", terminal)
+        )
+        if value is not None
+    ]
+    if len(chosen) != 1:
         return {
-            "error": "run-state takes one of --note <line> or --artifact <name>. "
+            "error": "run-state takes exactly one of --note <line>, --artifact "
+            f"<name> or --terminal <state>; got {chosen or 'none'}. "
             f"usage: {RUN_STATE_USAGE}"
         }
     invalid = _segment_error("run id", run)
@@ -1021,14 +1076,26 @@ def _cmd_run_state(rest):
             f"{list(RUN_STATE_TREES)}"
         }
     body = None
-    if artifact is not None:
-        invalid = _segment_error("artifact name", artifact)
-        if invalid is not None:
-            return invalid
+    if artifact is not None or terminal is not None:
+        owner = "--artifact" if artifact is not None else "--terminal"
+        if artifact is not None:
+            invalid = _segment_error("artifact name", artifact)
+            if invalid is not None:
+                return invalid
+        else:
+            if terminal not in TERMINAL_STATES:
+                return {
+                    "error": f"unknown terminal state '{terminal}': one of "
+                    f"{list(TERMINAL_STATES)}. A ticket status is not a run's "
+                    "terminal state (contracts/worklog.md)"
+                }
         if (file_arg is None) == (text_arg is None):
+            carries = (
+                "the deciding evidence" if terminal is not None else "its body"
+            )
             return {
-                "error": "--artifact takes one of --file <path> or --text <string>. "
-                f"usage: {RUN_STATE_USAGE}"
+                "error": f"{owner} takes one of --file <path> or --text <string> "
+                f"for {carries}. usage: {RUN_STATE_USAGE}"
             }
         if file_arg is not None:
             # read from the caller's own workspace, write at the main root
@@ -1041,13 +1108,35 @@ def _cmd_run_state(rest):
     elif file_arg is not None or text_arg is not None:
         return {
             "error": "--note carries its own line; --file and --text belong to "
-            f"--artifact. usage: {RUN_STATE_USAGE}"
+            f"--artifact and --terminal. usage: {RUN_STATE_USAGE}"
+        }
+    elif _is_terminal_heading(note):
+        # Only `--terminal` may put the marker in the file. A note that would
+        # read as one is refused, so the guard below can never be walked past
+        # by a line that merely looks like a close.
+        return {
+            "error": f"a note may not read as a terminal heading "
+            f"('{TERMINAL_HEADING}'): close the run with --terminal <state> "
+            f"instead, one of {list(TERMINAL_STATES)}"
         }
 
     tree_root = _run_state_root(tree)
     if tree_root is None:
         return {"error": "not inside a git repository"}
     run_dir = tree_root / run
+    if note is not None or terminal is not None:
+        # contracts/worklog.md: "no note is written past a terminal section".
+        # A closed worklog is closed once: a second close would leave two
+        # answers to "how did this run exit", and a note after one would be
+        # state recorded where no reader looks.
+        closed = _worklog_terminal(run_dir / WORKLOG_NAME)
+        if closed is not None:
+            attempt = "a note" if note is not None else f"a '{terminal}' close"
+            return {
+                "error": f"this worklog closed '{closed}': no note is written "
+                f"past a terminal section, and {attempt} would be. "
+                f"worklog: {run_dir / WORKLOG_NAME}"
+            }
     replaced = False
     if artifact is not None:
         target = run_dir / artifact
@@ -1065,24 +1154,34 @@ def _cmd_run_state(rest):
         replaced = target.exists()
     try:
         run_dir.mkdir(parents=True, exist_ok=True)
-        if note is not None:
-            path = run_dir / "worklog.md"
-            with open(path, "a", encoding="utf-8", newline="\n") as handle:
-                handle.write(note.rstrip("\r\n") + "\n")
-        else:
+        if artifact is not None:
             path = run_dir / artifact
             with open(path, "w", encoding="utf-8", newline="\n") as handle:
                 handle.write(body)
+        else:
+            path = run_dir / WORKLOG_NAME
+            if note is not None:
+                block = note.rstrip("\r\n") + "\n"
+            else:
+                # The close is an append like every other line on this log:
+                # the section goes after what is already there, never over it.
+                evidence = body.replace("\r\n", "\n").replace("\r", "\n").strip("\n")
+                block = f"\n{TERMINAL_HEADING}: {terminal}\n\n{evidence}\n"
+            with open(path, "a", encoding="utf-8", newline="\n") as handle:
+                handle.write(block)
     except OSError as error:
         return {"error": f"unwritable run state: {error}"}
-    written = {
-        "run": run,
-        "tree": tree,
-        "path": str(path),
-        "mode": "note" if note is not None else "artifact",
-    }
+    if artifact is not None:
+        mode = "artifact"
+    elif terminal is not None:
+        mode = "terminal"
+    else:
+        mode = "note"
+    written = {"run": run, "tree": tree, "path": str(path), "mode": mode}
     if artifact is not None:
         written["replaced"] = replaced
+    if terminal is not None:
+        written["terminal"] = terminal
     return {"run_state": written}
 
 
