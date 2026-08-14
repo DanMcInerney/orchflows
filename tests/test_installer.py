@@ -45,6 +45,12 @@ requires_tomllib = unittest.skipIf(
 )
 
 
+# Spelled out rather than read off ``install``: a can-fail run against a
+# revision that has no such constant must fail on behavior, not on an
+# AttributeError raised in setUp. One case pins the constant to this literal.
+SINK_ENV_VAR = "ORCHFLOWS_STATE_HOME"
+
+
 def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -1840,6 +1846,170 @@ class TestCodexHome(unittest.TestCase):
 
             for dest, _ in plan.codex_skills:
                 self.assertEqual(home / ".codex" / "skills", dest.parent.parent)
+
+
+class TestRuntimeDirsSeedTheSink(unittest.TestCase):
+    """An install of either scope seeds the one user-scope sink, and no
+    install seeds project-local durable state. Only ``<project>/.orch/bin``
+    stays in the repository: installed scripts are not state."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.tmp = Path(self._tmp.name).resolve()
+        self.home = self.tmp / "home"
+        self.home.mkdir()
+        self.project = self.tmp / "project"
+        (self.project / ".git").mkdir(parents=True)
+        self.sink = self.home / ".orchflows" / "state"
+        # The suite guard points ORCHFLOWS_STATE_HOME at a temporary sink for
+        # every test in the process, and `_state_sink` honours it. These cases
+        # are about the home-derived default, so they clear it for their own
+        # duration — the documented single-call opt-out.
+        guard = patch.dict(os.environ)
+        guard.start()
+        self.addCleanup(guard.stop)
+        os.environ.pop(SINK_ENV_VAR, None)
+
+    def planned_paths(self, plan) -> list:
+        """Every filesystem path the plan would write or create."""
+
+        paths = [plan.lib_home, plan.scope_home, plan.bin_dir, plan.receipt_path]
+        paths.extend(plan.runtime_dirs)
+        for src, dest in list(plan.lib_copies) + list(plan.scripts):
+            del src
+            paths.append(dest)
+        for pair in (list(plan.claude_adapters) + list(plan.codex_prompts)
+                     + list(plan.codex_skills) + list(plan.by_name)
+                     + list(plan.claude_agents) + list(plan.codex_agents)
+                     + list(plan.configs)):
+            paths.append(pair[0])
+        for block in plan.blocks:
+            paths.append(block.dest)
+        for extra in (plan.host_block, plan.claude_import):
+            if extra is not None:
+                paths.append(extra.dest)
+        return paths
+
+    @staticmethod
+    def under(root: Path, path: Path) -> bool:
+        """Whole segments only: ``.orchflows`` is not under ``.orch``."""
+
+        return path == root or root in path.parents
+
+    def assert_under(self, root: Path, path: Path, why: str):
+        self.assertTrue(self.under(root, path), f"{path}: {why}")
+
+    def test_both_scopes_seed_the_sink_and_neither_seeds_project_state(self):
+        with patch.object(install.Path, "home", return_value=self.home):
+            user = install._runtime_dirs("user", None)
+            project = install._runtime_dirs("project", self.project)
+
+        expected = [
+            self.sink / "tickets",
+            self.sink / "runs",
+            self.sink / "friction",
+            self.sink / "improvement" / "proposals",
+        ]
+        for scope, seeded in (("user", user), ("project", project)):
+            with self.subTest(scope=scope):
+                self.assertEqual(expected, list(seeded))
+                for path in seeded:
+                    self.assert_under(self.sink, path, "seeded outside the sink")
+                    self.assertFalse(
+                        self.under(self.project / ".orch", path),
+                        f"{path}: project-local durable state",
+                    )
+
+    def test_the_override_redirects_what_an_install_seeds(self):
+        """A user who redirects the sink gets the root they read seeded, and
+        the suite's own redirect keeps a forgetful installer test off the real
+        sink. A resolver the installer ignored would sit outside that guard."""
+
+        elsewhere = self.tmp / "elsewhere"
+        with patch.object(install.Path, "home", return_value=self.home), patch.dict(
+            os.environ, {SINK_ENV_VAR: str(elsewhere)}
+        ):
+            seeded = install._runtime_dirs("user", None)
+        # graded before anything this item introduced is named, so a can-fail
+        # run reads as wrong behavior rather than as a missing attribute
+        self.assertTrue(seeded)
+        for path in seeded:
+            self.assert_under(elsewhere, path, "the override was not honoured")
+
+        for blank in ("", "   "):
+            with patch.object(install.Path, "home", return_value=self.home), patch.dict(
+                os.environ, {SINK_ENV_VAR: blank}
+            ):
+                self.assertEqual(self.sink, install._state_sink(), blank)
+        self.assertEqual(SINK_ENV_VAR, install.STATE_HOME_ENV_VAR)
+
+    def test_the_bin_dir_is_unchanged_in_shape(self):
+        """The one thing that stays in the repository stays there."""
+
+        with patch.object(install.Path, "home", return_value=self.home):
+            self.assertEqual(
+                self.home / ".orchflows" / "bin", install._bin_dir("user", None)
+            )
+            self.assertEqual(
+                self.project / ".orch" / "bin",
+                install._bin_dir("project", self.project),
+            )
+
+    def test_a_real_plan_writes_no_project_runtime_state(self):
+        (self.home / ".claude").mkdir()
+        with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("claude"):
+            project_plan = install.build_plan("project", self.project)
+            user_plan = install.build_plan("user", None)
+
+        orch = self.project / ".orch"
+        for path in self.planned_paths(project_plan):
+            if self.under(orch, path):
+                self.assertEqual(
+                    orch / "bin", path,
+                    f"{path}: the only path left under a project .orch/ is bin/",
+                )
+        # The project plan stays the thin stub it already was: blocks and a
+        # receipt, no directories. `_runtime_dirs("project", ...)` returning
+        # sink paths is what stops a *future* caller seeding project state;
+        # nothing seeds the sink on a project install, and nothing needs to —
+        # every writer creates it on demand.
+        self.assertEqual([], list(project_plan.runtime_dirs))
+
+        planned = set(user_plan.runtime_dirs)
+        for name in ("tickets", "runs", "friction"):
+            self.assertIn(self.sink / name, planned)
+        self.assertIn(self.sink / "improvement" / "proposals", planned)
+        self.assertNotIn(self.home / ".orchflows" / "friction", planned)
+
+    def test_no_planned_line_in_either_scope_names_a_dot_orch_friction_path(self):
+        """Held mechanically against a temporary home, so it holds on a host
+        whose real home differs from this one's."""
+
+        (self.home / ".claude").mkdir()
+        with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("claude"):
+            for scope, root in (("user", None), ("project", self.project)):
+                with self.subTest(scope=scope):
+                    plan = install.build_plan(scope, root)
+                    printed = io.StringIO()
+                    with redirect_stdout(printed):
+                        install.print_plan(plan)
+                    for line in printed.getvalue().splitlines():
+                        self.assertNotIn(
+                            ".orch/friction", line.replace(os.sep, "/"), line
+                        )
+
+    def test_the_project_scope_docstring_matches_behavior(self):
+        collapsed = " ".join((install.__doc__ or "").split())
+        self.assertIn(
+            "an install seeds the one sink ``_state_sink`` names and never a "
+            "project runtime tree", collapsed,
+        )
+        self.assertIn(
+            "Of ``<project>/.orch`` only ``bin/`` is still written", collapsed
+        )
+        self.assertNotIn("project runtime directories", collapsed)
+        self.assertEqual((".orchflows", "state"), install.STATE_SINK_SUBPATH)
 
 
 if __name__ == "__main__":

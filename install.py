@@ -44,6 +44,11 @@ rendered against the *user* library paths since a project carries no
 library of its own, plus a minimal receipt for those blocks. Both stay
 inline marker blocks (never an import) since a project is committable and
 must stay self-contained for teammates without the same ``~/.orchflows``.
+Durable state is user-scope in either scope: an install seeds the one sink
+``_state_sink`` names and never a project runtime tree, so a record carries
+the project it arose in as a field rather than by its location. Of
+``<project>/.orch`` only ``bin/`` is still written, by a project install that
+copies scripts — installed scripts are not state.
 
 The receipt records ``source_commit`` (the installed-from repo's git HEAD,
 null when unavailable); a rerun whose HEAD has moved prints the drift.
@@ -159,16 +164,44 @@ def _bin_dir(scope: str, project_root: Path | None) -> Path:
     return _require_project_root(project_root) / ".orch" / "bin"
 
 
+# ``scripts/state_root.py`` owns this pair. The installer cannot import it: it
+# runs before any script is installed. Stated once here, and linked rather than
+# restated in prose.
+STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
+STATE_SINK_SUBPATH = (".orchflows", "state")
+
+
+def _state_sink() -> Path:
+    """The one user-scope sink an install of either scope seeds.
+
+    The override is honoured for two reasons, not one: a user who redirects
+    the sink gets the root they actually read seeded, and the test suite's own
+    redirect keeps an installer test that forgets to fake ``Path.home`` off the
+    real sink. A resolver the installer ignored would sit outside that guard.
+    """
+
+    override = os.environ.get(STATE_HOME_ENV_VAR, "").strip()
+    if override:
+        return Path(override).expanduser()
+    return Path.home().joinpath(*STATE_SINK_SUBPATH)
+
+
 def _runtime_dirs(scope: str, project_root: Path | None) -> list[Path]:
-    if scope == "user":
-        return [Path.home() / ".orchflows" / "friction", Path.home() / ".orchflows" / "bin"]
-    orch = _require_project_root(project_root) / ".orch"
+    """The directories an install seeds — the same four in either scope.
+
+    Durable state is user-scope: one sink, reached from any repository, so a
+    project install seeds nothing project-local. ``bin/`` is not state and is
+    absent here; the script-copy step creates it where ``_bin_dir`` puts it.
+    """
+
+    if scope != "user":
+        _require_project_root(project_root)
+    sink = _state_sink()
     return [
-        orch / "tickets",
-        orch / "runs",
-        orch / "friction",
-        orch / "improvement" / "proposals",
-        orch / "bin",
+        sink / "tickets",
+        sink / "runs",
+        sink / "friction",
+        sink / "improvement" / "proposals",
     ]
 
 
