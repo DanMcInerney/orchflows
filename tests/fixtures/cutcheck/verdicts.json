@@ -7,6 +7,13 @@
   "exit": 0,
   "lines": []
  },
+ "cutcheck-evalhead": {
+  "exit": 0,
+  "lines": [
+   "01-evalhead: family 1: extraction-gap: criterion 1: **An interpreter evaluating its argument is never executed.** `python3 -c \"import pathlib;pathlib.Pa",
+   "cutcheck-evalhead: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-evalhead/coverage.md"
+  ]
+ },
  "cutcheck-f1-cuttime": {
   "exit": 1,
   "lines": [
@@ -117,6 +124,7 @@
   "exit": 1,
   "lines": [
    "01-pre-existing: family 1: swallowed-exit: criterion 2: python3 -m unittest discover -s tests | tail -5",
+   "01-pre-existing: family 1: verdict-in-output: criterion 3: grep -c \"SCRIPT_NAMES\" install.py",
    "02-authored-here: family 1: already-passes: criterion 1: grep -n \"SCRIPT_NAMES\" install.py",
    "cutcheck-provenance: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-provenance/coverage.md"
   ]
@@ -139,8 +147,8 @@
   "exit": 0,
   "lines": [
    "01-verdict: family 1: verdict-in-output: criterion 1: grep -c \"SCRIPT_NAMES\" install.py",
-   "01-verdict: family 1: verdict-in-output: criterion 2: git archive ac8791a",
-   "01-verdict: family 1: verdict-in-output: criterion 3: git diff ac8791a -- install.py",
+   "01-verdict: family 1: git-no-history: criterion 2: git archive ac8791a",
+   "01-verdict: family 1: git-no-history: criterion 3: git diff ac8791a -- install.py",
    "cutcheck-verdict-in-output: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-verdict-in-output/coverage.md"
   ]
  }

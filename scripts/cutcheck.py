@@ -12,14 +12,21 @@ inside a scratch copy of the baseline revision and, when it fails there,
 inside a scratch copy of HEAD -- both built beside the tree by ``git
 archive``, never in the tree under test. An oracle that already passes
 at the baseline, that finds nothing at either revision, or that fails at
-both from a missing path, class or module is reported. When HEAD is the
-baseline the HEAD half is skipped: at cut time nothing has landed, so a
-baseline failure is what a discriminating oracle looks like. An oracle whose
+both from a missing path, class or module is reported, and so is one that no
+revision runs at all: a command that is absent or that never returns is a cut
+defect wherever it is read. When HEAD is the baseline the HEAD half is
+skipped: at cut time nothing has landed, so a baseline failure is what a
+discriminating oracle looks like. Execution therefore decides two classes
+there and only two -- the oracle that already passes, and the one nothing can
+run -- because every other class needs a reading of the landed work to compare
+against, and at cut time there is none. An oracle whose
 criterion states ``provenance: pre-existing`` is an invariant -- it passed
 before the work and has to pass after -- so discrimination is not asked of it,
 and nothing else is forgiven it. A command carrying its verdict in what it
-prints rather than in its exit status -- a count, an archive, a diff without
-``--exit-code`` -- is reported as one this tool cannot decide.
+prints rather than in its exit status -- a count -- is reported as one this
+tool cannot decide. So is every ``git`` oracle: a ``git archive`` copy carries
+no history, so no git command reads the tree under test there, and none is
+run.
 
 Path reality: a path an oracle names exists at the baseline, or the item
 itself or a ``depends_on`` ancestor creates it; a ``file:line`` or
@@ -54,8 +61,8 @@ Shape: the command text itself carries two defects. A pipeline through
 per-item scope check written against a cumulative ``<base>..HEAD`` range
 answers about the whole branch, not the item.
 
-Both of those set the exit status. An extraction gap and an absent
-coverage map do not: a
+Both of those set the exit status. An extraction gap, an absent coverage
+map, and a class this tool reports as one it cannot decide do not: a
 criterion whose oracle no extractor recognized is reported on its own
 line so silent under-coverage stays visible, but real tickets state many
 criteria in prose, and a gap that failed the run would turn every clean
@@ -65,7 +72,10 @@ decide.
 cutcheck never edits a ticket; it reports, and the decomposer repairs.
 An extracted command is ticket content and ticket content is untrusted,
 so commands run argv-only, never through a shell, under a timeout, with
-a working directory inside a scratch copy.
+a working directory inside a scratch copy. A span whose own arguments are
+the program -- a shell, or an interpreter reading code from ``-c``, ``-e``,
+``--eval``, ``--exec`` or a bare ``-`` -- is recognized by no extractor, so it
+runs nowhere and surfaces as an extraction gap.
 """
 
 import argparse
@@ -105,6 +115,8 @@ SWALLOWED_EXIT = "swallowed-exit"
 CUMULATIVE_RANGE = "cumulative-range"
 EXTRACTION_GAP = "extraction-gap"
 VERDICT_IN_OUTPUT = "verdict-in-output"
+UNRUNNABLE_ORACLE = "unrunnable-oracle"
+GIT_NO_HISTORY = "git-no-history"
 MISSING_PATH = "missing-path"
 UNRESOLVED_CITATION = "unresolved-citation"
 QUOTE_NOT_AT_CITATION = "quote-not-at-citation"
@@ -124,6 +136,8 @@ FAMILY_OF = {
     CUMULATIVE_RANGE: FAMILY,
     EXTRACTION_GAP: FAMILY,
     VERDICT_IN_OUTPUT: FAMILY,
+    UNRUNNABLE_ORACLE: FAMILY,
+    GIT_NO_HISTORY: FAMILY,
     MISSING_PATH: FAMILY_2,
     UNRESOLVED_CITATION: FAMILY_2,
     QUOTE_NOT_AT_CITATION: FAMILY_2,
@@ -138,7 +152,9 @@ FAMILY_OF = {
 }
 # Advisory classes are printed and never set the exit status. A map that is
 # not there is a fact about the run, not a defect of the cut.
-ADVISORY = frozenset({EXTRACTION_GAP, COVERAGE_MAP_ABSENT, VERDICT_IN_OUTPUT})
+ADVISORY = frozenset(
+    {EXTRACTION_GAP, COVERAGE_MAP_ABSENT, VERDICT_IN_OUTPUT, GIT_NO_HISTORY}
+)
 
 # The acceptance-coverage map: one row per spec criterion, naming the item,
 # the gate, or declared remainder that answers for it.
@@ -175,12 +191,18 @@ COMMAND_HEADS = (
     "rg",
 )
 SEARCH_HEADS = ("grep", "rg")
+GIT_HEAD = "git"
+# An interpreter under one of these reads its program from the line, or from
+# stdin, rather than from the tree: the same hazard a shell head is refused
+# for, through a head an extractor otherwise accepts. Only these heads
+# evaluate -- `grep -c` counts and `grep -e` names a pattern.
+EVAL_HEADS = ("node", "npm", "python", "python3")
+EVAL_ARGS = frozenset({"-c", "-e", "--eval", "--exec", "-"})
 # A criterion states the provenance of its own oracle; an oracle stated
 # pre-existing is an invariant, and holding still is what it is for.
 PRE_EXISTING_RE = re.compile(r"provenance:\s*pre-existing", re.I)
-# Counting prints the verdict; only these flags put a diff's verdict in its exit.
+# Counting prints the verdict rather than exiting on it.
 COUNT_FLAG_RE = re.compile(r"^-[A-Za-z]*c[A-Za-z]*$|^--count$")
-DECIDING_DIFF_FLAGS = ("--exit-code", "--quiet", "--check")
 CITATION_RE = re.compile(r"\b([\w][\w./-]*\.[A-Za-z0-9]{1,5}):(\d+)")
 SECTION_CITATION_RE = re.compile(r"\b([\w][\w./-]*\.[A-Za-z0-9]{1,5})\s+§(\d+)")
 # A quotation opens and closes at a word boundary. A span that wrapped a line
@@ -287,7 +309,8 @@ def _same_revision(rev, worktree_root):
     fails at the baseline and would fail again at HEAD. "Does this pass once
     the work lands" is unanswerable before the work lands, so the honest
     reading is to not ask -- the HEAD half is skipped and a baseline failure
-    alone is clean. Post-work the two differ and the full rule applies.
+    is clean unless the command could not run at all, which no landing work
+    would change. Post-work the two differ and the full rule applies.
     """
 
     seen = set()
@@ -329,9 +352,22 @@ def _commands(criterion):
     found = []
     for span in BACKTICK_RE.findall(criterion):
         candidate = span.strip()
-        if candidate.split(" ", 1)[0] in COMMAND_HEADS:
-            found.append(candidate)
+        argv = candidate.split()
+        if not argv or argv[0] not in COMMAND_HEADS or _evaluates_code(argv):
+            continue
+        found.append(candidate)
     return found
+
+
+def _evaluates_code(argv):
+    """Does this span hand an interpreter a program to evaluate?
+
+    ``python3 -c '<anything>'`` is ``bash -lc '<anything>'`` through a head an
+    extractor accepts: the argument is the program, and ticket content is
+    untrusted. A bare ``-`` is the same span with the program left on stdin.
+    """
+
+    return argv[0] in EVAL_HEADS and any(token in EVAL_ARGS for token in argv[1:])
 
 
 def _shape(command):
@@ -384,22 +420,17 @@ def _run_once(command, tree):
 def _verdict_in_output(command):
     """Is this a command whose exit status carries no verdict?
 
-    ``grep -c`` prints a count and exits on whether it printed anything;
-    ``git archive`` and a ``git diff`` without ``--exit-code`` exit 0 almost
-    however the tree reads. A criterion saying "reports 0" or "is
-    byte-identical" is judged by that text, which no exit status carries, so
-    the honest report is that cutcheck cannot decide it.
+    ``grep -c`` prints a count and exits on whether it printed anything. A
+    criterion saying "reports 0" is judged by that text, which no exit status
+    carries, so the honest report is that cutcheck cannot decide it. The git
+    commands that read the same way need no clause here: no git oracle is
+    decidable in a copy with no history, so the head decides all of them.
     """
 
     argv = command.split()
-    head, rest = argv[0], argv[1:]
-    if head in SEARCH_HEADS:
-        return any(COUNT_FLAG_RE.match(token) for token in rest)
-    if head != "git" or not rest:
+    if argv[0] not in SEARCH_HEADS:
         return False
-    if rest[0] == "archive":
-        return True
-    return rest[0] == "diff" and not any(f in rest for f in DECIDING_DIFF_FLAGS)
+    return any(COUNT_FLAG_RE.match(token) for token in argv[1:])
 
 
 def _discrimination(command, baseline_tree, head_tree):
@@ -407,6 +438,10 @@ def _discrimination(command, baseline_tree, head_tree):
 
     An oracle discriminates when it fails at the baseline and passes once the
     work has landed, so HEAD is only consulted after the baseline read fails.
+    A baseline read that could not run at all is revision-independent -- no
+    work makes an absent command exist -- so it is reported without asking
+    HEAD, and at cut time, where there is no HEAD half to ask, it is reported
+    all the same.
     """
 
     at_baseline = _exit_code(command, baseline_tree)
@@ -414,6 +449,8 @@ def _discrimination(command, baseline_tree, head_tree):
         return None
     if at_baseline == 0:
         return ALREADY_PASSES
+    if at_baseline in (UNRUNNABLE, TIMED_OUT):
+        return UNRUNNABLE_ORACLE
     if head_tree is None:
         return None
     at_head = _exit_code(command, head_tree)
@@ -474,8 +511,11 @@ def _granted(frontmatter, siblings):
 def _covered(rel, scopes):
     """Is ``rel`` inside one of ``scopes``?
 
-    A bare filename names no directory, so a scope entry of that name and any
-    granted directory could hold it; only a rooted path is provably outside.
+    Containment runs one way: a grant covers itself and what is under it, never
+    the directory that holds it -- a grant of one file is no licence over its
+    parent. A bare filename names no directory, so the one grant that provably
+    holds it is the grant whose own basename it is; a granted directory that
+    happens to be somewhere it could live covers nothing.
     """
 
     target = rel.strip().strip("/")
@@ -483,11 +523,9 @@ def _covered(rel, scopes):
         scope = entry.strip().strip("/")
         if not scope:
             continue
-        if target == scope or target.startswith(scope + "/") or scope.startswith(target + "/"):
+        if target == scope or target.startswith(scope + "/"):
             return True
-        if "/" not in target and (
-            entry.strip().endswith("/") or scope.rsplit("/", 1)[-1] == target
-        ):
+        if "/" not in target and scope.rsplit("/", 1)[-1] == target:
             return True
     return False
 
@@ -889,13 +927,19 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
                     for arg in missing
                 )
                 continue
+            if command.split(" ", 1)[0] == GIT_HEAD:
+                # `git archive` writes no `.git`, so a git command run in the
+                # scratch tree walks up to whatever repository encloses it and
+                # answers about that one. No git oracle is decidable here.
+                findings.append((ticket_id, number, GIT_NO_HISTORY, command))
+                continue
+            if _verdict_in_output(command):
+                findings.append((ticket_id, number, VERDICT_IN_OUTPUT, command))
+                continue
             if invariant:
                 # An oracle the criterion states is pre-existing is an
                 # invariant: it passed before this work and has to pass after,
                 # so discriminating is not its job and never was.
-                continue
-            if _verdict_in_output(command):
-                findings.append((ticket_id, number, VERDICT_IN_OUTPUT, command))
                 continue
             klass = _discrimination(command, baseline_tree, head_tree)
             if klass is not None:

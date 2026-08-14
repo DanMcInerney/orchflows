@@ -13,11 +13,13 @@ covered remainder still executes.
 
 Critique the cut, when it issued more than one item or any edge, before
 executing it: `orch-critique`, independent of the decomposition, supplying its
-Require by name — the ticket directory with its item ids, the spec, and
-[references/cut-lens.md](references/cut-lens.md) — its packet's `authority`
-granting write over that directory alone, so it repairs what it finds;
-`cutcheck.py` re-run to exit 0, `--baseline` still the revision the set was
-cut from, confirms the repair, and a blocking finding it cannot repair rides
+Require by name — the ticket directory with its item ids, the spec,
+[references/cut-lens.md](references/cut-lens.md), and the cutcheck report
+`orch-decompose` returned — its packet's `authority` granting write over
+that directory alone, so it repairs what it finds; `cutcheck.py` re-run to
+exit 0, `--baseline` still the revision the set was cut from, confirms the
+repairs cutcheck can decide, and a blocking finding it cannot repair, or a
+judgment cutcheck cannot decide — unowned outcome, slicing fidelity — rides
 decision_gap. When the caller asked for a plan or the spec sets `plan_gate`,
 stop and return the plan — items, edges, budgets, risks, uncovered remainder,
 findings — resuming only on approval, against the frozen plan.

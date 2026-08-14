@@ -387,6 +387,43 @@ class ShellHeadTest(unittest.TestCase):
         self.assertIn(cutcheck.EXTRACTION_GAP, lines[0])
 
 
+EVAL_MARK = Path("/tmp/cutcheck-evalhead-ran")
+
+
+class EvalHeadTest(unittest.TestCase):
+    """An interpreter handed its program on the line is a shell by another head."""
+
+    def setUp(self):
+        EVAL_MARK.unlink(missing_ok=True)
+        self.addCleanup(EVAL_MARK.unlink, True)
+        self.result = run_cutcheck("cutcheck-evalhead")
+
+    def test_the_evaluated_span_did_not_run(self):
+        self.assertFalse(EVAL_MARK.exists(), self.result.stdout)
+
+    def test_the_span_is_reported_rather_than_run(self):
+        lines = [line for line in self.result.stdout.splitlines() if "01-evalhead" in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.EXTRACTION_GAP, lines[0])
+
+    def test_the_interpreter_oracles_real_tickets_state_still_extract(self):
+        for command in (
+            "python3 -m unittest discover -s tests",
+            "python3 install.py --dry-run",
+            "python3 tools/validate.py",
+            "python3 -m pytest tests/test_cutcheck.py::CleanSetTest",
+        ):
+            self.assertEqual(
+                cutcheck._commands("`{}`".format(command)), [command], command
+            )
+
+    def test_a_search_flag_that_only_looks_like_one_still_extracts(self):
+        self.assertEqual(
+            cutcheck._commands('`grep -c "SCRIPT_NAMES" install.py`'),
+            ['grep -c "SCRIPT_NAMES" install.py'],
+        )
+
+
 class ParserReuseTest(unittest.TestCase):
     def test_frontmatter_and_section_parsers_are_the_ticket_scripts_own(self):
         self.assertIs(cutcheck._parse_frontmatter, tickets._parse_frontmatter)
@@ -418,6 +455,11 @@ class ProvenanceTest(unittest.TestCase):
         self.assertEqual(len(lines), 1, self.result.stdout)
         self.assertIn("01-pre-existing", lines[0])
 
+    def test_an_undecidable_oracle_is_told_whatever_the_provenance(self):
+        lines = [line for line in self.lines if cutcheck.VERDICT_IN_OUTPUT in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn("01-pre-existing", lines[0])
+
 
 class VerdictInOutputTest(unittest.TestCase):
     """A command whose verdict is in what it prints is one cutcheck cannot judge."""
@@ -428,13 +470,19 @@ class VerdictInOutputTest(unittest.TestCase):
             line for line in self.result.stdout.splitlines() if "01-verdict" in line
         ]
 
-    def test_the_count_the_archive_and_the_diff_are_each_reported(self):
-        self.assertEqual(len(self.lines), 3, self.result.stdout)
-        for line in self.lines:
-            self.assertIn(cutcheck.VERDICT_IN_OUTPUT, line)
+    def test_the_count_is_the_one_reported_for_what_it_prints(self):
+        lines = [line for line in self.lines if cutcheck.VERDICT_IN_OUTPUT in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn("criterion 1", lines[0])
 
-    def test_the_class_is_advisory_and_the_set_exits_zero(self):
+    def test_the_archive_and_the_diff_are_reported_for_their_head(self):
+        lines = [line for line in self.lines if cutcheck.GIT_NO_HISTORY in line]
+        self.assertEqual(len(lines), 2, self.result.stdout)
+        self.assertEqual(len(self.lines), 3, self.result.stdout)
+
+    def test_both_classes_are_advisory_and_the_set_exits_zero(self):
         self.assertIn(cutcheck.VERDICT_IN_OUTPUT, cutcheck.ADVISORY)
+        self.assertIn(cutcheck.GIT_NO_HISTORY, cutcheck.ADVISORY)
         self.assertEqual(self.result.returncode, 0, self.result.stdout)
 
 
@@ -564,6 +612,66 @@ class RecordedVerdictTest(unittest.TestCase):
         for run in fixture_sets():
             with self.subTest(run=run):
                 self.assertEqual(verdict(run), recorded[run])
+
+
+class GitOracleTest(unittest.TestCase):
+    """A `git archive` copy carries no history, so no git oracle is decidable."""
+
+    def test_every_git_span_is_reported_and_none_of_them_is_executed(self):
+        ticket = FIXTURES / "cutcheck-verdict-in-output" / "01-verdict.md"
+        with mock.patch.object(cutcheck, "_exit_code") as ran:
+            findings = cutcheck._check_ticket(ticket, ROOT, None, {})
+        ran.assert_not_called()
+        classes = [klass for _, _, klass, _ in findings]
+        self.assertEqual(classes.count(cutcheck.GIT_NO_HISTORY), 2, classes)
+
+    def test_the_head_decides_it_rather_than_a_second_reading_of_the_flags(self):
+        for command in ("git diff --exit-code", "git status --porcelain"):
+            self.assertFalse(cutcheck._verdict_in_output(command), command)
+
+
+class CutTimeDecidabilityTest(unittest.TestCase):
+    """At cut time execution decides two classes: already-passes, and unrunnable."""
+
+    def _class(self, code):
+        with mock.patch.object(cutcheck, "_exit_code", return_value=code):
+            return cutcheck._discrimination("pytest tests", Path("/baseline"), None)
+
+    def test_an_absent_command_is_a_defect_at_the_revision_it_was_cut_from(self):
+        self.assertEqual(self._class(cutcheck.UNRUNNABLE), cutcheck.UNRUNNABLE_ORACLE)
+
+    def test_a_command_that_never_returns_is_one_too(self):
+        self.assertEqual(self._class(cutcheck.TIMED_OUT), cutcheck.UNRUNNABLE_ORACLE)
+
+    def test_a_plain_baseline_failure_stays_unjudged_at_cut_time(self):
+        self.assertIsNone(self._class(1))
+
+    def test_already_passing_is_the_other_class_cut_time_decides(self):
+        self.assertEqual(self._class(0), cutcheck.ALREADY_PASSES)
+
+    def test_an_oracle_nothing_can_run_sets_the_exit_status(self):
+        self.assertNotIn(cutcheck.UNRUNNABLE_ORACLE, cutcheck.ADVISORY)
+
+
+class ScopeContainmentTest(unittest.TestCase):
+    """A grant covers what is under it, never the directory that holds it."""
+
+    def test_a_grant_of_one_file_is_no_grant_over_its_parent(self):
+        self.assertFalse(cutcheck._covered("scripts", ["scripts/cutcheck.py"]))
+
+    def test_a_directory_grant_does_not_cover_a_filename_it_never_names(self):
+        self.assertFalse(cutcheck._covered("pins.json", ["tests/fixtures/cutcheck/"]))
+
+    def test_a_grants_own_basename_is_the_file_it_granted(self):
+        self.assertTrue(cutcheck._covered("cutcheck.py", ["scripts/cutcheck.py"]))
+
+    def test_a_path_under_a_granted_directory_is_covered(self):
+        self.assertTrue(
+            cutcheck._covered(
+                "tests/fixtures/cutcheck/cutcheck-evalhead/01-evalhead.md",
+                ["tests/fixtures/cutcheck/"],
+            )
+        )
 
 
 if __name__ == "__main__":

@@ -30,6 +30,9 @@ discrimination alone.
 2. **Shape is judged whatever the provenance.** `python3 -m unittest discover -s
    tests | tail -5` reports OK. oracle_class: deterministic. provenance:
    pre-existing.
+3. **An undecidable oracle is told whatever the provenance.** `grep -c
+   "SCRIPT_NAMES" install.py` reports 1, which its exit status does not carry.
+   oracle_class: deterministic. provenance: pre-existing.
 
 ## Result
 
