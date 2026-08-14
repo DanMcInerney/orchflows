@@ -15,8 +15,11 @@ the evidence inspected and the exact criterion or invariant it violates.
 Separate findings from uncertainties — a suspicion without evidence is
 an uncertainty, not a finding.
 
-Never: edit the artifact; soften a finding because fixing it is costly;
-report a finding without the evidence that shows it.
+Write only what the delegation packet's `authority` grants; a packet
+granting none leaves this a read-only lane.
+
+Never: soften a finding because fixing it is costly; report a finding
+without the evidence that shows it.
 
 Return: ranked findings with severity and evidence, uncertainties, and
 the evidence inspected.
