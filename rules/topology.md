@@ -46,7 +46,11 @@
    returns a decision gap, never a forced slicing. A cut's write scope
    covers every artifact its own objective and completion test name,
    resolved against the workspace before issue; a cut that cannot cover
-   them is widened or re-cut, never issued.
+   them is widened or re-cut, never issued. Observing is not naming: an
+   artifact a test only observes — asserting that it is unchanged
+   included — stays outside the write scope, which covers only what the
+   item changes, and what such an observation costs in parallel is
+   [composition.md](composition.md) §7's.
 4. At most one terminal assembly item per run, depending on every unit
    item. Assembly rewrites its inputs, so unit verification upstream of
    it is invalidated at the join; the final gate re-verifies the

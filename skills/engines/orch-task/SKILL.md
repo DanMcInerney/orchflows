@@ -12,16 +12,17 @@ oracle with its oracle_class on any criterion, naming the missing
 part — a request that cannot name one belongs to orch-spec.
 
 Claim the ticket (set `claimed_by`, `claimed_at`, status `claimed`).
-Derive the item's workspace per the workspace cell of the pack the
+Isolate the item's workspace per the workspace cell of the pack the
 ticket names — a ticket naming none works at its plain-path write
-scope — before dispatch. Dispatch exactly one fresh child through
-`orch-delegate` — or execute inline under
-[rules/delegation.md](../../../rules/delegation.md) §2's independence
-condition; the ladder's cheaper rungs apply inside the child — naming
-the ticket's executor as the applied skill, with the ticket path plus
-the derived workspace identity as the packet. `tickets.py packet`
-emits that packet or names the part the ticket is missing; a refusal
-here is the cut's defect, never read the body to repair it yourself.
+scope — whose establishment, when the ticket's `isolation` field
+declares one, is per orch-workspace by the step its packet emits.
+Dispatch exactly one fresh child through `orch-delegate` — or execute
+inline under [rules/delegation.md](../../../rules/delegation.md) §2's
+independence condition; the ladder's cheaper rungs apply inside the
+child — naming the ticket's executor as the applied skill, with the
+ticket path as the packet. `tickets.py packet` emits that packet or
+names the part the ticket is missing; a refusal here is the cut's
+defect, never read the body to repair it yourself.
 
 When a criterion's oracle carries `authored-here` provenance and the
 ticket's `independence` reads `checker`, dispatch `orch-check` as one
@@ -33,13 +34,14 @@ entries supersede what they cover, per
 Accept the result once through `orch-integrate`. On `suspended` — the
 executor has written its `## Handoff` — set status `suspended`, claim
 fields kept, for the next claim to resume from it; never the join's
-reject path. On any other disposition, integrate the result into the
-run workspace per the ticket's pack workspace cell when one is named —
-a conflict during integration routes to the cell's conflict binding;
-derived evidence the cell defines is refreshed at the fixed revision
-before any lens runs — on needs-verify run `orch-verify` for exactly
-the uncovered criteria; on rejected record the blame class. Record
-the join's terminal status in the ticket.
+reject path. On any other disposition, grade the declared isolation,
+then integrate the result into the run workspace per the ticket's pack
+workspace cell when one is named — a conflict during integration
+routes to the cell's conflict binding; derived evidence the cell
+defines is refreshed at the fixed revision before any lens runs — on
+needs-verify run `orch-verify` for exactly the uncovered criteria; on
+rejected record the blame class. Record the join's terminal status in
+the ticket.
 
 Never: run two executors for one ticket; accept a result that skipped
 the join; re-verify evidence the join already accepted.

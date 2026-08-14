@@ -17,6 +17,8 @@ Subcommands:
     claim <run> <id> --by <name>
     set-status <run> <id> <status>
     packet <run> <id> --reply-to <name> [--workspace <path>]
+    result <run> <id> --section <name> (--file <path> | --text <string>) [--append]
+    run-state <run> (--note <line> | --artifact <name> (--file <path> | --text <string>))
 """
 
 from __future__ import annotations
@@ -58,6 +60,45 @@ PACKET_SECTIONS = (
     ("inputs", "Fixed inputs"),
     ("return_contract", "Return fields"),
 )
+# contracts/work-item.md: the closed set of sections an executor writes.
+# Every other heading is cut-time content, and terminal `status` is the
+# join's alone — which is why `result` writes no frontmatter at all.
+EXECUTOR_SECTIONS = ("Result", "Verification", "Feedback", "Risks", "Handoff")
+EXECUTOR_SECTIONS_BY_KEY = {name.lower(): name for name in EXECUTOR_SECTIONS}
+# contracts/work-item.md states the sections in this order; a created section
+# takes its place in it, never the end of the file.
+SECTION_ORDER = (
+    "Objective",
+    "Fixed inputs",
+    "Completion test",
+    "Return fields",
+) + EXECUTOR_SECTIONS
+SECTION_RANK = {name.lower(): i for i, name in enumerate(SECTION_ORDER)}
+# contracts/work-item.md: the one `isolation` value that means this item
+# executes in a workspace of its own. The sibling script grades the same
+# declaration; the spelling belongs to the contract, not to either script.
+REQUIRED_ISOLATION = "required"
+RESULT_USAGE = (
+    "result <run> <id> --section <name> (--file <path> | --text <string>) [--append]"
+)
+RUN_STATE_USAGE = (
+    "run-state <run> (--note <line> | --artifact <name> "
+    "(--file <path> | --text <string>))"
+)
+
+
+def normalized_isolation(declared) -> str:
+    """contracts/work-item.md's `isolation`, read one way by both scripts.
+
+    Absent or empty reads `none`. Backticks are ordinary frontmatter
+    punctuation here, stripped exactly as `_normalized_scope` and the
+    executor check strip them, so the value this script emits an
+    establishment step for is the value `scripts/workspace.py` grades.
+    Normalizing it in two places is how an emitted step and a skipped
+    grade can disagree behind a green suite.
+    """
+
+    return str(declared or "none").strip().strip("`").strip() or "none"
 
 
 # --- repository / filesystem helpers ---------------------------------------
@@ -104,6 +145,26 @@ def _tickets_root():
     if repo_root is None:
         return None
     return repo_root / ".orch" / "tickets"
+
+
+def _runs_root():
+    repo_root = _find_repo_root(Path.cwd())
+    if repo_root is None:
+        return None
+    return repo_root / ".orch" / "runs"
+
+
+def _segment_error(kind: str, value: str):
+    """Refuse, by name, anything that is not one path segment under the root."""
+
+    if not value or not value.strip():
+        return {"error": f"{kind} is empty"}
+    if "/" in value or "\\" in value or ".." in value or value == ".":
+        return {
+            "error": f"unsafe {kind} '{value}': one path segment only, with no "
+            "path separator and no '..'"
+        }
+    return None
 
 
 def _iter_run_dirs(tickets_root: Path, run_filter):
@@ -197,14 +258,83 @@ def _set_frontmatter_field(text: str, key: str, value: str) -> str:
     return "".join(lines)
 
 
+class TicketFormatError(ValueError):
+    """The ticket's markdown cannot be written safely as it stands."""
+
+
+def _fence_run(line: str):
+    """The ``` or ~~~ run this line opens or closes a fenced block with.
+
+    None at four or more columns of indentation: CommonMark 4.4-4.5 makes
+    that indented-code content rather than a fence, and a ticket quoting an
+    indented snippet is ordinary. Opening a block there opens one nothing
+    closes, which now costs the whole write (`_write_section`).
+    """
+
+    if line.startswith("\t") or len(line) - len(line.lstrip(" ")) >= 4:
+        return None
+    stripped = line.strip()
+    for char in ("`", "~"):
+        if stripped.startswith(char * 3):
+            return char * (len(stripped) - len(stripped.lstrip(char)))
+    return None
+
+
+def _scan_sections(lines, start: int = 0):
+    """The ``## `` boundary indices below ``start``, and any unclosed fence.
+
+    A ``## `` line inside a fenced block is quoted content, not a heading:
+    every deliverable in this repository is markdown with ``## `` headings
+    and executors quote them at length. Counting a quotation as a boundary
+    truncates the span a replacement rewrites -- deleting the opening
+    fence, orphaning the closing one, and promoting the quoted heading to
+    a real one that `_sections` then resolves last-writer-wins.
+
+    The second return value is the index of a fence still open at the end
+    of the scan. Below it no heading is findable, so a reader sees fewer
+    sections than the file means and a writer would create a duplicate of
+    one that is already there; only the writer treats it as fatal.
+    """
+
+    found = []
+    fence = None
+    opened_at = None
+    for i in range(start, len(lines)):
+        line = lines[i]
+        run = _fence_run(line)
+        if fence is None:
+            if run is not None:
+                fence = run  # an info string is allowed on the opener
+                opened_at = i
+            elif line.startswith("## "):
+                found.append(i)
+        elif (
+            run is not None
+            and run[0] == fence[0]
+            and len(run) >= len(fence)
+            and not line.strip()[len(run):].strip()  # a closer carries none
+        ):
+            fence = None
+            opened_at = None
+    return found, opened_at
+
+
+def _heading_lines(lines, start: int = 0) -> list:
+    """Indices of the ``## `` lines that are section boundaries."""
+
+    return _scan_sections(lines, start)[0]
+
+
 def _sections(text: str) -> dict:
     """Map each ``## Heading`` to its stripped body text."""
 
     sections: dict = {}
     heading = None
     body: list = []
-    for line in text.splitlines():
-        if line.startswith("## "):
+    lines = text.splitlines()
+    starts = set(_heading_lines(lines))
+    for i, line in enumerate(lines):
+        if i in starts:
             if heading is not None:
                 sections[heading] = "\n".join(body).strip()
             heading = line[3:].strip()
@@ -214,6 +344,80 @@ def _sections(text: str) -> dict:
     if heading is not None:
         sections[heading] = "\n".join(body).strip()
     return sections
+
+
+def _body_block(body: str, newline: str) -> str:
+    """Normalize a body to the file's line ending, ending in exactly one."""
+
+    normalized = body.replace("\r\n", "\n").replace("\r", "\n").strip("\n")
+    if not normalized:
+        return ""
+    return newline.join(normalized.split("\n")) + newline
+
+
+def _write_section(text: str, heading: str, body: str, append: bool = False) -> str:
+    """Replace or create one ``## Heading`` body, leaving every other byte alone."""
+
+    lines = text.splitlines(keepends=True)
+    newline = "\r\n" if lines and lines[0].endswith("\r\n") else "\n"
+    # Headings are looked for below the frontmatter only: a wrapped
+    # frontmatter value can begin a line with "## ", and frontmatter is
+    # never this writer's to touch.
+    body_start = 0
+    if lines and lines[0].rstrip("\r\n") == "---":
+        for i in range(1, len(lines)):
+            if lines[i].rstrip("\r\n") == "---":
+                body_start = i + 1
+                break
+    starts, unclosed = _scan_sections(lines, body_start)
+    if unclosed is not None:
+        # Every heading below the open fence reads as quoted content, so the
+        # section named here looks absent however present it is: writing it
+        # would append a second `## <heading>` that `_sections` resolves to
+        # neither. Nothing this writer can do to such a file is safe.
+        raise TicketFormatError(
+            f"unterminated fence opened at line {unclosed + 1} "
+            f"({lines[unclosed].strip()}): every heading below it reads as "
+            f"quoted content, so writing '## {heading}' would create a "
+            "second one. Close the fence in the ticket, then retry"
+        )
+    found = None
+    for i in starts:
+        if lines[i][3:].strip().lower() == heading.lower():
+            found = i
+            break
+
+    if found is None:
+        block = _body_block(body, newline)
+        segment = f"## {heading}{newline}{newline}{block}" if block else f"## {heading}{newline}"
+        insert_at = None
+        target_rank = SECTION_RANK.get(heading.lower())
+        if target_rank is not None:
+            for i in starts:
+                rank = SECTION_RANK.get(lines[i][3:].strip().lower())
+                if rank is not None and rank > target_rank:
+                    insert_at = i
+                    break
+        if insert_at is None:
+            prefix = "".join(lines).rstrip("\r\n")
+            if prefix:
+                prefix += newline + newline
+            return prefix + segment
+        return "".join(lines[:insert_at]) + segment + newline + "".join(lines[insert_at:])
+
+    end = next((i for i in starts if i > found), len(lines))
+    if append:
+        prior = "".join(lines[found + 1 : end]).rstrip().lstrip("\r\n")
+        if prior:
+            body = f"{prior}\n\n{body}"
+    block = _body_block(body, newline)
+    head = lines[found]
+    if not head.endswith("\n"):
+        head += newline
+    segment = head + newline + block if block else head
+    if end < len(lines):
+        segment += newline
+    return "".join(lines[:found]) + segment + "".join(lines[end:])
 
 
 def _load_ticket(path: Path) -> dict:
@@ -514,6 +718,34 @@ def _cmd_packet(rest):
         "Write your result into the ticket's own sections as you produce it, "
         "never in one write at the end; the join alone sets terminal status."
     )
+    run_id = loaded.get("run") or run
+    script = Path(__file__).resolve()
+    # contracts/work-item.md's `isolation`: absent reads `none`, and only
+    # `required` is told to establish anything, so a lane that must not stamp
+    # itself is never handed the command. The sibling resolves from this
+    # file's own location, so it points at whichever copy is running.
+    isolation = normalized_isolation(loaded.get("isolation"))
+    if isolation == REQUIRED_ISOLATION:
+        prompt.append(
+            "Workspace establishment (isolation: required), your first act, "
+            "run from inside your own workspace:"
+        )
+        prompt.append(
+            f"{sys.executable} {script.with_name('workspace.py')} "
+            f"start {run_id} {loaded['id']}"
+        )
+    # Every packet carries the channel, isolated or not: a child learns how to
+    # write run state from its own dispatch, never by reading a sibling's
+    # ticket. Built from `sys.executable` and this file's own resolved path so
+    # the tokens are absolute wherever the script was installed, and shaped one
+    # token per argument — no pipe, redirect or `&&` — because a host guard may
+    # refuse a command it cannot statically verify.
+    prompt.append(
+        "Run-state channel (rules/visibility.md §6), from your own workspace, "
+        "with TEXT and NAME replaced:"
+    )
+    prompt.append(f"{sys.executable} {script} run-state {run_id} --note TEXT")
+    prompt.append(f"{sys.executable} {script} run-state {run_id} --artifact NAME --text TEXT")
     prompt.append(f"reply_to: {reply_to} — address your closing message to `{reply_to}`.")
 
     return {
@@ -525,6 +757,7 @@ def _cmd_packet(rest):
             "pack": loaded.get("pack"),
             "profile": loaded.get("profile"),
             "independence": loaded.get("independence") or "checker",
+            "isolation": isolation,
             "reply_to": reply_to,
             "workspace": workspace,
             "prompt": "\n".join(prompt),
@@ -532,9 +765,175 @@ def _cmd_packet(rest):
     }
 
 
+def _cmd_result(rest):
+    """Write one reserved section of a ticket at the main repository root.
+
+    The executor runs this from inside its own isolated worktree: ``--file``
+    reads the body from that workspace while ``_tickets_root()`` resolves the
+    worktree's ``.git`` pointer to the one main-root ticket path every
+    workspace agrees on (contracts/work-item.md).
+    """
+
+    args = list(rest)
+    section = _extract_flag(args, "--section")
+    file_arg = _extract_flag(args, "--file")
+    text_arg = _extract_flag(args, "--text")
+    append = "--append" in args
+    while "--append" in args:
+        args.remove("--append")
+    stray = next((arg for arg in args if arg.startswith("-")), None)
+    if stray is not None:
+        return {
+            "error": f"result does not accept {stray}: it writes body sections only, "
+            "never frontmatter — terminal status is set by the join (orch-integrate) "
+            f"through `set-status`. usage: {RESULT_USAGE}"
+        }
+    if len(args) != 2:
+        return {"error": f"usage: {RESULT_USAGE}"}
+    run, ticket_id = args
+    if section is None:
+        return {"error": f"result requires --section <name>, one of {list(EXECUTOR_SECTIONS)}"}
+    canonical = EXECUTOR_SECTIONS_BY_KEY.get(section.strip().strip("#").strip().lower())
+    if canonical is None:
+        return {
+            "error": f"section '{section}' is not one of the sections an executor "
+            f"writes: {list(EXECUTOR_SECTIONS)}"
+        }
+    if file_arg is not None and text_arg is not None:
+        return {"error": "result takes one of --file <path> or --text <string>, not both"}
+    if file_arg is None and text_arg is None:
+        return {"error": f"result requires --file <path> or --text <string>. usage: {RESULT_USAGE}"}
+    if file_arg is not None:
+        # read from the caller's own workspace, while the ticket written is
+        # the main checkout's — that split is the point of this subcommand
+        try:
+            body = Path(file_arg).read_text(encoding="utf-8")
+        except OSError as error:
+            return {"error": f"unreadable body file: {error}"}
+    else:
+        body = text_arg
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {"error": "not inside a git repository"}
+    ticket_path = tickets_root / run / f"{ticket_id}.md"
+    if not ticket_path.is_file():
+        return {"error": f"ticket not found: {run}/{ticket_id}"}
+    try:
+        text = ticket_path.read_text(encoding="utf-8")
+        # _write_section raises before any byte is written: a ticket it
+        # cannot write safely is left exactly as it was found
+        ticket_path.write_text(
+            _write_section(text, canonical, body, append), encoding="utf-8"
+        )
+    except TicketFormatError as error:
+        return {"error": f"{error}. ticket: {ticket_path}"}
+    except OSError as error:
+        return {"error": f"unwritable ticket: {error}"}
+    return {
+        "result": {
+            "run": run,
+            "id": ticket_id,
+            "path": str(ticket_path),
+            "section": canonical,
+            "mode": "append" if append else "replace",
+        }
+    }
+
+
+def _cmd_run_state(rest):
+    """Write this run's state into the one repository-wide ``.orch/``.
+
+    The channel rules/visibility.md §6 names. The root is resolved the way
+    every other subcommand resolves it — ``_find_repo_root`` dereferencing a
+    worktree's ``.git`` pointer, no subprocess — so a child in its own
+    workspace reaches the main checkout's ``.orch/`` without a git call it
+    may not be allowed to make.
+
+    ``--note`` appends to one shared log, so it opens in append mode with an
+    explicit ``newline`` (``scripts/friction.py``) and writes one line in one
+    call: two workspaces write one repository's worklog concurrently and
+    neither may read-modify-write it. ``--artifact`` is whole-file, which is
+    safe only because the run id partitions it.
+
+    There is no fallback. A write that cannot reach that root is reported as
+    an error and lands nowhere else: a run-state write that silently
+    succeeds in the caller's own tree is the loss this channel exists to end.
+    """
+
+    args = list(rest)
+    note = _extract_flag(args, "--note")
+    artifact = _extract_flag(args, "--artifact")
+    file_arg = _extract_flag(args, "--file")
+    text_arg = _extract_flag(args, "--text")
+    stray = next((arg for arg in args if arg.startswith("-")), None)
+    if stray is not None:
+        return {"error": f"run-state does not accept {stray}. usage: {RUN_STATE_USAGE}"}
+    if len(args) != 1:
+        return {"error": f"usage: {RUN_STATE_USAGE}"}
+    run = args[0]
+    if (note is None) == (artifact is None):
+        return {
+            "error": "run-state takes one of --note <line> or --artifact <name>. "
+            f"usage: {RUN_STATE_USAGE}"
+        }
+    invalid = _segment_error("run id", run)
+    if invalid is not None:
+        return invalid
+    body = None
+    if artifact is not None:
+        invalid = _segment_error("artifact name", artifact)
+        if invalid is not None:
+            return invalid
+        if (file_arg is None) == (text_arg is None):
+            return {
+                "error": "--artifact takes one of --file <path> or --text <string>. "
+                f"usage: {RUN_STATE_USAGE}"
+            }
+        if file_arg is not None:
+            # read from the caller's own workspace, write at the main root
+            try:
+                body = Path(file_arg).read_text(encoding="utf-8")
+            except OSError as error:
+                return {"error": f"unreadable body file: {error}"}
+        else:
+            body = text_arg
+    elif file_arg is not None or text_arg is not None:
+        return {
+            "error": "--note carries its own line; --file and --text belong to "
+            f"--artifact. usage: {RUN_STATE_USAGE}"
+        }
+
+    runs_root = _runs_root()
+    if runs_root is None:
+        return {"error": "not inside a git repository"}
+    run_dir = runs_root / run
+    try:
+        run_dir.mkdir(parents=True, exist_ok=True)
+        if note is not None:
+            path = run_dir / "worklog.md"
+            with open(path, "a", encoding="utf-8", newline="\n") as handle:
+                handle.write(note.rstrip("\r\n") + "\n")
+        else:
+            path = run_dir / artifact
+            with open(path, "w", encoding="utf-8", newline="\n") as handle:
+                handle.write(body)
+    except OSError as error:
+        return {"error": f"unwritable run state: {error}"}
+    return {
+        "run_state": {
+            "run": run,
+            "path": str(path),
+            "mode": "note" if note is not None else "artifact",
+        }
+    }
+
+
 def _dispatch(argv):
     if not argv:
-        return {"error": "missing subcommand: list | ready | claim | set-status | packet"}
+        return {
+            "error": "missing subcommand: list | ready | claim | set-status | "
+            "packet | result | run-state"
+        }
     command, rest = argv[0], argv[1:]
     if command == "list":
         return _cmd_list(rest)
@@ -546,6 +945,10 @@ def _dispatch(argv):
         return _cmd_set_status(rest)
     if command == "packet":
         return _cmd_packet(rest)
+    if command == "result":
+        return _cmd_result(rest)
+    if command == "run-state":
+        return _cmd_run_state(rest)
     return {"error": f"unknown subcommand: {command}"}
 
 

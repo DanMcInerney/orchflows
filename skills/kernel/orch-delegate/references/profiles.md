@@ -5,7 +5,7 @@ file solely owns default model mappings and the child-naming algorithm.
 
 | Profile | Role | Codex | Claude Code |
 | --- | --- | --- | --- |
-| `orch-planner` | planner | agent_type `orch_planner`, model `gpt-5.6-sol`, model_reasoning_effort `ultra` | model `claude-fable-5`, effort `high` |
+| `orch-planner` | planner | agent_type `orch_planner`, model `gpt-5.6-sol`, model_reasoning_effort `ultra` | model `claude-opus-5`, effort `max` |
 | `orch-worker` | worker | agent_type `orch_worker`, model `gpt-5.6-sol`, model_reasoning_effort `high`, service_tier `fast` | model `claude-opus-5`, effort `high` |
 
 One machine runs different bindings by editing its own rendered role
@@ -16,6 +16,13 @@ Use native invocation fields when available; a prompt-only request is
 requested, not verified. An unsupported or blocked model binding stops
 the dispatch — never substitute; a missing effort control alone is
 requested in the prompt and noted unverified, never a stop.
+
+A host with no native isolation field cannot establish an isolated
+workspace at dispatch: the request rides the prompt, is graded
+requested, not verified, and is never recorded as established. Like a
+missing effort control it is no stop on its own — what an unisolated
+child then shares with its siblings is the caller's to weigh before
+dispatching them.
 
 On Codex, `agent_type` selects the installed profile; `task_name` only
 labels the child. A spawn surface that omits `agent_type` cannot apply a

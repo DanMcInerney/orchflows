@@ -63,11 +63,21 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
   `## Handoff`. Never a path in this item's own `write_scope`: an item
   forbidden to touch what it is granted cannot be executed as written,
   and the contradiction is the cut's to fix, not the executor's.
+- `isolation` — packet `authority`, optional: `required` | `none` —
+  whether this item executes in a workspace of its own; absent reads
+  `none`. The declaration `scripts/workspace.py check` grades and
+  `scripts/tickets.py packet` conditions on.
 - `bound` — packet `bounds`: the item's effort budget.
 - `claimed_by`, `claimed_at` — lifecycle: set on claim. Staleness runs
   on wall clock: a claim older than the item's bound read as a duration
   is stale and reclaimable; when the bound is not a duration, the lease
   defaults to 60 minutes.
+- `workspace_branch`, `workspace_baseline` — lifecycle, optional:
+  written by `scripts/workspace.py start` — the branch of the workspace
+  the item was executed in, and the revision that workspace derives
+  from plus what was dirty at start. Script-written bookkeeping of the
+  same class as `claimed_by` / `claimed_at`, so setting them is not the
+  executor writing outside its body sections.
 - `profile` — packet `profile`, optional: an explicit role override per
   rules/roles.md §4; absent, role resolves from the executor's declared
   role.
@@ -113,9 +123,9 @@ Compatibility floor: the nine frontmatter keys above (id, run, status,
 executor, depends_on, write_scope, bound, claimed_by, claimed_at) and
 the eight body section names are unchanged on disk; `profile`,
 `excluded_actions`, `suspended`, `## Handoff`, per-criterion oracle
-provenance, `pack`, `independence`, and `checked_by` are optional
-additions — `scripts/tickets.py` and every existing ticket keep
-parsing.
+provenance, `pack`, `independence`, `checked_by`, `isolation`,
+`workspace_branch`, and `workspace_baseline` are optional additions —
+`scripts/tickets.py` and every existing ticket keep parsing.
 
 Rules: uncovered remainder belongs to the run worklog, never to a ticket;
 a ticket never widens its own scope or bound; domains extend the sections,
