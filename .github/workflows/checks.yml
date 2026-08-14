@@ -38,7 +38,14 @@ jobs:
         python-version: ['3.9', '3.11', '3.13']
 
     steps:
+      # Full history, not the default depth-1: tests/test_cutcheck.py grades
+      # oracles inside a `git archive` copy of a baseline revision, and a
+      # one-commit checkout can archive no ancestor. A depth-1 leg fails every
+      # cutcheck case with "cannot archive baseline" while the same suite is
+      # green on any developer clone.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:

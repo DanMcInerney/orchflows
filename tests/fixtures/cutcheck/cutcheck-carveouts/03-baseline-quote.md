@@ -20,7 +20,7 @@ ticket is clean; resolving them at the workspace revision would report it.
 
 ## Fixed inputs
 
-- Baseline: `ac8791a`, where `install.py:101` opens the script tuple
+- Baseline: `462ef52`, where `install.py:101` opens the script tuple
   `SCRIPT_NAMES = ("friction.py"`.
 
 ## Completion test
