@@ -307,6 +307,41 @@ class TestVocabularyDefinesShapeChange(unittest.TestCase):
         )
 
 
+class TestVisibilityChannelLaw(unittest.TestCase):
+    """`rules/visibility.md` §6 owns the two-channel law. Its content
+    channel must hold for all four packs, whose workspace cells are a git
+    tree, a git-plus-render tree, a document tree and an evidence store —
+    only the first two merge. Its scope is all of `.orch/`."""
+
+    def section(self):
+        return read_at_flat("rules/visibility.md")
+
+    def test_content_channel_is_the_packs_workspace_cell(self):
+        text = self.section()
+        self.assertIn(
+            "the pack's workspace cell", text,
+            "visibility.md §6 does not name the pack's workspace cell as what "
+            "content leaves the workspace by; a merge-only channel is false "
+            "for the content and research packs",
+        )
+
+    def test_governs_all_of_orch(self):
+        self.assertIn(
+            "not only `runs/` and `tickets/`", self.section(),
+            "visibility.md §6 does not state that it governs all of `.orch/`, "
+            "not only `runs/` and `tickets/`",
+        )
+
+    def test_the_two_channel_law_survives_the_rewrite(self):
+        text = self.section()
+        for clause in ("two channels", "never cross", "file tools", "installed scripts"):
+            self.assertIn(
+                clause, text,
+                f"visibility.md §6 lost {clause!r}: the merge clause is "
+                "re-expressed, never deleted",
+            )
+
+
 class TestSkillDescriptions(unittest.TestCase):
     def test_every_skill_description_is_at_most_140_chars(self):
         skill_files = sorted(SKILLS.glob("*/*/SKILL.md"))
