@@ -1522,5 +1522,77 @@ class TestExecutedRunStateSeam(unittest.TestCase):
             self.assertFalse((worktree / ".orch").exists())
 
 
+class ExitConventionTest(unittest.TestCase):
+    """Pin the exit convention: exit 1 when JSON has 'error', exit 0 otherwise."""
+
+    def test_error_exits_1(self):
+        """An error path exits with code 1."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_repo(tmp, {})
+            result = run_full(tmp, "result", "no-run", "no-id", "--section", "Result", "--text", "x")
+            self.assertIn("error", result.stdout)
+            self.assertEqual(1, result.returncode)
+
+    def test_success_exits_0_list(self):
+        """A success path exits with code 0: list subcommand."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_repo(tmp, {"T1": ("ready", "[]")})
+            result = run_full(tmp, "list")
+            payload = json.loads(result.stdout)
+            self.assertNotIn("error", payload)
+            self.assertEqual(0, result.returncode)
+
+    def test_success_exits_0_ready(self):
+        """A success path exits with code 0: ready subcommand."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_repo(tmp, {"T1": ("ready", "[]")})
+            result = run_full(tmp, "ready")
+            payload = json.loads(result.stdout)
+            self.assertNotIn("error", payload)
+            self.assertEqual(0, result.returncode)
+
+    def test_error_exits_1_claim(self):
+        """An error path exits with code 1: claim on non-ready ticket."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_repo(tmp, {"T1": ("complete", "[]")})
+            result = run_full(tmp, "claim", "testrun", "T1", "--by", "test")
+            payload = json.loads(result.stdout)
+            self.assertIn("error", payload)
+            self.assertEqual(1, result.returncode)
+
+    def test_error_exits_1_set_status_invalid(self):
+        """An error path exits with code 1: invalid status."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_repo(tmp, {"T1": ("ready", "[]")})
+            result = run_full(tmp, "set-status", "testrun", "T1", "invalid-status")
+            payload = json.loads(result.stdout)
+            self.assertIn("error", payload)
+            self.assertEqual(1, result.returncode)
+
+    def test_error_exits_1_missing_subcommand(self):
+        """An error path exits with code 1: missing subcommand."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_repo(tmp, {})
+            result = run_full(tmp)
+            payload = json.loads(result.stdout)
+            self.assertIn("error", payload)
+            self.assertEqual(1, result.returncode)
+
+
+class DocstringHonestyTest(unittest.TestCase):
+    """Assert the module docstring does not claim exit 0 on failure."""
+
+    def test_docstring_does_not_claim_exit_0_on_failure(self):
+        """The docstring should not claim 'never as a non-zero exit'."""
+        docstring = tickets_mod.__doc__ or ""
+        self.assertNotIn("never as a non-zero exit", docstring)
+
+
 if __name__ == "__main__":
     unittest.main()

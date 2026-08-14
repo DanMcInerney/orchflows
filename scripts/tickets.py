@@ -6,10 +6,9 @@ Stdlib-only, cross-platform. Tickets are markdown work items per
 YAML dependency). The root is the main repository root — a linked
 worktree's ``.git`` pointer is dereferenced to it — so every worktree of
 a repository reads and writes one run's tickets at one path. Every
-subcommand exits 0 and prints exactly one JSON document to stdout —
-failures are reported as ``{"error": "..."}"``, never as a non-zero exit
-or a raised traceback, so this stays safe to call from any host without
-argument-parsing surprises.
+subcommand prints exactly one JSON document to stdout. Failures are
+reported as ``{"error": "..."}`` in the JSON payload and exit 1; success
+exits 0. No outcome raises a traceback.
 
 Subcommands:
     list [--run R]
@@ -959,7 +958,7 @@ def main(argv=None):
     except Exception as error:
         result = {"error": str(error)}
     print(json.dumps(result, ensure_ascii=False))
-    return 0
+    return 1 if "error" in result else 0
 
 
 if __name__ == "__main__":
