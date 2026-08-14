@@ -5,6 +5,7 @@ import subprocess
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -395,6 +396,132 @@ class ParserReuseTest(unittest.TestCase):
 class InstallationTest(unittest.TestCase):
     def test_cutcheck_is_installed_under_its_bare_name(self):
         self.assertIn("cutcheck.py", install.SCRIPT_NAMES)
+
+
+class ProvenanceTest(unittest.TestCase):
+    """A stated ``pre-existing`` provenance exempts an invariant, and only that."""
+
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-provenance")
+        self.lines = reported(self.result)
+
+    def test_the_invariant_is_not_reported_for_passing_at_the_baseline(self):
+        self.assertNotIn("01-pre-existing: family 1: already-passes", self.result.stdout)
+
+    def test_the_same_oracle_authored_here_is_still_reported(self):
+        lines = [line for line in self.lines if cutcheck.ALREADY_PASSES in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn("02-authored-here", lines[0])
+
+    def test_shape_is_judged_whatever_the_provenance(self):
+        lines = [line for line in self.lines if cutcheck.SWALLOWED_EXIT in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn("01-pre-existing", lines[0])
+
+
+class VerdictInOutputTest(unittest.TestCase):
+    """A command whose verdict is in what it prints is one cutcheck cannot judge."""
+
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-verdict-in-output")
+        self.lines = [
+            line for line in self.result.stdout.splitlines() if "01-verdict" in line
+        ]
+
+    def test_the_count_the_archive_and_the_diff_are_each_reported(self):
+        self.assertEqual(len(self.lines), 3, self.result.stdout)
+        for line in self.lines:
+            self.assertIn(cutcheck.VERDICT_IN_OUTPUT, line)
+
+    def test_the_class_is_advisory_and_the_set_exits_zero(self):
+        self.assertIn(cutcheck.VERDICT_IN_OUTPUT, cutcheck.ADVISORY)
+        self.assertEqual(self.result.returncode, 0, self.result.stdout)
+
+
+class QuotePrecisionTest(unittest.TestCase):
+    """A quotation is text asserted to be at the citation, not the prose near it."""
+
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-quote-precision")
+        self.lines = reported(self.result, cutcheck.FAMILY_2)
+
+    def test_only_the_absent_quotation_is_reported(self):
+        self.assertEqual(len(self.lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.QUOTE_NOT_AT_CITATION, self.lines[0])
+        self.assertIn("no line of this file reads this way", self.lines[0])
+
+    def test_a_citation_followed_by_its_symbol_is_not_a_quotation(self):
+        self.assertNotIn("SCRIPT_NAMES\" not at", self.result.stdout)
+
+    def test_a_fragment_of_the_surrounding_sentence_is_not_a_quotation(self):
+        self.assertNotIn("and the word", self.result.stdout)
+
+
+class MentionTest(unittest.TestCase):
+    """Family 3 reports a path the ticket commits to writing, and nothing else."""
+
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-mention")
+        self.lines = reported(self.result, cutcheck.FAMILY_3)
+
+    def test_only_the_committed_sink_is_reported(self):
+        self.assertEqual(len(self.lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.UNSCOPED_WRITE, self.lines[0])
+        self.assertIn(".orch/evidence/mention/verdict.txt", self.lines[0])
+
+    def test_no_mentioned_path_is_read_as_a_write(self):
+        for mentioned in (
+            ".orch/runs/<run>/coverage.md",
+            "scripts/cutcheck.py",
+            "rules/topology.md",
+        ):
+            self.assertNotIn(mentioned, self.result.stdout)
+
+
+class CoverageMapPathTest(unittest.TestCase):
+    """The absent map is named the way every other line names a path."""
+
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-f5-nomap")
+        self.lines = [
+            line
+            for line in self.result.stdout.splitlines()
+            if cutcheck.COVERAGE_MAP_ABSENT in line
+        ]
+
+    def test_the_absent_map_is_reported_relative_to_the_repository(self):
+        self.assertEqual(len(self.lines), 1, self.result.stdout)
+        self.assertIn(
+            "tests/fixtures/cutcheck/cutcheck-f5-nomap/coverage.md", self.lines[0]
+        )
+        self.assertNotIn(str(ROOT), self.lines[0])
+
+    def test_the_line_stays_advisory(self):
+        self.assertEqual(self.result.returncode, 0, self.result.stdout)
+
+
+class ExecutionCacheTest(unittest.TestCase):
+    """One command in one scratch tree is one execution, however often extracted."""
+
+    def setUp(self):
+        cutcheck._EXIT_CACHE.clear()
+        self.addCleanup(cutcheck._EXIT_CACHE.clear)
+
+    def test_a_command_extracted_twice_for_one_tree_runs_once(self):
+        done = subprocess.CompletedProcess([], 0)
+        with mock.patch.object(cutcheck.subprocess, "run", return_value=done) as run:
+            first = cutcheck._exit_code("git status", Path("/tree-a"))
+            second = cutcheck._exit_code("git status", Path("/tree-a"))
+            self.assertEqual(run.call_count, 1)
+        self.assertEqual(first, 0)
+        self.assertEqual(second, 0)
+
+    def test_the_other_tree_is_its_own_execution(self):
+        done = subprocess.CompletedProcess([], 0)
+        with mock.patch.object(cutcheck.subprocess, "run", return_value=done) as run:
+            cutcheck._exit_code("git status", Path("/tree-a"))
+            cutcheck._exit_code("git status", Path("/tree-b"))
+            self.assertEqual(run.call_count, 2)
 
 
 FIXTURES = ROOT / "tests" / "fixtures" / "cutcheck"

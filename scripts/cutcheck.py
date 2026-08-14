@@ -14,7 +14,12 @@ archive``, never in the tree under test. An oracle that already passes
 at the baseline, that finds nothing at either revision, or that fails at
 both from a missing path, class or module is reported. When HEAD is the
 baseline the HEAD half is skipped: at cut time nothing has landed, so a
-baseline failure is what a discriminating oracle looks like.
+baseline failure is what a discriminating oracle looks like. An oracle whose
+criterion states ``provenance: pre-existing`` is an invariant -- it passed
+before the work and has to pass after -- so discrimination is not asked of it,
+and nothing else is forgiven it. A command carrying its verdict in what it
+prints rather than in its exit status -- a count, an archive, a diff without
+``--exit-code`` -- is reported as one this tool cannot decide.
 
 Path reality: a path an oracle names exists at the baseline, or the item
 itself or a ``depends_on`` ancestor creates it; a ``file:line`` or
@@ -25,7 +30,8 @@ the ticket was cut from, which the work then changes.
 Scope closure: the write scope covers every path the item says it
 writes, evidence sinks included, and no excluded action names a path the
 scope grants. A path the item only reads is no defect: observing is not
-naming.
+naming, and neither is mentioning -- a placeholder, a denied write, the
+grant's own name.
 
 Pairwise safety: for every pair the DAG leaves unordered -- ordering is
 reachability through ``depends_on``, not adjacency -- write scopes are
@@ -98,6 +104,7 @@ FAILS_BOTH_REVISIONS = "fails-both-revisions"
 SWALLOWED_EXIT = "swallowed-exit"
 CUMULATIVE_RANGE = "cumulative-range"
 EXTRACTION_GAP = "extraction-gap"
+VERDICT_IN_OUTPUT = "verdict-in-output"
 MISSING_PATH = "missing-path"
 UNRESOLVED_CITATION = "unresolved-citation"
 QUOTE_NOT_AT_CITATION = "quote-not-at-citation"
@@ -116,6 +123,7 @@ FAMILY_OF = {
     SWALLOWED_EXIT: FAMILY,
     CUMULATIVE_RANGE: FAMILY,
     EXTRACTION_GAP: FAMILY,
+    VERDICT_IN_OUTPUT: FAMILY,
     MISSING_PATH: FAMILY_2,
     UNRESOLVED_CITATION: FAMILY_2,
     QUOTE_NOT_AT_CITATION: FAMILY_2,
@@ -130,7 +138,7 @@ FAMILY_OF = {
 }
 # Advisory classes are printed and never set the exit status. A map that is
 # not there is a fact about the run, not a defect of the cut.
-ADVISORY = frozenset({EXTRACTION_GAP, COVERAGE_MAP_ABSENT})
+ADVISORY = frozenset({EXTRACTION_GAP, COVERAGE_MAP_ABSENT, VERDICT_IN_OUTPUT})
 
 # The acceptance-coverage map: one row per spec criterion, naming the item,
 # the gate, or declared remainder that answers for it.
@@ -167,9 +175,20 @@ COMMAND_HEADS = (
     "rg",
 )
 SEARCH_HEADS = ("grep", "rg")
+# A criterion states the provenance of its own oracle; an oracle stated
+# pre-existing is an invariant, and holding still is what it is for.
+PRE_EXISTING_RE = re.compile(r"provenance:\s*pre-existing", re.I)
+# Counting prints the verdict; only these flags put a diff's verdict in its exit.
+COUNT_FLAG_RE = re.compile(r"^-[A-Za-z]*c[A-Za-z]*$|^--count$")
+DECIDING_DIFF_FLAGS = ("--exit-code", "--quiet", "--check")
 CITATION_RE = re.compile(r"\b([\w][\w./-]*\.[A-Za-z0-9]{1,5}):(\d+)")
 SECTION_CITATION_RE = re.compile(r"\b([\w][\w./-]*\.[A-Za-z0-9]{1,5})\s+§(\d+)")
-QUOTE_RE = re.compile(r'"([^"\n]{6,120})"|`([^`\n]{6,120})`')
+# A quotation opens and closes at a word boundary. A span that wrapped a line
+# never closed, so the quote after the wrap opens nothing: the prose it would
+# run to is the sentence around the citation, not a claim about the line.
+QUOTE_RE = re.compile(
+    r'(?<![\w"])"([^"\n]{6,120})"(?!\w)|(?<![\w`])`([^`\n]{6,120})`(?!\w)'
+)
 WRITE_RE = re.compile(
     r"\b(?:write|writes|writing|written|create|creates|creating|emit|emits"
     r"|append|appends|record|records)\b",
@@ -177,6 +196,12 @@ WRITE_RE = re.compile(
 )
 DOTTED_RE = re.compile(r"\.[A-Za-z0-9]{1,5}$")
 GLOB_RE = re.compile(r"[*?\[\]]")
+# `<run>` stands for whichever run it is: a shape, not a path anything writes.
+PLACEHOLDER_RE = re.compile(r"[<>]")
+# "write scope" names the grant. A denied write commits the item to nothing.
+SCOPE_WORD_RE = re.compile(r"^[-_ ]scopes?\b", re.I)
+DENIAL_RE = re.compile(r"\b(?:not|never|no|without|rather than)\s+$", re.I)
+DENIAL_WINDOW = 24
 # A citation points at a line; the sentence around it may wrap.
 CITED_LINES = 2
 QUOTE_WINDOW = 80
@@ -188,6 +213,9 @@ UNRUNNABLE = 127
 NO_TICKET_SET = 2
 REPORTED = 1
 CLEAN = 0
+# One invocation's read of one (command, scratch tree) pair. The trees are
+# read-only copies built for this invocation, so the pair reads the same twice.
+_EXIT_CACHE = {}
 
 
 def _git(args, cwd):
@@ -316,6 +344,22 @@ def _shape(command):
 
 
 def _exit_code(command, tree):
+    """This command's exit status in this tree, run once however often asked.
+
+    A scratch tree is a read-only copy built for one invocation and thrown away
+    with it, so ``(command, tree)`` reads the same every time. The cache is a
+    speed change and never a meaning change: one ticket set states the same
+    invariant oracle in item after item, and a suite is a slow read.
+    """
+
+    key = (command, str(tree))
+    if key in _EXIT_CACHE:
+        return _EXIT_CACHE[key]
+    _EXIT_CACHE[key] = code = _run_once(command, tree)
+    return code
+
+
+def _run_once(command, tree):
     try:
         argv = shlex.split(command)
     except ValueError:
@@ -335,6 +379,27 @@ def _exit_code(command, tree):
     except OSError:
         return UNRUNNABLE
     return proc.returncode
+
+
+def _verdict_in_output(command):
+    """Is this a command whose exit status carries no verdict?
+
+    ``grep -c`` prints a count and exits on whether it printed anything;
+    ``git archive`` and a ``git diff`` without ``--exit-code`` exit 0 almost
+    however the tree reads. A criterion saying "reports 0" or "is
+    byte-identical" is judged by that text, which no exit status carries, so
+    the honest report is that cutcheck cannot decide it.
+    """
+
+    argv = command.split()
+    head, rest = argv[0], argv[1:]
+    if head in SEARCH_HEADS:
+        return any(COUNT_FLAG_RE.match(token) for token in rest)
+    if head != "git" or not rest:
+        return False
+    if rest[0] == "archive":
+        return True
+    return rest[0] == "diff" and not any(f in rest for f in DECIDING_DIFF_FLAGS)
 
 
 def _discrimination(command, baseline_tree, head_tree):
@@ -454,12 +519,18 @@ def _path_args(command):
 
 
 def _paths_in(text):
-    """Tokens in prose that name a path: a slash, or a short final extension."""
+    """Tokens in prose that name a path: a slash, or a short final extension.
+
+    A token holding an angle bracket is a placeholder for wherever the run puts
+    its state, so no item's grant can name it and its absence is no defect.
+    """
 
     found = []
     for token in text.replace("`", " ").split():
         token = token.lstrip("(<[\"'").rstrip(")>],;:.\"'")
         if not token or token[:1] == "-" or GLOB_RE.search(token):
+            continue
+        if PLACEHOLDER_RE.search(token):
             continue
         if "/" in token or DOTTED_RE.search(token):
             found.append(token)
@@ -519,7 +590,9 @@ def _path_reality(prose, baseline_tree):
 
     A quotation is multi-word text in quotes or in backticks -- a single token
     beside a citation names something, it does not quote it. Backticks count
-    because a quoted line of code carries quotes of its own.
+    because a quoted line of code carries quotes of its own. A span holding a
+    citation is that citation with what it points at, never a quotation of the
+    line: the ticket is saying where, not what.
     """
 
     findings = []
@@ -530,7 +603,7 @@ def _path_reality(prose, baseline_tree):
     for match in QUOTE_RE.finditer(prose):
         quoted = _flat(match.group(1) or match.group(2) or "")
         near = [c for c in cites if abs(c[0] - match.start()) <= QUOTE_WINDOW]
-        if " " not in quoted or not near:
+        if " " not in quoted or not near or _citations(quoted):
             continue
         _, rel, line, section = min(near, key=lambda c: abs(c[0] - match.start()))
         text = _cited_text(baseline_tree, rel, line, section)
@@ -549,7 +622,10 @@ def _scope_closure(frontmatter, prose):
     """Family 3: the grant covers every write, and contradicts no exclusion.
 
     Observing is not naming: a path the item only reads stays outside its write
-    scope and is no defect here.
+    scope and is no defect here, and neither is one the text mentions without
+    committing to write. "Write scope" is the grant's name rather than a write,
+    and a denied write -- never written, not created -- commits the item to
+    nothing at all.
     """
 
     scope = _listed(frontmatter, "write_scope")
@@ -557,6 +633,10 @@ def _scope_closure(frontmatter, prose):
     seen = set()
     flat = _flat(prose)
     for match in WRITE_RE.finditer(flat):
+        if SCOPE_WORD_RE.match(flat[match.end():]):
+            continue
+        if DENIAL_RE.search(flat[max(0, match.start() - DENIAL_WINDOW):match.start()]):
+            continue
         end = match.end() + WRITE_WINDOW
         window = flat[match.end():end]
         if len(flat) > end and not flat[end].isspace():
@@ -672,7 +752,20 @@ def _coverage_rows(path):
     return rows
 
 
-def _coverage(run, run_dir, issued):
+def _relative(path, roots):
+    """A path named the way every other line names one: from its root."""
+
+    for root in roots:
+        if root is None:
+            continue
+        try:
+            return str(path.relative_to(root))
+        except ValueError:
+            continue
+    return str(path)
+
+
+def _coverage(run, run_dir, issued, roots):
     """Family 5: the map and the issued set answer for each other, both ways.
 
     A criterion reaches an item, the gate, or declared remainder; an item is
@@ -682,7 +775,9 @@ def _coverage(run, run_dir, issued):
 
     path = _coverage_path(run_dir)
     if path is None or not path.is_file():
-        where = str(path) if path is not None else "none for this ticket root"
+        where = (
+            _relative(path, roots) if path is not None else "none for this ticket root"
+        )
         return [(run, 0, COVERAGE_MAP_ABSENT, where)]
     findings = []
     owned = set()
@@ -775,6 +870,7 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
         if not commands:
             findings.append((ticket_id, number, EXTRACTION_GAP, criterion[:100]))
             continue
+        invariant = bool(PRE_EXISTING_RE.search(criterion))
         for command in commands:
             shape = _shape(command)
             if shape:
@@ -792,6 +888,14 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
                     (ticket_id, number, MISSING_PATH, "{}: {}".format(arg, command))
                     for arg in missing
                 )
+                continue
+            if invariant:
+                # An oracle the criterion states is pre-existing is an
+                # invariant: it passed before this work and has to pass after,
+                # so discriminating is not its job and never was.
+                continue
+            if _verdict_in_output(command):
+                findings.append((ticket_id, number, VERDICT_IN_OUTPUT, command))
                 continue
             klass = _discrimination(command, baseline_tree, head_tree)
             if klass is not None:
@@ -854,7 +958,8 @@ def main(argv=None):
         for path in issued:
             findings.extend(_check_ticket(path, baseline_tree, head_tree, siblings))
         findings.extend(_pairwise(siblings, reads))
-        findings.extend(_coverage(args.run, run_dir, sorted(siblings)))
+        roots = (worktree_root, _find_repo_root(Path.cwd()))
+        findings.extend(_coverage(args.run, run_dir, sorted(siblings), roots))
         findings.extend(_executor_legality(siblings, worktree_root))
     finally:
         shutil.rmtree(scratch_root, ignore_errors=True)
