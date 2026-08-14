@@ -157,6 +157,12 @@ FAMILY_OF = {
 ADVISORY = frozenset(
     {EXTRACTION_GAP, COVERAGE_MAP_ABSENT, VERDICT_IN_OUTPUT, GIT_NO_HISTORY}
 )
+# The report's two summary lines. A reader selects finding lines by filtering
+# stdout on a family, a class name, a criterion number or a ticket id, so
+# neither summary line may carry any of those, nor the path of a script: a
+# summary a filter selects is a finding line to everything downstream.
+ADVISORY_HEADING = "cutcheck: advisory -- reported, and never setting the exit status:"
+NO_FINDING_OUTSIDE = "cutcheck: no finding outside the advisory set"
 
 # The acceptance-coverage map: one row per spec criterion, naming the item,
 # the gate, or declared remainder that answers for it.
@@ -978,10 +984,35 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
     return findings
 
 
+# What the caller reads off the status, and what the status does not mean. The
+# six families are the module docstring's to describe; this names none of them.
+EPILOG = """exit status:
+  0  Cutcheck's exit 0 means no finding whose class lies outside the advisory
+     set, not that the set is clean: an advisory finding is reported and
+     exits 0.
+  1  At least one finding whose class lies outside the advisory set.
+  2  No ticket set resolved for the run; argparse's own usage error exits 2
+     as well.
+
+A cut verdict is not portable between hosts. An oracle naming an interpreter
+one host lacks is reported there as unrunnable-oracle and is silent here, so a
+verdict is read only on the host that produced it."""
+
+
+def _finding_line(ticket_id, number, klass, detail):
+    # A criterion number of 0 is a defect of the ticket, not of one oracle.
+    where = "criterion {}: ".format(number) if number else ""
+    return "{}: {}: {}: {}{}".format(ticket_id, FAMILY_OF[klass], klass, where, detail)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="cutcheck.py",
         description="Report cut defects in an issued ticket set.",
+        # Raw: the epilog's sentences are the contract, and a formatter that
+        # rewraps them to the terminal decides where they break.
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=EPILOG,
     )
     parser.add_argument("run", help="run id naming the issued ticket set")
     parser.add_argument(
@@ -1025,14 +1056,19 @@ def main(argv=None):
     finally:
         shutil.rmtree(scratch_root, ignore_errors=True)
 
-    for ticket_id, number, klass, detail in findings:
-        # A criterion number of 0 is a defect of the ticket, not of one oracle.
-        where = "criterion {}: ".format(number) if number else ""
-        print(
-            "{}: {}: {}: {}{}".format(ticket_id, FAMILY_OF[klass], klass, where, detail)
-        )
-    if any(klass not in ADVISORY for _, _, klass, _ in findings):
+    outside = [f for f in findings if f[2] not in ADVISORY]
+    advisory = [f for f in findings if f[2] in ADVISORY]
+    for finding in outside:
+        print(_finding_line(*finding))
+    if advisory:
+        print(ADVISORY_HEADING)
+        for finding in advisory:
+            print(_finding_line(*finding))
+    if outside:
         return REPORTED
+    # Zero bytes reads the same as a run that never happened. A set whose only
+    # findings are advisory has been read and has passed, and says so.
+    print(NO_FINDING_OUTSIDE)
     return CLEAN
 
 
