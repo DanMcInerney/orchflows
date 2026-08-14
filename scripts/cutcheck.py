@@ -801,16 +801,23 @@ def _coverage_rows(path):
 
 
 def _relative(path, roots):
-    """A path named the way every other line names one: from its root."""
+    """A path named the way every other line names one: from its root.
+
+    Always with forward slashes, never the host separator. Every other path in
+    a report comes from a ticket, where it is written posix-style, and a reader
+    diffing one line against another must not see two spellings of one path.
+    On Windows ``str()`` here emitted ``tests\\fixtures\\...`` and every
+    recorded verdict missed.
+    """
 
     for root in roots:
         if root is None:
             continue
         try:
-            return str(path.relative_to(root))
+            return path.relative_to(root).as_posix()
         except ValueError:
             continue
-    return str(path)
+    return Path(path).as_posix()
 
 
 def _coverage(run, run_dir, issued, roots):
