@@ -28,9 +28,10 @@ tool cannot decide. A ``git`` oracle is no exception in either direction: the
 scratch copy carries its history, so a git command reads the revision under
 test and is graded on its exit status like any other, and the count-flagged
 one -- ``git rev-list --count`` -- is undecidable for its count, never for
-its head. Grading a git span is still not trusting it: only a subcommand
-named as reading the revision and reaching nothing outside the scratch copy
-is run, and every other git span is refused and reported.
+its head. Grading a git span is still not trusting it: only a subcommand named
+as reading the revision runs, and only while none of its own arguments spells a
+location outside the scratch copy. Every other git span is refused and
+reported.
 
 Path reality: a path an oracle names exists at the baseline, or the item
 itself or a ``depends_on`` ancestor creates it; a ``file:line`` or
@@ -65,7 +66,8 @@ Shape: the command text itself carries three defects. A pipeline through
 per-item scope check written against a cumulative ``<base>..HEAD`` range
 answers about the whole branch, not the item. A ``git`` span the scratch copy
 does not confine is refused unrun, because ticket content decides no program
-this tool executes and no directory it executes in.
+this tool executes, no directory it executes in, and no file it reads or
+writes.
 
 All three set the exit status. An extraction gap, an absent coverage
 map, and a class this tool reports as one it cannot decide do not: a
@@ -204,7 +206,10 @@ COMMAND_HEADS = (
 SEARCH_HEADS = ("grep", "rg")
 GIT_HEAD = "git"
 # The git subcommands a scratch copy confines: each reads the revision under
-# test, runs no program the span names, and reaches nothing outside the copy.
+# test and runs no program the span names. Membership is half the confinement
+# and never the whole of it -- a member still writes and reads wherever its own
+# options are pointed, which is `_names_outside_the_copy`'s question, not this
+# set's.
 # A closed set rather than a list of flags to refuse, because git's surface is
 # open at both ends -- `-c core.pager=`, `-c alias.x=!`, `--exec-path`,
 # `--upload-pack` and `--receive-pack` each run a named program by design, `-C`,
@@ -453,16 +458,54 @@ def _evaluates_code(argv):
     return argv[0] in EVAL_HEADS and any(token in EVAL_ARGS for token in argv[1:])
 
 
+def _names_outside_the_copy(token):
+    """Does this argv token spell a location the scratch copy does not hold?
+
+    Closed by construction rather than by flag name: reaching past the copy
+    means saying where, and from a working directory inside the copy there are
+    two ways to say it and no third -- root the path, or climb out of it. A
+    token that does neither reaches only what the copy is free to lose. Nothing
+    expands on the way: argv is split, never evaluated, and git spawns no shell,
+    so ``~`` and ``$HOME`` name a directory inside the copy and nothing else.
+
+    An option's value starts where the option stops -- after ``=`` for a long
+    one, after the letter for a short one carrying its value attached -- and an
+    operand is its own value. ``..`` counts only as a whole path component, so
+    ``<base>..HEAD`` stays the revision range it is.
+    """
+
+    if token.startswith("--"):
+        _, _, value = token.partition("=")
+    elif token.startswith("-"):
+        value = token[2:]
+    else:
+        value = token
+    return value.startswith("/") or ".." in value.split("/")
+
+
 def _unconfined_git(command):
     """Is this a git span the scratch copy does not confine?
 
-    A confined span is ``git <subcommand>`` with the subcommand in the confined
-    set. Position carries the whole escape question: every way git runs a named
-    program or leaves the tree it was pointed at is a global option, and a
-    global option is exactly a token standing before the subcommand, so a set
-    that holds no token beginning with ``-`` refuses all of them by shape. What
-    remains -- a pager, an alias, a textconv or ext-diff driver -- git reads
-    from configuration, which is the clone's own and which no ticket writes.
+    Two questions, because an escape takes two shapes and one test sees one of
+    them. Position answers the first: every way git runs a program named on the
+    line or leaves the tree it was pointed at is a global option, and a global
+    option is exactly a token standing before the subcommand, so a confined set
+    holding no token that begins with ``-`` refuses that family entire.
+
+    Position cannot answer the second, and a subcommand check alone is narrower
+    than the threat. ``--output=<file>`` is a subcommand option: it stands after
+    the subcommand, where the position rule cannot see it, and ``git diff``,
+    ``git log``, ``git show`` and ``git rev-list`` each take it and write the
+    file, absolute or climbing, inside the copy or beside it. ``-O<orderfile>``,
+    ``--exclude-from`` and ``--no-index`` read the same way round. So the second
+    question is asked of what a token spells rather than where it stands, and
+    ``_names_outside_the_copy`` answers it for every option git ships next.
+
+    What remains -- a pager, an alias, a textconv or ext-diff driver -- git
+    takes from configuration, and configuration is the clone's own: ``git
+    clone`` writes a fresh ``core``-only config, an in-tree ``.gitattributes``
+    can name a driver but cannot define one, and a ticket supplies argv and
+    nothing besides.
 
     Tokenised the way ``_run_once`` tokenises, so the span read here is the argv
     that would run: a gate splitting the text some other way grades one command
@@ -475,7 +518,9 @@ def _unconfined_git(command):
         return False
     if not argv or argv[0] != GIT_HEAD:
         return False
-    return len(argv) < 2 or argv[1] not in GIT_CONFINED_SUBCOMMANDS
+    if len(argv) < 2 or argv[1] not in GIT_CONFINED_SUBCOMMANDS:
+        return True
+    return any(_names_outside_the_copy(token) for token in argv[2:])
 
 
 def _shape(command):

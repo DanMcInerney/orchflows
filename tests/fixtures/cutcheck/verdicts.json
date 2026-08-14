@@ -165,6 +165,7 @@
   "exit": 1,
   "lines": [
    "01-gitescape: family 1: unconfined-oracle: criterion 1: git -c alias.pwn='!touch /tmp/cutcheck-gitescape-ran' pwn",
+   "01-gitescape: family 1: unconfined-oracle: criterion 2: git log --output=/tmp/cutcheck-gitescape-wrote",
    "cutcheck: advisory -- reported, and never setting the exit status:",
    "cutcheck-gitescape: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-gitescape/coverage.md"
   ]

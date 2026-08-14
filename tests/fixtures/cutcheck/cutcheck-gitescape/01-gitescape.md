@@ -14,9 +14,11 @@ excluded_actions:
 ---
 ## Objective
 
-Fixture ticket for untrusted ticket content under a head an extractor accepts:
-the criterion below states its oracle as a git span whose own argument is the
-program git then runs. A ticket is input, so no span of one chooses what runs.
+Fixture ticket for untrusted ticket content under a head an extractor accepts.
+One criterion below states its oracle as a git span whose own argument is the
+program git then runs; the other states one whose own argument is the file git
+then writes, under a subcommand the confined set holds. A ticket is input, so
+no span of one chooses what runs, and none chooses what is written where.
 
 ## Fixed inputs
 
@@ -28,6 +30,12 @@ program git then runs. A ticket is input, so no span of one chooses what runs.
    is the span; git runs that alias whatever its output is attached to, which
    is how the test tells running from reporting. oracle_class: deterministic.
    provenance: authored-here.
+2. **A git span never writes a file it names.** `git log --output=/tmp/cutcheck-gitescape-wrote`
+   is the span; `log` is a confined subcommand and `--output` stands after it,
+   so the subcommand alone decides nothing here. Git writes that file and exits
+   0 whatever its own output is attached to, which is how the test tells
+   running from reporting. oracle_class: deterministic. provenance:
+   authored-here.
 
 ## Result
 
