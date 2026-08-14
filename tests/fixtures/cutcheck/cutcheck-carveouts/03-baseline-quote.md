@@ -5,7 +5,7 @@ status: issued
 executor: orch-tdd
 pack: orch-code-pack
 independence: gate
-depends_on: []
+depends_on: [01-reads-only]
 bound: 20 tool calls
 write_scope:
   - install.py

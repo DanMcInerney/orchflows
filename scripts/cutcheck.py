@@ -61,6 +61,7 @@ FAMILY = "family 1"
 FAMILY_2 = "family 2"
 FAMILY_3 = "family 3"
 FAMILY_4 = "family 4"
+FAMILY_5 = "family 5"
 ALREADY_PASSES = "already-passes"
 NO_HITS_BOTH_REVISIONS = "no-hits-both-revisions"
 FAILS_BOTH_REVISIONS = "fails-both-revisions"
@@ -74,6 +75,9 @@ UNSCOPED_WRITE = "unscoped-write"
 SCOPE_CONTRADICTION = "scope-contradiction"
 SCOPE_COLLISION = "scope-collision"
 STAGED_INVALIDATION = "staged-invalidation"
+ORPHAN_CRITERION = "orphan-criterion"
+ORPHAN_ITEM = "orphan-item"
+COVERAGE_MAP_ABSENT = "coverage-map-absent"
 FAMILY_OF = {
     ALREADY_PASSES: FAMILY,
     NO_HITS_BOTH_REVISIONS: FAMILY,
@@ -88,10 +92,21 @@ FAMILY_OF = {
     SCOPE_CONTRADICTION: FAMILY_3,
     SCOPE_COLLISION: FAMILY_4,
     STAGED_INVALIDATION: FAMILY_4,
+    ORPHAN_CRITERION: FAMILY_5,
+    ORPHAN_ITEM: FAMILY_5,
+    COVERAGE_MAP_ABSENT: FAMILY_5,
 }
-# Advisory classes are printed and never set the exit status.
-ADVISORY = frozenset({EXTRACTION_GAP})
+# Advisory classes are printed and never set the exit status. A map that is
+# not there is a fact about the run, not a defect of the cut.
+ADVISORY = frozenset({EXTRACTION_GAP, COVERAGE_MAP_ABSENT})
 
+# The acceptance-coverage map: one row per spec criterion, naming the item,
+# the gate, or declared remainder that answers for it.
+COVERAGE_FILE = "coverage.md"
+COVERAGE_OWNERS = ("gate", "remainder")
+TICKETS_DIR = "tickets"
+CANARY_DIR = "canary"
+RUNS_DIR = "runs"
 OBJECTIVE_SECTION = "Objective"
 INPUTS_SECTION = "Fixed inputs"
 COMPLETION_SECTION = "Completion test"
@@ -593,6 +608,61 @@ def _pairwise(siblings, reads):
     return findings
 
 
+def _coverage_path(run_dir):
+    """Where the acceptance-coverage map lives for a resolved ticket root.
+
+    The map is found beside the root cutcheck already resolved, never at one
+    fixed path: a run keeps it with its worklog, a fixture set carries its own
+    beside its tickets, and the canary set has none to carry.
+    """
+
+    if run_dir.parent.name != TICKETS_DIR:
+        return run_dir / COVERAGE_FILE
+    if run_dir.parent.parent.name == CANARY_DIR:
+        return None
+    return run_dir.parent.parent / RUNS_DIR / run_dir.name / COVERAGE_FILE
+
+
+def _coverage_rows(path):
+    """Each ``| criterion | owner |`` row: a number, and what answers for it."""
+
+    rows = []
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        cells = [cell.strip().strip("`") for cell in line.strip().strip("|").split("|")]
+        if len(cells) >= 2 and cells[0].isdigit():
+            rows.append((int(cells[0]), cells[1]))
+    return rows
+
+
+def _coverage(run, run_dir, issued):
+    """Family 5: the map and the issued set answer for each other, both ways.
+
+    A criterion reaches an item, the gate, or declared remainder; an item is
+    named by some criterion. With no map there is nothing to read either
+    direction against, so the absence is the only thing reported.
+    """
+
+    path = _coverage_path(run_dir)
+    if path is None or not path.is_file():
+        where = str(path) if path is not None else "none for this ticket root"
+        return [(run, 0, COVERAGE_MAP_ABSENT, where)]
+    findings = []
+    owned = set()
+    for number, owner in _coverage_rows(path):
+        if owner in COVERAGE_OWNERS:
+            continue
+        if owner in issued:
+            owned.add(owner)
+            continue
+        findings.append((run, number, ORPHAN_CRITERION, owner))
+    findings.extend(
+        (item, 0, ORPHAN_ITEM, "named by no criterion in {}".format(path.name))
+        for item in issued
+        if item not in owned
+    )
+    return findings
+
+
 def _check_ticket(path, baseline_tree, head_tree, siblings):
     text = path.read_text(encoding="utf-8")
     frontmatter = _parse_frontmatter(text)
@@ -676,7 +746,7 @@ def main(argv=None):
         head_tree = None
         if not _same_revision(args.baseline, worktree_root):
             head_tree = _scratch_tree("HEAD", worktree_root, scratch_root)
-        issued = sorted(run_dir.glob("*.md"))
+        issued = sorted(p for p in run_dir.glob("*.md") if p.name != COVERAGE_FILE)
         siblings = {}
         reads = {}
         for path in issued:
@@ -689,6 +759,7 @@ def main(argv=None):
         for path in issued:
             findings.extend(_check_ticket(path, baseline_tree, head_tree, siblings))
         findings.extend(_pairwise(siblings, reads))
+        findings.extend(_coverage(args.run, run_dir, sorted(siblings)))
     finally:
         shutil.rmtree(scratch_root, ignore_errors=True)
 

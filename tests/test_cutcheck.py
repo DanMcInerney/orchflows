@@ -273,6 +273,62 @@ class CanarySetTest(unittest.TestCase):
         self.assertIn("extra.txt", lines[0])
 
 
+class CoverageTest(unittest.TestCase):
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-f5-coverage")
+        self.lines = reported(self.result, cutcheck.FAMILY_5)
+
+    def test_coverage_set_exits_nonzero(self):
+        self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
+
+    def test_the_orphan_criterion_is_named_by_its_number(self):
+        lines = [line for line in self.lines if cutcheck.ORPHAN_CRITERION in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn("criterion 3", lines[0])
+        self.assertIn("03-absent", lines[0])
+
+    def test_the_orphan_item_is_named_by_its_id(self):
+        lines = [line for line in self.lines if cutcheck.ORPHAN_ITEM in line]
+        self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn("02-orphan-item", lines[0])
+
+    def test_both_directions_and_nothing_else(self):
+        self.assertEqual(len(self.lines), 2, self.result.stdout)
+
+
+class AbsentMapTest(unittest.TestCase):
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-f5-nomap")
+        self.lines = reported(self.result, cutcheck.FAMILY_5)
+
+    def test_the_absent_map_is_one_line_and_no_violation(self):
+        self.assertEqual(len(self.lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.COVERAGE_MAP_ABSENT, self.lines[0])
+        self.assertEqual(self.result.returncode, 0, self.result.stdout)
+
+    def test_no_orphan_is_reported_in_either_direction(self):
+        self.assertNotIn(cutcheck.ORPHAN_CRITERION, self.result.stdout)
+        self.assertNotIn(cutcheck.ORPHAN_ITEM, self.result.stdout)
+
+
+class CoverageHomeTest(unittest.TestCase):
+    """The map is found beside the ticket root cutcheck resolved, not at a path."""
+
+    def test_a_fixture_set_carries_its_map_beside_its_tickets(self):
+        fixture = ROOT / "tests" / "fixtures" / "cutcheck" / "cutcheck-f5-coverage"
+        self.assertEqual(cutcheck._coverage_path(fixture), fixture / "coverage.md")
+
+    def test_a_runs_map_sits_beside_its_worklog(self):
+        self.assertEqual(
+            cutcheck._coverage_path(ROOT / ".orch" / "tickets" / "some-run"),
+            ROOT / ".orch" / "runs" / "some-run" / "coverage.md",
+        )
+
+    def test_the_canary_root_carries_no_map(self):
+        canary = ROOT / ".orch" / "canary" / "tickets" / "canary"
+        self.assertIsNone(cutcheck._coverage_path(canary))
+
+
 SHELL_MARK = Path("/tmp/cutcheck-shellhead-ran")
 
 
