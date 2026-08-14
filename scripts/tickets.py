@@ -18,6 +18,7 @@ Subcommands:
     set-status <run> <id> <status>
     packet <run> <id> --reply-to <name> [--workspace <path>]
     result <run> <id> --section <name> (--file <path> | --text <string>) [--append]
+    run-state <run> (--note <line> | --artifact <name> (--file <path> | --text <string>))
 """
 
 from __future__ import annotations
@@ -76,6 +77,10 @@ SECTION_RANK = {name.lower(): i for i, name in enumerate(SECTION_ORDER)}
 RESULT_USAGE = (
     "result <run> <id> --section <name> (--file <path> | --text <string>) [--append]"
 )
+RUN_STATE_USAGE = (
+    "run-state <run> (--note <line> | --artifact <name> "
+    "(--file <path> | --text <string>))"
+)
 
 
 # --- repository / filesystem helpers ---------------------------------------
@@ -122,6 +127,26 @@ def _tickets_root():
     if repo_root is None:
         return None
     return repo_root / ".orch" / "tickets"
+
+
+def _runs_root():
+    repo_root = _find_repo_root(Path.cwd())
+    if repo_root is None:
+        return None
+    return repo_root / ".orch" / "runs"
+
+
+def _segment_error(kind: str, value: str):
+    """Refuse, by name, anything that is not one path segment under the root."""
+
+    if not value or not value.strip():
+        return {"error": f"{kind} is empty"}
+    if "/" in value or "\\" in value or ".." in value or value == ".":
+        return {
+            "error": f"unsafe {kind} '{value}': one path segment only, with no "
+            "path separator and no '..'"
+        }
+    return None
 
 
 def _iter_run_dirs(tickets_root: Path, run_filter):
@@ -638,6 +663,20 @@ def _cmd_packet(rest):
         "Write your result into the ticket's own sections as you produce it, "
         "never in one write at the end; the join alone sets terminal status."
     )
+    # Every packet carries the channel, isolated or not: a child learns how to
+    # write run state from its own dispatch, never by reading a sibling's
+    # ticket. Built from `sys.executable` and this file's own resolved path so
+    # the tokens are absolute wherever the script was installed, and shaped one
+    # token per argument — no pipe, redirect or `&&` — because a host guard may
+    # refuse a command it cannot statically verify.
+    run_id = loaded.get("run") or run
+    script = Path(__file__).resolve()
+    prompt.append(
+        "Run-state channel (rules/visibility.md §6), from your own workspace, "
+        "with TEXT and NAME replaced:"
+    )
+    prompt.append(f"{sys.executable} {script} run-state {run_id} --note TEXT")
+    prompt.append(f"{sys.executable} {script} run-state {run_id} --artifact NAME --text TEXT")
     prompt.append(f"reply_to: {reply_to} — address your closing message to `{reply_to}`.")
 
     return {
@@ -727,10 +766,99 @@ def _cmd_result(rest):
     }
 
 
+def _cmd_run_state(rest):
+    """Write this run's state into the one repository-wide ``.orch/``.
+
+    The channel rules/visibility.md §6 names. The root is resolved the way
+    every other subcommand resolves it — ``_find_repo_root`` dereferencing a
+    worktree's ``.git`` pointer, no subprocess — so a child in its own
+    workspace reaches the main checkout's ``.orch/`` without a git call it
+    may not be allowed to make.
+
+    ``--note`` appends to one shared log, so it opens in append mode with an
+    explicit ``newline`` (``scripts/friction.py``) and writes one line in one
+    call: two workspaces write one repository's worklog concurrently and
+    neither may read-modify-write it. ``--artifact`` is whole-file, which is
+    safe only because the run id partitions it.
+
+    There is no fallback. A write that cannot reach that root is reported as
+    an error and lands nowhere else: a run-state write that silently
+    succeeds in the caller's own tree is the loss this channel exists to end.
+    """
+
+    args = list(rest)
+    note = _extract_flag(args, "--note")
+    artifact = _extract_flag(args, "--artifact")
+    file_arg = _extract_flag(args, "--file")
+    text_arg = _extract_flag(args, "--text")
+    stray = next((arg for arg in args if arg.startswith("-")), None)
+    if stray is not None:
+        return {"error": f"run-state does not accept {stray}. usage: {RUN_STATE_USAGE}"}
+    if len(args) != 1:
+        return {"error": f"usage: {RUN_STATE_USAGE}"}
+    run = args[0]
+    if (note is None) == (artifact is None):
+        return {
+            "error": "run-state takes one of --note <line> or --artifact <name>. "
+            f"usage: {RUN_STATE_USAGE}"
+        }
+    invalid = _segment_error("run id", run)
+    if invalid is not None:
+        return invalid
+    body = None
+    if artifact is not None:
+        invalid = _segment_error("artifact name", artifact)
+        if invalid is not None:
+            return invalid
+        if (file_arg is None) == (text_arg is None):
+            return {
+                "error": "--artifact takes one of --file <path> or --text <string>. "
+                f"usage: {RUN_STATE_USAGE}"
+            }
+        if file_arg is not None:
+            # read from the caller's own workspace, write at the main root
+            try:
+                body = Path(file_arg).read_text(encoding="utf-8")
+            except OSError as error:
+                return {"error": f"unreadable body file: {error}"}
+        else:
+            body = text_arg
+    elif file_arg is not None or text_arg is not None:
+        return {
+            "error": "--note carries its own line; --file and --text belong to "
+            f"--artifact. usage: {RUN_STATE_USAGE}"
+        }
+
+    runs_root = _runs_root()
+    if runs_root is None:
+        return {"error": "not inside a git repository"}
+    run_dir = runs_root / run
+    try:
+        run_dir.mkdir(parents=True, exist_ok=True)
+        if note is not None:
+            path = run_dir / "worklog.md"
+            with open(path, "a", encoding="utf-8", newline="\n") as handle:
+                handle.write(note.rstrip("\r\n") + "\n")
+        else:
+            path = run_dir / artifact
+            with open(path, "w", encoding="utf-8", newline="\n") as handle:
+                handle.write(body)
+    except OSError as error:
+        return {"error": f"unwritable run state: {error}"}
+    return {
+        "run_state": {
+            "run": run,
+            "path": str(path),
+            "mode": "note" if note is not None else "artifact",
+        }
+    }
+
+
 def _dispatch(argv):
     if not argv:
         return {
-            "error": "missing subcommand: list | ready | claim | set-status | packet | result"
+            "error": "missing subcommand: list | ready | claim | set-status | "
+            "packet | result | run-state"
         }
     command, rest = argv[0], argv[1:]
     if command == "list":
@@ -745,6 +873,8 @@ def _dispatch(argv):
         return _cmd_packet(rest)
     if command == "result":
         return _cmd_result(rest)
+    if command == "run-state":
+        return _cmd_run_state(rest)
     return {"error": f"unknown subcommand: {command}"}
 
 
