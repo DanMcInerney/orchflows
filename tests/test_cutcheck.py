@@ -642,12 +642,22 @@ class GitEscapeTest(unittest.TestCase):
     `--upload-pack` and `--receive-pack`, and leaves the scratch copy through
     `-C`, `--git-dir` and `--work-tree`. The subcommands that run are a closed
     set, so the flag git ships next is refused before anyone has heard of it.
+
+    One invocation for the whole class: `setUpClass`, not `setUp`, because this
+    tool's own suite is an oracle running under COMMAND_TIMEOUT and every
+    invocation added here is spent against that budget. The gate itself is
+    decided from the command text, so the rest of the claim needs no subprocess
+    at all and is asserted next door.
     """
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         GIT_ESCAPE_MARK.unlink(missing_ok=True)
-        self.addCleanup(GIT_ESCAPE_MARK.unlink, True)
-        self.result = run_cutcheck("cutcheck-gitescape")
+        cls.result = run_cutcheck("cutcheck-gitescape")
+
+    @classmethod
+    def tearDownClass(cls):
+        GIT_ESCAPE_MARK.unlink(missing_ok=True)
 
     def test_the_injected_span_did_not_run(self):
         self.assertFalse(GIT_ESCAPE_MARK.exists(), self.result.stdout)
@@ -662,6 +672,10 @@ class GitEscapeTest(unittest.TestCase):
     def test_a_refused_span_is_a_finding_and_not_a_silence(self):
         self.assertNotIn(cutcheck.UNCONFINED_ORACLE, cutcheck.ADVISORY)
         self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
+
+
+class GitConfinementGateTest(unittest.TestCase):
+    """Which git spans the gate runs, decided from the command text alone."""
 
     def test_every_escape_the_head_used_to_carry_is_refused(self):
         for command in GIT_ESCAPES:
