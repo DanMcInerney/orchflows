@@ -761,5 +761,14 @@ class TestVerdictSurvivesCleanupAndScopeIsSegmentExact(unittest.TestCase):
             self.assertIn(outside, payload_of(done)["error"])
 
 
+class NoFormatCallsTest(unittest.TestCase):
+    """Completion criterion 1 of item-05-fstring-pass: no `.format(` call site
+    remains in scripts/workspace.py."""
+
+    def test_workspace_py_contains_no_format_calls(self):
+        source = WORKSPACE_PY.read_text(encoding="utf-8")
+        self.assertNotIn(".format(", source)
+
+
 if __name__ == "__main__":
     unittest.main()
