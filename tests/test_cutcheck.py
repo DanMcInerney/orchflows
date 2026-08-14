@@ -44,6 +44,23 @@ def reported(result, family=cutcheck.FAMILY):
     return [line for line in result.stdout.splitlines() if family in line]
 
 
+def report(result):
+    """The report split where its own two summary lines split it.
+
+    Findings outside the advisory set first, then the advisory findings under
+    the heading, then whether the affirmative line closed the report.
+    """
+
+    lines = result.stdout.splitlines()
+    affirmed = bool(lines) and lines[-1] == cutcheck.NO_FINDING_OUTSIDE
+    if affirmed:
+        lines = lines[:-1]
+    if cutcheck.ADVISORY_HEADING in lines:
+        cut = lines.index(cutcheck.ADVISORY_HEADING)
+        return lines[:cut], lines[cut + 1:], affirmed
+    return lines, [], affirmed
+
+
 def fixture_criteria(run, name):
     path = ROOT / "tests" / "fixtures" / "cutcheck" / run / name
     section = tickets._sections(path.read_text(encoding="utf-8"))
@@ -55,6 +72,114 @@ class CleanSetTest(unittest.TestCase):
         result = run_cutcheck("cutcheck-clean")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(reported(result), [])
+
+
+class AffirmativeSummaryTest(unittest.TestCase):
+    """A set with no finding outside the advisory set says so, rather than nothing."""
+
+    def test_the_clean_set_prints_the_affirmative_line_and_exits_zero(self):
+        result = run_cutcheck("cutcheck-clean")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout.splitlines(), [cutcheck.NO_FINDING_OUTSIDE])
+
+    def test_a_set_holding_a_finding_outside_the_advisory_set_never_affirms(self):
+        violations, _, affirmed = report(run_cutcheck("cutcheck-f2-paths"))
+        self.assertTrue(violations, violations)
+        self.assertFalse(affirmed, violations)
+
+
+class AdvisoryMarkingTest(unittest.TestCase):
+    """An advisory finding is printed where the report says it decides nothing."""
+
+    def _classes(self, lines):
+        return [line.split(": ")[2] for line in lines]
+
+    def test_the_advisory_finding_is_reported_under_the_heading(self):
+        violations, advisories, _ = report(run_cutcheck("cutcheck-f1-extraction-gap"))
+        self.assertEqual(violations, [], violations)
+        self.assertIn(cutcheck.EXTRACTION_GAP, self._classes(advisories), advisories)
+
+    def test_a_finding_outside_the_advisory_set_is_never_under_the_heading(self):
+        violations, advisories, _ = report(run_cutcheck("cutcheck-provenance"))
+        self.assertTrue(violations, violations)
+        self.assertTrue(advisories, advisories)
+        for klass in self._classes(violations):
+            self.assertNotIn(klass, cutcheck.ADVISORY, violations)
+        for klass in self._classes(advisories):
+            self.assertIn(klass, cutcheck.ADVISORY, advisories)
+
+    def test_one_heading_stands_over_the_whole_advisory_block(self):
+        result = run_cutcheck("cutcheck-verdict-in-output")
+        lines = result.stdout.splitlines()
+        self.assertEqual(lines.count(cutcheck.ADVISORY_HEADING), 1, result.stdout)
+        self.assertGreater(len(report(result)[1]), 1, result.stdout)
+
+    def test_neither_summary_line_can_be_read_as_a_finding(self):
+        markers = sorted(cutcheck.FAMILY_OF) + sorted(set(cutcheck.FAMILY_OF.values()))
+        markers += ["criterion ", "scripts/cutcheck.py"]
+        for line in (cutcheck.ADVISORY_HEADING, cutcheck.NO_FINDING_OUTSIDE):
+            for marker in markers:
+                self.assertNotIn(marker, line)
+
+
+class AdvisoryExitZeroTest(unittest.TestCase):
+    """Exit 0 is no finding outside the advisory set, never a set with no finding."""
+
+    def test_an_advisory_finding_is_reported_and_the_status_is_still_zero(self):
+        result = run_cutcheck("cutcheck-verdict-in-output")
+        violations, advisories, affirmed = report(result)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(violations, [], result.stdout)
+        self.assertTrue(advisories, result.stdout)
+        self.assertTrue(affirmed, result.stdout)
+
+
+class ExitCodeEpilogTest(unittest.TestCase):
+    """`--help` names each exit status, and says a verdict stays on its host."""
+
+    def setUp(self):
+        result = subprocess.run(
+            [sys.executable, "scripts/cutcheck.py", "--help"],
+            cwd=str(ROOT),
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.help = " ".join(result.stdout.split())
+
+    def test_zero_is_no_finding_outside_the_advisory_set_and_not_a_clean_set(self):
+        self.assertIn(
+            "0 Cutcheck's exit 0 means no finding whose class lies outside the "
+            "advisory set, not that the set is clean: an advisory finding is "
+            "reported and exits 0.",
+            self.help,
+        )
+
+    def test_one_is_a_finding_outside_the_advisory_set(self):
+        self.assertIn(
+            "1 At least one finding whose class lies outside the advisory set.",
+            self.help,
+        )
+
+    def test_two_is_no_ticket_set_and_argparses_own_usage_error(self):
+        self.assertIn(
+            "2 No ticket set resolved for the run; argparse's own usage error "
+            "exits 2 as well.",
+            self.help,
+        )
+
+    def test_a_verdict_is_read_only_on_the_host_that_produced_it(self):
+        self.assertIn(
+            "A cut verdict is not portable between hosts. An oracle naming an "
+            "interpreter one host lacks is reported there as unrunnable-oracle "
+            "and is silent here, so a verdict is read only on the host that "
+            "produced it.",
+            self.help,
+        )
+
+    def test_the_epilog_leaves_the_families_to_the_module_docstring(self):
+        for family in sorted(set(cutcheck.FAMILY_OF.values())):
+            self.assertNotIn(family, self.help)
 
 
 class DiscriminationTest(unittest.TestCase):
@@ -188,7 +313,9 @@ class CarveOutTest(unittest.TestCase):
 
     def test_the_set_is_reported_clean(self):
         self.assertEqual(self.result.returncode, 0, self.result.stdout + self.result.stderr)
-        self.assertEqual(self.result.stdout.splitlines(), [])
+        # The whole report, not a line of it: nothing was found here but the
+        # affirmative line that says so.
+        self.assertEqual(self.result.stdout.splitlines(), [cutcheck.NO_FINDING_OUTSIDE])
 
     def test_a_path_the_item_only_reads_is_no_scope_defect(self):
         self.assertNotIn("01-reads-only", self.result.stdout)
