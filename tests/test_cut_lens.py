@@ -24,6 +24,7 @@ DELEGATED = "## Delegated"
 KEPT = "## Kept"
 NO_DIVISION = "the lens states no {} / {} division".format(DELEGATED, KEPT)
 UNCLAIMED = "the checker defines {}, which the lens neither delegates nor keeps"
+UNDEFINED = "the lens delegates {}, which the checker does not define"
 
 
 def checker_families(source):
@@ -55,6 +56,8 @@ def correspondence(lens, source):
     kept = set(LENS_FAMILY_RE.findall(division[1]))
     families = checker_families(source)
     return [
+        UNDEFINED.format(family) for family in sorted(delegated - families)
+    ] + [
         UNCLAIMED.format(family)
         for family in sorted(families - delegated - kept)
     ]
@@ -76,6 +79,23 @@ class FamilyCorrespondenceTest(unittest.TestCase):
         self.assertEqual(
             [UNCLAIMED.format(dropped)], correspondence(five_for_six, self.source)
         )
+
+    def test_a_family_the_checker_drops_is_reported(self):
+        dropped = self.families[-1]
+        without = re.sub(
+            r"^.*{}.*\n".format(re.escape(dropped)), "", self.source, flags=re.M
+        )
+        self.assertEqual(
+            [UNDEFINED.format(dropped)], correspondence(self.lens, without)
+        )
+
+    def test_a_family_the_lens_keeps_for_itself_is_no_defect(self):
+        kept = self.families[-1]
+        moved = self.lens.replace(kept, "").replace(
+            KEPT,
+            "{}\n\n- {}: judged by reading, never by the tool.".format(KEPT, kept),
+        )
+        self.assertEqual([], correspondence(moved, self.source))
 
 
 if __name__ == "__main__":
