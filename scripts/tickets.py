@@ -10,6 +10,10 @@ subcommand prints exactly one JSON document to stdout. Failures are
 reported as ``{"error": "..."}`` in the JSON payload and exit 1; success
 exits 0. No outcome raises a traceback.
 
+``--help``, ``-h`` or ``help`` answers usage at the top level, and
+``<subcommand> --help`` for one subcommand: a request for usage is served,
+never rendered as an unknown-subcommand error.
+
 Subcommands:
     list [--run R]
     ready [--run R]
@@ -83,6 +87,51 @@ RESULT_USAGE = (
 RUN_STATE_USAGE = (
     "run-state <run> (--note <line> | --artifact <name> "
     "(--file <path> | --text <string>))"
+)
+SUBCOMMAND_USAGE = {
+    "list": "list [--run R]",
+    "ready": "ready [--run R]",
+    "claim": "claim <run> <id> --by <name>",
+    "set-status": "set-status <run> <id> <status>",
+    "packet": "packet <run> <id> --reply-to <name> [--workspace <path>]",
+    "result": RESULT_USAGE,
+    "run-state": RUN_STATE_USAGE,
+}
+SUBCOMMAND_SUMMARY = {
+    "list": "Every ticket in the tracker, or in one run, as summaries.",
+    "ready": "The tickets whose dependencies are complete and whose claim is "
+    "free or stale; promotes an eligible `pending` to `ready`.",
+    "claim": "Take one ready or stale ticket, losing the race rather than "
+    "overwriting a live claim.",
+    "set-status": f"Set one ticket's status; terminal status is the join's "
+    f"alone. One of {sorted(VALID_STATUSES)}.",
+    "packet": "The by-reference dispatch packet for one ticket: path, parts, "
+    "and the commands the child runs from its own workspace.",
+    "result": f"Write one of the executor's own sections {list(EXECUTOR_SECTIONS)}.",
+    "run-state": "Write this run's state under the one repository-wide `.orch/`.",
+}
+HELP_FLAGS = frozenset({"--help", "-h"})
+# The bare word only heads the command line. Inside a subcommand `help` is
+# an ordinary token — a ticket could be named it — so only the dashed flags
+# ask for usage there.
+HELP_COMMANDS = HELP_FLAGS | {"help"}
+# Every flag that consumes the token after it. A help flag standing as one of
+# those values is that value, not a request for usage: `--note --help` writes
+# the note `--help`, exactly as `_extract_flag` would read it.
+VALUE_FLAGS = frozenset(
+    {
+        "--run",
+        "--by",
+        "--section",
+        "--file",
+        "--text",
+        "--note",
+        "--artifact",
+        "--terminal",
+        "--tree",
+        "--reply-to",
+        "--workspace",
+    }
 )
 
 
@@ -612,7 +661,7 @@ def _cmd_claim(rest):
     if claimed_by is None:
         return {"error": "claim requires --by <name>"}
     if len(args) != 2:
-        return {"error": "usage: claim <run> <id> --by <name>"}
+        return {"error": f"usage: {SUBCOMMAND_USAGE['claim']}"}
     run, ticket_id = args
     tickets_root = _tickets_root()
     if tickets_root is None:
@@ -636,7 +685,7 @@ def _cmd_claim(rest):
 def _cmd_set_status(rest):
     args = list(rest)
     if len(args) != 3:
-        return {"error": "usage: set-status <run> <id> <status>"}
+        return {"error": f"usage: {SUBCOMMAND_USAGE['set-status']}"}
     run, ticket_id, status = args
     if status not in VALID_STATUSES:
         return {"error": f"invalid status '{status}'; must be one of {sorted(VALID_STATUSES)}"}
@@ -668,7 +717,7 @@ def _cmd_packet(rest):
     reply_to = _extract_flag(args, "--reply-to")
     workspace = _extract_flag(args, "--workspace")
     if len(args) != 2:
-        return {"error": "usage: packet <run> <id> --reply-to <name> [--workspace <path>]"}
+        return {"error": f"usage: {SUBCOMMAND_USAGE['packet']}"}
     run, ticket_id = args
     tickets_root = _tickets_root()
     if tickets_root is None:
@@ -927,6 +976,54 @@ def _cmd_run_state(rest):
     }
 
 
+def _help_requested(rest) -> bool:
+    """Whether a help flag in ``rest`` stands as its own token.
+
+    A help flag consumed as a value-taking flag's value is that value
+    (``VALUE_FLAGS``), so ``--note --help`` writes the note and never
+    answers usage: a run-state line whose text happens to be a help flag
+    must not be swallowed silently.
+    """
+
+    return any(
+        token in HELP_FLAGS and (i == 0 or rest[i - 1] not in VALUE_FLAGS)
+        for i, token in enumerate(rest)
+    )
+
+
+def _cmd_help(command=None):
+    """Usage, answered before any argument is resolved.
+
+    A request for usage is a request this script serves, never an unhandled
+    case it renders as the ordinary error path. It carries no ``error`` key
+    and so exits 0, and it touches no repository: `--help` outside a
+    checkout, or on a subcommand whose required arguments are absent, is
+    still answerable and is the case a reader most often needs it in.
+    """
+
+    if command is None:
+        return {
+            "help": {
+                "usage": "tickets.py <subcommand> [options]",
+                "subcommands": {
+                    name: {"usage": SUBCOMMAND_USAGE[name], "summary": SUBCOMMAND_SUMMARY[name]}
+                    for name in SUBCOMMAND_USAGE
+                },
+                "help": f"tickets.py {' | '.join(sorted(HELP_FLAGS))} | "
+                "help, or <subcommand> --help",
+                "output": "exactly one JSON document on stdout; a payload "
+                "carrying 'error' exits 1, every other payload exits 0",
+            }
+        }
+    return {
+        "help": {
+            "subcommand": command,
+            "usage": SUBCOMMAND_USAGE[command],
+            "summary": SUBCOMMAND_SUMMARY[command],
+        }
+    }
+
+
 def _dispatch(argv):
     if not argv:
         return {
@@ -934,6 +1031,10 @@ def _dispatch(argv):
             "packet | result | run-state"
         }
     command, rest = argv[0], argv[1:]
+    if command in HELP_COMMANDS:
+        return _cmd_help()
+    if command in SUBCOMMAND_USAGE and _help_requested(rest):
+        return _cmd_help(command)
     if command == "list":
         return _cmd_list(rest)
     if command == "ready":
