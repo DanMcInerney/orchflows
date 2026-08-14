@@ -159,12 +159,12 @@ class TestClaim(unittest.TestCase):
 
 
 class TestInvalidStatus(unittest.TestCase):
-    def test_set_status_rejects_invalid_status_as_error_json_exit_zero(self):
+    def test_set_status_rejects_invalid_status_as_error_json_exit_one(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             run_dir = make_repo(tmp, {"T1": ("ready", "[]")})
             result = run_full(tmp, "set-status", "testrun", "T1", "bogus-status")
-            self.assertEqual(0, result.returncode)
+            self.assertEqual(1, result.returncode)
             payload = json.loads(result.stdout)
             self.assertIn("error", payload)
             self.assertIn("status: ready", (run_dir / "T1.md").read_text(encoding="utf-8"))
@@ -194,7 +194,7 @@ class TestMalformedFrontmatter(unittest.TestCase):
             run_dir.mkdir(parents=True)
             (run_dir / "T1.md").write_text("---\nid: T1\nstatus: ready\n", encoding="utf-8")
             result = run_full(tmp, "set-status", "testrun", "T1", "complete")
-            self.assertEqual(0, result.returncode)
+            self.assertEqual(1, result.returncode)
             payload = json.loads(result.stdout)
             self.assertIn("error", payload)
 
@@ -206,7 +206,7 @@ class TestMalformedFrontmatter(unittest.TestCase):
             run_dir.mkdir(parents=True)
             (run_dir / "T1.md").write_text("---\nid: T1\nstatus: ready\n", encoding="utf-8")
             result = run_full(tmp, "claim", "testrun", "T1", "--by", "agent-a")
-            self.assertEqual(0, result.returncode)
+            self.assertEqual(1, result.returncode)
             payload = json.loads(result.stdout)
             self.assertIn("error", payload)
 
@@ -314,7 +314,7 @@ class TestNotInsideARepo(unittest.TestCase):
             tmp = Path(tmp)
             # deliberately no .git anywhere under this tempdir
             result = run_full(tmp, "list")
-            self.assertEqual(0, result.returncode)
+            self.assertEqual(1, result.returncode)
             payload = json.loads(result.stdout)
             self.assertEqual({"error": "not inside a git repository"}, payload)
 
@@ -322,7 +322,7 @@ class TestNotInsideARepo(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             result = run_full(tmp, "claim", "testrun", "T1", "--by", "agent-a")
-            self.assertEqual(0, result.returncode)
+            self.assertEqual(1, result.returncode)
             payload = json.loads(result.stdout)
             self.assertEqual({"error": "not inside a git repository"}, payload)
 
@@ -440,7 +440,7 @@ class TestPacket(unittest.TestCase):
             self.assertIn("ticket not found", run_cmd(tmp, "packet", "testrun", "T9", "--reply-to", "main")["error"])
         with tempfile.TemporaryDirectory() as tmp:
             result = run_full(Path(tmp), "packet", "testrun", "T1", "--reply-to", "main")
-            self.assertEqual(0, result.returncode)
+            self.assertEqual(1, result.returncode)
             self.assertEqual(
                 {"error": "not inside a git repository"}, json.loads(result.stdout)
             )
@@ -561,7 +561,7 @@ class TestResultBodySource(unittest.TestCase):
                 worktree, "result", "testrun", "T1", "--section", "Result",
                 "--file", str(body), "--text", "from a string",
             )
-            self.assertEqual(0, result.returncode)
+            self.assertEqual(1, result.returncode)
             self.assertIn("error", json.loads(result.stdout))
             self.assertEqual(before, (run_dir / "T1.md").read_text(encoding="utf-8"))
 
@@ -571,7 +571,7 @@ class TestResultBodySource(unittest.TestCase):
             _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
             before = (run_dir / "T1.md").read_text(encoding="utf-8")
             result = run_full(worktree, "result", "testrun", "T1", "--section", "Result")
-            self.assertEqual(0, result.returncode)
+            self.assertEqual(1, result.returncode)
             self.assertIn("error", json.loads(result.stdout))
             self.assertEqual(before, (run_dir / "T1.md").read_text(encoding="utf-8"))
 
@@ -583,7 +583,7 @@ class TestResultBodySource(unittest.TestCase):
                 worktree, "result", "testrun", "T1", "--section", "Result",
                 "--file", str(worktree / "absent.md"),
             )
-            self.assertEqual(0, result.returncode)
+            self.assertEqual(1, result.returncode)
             self.assertIn("error", json.loads(result.stdout))
 
 
@@ -600,7 +600,7 @@ class TestResultRefusesTerminalStatus(unittest.TestCase):
                 worktree, "result", "testrun", "T1", "--section", "Result",
                 "--text", "done", "--status", "complete",
             )
-            self.assertEqual(0, result.returncode)
+            self.assertEqual(1, result.returncode)
             payload = json.loads(result.stdout)
             self.assertIn("--status", payload["error"])
             self.assertIn("set-status", payload["error"])
@@ -693,7 +693,7 @@ class TestResultRefusesTerminalStatus(unittest.TestCase):
 
 
 class TestResultScriptContract(unittest.TestCase):
-    def test_success_and_failure_both_exit_zero_with_one_json_document(self):
+    def test_success_and_failure_each_print_one_json_document(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             _, worktree, _run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
@@ -706,7 +706,7 @@ class TestResultScriptContract(unittest.TestCase):
             bad = run_full(
                 worktree, "result", "testrun", "T9", "--section", "Result", "--text", "ok",
             )
-            self.assertEqual(0, bad.returncode)
+            self.assertEqual(1, bad.returncode)
             self.assertIn("ticket not found", json.loads(bad.stdout)["error"])
             self.assertEqual(1, len(bad.stdout.strip().splitlines()))
 
@@ -715,7 +715,7 @@ class TestResultScriptContract(unittest.TestCase):
             result = run_full(
                 Path(tmp), "result", "testrun", "T1", "--section", "Result", "--text", "x"
             )
-            self.assertEqual(0, result.returncode)
+            self.assertEqual(1, result.returncode)
             self.assertEqual(
                 {"error": "not inside a git repository"}, json.loads(result.stdout)
             )
@@ -1500,7 +1500,7 @@ class TestExecutedRunStateSeam(unittest.TestCase):
             noted = run_argv(note_argv, worktree)
             self.assertEqual(0, noted.returncode, noted.stderr)
             payload = json.loads(noted.stdout)
-            # `tickets.py` exits 0 on error: the payload decides, not the code
+            # exit 0 and an error-free payload are one fact, asserted as two
             self.assertNotIn("error", payload)
             self.assertEqual(str(worklog_of(main).resolve()), payload["run_state"]["path"])
             self.assertEqual(
