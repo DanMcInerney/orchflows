@@ -1841,9 +1841,18 @@ class InCopyMutationTest(unittest.TestCase):
         self.assertEqual(self._wrote("git log -1 --format=%H"), [])
 
     def test_an_untracked_unignored_directory_in_the_copy_is_reported(self):
-        wrote = self._wrote(
-            "python3 -m pytest --junitxml=probe_dir/r.xml tests/test_installer.py"
-        )
+        """A directory a span leaves behind, written by git rather than by pytest.
+
+        The shape it stands for is a runner emitting a report directory --
+        `python3 -m pytest --junitxml=probe_dir/r.xml ...` was the spelling
+        here, and it wrote `probe_dir/` only on a host with pytest installed.
+        No CI leg installs anything, so that span wrote nothing on all nine of
+        them and this node failed there while passing here. `checkout-index`
+        writes an indexed file under a prefix it creates, and needs nothing
+        the copy does not already need: the copy is a git clone.
+        """
+
+        wrote = self._wrote("git checkout-index --prefix=probe_dir/ LICENSE")
         self.assertIn("probe_dir/", wrote)
 
     def test_an_ignored_path_is_reported_and_the_bare_spelling_would_miss_it(self):
@@ -1853,9 +1862,15 @@ class InCopyMutationTest(unittest.TestCase):
         status --porcelain`: that spelling returns nothing with the directory
         sitting in the copy, so it is silently vacuous against the one leak
         that motivated the check.
+
+        The directory is the one pytest leaves; the span that makes it is git,
+        for the reason the node above states. The name has to stay an ignored
+        one -- an unignored path here would leave both nodes reading the same
+        thing, and the bare-spelling assertion below would pass vacuously
+        against a status that is empty for no reason at all.
         """
 
-        wrote = self._wrote("python3 -m pytest tests/test_installer.py")
+        wrote = self._wrote("git checkout-index --prefix=.pytest_cache/ LICENSE")
         self.assertIn(".pytest_cache/", wrote)
         bare = cutcheck._git(["status", "--porcelain"], self.tree)
         self.assertEqual(bare.stdout, "", "the bare spelling would have missed it")
