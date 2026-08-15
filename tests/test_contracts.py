@@ -18,6 +18,38 @@ def read_flat(name):
     return re.sub(r"\s+", " ", read(name))
 
 
+def read_at(relative):
+    """Any repository file, by repository-relative path."""
+    return (ROOT / relative).read_text(encoding="utf-8")
+
+
+def read_at_flat(relative):
+    """Any repository file, whitespace collapsed, so wrapped clauses match."""
+    return re.sub(r"\s+", " ", read_at(relative))
+
+
+def read_clause_flat(relative, number):
+    """One numbered clause of a rules file, whitespace collapsed. Scopes an
+    assertion to the clause that owns the law, so a sentence landing in a
+    neighbouring clause cannot satisfy it."""
+    match = re.search(
+        rf"(?m)^{number}\. (.*?)(?=^\d+\. |\Z)", read_at(relative), re.S
+    )
+    if match is None:
+        raise AssertionError(f"{relative} has no clause {number}")
+    return re.sub(r"\s+", " ", match.group(1))
+
+
+def read_bullet_flat(name, marker):
+    """One top-level bullet of a contract, whitespace collapsed. Scopes an
+    assertion to the bullet the criterion names, so a sentence landing in a
+    neighbouring bullet cannot satisfy it."""
+    flat = read_flat(name)
+    if marker not in flat:
+        raise AssertionError(f"contracts/{name} has no bullet {marker}")
+    return flat.split(marker, 1)[1].split(" - `", 1)[0]
+
+
 class TestVerdictContract(unittest.TestCase):
     def test_contains_the_verdict_grammar(self):
         text = read("verdict.md")
@@ -251,6 +283,262 @@ class TestDelegationContract(unittest.TestCase):
         self.assertIn(
             "a work-item dispatch suspends through the ticket's `## Handoff`",
             text, "delegation.md does not route work-item suspension through the ticket's ## Handoff",
+        )
+
+
+class TestVocabularyDefinesShapeChange(unittest.TestCase):
+    """`docs/vocabulary.md` owns the term the T0 supersession gate in
+    `AGENTS.md` and `ARCHITECTURE.md` invokes. The subject is the entry,
+    never a corpus count of the words."""
+
+    TERM = "**shape change**"
+
+    def entry(self):
+        flat = read_at_flat("docs/vocabulary.md")
+        self.assertEqual(
+            flat.count(self.TERM), 1,
+            f"docs/vocabulary.md must carry the {self.TERM} entry exactly once",
+        )
+        return flat.split(self.TERM, 1)[1].split(" - **", 1)[0]
+
+    def test_defines_the_term(self):
+        entry = self.entry()
+        self.assertIn(
+            "a change to a named field or enum", entry,
+            "the shape change entry does not state what moves",
+        )
+        self.assertIn(
+            "T0", entry,
+            "the shape change entry does not scope the term to T0",
+        )
+
+    def test_states_the_converse_a_prose_only_edit_needs(self):
+        self.assertIn(
+            "without a supersession PR", self.entry(),
+            "the shape change entry does not state the converse: a T0 edit "
+            "moving no field or enum re-pins without a supersession PR",
+        )
+
+    def test_lands_beside_contract_under_structure(self):
+        flat = read_at_flat("docs/vocabulary.md")
+        structure = flat.split("## Structure", 1)[1].split("## Work", 1)[0]
+        self.assertIn(
+            self.TERM, structure,
+            "the shape change entry must sit under ## Structure, where a "
+            "reader of the `contract` entry finds it",
+        )
+
+
+class TestVisibilityChannelLaw(unittest.TestCase):
+    """`rules/visibility.md` §6 owns the two-channel law. Its content
+    channel must hold for all four packs, whose workspace cells are a git
+    tree, a git-plus-render tree, a document tree and an evidence store —
+    only the first two merge. Its scope is all of `.orch/`."""
+
+    def section(self):
+        return read_clause_flat("rules/visibility.md", 6)
+
+    def test_content_channel_is_the_packs_workspace_cell(self):
+        text = self.section()
+        self.assertIn(
+            "the pack's workspace cell", text,
+            "visibility.md §6 does not name the pack's workspace cell as what "
+            "content leaves the workspace by; a merge-only channel is false "
+            "for the content and research packs",
+        )
+
+    def test_governs_all_of_orch(self):
+        self.assertIn(
+            "not only `runs/` and `tickets/`", self.section(),
+            "visibility.md §6 does not state that it governs all of `.orch/`, "
+            "not only `runs/` and `tickets/`",
+        )
+
+    def test_the_two_channel_law_survives_the_rewrite(self):
+        text = self.section()
+        for clause in ("two channels", "never cross", "file tools", "installed scripts"):
+            self.assertIn(
+                clause, text,
+                f"visibility.md §6 lost {clause!r}: the merge clause is "
+                "re-expressed, never deleted",
+            )
+
+
+class TestVerificationHomelessLaws(unittest.TestCase):
+    """`rules/verification.md` owns three laws no other file states: §1's
+    truncation prohibition, which `scripts/cutcheck.py` enforces; §7's
+    reuse precondition for a gate that returns findings; and
+    §11's two cross-step sentences, frozen byte-for-byte against the copy
+    `S-CUT`'s spec carries. The last two are never reworded here."""
+
+    def law(self, number=None):
+        if number is None:
+            return read_at_flat("rules/verification.md")
+        return read_clause_flat("rules/verification.md", number)
+
+    def test_a_truncated_transcript_is_not_the_oracles_output(self):
+        text = self.law(1)
+        self.assertIn(
+            "A truncated transcript is not the oracle's output", text,
+            "verification.md §1 does not state that a truncated transcript "
+            "is not the oracle's output",
+        )
+        for pipe in ("`| tail`", "`| head`"):
+            self.assertIn(
+                pipe, text,
+                f"verification.md §1 does not name {pipe} as a reader that "
+                "reports the pipe's status rather than the command's",
+            )
+        self.assertIn(
+            "redirecting to a file and grepping it", text,
+            "verification.md §1 names no method in place of the pipes it forbids",
+        )
+
+    def test_a_gate_returning_findings_moves_the_result_identity(self):
+        text = self.law(7)
+        self.assertIn(
+            "A gate returning findings moves the result identity", text,
+            "verification.md §7 does not state that a gate returning findings "
+            "moves the result identity",
+        )
+        self.assertIn(
+            "reusable only where the correction left the covered identity "
+            "unchanged", text,
+            "verification.md §7 does not qualify reuse by what the correction "
+            "left unchanged",
+        )
+
+    def test_carries_the_frozen_cutcheck_exit_sentence_verbatim(self):
+        self.assertIn(
+            "Cutcheck's exit 0 means no finding whose class lies outside "
+            "the advisory set, not that the set is clean: an advisory "
+            "finding is reported and exits 0.",
+            self.law(),
+            "verification.md §11 lost the frozen cross-step sentence on "
+            "cutcheck's exit 0; it is byte-frozen against `S-CUT`'s copy and "
+            "is re-copied, never reworded",
+        )
+
+    def test_carries_the_frozen_host_portability_sentence_verbatim(self):
+        self.assertIn(
+            "A cut verdict is not portable between hosts. An oracle naming "
+            "an interpreter one host lacks is reported there as "
+            "`unrunnable-oracle` and is silent here, so a verdict is read "
+            "only on the host that produced it.",
+            self.law(),
+            "verification.md §11 lost the frozen cross-step sentence on host "
+            "portability; it is byte-frozen against `S-CUT`'s copy and is "
+            "re-copied, never reworded",
+        )
+
+
+class TestWorkItemCitationLaws(unittest.TestCase):
+    """`contracts/work-item.md` resolves three collisions no other file
+    owns: whose `status` a `Return fields` list names, who sets
+    `isolation` and when the join grades it, and what a fixed input may
+    cite. Each is read from the bullet that owns it, never from the file
+    around it: placement is what these criteria assert."""
+
+    def bullet(self, marker):
+        return read_bullet_flat("work-item.md", marker)
+
+    def test_return_fields_status_is_the_result_envelopes(self):
+        text = self.bullet("`## Return fields` — packet `return_contract`")
+        self.assertIn(
+            "A `status` in this list is the result envelope's", text,
+            "work-item.md's `## Return fields` bullet does not say a `status` "
+            "named there is the result envelope's",
+        )
+        self.assertIn(
+            "[result.md](result.md)", text,
+            "work-item.md's `## Return fields` bullet does not cite result.md "
+            "as the envelope owning that `status`",
+        )
+        self.assertIn(
+            "never the ticket frontmatter key above", text,
+            "work-item.md's `## Return fields` bullet does not exclude the "
+            "ticket frontmatter key",
+        )
+
+    def test_isolation_names_its_only_setter_and_the_grading_order(self):
+        text = self.bullet("`isolation` — packet `authority`")
+        for clause, why in (
+            ("The decomposer is the field's only setter",
+             "work-item.md's `isolation` bullet does not name the decomposer "
+             "as the field's only setter"),
+            ("`scripts/workspace.py check`",
+             "work-item.md's `isolation` bullet no longer names "
+             "`scripts/workspace.py check` as what grades the declaration"),
+            ("before the merge, because afterwards the item's tip is already "
+             "an ancestor of the run tip and a stamped item exits clean by "
+             "design",
+             "work-item.md's `isolation` bullet does not order "
+             "`scripts/workspace.py check` before the merge, nor give the "
+             "reason the check decides nothing after it"),
+        ):
+            with self.subTest(clause=clause):
+                self.assertIn(clause, text, why)
+
+    def test_fixed_inputs_forbid_an_unpinned_coordinate_by_citing_identity(self):
+        text = self.bullet("`## Fixed inputs` — packet `inputs`")
+        self.assertIn(
+            "never prose copies", text,
+            "work-item.md's `## Fixed inputs` bullet lost its existing "
+            "prohibition on a prose copy",
+        )
+        self.assertIn(
+            "never an unpinned coordinate", text,
+            "work-item.md's `## Fixed inputs` bullet does not forbid citing a "
+            "fixed input by an unpinned coordinate",
+        )
+        self.assertIn(
+            "[docs/vocabulary.md](../docs/vocabulary.md)'s `identity` entry",
+            text,
+            "work-item.md's `## Fixed inputs` bullet does not resolve the "
+            "line-number prohibition against the `identity` entry that owns "
+            "it; the citation is the property, never a restatement",
+        )
+
+
+class TestWorklogNoteLaws(unittest.TestCase):
+    """`contracts/worklog.md` owns note ordering, the terminal-section
+    boundary, and the refusal that keeps an artifact write from
+    overwriting silently. Of the three, `scripts/tickets.py` today
+    implements only the append; `S-MECH` adds the terminal-section
+    boundary and the refusal, through this run's `seq` edge."""
+
+    def contract(self):
+        return read_flat("worklog.md")
+
+    def test_notes_append_in_occurrence_order(self):
+        self.assertIn(
+            "Notes append in occurrence order", self.contract(),
+            "worklog.md does not state that notes append in occurrence order",
+        )
+
+    def test_no_note_is_written_past_a_terminal_section(self):
+        text = self.contract()
+        self.assertIn(
+            "no note is written past a terminal section", text,
+            "worklog.md does not close the file at its terminal section",
+        )
+        self.assertIn(
+            "carries no terminal placeholder until it closes", text,
+            "worklog.md does not draw the consequence that an open run has no "
+            "terminal placeholder for a note to land past",
+        )
+
+    def test_an_existing_artifact_is_not_overwritten_silently(self):
+        text = self.contract()
+        self.assertIn(
+            "Writing an artifact that already exists is refused by default",
+            text,
+            "worklog.md does not refuse a write over an existing artifact",
+        )
+        self.assertIn(
+            "the refusal naming the existing path", text,
+            "worklog.md's overwrite refusal does not name the existing path, "
+            "so the refusal is not actionable",
         )
 
 

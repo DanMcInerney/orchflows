@@ -6,10 +6,13 @@ Stdlib-only, cross-platform. Tickets are markdown work items per
 YAML dependency). The root is the main repository root — a linked
 worktree's ``.git`` pointer is dereferenced to it — so every worktree of
 a repository reads and writes one run's tickets at one path. Every
-subcommand exits 0 and prints exactly one JSON document to stdout —
-failures are reported as ``{"error": "..."}"``, never as a non-zero exit
-or a raised traceback, so this stays safe to call from any host without
-argument-parsing surprises.
+subcommand prints exactly one JSON document to stdout. Failures are
+reported as ``{"error": "..."}`` in the JSON payload and exit 1; success
+exits 0. No outcome raises a traceback.
+
+``--help``, ``-h`` or ``help`` answers usage at the top level, and
+``<subcommand> --help`` for one subcommand: a request for usage is served,
+never rendered as an unknown-subcommand error.
 
 Subcommands:
     list [--run R]
@@ -17,8 +20,11 @@ Subcommands:
     claim <run> <id> --by <name>
     set-status <run> <id> <status>
     packet <run> <id> --reply-to <name> [--workspace <path>]
-    result <run> <id> --section <name> (--file <path> | --text <string>) [--append]
-    run-state <run> (--note <line> | --artifact <name> (--file <path> | --text <string>))
+    result <run> <id> --section <name> (--file <path> | --text <string>)
+           [--append | --replace]
+    run-state <run> [--tree <name>] (--note <line> |
+             (--artifact <name> [--replace] | --terminal <state>)
+             (--file <path> | --text <string>))
 """
 
 from __future__ import annotations
@@ -28,6 +34,11 @@ import re
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+try:  # Windows only; POSIX append needs no lock. See _append_one_line.
+    import msvcrt
+except ImportError:
+    msvcrt = None
 
 VALID_STATUSES = {
     "pending",
@@ -78,12 +89,96 @@ SECTION_RANK = {name.lower(): i for i, name in enumerate(SECTION_ORDER)}
 # executes in a workspace of its own. The sibling script grades the same
 # declaration; the spelling belongs to the contract, not to either script.
 REQUIRED_ISOLATION = "required"
+# Each pack's `workspace` cell names its mechanism first, before the cell's
+# colon; this is that name, per pack. Only a git mechanism has a workspace
+# `scripts/workspace.py start` can establish, so only those packs are emitted
+# a step for. Mirrors packs/; tests/test_sync.py holds the two in sync,
+# because an installed copy of this script runs against a target repository
+# with no library tree to read the cell from.
+PACK_WORKSPACE_MECHANISMS = {
+    "orch-code-pack": "git",
+    "orch-content-pack": "document tree",
+    "orch-design-pack": "git plus render",
+    "orch-research-pack": "evidence store",
+}
+# The mechanisms above that are a git ref, and so establishable from here.
+GIT_WORKSPACE_MECHANISMS = frozenset({"git", "git plus render"})
+# rules/visibility.md §6's `.orch/` trees a run writes into, as a closed set.
+# `runs/` is the worklog's own and stays the default, so every pre-existing
+# call site lands exactly where it always did. The other three are named
+# across the library and had no writer at all: anything meant for them was
+# written by hand at a path each author guessed, or simply lost. Closed and
+# refused by name rather than open, because `.orch/tickets/` is the tracker's
+# and `.orch/friction/` is the logger's — neither is writable from here.
+RUN_STATE_TREES = ("runs", "research", "improvement", "handoffs")
+DEFAULT_RUN_STATE_TREE = "runs"
+# contracts/worklog.md's run-level `terminal` set, in the contract's order.
+# Deliberately not VALID_STATUSES: the contract states the two are not one
+# set — `stalled` exists only at run level, `suspended` only at ticket level.
+TERMINAL_STATES = ("complete", "blocked", "stalled", "limited", "failed")
+WORKLOG_NAME = "worklog.md"
+# The heading that closes a worklog. Written only by `--terminal`, so a
+# worklog carries no terminal placeholder until it closes and the marker
+# means what it says: while it is absent the run is open.
+TERMINAL_HEADING = "## terminal"
 RESULT_USAGE = (
-    "result <run> <id> --section <name> (--file <path> | --text <string>) [--append]"
+    "result <run> <id> --section <name> (--file <path> | --text <string>) "
+    "[--append | --replace]"
 )
 RUN_STATE_USAGE = (
-    "run-state <run> (--note <line> | --artifact <name> "
+    "run-state <run> [--tree <name>] (--note <line> | "
+    "(--artifact <name> [--replace] | --terminal <state>) "
     "(--file <path> | --text <string>))"
+)
+SUBCOMMAND_USAGE = {
+    "list": "list [--run R]",
+    "ready": "ready [--run R]",
+    "claim": "claim <run> <id> --by <name>",
+    "set-status": "set-status <run> <id> <status>",
+    "packet": "packet <run> <id> --reply-to <name> [--workspace <path>]",
+    "result": RESULT_USAGE,
+    "run-state": RUN_STATE_USAGE,
+}
+SUBCOMMAND_SUMMARY = {
+    "list": "Every ticket in the tracker, or in one run, as summaries.",
+    "ready": "The tickets whose dependencies are complete and whose claim is "
+    "free or stale; promotes an eligible `pending` to `ready`.",
+    "claim": "Take one ready or stale ticket, losing the race rather than "
+    "overwriting a live claim.",
+    "set-status": f"Set one ticket's status; terminal status is the join's "
+    f"alone. One of {sorted(VALID_STATUSES)}.",
+    "packet": "The by-reference dispatch packet for one ticket: path, parts, "
+    "and the commands the child runs from its own workspace.",
+    "result": f"Write one of the executor's own sections {list(EXECUTOR_SECTIONS)}; "
+    "a section already carrying content is refused without --append or --replace.",
+    "run-state": "Write this run's state under the one repository-wide "
+    f"`.orch/`, in one of {list(RUN_STATE_TREES)} (default "
+    f"{DEFAULT_RUN_STATE_TREE}); an artifact that already exists is refused "
+    f"without --replace. --terminal closes the worklog, one of "
+    f"{list(TERMINAL_STATES)}, after which no note is written.",
+}
+HELP_FLAGS = frozenset({"--help", "-h"})
+# The bare word only heads the command line. Inside a subcommand `help` is
+# an ordinary token — a ticket could be named it — so only the dashed flags
+# ask for usage there.
+HELP_COMMANDS = HELP_FLAGS | {"help"}
+# Every flag that consumes the token after it. A help flag standing as one of
+# those values is that value, not a request for usage: `--note --help` writes
+# the note `--help`, exactly as `_extract_flag` would read it.
+VALUE_FLAGS = frozenset(
+    {
+        "--run",
+        "--by",
+        "--section",
+        "--file",
+        "--text",
+        "--note",
+        "--artifact",
+        "--terminal",
+        "--tree",
+        "--reply-to",
+        "--workspace",
+    }
 )
 
 
@@ -99,6 +194,22 @@ def normalized_isolation(declared) -> str:
     """
 
     return str(declared or "none").strip().strip("`").strip() or "none"
+
+
+def establishes_a_git_workspace(pack) -> bool:
+    """Whether `pack`'s workspace cell names a mechanism this script can
+    establish a workspace in.
+
+    A pack absent from the table answers yes. The table is only as current as
+    its last sync, and the two mistakes are not equal: a child handed a step
+    its mechanism has no meaning for fails at its first act, in the open,
+    while a child not handed one it needed works in the shared tree and loses
+    that work at the join with nothing to see.
+    """
+
+    name = str(pack or "").strip().strip("`").strip()
+    mechanism = PACK_WORKSPACE_MECHANISMS.get(name)
+    return mechanism is None or mechanism in GIT_WORKSPACE_MECHANISMS
 
 
 # --- repository / filesystem helpers ---------------------------------------
@@ -147,11 +258,11 @@ def _tickets_root():
     return repo_root / ".orch" / "tickets"
 
 
-def _runs_root():
+def _run_state_root(tree: str):
     repo_root = _find_repo_root(Path.cwd())
     if repo_root is None:
         return None
-    return repo_root / ".orch" / "runs"
+    return repo_root / ".orch" / tree
 
 
 def _segment_error(kind: str, value: str):
@@ -346,6 +457,43 @@ def _sections(text: str) -> dict:
     return sections
 
 
+def _frontmatter_end(lines) -> int:
+    """The first index below the frontmatter block; 0 when there is none.
+
+    Both the writer and the overwrite guard look for headings only below
+    this line: a wrapped frontmatter value can begin a line with ``## ``,
+    and reading one as a section is how a guard comes to report on a
+    heading that is not a section at all.
+    """
+
+    if not lines or lines[0].rstrip("\r\n") != "---":
+        return 0
+    for i in range(1, len(lines)):
+        if lines[i].rstrip("\r\n") == "---":
+            return i + 1
+    return 0
+
+
+def _section_body(text: str, heading: str) -> str:
+    """One section's current body, found the way ``_write_section`` finds it.
+
+    Same frontmatter skip, same fence-aware scan, same case-insensitive
+    match, so the content the overwrite guard reads is the content of the
+    very span the writer is about to overwrite. A guard resolving a
+    different heading than the writer writes is a guard that passes while
+    the clobber happens.
+    """
+
+    lines = text.splitlines()
+    starts, _ = _scan_sections(lines, _frontmatter_end(lines))
+    for position, index in enumerate(starts):
+        if lines[index][3:].strip().lower() != heading.strip().lower():
+            continue
+        end = starts[position + 1] if position + 1 < len(starts) else len(lines)
+        return "\n".join(lines[index + 1 : end]).strip()
+    return ""
+
+
 def _body_block(body: str, newline: str) -> str:
     """Normalize a body to the file's line ending, ending in exactly one."""
 
@@ -363,13 +511,7 @@ def _write_section(text: str, heading: str, body: str, append: bool = False) -> 
     # Headings are looked for below the frontmatter only: a wrapped
     # frontmatter value can begin a line with "## ", and frontmatter is
     # never this writer's to touch.
-    body_start = 0
-    if lines and lines[0].rstrip("\r\n") == "---":
-        for i in range(1, len(lines)):
-            if lines[i].rstrip("\r\n") == "---":
-                body_start = i + 1
-                break
-    starts, unclosed = _scan_sections(lines, body_start)
+    starts, unclosed = _scan_sections(lines, _frontmatter_end(lines))
     if unclosed is not None:
         # Every heading below the open fence reads as quoted content, so the
         # section named here looks absent however present it is: writing it
@@ -613,7 +755,7 @@ def _cmd_claim(rest):
     if claimed_by is None:
         return {"error": "claim requires --by <name>"}
     if len(args) != 2:
-        return {"error": "usage: claim <run> <id> --by <name>"}
+        return {"error": f"usage: {SUBCOMMAND_USAGE['claim']}"}
     run, ticket_id = args
     tickets_root = _tickets_root()
     if tickets_root is None:
@@ -637,7 +779,7 @@ def _cmd_claim(rest):
 def _cmd_set_status(rest):
     args = list(rest)
     if len(args) != 3:
-        return {"error": "usage: set-status <run> <id> <status>"}
+        return {"error": f"usage: {SUBCOMMAND_USAGE['set-status']}"}
     run, ticket_id, status = args
     if status not in VALID_STATUSES:
         return {"error": f"invalid status '{status}'; must be one of {sorted(VALID_STATUSES)}"}
@@ -669,7 +811,7 @@ def _cmd_packet(rest):
     reply_to = _extract_flag(args, "--reply-to")
     workspace = _extract_flag(args, "--workspace")
     if len(args) != 2:
-        return {"error": "usage: packet <run> <id> --reply-to <name> [--workspace <path>]"}
+        return {"error": f"usage: {SUBCOMMAND_USAGE['packet']}"}
     run, ticket_id = args
     tickets_root = _tickets_root()
     if tickets_root is None:
@@ -722,10 +864,15 @@ def _cmd_packet(rest):
     script = Path(__file__).resolve()
     # contracts/work-item.md's `isolation`: absent reads `none`, and only
     # `required` is told to establish anything, so a lane that must not stamp
-    # itself is never handed the command. The sibling resolves from this
+    # itself is never handed the command. The pack is the second condition:
+    # `required` says the item works alone, its pack's workspace cell says
+    # what working alone is made of, and only a git mechanism is made of
+    # something this command can establish. The sibling resolves from this
     # file's own location, so it points at whichever copy is running.
     isolation = normalized_isolation(loaded.get("isolation"))
-    if isolation == REQUIRED_ISOLATION:
+    if isolation == REQUIRED_ISOLATION and establishes_a_git_workspace(
+        loaded.get("pack")
+    ):
         prompt.append(
             "Workspace establishment (isolation: required), your first act, "
             "run from inside your own workspace:"
@@ -781,6 +928,15 @@ def _cmd_result(rest):
     append = "--append" in args
     while "--append" in args:
         args.remove("--append")
+    replace = "--replace" in args
+    while "--replace" in args:
+        args.remove("--replace")
+    if append and replace:
+        return {
+            "error": "result takes one of --append or --replace, not both: they "
+            f"are the two ways to write a section that already carries content. "
+            f"usage: {RESULT_USAGE}"
+        }
     stray = next((arg for arg in args if arg.startswith("-")), None)
     if stray is not None:
         return {
@@ -820,24 +976,115 @@ def _cmd_result(rest):
         return {"error": f"ticket not found: {run}/{ticket_id}"}
     try:
         text = ticket_path.read_text(encoding="utf-8")
-        # _write_section raises before any byte is written: a ticket it
-        # cannot write safely is left exactly as it was found
-        ticket_path.write_text(
-            _write_section(text, canonical, body, append), encoding="utf-8"
-        )
+        # Rendered before the overwrite guard reads anything, and written
+        # after it: a ticket this writer cannot write safely is refused as
+        # such whatever flags were passed, and the guard never reports on a
+        # file whose headings `_sections` cannot see (an unterminated fence
+        # hides every one below it, which would read as an empty section and
+        # wave the clobber through). `_write_section` is pure, so nothing is
+        # on disk until the write below.
+        rendered = _write_section(text, canonical, body, append)
     except TicketFormatError as error:
         return {"error": f"{error}. ticket: {ticket_path}"}
     except OSError as error:
+        return {"error": f"unreadable ticket: {error}"}
+    prior = _section_body(text, canonical)
+    if prior and not append and not replace:
+        # contracts/worklog.md's closing law, read across to the ticket the
+        # same executor writes: a write over content already there is refused
+        # by default and the refusal names the path. A ticket is cut with its
+        # executor sections present and empty, so a first write is free; what
+        # is guarded is the second writer silently erasing the first — the
+        # §10 checker over the executor, or a resumed agent over its own pass.
+        return {
+            "error": f"'## {canonical}' already carries content: refusing to "
+            "overwrite it silently. Pass --append to add after it, or "
+            f"--replace to overwrite it deliberately. ticket: {ticket_path}"
+        }
+    try:
+        ticket_path.write_text(rendered, encoding="utf-8")
+    except OSError as error:
         return {"error": f"unwritable ticket: {error}"}
+    if append:
+        mode = "append"
+    elif replace:
+        mode = "replace"
+    else:
+        mode = "write"
     return {
         "result": {
             "run": run,
             "id": ticket_id,
             "path": str(ticket_path),
             "section": canonical,
-            "mode": "append" if append else "replace",
+            "mode": mode,
         }
     }
+
+
+def _is_terminal_heading(line: str) -> bool:
+    """Whether one line closes a worklog.
+
+    Case-insensitive, and the prefix must end the word: ``## terminal`` and
+    ``## terminal: complete`` close, ``## terminals`` is an ordinary
+    heading. A note that would read as one is refused rather than written,
+    so nothing but ``--terminal`` can ever put this marker in the file.
+    """
+
+    stripped = line.strip()
+    if not stripped.lower().startswith(TERMINAL_HEADING):
+        return False
+    remainder = stripped[len(TERMINAL_HEADING) :]
+    return remainder == "" or remainder.startswith(":")
+
+
+def _append_one_line(path: Path, block: str) -> None:
+    """Append in one write, serialised where the platform does not do it.
+
+    POSIX ``O_APPEND`` places a write at end-of-file atomically, so append mode
+    alone is the whole guarantee there. The Windows CRT emulates append with a
+    seek and then a write, and those are two steps: two writers take the same
+    offset and one whole line disappears -- seen here as seven notes of eight
+    surviving, every survivor intact, on a job that had passed the run before.
+    A torn line would have been obvious; a missing one reads like a writer that
+    never ran.
+
+    So Windows locks and POSIX does not, and byte zero is the mutex: every
+    appender contends on the same byte and no reader takes it, so an append
+    blocks only another append. Nothing here read-modify-writes. The lock
+    serialises the seek the platform hides inside ``write``.
+    """
+
+    with open(path, "a", encoding="utf-8", newline="\n") as handle:
+        if msvcrt is None:
+            handle.write(block)
+            return
+        handle.seek(0)
+        msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+        try:
+            handle.write(block)
+            handle.flush()
+        finally:
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+
+
+def _worklog_terminal(path: Path):
+    """The state a worklog closed with, or ``None`` while it is open.
+
+    A read, never a read-modify-write: the note that follows is still one
+    append in one call, so a line another workspace added in between
+    survives untouched.
+    """
+
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    for line in text.splitlines():
+        if _is_terminal_heading(line):
+            return line.strip()[len(TERMINAL_HEADING) :].strip(" :")
+    return None
 
 
 def _cmd_run_state(rest):
@@ -851,8 +1098,9 @@ def _cmd_run_state(rest):
 
     ``--note`` appends to one shared log, so it opens in append mode with an
     explicit ``newline`` (``scripts/friction.py``) and writes one line in one
-    call: two workspaces write one repository's worklog concurrently and
-    neither may read-modify-write it. ``--artifact`` is whole-file, which is
+    call through ``_append_one_line``, which serialises that call on the
+    platform where append is not itself atomic: two workspaces write one
+    repository's worklog concurrently and neither may read-modify-write it. ``--artifact`` is whole-file, which is
     safe only because the run id partitions it.
 
     There is no fallback. A write that cannot reach that root is reported as
@@ -863,31 +1111,63 @@ def _cmd_run_state(rest):
     args = list(rest)
     note = _extract_flag(args, "--note")
     artifact = _extract_flag(args, "--artifact")
+    terminal = _extract_flag(args, "--terminal")
     file_arg = _extract_flag(args, "--file")
     text_arg = _extract_flag(args, "--text")
+    tree = _extract_flag(args, "--tree")
+    replace = "--replace" in args
+    while "--replace" in args:
+        args.remove("--replace")
     stray = next((arg for arg in args if arg.startswith("-")), None)
     if stray is not None:
         return {"error": f"run-state does not accept {stray}. usage: {RUN_STATE_USAGE}"}
     if len(args) != 1:
         return {"error": f"usage: {RUN_STATE_USAGE}"}
     run = args[0]
-    if (note is None) == (artifact is None):
+    chosen = [
+        name
+        for name, value in (
+            ("--note", note), ("--artifact", artifact), ("--terminal", terminal)
+        )
+        if value is not None
+    ]
+    if len(chosen) != 1:
         return {
-            "error": "run-state takes one of --note <line> or --artifact <name>. "
+            "error": "run-state takes exactly one of --note <line>, --artifact "
+            f"<name> or --terminal <state>; got {chosen or 'none'}. "
             f"usage: {RUN_STATE_USAGE}"
         }
     invalid = _segment_error("run id", run)
     if invalid is not None:
         return invalid
+    if tree is None:
+        tree = DEFAULT_RUN_STATE_TREE
+    if tree not in RUN_STATE_TREES:
+        return {
+            "error": f"unknown run-state tree '{tree}': one of "
+            f"{list(RUN_STATE_TREES)}"
+        }
     body = None
-    if artifact is not None:
-        invalid = _segment_error("artifact name", artifact)
-        if invalid is not None:
-            return invalid
+    if artifact is not None or terminal is not None:
+        owner = "--artifact" if artifact is not None else "--terminal"
+        if artifact is not None:
+            invalid = _segment_error("artifact name", artifact)
+            if invalid is not None:
+                return invalid
+        else:
+            if terminal not in TERMINAL_STATES:
+                return {
+                    "error": f"unknown terminal state '{terminal}': one of "
+                    f"{list(TERMINAL_STATES)}. A ticket status is not a run's "
+                    "terminal state (contracts/worklog.md)"
+                }
         if (file_arg is None) == (text_arg is None):
+            carries = (
+                "the deciding evidence" if terminal is not None else "its body"
+            )
             return {
-                "error": "--artifact takes one of --file <path> or --text <string>. "
-                f"usage: {RUN_STATE_USAGE}"
+                "error": f"{owner} takes one of --file <path> or --text <string> "
+                f"for {carries}. usage: {RUN_STATE_USAGE}"
             }
         if file_arg is not None:
             # read from the caller's own workspace, write at the main root
@@ -900,30 +1180,126 @@ def _cmd_run_state(rest):
     elif file_arg is not None or text_arg is not None:
         return {
             "error": "--note carries its own line; --file and --text belong to "
-            f"--artifact. usage: {RUN_STATE_USAGE}"
+            f"--artifact and --terminal. usage: {RUN_STATE_USAGE}"
+        }
+    elif _is_terminal_heading(note):
+        # Only `--terminal` may put the marker in the file. A note that would
+        # read as one is refused, so the guard below can never be walked past
+        # by a line that merely looks like a close.
+        return {
+            "error": f"a note may not read as a terminal heading "
+            f"('{TERMINAL_HEADING}'): close the run with --terminal <state> "
+            f"instead, one of {list(TERMINAL_STATES)}"
         }
 
-    runs_root = _runs_root()
-    if runs_root is None:
+    tree_root = _run_state_root(tree)
+    if tree_root is None:
         return {"error": "not inside a git repository"}
-    run_dir = runs_root / run
+    run_dir = tree_root / run
+    if note is not None or terminal is not None:
+        # contracts/worklog.md: "no note is written past a terminal section".
+        # A closed worklog is closed once: a second close would leave two
+        # answers to "how did this run exit", and a note after one would be
+        # state recorded where no reader looks.
+        closed = _worklog_terminal(run_dir / WORKLOG_NAME)
+        if closed is not None:
+            attempt = "a note" if note is not None else f"a '{terminal}' close"
+            return {
+                "error": f"this worklog closed '{closed}': no note is written "
+                f"past a terminal section, and {attempt} would be. "
+                f"worklog: {run_dir / WORKLOG_NAME}"
+            }
+    replaced = False
+    if artifact is not None:
+        target = run_dir / artifact
+        # contracts/worklog.md: "Writing an artifact that already exists is
+        # refused by default, the refusal naming the existing path." This is
+        # the one whole-file write on a channel two workspaces share, so a
+        # truncation here erases a sibling's evidence leaving no trace that
+        # it existed. The run id partitions the path, which is what makes the
+        # same artifact name under two runs two different files.
+        if target.exists() and not replace:
+            return {
+                "error": f"artifact already exists: {target}. Pass --replace to "
+                "overwrite it deliberately, or write it under another name"
+            }
+        replaced = target.exists()
     try:
         run_dir.mkdir(parents=True, exist_ok=True)
-        if note is not None:
-            path = run_dir / "worklog.md"
-            with open(path, "a", encoding="utf-8", newline="\n") as handle:
-                handle.write(note.rstrip("\r\n") + "\n")
-        else:
+        if artifact is not None:
             path = run_dir / artifact
             with open(path, "w", encoding="utf-8", newline="\n") as handle:
                 handle.write(body)
+        else:
+            path = run_dir / WORKLOG_NAME
+            if note is not None:
+                block = note.rstrip("\r\n") + "\n"
+            else:
+                # The close is an append like every other line on this log:
+                # the section goes after what is already there, never over it.
+                evidence = body.replace("\r\n", "\n").replace("\r", "\n").strip("\n")
+                block = f"\n{TERMINAL_HEADING}: {terminal}\n\n{evidence}\n"
+            _append_one_line(path, block)
     except OSError as error:
         return {"error": f"unwritable run state: {error}"}
+    if artifact is not None:
+        mode = "artifact"
+    elif terminal is not None:
+        mode = "terminal"
+    else:
+        mode = "note"
+    written = {"run": run, "tree": tree, "path": str(path), "mode": mode}
+    if artifact is not None:
+        written["replaced"] = replaced
+    if terminal is not None:
+        written["terminal"] = terminal
+    return {"run_state": written}
+
+
+def _help_requested(rest) -> bool:
+    """Whether a help flag in ``rest`` stands as its own token.
+
+    A help flag consumed as a value-taking flag's value is that value
+    (``VALUE_FLAGS``), so ``--note --help`` writes the note and never
+    answers usage: a run-state line whose text happens to be a help flag
+    must not be swallowed silently.
+    """
+
+    return any(
+        token in HELP_FLAGS and (i == 0 or rest[i - 1] not in VALUE_FLAGS)
+        for i, token in enumerate(rest)
+    )
+
+
+def _cmd_help(command=None):
+    """Usage, answered before any argument is resolved.
+
+    A request for usage is a request this script serves, never an unhandled
+    case it renders as the ordinary error path. It carries no ``error`` key
+    and so exits 0, and it touches no repository: `--help` outside a
+    checkout, or on a subcommand whose required arguments are absent, is
+    still answerable and is the case a reader most often needs it in.
+    """
+
+    if command is None:
+        return {
+            "help": {
+                "usage": "tickets.py <subcommand> [options]",
+                "subcommands": {
+                    name: {"usage": SUBCOMMAND_USAGE[name], "summary": SUBCOMMAND_SUMMARY[name]}
+                    for name in SUBCOMMAND_USAGE
+                },
+                "help": f"tickets.py {' | '.join(sorted(HELP_FLAGS))} | "
+                "help, or <subcommand> --help",
+                "output": "exactly one JSON document on stdout; a payload "
+                "carrying 'error' exits 1, every other payload exits 0",
+            }
+        }
     return {
-        "run_state": {
-            "run": run,
-            "path": str(path),
-            "mode": "note" if note is not None else "artifact",
+        "help": {
+            "subcommand": command,
+            "usage": SUBCOMMAND_USAGE[command],
+            "summary": SUBCOMMAND_SUMMARY[command],
         }
     }
 
@@ -935,6 +1311,10 @@ def _dispatch(argv):
             "packet | result | run-state"
         }
     command, rest = argv[0], argv[1:]
+    if command in HELP_COMMANDS:
+        return _cmd_help()
+    if command in SUBCOMMAND_USAGE and _help_requested(rest):
+        return _cmd_help(command)
     if command == "list":
         return _cmd_list(rest)
     if command == "ready":
@@ -959,7 +1339,7 @@ def main(argv=None):
     except Exception as error:
         result = {"error": str(error)}
     print(json.dumps(result, ensure_ascii=False))
-    return 0
+    return 1 if "error" in result else 0
 
 
 if __name__ == "__main__":

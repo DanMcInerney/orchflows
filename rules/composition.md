@@ -22,9 +22,10 @@
    `role`), then `Require:`, procedure, `Never:`, `Return:`. Body
    budgets: kernel, instances, and utilities 25 lines; engines and
    workflows 40; pack SKILL.md 20 — enforceable because observable:
-   `wc -l` checks a line budget against the artifact and nothing checks
-   a rate. Cutoffs, not measured optima. What the body holds is
-   [token-economy.md](token-economy.md) §6's.
+   `tools/validate.py` counts the artifact's non-empty lines against a
+   budget and nothing checks a rate. Cutoffs, not measured optima; the count is of non-empty
+   lines, and no width bound exists or is intended. What the body holds
+   is [token-economy.md](token-economy.md) §6's.
 6. Admission: a new skill's contract must be expressible from existing
    skill contracts; otherwise it is a kernel candidate and must show
    that omitting it forces another skill to inline its judgment. Two
@@ -33,11 +34,15 @@
 7. Parallel branches share no output field and no write scope. Reads are
    scope too: a branch whose completion test observes artifacts outside
    its own write scope ([topology.md](topology.md) §3) is parallel-safe
-   only against siblings that change nothing it observes in the
-   workspace where it observes it — isolation that keeps a sibling's
-   in-flight change out of that workspace qualifies as squarely as
-   disjointness does. A retry changes cause, input, or method; an
-   identical retry is a defect.
+   only against siblings that change nothing that could move the
+   verdict it observes, in the workspace where it observes it —
+   isolation that keeps a sibling's in-flight change out of that
+   workspace qualifies as squarely as disjointness does. Immateriality
+   is shown, never assumed: name the sibling's write and the part of
+   the artifact the verdict turns on, and show the two disjoint under
+   the observing method itself; what is not shown disjoint counts as
+   material. A retry changes cause, input, or method; an identical
+   retry is a defect.
 8. Every failure path returns partial results plus the evidence
    gathered; work is never silently discarded.
 9. Generic skills (kernel, engines, workflows, utilities) never name a domain;

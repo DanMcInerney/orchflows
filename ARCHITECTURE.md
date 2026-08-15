@@ -65,13 +65,17 @@ dependencies point. Terms: `docs/vocabulary.md`.
   owns friction logging; `scripts/tickets.py` owns mechanical ticket
   queries; `scripts/trace.py` owns trace extraction, consumed by
   `orch-self-improve`.
-- `.orch/` — runtime state, never an instruction source; one per
-  repository — linked worktrees share the main checkout's: `tickets/`
-  (the local tracker, ticket `## Handoff` sections included), `runs/`
-  (worklogs), `friction/` (JSONL logs), `improvement/proposals/`,
-  `improvement/covered.jsonl` (the coverage record),
-  `canary/` (tracked golden fixture), `bin/` (installed run-local
-  scripts).
+- `.orch/` — runtime state, never an instruction source; every tree below
+  is gitignored except `canary/`, so each linked worktree has its own
+  copy of the ignored trees on disk and only the script channel
+  (`rules/visibility.md` §6) reaches the ones at the main repository
+  root, while tracked `canary/` is one fixture every worktree checks out
+  and a change to it reaches the repository by merge: `tickets/` (the local tracker, ticket `## Handoff`
+  sections included), `runs/` (worklogs), `friction/` (JSONL logs),
+  `improvement/proposals/`, `improvement/covered.jsonl` (the coverage
+  record), `research/` (research-lane outputs), `handoffs/`
+  (cross-session handoff documents), `canary/` (tracked golden
+  fixture), `bin/` (installed run-local scripts).
 
 ## Dependency direction
 

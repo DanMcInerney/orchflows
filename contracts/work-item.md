@@ -65,8 +65,11 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
   and the contradiction is the cut's to fix, not the executor's.
 - `isolation` — packet `authority`, optional: `required` | `none` —
   whether this item executes in a workspace of its own; absent reads
-  `none`. The declaration `scripts/workspace.py check` grades and
-  `scripts/tickets.py packet` conditions on.
+  `none`. The decomposer is the field's only setter. The declaration
+  `scripts/workspace.py check` grades and `scripts/tickets.py packet`
+  conditions on; the join runs that check before the merge, because
+  afterwards the item's tip is already an ancestor of the run tip and a
+  stamped item exits clean by design.
 - `bound` — packet `bounds`: the item's effort budget.
 - `claimed_by`, `claimed_at` — lifecycle: set on claim. Staleness runs
   on wall clock: a claim older than the item's bound read as a duration
@@ -88,7 +91,9 @@ parts:
 - `## Objective` — packet `objective`: one observable end state, never
   activities.
 - `## Fixed inputs` — packet `inputs`: evidence by identity, never prose
-  copies. An item carries verbatim every spec field its executor's
+  copies and never an unpinned coordinate, which
+  [docs/vocabulary.md](../docs/vocabulary.md)'s `identity` entry
+  excludes. An item carries verbatim every spec field its executor's
   Require names.
 - `## Completion test` — enumerated criteria, each naming its oracle and
   oracle_class per [verdict.md](verdict.md), and optionally its oracle
@@ -97,7 +102,9 @@ parts:
   context creates it); absent reads `authored-here`. Independence law:
   [rules/verification.md](../rules/verification.md) §10.
 - `## Return fields` — packet `return_contract`: the named fields the
-  executor's result must carry.
+  executor's result must carry. A `status` in this list is the result
+  envelope's ([result.md](result.md)), never the ticket frontmatter key
+  above.
 - `## Result` — written by the executor: what changed, by identity. A
   §10 checker appends its own pass — findings, changes, invalidated
   entries — and never rewrites the executor's.
