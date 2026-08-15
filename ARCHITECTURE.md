@@ -67,7 +67,9 @@ dependencies point. Terms: `docs/vocabulary.md`.
   set, read by `orch-deliver`'s cut lens; `scripts/friction.py` owns
   friction logging; `scripts/isolate.py` owns exporting one revision
   into a tree beside the repository, where a check reads one lane's
-  result alone; `scripts/state_root.py` owns resolving the state sink,
+  result alone; `scripts/migrate_state.py` owns copying a pre-existing
+  state tree into the sink, never deleting from the source;
+  `scripts/state_root.py` owns resolving the state sink,
   the one channel every other script reaches it through;
   `scripts/tickets.py` owns mechanical ticket queries; its `tickets.py
   help` is operator-only: usage a reader asks for, never a step a skill

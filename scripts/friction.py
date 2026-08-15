@@ -51,7 +51,6 @@ SESSION_ENV_VARS = (
     "SESSION_ID",
 )
 GIT_REV_TIMEOUT_SECONDS = 2
-MAX_WALK_UP = 200
 # Half the one-second ceiling this logger is held to, so the ceiling still
 # holds on a loaded machine once the last retry's sleep is counted in.
 APPEND_LOCK_BUDGET_SECONDS = 0.5

@@ -175,7 +175,7 @@ def _locate(run: str, ticket_id: str):
     root = state_root.find_repo_root(Path.cwd())
     if root is None:
         raise Refused("not inside a git repository")
-    path = state_root.tickets_root() / run / "{}.md".format(ticket_id)
+    path = state_root.tickets_root() / run / f"{ticket_id}.md"
     if not path.is_file():
         raise Refused(f"ticket not found: {run}/{ticket_id}")
     return root, path

@@ -114,25 +114,65 @@ def run_json(cwd: Path, *args):
     return json.loads(run_full(cwd, *args).stdout)
 
 
-@contextmanager
-def repo_root_of(cwd: Path):
-    """Pin ``_find_repo_root`` to the root ``cwd`` resolves to.
+_REAL_CWD = tickets_mod._cwd
+_pinned = threading.local()
+_pin_lock = threading.Lock()
+_pins_held = 0
 
-    The seam ``TestRunStateRootResolution`` already patches, used here to run
-    a dispatch against a fixture tree without ``os.chdir``: chdir is
-    process-global, so a module that used it could not be sharded or run
-    beside anything else. The resolution itself is the real one -- a linked
-    worktree's pointer file is dereferenced exactly as in a subprocess -- and
-    the production signature is untouched.
+
+def _cwd_or_pin():
+    """What a pinned dispatch stands in: this thread's pin if it set one, the
+    process's own directory otherwise, so an unpinned caller in another
+    thread is unaffected."""
+
+    pinned = getattr(_pinned, "cwd", None)
+    return _REAL_CWD() if pinned is None else pinned
+
+
+@contextmanager
+def _the_pin_is_installed():
+    """Hold ``tickets_mod._cwd`` swapped for as long as any thread holds a pin.
+
+    Depth-counted under a lock because the counter and the attribute must
+    move together: two threads pinning at once would otherwise have the first
+    to finish restore the real accessor under the second, and two cases here
+    dispatch from a thread pool.
     """
 
-    resolved = tickets_mod._find_repo_root(Path(cwd))
-    original = tickets_mod._find_repo_root
-    tickets_mod._find_repo_root = lambda start: resolved
+    global _pins_held
+    with _pin_lock:
+        _pins_held += 1
+        if _pins_held == 1:
+            tickets_mod._cwd = _cwd_or_pin
     try:
         yield
     finally:
-        tickets_mod._find_repo_root = original
+        with _pin_lock:
+            _pins_held -= 1
+            if _pins_held == 0:
+                tickets_mod._cwd = _REAL_CWD
+
+
+@contextmanager
+def repo_root_of(cwd: Path):
+    """Run a dispatch as though the process were standing in ``cwd``.
+
+    Pinning the one accessor rather than the resolvers around it: everything
+    downstream -- which project, which workspace of it, whether there is a
+    checkout at all -- is then the real resolution run against the fixture
+    tree, a linked worktree's pointer file dereferenced exactly as it would
+    be in a subprocess. What this replaces is ``os.chdir``, which is
+    process-global and would stop this module being run beside anything
+    else, its own thread pools included.
+    """
+
+    before = getattr(_pinned, "cwd", None)
+    _pinned.cwd = Path(cwd).resolve()
+    try:
+        with _the_pin_is_installed():
+            yield
+    finally:
+        _pinned.cwd = before
 
 
 def run_main(cwd: Path, *args):
@@ -713,7 +753,7 @@ class OSErrorHandlerTest(unittest.TestCase):
                 worktree, "run-state", "testrun",
                 "--terminal", "complete", "--text", "the deciding evidence",
             )
-            log = worklog_of(main)
+            log = worklog_of()
             self.assertIn("complete", log.read_text(encoding="utf-8"))
             with refusing_to_read(log, PermissionError):
                 payload = run_cmd(worktree, "run-state", "testrun", "--note", "past the close")
@@ -753,8 +793,8 @@ class OSErrorHandlerTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
-            runs = main / ".orch" / "runs"
+            _, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            runs = sink_root() / "runs"
             runs.mkdir(parents=True, exist_ok=True)
             (runs / "testrun").write_text("not a directory\n", encoding="utf-8")
             result = run_main(worktree, "run-state", "testrun", "--note", "nowhere to land")
@@ -914,8 +954,6 @@ class TestOutsideARepoTheSinkStillResolves(unittest.TestCase):
             bare.mkdir()
             result = run_full(bare, "list", "--run", "testrun")
             self.assertEqual(0, result.returncode)
-            result = run_main(tmp, "list")
-            self.assertEqual(1, result.returncode)
             payload = json.loads(result.stdout)
             self.assertEqual(["T1"], [t["id"] for t in payload["tickets"]])
 
@@ -954,10 +992,6 @@ class TestOutsideARepoTheSinkStillResolves(unittest.TestCase):
             ):
                 payload = tickets_mod._cmd_list([])
             self.assertEqual({"error": tickets_mod.NO_SINK_ERROR}, payload)
-            result = run_main(tmp, "claim", "testrun", "T1", "--by", "agent-a")
-            self.assertEqual(1, result.returncode)
-            payload = json.loads(result.stdout)
-            self.assertEqual({"error": "not inside a git repository"}, payload)
 
 
 FULL_TICKET = """---
@@ -1075,13 +1109,9 @@ class TestPacket(unittest.TestCase):
             tmp = Path(tmp)
             use_sink(tmp)
             result = run_full(tmp, "packet", "testrun", "T1", "--reply-to", "main")
-            self.assertEqual(0, result.returncode)
-            self.assertIn("ticket not found", json.loads(result.stdout)["error"])
-            result = run_main(Path(tmp), "packet", "testrun", "T1", "--reply-to", "main")
+            # an error payload, carried out to the caller's exit code
             self.assertEqual(1, result.returncode)
-            self.assertEqual(
-                {"error": "not inside a git repository"}, json.loads(result.stdout)
-            )
+            self.assertIn("ticket not found", json.loads(result.stdout)["error"])
 
 
 def make_worktree(tmp: Path, tickets: dict):
@@ -1628,6 +1658,16 @@ def run_dir_of(run: str = "testrun") -> Path:
     return sink_root() / "runs" / run
 
 
+def tree_dir_of(tree: str, run: str = "testrun") -> Path:
+    """One run's directory in a named run-state tree of the sink.
+
+    ``runs`` is the default tree, so ``tree_dir_of("runs")`` and
+    ``run_dir_of()`` are the same path by construction.
+    """
+
+    return sink_root() / tree / run
+
+
 def run_state_lines(prompt: str) -> list:
     return [line for line in prompt.splitlines() if " run-state " in line]
 
@@ -1942,7 +1982,7 @@ class TerminalNoteTest(unittest.TestCase):
             tmp = Path(tmp)
             main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
             run_cmd(worktree, "run-state", "testrun", "--note", "the first line")
-            text = worklog_of(main).read_text(encoding="utf-8")
+            text = worklog_of().read_text(encoding="utf-8")
             self.assertEqual("the first line\n", text)
             self.assertNotIn(tickets_mod.TERMINAL_HEADING, text)
             for state in tickets_mod.TERMINAL_STATES:
@@ -1966,9 +2006,9 @@ class TerminalNoteTest(unittest.TestCase):
             error = json.loads(result.stdout)["error"]
             self.assertIn("terminal", error)
             self.assertIn("complete", error)
-            self.assertIn(str(worklog_of(main).resolve()), error)
+            self.assertIn(str(worklog_of().resolve()), error)
 
-            lines = worklog_of(main).read_text(encoding="utf-8").splitlines()
+            lines = worklog_of().read_text(encoding="utf-8").splitlines()
             # the notes are in occurrence order, the close is after them, and
             # the fourth note is nowhere in the file
             self.assertEqual(["note one", "note two"], lines[:2])
@@ -1982,12 +2022,12 @@ class TerminalNoteTest(unittest.TestCase):
             main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
             run_cmd(worktree, "run-state", "testrun", "--terminal", "complete",
                     "--text", "the deciding evidence")
-            before = worklog_of(main).read_text(encoding="utf-8")
+            before = worklog_of().read_text(encoding="utf-8")
             result = run_main(worktree, "run-state", "testrun", "--terminal", "failed",
                               "--text", "a second close")
             self.assertEqual(1, result.returncode, result.stdout)
             self.assertIn("complete", json.loads(result.stdout)["error"])
-            self.assertEqual(before, worklog_of(main).read_text(encoding="utf-8"))
+            self.assertEqual(before, worklog_of().read_text(encoding="utf-8"))
 
     # Both halves of what stood here are graded by TestRunStateWorklog, each
     # asserting more: the interleave by
@@ -2081,7 +2121,7 @@ class TerminalNoteTest(unittest.TestCase):
             result = run_main(worktree, "run-state", "testrun", "--terminal", "complete")
             self.assertEqual(1, result.returncode, result.stdout)
             self.assertIn("--text", json.loads(result.stdout)["error"])
-            self.assertFalse(worklog_of(main).exists())
+            self.assertFalse(worklog_of().exists())
 
     def test_every_run_level_terminal_state_closes_and_the_states_are_the_contract(self):
         for state in tickets_mod.TERMINAL_STATES:
@@ -2092,7 +2132,7 @@ class TerminalNoteTest(unittest.TestCase):
                         "--text", "the deciding evidence")
                 self.assertIn(
                     f"## terminal: {state}",
-                    worklog_of(main).read_text(encoding="utf-8"),
+                    worklog_of().read_text(encoding="utf-8"),
                 )
                 result = run_main(worktree, "run-state", "testrun", "--note", "past it")
                 self.assertEqual(1, result.returncode, f"{state}: {result.stdout}")
@@ -2113,7 +2153,7 @@ class TerminalNoteTest(unittest.TestCase):
                 result = run_main(worktree, "run-state", "testrun", "--note", forged)
                 self.assertEqual(1, result.returncode, f"{forged!r}: {result.stdout}")
                 self.assertIn("--terminal", json.loads(result.stdout)["error"])
-            self.assertFalse(worklog_of(main).exists())
+            self.assertFalse(worklog_of().exists())
 
     def test_the_close_is_per_run_and_per_tree(self):
         """A closed run does not close another run, and a closed research
@@ -2134,7 +2174,7 @@ class TerminalNoteTest(unittest.TestCase):
             )
             self.assertEqual(
                 "a research lane's own log\n",
-                (main / ".orch" / "research" / "testrun" / "worklog.md").read_text(
+                (tree_dir_of("research") / "worklog.md").read_text(
                     encoding="utf-8"
                 ),
             )
@@ -2153,7 +2193,7 @@ class TerminalNoteTest(unittest.TestCase):
             self.assertEqual("artifact", payload["run_state"]["mode"])
             self.assertEqual(
                 "the join's own record\n",
-                (run_dir_of(main) / "post-close.md").read_text(encoding="utf-8"),
+                (run_dir_of() / "post-close.md").read_text(encoding="utf-8"),
             )
 
 
@@ -2173,7 +2213,7 @@ class ArtifactOverwriteTest(unittest.TestCase):
             main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
             run_cmd(worktree, "run-state", "testrun", "--artifact", "evidence.md",
                     "--text", "the first lane's evidence\n")
-            artifact = run_dir_of(main) / "evidence.md"
+            artifact = run_dir_of() / "evidence.md"
             result = run_main(worktree, "run-state", "testrun", "--artifact",
                               "evidence.md", "--text", "a silent truncation\n")
             self.assertEqual(1, result.returncode, result.stdout)
@@ -2197,7 +2237,7 @@ class ArtifactOverwriteTest(unittest.TestCase):
             self.assertTrue(payload["run_state"]["replaced"])
             self.assertEqual(
                 "second\n",
-                (run_dir_of(main) / "evidence.md").read_text(encoding="utf-8"),
+                (run_dir_of() / "evidence.md").read_text(encoding="utf-8"),
             )
 
     def test_a_first_write_needs_no_flag_and_reports_it_replaced_nothing(self):
@@ -2208,7 +2248,7 @@ class ArtifactOverwriteTest(unittest.TestCase):
                               "evidence.md", "--text", "only\n")
             self.assertFalse(payload["run_state"]["replaced"])
             self.assertEqual(
-                "only\n", (run_dir_of(main) / "evidence.md").read_text(encoding="utf-8")
+                "only\n", (run_dir_of() / "evidence.md").read_text(encoding="utf-8")
             )
 
     def test_replace_on_an_absent_artifact_is_not_an_error(self):
@@ -2219,7 +2259,7 @@ class ArtifactOverwriteTest(unittest.TestCase):
                               "fresh.md", "--text", "only\n", "--replace")
             self.assertEqual("artifact", payload["run_state"]["mode"])
             self.assertEqual(
-                "only\n", (run_dir_of(main) / "fresh.md").read_text(encoding="utf-8")
+                "only\n", (run_dir_of() / "fresh.md").read_text(encoding="utf-8")
             )
 
     def test_the_guard_is_the_run_partitioned_path_not_the_bare_name(self):
@@ -2237,7 +2277,7 @@ class ArtifactOverwriteTest(unittest.TestCase):
             for run in ("testrun", "otherrun"):
                 self.assertEqual(
                     f"{run}\n",
-                    (run_dir_of(main, run) / "evidence.md").read_text(encoding="utf-8"),
+                    (run_dir_of(run) / "evidence.md").read_text(encoding="utf-8"),
                 )
 
     def test_a_note_is_an_append_and_never_trips_the_artifact_guard(self):
@@ -2249,7 +2289,7 @@ class ArtifactOverwriteTest(unittest.TestCase):
                 self.assertIn("run_state", payload, line)
             self.assertEqual(
                 ["one", "two", "three"],
-                worklog_of(main).read_text(encoding="utf-8").splitlines(),
+                worklog_of().read_text(encoding="utf-8").splitlines(),
             )
 
 
@@ -2269,7 +2309,7 @@ class OrchTreesTest(unittest.TestCase):
                 payload = run_cmd(worktree, "run-state", "testrun", "--tree", tree,
                                   "--artifact", "evidence.md", "--text", f"{tree} bytes\n")
                 self.assertEqual(tree, payload["run_state"]["tree"], tree)
-                landed = main / ".orch" / tree / "testrun" / "evidence.md"
+                landed = tree_dir_of(tree) / "evidence.md"
                 self.assertEqual(str(landed.resolve()), payload["run_state"]["path"], tree)
                 self.assertEqual(f"{tree} bytes\n", landed.read_text(encoding="utf-8"), tree)
             # written from the worktree, landed at the main root, every time
@@ -2285,7 +2325,7 @@ class OrchTreesTest(unittest.TestCase):
             for run in ("testrun", "otherrun"):
                 self.assertEqual(
                     f"{run}\n",
-                    (main / ".orch" / "research" / run / "evidence.md").read_text(
+                    (tree_dir_of("research", run) / "evidence.md").read_text(
                         encoding="utf-8"
                     ),
                 )
@@ -2299,12 +2339,12 @@ class OrchTreesTest(unittest.TestCase):
             main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
             note = run_cmd(worktree, "run-state", "testrun", "--note", "a line")
             self.assertEqual("runs", note["run_state"]["tree"])
-            self.assertEqual(str(worklog_of(main).resolve()), note["run_state"]["path"])
+            self.assertEqual(str(worklog_of().resolve()), note["run_state"]["path"])
             artifact = run_cmd(worktree, "run-state", "testrun", "--artifact",
                                "evidence.md", "--text", "bytes\n")
             self.assertEqual("runs", artifact["run_state"]["tree"])
             self.assertEqual(
-                str((run_dir_of(main) / "evidence.md").resolve()),
+                str((run_dir_of() / "evidence.md").resolve()),
                 artifact["run_state"]["path"],
             )
             self.assertEqual("runs", tickets_mod.DEFAULT_RUN_STATE_TREE)
@@ -2317,7 +2357,7 @@ class OrchTreesTest(unittest.TestCase):
             explicit = run_cmd(worktree, "run-state", "testrun", "--tree", "runs",
                                "--artifact", "evidence.md", "--text", "bytes\n")
             self.assertEqual(
-                str((run_dir_of(main) / "evidence.md").resolve()),
+                str((run_dir_of() / "evidence.md").resolve()),
                 explicit["run_state"]["path"],
             )
 
@@ -2331,7 +2371,7 @@ class OrchTreesTest(unittest.TestCase):
                 result = run_main(worktree, "run-state", "testrun", "--tree", tree,
                                   "--artifact", "evidence.md", "--text", "clobber\n")
                 self.assertEqual(1, result.returncode, f"{tree}: {result.stdout}")
-                landed = main / ".orch" / tree / "testrun" / "evidence.md"
+                landed = tree_dir_of(tree) / "evidence.md"
                 self.assertIn(str(landed.resolve()), json.loads(result.stdout)["error"], tree)
                 self.assertEqual("first\n", landed.read_text(encoding="utf-8"), tree)
 
@@ -2346,11 +2386,12 @@ class OrchTreesTest(unittest.TestCase):
                 error = json.loads(result.stdout)["error"]
                 for tree in tickets_mod.RUN_STATE_TREES:
                     self.assertIn(tree, error, f"{bad!r}: {tree}")
-            # a refused tree creates nothing: `.orch/` still holds only what
+            # a refused tree creates nothing: the sink still holds only what
             # the fixture put there, and no run-state tree was opened
             self.assertEqual(
-                ["tickets"], sorted(p.name for p in (main / ".orch").iterdir())
+                ["tickets"], sorted(p.name for p in sink_root().iterdir())
             )
+            self.assertFalse((main / ".orch").exists())
 
     def test_every_addressed_tree_is_gitignored_runtime_state(self):
         """`.gitignore` line 3 is `.orch/*`: every tree this subcommand
@@ -3089,7 +3130,10 @@ class NoLibraryTreeReadTest(unittest.TestCase):
             tmp = Path(tmp)
             elsewhere = tmp / "elsewhere"
             elsewhere.mkdir()
-            for name in ("tickets.py", "workspace.py"):
+            # state_root.py travels with it: the script imports its sibling
+            # resolver, and the installer copies `scripts/` as one unit. What
+            # this case removes is the *library* tree, not the sibling.
+            for name in ("tickets.py", "workspace.py", "state_root.py"):
                 (elsewhere / name).write_text(
                     (SCRIPTS / name).read_text(encoding="utf-8"), encoding="utf-8"
                 )
@@ -3625,8 +3669,9 @@ class TestNoFallback(unittest.TestCase):
             ):
                 with self.subTest(args[2]):
                     completed = run_full(repo, *args)
-                    # the script's convention: exit 0, the payload decides
-                    self.assertEqual(0, completed.returncode, completed.stderr)
+                    # the script's convention: an error payload, and a
+                    # nonzero exit carrying it out to the caller
+                    self.assertEqual(1, completed.returncode, completed.stderr)
                     payload = json.loads(completed.stdout)
                     self.assertIn("error", payload)
                     self.assertNotIn("run_state", payload)
@@ -3649,7 +3694,7 @@ class TestNoFallback(unittest.TestCase):
             ):
                 with self.subTest(args[0]):
                     completed = run_full(repo, *args)
-                    self.assertEqual(0, completed.returncode, completed.stderr)
+                    self.assertEqual(1, completed.returncode, completed.stderr)
                     self.assertIn("error", json.loads(completed.stdout))
             self.assertEqual(before, self.listing(repo))
             self.assertFalse((repo / ".orch").exists())
@@ -3866,7 +3911,7 @@ class TestImprovementWriter(unittest.TestCase):
             for label, (args, expected) in cases.items():
                 with self.subTest(label):
                     completed = run_full(tmp, *args)
-                    self.assertEqual(0, completed.returncode, completed.stderr)
+                    self.assertEqual(1, completed.returncode, completed.stderr)
                     payload = json.loads(completed.stdout)
                     self.assertIn(expected, payload.get("error", ""))
                     self.assertNotIn("improvement", payload)
@@ -3886,8 +3931,9 @@ class TestImprovementWriter(unittest.TestCase):
             ):
                 with self.subTest(args[1]):
                     completed = run_full(workspace, *args)
-                    # the script's convention: exit 0, the payload decides
-                    self.assertEqual(0, completed.returncode, completed.stderr)
+                    # the script's convention: an error payload, and a
+                    # nonzero exit carrying it out to the caller
+                    self.assertEqual(1, completed.returncode, completed.stderr)
                     payload = json.loads(completed.stdout)
                     # the refusal is about the sink it could not reach, so a
                     # script that simply has no such subcommand fails here
@@ -4071,7 +4117,7 @@ class HelpTest(unittest.TestCase):
             payload = json.loads(result.stdout)
             self.assertNotIn("help", payload)
             self.assertEqual("note", payload["run_state"]["mode"])
-            self.assertEqual("--help\n", worklog_of(main).read_text(encoding="utf-8"))
+            self.assertEqual("--help\n", worklog_of().read_text(encoding="utf-8"))
 
     def test_the_usage_table_covers_exactly_the_dispatched_subcommands(self):
         self.assertEqual(

@@ -632,100 +632,87 @@ def validate_sync(diag: Diagnostics) -> None:
         _sync_validate_friction_clause_copy(copy_path, owner_clause, diag)
 
 
-# --- Friction log locations -------------------------------------------
+# --- Friction log location ---------------------------------------------
 #
-# The Sync section's discipline over a second owner: scripts/friction.py
+# The Sync section's discipline over a second owner: scripts/state_root.py
 # owns where the friction log goes (ARCHITECTURE.md's scripts/ tier), so
-# the locations are read from its `_target_path` returns and never
-# restated here. Its copies are docs/vocabulary.md's **friction log**
-# term, which names both, and the blocked-case sentence in
-# templates/host-block.md and AGENTS.md, which names the out-of-worktree
-# one alone: a fallback the shell refused inside a worktree has to land
-# outside every worktree, and no copy may send a hand-written file under
-# `.orch/`.
-FRICTION_OWNER = ROOT / "scripts" / "friction.py"
-FRICTION_RESOLVER = "_target_path"
+# the tree it resolves is read from `friction_root` and never restated
+# here. The sink root under it is rules/visibility.md §6's, checked
+# against the resolver by tests/test_validate.py, and no copy restates
+# it. What the copies do name is the tree: docs/vocabulary.md's
+# **friction log** term, and the blocked-case sentence in
+# templates/host-block.md and AGENTS.md -- a fallback the shell refused
+# inside a worktree has to land outside every worktree, so no copy may
+# send a hand-written file to the old location under `.orch/`.
+FRICTION_OWNER = ROOT / "scripts" / "state_root.py"
+FRICTION_RESOLVER = "friction_root"
+FRICTION_IN_REPOSITORY = ".orch/"
 FRICTION_TERM_RE = re.compile(r"^- \*\*friction log\*\*.*?(?=\n- \*\*|\Z)", re.MULTILINE | re.DOTALL)
 FRICTION_FALLBACK_RE = re.compile(r"Whenever the logger cannot run.*?never skip the log\.")
 
 
-def _friction_join_location(node) -> str:
-    """The directory a `base / "a" / "b" / <file>` expression names,
-    spelled as a copy spells it -- 'a/b/' under a repository, '~/a/b/'
-    under Path.home(). None when the expression is not such a join."""
-    parts = []
-    while isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
-        parts.append(node.right)
-        node = node.left
-    if len(parts) < 2:
+def _friction_join_tree(node) -> str:
+    """The tree a `<sink root> / "name"` expression names, spelled as a
+    copy spells it -- 'name/'. None when the expression is not such a
+    join."""
+    if not (isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div)):
         return None
-    parts.pop(0)  # the file name, which no copy spells
-    segments = []
-    for part in reversed(parts):
-        if not (isinstance(part, ast.Constant) and isinstance(part.value, str)):
-            return None
-        segments.append(part.value)
-    home = (
-        isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Attribute)
-        and node.func.attr == "home"
-    )
-    return ("~/" if home else "") + "/".join(segments) + "/"
+    name = node.right
+    if not (isinstance(name, ast.Constant) and isinstance(name.value, str)):
+        return None
+    return name.value + "/"
 
 
-def _friction_owner_locations(diag: Diagnostics):
-    """(repository-relative, out-of-worktree) as scripts/friction.py
-    resolves them, or None with the defect reported."""
+def _friction_owner_tree(diag: Diagnostics):
+    """The sink tree scripts/state_root.py resolves the log into, or None
+    with the defect reported."""
     label = rel(FRICTION_OWNER)
     try:
         tree = ast.parse(_read_source(FRICTION_OWNER))
     except SyntaxError as exc:
-        diag.error(label, f"does not parse, so the friction log locations cannot be read: {exc}")
+        diag.error(label, f"does not parse, so the friction log location cannot be read: {exc}")
         return None
     resolver = next(
         (n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == FRICTION_RESOLVER),
         None,
     )
     if resolver is None:
-        diag.error(label, f"no `{FRICTION_RESOLVER}` to read the friction log locations from")
+        diag.error(label, f"no `{FRICTION_RESOLVER}` to read the friction log location from")
         return None
     found = []
     for node in ast.walk(resolver):
         if isinstance(node, ast.Return) and node.value is not None:
-            location = _friction_join_location(node.value)
+            location = _friction_join_tree(node.value)
             if location is not None:
                 found.append(location)
-    outside = [loc for loc in found if loc.startswith("~/")]
-    local = [loc for loc in found if not loc.startswith("~/")]
-    if len(outside) != 1 or len(local) != 1:
+    if len(found) != 1:
         diag.error(
             label,
-            f"`{FRICTION_RESOLVER}` must resolve exactly one repository-relative and one "
-            f"home-rooted friction log location for the copies to be checked against; read {sorted(found)}",
+            f"`{FRICTION_RESOLVER}` must resolve exactly one sink tree for the copies to be "
+            f"checked against; read {sorted(found)}",
         )
         return None
-    return local[0], outside[0]
+    return found[0]
 
 
-def _friction_validate_term(local: str, outside: str, diag: Diagnostics) -> None:
+def _friction_validate_term(tree: str, diag: Diagnostics) -> None:
     path = ROOT / "docs" / "vocabulary.md"
     if not path.is_file():
         return  # term owner absent (isolated fixtures) -- not this check's tree
     match = FRICTION_TERM_RE.search(_read_source(path))
     if match is None:
-        diag.error(rel(path), "could not locate the **friction log** term entry to check against scripts/friction.py")
+        diag.error(rel(path), "could not locate the **friction log** term entry to check against scripts/state_root.py")
         return
     entry = re.sub(r"\s+", " ", match.group(0))
-    missing = [loc for loc in (local, outside) if loc not in entry]
-    if missing:
+    if tree not in entry:
         diag.error(
             rel(path),
-            f"**friction log** entry does not name {', '.join(missing)} -- scripts/friction.py "
-            f"resolves the log to {local} and {outside}",
+            f"**friction log** entry does not name {tree} -- scripts/state_root.py resolves "
+            f"the log into that tree of the sink",
         )
 
 
-def _friction_validate_fallback_copy(path: Path, local: str, outside: str, diag: Diagnostics) -> None:
+def _friction_validate_fallback_copy(path: Path, tree: str, diag: Diagnostics) -> None:
     file_label = rel(path)
     if not path.is_file():
         diag.error(file_label, "friction fallback copy is missing")
@@ -735,36 +722,35 @@ def _friction_validate_fallback_copy(path: Path, local: str, outside: str, diag:
         diag.error(
             file_label,
             "could not locate the blocked-case friction sentence ('Whenever the logger cannot "
-            "run ... never skip the log.') to check against scripts/friction.py",
+            "run ... never skip the log.') to check against scripts/state_root.py",
         )
         return
     sentence = match.group(0)
-    if outside not in sentence:
+    if tree not in sentence:
         diag.error(
             file_label,
-            f"blocked-case friction fallback does not spell {outside}, the location "
-            f"scripts/friction.py resolves outside every worktree",
+            f"blocked-case friction fallback does not spell {tree}, the sink tree "
+            f"scripts/state_root.py resolves outside every worktree",
         )
-    if local in sentence:
+    if FRICTION_IN_REPOSITORY in sentence:
         diag.error(
             file_label,
-            f"blocked-case friction fallback sends the entry to {local}, inside the worktree "
-            f"whose writes the refusal may cover",
+            f"blocked-case friction fallback sends the entry to {FRICTION_IN_REPOSITORY}, inside "
+            f"the worktree whose writes the refusal may cover",
         )
 
 
 def validate_friction_locations(diag: Diagnostics) -> None:
-    """Every copy of the friction log's locations against their owner,
-    scripts/friction.py."""
+    """Every copy of the friction log's location against their owner,
+    scripts/state_root.py."""
     if not FRICTION_OWNER.is_file():
         return  # owner absent (isolated fixtures) -- not this check's tree
-    locations = _friction_owner_locations(diag)
-    if locations is None:
+    tree = _friction_owner_tree(diag)
+    if tree is None:
         return
-    local, outside = locations
-    _friction_validate_term(local, outside, diag)
+    _friction_validate_term(tree, diag)
     for copy_path in (ROOT / "templates" / "host-block.md", ROOT / "AGENTS.md"):
-        _friction_validate_fallback_copy(copy_path, local, outside, diag)
+        _friction_validate_fallback_copy(copy_path, tree, diag)
 
 
 CONTRACTS_DIR = ROOT / "contracts"

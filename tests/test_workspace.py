@@ -549,13 +549,18 @@ def graded_repository():
     ``check`` test below wanted the same one. So every branch any of them
     grades is cut here from ``base`` and never moved again, and the caller
     is left one commit past ``base`` so a branch left behind is genuinely
-    behind. A test writes only its own ticket, under its own id, into the
-    gitignored ``.orch/`` -- nothing a test does reaches what the next one
+    behind. A test writes only its own ticket, under its own id, into this
+    fixture's own sink -- nothing a test does reaches what the next one
     reads. Whatever must move a branch, an index or a working tree keeps
     its own repository, built inline from ``make_repo``.
     """
 
     if _GRADED:
+        # re-pointed on every call, not only built once: ``use_sink`` moves
+        # ``ORCHFLOWS_STATE_HOME`` for the rest of the process, so any test
+        # that has built its own repository since left the variable at its
+        # own sink, and this repository's tickets would be looked for there.
+        os.environ[STATE_HOME_ENV_VAR] = str(_GRADED["sink"])
         return _GRADED
     tmp = Path(tempfile.mkdtemp(prefix="workspace-graded-"))
     _GRADED["tmp"] = tmp
@@ -591,7 +596,7 @@ def graded_repository():
 
     _GRADED.update(
         main=main, run_dir=run_dir, base=base, advanced=advanced,
-        removed=removed, own=own,
+        removed=removed, own=own, sink=run_dir.parent.parent,
     )
     return _GRADED
 

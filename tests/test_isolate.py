@@ -37,8 +37,6 @@ def write(path: Path, text: str):
 class IsolateFixture(unittest.TestCase):
     """Each case builds a throwaway repository and a throwaway state sink;
     none reads this repository or this machine's own sink."""
-class IsolateTest(unittest.TestCase):
-    """Each case gets its own throwaway repository; none reads this one."""
 
     @classmethod
     def setUpClass(cls):
@@ -80,15 +78,6 @@ class IsolateTest(unittest.TestCase):
         sink_env = mock.patch.dict(os.environ, {state_root.ENV_VAR: str(self.sink)})
         sink_env.start()
         self.addCleanup(sink_env.stop)
-        self.repo.mkdir()
-        git(self.repo, "init", "-q")
-        git(self.repo, "config", "user.email", "t@example.invalid")
-        git(self.repo, "config", "user.name", "t")
-        write(self.repo / "kept.md", "committed\n")
-        write(self.repo / "changed.md", "committed\n")
-        write(self.repo / "gone.md", "committed\n")
-        git(self.repo, "add", "-A")
-        git(self.repo, "commit", "-qm", "base")
         # `*.lock` is never copied: a lock names a write in progress, so
         # carrying one into a fresh repository would be wrong even if it
         # survived the copy. Belt to the template's braces above -- a git

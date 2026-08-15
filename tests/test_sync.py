@@ -24,12 +24,14 @@ import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import scripts.friction as friction_mod  # noqa: E402
+import scripts.state_root as state_root  # noqa: E402  the sink resolver's one owner
 import scripts.tickets as tickets_mod  # noqa: E402
 from tests.tree_removal import remove_repo_tree  # noqa: E402  the removal's one owner
 
@@ -317,59 +319,52 @@ def _collapse(text: str) -> str:
 
 
 class FrictionLocationSyncTest(unittest.TestCase):
-    """The friction log's two locations, resolved by scripts/friction.py's
-    `_target_path`, against every copy of them: docs/vocabulary.md's
-    **friction log** term names both, and the blocked-case sentence in
-    templates/host-block.md and AGENTS.md names the out-of-worktree one
-    alone -- rules/improvement.md §1 sends a write its refusal blocks
-    inside a worktree outside every worktree, and rules/visibility.md §6
-    leaves no hand-written file under `.orch/`. Every expectation is
-    derived by running the owner, never restated here."""
+    """The friction log's one location, resolved by scripts/state_root.py's
+    `friction_root`, against every copy of it: docs/vocabulary.md's
+    **friction log** term names the sink tree, and so does the
+    blocked-case sentence in templates/host-block.md and AGENTS.md --
+    rules/improvement.md §1 sends a write its refusal blocks inside a
+    worktree outside every worktree, which the sink is, and
+    rules/visibility.md §6 leaves no hand-written file under `.orch/`.
+    The expectation is derived by running the owner, never restated here."""
+
+    IN_REPOSITORY = ".orch/"
 
     @staticmethod
-    def _resolved_locations():
-        """(repository-relative, out-of-worktree), each spelled as a copy
-        spells it, from scripts/friction.py's own resolver: its
-        repository branch read with cwd in this tree, its home branch
-        with cwd in a scratch directory enclosed by no repository."""
+    def _resolved_tree():
+        """The sink tree the log lands in, spelled as a copy spells it,
+        from the logger's own resolver run against a scratch sink: the
+        root is user-scope and identical from anywhere, so what a copy
+        can name -- and what this compares -- is the tree under it."""
 
         stamp = datetime(2026, 1, 1, tzinfo=timezone.utc)
-        origin = Path.cwd()
-        outside = Path(tempfile.mkdtemp(prefix="friction-outside-"))
-        try:
-            os.chdir(ROOT)
-            repo_root = friction_mod._find_repo_root(Path.cwd())
-            if repo_root is None:
-                raise AssertionError(f"{ROOT} encloses no repository; the repository branch was not exercised")
-            local = friction_mod._target_path(stamp).parent.relative_to(repo_root)
-            os.chdir(outside)
-            if friction_mod._find_repo_root(Path.cwd()) is not None:
-                raise AssertionError(f"{outside} is inside a repository; the home branch was not exercised")
-            home = friction_mod._target_path(stamp).parent.relative_to(Path.home())
-        finally:
-            os.chdir(origin)
-            shutil.rmtree(outside)
-        return local.as_posix() + "/", "~/" + home.as_posix() + "/"
+        with tempfile.TemporaryDirectory(prefix="friction-sink-") as sink:
+            with mock.patch.dict(os.environ, {state_root.ENV_VAR: sink}):
+                landed = friction_mod._target_path(stamp).parent
+                return landed.relative_to(state_root.state_root()).as_posix() + "/"
 
     def _blocked_case(self, path: Path) -> str:
         match = BLOCKED_CASE_RE.search(_collapse(path.read_text(encoding="utf-8")))
         self.assertIsNotNone(match, f"{path.name}: no blocked-case friction sentence to read")
         return match.group(0)
 
-    def test_the_term_entry_names_every_location_the_logger_resolves(self):
+    def test_the_term_entry_names_the_location_the_logger_resolves(self):
         match = TERM_ENTRY_RE.search(VOCABULARY.read_text(encoding="utf-8"))
         self.assertIsNotNone(match, "docs/vocabulary.md: no **friction log** term entry")
         entry = _collapse(match.group(0))
-        for location in self._resolved_locations():
-            self.assertIn(location, entry, f"the term owner does not name {location}: {entry}")
+        tree = self._resolved_tree()
+        self.assertIn(tree, entry, f"the term owner does not name {tree}: {entry}")
 
     def test_both_copies_spell_the_blocked_case_destination(self):
-        local, outside = self._resolved_locations()
+        tree = self._resolved_tree()
         for path in (HOST_BLOCK, AGENTS_MD):
             with self.subTest(copy=path.name):
                 sentence = self._blocked_case(path)
-                self.assertIn(outside, sentence, f"{path.name}: blocked case does not spell {outside}")
-                self.assertNotIn(local, sentence, f"{path.name}: blocked case still sends the entry to {local}")
+                self.assertIn(tree, sentence, f"{path.name}: blocked case does not spell {tree}")
+                self.assertNotIn(
+                    self.IN_REPOSITORY, sentence,
+                    f"{path.name}: blocked case still sends the entry to {self.IN_REPOSITORY}",
+                )
 
     # --- the two wrong-result readings (rules/verification.md §8) ------
 
@@ -462,18 +457,21 @@ class FrictionLocationSyncTest(unittest.TestCase):
             self._reading("the copy and the tree do not report the same findings"),
         )
 
-    def test_a_copy_naming_only_the_repository_location_fails(self):
-        local, outside = self._resolved_locations()
+    def test_a_copy_naming_the_repository_location_fails(self):
+        tree = self._resolved_tree()
+        inside = self.IN_REPOSITORY + tree
         self._assert_clean_first()
-        self._seed("AGENTS.md", outside, local)
+        # seeded inside the backticked path, which one line carries whole:
+        # the prose around it wraps, and `_seed` reads the file unwrapped
+        self._seed("AGENTS.md", "`" + tree, "`" + inside)
         seeded = self._validate_in_copy()
-        self.assertEqual(1, seeded.returncode, self._reading(f"a blocked case naming only {local} must fail: {seeded.stdout}"))
+        self.assertEqual(1, seeded.returncode, self._reading(f"a blocked case naming {inside} must fail: {seeded.stdout}"))
         self.assertIn("AGENTS.md", seeded.stdout, self._reading(f"the drifted copy goes unnamed: {seeded.stdout}"))
         self.assertNotIn("host-block.md", seeded.stdout, self._reading(f"a copy that did not drift is named: {seeded.stdout}"))
 
-    def test_the_locations_are_read_from_their_owner(self):
+    def test_the_location_is_read_from_its_owner(self):
         self._assert_clean_first()
-        self._seed("scripts/friction.py", '".orchflows"', '".orchflows-moved"')
+        self._seed("scripts/state_root.py", '/ "friction"', '/ "friction-moved"')
         seeded = self._validate_in_copy()
         self.assertEqual(1, seeded.returncode, self._reading(f"a location changed in the owner alone must fail: {seeded.stdout}"))
         for copy_name in ("vocabulary.md", "host-block.md", "AGENTS.md"):

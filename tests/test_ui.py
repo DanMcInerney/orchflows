@@ -1095,11 +1095,11 @@ class TestUnreadableTicketFile(unittest.TestCase):
 
     RUN = "run-unreadable"
 
-    def checkout(self, tmp: str) -> Path:
-        root = make_checkout(
+    def sink(self, tmp: str) -> Path:
+        root = make_sink(
             Path(tmp), runs=("run-gamma",), friction=False, events=False
         )
-        run_dir = root / ".orch" / "tickets" / self.RUN
+        run_dir = root / "tickets" / self.RUN
         run_dir.mkdir(parents=True)
         write_raw_ticket(run_dir, "G1.md", "G1", status="ready")
         (run_dir / "oops.md").mkdir()
@@ -1107,7 +1107,7 @@ class TestUnreadableTicketFile(unittest.TestCase):
 
     def test_a_path_that_cannot_be_read_is_an_empty_ticket_not_a_traceback(self):
         with tempfile.TemporaryDirectory() as tmp:
-            unreadable = self.checkout(tmp) / ".orch" / "tickets" / self.RUN / "oops.md"
+            unreadable = self.sink(tmp) / "tickets" / self.RUN / "oops.md"
 
             # The premise. Without it the empty values below are proved by a
             # file that read fine and merely had nothing in it.
@@ -1124,7 +1124,7 @@ class TestUnreadableTicketFile(unittest.TestCase):
 
     def test_the_walk_that_finds_it_still_serves_the_run(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = self.checkout(tmp)
+            root = self.sink(tmp)
 
             listed = ui.run_tickets(root, self.RUN)
 
@@ -1137,31 +1137,31 @@ class TestUnreadableTicketFile(unittest.TestCase):
 
 
 class TestTicketTreeContainment(unittest.TestCase):
-    """`.orch/tickets/` is the whole scope a client-supplied name may reach.
-    A `..` in the query is a climb `_safe_name` sees in the string; a
+    """The sink's `tickets/` is the whole scope a client-supplied name may
+    reach. A `..` in the query is a climb `_safe_name` sees in the string; a
     symlink under the tickets tree is one it cannot, because the name is
     ordinary and the escape happens in the path layer. `_in_tree` resolves
     before it answers, which is the only reason the second kind is refused.
 
     The boundary is the query, not the walk: `discover` enumerates the
-    operator's own checkout and takes no client input, so a link the
-    operator planted there is still theirs to see on the index."""
+    operator's own sink and takes no client input, so a link the operator
+    planted there is still theirs to see on the index."""
 
     LEAKED = "OUTSIDE-THE-TICKETS-TREE"
     RUN = "run-leaked"
 
     def link_out(self, tmp: Path) -> tuple:
-        """``(checkout, link)`` -- a run-shaped symlink under
-        `.orch/tickets/` pointing at a real ticket outside the checkout."""
+        """``(sink, link)`` -- a run-shaped symlink under the sink's
+        `tickets/` pointing at a real ticket outside the sink."""
 
-        main = make_checkout(tmp)
+        main = make_sink(tmp)
         outside = tmp / "outside"
         outside.mkdir()
         (outside / "X1.md").write_text(
             "---\nid: X1\nstatus: ready\n---\n\n## Objective\n\n%s\n" % self.LEAKED,
             encoding="utf-8",
         )
-        link = main / ".orch" / "tickets" / self.RUN
+        link = main / "tickets" / self.RUN
         try:
             link.symlink_to(outside, target_is_directory=True)
         except (OSError, NotImplementedError) as error:
@@ -1179,7 +1179,7 @@ class TestTicketTreeContainment(unittest.TestCase):
             self.assertTrue(link.is_dir())
             self.assertTrue((link / "X1.md").is_file())
 
-    def test_a_run_linked_out_of_the_checkout_is_not_a_run(self):
+    def test_a_run_linked_out_of_the_sink_is_not_a_run(self):
         with tempfile.TemporaryDirectory() as tmp:
             main, _link = self.link_out(Path(tmp))
 

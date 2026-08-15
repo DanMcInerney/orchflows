@@ -184,21 +184,27 @@ class TestOneResolverOwnsBothFacts(unittest.TestCase):
                 )
 
     def test_workspace_reads_its_ticket_out_of_the_sink(self):
-        with tempfile.TemporaryDirectory() as raw:
-            tmp = Path(raw).resolve()
-            repo = tmp / "repo"
-            (repo / ".git").mkdir(parents=True)
-            sink = tmp / "sink"
-            run_dir = sink / "tickets" / "testrun"
-            run_dir.mkdir(parents=True)
-            (run_dir / "T1.md").write_text(TICKET, encoding="utf-8")
-            before = os.getcwd()
-            os.chdir(repo)
-            self.addCleanup(os.chdir, before)
-            with mock.patch.dict(os.environ, {ENV_VAR: str(sink)}):
-                root, path = workspace_mod._locate("testrun", "T1")
-            self.assertEqual(repo.resolve(), root)
-            self.assertEqual((run_dir / "T1.md").resolve(), path.resolve())
+        # Not a `with` block: its __exit__ removes the tree before any
+        # addCleanup runs, and this case stands inside that tree. Registered
+        # cleanups run LIFO, so the chdir back is registered after the tree
+        # and therefore runs first -- Windows refuses to remove a directory
+        # that is any process's cwd, and tests/_windows_semantics.py makes
+        # this platform refuse it too.
+        raw = tempfile.TemporaryDirectory()
+        self.addCleanup(raw.cleanup)
+        tmp = Path(raw.name).resolve()
+        repo = tmp / "repo"
+        (repo / ".git").mkdir(parents=True)
+        sink = tmp / "sink"
+        run_dir = sink / "tickets" / "testrun"
+        run_dir.mkdir(parents=True)
+        (run_dir / "T1.md").write_text(TICKET, encoding="utf-8")
+        self.addCleanup(os.chdir, os.getcwd())
+        os.chdir(repo)
+        with mock.patch.dict(os.environ, {ENV_VAR: str(sink)}):
+            root, path = workspace_mod._locate("testrun", "T1")
+        self.assertEqual(repo.resolve(), root)
+        self.assertEqual((run_dir / "T1.md").resolve(), path.resolve())
 
 
 class TestTheOverrideAndTheDefault(unittest.TestCase):
@@ -443,7 +449,10 @@ class TestThereIsNoFallback(_SinkFixture):
         before = listing(self.repo)
         done = run_script(TICKETS_PY, "run-state", "testrun", "--note", "x",
                           cwd=self.repo, sink=self.blocked)
-        self.assertEqual(0, done.returncode)
+        # Nonzero, unlike the logger below: tickets.py reports an error to
+        # its caller's exit code, and only friction.py is held to exiting 0
+        # whatever happens.
+        self.assertEqual(1, done.returncode)
         payload = json.loads(done.stdout)
         self.assertIn("error", payload)
         self.assertNotIn("run_state", payload)

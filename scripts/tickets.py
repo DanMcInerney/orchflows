@@ -257,6 +257,19 @@ _main_checkout_root = state_root.main_checkout_root
 _find_repo_root = state_root.find_repo_root
 
 
+def _cwd() -> Path:
+    """The directory this invocation is standing in.
+
+    Every question that starts from the caller's location asks here, so the
+    location has one source rather than one per caller. Sink paths do not go
+    through it at all — those are user-scope and the same from anywhere; what
+    the caller's directory decides is only who is writing, and from which
+    workspace of them.
+    """
+
+    return Path.cwd().resolve()
+
+
 def _tickets_root():
     """The sink's ticket tree, or ``None`` when no root can be resolved."""
 
@@ -421,7 +434,7 @@ def _workspace_root(start: Path):
 def _writer_identity():
     """``(project, workspace)`` for the caller: who is writing, from where."""
 
-    cwd = Path.cwd().resolve()
+    cwd = _cwd()
     root = state_root.find_repo_root(cwd)
     workspace = _workspace_root(cwd) or cwd
     if root is None:

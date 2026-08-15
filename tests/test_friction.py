@@ -1,5 +1,4 @@
-"""friction.py logs to the one user-scope sink, from every repository."""
-"""friction.py resolves .orch to the main checkout, one per repository, and
+"""friction.py logs to the one user-scope sink, from every repository, and
 appends to it under a lock that never blocks and never fails."""
 from __future__ import annotations
 
@@ -11,7 +10,6 @@ import io
 import json
 import os
 import stat
-import sys
 import sys
 import sysconfig
 import tempfile
@@ -31,6 +29,7 @@ if str(ROOT) not in sys.path:
 
 FRICTION_PY = ROOT / "scripts" / "friction.py"
 TICKETS_PY = ROOT / "scripts" / "tickets.py"
+STATE_ROOT_PY = ROOT / "scripts" / "state_root.py"
 _spec = importlib.util.spec_from_file_location(
     "friction", ROOT / "scripts" / "friction.py"
 )
@@ -870,16 +869,27 @@ class FrictionAppendLockTest(_IsolatedRepoTestCase):
         )
 
 
-def top_level_imports(path):
-    """Every module the file imports, from its syntax rather than its prose."""
+def _imported_modules(node):
+    """The top-level module names one import statement reaches for."""
 
-    imported = set()
-    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
-        if isinstance(node, ast.Import):
-            imported.update(alias.name.split(".")[0] for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and not node.level:
-            imported.add((node.module or "").split(".")[0])
-    return imported
+    if isinstance(node, ast.Import):
+        return {alias.name.split(".")[0] for alias in node.names}
+    if isinstance(node, ast.ImportFrom) and not node.level:
+        return {(node.module or "").split(".")[0]}
+    return set()
+
+
+def _imported_names(node):
+    """Those, plus what a `from X import y` binds: a sibling script is named
+    by the package it came out of in one form and by the bound name in the
+    other, and both spellings are the same import."""
+
+    bound = (
+        {alias.name for alias in node.names}
+        if isinstance(node, ast.ImportFrom) and not node.level
+        else set()
+    )
+    return _imported_modules(node) | bound
 
 
 STDLIB_DIR = Path(sysconfig.get_paths()["stdlib"]).resolve()
@@ -918,41 +928,85 @@ def outside_the_standard_library(names):
     return outside
 
 
-def function_source(path, name):
-    """The exact source of one top-level function, sliced from the file's own
-    bytes. A whole-file diff would say nothing: these two files share two
-    functions and nothing else."""
+def _imports_in(nodes, deferred=False):
+    """Every import under `nodes`, each with the fact that decides whether it
+    can break the file's import: whether a function defers it. Tracked by
+    descending, because ``ast.walk`` flattens the tree and loses it."""
 
-    source = path.read_text(encoding="utf-8")
-    for node in ast.parse(source).body:
-        if isinstance(node, ast.FunctionDef) and node.name == name:
-            return ast.get_source_segment(source, node)
-    return None
+    for node in nodes:
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            yield node, deferred
+            continue
+        below = deferred or isinstance(
+            node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
+        )
+        yield from _imports_in(list(ast.iter_child_nodes(node)), below)
 
 
-class FrictionDuplicationTest(unittest.TestCase):
-    """friction.py must never fail, so it imports nothing that can fail --
-    including scripts/tickets.py, which workspace.py imports instead
-    (test_the_root_resolver_is_imported_from_tickets_never_copied, in
-    tests/test_workspace.py). The price is two copied root resolvers, and
-    the price of a copy nobody compares is a silent divergence, so compare
-    them here.
+def _read_imports(path):
+    return _imports_in(ast.parse(path.read_text(encoding="utf-8")).body)
 
-    The lock is not a third comparand. tickets.py has no lock helper to
-    compare against: its lock is inlined in ``_append_one_line`` and takes
-    ``LK_LOCK``, the blocking mode ``rules/improvement.md`` §1 forbids this
-    logger, so byte-identity there would contradict the mechanism itself.
+
+def module_scope_imports(path):
+    """Only the imports that run when the file is imported. An import inside
+    a function body runs when that function is called, where ``main``'s broad
+    ``except`` still stands over it; one out here runs before ``main``
+    exists."""
+
+    imported = set()
+    for node, deferred in _read_imports(path):
+        if not deferred:
+            imported |= _imported_modules(node)
+    return imported
+
+
+def deferred_siblings(path, siblings):
+    """Each named sibling this file imports, mapped to whether every import
+    of it sits inside a function. One import at module scope is enough to
+    break the file, so a sibling seen twice keeps the weaker sighting."""
+
+    found = {}
+    for node, deferred in _read_imports(path):
+        for name in _imported_names(node) & siblings:
+            found[name] = found.get(name, True) and deferred
+    return found
+
+
+class FrictionImportSurfaceTest(unittest.TestCase):
+    """friction.py must never fail, so nothing that can fail runs at import.
+
+    It holds no second copy of the sink resolver or of project identity:
+    ``scripts/state_root.py`` owns the first, ``scripts/tickets.py`` owns the
+    second, and a copy nobody compares silently diverges. It imports them
+    instead, and pays for that with placement -- inside the function that
+    needs them, never at module scope, so ``main``'s broad ``except`` is
+    already standing when a partial install has no sibling to import. What
+    that costs then is the fields the sibling feeds and never the entry,
+    which ``TestFrictionNeverFails`` grades from the outside.
     """
 
-    def test_friction_imports_only_the_standard_library(self):
-        imported = top_level_imports(FRICTION_PY)
+    SIBLINGS = frozenset({"scripts", "state_root", "tickets"})
+    # The four the two owners define. A copy of any of them here is the
+    # duplication this file used to compare byte-for-byte and now forbids.
+    OWNED_ELSEWHERE = ("main_checkout_root", "find_repo_root",
+                       "_writer_identity", "_read_identity")
+
+    def _defined_here(self, path):
+        return {
+            node.name
+            for node in ast.parse(path.read_text(encoding="utf-8")).body
+            if isinstance(node, ast.FunctionDef)
+        }
+
+    def test_nothing_outside_the_standard_library_runs_at_import(self):
+        imported = module_scope_imports(FRICTION_PY)
         self.assertEqual(
             {
                 "__future__", "datetime", "json", "msvcrt", "os",
                 "pathlib", "subprocess", "sys", "time",
             },
             imported,
-            f"friction.py must stay standalone: {sorted(imported)}",
+            f"friction.py must import standalone: {sorted(imported)}",
         )
         self.assertEqual(
             set(),
@@ -970,17 +1024,29 @@ class FrictionDuplicationTest(unittest.TestCase):
         self.assertEqual({"no_such_module_anywhere"},
                          outside_the_standard_library({"no_such_module_anywhere"}))
 
-    def test_the_copied_root_resolvers_are_byte_identical_to_the_tickets_originals(self):
-        for name in ("_main_checkout_root", "_find_repo_root"):
-            copied = function_source(FRICTION_PY, name)
-            original = function_source(TICKETS_PY, name)
-            self.assertIsNotNone(copied, f"friction.py no longer defines {name}")
-            self.assertIsNotNone(original, f"tickets.py no longer defines {name}")
-            self.assertEqual(
-                original,
-                copied,
-                f"{name} has diverged from the tickets.py original it was copied from",
+    def test_the_resolvers_are_called_at_their_owners_never_copied_here(self):
+        here = self._defined_here(FRICTION_PY)
+        owners = self._defined_here(STATE_ROOT_PY) | self._defined_here(TICKETS_PY)
+        for name in self.OWNED_ELSEWHERE:
+            self.assertIn(name, owners, f"nothing owns {name} any more")
+            self.assertNotIn(
+                name, here, f"friction.py copies {name} instead of calling its owner"
             )
+
+    def test_every_sibling_import_is_deferred_into_the_function_that_needs_it(self):
+        found = deferred_siblings(FRICTION_PY, self.SIBLINGS)
+        self.assertTrue(found, "friction.py imports neither owner")
+        for name, deferred in sorted(found.items()):
+            self.assertTrue(deferred, f"the {name} import runs at module scope")
+
+    def test_a_module_scope_sibling_import_is_caught(self):
+        """The check above convicts only if it can. tickets.py imports
+        state_root at module scope -- correctly, it has no such bar to meet,
+        and it is the exact shape friction.py may not have."""
+
+        found = deferred_siblings(TICKETS_PY, self.SIBLINGS)
+        self.assertIn("state_root", found)
+        self.assertFalse(found["state_root"])
 
 
 if __name__ == "__main__":
