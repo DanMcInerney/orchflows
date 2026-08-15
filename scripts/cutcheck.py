@@ -77,6 +77,18 @@ criteria in prose, and a gap that failed the run would turn every clean
 set red. Gaps are for the decomposer to read, not for the exit code to
 decide.
 
+The copy is checked as well as the spans run in it. A tree entry carrying
+git's ``120000`` mode is the one route out that argv cannot see, so the copy
+is cloned with ``core.symlinks=false`` -- which makes such an entry a file
+holding a path rather than a way through it -- and every entry recording that
+mode is reported. That is the instrument for ``rules/visibility.md`` §5, and
+it is advisory: the clone flag is what enforces confinement, unconditionally
+and whatever the tree holds, so the report adds visibility and not safety. A
+committed symlink is a property of the repository, and this tool owns
+cut-defect detection over an issued ticket set. Failing a cut for it would
+fail every cut in every repository where a symlink is legal, for a reason
+outside what this tool answers for.
+
 cutcheck never edits a ticket; it reports, and the decomposer repairs.
 An extracted command is ticket content and ticket content is untrusted,
 so commands run argv-only, never through a shell, under a timeout, with
@@ -140,6 +152,7 @@ ORPHAN_CRITERION = "orphan-criterion"
 ORPHAN_ITEM = "orphan-item"
 COVERAGE_MAP_ABSENT = "coverage-map-absent"
 ILLEGAL_EXECUTOR = "illegal-executor"
+SYMLINK_IN_TREE = "symlink-in-tree"
 FAMILY_OF = {
     ALREADY_PASSES: FAMILY,
     NO_HITS_BOTH_REVISIONS: FAMILY,
@@ -147,6 +160,10 @@ FAMILY_OF = {
     SWALLOWED_EXIT: FAMILY,
     CUMULATIVE_RANGE: FAMILY,
     UNCONFINED_ORACLE: FAMILY,
+    # Family 1 because it is the same question as UNCONFINED_ORACLE, asked of
+    # the tree instead of the token: whether anything the copy holds reaches
+    # out of it. `_names_outside_the_copy` says they are one problem twice.
+    SYMLINK_IN_TREE: FAMILY,
     EXTRACTION_GAP: FAMILY,
     VERDICT_IN_OUTPUT: FAMILY,
     UNRUNNABLE_ORACLE: FAMILY,
@@ -163,8 +180,12 @@ FAMILY_OF = {
     ILLEGAL_EXECUTOR: FAMILY_6,
 }
 # Advisory classes are printed and never set the exit status. A map that is
-# not there is a fact about the run, not a defect of the cut.
-ADVISORY = frozenset({EXTRACTION_GAP, COVERAGE_MAP_ABSENT, VERDICT_IN_OUTPUT})
+# not there is a fact about the run, not a defect of the cut; a committed
+# symlink is a fact about the repository, and confinement does not rest on
+# reporting it -- the clone flag holds whether or not anyone reads this line.
+ADVISORY = frozenset(
+    {EXTRACTION_GAP, COVERAGE_MAP_ABSENT, VERDICT_IN_OUTPUT, SYMLINK_IN_TREE}
+)
 # The report's two summary lines. A reader selects finding lines by filtering
 # stdout on a family, a class name, a criterion number or a ticket id, so
 # neither summary line may carry any of those, nor the path of a script: a
@@ -208,6 +229,8 @@ COMMAND_HEADS = (
 )
 SEARCH_HEADS = ("grep", "rg")
 GIT_HEAD = "git"
+# The tree mode git records for a symlink, whatever the checkout made of it.
+SYMLINK_MODE = "120000"
 # The git subcommands a scratch copy confines: each reads the revision under
 # test and runs no program the span names. Membership is half the confinement
 # and never the whole of it -- a member still writes and reads wherever its own
@@ -359,6 +382,16 @@ def _scratch_tree(rev, worktree_root, scratch_root):
     meant. The clone keeps no remote: an oracle is ticket content, and ticket
     content is untrusted, so the scratch tree offers it no path to write back
     out of.
+
+    ``core.symlinks=false`` is the third route out, and the only one the copy
+    rather than the text can close. A committed symlink materialises as a file
+    holding its target's path, so ``--output=link/PAYLOAD`` and
+    ``-O link/orderfile`` -- both spelling a location inside the copy, both
+    landing outside it -- fail on the copy's own filesystem instead. Written
+    into the clone's config with ``--config`` and never with a global ``-c``:
+    the checkout below is a separate process, and only what the config file
+    holds reaches it. Windows already defaults to this, so setting it removes
+    a divergence rather than adding one.
     """
 
     tree = scratch_root / re.sub(r"[^A-Za-z0-9_.-]", "-", rev)
@@ -367,7 +400,15 @@ def _scratch_tree(rev, worktree_root, scratch_root):
     resolved = _git(["rev-parse", rev + "^{commit}"], worktree_root)
     if resolved is None or resolved.returncode != 0:
         return None
-    clone = ["clone", "--quiet", "--no-checkout", str(worktree_root), str(tree)]
+    clone = [
+        "clone",
+        "--quiet",
+        "--no-checkout",
+        "--config",
+        "core.symlinks=false",
+        str(worktree_root),
+        str(tree),
+    ]
     steps = (
         (clone, scratch_root),
         (["checkout", "--quiet", "--detach", resolved.stdout.strip()], tree),
@@ -379,6 +420,40 @@ def _scratch_tree(rev, worktree_root, scratch_root):
             shutil.rmtree(tree, ignore_errors=True)
             return None
     return tree
+
+
+def _symlink_entries(tree):
+    """Every path the graded revision records with git's ``120000`` mode.
+
+    Read from the tree, never from the checkout: ``core.symlinks=false`` is
+    what confines the copy, and it leaves the recorded mode exactly as
+    committed, so this reads the same on Windows and POSIX and under any
+    privilege. A tree carrying no history answers nothing and is reported as
+    nothing -- the clone is what puts history there.
+    """
+
+    proc = _git(["ls-tree", "-r", "HEAD"], tree)
+    if proc is None or proc.returncode != 0:
+        return []
+    return [
+        line.partition("\t")[2]
+        for line in proc.stdout.splitlines()
+        if line.partition(" ")[0] == SYMLINK_MODE
+    ]
+
+
+def _symlink_findings(run, trees):
+    """The instrument for ``rules/visibility.md`` §5's "No symlinks".
+
+    One finding per path, named once however many graded trees record it: two
+    revisions of one repository are one tree's worth of rule, not two.
+    """
+
+    paths = set()
+    for tree in trees:
+        if tree is not None:
+            paths.update(_symlink_entries(tree))
+    return [(run, 0, SYMLINK_IN_TREE, path) for path in sorted(paths)]
 
 
 def _same_revision(rev, worktree_root):
@@ -1238,6 +1313,7 @@ def main(argv=None):
         roots = (worktree_root, _find_repo_root(Path.cwd()))
         findings.extend(_coverage(args.run, run_dir, sorted(siblings), roots))
         findings.extend(_executor_legality(siblings, worktree_root))
+        findings.extend(_symlink_findings(args.run, (baseline_tree, head_tree)))
     finally:
         shutil.rmtree(scratch_root, ignore_errors=True)
 
