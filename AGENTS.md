@@ -44,6 +44,22 @@ python -m unittest discover -s tests -v  # serial; proves no cross-module residu
 python install.py --dry-run
 git diff --check
 
+Before pushing, close what can be closed here rather than four minutes
+later in a matrix cell:
+
+python tools/preflight.py   # the whole suite under every CI interpreter installed
+
+Nine cells; a local run is one. Two of the three axes have local
+answers. `tools/run_tests.py --no-cache` schedules alphabetically, as a
+cold checkout does — the duration cache is gitignored, so a warm local
+run and CI co-schedule different modules, and a module only races the
+modules beside it; `preflight.py` runs it under each interpreter CI uses
+that is installed here, and names the ones that are not. What is left is
+the OS axis: `tests/_windows_semantics.py` makes POSIX refuse the
+directory deletions Windows refuses, installed for every runner by
+`tests/__init__.py`, and `tests/test_static_tree_invariants.py` refuses
+the same shape statically. Everything past that is genuinely CI's.
+
 ## Friction law (always on)
 
 The law is `rules/improvement.md` §1; this repository's command:
