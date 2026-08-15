@@ -1,5 +1,6 @@
 """Tests for scripts/cutcheck.py: family 1, oracle discrimination and shape."""
 
+import ast
 import json
 import os
 import shutil
@@ -931,6 +932,88 @@ class SymlinkCapabilityGuardTest(unittest.TestCase):
         self.addCleanup(shutil.rmtree, root, True)
         _symlink_capability(root)
         self.assertEqual(sorted(path.name for path in root.iterdir()), [])
+
+
+def _tree_with_a_symlink_entry(case):
+    """A repository whose HEAD records a `120000` entry, built without one.
+
+    `update-index --cacheinfo` writes the mode straight into the index, so the
+    instrument's own test needs no symlink privilege and reads the same on
+    every platform. That is the point rather than a convenience: what §5
+    forbids is the recorded mode, and the checkout a platform makes of it is a
+    separate question this check does not ask.
+    """
+
+    root = Path(tempfile.mkdtemp(prefix="cutcheck-mode-"))
+    case.addCleanup(shutil.rmtree, root, True)
+    for args in (
+        ["init", "-q", "."],
+        ["config", "user.email", "cutcheck@example.invalid"],
+        ["config", "user.name", "cutcheck"],
+    ):
+        cutcheck._git(args, root)
+    (root / "a.txt").write_text("a\n", encoding="utf-8")
+    cutcheck._git(["add", "a.txt"], root)
+    blob = subprocess.run(
+        ["git", "hash-object", "-w", "--stdin"],
+        cwd=str(root),
+        input="../outside\n",
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    cutcheck._git(
+        ["update-index", "--add", "--cacheinfo", "120000,{},sub/link".format(blob)],
+        root,
+    )
+    cutcheck._git(["commit", "-qm", "a symlink entry, and no symlink on disk"], root)
+    return root
+
+
+class SymlinkModeCheckTest(unittest.TestCase):
+    """`rules/visibility.md` §5's instrument: the mode git records.
+
+    Read from the tree and never from the checkout, so `core.symlinks=false`
+    -- which is what confines the copy -- does not blind the check that says
+    the tree broke the rule.
+    """
+
+    def test_an_entry_anywhere_in_the_tree_is_found_by_its_mode(self):
+        tree = _tree_with_a_symlink_entry(self)
+        self.assertEqual(cutcheck._symlink_entries(tree), ["sub/link"])
+
+    def test_the_entry_is_reported_against_the_run(self):
+        tree = _tree_with_a_symlink_entry(self)
+        self.assertEqual(
+            cutcheck._symlink_findings("some-run", (tree, None)),
+            [("some-run", 0, cutcheck.SYMLINK_IN_TREE, "sub/link")],
+        )
+
+    def test_a_path_both_graded_trees_record_is_named_once(self):
+        tree = _tree_with_a_symlink_entry(self)
+        self.assertEqual(len(cutcheck._symlink_findings("some-run", (tree, tree))), 1)
+
+    def test_the_class_carries_a_family_and_sets_the_exit_status(self):
+        self.assertIn(cutcheck.SYMLINK_IN_TREE, cutcheck.FAMILY_OF)
+        self.assertNotIn(cutcheck.SYMLINK_IN_TREE, cutcheck.ADVISORY)
+
+    def test_this_repositorys_own_tree_carries_no_such_entry(self):
+        self.assertEqual(cutcheck._symlink_entries(ROOT), [])
+
+    def test_the_check_is_wired_into_the_report_and_not_only_defined(self):
+        """A reported class nothing calls is the vacuous shape one step over."""
+
+        source = (ROOT / "scripts" / "cutcheck.py").read_text(encoding="utf-8")
+        defined = [
+            node
+            for node in ast.walk(ast.parse(source))
+            if isinstance(node, ast.FunctionDef) and node.name == "main"
+        ]
+        called = {
+            node.func.id
+            for node in ast.walk(defined[0])
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        }
+        self.assertIn("_symlink_findings", called)
 
 
 class BareCommandNounTest(unittest.TestCase):
