@@ -108,6 +108,7 @@ import re
 import shlex
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -192,6 +193,11 @@ ADVISORY = frozenset(
 # summary a filter selects is a finding line to everything downstream.
 ADVISORY_HEADING = "cutcheck: advisory -- reported, and never setting the exit status:"
 NO_FINDING_OUTSIDE = "cutcheck: no finding outside the advisory set"
+SCRATCH_NOT_REMOVED = "cutcheck: scratch root not removed"
+NO_SCRATCH_ROOT = "cutcheck: no scratch root under the git common dir of"
+# One directory under the git common dir holds every copy every cut makes, so
+# a root outliving its run is findable rather than scattered.
+SCRATCH_DIR = "cutcheck-scratch"
 
 # The acceptance-coverage map: one row per spec criterion, naming the item,
 # the gate, or declared remainder that answers for it.
@@ -378,6 +384,85 @@ def _run_dir(run, worktree_root):
         if candidate.is_dir():
             return candidate
     return None
+
+
+def _scratch_root(worktree_root):
+    """One invocation's private directory for the copies it grades in.
+
+    Placed under the git common dir, which is the one directory that is the
+    tool's to write in, answers the same from every worktree, and sits with the
+    object store a local clone hardlinks from -- whatever volume the worktree
+    itself is on. Enumerable too: every copy any cut ever leaves is under one
+    ``cutcheck-scratch``, so a stale one can be found without a search.
+
+    ``--git-common-dir``, and not the three neighbours it is easily confused
+    with. ``worktree_root.parent`` is the repository's *parent* from a main
+    checkout, which is how 24M landed outside every ignore file the repository
+    has; a literal ``.git`` is an 85-byte file in a linked worktree; and
+    ``--git-dir`` resolves to ``.git/worktrees/<name>``, so two worktrees
+    grading one run would not share a place. The answer comes back relative
+    -- a bare ``.git`` -- from a main checkout and absolute from a linked
+    worktree, so it is joined to the tree it was asked about before use.
+
+    ``None`` where there is no common dir to place it under, which is any
+    directory outside a repository; the caller has a ticket set it cannot
+    grade and says so.
+    """
+
+    proc = _git(["rev-parse", "--git-common-dir"], worktree_root)
+    if proc is None or proc.returncode != 0:
+        return None
+    common = Path(proc.stdout.strip())
+    if not common.is_absolute():
+        common = worktree_root / common
+    try:
+        parent = common.resolve() / SCRATCH_DIR
+        parent.mkdir(parents=True, exist_ok=True)
+        return Path(tempfile.mkdtemp(prefix=".cutcheck-", dir=str(parent)))
+    except OSError:
+        return None
+
+
+def _remove_scratch_root(scratch_root):
+    """Remove this invocation's copies, and say so when they will not go.
+
+    ``ignore_errors=True`` here was a swallowed error in the tool whose whole
+    subject is swallowed errors: each copy is a full clone, and a removal that
+    quietly failed left one on disk per invocation with nothing said.
+
+    Said rather than raised, never exit-setting, and on stderr. The report is
+    about this tool's own hygiene: a leaked copy is no finding against the
+    ticket set that was being read, and the `finally` this runs in precedes
+    every finding printed, so the same line on stdout would prepend itself to
+    a pinned verdict and move all of them at once on any host that leaks.
+    """
+
+    try:
+        shutil.rmtree(str(scratch_root))
+        return
+    except OSError:
+        # Git writes loose objects and packs `0o444` and hardlinks that mode
+        # into every clone, so a strict removal meets it on every platform;
+        # where a file with no write bit cannot be unlinked at all, as on
+        # Windows, that alone would leak a copy per invocation. The mode is
+        # git's statement about an object and never about whether this copy
+        # may go, so clear it and try once more before calling the removal
+        # refused. Only ever on the retry: the walk costs nothing on the path
+        # that already succeeded.
+        pass
+    for path in [scratch_root] + sorted(scratch_root.rglob("*")):
+        try:
+            # A directory has to be enterable and writable to give up its
+            # children; a file only has to be writable.
+            path.chmod(path.stat().st_mode | (0o700 if path.is_dir() else 0o200))
+        except OSError:
+            pass
+    try:
+        shutil.rmtree(str(scratch_root))
+    except OSError as exc:
+        sys.stderr.write(
+            "{}: {}: {}\n".format(SCRATCH_NOT_REMOVED, scratch_root, exc)
+        )
 
 
 def _scratch_tree(rev, worktree_root, scratch_root):
@@ -1348,7 +1433,10 @@ def main(argv=None):
         print("cutcheck: no ticket set resolved for run {}".format(args.run))
         return NO_TICKET_SET
 
-    scratch_root = Path(tempfile.mkdtemp(prefix=".cutcheck-", dir=str(worktree_root.parent)))
+    scratch_root = _scratch_root(worktree_root)
+    if scratch_root is None:
+        print("{} {}".format(NO_SCRATCH_ROOT, worktree_root))
+        return NO_TICKET_SET
     try:
         baseline_tree = _scratch_tree(args.baseline, worktree_root, scratch_root)
         if baseline_tree is None:
@@ -1375,7 +1463,7 @@ def main(argv=None):
         findings.extend(_executor_legality(siblings, worktree_root))
         findings.extend(_symlink_findings(args.run, (baseline_tree, head_tree)))
     finally:
-        shutil.rmtree(scratch_root, ignore_errors=True)
+        _remove_scratch_root(scratch_root)
 
     outside = [f for f in findings if f[2] not in ADVISORY]
     advisory = [f for f in findings if f[2] in ADVISORY]
