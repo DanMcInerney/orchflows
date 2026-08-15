@@ -3,6 +3,7 @@
 import ast
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -1014,6 +1015,45 @@ class SymlinkModeCheckTest(unittest.TestCase):
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
         }
         self.assertIn("_symlink_findings", called)
+
+
+VISIBILITY = ROOT / "rules" / "visibility.md"
+
+
+def _visibility_clause(number):
+    """One flat numbered clause of `rules/visibility.md`."""
+
+    match = re.search(
+        r"^{}\.[ ](.*?)(?=^\d+\.[ ]|\Z)".format(number),
+        VISIBILITY.read_text(encoding="utf-8"),
+        re.S | re.M,
+    )
+    assert match is not None, "rules/visibility.md has no clause {}".format(number)
+    return " ".join(match.group(1).split())
+
+
+class VisibilitySymlinkClauseTest(unittest.TestCase):
+    """§5 forbade symlinks and named nothing that reads a tree for one.
+
+    A prohibition whose instrument is unnamed is one no reader can run, and
+    the gap this item closes is exactly that: the rule now says what grades it.
+    """
+
+    def test_section_five_names_its_instrument(self):
+        clause = _visibility_clause(5)
+        for named in (
+            "scripts/cutcheck.py",
+            cutcheck.SYMLINK_IN_TREE,
+            cutcheck.SYMLINK_MODE,
+        ):
+            self.assertIn(named, clause, clause)
+
+    def test_the_clause_keeps_what_it_already_owned(self):
+        """Amended, not replaced: §5 owns three further facts and keeps them."""
+
+        clause = _visibility_clause(5)
+        for kept in ("No symlinks", "stdlib Python 3", "cross-platform", "network"):
+            self.assertIn(kept, clause, clause)
 
 
 class BareCommandNounTest(unittest.TestCase):
