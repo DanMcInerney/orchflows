@@ -45,9 +45,6 @@ rendered domain's own.
 - Token before value: every visual decision is made once, at a token,
   and referenced everywhere; a per-element exception is a defect
   unless the standards owner grants it.
-- The unit is a view: all its states co-located with it; understanding
-  one component never scatters across layers.
-- Quality a capture at a named identity cannot show is shaped wrong,
-  whatever its elegance in source.
+- The unit is a view: all its states co-located with it.
 - Empty, loading, and error are states of the view, not afterthoughts;
   a state the spec enumerates and no capture shows is unfinished work.

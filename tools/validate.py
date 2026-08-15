@@ -1039,7 +1039,9 @@ CELL_DUPLICATION_ALLOWLIST = (
             "The code and design packs both run on git, so their workspace "
             "cells share the worktree-per-item clause and the conflict "
             "binding, their required_spec_fields share the standards-owner "
-            "pointer, and their oracle tables share the build/type row. A "
+            "pointer, and their oracle tables share the build/type and "
+            "standards-shape rows -- both of which ask the workspace's own "
+            "tooling the same question. A "
             "workspace-kind abstraction factoring those mechanics out is not "
             "worth a permanent concept for two packs: this duplication is "
             "paid consciously and revisited when a third git-workspace pack "
@@ -1053,6 +1055,8 @@ CELL_DUPLICATION_ALLOWLIST = (
             "each frontier item gets its own worktree branched from the run's "
             "current revision at dispatch, merged at the join",
             "build/type the workspace's build and typecheck commands "
+            "deterministic pre-existing",
+            "standards shape the workspace's linter, formatter, or validator "
             "deterministic pre-existing",
         ),
     },

@@ -351,7 +351,7 @@ class TestAllowlist(unittest.TestCase):
 # fixed. Raising it is a decision, and it belongs in the commit message
 # that raises it.
 BASELINE_WARNINGS = 47
-WARNING_CEILING = 30
+WARNING_CEILING = 25
 
 # A clone is the whole tree minus version control, runtime state and
 # caches -- never an extract of the directories the check happens to read

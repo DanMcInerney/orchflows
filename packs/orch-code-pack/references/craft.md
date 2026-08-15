@@ -21,15 +21,12 @@ code's own.
 - Never assemble an identifier by string concatenation; never drift to
   a synonym across modules.
 - Locality: the unit is a module at roughly one-read size (~100–500
-  lines); understanding one feature never requires a scatter-gather
-  across layers.
+  lines).
 - Explicit over clever: static, followable call sites; no runtime
   registries or metaprogrammed dispatch — they blind exact search and
   language servers at once.
 - Comments state only what code cannot: invariants, ordering
   constraints, why-not-the-obvious.
-- Behavior a completion test cannot observe at a seam is shaped wrong,
-  whatever its elegance.
 - Nonzero exit is data: an expected nonzero exit from a read-only
   probe (a search with no matches, `git diff --no-index` on differing
   inputs) reports a result, not a tool failure — one probe's expected
