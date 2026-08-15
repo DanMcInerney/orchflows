@@ -11,7 +11,11 @@
    (a wrong skill or lane was dispatched) — advisory evidence for the
    clusters §4 keys on owner and observed-text similarity.
    The logger never blocks, prompts, or fails the task; logging
-   is exempt from every bound. Logging friction is part of completing
+   is exempt from every bound. The fallback the block spells is bounded
+   by whatever refused the logger: where that refusal covers writing
+   inside a git worktree, the entry goes to a path outside every
+   worktree that the dispatch permits, and the return names that path
+   so the caller can collect it. Logging friction is part of completing
    the task: a session that hit friction and logged nothing failed
    silently.
 2. Observation changes nothing. Logs and proposals are passive; only a
