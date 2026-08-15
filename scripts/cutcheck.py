@@ -497,6 +497,13 @@ def _scratch_tree(rev, worktree_root, scratch_root):
     the checkout below is a separate process, and only what the config file
     holds reaches it. Windows already defaults to this, so setting it removes
     a divergence rather than adding one.
+
+    ``core.longpaths=true`` for the same reason and by the same route. Where
+    git enforces ``MAX_PATH`` the checkout below drops the entries it cannot
+    write and still exits 0, so the copy arrives short of the revision it
+    claims to hold and every oracle after it reads a tree missing files. Set
+    here rather than asked of the host: a copy that silently omits part of the
+    revision is a wrong reading on whichever host omits it.
     """
 
     tree = scratch_root / re.sub(r"[^A-Za-z0-9_.-]", "-", rev)
@@ -511,6 +518,8 @@ def _scratch_tree(rev, worktree_root, scratch_root):
         "--no-checkout",
         "--config",
         "core.symlinks=false",
+        "--config",
+        "core.longpaths=true",
         str(worktree_root),
         str(tree),
     ]

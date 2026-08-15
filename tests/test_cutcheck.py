@@ -25,6 +25,30 @@ import scripts.tickets as tickets  # noqa: E402
 from tests.baseline_pin import BASELINE  # noqa: E402  the pin's one owner
 
 
+def remove_repo_tree(root):
+    """Remove a temporary tree that holds a repository this suite committed in.
+
+    `git commit` writes its loose objects read-only, and Windows refuses to
+    unlink a read-only file, so a bare `shutil.rmtree` leaves every such tree
+    behind and errors the test that built it -- twelve of them, on all three
+    Windows legs and on none of the other six. The mode is cleared first and
+    the removal stays strict, which is how `scripts/cutcheck.py` removes the
+    scratch roots the tool itself owns.
+
+    Only for trees that can hold a repository. Everything else this suite
+    removes keeps the bare `shutil.rmtree` at its own call site: that is the
+    spelling `rmtree_calls` reads, and the removal below is the one it reads
+    for all the callers here.
+    """
+
+    for path in [Path(root)] + sorted(Path(root).rglob("*")):
+        try:
+            path.chmod(path.stat().st_mode | (0o700 if path.is_dir() else 0o200))
+        except OSError:
+            pass
+    shutil.rmtree(str(root))
+
+
 def run_cutcheck(run, baseline=BASELINE):
     """Invoke cutcheck exactly as the completion test states it."""
 
@@ -1043,7 +1067,7 @@ def _symlink_source(case):
     """
 
     root = Path(tempfile.mkdtemp(prefix="cutcheck-symlink-"))
-    case.addCleanup(shutil.rmtree, root)
+    case.addCleanup(remove_repo_tree, root)
     require_symlinks(case, root)
     outside = root / "outside"
     outside.mkdir()
@@ -1241,7 +1265,7 @@ def _tree_with_a_symlink_entry(case):
     """
 
     root = Path(tempfile.mkdtemp(prefix="cutcheck-mode-"))
-    case.addCleanup(shutil.rmtree, root)
+    case.addCleanup(remove_repo_tree, root)
     for args in (
         ["init", "-q", "."],
         ["config", "user.email", "cutcheck@example.invalid"],
@@ -1780,7 +1804,7 @@ class BinaryOutputOracleTest(unittest.TestCase):
 
     def setUp(self):
         scratch_root = Path(tempfile.mkdtemp(prefix=".cutcheck-binary-"))
-        self.addCleanup(shutil.rmtree, scratch_root)
+        self.addCleanup(remove_repo_tree, scratch_root)
         self.tree = cutcheck._scratch_tree(BASELINE, ROOT, scratch_root)
         self.assertIsNotNone(self.tree, "no scratch tree was built for the baseline")
 
@@ -1793,7 +1817,7 @@ class ScratchTreeHistoryTest(unittest.TestCase):
 
     def setUp(self):
         scratch_root = Path(tempfile.mkdtemp(prefix=".cutcheck-history-"))
-        self.addCleanup(shutil.rmtree, scratch_root)
+        self.addCleanup(remove_repo_tree, scratch_root)
         self.tree = cutcheck._scratch_tree(BASELINE, ROOT, scratch_root)
         self.assertIsNotNone(self.tree, "no scratch tree was built for the baseline")
 
@@ -2244,7 +2268,7 @@ class InCopyMutationTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        shutil.rmtree(cls.scratch_root)
+        remove_repo_tree(cls.scratch_root)
 
     def setUp(self):
         if self.tree is None:
@@ -2329,7 +2353,18 @@ class InCopyMutationTest(unittest.TestCase):
         wrote = self._wrote("git checkout-index --prefix=.pytest_cache/ LICENSE")
         self.assertIn(".pytest_cache/", wrote)
         bare = cutcheck._git(["status", "--porcelain"], self.tree)
-        self.assertEqual(bare.stdout, "", "the bare spelling would have missed it")
+        # Anything else standing in this reading is the copy arriving short of
+        # the revision, which is a fact about the checkout and not about the
+        # spelling. The copy's own path is named because the host that showed
+        # this is one nobody here can run: a `D` line under a path length no
+        # other entry reaches is the checkout hitting a limit of that host's.
+        self.assertEqual(
+            bare.stdout,
+            "",
+            "the bare spelling would have missed it; copy at {} chars: {}".format(
+                len(str(self.tree)), self.tree
+            ),
+        )
 
     def test_the_next_span_is_not_blamed_for_the_previous_spans_write(self):
         first = self._wrote("git diff --output=inside.txt HEAD~1 HEAD")
@@ -2691,7 +2726,7 @@ def placement_repo(case):
     """
 
     base = Path(tempfile.mkdtemp(prefix="cutcheck-placement-"))
-    case.addCleanup(shutil.rmtree, base)
+    case.addCleanup(remove_repo_tree, base)
     main = base / "main"
     main.mkdir()
     for args in (
@@ -2729,7 +2764,7 @@ class ScratchRootPlacementTest(unittest.TestCase):
     def _root(self, origin):
         root = cutcheck._scratch_root(origin)
         self.assertIsNotNone(root, "no scratch root was placed for {}".format(origin))
-        self.addCleanup(shutil.rmtree, root)
+        self.addCleanup(remove_repo_tree, root)
         return root.resolve()
 
     def test_the_root_lands_under_the_common_dir_from_a_main_checkout(self):
