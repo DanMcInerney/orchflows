@@ -1668,6 +1668,183 @@ class CutTimeDecidabilityTest(unittest.TestCase):
         self.assertNotIn(cutcheck.UNRUNNABLE_ORACLE, cutcheck.ADVISORY)
 
 
+# The two trees holding every ticket this repository tracks. The per-run trees
+# under `.orch/tickets/` are a worktree's own runtime state, present on one
+# machine and absent on the next, so a corpus claim cannot be made about them.
+CORPUS_ROOTS = (
+    ROOT / ".orch" / "canary" / "tickets" / "canary",
+    FIXTURES,
+)
+# One criterion, handed to the whole gate. Its frontmatter grants `scripts/`
+# so a probe's own oracle paths resolve and family 3 stays quiet.
+PROBE_TICKET = """\
+---
+id: node-id-probe
+run: node-id-probe
+status: ready
+executor: orch-tdd
+depends_on: []
+write_scope: scripts/
+bound: 1 tool call
+---
+## Objective
+The one criterion the probe was handed.
+## Fixed inputs
+None.
+## Completion test
+1. {criterion}
+## Return fields
+status.
+## Result
+[]
+## Verification
+[]
+## Feedback
+[]
+## Risks
+[]
+"""
+
+
+class NodeIdOracleGapTest(unittest.TestCase):
+    """An oracle naming no node id is reported, and never run.
+
+    `_commands` already refuses a bare head, because a tool's name with nothing
+    after it decides nothing. A whole-module or whole-suite invocation is that
+    same defect with more typing: it runs the identical tests under every item
+    it is stated under, so it discriminates none of them.
+
+    Reporting it removes a standing hazard rather than adding a rule. This
+    repository's own second mandated check is a whole-suite `discover`, and
+    that suite outgrew `COMMAND_TIMEOUT` in the cleanest store there is, so
+    executing it returned `unrunnable-oracle` -- a true class, reached by
+    reading the clock instead of the cut, and reached only for criteria that
+    happened to carry no `pre-existing` stamp.
+    """
+
+    def _report(self, criterion):
+        """Every class reported for one criterion, and every command run for it.
+
+        Through `_check_ticket` rather than through `_whole_suite` alone: the
+        exemption is an ordering inside that function, and no reading of the
+        predicate by itself can see it. `_exit_code` is mocked because what is
+        graded here is which commands reach execution, not what they return.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "01-probe.md"
+            path.write_text(
+                PROBE_TICKET.format(criterion=criterion), encoding="utf-8"
+            )
+            with mock.patch.object(cutcheck, "_exit_code", return_value=1) as ran:
+                findings = cutcheck._check_ticket(path, ROOT, None, {})
+        return (
+            [klass for _, _, klass, _ in findings],
+            [call[0][0] for call in ran.call_args_list],
+        )
+
+    def test_a_whole_module_oracle_is_reported_as_a_gap(self):
+        for command in (
+            "python3 -m unittest tests.test_cutcheck",
+            "python3 -m unittest discover -s tests -v",
+            "pytest tests",
+            "pytest tests/test_cutcheck.py",
+        ):
+            with self.subTest(command=command):
+                classes, ran = self._report(
+                    "`{}` exits 0. Oracle: the command above. "
+                    "oracle_class: deterministic.".format(command)
+                )
+                self.assertIn(cutcheck.WHOLE_SUITE_ORACLE, classes, classes)
+                self.assertEqual(ran, [], "a gap is decided without running it")
+
+    def test_an_oracle_naming_a_node_id_is_not_reported(self):
+        """The can-fail direction, on all three spellings that name a node.
+
+        A dotted target reaching past its module, pytest's `::`, and `-k`. The
+        run is asserted beside the silence: a predicate that convicted nothing
+        because the command never reached it would read as this one does.
+        """
+
+        for command in (
+            "python3 -m unittest tests.test_cutcheck.NodeIdOracleGapTest",
+            "python3 -B -m unittest tests.test_installer.NoSuchClass.test_absent",
+            "pytest tests/test_cutcheck.py::NodeIdOracleGapTest",
+            "python3 -m unittest discover -s tests -k test_a_named_node",
+        ):
+            with self.subTest(command=command):
+                classes, ran = self._report(
+                    "`{}` exits 0. Oracle: the command above. "
+                    "oracle_class: deterministic.".format(command)
+                )
+                self.assertNotIn(cutcheck.WHOLE_SUITE_ORACLE, classes, classes)
+                self.assertEqual(ran, [command])
+
+    def test_a_pre_existing_required_check_stays_exempt(self):
+        """The four checks `AGENTS.md` mandates, stated as what they are.
+
+        An invariant's job is holding still, not discriminating, and the stamp
+        that says so is read before this class is. Without that order the
+        second of the four convicts every ticket honest enough to state it.
+        """
+
+        classes, ran = self._report(
+            "`python tools/validate.py`, `python -m unittest discover -s tests -v`, "
+            "`python install.py --dry-run` and `git diff --check` all pass. "
+            "Oracle: the four commands above. oracle_class: deterministic. "
+            "provenance: pre-existing."
+        )
+        self.assertNotIn(cutcheck.WHOLE_SUITE_ORACLE, classes, classes)
+        self.assertEqual(ran, [], "an invariant is not run for discrimination")
+
+    def test_the_tracked_corpus_reports_zero_gaps(self):
+        """Every tracked criterion, read through the gate's own two questions.
+
+        Statically: running the tool over the whole corpus costs minutes and
+        sees nothing more, because the gate is one stamp and one predicate and
+        `test_a_pre_existing_required_check_stays_exempt` is what grades their
+        order. The commands read are asserted too -- a scan that resolved no
+        ticket reports zero gaps for the wrong reason.
+        """
+
+        read, gaps = [], []
+        for root in CORPUS_ROOTS:
+            for path in sorted(root.rglob("*.md")):
+                text = path.read_text(encoding="utf-8")
+                section = cutcheck._sections(text).get(cutcheck.COMPLETION_SECTION, "")
+                for number, criterion in cutcheck._criteria(section):
+                    for command in cutcheck._commands(criterion):
+                        read.append(command)
+                        if cutcheck.PRE_EXISTING_RE.search(criterion):
+                            continue
+                        if cutcheck._whole_suite(command, ROOT):
+                            gaps.append(
+                                "{} criterion {}: {}".format(
+                                    path.relative_to(ROOT), number, command
+                                )
+                            )
+        self.assertIn(
+            'python3 -m unittest discover -s .orch/canary/scratch/tdd -p "test_*.py"'
+            " -k test_double_returns_twice_input -v",
+            read,
+            "the canary criterion this class was cut for was not read",
+        )
+        self.assertEqual(gaps, [], "\n".join(gaps))
+
+    def test_the_gap_sets_the_exit_status(self):
+        """Family 1 and not advisory: an oracle discriminating nothing is a defect.
+
+        `extraction-gap` is advisory because it reports what cutcheck could not
+        read. This reports what the criterion does say, and says it decides
+        nothing -- the same finding as `already-passes`, and graded the same.
+        """
+
+        self.assertEqual(
+            cutcheck.FAMILY_OF[cutcheck.WHOLE_SUITE_ORACLE], cutcheck.FAMILY
+        )
+        self.assertNotIn(cutcheck.WHOLE_SUITE_ORACLE, cutcheck.ADVISORY)
+
+
 class HeadHalfNonReadingTest(unittest.TestCase):
     """A HEAD half that produced no reading is not a failure at both revisions.
 
