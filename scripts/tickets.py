@@ -36,6 +36,7 @@ import json
 import re
 import sys
 import tempfile
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -532,6 +533,33 @@ def _identity_document(run: str, path: Path, project: dict, workspace: str, now)
     return (updated, None) if updated != existing else (None, None)
 
 
+# Windows has no unconditional atomic replace. ``MoveFileEx`` answers
+# ERROR_ACCESS_DENIED -- WinError 5, which reads like a permission problem
+# and is not one -- for as long as any other handle holds the destination
+# open: a concurrent reader of the identity document, or a second writer's
+# own move already in flight over the same name. Both windows are
+# microseconds wide and both close by themselves, so the move is waited out
+# rather than reported; reporting it fails a writer for someone else's read.
+# POSIX ``rename`` has neither window, so there the first attempt is the
+# only one and a refusal is real.
+REPLACE_BUDGET_SECONDS = 2.0
+REPLACE_RETRY_SECONDS = 0.005
+
+
+def _replace_atomically(temporary: Path, target: Path) -> None:
+    """Move ``temporary`` onto ``target``, waiting out a transient refusal."""
+
+    deadline = time.monotonic() + REPLACE_BUDGET_SECONDS
+    while True:
+        try:
+            temporary.replace(target)
+            return
+        except OSError:
+            if msvcrt is None or time.monotonic() >= deadline:
+                raise
+            time.sleep(REPLACE_RETRY_SECONDS)
+
+
 def _write_identity(run_dir: Path, document: dict) -> None:
     """Whole-file, and atomically.
 
@@ -549,7 +577,7 @@ def _write_identity(run_dir: Path, document: dict) -> None:
     try:
         with handle:
             handle.write(json.dumps(document, ensure_ascii=False, indent=2) + "\n")
-        temporary.replace(run_dir / RUN_IDENTITY_NAME)
+        _replace_atomically(temporary, run_dir / RUN_IDENTITY_NAME)
     except BaseException:
         temporary.unlink(missing_ok=True)
         raise

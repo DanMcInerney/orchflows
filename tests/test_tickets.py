@@ -2446,9 +2446,11 @@ class TestRunStateRootResolution(unittest.TestCase):
             self.assertNotIn("os", imported)
             # msvcrt is absent on POSIX and imported under try/except for the
             # one lock _append_one_line takes; it reaches no subprocess.
+            # `time` is the retry budget `_replace_atomically` waits out a
+            # Windows refusal against, and it too starts nothing.
             self.assertEqual(
                 {"__future__", "datetime", "json", "msvcrt", "pathlib", "re",
-                 "scripts", "state_root", "sys", "tempfile"},
+                 "scripts", "state_root", "sys", "tempfile", "time"},
                 imported,
             )
 
@@ -3514,11 +3516,15 @@ class TestRunIdentity(unittest.TestCase):
         """Atomicity is the claim `_write_identity` makes, and a plain write
         would pass the concurrency case above most days it ran. What is
         graded is the mechanism: the target is only ever reached by a move,
-        so a reader cannot meet a half-written identity."""
+        so a reader cannot meet a half-written identity, and the move is the
+        one `_replace_atomically` owns."""
 
         source = inspect.getsource(tickets_mod._write_identity)
-        self.assertIn("temporary.replace(run_dir / RUN_IDENTITY_NAME)", source)
+        self.assertIn("_replace_atomically(temporary, run_dir / RUN_IDENTITY_NAME)", source)
         self.assertNotIn("write_text", source)
+        mover = inspect.getsource(tickets_mod._replace_atomically)
+        self.assertIn("temporary.replace(target)", mover)
+        self.assertNotIn("write_text", mover)
 
     @unittest.skipUnless(git_available(), "git is not on PATH")
     def test_a_real_git_worktree_appends_to_the_same_project(self):
@@ -3531,6 +3537,90 @@ class TestRunIdentity(unittest.TestCase):
             self.assertEqual(
                 [str(main.resolve()), str(worktree.resolve())], workspaces_of()
             )
+
+
+class TestAtomicReplace(unittest.TestCase):
+    """`_replace_atomically`'s two platforms, both graded here.
+
+    The branch that matters runs on Windows only, where `MoveFileEx` refuses
+    a destination another handle holds open, so on every other host it is
+    unreachable code that three cells of the matrix are the first to run.
+    `msvcrt` is the discriminator the module already uses, so setting it is
+    how this host asks the Windows question.
+    """
+
+    def refusals(self, count: int):
+        """A `Path.replace` that refuses `count` times, then moves."""
+
+        real = Path.replace
+        state = {"left": count, "calls": 0}
+
+        def replace(self, target):
+            state["calls"] += 1
+            if state["left"] > 0:
+                state["left"] -= 1
+                raise PermissionError(5, "Access is denied")
+            return real(self, target)
+
+        return replace, state
+
+    def move(self, tmp: Path):
+        source = tmp / "source"
+        source.write_text("moved\n", encoding="utf-8")
+        return source, tmp / "target"
+
+    def test_windows_waits_out_a_transient_refusal(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            source, target = self.move(tmp)
+            replace, state = self.refusals(3)
+            with mock.patch.object(tickets_mod, "msvcrt", object()), mock.patch.object(
+                Path, "replace", replace
+            ):
+                tickets_mod._replace_atomically(source, target)
+            self.assertEqual(4, state["calls"])
+            self.assertEqual("moved\n", target.read_text(encoding="utf-8"))
+
+    def test_a_refusal_that_never_ends_is_reported_when_the_budget_runs_out(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            source, target = self.move(tmp)
+            replace, _ = self.refusals(10**6)
+            with mock.patch.object(tickets_mod, "msvcrt", object()), mock.patch.object(
+                tickets_mod, "REPLACE_BUDGET_SECONDS", 0.05
+            ), mock.patch.object(Path, "replace", replace):
+                with self.assertRaises(PermissionError):
+                    tickets_mod._replace_atomically(source, target)
+            self.assertFalse(target.exists())
+
+    def test_posix_takes_the_first_answer(self):
+        """No retry where the platform has no transient refusal: a refusal
+        there is real, and waiting on it would only delay the report."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            source, target = self.move(tmp)
+            replace, state = self.refusals(1)
+            with mock.patch.object(tickets_mod, "msvcrt", None), mock.patch.object(
+                Path, "replace", replace
+            ):
+                with self.assertRaises(PermissionError):
+                    tickets_mod._replace_atomically(source, target)
+            self.assertEqual(1, state["calls"])
+
+    def test_an_unobstructed_move_costs_one_attempt_on_either_platform(self):
+        for label, sentinel in (("windows", object()), ("posix", None)):
+            with self.subTest(label), tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                source, target = self.move(tmp)
+                replace, state = self.refusals(0)
+                with mock.patch.object(tickets_mod, "msvcrt", sentinel), mock.patch.object(
+                    Path, "replace", replace
+                ):
+                    tickets_mod._replace_atomically(source, target)
+                self.assertEqual(1, state["calls"])
+                self.assertFalse(source.exists())
+                self.assertEqual("moved\n", target.read_text(encoding="utf-8"))
 
 
 class TestRunIdentityCollision(unittest.TestCase):
