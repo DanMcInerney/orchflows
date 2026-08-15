@@ -15,17 +15,21 @@ cells. That copy exists because an installed tickets.py has no library
 tree to read; nothing else then notices when a cell and the table move
 apart, which is what this module is for."""
 import ast
+import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import scripts.friction as friction_mod  # noqa: E402
 import scripts.tickets as tickets_mod  # noqa: E402
 
 VALIDATE = ROOT / "tools" / "validate.py"
@@ -249,6 +253,153 @@ class TestPackWorkspaceTableAgainstPacks(unittest.TestCase):
         self.assertIsInstance(found[0], ast.Dict)
         for node in [*found[0].keys, *found[0].values]:
             self.assertIsInstance(node, ast.Constant, ast.dump(node))
+
+
+VOCABULARY = ROOT / "docs" / "vocabulary.md"
+AGENTS_MD = ROOT / "AGENTS.md"
+HOST_BLOCK = TEMPLATES / "host-block.md"
+TERM_ENTRY_RE = re.compile(r"^- \*\*friction log\*\*.*?(?=\n- \*\*|\Z)", re.MULTILINE | re.DOTALL)
+BLOCKED_CASE_RE = re.compile(r"Whenever the logger cannot run.*?never skip the log\.")
+
+
+def _collapse(text: str) -> str:
+    return re.sub(r"\s+", " ", text)
+
+
+class FrictionLocationSyncTest(unittest.TestCase):
+    """The friction log's two locations, resolved by scripts/friction.py's
+    `_target_path`, against every copy of them: docs/vocabulary.md's
+    **friction log** term names both, and the blocked-case sentence in
+    templates/host-block.md and AGENTS.md names the out-of-worktree one
+    alone -- rules/improvement.md §1 sends a write its refusal blocks
+    inside a worktree outside every worktree, and rules/visibility.md §6
+    leaves no hand-written file under `.orch/`. Every expectation is
+    derived by running the owner, never restated here."""
+
+    @staticmethod
+    def _resolved_locations():
+        """(repository-relative, out-of-worktree), each spelled as a copy
+        spells it, from scripts/friction.py's own resolver: its
+        repository branch read with cwd in this tree, its home branch
+        with cwd in a scratch directory enclosed by no repository."""
+
+        stamp = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        origin = Path.cwd()
+        outside = Path(tempfile.mkdtemp(prefix="friction-outside-"))
+        try:
+            os.chdir(ROOT)
+            repo_root = friction_mod._find_repo_root(Path.cwd())
+            if repo_root is None:
+                raise AssertionError(f"{ROOT} encloses no repository; the repository branch was not exercised")
+            local = friction_mod._target_path(stamp).parent.relative_to(repo_root)
+            os.chdir(outside)
+            if friction_mod._find_repo_root(Path.cwd()) is not None:
+                raise AssertionError(f"{outside} is inside a repository; the home branch was not exercised")
+            home = friction_mod._target_path(stamp).parent.relative_to(Path.home())
+        finally:
+            os.chdir(origin)
+            shutil.rmtree(outside, True)
+        return local.as_posix() + "/", "~/" + home.as_posix() + "/"
+
+    def _blocked_case(self, path: Path) -> str:
+        match = BLOCKED_CASE_RE.search(_collapse(path.read_text(encoding="utf-8")))
+        self.assertIsNotNone(match, f"{path.name}: no blocked-case friction sentence to read")
+        return match.group(0)
+
+    def test_the_term_entry_names_every_location_the_logger_resolves(self):
+        match = TERM_ENTRY_RE.search(VOCABULARY.read_text(encoding="utf-8"))
+        self.assertIsNotNone(match, "docs/vocabulary.md: no **friction log** term entry")
+        entry = _collapse(match.group(0))
+        for location in self._resolved_locations():
+            self.assertIn(location, entry, f"the term owner does not name {location}: {entry}")
+
+    def test_both_copies_spell_the_blocked_case_destination(self):
+        local, outside = self._resolved_locations()
+        for path in (HOST_BLOCK, AGENTS_MD):
+            with self.subTest(copy=path.name):
+                sentence = self._blocked_case(path)
+                self.assertIn(outside, sentence, f"{path.name}: blocked case does not spell {outside}")
+                self.assertNotIn(local, sentence, f"{path.name}: blocked case still sends the entry to {local}")
+
+    # --- the two wrong-result readings (rules/verification.md §8) ------
+
+    OVERLAY = (
+        "scripts/friction.py",
+        "docs/vocabulary.md",
+        "templates/host-block.md",
+        "AGENTS.md",
+        "tools/validate.py",
+    )
+    _copy = None
+    _revisions = None
+
+    @classmethod
+    def _wrong_result_tree(cls):
+        """A clone beside the tree -- never the tree itself, which an
+        interrupted seeding leaves mutated, and never an extract, which
+        drops `.git` -- carrying the working-tree state of every file the
+        check reads, so an uncommitted slice is what gets read."""
+
+        if cls._copy is None:
+            scratch = Path(tempfile.mkdtemp(prefix="friction-locations-"))
+            cls.addClassCleanup(setattr, cls, "_copy", None)
+            cls.addClassCleanup(shutil.rmtree, scratch, True)
+            copy = scratch / "clone"
+            subprocess.run(
+                ["git", "clone", "--quiet", str(ROOT), str(copy)],
+                check=True, capture_output=True,
+            )
+            for rel_path in cls.OVERLAY:
+                shutil.copy(ROOT / rel_path, copy / rel_path)
+            cls._revisions = subprocess.run(
+                ["git", "-C", str(copy), "rev-list", "--count", "HEAD"],
+                capture_output=True, text=True, check=True,
+            ).stdout.strip()
+            subprocess.run(
+                [sys.executable, str(copy / "tools" / "validate.py"), "--pin"],
+                capture_output=True, text=True,
+            )
+            cls._copy = copy
+        return cls._copy
+
+    def _reading(self, label: str) -> str:
+        return f"{label} [clone, git rev-list --count {self._revisions}]"
+
+    def _validate_in_copy(self):
+        copy = self._wrong_result_tree()
+        return subprocess.run(
+            [sys.executable, str(copy / "tools" / "validate.py")],
+            capture_output=True, text=True,
+        )
+
+    def _seed(self, rel_path: str, old: str, new: str) -> None:
+        path = self._wrong_result_tree() / rel_path
+        text = path.read_text(encoding="utf-8")
+        self.assertIn(old, text, self._reading(f"{rel_path}: seed assumption stale, {old!r} absent"))
+        self.addCleanup(path.write_text, text, "utf-8")
+        path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+    def _assert_clean_first(self):
+        clean = self._validate_in_copy()
+        self.assertEqual(0, clean.returncode, self._reading(f"unseeded copy must pass first: {clean.stdout}"))
+
+    def test_a_copy_naming_only_the_repository_location_fails(self):
+        local, outside = self._resolved_locations()
+        self._assert_clean_first()
+        self._seed("AGENTS.md", outside, local)
+        seeded = self._validate_in_copy()
+        self.assertEqual(1, seeded.returncode, self._reading(f"a blocked case naming only {local} must fail: {seeded.stdout}"))
+        self.assertIn("AGENTS.md", seeded.stdout, self._reading(f"the drifted copy goes unnamed: {seeded.stdout}"))
+        self.assertNotIn("host-block.md", seeded.stdout, self._reading(f"a copy that did not drift is named: {seeded.stdout}"))
+
+    def test_the_locations_are_read_from_their_owner(self):
+        self._assert_clean_first()
+        self._seed("scripts/friction.py", '".orchflows"', '".orchflows-moved"')
+        seeded = self._validate_in_copy()
+        self.assertEqual(1, seeded.returncode, self._reading(f"a location changed in the owner alone must fail: {seeded.stdout}"))
+        for copy_name in ("vocabulary.md", "host-block.md", "AGENTS.md"):
+            with self.subTest(copy=copy_name):
+                self.assertIn(copy_name, seeded.stdout, self._reading(f"{copy_name} still names the location the owner left: {seeded.stdout}"))
 
 
 if __name__ == "__main__":

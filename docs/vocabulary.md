@@ -242,8 +242,10 @@ The benchmark pipeline has exactly four artifact roles:
 - **friction** — an observed obstruction logged during any session: extra
   attempts, missing input or tool or document, surprising output, a
   contract gap, a workaround. Observations only, never causes.
-- **friction log** — append-only JSONL under `.orch/friction/`; the
-  primary input to self-improvement.
+- **friction log** — append-only JSONL at either location
+  `scripts/friction.py` resolves: project-scope `.orch/friction/`,
+  user-scope `~/.orchflows/friction/`; the primary input to
+  self-improvement.
 - **run state** — the contents of `.orch/runs/` and `.orch/tickets/`;
   read by self-improvement as evidence only.
 - **trace** — the normalized event record of one session, extracted
