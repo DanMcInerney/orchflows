@@ -68,10 +68,11 @@ dependencies point. Terms: `docs/vocabulary.md`.
   friction logging; `scripts/isolate.py` owns exporting one revision
   into a tree beside the repository, where a check reads one lane's
   result alone; `scripts/tickets.py` owns mechanical ticket queries;
-  `scripts/trace.py` owns trace extraction, consumed by
-  `orch-self-improve`; `scripts/ui.py` owns the read-only local view of
-  `.orch/` run state; `scripts/workspace.py` owns the workspace
-  lifecycle stamps and the isolation grade at the join.
+  its `tickets.py help` is operator-only: usage a reader asks for,
+  never a step a skill runs; `scripts/trace.py` owns trace extraction,
+  consumed by `orch-self-improve`; `scripts/ui.py` owns the read-only
+  local view of `.orch/` run state; `scripts/workspace.py` owns the
+  workspace lifecycle stamps and the isolation grade at the join.
 - `.orch/` — runtime state, never an instruction source; every tree below
   is gitignored except `canary/`, so each linked worktree has its own
   copy of the ignored trees on disk and only the script channel
