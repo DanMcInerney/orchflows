@@ -1109,6 +1109,49 @@ class TestRunStateArtifact(unittest.TestCase):
             )
 
 
+def _open_mode(call):
+    """The mode an ``open`` call asks for; omitted, the default is a read."""
+
+    if len(call.args) > 1:
+        return call.args[1].value if isinstance(call.args[1], ast.Constant) else None
+    return "r"
+
+
+def append_mechanism(source: str, name: str) -> dict:
+    """How the function ``name`` in ``source`` opens its file, read off the
+    AST rather than the text.
+
+    A grep pins one spelling of the call: it said nothing once the call moved
+    one function away, and it would fail on ``open(path, 'a'`` -- a false
+    failure, not a change in mechanism. What separates an append from a
+    read-modify-write is how many opens there are and in what mode.
+    """
+
+    defined = [
+        node
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.FunctionDef) and node.name == name
+    ]
+    if len(defined) != 1:
+        raise AssertionError(f"{len(defined)} functions named {name!r} in this source")
+    return {
+        "open_modes": [
+            _open_mode(call)
+            for call in ast.walk(defined[0])
+            if isinstance(call, ast.Call)
+            and isinstance(call.func, ast.Name)
+            and call.func.id == "open"
+        ]
+    }
+
+
+def assert_one_append_open_and_no_read(test, source: str, name: str) -> None:
+    """Assert ``name`` appends: exactly one open, and it in append mode."""
+
+    mechanism = append_mechanism(source, name)
+    test.assertEqual(["a"], mechanism["open_modes"], name)
+
+
 class TerminalNoteTest(unittest.TestCase):
     """contracts/worklog.md: "Notes append in occurrence order, and no note
     is written past a terminal section: a worklog carries no terminal
@@ -1188,14 +1231,13 @@ class TerminalNoteTest(unittest.TestCase):
                 ["from the channel", "from another worktree", "from the channel again"],
                 worklog_of(main).read_text(encoding="utf-8").splitlines(),
             )
-            # Both halves of the note path: the subcommand and the helper it
-            # hands the write to. Reading only the subcommand made this pass
-            # for as long as the open sat there and say nothing once it moved.
-            source = " ".join(
-                inspect.getsource(tickets_mod._cmd_run_state).split()
-                + inspect.getsource(tickets_mod._append_one_line).split()
-            )
-            self.assertIn('open(path, "a"', source)
+            # The mechanism itself is graded by
+            # test_the_append_is_one_open_in_append_mode_with_no_read, and it
+            # has to be graded somewhere other than here: the write above
+            # lands between two complete invocations, so a read-modify-write
+            # reproduces this expectation exactly. What stood here was a grep
+            # over two function bodies joined as text, which the same
+            # mechanism spelled another way already failed.
 
             notes = [f"writer-{i} " + "x" * 2000 for i in range(8)]
             with ThreadPoolExecutor(max_workers=8) as pool:
@@ -1207,6 +1249,18 @@ class TerminalNoteTest(unittest.TestCase):
                 sorted(notes),
                 sorted(worklog_of(main, "otherrun").read_text(encoding="utf-8").splitlines()),
             )
+
+    def test_the_append_is_one_open_in_append_mode_with_no_read(self):
+        """The mechanism assertion, read off the AST: one open, append mode,
+        nothing read.
+
+        Replaces the source-text grep this class carried at 6c3b7aa:907,
+        which fell to a spelling change and to the call moving one function
+        away -- each a false failure, neither a change in mechanism."""
+
+        assert_one_append_open_and_no_read(
+            self, inspect.getsource(tickets_mod._append_one_line), "_append_one_line"
+        )
 
     def test_the_close_requires_a_known_state_and_its_deciding_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
