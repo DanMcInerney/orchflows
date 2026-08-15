@@ -16,8 +16,9 @@ first, watch it fail, then pass it.
 None.
 ## Completion test
 1. `python3 -m unittest discover -s .orch/canary/scratch/tdd -p
-   "test_*.py" -v` exits 0 and reports test_double_returns_twice_input
-   passing. Oracle: the test command above. oracle_class: deterministic.
+   "test_*.py" -k test_double_returns_twice_input -v` exits 0 and reports
+   test_double_returns_twice_input passing. Oracle: the test command above.
+   oracle_class: deterministic.
 ## Return fields
 status, changed_artifacts, verification.
 ## Result

@@ -19,7 +19,10 @@ skipped: at cut time nothing has landed, so a baseline failure is what a
 discriminating oracle looks like. Execution therefore decides two classes
 there and only two -- the oracle that already passes, and the one nothing can
 run -- because every other class needs a reading of the landed work to compare
-against, and at cut time there is none. An oracle whose
+against, and at cut time there is none. A test invocation naming no node id --
+a whole module, a whole tree, a bare ``discover`` -- is reported without being
+run at all: it grades the identical tests under every item it is stated under,
+so no reading of it could discriminate one from another. An oracle whose
 criterion states ``provenance: pre-existing`` is an invariant -- it passed
 before the work and has to pass after -- so discrimination is not asked of it,
 and nothing else is forgiven it. A command carrying its verdict in what it
@@ -142,6 +145,7 @@ UNCONFINED_ORACLE = "unconfined-oracle"
 EXTRACTION_GAP = "extraction-gap"
 VERDICT_IN_OUTPUT = "verdict-in-output"
 UNRUNNABLE_ORACLE = "unrunnable-oracle"
+WHOLE_SUITE_ORACLE = "whole-suite-oracle"
 MISSING_PATH = "missing-path"
 UNRESOLVED_CITATION = "unresolved-citation"
 QUOTE_NOT_AT_CITATION = "quote-not-at-citation"
@@ -168,6 +172,7 @@ FAMILY_OF = {
     EXTRACTION_GAP: FAMILY,
     VERDICT_IN_OUTPUT: FAMILY,
     UNRUNNABLE_ORACLE: FAMILY,
+    WHOLE_SUITE_ORACLE: FAMILY,
     MISSING_PATH: FAMILY_2,
     UNRESOLVED_CITATION: FAMILY_2,
     QUOTE_NOT_AT_CITATION: FAMILY_2,
@@ -272,6 +277,13 @@ GIT_CONFINED_SUBCOMMANDS = frozenset(
 # evaluate -- `grep -c` counts and `grep -e` names a pattern.
 EVAL_HEADS = ("node", "npm", "python", "python3")
 EVAL_ARGS = frozenset({"-c", "-e", "--eval", "--exec", "-"})
+# A test invocation says which node it grades, or it grades whatever it finds.
+# `discover` names no node by construction; `-k` names one whatever it is
+# pointed at; `::` opens the node half of a pytest target.
+TEST_RUNNERS = ("unittest", "pytest")
+DISCOVER = "discover"
+NODE_FILTER = "-k"
+NODE_SEP = "::"
 # A criterion states the provenance of its own oracle; an oracle stated
 # pre-existing is an invariant, and holding still is what it is for. Stating it
 # is writing the field and nothing else: a sentence boundary opens the phrase,
@@ -840,6 +852,53 @@ def _verdict_in_output(command):
     return any(COUNT_FLAG_RE.match(token) for token in argv[1:])
 
 
+def _whole_target(target, tree):
+    """Does this target name a whole module or directory, not a node inside one?
+
+    Decided against the tree, because only the tree knows where the module
+    stops. ``tests.test_cutcheck`` is a file and
+    ``tests.test_cutcheck.CleanSetTest`` is a class inside that file, and no
+    reading of the two strings tells them apart. A unittest target spells the
+    way down with dots and a pytest target spells it with slashes; both are one
+    question about where the path stops resolving.
+    """
+
+    if NODE_SEP in target:
+        return False
+    here = tree / (target if "/" in target else target.replace(".", "/"))
+    return here.is_dir() or here.with_suffix(".py").is_file()
+
+
+def _whole_suite(command, tree):
+    """Is this a test invocation naming no node id?
+
+    ``_commands`` refuses a bare head for this reason already: a tool's name
+    with nothing after it decides nothing. A whole-module or whole-suite
+    invocation is that same defect with more typing -- it runs the identical
+    tests under every item it is stated under, so it discriminates none of
+    them, and the honest report of it is the gap.
+
+    Reported rather than run, which is what makes the class worth having: this
+    repository's own mandated ``discover`` outgrows ``COMMAND_TIMEOUT`` in the
+    cleanest store there is, so executing it returned ``unrunnable-oracle`` --
+    a true class reached by reading the clock instead of the cut.
+
+    A target resolving to no module at all is some flag's value rather than a
+    thing to grade, and one such token is enough to withhold the finding: this
+    convicts what it can read whole, and stays quiet over what it cannot.
+    """
+
+    argv = command.split()
+    runner = next((i for i, token in enumerate(argv) if token in TEST_RUNNERS), None)
+    if runner is None or NODE_FILTER in argv:
+        return False
+    rest = argv[runner + 1:]
+    if DISCOVER in rest:
+        return True
+    targets = [token for token in rest if token[:1] not in ("-", '"', "'")]
+    return bool(targets) and all(_whole_target(token, tree) for token in targets)
+
+
 def _discrimination(command, baseline_tree, head_tree):
     """The class this oracle fails as, or None when it discriminates.
 
@@ -1360,6 +1419,13 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
                 # An oracle the criterion states is pre-existing is an
                 # invariant: it passed before this work and has to pass after,
                 # so discriminating is not its job and never was.
+                continue
+            if _whole_suite(command, baseline_tree):
+                # Below the stamp, because an invariant is not being asked to
+                # discriminate, and above execution because this one must not
+                # run: the mandated `discover` that lands here outgrows
+                # COMMAND_TIMEOUT, and the timeout reports the clock.
+                findings.append((ticket_id, number, WHOLE_SUITE_ORACLE, command))
                 continue
             del _MUTATED[:]
             klass = _discrimination(command, baseline_tree, head_tree)
