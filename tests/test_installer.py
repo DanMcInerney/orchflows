@@ -764,6 +764,116 @@ class TestHostAutoDetection(unittest.TestCase):
             self.assertIn("detected Codex CLI: no", output)
 
 
+class DryRunOracleTest(unittest.TestCase):
+    """``python install.py --dry-run`` is one of the four required checks.
+
+    It used to return a bare 0 whether it had planned the entire install or
+    nothing at all: with no host CLI on PATH -- the state of every CI runner
+    -- ``main`` returned before printing any plan, so a green run claimed
+    only that argv parsed and the module imported. These oracles pin what a
+    green dry run now asserts about the plan it printed.
+    """
+
+    _COUNT = re.compile(r"^planned entries: (\d+)$", re.MULTILINE)
+
+    def _dry_run(self, home: Path, *hosts: str) -> tuple[int, str]:
+        with patch.object(install.Path, "home", return_value=home), mock_host_clis(*hosts):
+            buffer = io.StringIO()
+            with redirect_stdout(buffer):
+                code = install.main(["--user", "--dry-run"])
+        return code, buffer.getvalue()
+
+    def _planned_entries(self, output: str) -> int:
+        found = self._COUNT.search(output)
+        self.assertIsNotNone(found, "dry run printed no planned-entry count:\n" + output)
+        return int(found.group(1))
+
+    def test_a_dry_run_with_no_host_enabled_is_distinguishable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            no_host_home = Path(tmp) / "no-host"
+            claude_home = Path(tmp) / "claude"
+            no_host_home.mkdir()
+            claude_home.mkdir()
+
+            no_host_code, no_host_output = self._dry_run(no_host_home)
+            claude_code, claude_output = self._dry_run(claude_home, "claude")
+
+        # Both exit 0 on purpose: CI runners carry neither CLI, and this
+        # repository's own required check has to stay green. What separates
+        # the two runs is what each says about its plan, not its status.
+        self.assertEqual(0, no_host_code)
+        self.assertEqual(0, claude_code)
+
+        self.assertEqual(0, self._planned_entries(no_host_output))
+        self.assertGreater(self._planned_entries(claude_output), 0)
+        self.assertIn("detected Claude Code CLI: no", no_host_output)
+        self.assertIn("detected Claude Code CLI: yes", claude_output)
+
+    def test_the_printed_plan_is_non_empty_when_a_host_is_enabled(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            code, output = self._dry_run(Path(tmp), "claude", "codex")
+
+        self.assertEqual(0, code)
+        self.assertGreater(self._planned_entries(output), 0)
+        for heading in ("library files (", "scripts (", "Claude Code role agents ("):
+            self.assertIn(heading, output)
+
+        # Can-fail, built beside the tree: a planner that detected a host and
+        # planned nothing is exactly the silence this criterion exists to
+        # break. The wrong result is a stub Plan, never a mutation of the
+        # tree under test.
+        empty = install.Plan(
+            scope="user",
+            project_root=None,
+            lib_home=Path("unused") / "lib",
+            scope_home=Path("unused") / "scope",
+            bin_dir=Path("unused") / "bin",
+            receipt_path=Path("unused") / "receipt.json",
+            claude_enabled=True,
+            codex_enabled=False,
+        )
+        with patch.object(install, "build_plan", return_value=empty):
+            buffer = io.StringIO()
+            with redirect_stdout(buffer):
+                empty_code = install.main(["--user", "--dry-run"])
+
+        self.assertNotEqual(0, empty_code)
+        self.assertEqual(0, self._planned_entries(buffer.getvalue()))
+
+    def test_dry_run_writes_nothing(self):
+        def snapshot(root: Path) -> dict:
+            return {
+                str(path.relative_to(root)): digest(path) if path.is_file() else "<dir>"
+                for path in sorted(root.rglob("*"))
+            }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            # A sandboxed destination, populated so there is something a
+            # write could disturb. The tree under test is never the target.
+            home = Path(tmp) / "home"
+            (home / ".claude").mkdir(parents=True)
+            (home / ".codex").mkdir(parents=True)
+            (home / ".claude" / "CLAUDE.md").write_text("# mine\n", encoding="utf-8")
+            before = snapshot(home)
+
+            code, _ = self._dry_run(home, "claude", "codex")
+
+            self.assertEqual(0, code)
+            self.assertEqual(before, snapshot(home))
+
+            # Can-fail: the same comparison against a real install into the
+            # same sandboxed home must differ, or the equality above would
+            # hold just as well for a dry run that wrote the lot.
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "claude", "codex"
+            ):
+                buffer = io.StringIO()
+                with redirect_stdout(buffer):
+                    install.main(["--user", "--yes"])
+
+            self.assertNotEqual(before, snapshot(home))
+
+
 class TestClaudeAlwaysOnImport(unittest.TestCase):
     """Criteria 3-4: the always-on layer is one appended import line in
     CLAUDE.md pointing at an installer-owned ``~/.orchflows/host-block.md``;
