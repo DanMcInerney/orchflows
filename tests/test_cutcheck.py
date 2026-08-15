@@ -199,43 +199,36 @@ class DiscriminationTest(unittest.TestCase):
             self.assertIn("01-discrimination", line)
             self.assertIn(cutcheck.FAMILY, line)
 
-    # This set's third span is `python3 -m pytest ...`, which writes
-    # `.pytest_cache/` into the copy it is graded in. That is a true finding
-    # about this fixture and an addition to what the set reports, never a
-    # replacement: the three discrimination classes are each still reported
-    # once, and the confinement line stands beside them rather than instead of
-    # one. Both counts are read off a filter naming the addition, so a
-    # discrimination class going missing still fails here.
-    DISCRIMINATION_CLASSES = sorted(
-        [
-            cutcheck.ALREADY_PASSES,
-            cutcheck.NO_HITS_BOTH_REVISIONS,
-            cutcheck.FAILS_BOTH_REVISIONS,
-        ]
-    )
-
-    def _classes(self, klass=None):
-        found = [line.split(": ")[2] for line in self.lines]
-        return sorted(name for name in found if klass in (None, name))
-
     def test_exactly_three_violations_one_per_case(self):
-        discriminating = [
-            name for name in self._classes() if name != cutcheck.UNCONFINED_ORACLE
-        ]
-        self.assertEqual(len(discriminating), 3, "\n".join(self.lines))
+        self.assertEqual(len(self.lines), 3, "\n".join(self.lines))
 
     def test_each_discrimination_class_is_reported_once(self):
-        classes = [
-            name for name in self._classes() if name != cutcheck.UNCONFINED_ORACLE
-        ]
-        self.assertEqual(classes, self.DISCRIMINATION_CLASSES, "\n".join(self.lines))
+        classes = sorted(line.split(": ")[2] for line in self.lines)
+        self.assertEqual(
+            classes,
+            sorted([
+                cutcheck.ALREADY_PASSES,
+                cutcheck.NO_HITS_BOTH_REVISIONS,
+                cutcheck.FAILS_BOTH_REVISIONS,
+            ]),
+            "\n".join(self.lines),
+        )
 
-    def test_the_pytest_span_is_reported_for_what_it_wrote_into_the_copy(self):
-        self.assertEqual(self._classes(cutcheck.UNCONFINED_ORACLE), [
-            cutcheck.UNCONFINED_ORACLE
-        ], "\n".join(self.lines))
-        written = [line for line in self.lines if ".pytest_cache/" in line]
-        self.assertEqual(len(written), 1, "\n".join(self.lines))
+    def test_no_span_in_this_set_writes_into_the_copy(self):
+        """This corpus reads the same on every host, and a regression says so here.
+
+        Case 3 was once `python3 -m pytest ...`, which writes `.pytest_cache/`
+        into the copy it is graded in: a true finding, and one that exists only
+        where pytest is installed. This repository's CI installs nothing, so
+        pinning that finding would have pinned this host. The span is a unittest
+        node id now, and this is what that bought — whatever a reader's host
+        carries, no span here writes into the copy, so the recorded verdict is
+        the verdict everywhere. A span that starts writing fails here instead of
+        being re-pinned into the fixture.
+        """
+
+        wrote = [line for line in self.lines if cutcheck.UNCONFINED_ORACLE in line]
+        self.assertEqual(wrote, [], "\n".join(self.lines))
 
 
 class ShapeTest(unittest.TestCase):
