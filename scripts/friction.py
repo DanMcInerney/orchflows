@@ -7,6 +7,10 @@ broad ``except Exception`` so an internal failure is silent and the
 process still exits 0. Prints exactly one line, ``friction logged``, on
 success; nothing on failure.
 
+The one wait it ever takes is the append lock's retry budget: nothing at
+all on POSIX, and on a contended Windows append a bounded half second
+that ends in the write either way. See ``_acquire_append_lock``.
+
 Usage:
     python friction.py "<observed>" "<expected>" [--category C]
         [--skill S] [--ticket T] [--run R]
@@ -24,8 +28,14 @@ import json
 import os
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
+
+try:  # Windows only; POSIX append needs no lock. See _acquire_append_lock.
+    import msvcrt
+except ImportError:
+    msvcrt = None
 
 FLAG_MAP = {
     "--category": "category",
@@ -41,6 +51,10 @@ SESSION_ENV_VARS = (
 )
 GIT_REV_TIMEOUT_SECONDS = 2
 MAX_WALK_UP = 200
+# Half the one-second ceiling this logger is held to, so the ceiling still
+# holds on a loaded machine once the last retry's sleep is counted in.
+APPEND_LOCK_BUDGET_SECONDS = 0.5
+APPEND_LOCK_RETRY_SECONDS = 0.01
 
 
 def _parse_args(argv):
@@ -162,6 +176,57 @@ def _build_entry(observed, expected, options, now: datetime):
     }
 
 
+def _acquire_append_lock(handle):
+    """Try for the byte-zero append lock. Never blocks on it, never fails for
+    want of it; returns whether it was taken.
+
+    Windows has no atomic append. The CRT emulates it with a seek and then a
+    write, so two appenders take the same offset and one whole line vanishes --
+    the same defect ``scripts/tickets.py:_append_one_line`` documents, and this
+    file was the source of the unlocked idiom it fixed. POSIX ``O_APPEND``
+    places the write at end-of-file in one step, so there is nothing to lock
+    there and this is a no-op.
+
+    ``LK_NBLCK``, not the ``LK_LOCK`` tickets.py takes: ``LK_LOCK`` blocks for
+    about ten seconds and *then* raises, and ``rules/improvement.md`` §1 says
+    this logger never blocks and never fails. ``LK_NBLCK`` returns at once, so
+    the wait is this budget and nothing longer -- under a second, below a plain
+    ``open()`` on a slow filesystem. A budget that runs out returns False and
+    the caller writes anyway: that degrades to the unlocked append this
+    replaced, never to a lost log line.
+    """
+
+    if msvcrt is None:
+        return False
+    deadline = time.monotonic() + APPEND_LOCK_BUDGET_SECONDS
+    while True:
+        try:
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            return True
+        except Exception:
+            if time.monotonic() + APPEND_LOCK_RETRY_SECONDS >= deadline:
+                return False
+            time.sleep(APPEND_LOCK_RETRY_SECONDS)
+
+
+def _append_line(path: Path, line: str) -> None:
+    """Append one whole line, serialised where the platform does not do it."""
+
+    with open(path, "a", encoding="utf-8", newline="\n") as handle:
+        acquired = _acquire_append_lock(handle)
+        try:
+            handle.write(line)
+            handle.flush()
+        finally:
+            if acquired:
+                try:
+                    handle.seek(0)
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+                except Exception:
+                    pass
+
+
 def _run(argv):
     parsed = _parse_args(argv)
     if parsed is None:
@@ -172,8 +237,7 @@ def _run(argv):
     path = _target_path(now)
     path.parent.mkdir(parents=True, exist_ok=True)
     line = json.dumps(entry, ensure_ascii=False) + "\n"
-    with open(path, "a", encoding="utf-8", newline="\n") as handle:
-        handle.write(line)
+    _append_line(path, line)
     return True
 
 
