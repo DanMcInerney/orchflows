@@ -448,6 +448,40 @@ def _writer_identity():
     )
 
 
+# Windows has no unconditional atomic replace, and both sides of one pay
+# for it. ``MoveFileEx`` answers ERROR_ACCESS_DENIED -- WinError 5, which
+# reads like a permission problem and is not one -- for as long as any other
+# handle holds the destination open, and an ``open`` of that same name is
+# refused for the instant the move is in flight. So two workspaces opening
+# one run refuse each other in both directions: the writer for someone
+# else's read, the reader for someone else's write. Every such window is
+# microseconds wide and closes by itself, so both are waited out on one
+# bounded budget rather than reported. POSIX ``rename`` and ``open`` never
+# collide this way, so there the first answer is the only one and a refusal
+# is real.
+REPLACE_BUDGET_SECONDS = 2.0
+REPLACE_RETRY_SECONDS = 0.005
+
+
+def _waiting_out_windows(action):
+    """Run ``action``, retrying only the refusal only Windows raises.
+
+    ``PermissionError`` alone, never ``OSError``: a missing file and an
+    unreachable directory are answers, and waiting two seconds for one of
+    those on every run that has yet to open would cost the ordinary path
+    to spare the rare one.
+    """
+
+    deadline = time.monotonic() + REPLACE_BUDGET_SECONDS
+    while True:
+        try:
+            return action()
+        except PermissionError:
+            if msvcrt is None or time.monotonic() >= deadline:
+                raise
+            time.sleep(REPLACE_RETRY_SECONDS)
+
+
 def _read_identity(path: Path):
     """``(document, error)``: the run's identity, ``(None, None)`` when absent.
 
@@ -457,7 +491,7 @@ def _read_identity(path: Path):
     """
 
     try:
-        text = path.read_text(encoding="utf-8")
+        text = _waiting_out_windows(lambda: path.read_text(encoding="utf-8"))
     except (FileNotFoundError, NotADirectoryError):
         # No document, and no reachable place for one. An unreachable sink is
         # the run-state write's own error to report, in its own words.
@@ -533,31 +567,10 @@ def _identity_document(run: str, path: Path, project: dict, workspace: str, now)
     return (updated, None) if updated != existing else (None, None)
 
 
-# Windows has no unconditional atomic replace. ``MoveFileEx`` answers
-# ERROR_ACCESS_DENIED -- WinError 5, which reads like a permission problem
-# and is not one -- for as long as any other handle holds the destination
-# open: a concurrent reader of the identity document, or a second writer's
-# own move already in flight over the same name. Both windows are
-# microseconds wide and both close by themselves, so the move is waited out
-# rather than reported; reporting it fails a writer for someone else's read.
-# POSIX ``rename`` has neither window, so there the first attempt is the
-# only one and a refusal is real.
-REPLACE_BUDGET_SECONDS = 2.0
-REPLACE_RETRY_SECONDS = 0.005
-
-
 def _replace_atomically(temporary: Path, target: Path) -> None:
     """Move ``temporary`` onto ``target``, waiting out a transient refusal."""
 
-    deadline = time.monotonic() + REPLACE_BUDGET_SECONDS
-    while True:
-        try:
-            temporary.replace(target)
-            return
-        except OSError:
-            if msvcrt is None or time.monotonic() >= deadline:
-                raise
-            time.sleep(REPLACE_RETRY_SECONDS)
+    _waiting_out_windows(lambda: temporary.replace(target))
 
 
 def _write_identity(run_dir: Path, document: dict) -> None:
