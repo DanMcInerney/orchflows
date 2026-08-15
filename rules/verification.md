@@ -31,6 +31,18 @@
    claim it stands for is false decides nothing, and its PASS is void.
    Show it against a wrong result built beside the tree, never by
    mutating the tree under test, which an interrupted pass leaves mutated.
+   Build that copy by clone, never by extract: an extract drops `.git`,
+   so an oracle reading history reads whichever repository encloses the
+   copy, or errors, and changes its verdict with no diagnostic. A copy
+   is faithful when everything the oracles read is present in it
+   unchanged, including what they read without naming it; evidence that
+   with `git rev-list --count` run in the copy and recorded beside every
+   reading taken there — one count proves the history came across and
+   fingerprints which revision was read, so `OK` beside a count is
+   re-readable where a bare `OK` is not. Runtime indicts a copy only
+   when short: shorter than expected means broken, longer means nothing,
+   and runtime tracks the checkout as much as the tree, so loose-object
+   and ref counts belong beside a timing reading.
 9. A correction consumes causes, not findings: one fix per shared
    cause, the smallest set that closes the validated findings,
    preferring the fix that simplifies. A cause whose coherent fix

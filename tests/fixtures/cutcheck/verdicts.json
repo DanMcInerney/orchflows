@@ -20,6 +20,16 @@
    "cutcheck: no finding outside the advisory set"
   ]
  },
+ "cutcheck-command-mention": {
+  "exit": 0,
+  "lines": [
+   "cutcheck: advisory -- reported, and never setting the exit status:",
+   "01-quoted: family 1: extraction-gap: criterion 2: **A span quoted as what the guard refuses is no oracle.** The confinement gate refuses `git log --ou",
+   "01-quoted: family 1: extraction-gap: criterion 3: **A span quoted as what CI runs is no oracle.** A whole-module invocation such as `python3 -m unitte",
+   "cutcheck-command-mention: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-command-mention/coverage.md",
+   "cutcheck: no finding outside the advisory set"
+  ]
+ },
  "cutcheck-evalhead": {
   "exit": 0,
   "lines": [
@@ -42,7 +52,7 @@
   "lines": [
    "01-discrimination: family 1: already-passes: criterion 1: grep -n \"SCRIPT_NAMES\" install.py",
    "01-discrimination: family 1: no-hits-both-revisions: criterion 2: grep -rn \"zzqq-token-never-written\" install.py",
-   "01-discrimination: family 1: fails-both-revisions: criterion 3: python3 -m pytest tests/test_installer.py::NoSuchClass::test_absent",
+   "01-discrimination: family 1: fails-both-revisions: criterion 3: python3 -B -m unittest tests.test_installer.NoSuchClass.test_absent",
    "cutcheck: advisory -- reported, and never setting the exit status:",
    "cutcheck-f1-discrimination: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f1-discrimination/coverage.md"
   ]

@@ -988,6 +988,31 @@ def build_plan(scope: str, project_root: Path | None) -> Plan:
     return _build_user_plan()
 
 
+def plan_entry_count(plan: Plan) -> int:
+    """Every directory, file and managed edit the plan would produce.
+
+    ``--dry-run`` prints this so a green run states whether it planned the
+    install or planned nothing at all; the bare 0 it used to return read the
+    same either way.
+    """
+
+    return (
+        len(plan.runtime_dirs)
+        + len(plan.lib_copies)
+        + len(plan.scripts)
+        + len(plan.claude_adapters)
+        + len(plan.codex_prompts)
+        + len(plan.codex_skills)
+        + len(plan.by_name)
+        + len(plan.claude_agents)
+        + len(plan.codex_agents)
+        + len(plan.configs)
+        + len(plan.blocks)
+        + (1 if plan.host_block is not None else 0)
+        + (1 if plan.claude_import is not None else 0)
+    )
+
+
 def print_plan(plan: Plan) -> None:
     print(f"scope: {plan.scope}")
     if plan.project_root is not None:
@@ -1051,6 +1076,8 @@ def print_plan(plan: Plan) -> None:
         print(f"  {plan.claude_import.label}: {plan.claude_import.dest} -> @{plan.claude_import.import_target}")
         print()
     print(f"receipt: {plan.receipt_path}")
+    print()
+    print(f"planned entries: {plan_entry_count(plan)}")
 
 
 # --- apply -----------------------------------------------------------------
@@ -1660,11 +1687,20 @@ def main(argv=None) -> int:
     for warning in plan.warnings:
         print(warning)
 
-    if scope == "user" and not plan.claude_enabled and not plan.codex_enabled:
-        return 0
-
+    # Before the no-host exit, so a dry run always prints the plan it built
+    # and its entry count. Returning 0 without printing anything read exactly
+    # like a run that had planned the whole install.
     if args.dry_run:
         print_plan(plan)
+        if (plan.claude_enabled or plan.codex_enabled) and plan_entry_count(plan) == 0:
+            print(
+                "error: a host is enabled but the plan is empty; nothing would be installed",
+                file=sys.stderr,
+            )
+            return 1
+        return 0
+
+    if scope == "user" and not plan.claude_enabled and not plan.codex_enabled:
         return 0
 
     old_receipt = _load_json(plan.receipt_path)

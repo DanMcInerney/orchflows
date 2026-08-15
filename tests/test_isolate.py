@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import isolate  # noqa: E402
+from tests.tree_removal import remove_repo_tree  # noqa: E402  the removal's one owner
 
 
 def git(repo, *args):
@@ -35,7 +36,7 @@ class IsolateTest(unittest.TestCase):
 
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp(prefix="isolate-test-"))
-        self.addCleanup(shutil.rmtree, str(self.tmp), ignore_errors=True)
+        self.addCleanup(remove_repo_tree, str(self.tmp))
         self.repo = self.tmp / "repo"
         self.dest = self.tmp / "out"
         self.repo.mkdir()
