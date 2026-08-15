@@ -321,6 +321,86 @@ class FrictionLocationSyncTest(unittest.TestCase):
                 self.assertIn(outside, sentence, f"{path.name}: blocked case does not spell {outside}")
                 self.assertNotIn(local, sentence, f"{path.name}: blocked case still sends the entry to {local}")
 
+    # --- the two wrong-result readings (rules/verification.md §8) ------
+
+    OVERLAY = (
+        "scripts/friction.py",
+        "docs/vocabulary.md",
+        "templates/host-block.md",
+        "AGENTS.md",
+        "tools/validate.py",
+    )
+    _copy = None
+    _revisions = None
+
+    @classmethod
+    def _wrong_result_tree(cls):
+        """A clone beside the tree -- never the tree itself, which an
+        interrupted seeding leaves mutated, and never an extract, which
+        drops `.git` -- carrying the working-tree state of every file the
+        check reads, so an uncommitted slice is what gets read."""
+
+        if cls._copy is None:
+            scratch = Path(tempfile.mkdtemp(prefix="friction-locations-"))
+            cls.addClassCleanup(setattr, cls, "_copy", None)
+            cls.addClassCleanup(shutil.rmtree, scratch, True)
+            copy = scratch / "clone"
+            subprocess.run(
+                ["git", "clone", "--quiet", str(ROOT), str(copy)],
+                check=True, capture_output=True,
+            )
+            for rel_path in cls.OVERLAY:
+                shutil.copy(ROOT / rel_path, copy / rel_path)
+            cls._revisions = subprocess.run(
+                ["git", "-C", str(copy), "rev-list", "--count", "HEAD"],
+                capture_output=True, text=True, check=True,
+            ).stdout.strip()
+            subprocess.run(
+                [sys.executable, str(copy / "tools" / "validate.py"), "--pin"],
+                capture_output=True, text=True,
+            )
+            cls._copy = copy
+        return cls._copy
+
+    def _reading(self, label: str) -> str:
+        return f"{label} [clone, git rev-list --count {self._revisions}]"
+
+    def _validate_in_copy(self):
+        copy = self._wrong_result_tree()
+        return subprocess.run(
+            [sys.executable, str(copy / "tools" / "validate.py")],
+            capture_output=True, text=True,
+        )
+
+    def _seed(self, rel_path: str, old: str, new: str) -> None:
+        path = self._wrong_result_tree() / rel_path
+        text = path.read_text(encoding="utf-8")
+        self.assertIn(old, text, self._reading(f"{rel_path}: seed assumption stale, {old!r} absent"))
+        self.addCleanup(path.write_text, text, "utf-8")
+        path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+    def _assert_clean_first(self):
+        clean = self._validate_in_copy()
+        self.assertEqual(0, clean.returncode, self._reading(f"unseeded copy must pass first: {clean.stdout}"))
+
+    def test_a_copy_naming_only_the_repository_location_fails(self):
+        local, outside = self._resolved_locations()
+        self._assert_clean_first()
+        self._seed("AGENTS.md", outside, local)
+        seeded = self._validate_in_copy()
+        self.assertEqual(1, seeded.returncode, self._reading(f"a blocked case naming only {local} must fail: {seeded.stdout}"))
+        self.assertIn("AGENTS.md", seeded.stdout, self._reading(f"the drifted copy goes unnamed: {seeded.stdout}"))
+        self.assertNotIn("host-block.md", seeded.stdout, self._reading(f"a copy that did not drift is named: {seeded.stdout}"))
+
+    def test_the_locations_are_read_from_their_owner(self):
+        self._assert_clean_first()
+        self._seed("scripts/friction.py", '".orchflows"', '".orchflows-moved"')
+        seeded = self._validate_in_copy()
+        self.assertEqual(1, seeded.returncode, self._reading(f"a location changed in the owner alone must fail: {seeded.stdout}"))
+        for copy_name in ("vocabulary.md", "host-block.md", "AGENTS.md"):
+            with self.subTest(copy=copy_name):
+                self.assertIn(copy_name, seeded.stdout, self._reading(f"{copy_name} still names the location the owner left: {seeded.stdout}"))
+
 
 if __name__ == "__main__":
     unittest.main()

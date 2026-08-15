@@ -15,6 +15,7 @@ Exit 0 clean. Exit 1 with one line per violation:
 from __future__ import annotations
 
 import argparse
+import ast
 import difflib
 import hashlib
 import json
@@ -594,6 +595,141 @@ def validate_sync(diag: Diagnostics) -> None:
     owner_clause = _sync_normalize_clause(clause_m.group(0))
     for copy_path in (ROOT / "templates" / "host-block.md", ROOT / "AGENTS.md"):
         _sync_validate_friction_clause_copy(copy_path, owner_clause, diag)
+
+
+# --- Friction log locations -------------------------------------------
+#
+# The Sync section's discipline over a second owner: scripts/friction.py
+# owns where the friction log goes (ARCHITECTURE.md's scripts/ tier), so
+# the locations are read from its `_target_path` returns and never
+# restated here. Its copies are docs/vocabulary.md's **friction log**
+# term, which names both, and the blocked-case sentence in
+# templates/host-block.md and AGENTS.md, which names the out-of-worktree
+# one alone: a fallback the shell refused inside a worktree has to land
+# outside every worktree, and no copy may send a hand-written file under
+# `.orch/`.
+FRICTION_OWNER = ROOT / "scripts" / "friction.py"
+FRICTION_RESOLVER = "_target_path"
+FRICTION_TERM_RE = re.compile(r"^- \*\*friction log\*\*.*?(?=\n- \*\*|\Z)", re.MULTILINE | re.DOTALL)
+FRICTION_FALLBACK_RE = re.compile(r"Whenever the logger cannot run.*?never skip the log\.")
+
+
+def _friction_join_location(node) -> str:
+    """The directory a `base / "a" / "b" / <file>` expression names,
+    spelled as a copy spells it -- 'a/b/' under a repository, '~/a/b/'
+    under Path.home(). None when the expression is not such a join."""
+    parts = []
+    while isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+        parts.append(node.right)
+        node = node.left
+    if len(parts) < 2:
+        return None
+    parts.pop(0)  # the file name, which no copy spells
+    segments = []
+    for part in reversed(parts):
+        if not (isinstance(part, ast.Constant) and isinstance(part.value, str)):
+            return None
+        segments.append(part.value)
+    home = (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "home"
+    )
+    return ("~/" if home else "") + "/".join(segments) + "/"
+
+
+def _friction_owner_locations(diag: Diagnostics):
+    """(repository-relative, out-of-worktree) as scripts/friction.py
+    resolves them, or None with the defect reported."""
+    label = rel(FRICTION_OWNER)
+    try:
+        tree = ast.parse(_read_source(FRICTION_OWNER))
+    except SyntaxError as exc:
+        diag.error(label, f"does not parse, so the friction log locations cannot be read: {exc}")
+        return None
+    resolver = next(
+        (n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == FRICTION_RESOLVER),
+        None,
+    )
+    if resolver is None:
+        diag.error(label, f"no `{FRICTION_RESOLVER}` to read the friction log locations from")
+        return None
+    found = []
+    for node in ast.walk(resolver):
+        if isinstance(node, ast.Return) and node.value is not None:
+            location = _friction_join_location(node.value)
+            if location is not None:
+                found.append(location)
+    outside = [loc for loc in found if loc.startswith("~/")]
+    local = [loc for loc in found if not loc.startswith("~/")]
+    if len(outside) != 1 or len(local) != 1:
+        diag.error(
+            label,
+            f"`{FRICTION_RESOLVER}` must resolve exactly one repository-relative and one "
+            f"home-rooted friction log location for the copies to be checked against; read {sorted(found)}",
+        )
+        return None
+    return local[0], outside[0]
+
+
+def _friction_validate_term(local: str, outside: str, diag: Diagnostics) -> None:
+    path = ROOT / "docs" / "vocabulary.md"
+    if not path.is_file():
+        return  # term owner absent (isolated fixtures) -- not this check's tree
+    match = FRICTION_TERM_RE.search(_read_source(path))
+    if match is None:
+        diag.error(rel(path), "could not locate the **friction log** term entry to check against scripts/friction.py")
+        return
+    entry = re.sub(r"\s+", " ", match.group(0))
+    missing = [loc for loc in (local, outside) if loc not in entry]
+    if missing:
+        diag.error(
+            rel(path),
+            f"**friction log** entry does not name {', '.join(missing)} -- scripts/friction.py "
+            f"resolves the log to {local} and {outside}",
+        )
+
+
+def _friction_validate_fallback_copy(path: Path, local: str, outside: str, diag: Diagnostics) -> None:
+    file_label = rel(path)
+    if not path.is_file():
+        diag.error(file_label, "friction fallback copy is missing")
+        return
+    match = FRICTION_FALLBACK_RE.search(re.sub(r"\s+", " ", _read_source(path)))
+    if match is None:
+        diag.error(
+            file_label,
+            "could not locate the blocked-case friction sentence ('Whenever the logger cannot "
+            "run ... never skip the log.') to check against scripts/friction.py",
+        )
+        return
+    sentence = match.group(0)
+    if outside not in sentence:
+        diag.error(
+            file_label,
+            f"blocked-case friction fallback does not spell {outside}, the location "
+            f"scripts/friction.py resolves outside every worktree",
+        )
+    if local in sentence:
+        diag.error(
+            file_label,
+            f"blocked-case friction fallback sends the entry to {local}, inside the worktree "
+            f"whose writes the refusal may cover",
+        )
+
+
+def validate_friction_locations(diag: Diagnostics) -> None:
+    """Every copy of the friction log's locations against their owner,
+    scripts/friction.py."""
+    if not FRICTION_OWNER.is_file():
+        return  # owner absent (isolated fixtures) -- not this check's tree
+    locations = _friction_owner_locations(diag)
+    if locations is None:
+        return
+    local, outside = locations
+    _friction_validate_term(local, outside, diag)
+    for copy_path in (ROOT / "templates" / "host-block.md", ROOT / "AGENTS.md"):
+        _friction_validate_fallback_copy(copy_path, local, outside, diag)
 
 
 CONTRACTS_DIR = ROOT / "contracts"
@@ -1399,6 +1535,7 @@ def run_validation() -> Diagnostics:
     validate_cross_package_links(packages, diag)
     validate_pins(diag)
     validate_sync(diag)
+    validate_friction_locations(diag)
     return diag
 
 
