@@ -384,15 +384,13 @@ def ceiling_breach(count):
 
 
 class WarningCeilingTest(unittest.TestCase):
-    # One clause packs/orch-code-pack/references/slicing.md:8-11 already
-    # owns, restated in a fifth place with a single noun changed. This is
+    # One clause packs/orch-code-pack/references/slicing.md:11 already
+    # owns, restated in a third pack with a single noun changed. This is
     # what a regression here looks like: not a new kind of finding, one
-    # more copy of a clause that has an owner.
-    REGRESSION = (
-        "\n- Each ticket: one observable behavior, provable by runnable checks "
-        "from the spec's acceptance; a write scope overlapping only cousins it "
-        "is dependency-ordered with and sufficient for its own completion test.\n"
-    )
+    # more copy of a clause that has an owner. The clause carries no span
+    # MANDATED_FORM_RES strips, so the plant is the pack's own content and
+    # the ratio is measured over all of it.
+    REGRESSION = "\n- Dependency edges only where one lane's seam is another's input.\n"
 
     def _clone_beside_the_tree(self):
         temporary = tempfile.TemporaryDirectory()

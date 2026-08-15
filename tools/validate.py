@@ -99,6 +99,14 @@ MANDATED_FORM_RES = (
     re.compile(
         r"\b(?:deterministic|judged|evidence)\s+(?:pre-existing|authored-here)$"
     ),
+    # tests/test_adaptive_delivery.py asserts this exact wording in
+    # orch-decompose's body and in both slicing cells that carry it: the
+    # duplication is the invariant, holding every pack to overlap along
+    # dependency order and off the old global-disjointness rule. A pack
+    # cannot state it in its own words without breaking that check.
+    re.compile(
+        r"a write scope overlapping only siblings it is dependency-ordered with"
+    ),
 )
 MD_LINK_RE = re.compile(r"\]\(([^)]+)\)")
 LOOP_TRIGGER_RE = re.compile(r"\biterat(?:e|es|ing)\b|\brepeat until\b", re.IGNORECASE)
