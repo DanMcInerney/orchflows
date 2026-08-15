@@ -39,8 +39,8 @@ dependencies point. Terms: `docs/vocabulary.md`.
   Everything it does not check — the Return law's field substance
   included — is owned by review under the library lens. `tests/`
   freeze canonical bytes; nothing depends on tests.
-- `install.sh` / `install.cmd` + `install.py` + `scripts/` — setup,
-  teardown, and the friction logger. The root wrappers resolve an
+- `install.sh` / `install.cmd` + `install.py` — setup and teardown.
+  The root wrappers resolve an
   interpreter (uv → python3 → python, never hardcoded) and pass
   arguments through to `install.py`. `install.py --user` auto-detects
   which host halves to configure — Claude Code only when a Claude CLI is
@@ -61,10 +61,17 @@ dependencies point. Terms: `docs/vocabulary.md`.
   `install.py --project PATH` writes only the two committable routing
   blocks (project `CLAUDE.md`, `AGENTS.md`) as inline marker blocks —
   self-contained for teammates — plus a minimal receipt; no project lib
-  copy, no project `.claude`/`.codex` writes. `scripts/friction.py`
-  owns friction logging; `scripts/tickets.py` owns mechanical ticket
-  queries; `scripts/trace.py` owns trace extraction, consumed by
-  `orch-self-improve`.
+  copy, no project `.claude`/`.codex` writes.
+- `scripts/` — repository-root scripts, one owner each:
+  `scripts/cutcheck.py` owns cut-defect detection over an issued ticket
+  set, read by `orch-deliver`'s cut lens; `scripts/friction.py` owns
+  friction logging; `scripts/isolate.py` owns exporting one revision
+  into a tree beside the repository, where a check reads one lane's
+  result alone; `scripts/tickets.py` owns mechanical ticket queries;
+  `scripts/trace.py` owns trace extraction, consumed by
+  `orch-self-improve`; `scripts/ui.py` owns the read-only local view of
+  `.orch/` run state; `scripts/workspace.py` owns the workspace
+  lifecycle stamps and the isolation grade at the join.
 - `.orch/` — runtime state, never an instruction source; every tree below
   is gitignored except `canary/`, so each linked worktree has its own
   copy of the ignored trees on disk and only the script channel
