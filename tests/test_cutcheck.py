@@ -23,30 +23,7 @@ import install  # noqa: E402
 import scripts.cutcheck as cutcheck  # noqa: E402
 import scripts.tickets as tickets  # noqa: E402
 from tests.baseline_pin import BASELINE  # noqa: E402  the pin's one owner
-
-
-def remove_repo_tree(root):
-    """Remove a temporary tree that holds a repository this suite committed in.
-
-    `git commit` writes its loose objects read-only, and Windows refuses to
-    unlink a read-only file, so a bare `shutil.rmtree` leaves every such tree
-    behind and errors the test that built it -- twelve of them, on all three
-    Windows legs and on none of the other six. The mode is cleared first and
-    the removal stays strict, which is how `scripts/cutcheck.py` removes the
-    scratch roots the tool itself owns.
-
-    Only for trees that can hold a repository. Everything else this suite
-    removes keeps the bare `shutil.rmtree` at its own call site: that is the
-    spelling `rmtree_calls` reads, and the removal below is the one it reads
-    for all the callers here.
-    """
-
-    for path in [Path(root)] + sorted(Path(root).rglob("*")):
-        try:
-            path.chmod(path.stat().st_mode | (0o700 if path.is_dir() else 0o200))
-        except OSError:
-            pass
-    shutil.rmtree(str(root))
+from tests.tree_removal import remove_repo_tree  # noqa: E402  the removal's one owner
 
 
 def run_cutcheck(run, baseline=BASELINE):
@@ -2500,9 +2477,12 @@ class SpanDependencyTest(unittest.TestCase):
 def rmtree_calls(tree):
     """Every ``shutil.rmtree`` in a parsed module, with its ``ignore_errors``.
 
-    Two spellings, because they silence the same thing: the call itself, and
-    the call deferred through ``addCleanup``, where the third positional is
-    ``ignore_errors`` and reads as a bare ``True`` at the call site.
+    Three spellings, because they silence the same thing: the call itself, and
+    the call deferred through ``addCleanup`` or ``addClassCleanup``, where the
+    third positional is ``ignore_errors`` and reads as a bare ``True`` at the
+    call site. The class-scoped spelling is here because it was missing: two
+    swallowing removals reached the tree behind it, one of them over a full
+    clone of this repository.
     """
 
     for node in ast.walk(tree):
@@ -2511,7 +2491,7 @@ def rmtree_calls(tree):
         if node.func.attr == "rmtree":
             yield node, node.args[1:], node.keywords
         elif (
-            node.func.attr == "addCleanup"
+            node.func.attr in ("addCleanup", "addClassCleanup")
             and node.args
             and isinstance(node.args[0], ast.Attribute)
             and node.args[0].attr == "rmtree"
@@ -2689,21 +2669,27 @@ class ScratchCleanupReportingTest(unittest.TestCase):
     def test_suite_cleanups_do_not_swallow(self):
         """The instrument may not silence what the subject is on trial for.
 
-        Read from the module's own source, so it covers every removal the
-        suite performs rather than the two a search happened to name.
+        Read from source across every test module, so it covers every removal
+        the suite performs rather than the two a search happened to name. This
+        module alone was the earlier scope, and three swallowing removals sat
+        in two others -- one over a full clone of this repository -- where the
+        reading could not reach them.
         """
 
-        source = Path(__file__).resolve()
-        calls = list(rmtree_calls(ast.parse(source.read_text(encoding="utf-8"))))
-        self.assertTrue(calls, "no shutil.rmtree call was found to check")
-        self.assertEqual(
-            [
+        modules = sorted(Path(__file__).resolve().parent.glob("*.py"))
+        self.assertTrue(modules, "no test module was found to read")
+        swallowing, checked = [], 0
+        for source in modules:
+            calls = list(rmtree_calls(ast.parse(source.read_text(encoding="utf-8"))))
+            checked += len(calls)
+            swallowing.extend(
                 "{}:{}".format(source.name, node.lineno)
                 for node, rest, keywords in calls
                 if swallows(rest, keywords)
-            ],
-            [],
-            "these removals discard the failure they should report",
+            )
+        self.assertTrue(checked, "no shutil.rmtree call was found to check")
+        self.assertEqual(
+            swallowing, [], "these removals discard the failure they should report"
         )
 
 

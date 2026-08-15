@@ -31,6 +31,7 @@ if str(ROOT) not in sys.path:
 
 import scripts.friction as friction_mod  # noqa: E402
 import scripts.tickets as tickets_mod  # noqa: E402
+from tests.tree_removal import remove_repo_tree  # noqa: E402  the removal's one owner
 
 VALIDATE = ROOT / "tools" / "validate.py"
 CONTRACTS = ROOT / "contracts"
@@ -298,7 +299,7 @@ class FrictionLocationSyncTest(unittest.TestCase):
             home = friction_mod._target_path(stamp).parent.relative_to(Path.home())
         finally:
             os.chdir(origin)
-            shutil.rmtree(outside, True)
+            shutil.rmtree(outside)
         return local.as_posix() + "/", "~/" + home.as_posix() + "/"
 
     def _blocked_case(self, path: Path) -> str:
@@ -343,7 +344,7 @@ class FrictionLocationSyncTest(unittest.TestCase):
         if cls._copy is None:
             scratch = Path(tempfile.mkdtemp(prefix="friction-locations-"))
             cls.addClassCleanup(setattr, cls, "_copy", None)
-            cls.addClassCleanup(shutil.rmtree, scratch, True)
+            cls.addClassCleanup(remove_repo_tree, scratch)
             copy = scratch / "clone"
             subprocess.run(
                 ["git", "clone", "--quiet", str(ROOT), str(copy)],

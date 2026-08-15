@@ -284,6 +284,11 @@ TEST_RUNNERS = ("unittest", "pytest")
 DISCOVER = "discover"
 NODE_FILTER = "-k"
 NODE_SEP = "::"
+# A filter narrows only if some node id fails it. Every test node here is a
+# method named `test_...`, so a pattern that is a prefix of that matches all of
+# them: `-k test` is the whole suite with a flag on, and the token's presence
+# is no evidence on its own.
+FILTER_MATCHES_ALL = "test_"
 # A criterion states the provenance of its own oracle; an oracle stated
 # pre-existing is an invariant, and holding still is what it is for. Stating it
 # is writing the field and nothing else: a sentence boundary opens the phrase,
@@ -878,6 +883,24 @@ def _whole_target(target, tree):
     return here.is_dir() or here.with_suffix(".py").is_file()
 
 
+def _filter_narrows(argv):
+    """Does this command's node filter actually exclude any node?
+
+    The token's presence was the whole test once, and that read `-k test` --
+    which matches every method in the suite -- as a narrowed oracle. The
+    pattern is read instead: anything `test_` starts with matches all of them
+    and narrows nothing, and everything else is taken at its word, because
+    which nodes a pattern selects is a question for the runner and not for
+    this.
+    """
+
+    if NODE_FILTER not in argv:
+        return False
+    index = argv.index(NODE_FILTER)
+    pattern = argv[index + 1].strip("\"'") if index + 1 < len(argv) else ""
+    return not FILTER_MATCHES_ALL.startswith(pattern)
+
+
 def _whole_suite(command, tree):
     """Is this a test invocation naming no node id?
 
@@ -895,17 +918,32 @@ def _whole_suite(command, tree):
     A target resolving to no module at all is some flag's value rather than a
     thing to grade, and one such token is enough to withhold the finding: this
     convicts what it can read whole, and stays quiet over what it cannot.
+
+    A runner carrying flags and no target at all is the widest spelling there
+    is -- ``pytest -q``, or the bare ``python3 -m unittest`` that is documented
+    as equivalent to ``discover``. Naming nothing is not the same as naming
+    something unreadable, so the two are separated here: the finding is
+    withheld over a quoted target, which names a node this cannot parse, and
+    made over an empty one, which names none.
     """
 
     argv = command.split()
     runner = next((i for i, token in enumerate(argv) if token in TEST_RUNNERS), None)
-    if runner is None or NODE_FILTER in argv:
+    if runner is None or _filter_narrows(argv):
         return False
     rest = argv[runner + 1:]
     if DISCOVER in rest:
         return True
+    if NODE_FILTER in rest:
+        # Reaching here means the pattern matched every node, so it is a flag's
+        # value and not a target. Left in, it resolves to no module and
+        # withholds the finding over the very filter that earned it.
+        at = rest.index(NODE_FILTER)
+        rest = rest[:at] + rest[at + 2:]
     targets = [token for token in rest if token[:1] not in ("-", '"', "'")]
-    return bool(targets) and all(_whole_target(token, tree) for token in targets)
+    if not targets:
+        return not any(token[:1] in ('"', "'") for token in rest)
+    return all(_whole_target(token, tree) for token in targets)
 
 
 def _discrimination(command, baseline_tree, head_tree):
