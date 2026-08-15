@@ -7,6 +7,10 @@ broad ``except Exception`` so an internal failure is silent and the
 process still exits 0. Prints exactly one line, ``friction logged``, on
 success; nothing on failure.
 
+The one wait it ever takes is the append lock's retry budget: nothing at
+all on POSIX, and on a contended Windows append a bounded half second
+that ends in the write either way. See ``_acquire_append_lock``.
+
 Usage:
     python friction.py "<observed>" "<expected>" [--category C]
         [--skill S] [--ticket T] [--run R]
