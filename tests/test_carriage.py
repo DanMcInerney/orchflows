@@ -429,5 +429,110 @@ class SubcommandReachTest(unittest.TestCase):
             )
 
 
+VERIFICATION = ROOT / "rules" / "verification.md"
+
+# What §8's faithfulness clause has to state, keyed to the measurement that
+# named it: `git archive` drops `.git`, which silently moved 61-65
+# test_cutcheck verdicts; `git rev-list --count` fingerprints a tip (417 at
+# 2c8d484, 420 at 7d94c46), so a count recorded beside a reading settles
+# which revision it was taken at; runtime indicts a copy only when short.
+_FAITHFULNESS_CLAUSE = {
+    "what a faithful copy preserves": ("faithful", "everything the oracles read"),
+    "clone, never extract": ("clone", "extract", "`.git`"),
+    "the fingerprint that evidences it": ("`git rev-list --count`", "which revision"),
+    "the one direction runtime indicts in": ("shorter", "longer"),
+}
+
+# §8 as it read before the clause landed: it required the wrong result be
+# built beside the tree and never said how to build one.
+_SECTION_8_UNAMENDED = """8. An oracle must be able to fail: a check that cannot FAIL when the
+   claim it stands for is false decides nothing, and its PASS is void.
+   Show it against a wrong result built beside the tree, never by
+   mutating the tree under test, which an interrupted pass leaves mutated.
+"""
+
+
+def _clause(text, number):
+    """One numbered clause of a flat-numbered rules file, whitespace
+    collapsed so a wrapped sentence matches and a sentence landing in a
+    neighbouring clause cannot satisfy an assertion scoped to this one."""
+    match = re.search(rf"(?m)^{number}\. (.*?)(?=^\d+\. |\Z)", text, re.S)
+    if match is None:
+        raise AssertionError(f"rules/verification.md has no clause {number}")
+    return re.sub(r"\s+", " ", match.group(1))
+
+
+def _faithfulness_gaps(verification_text):
+    """Which parts of the faithfulness clause verification_text never
+    states. Read from clause 8 alone, which owns how a copy built beside the
+    tree is proved faithful."""
+    clause = _clause(verification_text, 8)
+    return sorted(
+        name
+        for name, phrases in _FAITHFULNESS_CLAUSE.items()
+        if not all(phrase in clause for phrase in phrases)
+    )
+
+
+class CopyFaithfulnessClauseTest(unittest.TestCase):
+    """§8 sends every can-fail demonstration to a copy built beside the
+    tree and, until this clause, never said how to build one. An unproved
+    copy is worse than none: an oracle that reads history answers from
+    whatever the copy carries, and reports nothing when that is not the
+    revision under test."""
+
+    def test_section_8_states_what_a_copy_preserves_and_how_that_is_evidenced(self):
+        gaps = _faithfulness_gaps(VERIFICATION.read_text(encoding="utf-8"))
+        self.assertEqual(
+            [],
+            gaps,
+            "rules/verification.md §8 states no faithfulness clause covering: "
+            f"{', '.join(gaps)}",
+        )
+
+    def test_the_clause_names_rev_list_count_as_the_fingerprint(self):
+        clause = _clause(VERIFICATION.read_text(encoding="utf-8"), 8)
+        self.assertIn(
+            "`git rev-list --count`",
+            clause,
+            "verification.md §8 names no fingerprint that proves the copy "
+            "carries the history it is read for",
+        )
+        self.assertIn(
+            "which revision",
+            clause,
+            "verification.md §8 names `git rev-list --count` without saying "
+            "it settles which revision a reading was taken at; a count that "
+            "settles nothing is not re-readable",
+        )
+
+    def test_a_section_8_without_the_clause_fails_the_check(self):
+        """The can-fail direction, built beside the tree and never by
+        mutating it -- under the clause being added here: a copy of
+        rules/verification.md carrying the §8 that preceded it."""
+        real = VERIFICATION.read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            beside = Path(tmp) / "verification.md"
+            beside.write_text(real, encoding="utf-8")
+            self.assertEqual(
+                [],
+                _faithfulness_gaps(beside.read_text(encoding="utf-8")),
+                "the copy must start with the clause intact, or the excision "
+                "below is not what the check reacted to",
+            )
+            beside.write_text(
+                re.sub(
+                    r"(?ms)^8\. .*?(?=^9\. )",
+                    lambda _: _SECTION_8_UNAMENDED,
+                    real,
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                sorted(_FAITHFULNESS_CLAUSE),
+                _faithfulness_gaps(beside.read_text(encoding="utf-8")),
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
