@@ -336,5 +336,100 @@ class TestAllowlist(unittest.TestCase):
         self.assertNotIn(VERBATIM, result.stdout)
 
 
+# --- the warning ratchet ---------------------------------------------
+#
+# tools/validate.py:1559 returns has_errors inverted, so exit 0 is blind to
+# every WARN it printed. Until this ceiling, nothing anywhere read the
+# count: the tree could slide back to any number and stay green. The
+# ceiling is the claim exit 0 now carries.
+#
+# 47 is what the tree reported at ff30d60, every one of them a
+# near-duplicate cell clause. WARNING_CEILING is the count the tree
+# reports now, set with no headroom on purpose: headroom is a standing
+# licence to regress into it, and every warning still under the ceiling is
+# a duplication nobody has argued for yet. It ratchets down as those are
+# fixed. Raising it is a decision, and it belongs in the commit message
+# that raises it.
+BASELINE_WARNINGS = 47
+WARNING_CEILING = 30
+
+# A clone is the whole tree minus version control, runtime state and
+# caches -- never an extract of the directories the check happens to read
+# today, which would stop grading whatever it left out.
+CLONE_SKIPS = shutil.ignore_patterns(
+    ".git", ".claude", ".orch", "__pycache__", "*.pyc", ".venv", ".mypy_cache"
+)
+
+
+def warning_lines(root):
+    """Every WARN tools/validate.py reports for the tree at `root`.
+    ROOT is validate.py's own parent.parent, so the copy in a clone grades
+    the clone."""
+    result = subprocess.run(
+        [sys.executable, str(Path(root) / "tools" / "validate.py")],
+        capture_output=True,
+        text=True,
+    )
+    return [line for line in result.stdout.splitlines() if line.startswith("WARN")]
+
+
+def ceiling_breach(count):
+    """The ratchet's whole decision: None while the count holds, the
+    sentence naming the breach once it does not. Both tests below call
+    this one function, so the check that grades the real tree is the same
+    check shown to fail against a wrong one."""
+    if count > WARNING_CEILING:
+        return "%d WARN, ceiling %d" % (count, WARNING_CEILING)
+    return None
+
+
+class WarningCeilingTest(unittest.TestCase):
+    # One clause packs/orch-code-pack/references/slicing.md:8-11 already
+    # owns, restated in a fifth place with a single noun changed. This is
+    # what a regression here looks like: not a new kind of finding, one
+    # more copy of a clause that has an owner.
+    REGRESSION = (
+        "\n- Each ticket: one observable behavior, provable by runnable checks "
+        "from the spec's acceptance; a write scope overlapping only cousins it "
+        "is dependency-ordered with and sufficient for its own completion test.\n"
+    )
+
+    def _clone_beside_the_tree(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        clone = Path(temporary.name) / "clone"
+        shutil.copytree(ROOT, clone, ignore=CLONE_SKIPS, symlinks=True)
+        return clone
+
+    def test_the_tree_holds_at_or_under_the_ceiling(self):
+        found = warning_lines(ROOT)
+        self.assertIsNone(ceiling_breach(len(found)), "\n".join(found))
+        self.assertLess(
+            len(found),
+            BASELINE_WARNINGS,
+            "the ratchet must stand below the %d measured at ff30d60"
+            % BASELINE_WARNINGS,
+        )
+
+    def test_a_count_above_the_ceiling_fails(self):
+        clone = self._clone_beside_the_tree()
+        held = warning_lines(clone)
+        self.assertIsNone(
+            ceiling_breach(len(held)),
+            "the clone must start where the tree stands, or it grades nothing",
+        )
+        planted = clone / "packs" / "orch-research-pack" / "references" / "slicing.md"
+        planted.write_text(
+            planted.read_text(encoding="utf-8") + self.REGRESSION, encoding="utf-8"
+        )
+        raised = warning_lines(clone)
+        self.assertGreater(len(raised), len(held), "the plant reported nothing")
+        self.assertIsNotNone(
+            ceiling_breach(len(raised)),
+            "%d WARN in the clone did not breach the ceiling of %d"
+            % (len(raised), WARNING_CEILING),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
