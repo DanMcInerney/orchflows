@@ -1109,11 +1109,25 @@ class TestRunStateArtifact(unittest.TestCase):
             )
 
 
-def _open_mode(call):
-    """The mode an ``open`` call asks for; omitted, the default is a read."""
+def _constant(node):
+    """A literal argument's value, or ``None`` where it is not a literal."""
 
-    if len(call.args) > 1:
-        return call.args[1].value if isinstance(call.args[1], ast.Constant) else None
+    return node.value if isinstance(node, ast.Constant) else None
+
+
+def _open_mode(call, positional: int):
+    """The mode an ``open`` call asks for, however the call spells it:
+    positionally, by keyword, or by omission -- the default is a read.
+
+    ``open(path, mode)`` and ``path.open(mode)`` carry it in different
+    positions, so the caller says which one this call is.
+    """
+
+    for keyword in call.keywords:
+        if keyword.arg == "mode":
+            return _constant(keyword.value)
+    if len(call.args) > positional:
+        return _constant(call.args[positional])
     return "r"
 
 
@@ -1122,9 +1136,10 @@ def append_mechanism(source: str, name: str) -> dict:
     AST rather than the text.
 
     A grep pins one spelling of the call: it said nothing once the call moved
-    one function away, and it would fail on ``open(path, 'a'`` -- a false
-    failure, not a change in mechanism. What separates an append from a
-    read-modify-write is how many opens there are and in what mode.
+    one function away, and it fails on ``open(path, 'a'``, on
+    ``open(path, mode="a")`` and on ``path.open("a")`` -- false failures, no
+    change in mechanism. What separates an append from a read-modify-write is
+    how many opens there are and in what mode.
     """
 
     defined = [
@@ -1134,15 +1149,15 @@ def append_mechanism(source: str, name: str) -> dict:
     ]
     if len(defined) != 1:
         raise AssertionError(f"{len(defined)} functions named {name!r} in this source")
-    return {
-        "open_modes": [
-            _open_mode(call)
-            for call in ast.walk(defined[0])
-            if isinstance(call, ast.Call)
-            and isinstance(call.func, ast.Name)
-            and call.func.id == "open"
-        ]
-    }
+    modes = []
+    for call in ast.walk(defined[0]):
+        if not isinstance(call, ast.Call):
+            continue
+        if isinstance(call.func, ast.Name) and call.func.id == "open":
+            modes.append(_open_mode(call, 1))
+        elif isinstance(call.func, ast.Attribute) and call.func.attr == "open":
+            modes.append(_open_mode(call, 0))
+    return {"open_modes": modes}
 
 
 def assert_one_append_open_and_no_read(test, source: str, name: str) -> None:
@@ -1150,6 +1165,28 @@ def assert_one_append_open_and_no_read(test, source: str, name: str) -> None:
 
     mechanism = append_mechanism(source, name)
     test.assertEqual(["a"], mechanism["open_modes"], name)
+
+
+# One mechanism, three spellings, and not one of them a string the grep
+# could find. A check that fails on any of these reports a rewrite that
+# never happened.
+APPEND_SPELLINGS = {
+    "single quotes": """
+def _append_one_line(path, block):
+    with open(path, 'a', encoding="utf-8", newline="\\n") as handle:
+        handle.write(block)
+""",
+    "mode keyword": """
+def _append_one_line(path, block):
+    with open(path, mode="a", encoding="utf-8", newline="\\n") as handle:
+        handle.write(block)
+""",
+    "Path.open": """
+def _append_one_line(path, block):
+    with path.open("a", encoding="utf-8", newline="\\n") as handle:
+        handle.write(block)
+""",
+}
 
 
 class TerminalNoteTest(unittest.TestCase):
@@ -1261,6 +1298,16 @@ class TerminalNoteTest(unittest.TestCase):
         assert_one_append_open_and_no_read(
             self, inspect.getsource(tickets_mod._append_one_line), "_append_one_line"
         )
+
+    def test_the_assertion_survives_alternate_open_spellings(self):
+        """The spellings the grep could not read. Each is the same mechanism
+        written another way, so the assertion has to pass every one of them
+        while the string the grep looked for appears in none."""
+
+        for label, source in APPEND_SPELLINGS.items():
+            with self.subTest(label):
+                self.assertNotIn('open(path, "a"', source)
+                assert_one_append_open_and_no_read(self, source, "_append_one_line")
 
     def test_the_close_requires_a_known_state_and_its_deciding_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
