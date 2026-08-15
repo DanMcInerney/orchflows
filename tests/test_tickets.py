@@ -1207,6 +1207,19 @@ def _append_one_line(path, block):
 """,
 }
 
+# The real function writes on two branches and flushes on one; a third branch
+# would move that count again without moving anything the append depends on.
+BRANCHED_APPEND = """
+def _append_one_line(path, block):
+    with open(path, "a", encoding="utf-8", newline="\\n") as handle:
+        if msvcrt is None:
+            handle.write(block)
+            return
+        handle.write(block)
+        handle.flush()
+        handle.write("")
+"""
+
 # Two implementations that are wrong and satisfy the behavioural test anyway.
 # Each reproduces its expectation exactly, because the write that test
 # interleaves lands between two complete invocations -- so nothing there can
@@ -1397,6 +1410,19 @@ class TerminalNoteTest(unittest.TestCase):
                         inspect.getsource(wrong._append_one_line),
                         "_append_one_line",
                     )
+
+    def test_the_write_call_count_is_not_asserted(self):
+        """Bodies that differ only in how many times they write get one
+        verdict. The real function is already on two writes and a flush, so a
+        count here would fail the next branch added to it -- the grep's
+        mistake in another instrument."""
+
+        for label, source in (
+            ("one write", APPEND_SPELLINGS["single quotes"]),
+            ("a write on every branch", BRANCHED_APPEND),
+        ):
+            with self.subTest(label):
+                assert_one_append_open_and_no_read(self, source, "_append_one_line")
 
     def test_the_close_requires_a_known_state_and_its_deciding_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
