@@ -1947,17 +1947,17 @@ class ScratchCleanupReportingTest(unittest.TestCase):
             created.append(root)
             return root
 
-        out = io.StringIO()
+        out, err = io.StringIO(), io.StringIO()
         with mock.patch.object(cutcheck, "_scratch_root", recording):
-            with contextlib.redirect_stdout(out):
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
                 code = cutcheck.main(
                     ["cutcheck-clean", "--baseline", self.UNRESOLVABLE]
                 )
         self.assertEqual(len(created), 1, created)
-        return code, out.getvalue(), created[0]
+        return code, out.getvalue(), err.getvalue(), created[0]
 
     def test_main_removes_the_root_it_created(self):
-        code, _, root = self._main_naming_its_scratch_root()
+        code, _, _, root = self._main_naming_its_scratch_root()
         self.assertEqual(code, cutcheck.NO_TICKET_SET)
         self.assertFalse(root.exists(), "{} outlived the run that made it".format(root))
 
@@ -1965,23 +1965,101 @@ class ScratchCleanupReportingTest(unittest.TestCase):
         with mock.patch.object(
             cutcheck.shutil, "rmtree", side_effect=OSError(13, "Permission denied")
         ):
-            code, out, root = self._main_naming_its_scratch_root()
+            code, _, err, root = self._main_naming_its_scratch_root()
         self.addCleanup(shutil.rmtree, root)
         # The failure was a real one: said or swallowed, the root is still on
         # disk, and that state is what the report exists to make visible.
         self.assertTrue(root.is_dir(), "the removal did not actually fail")
-        self.assertIn(cutcheck.SCRATCH_NOT_REMOVED, out)
-        self.assertIn(str(root), out)
-        self.assertIn("Permission denied", out)
+        self.assertIn(cutcheck.SCRATCH_NOT_REMOVED, err)
+        self.assertIn(str(root), err)
+        self.assertIn("Permission denied", err)
         # Reported, not re-graded: a leaked root is the tool's own hygiene and
         # never a finding against the ticket set it was reading.
         self.assertEqual(code, cutcheck.NO_TICKET_SET)
 
-    def test_a_removal_that_succeeds_says_nothing(self):
-        # The can-fail direction for the line above: a report printed
-        # unconditionally would carry no information about the removal.
-        _, out, _ = self._main_naming_its_scratch_root()
+    def test_a_failing_removal_stays_out_of_the_graded_report(self):
+        """The diagnostic may not disturb the report it is a diagnostic about.
+
+        `RecordedVerdictTest` compares each of 27 fixture sets' stdout whole, and
+        the `finally` runs before a single finding is printed. A leak report on
+        stdout would therefore prepend a line to every pinned verdict on any
+        host where a removal really fails -- and one does: git writes objects
+        `0o444`, and Windows refuses to unlink a file with no write bit. The
+        report belongs on the stream that is not the report.
+        """
+
+        with mock.patch.object(
+            cutcheck.shutil, "rmtree", side_effect=OSError(13, "Permission denied")
+        ):
+            _, out, err, root = self._main_naming_its_scratch_root()
+        self.addCleanup(shutil.rmtree, root)
+        self.assertIn(cutcheck.SCRATCH_NOT_REMOVED, err)
         self.assertNotIn(cutcheck.SCRATCH_NOT_REMOVED, out)
+
+    def test_a_root_git_left_read_only_is_still_removed(self):
+        """The removal survives the mode git puts on every object it writes.
+
+        Git writes loose objects and packs `0o444` and hardlinks that mode into
+        each clone, so a strict removal meets it on every platform; on Windows
+        a file carrying no write bit cannot be unlinked at all, which would
+        turn this ticket's own removal assertion red there and leak 12M per
+        run. The probe is the POSIX shape of the same refusal -- a directory
+        whose write bit is off will not give up its children -- because that is
+        the refusal this host can be made to exhibit.
+        """
+
+        if not self._refuses_unlink_under_a_read_only_directory():
+            self.skipTest(
+                "this host unlinks inside a write-protected directory, so the "
+                "retry cannot be made to discriminate here"
+            )
+        root = Path(tempfile.mkdtemp(prefix="cutcheck-readonly-"))
+        self.addCleanup(self._force_remove, root)
+        held = root / "objects" / "0d"
+        held.mkdir(parents=True)
+        (held / "8a474fc6797").write_text("object", encoding="utf-8")
+        held.chmod(0o500)
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            cutcheck._remove_scratch_root(root)
+        self.assertFalse(root.exists(), "{} survived its removal".format(root))
+        self.assertEqual(err.getvalue(), "")
+
+    def _refuses_unlink_under_a_read_only_directory(self):
+        probe = Path(tempfile.mkdtemp(prefix="cutcheck-probe-mode-"))
+        self.addCleanup(self._force_remove, probe)
+        sub = probe / "sub"
+        sub.mkdir()
+        (sub / "f").write_text("x", encoding="utf-8")
+        sub.chmod(0o500)
+        try:
+            (sub / "f").unlink()
+        except OSError:
+            return True
+        return False
+
+    @staticmethod
+    def _force_remove(root):
+        """Undo the modes this test set, then remove strictly like the rest.
+
+        Absence is the success case here and never an error to discard: the
+        test under it removes the root itself.
+        """
+
+        if not root.exists():
+            return
+        for path in [root] + sorted(root.rglob("*")):
+            try:
+                path.chmod(0o700)
+            except OSError:
+                pass
+        shutil.rmtree(str(root))
+
+    def test_a_removal_that_succeeds_says_nothing(self):
+        # The can-fail direction for the lines above: a report printed
+        # unconditionally would carry no information about the removal.
+        _, out, err, _ = self._main_naming_its_scratch_root()
+        self.assertNotIn(cutcheck.SCRATCH_NOT_REMOVED, out + err)
 
     def test_suite_cleanups_do_not_swallow(self):
         """The instrument may not silence what the subject is on trial for.

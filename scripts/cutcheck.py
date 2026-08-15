@@ -108,6 +108,7 @@ import re
 import shlex
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -392,16 +393,41 @@ def _remove_scratch_root(scratch_root):
 
     ``ignore_errors=True`` here was a swallowed error in the tool whose whole
     subject is swallowed errors: each copy is a full clone, and a removal that
-    quietly failed left one on disk per invocation with nothing said. Said
-    rather than raised, and never exit-setting -- the report is about this
-    tool's own hygiene, and a leaked copy is no finding against the ticket set
-    it was reading.
+    quietly failed left one on disk per invocation with nothing said.
+
+    Said rather than raised, never exit-setting, and on stderr. The report is
+    about this tool's own hygiene: a leaked copy is no finding against the
+    ticket set that was being read, and the `finally` this runs in precedes
+    every finding printed, so the same line on stdout would prepend itself to
+    a pinned verdict and move all of them at once on any host that leaks.
     """
 
     try:
         shutil.rmtree(str(scratch_root))
+        return
+    except OSError:
+        # Git writes loose objects and packs `0o444` and hardlinks that mode
+        # into every clone, so a strict removal meets it on every platform;
+        # where a file with no write bit cannot be unlinked at all, as on
+        # Windows, that alone would leak a copy per invocation. The mode is
+        # git's statement about an object and never about whether this copy
+        # may go, so clear it and try once more before calling the removal
+        # refused. Only ever on the retry: the walk costs nothing on the path
+        # that already succeeded.
+        pass
+    for path in [scratch_root] + sorted(scratch_root.rglob("*")):
+        try:
+            # A directory has to be enterable and writable to give up its
+            # children; a file only has to be writable.
+            path.chmod(path.stat().st_mode | (0o700 if path.is_dir() else 0o200))
+        except OSError:
+            pass
+    try:
+        shutil.rmtree(str(scratch_root))
     except OSError as exc:
-        print("{}: {}: {}".format(SCRATCH_NOT_REMOVED, scratch_root, exc))
+        sys.stderr.write(
+            "{}: {}: {}\n".format(SCRATCH_NOT_REMOVED, scratch_root, exc)
+        )
 
 
 def _scratch_tree(rev, worktree_root, scratch_root):
