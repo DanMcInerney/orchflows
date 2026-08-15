@@ -2,6 +2,7 @@
 (claim races, malformed input, repo-boundary errors)."""
 
 import ast
+import importlib.util
 import inspect
 import json
 import os
@@ -1109,6 +1110,12 @@ class TestRunStateArtifact(unittest.TestCase):
             )
 
 
+# Reading is the thing an append does not do. Any of these inside the writer
+# says the write depends on what the file held at some earlier moment, which
+# is the whole of the hazard whether the write itself appends or not.
+READ_CALLS = frozenset({"read", "readline", "readlines", "read_text", "read_bytes"})
+
+
 def _constant(node):
     """A literal argument's value, or ``None`` where it is not a literal."""
 
@@ -1139,7 +1146,7 @@ def append_mechanism(source: str, name: str) -> dict:
     one function away, and it fails on ``open(path, 'a'``, on
     ``open(path, mode="a")`` and on ``path.open("a")`` -- false failures, no
     change in mechanism. What separates an append from a read-modify-write is
-    how many opens there are and in what mode.
+    how many opens there are, in what mode, and whether anything reads.
     """
 
     defined = [
@@ -1149,22 +1156,34 @@ def append_mechanism(source: str, name: str) -> dict:
     ]
     if len(defined) != 1:
         raise AssertionError(f"{len(defined)} functions named {name!r} in this source")
-    modes = []
+    modes, reads = [], []
     for call in ast.walk(defined[0]):
         if not isinstance(call, ast.Call):
             continue
-        if isinstance(call.func, ast.Name) and call.func.id == "open":
-            modes.append(_open_mode(call, 1))
-        elif isinstance(call.func, ast.Attribute) and call.func.attr == "open":
-            modes.append(_open_mode(call, 0))
-    return {"open_modes": modes}
+        if isinstance(call.func, ast.Attribute):
+            called, position = call.func.attr, 0  # path.open(mode)
+        elif isinstance(call.func, ast.Name):
+            called, position = call.func.id, 1  # open(path, mode)
+        else:
+            continue
+        if called == "open":
+            modes.append(_open_mode(call, position))
+        elif called in READ_CALLS:
+            reads.append(called)
+    return {"open_modes": modes, "reads": reads}
 
 
 def assert_one_append_open_and_no_read(test, source: str, name: str) -> None:
-    """Assert ``name`` appends: exactly one open, and it in append mode."""
+    """Assert ``name`` appends: exactly one open, in append mode, nothing read.
+
+    One check, both directions: the real function is graded by it and so is
+    every wrong implementation built beside the tree, so what passes and what
+    fails are decided by the same instrument.
+    """
 
     mechanism = append_mechanism(source, name)
     test.assertEqual(["a"], mechanism["open_modes"], name)
+    test.assertEqual([], mechanism["reads"], name)
 
 
 # One mechanism, three spellings, and not one of them a string the grep
@@ -1187,6 +1206,45 @@ def _append_one_line(path, block):
         handle.write(block)
 """,
 }
+
+# Two implementations that are wrong and satisfy the behavioural test anyway.
+# Each reproduces its expectation exactly, because the write that test
+# interleaves lands between two complete invocations -- so nothing there can
+# tell either of these from the real function. The first rewrites the whole
+# file; the second appends, but only after deciding from a read that another
+# writer can invalidate before the write lands.
+WRONG_APPENDS = {
+    "whole-file rewrite": """
+def _append_one_line(path, block):
+    existing = path.read_text(encoding="utf-8")
+    with open(path, "w", encoding="utf-8", newline="\\n") as handle:
+        handle.write(existing + block)
+""",
+    "append decided by a stale read": """
+def _append_one_line(path, block):
+    if block in path.read_text(encoding="utf-8"):
+        return
+    with open(path, "a", encoding="utf-8", newline="\\n") as handle:
+        handle.write(block)
+""",
+}
+
+
+def load_beside_the_tree(directory: Path, name: str, source: str):
+    """Import ``source`` as a module of its own, beside the tree, never in it.
+
+    A wrong implementation is evidence only if it is a real one, and
+    rules/verification.md §8 rules out the other way of getting one: editing
+    the tree under test and putting it back, where the harm is the window and
+    not the commit.
+    """
+
+    path = directory / (name + ".py")
+    path.write_text(source, encoding="utf-8")
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 class TerminalNoteTest(unittest.TestCase):
@@ -1308,6 +1366,37 @@ class TerminalNoteTest(unittest.TestCase):
             with self.subTest(label):
                 self.assertNotIn('open(path, "a"', source)
                 assert_one_append_open_and_no_read(self, source, "_append_one_line")
+
+    def test_a_read_modify_write_implementation_fails_the_assertion(self):
+        """The can-fail direction, without which the assertion grades nothing.
+
+        Each wrong implementation is imported beside the tree and run for
+        real: first against the interleaved write, where it reproduces the
+        behavioural expectation exactly and so goes uncaught, and then
+        against the assertion, which is the one check here that can see it."""
+
+        for label, source in WRONG_APPENDS.items():
+            with self.subTest(label), tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                wrong = load_beside_the_tree(tmp, "wrong_append", source)
+                path = tmp / "worklog.md"
+                path.write_text("", encoding="utf-8")
+                wrong._append_one_line(path, "from the channel\n")
+                with open(path, "a", encoding="utf-8", newline="\n") as handle:
+                    handle.write("from another worktree\n")
+                wrong._append_one_line(path, "from the channel again\n")
+                self.assertEqual(
+                    ["from the channel", "from another worktree",
+                     "from the channel again"],
+                    path.read_text(encoding="utf-8").splitlines(),
+                    "the behavioural test cannot tell this from the real one",
+                )
+                with self.assertRaises(AssertionError):
+                    assert_one_append_open_and_no_read(
+                        self,
+                        inspect.getsource(wrong._append_one_line),
+                        "_append_one_line",
+                    )
 
     def test_the_close_requires_a_known_state_and_its_deciding_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
