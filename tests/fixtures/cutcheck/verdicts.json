@@ -52,7 +52,7 @@
   "lines": [
    "01-discrimination: family 1: already-passes: criterion 1: grep -n \"SCRIPT_NAMES\" install.py",
    "01-discrimination: family 1: no-hits-both-revisions: criterion 2: grep -rn \"zzqq-token-never-written\" install.py",
-   "01-discrimination: family 1: fails-both-revisions: criterion 3: python3 -m pytest tests/test_installer.py::NoSuchClass::test_absent",
+   "01-discrimination: family 1: fails-both-revisions: criterion 3: python3 -B -m unittest tests.test_installer.NoSuchClass.test_absent",
    "cutcheck: advisory -- reported, and never setting the exit status:",
    "cutcheck-f1-discrimination: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f1-discrimination/coverage.md"
   ]

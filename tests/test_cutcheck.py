@@ -206,15 +206,29 @@ class DiscriminationTest(unittest.TestCase):
         classes = sorted(line.split(": ")[2] for line in self.lines)
         self.assertEqual(
             classes,
-            sorted(
-                [
-                    cutcheck.ALREADY_PASSES,
-                    cutcheck.NO_HITS_BOTH_REVISIONS,
-                    cutcheck.FAILS_BOTH_REVISIONS,
-                ]
-            ),
+            sorted([
+                cutcheck.ALREADY_PASSES,
+                cutcheck.NO_HITS_BOTH_REVISIONS,
+                cutcheck.FAILS_BOTH_REVISIONS,
+            ]),
             "\n".join(self.lines),
         )
+
+    def test_no_span_in_this_set_writes_into_the_copy(self):
+        """This corpus reads the same on every host, and a regression says so here.
+
+        Case 3 was once `python3 -m pytest ...`, which writes `.pytest_cache/`
+        into the copy it is graded in: a true finding, and one that exists only
+        where pytest is installed. This repository's CI installs nothing, so
+        pinning that finding would have pinned this host. The span is a unittest
+        node id now, and this is what that bought — whatever a reader's host
+        carries, no span here writes into the copy, so the recorded verdict is
+        the verdict everywhere. A span that starts writing fails here instead of
+        being re-pinned into the fixture.
+        """
+
+        wrote = [line for line in self.lines if cutcheck.UNCONFINED_ORACLE in line]
+        self.assertEqual(wrote, [], "\n".join(self.lines))
 
 
 class ShapeTest(unittest.TestCase):
@@ -1424,27 +1438,51 @@ class CoverageMapPathTest(unittest.TestCase):
 
 
 class ExecutionCacheTest(unittest.TestCase):
-    """One command in one scratch tree is one execution, however often extracted."""
+    """One command in one scratch tree is one execution, however often extracted.
+
+    An execution now costs a second subprocess: the status read measuring what
+    the span wrote into the copy. Counted here rather than described, so the
+    price of the measurement stays visible and a cache hit stays free of it.
+    """
+
+    STATUS_READ = ["git", "status", "--porcelain", "--ignored"]
 
     def setUp(self):
         cutcheck._EXIT_CACHE.clear()
+        cutcheck._TREE_STATE.clear()
         self.addCleanup(cutcheck._EXIT_CACHE.clear)
+        self.addCleanup(cutcheck._TREE_STATE.clear)
+        self.addCleanup(cutcheck._MUTATED.clear)
+
+    def _counts(self, run):
+        """Spans executed, and status reads paid for them."""
+
+        argvs = [call[0][0] for call in run.call_args_list]
+        reads = [argv for argv in argvs if argv == self.STATUS_READ]
+        return len(argvs) - len(reads), len(reads)
 
     def test_a_command_extracted_twice_for_one_tree_runs_once(self):
-        done = subprocess.CompletedProcess([], 0)
+        done = subprocess.CompletedProcess([], 0, stdout="")
         with mock.patch.object(cutcheck.subprocess, "run", return_value=done) as run:
             first = cutcheck._exit_code("git status", Path("/tree-a"))
             second = cutcheck._exit_code("git status", Path("/tree-a"))
-            self.assertEqual(run.call_count, 1)
+            self.assertEqual(self._counts(run), (1, 1))
         self.assertEqual(first, 0)
         self.assertEqual(second, 0)
 
     def test_the_other_tree_is_its_own_execution(self):
-        done = subprocess.CompletedProcess([], 0)
+        done = subprocess.CompletedProcess([], 0, stdout="")
         with mock.patch.object(cutcheck.subprocess, "run", return_value=done) as run:
             cutcheck._exit_code("git status", Path("/tree-a"))
             cutcheck._exit_code("git status", Path("/tree-b"))
-            self.assertEqual(run.call_count, 2)
+            self.assertEqual(self._counts(run), (2, 2))
+
+    def test_the_status_read_is_paid_once_per_execution_and_never_on_a_hit(self):
+        done = subprocess.CompletedProcess([], 0, stdout="")
+        with mock.patch.object(cutcheck.subprocess, "run", return_value=done) as run:
+            for _ in range(5):
+                cutcheck._exit_code("git status", Path("/tree-a"))
+            self.assertEqual(self._counts(run), (1, 1))
 
 
 class BinaryOutputOracleTest(unittest.TestCase):
@@ -1712,6 +1750,124 @@ class ScopeContainmentTest(unittest.TestCase):
                 ["tests/fixtures/cutcheck/"],
             )
         )
+
+
+MUTATING_TICKET = """---
+id: 01-mutating
+write_scope:
+  - scripts/cutcheck.py
+---
+
+## Objective
+
+A span the confinement gate permits, writing into the copy all the same.
+
+## Completion test
+
+1. The diff is produced. Oracle: `git diff --output=inside.txt HEAD~1 HEAD`.
+2. The revision is read. Oracle: `git log -1 --format=%H`.
+"""
+
+
+class InCopyMutationTest(unittest.TestCase):
+    """A span that writes into the shared copy is reported, never obeyed quietly.
+
+    One copy is cloned per invocation and every ticket's oracles are graded in
+    it, so a span that writes there changes what a sibling ticket's oracle
+    reads. `_names_outside_the_copy` names this hole in its own docstring and
+    cannot close it: where a write lands is a fact about the tree, not about
+    the token, so only the tree answers it.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.scratch_root = Path(tempfile.mkdtemp(prefix=".cutcheck-mutation-"))
+        cls.tree = cutcheck._scratch_tree(BASELINE, ROOT, cls.scratch_root)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.scratch_root, ignore_errors=True)
+
+    def setUp(self):
+        if self.tree is None:
+            self.skipTest("no scratch tree was built for the baseline")
+        cutcheck._EXIT_CACHE.clear()
+        self.addCleanup(cutcheck._EXIT_CACHE.clear)
+        self.addCleanup(self._restore)
+
+    def _restore(self):
+        """Leave the copy as this test found it, and resync the recorded state.
+
+        The copy outlives one test here exactly as it outlives one ticket in a
+        run: a test leaving its writes behind would convict the next one.
+        """
+
+        for name in ("inside.txt", "probe_dir", ".pytest_cache"):
+            path = self.tree / name
+            if path.is_dir():
+                shutil.rmtree(path, ignore_errors=True)
+            elif path.exists():
+                path.unlink()
+        cutcheck._mutations(self.tree)
+        del cutcheck._MUTATED[:]
+
+    def _wrote(self, command):
+        """What this span wrote into the copy, as `_run_once` measures it."""
+
+        del cutcheck._MUTATED[:]
+        cutcheck._run_once(command, self.tree)
+        return sorted(set(cutcheck._MUTATED))
+
+    def _unconfined(self, path):
+        findings = cutcheck._check_ticket(path, self.tree, None, {})
+        return [f for f in findings if f[2] == cutcheck.UNCONFINED_ORACLE]
+
+    def test_a_permitted_span_that_writes_into_the_copy_is_reported(self):
+        ticket = Path(self.scratch_root) / "01-mutating.md"
+        ticket.write_text(MUTATING_TICKET, encoding="utf-8")
+        self.addCleanup(ticket.unlink)
+        findings = self._unconfined(ticket)
+        self.assertEqual(len(findings), 1, findings)
+        ticket_id, number, _, detail = findings[0]
+        self.assertEqual((ticket_id, number), ("01-mutating", 1))
+        self.assertIn("inside.txt", detail)
+
+    def test_a_span_writing_nothing_is_not_reported(self):
+        # The can-fail direction: the same ticket's second criterion reads the
+        # revision and writes nothing, and criterion 1 above proves this
+        # assertion is reachable rather than vacuous.
+        self.assertEqual(self._wrote("git log -1 --format=%H"), [])
+
+    def test_an_untracked_unignored_directory_in_the_copy_is_reported(self):
+        wrote = self._wrote(
+            "python3 -m pytest --junitxml=probe_dir/r.xml tests/test_installer.py"
+        )
+        self.assertIn("probe_dir/", wrote)
+
+    def test_an_ignored_path_is_reported_and_the_bare_spelling_would_miss_it(self):
+        """`.pytest_cache/` is the shape found on disk, and it is ignored here.
+
+        The guard against anyone shortening the reading back to a bare `git
+        status --porcelain`: that spelling returns nothing with the directory
+        sitting in the copy, so it is silently vacuous against the one leak
+        that motivated the check.
+        """
+
+        wrote = self._wrote("python3 -m pytest tests/test_installer.py")
+        self.assertIn(".pytest_cache/", wrote)
+        bare = cutcheck._git(["status", "--porcelain"], self.tree)
+        self.assertEqual(bare.stdout, "", "the bare spelling would have missed it")
+
+    def test_the_next_span_is_not_blamed_for_the_previous_spans_write(self):
+        first = self._wrote("git diff --output=inside.txt HEAD~1 HEAD")
+        self.assertEqual(first, ["inside.txt"])
+        self.assertEqual(self._wrote("git log -1 --format=%H"), [])
+
+    def test_the_clone_primes_its_own_arrival_state_and_reads_clean(self):
+        # A checkout an eol rule or a filter left dirty is the copy's arrival
+        # state, not the first span's doing.
+        self.assertIn(str(self.tree), cutcheck._TREE_STATE)
+        self.assertEqual(cutcheck._mutations(self.tree), [])
 
 
 if __name__ == "__main__":

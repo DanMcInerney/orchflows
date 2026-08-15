@@ -326,8 +326,16 @@ NO_TICKET_SET = 2
 REPORTED = 1
 CLEAN = 0
 # One invocation's read of one (command, scratch tree) pair. The trees are
-# read-only copies built for this invocation, so the pair reads the same twice.
+# copies built for this invocation, and `_mutations` is what measures whether
+# the pair really does read the same twice.
 _EXIT_CACHE = {}
+# Per scratch tree, every status entry that tree has already shown. Primed at
+# the clone, so the first reading after a span names what the span wrote and
+# not what the checkout arrived with.
+_TREE_STATE = {}
+# What the span now running wrote into its copy. Drained per command by
+# `_check_ticket`, which is the only caller that knows whose finding it is.
+_MUTATED = []
 
 
 def _git(args, cwd):
@@ -419,7 +427,38 @@ def _scratch_tree(rev, worktree_root, scratch_root):
         if proc is None or proc.returncode != 0:
             shutil.rmtree(tree, ignore_errors=True)
             return None
+    # Whatever the checkout arrived carrying is the copy's arrival state and no
+    # span's doing. Recorded here so the first span graded is answerable for
+    # the difference it made and for nothing else.
+    _mutations(tree)
     return tree
+
+
+def _mutations(tree):
+    """Paths this copy holds that it did not hold at the previous reading.
+
+    ``--ignored`` is the whole reading rather than a refinement of it. The leak
+    this measures was found on disk as a `.pytest_cache/` directory, and this
+    repository ignores that path, as every repository running pytest does: a
+    bare ``git status --porcelain`` returns zero lines with the directory
+    sitting in the copy, so the plain spelling is silently vacuous against the
+    one leak that motivated the check. Ignored states what a reader wants kept
+    out of a diff, and never what a sibling's oracle reads.
+
+    A delta and not a census, because one copy grades span after span: the
+    first writer would otherwise convict every span that followed it, and a
+    checkout an eol rule or a filter left dirty would convict the first.
+    """
+
+    proc = _git(["status", "--porcelain", "--ignored"], tree)
+    if proc is None or proc.returncode != 0:
+        return []
+    # Porcelain v1 is two status columns, a space, then the path.
+    seen = {line[3:] for line in proc.stdout.splitlines() if len(line) > 3}
+    key = str(tree)
+    fresh = seen - _TREE_STATE.get(key, frozenset())
+    _TREE_STATE[key] = seen
+    return sorted(fresh)
 
 
 def _symlink_entries(tree):
@@ -645,10 +684,18 @@ def _shape(command):
 def _exit_code(command, tree):
     """This command's exit status in this tree, run once however often asked.
 
-    A scratch tree is a read-only copy built for one invocation and thrown away
-    with it, so ``(command, tree)`` reads the same every time. The cache is a
-    speed change and never a meaning change: one ticket set states the same
-    invariant oracle in item after item, and a suite is a slow read.
+    A scratch tree is a copy built for one invocation and thrown away with it,
+    and the cache is a speed change rather than a meaning change exactly while
+    ``(command, tree)`` reads the same every time: one ticket set states the
+    same invariant oracle in item after item, and a suite is a slow read.
+
+    That sameness is measured now rather than assumed. ``_run_once`` reads the
+    copy's status after every span it runs, so a span that wrote into the copy
+    is reported as ``unconfined-oracle`` instead of silently deciding what the
+    next reader of this cache sees. Measured, not proven: the reading covers
+    the working tree, so a write into ``.git``, or one an interpreter's
+    ``sys.pycache_prefix`` sends to a cache directory outside the copy, is a
+    change no status can see.
     """
 
     key = (command, str(tree))
@@ -677,11 +724,16 @@ def _run_once(command, tree):
             stderr=subprocess.DEVNULL,
             timeout=COMMAND_TIMEOUT,
         )
+        code = proc.returncode
     except subprocess.TimeoutExpired:
-        return TIMED_OUT
+        # A span that ran out of time still ran, and still wrote whatever it
+        # had written by the time it was killed.
+        code = TIMED_OUT
     except OSError:
+        # Nothing started, so there is nothing for it to have written.
         return UNRUNNABLE
-    return proc.returncode
+    _MUTATED.extend(_mutations(tree))
+    return code
 
 
 def _verdict_in_output(command):
@@ -1224,7 +1276,15 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
                 # invariant: it passed before this work and has to pass after,
                 # so discriminating is not its job and never was.
                 continue
+            del _MUTATED[:]
             klass = _discrimination(command, baseline_tree, head_tree)
+            # Named once per path however many graded copies the span wrote
+            # into: two revisions of one repository are one span's worth of
+            # defect, not two.
+            findings.extend(
+                (ticket_id, number, UNCONFINED_ORACLE, "{}: {}".format(wrote, command))
+                for wrote in sorted(set(_MUTATED))
+            )
             if klass is not None:
                 findings.append((ticket_id, number, klass, command))
     header = "\n".join(
