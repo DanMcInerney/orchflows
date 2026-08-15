@@ -2,10 +2,10 @@
 
 The run's persistent state file: what makes fresh-context iteration,
 resumption, and post-hoc improvement possible. One per run, at
-`<main-repository-root>/.orch/runs/<run>/worklog.md`, where the main
-repository root is the shared root a linked worktree's `.git` pointer
-resolves to — never the worktree's own root. Iterations read it instead
-of transcripts; transcripts are never state.
+`<state-root>/runs/<run>/worklog.md`, where the state root is the
+user-scope sink `scripts/state_root.py` resolves — one per user, outside
+every repository. Iterations read it instead of transcripts; transcripts
+are never state.
 
 - `goal` — the frozen objective and acceptance — or the done-check for
   a loop run — verbatim; never edited after iteration 1.
@@ -30,3 +30,18 @@ Notes append in occurrence order, and no note is written past a terminal
 section: a worklog carries no terminal placeholder until it closes.
 Writing an artifact that already exists is refused by default, the
 refusal naming the existing path.
+
+Beside it, `<state-root>/runs/<run>/run.json` — the run's identity, written
+on the run's first state write, appended to and never rewritten:
+
+- `run` — the run id; equals the name of the directory holding this file.
+- `sink_convention` — integer: the sink layout this record was written under.
+- `opened_at` — when the run's first write landed; never rewritten.
+- `project` — which project owns this run id; never rewritten once set.
+  `project.root` — absolute path of the **main** checkout, a linked worktree
+  resolved to it and a submodule to its superproject; `project.origin` — the
+  origin url, null when the repository has no remote; `project.name` — the
+  root's base name, a human label, never compared.
+- `workspaces` — every workspace that has written to this run, in first-write
+  order. `workspaces[].path` — that workspace itself, **not** its main
+  checkout; `workspaces[].first_seen` — when its first write landed.

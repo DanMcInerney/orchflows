@@ -67,23 +67,30 @@ dependencies point. Terms: `docs/vocabulary.md`.
   set, read by `orch-deliver`'s cut lens; `scripts/friction.py` owns
   friction logging; `scripts/isolate.py` owns exporting one revision
   into a tree beside the repository, where a check reads one lane's
-  result alone; `scripts/tickets.py` owns mechanical ticket queries;
-  its `tickets.py help` is operator-only: usage a reader asks for,
-  never a step a skill runs; `scripts/trace.py` owns trace extraction,
-  consumed by `orch-self-improve`; `scripts/ui.py` owns the read-only
-  local view of `.orch/` run state; `scripts/workspace.py` owns the
-  workspace lifecycle stamps and the isolation grade at the join.
-- `.orch/` — runtime state, never an instruction source; every tree below
-  is gitignored except `canary/`, so each linked worktree has its own
-  copy of the ignored trees on disk and only the script channel
-  (`rules/visibility.md` §6) reaches the ones at the main repository
-  root, while tracked `canary/` is one fixture every worktree checks out
-  and a change to it reaches the repository by merge: `tickets/` (the local tracker, ticket `## Handoff`
-  sections included), `runs/` (worklogs), `friction/` (JSONL logs),
-  `improvement/proposals/`, `improvement/covered.jsonl` (the coverage
-  record), `research/` (research-lane outputs), `handoffs/`
-  (cross-session handoff documents), `canary/` (tracked golden
-  fixture), `bin/` (installed run-local scripts).
+  result alone; `scripts/migrate_state.py` owns copying a pre-existing
+  state tree into the sink, never deleting from the source;
+  `scripts/state_root.py` owns resolving the state sink,
+  the one channel every other script reaches it through;
+  `scripts/tickets.py` owns mechanical ticket queries; its `tickets.py
+  help` is operator-only: usage a reader asks for, never a step a skill
+  runs; `scripts/trace.py` owns trace extraction, consumed by
+  `orch-self-improve`; `scripts/ui.py` owns the read-only local view of
+  run state; `scripts/workspace.py` owns the workspace lifecycle stamps
+  and the isolation grade at the join.
+- state sink — every run's durable state and both improvement evidence
+  streams, one per user and outside every repository, never an
+  instruction source; the root and its law are
+  [rules/visibility.md](rules/visibility.md) §6 and its resolver is
+  `scripts/state_root.py`: `tickets/<run>/` (the local tracker, ticket
+  `## Handoff` sections included), `runs/<run>/` (worklog, `run.json`,
+  composition instances), `research/` (research-lane outputs),
+  `handoffs/` (cross-session handoff documents), `friction/` (JSONL
+  logs), `improvement/proposals/`, `improvement/covered.jsonl` (the
+  coverage record). Every record names the project it arose in.
+- `.orch/` — what stays in a repository: `canary/` (tracked golden
+  fixture, one file every worktree checks out and whose change reaches
+  the repository by merge) and, for a project-scope install, `bin/`
+  (installed run-local scripts). Nothing else.
 
 ## Dependency direction
 

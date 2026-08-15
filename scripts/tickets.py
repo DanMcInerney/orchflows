@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Mechanical ticket queries over ``.orch/tickets/<run>/*.md``.
+"""Mechanical ticket queries over ``<sink>/tickets/<run>/*.md``.
 
 Stdlib-only, cross-platform. Tickets are markdown work items per
 ``contracts/work-item.md``; frontmatter is parsed manually (no third-party
-YAML dependency). The root is the main repository root — a linked
-worktree's ``.git`` pointer is dereferenced to it — so every worktree of
-a repository reads and writes one run's tickets at one path. Every
-subcommand prints exactly one JSON document to stdout. Failures are
-reported as ``{"error": "..."}`` in the JSON payload and exit 1; success
-exits 0. No outcome raises a traceback.
+YAML dependency). The root is the one user-scope state sink
+``scripts/state_root.py`` resolves — ``$ORCHFLOWS_STATE_HOME`` or
+``~/.orchflows/state`` — so every workspace in every repository reads and
+writes one run's tickets at one path, and a run outlives the checkout it
+started in. Every subcommand prints exactly one JSON document to stdout.
+Failures are reported as ``{"error": "..."}`` in the JSON payload and
+exit 1; success exits 0. No outcome raises a traceback.
 
 ``--help``, ``-h`` or ``help`` answers usage at the top level, and
 ``<subcommand> --help`` for one subcommand: a request for usage is served,
@@ -25,6 +26,8 @@ Subcommands:
     run-state <run> [--tree <name>] (--note <line> |
              (--artifact <name> [--replace] | --terminal <state>)
              (--file <path> | --text <string>))
+    improvement --proposal <name> (--file <path> | --text <string>)
+    improvement --covered <line>
 """
 
 from __future__ import annotations
@@ -32,8 +35,15 @@ from __future__ import annotations
 import json
 import re
 import sys
+import tempfile
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+try:  # in-repo; the installed copy sits flat beside state_root.py
+    from scripts import state_root
+except ImportError:  # pragma: no cover - the installed copy's path
+    import state_root
 
 try:  # Windows only; POSIX append needs no lock. See _append_one_line.
     import msvcrt
@@ -61,7 +71,19 @@ ENGINE_EXECUTORS = frozenset(
 )
 DURATION_RE = re.compile(r"^(\d+)(m|h)$")
 DEFAULT_BOUND_MINUTES = 60
-MAX_WALK_UP = 200
+# The shape of every UTC instant this script writes, stated once and read
+# wherever one is stamped: a claim's `claimed_at` and a run's `opened_at`
+# cannot drift into two shapes. It is the shape `scripts/friction.py`
+# already produces for its own stream.
+UTC_STAMP = "%Y-%m-%dT%H:%M:%SZ"
+# The run's identity document, beside its worklog under the same run
+# partition. `sink_convention` says which layout wrote it; item 06 states
+# the field list in the contract.
+RUN_IDENTITY_NAME = "run.json"
+SINK_CONVENTION = 2
+NO_SINK_ERROR = (
+    "cannot resolve the state sink: no $ORCHFLOWS_STATE_HOME and no home directory"
+)
 # contracts/delegation.md: a work-item dispatch may supply the six packet
 # parts by reference to the ticket path. These are the parts that live in
 # a body section; authority and bounds live in frontmatter, and reply_to
@@ -130,6 +152,15 @@ RUN_STATE_USAGE = (
     "(--artifact <name> [--replace] | --terminal <state>) "
     "(--file <path> | --text <string>))"
 )
+IMPROVEMENT_USAGE = (
+    "improvement (--proposal <name> (--file <path> | --text <string>) "
+    "| --covered <line>)"
+)
+# The two improvement evidence streams, under the sink's `improvement/`.
+# One is whole-file and named; one is a shared append-only stream every
+# self-improvement pass adds a line to.
+PROPOSALS_DIR = "proposals"
+COVERAGE_RECORD_NAME = "covered.jsonl"
 SUBCOMMAND_USAGE = {
     "list": "list [--run R]",
     "ready": "ready [--run R]",
@@ -138,6 +169,7 @@ SUBCOMMAND_USAGE = {
     "packet": "packet <run> <id> --reply-to <name> [--workspace <path>]",
     "result": RESULT_USAGE,
     "run-state": RUN_STATE_USAGE,
+    "improvement": IMPROVEMENT_USAGE,
 }
 SUBCOMMAND_SUMMARY = {
     "list": "Every ticket in the tracker, or in one run, as summaries.",
@@ -151,11 +183,13 @@ SUBCOMMAND_SUMMARY = {
     "and the commands the child runs from its own workspace.",
     "result": f"Write one of the executor's own sections {list(EXECUTOR_SECTIONS)}; "
     "a section already carrying content is refused without --append or --replace.",
-    "run-state": "Write this run's state under the one repository-wide "
-    f"`.orch/`, in one of {list(RUN_STATE_TREES)} (default "
+    "run-state": "Write this run's state under the one user-scope sink, "
+    f"in one of {list(RUN_STATE_TREES)} (default "
     f"{DEFAULT_RUN_STATE_TREE}); an artifact that already exists is refused "
     f"without --replace. --terminal closes the worklog, one of "
     f"{list(TERMINAL_STATES)}, after which no note is written.",
+    "improvement": "Write one improvement evidence record under the sink: "
+    "a named proposal file, or one appended line of the coverage record.",
 }
 HELP_FLAGS = frozenset({"--help", "-h"})
 # The bare word only heads the command line. Inside a subcommand `help` is
@@ -178,6 +212,8 @@ VALUE_FLAGS = frozenset(
         "--tree",
         "--reply-to",
         "--workspace",
+        "--proposal",
+        "--covered",
     }
 )
 
@@ -212,57 +248,67 @@ def establishes_a_git_workspace(pack) -> bool:
     return mechanism is None or mechanism in GIT_WORKSPACE_MECHANISMS
 
 
-# --- repository / filesystem helpers ---------------------------------------
+# --- sink / filesystem helpers ----------------------------------------------
+
+# rules/visibility.md §3: ``scripts/state_root.py`` is the single owner of both
+# the sink root and the repository a path belongs to. These are the private
+# spellings sibling scripts already import (``scripts/cutcheck.py``); the
+# bodies live in one module and no second copy survives under ``scripts/``.
+_main_checkout_root = state_root.main_checkout_root
+_find_repo_root = state_root.find_repo_root
 
 
-def _main_checkout_root(git_file: Path):
-    """Resolve a .git pointer file (worktree/submodule) to its main root."""
-    try:
-        for line in git_file.read_text(encoding="utf-8", errors="replace").splitlines():
-            if not line.startswith("gitdir:"):
-                continue
-            gitdir = Path(line.partition(":")[2].strip())
-            if not gitdir.is_absolute():
-                gitdir = git_file.parent / gitdir
-            parts = gitdir.resolve().parts
-            for i in range(len(parts) - 1, -1, -1):
-                if parts[i] == ".git":
-                    return Path(*parts[:i])
-            break
-    except Exception:
-        pass
-    return None
+def _cwd() -> Path:
+    """The directory this invocation is standing in.
 
+    Every question that starts from the caller's location asks here, so the
+    location has one source rather than one per caller. Sink paths do not go
+    through it at all — those are user-scope and the same from anywhere; what
+    the caller's directory decides is only who is writing, and from which
+    workspace of them.
+    """
 
-def _find_repo_root(start: Path):
-    current = start.resolve()
-    for _ in range(MAX_WALK_UP):
-        marker = current / ".git"
-        if marker.exists():
-            if marker.is_file():
-                main_root = _main_checkout_root(marker)
-                if main_root is not None:
-                    return main_root
-            return current
-        parent = current.parent
-        if parent == current:
-            return None
-        current = parent
-    return None
+    return Path.cwd().resolve()
 
 
 def _tickets_root():
-    repo_root = _find_repo_root(Path.cwd())
-    if repo_root is None:
+    """The sink's ticket tree, or ``None`` when no root can be resolved."""
+
+    try:
+        return state_root.tickets_root()
+    except Exception:
         return None
-    return repo_root / ".orch" / "tickets"
+
+
+def _runs_root():
+    """The sink's run tree, or ``None`` when no root can be resolved."""
+
+    try:
+        return state_root.runs_root()
+    except Exception:
+        return None
+
+
+def _improvement_root():
+    """The sink's improvement tree, or ``None`` when no root can be resolved."""
+
+    try:
+        return state_root.improvement_root()
+    except Exception:
+        return None
 
 
 def _run_state_root(tree: str):
-    repo_root = _find_repo_root(Path.cwd())
-    if repo_root is None:
+    """One of the sink's run-state trees, or ``None`` when unresolvable.
+
+    ``--tree`` names the tree; the set is closed and checked by the
+    caller, so anything reaching here is one of ``RUN_STATE_TREES``.
+    """
+
+    try:
+        return state_root.state_root() / tree
+    except Exception:
         return None
-    return repo_root / ".orch" / tree
 
 
 def _segment_error(kind: str, value: str):
@@ -285,6 +331,256 @@ def _iter_run_dirs(tickets_root: Path, run_filter):
         candidate = tickets_root / run_filter
         return [candidate] if candidate.is_dir() else []
     return sorted(p for p in tickets_root.iterdir() if p.is_dir())
+
+
+# --- run identity -----------------------------------------------------------
+
+
+def _origin_url(main_root: Path):
+    """The ``origin`` remote's url, read out of ``<main_root>/.git/config``.
+
+    Read, never asked for. This script shells out to nothing — that is what
+    lets a child in a workspace it may not run ``git`` in reach the sink at
+    all — so git's config is parsed here in the small, the way frontmatter
+    is: the ``[remote "origin"]`` section, its ``url`` key, nothing else.
+    Both spellings of the header are accepted because git accepts both.
+    """
+
+    try:
+        text = (main_root / ".git" / "config").read_text(
+            encoding="utf-8", errors="replace"
+        )
+    except OSError:
+        return None
+    in_origin = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped[0] in "#;":
+            continue
+        if stripped.startswith("[") and stripped.endswith("]"):
+            inner = stripped[1:-1].replace(".", " ")
+            in_origin = [part.strip('"') for part in inner.split()] == [
+                "remote",
+                "origin",
+            ]
+            continue
+        if in_origin:
+            key, separator, value = stripped.partition("=")
+            if separator and key.strip().lower() == "url":
+                return value.strip() or None
+    return None
+
+
+def _normalized_origin(origin) -> str:
+    """One remote, one spelling.
+
+    A trailing ``/`` and a trailing ``.git`` are the two ways one transport
+    writes one url, so both come off. Nothing tries to canonicalize ssh
+    against https: guessing that two spellings mean one repository is how a
+    run silently acquires a second project, which is what this exists to
+    refuse. Empty for a repository with no remote.
+    """
+
+    text = str(origin or "").strip().rstrip("/")
+    if text.endswith(".git"):
+        text = text[: -len(".git")]
+    return text.rstrip("/")
+
+
+def _project_key(project: dict) -> str:
+    """The name a project is refused by: its origin url, else its root."""
+
+    return _normalized_origin(project.get("origin")) or str(project.get("root"))
+
+
+def _same_project(recorded: dict, writing: dict) -> bool:
+    """Whether two writes belong to one project.
+
+    Origin first: two clones of one origin are one project with two
+    workspaces, wherever on disk they sit. When either side has no origin
+    there is nothing to compare but the main checkout root — so two
+    repositories with no remote are two projects, and one repository that
+    gained or lost its remote after the run opened is still itself rather
+    than an impostor locked out of its own run.
+    """
+
+    theirs = _normalized_origin(recorded.get("origin"))
+    mine = _normalized_origin(writing.get("origin"))
+    if theirs and mine:
+        return theirs == mine
+    return str(recorded.get("root")) == str(writing.get("root"))
+
+
+def _workspace_root(start: Path):
+    """The checkout the caller is standing in, *not* dereferenced.
+
+    ``state_root.find_repo_root`` owns the other half of a run's identity —
+    which project — and follows a linked worktree's pointer to the main
+    checkout to answer it. This one stops at the first ``.git`` instead of
+    following it, because two worktrees of one project are exactly what
+    ``workspaces[]`` distinguishes. The walk bound is the resolver's, never
+    a second one.
+    """
+
+    current = Path(start).resolve()
+    for _ in range(state_root.MAX_WALK_UP):
+        if (current / ".git").exists():
+            return current
+        if current.parent == current:
+            break
+        current = current.parent
+    return None
+
+
+def _writer_identity():
+    """``(project, workspace)`` for the caller: who is writing, from where."""
+
+    cwd = _cwd()
+    root = state_root.find_repo_root(cwd)
+    workspace = _workspace_root(cwd) or cwd
+    if root is None:
+        # Outside any checkout the caller's own directory is all the identity
+        # there is. A write from nowhere is still attributable to somewhere.
+        return {"root": str(cwd), "origin": None, "name": cwd.name}, str(workspace)
+    return (
+        {"root": str(root), "origin": _origin_url(root), "name": root.name},
+        str(workspace),
+    )
+
+
+def _read_identity(path: Path):
+    """``(document, error)``: the run's identity, ``(None, None)`` when absent.
+
+    A corrupt identity is refused rather than replaced. Overwriting it would
+    attribute the run to whoever wrote last, which is the confusion the
+    document exists to prevent.
+    """
+
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (FileNotFoundError, NotADirectoryError):
+        # No document, and no reachable place for one. An unreachable sink is
+        # the run-state write's own error to report, in its own words.
+        return None, None
+    except OSError as error:
+        return None, {"error": f"unreadable run identity {path}: {error}"}
+    try:
+        data = json.loads(text)
+    except ValueError as parse_error:
+        # bound to a name of its own: Python unbinds an `except ... as` name
+        # at the end of its block, and this one is read after it
+        reason = str(parse_error)
+    else:
+        if isinstance(data, dict):
+            return data, None
+        reason = "the document is not an object"
+    return None, {
+        "error": f"run identity {path} is unreadable ({reason}); repair or "
+        "remove it. Refusing to overwrite a run's identity with a guess"
+    }
+
+
+def _identity_document(run: str, path: Path, project: dict, workspace: str, now):
+    """``(document_to_write, error)`` — create, extend, or refuse.
+
+    ``project`` and ``opened_at`` are the first writer's and are never
+    rewritten; a later workspace of the same project only appends itself.
+    ``None`` for both means the identity is already correct and no write is
+    owed, so an ordinary note does not rewrite this file every time.
+    """
+
+    existing, error = _read_identity(path)
+    if error is not None:
+        return None, error
+    stamp = now.strftime(UTC_STAMP)
+    entry = {"path": workspace, "first_seen": stamp}
+    if existing is None:
+        return {
+            "run": run,
+            "sink_convention": SINK_CONVENTION,
+            "opened_at": stamp,
+            "project": project,
+            "workspaces": [entry],
+        }, None
+
+    updated = dict(existing)
+    recorded = existing.get("project")
+    if isinstance(recorded, dict) and (recorded.get("root") or recorded.get("origin")):
+        if not _same_project(recorded, project):
+            theirs, mine = _project_key(recorded), _project_key(project)
+            return None, {
+                "error": f"run '{run}' is held by project {theirs}; this write "
+                f"comes from project {mine}. One run id is one project's, so "
+                "nothing was written. Use a different run id, or write from a "
+                f"workspace of {theirs}"
+            }
+    else:
+        # An identity document with no project — an older layout, or one
+        # written before this field existed — is adopted rather than refused:
+        # there is no second project to confuse it with.
+        updated["project"] = project
+        updated.setdefault("run", run)
+        updated.setdefault("opened_at", stamp)
+        updated.setdefault("sink_convention", SINK_CONVENTION)
+
+    seen = existing.get("workspaces")
+    seen = list(seen) if isinstance(seen, list) else []
+    if not any(isinstance(w, dict) and w.get("path") == workspace for w in seen):
+        seen.append(entry)
+        updated["workspaces"] = seen
+    elif not isinstance(existing.get("workspaces"), list):
+        updated["workspaces"] = seen
+    return (updated, None) if updated != existing else (None, None)
+
+
+# Windows has no unconditional atomic replace. ``MoveFileEx`` answers
+# ERROR_ACCESS_DENIED -- WinError 5, which reads like a permission problem
+# and is not one -- for as long as any other handle holds the destination
+# open: a concurrent reader of the identity document, or a second writer's
+# own move already in flight over the same name. Both windows are
+# microseconds wide and both close by themselves, so the move is waited out
+# rather than reported; reporting it fails a writer for someone else's read.
+# POSIX ``rename`` has neither window, so there the first attempt is the
+# only one and a refusal is real.
+REPLACE_BUDGET_SECONDS = 2.0
+REPLACE_RETRY_SECONDS = 0.005
+
+
+def _replace_atomically(temporary: Path, target: Path) -> None:
+    """Move ``temporary`` onto ``target``, waiting out a transient refusal."""
+
+    deadline = time.monotonic() + REPLACE_BUDGET_SECONDS
+    while True:
+        try:
+            temporary.replace(target)
+            return
+        except OSError:
+            if msvcrt is None or time.monotonic() >= deadline:
+                raise
+            time.sleep(REPLACE_RETRY_SECONDS)
+
+
+def _write_identity(run_dir: Path, document: dict) -> None:
+    """Whole-file, and atomically.
+
+    The run id partitions this document, but two workspaces of one project
+    still open it at once, and a reader must never meet a half-written one.
+    Written beside the target and moved over it, so the move is the only
+    thing a concurrent reader can observe.
+    """
+
+    handle = tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", newline="\n", dir=str(run_dir),
+        prefix=RUN_IDENTITY_NAME + ".", suffix=".tmp", delete=False,
+    )
+    temporary = Path(handle.name)
+    try:
+        with handle:
+            handle.write(json.dumps(document, ensure_ascii=False, indent=2) + "\n")
+        _replace_atomically(temporary, run_dir / RUN_IDENTITY_NAME)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
 
 
 # --- manual frontmatter parsing ---------------------------------------------
@@ -657,7 +953,7 @@ def _cmd_list(rest):
         return {"error": f"unexpected arguments: {' '.join(args)}"}
     tickets_root = _tickets_root()
     if tickets_root is None:
-        return {"error": "not inside a git repository"}
+        return {"error": NO_SINK_ERROR}
     items = []
     for run_dir in _iter_run_dirs(tickets_root, run_filter):
         for ticket_path in sorted(run_dir.glob("*.md")):
@@ -673,7 +969,7 @@ def _cmd_ready(rest):
         return {"error": f"unexpected arguments: {' '.join(args)}"}
     tickets_root = _tickets_root()
     if tickets_root is None:
-        return {"error": "not inside a git repository"}
+        return {"error": NO_SINK_ERROR}
     now = datetime.now(timezone.utc)
     ready_items = []
     for run_dir in _iter_run_dirs(tickets_root, run_filter):
@@ -741,7 +1037,7 @@ def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime
             return {"error": f"ticket already claimed and not stale: {ticket_path.stem}"}
     elif status != "ready":
         return {"error": f"ticket is not claimable in status '{status}': {ticket_path.stem}"}
-    timestamp = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    timestamp = now.strftime(UTC_STAMP)
     updated = _set_frontmatter_field(prior_text, "status", "claimed")
     updated = _set_frontmatter_field(updated, "claimed_by", claimed_by)
     updated = _set_frontmatter_field(updated, "claimed_at", timestamp)
@@ -759,7 +1055,7 @@ def _cmd_claim(rest):
     run, ticket_id = args
     tickets_root = _tickets_root()
     if tickets_root is None:
-        return {"error": "not inside a git repository"}
+        return {"error": NO_SINK_ERROR}
     ticket_path = tickets_root / run / f"{ticket_id}.md"
     if not ticket_path.is_file():
         return {"error": f"ticket not found: {run}/{ticket_id}"}
@@ -785,7 +1081,7 @@ def _cmd_set_status(rest):
         return {"error": f"invalid status '{status}'; must be one of {sorted(VALID_STATUSES)}"}
     tickets_root = _tickets_root()
     if tickets_root is None:
-        return {"error": "not inside a git repository"}
+        return {"error": NO_SINK_ERROR}
     ticket_path = tickets_root / run / f"{ticket_id}.md"
     if not ticket_path.is_file():
         return {"error": f"ticket not found: {run}/{ticket_id}"}
@@ -815,7 +1111,7 @@ def _cmd_packet(rest):
     run, ticket_id = args
     tickets_root = _tickets_root()
     if tickets_root is None:
-        return {"error": "not inside a git repository"}
+        return {"error": NO_SINK_ERROR}
     ticket_path = tickets_root / run / f"{ticket_id}.md"
     if not ticket_path.is_file():
         return {"error": f"ticket not found: {run}/{ticket_id}"}
@@ -913,12 +1209,12 @@ def _cmd_packet(rest):
 
 
 def _cmd_result(rest):
-    """Write one reserved section of a ticket at the main repository root.
+    """Write one reserved section of a ticket in the state sink.
 
     The executor runs this from inside its own isolated worktree: ``--file``
     reads the body from that workspace while ``_tickets_root()`` resolves the
-    worktree's ``.git`` pointer to the one main-root ticket path every
-    workspace agrees on (contracts/work-item.md).
+    user-scope sink, the one ticket path every workspace in every repository
+    agrees on (contracts/work-item.md).
     """
 
     args = list(rest)
@@ -970,7 +1266,7 @@ def _cmd_result(rest):
         body = text_arg
     tickets_root = _tickets_root()
     if tickets_root is None:
-        return {"error": "not inside a git repository"}
+        return {"error": NO_SINK_ERROR}
     ticket_path = tickets_root / run / f"{ticket_id}.md"
     if not ticket_path.is_file():
         return {"error": f"ticket not found: {run}/{ticket_id}"}
@@ -1088,13 +1384,13 @@ def _worklog_terminal(path: Path):
 
 
 def _cmd_run_state(rest):
-    """Write this run's state into the one repository-wide ``.orch/``.
+    """Write this run's state into the one user-scope state sink.
 
     The channel rules/visibility.md §6 names. The root is resolved the way
-    every other subcommand resolves it — ``_find_repo_root`` dereferencing a
-    worktree's ``.git`` pointer, no subprocess — so a child in its own
-    workspace reaches the main checkout's ``.orch/`` without a git call it
-    may not be allowed to make.
+    every other subcommand resolves it — ``scripts/state_root.py``, an
+    environment variable and a home directory, no subprocess — so a child in
+    its own workspace, in any repository or none, reaches the run's state
+    without a git call it may not be allowed to make.
 
     ``--note`` appends to one shared log, so it opens in append mode with an
     explicit ``newline`` (``scripts/friction.py``) and writes one line in one
@@ -1102,6 +1398,13 @@ def _cmd_run_state(rest):
     platform where append is not itself atomic: two workspaces write one
     repository's worklog concurrently and neither may read-modify-write it. ``--artifact`` is whole-file, which is
     safe only because the run id partitions it.
+
+    One sink holds every project's runs, so a run says which project it is:
+    the first write stamps ``run.json`` beside the worklog, a later write
+    from another workspace of the same project appends itself to it, and a
+    write from a *different* project is refused by name. Without that, two
+    projects that pick one run id interleave into one worklog and neither
+    can tell which line is whose.
 
     There is no fallback. A write that cannot reach that root is reported as
     an error and lands nowhere else: a run-state write that silently
@@ -1193,9 +1496,14 @@ def _cmd_run_state(rest):
         }
 
     tree_root = _run_state_root(tree)
-    if tree_root is None:
-        return {"error": "not inside a git repository"}
+    runs_root = _runs_root()
+    if tree_root is None or runs_root is None:
+        return {"error": NO_SINK_ERROR}
     run_dir = tree_root / run
+    # The run's identity sits beside its worklog whichever tree the payload
+    # lands in: contracts/worklog.md puts `run.json` at `runs/<run>/`, and a
+    # run has one identity, not one per tree it happens to write into.
+    identity_dir = runs_root / run
     if note is not None or terminal is not None:
         # contracts/worklog.md: "no note is written past a terminal section".
         # A closed worklog is closed once: a second close would leave two
@@ -1224,8 +1532,24 @@ def _cmd_run_state(rest):
                 "overwrite it deliberately, or write it under another name"
             }
         replaced = target.exists()
+    project, workspace = _writer_identity()
+    document, refusal = _identity_document(
+        run,
+        identity_dir / RUN_IDENTITY_NAME,
+        project,
+        workspace,
+        datetime.now(timezone.utc),
+    )
+    # The identity gate runs before the payload and before either directory
+    # exists: a refused write leaves the worklog, the artifact and the
+    # identity document all exactly as it found them, and creates nothing.
+    if refusal is not None:
+        return refusal
     try:
         run_dir.mkdir(parents=True, exist_ok=True)
+        if document is not None:
+            identity_dir.mkdir(parents=True, exist_ok=True)
+            _write_identity(identity_dir, document)
         if artifact is not None:
             path = run_dir / artifact
             with open(path, "w", encoding="utf-8", newline="\n") as handle:
@@ -1304,11 +1628,105 @@ def _cmd_help(command=None):
     }
 
 
+def _cmd_improvement(rest):
+    """Write an improvement evidence record into the one user-scope sink.
+
+    ``_cmd_run_state``'s sibling, for the other two records the channel
+    rules/visibility.md §6 covers: a proposal and the coverage record.
+    Same root resolution, same two shapes — one whole-file, one
+    single-call append — and the same refusal to reach for a fallback.
+
+    ``--proposal`` is whole-file, safe because the name partitions it, and
+    the name goes through ``_segment_error`` so nothing can climb out of
+    ``proposals/``. ``--covered`` appends to a stream every pass shares, so
+    it opens in append mode with an explicit ``newline`` and writes one
+    line in one call: a read-modify-write here loses a concurrent writer's
+    line, which is the whole reason the record is JSONL.
+
+    Neither body is read, parsed or validated. This is a channel; what a
+    proposal says and what a coverage line carries belong to
+    ``orch-self-improve``.
+
+    There is no fallback. A write that cannot reach the resolved root is
+    reported as an error and lands nowhere else.
+    """
+
+    args = list(rest)
+    proposal = _extract_flag(args, "--proposal")
+    covered = _extract_flag(args, "--covered")
+    file_arg = _extract_flag(args, "--file")
+    text_arg = _extract_flag(args, "--text")
+    stray = next((arg for arg in args if arg.startswith("-")), None)
+    if stray is not None:
+        return {"error": f"improvement does not accept {stray}. usage: {IMPROVEMENT_USAGE}"}
+    if args:
+        return {
+            "error": f"improvement takes no positional argument: got {args[0]}. "
+            f"usage: {IMPROVEMENT_USAGE}"
+        }
+    if (proposal is None) == (covered is None):
+        return {
+            "error": "improvement takes one of --proposal <name> or --covered <line>. "
+            f"usage: {IMPROVEMENT_USAGE}"
+        }
+    body = None
+    if proposal is not None:
+        invalid = _segment_error("proposal name", proposal)
+        if invalid is not None:
+            return invalid
+        if (file_arg is None) == (text_arg is None):
+            return {
+                "error": "--proposal takes one of --file <path> or --text <string>. "
+                f"usage: {IMPROVEMENT_USAGE}"
+            }
+        if file_arg is not None:
+            # read from the caller's own workspace, write in the sink
+            try:
+                body = Path(file_arg).read_text(encoding="utf-8")
+            except OSError as error:
+                return {"error": f"unreadable body file: {error}"}
+        else:
+            body = text_arg
+    elif file_arg is not None or text_arg is not None:
+        return {
+            "error": "--covered carries its own line; --file and --text belong to "
+            f"--proposal. usage: {IMPROVEMENT_USAGE}"
+        }
+
+    improvement_root = _improvement_root()
+    if improvement_root is None:
+        return {"error": NO_SINK_ERROR}
+    try:
+        if proposal is not None:
+            path = improvement_root / PROPOSALS_DIR / proposal
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "w", encoding="utf-8", newline="\n") as handle:
+                handle.write(body)
+        else:
+            path = improvement_root / COVERAGE_RECORD_NAME
+            improvement_root.mkdir(parents=True, exist_ok=True)
+            # Through the serialised writer, not a bare `open(..., "a")`:
+            # this record is the one file every workspace on the machine
+            # appends to, and on Windows an unserialised append is a seek
+            # and a write, so two writers take one offset and a whole line
+            # disappears. Same channel as the worklog, same guarantee.
+            _append_one_line(path, covered.rstrip("\r\n") + "\n")
+    except OSError as error:
+        return {"error": f"unwritable improvement record: {error}"}
+    return {
+        "improvement": {
+            "mode": "proposal" if proposal is not None else "covered",
+            "name": proposal,
+            "path": str(path),
+        }
+    }
+
+
 def _dispatch(argv):
     if not argv:
         return {
             "error": "missing subcommand: list | ready | claim | set-status | "
-            "packet | result | run-state"
+            "packet | result | run-state | improvement"
         }
     command, rest = argv[0], argv[1:]
     if command in HELP_COMMANDS:
@@ -1329,6 +1747,8 @@ def _dispatch(argv):
         return _cmd_result(rest)
     if command == "run-state":
         return _cmd_run_state(rest)
+    if command == "improvement":
+        return _cmd_improvement(rest)
     return {"error": f"unknown subcommand: {command}"}
 
 

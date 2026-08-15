@@ -77,6 +77,62 @@ class TestHashAndSnapshot(unittest.TestCase):
 
                 self.assertIn(str(Path("skills") / "SKILL.md"), snapshot["trees"][tree_name])
 
+    def test_the_sink_is_watched_under_its_own_name_wherever_it_points(self):
+        # ~/.orchflows is watched already, so a default sink is covered by
+        # that tree. A redirected one is not — and a suite that redirects is
+        # exactly when a stray write is most likely.
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            sink = root / "elsewhere" / "sink"
+            (sink / "runs" / "somerun").mkdir(parents=True)
+            (sink / "runs" / "somerun" / "worklog.md").write_text("x\n", encoding="utf-8")
+            with mock.patch.dict(
+                os.environ, {suite_check.STATE_HOME_ENV_VAR: str(sink)}
+            ):
+                watched = suite_check.collect_snapshot(root, root / "home", watch_home=True)
+                # the sink guard is not part of the home watch, so
+                # --no-home-watch cannot switch it off
+                unwatched = suite_check.collect_snapshot(root, root / "home", watch_home=False)
+        expected = str(Path("runs") / "somerun" / "worklog.md")
+        self.assertIn(expected, watched["trees"]["state_sink"])
+        self.assertIn(expected, unwatched["trees"]["state_sink"])
+
+    def test_the_sink_root_it_watches_is_the_one_the_scripts_resolve(self):
+        """``suite_check.py`` cannot import ``scripts/state_root.py``: it must
+        watch the sink the suite's interpreter resolves even against a tree
+        that has no such module. That duplication is only safe while the two
+        spellings agree."""
+
+        sys.path.insert(0, str(REPO_ROOT / "scripts"))
+        try:
+            import state_root
+        finally:
+            sys.path.pop(0)
+        self.assertEqual(state_root.ENV_VAR, suite_check.STATE_HOME_ENV_VAR)
+        self.assertEqual(state_root.DEFAULT_HOME_SUBPATH, suite_check.STATE_HOME_SUBPATH)
+        with tempfile.TemporaryDirectory() as td:
+            home = Path(td)
+            with mock.patch.dict(os.environ, {}, clear=False):
+                os.environ.pop(suite_check.STATE_HOME_ENV_VAR, None)
+                self.assertEqual(
+                    home / ".orchflows" / "state", suite_check.state_sink_dir(home)
+                )
+            for blank in ("", "   "):
+                with mock.patch.dict(
+                    os.environ, {suite_check.STATE_HOME_ENV_VAR: blank}
+                ):
+                    self.assertEqual(
+                        home / ".orchflows" / "state",
+                        suite_check.state_sink_dir(home),
+                        blank,
+                    )
+            with mock.patch.dict(
+                os.environ, {suite_check.STATE_HOME_ENV_VAR: "~/redirected"}
+            ):
+                self.assertEqual(
+                    Path.home() / "redirected", suite_check.state_sink_dir(home)
+                )
+
     def test_hash_file_changes_with_content(self):
         with tempfile.TemporaryDirectory() as td:
             path = Path(td) / "a.jsonl"
@@ -310,6 +366,79 @@ class TestHarnessSubprocess(unittest.TestCase):
             self.assertFalse(verdict["ok"])
             self.assertIn("failures", verdict)
             self.assertTrue(verdict["failures"])
+
+    def test_a_stray_write_into_the_sink_fails_the_run(self):
+        """The guard behind ``tests/__init__.py``: a suite that redirects the
+        sink for its own children still must not write to the root it was
+        given. Both halves of the seam are exercised — a test that writes
+        in-process, and a test whose subprocess inherits the variable and
+        writes there — because a guard that catches only one is no guard.
+        """
+
+        harness = REPO_ROOT / "tools" / "suite_check.py"
+        for who, body in (
+            (
+                "in_process",
+                """
+                import os, pathlib, unittest
+
+                class TestStray(unittest.TestCase):
+                    def test_writes_into_the_sink(self):
+                        sink = pathlib.Path(os.environ["ORCHFLOWS_STATE_HOME"])
+                        (sink / "runs" / "leaked").mkdir(parents=True, exist_ok=True)
+                        (sink / "runs" / "leaked" / "worklog.md").write_text("x\\n")
+                """,
+            ),
+            (
+                "subprocess",
+                """
+                import os, subprocess, sys, unittest
+
+                class TestStray(unittest.TestCase):
+                    def test_a_child_writes_into_the_inherited_sink(self):
+                        program = (
+                            "import os, pathlib;"
+                            "s = pathlib.Path(os.environ['ORCHFLOWS_STATE_HOME']);"
+                            "d = s / 'friction';"
+                            "d.mkdir(parents=True, exist_ok=True);"
+                            "(d / '2026-08.jsonl').write_text('{}\\\\n')"
+                        )
+                        # no env= : the child inherits, which is the point
+                        done = subprocess.run([sys.executable, "-c", program])
+                        self.assertEqual(0, done.returncode)
+                """,
+            ),
+        ):
+            with self.subTest(who=who), tempfile.TemporaryDirectory() as td:
+                root = Path(td)
+                tests_dir = root / "tests"
+                tests_dir.mkdir(parents=True)
+                (tests_dir / "__init__.py").write_text("", encoding="utf-8")
+                (tests_dir / "test_stray.py").write_text(
+                    textwrap.dedent(body), encoding="utf-8"
+                )
+                sink = root / "stand-in-sink"
+                sink.mkdir()
+                env = dict(os.environ, ORCHFLOWS_STATE_HOME=str(sink))
+                result = subprocess.run(
+                    [
+                        sys.executable, str(harness),
+                        "--repo-root", str(root),
+                        "--python", sys.executable,
+                        "--no-home-watch",
+                    ],
+                    capture_output=True, text=True, timeout=120, env=env,
+                )
+                verdict = json.loads(result.stdout.strip().splitlines()[-1])
+                # the suite itself passed: only the snapshot caught this
+                self.assertTrue(verdict["phases"]["suite"]["ok"], result.stdout)
+                self.assertFalse(verdict["phases"]["snapshot"]["ok"], result.stdout)
+                self.assertFalse(verdict["ok"])
+                self.assertEqual(1, result.returncode)
+                self.assertTrue(
+                    [f for f in verdict["failures"] if f.startswith("state_sink: added ")],
+                    verdict["failures"],
+                )
 
 
 if __name__ == "__main__":

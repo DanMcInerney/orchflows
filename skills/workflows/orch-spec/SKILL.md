@@ -17,7 +17,7 @@ settled, approved spec is the deliverable.
 Count the deliverable kinds the end state spans — this decision and
 its evidence ride the Return. One kind → one pack-stamped spec. Two or
 more → one spec per kind plus a composition instance at
-`.orch/runs/<run>/composition.md`, orch-compose the executor that
+`<state-root>/runs/<run>/composition.md`, orch-compose the executor that
 runs it, chaining single-pack deliveries per
 [contracts/composition.md](../../../contracts/composition.md), the cut
 falling where the deliverable's kind changes, each successor's
@@ -39,7 +39,7 @@ Stamp routing — exactly one pack per
 the spec carries every field the stamped pack's `required_spec_fields`
 cell demands — decomposition otherwise rejects it downstream, naming
 the missing fields; catch that gap here, not there. Write the accepted
-spec to `.orch/runs/<run>/spec.md`; the run itself — worklog, tickets,
+spec to `<state-root>/runs/<run>/spec.md`; the run itself — worklog, tickets,
 terminal state — opens at delivery, not at spec time.
 
 Never: stamp two packs in one spec (emit a composition instance

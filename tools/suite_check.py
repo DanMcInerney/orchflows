@@ -5,9 +5,12 @@ mechanically:
 (a) skip-audit — runs the unit suite with ``-m unittest discover -v``
     and fails on non-zero exit or any skip line whose reason is empty.
 (b) snapshot guard — hashes ``.orch/friction/*.jsonl`` and lists
-    ``.orch/``, ``~/.claude``, ``~/.codex``, ``~/.orchflows`` before
-    and after the run, failing on any difference (the harness itself
-    writes only to stdout).
+    ``.orch/``, the resolved state sink, ``~/.claude``, ``~/.codex``
+    and ``~/.orchflows`` before and after the run, failing on any
+    difference (the harness itself writes only to stdout). The sink is
+    resolved in *this* process, so a suite that redirects
+    ``ORCHFLOWS_STATE_HOME`` for its own children is still graded
+    against the root it was supposed to leave alone.
 (c) stripped-PATH run — re-runs the suite with PATH rebuilt to only
     the running interpreter's own directory (and a ``Scripts``/``bin``
     sibling, if present), so no `claude`, `codex`, or `npx` on the
@@ -192,6 +195,12 @@ HOME_WATCH_DIRS = (
     ("codex_home", ".codex", "CODEX_HOME"),
     ("orchflows_home", ".orchflows", None),
 )
+# scripts/state_root.py owns this pair; the guard cannot import it, because
+# it must watch the sink the *suite's* interpreter would resolve even when
+# the tree under test has no such module. tests/test_suite_check.py asserts
+# the two agree.
+STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
+STATE_HOME_SUBPATH = (".orchflows", "state")
 
 
 def _watch_dir(home: Path, dirname: str, env_var: str | None) -> Path:
@@ -203,10 +212,26 @@ def _watch_dir(home: Path, dirname: str, env_var: str | None) -> Path:
     return Path(override).expanduser() if override else home / dirname
 
 
+def state_sink_dir(home: Path) -> Path:
+    """The state sink this run would write to, override honoured.
+
+    ``~/.orchflows`` is already watched, so the default sink is covered by
+    that tree. An ``ORCHFLOWS_STATE_HOME`` pointing anywhere else is not,
+    and a suite that redirects the sink is exactly when a stray write is
+    most likely — so the resolved root is watched under its own name.
+    """
+
+    override = os.environ.get(STATE_HOME_ENV_VAR, "").strip()
+    return Path(override).expanduser() if override else home.joinpath(*STATE_HOME_SUBPATH)
+
+
 def collect_snapshot(repo_root: Path, home: Path, watch_home: bool) -> dict:
     snapshot = {
         "friction_hashes": snapshot_friction_hashes(repo_root),
-        "trees": {"orch": snapshot_tree(repo_root / ".orch")},
+        "trees": {
+            "orch": snapshot_tree(repo_root / ".orch"),
+            "state_sink": snapshot_tree(state_sink_dir(home)),
+        },
     }
     if watch_home:
         for name, dirname, env_var in HOME_WATCH_DIRS:

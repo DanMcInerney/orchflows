@@ -1,4 +1,4 @@
-"""friction.py resolves .orch to the main checkout, one per repository, and
+"""friction.py logs to the one user-scope sink, from every repository, and
 appends to it under a lock that never blocks and never fails."""
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import importlib.util
 import io
 import json
 import os
+import stat
 import sys
 import sysconfig
 import tempfile
@@ -19,115 +20,124 @@ from pathlib import Path
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
+# friction.py imports its resolver as `scripts.state_root` in-repo, falling
+# back to a flat `state_root` beside it once installed. Neither name is
+# importable from `tests/` alone, so put the repository root on the path
+# before the module body runs.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 FRICTION_PY = ROOT / "scripts" / "friction.py"
 TICKETS_PY = ROOT / "scripts" / "tickets.py"
+STATE_ROOT_PY = ROOT / "scripts" / "state_root.py"
 _spec = importlib.util.spec_from_file_location(
     "friction", ROOT / "scripts" / "friction.py"
 )
 friction = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_spec and friction)
 
-REQUIRED_ENTRY_KEYS = {
+from scripts import tickets  # noqa: E402  the owner of project identity
+
+STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
+
+# The fields the stream carried before it said which project an entry arose
+# in. Named separately from the four added since, because "every existing
+# field survives, with its meaning" is a property in its own right: a reader
+# of an older stream and a reader of this one agree on everything they share.
+LEGACY_ENTRY_KEYS = {
     "ts", "cwd", "git_rev", "host", "session",
     "category", "skill", "ticket", "run", "observed", "expected",
 }
+PROVENANCE_KEYS = {"project", "project_source", "workspace", "sink_convention"}
+REQUIRED_ENTRY_KEYS = LEGACY_ENTRY_KEYS | PROVENANCE_KEYS
 
 
-class TestFindRepoRoot(unittest.TestCase):
+class TestTargetPath(unittest.TestCase):
+    """The target is the sink's, and the cwd has no say in it.
+
+    ``scripts/state_root.py`` owns the resolver itself and
+    ``tests/test_state_root.py`` grades it; what belongs here is that
+    friction.py asks it, rather than deciding for itself.
+    """
+
     def setUp(self):
-        self._tmp = tempfile.TemporaryDirectory()
-        self.tmp = Path(self._tmp.name).resolve()
+        # Register the tempdir cleanup via addCleanup (not a `with` block):
+        # addCleanup runs LIFO, so a chdir-back registered after it fires
+        # first. A `with tempfile.TemporaryDirectory()` wrapping a chdir
+        # into itself has its own __exit__ run before any addCleanup, and on
+        # Windows rmtree of the current working directory raises
+        # PermissionError — that ordering bug is what this guards against.
+        tmp_ctx = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp_ctx.cleanup)
+        self.tmp = Path(tmp_ctx.name).resolve()
+        self.sink = self.tmp / "sink"
+        patcher = mock.patch.dict(os.environ, {STATE_HOME_ENV_VAR: str(self.sink)})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.stamp = friction.datetime.now(friction.timezone.utc).strftime("%Y-%m")
 
-    def tearDown(self):
-        self._tmp.cleanup()
+    def _chdir(self, target: Path):
+        before = os.getcwd()
+        os.chdir(target)
+        self.addCleanup(os.chdir, before)
 
-    def _make_main(self, name="main"):
-        main = self.tmp / name
-        (main / ".git").mkdir(parents=True)
-        return main
+    def _target(self) -> Path:
+        return friction._target_path(friction.datetime.now(friction.timezone.utc))
 
-    def test_main_checkout_resolves_to_itself(self):
-        main = self._make_main()
-        sub = main / "skills" / "kernel"
-        sub.mkdir(parents=True)
-        self.assertEqual(friction._find_repo_root(sub), main)
+    def test_the_target_is_the_sinks_friction_stream(self):
+        self.assertEqual(self.sink / "friction" / f"{self.stamp}.jsonl", self._target())
 
-    def test_linked_worktree_resolves_to_main_checkout(self):
-        main = self._make_main()
+    def test_a_worktree_a_main_checkout_and_no_repository_agree(self):
+        main = self.tmp / "main"
         (main / ".git" / "worktrees" / "wt").mkdir(parents=True)
         wt = self.tmp / "wt"
         wt.mkdir()
         (wt / ".git").write_text(
             f"gitdir: {main / '.git' / 'worktrees' / 'wt'}\n", encoding="utf-8"
         )
-        self.assertEqual(friction._find_repo_root(wt), main)
-
-    def test_relative_gitdir_pointer_resolves_to_superproject(self):
-        super_repo = self._make_main("super")
-        (super_repo / ".git" / "modules" / "mod").mkdir(parents=True)
-        mod = super_repo / "mod"
-        mod.mkdir()
-        (mod / ".git").write_text("gitdir: ../.git/modules/mod\n", encoding="utf-8")
-        self.assertEqual(friction._find_repo_root(mod), super_repo)
-
-    def test_unparseable_git_file_falls_back_to_walk_up_result(self):
-        main = self._make_main()
-        wt = main / "vendored"
-        wt.mkdir()
-        (wt / ".git").write_text("not a gitdir pointer\n", encoding="utf-8")
-        self.assertEqual(friction._find_repo_root(wt), wt)
-
-    def test_no_repository_returns_none(self):
         bare = self.tmp / "bare"
         bare.mkdir()
-        self.assertIsNone(friction._find_repo_root(bare))
+        seen = []
+        for cwd in (main, wt, bare):
+            before = os.getcwd()
+            os.chdir(cwd)
+            try:
+                seen.append(self._target())
+            finally:
+                os.chdir(before)
+        self.assertEqual([self.sink / "friction" / f"{self.stamp}.jsonl"] * 3, seen)
 
-
-class TestTargetPath(unittest.TestCase):
-    def test_entry_from_worktree_lands_in_main_checkout(self):
-        # Register the tempdir cleanup via addCleanup too (not a `with`
-        # block): addCleanup runs LIFO, so the chdir-back registered after
-        # it fires first. A `with tempfile.TemporaryDirectory()` wrapping a
-        # chdir into itself has its own __exit__ run before any addCleanup,
-        # and on Windows rmtree of the current working directory raises
-        # PermissionError — that ordering bug is what this guards against.
-        tmp_ctx = tempfile.TemporaryDirectory()
-        self.addCleanup(tmp_ctx.cleanup)
-        tmp_path = Path(tmp_ctx.name).resolve()
-        main = tmp_path / "main"
-        (main / ".git" / "worktrees" / "wt").mkdir(parents=True)
-        wt = tmp_path / "wt"
-        wt.mkdir()
-        (wt / ".git").write_text(
-            f"gitdir: {main / '.git' / 'worktrees' / 'wt'}\n", encoding="utf-8"
-        )
-        before = os.getcwd()
-        os.chdir(wt)
-        self.addCleanup(os.chdir, before)
-        target = friction._target_path(friction.datetime.now(friction.timezone.utc))
-        self.assertEqual(target.parent.parent.parent, main)
+    def test_the_override_is_honoured_after_the_module_was_imported(self):
+        moved = self.tmp / "moved-sink"
+        os.environ[STATE_HOME_ENV_VAR] = str(moved)
+        self.assertEqual(moved / "friction" / f"{self.stamp}.jsonl", self._target())
 
 
 class _IsolatedRepoTestCase(unittest.TestCase):
     """Base for tests that run friction.main() against a synthetic repo root.
 
-    Never touches the real .orch/ — cwd is pinned to a fresh tempdir
-    containing its own fake .git, and restored via addCleanup even if
-    the test body raises.
+    Never touches the real sink — ``ORCHFLOWS_STATE_HOME`` is pointed at a
+    fresh tempdir for the duration, and cwd is pinned to a repository
+    inside it and restored via addCleanup even if the test body raises.
     """
 
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self._tmp.cleanup)
-        self.repo = Path(self._tmp.name).resolve() / "repo"
+        self.tmp = Path(self._tmp.name).resolve()
+        self.repo = self.tmp / "repo"
         (self.repo / ".git").mkdir(parents=True)
+        self.sink = self.tmp / "sink"
+        patcher = mock.patch.dict(os.environ, {STATE_HOME_ENV_VAR: str(self.sink)})
+        patcher.start()
+        self.addCleanup(patcher.stop)
         before = os.getcwd()
         os.chdir(self.repo)
         self.addCleanup(os.chdir, before)
 
     def _log_path(self):
         stamp = friction.datetime.now(friction.timezone.utc).strftime("%Y-%m")
-        return self.repo / ".orch" / "friction" / f"{stamp}.jsonl"
+        return self.sink / "friction" / f"{stamp}.jsonl"
 
     def _run_main(self, argv):
         buf = io.StringIO()
@@ -209,25 +219,35 @@ class TestMainWritesEntry(_IsolatedRepoTestCase):
         entry = json.loads(self._log_path().read_text(encoding="utf-8").splitlines()[-1])
         self.assertIsNone(entry["git_rev"])
 
-    def test_worktree_cwd_resolves_log_to_main_checkout(self):
-        # Reshape self.repo into a linked worktree of a separate main checkout,
-        # and confirm main() writes to the main checkout's log, not the worktree.
-        base = self.repo.parent
-        main = base / "main-checkout"
+    def test_a_worktree_and_its_main_checkout_append_to_one_stream(self):
+        # Build a linked worktree of a separate main checkout and log from
+        # both: one stream, two lines, and no `.orch/` in either tree.
+        main = self.tmp / "main-checkout"
         (main / ".git" / "worktrees" / "wt").mkdir(parents=True)
-        wt = base / "wt"
+        wt = self.tmp / "wt"
         wt.mkdir()
         (wt / ".git").write_text(
             f"gitdir: {main / '.git' / 'worktrees' / 'wt'}\n", encoding="utf-8"
         )
+        os.chdir(main)
+        self.assertEqual(0, self._run_main(["from the main checkout", "e"])[0])
         os.chdir(wt)
-        rc, _ = self._run_main(["o", "e"])
-        self.assertEqual(rc, 0)
-        stamp = friction.datetime.now(friction.timezone.utc).strftime("%Y-%m")
-        main_log = main / ".orch" / "friction" / f"{stamp}.jsonl"
-        wt_log = wt / ".orch" / "friction" / f"{stamp}.jsonl"
-        self.assertTrue(main_log.exists())
-        self.assertFalse(wt_log.exists())
+        self.assertEqual(0, self._run_main(["from the worktree", "e"])[0])
+        lines = self._log_path().read_text(encoding="utf-8").splitlines()
+        self.assertEqual(
+            ["from the main checkout", "from the worktree"],
+            [json.loads(line)["observed"] for line in lines],
+        )
+        self.assertFalse((main / ".orch").exists())
+        self.assertFalse((wt / ".orch").exists())
+
+    def test_the_entry_records_the_directory_it_was_logged_from(self):
+        # One stream for every repository, so where an entry came from is a
+        # field on it, never its location. `cwd` is the literal directory;
+        # `TestFrictionProjectFields` owns the identity of it.
+        self._run_main(["o", "e"])
+        entry = json.loads(self._log_path().read_text(encoding="utf-8").splitlines()[-1])
+        self.assertEqual(str(self.repo), entry["cwd"])
 
 
 class TestMainMalformedArgvIsSilentNoop(_IsolatedRepoTestCase):
@@ -258,10 +278,30 @@ class TestMainMalformedArgvIsSilentNoop(_IsolatedRepoTestCase):
 
 class TestMainAdversarialFailuresStaySilentAndExitZero(_IsolatedRepoTestCase):
     def test_unwritable_target_directory(self):
-        # Pre-create `.orch` as a plain file so mkdir(parents=True) for the
-        # friction/ subdirectory raises FileExistsError.
-        (self.repo / ".orch").write_text("blocked", encoding="utf-8")
+        # Pre-create the sink root as a plain file so mkdir(parents=True)
+        # for the friction/ subdirectory raises FileExistsError.
+        self.sink.write_text("blocked", encoding="utf-8")
         rc, out = self._run_main(["o", "e"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(out, "")
+
+    def test_an_unwritable_sink_is_never_traded_for_a_writable_cwd(self):
+        # There is no fallback at this seam. A blocked sink loses the entry;
+        # it does not resurrect the per-repository `.orch/` this run retired.
+        self.sink.write_text("blocked", encoding="utf-8")
+        before = sorted(p.name for p in self.repo.iterdir())
+        self._run_main(["o", "e"])
+        self.assertEqual(before, sorted(p.name for p in self.repo.iterdir()))
+        self.assertFalse((self.repo / ".orch").exists())
+
+    def test_a_resolver_that_cannot_be_imported_is_swallowed(self):
+        # The two-arm import lives inside a function precisely so main()'s
+        # broad except can catch its failure. At module scope this would
+        # traceback before there was a main() to swallow it.
+        with mock.patch.object(
+            friction, "_state_root", side_effect=ImportError("no state_root")
+        ):
+            rc, out = self._run_main(["o", "e"])
         self.assertEqual(rc, 0)
         self.assertEqual(out, "")
 
@@ -275,6 +315,380 @@ class TestMainAdversarialFailuresStaySilentAndExitZero(_IsolatedRepoTestCase):
             for line in content.splitlines():
                 json.loads(line)  # any line present must be a complete, valid entry
 
+
+class _ProvenanceTestCase(_IsolatedRepoTestCase):
+    """Builders for the three things an entry's provenance is read out of."""
+
+    def repository(self, name: str, origin=None) -> Path:
+        """A checkout, optionally with an ``origin`` remote."""
+
+        root = self.tmp / name
+        (root / ".git").mkdir(parents=True)
+        if origin is not None:
+            (root / ".git" / "config").write_text(
+                '[core]\n\tbare = false\n[remote "origin"]\n\turl = {0}\n'.format(origin),
+                encoding="utf-8",
+            )
+        return root
+
+    def worktree_of(self, main: Path, name: str) -> Path:
+        """A linked worktree: its own workspace, its main checkout's project."""
+
+        (main / ".git" / "worktrees" / name).mkdir(parents=True)
+        linked = self.tmp / name
+        linked.mkdir()
+        (linked / ".git").write_text(
+            "gitdir: {0}\n".format(main / ".git" / "worktrees" / name), encoding="utf-8"
+        )
+        return linked
+
+    def seed_run(self, run: str, project: dict, workspace="/nowhere") -> Path:
+        """A run the sink holds, its identity written by the code that owns it.
+
+        Built through ``tickets._identity_document`` and ``_write_identity``
+        rather than by hand, so this fixture cannot drift from the document
+        the writer really produces.
+        """
+
+        run_dir = self.sink / "runs" / run
+        run_dir.mkdir(parents=True)
+        document, error = tickets._identity_document(
+            run,
+            run_dir / tickets.RUN_IDENTITY_NAME,
+            project,
+            workspace,
+            friction.datetime.now(friction.timezone.utc),
+        )
+        self.assertIsNone(error)
+        tickets._write_identity(run_dir, document)
+        return run_dir
+
+    def last_entry(self) -> dict:
+        """The line most recently appended, its provenance keys asserted present.
+
+        Asserted here rather than dereferenced in each case, so an entry
+        that simply does not carry these fields reads as the case failing
+        rather than as a ``KeyError`` traceback (rules/verification.md §8).
+        """
+
+        entry = json.loads(self._log_path().read_text(encoding="utf-8").splitlines()[-1])
+        self.assertEqual(
+            set(), PROVENANCE_KEYS - set(entry), "entry carries no provenance"
+        )
+        return entry
+
+    def entry(self, argv) -> dict:
+        """Log once and return the line it appended."""
+
+        rc, out = self._run_main(argv)
+        self.assertEqual(0, rc)
+        self.assertEqual("friction logged", out.strip())
+        return self.last_entry()
+
+    def project_of(self, entry: dict) -> dict:
+        """The entry's project, asserted to be one before it is read into."""
+
+        project = entry.get("project")
+        self.assertIsInstance(project, dict, "entry names no project")
+        return project
+
+    def chdir(self, target: Path):
+        os.chdir(target)
+
+
+class TestFrictionProjectFields(_ProvenanceTestCase):
+    """One stream serves every project because each entry says which one.
+
+    ``project`` is item 03's rule, called and never restated here; what
+    these grade is which of the three questions answered it, and that the
+    answer reaches the entry.
+    """
+
+    def test_a_run_the_sink_holds_names_the_project(self):
+        alpha = {"root": "/elsewhere/alpha", "origin": "https://x/alpha", "name": "alpha"}
+        self.seed_run("20260814T000000Z-alpha", alpha)
+        entry = self.entry(["o", "e", "--run", "20260814T000000Z-alpha"])
+        self.assertEqual(alpha, entry["project"])
+        self.assertEqual("run", entry["project_source"])
+
+    def test_without_a_run_the_repository_standing_in_names_the_project(self):
+        here = self.repository("beta", origin="git@host:team/beta.git")
+        self.chdir(here)
+        entry = self.entry(["o", "e"])
+        self.assertEqual(
+            {"root": str(here), "origin": "git@host:team/beta.git", "name": "beta"},
+            entry["project"],
+        )
+        self.assertEqual("cwd", entry["project_source"])
+
+    def test_outside_any_repository_there_is_no_project(self):
+        nowhere = self.tmp / "nowhere"
+        nowhere.mkdir()
+        self.chdir(nowhere)
+        entry = self.entry(["o", "e"])
+        self.assertIsNone(entry["project"])
+        self.assertEqual("none", entry["project_source"])
+        # Still attributable to somewhere: the two location fields stay.
+        self.assertEqual(str(nowhere), entry["cwd"])
+        self.assertEqual(str(nowhere), entry["workspace"])
+
+    def test_the_workspace_is_the_worktree_and_the_project_is_its_checkout(self):
+        main = self.repository("main-checkout", origin="https://x/gamma")
+        linked = self.worktree_of(main, "linked")
+        self.chdir(linked)
+        entry = self.entry(["o", "e"])
+        self.assertEqual(str(linked), entry["workspace"])
+        self.assertEqual(str(main), self.project_of(entry)["root"])
+        self.assertNotEqual(entry["workspace"], self.project_of(entry)["root"])
+
+    def test_four_worktrees_of_one_project_are_one_project_and_four_workspaces(self):
+        main = self.repository("shared", origin="https://x/shared")
+        trees = [main] + [self.worktree_of(main, "wt{0}".format(n)) for n in range(3)]
+        seen = []
+        for tree in trees:
+            self.chdir(tree)
+            seen.append(self.entry(["o", "e"]))
+        self.assertEqual([str(tree) for tree in trees], [e["workspace"] for e in seen])
+        self.assertEqual([main.name] * 4, [self.project_of(e)["name"] for e in seen])
+        self.assertEqual(
+            1, len({json.dumps(self.project_of(e), sort_keys=True) for e in seen})
+        )
+
+    def test_every_entry_names_the_sink_layout_it_was_written_under(self):
+        # The wire value a reader off this machine relies on, and the same
+        # value the writer of `run.json` stamps -- pinned together, so the
+        # two records of one sink cannot come to disagree about its layout.
+        entry = self.entry(["o", "e"])
+        self.assertEqual(2, entry["sink_convention"])
+        self.assertEqual(tickets.SINK_CONVENTION, entry["sink_convention"])
+
+    def test_a_run_beats_the_repository_it_is_logged_from(self):
+        alpha = {"root": "/elsewhere/alpha", "origin": "https://x/alpha", "name": "alpha"}
+        self.seed_run("20260814T000000Z-alpha", alpha)
+        self.chdir(self.repository("beta", origin="https://x/beta"))
+        entry = self.entry(["o", "e", "--run", "20260814T000000Z-alpha"])
+        self.assertEqual(alpha, entry["project"])
+        self.assertEqual("run", entry["project_source"])
+        # ...and the workspace is still the one the entry was logged from.
+        self.assertEqual(str(self.tmp / "beta"), entry["workspace"])
+
+    def test_a_run_the_sink_does_not_hold_falls_through_to_the_repository(self):
+        here = self.repository("beta", origin="https://x/beta")
+        self.chdir(here)
+        entry = self.entry(["o", "e", "--run", "20260814T000000Z-never-opened"])
+        self.assertEqual(str(here), self.project_of(entry)["root"])
+        self.assertEqual("cwd", entry["project_source"])
+        self.assertEqual("20260814T000000Z-never-opened", entry["run"])
+
+    def test_an_unreadable_run_identity_falls_through_and_the_entry_lands(self):
+        here = self.repository("beta", origin="https://x/beta")
+        self.chdir(here)
+        broken = {
+            "empty": "",
+            "truncated": '{"run": "r", "project": {"root": "/a", "orig',
+            "not json": "this is not json at all",
+            "not an object": '["a", "list"]',
+            "no project": '{"run": "r", "sink_convention": 2}',
+            "project is not an object": '{"run": "r", "project": "alpha"}',
+        }
+        for label, text in broken.items():
+            with self.subTest(label):
+                run = "20260814T000000Z-{0}".format(label.replace(" ", "-"))
+                run_dir = self.sink / "runs" / run
+                run_dir.mkdir(parents=True)
+                (run_dir / tickets.RUN_IDENTITY_NAME).write_text(text, encoding="utf-8")
+                entry = self.entry(["o", "e", "--run", run])
+                self.assertEqual(str(here), self.project_of(entry)["root"])
+                self.assertEqual("cwd", entry["project_source"])
+
+    def test_every_field_the_stream_already_carried_survives(self):
+        here = self.repository("beta", origin="https://x/beta")
+        self.chdir(here)
+        entry = self.entry([
+            "observed thing", "expected thing",
+            "--category", "contract-gap", "--skill", "orch-tdd",
+            "--ticket", "04-friction-project", "--run", "20260814T000000Z-alpha",
+        ])
+        self.assertEqual(LEGACY_ENTRY_KEYS | PROVENANCE_KEYS, set(entry))
+        self.assertEqual("observed thing", entry["observed"])
+        self.assertEqual("expected thing", entry["expected"])
+        self.assertEqual("contract-gap", entry["category"])
+        self.assertEqual("orch-tdd", entry["skill"])
+        self.assertEqual("04-friction-project", entry["ticket"])
+        self.assertEqual("20260814T000000Z-alpha", entry["run"])
+        self.assertEqual(str(here), entry["cwd"])
+        self.assertRegex(entry["ts"], r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$")
+        self.assertIn("git_rev", entry)
+        self.assertIn("host", entry)
+        self.assertIn("session", entry)
+
+    def test_one_stream_carries_two_projects_distinguished_only_by_the_field(self):
+        first = self.repository("alpha", origin="https://x/alpha")
+        second = self.repository("beta", origin="https://x/beta")
+        for where, observed in ((first, "from alpha"), (second, "from beta")):
+            self.chdir(where)
+            self._run_main([observed, "e"])
+        lines = self._log_path().read_text(encoding="utf-8").splitlines()
+        self.assertEqual(2, len(lines))
+        entries = [json.loads(line) for line in lines]
+        for entry in entries:
+            self.assertIsInstance(entry.get("project"), dict, "no project on the entry")
+        self.assertEqual(
+            ["https://x/alpha", "https://x/beta"],
+            [e["project"]["origin"] for e in entries],
+        )
+        # One file, one month, one stream: the location says nothing about
+        # which project, and the field says everything.
+        self.assertEqual(
+            [self._log_path()], sorted((self.sink / "friction").iterdir())
+        )
+
+
+class TestFrictionNeverFails(_ProvenanceTestCase):
+    """Every field added here is a new way to fail inside a script that cannot.
+
+    Each case breaks one resolution and asserts the cost is that field,
+    that the process exits 0, that nothing is printed on failure and
+    exactly ``friction logged`` on success, and that stderr carries no
+    traceback.
+    """
+
+    def _run_main_capturing_stderr(self, argv):
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            rc = friction.main(argv)
+        return rc, out.getvalue(), err.getvalue()
+
+    def test_an_unwritable_sink_root_loses_the_entry_and_exits_zero(self):
+        if os.name == "nt" or os.getuid() == 0:  # pragma: no cover - platform
+            self.skipTest("directory mode is not a write barrier here")
+        self.sink.mkdir(parents=True)
+        self.sink.chmod(stat.S_IRUSR | stat.S_IXUSR)
+        self.addCleanup(self.sink.chmod, stat.S_IRWXU)
+        rc, out, err = self._run_main_capturing_stderr(["o", "e"])
+        self.assertEqual(0, rc)
+        self.assertEqual("", out)
+        self.assertEqual("", err)
+
+    def test_a_sink_root_whose_parent_is_a_regular_file(self):
+        blocker = self.tmp / "blocker"
+        blocker.write_text("not a directory", encoding="utf-8")
+        os.environ[STATE_HOME_ENV_VAR] = str(blocker / "sink")
+        rc, out, err = self._run_main_capturing_stderr(["o", "e"])
+        self.assertEqual(0, rc)
+        self.assertEqual("", out)
+        self.assertEqual("", err)
+
+    def test_a_run_identity_that_is_a_directory_costs_the_run_branch_only(self):
+        here = self.repository("beta", origin="https://x/beta")
+        self.chdir(here)
+        run = "20260814T000000Z-alpha"
+        (self.sink / "runs" / run / tickets.RUN_IDENTITY_NAME).mkdir(parents=True)
+        rc, out, err = self._run_main_capturing_stderr(["o", "e", "--run", run])
+        self.assertEqual(0, rc)
+        self.assertEqual("friction logged", out.strip())
+        self.assertEqual("", err)
+        entry = self.last_entry()
+        self.assertEqual(str(here), self.project_of(entry)["root"])
+        self.assertEqual("cwd", entry["project_source"])
+
+    def test_an_unreadable_git_config_costs_the_origin_only(self):
+        if os.name == "nt" or os.getuid() == 0:  # pragma: no cover - platform
+            self.skipTest("file mode is not a read barrier here")
+        here = self.repository("beta", origin="https://x/beta")
+        config = here / ".git" / "config"
+        config.chmod(0)
+        self.addCleanup(config.chmod, stat.S_IRUSR | stat.S_IWUSR)
+        self.chdir(here)
+        rc, out, err = self._run_main_capturing_stderr(["o", "e"])
+        self.assertEqual(0, rc)
+        self.assertEqual("friction logged", out.strip())
+        self.assertEqual("", err)
+        entry = self.last_entry()
+        self.assertEqual({"root": str(here), "origin": None, "name": "beta"},
+                         self.project_of(entry))
+        self.assertEqual("cwd", entry["project_source"])
+
+    def test_a_project_resolver_that_raises_costs_the_fields_not_the_entry(self):
+        # The case that proves the guards are per-field rather than one
+        # guard around the write. Two depths: the sibling import, and the
+        # whole provenance step. The rule itself is the case below.
+        targets = ("_identity_module", "_provenance")
+        for name in targets:
+            with self.subTest(name):
+                self._log_path().unlink(missing_ok=True)
+                with mock.patch.object(
+                    friction, name, side_effect=RuntimeError("resolver is broken")
+                ):
+                    rc, out, err = self._run_main_capturing_stderr(["o", "e"])
+                self.assertEqual(0, rc)
+                self.assertEqual("friction logged", out.strip())
+                self.assertEqual("", err)
+                entry = self.last_entry()
+                self.assertIsNone(entry["project"])
+                self.assertEqual("none", entry["project_source"])
+                self.assertEqual(LEGACY_ENTRY_KEYS | PROVENANCE_KEYS, set(entry))
+
+    def test_a_writer_identity_that_raises_costs_the_project_not_the_entry(self):
+        with mock.patch.object(
+            tickets, "_writer_identity", side_effect=RuntimeError("no identity")
+        ):
+            rc, out, err = self._run_main_capturing_stderr(["o", "e"])
+        self.assertEqual(0, rc)
+        self.assertEqual("friction logged", out.strip())
+        self.assertEqual("", err)
+        entry = self.last_entry()
+        self.assertIsNone(entry["project"])
+        self.assertIsNone(entry["workspace"])
+        self.assertEqual("none", entry["project_source"])
+        # The one field that does not depend on resolving anything survives.
+        self.assertEqual(tickets.SINK_CONVENTION, entry["sink_convention"])
+
+
+class TestFrictionAppendStaysOneCall(_ProvenanceTestCase):
+    """Concurrent loggers share this file, so the write stays append-only.
+
+    Read-modify-write would let two loggers racing on one month's stream
+    lose each other's lines. The property is structural, so it is asserted
+    against the source rather than inferred from a timing test.
+    """
+
+    def _source(self):
+        return ast.parse((ROOT / "scripts" / "friction.py").read_text(encoding="utf-8"))
+
+    def test_the_stream_is_opened_once_in_append_mode(self):
+        opens = [
+            node for node in ast.walk(self._source())
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "open"
+        ]
+        self.assertEqual(1, len(opens))
+        modes = [arg.value for arg in opens[0].args[1:2]] + [
+            keyword.value.value for keyword in opens[0].keywords
+            if keyword.arg == "mode"
+        ]
+        self.assertEqual(["a"], modes)
+
+    def test_the_entry_reaches_the_stream_in_one_write(self):
+        writes = [
+            node for node in ast.walk(self._source())
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "write"
+        ]
+        self.assertEqual(1, len(writes))
+        self.assertEqual(1, len(writes[0].args))
+
+    def test_three_loggers_in_one_month_leave_three_whole_lines(self):
+        for where in ("alpha", "beta", "gamma"):
+            self.chdir(self.repository(where, origin="https://x/{0}".format(where)))
+            self._run_main(["from {0}".format(where), "e"])
+        lines = self._log_path().read_text(encoding="utf-8").splitlines()
+        self.assertEqual(
+            ["from alpha", "from beta", "from gamma"],
+            [json.loads(line)["observed"] for line in lines],
+        )
 
 OUTSIDE_FD = -1
 
@@ -455,16 +869,27 @@ class FrictionAppendLockTest(_IsolatedRepoTestCase):
         )
 
 
-def top_level_imports(path):
-    """Every module the file imports, from its syntax rather than its prose."""
+def _imported_modules(node):
+    """The top-level module names one import statement reaches for."""
 
-    imported = set()
-    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
-        if isinstance(node, ast.Import):
-            imported.update(alias.name.split(".")[0] for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and not node.level:
-            imported.add((node.module or "").split(".")[0])
-    return imported
+    if isinstance(node, ast.Import):
+        return {alias.name.split(".")[0] for alias in node.names}
+    if isinstance(node, ast.ImportFrom) and not node.level:
+        return {(node.module or "").split(".")[0]}
+    return set()
+
+
+def _imported_names(node):
+    """Those, plus what a `from X import y` binds: a sibling script is named
+    by the package it came out of in one form and by the bound name in the
+    other, and both spellings are the same import."""
+
+    bound = (
+        {alias.name for alias in node.names}
+        if isinstance(node, ast.ImportFrom) and not node.level
+        else set()
+    )
+    return _imported_modules(node) | bound
 
 
 STDLIB_DIR = Path(sysconfig.get_paths()["stdlib"]).resolve()
@@ -503,41 +928,85 @@ def outside_the_standard_library(names):
     return outside
 
 
-def function_source(path, name):
-    """The exact source of one top-level function, sliced from the file's own
-    bytes. A whole-file diff would say nothing: these two files share two
-    functions and nothing else."""
+def _imports_in(nodes, deferred=False):
+    """Every import under `nodes`, each with the fact that decides whether it
+    can break the file's import: whether a function defers it. Tracked by
+    descending, because ``ast.walk`` flattens the tree and loses it."""
 
-    source = path.read_text(encoding="utf-8")
-    for node in ast.parse(source).body:
-        if isinstance(node, ast.FunctionDef) and node.name == name:
-            return ast.get_source_segment(source, node)
-    return None
+    for node in nodes:
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            yield node, deferred
+            continue
+        below = deferred or isinstance(
+            node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
+        )
+        yield from _imports_in(list(ast.iter_child_nodes(node)), below)
 
 
-class FrictionDuplicationTest(unittest.TestCase):
-    """friction.py must never fail, so it imports nothing that can fail --
-    including scripts/tickets.py, which workspace.py imports instead
-    (test_the_root_resolver_is_imported_from_tickets_never_copied, in
-    tests/test_workspace.py). The price is two copied root resolvers, and
-    the price of a copy nobody compares is a silent divergence, so compare
-    them here.
+def _read_imports(path):
+    return _imports_in(ast.parse(path.read_text(encoding="utf-8")).body)
 
-    The lock is not a third comparand. tickets.py has no lock helper to
-    compare against: its lock is inlined in ``_append_one_line`` and takes
-    ``LK_LOCK``, the blocking mode ``rules/improvement.md`` §1 forbids this
-    logger, so byte-identity there would contradict the mechanism itself.
+
+def module_scope_imports(path):
+    """Only the imports that run when the file is imported. An import inside
+    a function body runs when that function is called, where ``main``'s broad
+    ``except`` still stands over it; one out here runs before ``main``
+    exists."""
+
+    imported = set()
+    for node, deferred in _read_imports(path):
+        if not deferred:
+            imported |= _imported_modules(node)
+    return imported
+
+
+def deferred_siblings(path, siblings):
+    """Each named sibling this file imports, mapped to whether every import
+    of it sits inside a function. One import at module scope is enough to
+    break the file, so a sibling seen twice keeps the weaker sighting."""
+
+    found = {}
+    for node, deferred in _read_imports(path):
+        for name in _imported_names(node) & siblings:
+            found[name] = found.get(name, True) and deferred
+    return found
+
+
+class FrictionImportSurfaceTest(unittest.TestCase):
+    """friction.py must never fail, so nothing that can fail runs at import.
+
+    It holds no second copy of the sink resolver or of project identity:
+    ``scripts/state_root.py`` owns the first, ``scripts/tickets.py`` owns the
+    second, and a copy nobody compares silently diverges. It imports them
+    instead, and pays for that with placement -- inside the function that
+    needs them, never at module scope, so ``main``'s broad ``except`` is
+    already standing when a partial install has no sibling to import. What
+    that costs then is the fields the sibling feeds and never the entry,
+    which ``TestFrictionNeverFails`` grades from the outside.
     """
 
-    def test_friction_imports_only_the_standard_library(self):
-        imported = top_level_imports(FRICTION_PY)
+    SIBLINGS = frozenset({"scripts", "state_root", "tickets"})
+    # The four the two owners define. A copy of any of them here is the
+    # duplication this file used to compare byte-for-byte and now forbids.
+    OWNED_ELSEWHERE = ("main_checkout_root", "find_repo_root",
+                       "_writer_identity", "_read_identity")
+
+    def _defined_here(self, path):
+        return {
+            node.name
+            for node in ast.parse(path.read_text(encoding="utf-8")).body
+            if isinstance(node, ast.FunctionDef)
+        }
+
+    def test_nothing_outside_the_standard_library_runs_at_import(self):
+        imported = module_scope_imports(FRICTION_PY)
         self.assertEqual(
             {
                 "__future__", "datetime", "json", "msvcrt", "os",
                 "pathlib", "subprocess", "sys", "time",
             },
             imported,
-            f"friction.py must stay standalone: {sorted(imported)}",
+            f"friction.py must import standalone: {sorted(imported)}",
         )
         self.assertEqual(
             set(),
@@ -555,17 +1024,29 @@ class FrictionDuplicationTest(unittest.TestCase):
         self.assertEqual({"no_such_module_anywhere"},
                          outside_the_standard_library({"no_such_module_anywhere"}))
 
-    def test_the_copied_root_resolvers_are_byte_identical_to_the_tickets_originals(self):
-        for name in ("_main_checkout_root", "_find_repo_root"):
-            copied = function_source(FRICTION_PY, name)
-            original = function_source(TICKETS_PY, name)
-            self.assertIsNotNone(copied, f"friction.py no longer defines {name}")
-            self.assertIsNotNone(original, f"tickets.py no longer defines {name}")
-            self.assertEqual(
-                original,
-                copied,
-                f"{name} has diverged from the tickets.py original it was copied from",
+    def test_the_resolvers_are_called_at_their_owners_never_copied_here(self):
+        here = self._defined_here(FRICTION_PY)
+        owners = self._defined_here(STATE_ROOT_PY) | self._defined_here(TICKETS_PY)
+        for name in self.OWNED_ELSEWHERE:
+            self.assertIn(name, owners, f"nothing owns {name} any more")
+            self.assertNotIn(
+                name, here, f"friction.py copies {name} instead of calling its owner"
             )
+
+    def test_every_sibling_import_is_deferred_into_the_function_that_needs_it(self):
+        found = deferred_siblings(FRICTION_PY, self.SIBLINGS)
+        self.assertTrue(found, "friction.py imports neither owner")
+        for name, deferred in sorted(found.items()):
+            self.assertTrue(deferred, f"the {name} import runs at module scope")
+
+    def test_a_module_scope_sibling_import_is_caught(self):
+        """The check above convicts only if it can. tickets.py imports
+        state_root at module scope -- correctly, it has no such bar to meet,
+        and it is the exact shape friction.py may not have."""
+
+        found = deferred_siblings(TICKETS_PY, self.SIBLINGS)
+        self.assertIn("state_root", found)
+        self.assertFalse(found["state_root"])
 
 
 if __name__ == "__main__":

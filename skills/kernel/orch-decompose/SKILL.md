@@ -24,7 +24,7 @@ completion test carrying the final gate's criteria.
 
 Map every acceptance criterion to an item, to the gate when the pack's
 lens owns it, or to uncovered remainder; that map's durable home is
-`.orch/runs/<run>/coverage.md`. A criterion no slicing covers returns a
+`<state-root>/runs/<run>/coverage.md`. A criterion no slicing covers returns a
 decision gap naming them; the rest is still cut, never a forced slicing (§3).
 
 Before returning, run `cutcheck.py <run> --baseline <the revision the set

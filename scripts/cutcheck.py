@@ -116,16 +116,16 @@ import tempfile
 from pathlib import Path
 
 try:  # in-repo; the installed copy sits flat beside tickets.py
+    from scripts import state_root
     from scripts.tickets import (
         ENGINE_EXECUTORS,
-        _find_repo_root,
         _parse_frontmatter,
         _sections,
     )
 except ImportError:  # pragma: no cover - the installed copy's path
+    import state_root
     from tickets import (
         ENGINE_EXECUTORS,
-        _find_repo_root,
         _parse_frontmatter,
         _sections,
     )
@@ -384,16 +384,17 @@ def _worktree_root():
 def _run_dir(run, worktree_root):
     """Locate the issued ticket set for ``run``.
 
-    Run and canary tickets resolve at the main checkout because ``.orch/`` is
-    gitignored and exists only there. Fixture sets resolve at the invoking
-    worktree's own top level because they are tracked content, and every
-    frontier item carries its own copy in its own worktree.
+    Run tickets resolve in the one user-scope state sink
+    (``scripts/state_root.py``), so a run is checkable from any workspace in
+    any repository. Canary tickets resolve at the main checkout instead: the
+    canary is a git-tracked golden fixture, not run state. Fixture sets
+    resolve at the invoking worktree's own top level for the same reason, and
+    every frontier item carries its own copy in its own worktree.
     """
 
-    candidates = []
-    main_root = _find_repo_root(Path.cwd())
+    candidates = [state_root.tickets_root() / run]
+    main_root = state_root.find_repo_root(Path.cwd())
     if main_root is not None:
-        candidates.append(main_root / ".orch" / "tickets" / run)
         candidates.append(main_root / ".orch" / "canary" / "tickets" / run)
     if worktree_root is not None:
         candidates.append(worktree_root / "tests" / "fixtures" / "cutcheck" / run)
@@ -1571,7 +1572,10 @@ def main(argv=None):
         for path in issued:
             findings.extend(_check_ticket(path, baseline_tree, head_tree, siblings))
         findings.extend(_pairwise(siblings, reads))
-        roots = (worktree_root, _find_repo_root(Path.cwd()))
+        # The sink first: a run's coverage map lives there now, and a report
+        # line naming it absolutely would be machine-specific again.
+        roots = (state_root.state_root(), worktree_root,
+                 state_root.find_repo_root(Path.cwd()))
         findings.extend(_coverage(args.run, run_dir, sorted(siblings), roots))
         findings.extend(_executor_legality(siblings, worktree_root))
         findings.extend(_symlink_findings(args.run, (baseline_tree, head_tree)))

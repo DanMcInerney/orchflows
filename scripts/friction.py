@@ -15,11 +15,12 @@ Usage:
     python friction.py "<observed>" "<expected>" [--category C]
         [--skill S] [--ticket T] [--run R]
 
-Log location: the main repository's ``.orch/friction/<YYYY-MM>.jsonl``
-when cwd is inside a git repository or one of its linked worktrees —
-a ``.git`` pointer file is resolved to the main checkout, so every
-worktree shares one project log — else
-``~/.orchflows/friction/<YYYY-MM>.jsonl``.
+Log location: ``<sink>/friction/<YYYY-MM>.jsonl``, where the sink is the
+one user-scope root ``scripts/state_root.py`` resolves —
+``$ORCHFLOWS_STATE_HOME`` or ``~/.orchflows/state``. One stream for
+every repository; the project an entry arose in is a field on the entry,
+never its location. There is no fallback: a write that cannot reach that
+root lands nowhere, silently, per the bar above.
 """
 
 from __future__ import annotations
@@ -50,11 +51,16 @@ SESSION_ENV_VARS = (
     "SESSION_ID",
 )
 GIT_REV_TIMEOUT_SECONDS = 2
-MAX_WALK_UP = 200
 # Half the one-second ceiling this logger is held to, so the ceiling still
 # holds on a loaded machine once the last retry's sleep is counted in.
 APPEND_LOCK_BUDGET_SECONDS = 0.5
 APPEND_LOCK_RETRY_SECONDS = 0.01
+# What `project_source` may say: which of the three questions below
+# actually answered "which project". Named so a reader of the stream and
+# `_provenance` cannot drift on the vocabulary.
+SOURCE_RUN = "run"
+SOURCE_CWD = "cwd"
+SOURCE_NONE = "none"
 
 
 def _parse_args(argv):
@@ -81,40 +87,138 @@ def _parse_args(argv):
     return positional[0], positional[1], options
 
 
-def _main_checkout_root(git_file: Path):
-    """Resolve a .git pointer file (worktree/submodule) to its main root."""
+def _state_root():
+    """Import the one resolver, here rather than at module scope.
+
+    rules/visibility.md §3: ``scripts/state_root.py`` owns the sink root,
+    and this script holds no second copy of it. The import sits inside a
+    function because the reliability bar above is absolute — a module-level
+    import that failed (a partial install with no ``state_root.py`` beside
+    this file) would traceback before ``main`` existed to swallow it, and
+    the logger would exit non-zero. From here, ``main``'s broad ``except``
+    still catches it.
+    """
+
+    try:  # in-repo; the installed copy sits flat beside state_root.py
+        from scripts import state_root
+    except ImportError:  # pragma: no cover - the installed copy's path
+        import state_root
+    return state_root
+
+
+def _identity_module():
+    """Import the owner of project identity, guarded and here, not at module scope.
+
+    ``scripts/tickets.py`` owns what a project *is* and which sink layout a
+    record is written under. This script holds no second copy of either
+    rule; it calls them. The import is deferred and guarded for the same
+    reason ``_state_root``'s is: a partial install with no sibling beside
+    this file must cost the fields that sibling feeds, never the entry.
+    """
+
+    try:  # in-repo; the installed copy sits flat beside tickets.py
+        from scripts import tickets
+    except ImportError:  # pragma: no cover - the installed copy's path
+        import tickets
+    return tickets
+
+
+def _unattributed():
+    """The provenance fields when nothing about the caller resolved.
+
+    Not an error. The entry still lands, and ``project_source: "none"``
+    is the entry saying so, so a reader grouping by project sees its own
+    group rather than mistaking it for someone else's.
+    """
+
+    return {
+        "project": None,
+        "project_source": SOURCE_NONE,
+        "workspace": None,
+        "sink_convention": None,
+    }
+
+
+def _recorded_project(run, identity):
+    """The project ``run`` already belongs to, read from the sink, or ``None``.
+
+    A run's identity document is the only place that answer can come from,
+    so an entry filed against a run from anywhere reads as that run's
+    project. A run the sink does not hold, a document that does not parse,
+    and a document carrying no project all answer ``None`` — each falls
+    through to the caller's own repository, which is a weaker answer to
+    the same question, never a different one.
+    """
+
+    if not run:
+        return None
+    path = _state_root().runs_root() / run / identity.RUN_IDENTITY_NAME
+    document, error = identity._read_identity(path)
+    if error is not None or not isinstance(document, dict):
+        return None
+    project = document.get("project")
+    return project if isinstance(project, dict) else None
+
+
+def _in_a_repository():
+    """Whether the caller is standing in a checkout at all."""
+
     try:
-        for line in git_file.read_text(encoding="utf-8", errors="replace").splitlines():
-            if not line.startswith("gitdir:"):
-                continue
-            gitdir = Path(line.partition(":")[2].strip())
-            if not gitdir.is_absolute():
-                gitdir = git_file.parent / gitdir
-            parts = gitdir.resolve().parts
-            for i in range(len(parts) - 1, -1, -1):
-                if parts[i] == ".git":
-                    return Path(*parts[:i])
-            break
+        return _state_root().find_repo_root(Path.cwd().resolve()) is not None
     except Exception:
-        pass
-    return None
+        return False
 
 
-def _find_repo_root(start: Path):
-    current = start.resolve()
-    for _ in range(MAX_WALK_UP):
-        marker = current / ".git"
-        if marker.exists():
-            if marker.is_file():
-                main_root = _main_checkout_root(marker)
-                if main_root is not None:
-                    return main_root
-            return current
-        parent = current.parent
-        if parent == current:
-            return None
-        current = parent
-    return None
+def _provenance(options):
+    """Which project this entry arose in, from where, and under which layout.
+
+    Precedence, and what each guard costs when it trips:
+
+    1. ``--run`` naming a run the sink already holds -> that run's own
+       recorded project, ``project_source: "run"``.
+    2. Otherwise the repository the caller stands in ->
+       ``project_source: "cwd"``.
+    3. Otherwise ``project: null``, ``project_source: "none"``.
+
+    Every resolution sits in its own guard, so an unreachable sibling, a
+    corrupt identity document or an unreadable ``.git/config`` costs the
+    field it feeds and never the entry.
+    """
+
+    fields = _unattributed()
+    try:
+        identity = _identity_module()
+    except Exception:
+        return fields
+    fields["sink_convention"] = getattr(identity, "SINK_CONVENTION", None)
+
+    try:
+        # One call for both halves: the project the caller belongs to, and
+        # the workspace it is standing in. They differ in a linked worktree,
+        # which is exactly what `workspace` is here to record.
+        standing_in, workspace = identity._writer_identity()
+        fields["workspace"] = workspace
+    except Exception:
+        standing_in = None
+
+    try:
+        recorded = _recorded_project(options.get("run"), identity)
+    except Exception:
+        recorded = None
+    if recorded is not None:
+        fields["project"] = recorded
+        fields["project_source"] = SOURCE_RUN
+        return fields
+
+    # Outside any repository `_writer_identity` still names a project, so
+    # that a run written from nowhere has an owner to collide on. An entry
+    # has nothing to collide on and genuinely arose in no project, so that
+    # answer is dropped here rather than recorded. The rule for what a
+    # project *is* stays item 03's, untouched.
+    if standing_in is not None and _in_a_repository():
+        fields["project"] = standing_in
+        fields["project_source"] = SOURCE_CWD
+    return fields
 
 
 def _git_rev(cwd: Path):
@@ -154,16 +258,32 @@ def _detect_session():
 
 def _target_path(now: datetime):
     stamp = now.strftime("%Y-%m")
-    repo_root = _find_repo_root(Path.cwd())
-    if repo_root is not None:
-        return repo_root / ".orch" / "friction" / f"{stamp}.jsonl"
-    return Path.home() / ".orchflows" / "friction" / f"{stamp}.jsonl"
+    return _state_root().friction_root() / f"{stamp}.jsonl"
 
 
 def _build_entry(observed, expected, options, now: datetime):
+    """One entry. Key order is the order a reader should meet the fields in.
+
+    ``sink_convention`` first because it says how to read the rest; then
+    the four that answer *where this came from*, cwd being the literal
+    directory and the other three the identity of it; then the fields the
+    caller supplied.
+    """
+
+    try:
+        provenance = _provenance(options)
+    except Exception:
+        # `_provenance` guards every resolution it makes, so reaching here
+        # means the guards themselves broke. Even that costs four fields
+        # and not the entry.
+        provenance = _unattributed()
     return {
+        "sink_convention": provenance.get("sink_convention"),
         "ts": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "cwd": str(Path.cwd()),
+        "workspace": provenance.get("workspace"),
+        "project": provenance.get("project"),
+        "project_source": provenance.get("project_source", SOURCE_NONE),
         "git_rev": _git_rev(Path.cwd()),
         "host": _detect_host(),
         "session": _detect_session(),

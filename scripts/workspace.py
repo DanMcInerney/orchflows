@@ -47,7 +47,8 @@ _SIBLING_DIR = str(Path(__file__).resolve().parent)
 if _SIBLING_DIR not in sys.path:
     sys.path.append(_SIBLING_DIR)
 
-import tickets  # noqa: E402  the root resolver, imported and never copied
+import state_root  # noqa: E402  the sink resolver, imported and never copied
+import tickets  # noqa: E402  frontmatter and isolation, imported and never copied
 
 ISOLATION_KEY = "isolation"
 BRANCH_KEY = "workspace_branch"
@@ -163,12 +164,18 @@ def _graded(payload, what: str) -> dict:
 
 
 def _locate(run: str, ticket_id: str):
-    """The main repository root and the one ticket path every workspace shares."""
+    """This workspace's repository root, and the ticket's one path in the sink.
 
-    root = tickets._find_repo_root(Path.cwd())
+    Two questions with two answers. The root says *which project this
+    workspace is*, which is what grades isolation and write scope. The
+    ticket lives in the user-scope sink ``scripts/state_root.py`` resolves,
+    identical from every workspace in every repository.
+    """
+
+    root = state_root.find_repo_root(Path.cwd())
     if root is None:
         raise Refused("not inside a git repository")
-    path = root / ".orch" / "tickets" / run / f"{ticket_id}.md"
+    path = state_root.tickets_root() / run / f"{ticket_id}.md"
     if not path.is_file():
         raise Refused(f"ticket not found: {run}/{ticket_id}")
     return root, path

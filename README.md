@@ -68,7 +68,8 @@ own. `orch-compose` is the engine that runs any composition, including
 the chains routing builds for multi-part requests.
 
 Runs survive session death: specs, tickets, and worklogs are files in
-`.orch/`, so a fresh context resumes mid-flight.
+one per-user state sink outside every repository, so a fresh context —
+in any checkout — resumes mid-flight.
 
 Team setup: `python install.py --project PATH` writes a committable
 routing block for a repo. Uninstall: `python install.py --user
@@ -341,7 +342,8 @@ or UI.
   logged; `orch-self-improve` mines them into concrete fixes to the
   workflows themselves — including to itself.
 - **Survives session death.** Specs, tickets, and worklogs are files in
-  `.orch/`, so any fresh context can resume a run mid-flight.
+  a per-user state sink outside every repository, so any fresh context,
+  in any checkout, can resume a run mid-flight.
 - **Smallest-first routing.** One intake for everything: a one-line
   question never pays workflow ceremony, and a launch never gets
   typo-fix rigor.

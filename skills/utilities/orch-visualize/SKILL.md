@@ -16,9 +16,9 @@ shapes, `vega-lite` fences for data, prose or tables when no
 relationship needs 2-D locality. A subject the lint rejects whole
 splits into an overview plus per-node detail panels under the
 reference's staging law. Author each visual plus one terse
-paragraph — what it shows, the one thing to notice — in
-`.orch/runs/viz/<subject>.md` (or the caller's named path); the
-rendered `<subject>.html` beside it is the deliverable.
+paragraph — what it shows, the one thing to notice — at the caller's
+named path, else `viz/<subject>.md` in the workspace; the rendered
+`<subject>.html` beside it is the deliverable.
 
 Verify: run this package's `scripts/verify_mermaid.py --lint`; one
 correction pass on rejection, then stop. Render with

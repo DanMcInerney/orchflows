@@ -30,6 +30,7 @@ from tools import live_sweep_e2e as sweep_live
 
 LOOP_AGENT = "orch-loop-body-e2e-42"
 SWEEP_AGENT = "orch-sweep-e2e-42"
+SWEEP_PY = Path(sweep_live.__file__).resolve()
 
 
 def _launch(tool_id: str, agent_type: str, prompt: str = None) -> dict:
@@ -542,6 +543,63 @@ class TestMainGuard(unittest.TestCase):
         args, kwargs = run_live_sweep.call_args
         self.assertEqual("sonnet", args[1])
         self.assertEqual("medium", args[2])
+
+
+class TestLogDirIsInTheSink(unittest.TestCase):
+    """The probe is run from whatever workspace is at hand; its per-run log
+    lands in the one sink, never in the repository that happened to host the
+    invocation. The harness itself is not run here -- it makes live model
+    calls."""
+
+    def test_the_default_log_dir_resolves_under_the_sink(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = Path(tmp) / "sink"
+            with mock.patch.dict(
+                os.environ, {sweep_live.state_root.ENV_VAR: str(sink)}
+            ):
+                self.assertEqual(
+                    sink / sweep_live.LOG_DIR_NAME, sweep_live.default_log_dir()
+                )
+                # Read at call time, so pointing the sink elsewhere moves it.
+                moved = Path(tmp) / "moved"
+                with mock.patch.dict(
+                    os.environ, {sweep_live.state_root.ENV_VAR: str(moved)}
+                ):
+                    self.assertEqual(
+                        moved / sweep_live.LOG_DIR_NAME, sweep_live.default_log_dir()
+                    )
+
+    def test_resolving_the_default_creates_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = Path(tmp) / "sink"
+            with mock.patch.dict(
+                os.environ, {sweep_live.state_root.ENV_VAR: str(sink)}
+            ):
+                sweep_live.default_log_dir()
+            self.assertFalse(sink.exists())
+
+    def test_main_passes_the_sink_default_when_no_log_dir_is_named(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = Path(tmp) / "sink"
+            with mock.patch.object(sweep_live, "_claude_command", return_value=["claude"]), \
+                    mock.patch.object(sweep_live, "_run_live_sweep") as run_live_sweep, \
+                    mock.patch.dict(os.environ, {sweep_live.state_root.ENV_VAR: str(sink)}), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                run_live_sweep.return_value = {"passed": True, "stderr": ""}
+                sweep_live.main([])
+                named = sweep_live.main(["--log-dir", str(Path(tmp) / "elsewhere")])
+
+            self.assertEqual(0, named)
+            self.assertEqual(
+                [sink / sweep_live.LOG_DIR_NAME, Path(tmp) / "elsewhere"],
+                [call.args[5] for call in run_live_sweep.call_args_list],
+            )
+
+    def test_no_repository_state_path_is_composed(self):
+        source = SWEEP_PY.read_text(encoding="utf-8")
+        self.assertIn("state_root.state_root()", source)
+        self.assertNotIn('".orch"', source)
+        self.assertNotIn(".orch/live-sweep-e2e", source)
 
 
 # --- tools/live_claude_profiles.py and tools/live_codex_profiles.py ----

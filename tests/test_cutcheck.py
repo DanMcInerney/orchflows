@@ -21,6 +21,7 @@ if str(ROOT) not in sys.path:
 
 import install  # noqa: E402
 import scripts.cutcheck as cutcheck  # noqa: E402
+import scripts.state_root as state_root  # noqa: E402
 import scripts.tickets as tickets  # noqa: E402
 from tests.baseline_pin import (  # noqa: E402  the invocation's one owner
     BASELINE,
@@ -2232,6 +2233,226 @@ class ScopeContainmentTest(unittest.TestCase):
         )
 
 
+# Item 05's five readers. Every one of them resolved run state under the
+# repository before this item; every one of them reaches the sink now, and
+# the last two entries prove it for the whole set at once.
+READERS = (
+    "scripts/cutcheck.py",
+    "scripts/ui.py",
+    "scripts/isolate.py",
+    "scripts/trace.py",
+    "tools/live_sweep_e2e.py",
+)
+
+# Every non-docstring string literal in those files that still names `.orch`,
+# with the reason it is allowed to. Anything else is a reader left behind.
+ALLOWED_STATE_LITERALS = {
+    # The canary is a git-tracked golden fixture under the repository, not
+    # run state, and the item's `excluded_actions` forbid moving it.
+    "scripts/cutcheck.py": {".orch"},
+    # Where a run snapshot lands inside an isolated tree. A copy of the
+    # sink's layout, not a state root: `state_root.py` still owns that.
+    "scripts/isolate.py": {".orchflows-state"},
+    # Item 05 criterion 4: a trace may cover a session that predates the
+    # migration, so the harvester matches the repository shape as well as
+    # the sink's. These match a path in someone else's transcript; they
+    # compose no path this host reads.
+    "scripts/trace.py": {
+        r"(?:\.orch|\.orchflows[/\\]state)",
+        ".orch/runs/*/spec-*.md",
+    },
+    "scripts/ui.py": set(),
+    "tools/live_sweep_e2e.py": set(),
+}
+
+
+def state_literals(relative: str) -> set:
+    """Every string literal in one reader that names `.orch`, docstrings
+    excluded: prose is item 07's, and a comment is not a path."""
+
+    tree = ast.parse((ROOT / relative).read_text(encoding="utf-8"))
+    docstrings = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef,
+                             ast.AsyncFunctionDef)):
+            body = getattr(node, "body", None)
+            if (body and isinstance(body[0], ast.Expr)
+                    and isinstance(body[0].value, ast.Constant)
+                    and isinstance(body[0].value.value, str)):
+                docstrings.add(id(body[0].value))
+    return {
+        node.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant)
+        and isinstance(node.value, str)
+        and ".orch" in node.value
+        and id(node) not in docstrings
+    }
+
+
+class TestCutcheckResolvesSink(unittest.TestCase):
+    """Item 05 criteria 1 and 6. `cutcheck.py` grades a run from wherever the
+    run's tickets are, which is the sink now -- and still grades the canary,
+    which is a fixture in the repository and stays there."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+        self.addCleanup(self._tmp.cleanup)
+        self.sink = self.tmp / "sink"
+        self.repo = self.tmp / "repo"
+        (self.repo / ".git").mkdir(parents=True)
+
+    def issue(self, root: Path, run: str, source: str = "cutcheck-clean") -> Path:
+        """One fixture ticket set, copied to `root` under the name `run`."""
+
+        dest = root / run
+        dest.mkdir(parents=True)
+        for src in sorted(
+            (ROOT / "tests" / "fixtures" / "cutcheck" / source).glob("*.md")
+        ):
+            shutil.copyfile(str(src), str(dest / src.name))
+        return dest
+
+    @contextlib.contextmanager
+    def launched_from(self, where: Path):
+        """cwd and sink both pointed away from this repository."""
+
+        cwd = os.getcwd()
+        os.chdir(str(where))
+        try:
+            with mock.patch.dict(
+                os.environ, {state_root.ENV_VAR: str(self.sink)}
+            ):
+                yield
+        finally:
+            os.chdir(cwd)
+
+    # --- criterion 1 ---------------------------------------------------
+
+    def test_a_run_living_only_in_the_sink_is_found(self):
+        issued = self.issue(self.sink / "tickets", "sink-only")
+
+        with self.launched_from(self.repo):
+            found = cutcheck._run_dir("sink-only", None)
+
+        self.assertEqual(issued, found)
+        self.assertTrue(sorted(found.glob("*.md")))
+
+    def test_a_run_living_only_in_a_repositorys_own_state_is_not_found(self):
+        """The whole point of the move: a reader that still fell back here
+        would keep per-repository run state alive after item 08 copies."""
+
+        self.issue(self.repo / ".orch" / "tickets", "repo-only")
+        (self.sink / "tickets").mkdir(parents=True)
+
+        with self.launched_from(self.repo):
+            self.assertIsNone(cutcheck._run_dir("repo-only", None))
+
+    def test_the_canary_still_resolves_under_the_repository(self):
+        issued = self.issue(
+            self.repo / ".orch" / "canary" / "tickets", "canary", source="cutcheck-clean"
+        )
+
+        with self.launched_from(self.repo):
+            found = cutcheck._run_dir("canary", None)
+
+        # Asserted before it is dereferenced, so a candidate list that stopped
+        # offering the canary reads as this case failing, not as a traceback.
+        self.assertIsNotNone(found)
+        self.assertEqual(issued.resolve(), found.resolve())
+
+    def test_this_repositorys_real_canary_is_still_found(self):
+        # The tracked fixture, not a copy: `CanarySetTest` grades it, and it
+        # can only do that while this resolves. It lives at the main checkout
+        # -- a worktree of this repository has no `.orch/canary/` of its own.
+        main = state_root.find_repo_root(ROOT)
+        found = cutcheck._run_dir("canary", ROOT)
+        self.assertIsNotNone(found)
+        self.assertEqual(
+            (main / ".orch" / "canary" / "tickets" / "canary").resolve(),
+            found.resolve(),
+        )
+        self.assertTrue(sorted(found.glob("*.md")))
+
+    def test_the_sink_is_preferred_over_a_fixture_set_of_the_same_name(self):
+        """Order matters: run state first, then the canary, then fixtures."""
+
+        issued = self.issue(self.sink / "tickets", "cutcheck-clean")
+
+        with self.launched_from(self.repo):
+            self.assertEqual(issued, cutcheck._run_dir("cutcheck-clean", ROOT))
+
+    def test_a_sink_resident_run_is_graded_end_to_end(self):
+        self.issue(self.sink / "tickets", "sink-clean")
+        env = dict(os.environ)
+        env[state_root.ENV_VAR] = str(self.sink)
+
+        done = subprocess.run(
+            [sys.executable, "scripts/cutcheck.py", "sink-clean",
+             "--baseline", BASELINE],
+            cwd=str(ROOT),
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+
+        self.assertEqual(0, done.returncode, done.stdout + done.stderr)
+        self.assertEqual([], reported(done), done.stdout)
+
+    def test_a_run_nowhere_is_still_the_named_absence(self):
+        (self.sink / "tickets").mkdir(parents=True)
+        env = dict(os.environ)
+        env[state_root.ENV_VAR] = str(self.sink)
+
+        done = subprocess.run(
+            [sys.executable, "scripts/cutcheck.py", "no-such-run",
+             "--baseline", BASELINE],
+            cwd=str(ROOT),
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+
+        self.assertEqual(
+            cutcheck.NO_TICKET_SET, done.returncode, done.stdout + done.stderr
+        )
+
+    # --- criterion 6 ---------------------------------------------------
+
+    def test_no_reader_still_composes_a_repository_state_path(self):
+        for relative in READERS:
+            with self.subTest(relative):
+                self.assertEqual(
+                    ALLOWED_STATE_LITERALS[relative],
+                    state_literals(relative),
+                )
+
+    def test_every_reader_that_resolves_the_sink_reaches_the_one_resolver(self):
+        """Item 01's module, by the names its result gives -- and every name
+        a reader calls is one the resolver really exports, so a reader and a
+        renamed export cannot drift apart silently. `trace.py` is the one
+        exception and is asserted as one: it mines transcripts written on
+        other machines, where this host's sink path decides nothing, so it
+        matches both shapes textually and resolves nothing."""
+
+        called = re.compile(r"state_root\.([a-z_]+)\(")
+        for relative in ("scripts/cutcheck.py", "scripts/ui.py",
+                         "scripts/isolate.py", "tools/live_sweep_e2e.py"):
+            with self.subTest(relative):
+                source = (ROOT / relative).read_text(encoding="utf-8")
+                names = sorted(set(called.findall(source)))
+                self.assertTrue(names, relative)
+                for name in names:
+                    self.assertTrue(
+                        callable(getattr(state_root, name, None)),
+                        "{0} calls state_root.{1}".format(relative, name),
+                    )
+        # It may name the owner in a comment -- that is the one-owner law --
+        # but it neither imports it nor calls it.
+        trace_source = (ROOT / "scripts" / "trace.py").read_text(encoding="utf-8")
+        self.assertNotIn("import state_root", trace_source)
+        self.assertFalse(called.findall(trace_source))
 MUTATING_TICKET = """---
 id: 01-mutating
 write_scope:
