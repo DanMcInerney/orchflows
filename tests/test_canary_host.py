@@ -9,7 +9,6 @@ by hiding the oracle rather than by making it runnable.
 """
 
 import ast
-import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -19,19 +18,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import scripts.cutcheck as cutcheck  # noqa: E402
-from tests.baseline_pin import BASELINE  # noqa: E402  the pin's one owner
-
-
-def run_cutcheck(run, baseline=BASELINE):
-    """Invoke cutcheck exactly as the completion test states it."""
-
-    return subprocess.run(
-        [sys.executable, "scripts/cutcheck.py", run, "--baseline", baseline],
-        cwd=str(ROOT),
-        capture_output=True,
-        text=True,
-    )
-
+from tests.baseline_pin import BASELINE, run_cutcheck  # noqa: E402  its one owner
 
 # `_run_dir` resolves a canary set at the main checkout, never at the invoking
 # worktree, so this reads the same ticket the report's oracle observed.
@@ -94,8 +81,10 @@ class CanaryHostVerdictTest(unittest.TestCase):
     def setUpClass(cls):
         # One invocation, three readings: it costs seconds, and three runs
         # would let the status, the report and the class come from three
-        # different reports.
-        cls.result = run_cutcheck("canary")
+        # different reports. The invocation's owner memoises it, so the two
+        # readings `tests/test_cutcheck.py` takes of the same argv are this
+        # same report and not a fourth and fifth grading of the canary.
+        cls.result = run_cutcheck("canary", baseline=BASELINE)
 
     def test_no_oracle_of_the_canary_set_is_unrunnable_here(self):
         self.assertEqual(

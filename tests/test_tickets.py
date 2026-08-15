@@ -4,14 +4,17 @@
 import ast
 import importlib.util
 import inspect
+import io
 import json
 import os
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from contextlib import contextmanager, redirect_stdout
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -50,6 +53,12 @@ def make_repo(tmp: Path, tickets: dict) -> Path:
 
 
 def run_full(cwd: Path, *args):
+    """A real process: argv, exit code, and one JSON document on stdout.
+
+    The surface an in-process dispatch does not have, so every case that
+    grades a return code or the shape of stdout keeps this.
+    """
+
     return subprocess.run(
         [sys.executable, str(TICKETS_PY), *args],
         capture_output=True, text=True, encoding="utf-8",
@@ -57,8 +66,168 @@ def run_full(cwd: Path, *args):
     )
 
 
-def run_cmd(cwd: Path, *args):
+def run_json(cwd: Path, *args):
+    """``run_full``'s payload, for the cases that need the process boundary
+    and read only the payload: concurrent writers, which must be processes
+    for the contention to be real, and the seams run against real git."""
+
     return json.loads(run_full(cwd, *args).stdout)
+
+
+@contextmanager
+def repo_root_of(cwd: Path):
+    """Pin ``_find_repo_root`` to the root ``cwd`` resolves to.
+
+    The seam ``TestRunStateRootResolution`` already patches, used here to run
+    a dispatch against a fixture tree without ``os.chdir``: chdir is
+    process-global, so a module that used it could not be sharded or run
+    beside anything else. The resolution itself is the real one -- a linked
+    worktree's pointer file is dereferenced exactly as in a subprocess -- and
+    the production signature is untouched.
+    """
+
+    resolved = tickets_mod._find_repo_root(Path(cwd))
+    original = tickets_mod._find_repo_root
+    tickets_mod._find_repo_root = lambda start: resolved
+    try:
+        yield
+    finally:
+        tickets_mod._find_repo_root = original
+
+
+def run_main(cwd: Path, *args):
+    """``main`` in this process: its real return code and the one JSON
+    document it prints, in ``run_full``'s shape so a call site reads the same.
+
+    ``_dispatch`` alone has neither -- the exit convention and ``main``'s own
+    exception handling both live in ``main`` -- so the cases that grade an
+    exit code keep grading one. What is not exercised here is the OS's own
+    argv handoff, which is what the fidelity anchors on ``run_full`` keep.
+    """
+
+    argv = [str(arg) for arg in args]
+    stream = io.StringIO()
+    with repo_root_of(cwd), redirect_stdout(stream):
+        code = tickets_mod.main(argv)
+    return subprocess.CompletedProcess(
+        [sys.executable, str(TICKETS_PY), *argv], code, stream.getvalue(), ""
+    )
+
+
+def run_cmd(cwd: Path, *args):
+    """One dispatch in this process, returning what the script would print.
+
+    ``main`` turns a raised exception into ``{"error": str(error)}`` and
+    prints one JSON document; both are reproduced here, the round trip so a
+    caller reads exactly what a reader of stdout reads.
+    """
+
+    with repo_root_of(cwd):
+        try:
+            payload = tickets_mod._dispatch([str(arg) for arg in args])
+        except Exception as error:  # what `main` does with one
+            payload = {"error": str(error)}
+    return json.loads(json.dumps(payload, ensure_ascii=False))
+
+
+class SequencedPath:
+    """A ticket path whose read and write call the test back.
+
+    ``_do_claim`` takes the path as an argument, so two threads can be given
+    two instrumented paths onto one file and meet in a chosen interleaving
+    instead of whichever one the scheduler happens to produce. Only the three
+    attributes ``_do_claim`` touches are forwarded; the subject keeps its
+    signature and its body.
+    """
+
+    def __init__(self, path: Path, before_read=None, after_read=None, after_write=None):
+        self._path = path
+        self._before_read = before_read
+        self._after_read = after_read
+        self._after_write = after_write
+
+    @property
+    def stem(self):
+        return self._path.stem
+
+    def read_text(self, *args, **kwargs):
+        if self._before_read is not None:
+            self._before_read()
+        text = self._path.read_text(*args, **kwargs)
+        if self._after_read is not None:
+            self._after_read()
+        return text
+
+    def write_text(self, *args, **kwargs):
+        written = self._path.write_text(*args, **kwargs)
+        if self._after_write is not None:
+            self._after_write()
+        return written
+
+
+@contextmanager
+def refusing_to_read(path, error=None, after: int = 0):
+    """``Path.read_text`` raising ``error`` for ``path`` alone, and nothing
+    else changed.
+
+    The portable way to reach an OSError on a file that is there: ``chmod``
+    has no effect on Windows and none as root, so an assertion resting on it
+    reports the platform rather than the handler. ``error`` of ``None``
+    leaves the real read in place, so a case needing no seam reads the same
+    line as one that does.
+
+    ``after`` lets the first N reads succeed. Several handlers sit behind an
+    earlier read of the same file that has its own guard, so a read failing
+    from the first call is caught by the earlier one and the later handler is
+    never reached -- ``after`` is what distinguishes "this file is
+    unreadable" from "this file stopped being readable partway through", and
+    only the second reaches those.
+    """
+
+    if error is None:
+        yield
+        return
+    target = Path(path).resolve()
+    original = Path.read_text
+    survived = []
+
+    def read_text(self, *args, **kwargs):
+        if Path(self).resolve() == target:
+            if len(survived) >= after:
+                raise error(13, "Permission denied", str(self))
+            survived.append(1)
+        return original(self, *args, **kwargs)
+
+    Path.read_text = read_text
+    try:
+        yield
+    finally:
+        Path.read_text = original
+
+
+@contextmanager
+def refusing_to_write(path, error=PermissionError):
+    """``refusing_to_read``'s twin over ``Path.write_text``.
+
+    A read that fails and a write that fails are different handlers with
+    different messages, and a file that cannot be written is not reachable by
+    making one on disk: an existing file is writable, and a path that is a
+    directory fails the ``is_file`` check long before the write.
+    """
+
+    target = Path(path).resolve()
+    original = Path.write_text
+
+    def write_text(self, *args, **kwargs):
+        if Path(self).resolve() == target:
+            raise error(13, "Permission denied", str(self))
+        return original(self, *args, **kwargs)
+
+    Path.write_text = write_text
+    try:
+        yield
+    finally:
+        Path.write_text = original
 
 
 class TestPendingPromotion(unittest.TestCase):
@@ -134,29 +303,110 @@ class TestClaim(unittest.TestCase):
             self.assertIn("claimed_by: agent-b", ticket_path.read_text(encoding="utf-8"))
 
     def test_two_writer_claim_race_yields_exactly_one_winner(self):
+        """Two threads in flight at once over one ticket, both holding the
+        same pre-claim snapshot, the loser's read released only once the
+        winner's write has landed.
+
+        That interleaving is the one ``_do_claim``'s snapshot check exists
+        for, and the check is what decides it: the loser re-reads, finds the
+        file no longer the text it was handed, and reports the lost race
+        rather than overwriting the winner. Until now this ran ``_do_claim``
+        twice in one thread, which is not a race at all -- there is only
+        ever one runnable writer, so no scheduling could have produced any
+        other answer.
+
+        Deterministic on purpose, and one invocation: driven 200 times while
+        this was written, one winner every time. The interleaving the check
+        does *not* cover is
+        ``test_both_claimants_win_when_neither_read_sees_the_others_write``.
+        """
+
+        winners, losers, final_text = self.race(release_loser_after_write=True)
+        self.assertEqual(1, len(winners), (winners, losers))
+        self.assertEqual(1, len(losers), (winners, losers))
+        self.assertIn("lost the claim race", losers[0]["error"])
+
+        winner_name = winners[0]["claimed"]["claimed_by"]
+        self.assertIn(f"claimed_by: {winner_name}", final_text)
+        loser_name = "writer-b" if winner_name == "writer-a" else "writer-a"
+        self.assertNotIn(f"claimed_by: {loser_name}", final_text)
+
+    def test_both_claimants_win_when_neither_read_sees_the_others_write(self):
+        """The window the snapshot check does not close, recorded as it is.
+
+        ``_do_claim`` re-reads and compares, then writes; the two are not one
+        step. Align two writers so both re-reads complete before either write
+        does and both compares pass, so both write and both report a claim --
+        the state the check was added to prevent, reached by an interleaving
+        it cannot see. Nothing forces this alignment in production, and
+        nothing prevents it either.
+
+        This is the current behavior pinned, not endorsed: a compare-and-swap
+        that closed the window would fail this case, which is the point of
+        having it here rather than in a note nobody reads.
+        """
+
+        winners, _losers, final_text = self.race(release_loser_after_write=False)
+        self.assertEqual(2, len(winners), winners)
+        # both wrote, and the file carries whichever landed last -- there is
+        # no record left that the other believed it had won
+        self.assertEqual(1, final_text.count("claimed_by: "))
+
+    def race(self, release_loser_after_write: bool):
+        """Two threads claiming one ticket from one snapshot, at one chosen
+        interleaving. Returns the winners, the losers, and the final bytes.
+
+        The barrier puts both writers in flight together; the ordering hooks
+        ride on the path object ``_do_claim`` is handed, so the interleaving
+        is chosen by this fixture rather than by the scheduler. No production
+        signature or body is touched: the argument is the seam.
+        """
+
         with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            run_dir = make_repo(tmp, {"T1": ("ready", "[]")})
+            run_dir = make_repo(Path(tmp), {"T1": ("ready", "[]")})
             ticket_path = run_dir / "T1.md"
-            # Both writers "read" the identical pre-claim snapshot before either
-            # writes, modelling two processes racing to claim the same ticket.
             prior_text = ticket_path.read_text(encoding="utf-8")
             now = datetime.now(timezone.utc)
 
-            result_a = tickets_mod._do_claim(ticket_path, prior_text, "writer-a", now)
-            result_b = tickets_mod._do_claim(ticket_path, prior_text, "writer-b", now)
+            in_flight = threading.Barrier(2)
+            winner_wrote = threading.Event()
+            both_read = threading.Barrier(2)
+            outcomes = {}
 
-            outcomes = [result_a, result_b]
-            winners = [r for r in outcomes if "claimed" in r]
-            losers = [r for r in outcomes if "error" in r]
-            self.assertEqual(1, len(winners), outcomes)
-            self.assertEqual(1, len(losers), outcomes)
+            def claim(name, path):
+                in_flight.wait(timeout=30)
+                outcomes[name] = tickets_mod._do_claim(path, prior_text, name, now)
 
-            final_text = ticket_path.read_text(encoding="utf-8")
-            winner_name = winners[0]["claimed"]["claimed_by"]
-            self.assertIn(f"claimed_by: {winner_name}", final_text)
-            loser_name = "writer-b" if winner_name == "writer-a" else "writer-a"
-            self.assertNotIn(f"claimed_by: {loser_name}", final_text)
+            if release_loser_after_write:
+                paths = {
+                    "writer-a": SequencedPath(ticket_path, after_write=winner_wrote.set),
+                    "writer-b": SequencedPath(
+                        ticket_path, before_read=lambda: winner_wrote.wait(timeout=30)
+                    ),
+                }
+            else:
+                paths = {
+                    name: SequencedPath(
+                        ticket_path, after_read=lambda: both_read.wait(timeout=30)
+                    )
+                    for name in ("writer-a", "writer-b")
+                }
+
+            threads = [
+                threading.Thread(target=claim, args=(name, path), daemon=True)
+                for name, path in paths.items()
+            ]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join(timeout=30)
+                self.assertFalse(thread.is_alive(), "a claimant never finished")
+
+            return (
+                [r for r in outcomes.values() if "claimed" in r],
+                [r for r in outcomes.values() if "error" in r],
+                ticket_path.read_text(encoding="utf-8"),
+            )
 
 
 class TestInvalidStatus(unittest.TestCase):
@@ -164,11 +414,312 @@ class TestInvalidStatus(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             run_dir = make_repo(tmp, {"T1": ("ready", "[]")})
-            result = run_full(tmp, "set-status", "testrun", "T1", "bogus-status")
+            result = run_main(tmp, "set-status", "testrun", "T1", "bogus-status")
             self.assertEqual(1, result.returncode)
             payload = json.loads(result.stdout)
             self.assertIn("error", payload)
             self.assertIn("status: ready", (run_dir / "T1.md").read_text(encoding="utf-8"))
+
+
+def make_claimed_repo(tmp: Path, claims: dict) -> Path:
+    """A repo of claimed tickets, each carrying its own ``bound`` and
+    ``claimed_at``.
+
+    The two fields staleness is computed from, and the two `make_repo` holds
+    fixed -- so anything grading a claim's age or its owner varies them here.
+    """
+
+    run_dir = make_repo(tmp, {tid: ("claimed", "[]") for tid in claims})
+    for tid, (bound, claimed_at) in claims.items():
+        path = run_dir / f"{tid}.md"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                "bound: 30m",
+                f"bound: {bound}\nclaimed_by: agent-a\nclaimed_at: {claimed_at}",
+            ),
+            encoding="utf-8",
+        )
+    return run_dir
+
+
+class TestSuspendedStatus(unittest.TestCase):
+    """contracts/work-item.md: `suspended` is a valid non-terminal wait. A
+    suspended ticket is still someone's, so the claim survives the
+    transition -- were it dropped, the ticket would go back on offer while
+    its holder was only waiting."""
+
+    def test_set_status_accepts_suspended_and_keeps_the_claim(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.assertIn("suspended", tickets_mod.VALID_STATUSES)
+            run_dir = make_claimed_repo(tmp, {"T1": ("30m", "2026-07-18T00:00:00Z")})
+            result = run_main(tmp, "set-status", "testrun", "T1", "suspended")
+            self.assertEqual(0, result.returncode, result.stdout)
+            self.assertEqual(
+                "suspended", json.loads(result.stdout)["set_status"]["status"]
+            )
+            text = (run_dir / "T1.md").read_text(encoding="utf-8")
+            self.assertIn("status: suspended", text)
+            self.assertIn("claimed_by: agent-a", text)
+            self.assertIn("claimed_at: 2026-07-18T00:00:00Z", text)
+
+
+def minutes_ago(count: int) -> str:
+    return (datetime.now(timezone.utc) - timedelta(minutes=count)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+
+
+class TimeParseFallbackTest(unittest.TestCase):
+    """What an unstated or unparsable `bound` and `claimed_at` do to
+    staleness -- which is to say, to whether a claim can be taken away.
+
+    Two fallbacks that read alike and point opposite ways: an unparsable
+    bound lengthens the claim's protection, an unparsable timestamp removes
+    it entirely. Pinned as they behave, not as they ought to.
+    """
+
+    def test_a_bound_the_pattern_does_not_match_falls_back_to_the_default(self):
+        self.assertEqual(60, tickets_mod.DEFAULT_BOUND_MINUTES)
+        for bound, minutes in (
+            ("30m", 30),
+            ("2h", 120),
+            ("  45m  ", 45),
+            ("0m", 0),
+            ("banana", 60),
+            ("30", 60),  # a number with no unit is not a duration here
+            ("-5m", 60),  # the pattern has no sign
+            ("", 60),
+            (None, 60),
+            ([], 60),  # not a string at all
+        ):
+            with self.subTest(bound=bound):
+                self.assertEqual(minutes, tickets_mod._parse_bound_minutes(bound))
+
+    def test_a_timestamp_it_cannot_read_is_none_and_never_a_raise(self):
+        """`_parse_iso` answers or returns None; it never propagates. Its
+        callers are a listing and a staleness check, and one unparsable field
+        in one ticket may not take down a read of the whole run.
+
+        The early `isinstance`/blank return is not what makes that true for
+        the first four of these -- the `except Exception` below absorbs every
+        one of them too, so that return is a guard whose removal changes
+        nothing. What this pins is the contract, which only the `except`
+        upholds.
+        """
+
+        for value in (None, "", "   ", 12345, [], object(),
+                      "yesterday", "2020-13-45T99:99:99Z", "2026-07-18T00:00:00+banana"):
+            with self.subTest(value=repr(value)):
+                self.assertIsNone(tickets_mod._parse_iso(value))
+
+    def test_a_naive_timestamp_is_read_as_utc_not_as_local_time(self):
+        """Without this the subtraction in `_is_stale` raises rather than
+        answers: an aware `now` minus a naive stamp is a TypeError, so a
+        ticket whose `claimed_at` omitted its offset would crash the reader
+        rather than be judged."""
+
+        naive = tickets_mod._parse_iso("2026-07-18T00:00:00")
+        self.assertEqual(timezone.utc, naive.tzinfo)
+        self.assertEqual(tickets_mod._parse_iso("2026-07-18T00:00:00Z"), naive)
+
+    def test_an_unreadable_claim_time_is_stale_and_a_readable_one_is_judged(self):
+        now = datetime(2026, 8, 15, 12, 0, 0, tzinfo=timezone.utc)
+        stale = tickets_mod._is_stale
+        # no timestamp and an unparsable one both read as stale, which is the
+        # fallback that hands a claim away rather than holding it
+        self.assertTrue(stale(None, 30, now))
+        self.assertTrue(stale("yesterday", 30, now))
+        self.assertTrue(stale("2026-08-15T11:00:00Z", 30, now))
+        self.assertFalse(stale("2026-08-15T11:45:00Z", 30, now))
+
+    def test_a_nonsense_bound_protects_a_claim_longer_than_a_stated_one(self):
+        """The end-to-end reading, and the answer to whether `bound: banana`
+        is immediately reclaimable: it is not.
+
+        The bound falls back to an hour, which is *longer* than the 30m these
+        fixtures otherwise carry, so a bound no one can parse buys the holder
+        more time than a bound they stated. `claimed_at: yesterday` is the
+        field that does hand a ticket away on sight, because an unparsable
+        timestamp is read as expired rather than as unknown.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_claimed_repo(tmp, {
+                "T1": ("banana", minutes_ago(45)),  # inside the hour it fell back to
+                "T2": ("banana", minutes_ago(75)),  # past it
+                "T3": ("30m", "yesterday"),  # the stamp, not the bound, frees this
+                "T4": ("30m", minutes_ago(5)),  # a live claim, stated bound
+            })
+            ready = {item["id"] for item in run_cmd(tmp, "ready")["ready"]}
+        self.assertEqual({"T2", "T3"}, ready)
+
+
+class OSErrorHandlerTest(unittest.TestCase):
+    """Every `except OSError` in the script, entered and graded.
+
+    Each turns a filesystem failure into a named JSON error rather than a
+    traceback on a channel whose contract is one JSON document; none was
+    entered by this suite before. The seams raise on one resolved path only,
+    because `chmod` is a no-op on Windows and as root, and a test resting on
+    it grades the platform.
+    """
+
+    def test_an_unreadable_ticket_is_a_named_error_beside_its_readable_peers(self):
+        """`_load_ticket`: one file no one can read is not a run no one can
+        list."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            run_dir = make_repo(tmp, {"T1": ("ready", "[]"), "T2": ("ready", "[]")})
+            with refusing_to_read(run_dir / "T1.md", PermissionError):
+                payload = run_cmd(tmp, "list")
+            by_id = {item["id"]: item for item in payload["tickets"]}
+            self.assertIn("unreadable ticket", by_id["T1"]["error"])
+            self.assertNotIn("error", by_id["T2"])
+
+    def test_a_promotion_that_cannot_be_persisted_leaves_the_ticket_out(self):
+        """`_cmd_ready`'s pending promotion: the status on disk and the status
+        reported are the same claim, so a write that failed reports nothing
+        ready. A promotion announced but not persisted would be handed to an
+        executor whose own read finds it still pending."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            run_dir = make_repo(tmp, {
+                "T1": ("complete", "[]"),
+                "T2": ("pending", "[T1]"),
+                "T3": ("ready", "[]"),
+            })
+            with refusing_to_write(run_dir / "T2.md"):
+                payload = run_cmd(tmp, "ready")
+            self.assertEqual(["T3"], [item["id"] for item in payload["ready"]])
+            self.assertIn(
+                "status: pending", (run_dir / "T2.md").read_text(encoding="utf-8")
+            )
+
+    def test_a_ticket_that_stops_being_readable_mid_claim_is_a_named_error(self):
+        """`_do_claim`'s re-read. `claim` reads the file twice before that
+        re-read, each behind its own guard, so a read failing from the first
+        call never reaches this one -- only a file that stops being readable
+        partway through does."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            run_dir = make_repo(tmp, {"T1": ("ready", "[]")})
+            with refusing_to_read(run_dir / "T1.md", PermissionError, after=2):
+                result = run_main(tmp, "claim", "testrun", "T1", "--by", "agent-a")
+            self.assertEqual(1, result.returncode, result.stdout)
+            self.assertIn("unreadable ticket", json.loads(result.stdout)["error"])
+            self.assertIn(
+                "status: ready", (run_dir / "T1.md").read_text(encoding="utf-8")
+            )
+
+    def test_a_ticket_that_stops_being_readable_mid_packet_is_a_named_error(self):
+        """`_cmd_packet` reads the ticket a second time to section it, after
+        `_load_ticket` has already read and guarded it."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            run_dir = make_repo(tmp, {"T1": ("ready", "[]")})
+            with refusing_to_read(run_dir / "T1.md", PermissionError, after=1):
+                result = run_main(tmp, "packet", "testrun", "T1", "--reply-to", "main")
+            self.assertEqual(1, result.returncode, result.stdout)
+            self.assertIn("unreadable ticket", json.loads(result.stdout)["error"])
+
+    def test_an_unreadable_ticket_refuses_the_result_rather_than_dropping_it(self):
+        """`_cmd_result`'s read. Nothing is written when the read fails, so
+        the executor's body is refused loudly instead of landing in a file
+        rendered from text no one could see."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            run_dir = make_repo(tmp, {"T1": ("claimed", "[]")})
+            before = (run_dir / "T1.md").read_text(encoding="utf-8")
+            with refusing_to_read(run_dir / "T1.md", PermissionError):
+                result = run_main(
+                    tmp, "result", "testrun", "T1", "--section", "Result", "--text", "x"
+                )
+            self.assertEqual(1, result.returncode, result.stdout)
+            self.assertIn("unreadable ticket", json.loads(result.stdout)["error"])
+            self.assertEqual(before, (run_dir / "T1.md").read_text(encoding="utf-8"))
+
+    def test_a_ticket_that_cannot_be_written_says_so_by_name(self):
+        """`_cmd_result`'s write: a different handler and a different word
+        from the read's, because a caller retries the two differently."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            run_dir = make_repo(tmp, {"T1": ("claimed", "[]")})
+            with refusing_to_write(run_dir / "T1.md"):
+                result = run_main(
+                    tmp, "result", "testrun", "T1", "--section", "Result", "--text", "x"
+                )
+            self.assertEqual(1, result.returncode, result.stdout)
+            self.assertIn("unwritable ticket", json.loads(result.stdout)["error"])
+
+    def test_a_worklog_whose_close_cannot_be_read_still_takes_the_note(self):
+        """`_worklog_terminal` is the one OSError here that is swallowed
+        rather than reported: an unreadable worklog reads as an open one, so
+        the note lands past a close nobody could see. Recorded as it
+        behaves -- reporting the read failure instead would refuse a note the
+        contract otherwise allows."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            run_cmd(
+                worktree, "run-state", "testrun",
+                "--terminal", "complete", "--text", "the deciding evidence",
+            )
+            log = worklog_of(main)
+            self.assertIn("complete", log.read_text(encoding="utf-8"))
+            with refusing_to_read(log, PermissionError):
+                payload = run_cmd(worktree, "run-state", "testrun", "--note", "past the close")
+            self.assertEqual("note", payload["run_state"]["mode"])
+            self.assertIn("past the close", log.read_text(encoding="utf-8"))
+
+    def test_an_unreadable_run_state_body_file_is_an_error_not_a_traceback(self):
+        """`_cmd_run_state`'s body read: the `_cmd_result` handler's twin, on
+        the other channel and reached by other flags."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            a_directory = worktree / "body-that-is-a-directory.md"
+            a_directory.mkdir()
+            present = worktree / "present-but-unreadable.md"
+            present.write_text("bytes no reader reaches\n", encoding="utf-8")
+
+            for label, path, raiser in (
+                ("a directory where a file is expected", a_directory, None),
+                ("a present file whose read raises", present, PermissionError),
+            ):
+                with self.subTest(label):
+                    with refusing_to_read(path, raiser):
+                        result = run_main(
+                            worktree, "run-state", "testrun",
+                            "--artifact", "evidence.md", "--file", str(path),
+                        )
+                    self.assertEqual(1, result.returncode, result.stdout)
+                    error = json.loads(result.stdout)["error"]
+                    self.assertIn("unreadable body file", error, error)
+
+    def test_a_run_directory_that_cannot_be_made_is_a_named_error(self):
+        """`_cmd_run_state`'s write. A plain file standing where the run's
+        directory goes needs no seam at all: `mkdir(exist_ok=True)` excuses an
+        existing directory, never an existing file, on every platform."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            runs = main / ".orch" / "runs"
+            runs.mkdir(parents=True, exist_ok=True)
+            (runs / "testrun").write_text("not a directory\n", encoding="utf-8")
+            result = run_main(worktree, "run-state", "testrun", "--note", "nowhere to land")
+            self.assertEqual(1, result.returncode, result.stdout)
+            self.assertIn("unwritable run state", json.loads(result.stdout)["error"])
 
 
 class TestMalformedFrontmatter(unittest.TestCase):
@@ -181,7 +732,7 @@ class TestMalformedFrontmatter(unittest.TestCase):
             (run_dir / "T1.md").write_text(
                 "# Not a ticket\n\nNo frontmatter delimiters at all.\n", encoding="utf-8"
             )
-            result = run_full(tmp, "list", "--run", "testrun")
+            result = run_main(tmp, "list", "--run", "testrun")
             self.assertEqual(0, result.returncode)
             payload = json.loads(result.stdout)
             self.assertEqual(1, len(payload["tickets"]))
@@ -194,7 +745,7 @@ class TestMalformedFrontmatter(unittest.TestCase):
             run_dir = tmp / ".orch" / "tickets" / "testrun"
             run_dir.mkdir(parents=True)
             (run_dir / "T1.md").write_text("---\nid: T1\nstatus: ready\n", encoding="utf-8")
-            result = run_full(tmp, "set-status", "testrun", "T1", "complete")
+            result = run_main(tmp, "set-status", "testrun", "T1", "complete")
             self.assertEqual(1, result.returncode)
             payload = json.loads(result.stdout)
             self.assertIn("error", payload)
@@ -206,7 +757,7 @@ class TestMalformedFrontmatter(unittest.TestCase):
             run_dir = tmp / ".orch" / "tickets" / "testrun"
             run_dir.mkdir(parents=True)
             (run_dir / "T1.md").write_text("---\nid: T1\nstatus: ready\n", encoding="utf-8")
-            result = run_full(tmp, "claim", "testrun", "T1", "--by", "agent-a")
+            result = run_main(tmp, "claim", "testrun", "T1", "--by", "agent-a")
             self.assertEqual(1, result.returncode)
             payload = json.loads(result.stdout)
             self.assertIn("error", payload)
@@ -314,7 +865,7 @@ class TestNotInsideARepo(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             # deliberately no .git anywhere under this tempdir
-            result = run_full(tmp, "list")
+            result = run_main(tmp, "list")
             self.assertEqual(1, result.returncode)
             payload = json.loads(result.stdout)
             self.assertEqual({"error": "not inside a git repository"}, payload)
@@ -322,7 +873,7 @@ class TestNotInsideARepo(unittest.TestCase):
     def test_claim_outside_a_repo_returns_error(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            result = run_full(tmp, "claim", "testrun", "T1", "--by", "agent-a")
+            result = run_main(tmp, "claim", "testrun", "T1", "--by", "agent-a")
             self.assertEqual(1, result.returncode)
             payload = json.loads(result.stdout)
             self.assertEqual({"error": "not inside a git repository"}, payload)
@@ -440,7 +991,7 @@ class TestPacket(unittest.TestCase):
             self.make(tmp)
             self.assertIn("ticket not found", run_cmd(tmp, "packet", "testrun", "T9", "--reply-to", "main")["error"])
         with tempfile.TemporaryDirectory() as tmp:
-            result = run_full(Path(tmp), "packet", "testrun", "T1", "--reply-to", "main")
+            result = run_main(Path(tmp), "packet", "testrun", "T1", "--reply-to", "main")
             self.assertEqual(1, result.returncode)
             self.assertEqual(
                 {"error": "not inside a git repository"}, json.loads(result.stdout)
@@ -558,7 +1109,7 @@ class TestResultBodySource(unittest.TestCase):
             body = worktree / "body.md"
             body.write_text("from a file\n", encoding="utf-8")
             before = (run_dir / "T1.md").read_text(encoding="utf-8")
-            result = run_full(
+            result = run_main(
                 worktree, "result", "testrun", "T1", "--section", "Result",
                 "--file", str(body), "--text", "from a string",
             )
@@ -571,21 +1122,50 @@ class TestResultBodySource(unittest.TestCase):
             tmp = Path(tmp)
             _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
             before = (run_dir / "T1.md").read_text(encoding="utf-8")
-            result = run_full(worktree, "result", "testrun", "T1", "--section", "Result")
+            result = run_main(worktree, "result", "testrun", "T1", "--section", "Result")
             self.assertEqual(1, result.returncode)
             self.assertIn("error", json.loads(result.stdout))
             self.assertEqual(before, (run_dir / "T1.md").read_text(encoding="utf-8"))
 
     def test_an_unreadable_body_file_is_an_error_not_a_traceback(self):
+        """A body path that exists and cannot be read, which is what this
+        test's name claims and what an absent path is not.
+
+        The absent path this carried until now takes the same handler, so
+        the case that names the handler graded only ``FileNotFoundError``:
+        a body file that is there and unreadable -- the reason the read is
+        wrapped at all -- was never passed. Two shapes, both portable:
+        a directory where a file is expected (``IsADirectoryError`` on
+        POSIX, ``PermissionError`` on Windows -- ``chmod 000`` is neither,
+        and does not bite as root), and a read that raises for that path
+        alone. The absent path stays as a third case, now beside the two.
+        """
+
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             _, worktree, _run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
-            result = run_full(
-                worktree, "result", "testrun", "T1", "--section", "Result",
-                "--file", str(worktree / "absent.md"),
-            )
-            self.assertEqual(1, result.returncode)
-            self.assertIn("error", json.loads(result.stdout))
+            a_directory = worktree / "body-that-is-a-directory.md"
+            a_directory.mkdir()
+            present = worktree / "present-but-unreadable.md"
+            present.write_text("bytes no reader reaches\n", encoding="utf-8")
+
+            for label, path, raiser in (
+                ("a directory where a file is expected", a_directory, None),
+                ("a present file whose read raises", present, PermissionError),
+                ("an absent path", worktree / "absent.md", None),
+            ):
+                with self.subTest(label):
+                    with refusing_to_read(path, raiser):
+                        result = run_main(
+                            worktree, "result", "testrun", "T1",
+                            "--section", "Result", "--file", str(path),
+                        )
+                    self.assertEqual(1, result.returncode, result.stdout)
+                    error = json.loads(result.stdout)["error"]
+                    # the handler's own words, not a traceback rendered by
+                    # `main`'s catch-all: with the handler gone this reads
+                    # the bare OSError instead
+                    self.assertIn("unreadable body file", error, error)
 
 
 class TestResultRefusesTerminalStatus(unittest.TestCase):
@@ -597,7 +1177,7 @@ class TestResultRefusesTerminalStatus(unittest.TestCase):
             tmp = Path(tmp)
             _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
             before = (run_dir / "T1.md").read_text(encoding="utf-8")
-            result = run_full(
+            result = run_main(
                 worktree, "result", "testrun", "T1", "--section", "Result",
                 "--text", "done", "--status", "complete",
             )
@@ -713,7 +1293,7 @@ class TestResultScriptContract(unittest.TestCase):
 
     def test_result_outside_a_repo_is_an_error(self):
         with tempfile.TemporaryDirectory() as tmp:
-            result = run_full(
+            result = run_main(
                 Path(tmp), "result", "testrun", "T1", "--section", "Result", "--text", "x"
             )
             self.assertEqual(1, result.returncode)
@@ -825,7 +1405,7 @@ class ResultOverwriteTest(unittest.TestCase):
             tmp = Path(tmp)
             worktree, ticket = self.written(tmp)
             before = ticket.read_text(encoding="utf-8")
-            result = run_full(worktree, "result", "testrun", "T1", "--section", "Result",
+            result = run_main(worktree, "result", "testrun", "T1", "--section", "Result",
                               "--text", "a silent clobber")
             self.assertEqual(1, result.returncode, result.stdout)
             error = json.loads(result.stdout)["error"]
@@ -837,28 +1417,12 @@ class ResultOverwriteTest(unittest.TestCase):
             self.assertEqual(before, ticket.read_text(encoding="utf-8"))
             self.assertNotIn("a silent clobber", before)
 
-    def test_replace_is_what_carries_the_overwrite_through(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            worktree, ticket = self.written(tmp)
-            payload = run_cmd(worktree, "result", "testrun", "T1", "--section", "Result",
-                              "--text", "a named overwrite", "--replace")
-            self.assertEqual("replace", payload["result"]["mode"])
-            text = ticket.read_text(encoding="utf-8")
-            self.assertEqual("a named overwrite", tickets_mod._sections(text)["Result"])
-            self.assertNotIn("the executor's own pass", text)
-
-    def test_append_keeps_its_current_meaning(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            worktree, ticket = self.written(tmp)
-            payload = run_cmd(worktree, "result", "testrun", "T1", "--section", "Result",
-                              "--text", "the checker's pass", "--append")
-            self.assertEqual("append", payload["result"]["mode"])
-            self.assertEqual(
-                "the executor's own pass\n\nthe checker's pass",
-                tickets_mod._sections(ticket.read_text(encoding="utf-8"))["Result"],
-            )
+    # The two flags that carry a write past this guard are graded by
+    # TestResultAppend: `--replace` by test_replace_replaces_rather_than_appends
+    # and `--append` by test_append_keeps_the_prior_body_and_adds_after_it,
+    # each over a section already written and each asserting strictly more
+    # than the pair that stood here (the append case also grades ordering and
+    # that every other section is byte-unchanged).
 
     def test_a_first_write_and_an_empty_cut_time_section_are_not_overwrites(self):
         """A ticket is cut with its executor sections present and empty; the
@@ -888,7 +1452,7 @@ class ResultOverwriteTest(unittest.TestCase):
             tmp = Path(tmp)
             worktree, ticket = self.written(tmp)
             before = ticket.read_text(encoding="utf-8")
-            result = run_full(worktree, "result", "testrun", "T1", "--section", "Result",
+            result = run_main(worktree, "result", "testrun", "T1", "--section", "Result",
                               "--text", "both", "--append", "--replace")
             self.assertEqual(1, result.returncode, result.stdout)
             error = json.loads(result.stdout)["error"]
@@ -948,7 +1512,7 @@ class ResultOverwriteTest(unittest.TestCase):
                 run_cmd(worktree, "result", "testrun", "T1", "--section", section,
                         "--text", f"{section} first")
                 before = ticket.read_text(encoding="utf-8")
-                result = run_full(worktree, "result", "testrun", "T1",
+                result = run_main(worktree, "result", "testrun", "T1",
                                   "--section", section, "--text", f"{section} clobber")
                 self.assertEqual(1, result.returncode, f"{section}: {result.stdout}")
                 self.assertIn(section, json.loads(result.stdout)["error"])
@@ -1056,10 +1620,13 @@ class TestRunStateWorklog(unittest.TestCase):
             tmp = Path(tmp)
             main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
             notes = [f"writer-{i} " + "x" * 2000 for i in range(8)]
+            # eight processes, never eight threads: the contention this grades
+            # is between writers the platform serialises at the file, and
+            # in-process callers would share one interpreter's own ordering
             with ThreadPoolExecutor(max_workers=8) as pool:
                 payloads = list(
                     pool.map(
-                        lambda note: run_cmd(worktree, "run-state", "testrun", "--note", note),
+                        lambda note: run_json(worktree, "run-state", "testrun", "--note", note),
                         notes,
                     )
                 )
@@ -1294,7 +1861,7 @@ class TerminalNoteTest(unittest.TestCase):
             self.assertEqual("terminal", closed["run_state"]["mode"])
             self.assertEqual("complete", closed["run_state"]["terminal"])
 
-            result = run_full(worktree, "run-state", "testrun", "--note", "note four")
+            result = run_main(worktree, "run-state", "testrun", "--note", "note four")
             self.assertEqual(1, result.returncode, result.stdout)
             error = json.loads(result.stdout)["error"]
             self.assertIn("terminal", error)
@@ -1316,47 +1883,21 @@ class TerminalNoteTest(unittest.TestCase):
             run_cmd(worktree, "run-state", "testrun", "--terminal", "complete",
                     "--text", "the deciding evidence")
             before = worklog_of(main).read_text(encoding="utf-8")
-            result = run_full(worktree, "run-state", "testrun", "--terminal", "failed",
+            result = run_main(worktree, "run-state", "testrun", "--terminal", "failed",
                               "--text", "a second close")
             self.assertEqual(1, result.returncode, result.stdout)
             self.assertIn("complete", json.loads(result.stdout)["error"])
             self.assertEqual(before, worklog_of(main).read_text(encoding="utf-8"))
 
-    def test_the_note_stays_a_pure_append_never_a_read_modify_write(self):
-        """Two workspaces write one repository's worklog at once. The
-        terminal check reads the file, but the write is still one append in
-        one call: a line another writer added between the read and the
-        append survives untouched."""
-
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
-            run_cmd(worktree, "run-state", "testrun", "--note", "from the channel")
-            with open(worklog_of(main), "a", encoding="utf-8", newline="\n") as handle:
-                handle.write("from another worktree\n")
-            run_cmd(worktree, "run-state", "testrun", "--note", "from the channel again")
-            self.assertEqual(
-                ["from the channel", "from another worktree", "from the channel again"],
-                worklog_of(main).read_text(encoding="utf-8").splitlines(),
-            )
-            # The mechanism itself is graded by
-            # test_the_append_is_one_open_in_append_mode_with_no_read, and it
-            # has to be graded somewhere other than here: the write above
-            # lands between two complete invocations, so a read-modify-write
-            # reproduces this expectation exactly. What stood here was a grep
-            # over two function bodies joined as text, which the same
-            # mechanism spelled another way already failed.
-
-            notes = [f"writer-{i} " + "x" * 2000 for i in range(8)]
-            with ThreadPoolExecutor(max_workers=8) as pool:
-                list(pool.map(
-                    lambda note: run_cmd(worktree, "run-state", "otherrun", "--note", note),
-                    notes,
-                ))
-            self.assertEqual(
-                sorted(notes),
-                sorted(worklog_of(main, "otherrun").read_text(encoding="utf-8").splitlines()),
-            )
+    # Both halves of what stood here are graded by TestRunStateWorklog, each
+    # asserting more: the interleave by
+    # test_a_prior_line_and_an_outside_writer_both_survive, and the eight
+    # concurrent writers by test_concurrent_notes_all_land_whole, which also
+    # grades the payloads (a writer that reported an error and a writer whose
+    # line was lost are two defects, and the file check alone shows only the
+    # second). The mechanism is graded below off the AST, which is the only
+    # place it can be: the writes above land between complete invocations, so
+    # a read-modify-write reproduces both expectations exactly.
 
     def test_the_append_is_one_open_in_append_mode_with_no_read(self):
         """The mechanism assertion, read off the AST: one open, append mode,
@@ -1430,14 +1971,14 @@ class TerminalNoteTest(unittest.TestCase):
             main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
             # a ticket-level status is not a run-level terminal state
             for bad in ("suspended", "ready", "done", ""):
-                result = run_full(worktree, "run-state", "testrun", "--terminal", bad,
+                result = run_main(worktree, "run-state", "testrun", "--terminal", bad,
                                   "--text", "x")
                 self.assertEqual(1, result.returncode, f"{bad!r}: {result.stdout}")
                 error = json.loads(result.stdout)["error"]
                 for state in tickets_mod.TERMINAL_STATES:
                     self.assertIn(state, error, f"{bad!r}: {state}")
             # the deciding evidence is not optional
-            result = run_full(worktree, "run-state", "testrun", "--terminal", "complete")
+            result = run_main(worktree, "run-state", "testrun", "--terminal", "complete")
             self.assertEqual(1, result.returncode, result.stdout)
             self.assertIn("--text", json.loads(result.stdout)["error"])
             self.assertFalse(worklog_of(main).exists())
@@ -1453,7 +1994,7 @@ class TerminalNoteTest(unittest.TestCase):
                     f"## terminal: {state}",
                     worklog_of(main).read_text(encoding="utf-8"),
                 )
-                result = run_full(worktree, "run-state", "testrun", "--note", "past it")
+                result = run_main(worktree, "run-state", "testrun", "--note", "past it")
                 self.assertEqual(1, result.returncode, f"{state}: {result.stdout}")
         self.assertEqual(
             ("complete", "blocked", "stalled", "limited", "failed"),
@@ -1469,7 +2010,7 @@ class TerminalNoteTest(unittest.TestCase):
             tmp = Path(tmp)
             main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
             for forged in ("## terminal: complete", "  ## terminal", "## Terminal: failed"):
-                result = run_full(worktree, "run-state", "testrun", "--note", forged)
+                result = run_main(worktree, "run-state", "testrun", "--note", forged)
                 self.assertEqual(1, result.returncode, f"{forged!r}: {result.stdout}")
                 self.assertIn("--terminal", json.loads(result.stdout)["error"])
             self.assertFalse(worklog_of(main).exists())
@@ -1533,7 +2074,7 @@ class ArtifactOverwriteTest(unittest.TestCase):
             run_cmd(worktree, "run-state", "testrun", "--artifact", "evidence.md",
                     "--text", "the first lane's evidence\n")
             artifact = run_dir_of(main) / "evidence.md"
-            result = run_full(worktree, "run-state", "testrun", "--artifact",
+            result = run_main(worktree, "run-state", "testrun", "--artifact",
                               "evidence.md", "--text", "a silent truncation\n")
             self.assertEqual(1, result.returncode, result.stdout)
             error = json.loads(result.stdout)["error"]
@@ -1687,7 +2228,7 @@ class OrchTreesTest(unittest.TestCase):
             for tree in self.OWNERLESS:
                 run_cmd(worktree, "run-state", "testrun", "--tree", tree,
                         "--artifact", "evidence.md", "--text", "first\n")
-                result = run_full(worktree, "run-state", "testrun", "--tree", tree,
+                result = run_main(worktree, "run-state", "testrun", "--tree", tree,
                                   "--artifact", "evidence.md", "--text", "clobber\n")
                 self.assertEqual(1, result.returncode, f"{tree}: {result.stdout}")
                 landed = main / ".orch" / tree / "testrun" / "evidence.md"
@@ -1699,7 +2240,7 @@ class OrchTreesTest(unittest.TestCase):
             tmp = Path(tmp)
             main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
             for bad in ("tickets", "friction", "../escape", "a/b", "", "canary"):
-                result = run_full(worktree, "run-state", "testrun", "--tree", bad,
+                result = run_main(worktree, "run-state", "testrun", "--tree", bad,
                                   "--artifact", "evidence.md", "--text", "x")
                 self.assertEqual(1, result.returncode, f"{bad!r}: {result.stdout}")
                 error = json.loads(result.stdout)["error"]
@@ -1769,7 +2310,7 @@ class TestRunStateRootResolution(unittest.TestCase):
     def test_inside_a_real_git_worktree_the_bytes_land_at_the_main_root(self):
         with tempfile.TemporaryDirectory() as tmp:
             main, worktree = make_real_worktree(Path(tmp))
-            payload = run_cmd(worktree, "run-state", "testrun", "--note", "from a real worktree")
+            payload = run_json(worktree, "run-state", "testrun", "--note", "from a real worktree")
             self.assertEqual(
                 str(worklog_of(main).resolve()), payload["run_state"]["path"]
             )
@@ -2456,7 +2997,7 @@ class TestExecutedPacketSeam(unittest.TestCase):
     def test_the_emitted_line_runs_from_inside_and_check_grades_the_result(self):
         with tempfile.TemporaryDirectory() as tmp:
             main, worktree, ticket, base = make_isolated_fixture(Path(tmp))
-            packet = run_cmd(worktree, "packet", "testrun", "T1", "--reply-to", "main")["packet"]
+            packet = run_json(worktree, "packet", "testrun", "T1", "--reply-to", "main")["packet"]
             (line,) = establishment_lines(packet["prompt"])
             argv = line.split()
 
@@ -2503,7 +3044,7 @@ class TestExecutedRunStateSeam(unittest.TestCase):
     def test_the_emitted_run_state_lines_run_from_inside_the_linked_tree(self):
         with tempfile.TemporaryDirectory() as tmp:
             main, worktree, _, _ = make_isolated_fixture(Path(tmp))
-            packet = run_cmd(worktree, "packet", "testrun", "T1", "--reply-to", "main")["packet"]
+            packet = run_json(worktree, "packet", "testrun", "T1", "--reply-to", "main")["packet"]
             note_line, artifact_line = run_state_lines(packet["prompt"])
 
             note_argv = note_line.split()
@@ -2694,7 +3235,7 @@ class HelpTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
-            result = run_full(worktree, "run-state", "testrun", "--note", "--help")
+            result = run_main(worktree, "run-state", "testrun", "--note", "--help")
             self.assertEqual(0, result.returncode, result.stdout)
             payload = json.loads(result.stdout)
             self.assertNotIn("help", payload)

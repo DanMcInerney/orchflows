@@ -34,8 +34,96 @@ def setUpModule():
     os.environ.pop("CODEX_HOME", None)
 
 
+_SHARED: dict = {}
+
+
 def tearDownModule():
     _ENV_GUARD.stop()
+    for key in ("root", "uninstall_root"):
+        root = _SHARED.pop(key, None)
+        if root is not None:
+            # Strict, like every other removal in this suite: a root that
+            # cannot be removed is a failure worth hearing, and neither shared
+            # root can hold a repository, so `tree_removal.remove_repo_tree`
+            # is not the owner here (see its docstring's scope clause).
+            shutil.rmtree(root)
+
+
+def relocated_user_install():
+    """One user-scope install -- both hosts enabled, both config directories
+    relocated -- applied once and shared by every test that only reads it.
+
+    The apply is the whole cost of this module: it copies the library, every
+    adapter, every agent and every script, and four tests were each paying
+    for their own to read a different corner of one identical result.
+
+    Read-only, and it has to stay that way: a test that writes into what this
+    returns changes what the tests after it see. Anything that mutates its
+    own install -- a reapply, an uninstall, a dry run proving nothing was
+    written, a pre-seeded legacy file -- builds its own below, and the ones
+    that grade *where* a surface lands unrelocated do too. Built on first use
+    rather than in ``setUpModule`` so running one test costs one test.
+
+    Returns the plan, the fake home, and the two relocated config directories.
+    """
+
+    if "value" not in _SHARED:
+        root = Path(tempfile.mkdtemp(prefix="orchflows-shared-install-"))
+        _SHARED["root"] = root
+        home = root / "home"
+        home.mkdir()
+        claude_dir = root / "elsewhere" / "claude"
+        claude_dir.mkdir(parents=True)
+        codex_dir = root / "elsewhere" / "codex"
+        codex_dir.mkdir(parents=True)
+        with patch.object(install.Path, "home", return_value=home), patch.dict(
+            os.environ,
+            {"CLAUDE_CONFIG_DIR": str(claude_dir), "CODEX_HOME": str(codex_dir)},
+        ), mock_host_clis("claude", "codex"):
+            plan = install.build_plan("user", None)
+            install.apply_plan(plan)
+        _SHARED["value"] = (plan, home, claude_dir, codex_dir)
+    return _SHARED["value"]
+
+
+def relocated_user_uninstall():
+    """The same install, its own copy, uninstalled once.
+
+    Uninstall is destructive, so it cannot run over the shared read-only
+    install -- but its *result* is read-only, and two tests read different
+    halves of it: that Claude's adapters followed `CLAUDE_CONFIG_DIR` out of
+    the removal and Codex's prompts and skills followed `CODEX_HOME`. One
+    apply and one uninstall answer both.
+
+    Returns the plan, the uninstall report, and the two config directories.
+    """
+
+    if "uninstalled" not in _SHARED:
+        root = Path(tempfile.mkdtemp(prefix="orchflows-shared-uninstall-"))
+        _SHARED["uninstall_root"] = root
+        home = root / "home"
+        home.mkdir()
+        claude_dir = root / "elsewhere" / "claude"
+        claude_dir.mkdir(parents=True)
+        codex_dir = root / "elsewhere" / "codex"
+        codex_dir.mkdir(parents=True)
+        with patch.object(install.Path, "home", return_value=home), patch.dict(
+            os.environ,
+            {"CLAUDE_CONFIG_DIR": str(claude_dir), "CODEX_HOME": str(codex_dir)},
+        ), mock_host_clis("claude", "codex"):
+            plan = install.build_plan("user", None)
+            install.apply_plan(plan)
+            report = install.run_uninstall("user", None, dry_run=False)
+        _SHARED["uninstalled"] = (plan, report, claude_dir, codex_dir)
+    return _SHARED["uninstalled"]
+
+
+def removed_unchanged(report: dict) -> set:
+    return {
+        action["path"]
+        for action in report["skill_actions"]
+        if action["action"] == "removed unchanged skill"
+    }
 
 
 requires_tomllib = unittest.skipIf(
@@ -68,19 +156,13 @@ class TestScriptNames(unittest.TestCase):
     proved nothing about install.py's behavior."""
 
     def test_build_plan_installs_every_managed_script_with_matching_content(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            home = Path(tmp)
-            (home / ".claude").mkdir(parents=True)
-            with patch.object(install.Path, "home", return_value=home), mock_host_clis("claude"):
-                plan = install.build_plan("user", None)
-                install.apply_plan(plan)
-
-            self.assertEqual(set(install.SCRIPT_NAMES), {path.name for _, path in plan.scripts})
-            for name in install.SCRIPT_NAMES:
-                installed = plan.bin_dir / name
-                self.assertTrue(installed.is_file(), f"{name} was not installed to {plan.bin_dir}")
-                source = install.REPO_ROOT / "scripts" / name
-                self.assertEqual(source.read_bytes(), installed.read_bytes())
+        plan = relocated_user_install()[0]
+        self.assertEqual(set(install.SCRIPT_NAMES), {path.name for _, path in plan.scripts})
+        for name in install.SCRIPT_NAMES:
+            installed = plan.bin_dir / name
+            self.assertTrue(installed.is_file(), f"{name} was not installed to {plan.bin_dir}")
+            source = install.REPO_ROOT / "scripts" / name
+            self.assertEqual(source.read_bytes(), installed.read_bytes())
 
 
 class TestInstallReceipt(unittest.TestCase):
@@ -296,6 +378,76 @@ class TestInstallReceipt(unittest.TestCase):
 
             self.assertFalse(old_agent.exists())
             self.assertEqual('name = "orch_worker"\n', new_agent.read_text(encoding="utf-8"))
+
+
+class RoleProfileRefusalTest(unittest.TestCase):
+    """`load_role_profiles` reads the one table binding each child role to a
+    model on each host, and refuses rather than install half a binding.
+
+    Every refusal below would otherwise ship silently and surface only at
+    dispatch: a host agent for a role nothing dispatches, a role agent bound
+    to no model, or two Codex agents claiming one spawn identifier. Each case
+    mutates the shipped table in exactly one way, so nothing else can be what
+    the refusal is reacting to.
+    """
+
+    ROW = (
+        "| `{name}` | {role} | agent_type `{agent}`, model `gpt-5.6-sol`, "
+        "model_reasoning_effort `high` | model `claude-opus-5`, effort `high` |\n"
+    )
+
+    def table(self, *replacements, extra: str = "") -> Path:
+        text = install.PROFILES_MD.read_text(encoding="utf-8")
+        for old, new in replacements:
+            self.assertIn(old, text, old)
+            text = text.replace(old, new, 1)
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp)
+        path = Path(tmp) / "profiles.md"
+        path.write_text(text.rstrip("\n") + "\n" + extra, encoding="utf-8")
+        return path
+
+    def test_a_row_whose_role_is_outside_the_closed_set_is_skipped(self):
+        path = self.table(
+            extra=self.ROW.format(name="orch-scribe", role="archivist", agent="orch_scribe")
+        )
+        profiles = install.load_role_profiles(path)
+        self.assertEqual({"orch-planner", "orch-worker"}, set(profiles))
+
+    def test_a_missing_role_row_is_refused_and_the_role_is_named(self):
+        rows = {
+            role: next(
+                line for line in install.PROFILES_MD.read_text(encoding="utf-8").splitlines()
+                if line.startswith(f"| `orch-{role}` |")
+            )
+            for role in install.PROFILE_ROLES
+        }
+        for role, line in rows.items():
+            with self.subTest(role=role):
+                path = self.table((line + "\n", ""))
+                with self.assertRaisesRegex(
+                    ValueError, rf"missing role profile row\(s\) for orch-{role}"
+                ):
+                    install.load_role_profiles(path)
+
+    def test_an_incomplete_codex_binding_is_refused_and_the_row_is_named(self):
+        path = self.table((", model_reasoning_effort `ultra`", ""))
+        with self.assertRaisesRegex(ValueError, "incomplete Codex binding for orch-planner"):
+            install.load_role_profiles(path)
+
+    def test_two_roles_may_not_claim_one_codex_agent_type(self):
+        """The Codex agent_type is the spawn identifier and the installed
+        file's name: two rows sharing one write two agents to one path, the
+        second winning without a word."""
+
+        path = self.table(("agent_type `orch_worker`", "agent_type `orch_planner`"))
+        with self.assertRaisesRegex(ValueError, "duplicate Codex agent_type: orch_planner"):
+            install.load_role_profiles(path)
+
+    def test_an_incomplete_claude_binding_is_refused_and_the_row_is_named(self):
+        path = self.table(("model `claude-opus-5`, effort `max`", "effort `max`"))
+        with self.assertRaisesRegex(ValueError, "incomplete Claude binding for orch-planner"):
+            install.load_role_profiles(path)
 
 
 class TestScopedHostConfiguration(unittest.TestCase):
@@ -936,29 +1088,25 @@ class TestClaudeAlwaysOnImport(unittest.TestCase):
             self.assertIn("Friction law", plan.blocks[0].content)
 
     def test_apply_writes_host_block_file_and_appends_import_line(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            home = Path(tmp)
-            (home / ".claude").mkdir(parents=True)
-            (home / ".codex").mkdir(parents=True)
-            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
-                "claude", "codex"
-            ):
-                plan = install.build_plan("user", None)
-                install.apply_plan(plan)
+        """What the apply put on disk. Which paths those are is graded by
+        `test_user_plan_renders_host_block_file_and_claude_import` above,
+        which needs no apply at all -- so this one reads the plan's own
+        destinations and can share an install with three other tests."""
 
-            host_block_path = home / ".orchflows" / "host-block.md"
-            claude_md = home / ".claude" / "CLAUDE.md"
-            self.assertTrue(host_block_path.is_file())
-            self.assertIn("Friction law", host_block_path.read_text(encoding="utf-8"))
+        plan, home, _claude_dir, _codex_dir = relocated_user_install()
+        host_block_path = home / ".orchflows" / "host-block.md"
+        self.assertEqual(host_block_path, plan.host_block.dest)
+        self.assertTrue(host_block_path.is_file())
+        self.assertIn("Friction law", host_block_path.read_text(encoding="utf-8"))
 
-            claude_text = claude_md.read_text(encoding="utf-8")
-            import_line = f"@{host_block_path.resolve()}"
-            self.assertEqual(1, claude_text.count(import_line))
+        claude_text = plan.claude_import.dest.read_text(encoding="utf-8")
+        import_line = f"@{host_block_path.resolve()}"
+        self.assertEqual(1, claude_text.count(import_line))
 
-            # Codex AGENTS.md still carries the full inline block.
-            agents_text = (home / ".codex" / "AGENTS.md").read_text(encoding="utf-8")
-            self.assertIn("Friction law", agents_text)
-            self.assertNotIn(f"@{host_block_path.resolve()}", agents_text)
+        # Codex AGENTS.md still carries the full inline block.
+        agents_text = plan.blocks[0].dest.read_text(encoding="utf-8")
+        self.assertIn("Friction law", agents_text)
+        self.assertNotIn(import_line, agents_text)
 
     def test_reapply_does_not_duplicate_import_line(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1761,53 +1909,25 @@ class TestClaudeConfigDir(unittest.TestCase):
     same override Claude Code itself reads."""
 
     def test_user_plan_writes_every_claude_surface_under_claude_config_dir(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            home = Path(tmp) / "home"
-            home.mkdir()
-            config_dir = Path(tmp) / "elsewhere" / "claude"
-            config_dir.mkdir(parents=True)
-
-            with patch.object(install.Path, "home", return_value=home), patch.dict(
-                os.environ, {"CLAUDE_CONFIG_DIR": str(config_dir)}
-            ), mock_host_clis("claude"):
-                plan = install.build_plan("user", None)
-                install.apply_plan(plan)
-
-            self.assertTrue(plan.claude_adapters)
-            for dest, _ in plan.claude_adapters:
-                self.assertEqual(config_dir / "skills", dest.parent.parent)
-            self.assertTrue(plan.claude_agents)
-            for dest, _ in plan.claude_agents:
-                self.assertEqual(config_dir / "agents", dest.parent)
-            self.assertTrue((config_dir / "settings.json").is_file())
-            self.assertTrue((config_dir / "CLAUDE.md").is_file())
-            self.assertFalse((home / ".claude").exists())
+        plan, home, config_dir, _codex_dir = relocated_user_install()
+        self.assertTrue(plan.claude_adapters)
+        for dest, _ in plan.claude_adapters:
+            self.assertEqual(config_dir / "skills", dest.parent.parent)
+        self.assertTrue(plan.claude_agents)
+        for dest, _ in plan.claude_agents:
+            self.assertEqual(config_dir / "agents", dest.parent)
+        self.assertTrue((config_dir / "settings.json").is_file())
+        self.assertTrue((config_dir / "CLAUDE.md").is_file())
+        self.assertFalse((home / ".claude").exists())
 
     def test_uninstall_removes_adapter_installed_under_claude_config_dir(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            home = Path(tmp) / "home"
-            home.mkdir()
-            config_dir = Path(tmp) / "elsewhere" / "claude"
-            config_dir.mkdir(parents=True)
-
-            with patch.object(install.Path, "home", return_value=home), patch.dict(
-                os.environ, {"CLAUDE_CONFIG_DIR": str(config_dir)}
-            ), mock_host_clis("claude"):
-                plan = install.build_plan("user", None)
-                install.apply_plan(plan)
-                report = install.run_uninstall("user", None, dry_run=False)
-
-            adapters = {str(dest) for dest, _ in plan.claude_adapters}
-            removed = {
-                action["path"]
-                for action in report["skill_actions"]
-                if action["action"] == "removed unchanged skill"
-            }
-            self.assertTrue(adapters)
-            self.assertTrue(adapters <= removed)
-            for path in adapters:
-                self.assertEqual(config_dir / "skills", Path(path).parent.parent)
-            self.assertFalse((config_dir / "skills").exists())
+        plan, report, config_dir, _codex_dir = relocated_user_uninstall()
+        adapters = {str(dest) for dest, _ in plan.claude_adapters}
+        self.assertTrue(adapters)
+        self.assertTrue(adapters <= removed_unchanged(report))
+        for path in adapters:
+            self.assertEqual(config_dir / "skills", Path(path).parent.parent)
+        self.assertFalse((config_dir / "skills").exists())
 
     def test_blank_claude_config_dir_falls_back_to_home(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1827,57 +1947,29 @@ class TestCodexHome(unittest.TestCase):
     ``CLAUDE_CONFIG_DIR`` relocates Claude Code's."""
 
     def test_user_plan_writes_every_codex_surface_under_codex_home(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            home = Path(tmp) / "home"
-            home.mkdir()
-            codex_home = Path(tmp) / "elsewhere" / "codex"
-            codex_home.mkdir(parents=True)
-
-            with patch.object(install.Path, "home", return_value=home), patch.dict(
-                os.environ, {"CODEX_HOME": str(codex_home)}
-            ), mock_host_clis("codex"):
-                plan = install.build_plan("user", None)
-                install.apply_plan(plan)
-
-            self.assertTrue(plan.codex_prompts)
-            for dest, _ in plan.codex_prompts:
-                self.assertEqual(codex_home / "prompts", dest.parent)
-            self.assertTrue(plan.codex_skills)
-            for dest, _ in plan.codex_skills:
-                self.assertEqual(codex_home / "skills", dest.parent.parent)
-            self.assertTrue(plan.codex_agents)
-            for dest, _ in plan.codex_agents:
-                self.assertEqual(codex_home / "agents", dest.parent)
-            self.assertTrue((codex_home / "config.toml").is_file())
-            self.assertTrue((codex_home / "AGENTS.md").is_file())
-            self.assertFalse((home / ".codex").exists())
+        plan, home, _claude_dir, codex_home = relocated_user_install()
+        self.assertTrue(plan.codex_prompts)
+        for dest, _ in plan.codex_prompts:
+            self.assertEqual(codex_home / "prompts", dest.parent)
+        self.assertTrue(plan.codex_skills)
+        for dest, _ in plan.codex_skills:
+            self.assertEqual(codex_home / "skills", dest.parent.parent)
+        self.assertTrue(plan.codex_agents)
+        for dest, _ in plan.codex_agents:
+            self.assertEqual(codex_home / "agents", dest.parent)
+        self.assertTrue((codex_home / "config.toml").is_file())
+        self.assertTrue((codex_home / "AGENTS.md").is_file())
+        self.assertFalse((home / ".codex").exists())
 
     def test_uninstall_removes_codex_skills_installed_under_codex_home(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            home = Path(tmp) / "home"
-            home.mkdir()
-            codex_home = Path(tmp) / "elsewhere" / "codex"
-            codex_home.mkdir(parents=True)
-
-            with patch.object(install.Path, "home", return_value=home), patch.dict(
-                os.environ, {"CODEX_HOME": str(codex_home)}
-            ), mock_host_clis("codex"):
-                plan = install.build_plan("user", None)
-                install.apply_plan(plan)
-                report = install.run_uninstall("user", None, dry_run=False)
-
-            installed = {str(dest) for dest, _ in plan.codex_prompts + plan.codex_skills}
-            removed = {
-                action["path"]
-                for action in report["skill_actions"]
-                if action["action"] == "removed unchanged skill"
-            }
-            self.assertTrue(installed)
-            self.assertTrue(installed <= removed)
-            for path in installed:
-                self.assertIn(codex_home, Path(path).parents)
-            self.assertFalse((codex_home / "skills").exists())
-            self.assertFalse((codex_home / "prompts").exists())
+        plan, report, _claude_dir, codex_home = relocated_user_uninstall()
+        installed = {str(dest) for dest, _ in plan.codex_prompts + plan.codex_skills}
+        self.assertTrue(installed)
+        self.assertTrue(installed <= removed_unchanged(report))
+        for path in installed:
+            self.assertIn(codex_home, Path(path).parents)
+        self.assertFalse((codex_home / "skills").exists())
+        self.assertFalse((codex_home / "prompts").exists())
 
     def test_hooks_warning_reads_relocated_codex_home(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -10,9 +10,9 @@ import io
 import json
 import os
 import sys
+import sysconfig
 import tempfile
 import threading
-import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -328,6 +328,30 @@ class _FakeMsvcrt:
         return [event for event, who in self.events if who == name]
 
 
+class _VirtualClock:
+    """``time.monotonic`` and ``time.sleep`` over a counter.
+
+    The retry budget is arithmetic over these two calls, so spending it is
+    a property of the code and not of how loaded the host is. Measuring
+    real elapsed seconds instead measured the machine: under a runner that
+    shards modules across processes the reading is contended, and the only
+    repair available to a wall-clock assertion is a larger threshold, which
+    is the assertion giving up. Advancing a virtual clock spends the whole
+    budget in no real time and reads the same number every run.
+    """
+
+    def __init__(self):
+        self.now = 0.0
+        self.slept = []
+
+    def monotonic(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.slept.append(seconds)
+        self.now += seconds
+
+
 class FrictionAppendLockTest(_IsolatedRepoTestCase):
     """A concurrent append loses no line, and the lock that buys that never
     blocks the logger and never fails it."""
@@ -383,7 +407,9 @@ class FrictionAppendLockTest(_IsolatedRepoTestCase):
     def test_an_unacquirable_lock_still_writes_and_never_raises(self):
         fake = _FakeMsvcrt(always_refuse=True)
         path = self._prepared_log()
-        with mock.patch.object(friction, "msvcrt", fake):
+        with mock.patch.object(friction, "msvcrt", fake), mock.patch.object(
+            friction, "time", _VirtualClock()
+        ):
             friction._append_line(path, "second line\n")  # must not raise
             rc, out = self._run_main(["observed thing", "expected thing"])
         self.assertEqual(0, rc)
@@ -393,14 +419,32 @@ class FrictionAppendLockTest(_IsolatedRepoTestCase):
         self.assertEqual("observed thing", json.loads(lines[2])["observed"])
         self.assertNotIn("acquire", fake.thread_events(threading.current_thread().name))
 
-    def test_the_unacquired_path_is_bounded_below_one_second(self):
+    def test_the_unacquired_path_returns_inside_a_budget_under_one_second(self):
+        """The one-second ceiling rules/improvement.md §1 holds this logger
+        to, read off the retry arithmetic rather than off a stopwatch: the
+        budget bounds the wait, the loop never runs past it, and the line is
+        written when it runs out."""
+
         fake = _FakeMsvcrt(always_refuse=True)
+        clock = _VirtualClock()
         path = self._prepared_log()
-        with mock.patch.object(friction, "msvcrt", fake):
-            started = time.monotonic()
+        with mock.patch.object(friction, "msvcrt", fake), mock.patch.object(
+            friction, "time", clock
+        ):
             friction._append_line(path, "second line\n")
-            elapsed = time.monotonic() - started
-        self.assertLess(elapsed, 1.0, f"the unacquired append took {elapsed:.3f}s")
+        self.assertLess(
+            friction.APPEND_LOCK_BUDGET_SECONDS, 1.0, "the budget itself breaks the ceiling"
+        )
+        self.assertLessEqual(
+            clock.now,
+            friction.APPEND_LOCK_BUDGET_SECONDS,
+            "the retry loop waited past the budget it declares",
+        )
+        self.assertEqual(
+            {friction.APPEND_LOCK_RETRY_SECONDS},
+            set(clock.slept),
+            "the loop slept for something other than its own retry interval",
+        )
         self.assertGreater(
             fake.thread_events(threading.current_thread().name).count("refused"),
             1,
@@ -423,6 +467,42 @@ def top_level_imports(path):
     return imported
 
 
+STDLIB_DIR = Path(sysconfig.get_paths()["stdlib"]).resolve()
+# The one import friction.py takes under a try/except because the platform
+# may not have it: msvcrt ships with CPython on Windows and nowhere else, so
+# off Windows there is no spec to resolve and its absence is the contract.
+PLATFORM_OPTIONAL_IMPORTS = frozenset({"msvcrt"})
+
+
+def outside_the_standard_library(names):
+    """The subset of `names` this interpreter does not ship.
+
+    ``sys.stdlib_module_names`` answers this in one line and exists only
+    from 3.10; this repository's floor is 3.9, where that branch never ran
+    and the assertion resting on it was not coverage. Resolving each name
+    against the interpreter's own stdlib directory answers the same
+    question on every supported version.
+    """
+
+    outside = set()
+    for name in names:
+        if name in sys.builtin_module_names:
+            continue
+        try:
+            spec = importlib.util.find_spec(name)
+        except (ImportError, ValueError):
+            spec = None
+        if spec is None:
+            if name not in PLATFORM_OPTIONAL_IMPORTS:
+                outside.add(name)
+            continue
+        if spec.origin in (None, "built-in", "frozen"):
+            continue
+        if not Path(spec.origin).resolve().is_relative_to(STDLIB_DIR):
+            outside.add(name)
+    return outside
+
+
 def function_source(path, name):
     """The exact source of one top-level function, sliced from the file's own
     bytes. A whole-file diff would say nothing: these two files share two
@@ -438,7 +518,8 @@ def function_source(path, name):
 class FrictionDuplicationTest(unittest.TestCase):
     """friction.py must never fail, so it imports nothing that can fail --
     including scripts/tickets.py, which workspace.py imports instead
-    (tests/test_workspace.py:391). The price is two copied root resolvers, and
+    (test_the_root_resolver_is_imported_from_tickets_never_copied, in
+    tests/test_workspace.py). The price is two copied root resolvers, and
     the price of a copy nobody compares is a silent divergence, so compare
     them here.
 
@@ -458,9 +539,21 @@ class FrictionDuplicationTest(unittest.TestCase):
             imported,
             f"friction.py must stay standalone: {sorted(imported)}",
         )
-        stdlib = getattr(sys, "stdlib_module_names", None)
-        if stdlib is not None:  # 3.10+; under the 3.9 floor the pin above stands alone
-            self.assertEqual(set(), imported - set(stdlib))
+        self.assertEqual(
+            set(),
+            outside_the_standard_library(imported),
+            "friction.py imports something this interpreter does not ship",
+        )
+
+    def test_a_third_party_import_is_caught_as_outside_the_standard_library(self):
+        """Without this the check above passes on any input that happens to
+        resolve, and nothing shows it can convict. `tests` is this
+        repository's own package: importable here, shipped with no
+        interpreter."""
+
+        self.assertEqual({"tests"}, outside_the_standard_library({"json", "tests"}))
+        self.assertEqual({"no_such_module_anywhere"},
+                         outside_the_standard_library({"no_such_module_anywhere"}))
 
     def test_the_copied_root_resolvers_are_byte_identical_to_the_tickets_originals(self):
         for name in ("_main_checkout_root", "_find_repo_root"):

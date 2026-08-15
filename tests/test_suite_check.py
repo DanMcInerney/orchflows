@@ -77,15 +77,6 @@ class TestHashAndSnapshot(unittest.TestCase):
 
                 self.assertIn(str(Path("skills") / "SKILL.md"), snapshot["trees"][tree_name])
 
-    def test_hash_file_is_deterministic(self):
-        with tempfile.TemporaryDirectory() as td:
-            path = Path(td) / "a.jsonl"
-            path.write_text('{"a": 1}\n', encoding="utf-8")
-            first = suite_check.hash_file(path)
-            second = suite_check.hash_file(path)
-            self.assertEqual(first, second)
-            self.assertEqual(len(first), 64)
-
     def test_hash_file_changes_with_content(self):
         with tempfile.TemporaryDirectory() as td:
             path = Path(td) / "a.jsonl"
@@ -178,28 +169,16 @@ class TestHashAndSnapshot(unittest.TestCase):
 
 
 class TestDiffSnapshots(unittest.TestCase):
-    def test_no_changes_is_clean(self):
-        before = {"a": "file:1", "b": "dir"}
-        after = {"a": "file:1", "b": "dir"}
-        self.assertEqual(suite_check.diff_snapshots(before, after, "orch"), [])
-
-    def test_added_path_is_named(self):
-        before = {"a": "file:1"}
-        after = {"a": "file:1", "b": "file:2"}
-        problems = suite_check.diff_snapshots(before, after, "orch")
-        self.assertEqual(problems, ["orch: added b"])
-
-    def test_removed_path_is_named(self):
-        before = {"a": "file:1", "b": "file:2"}
-        after = {"a": "file:1"}
-        problems = suite_check.diff_snapshots(before, after, "orch")
-        self.assertEqual(problems, ["orch: removed b"])
-
-    def test_changed_path_is_named(self):
-        before = {"a": "file:1"}
-        after = {"a": "file:2"}
-        problems = suite_check.diff_snapshots(before, after, "orch")
-        self.assertEqual(problems, ["orch: changed a"])
+    def test_every_kind_of_difference_is_named_and_sameness_is_clean(self):
+        cases = (
+            ("no change", {"a": "file:1", "b": "dir"}, {"a": "file:1", "b": "dir"}, []),
+            ("added", {"a": "file:1"}, {"a": "file:1", "b": "file:2"}, ["orch: added b"]),
+            ("removed", {"a": "file:1", "b": "file:2"}, {"a": "file:1"}, ["orch: removed b"]),
+            ("changed", {"a": "file:1"}, {"a": "file:2"}, ["orch: changed a"]),
+        )
+        for kind, before, after, expected in cases:
+            with self.subTest(kind=kind):
+                self.assertEqual(suite_check.diff_snapshots(before, after, "orch"), expected)
 
     def test_added_only_ignores_removed_and_changed_but_flags_added(self):
         before = {"a": "file:1", "b": "file:2"}

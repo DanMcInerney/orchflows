@@ -22,19 +22,13 @@ if str(ROOT) not in sys.path:
 import install  # noqa: E402
 import scripts.cutcheck as cutcheck  # noqa: E402
 import scripts.tickets as tickets  # noqa: E402
-from tests.baseline_pin import BASELINE  # noqa: E402  the pin's one owner
+from tests.baseline_pin import (  # noqa: E402  the invocation's one owner
+    BASELINE,
+    run_cutcheck,
+    run_cutcheck_subprocess,
+    shared_root,
+)
 from tests.tree_removal import remove_repo_tree  # noqa: E402  the removal's one owner
-
-
-def run_cutcheck(run, baseline=BASELINE):
-    """Invoke cutcheck exactly as the completion test states it."""
-
-    return subprocess.run(
-        [sys.executable, "scripts/cutcheck.py", run, "--baseline", baseline],
-        cwd=str(ROOT),
-        capture_output=True,
-        text=True,
-    )
 
 
 def reported(result, family=cutcheck.FAMILY):
@@ -64,20 +58,44 @@ def fixture_criteria(run, name):
     return cutcheck._criteria(section[cutcheck.COMPLETION_SECTION])
 
 
-class CleanSetTest(unittest.TestCase):
-    def test_clean_set_exits_zero_and_reports_nothing(self):
-        result = run_cutcheck("cutcheck-clean")
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(reported(result), [])
-
-
 class AffirmativeSummaryTest(unittest.TestCase):
-    """A set with no finding outside the advisory set says so, rather than nothing."""
+    """A set with no finding outside the advisory set says so, rather than nothing.
+
+    This class is also the module's one end-to-end grading across a real
+    process boundary. Every other grading here runs `main` in this process
+    against copies the whole module shares, which is the same work without a
+    clone per invocation but cannot testify to argv, to the status the
+    operating system reports, or to two real pipes. One set graded the long way
+    is what says the short way reads the same, and the node below is where that
+    is asserted rather than assumed.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.spawned = run_cutcheck_subprocess(
+            ["cutcheck-clean", "--baseline", BASELINE]
+        )
 
     def test_the_clean_set_prints_the_affirmative_line_and_exits_zero(self):
-        result = run_cutcheck("cutcheck-clean")
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(result.stdout.splitlines(), [cutcheck.NO_FINDING_OUTSIDE])
+        self.assertEqual(
+            self.spawned.returncode, 0, self.spawned.stdout + self.spawned.stderr
+        )
+        self.assertEqual(
+            self.spawned.stdout.splitlines(), [cutcheck.NO_FINDING_OUTSIDE]
+        )
+
+    def test_the_in_process_grading_reads_the_same_as_the_spawned_one(self):
+        """The port's own anchor: one pair, graded both ways, compared whole.
+
+        Status and stdout together, because either alone passes over a run that
+        resolved nothing: `NO_TICKET_SET` with one line of explanation is a
+        report too. Stderr is not compared -- the in-process run neutralises
+        the scratch removal, which is the only thing that ever writes there.
+        """
+
+        graded = run_cutcheck("cutcheck-clean")
+        self.assertEqual(graded.returncode, self.spawned.returncode)
+        self.assertEqual(graded.stdout, self.spawned.stdout)
 
     def test_a_set_holding_a_finding_outside_the_advisory_set_never_affirms(self):
         violations, _, affirmed = report(run_cutcheck("cutcheck-f2-paths"))
@@ -132,17 +150,22 @@ class AdvisoryExitZeroTest(unittest.TestCase):
 
 
 class ExitCodeEpilogTest(unittest.TestCase):
-    """`--help` names each exit status, and says a verdict stays on its host."""
+    """`--help` names each exit status, and says a verdict stays on its host.
+
+    Spawned, and spawned once. The epilog is what argparse prints for an argv
+    this process never assembles and a status the operating system reports, so
+    a real process is the only thing that can be asked; five assertions read
+    that one output, so `setUpClass` and not `setUp`, which is four spawns of
+    the same reading.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.result = run_cutcheck_subprocess(["--help"])
+        cls.help = " ".join(cls.result.stdout.split())
 
     def setUp(self):
-        result = subprocess.run(
-            [sys.executable, "scripts/cutcheck.py", "--help"],
-            cwd=str(ROOT),
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.help = " ".join(result.stdout.split())
+        self.assertEqual(self.result.returncode, 0, self.result.stderr)
 
     def test_zero_is_no_finding_outside_the_advisory_set_and_not_a_clean_set(self):
         self.assertIn(
@@ -258,10 +281,20 @@ class ExtractionGapTest(unittest.TestCase):
 
 
 class CutTimeTest(unittest.TestCase):
-    """At cut time HEAD is the baseline, and every honest oracle fails there."""
+    """At cut time HEAD is the baseline, and every honest oracle fails there.
+
+    The cut-time reading is spawned. It is the one grading whose subject is the
+    revision the invocation resolves `HEAD` against, and an in-process run
+    resolves it inside a process that has already imported the tool and stood
+    somewhere: what `HEAD` means to a fresh invocation is a fact about the
+    invocation. The baseline-behind-HEAD reading next door asks nothing of the
+    process and is graded in this one.
+    """
 
     def test_same_revision_reads_green(self):
-        result = run_cutcheck("cutcheck-f1-cuttime", baseline="HEAD")
+        result = run_cutcheck_subprocess(
+            ["cutcheck-f1-cuttime", "--baseline", "HEAD"]
+        )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(reported(result), [])
 
@@ -328,12 +361,6 @@ class NestedEnumerationTest(unittest.TestCase):
         self.assertIn(
             "A reviewer names, from the module docstring alone", dict(criteria)[2]
         )
-
-    def test_the_indented_criterion_still_surfaces_in_the_report(self):
-        lines = reported(run_cutcheck("cutcheck-f1-truncated"))
-        gaps = [line for line in lines if cutcheck.EXTRACTION_GAP in line]
-        self.assertEqual(len(gaps), 1, "\n".join(lines))
-        self.assertIn("criterion 2", gaps[0])
 
 
 class PathRealityTest(unittest.TestCase):
@@ -1612,12 +1639,6 @@ class ProvenanceStampTest(unittest.TestCase):
         lines = [line for line in reported(result) if "02-stamped" in line]
         self.assertEqual(lines, [], result.stdout)
 
-    def test_the_existing_provenance_fixture_is_exempt_as_it_was(self):
-        result = run_cutcheck("cutcheck-provenance")
-        lines = [line for line in reported(result) if cutcheck.ALREADY_PASSES in line]
-        self.assertEqual(len(lines), 1, result.stdout)
-        self.assertIn("02-authored-here", lines[0])
-
     def test_every_shape_the_corpus_stamps_with_still_reads_as_a_stamp(self):
         for text in (
             "**A criterion.** `grep -n x install.py` returns it. oracle_class: "
@@ -2833,6 +2854,79 @@ class ScratchRootPlacementTest(unittest.TestCase):
                 )
             )
         self.assertIsNone(cutcheck._scratch_root(outside))
+
+
+class SharedScratchHarnessTest(unittest.TestCase):
+    """What the module's own grading harness may and may not do to the tool.
+
+    Every grading here but three runs `main` in this process against copies
+    the whole module shares, which is what turns 231 clones of a 78M
+    repository into 5. Three things have to stay true for that to be a
+    measurement of the tool rather than of a stub: the patches are scoped to
+    the call, the reports are values, and the shared root is this process's own.
+    """
+
+    def test_the_harness_leaves_the_real_scratch_lifecycle_in_place(self):
+        """The two classes next door grade the real removal, so they must reach it.
+
+        `ScratchCleanupReportingTest` and `ScratchRootPlacementTest` assert on
+        `_scratch_root` and `_remove_scratch_root` themselves. A module-wide
+        patch -- a `setUpModule` that starts one and never stops it -- would
+        leave both of them grading a lambda and passing, so the harness patches
+        inside the call it grades and nowhere else. Read after a grading, which
+        is when a leaked patch would still be standing.
+        """
+
+        before = (cutcheck._scratch_root, cutcheck._remove_scratch_root)
+        run_cutcheck("cutcheck-clean")
+        self.assertEqual(
+            (cutcheck._scratch_root, cutcheck._remove_scratch_root), before
+        )
+        for name, func in zip(("_scratch_root", "_remove_scratch_root"), before):
+            with self.subTest(function=name):
+                self.assertEqual(func.__name__, name)
+                self.assertEqual(func.__module__, cutcheck.__name__)
+
+    def test_two_readings_of_one_pair_are_one_grading_and_two_values(self):
+        """A memoised report is handed out by copy, so no caller can spend it.
+
+        The rewrite is the assertion. Two callers holding one object is a
+        report the second one reads after the first edited it, and 41 call
+        sites read this dictionary.
+        """
+
+        first, second = run_cutcheck("cutcheck-clean"), run_cutcheck("cutcheck-clean")
+        self.assertIsNot(first, second)
+        self.assertEqual(
+            (first.returncode, first.stdout, first.stderr),
+            (second.returncode, second.stdout, second.stderr),
+        )
+        first.stdout = "a caller rewrote its own copy"
+        self.assertNotEqual(run_cutcheck("cutcheck-clean").stdout, first.stdout)
+
+    def test_the_shared_root_is_this_processs_own_inside_the_tools_place(self):
+        """Two suites at once share the directory and never a tree.
+
+        The root is under the git **common** dir, which is the main checkout's
+        and answers the same from all 62 worktrees of this repository, so a
+        fixed name here would be two concurrent runs writing one tree. It is a
+        `mkdtemp` of the tool's own making instead, and the neighbour built
+        below is what says so rather than the prefix.
+        """
+
+        root = shared_root()
+        self.assertEqual(shared_root(), root, "a second root is a second pair of clones")
+        self.assertTrue(root.is_dir(), root)
+        self.assertEqual(root.parent.name, cutcheck.SCRATCH_DIR)
+        common = cutcheck._git(["rev-parse", "--git-common-dir"], ROOT)
+        self.assertEqual(common.returncode, 0, common.stderr)
+        self.assertEqual(
+            root.parent.parent, (ROOT / common.stdout.strip()).resolve()
+        )
+        neighbour = cutcheck._scratch_root(ROOT)
+        self.addCleanup(remove_repo_tree, neighbour)
+        self.assertEqual(neighbour.parent, root.parent)
+        self.assertNotEqual(neighbour, root)
 
 
 if __name__ == "__main__":

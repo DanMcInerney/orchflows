@@ -122,11 +122,19 @@ class World:
             identity, count = tree_identity(directory)
             self.artifacts[rung] = (directory, identity, count)
         self.angles = {case: "angle-%d" % index for index, case in enumerate(CASES)}
-        self._records = 0
 
     def write_record(self, text: str) -> Path:
-        self._records += 1
-        path = self.root / ("record-%d.md" % self._records)
+        """One file per distinct record text, named for the text.
+
+        Named for the text and not for a call counter: the world is shared
+        by the whole module, so a counter makes each test's path depend on
+        how many records the tests before it happened to write, and running
+        one test alone or in another order names a different file. Same
+        text, same path, and the write is idempotent.
+        """
+
+        digest = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+        path = self.root / ("record-%s.md" % digest)
         path.write_text(text, encoding="utf-8")
         return path
 
@@ -1204,7 +1212,16 @@ class TestCheckerShape(unittest.TestCase):
 
 class TestRowMode(unittest.TestCase):
     def row_file(self, text):
-        path = WORLD.root / "row.md"
+        """One file per distinct row text, named for the text.
+
+        Every test in this class wrote the same ``row.md``, so each one
+        depended on the previous one's content being overwritten before it
+        read: a test that failed after writing left the next one a file it
+        did not author. Named for the text, no two tests share a path.
+        """
+
+        digest = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+        path = WORLD.root / ("row-%s.md" % digest)
         path.write_text(text, encoding="utf-8")
         return path
 

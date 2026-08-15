@@ -39,6 +39,63 @@ RULES = ROOT / "rules"
 TEMPLATES = ROOT / "templates"
 
 
+_TEMPLATE_HOLDER = None
+_TEMPLATE = None
+
+
+def setUpModule():
+    """Build the isolated tree once, pinned, and copy it per test.
+
+    Building it in every setUp paid `validate.py --pin` -- a subprocess --
+    nine times for a tree whose bytes never differ. A filesystem copy of the
+    finished template costs a fraction of that and still hands each test a
+    private tree it is free to mutate.
+    """
+
+    global _TEMPLATE_HOLDER, _TEMPLATE
+    _TEMPLATE_HOLDER = tempfile.TemporaryDirectory(prefix="sync-template-")
+    _TEMPLATE = Path(_TEMPLATE_HOLDER.name) / "tree"
+    _TEMPLATE.mkdir()
+    shutil.copytree(CONTRACTS, _TEMPLATE / "contracts")
+    (_TEMPLATE / "rules").mkdir()
+    shutil.copy(RULES / "composition.md", _TEMPLATE / "rules" / "composition.md")
+    shutil.copy(RULES / "improvement.md", _TEMPLATE / "rules" / "improvement.md")
+    (_TEMPLATE / "templates").mkdir()
+    shutil.copy(TEMPLATES / "host-block.md", _TEMPLATE / "templates" / "host-block.md")
+    shutil.copy(ROOT / "AGENTS.md", _TEMPLATE / "AGENTS.md")
+    (_TEMPLATE / "tools").mkdir()
+    shutil.copy(VALIDATE, _TEMPLATE / "tools" / "validate.py")
+    subprocess.run(  # matching pins so only seeded mismatches can fail
+        [sys.executable, str(_TEMPLATE / "tools" / "validate.py"), "--pin"],
+        capture_output=True,
+        text=True,
+    )
+
+
+def tearDownModule():
+    _TEMPLATE_HOLDER.cleanup()
+
+
+_REAL_TREE_RUN = None
+
+
+def validate_the_real_tree():
+    """One `validate.py` run over this repository, shared by every case that
+    reads it. Nothing here mutates the tree, so a second run can only return
+    the first one's answer half a second later."""
+
+    global _REAL_TREE_RUN
+    if _REAL_TREE_RUN is None:
+        _REAL_TREE_RUN = subprocess.run(
+            [sys.executable, str(VALIDATE)], capture_output=True, text=True
+        )
+    return _REAL_TREE_RUN
+
+
+def warning_lines(stdout: str):
+    return [line for line in stdout.splitlines() if line.startswith("WARN")]
+
+
 class _IsolatedSyncTree(unittest.TestCase):
     """A synthetic repo tree carrying only what validate_sync and pin
     checking read: contracts/ (for pins), rules/composition.md +
@@ -48,18 +105,9 @@ class _IsolatedSyncTree(unittest.TestCase):
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.tmp_path = Path(self.tmp.name)
-        shutil.copytree(CONTRACTS, self.tmp_path / "contracts")
-        (self.tmp_path / "rules").mkdir()
-        shutil.copy(RULES / "composition.md", self.tmp_path / "rules" / "composition.md")
-        shutil.copy(RULES / "improvement.md", self.tmp_path / "rules" / "improvement.md")
-        (self.tmp_path / "templates").mkdir()
-        shutil.copy(TEMPLATES / "host-block.md", self.tmp_path / "templates" / "host-block.md")
-        shutil.copy(ROOT / "AGENTS.md", self.tmp_path / "AGENTS.md")
-        (self.tmp_path / "tools").mkdir()
+        self.tmp_path = Path(self.tmp.name) / "tree"
+        shutil.copytree(_TEMPLATE, self.tmp_path)
         self.validate_copy = self.tmp_path / "tools" / "validate.py"
-        shutil.copy(VALIDATE, self.validate_copy)
-        self._run("--pin")  # matching pins so only seeded mismatches can fail
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -181,9 +229,10 @@ class TestSyncAgainstRepo(unittest.TestCase):
     never appearing."""
 
     def test_real_tree_owned_copies_are_in_sync(self):
-        result = subprocess.run(
-            [sys.executable, str(VALIDATE)], capture_output=True, text=True
-        )
+        result = validate_the_real_tree()
+        # The returncode first: without it a validate.py that crashed before
+        # printing anything satisfies all three assertNotIns below.
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertNotIn("out of sync", result.stdout)
         self.assertNotIn("BODY_BUDGET", result.stdout)
         self.assertNotIn("ENVELOPE_UNITS", result.stdout)
@@ -324,54 +373,60 @@ class FrictionLocationSyncTest(unittest.TestCase):
 
     # --- the two wrong-result readings (rules/verification.md §8) ------
 
-    OVERLAY = (
-        "scripts/friction.py",
-        "docs/vocabulary.md",
-        "templates/host-block.md",
-        "AGENTS.md",
-        "tools/validate.py",
+    # Version control, runtime state, caches -- and the two data corpora
+    # that hold 1275 of the tree's 1492 files while validate.py grades
+    # neither: the copy reports the identical exit code and warning count
+    # without them, and `test_the_copy_grades_what_the_tree_grades` is what
+    # says so on every run.
+    COPY_SKIPS = shutil.ignore_patterns(
+        ".git", ".claude", ".orch", "__pycache__", "*.pyc", ".venv", ".mypy_cache",
+        "benchmarks", "fixtures",
     )
     _copy = None
     _revisions = None
+    _clean = None
 
     @classmethod
     def _wrong_result_tree(cls):
-        """A clone beside the tree -- never the tree itself, which an
-        interrupted seeding leaves mutated, and never an extract, which
-        drops `.git` -- carrying the working-tree state of every file the
-        check reads, so an uncommitted slice is what gets read."""
+        """A copy beside the tree -- never the tree itself, which an
+        interrupted seeding leaves mutated -- carrying the working-tree
+        state of every file the check reads, so an uncommitted slice is what
+        gets read.
+
+        A `git clone` would carry the *committed* state and cost four
+        seconds; this carries the working tree directly, which is what the
+        clone's five-file overlay existed to reconstruct. Dropping `.git`
+        costs nothing: validate.py runs no git (it contains no subprocess
+        call at all), and the revision this reading is against is read off
+        the tree the copy was taken from.
+        """
 
         if cls._copy is None:
             scratch = Path(tempfile.mkdtemp(prefix="friction-locations-"))
             cls.addClassCleanup(setattr, cls, "_copy", None)
+            cls.addClassCleanup(setattr, cls, "_clean", None)
             cls.addClassCleanup(remove_repo_tree, scratch)
-            copy = scratch / "clone"
-            subprocess.run(
-                ["git", "clone", "--quiet", str(ROOT), str(copy)],
-                check=True, capture_output=True,
-            )
-            for rel_path in cls.OVERLAY:
-                shutil.copy(ROOT / rel_path, copy / rel_path)
+            copy = scratch / "copy"
+            shutil.copytree(ROOT, copy, ignore=cls.COPY_SKIPS, symlinks=True)
             cls._revisions = subprocess.run(
-                ["git", "-C", str(copy), "rev-list", "--count", "HEAD"],
+                ["git", "-C", str(ROOT), "rev-list", "--count", "HEAD"],
                 capture_output=True, text=True, check=True,
             ).stdout.strip()
-            subprocess.run(
-                [sys.executable, str(copy / "tools" / "validate.py"), "--pin"],
-                capture_output=True, text=True,
-            )
             cls._copy = copy
         return cls._copy
 
     def _reading(self, label: str) -> str:
-        return f"{label} [clone, git rev-list --count {self._revisions}]"
+        return f"{label} [working-tree copy, git rev-list --count {self._revisions}]"
 
-    def _validate_in_copy(self):
-        copy = self._wrong_result_tree()
+    @staticmethod
+    def _validate(root):
         return subprocess.run(
-            [sys.executable, str(copy / "tools" / "validate.py")],
+            [sys.executable, str(Path(root) / "tools" / "validate.py")],
             capture_output=True, text=True,
         )
+
+    def _validate_in_copy(self):
+        return self._validate(self._wrong_result_tree())
 
     def _seed(self, rel_path: str, old: str, new: str) -> None:
         path = self._wrong_result_tree() / rel_path
@@ -381,8 +436,31 @@ class FrictionLocationSyncTest(unittest.TestCase):
         path.write_text(text.replace(old, new, 1), encoding="utf-8")
 
     def _assert_clean_first(self):
-        clean = self._validate_in_copy()
-        self.assertEqual(0, clean.returncode, self._reading(f"unseeded copy must pass first: {clean.stdout}"))
+        """The unseeded reading, taken once and shared. It is the same tree
+        in the same state for every case here, and it cost a full validate
+        run per case to keep asking."""
+
+        cls = type(self)
+        if cls._clean is None:
+            cls._clean = self._validate_in_copy()
+        self.assertEqual(
+            0, cls._clean.returncode,
+            self._reading(f"unseeded copy must pass first: {cls._clean.stdout}"),
+        )
+
+    def test_the_copy_grades_what_the_tree_grades(self):
+        """The copy leaves out benchmarks/ and tests/fixtures/. If validate.py
+        ever grades either, the copy stops being a stand-in for the tree and
+        every seeded reading above it is taken against something else."""
+
+        self._assert_clean_first()
+        tree = validate_the_real_tree()
+        self.assertEqual(0, tree.returncode, tree.stdout)
+        self.assertEqual(
+            warning_lines(tree.stdout),
+            warning_lines(self._clean.stdout),
+            self._reading("the copy and the tree do not report the same findings"),
+        )
 
     def test_a_copy_naming_only_the_repository_location_fails(self):
         local, outside = self._resolved_locations()

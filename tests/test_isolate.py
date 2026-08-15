@@ -32,23 +32,53 @@ def write(path: Path, text: str):
 
 
 class IsolateTest(unittest.TestCase):
-    """Each case builds a throwaway repository; none reads this one."""
+    """Each case gets its own throwaway repository; none reads this one."""
+
+    @classmethod
+    def setUpClass(cls):
+        """The base repository costs six git subprocesses, and every case
+        needs the same one: built per test that was ~108 git invocations for
+        eighteen cases, over half the module's runtime. Built once here and
+        copied per test instead, so each case still owns a private, mutable
+        repository -- isolate.py's own subject rewrites it -- without paying
+        git again. Same hoist as tests/test_cutcheck.py:828."""
+
+        cls._template_root = Path(tempfile.mkdtemp(prefix="isolate-template-"))
+        cls.addClassCleanup(remove_repo_tree, str(cls._template_root))
+        template = cls._template_root / "repo"
+        template.mkdir()
+        git(template, "init", "-q")
+        git(template, "config", "user.email", "t@example.invalid")
+        git(template, "config", "user.name", "t")
+        # The template is read by every test's copy and written by none.
+        # Auto-gc and background maintenance would still write to it --
+        # a lock file under `.git/objects` that exists when copytree
+        # lists the directory and is gone when it reaches the entry.
+        git(template, "config", "gc.auto", "0")
+        git(template, "config", "maintenance.auto", "false")
+        write(template / "kept.md", "committed\n")
+        write(template / "changed.md", "committed\n")
+        write(template / "gone.md", "committed\n")
+        write(template / ".gitignore", ".orch/\n")
+        git(template, "add", "-A")
+        git(template, "commit", "-qm", "base")
+        cls._template = template
 
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp(prefix="isolate-test-"))
         self.addCleanup(remove_repo_tree, str(self.tmp))
         self.repo = self.tmp / "repo"
         self.dest = self.tmp / "out"
-        self.repo.mkdir()
-        git(self.repo, "init", "-q")
-        git(self.repo, "config", "user.email", "t@example.invalid")
-        git(self.repo, "config", "user.name", "t")
-        write(self.repo / "kept.md", "committed\n")
-        write(self.repo / "changed.md", "committed\n")
-        write(self.repo / "gone.md", "committed\n")
-        write(self.repo / ".gitignore", ".orch/\n")
-        git(self.repo, "add", "-A")
-        git(self.repo, "commit", "-qm", "base")
+        # `*.lock` is never copied: a lock names a write in progress, so
+        # carrying one into a fresh repository would be wrong even if it
+        # survived the copy. Belt to the template's braces above -- a git
+        # this suite did not configure is still git.
+        shutil.copytree(
+            self._template,
+            self.repo,
+            symlinks=True,
+            ignore=shutil.ignore_patterns("*.lock"),
+        )
 
     def run_isolate(self, *args):
         """The harness's own report is captured, not interleaved with ours."""
