@@ -5,6 +5,7 @@ must carry in the pack's slicing cell; every pack executor/assembly
 Return must file per the ticket/work-item filing law (work-item.md).
 Follows tests/test_validator.py's isolated-tmp-tree-plus-subprocess
 idiom for CLI-level fixtures."""
+import re
 import shutil
 import subprocess
 import sys
@@ -285,6 +286,62 @@ class TestCarriageAgainstRepo(unittest.TestCase):
             "expected zero carriage 'not carried' WARN lines on the real "
             f"tree; got:\n{result.stdout}",
         )
+
+
+SCRIPTS = ROOT / "scripts"
+ARCHITECTURE = ROOT / "ARCHITECTURE.md"
+
+# The form ARCHITECTURE.md's script clauses already take:
+# `scripts/<name>.py` owns <responsibility>. A bare mention names no owner.
+_OWNERSHIP_CLAUSE = re.compile(r"`scripts/([^`/]+\.py)`\s+owns\s+([^;.]+)")
+
+
+def _scripts_without_owners(scripts_dir, architecture_text):
+    """Every `*.py` in scripts_dir whose responsibility architecture_text
+    never states. Enumerated from disk, never from a pinned list, so a
+    script added later is checked without editing this file."""
+    flat = re.sub(r"\s+", " ", architecture_text)
+    owned = {m.group(1): m.group(2).strip() for m in _OWNERSHIP_CLAUSE.finditer(flat)}
+    return sorted(p.name for p in scripts_dir.glob("*.py") if not owned.get(p.name))
+
+
+class ScriptOwnershipTest(unittest.TestCase):
+    """ARCHITECTURE.md owns ownership (AGENTS.md), so a script whose
+    responsibility it never states has no owner in the repository."""
+
+    def test_every_script_is_named_with_the_responsibility_it_owns(self):
+        unowned = _scripts_without_owners(
+            SCRIPTS, ARCHITECTURE.read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            [],
+            unowned,
+            "ARCHITECTURE.md states no '`scripts/<name>` owns <responsibility>' "
+            f"clause for: {', '.join(unowned)}",
+        )
+
+    def test_a_script_with_no_owner_fails_the_check(self):
+        """The can-fail direction, built beside the tree and never by
+        mutating it (rules/verification.md §8): a scripts/ copy carrying
+        one extra script, read against the real ARCHITECTURE.md, which
+        cannot name it."""
+        architecture_text = ARCHITECTURE.read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            beside = Path(tmp) / "scripts"
+            beside.mkdir()
+            for script in SCRIPTS.glob("*.py"):
+                (beside / script.name).write_text("", encoding="utf-8")
+            self.assertEqual(
+                [],
+                _scripts_without_owners(beside, architecture_text),
+                "the copy must start fully owned, or the newcomer below is "
+                "not what the check reacted to",
+            )
+            (beside / "unowned_newcomer.py").write_text("", encoding="utf-8")
+            self.assertEqual(
+                ["unowned_newcomer.py"],
+                _scripts_without_owners(beside, architecture_text),
+            )
 
 
 if __name__ == "__main__":
