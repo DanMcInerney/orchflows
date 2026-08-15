@@ -2,6 +2,7 @@
 (claim races, malformed input, repo-boundary errors)."""
 
 import ast
+import importlib.util
 import inspect
 import json
 import os
@@ -1109,6 +1110,156 @@ class TestRunStateArtifact(unittest.TestCase):
             )
 
 
+# Reading is the thing an append does not do. Any of these inside the writer
+# says the write depends on what the file held at some earlier moment, which
+# is the whole of the hazard whether the write itself appends or not.
+READ_CALLS = frozenset({"read", "readline", "readlines", "read_text", "read_bytes"})
+
+
+def _constant(node):
+    """A literal argument's value, or ``None`` where it is not a literal."""
+
+    return node.value if isinstance(node, ast.Constant) else None
+
+
+def _open_mode(call, positional: int):
+    """The mode an ``open`` call asks for, however the call spells it:
+    positionally, by keyword, or by omission -- the default is a read.
+
+    ``open(path, mode)`` and ``path.open(mode)`` carry it in different
+    positions, so the caller says which one this call is.
+    """
+
+    for keyword in call.keywords:
+        if keyword.arg == "mode":
+            return _constant(keyword.value)
+    if len(call.args) > positional:
+        return _constant(call.args[positional])
+    return "r"
+
+
+def append_mechanism(source: str, name: str) -> dict:
+    """How the function ``name`` in ``source`` opens its file, read off the
+    AST rather than the text.
+
+    A grep pins one spelling of the call: it said nothing once the call moved
+    one function away, and it fails on ``open(path, 'a'``, on
+    ``open(path, mode="a")`` and on ``path.open("a")`` -- false failures, no
+    change in mechanism. What separates an append from a read-modify-write is
+    how many opens there are, in what mode, and whether anything reads.
+    """
+
+    defined = [
+        node
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.FunctionDef) and node.name == name
+    ]
+    if len(defined) != 1:
+        raise AssertionError(f"{len(defined)} functions named {name!r} in this source")
+    modes, reads = [], []
+    for call in ast.walk(defined[0]):
+        if not isinstance(call, ast.Call):
+            continue
+        if isinstance(call.func, ast.Attribute):
+            called, position = call.func.attr, 0  # path.open(mode)
+        elif isinstance(call.func, ast.Name):
+            called, position = call.func.id, 1  # open(path, mode)
+        else:
+            continue
+        if called == "open":
+            modes.append(_open_mode(call, position))
+        elif called in READ_CALLS:
+            reads.append(called)
+    return {"open_modes": modes, "reads": reads}
+
+
+def assert_one_append_open_and_no_read(test, source: str, name: str) -> None:
+    """Assert ``name`` appends: exactly one open, in append mode, nothing read.
+
+    One check, both directions: the real function is graded by it and so is
+    every wrong implementation built beside the tree, so what passes and what
+    fails are decided by the same instrument.
+    """
+
+    mechanism = append_mechanism(source, name)
+    test.assertEqual(["a"], mechanism["open_modes"], name)
+    test.assertEqual([], mechanism["reads"], name)
+
+
+# One mechanism, three spellings, and not one of them a string the grep
+# could find. A check that fails on any of these reports a rewrite that
+# never happened.
+APPEND_SPELLINGS = {
+    "single quotes": """
+def _append_one_line(path, block):
+    with open(path, 'a', encoding="utf-8", newline="\\n") as handle:
+        handle.write(block)
+""",
+    "mode keyword": """
+def _append_one_line(path, block):
+    with open(path, mode="a", encoding="utf-8", newline="\\n") as handle:
+        handle.write(block)
+""",
+    "Path.open": """
+def _append_one_line(path, block):
+    with path.open("a", encoding="utf-8", newline="\\n") as handle:
+        handle.write(block)
+""",
+}
+
+# The real function writes on two branches and flushes on one; a third branch
+# would move that count again without moving anything the append depends on.
+BRANCHED_APPEND = """
+def _append_one_line(path, block):
+    with open(path, "a", encoding="utf-8", newline="\\n") as handle:
+        if msvcrt is None:
+            handle.write(block)
+            return
+        handle.write(block)
+        handle.flush()
+        handle.write("")
+"""
+
+# Two implementations that are wrong and satisfy the behavioural test anyway.
+# Each reproduces its expectation exactly, because the write that test
+# interleaves lands between two complete invocations -- so nothing there can
+# tell either of these from the real function. The first rewrites the whole
+# file; the second appends, but only after deciding from a read that another
+# writer can invalidate before the write lands.
+WRONG_APPENDS = {
+    "whole-file rewrite": """
+def _append_one_line(path, block):
+    existing = path.read_text(encoding="utf-8")
+    with open(path, "w", encoding="utf-8", newline="\\n") as handle:
+        handle.write(existing + block)
+""",
+    "append decided by a stale read": """
+def _append_one_line(path, block):
+    if block in path.read_text(encoding="utf-8"):
+        return
+    with open(path, "a", encoding="utf-8", newline="\\n") as handle:
+        handle.write(block)
+""",
+}
+
+
+def load_beside_the_tree(directory: Path, name: str, source: str):
+    """Import ``source`` as a module of its own, beside the tree, never in it.
+
+    A wrong implementation is evidence only if it is a real one, and
+    rules/verification.md §8 rules out the other way of getting one: editing
+    the tree under test and putting it back, where the harm is the window and
+    not the commit.
+    """
+
+    path = directory / (name + ".py")
+    path.write_text(source, encoding="utf-8")
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 class TerminalNoteTest(unittest.TestCase):
     """contracts/worklog.md: "Notes append in occurrence order, and no note
     is written past a terminal section: a worklog carries no terminal
@@ -1188,14 +1339,13 @@ class TerminalNoteTest(unittest.TestCase):
                 ["from the channel", "from another worktree", "from the channel again"],
                 worklog_of(main).read_text(encoding="utf-8").splitlines(),
             )
-            # Both halves of the note path: the subcommand and the helper it
-            # hands the write to. Reading only the subcommand made this pass
-            # for as long as the open sat there and say nothing once it moved.
-            source = " ".join(
-                inspect.getsource(tickets_mod._cmd_run_state).split()
-                + inspect.getsource(tickets_mod._append_one_line).split()
-            )
-            self.assertIn('open(path, "a"', source)
+            # The mechanism itself is graded by
+            # test_the_append_is_one_open_in_append_mode_with_no_read, and it
+            # has to be graded somewhere other than here: the write above
+            # lands between two complete invocations, so a read-modify-write
+            # reproduces this expectation exactly. What stood here was a grep
+            # over two function bodies joined as text, which the same
+            # mechanism spelled another way already failed.
 
             notes = [f"writer-{i} " + "x" * 2000 for i in range(8)]
             with ThreadPoolExecutor(max_workers=8) as pool:
@@ -1207,6 +1357,72 @@ class TerminalNoteTest(unittest.TestCase):
                 sorted(notes),
                 sorted(worklog_of(main, "otherrun").read_text(encoding="utf-8").splitlines()),
             )
+
+    def test_the_append_is_one_open_in_append_mode_with_no_read(self):
+        """The mechanism assertion, read off the AST: one open, append mode,
+        nothing read.
+
+        Replaces the source-text grep this class carried at 6c3b7aa:907,
+        which fell to a spelling change and to the call moving one function
+        away -- each a false failure, neither a change in mechanism."""
+
+        assert_one_append_open_and_no_read(
+            self, inspect.getsource(tickets_mod._append_one_line), "_append_one_line"
+        )
+
+    def test_the_assertion_survives_alternate_open_spellings(self):
+        """The spellings the grep could not read. Each is the same mechanism
+        written another way, so the assertion has to pass every one of them
+        while the string the grep looked for appears in none."""
+
+        for label, source in APPEND_SPELLINGS.items():
+            with self.subTest(label):
+                self.assertNotIn('open(path, "a"', source)
+                assert_one_append_open_and_no_read(self, source, "_append_one_line")
+
+    def test_a_read_modify_write_implementation_fails_the_assertion(self):
+        """The can-fail direction, without which the assertion grades nothing.
+
+        Each wrong implementation is imported beside the tree and run for
+        real: first against the interleaved write, where it reproduces the
+        behavioural expectation exactly and so goes uncaught, and then
+        against the assertion, which is the one check here that can see it."""
+
+        for label, source in WRONG_APPENDS.items():
+            with self.subTest(label), tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                wrong = load_beside_the_tree(tmp, "wrong_append", source)
+                path = tmp / "worklog.md"
+                path.write_text("", encoding="utf-8")
+                wrong._append_one_line(path, "from the channel\n")
+                with open(path, "a", encoding="utf-8", newline="\n") as handle:
+                    handle.write("from another worktree\n")
+                wrong._append_one_line(path, "from the channel again\n")
+                self.assertEqual(
+                    ["from the channel", "from another worktree",
+                     "from the channel again"],
+                    path.read_text(encoding="utf-8").splitlines(),
+                    "the behavioural test cannot tell this from the real one",
+                )
+                with self.assertRaises(AssertionError):
+                    assert_one_append_open_and_no_read(
+                        self,
+                        inspect.getsource(wrong._append_one_line),
+                        "_append_one_line",
+                    )
+
+    def test_the_write_call_count_is_not_asserted(self):
+        """Bodies that differ only in how many times they write get one
+        verdict. The real function is already on two writes and a flush, so a
+        count here would fail the next branch added to it -- the grep's
+        mistake in another instrument."""
+
+        for label, source in (
+            ("one write", APPEND_SPELLINGS["single quotes"]),
+            ("a write on every branch", BRANCHED_APPEND),
+        ):
+            with self.subTest(label):
+                assert_one_append_open_and_no_read(self, source, "_append_one_line")
 
     def test_the_close_requires_a_known_state_and_its_deciding_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
