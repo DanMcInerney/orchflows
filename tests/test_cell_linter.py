@@ -271,6 +271,56 @@ class TestCellDuplication(_IsolatedTree):
         self.assertNotIn(NEAR, out)
 
 
+class TestMandatedEchoExemption(_IsolatedTree):
+    """Three echoes an owner outside the pack mandates, so two packs
+    carrying them carry them by obligation. Each pair below is the real
+    tree's own pair with the domain nouns swapped for synthetic ones, so
+    the synthetic clauses have the real ones' shape and length."""
+
+    # packs/orch-code-pack/SKILL.md:12 and packs/orch-design-pack/SKILL.md:12.
+    ASSEMBLY = (
+        "none — the repository is the assembly",
+        "none — the merged revision's rendered views are the assembly",
+    )
+    # packs/orch-code-pack/references/oracles.md and the design pack's:
+    # both rows end in verdict.md's oracle_class and work-item.md's
+    # provenance, and there are three of the first and two of the second.
+    ORACLE_ROWS = (
+        "| behavior | the ticket's named test commands | deterministic | pre-existing |",
+        "| accessibility floor | the accessibility bar's check command at every "
+        "covered identity | deterministic | pre-existing |",
+    )
+    ORACLE_TABLE = (
+        "# Oracles\n\n"
+        "| criterion kind | oracle | oracle_class | provenance |\n"
+        "| --- | --- | --- | --- |\n"
+        "%s\n"
+    )
+    # packs/*/references/craft.md:3 -- the opener naming the cell the file
+    # satisfies, which every pointer cell's reference carries.
+    CRAFT_OPENER = "# Craft\n\nThe %s domain's terms and shape, per the signature's craft cell.\n"
+
+    # A pack not exercising the assembly echo still needs a legal assembly
+    # that resolves without skills/ and is nobody else's verbatim twin: a
+    # per-pack gloss, since no backticked skill resolves in this tree.
+    def _inert(self, name):
+        return "none — %s stands in" % name
+
+    def test_the_craft_opener_the_assembly_form_and_the_oracle_enums_are_exempt(self):
+        for name, domain in (("openerapack", "alpha"), ("openerbpack", "beta")):
+            self._write_pack(name, assembly=self._inert(name),
+                             files={"references/craft.md": self.CRAFT_OPENER % domain})
+        self._write_pack("formapack", assembly=self.ASSEMBLY[0])
+        self._write_pack("formbpack", assembly=self.ASSEMBLY[1])
+        for name, row in (("enumapack", self.ORACLE_ROWS[0]), ("enumbpack", self.ORACLE_ROWS[1])):
+            self._write_pack(name, assembly=self._inert(name),
+                             files={"references/oracles.md": self.ORACLE_TABLE % row})
+        result = self._run()
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn(VERBATIM, result.stdout)
+        self.assertNotIn(NEAR, result.stdout)
+
+
 class TestAllowlist(unittest.TestCase):
     def test_exactly_one_family(self):
         self.assertEqual(1, len(validate.CELL_DUPLICATION_ALLOWLIST))
