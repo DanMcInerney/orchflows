@@ -192,6 +192,7 @@ ADVISORY = frozenset(
 # summary a filter selects is a finding line to everything downstream.
 ADVISORY_HEADING = "cutcheck: advisory -- reported, and never setting the exit status:"
 NO_FINDING_OUTSIDE = "cutcheck: no finding outside the advisory set"
+SCRATCH_NOT_REMOVED = "cutcheck: scratch root not removed"
 
 # The acceptance-coverage map: one row per spec criterion, naming the item,
 # the gate, or declared remainder that answers for it.
@@ -378,6 +379,29 @@ def _run_dir(run, worktree_root):
         if candidate.is_dir():
             return candidate
     return None
+
+
+def _scratch_root(worktree_root):
+    """One invocation's private directory for the copies it grades in."""
+
+    return Path(tempfile.mkdtemp(prefix=".cutcheck-", dir=str(worktree_root.parent)))
+
+
+def _remove_scratch_root(scratch_root):
+    """Remove this invocation's copies, and say so when they will not go.
+
+    ``ignore_errors=True`` here was a swallowed error in the tool whose whole
+    subject is swallowed errors: each copy is a full clone, and a removal that
+    quietly failed left one on disk per invocation with nothing said. Said
+    rather than raised, and never exit-setting -- the report is about this
+    tool's own hygiene, and a leaked copy is no finding against the ticket set
+    it was reading.
+    """
+
+    try:
+        shutil.rmtree(str(scratch_root))
+    except OSError as exc:
+        print("{}: {}: {}".format(SCRATCH_NOT_REMOVED, scratch_root, exc))
 
 
 def _scratch_tree(rev, worktree_root, scratch_root):
@@ -1348,7 +1372,7 @@ def main(argv=None):
         print("cutcheck: no ticket set resolved for run {}".format(args.run))
         return NO_TICKET_SET
 
-    scratch_root = Path(tempfile.mkdtemp(prefix=".cutcheck-", dir=str(worktree_root.parent)))
+    scratch_root = _scratch_root(worktree_root)
     try:
         baseline_tree = _scratch_tree(args.baseline, worktree_root, scratch_root)
         if baseline_tree is None:
@@ -1375,7 +1399,7 @@ def main(argv=None):
         findings.extend(_executor_legality(siblings, worktree_root))
         findings.extend(_symlink_findings(args.run, (baseline_tree, head_tree)))
     finally:
-        shutil.rmtree(scratch_root, ignore_errors=True)
+        _remove_scratch_root(scratch_root)
 
     outside = [f for f in findings if f[2] not in ADVISORY]
     advisory = [f for f in findings if f[2] in ADVISORY]

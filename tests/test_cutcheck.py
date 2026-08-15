@@ -1,6 +1,8 @@
 """Tests for scripts/cutcheck.py: family 1, oracle discrimination and shape."""
 
 import ast
+import contextlib
+import io
 import json
 import os
 import re
@@ -762,7 +764,7 @@ def _symlink_source(case):
     """
 
     root = Path(tempfile.mkdtemp(prefix="cutcheck-symlink-"))
-    case.addCleanup(shutil.rmtree, root, True)
+    case.addCleanup(shutil.rmtree, root)
     require_symlinks(case, root)
     outside = root / "outside"
     outside.mkdir()
@@ -931,7 +933,7 @@ class SymlinkCapabilityGuardTest(unittest.TestCase):
         """
 
         root = Path(tempfile.mkdtemp(prefix="cutcheck-probe-"))
-        self.addCleanup(shutil.rmtree, root, True)
+        self.addCleanup(shutil.rmtree, root)
         direct = root / "direct"
         try:
             os.symlink(str(root / "no-such-target"), str(direct))
@@ -944,7 +946,7 @@ class SymlinkCapabilityGuardTest(unittest.TestCase):
 
     def test_the_probe_leaves_the_directory_as_it_found_it(self):
         root = Path(tempfile.mkdtemp(prefix="cutcheck-probe-"))
-        self.addCleanup(shutil.rmtree, root, True)
+        self.addCleanup(shutil.rmtree, root)
         _symlink_capability(root)
         self.assertEqual(sorted(path.name for path in root.iterdir()), [])
 
@@ -960,7 +962,7 @@ def _tree_with_a_symlink_entry(case):
     """
 
     root = Path(tempfile.mkdtemp(prefix="cutcheck-mode-"))
-    case.addCleanup(shutil.rmtree, root, True)
+    case.addCleanup(shutil.rmtree, root)
     for args in (
         ["init", "-q", "."],
         ["config", "user.email", "cutcheck@example.invalid"],
@@ -1221,7 +1223,7 @@ class CommandExtractionTest(unittest.TestCase):
         """
 
         scratch = Path(tempfile.mkdtemp(prefix="cutcheck-quoted-"))
-        self.addCleanup(shutil.rmtree, scratch, True)
+        self.addCleanup(shutil.rmtree, scratch)
         self.assertTrue(scratch.is_dir(), scratch)
         mark = scratch / "quoted-command-ran"
         writer = scratch / "writer.py"
@@ -1499,7 +1501,7 @@ class BinaryOutputOracleTest(unittest.TestCase):
 
     def setUp(self):
         scratch_root = Path(tempfile.mkdtemp(prefix=".cutcheck-binary-"))
-        self.addCleanup(shutil.rmtree, scratch_root, True)
+        self.addCleanup(shutil.rmtree, scratch_root)
         self.tree = cutcheck._scratch_tree(BASELINE, ROOT, scratch_root)
         self.assertIsNotNone(self.tree, "no scratch tree was built for the baseline")
 
@@ -1512,7 +1514,7 @@ class ScratchTreeHistoryTest(unittest.TestCase):
 
     def setUp(self):
         scratch_root = Path(tempfile.mkdtemp(prefix=".cutcheck-history-"))
-        self.addCleanup(shutil.rmtree, scratch_root, True)
+        self.addCleanup(shutil.rmtree, scratch_root)
         self.tree = cutcheck._scratch_tree(BASELINE, ROOT, scratch_root)
         self.assertIsNotNone(self.tree, "no scratch tree was built for the baseline")
 
@@ -1786,7 +1788,7 @@ class InCopyMutationTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        shutil.rmtree(cls.scratch_root, ignore_errors=True)
+        shutil.rmtree(cls.scratch_root)
 
     def setUp(self):
         if self.tree is None:
@@ -1805,7 +1807,7 @@ class InCopyMutationTest(unittest.TestCase):
         for name in ("inside.txt", "probe_dir", ".pytest_cache"):
             path = self.tree / name
             if path.is_dir():
-                shutil.rmtree(path, ignore_errors=True)
+                shutil.rmtree(path)
             elif path.exists():
                 path.unlink()
         cutcheck._mutations(self.tree)
@@ -1868,6 +1870,138 @@ class InCopyMutationTest(unittest.TestCase):
         # state, not the first span's doing.
         self.assertIn(str(self.tree), cutcheck._TREE_STATE)
         self.assertEqual(cutcheck._mutations(self.tree), [])
+
+
+def rmtree_calls(tree):
+    """Every ``shutil.rmtree`` in a parsed module, with its ``ignore_errors``.
+
+    Two spellings, because they silence the same thing: the call itself, and
+    the call deferred through ``addCleanup``, where the third positional is
+    ``ignore_errors`` and reads as a bare ``True`` at the call site.
+    """
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            continue
+        if node.func.attr == "rmtree":
+            yield node, node.args[1:], node.keywords
+        elif (
+            node.func.attr == "addCleanup"
+            and node.args
+            and isinstance(node.args[0], ast.Attribute)
+            and node.args[0].attr == "rmtree"
+        ):
+            yield node, node.args[2:], node.keywords
+
+
+def swallows(rest, keywords):
+    """Does this call ask ``rmtree`` to discard the errors it raises?"""
+
+    given = list(rest) + [k.value for k in keywords if k.arg == "ignore_errors"]
+    return any(
+        not (isinstance(node, ast.Constant) and node.value is False) for node in given
+    )
+
+
+class ScratchCleanupReportingTest(unittest.TestCase):
+    """The root an invocation makes is removed, and a failure to remove it is said.
+
+    The removal itself is not new -- `mkdtemp` and `try:` are adjacent and the
+    `finally` covers the exception path and the early `NO_TICKET_SET` alike.
+    What is new is that anything checks it. `ignore_errors=True` in the tool
+    whose subject is swallowed errors leaves a 12M copy on disk and says
+    nothing, which is how seven roots accumulated unnoticed.
+    """
+
+    # A revision that resolves nowhere, so `main` returns at the early
+    # `NO_TICKET_SET` its `finally` also covers: no clone, no oracle, and the
+    # cleanup under test reached in milliseconds rather than minutes.
+    UNRESOLVABLE = "cutcheck-no-such-revision"
+
+    def setUp(self):
+        here = Path.cwd()
+        self.addCleanup(os.chdir, str(here))
+        os.chdir(str(ROOT))
+        self.addCleanup(cutcheck._EXIT_CACHE.clear)
+        self.addCleanup(cutcheck._TREE_STATE.clear)
+        self.addCleanup(cutcheck._MUTATED.clear)
+
+    def _main_naming_its_scratch_root(self):
+        """Run `main` to its `finally`, holding the exact root that run created.
+
+        `_scratch_root` is wrapped rather than the filesystem searched. A
+        `.cutcheck-*` glob would also match this suite's own roots and, worse,
+        a concurrently running cut's live tree; a directory listing is flaky
+        the moment two cuts overlap, which on this machine they do.
+        """
+
+        created = []
+        real = cutcheck._scratch_root
+
+        def recording(worktree_root):
+            root = real(worktree_root)
+            # Non-vacuity, asserted where it is still true: "the root is gone"
+            # passes for the wrong reason over a root that was never made.
+            self.assertIsNotNone(root, "no scratch root was created")
+            self.assertTrue(root.is_dir(), "{} was never a directory".format(root))
+            created.append(root)
+            return root
+
+        out = io.StringIO()
+        with mock.patch.object(cutcheck, "_scratch_root", recording):
+            with contextlib.redirect_stdout(out):
+                code = cutcheck.main(
+                    ["cutcheck-clean", "--baseline", self.UNRESOLVABLE]
+                )
+        self.assertEqual(len(created), 1, created)
+        return code, out.getvalue(), created[0]
+
+    def test_main_removes_the_root_it_created(self):
+        code, _, root = self._main_naming_its_scratch_root()
+        self.assertEqual(code, cutcheck.NO_TICKET_SET)
+        self.assertFalse(root.exists(), "{} outlived the run that made it".format(root))
+
+    def test_a_failing_removal_is_reported(self):
+        with mock.patch.object(
+            cutcheck.shutil, "rmtree", side_effect=OSError(13, "Permission denied")
+        ):
+            code, out, root = self._main_naming_its_scratch_root()
+        self.addCleanup(shutil.rmtree, root)
+        # The failure was a real one: said or swallowed, the root is still on
+        # disk, and that state is what the report exists to make visible.
+        self.assertTrue(root.is_dir(), "the removal did not actually fail")
+        self.assertIn(cutcheck.SCRATCH_NOT_REMOVED, out)
+        self.assertIn(str(root), out)
+        self.assertIn("Permission denied", out)
+        # Reported, not re-graded: a leaked root is the tool's own hygiene and
+        # never a finding against the ticket set it was reading.
+        self.assertEqual(code, cutcheck.NO_TICKET_SET)
+
+    def test_a_removal_that_succeeds_says_nothing(self):
+        # The can-fail direction for the line above: a report printed
+        # unconditionally would carry no information about the removal.
+        _, out, _ = self._main_naming_its_scratch_root()
+        self.assertNotIn(cutcheck.SCRATCH_NOT_REMOVED, out)
+
+    def test_suite_cleanups_do_not_swallow(self):
+        """The instrument may not silence what the subject is on trial for.
+
+        Read from the module's own source, so it covers every removal the
+        suite performs rather than the two a search happened to name.
+        """
+
+        source = Path(__file__).resolve()
+        calls = list(rmtree_calls(ast.parse(source.read_text(encoding="utf-8"))))
+        self.assertTrue(calls, "no shutil.rmtree call was found to check")
+        self.assertEqual(
+            [
+                "{}:{}".format(source.name, node.lineno)
+                for node, rest, keywords in calls
+                if swallows(rest, keywords)
+            ],
+            [],
+            "these removals discard the failure they should report",
+        )
 
 
 if __name__ == "__main__":
