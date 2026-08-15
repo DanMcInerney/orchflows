@@ -8,6 +8,7 @@ test_benchmark_architecture.py, which walked the tree four times over. Every
 test here reads committed files; the only subprocess is the one git index read
 that no filesystem check can substitute for.
 """
+import ast
 import re
 import subprocess
 import sys
@@ -293,6 +294,72 @@ class TestCompositionLinks(unittest.TestCase):
                         f"{path} cites {target}, which does not exist",
                     )
         self.assertTrue(checked, "found no composition links to resolve")
+
+
+def _called_name(node):
+    """The bare name of a call's target: `os.chdir` and `chdir` both give
+    `chdir`, so a module's import style does not decide what is checked."""
+
+    function = node.func
+    if isinstance(function, ast.Attribute):
+        return function.attr
+    return function.id if isinstance(function, ast.Name) else None
+
+
+def _calls_named(node, name):
+    return any(
+        isinstance(child, ast.Call) and _called_name(child) == name
+        for child in ast.walk(node)
+    )
+
+
+class TestNoTempTreeIsDeletedWhileItIsTheCwd(unittest.TestCase):
+    """Windows refuses to delete a directory that is any process's current
+    directory; POSIX allows it. So this shape passes every POSIX runner and
+    fails every Windows one, deterministically:
+
+        with tempfile.TemporaryDirectory() as raw:
+            os.chdir(Path(raw) / "repo")
+            self.addCleanup(os.chdir, before)
+
+    The block deletes the tree when it exits, and `addCleanup` does not run
+    until the whole test method has returned -- so the restore lands after
+    the delete has already been attempted, and the delete dies on WinError
+    32. The two safe shapes are both in this suite and both stay legal
+    here: restore inside the block through `try/finally`, or hold the
+    directory open (`tempfile.TemporaryDirectory()` bound to a name, its
+    `cleanup` registered with `addCleanup` *before* the chdir's restore, so
+    LIFO runs the restore first).
+
+    Caught by CI three times in two days and never once locally, because
+    the only host that can see it is the one this suite is least often run
+    on. It is a shape, not a behavior, so a reader can see it here instead.
+    """
+
+    def test_no_chdir_inside_a_temporary_directory_block_defers_its_restore(self):
+        offenders = []
+        for path in sorted(Path(__file__).resolve().parent.glob("*.py")):
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.With):
+                    continue
+                opens_temp_tree = any(
+                    isinstance(item.context_expr, ast.Call)
+                    and _called_name(item.context_expr) == "TemporaryDirectory"
+                    for item in node.items
+                )
+                if not opens_temp_tree or not _calls_named(node, "chdir"):
+                    continue
+                # A restore anywhere in a `finally` inside the block runs
+                # before the block's own cleanup, which is the whole point.
+                restored = any(
+                    isinstance(child, ast.Try)
+                    and any(_calls_named(stmt, "chdir") for stmt in child.finalbody)
+                    for child in ast.walk(node)
+                )
+                if not restored:
+                    offenders.append(f"{path.name}:{node.lineno}")
+        self.assertEqual([], offenders, "chdir inside a self-deleting temp tree")
 
 
 class TestBenchmarkArchitecture(unittest.TestCase):
