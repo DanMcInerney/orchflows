@@ -1,8 +1,15 @@
-"""Rule 10 (rules/composition.md, the carriage rule) mechanized as
+"""Invariants of this repository's own law, each read from the file that
+owns it. Rule 10 (rules/composition.md, the carriage rule) mechanized as
 validate_carriage: every call edge's Require item must be lexically
 carried in the caller's body; every pack's executor/assembly Require
 must carry in the pack's slicing cell; every pack executor/assembly
 Return must file per the ticket/work-item filing law (work-item.md).
+Then four invariants validate.py does not check: ARCHITECTURE.md naming
+the responsibility every `scripts/*.py` owns; every `tickets.py`
+subcommand reached by a skill body or recorded operator-only there; and
+two rules clauses read from their owners -- rules/verification.md §8 on
+proving a copy built beside the tree faithful, rules/improvement.md §1
+on where the friction fallback writes when the logger is refused.
 Follows tests/test_validator.py's isolated-tmp-tree-plus-subprocess
 idiom for CLI-level fixtures."""
 import re
@@ -531,6 +538,164 @@ class CopyFaithfulnessClauseTest(unittest.TestCase):
             self.assertEqual(
                 sorted(_FAITHFULNESS_CLAUSE),
                 _faithfulness_gaps(beside.read_text(encoding="utf-8")),
+            )
+
+
+IMPROVEMENT = ROOT / "rules" / "improvement.md"
+
+# What §1's fallback clause has to state, keyed to the refusal that named
+# it: the isolation guard refuses writes to any git worktree including the
+# main root, and the fallback the host block spells names a path inside the
+# repository -- so a destination stated only as repository-internal is no
+# destination under the one dispatch that forces the fallback.
+_FALLBACK_DESTINATION = {
+    "the refusal the fallback has to survive": ("writing inside a git worktree",),
+    "a destination reachable under it": ("outside every worktree", "the dispatch permits"),
+    "how the entry gets back": ("the return names that path",),
+}
+
+# §1 names the route once and delegates its spelling to the host block. A
+# fix that answers a missing destination with a new tool shows up either as
+# a second mechanism named here, or as a command or path spelled here.
+_PRIMARY_ROUTE = re.compile(r"through the installed ([a-z]+ logger)")
+_SECOND_ROUTE = re.compile(
+    r"\b(?:second|third|another|alternative|additional|backup|fallback)\s+"
+    r"(?:friction\s+)?(?:logger|tool|script|command)\b"
+)
+_SPELLED_COMMAND_OR_PATH = re.compile(r"`[^`]*(?:\.py\b|/)[^`]*`")
+
+# §1 as it read before the clause landed: one route, and no word on where
+# the fallback writes when the refusal covers the repository itself.
+_SECTION_1_UNAMENDED = """1. Friction law: on friction — more than two attempts at one step, a
+   missing input, tool, or document, surprising output, a contract gap,
+   or a workaround — the agent logs and continues, through the installed
+   friction logger (the host instruction block names its exact command;
+   this repository's is in `AGENTS.md`). Record observations only, never
+   causes. Categories form a closed set — repeated-attempts,
+   missing-input, missing-tool, missing-doc, contract-gap, tool-failure
+   (a tool erred outright), surprising-output, workaround, misrouting
+   (a wrong skill or lane was dispatched) — advisory evidence for the
+   clusters §4 keys on owner and observed-text similarity.
+   The logger never blocks, prompts, or fails the task; logging
+   is exempt from every bound. Logging friction is part of completing
+   the task: a session that hit friction and logged nothing failed
+   silently.
+"""
+
+_SECOND_ROUTE_SPLICE = (
+    "When the logger cannot run, a second logger at "
+    "`scripts/friction_fallback.py` takes the entry. "
+)
+
+
+def _fallback_destination_gaps(improvement_text):
+    """Which parts of the fallback-destination clause improvement_text
+    never states. Read from clause 1 alone, which owns the friction law,
+    through the flat-numbered clause reader above -- file-agnostic, only
+    its miss-message names verification.md."""
+    clause = _clause(improvement_text, 1)
+    return sorted(
+        name
+        for name, phrases in _FALLBACK_DESTINATION.items()
+        if not all(phrase in clause for phrase in phrases)
+    )
+
+
+def _routes_beyond_the_one(improvement_text):
+    """Everything in clause 1 that names a logging route other than the one
+    installed logger: a second mechanism by name, or a command or path
+    spelled where §1 delegates the spelling to the host block."""
+    clause = _clause(improvement_text, 1)
+    return sorted(
+        _SECOND_ROUTE.findall(clause) + _SPELLED_COMMAND_OR_PATH.findall(clause)
+    )
+
+
+class FrictionDestinationTest(unittest.TestCase):
+    """The fallback exists for the dispatch that refuses the logger, and the
+    refusal observed on this host covers writing inside any git worktree
+    including the main root. A fallback whose only destination sits inside
+    the repository has none exactly when it is reached for."""
+
+    def test_section_one_states_a_destination_that_survives_the_refusal(self):
+        gaps = _fallback_destination_gaps(IMPROVEMENT.read_text(encoding="utf-8"))
+        self.assertEqual(
+            [],
+            gaps,
+            "rules/improvement.md §1 states no fallback destination covering: "
+            f"{', '.join(gaps)}",
+        )
+
+    def test_section_one_still_names_exactly_one_primary_route(self):
+        clause = _clause(IMPROVEMENT.read_text(encoding="utf-8"), 1)
+        self.assertEqual(
+            ["friction logger"],
+            _PRIMARY_ROUTE.findall(clause),
+            "§1 names one primary route, the installed friction logger; the "
+            "destination gap is not answered by a second one",
+        )
+        extra = _routes_beyond_the_one(IMPROVEMENT.read_text(encoding="utf-8"))
+        self.assertEqual(
+            [],
+            extra,
+            "§1 delegates the command's spelling to the host block and adds "
+            f"no route of its own; it names: {', '.join(extra)}",
+        )
+
+    def test_a_section_one_without_the_destination_fails_the_check(self):
+        """The can-fail direction, built beside the tree and never by
+        mutating it (rules/verification.md §8): a copy of
+        rules/improvement.md carrying the §1 that preceded this clause. The
+        copy carries no history because the check reads clause text and
+        nothing else."""
+        real = IMPROVEMENT.read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            beside = Path(tmp) / "improvement.md"
+            beside.write_text(real, encoding="utf-8")
+            self.assertEqual(
+                [],
+                _fallback_destination_gaps(beside.read_text(encoding="utf-8")),
+                "the copy must start with the clause intact, or the excision "
+                "below is not what the check reacted to",
+            )
+            beside.write_text(
+                re.sub(
+                    r"(?ms)^1\. .*?(?=^2\. )",
+                    lambda _: _SECTION_1_UNAMENDED,
+                    real,
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                sorted(_FALLBACK_DESTINATION),
+                _fallback_destination_gaps(beside.read_text(encoding="utf-8")),
+            )
+
+    def test_a_section_one_answering_the_gap_with_a_tool_fails_the_check(self):
+        """The can-fail direction for the route count: a copy whose §1
+        answers the missing destination the way the ticket forbids -- with a
+        second logger, spelled."""
+        real = IMPROVEMENT.read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            beside = Path(tmp) / "improvement.md"
+            beside.write_text(real, encoding="utf-8")
+            self.assertEqual(
+                [],
+                _routes_beyond_the_one(beside.read_text(encoding="utf-8")),
+                "the copy must start with one route, or the splice below is "
+                "not what the check reacted to",
+            )
+            beside.write_text(
+                real.replace(
+                    "Logging friction is part of completing",
+                    _SECOND_ROUTE_SPLICE + "Logging friction is part of completing",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                ["`scripts/friction_fallback.py`", "second logger"],
+                _routes_beyond_the_one(beside.read_text(encoding="utf-8")),
             )
 
 
