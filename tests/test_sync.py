@@ -15,17 +15,21 @@ cells. That copy exists because an installed tickets.py has no library
 tree to read; nothing else then notices when a cell and the table move
 apart, which is what this module is for."""
 import ast
+import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import scripts.friction as friction_mod  # noqa: E402
 import scripts.tickets as tickets_mod  # noqa: E402
 
 VALIDATE = ROOT / "tools" / "validate.py"
@@ -249,6 +253,73 @@ class TestPackWorkspaceTableAgainstPacks(unittest.TestCase):
         self.assertIsInstance(found[0], ast.Dict)
         for node in [*found[0].keys, *found[0].values]:
             self.assertIsInstance(node, ast.Constant, ast.dump(node))
+
+
+VOCABULARY = ROOT / "docs" / "vocabulary.md"
+AGENTS_MD = ROOT / "AGENTS.md"
+HOST_BLOCK = TEMPLATES / "host-block.md"
+TERM_ENTRY_RE = re.compile(r"^- \*\*friction log\*\*.*?(?=\n- \*\*|\Z)", re.MULTILINE | re.DOTALL)
+BLOCKED_CASE_RE = re.compile(r"Whenever the logger cannot run.*?never skip the log\.")
+
+
+def _collapse(text: str) -> str:
+    return re.sub(r"\s+", " ", text)
+
+
+class FrictionLocationSyncTest(unittest.TestCase):
+    """The friction log's two locations, resolved by scripts/friction.py's
+    `_target_path`, against every copy of them: docs/vocabulary.md's
+    **friction log** term names both, and the blocked-case sentence in
+    templates/host-block.md and AGENTS.md names the out-of-worktree one
+    alone -- rules/improvement.md §1 sends a write its refusal blocks
+    inside a worktree outside every worktree, and rules/visibility.md §6
+    leaves no hand-written file under `.orch/`. Every expectation is
+    derived by running the owner, never restated here."""
+
+    @staticmethod
+    def _resolved_locations():
+        """(repository-relative, out-of-worktree), each spelled as a copy
+        spells it, from scripts/friction.py's own resolver: its
+        repository branch read with cwd in this tree, its home branch
+        with cwd in a scratch directory enclosed by no repository."""
+
+        stamp = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        origin = Path.cwd()
+        outside = Path(tempfile.mkdtemp(prefix="friction-outside-"))
+        try:
+            os.chdir(ROOT)
+            repo_root = friction_mod._find_repo_root(Path.cwd())
+            if repo_root is None:
+                raise AssertionError(f"{ROOT} encloses no repository; the repository branch was not exercised")
+            local = friction_mod._target_path(stamp).parent.relative_to(repo_root)
+            os.chdir(outside)
+            if friction_mod._find_repo_root(Path.cwd()) is not None:
+                raise AssertionError(f"{outside} is inside a repository; the home branch was not exercised")
+            home = friction_mod._target_path(stamp).parent.relative_to(Path.home())
+        finally:
+            os.chdir(origin)
+            shutil.rmtree(outside, True)
+        return local.as_posix() + "/", "~/" + home.as_posix() + "/"
+
+    def _blocked_case(self, path: Path) -> str:
+        match = BLOCKED_CASE_RE.search(_collapse(path.read_text(encoding="utf-8")))
+        self.assertIsNotNone(match, f"{path.name}: no blocked-case friction sentence to read")
+        return match.group(0)
+
+    def test_the_term_entry_names_every_location_the_logger_resolves(self):
+        match = TERM_ENTRY_RE.search(VOCABULARY.read_text(encoding="utf-8"))
+        self.assertIsNotNone(match, "docs/vocabulary.md: no **friction log** term entry")
+        entry = _collapse(match.group(0))
+        for location in self._resolved_locations():
+            self.assertIn(location, entry, f"the term owner does not name {location}: {entry}")
+
+    def test_both_copies_spell_the_blocked_case_destination(self):
+        local, outside = self._resolved_locations()
+        for path in (HOST_BLOCK, AGENTS_MD):
+            with self.subTest(copy=path.name):
+                sentence = self._blocked_case(path)
+                self.assertIn(outside, sentence, f"{path.name}: blocked case does not spell {outside}")
+                self.assertNotIn(local, sentence, f"{path.name}: blocked case still sends the entry to {local}")
 
 
 if __name__ == "__main__":
