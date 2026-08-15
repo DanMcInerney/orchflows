@@ -706,6 +706,36 @@ class GitEscapeTest(unittest.TestCase):
         self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
 
 
+SYMLINK_SKIP_PREFIX = "symlink creation unavailable, so the escape cannot be built here"
+
+
+def _symlink_capability(directory):
+    """Why no symlink can be created under `directory`, or None if one can.
+
+    Probed, never inferred from `os.name`: `os.symlink` exists on Windows and
+    raises without SeCreateSymbolicLinkPrivilege, so a platform test would skip
+    a capable runner and -- the defect that matters -- would have to guess for
+    an incapable one. The probe answers for the filesystem the escape is built
+    on, and leaves it as it found it.
+    """
+
+    probe = Path(directory) / ".cutcheck-symlink-probe"
+    try:
+        os.symlink(str(Path(directory) / "no-such-target"), str(probe))
+    except (OSError, NotImplementedError, ValueError) as exc:
+        return "{}: {}".format(SYMLINK_SKIP_PREFIX, exc)
+    os.unlink(str(probe))
+    return None
+
+
+def require_symlinks(case, directory):
+    """Skip `case` with a recorded reason where the escape cannot be built."""
+
+    reason = _symlink_capability(directory)
+    if reason is not None:
+        case.skipTest(reason)
+
+
 def _symlink_source(case):
     """A source tree committing a symlink that points outside itself.
 
@@ -717,6 +747,7 @@ def _symlink_source(case):
 
     root = Path(tempfile.mkdtemp(prefix="cutcheck-symlink-"))
     case.addCleanup(shutil.rmtree, root, True)
+    require_symlinks(case, root)
     outside = root / "outside"
     outside.mkdir()
     src = root / "src"
@@ -836,6 +867,70 @@ class GitConfinementGateTest(unittest.TestCase):
             "the copy read an orderfile lying outside it",
         )
         self.assertIn("orderfile", proc.stderr)
+
+
+class SymlinkCapabilityGuardTest(unittest.TestCase):
+    """Neither escape test may pass where the escape cannot be built.
+
+    A check that cannot fail decides nothing, and on a platform with no
+    symlink privilege neither confinement test can construct the wrong result
+    it exists to refuse. Passing there would report a guarantee nothing
+    checked -- on the three `windows-latest` matrix legs, every leg of it. So
+    they skip, and the reason is recorded rather than inferred from the count.
+    """
+
+    ESCAPE_TESTS = (
+        "test_committed_symlink_cannot_escape_the_copy",
+        "test_a_committed_symlink_cannot_be_read_through_by_an_orderfile",
+    )
+
+    def _incapable(self):
+        # What a Windows runner without SeCreateSymbolicLinkPrivilege raises.
+        return mock.patch.object(
+            os,
+            "symlink",
+            side_effect=OSError(1, "A required privilege is not held by the client"),
+        )
+
+    def test_each_escape_test_skips_with_a_reason_rather_than_passing(self):
+        for name in self.ESCAPE_TESTS:
+            with self.subTest(test=name):
+                result = unittest.TestResult()
+                with self._incapable():
+                    GitConfinementGateTest(name).run(result)
+                self.assertEqual(result.errors, [], "the guard never ran")
+                self.assertEqual(result.failures, [])
+                self.assertEqual(len(result.skipped), 1, "it passed vacuously")
+                self.assertEqual(
+                    result.skipped[0][1],
+                    SYMLINK_SKIP_PREFIX
+                    + ": [Errno 1] A required privilege is not held by the client",
+                )
+
+    def test_the_probe_answers_what_the_platform_actually_does(self):
+        """A guard that always skips is the same vacuity facing the other way.
+
+        No skip of its own: whichever way this host answers, the probe has to
+        agree with it, so the assertion is total on every platform.
+        """
+
+        root = Path(tempfile.mkdtemp(prefix="cutcheck-probe-"))
+        self.addCleanup(shutil.rmtree, root, True)
+        direct = root / "direct"
+        try:
+            os.symlink(str(root / "no-such-target"), str(direct))
+        except (OSError, NotImplementedError, ValueError):
+            capable = False
+        else:
+            capable = True
+            os.unlink(str(direct))
+        self.assertEqual(_symlink_capability(root) is None, capable)
+
+    def test_the_probe_leaves_the_directory_as_it_found_it(self):
+        root = Path(tempfile.mkdtemp(prefix="cutcheck-probe-"))
+        self.addCleanup(shutil.rmtree, root, True)
+        _symlink_capability(root)
+        self.assertEqual(sorted(path.name for path in root.iterdir()), [])
 
 
 class BareCommandNounTest(unittest.TestCase):
