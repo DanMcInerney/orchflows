@@ -19,6 +19,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import scripts.workspace as workspace  # noqa: E402
+from tests.tree_removal import remove_repo_tree  # noqa: E402  the removal's one owner
 
 WORKSPACE_PY = ROOT / "scripts" / "workspace.py"
 TICKETS_PY = ROOT / "scripts" / "tickets.py"
@@ -538,23 +539,83 @@ def commit_in(tree: Path, files: dict, message: str) -> str:
     return git(tree, "rev-parse", "HEAD").strip()
 
 
-def make_isolated_item(
-    tmp: Path, *, scope=("scratch",), files=None, branch="wt-branch",
-    tid="T1", recorded=True, extra=(),
-):
-    """A main checkout at a base commit, a linked worktree carrying the item's
-    branch, and the main-root ticket that declares the isolation."""
+_GRADED = {}
 
+
+def graded_repository():
+    """One real repository, built once, for the tests that only read it.
+
+    A repository plus a linked worktree is eight git processes and every
+    ``check`` test below wanted the same one. So every branch any of them
+    grades is cut here from ``base`` and never moved again, and the caller
+    is left one commit past ``base`` so a branch left behind is genuinely
+    behind. A test writes only its own ticket, under its own id, into the
+    gitignored ``.orch/`` -- nothing a test does reaches what the next one
+    reads. Whatever must move a branch, an index or a working tree keeps
+    its own repository, built inline from ``make_repo``.
+    """
+
+    if _GRADED:
+        return _GRADED
+    tmp = Path(tempfile.mkdtemp(prefix="workspace-graded-"))
+    _GRADED["tmp"] = tmp
     main, run_dir = make_repo(tmp)
     base = git(main, "rev-parse", "HEAD").strip()
-    worktree = add_worktree(main, branch, tmp / branch)
-    commit_in(worktree, files if files is not None else {"scratch/a.txt": "one\n"}, "item work")
-    stamps = ((workspace.BRANCH_KEY, branch),) if recorded else ()
-    ticket = make_ticket(
-        run_dir, tid, scope=scope,
-        extra=((workspace.ISOLATION_KEY, "required"),) + stamps + tuple(extra),
+
+    worktree = add_worktree(main, "wt-branch", tmp / "wt")
+    commit_in(worktree, {"scratch/a.txt": "one\n"}, "item work")
+    for branch, files in (
+        ("leak-branch", {"docs/leak.md": "leak\n"}),
+        ("mixed-branch", {"scratch/a.txt": "one\n", "docs/leak.md": "leak\n"}),
+        ("docsmith-branch", {"docsmith/x.md": "sneak\n"}),
+        ("docs-branch", {"docs/x.md": "mine\n"}),
+        ("side-branch", {"scratch/side.txt": "side\n"}),
+        ("merge-branch", {"scratch/a.txt": "one\n"}),
+    ):
+        # `checkout -b`, never `switch`: switch arrived in git 2.23.
+        git(worktree, "checkout", "--quiet", "-b", branch, base)
+        commit_in(worktree, files, "item work")
+    # merge-branch's breach arrives in the merge commit itself, which is
+    # exactly what `git log --name-only` cannot see
+    git(worktree, "merge", "--no-ff", "--no-commit", "--quiet", "side-branch")
+    commit_in(worktree, {"docs/leak.md": "leak\n"}, "merge side-branch")
+
+    removed = tmp / "removed"
+    add_worktree(main, "removed-branch", removed)
+    commit_in(removed, {"scratch/a.txt": "one\n"}, "item work")
+    git(main, "worktree", "remove", "--force", str(removed))
+
+    git(main, "branch", "stale-branch", base)
+    own = git(main, "rev-parse", "--abbrev-ref", "HEAD").strip()
+    advanced = commit_in(main, {"README.md": "advanced\n"}, "caller moves on")
+
+    _GRADED.update(
+        main=main, run_dir=run_dir, base=base, advanced=advanced,
+        removed=removed, own=own,
     )
-    return main, worktree, ticket, base
+    return _GRADED
+
+
+def tearDownModule():
+    tmp = _GRADED.pop("tmp", None)
+    if tmp is not None:
+        # the tree holds a repository this suite committed in, so the strict
+        # owner removes it -- see tests/tree_removal.py
+        remove_repo_tree(str(tmp))
+
+
+def graded_item(tid, *, branch="wt-branch", scope=("scratch",), isolation="required",
+                recorded=True, extra=()):
+    """A ticket of the shared repository, under this test's own id."""
+
+    graded = graded_repository()
+    declared = ((workspace.ISOLATION_KEY, isolation),) if isolation else ()
+    stamps = ((workspace.BRANCH_KEY, branch),) if recorded else ()
+    make_ticket(
+        graded["run_dir"], tid, scope=scope,
+        extra=declared + stamps + tuple(extra),
+    )
+    return graded
 
 
 @unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
@@ -563,23 +624,21 @@ class TestCheckGradesFromTheCallersGit(unittest.TestCase):
     re-derived from git. Nothing a child wrote in prose is read."""
 
     def test_isolation_absent_passes_without_touching_git(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, run_dir = make_repo(tmp)
-            make_ticket(run_dir, "T1")
-            # a base no git command could resolve: reaching git at all fails
-            done = run_workspace(main, "check", "testrun", "T1", "--base", "no-such-rev")
-            self.assertEqual(0, done.returncode, done.stdout)
-            self.assertEqual("not required", payload_of(done)["check"]["verdict"])
+        graded = graded_item("T-absent", isolation=None, recorded=False)
+        # a base no git command could resolve: reaching git at all fails
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-absent", "--base", "no-such-rev"
+        )
+        self.assertEqual(0, done.returncode, done.stdout)
+        self.assertEqual("not required", payload_of(done)["check"]["verdict"])
 
     def test_isolation_none_passes_without_touching_git(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, run_dir = make_repo(tmp)
-            make_ticket(run_dir, "T1", extra=((workspace.ISOLATION_KEY, "none"),))
-            done = run_workspace(main, "check", "testrun", "T1", "--base", "no-such-rev")
-            self.assertEqual(0, done.returncode, done.stdout)
-            self.assertEqual("not required", payload_of(done)["check"]["verdict"])
+        graded = graded_item("T-none", isolation="none", recorded=False)
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-none", "--base", "no-such-rev"
+        )
+        self.assertEqual(0, done.returncode, done.stdout)
+        self.assertEqual("not required", payload_of(done)["check"]["verdict"])
 
     def test_a_backticked_required_grades_the_same_as_a_bare_one(self):
         """One normalizer reads `isolation` for both scripts. `tickets.py`
@@ -587,22 +646,14 @@ class TestCheckGradesFromTheCallersGit(unittest.TestCase):
         establishment step, so a grader that did not would skip the grade
         entirely at exit 0 while the join read success."""
 
-        for declared in ("required", "`required`"):
-            with self.subTest(declared=declared), tempfile.TemporaryDirectory() as tmp:
-                tmp = Path(tmp)
-                main, run_dir = make_repo(tmp)
-                base = git(main, "rev-parse", "HEAD").strip()
-                worktree = add_worktree(main, "wt-branch", tmp / "wt")
-                commit_in(worktree, {"docs/leak.md": "leak\n"}, "item work")
-                make_ticket(
-                    run_dir, "T1", scope=("scratch",),
-                    extra=(
-                        (workspace.ISOLATION_KEY, declared),
-                        (workspace.BRANCH_KEY, "wt-branch"),
-                    ),
-                )
+        for index, declared in enumerate(("required", "`required`")):
+            with self.subTest(declared=declared):
+                tid = "T-backtick-%d" % index
+                graded = graded_item(tid, branch="leak-branch", isolation=declared)
 
-                done = run_workspace(main, "check", "testrun", "T1", "--base", base)
+                done = run_workspace(
+                    graded["main"], "check", "testrun", tid, "--base", graded["base"]
+                )
 
                 self.assertEqual(4, done.returncode, done.stdout)
                 body = payload_of(done)
@@ -610,129 +661,111 @@ class TestCheckGradesFromTheCallersGit(unittest.TestCase):
                 self.assertEqual(["docs/leak.md"], body["breaches"])
 
     def test_required_with_no_recorded_branch_exits_no_record(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, _, _, base = make_isolated_item(Path(tmp), recorded=False)
-            done = run_workspace(main, "check", "testrun", "T1", "--base", base)
-            self.assertEqual(5, done.returncode, done.stdout)
-            body = payload_of(done)
-            self.assertEqual("no-record", body["verdict"])
-            self.assertIn(workspace.BRANCH_KEY, body["error"])
+        graded = graded_item("T-unrecorded", recorded=False)
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-unrecorded", "--base", graded["base"]
+        )
+        self.assertEqual(5, done.returncode, done.stdout)
+        body = payload_of(done)
+        self.assertEqual("no-record", body["verdict"])
+        self.assertIn(workspace.BRANCH_KEY, body["error"])
 
     def test_a_branch_that_does_not_resolve_exits_isolation_missing(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, _, ticket, base = make_isolated_item(tmp)
-            ticket.write_text(
-                ticket.read_text(encoding="utf-8").replace("wt-branch", "ghost-branch"),
-                encoding="utf-8",
-            )
-            done = run_workspace(main, "check", "testrun", "T1", "--base", base)
-            self.assertEqual(2, done.returncode, done.stdout)
-            body = payload_of(done)
-            self.assertEqual("isolation-missing", body["verdict"])
-            self.assertIn("ghost-branch", body["error"])
+        graded = graded_item("T-ghost", branch="ghost-branch")
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-ghost", "--base", graded["base"]
+        )
+        self.assertEqual(2, done.returncode, done.stdout)
+        body = payload_of(done)
+        self.assertEqual("isolation-missing", body["verdict"])
+        self.assertIn("ghost-branch", body["error"])
 
     def test_the_callers_own_branch_exits_isolation_missing(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, _, ticket, base = make_isolated_item(tmp)
-            own = git(main, "rev-parse", "--abbrev-ref", "HEAD").strip()
-            ticket.write_text(
-                ticket.read_text(encoding="utf-8").replace("wt-branch", own),
-                encoding="utf-8",
-            )
-            done = run_workspace(main, "check", "testrun", "T1", "--base", base)
-            self.assertEqual(2, done.returncode, done.stdout)
-            self.assertEqual("isolation-missing", payload_of(done)["verdict"])
+        graded = graded_repository()
+        graded_item("T-own", branch=graded["own"])
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-own", "--base", graded["base"]
+        )
+        self.assertEqual(2, done.returncode, done.stdout)
+        self.assertEqual("isolation-missing", payload_of(done)["verdict"])
 
     def test_a_branch_already_on_the_callers_head_exits_isolation_missing(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, _, ticket, base = make_isolated_item(tmp)
-            git(main, "branch", "stale-branch", base)
-            commit_in(main, {"README.md": "advanced\n"}, "caller moves on")
-            ticket.write_text(
-                ticket.read_text(encoding="utf-8").replace("wt-branch", "stale-branch"),
-                encoding="utf-8",
-            )
-            done = run_workspace(main, "check", "testrun", "T1", "--base", base)
-            self.assertEqual(2, done.returncode, done.stdout)
-            self.assertEqual("isolation-missing", payload_of(done)["verdict"])
+        # stale-branch sits at the base the caller has since moved past
+        graded = graded_item("T-stale", branch="stale-branch")
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-stale", "--base", graded["base"]
+        )
+        self.assertEqual(2, done.returncode, done.stdout)
+        self.assertEqual("isolation-missing", payload_of(done)["verdict"])
 
     def test_a_branch_not_cut_from_the_base_exits_wrong_branch_point(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, _, _, _ = make_isolated_item(tmp)
-            elsewhere = commit_in(main, {"README.md": "elsewhere\n"}, "another line")
-            done = run_workspace(main, "check", "testrun", "T1", "--base", elsewhere)
-            self.assertEqual(3, done.returncode, done.stdout)
-            body = payload_of(done)
-            self.assertEqual("wrong-branch-point", body["verdict"])
-            self.assertIn(elsewhere, body["error"])
+        graded = graded_item("T-elsewhere")
+        elsewhere = graded["advanced"]
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-elsewhere", "--base", elsewhere
+        )
+        self.assertEqual(3, done.returncode, done.stdout)
+        body = payload_of(done)
+        self.assertEqual("wrong-branch-point", body["verdict"])
+        self.assertIn(elsewhere, body["error"])
 
     def test_an_in_scope_branch_passes_and_reports_what_it_changed(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, _, _, base = make_isolated_item(tmp)
-            done = run_workspace(main, "check", "testrun", "T1", "--base", base)
-            self.assertEqual(0, done.returncode, done.stdout)
-            body = payload_of(done)["check"]
-            self.assertEqual("pass", body["verdict"])
-            self.assertEqual(["scratch/a.txt"], body["changed"])
-            self.assertEqual(1, body["commits"])
+        graded = graded_item("T-inscope")
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-inscope", "--base", graded["base"]
+        )
+        self.assertEqual(0, done.returncode, done.stdout)
+        body = payload_of(done)["check"]
+        self.assertEqual("pass", body["verdict"])
+        self.assertEqual(["scratch/a.txt"], body["changed"])
+        self.assertEqual(1, body["commits"])
 
     def test_a_path_outside_the_scope_exits_scope_breach(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, _, _, base = make_isolated_item(
-                Path(tmp), files={"scratch/a.txt": "one\n", "docs/leak.md": "leak\n"}
-            )
-            done = run_workspace(main, "check", "testrun", "T1", "--base", base)
-            self.assertEqual(4, done.returncode, done.stdout)
-            body = payload_of(done)
-            self.assertEqual("scope-breach", body["verdict"])
-            self.assertIn("docs/leak.md", body["error"])
-            self.assertEqual(["docs/leak.md"], body["breaches"])
+        graded = graded_item("T-breach", branch="mixed-branch")
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-breach", "--base", graded["base"]
+        )
+        self.assertEqual(4, done.returncode, done.stdout)
+        body = payload_of(done)
+        self.assertEqual("scope-breach", body["verdict"])
+        self.assertIn("docs/leak.md", body["error"])
+        self.assertEqual(["docs/leak.md"], body["breaches"])
 
     def test_a_breach_arriving_inside_a_merge_commit_is_seen(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, worktree, _, base = make_isolated_item(tmp)
-            side = add_worktree(main, "side-branch", tmp / "side")
-            commit_in(side, {"scratch/side.txt": "side\n"}, "side work")
-            git(worktree, "merge", "--no-ff", "--no-commit", "--quiet", "side-branch")
-            # the breach is introduced by the merge commit itself, which is
-            # exactly what `git log --name-only` cannot see
-            commit_in(worktree, {"docs/leak.md": "leak\n"}, "merge side-branch")
-            logged = git(main, "log", "--name-only", "--pretty=format:", f"{base}..wt-branch")
-            self.assertNotIn("docs/leak.md", logged)
+        graded = graded_item("T-merge", branch="merge-branch")
+        base = graded["base"]
+        logged = git(
+            graded["main"], "log", "--name-only", "--pretty=format:",
+            f"{base}..merge-branch",
+        )
+        self.assertNotIn("docs/leak.md", logged)
 
-            done = run_workspace(main, "check", "testrun", "T1", "--base", base)
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-merge", "--base", base
+        )
 
-            self.assertEqual(4, done.returncode, done.stdout)
-            self.assertEqual(["docs/leak.md"], payload_of(done)["breaches"])
+        self.assertEqual(4, done.returncode, done.stdout)
+        self.assertEqual(["docs/leak.md"], payload_of(done)["breaches"])
 
     def test_an_unresolvable_base_is_an_internal_error(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, _, _, _ = make_isolated_item(Path(tmp))
-            done = run_workspace(main, "check", "testrun", "T1", "--base", "no-such-rev")
-            self.assertEqual(1, done.returncode, done.stdout)
-            self.assertEqual("error", payload_of(done)["verdict"])
+        graded = graded_item("T-nobase")
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-nobase", "--base", "no-such-rev"
+        )
+        self.assertEqual(1, done.returncode, done.stdout)
+        self.assertEqual("error", payload_of(done)["verdict"])
 
     def test_usage_errors_exit_one(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, _, _, base = make_isolated_item(Path(tmp))
-            for args in (
-                ("check", "testrun", "T1"),
-                ("check", "testrun", "--base", base),
-                ("check", "testrun", "T1", "MISSING", "--base", base),
-                ("check", "testrun", "MISSING", "--base", base),
-            ):
-                with self.subTest(args=args):
-                    self.assertEqual(1, run_workspace(main, *args).returncode)
+        graded = graded_item("T-usage")
+        base = graded["base"]
+        for args in (
+            ("check", "testrun", "T-usage"),
+            ("check", "testrun", "--base", base),
+            ("check", "testrun", "T-usage", "MISSING", "--base", base),
+            ("check", "testrun", "MISSING", "--base", base),
+        ):
+            with self.subTest(args=args):
+                self.assertEqual(1, run_workspace(graded["main"], *args).returncode)
 
 
 @unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
@@ -741,63 +774,63 @@ class TestVerdictSurvivesCleanupAndScopeIsSegmentExact(unittest.TestCase):
     entry matches on whole segments."""
 
     def test_check_passes_after_the_linked_tree_is_removed(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, worktree, _, base = make_isolated_item(tmp)
-            git(main, "worktree", "remove", "--force", str(worktree))
-            self.assertFalse(worktree.exists())
+        # removed-branch's linked tree was removed when the fixture was
+        # built; every other test here grades a branch whose tree is still
+        # there, which is the contrast this one needs.
+        graded = graded_item("T-removed", branch="removed-branch")
+        self.assertFalse(graded["removed"].exists())
 
-            done = run_workspace(main, "check", "testrun", "T1", "--base", base)
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-removed", "--base", graded["base"]
+        )
 
-            self.assertEqual(0, done.returncode, done.stdout)
-            self.assertEqual("pass", payload_of(done)["check"]["verdict"])
+        self.assertEqual(0, done.returncode, done.stdout)
+        self.assertEqual("pass", payload_of(done)["check"]["verdict"])
 
     def test_a_scope_entry_matches_whole_segments_only(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, _, _, base = make_isolated_item(
-                Path(tmp), scope=("docs",), files={"docsmith/x.md": "sneak\n"}
-            )
-            done = run_workspace(main, "check", "testrun", "T1", "--base", base)
-            self.assertEqual(4, done.returncode, done.stdout)
-            self.assertEqual(["docsmith/x.md"], payload_of(done)["breaches"])
+        graded = graded_item("T-docsmith", branch="docsmith-branch", scope=("docs",))
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-docsmith", "--base", graded["base"]
+        )
+        self.assertEqual(4, done.returncode, done.stdout)
+        self.assertEqual(["docsmith/x.md"], payload_of(done)["breaches"])
 
     def test_the_same_scope_entry_takes_its_own_segment(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, _, _, base = make_isolated_item(
-                Path(tmp), scope=("docs",), files={"docs/x.md": "mine\n"}
-            )
-            done = run_workspace(main, "check", "testrun", "T1", "--base", base)
-            self.assertEqual(0, done.returncode, done.stdout)
-            self.assertEqual(["docs/x.md"], payload_of(done)["check"]["changed"])
+        graded = graded_item("T-docs", branch="docs-branch", scope=("docs",))
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-docs", "--base", graded["base"]
+        )
+        self.assertEqual(0, done.returncode, done.stdout)
+        self.assertEqual(["docs/x.md"], payload_of(done)["check"]["changed"])
 
     def test_an_absolute_scope_entry_inside_the_repository_is_normalized(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, run_dir = make_repo(tmp)
-            base = git(main, "rev-parse", "HEAD").strip()
-            worktree = add_worktree(main, "wt-branch", tmp / "wt")
-            commit_in(worktree, {"scratch/a.txt": "one\n"}, "item work")
-            make_ticket(
-                run_dir, "T1", scope=(str(main / "scratch"),),
-                extra=(
-                    (workspace.ISOLATION_KEY, "required"),
-                    (workspace.BRANCH_KEY, "wt-branch"),
-                ),
-            )
-            done = run_workspace(main, "check", "testrun", "T1", "--base", base)
-            self.assertEqual(0, done.returncode, done.stdout)
-            self.assertEqual("pass", payload_of(done)["check"]["verdict"])
+        graded = graded_repository()
+        graded_item("T-absolute-in", scope=(str(graded["main"] / "scratch"),))
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-absolute-in", "--base", graded["base"]
+        )
+        self.assertEqual(0, done.returncode, done.stdout)
+        self.assertEqual("pass", payload_of(done)["check"]["verdict"])
 
     def test_an_absolute_scope_entry_outside_the_repository_is_refused_by_name(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            outside = str(tmp / "elsewhere" / "notes.md")
-            main, _, _, base = make_isolated_item(Path(tmp), scope=("scratch", outside))
-            done = run_workspace(main, "check", "testrun", "T1", "--base", base)
-            self.assertEqual(1, done.returncode, done.stdout)
-            self.assertIn(outside, payload_of(done)["error"])
+        graded = graded_repository()
+        outside = str(graded["tmp"] / "elsewhere" / "notes.md")
+        graded_item("T-absolute-out", scope=("scratch", outside))
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-absolute-out",
+            "--base", graded["base"],
+        )
+        self.assertEqual(1, done.returncode, done.stdout)
+        self.assertIn(outside, payload_of(done)["error"])
+
+
+class NoFormatCallsTest(unittest.TestCase):
+    """Completion criterion 1 of item-05-fstring-pass: no `.format(` call site
+    remains in scripts/workspace.py."""
+
+    def test_workspace_py_contains_no_format_calls(self):
+        source = WORKSPACE_PY.read_text(encoding="utf-8")
+        self.assertNotIn(".format(", source)
 
 
 if __name__ == "__main__":

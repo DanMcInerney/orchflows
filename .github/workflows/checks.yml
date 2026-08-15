@@ -1,4 +1,4 @@
-# The four checks AGENTS.md requires, run on every combination this
+# The checks AGENTS.md requires, run on every combination this
 # repository claims to support.
 #
 # Versions: 3.9 is the floor `install.py` enforces via MIN_PYTHON. 3.11 is
@@ -39,10 +39,10 @@ jobs:
 
     steps:
       # Full history, not the default depth-1: tests/test_cutcheck.py grades
-      # oracles inside a `git archive` copy of a baseline revision, and a
-      # one-commit checkout can archive no ancestor. A depth-1 leg fails every
-      # cutcheck case with "cannot archive baseline" while the same suite is
-      # green on any developer clone.
+      # oracles inside a scratch clone of a baseline revision, and that clone
+      # carries its history from this checkout's, which a one-commit checkout
+      # has none of. A depth-1 leg fails every cutcheck case with "cannot clone
+      # baseline" while the same suite is green on any developer clone.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -64,6 +64,18 @@ jobs:
       - name: python tools/validate.py
         run: python tools/validate.py
 
+      # The suite, sharded one module per child interpreter. Thread
+      # parallelism is unsound here -- the suite performs ~30
+      # whole-interpreter mutations -- so the runner spawns a process per
+      # module.
+      - name: python tools/run_tests.py
+        run: python tools/run_tests.py
+
+      # The same suite in one interpreter. Not redundant with the step
+      # above: sharding gives every module a clean process, so only this
+      # run can fail when one module depends on another's in-process
+      # residue -- the risk every class- and module-scoped fixture in the
+      # suite carries. It is also the fallback if the runner itself breaks.
       - name: python -m unittest discover -s tests -v
         run: python -m unittest discover -s tests -v
 

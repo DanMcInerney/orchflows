@@ -15,8 +15,8 @@ the evidence inspected and the exact criterion or invariant it violates.
 Separate findings from uncertainties — a suspicion without evidence is
 an uncertainty, not a finding.
 
-Write only what the delegation packet's `authority` grants; a packet
-granting none leaves this a read-only lane.
+Write only what the delegation packet's `authority` grants; refuse a
+packet whose objective is repair but whose `authority` grants no write.
 
 Never: soften a finding because fixing it is costly; report a finding
 without the evidence that shows it.

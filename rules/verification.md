@@ -4,6 +4,9 @@
    claim of its own success. A claim is exactly worth its cited oracle
    output — the executor's, and equally a checker's, a judge's or a
    gate's, including any part of the caller's framing it repeats back.
+   A truncated transcript is not the oracle's output: read a verdict by
+   redirecting to a file and grepping it, never through `| tail` or
+   `| head`, which report the pipe's status rather than the command's.
 2. Verdicts follow [contracts/verdict.md](../contracts/verdict.md):
    PASS, FAIL, or UNVERIFIED per criterion; an unrun check is
    UNVERIFIED; overall PASS requires every required criterion and states
@@ -21,11 +24,25 @@
    that produced the artifact.
 7. Verification evidence is reusable at a join while everything it
    covers is unchanged; a covered identity changing invalidates exactly
-   the entries that cover it.
+   the entries that cover it. A gate returning findings moves the
+   result identity, so its verdicts are reusable only where the
+   correction left the covered identity unchanged.
 8. An oracle must be able to fail: a check that cannot FAIL when the
    claim it stands for is false decides nothing, and its PASS is void.
    Show it against a wrong result built beside the tree, never by
    mutating the tree under test, which an interrupted pass leaves mutated.
+   Build that copy by clone, never by extract: an extract drops `.git`,
+   so an oracle reading history reads whichever repository encloses the
+   copy, or errors, and changes its verdict with no diagnostic. A copy
+   is faithful when everything the oracles read is present in it
+   unchanged, including what they read without naming it; evidence that
+   with `git rev-list --count` run in the copy and recorded beside every
+   reading taken there — one count proves the history came across and
+   fingerprints which revision was read, so `OK` beside a count is
+   re-readable where a bare `OK` is not. Runtime indicts a copy only
+   when short: shorter than expected means broken, longer means nothing,
+   and runtime tracks the checkout as much as the tree, so loose-object
+   and ref counts belong beside a timing reading.
 9. A correction consumes causes, not findings: one fix per shared
    cause, the smallest set that closes the validated findings,
    preferring the fix that simplifies. A cause whose coherent fix
@@ -46,4 +63,9 @@
     check that did no part of the repair: repairing makes that context an
     executor from that moment (§4), claiming no verdict of its own. The
     cut's is `cutcheck.py` re-run to exit 0 against the revision the set
-    was cut from.
+    was cut from. Cutcheck's exit 0 means no finding whose class lies
+    outside the advisory set, not that the set is clean: an advisory
+    finding is reported and exits 0. A cut verdict is not portable
+    between hosts. An oracle naming an interpreter one host lacks is
+    reported there as `unrunnable-oracle` and is silent here, so a
+    verdict is read only on the host that produced it.

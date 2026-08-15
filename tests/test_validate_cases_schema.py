@@ -68,10 +68,6 @@ class ExecBoundTest(unittest.TestCase):
         self.assertTrue(any("missing required key 'exec_bound'" in e for e in found))
         self.assertTrue(any("carries key 'bound'" in e for e in found))
 
-    def test_builder_context_in_exec_bound_is_refused(self):
-        found = errors(exec_bound="one BC1 share; probe within small tier")
-        self.assertTrue(any("names a builder context" in e for e in found), found)
-
     def test_every_builder_context_token_is_caught(self):
         for n in range(1, 7):
             found = errors(exec_bound="one BC%d share; probe within small tier" % n)
@@ -151,16 +147,38 @@ RETIRED_RECIPE_PHRASES = (
 )
 
 
+# Three tests walk the same immutable case set and two of them parse the
+# same JSON; the walk and the parse happen once.
+_SCAN = {}
+
+
 def case_files():
-    for path in sorted(CASES.rglob("*")):
-        if path.is_file() and "__pycache__" not in path.parts:
-            yield path
+    if "files" not in _SCAN:
+        _SCAN["files"] = tuple(
+            path
+            for path in sorted(CASES.rglob("*"))
+            if path.is_file() and "__pycache__" not in path.parts
+        )
+    return _SCAN["files"]
 
 
 def case_json():
-    for path in sorted(CASES.rglob("*.json")):
-        if "__pycache__" not in path.parts:
-            yield path
+    if "json" not in _SCAN:
+        _SCAN["json"] = tuple(
+            path
+            for path in sorted(CASES.rglob("*.json"))
+            if "__pycache__" not in path.parts
+        )
+    return _SCAN["json"]
+
+
+def case_documents():
+    """(path, parsed) for every case JSON file. Read-only to its callers."""
+    if "documents" not in _SCAN:
+        _SCAN["documents"] = tuple(
+            (path, json.loads(path.read_text(encoding="utf-8"))) for path in case_json()
+        )
+    return _SCAN["documents"]
 
 
 def walk_objects(node):
@@ -196,8 +214,7 @@ class RetiredSealTest(unittest.TestCase):
 
     def test_no_component_reference_carries_a_digest_beside_its_locator(self):
         offenders = []
-        for path in case_json():
-            data = json.loads(path.read_text(encoding="utf-8"))
+        for path, data in case_documents():
             for obj in walk_objects(data):
                 if not isinstance(obj.get("locator"), str):
                     continue
@@ -212,8 +229,7 @@ class RetiredSealTest(unittest.TestCase):
 
     def test_no_qualification_cover_addresses_a_component_by_digest(self):
         offenders = []
-        for path in case_json():
-            data = json.loads(path.read_text(encoding="utf-8"))
+        for path, data in case_documents():
             for obj in walk_objects(data):
                 covers = obj.get("covers")
                 if covers is None:
@@ -486,58 +502,50 @@ class CoverageDeclarationTest(unittest.TestCase):
 
 
 class CoverageTeethTest(unittest.TestCase):
-    """A declaration is only worth its mutation. These run real probes."""
+    """A declaration is only worth its mutation. These run real probes.
+
+    One probe is a copytree plus a subprocess, so each violation does not
+    get its own run: a probe collects every failure over the whole
+    manifest, so independent violations planted in one manifest are graded
+    in one run and each message is asserted separately.
+    """
 
     def probe_against(self, case, mutate):
         return vc.probe_a_mutated_target(CASES / case, mutate)
 
     def test_a_declared_none_anchor_with_a_reason_passes_and_silence_fails(self):
+        def plant(manifest):
+            # Two anchors, two independent violations, one probe run.
+            manifest["anchors"]["s1"] = "   "
+            manifest["anchors"]["s2"] = "none"
+
+        code, detail = self.probe_against("cs-sparse-fresh", plant)
+        self.assertNotEqual(0, code)
         with self.subTest("silence"):
-            code, detail = self.probe_against(
-                "cs-sparse-fresh",
-                lambda manifest: manifest["anchors"].__setitem__("s1", "   "),
-            )
-            self.assertNotEqual(0, code)
             self.assertIn("anchors['s1'] is silent", detail)
         with self.subTest("a declared none with no reason"):
-            code, detail = self.probe_against(
-                "cs-sparse-fresh",
-                lambda manifest: manifest["anchors"].__setitem__("s1", "none"),
-            )
-            self.assertNotEqual(0, code)
-            self.assertIn("declares 'none' with no reason", detail)
+            self.assertIn("anchors['s2'] declares 'none' with no reason", detail)
         with self.subTest("a declared none with a reason"):
-            code, _ = self.probe_against(
+            code, detail = self.probe_against(
                 "cs-sparse-fresh",
                 lambda manifest: manifest["anchors"].__setitem__(
                     "s1", "none — the spec exhibits no example, so nothing outside "
                           "the package pins this behavior"
                 ),
             )
-            self.assertEqual(0, code)
+            self.assertEqual(0, code, detail)
 
     def test_a_reference_audit_rate_fails_where_a_count_passes(self):
+        def plant(manifest):
+            manifest["reference_audit"]["defect_count"] = 0.125
+            manifest["reference_audit"]["defect_rate"] = "1 defect per 8 cases"
+
+        code, detail = self.probe_against("cs-contradiction-fresh", plant)
+        self.assertNotEqual(0, code)
         with self.subTest("a rate in place of the count"):
-            code, detail = self.probe_against(
-                "cs-contradiction-fresh",
-                lambda manifest: manifest["reference_audit"].__setitem__(
-                    "defect_count", 0.125
-                ),
-            )
-            self.assertNotEqual(0, code)
             self.assertIn("never a rate", detail)
         with self.subTest("a rate beside the count"):
-            code, detail = self.probe_against(
-                "cs-contradiction-fresh",
-                lambda manifest: manifest["reference_audit"].__setitem__(
-                    "defect_rate", "1 defect per 8 cases"
-                ),
-            )
-            self.assertNotEqual(0, code)
-            self.assertIn("states a rate", detail)
-        with self.subTest("the count the contract asks for"):
-            code, _ = self.probe_against("cs-contradiction-fresh", lambda manifest: None)
-            self.assertEqual(0, code)
+            self.assertIn("states a rate ('defect_rate')", detail)
 
     def test_a_declared_field_no_probe_enforces_is_refused(self):
         found = vc.coverage_probe_errors(

@@ -14,8 +14,8 @@ excluded_actions:
 ---
 ## Objective
 
-Fixture ticket for commands whose verdict is in what they print: a count, an
-archive, and a two-argument diff all exit 0 whatever they find.
+Fixture ticket for commands whose verdict is in what they print: a text count
+and a revision count both exit 0 whatever they counted.
 
 ## Fixed inputs
 
@@ -25,12 +25,8 @@ archive, and a two-argument diff all exit 0 whatever they find.
 
 1. **A count is read, not exited on.** `grep -c "SCRIPT_NAMES" install.py`
    reports 0. oracle_class: deterministic. provenance: authored-here.
-2. **An archive exits 0 whenever it can archive.** `git archive ac8791a` is
-   byte-identical to the baseline tree. oracle_class: deterministic.
-   provenance: authored-here.
-3. **A two-argument diff exits 0 almost always.** `git diff ac8791a --
-   install.py` is empty. oracle_class: deterministic. provenance:
-   authored-here.
+2. **A revision count is printed, not exited on.** `git rev-list --count HEAD`
+   reports 0. oracle_class: deterministic. provenance: authored-here.
 
 ## Result
 

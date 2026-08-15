@@ -19,6 +19,5 @@ views.
   value or widens its own scope.
 - No terminal assembly item; cross-view consistency rides the gate's
   lens, never a ticket of its own.
-- A criterion needing simultaneous changes across most views (a
-  design-language shift) is a decision gap, not one giant ticket
-  (rules/topology.md §3).
+- A design-language shift, touching most views at once, is the decision
+  gap [rules/topology.md](../../../rules/topology.md) §3 names.

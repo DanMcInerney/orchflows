@@ -8,7 +8,7 @@ Require: the run id — with the spec's objective and acceptance (or
 the loop's done-check) at creation — and for an existing run its
 worklog at `<state-root>/runs/<run>/worklog.md`.
 
-Maintain the file per
+Maintain the file through `tickets.py run-state` per
 [contracts/worklog.md](../../../contracts/worklog.md): freeze the goal
 at creation — objective plus acceptance, or the done-check for a loop
 run; append iteration entries, failed approaches, queued scope, and

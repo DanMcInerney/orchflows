@@ -1,36 +1,37 @@
-"""No test in this suite can reach the real state sink.
+"""Test package. Importing it installs the guards the whole suite needs.
 
-``scripts/state_root.py`` resolves durable run state to
-``$ORCHFLOWS_STATE_HOME``, else ``~/.orchflows/state`` — the user's real
-evidence history. ``ensure_temporary_sink`` points that variable at one
-per-process temporary directory, removed at exit, and every subprocess a
-test launches inherits it.
+Two of them, for two hazards a single test cannot be trusted to remember:
 
-It fires from two places, because neither alone covers both ways this
-suite is run:
+- ``ensure_temporary_sink`` points ``$ORCHFLOWS_STATE_HOME`` at one
+  per-process temporary directory, removed at exit and inherited by every
+  subprocess a test launches, so no test can reach the user's real
+  evidence history. ``scripts/state_root.py`` otherwise resolves durable
+  run state to ``~/.orchflows/state``. It is a guard, not a convention: a
+  test that forgets to build its own sink writes into the temporary one
+  and is merely useless, never destructive. ``tools/suite_check.py``
+  watches the real sink from outside the suite process and reports any
+  run that touched it anyway. A test that needs the *unset* case clears
+  the variable for the one call it wraps and restores it, never for the
+  rest of the process.
+- ``_windows_semantics.install`` makes POSIX refuse the directory
+  deletions Windows refuses, so the three Windows cells of CI's matrix
+  stop being the first place that shape is seen.
 
-- this module's body, for ``python -m unittest tests.test_x``, which
-  imports the package;
-- ``tests/test_state_root.py``, for ``python -m unittest discover -s
-  tests`` — the check ``AGENTS.md`` requires — which sets the top-level
-  directory to ``tests/`` and therefore never imports this package at
-  all. Discovery imports every module before it runs any test, so one
-  module calling this is enough to cover the whole run whatever its
-  alphabetical position.
-
-It is a guard, not a convention: a test that forgets to build its own
-sink writes into the temporary one and is merely useless, never
-destructive. ``tools/suite_check.py`` watches the real sink from outside
-the suite process and reports any run that touched it anyway.
-
-A test that needs the *unset* case clears the variable for the one call
-it wraps and restores it, never for the rest of the process.
+Neither is reached by importing this package alone, because
+``unittest discover -s tests`` — the check ``AGENTS.md`` requires — makes
+``tests/`` the top-level directory and never imports the package at all.
+``tests/test_state_root.py`` and ``tests/test_windows_semantics.py``
+each import it by name for that reason. Discovery imports every module
+before running any test, so one such module is enough to cover a whole
+run whatever its alphabetical position.
 """
 
 import atexit
 import os
 import tempfile
 from pathlib import Path
+
+from . import _windows_semantics
 
 STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
 
@@ -55,3 +56,4 @@ def ensure_temporary_sink() -> str:
 
 
 ensure_temporary_sink()
+_windows_semantics.install()

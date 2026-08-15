@@ -9,8 +9,8 @@ decides all six.
 Discrimination: an oracle that reads the same at the baseline as it will
 once the work has landed proves nothing. Every extractable oracle runs
 inside a scratch copy of the baseline revision and, when it fails there,
-inside a scratch copy of HEAD -- both built beside the tree by ``git
-archive``, never in the tree under test. An oracle that already passes
+inside a scratch copy of HEAD -- both cloned beside the tree, each carrying
+its own history, never in the tree under test. An oracle that already passes
 at the baseline, that finds nothing at either revision, or that fails at
 both from a missing path, class or module is reported, and so is one that no
 revision runs at all: a command that is absent or that never returns is a cut
@@ -19,14 +19,22 @@ skipped: at cut time nothing has landed, so a baseline failure is what a
 discriminating oracle looks like. Execution therefore decides two classes
 there and only two -- the oracle that already passes, and the one nothing can
 run -- because every other class needs a reading of the landed work to compare
-against, and at cut time there is none. An oracle whose
+against, and at cut time there is none. A test invocation naming no node id --
+a whole module, a whole tree, a bare ``discover`` -- is reported without being
+run at all: it grades the identical tests under every item it is stated under,
+so no reading of it could discriminate one from another. An oracle whose
 criterion states ``provenance: pre-existing`` is an invariant -- it passed
 before the work and has to pass after -- so discrimination is not asked of it,
 and nothing else is forgiven it. A command carrying its verdict in what it
 prints rather than in its exit status -- a count -- is reported as one this
-tool cannot decide. So is every ``git`` oracle: a ``git archive`` copy carries
-no history, so no git command reads the tree under test there, and none is
-run.
+tool cannot decide. A ``git`` oracle is no exception in either direction: the
+scratch copy carries its history, so a git command reads the revision under
+test and is graded on its exit status like any other, and the count-flagged
+one -- ``git rev-list --count`` -- is undecidable for its count, never for
+its head. Grading a git span is still not trusting it: only a subcommand named
+as reading the revision runs, and only while none of its own arguments spells a
+location outside the scratch copy. Every other git span is refused and
+reported.
 
 Path reality: a path an oracle names exists at the baseline, or the item
 itself or a ``depends_on`` ancestor creates it; a ``file:line`` or
@@ -56,18 +64,33 @@ or assembly cell names, and is never an engine -- an engine dispatches
 an executor rather than being one. An item naming no pack has no cell to
 resolve against, so only the prohibition applies.
 
-Shape: the command text itself carries two defects. A pipeline through
+Shape: the command text itself carries three defects. A pipeline through
 ``tail`` or ``head`` reports that pipe's exit status, not the check's. A
 per-item scope check written against a cumulative ``<base>..HEAD`` range
-answers about the whole branch, not the item.
+answers about the whole branch, not the item. A ``git`` span the scratch copy
+does not confine is refused unrun, because ticket content decides no program
+this tool executes, no directory it executes in, and no file it reads or
+writes.
 
-Both of those set the exit status. An extraction gap, an absent coverage
+All three set the exit status. An extraction gap, an absent coverage
 map, and a class this tool reports as one it cannot decide do not: a
 criterion whose oracle no extractor recognized is reported on its own
 line so silent under-coverage stays visible, but real tickets state many
 criteria in prose, and a gap that failed the run would turn every clean
 set red. Gaps are for the decomposer to read, not for the exit code to
 decide.
+
+The copy is checked as well as the spans run in it. A tree entry carrying
+git's ``120000`` mode is the one route out that argv cannot see, so the copy
+is cloned with ``core.symlinks=false`` -- which makes such an entry a file
+holding a path rather than a way through it -- and every entry recording that
+mode is reported. That is the instrument for ``rules/visibility.md`` §5, and
+it is advisory: the clone flag is what enforces confinement, unconditionally
+and whatever the tree holds, so the report adds visibility and not safety. A
+committed symlink is a property of the repository, and this tool owns
+cut-defect detection over an issued ticket set. Failing a cut for it would
+fail every cut in every repository where a symlink is legal, for a reason
+outside what this tool answers for.
 
 cutcheck never edits a ticket; it reports, and the decomposer repairs.
 An extracted command is ticket content and ticket content is untrusted,
@@ -77,7 +100,10 @@ the program -- a shell, or an interpreter reading code from ``-c``, ``-e``,
 ``--eval``, ``--exec`` or a bare ``-`` -- is recognized by no extractor, so it
 runs nowhere and surfaces as an extraction gap. So is a span carrying a
 command head and no argument at all: ticket prose names tools in backticks,
-and a bare name decides nothing about the item it is stated under.
+and a bare name decides nothing about the item it is stated under. So is a
+span a criterion quotes rather than states -- one standing behind a denial, a
+refusal or an example -- because a command named as what not to do, as what
+the guard refuses, or as what CI runs is no oracle of the item naming it.
 """
 
 import argparse
@@ -85,7 +111,7 @@ import re
 import shlex
 import shutil
 import subprocess
-import tarfile
+import sys
 import tempfile
 from pathlib import Path
 
@@ -115,10 +141,11 @@ NO_HITS_BOTH_REVISIONS = "no-hits-both-revisions"
 FAILS_BOTH_REVISIONS = "fails-both-revisions"
 SWALLOWED_EXIT = "swallowed-exit"
 CUMULATIVE_RANGE = "cumulative-range"
+UNCONFINED_ORACLE = "unconfined-oracle"
 EXTRACTION_GAP = "extraction-gap"
 VERDICT_IN_OUTPUT = "verdict-in-output"
 UNRUNNABLE_ORACLE = "unrunnable-oracle"
-GIT_NO_HISTORY = "git-no-history"
+WHOLE_SUITE_ORACLE = "whole-suite-oracle"
 MISSING_PATH = "missing-path"
 UNRESOLVED_CITATION = "unresolved-citation"
 QUOTE_NOT_AT_CITATION = "quote-not-at-citation"
@@ -130,16 +157,22 @@ ORPHAN_CRITERION = "orphan-criterion"
 ORPHAN_ITEM = "orphan-item"
 COVERAGE_MAP_ABSENT = "coverage-map-absent"
 ILLEGAL_EXECUTOR = "illegal-executor"
+SYMLINK_IN_TREE = "symlink-in-tree"
 FAMILY_OF = {
     ALREADY_PASSES: FAMILY,
     NO_HITS_BOTH_REVISIONS: FAMILY,
     FAILS_BOTH_REVISIONS: FAMILY,
     SWALLOWED_EXIT: FAMILY,
     CUMULATIVE_RANGE: FAMILY,
+    UNCONFINED_ORACLE: FAMILY,
+    # Family 1 because it is the same question as UNCONFINED_ORACLE, asked of
+    # the tree instead of the token: whether anything the copy holds reaches
+    # out of it. `_names_outside_the_copy` says they are one problem twice.
+    SYMLINK_IN_TREE: FAMILY,
     EXTRACTION_GAP: FAMILY,
     VERDICT_IN_OUTPUT: FAMILY,
     UNRUNNABLE_ORACLE: FAMILY,
-    GIT_NO_HISTORY: FAMILY,
+    WHOLE_SUITE_ORACLE: FAMILY,
     MISSING_PATH: FAMILY_2,
     UNRESOLVED_CITATION: FAMILY_2,
     QUOTE_NOT_AT_CITATION: FAMILY_2,
@@ -153,10 +186,23 @@ FAMILY_OF = {
     ILLEGAL_EXECUTOR: FAMILY_6,
 }
 # Advisory classes are printed and never set the exit status. A map that is
-# not there is a fact about the run, not a defect of the cut.
+# not there is a fact about the run, not a defect of the cut; a committed
+# symlink is a fact about the repository, and confinement does not rest on
+# reporting it -- the clone flag holds whether or not anyone reads this line.
 ADVISORY = frozenset(
-    {EXTRACTION_GAP, COVERAGE_MAP_ABSENT, VERDICT_IN_OUTPUT, GIT_NO_HISTORY}
+    {EXTRACTION_GAP, COVERAGE_MAP_ABSENT, VERDICT_IN_OUTPUT, SYMLINK_IN_TREE}
 )
+# The report's two summary lines. A reader selects finding lines by filtering
+# stdout on a family, a class name, a criterion number or a ticket id, so
+# neither summary line may carry any of those, nor the path of a script: a
+# summary a filter selects is a finding line to everything downstream.
+ADVISORY_HEADING = "cutcheck: advisory -- reported, and never setting the exit status:"
+NO_FINDING_OUTSIDE = "cutcheck: no finding outside the advisory set"
+SCRATCH_NOT_REMOVED = "cutcheck: scratch root not removed"
+NO_SCRATCH_ROOT = "cutcheck: no scratch root under the git common dir of"
+# One directory under the git common dir holds every copy every cut makes, so
+# a root outliving its run is findable rather than scattered.
+SCRATCH_DIR = "cutcheck-scratch"
 
 # The acceptance-coverage map: one row per spec criterion, naming the item,
 # the gate, or declared remainder that answers for it.
@@ -194,17 +240,72 @@ COMMAND_HEADS = (
 )
 SEARCH_HEADS = ("grep", "rg")
 GIT_HEAD = "git"
+# The tree mode git records for a symlink, whatever the checkout made of it.
+SYMLINK_MODE = "120000"
+# The git subcommands a scratch copy confines: each reads the revision under
+# test and runs no program the span names. Membership is half the confinement
+# and never the whole of it -- a member still writes and reads wherever its own
+# options are pointed, which is `_names_outside_the_copy`'s question, not this
+# set's.
+# A closed set rather than a list of flags to refuse, because git's surface is
+# open at both ends -- `-c core.pager=`, `-c alias.x=!`, `--exec-path`,
+# `--upload-pack` and `--receive-pack` each run a named program by design, `-C`,
+# `--git-dir` and `--work-tree` each move the execution out of the copy meant to
+# confine it, and `clone` reaches the network. Refusing that list leaves the
+# next flag git ships unrefused; refusing everything unlisted does not.
+# `grep` is not here: `git grep -O` opens matches in a named pager, and plain
+# `grep` is already a head this tool extracts and runs.
+GIT_CONFINED_SUBCOMMANDS = frozenset(
+    {
+        "cat-file",
+        "describe",
+        "diff",
+        "log",
+        "ls-files",
+        "ls-tree",
+        "merge-base",
+        "rev-list",
+        "rev-parse",
+        "show",
+        "show-ref",
+        "status",
+    }
+)
 # An interpreter under one of these reads its program from the line, or from
 # stdin, rather than from the tree: the same hazard a shell head is refused
 # for, through a head an extractor otherwise accepts. Only these heads
 # evaluate -- `grep -c` counts and `grep -e` names a pattern.
 EVAL_HEADS = ("node", "npm", "python", "python3")
 EVAL_ARGS = frozenset({"-c", "-e", "--eval", "--exec", "-"})
+# A test invocation says which node it grades, or it grades whatever it finds.
+# `discover` names no node by construction; `-k` names one whatever it is
+# pointed at; `::` opens the node half of a pytest target.
+TEST_RUNNERS = ("unittest", "pytest")
+DISCOVER = "discover"
+NODE_FILTER = "-k"
+NODE_SEP = "::"
+# A filter narrows only if some node id fails it. Every test node here is a
+# method named `test_...`, so a pattern that is a prefix of that matches all of
+# them: `-k test` is the whole suite with a flag on, and the token's presence
+# is no evidence on its own.
+FILTER_MATCHES_ALL = "test_"
 # A criterion states the provenance of its own oracle; an oracle stated
-# pre-existing is an invariant, and holding still is what it is for.
-PRE_EXISTING_RE = re.compile(r"provenance:\s*pre-existing", re.I)
+# pre-existing is an invariant, and holding still is what it is for. Stating it
+# is writing the field and nothing else: a sentence boundary opens the phrase,
+# and no word continues it -- a parenthetical may follow, a predicate may not.
+# A criterion that quotes the phrase, denies carrying it, or discusses what it
+# means mentions the stamp instead of making one, and every such mention either
+# sits behind a backtick, an article or a verb, or runs on into the clause that
+# denies it. Grading is the default here, so a stamp written any other way is
+# graded rather than believed.
+PRE_EXISTING_RE = re.compile(
+    r"(?:\A|[.;])\s*provenance:\s*pre-existing(?!\s*[A-Za-z])", re.I
+)
 # Counting prints the verdict rather than exiting on it.
 COUNT_FLAG_RE = re.compile(r"^-[A-Za-z]*c[A-Za-z]*$|^--count$")
+# Under `git` only the long flag counts: `git -c` sets a configuration
+# override and `git log -c` asks for a combined diff, neither one a count.
+GIT_COUNT_FLAG = "--count"
 CITATION_RE = re.compile(r"\b([\w][\w./-]*\.[A-Za-z0-9]{1,5}):(\d+)")
 SECTION_CITATION_RE = re.compile(r"\b([\w][\w./-]*\.[A-Za-z0-9]{1,5})\s+§(\d+)")
 # A quotation opens and closes at a word boundary. A span that wrapped a line
@@ -226,6 +327,16 @@ PLACEHOLDER_RE = re.compile(r"[<>]")
 SCOPE_WORD_RE = re.compile(r"^[-_ ]scopes?\b", re.I)
 DENIAL_RE = re.compile(r"\b(?:not|never|no|without|rather than)\s+$", re.I)
 DENIAL_WINDOW = 24
+# A denied write and a quoted command are one question asked twice: is the
+# ticket doing the thing, or talking about it? ``DENIAL_RE`` answers it for a
+# write verb -- the ``cutcheck-mention`` set grades that answer -- and it reads
+# the same standing in front of a command span. Two frames it lacks: a span the
+# guard refuses, and a span named as an example of what something else runs.
+# Adjacency is the whole of the rule and not an economy: of the 611 command
+# spans this repository's ticket corpus states, 104 carry one of these words
+# somewhere in the 60 characters before them and none carries one adjacent, so
+# a window merely scanned for the word would refuse a hundred live oracles.
+MENTION_RE = re.compile(r"\b(?:refuses|refused|such as|like)\s+$", re.I)
 # A citation points at a line; the sentence around it may wrap.
 CITED_LINES = 2
 QUOTE_WINDOW = 80
@@ -238,8 +349,16 @@ NO_TICKET_SET = 2
 REPORTED = 1
 CLEAN = 0
 # One invocation's read of one (command, scratch tree) pair. The trees are
-# read-only copies built for this invocation, so the pair reads the same twice.
+# copies built for this invocation, and `_mutations` is what measures whether
+# the pair really does read the same twice.
 _EXIT_CACHE = {}
+# Per scratch tree, every status entry that tree has already shown. Primed at
+# the clone, so the first reading after a span names what the span wrote and
+# not what the checkout arrived with.
+_TREE_STATE = {}
+# What the span now running wrote into its copy. Drained per command by
+# `_check_ticket`, which is the only caller that knows whose finding it is.
+_MUTATED = []
 
 
 def _git(args, cwd):
@@ -285,24 +404,207 @@ def _run_dir(run, worktree_root):
     return None
 
 
+def _scratch_root(worktree_root):
+    """One invocation's private directory for the copies it grades in.
+
+    Placed under the git common dir, which is the one directory that is the
+    tool's to write in, answers the same from every worktree, and sits with the
+    object store a local clone hardlinks from -- whatever volume the worktree
+    itself is on. Enumerable too: every copy any cut ever leaves is under one
+    ``cutcheck-scratch``, so a stale one can be found without a search.
+
+    ``--git-common-dir``, and not the three neighbours it is easily confused
+    with. ``worktree_root.parent`` is the repository's *parent* from a main
+    checkout, which is how 24M landed outside every ignore file the repository
+    has; a literal ``.git`` is an 85-byte file in a linked worktree; and
+    ``--git-dir`` resolves to ``.git/worktrees/<name>``, so two worktrees
+    grading one run would not share a place. The answer comes back relative
+    -- a bare ``.git`` -- from a main checkout and absolute from a linked
+    worktree, so it is joined to the tree it was asked about before use.
+
+    ``None`` where there is no common dir to place it under, which is any
+    directory outside a repository; the caller has a ticket set it cannot
+    grade and says so.
+    """
+
+    proc = _git(["rev-parse", "--git-common-dir"], worktree_root)
+    if proc is None or proc.returncode != 0:
+        return None
+    common = Path(proc.stdout.strip())
+    if not common.is_absolute():
+        common = worktree_root / common
+    try:
+        parent = common.resolve() / SCRATCH_DIR
+        parent.mkdir(parents=True, exist_ok=True)
+        return Path(tempfile.mkdtemp(prefix=".cutcheck-", dir=str(parent)))
+    except OSError:
+        return None
+
+
+def _remove_scratch_root(scratch_root):
+    """Remove this invocation's copies, and say so when they will not go.
+
+    ``ignore_errors=True`` here was a swallowed error in the tool whose whole
+    subject is swallowed errors: each copy is a full clone, and a removal that
+    quietly failed left one on disk per invocation with nothing said.
+
+    Said rather than raised, never exit-setting, and on stderr. The report is
+    about this tool's own hygiene: a leaked copy is no finding against the
+    ticket set that was being read, and the `finally` this runs in precedes
+    every finding printed, so the same line on stdout would prepend itself to
+    a pinned verdict and move all of them at once on any host that leaks.
+    """
+
+    try:
+        shutil.rmtree(str(scratch_root))
+        return
+    except OSError:
+        # Git writes loose objects and packs `0o444` and hardlinks that mode
+        # into every clone, so a strict removal meets it on every platform;
+        # where a file with no write bit cannot be unlinked at all, as on
+        # Windows, that alone would leak a copy per invocation. The mode is
+        # git's statement about an object and never about whether this copy
+        # may go, so clear it and try once more before calling the removal
+        # refused. Only ever on the retry: the walk costs nothing on the path
+        # that already succeeded.
+        pass
+    for path in [scratch_root] + sorted(scratch_root.rglob("*")):
+        try:
+            # A directory has to be enterable and writable to give up its
+            # children; a file only has to be writable.
+            path.chmod(path.stat().st_mode | (0o700 if path.is_dir() else 0o200))
+        except OSError:
+            pass
+    try:
+        shutil.rmtree(str(scratch_root))
+    except OSError as exc:
+        sys.stderr.write(
+            "{}: {}: {}\n".format(SCRATCH_NOT_REMOVED, scratch_root, exc)
+        )
+
+
 def _scratch_tree(rev, worktree_root, scratch_root):
-    """Extract ``rev`` beside the tree, so no oracle runs in the tree itself."""
+    """Clone ``rev`` beside the tree, so no oracle runs in the tree itself.
+
+    A clone, not an extract: the copy carries its own history, so a git oracle
+    reads the revision under test rather than walking up to whichever
+    repository happens to enclose the copy. ``rev`` is resolved here, against
+    the tree being graded, so the clone's own HEAD never decides what ``HEAD``
+    meant. The clone keeps no remote: an oracle is ticket content, and ticket
+    content is untrusted, so the scratch tree offers it no path to write back
+    out of.
+
+    ``core.symlinks=false`` is the third route out, and the only one the copy
+    rather than the text can close. A committed symlink materialises as a file
+    holding its target's path, so ``--output=link/PAYLOAD`` and
+    ``-O link/orderfile`` -- both spelling a location inside the copy, both
+    landing outside it -- fail on the copy's own filesystem instead. Written
+    into the clone's config with ``--config`` and never with a global ``-c``:
+    the checkout below is a separate process, and only what the config file
+    holds reaches it. Windows already defaults to this, so setting it removes
+    a divergence rather than adding one.
+
+    ``core.longpaths=true`` for the same reason and by the same route. Where
+    git enforces ``MAX_PATH`` the checkout below drops the entries it cannot
+    write and still exits 0, so the copy arrives short of the revision it
+    claims to hold and every oracle after it reads a tree missing files. Set
+    here rather than asked of the host: a copy that silently omits part of the
+    revision is a wrong reading on whichever host omits it.
+    """
 
     tree = scratch_root / re.sub(r"[^A-Za-z0-9_.-]", "-", rev)
     if tree.is_dir():
         return tree
-    archive = scratch_root / "archive.tar"
-    proc = _git(["archive", "--format=tar", "-o", str(archive), rev], worktree_root)
-    if proc is None or proc.returncode != 0:
+    resolved = _git(["rev-parse", rev + "^{commit}"], worktree_root)
+    if resolved is None or resolved.returncode != 0:
         return None
-    tree.mkdir(parents=True)
-    with tarfile.open(archive) as bundle:
-        if hasattr(tarfile, "data_filter"):
-            bundle.extractall(tree, filter="data")
-        else:
-            bundle.extractall(tree)
-    archive.unlink()
+    clone = [
+        "clone",
+        "--quiet",
+        "--no-checkout",
+        "--config",
+        "core.symlinks=false",
+        "--config",
+        "core.longpaths=true",
+        str(worktree_root),
+        str(tree),
+    ]
+    steps = (
+        (clone, scratch_root),
+        (["checkout", "--quiet", "--detach", resolved.stdout.strip()], tree),
+        (["remote", "remove", "origin"], tree),
+    )
+    for args, cwd in steps:
+        proc = _git(args, cwd)
+        if proc is None or proc.returncode != 0:
+            shutil.rmtree(tree, ignore_errors=True)
+            return None
+    # Whatever the checkout arrived carrying is the copy's arrival state and no
+    # span's doing. Recorded here so the first span graded is answerable for
+    # the difference it made and for nothing else.
+    _mutations(tree)
     return tree
+
+
+def _mutations(tree):
+    """Paths this copy holds that it did not hold at the previous reading.
+
+    ``--ignored`` is the whole reading rather than a refinement of it. The leak
+    this measures was found on disk as a `.pytest_cache/` directory, and this
+    repository ignores that path, as every repository running pytest does: a
+    bare ``git status --porcelain`` returns zero lines with the directory
+    sitting in the copy, so the plain spelling is silently vacuous against the
+    one leak that motivated the check. Ignored states what a reader wants kept
+    out of a diff, and never what a sibling's oracle reads.
+
+    A delta and not a census, because one copy grades span after span: the
+    first writer would otherwise convict every span that followed it, and a
+    checkout an eol rule or a filter left dirty would convict the first.
+    """
+
+    proc = _git(["status", "--porcelain", "--ignored"], tree)
+    if proc is None or proc.returncode != 0:
+        return []
+    # Porcelain v1 is two status columns, a space, then the path.
+    seen = {line[3:] for line in proc.stdout.splitlines() if len(line) > 3}
+    key = str(tree)
+    fresh = seen - _TREE_STATE.get(key, frozenset())
+    _TREE_STATE[key] = seen
+    return sorted(fresh)
+
+
+def _symlink_entries(tree):
+    """Every path the graded revision records with git's ``120000`` mode.
+
+    Read from the tree, never from the checkout: ``core.symlinks=false`` is
+    what confines the copy, and it leaves the recorded mode exactly as
+    committed, so this reads the same on Windows and POSIX and under any
+    privilege. A tree carrying no history answers nothing and is reported as
+    nothing -- the clone is what puts history there.
+    """
+
+    proc = _git(["ls-tree", "-r", "HEAD"], tree)
+    if proc is None or proc.returncode != 0:
+        return []
+    return [
+        line.partition("\t")[2]
+        for line in proc.stdout.splitlines()
+        if line.partition(" ")[0] == SYMLINK_MODE
+    ]
+
+
+def _symlink_findings(run, trees):
+    """The instrument for ``rules/visibility.md`` §5's "No symlinks".
+
+    One finding per path, named once however many graded trees record it: two
+    revisions of one repository are one tree's worth of rule, not two.
+    """
+
+    paths = set()
+    for tree in trees:
+        if tree is not None:
+            paths.update(_symlink_entries(tree))
+    return [(run, 0, SYMLINK_IN_TREE, path) for path in sorted(paths)]
 
 
 def _same_revision(rev, worktree_root):
@@ -328,15 +630,29 @@ def _same_revision(rev, worktree_root):
 def _criteria(section):
     """Every numbered completion-test item, at any indentation.
 
+    Indentation is the signal and it is relative: a numbered line indented
+    deeper than the line that opened the item now open is that item's own
+    text -- a sentence wrapping onto a digit and a period, or a list nested
+    under it -- and opens nothing. A numbered line at that opening line's
+    indentation or less opens the next item, so a set whose criteria are
+    themselves written indented is still a list; and one met while no item is
+    open always opens one.
+
     Unindented prose ends an item's continuation, never the list: a criterion
     written after such a line still surfaces, as an extraction gap at minimum.
     """
 
     items = []
     current = None
+    opened_at = 0
     for line in section.splitlines():
         match = CRITERION_RE.match(line)
         if match:
+            depth = len(line) - len(line.lstrip())
+            if current is not None and depth > opened_at:
+                current[1].append(line.strip())
+                continue
+            opened_at = depth
             current = (int(match.group(1)), [match.group(2)])
             items.append(current)
             continue
@@ -358,13 +674,22 @@ def _commands(criterion):
     but a whole-suite invocation naming no node id reads the same under every
     item it is stated under, so it discriminates none of them -- a cut defect
     either way, and the honest report of it is the gap.
+
+    Stating is not quoting, and the frame standing immediately in front of the
+    span is what tells them apart -- ``_scope_closure``'s question about a
+    write verb, asked again of a command. Grading a quotation reaches for a
+    path the item never claimed, refuses the very span a ticket was describing,
+    and runs whatever the prose says something else runs.
     """
 
     found = []
-    for span in BACKTICK_RE.findall(criterion):
-        candidate = span.strip()
+    for match in BACKTICK_RE.finditer(criterion):
+        candidate = match.group(1).strip()
         argv = candidate.split()
         if len(argv) < 2 or argv[0] not in COMMAND_HEADS or _evaluates_code(argv):
+            continue
+        frame = criterion[max(0, match.start() - DENIAL_WINDOW):match.start()]
+        if DENIAL_RE.search(frame) or MENTION_RE.search(frame):
             continue
         found.append(candidate)
     return found
@@ -381,22 +706,108 @@ def _evaluates_code(argv):
     return argv[0] in EVAL_HEADS and any(token in EVAL_ARGS for token in argv[1:])
 
 
+def _names_outside_the_copy(token):
+    """Does this argv token spell a location the scratch copy does not hold?
+
+    Two spellings, and this catches both: root the path, or climb out of it.
+    Nothing expands on the way -- argv is split, never evaluated, and git spawns
+    no shell, so ``~`` and ``$HOME`` name a directory inside the copy and
+    nothing else.
+
+    Not closed by construction, because a third route exists that argv cannot
+    see: name a symlink the copy holds. Measured -- commit a symlink, run ``git
+    diff --output=link/x``, and the file lands outside the copy while this
+    returns False. That hole and the permitted span that writes *inside* the
+    copy are one problem said twice: text cannot answer a containment question,
+    because where a path lands is a fact about the tree and not about the token.
+    The copy has to enforce confinement. A rule that only describes it will keep
+    coming up one route short, so this narrows the reachable set without closing
+    it.
+
+    An option's value starts where the option stops -- after ``=`` for a long
+    one, after the letter for a short one carrying its value attached -- and an
+    operand is its own value. ``..`` counts only as a whole path component, so
+    ``<base>..HEAD`` stays the revision range it is.
+    """
+
+    if token.startswith("--"):
+        _, _, value = token.partition("=")
+    elif token.startswith("-"):
+        value = token[2:]
+    else:
+        value = token
+    return value.startswith("/") or ".." in value.split("/")
+
+
+def _unconfined_git(command):
+    """Is this a git span the scratch copy does not confine?
+
+    Two questions, because an escape takes two shapes and one test sees one of
+    them. Position answers the first: every way git runs a program named on the
+    line or leaves the tree it was pointed at is a global option, and a global
+    option is exactly a token standing before the subcommand, so a confined set
+    holding no token that begins with ``-`` refuses that family entire.
+
+    Position cannot answer the second, and a subcommand check alone is narrower
+    than the threat. ``--output=<file>`` is a subcommand option: it stands after
+    the subcommand, where the position rule cannot see it, and ``git diff``,
+    ``git log``, ``git show`` and ``git rev-list`` each take it and write the
+    file, absolute or climbing, inside the copy or beside it. ``-O<orderfile>``,
+    ``--exclude-from`` and ``--no-index`` read the same way round. So the second
+    question is asked of what a token spells rather than where it stands, and
+    ``_names_outside_the_copy`` answers it for every option git ships next --
+    as far as text can, which is not all the way; see its own docstring.
+
+    What remains -- a pager, an alias, a textconv or ext-diff driver -- git
+    takes from configuration, and configuration is the clone's own: ``git
+    clone`` writes a fresh ``core``-only config, an in-tree ``.gitattributes``
+    can name a driver but cannot define one, and a ticket supplies argv and
+    nothing besides.
+
+    Tokenised the way ``_run_once`` tokenises, so the span read here is the argv
+    that would run: a gate splitting the text some other way grades one command
+    and executes another.
+    """
+
+    try:
+        argv = shlex.split(command)
+    except ValueError:
+        return False
+    if not argv or argv[0] != GIT_HEAD:
+        return False
+    if len(argv) < 2 or argv[1] not in GIT_CONFINED_SUBCOMMANDS:
+        return True
+    return any(_names_outside_the_copy(token) for token in argv[2:])
+
+
 def _shape(command):
+    """The defects the command text carries, judged without running it."""
+
     classes = []
     if SWALLOW_RE.search(command):
         classes.append(SWALLOWED_EXIT)
     if CUMULATIVE_RE.search(command):
         classes.append(CUMULATIVE_RANGE)
+    if _unconfined_git(command):
+        classes.append(UNCONFINED_ORACLE)
     return classes
 
 
 def _exit_code(command, tree):
     """This command's exit status in this tree, run once however often asked.
 
-    A scratch tree is a read-only copy built for one invocation and thrown away
-    with it, so ``(command, tree)`` reads the same every time. The cache is a
-    speed change and never a meaning change: one ticket set states the same
-    invariant oracle in item after item, and a suite is a slow read.
+    A scratch tree is a copy built for one invocation and thrown away with it,
+    and the cache is a speed change rather than a meaning change exactly while
+    ``(command, tree)`` reads the same every time: one ticket set states the
+    same invariant oracle in item after item, and a suite is a slow read.
+
+    That sameness is measured now rather than assumed. ``_run_once`` reads the
+    copy's status after every span it runs, so a span that wrote into the copy
+    is reported as ``unconfined-oracle`` instead of silently deciding what the
+    next reader of this cache sees. Measured, not proven: the reading covers
+    the working tree, so a write into ``.git``, or one an interpreter's
+    ``sys.pycache_prefix`` sends to a cache directory outside the copy, is a
+    change no status can see.
     """
 
     key = (command, str(tree))
@@ -417,15 +828,24 @@ def _run_once(command, tree):
         proc = subprocess.run(
             argv,
             cwd=str(tree),
-            capture_output=True,
-            text=True,
+            # Discarded, never decoded: the exit status is the whole reading,
+            # and an oracle in a tree with history prints whatever it likes --
+            # `git archive` prints a tar. Text mode made one such span fatal to
+            # the invocation, and the report it was one line of.
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             timeout=COMMAND_TIMEOUT,
         )
+        code = proc.returncode
     except subprocess.TimeoutExpired:
-        return TIMED_OUT
+        # A span that ran out of time still ran, and still wrote whatever it
+        # had written by the time it was killed.
+        code = TIMED_OUT
     except OSError:
+        # Nothing started, so there is nothing for it to have written.
         return UNRUNNABLE
-    return proc.returncode
+    _MUTATED.extend(_mutations(tree))
+    return code
 
 
 def _verdict_in_output(command):
@@ -434,14 +854,97 @@ def _verdict_in_output(command):
     ``grep -c`` prints a count and exits on whether it printed anything. A
     criterion saying "reports 0" is judged by that text, which no exit status
     carries, so the honest report is that cutcheck cannot decide it. The git
-    commands that read the same way need no clause here: no git oracle is
-    decidable in a copy with no history, so the head decides all of them.
+    command that reads the same way is owned here now that the scratch copy
+    carries history and its head excuses nothing: ``git rev-list --count``
+    prints the number and exits 0 whatever it counted.
     """
 
     argv = command.split()
+    if argv[0] == GIT_HEAD:
+        return GIT_COUNT_FLAG in argv[1:]
     if argv[0] not in SEARCH_HEADS:
         return False
     return any(COUNT_FLAG_RE.match(token) for token in argv[1:])
+
+
+def _whole_target(target, tree):
+    """Does this target name a whole module or directory, not a node inside one?
+
+    Decided against the tree, because only the tree knows where the module
+    stops. ``tests.test_cutcheck`` is a file and
+    ``tests.test_cutcheck.CleanSetTest`` is a class inside that file, and no
+    reading of the two strings tells them apart. A unittest target spells the
+    way down with dots and a pytest target spells it with slashes; both are one
+    question about where the path stops resolving.
+    """
+
+    if NODE_SEP in target:
+        return False
+    here = tree / (target if "/" in target else target.replace(".", "/"))
+    return here.is_dir() or here.with_suffix(".py").is_file()
+
+
+def _filter_narrows(argv):
+    """Does this command's node filter actually exclude any node?
+
+    The token's presence was the whole test once, and that read `-k test` --
+    which matches every method in the suite -- as a narrowed oracle. The
+    pattern is read instead: anything `test_` starts with matches all of them
+    and narrows nothing, and everything else is taken at its word, because
+    which nodes a pattern selects is a question for the runner and not for
+    this.
+    """
+
+    if NODE_FILTER not in argv:
+        return False
+    index = argv.index(NODE_FILTER)
+    pattern = argv[index + 1].strip("\"'") if index + 1 < len(argv) else ""
+    return not FILTER_MATCHES_ALL.startswith(pattern)
+
+
+def _whole_suite(command, tree):
+    """Is this a test invocation naming no node id?
+
+    ``_commands`` refuses a bare head for this reason already: a tool's name
+    with nothing after it decides nothing. A whole-module or whole-suite
+    invocation is that same defect with more typing -- it runs the identical
+    tests under every item it is stated under, so it discriminates none of
+    them, and the honest report of it is the gap.
+
+    Reported rather than run, which is what makes the class worth having: this
+    repository's own mandated ``discover`` outgrows ``COMMAND_TIMEOUT`` in the
+    cleanest store there is, so executing it returned ``unrunnable-oracle`` --
+    a true class reached by reading the clock instead of the cut.
+
+    A target resolving to no module at all is some flag's value rather than a
+    thing to grade, and one such token is enough to withhold the finding: this
+    convicts what it can read whole, and stays quiet over what it cannot.
+
+    A runner carrying flags and no target at all is the widest spelling there
+    is -- ``pytest -q``, or the bare ``python3 -m unittest`` that is documented
+    as equivalent to ``discover``. Naming nothing is not the same as naming
+    something unreadable, so the two are separated here: the finding is
+    withheld over a quoted target, which names a node this cannot parse, and
+    made over an empty one, which names none.
+    """
+
+    argv = command.split()
+    runner = next((i for i, token in enumerate(argv) if token in TEST_RUNNERS), None)
+    if runner is None or _filter_narrows(argv):
+        return False
+    rest = argv[runner + 1:]
+    if DISCOVER in rest:
+        return True
+    if NODE_FILTER in rest:
+        # Reaching here means the pattern matched every node, so it is a flag's
+        # value and not a target. Left in, it resolves to no module and
+        # withholds the finding over the very filter that earned it.
+        at = rest.index(NODE_FILTER)
+        rest = rest[:at] + rest[at + 2:]
+    targets = [token for token in rest if token[:1] not in ("-", '"', "'")]
+    if not targets:
+        return not any(token[:1] in ('"', "'") for token in rest)
+    return all(_whole_target(token, tree) for token in targets)
 
 
 def _discrimination(command, baseline_tree, head_tree):
@@ -452,7 +955,9 @@ def _discrimination(command, baseline_tree, head_tree):
     A baseline read that could not run at all is revision-independent -- no
     work makes an absent command exist -- so it is reported without asking
     HEAD, and at cut time, where there is no HEAD half to ask, it is reported
-    all the same.
+    all the same. Neither half's non-reading is a failure: a read that timed
+    out or could not run decided nothing, and is reported as deciding nothing
+    whichever half produced it.
     """
 
     at_baseline = _exit_code(command, baseline_tree)
@@ -467,6 +972,14 @@ def _discrimination(command, baseline_tree, head_tree):
     at_head = _exit_code(command, head_tree)
     if at_head is None or at_head == 0:
         return None
+    if at_head in (UNRUNNABLE, TIMED_OUT):
+        # The same reading the baseline half already refuses to call a failure.
+        # A command that never returned, or that nothing could run, produced no
+        # verdict at HEAD; "fails at both revisions" claims one. An oracle that
+        # discriminates perfectly reads as one that never discriminates, and
+        # the timeout that says so is the likeliest reading of all -- a suite
+        # outgrowing COMMAND_TIMEOUT is the ordinary way here.
+        return UNRUNNABLE_ORACLE
     searching = command.split(" ", 1)[0] in SEARCH_HEADS
     if searching and at_baseline == NO_MATCH and at_head == NO_MATCH:
         return NO_HITS_BOTH_REVISIONS
@@ -930,7 +1443,9 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
         for command in commands:
             shape = _shape(command)
             if shape:
-                # A swallowed pipeline cannot be run argv-only anyway.
+                # Reported and never run: a swallowed pipeline cannot be run
+                # argv-only anyway, and an unconfined git span must not be.
+                # This `continue` is the refusal -- everything below executes.
                 findings.extend((ticket_id, number, k, command) for k in shape)
                 continue
             missing = [
@@ -945,12 +1460,6 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
                     for arg in missing
                 )
                 continue
-            if command.split(" ", 1)[0] == GIT_HEAD:
-                # `git archive` writes no `.git`, so a git command run in the
-                # scratch tree walks up to whatever repository encloses it and
-                # answers about that one. No git oracle is decidable here.
-                findings.append((ticket_id, number, GIT_NO_HISTORY, command))
-                continue
             if _verdict_in_output(command):
                 findings.append((ticket_id, number, VERDICT_IN_OUTPUT, command))
                 continue
@@ -959,7 +1468,22 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
                 # invariant: it passed before this work and has to pass after,
                 # so discriminating is not its job and never was.
                 continue
+            if _whole_suite(command, baseline_tree):
+                # Below the stamp, because an invariant is not being asked to
+                # discriminate, and above execution because this one must not
+                # run: the mandated `discover` that lands here outgrows
+                # COMMAND_TIMEOUT, and the timeout reports the clock.
+                findings.append((ticket_id, number, WHOLE_SUITE_ORACLE, command))
+                continue
+            del _MUTATED[:]
             klass = _discrimination(command, baseline_tree, head_tree)
+            # Named once per path however many graded copies the span wrote
+            # into: two revisions of one repository are one span's worth of
+            # defect, not two.
+            findings.extend(
+                (ticket_id, number, UNCONFINED_ORACLE, "{}: {}".format(wrote, command))
+                for wrote in sorted(set(_MUTATED))
+            )
             if klass is not None:
                 findings.append((ticket_id, number, klass, command))
     header = "\n".join(
@@ -979,10 +1503,35 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
     return findings
 
 
+# What the caller reads off the status, and what the status does not mean. The
+# six families are the module docstring's to describe; this names none of them.
+EPILOG = """exit status:
+  0  Cutcheck's exit 0 means no finding whose class lies outside the advisory
+     set, not that the set is clean: an advisory finding is reported and
+     exits 0.
+  1  At least one finding whose class lies outside the advisory set.
+  2  No ticket set resolved for the run; argparse's own usage error exits 2
+     as well.
+
+A cut verdict is not portable between hosts. An oracle naming an interpreter
+one host lacks is reported there as unrunnable-oracle and is silent here, so a
+verdict is read only on the host that produced it."""
+
+
+def _finding_line(ticket_id, number, klass, detail):
+    # A criterion number of 0 is a defect of the ticket, not of one oracle.
+    where = "criterion {}: ".format(number) if number else ""
+    return "{}: {}: {}: {}{}".format(ticket_id, FAMILY_OF[klass], klass, where, detail)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="cutcheck.py",
         description="Report cut defects in an issued ticket set.",
+        # Raw: the epilog's sentences are the contract, and a formatter that
+        # rewraps them to the terminal decides where they break.
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=EPILOG,
     )
     parser.add_argument("run", help="run id naming the issued ticket set")
     parser.add_argument(
@@ -998,11 +1547,14 @@ def main(argv=None):
         print("cutcheck: no ticket set resolved for run {}".format(args.run))
         return NO_TICKET_SET
 
-    scratch_root = Path(tempfile.mkdtemp(prefix=".cutcheck-", dir=str(worktree_root.parent)))
+    scratch_root = _scratch_root(worktree_root)
+    if scratch_root is None:
+        print("{} {}".format(NO_SCRATCH_ROOT, worktree_root))
+        return NO_TICKET_SET
     try:
         baseline_tree = _scratch_tree(args.baseline, worktree_root, scratch_root)
         if baseline_tree is None:
-            print("cutcheck: cannot archive baseline {}".format(args.baseline))
+            print("cutcheck: cannot clone baseline {}".format(args.baseline))
             return NO_TICKET_SET
         head_tree = None
         if not _same_revision(args.baseline, worktree_root):
@@ -1026,17 +1578,23 @@ def main(argv=None):
                  state_root.find_repo_root(Path.cwd()))
         findings.extend(_coverage(args.run, run_dir, sorted(siblings), roots))
         findings.extend(_executor_legality(siblings, worktree_root))
+        findings.extend(_symlink_findings(args.run, (baseline_tree, head_tree)))
     finally:
-        shutil.rmtree(scratch_root, ignore_errors=True)
+        _remove_scratch_root(scratch_root)
 
-    for ticket_id, number, klass, detail in findings:
-        # A criterion number of 0 is a defect of the ticket, not of one oracle.
-        where = "criterion {}: ".format(number) if number else ""
-        print(
-            "{}: {}: {}: {}{}".format(ticket_id, FAMILY_OF[klass], klass, where, detail)
-        )
-    if any(klass not in ADVISORY for _, _, klass, _ in findings):
+    outside = [f for f in findings if f[2] not in ADVISORY]
+    advisory = [f for f in findings if f[2] in ADVISORY]
+    for finding in outside:
+        print(_finding_line(*finding))
+    if advisory:
+        print(ADVISORY_HEADING)
+        for finding in advisory:
+            print(_finding_line(*finding))
+    if outside:
         return REPORTED
+    # Zero bytes reads the same as a run that never happened. A set whose only
+    # findings are advisory has been read and has passed, and says so.
+    print(NO_FINDING_OUTSIDE)
     return CLEAN
 
 

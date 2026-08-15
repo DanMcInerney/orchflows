@@ -8,8 +8,11 @@ that needs a different meaning needs a different word.
 
 - **tier** — one of four layers: T0 contracts, T1 skills, T2 packs, T3
   compositions. Coupling between tiers passes only through T0.
-- **contract** — a T0 file defining a pure data shape. Hash-pinned; a change
-  to a named field or enum is breaking even when prose meaning is unchanged.
+- **contract** — a T0 file defining a pure data shape. Hash-pinned; a shape
+  change (below) is breaking even when prose meaning is unchanged.
+- **shape change** — a change to a named field or enum in a T0 contract;
+  breaking, so it lands only through a supersession PR. A T0 edit moving no
+  field or enum is a prose edit, re-pinned without a supersession PR.
 - **waist** — the T0 layer as a whole: the one narrow interface many hosts
   sit below and many packs and workflows sit above.
 - **skill** — one callable package: a directory whose `SKILL.md` states a

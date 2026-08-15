@@ -30,7 +30,7 @@ baseline as they will when the work has landed, one per reported case.
    `grep -rn "zzqq-token-never-written" install.py` returns at least one line.
    oracle_class: deterministic. provenance: authored-here.
 3. **A node id naming a class that does not exist.**
-   `python3 -m pytest tests/test_installer.py::NoSuchClass::test_absent` exits 0.
+   `python3 -B -m unittest tests.test_installer.NoSuchClass.test_absent` exits 0.
    oracle_class: deterministic. provenance: authored-here.
 
 ## Result

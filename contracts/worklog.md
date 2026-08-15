@@ -26,6 +26,11 @@ are never state.
   item is under way, and the pause names the external action awaited
   and every item queued behind it.
 
+Notes append in occurrence order, and no note is written past a terminal
+section: a worklog carries no terminal placeholder until it closes.
+Writing an artifact that already exists is refused by default, the
+refusal naming the existing path.
+
 Beside it, `<state-root>/runs/<run>/run.json` — the run's identity, written
 on the run's first state write, appended to and never rewritten:
 

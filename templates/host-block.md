@@ -62,9 +62,9 @@ blocks, prompts, or fails the task; it always exits 0; logging is
 exempt from every bound. Whenever the logger cannot run — no
 interpreter, or the shell itself refused the call — append the entry as
 one JSON line to the state sink's `friction/<yyyy-mm>.jsonl`, its root
-given by {{ORCH_LIB}}/rules/visibility.md §6, with any tool that
-writes a file (ts, observed, expected, category, host); never skip the
-log.
+given by {{ORCH_LIB}}/rules/visibility.md §6 and outside every
+worktree, with any tool that writes a file (ts, observed, expected,
+category, host); never skip the log.
 Logging friction is part of completing the task — a session that hit
 friction and logged nothing failed silently. These logs are the primary
 input to `orch-self-improve`; their fidelity bounds the sharpest signal

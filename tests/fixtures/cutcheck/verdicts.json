@@ -2,29 +2,48 @@
  "cutcheck-barenoun": {
   "exit": 0,
   "lines": [
+   "cutcheck: advisory -- reported, and never setting the exit status:",
    "01-barenoun: family 1: extraction-gap: criterion 2: **A mention standing alone is an extraction gap.** The only command head this criterion states is `p",
-   "cutcheck-barenoun: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-barenoun/coverage.md"
+   "cutcheck-barenoun: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-barenoun/coverage.md",
+   "cutcheck: no finding outside the advisory set"
   ]
  },
  "cutcheck-carveouts": {
   "exit": 0,
-  "lines": []
+  "lines": [
+   "cutcheck: no finding outside the advisory set"
+  ]
  },
  "cutcheck-clean": {
   "exit": 0,
-  "lines": []
+  "lines": [
+   "cutcheck: no finding outside the advisory set"
+  ]
+ },
+ "cutcheck-command-mention": {
+  "exit": 0,
+  "lines": [
+   "cutcheck: advisory -- reported, and never setting the exit status:",
+   "01-quoted: family 1: extraction-gap: criterion 2: **A span quoted as what the guard refuses is no oracle.** The confinement gate refuses `git log --ou",
+   "01-quoted: family 1: extraction-gap: criterion 3: **A span quoted as what CI runs is no oracle.** A whole-module invocation such as `python3 -m unitte",
+   "cutcheck-command-mention: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-command-mention/coverage.md",
+   "cutcheck: no finding outside the advisory set"
+  ]
  },
  "cutcheck-evalhead": {
   "exit": 0,
   "lines": [
+   "cutcheck: advisory -- reported, and never setting the exit status:",
    "01-evalhead: family 1: extraction-gap: criterion 1: **An interpreter evaluating its argument is never executed.** `python3 -c \"import pathlib;pathlib.Pa",
-   "cutcheck-evalhead: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-evalhead/coverage.md"
+   "cutcheck-evalhead: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-evalhead/coverage.md",
+   "cutcheck: no finding outside the advisory set"
   ]
  },
  "cutcheck-f1-cuttime": {
   "exit": 1,
   "lines": [
    "01-cuttime: family 1: no-hits-both-revisions: criterion 1: grep -rn \"zzqq-cuttime-token\" install.py",
+   "cutcheck: advisory -- reported, and never setting the exit status:",
    "cutcheck-f1-cuttime: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f1-cuttime/coverage.md"
   ]
  },
@@ -33,15 +52,26 @@
   "lines": [
    "01-discrimination: family 1: already-passes: criterion 1: grep -n \"SCRIPT_NAMES\" install.py",
    "01-discrimination: family 1: no-hits-both-revisions: criterion 2: grep -rn \"zzqq-token-never-written\" install.py",
-   "01-discrimination: family 1: fails-both-revisions: criterion 3: python3 -m pytest tests/test_installer.py::NoSuchClass::test_absent",
+   "01-discrimination: family 1: fails-both-revisions: criterion 3: python3 -B -m unittest tests.test_installer.NoSuchClass.test_absent",
+   "cutcheck: advisory -- reported, and never setting the exit status:",
    "cutcheck-f1-discrimination: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f1-discrimination/coverage.md"
   ]
  },
  "cutcheck-f1-extraction-gap": {
   "exit": 0,
   "lines": [
+   "cutcheck: advisory -- reported, and never setting the exit status:",
    "01-extraction-gap: family 1: extraction-gap: criterion 1: **The boundary reads clearly to a first reader.** A reviewer who has not seen this ticket can name, ",
-   "cutcheck-f1-extraction-gap: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f1-extraction-gap/coverage.md"
+   "cutcheck-f1-extraction-gap: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f1-extraction-gap/coverage.md",
+   "cutcheck: no finding outside the advisory set"
+  ]
+ },
+ "cutcheck-f1-phantom": {
+  "exit": 0,
+  "lines": [
+   "cutcheck: advisory -- reported, and never setting the exit status:",
+   "cutcheck-f1-phantom: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f1-phantom/coverage.md",
+   "cutcheck: no finding outside the advisory set"
   ]
  },
  "cutcheck-f1-shape": {
@@ -49,14 +79,17 @@
   "lines": [
    "01-shape: family 1: swallowed-exit: criterion 1: python3 -m unittest discover -s tests | tail -5",
    "01-shape: family 1: cumulative-range: criterion 2: git diff --name-only ac8791a..HEAD",
+   "cutcheck: advisory -- reported, and never setting the exit status:",
    "cutcheck-f1-shape: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f1-shape/coverage.md"
   ]
  },
  "cutcheck-f1-truncated": {
   "exit": 0,
   "lines": [
+   "cutcheck: advisory -- reported, and never setting the exit status:",
    "01-truncated: family 1: extraction-gap: criterion 2: **The criterion after the interruption.** A reviewer names, from the module docstring alone, every f",
-   "cutcheck-f1-truncated: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f1-truncated/coverage.md"
+   "cutcheck-f1-truncated: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f1-truncated/coverage.md",
+   "cutcheck: no finding outside the advisory set"
   ]
  },
  "cutcheck-f2-paths": {
@@ -74,29 +107,35 @@
    "02-contradiction: family 3: scope-contradiction: editing scripts/cutcheck.py | scripts/cutcheck.py",
    "01-unscoped: family 4: scope-collision: with 02-contradiction: install.py",
    "01-unscoped: family 4: staged-invalidation: with 02-contradiction: install.py",
+   "cutcheck: advisory -- reported, and never setting the exit status:",
    "cutcheck-f3-scope: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f3-scope/coverage.md"
   ]
  },
  "cutcheck-f4-ordered": {
   "exit": 0,
   "lines": [
-   "cutcheck-f4-ordered: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f4-ordered/coverage.md"
+   "cutcheck: advisory -- reported, and never setting the exit status:",
+   "cutcheck-f4-ordered: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f4-ordered/coverage.md",
+   "cutcheck: no finding outside the advisory set"
   ]
  },
  "cutcheck-f4-pairs": {
   "exit": 1,
   "lines": [
-   "03-alpha: family 1: extraction-gap: criterion 1: **The shared scope is the whole defect.** The two scopes intersect, which the report names without r",
-   "04-beta: family 1: extraction-gap: criterion 1: **The shared scope is the whole defect.** The two scopes intersect, which the report names without r",
    "01-reader: family 4: staged-invalidation: with 02-rewriter: install.py",
    "03-alpha: family 4: scope-collision: with 04-beta: scripts/cutcheck.py",
+   "cutcheck: advisory -- reported, and never setting the exit status:",
+   "03-alpha: family 1: extraction-gap: criterion 1: **The shared scope is the whole defect.** The two scopes intersect, which the report names without r",
+   "04-beta: family 1: extraction-gap: criterion 1: **The shared scope is the whole defect.** The two scopes intersect, which the report names without r",
    "cutcheck-f4-pairs: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f4-pairs/coverage.md"
   ]
  },
  "cutcheck-f4-transitive": {
   "exit": 0,
   "lines": [
-   "cutcheck-f4-transitive: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f4-transitive/coverage.md"
+   "cutcheck: advisory -- reported, and never setting the exit status:",
+   "cutcheck-f4-transitive: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f4-transitive/coverage.md",
+   "cutcheck: no finding outside the advisory set"
   ]
  },
  "cutcheck-f5-coverage": {
@@ -109,21 +148,43 @@
  "cutcheck-f5-nomap": {
   "exit": 0,
   "lines": [
-   "cutcheck-f5-nomap: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f5-nomap/coverage.md"
+   "cutcheck: advisory -- reported, and never setting the exit status:",
+   "cutcheck-f5-nomap: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f5-nomap/coverage.md",
+   "cutcheck: no finding outside the advisory set"
   ]
  },
  "cutcheck-f6-executor": {
   "exit": 1,
   "lines": [
-   "cutcheck-f6-executor: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f6-executor/coverage.md",
    "01-engine: family 6: illegal-executor: orch-task is an engine",
-   "03-alien: family 6: illegal-executor: orch-render is neither orch-code-pack's executor cell nor its assembly cell"
+   "03-alien: family 6: illegal-executor: orch-render is neither orch-code-pack's executor cell nor its assembly cell",
+   "cutcheck: advisory -- reported, and never setting the exit status:",
+   "cutcheck-f6-executor: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f6-executor/coverage.md"
+  ]
+ },
+ "cutcheck-git-graded": {
+  "exit": 1,
+  "lines": [
+   "01-git-graded: family 1: already-passes: criterion 1: git log -1 --format=%H",
+   "01-git-graded: family 1: already-passes: criterion 2: git diff ac8791a -- install.py",
+   "cutcheck: advisory -- reported, and never setting the exit status:",
+   "cutcheck-git-graded: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-git-graded/coverage.md"
+  ]
+ },
+ "cutcheck-gitescape": {
+  "exit": 1,
+  "lines": [
+   "01-gitescape: family 1: unconfined-oracle: criterion 1: git -c alias.pwn='!touch /tmp/cutcheck-gitescape-ran' pwn",
+   "01-gitescape: family 1: unconfined-oracle: criterion 2: git log --output=/tmp/cutcheck-gitescape-wrote",
+   "cutcheck: advisory -- reported, and never setting the exit status:",
+   "cutcheck-gitescape: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-gitescape/coverage.md"
   ]
  },
  "cutcheck-mention": {
   "exit": 1,
   "lines": [
    "01-mention: family 3: unscoped-write: .orch/evidence/mention/verdict.txt",
+   "cutcheck: advisory -- reported, and never setting the exit status:",
    "cutcheck-mention: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-mention/coverage.md"
   ]
  },
@@ -131,32 +192,46 @@
   "exit": 1,
   "lines": [
    "01-pre-existing: family 1: swallowed-exit: criterion 2: python3 -m unittest discover -s tests | tail -5",
-   "01-pre-existing: family 1: verdict-in-output: criterion 3: grep -c \"SCRIPT_NAMES\" install.py",
    "02-authored-here: family 1: already-passes: criterion 1: grep -n \"SCRIPT_NAMES\" install.py",
+   "cutcheck: advisory -- reported, and never setting the exit status:",
+   "01-pre-existing: family 1: verdict-in-output: criterion 3: grep -c \"SCRIPT_NAMES\" install.py",
    "cutcheck-provenance: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-provenance/coverage.md"
+  ]
+ },
+ "cutcheck-provenance-mention": {
+  "exit": 1,
+  "lines": [
+   "01-mentioned: family 1: already-passes: criterion 1: grep -n \"SCRIPT_NAMES\" install.py",
+   "01-mentioned: family 1: already-passes: criterion 2: grep -n \"friction.py\" install.py",
+   "cutcheck: advisory -- reported, and never setting the exit status:",
+   "cutcheck-provenance-mention: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-provenance-mention/coverage.md"
   ]
  },
  "cutcheck-quote-precision": {
   "exit": 1,
   "lines": [
    "01-quotes: family 2: quote-not-at-citation: \"no line of this file reads this way\" not at install.py:1",
+   "cutcheck: advisory -- reported, and never setting the exit status:",
    "cutcheck-quote-precision: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-quote-precision/coverage.md"
   ]
  },
  "cutcheck-shellhead": {
   "exit": 0,
   "lines": [
+   "cutcheck: advisory -- reported, and never setting the exit status:",
    "01-shellhead: family 1: extraction-gap: criterion 1: **A shell span is never executed.** `bash -lc 'touch /tmp/cutcheck-shellhead-ran'` is the span; thro",
-   "cutcheck-shellhead: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-shellhead/coverage.md"
+   "cutcheck-shellhead: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-shellhead/coverage.md",
+   "cutcheck: no finding outside the advisory set"
   ]
  },
  "cutcheck-verdict-in-output": {
   "exit": 0,
   "lines": [
+   "cutcheck: advisory -- reported, and never setting the exit status:",
    "01-verdict: family 1: verdict-in-output: criterion 1: grep -c \"SCRIPT_NAMES\" install.py",
-   "01-verdict: family 1: git-no-history: criterion 2: git archive ac8791a",
-   "01-verdict: family 1: git-no-history: criterion 3: git diff ac8791a -- install.py",
-   "cutcheck-verdict-in-output: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-verdict-in-output/coverage.md"
+   "01-verdict: family 1: verdict-in-output: criterion 2: git rev-list --count HEAD",
+   "cutcheck-verdict-in-output: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-verdict-in-output/coverage.md",
+   "cutcheck: no finding outside the advisory set"
   ]
  }
 }

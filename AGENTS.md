@@ -34,11 +34,32 @@ run each command below through it in place of `python`. It must be
 Python 3.9 or newer: that is the floor `install.py` enforces and CI
 proves on 3.9, 3.11 and 3.13 across Linux, macOS and Windows. A result
 recorded on an older interpreter says nothing about this repository.
+A green run of the five below is provisional until the matrix in
+`.github/workflows/checks.yml` agrees: locally they run on one host
+under one interpreter, and that matrix is the oracle that discriminates
+a host-specific defect from a real one.
 
 python tools/validate.py
-python -m unittest discover -s tests -v
+python tools/run_tests.py                # sharded, one process per module
+python -m unittest discover -s tests -v  # serial; proves no cross-module residue
 python install.py --dry-run
 git diff --check
+
+Before pushing, close what can be closed here rather than four minutes
+later in a matrix cell:
+
+python tools/preflight.py   # the whole suite under every CI interpreter installed
+
+Nine cells; a local run is one. Two of the three axes have local
+answers. `tools/run_tests.py --no-cache` schedules alphabetically, as a
+cold checkout does — the duration cache is gitignored, so a warm local
+run and CI co-schedule different modules, and a module only races the
+modules beside it; `preflight.py` runs it under each interpreter CI uses
+that is installed here, and names the ones that are not. What is left is
+the OS axis: `tests/_windows_semantics.py` makes POSIX refuse the
+directory deletions Windows refuses, installed for every runner by
+`tests/__init__.py`, and `tests/test_static_tree_invariants.py` refuses
+the same shape statically. Everything past that is genuinely CI's.
 
 ## Friction law (always on)
 
@@ -52,9 +73,10 @@ surprising-output | workaround | misrouting), `--skill`, `--ticket`,
 `--run`. Whenever the logger cannot run — no interpreter, or the shell
 itself refused the call — append the entry as one JSON line to the state
 sink's `friction/<yyyy-mm>.jsonl`, its root given by
-`rules/visibility.md` §6, with any tool that writes a file (ts,
-observed, expected, category, host); never skip the log. The blocked
-shell is not a reason to lose the entry: it is the entry.
+`rules/visibility.md` §6 and outside every worktree, with any tool that
+writes a file (ts, observed, expected, category, host); never skip the
+log. The blocked shell is not a reason to lose the entry: it is the
+entry.
 Logging friction is part of completing
 the task — a session that hit friction and logged nothing failed
 silently.
