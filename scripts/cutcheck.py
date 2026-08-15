@@ -194,6 +194,10 @@ ADVISORY = frozenset(
 ADVISORY_HEADING = "cutcheck: advisory -- reported, and never setting the exit status:"
 NO_FINDING_OUTSIDE = "cutcheck: no finding outside the advisory set"
 SCRATCH_NOT_REMOVED = "cutcheck: scratch root not removed"
+NO_SCRATCH_ROOT = "cutcheck: no scratch root under the git common dir of"
+# One directory under the git common dir holds every copy every cut makes, so
+# a root outliving its run is findable rather than scattered.
+SCRATCH_DIR = "cutcheck-scratch"
 
 # The acceptance-coverage map: one row per spec criterion, naming the item,
 # the gate, or declared remainder that answers for it.
@@ -383,9 +387,40 @@ def _run_dir(run, worktree_root):
 
 
 def _scratch_root(worktree_root):
-    """One invocation's private directory for the copies it grades in."""
+    """One invocation's private directory for the copies it grades in.
 
-    return Path(tempfile.mkdtemp(prefix=".cutcheck-", dir=str(worktree_root.parent)))
+    Placed under the git common dir, which is the one directory that is the
+    tool's to write in, answers the same from every worktree, and sits with the
+    object store a local clone hardlinks from -- whatever volume the worktree
+    itself is on. Enumerable too: every copy any cut ever leaves is under one
+    ``cutcheck-scratch``, so a stale one can be found without a search.
+
+    ``--git-common-dir``, and not the three neighbours it is easily confused
+    with. ``worktree_root.parent`` is the repository's *parent* from a main
+    checkout, which is how 24M landed outside every ignore file the repository
+    has; a literal ``.git`` is an 85-byte file in a linked worktree; and
+    ``--git-dir`` resolves to ``.git/worktrees/<name>``, so two worktrees
+    grading one run would not share a place. The answer comes back relative
+    -- a bare ``.git`` -- from a main checkout and absolute from a linked
+    worktree, so it is joined to the tree it was asked about before use.
+
+    ``None`` where there is no common dir to place it under, which is any
+    directory outside a repository; the caller has a ticket set it cannot
+    grade and says so.
+    """
+
+    proc = _git(["rev-parse", "--git-common-dir"], worktree_root)
+    if proc is None or proc.returncode != 0:
+        return None
+    common = Path(proc.stdout.strip())
+    if not common.is_absolute():
+        common = worktree_root / common
+    try:
+        parent = common.resolve() / SCRATCH_DIR
+        parent.mkdir(parents=True, exist_ok=True)
+        return Path(tempfile.mkdtemp(prefix=".cutcheck-", dir=str(parent)))
+    except OSError:
+        return None
 
 
 def _remove_scratch_root(scratch_root):
@@ -1399,6 +1434,9 @@ def main(argv=None):
         return NO_TICKET_SET
 
     scratch_root = _scratch_root(worktree_root)
+    if scratch_root is None:
+        print("{} {}".format(NO_SCRATCH_ROOT, worktree_root))
+        return NO_TICKET_SET
     try:
         baseline_tree = _scratch_tree(args.baseline, worktree_root, scratch_root)
         if baseline_tree is None:

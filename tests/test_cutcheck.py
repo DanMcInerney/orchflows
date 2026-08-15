@@ -2082,6 +2082,148 @@ class ScratchCleanupReportingTest(unittest.TestCase):
         )
 
 
+def must_git(case, args, cwd):
+    proc = cutcheck._git(args, cwd)
+    case.assertIsNotNone(proc, "git could not be run: {}".format(args))
+    case.assertEqual(
+        proc.returncode, 0, "git {}: {}".format(" ".join(args), proc.stderr)
+    )
+    return proc
+
+
+def placement_repo(case):
+    """A main checkout and one linked worktree of it, under one temporary root.
+
+    Both origins built here rather than read off this machine: the placement
+    has to answer the same from either, and this repository's own 62 worktrees
+    are one arrangement of one host. One temporary root also means the
+    filesystem clause below compares a placement and not a mount table.
+    """
+
+    base = Path(tempfile.mkdtemp(prefix="cutcheck-placement-"))
+    case.addCleanup(shutil.rmtree, base)
+    main = base / "main"
+    main.mkdir()
+    for args in (
+        ["init", "-q", "."],
+        ["config", "user.email", "cutcheck@example.invalid"],
+        ["config", "user.name", "cutcheck"],
+        ["config", "commit.gpgsign", "false"],
+    ):
+        must_git(case, args, main)
+    (main / "a.txt").write_text("one\n", encoding="utf-8")
+    must_git(case, ["add", "-A"], main)
+    must_git(case, ["commit", "-qm", "one"], main)
+    linked = base / "linked"
+    must_git(case, ["worktree", "add", "-q", "--detach", str(linked)], main)
+    return main, linked
+
+
+class ScratchRootPlacementTest(unittest.TestCase):
+    """Where the copies land: a directory the tool owns, beside the object store.
+
+    `worktree_root.parent` answered differently from each origin and owned
+    neither answer. From a main checkout it is the repository's *parent*, which
+    is how 24M landed outside every ignore file this repository has and
+    invisible to any sweep scoped to it; from a linked worktree it is the
+    worktree directory, gitignored, where five more roots were sitting. The
+    common dir answers the same from both, is git's own storage rather than
+    anyone's source tree, and holds the object store a local clone hardlinks
+    from -- whichever volume the worktree itself is on.
+    """
+
+    def setUp(self):
+        self.main, self.linked = placement_repo(self)
+        self.common = (self.main / ".git").resolve()
+
+    def _root(self, origin):
+        root = cutcheck._scratch_root(origin)
+        self.assertIsNotNone(root, "no scratch root was placed for {}".format(origin))
+        self.addCleanup(shutil.rmtree, root)
+        return root.resolve()
+
+    def test_the_root_lands_under_the_common_dir_from_a_main_checkout(self):
+        # `--git-common-dir` answers a bare `.git` here -- relative to the cwd
+        # it was asked in, and the one spelling difference between the two
+        # origins. Resolved, or a main checkout places its copies relative to
+        # wherever the process happened to be standing.
+        self.assertEqual(self._root(self.main).parent.parent, self.common)
+
+    def test_the_root_lands_under_the_common_dir_from_a_linked_worktree(self):
+        root = self._root(self.linked)
+        self.assertEqual(root.parent.parent, self.common)
+        # Not `--git-dir`, which resolves to `.git/worktrees/<name>` and would
+        # give each worktree grading one run a root of its own.
+        self.assertNotIn("worktrees", root.parent.relative_to(self.common).parts)
+        # The placement this replaces.
+        self.assertNotEqual(root.parent, self.linked.parent.resolve())
+
+    def test_both_origins_place_their_roots_in_one_directory(self):
+        # One directory, and a distinct root inside it per invocation: two cuts
+        # running at once share the place and never the tree.
+        main_root, linked_root = self._root(self.main), self._root(self.linked)
+        self.assertEqual(main_root.parent, linked_root.parent)
+        self.assertNotEqual(main_root, linked_root)
+
+    def test_the_scratch_root_shares_a_filesystem_with_the_tree(self):
+        """Criterion 5: the clone hardlinks, so it must not cross a volume.
+
+        `st_dev` equality is necessary and, on a single-volume host, decides
+        nothing: every path on this machine reports one `st_dev`, the system
+        temp directory included, so the rejected placement passes that clause
+        too. Containment under the common dir is what carries the claim on
+        every host -- it is the object store's own directory, so no volume
+        boundary can appear between them however the host is mounted.
+        """
+
+        for origin in (self.main, self.linked):
+            with self.subTest(origin=origin.name):
+                root = self._root(origin)
+                objects = self.common / "objects"
+                self.assertEqual(root.parent.parent, self.common)
+                self.assertEqual(
+                    os.stat(str(root)).st_dev, os.stat(str(objects)).st_dev
+                )
+                self.assertEqual(
+                    os.stat(str(root)).st_dev, os.stat(str(origin)).st_dev
+                )
+
+    def test_a_clone_into_the_scratch_root_hardlinks_the_object_store(self):
+        """Criterion 5's other half, asserted rather than timed.
+
+        A timing is a number to report and never an oracle -- runtime tracks
+        the checkout as much as the tree, and only a short one indicts. Whether
+        the objects are shared is a fact `st_nlink` states outright.
+        """
+
+        root = self._root(self.linked)
+        probe = root / "probe"
+        try:
+            os.link(str(self.common / "HEAD"), str(probe))
+        except (AttributeError, OSError, NotImplementedError) as exc:
+            self.skipTest("this filesystem will not hardlink: {}".format(exc))
+        probe.unlink()
+        tree = cutcheck._scratch_tree("HEAD", self.linked, root)
+        self.assertIsNotNone(tree, "no scratch tree was cloned")
+        objects = tree / ".git" / "objects"
+        self.assertTrue(
+            [p for p in objects.rglob("*") if p.is_file() and p.stat().st_nlink > 1],
+            "the clone copied every object instead of linking it",
+        )
+
+    def test_a_directory_outside_any_repository_gets_no_scratch_root(self):
+        outside = Path(tempfile.mkdtemp(prefix="cutcheck-outside-"))
+        self.addCleanup(shutil.rmtree, outside)
+        proc = cutcheck._git(["rev-parse", "--git-common-dir"], outside)
+        if proc is not None and proc.returncode == 0:
+            self.skipTest(
+                "the temp directory is itself inside a repository: {}".format(
+                    proc.stdout.strip()
+                )
+            )
+        self.assertIsNone(cutcheck._scratch_root(outside))
+
+
 if __name__ == "__main__":
     if "--record" in sys.argv:
         record_verdicts()
