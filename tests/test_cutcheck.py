@@ -6,6 +6,7 @@ import io
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -1885,6 +1886,125 @@ class InCopyMutationTest(unittest.TestCase):
         # state, not the first span's doing.
         self.assertIn(str(self.tree), cutcheck._TREE_STATE)
         self.assertEqual(cutcheck._mutations(self.tree), [])
+
+
+# Every call in this module that hands a command string to a subprocess.
+# `cutcheck._commands` and its neighbours parse a string and start nothing, so
+# the pytest spellings they are handed sit outside this reading on purpose:
+# what CI cannot run is only what CI is asked to run.
+SPAN_EXECUTORS = ("_wrote", "_run_once", "_exit_code")
+
+# What a span this module runs may name. Frozen sets, never a probe of the
+# host: `importlib.util.find_spec("pytest")` answers PRESENT wherever pytest
+# is installed and ABSENT on every CI leg, so a check resting on it agrees
+# with whichever host it is asked on and is silent exactly where the defect
+# lives. `sys.stdlib_module_names` is 3.10 and later while this repository's
+# floor is 3.9, so reading that would split the verdict by leg instead.
+SPAN_PROGRAMS = frozenset({"git", "python3"})
+SPAN_MODULES = frozenset({"unittest"})
+
+
+def span_requirements(command):
+    """What running this command string needs, as ``(kind, name)`` pairs.
+
+    The program it names, and the module it hands an interpreter after
+    ``-m``. Read out of the string rather than off the host, because the host
+    running this test is not the host the reading is about.
+    """
+
+    try:
+        argv = shlex.split(command)
+    except ValueError:
+        return []
+    if not argv:
+        return []
+    needs = [("program", Path(argv[0]).name)]
+    for index in range(1, len(argv)):
+        token = argv[index]
+        if token == "-m":
+            if index + 1 < len(argv):
+                needs.append(("module", argv[index + 1]))
+            break
+        if not token.startswith("-"):
+            # the program's own arguments start here, and `-m` past this point
+            # belongs to the program rather than to an interpreter
+            break
+    return needs
+
+
+def executed_spans(tree):
+    """``(lineno, command)`` for every literal span a parsed module runs.
+
+    A span assembled at run time is outside this reading; every span this
+    module runs today is written out at its call site, and the vacuity node
+    below is what keeps saying so.
+    """
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not node.args:
+            continue
+        func = node.func
+        called = func.attr if isinstance(func, ast.Attribute) else getattr(func, "id", None)
+        if called not in SPAN_EXECUTORS:
+            continue
+        first = node.args[0]
+        if isinstance(first, ast.Constant) and isinstance(first.value, str):
+            yield first.lineno, first.value
+
+
+class SpanDependencyTest(unittest.TestCase):
+    """No span this module runs needs anything a bare CI runner lacks.
+
+    Nine legs -- three interpreters across three operating systems -- install
+    nothing past the interpreter, so a span naming a pip package writes
+    nothing there and every assertion about what it wrote goes red. The defect
+    is invisible on a developer machine, where the package is installed and
+    the node is green; that is how two of them lived here through several
+    passes. Caught by reading, because the alternative -- importing the name
+    to see whether it resolves -- answers about the host doing the asking.
+    """
+
+    def setUp(self):
+        source = Path(__file__).resolve()
+        self.spans = list(
+            executed_spans(ast.parse(source.read_text(encoding="utf-8")))
+        )
+
+    def test_the_reading_sees_the_spans_it_exists_to_grade(self):
+        """An empty reading passes the node below for free; this is what stops it."""
+
+        commands = [command for _, command in self.spans]
+        self.assertTrue(commands, "no span was found to check")
+        self.assertIn("git checkout-index --prefix=probe_dir/ LICENSE", commands)
+        self.assertIn("git checkout-index --prefix=.pytest_cache/ LICENSE", commands)
+
+    def test_no_span_names_a_program_or_module_outside_the_standard_set(self):
+        allowed = {"program": SPAN_PROGRAMS, "module": SPAN_MODULES}
+        self.assertEqual(
+            [
+                "line {}: {} {!r} in {!r}".format(lineno, kind, name, command)
+                for lineno, command in self.spans
+                for kind, name in span_requirements(command)
+                if name not in allowed[kind]
+            ],
+            [],
+            "a span here needs something CI does not install",
+        )
+
+    def test_the_reading_reports_the_spellings_that_were_here(self):
+        """The can-fail direction, on the two shapes this node was cut for."""
+
+        self.assertIn(
+            ("module", "pytest"),
+            span_requirements(
+                "python3 -m pytest --junitxml=probe_dir/r.xml tests/test_installer.py"
+            ),
+        )
+        self.assertIn(("program", "pytest"), span_requirements("pytest tests"))
+        self.assertNotIn(
+            ("module", "pytest"),
+            span_requirements("git checkout-index --prefix=probe_dir/ LICENSE"),
+        )
 
 
 def rmtree_calls(tree):
