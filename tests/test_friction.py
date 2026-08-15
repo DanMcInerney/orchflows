@@ -411,5 +411,69 @@ class FrictionAppendLockTest(_IsolatedRepoTestCase):
         )
 
 
+def top_level_imports(path):
+    """Every module the file imports, from its syntax rather than its prose."""
+
+    imported = set()
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.Import):
+            imported.update(alias.name.split(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and not node.level:
+            imported.add((node.module or "").split(".")[0])
+    return imported
+
+
+def function_source(path, name):
+    """The exact source of one top-level function, sliced from the file's own
+    bytes. A whole-file diff would say nothing: these two files share two
+    functions and nothing else."""
+
+    source = path.read_text(encoding="utf-8")
+    for node in ast.parse(source).body:
+        if isinstance(node, ast.FunctionDef) and node.name == name:
+            return ast.get_source_segment(source, node)
+    return None
+
+
+class FrictionDuplicationTest(unittest.TestCase):
+    """friction.py must never fail, so it imports nothing that can fail --
+    including scripts/tickets.py, which workspace.py imports instead
+    (tests/test_workspace.py:391). The price is two copied root resolvers, and
+    the price of a copy nobody compares is a silent divergence, so compare
+    them here.
+
+    The lock is not a third comparand. tickets.py has no lock helper to
+    compare against: its lock is inlined in ``_append_one_line`` and takes
+    ``LK_LOCK``, the blocking mode ``rules/improvement.md`` §1 forbids this
+    logger, so byte-identity there would contradict the mechanism itself.
+    """
+
+    def test_friction_imports_only_the_standard_library(self):
+        imported = top_level_imports(FRICTION_PY)
+        self.assertEqual(
+            {
+                "__future__", "datetime", "json", "msvcrt", "os",
+                "pathlib", "subprocess", "sys", "time",
+            },
+            imported,
+            f"friction.py must stay standalone: {sorted(imported)}",
+        )
+        stdlib = getattr(sys, "stdlib_module_names", None)
+        if stdlib is not None:  # 3.10+; under the 3.9 floor the pin above stands alone
+            self.assertEqual(set(), imported - set(stdlib))
+
+    def test_the_copied_root_resolvers_are_byte_identical_to_the_tickets_originals(self):
+        for name in ("_main_checkout_root", "_find_repo_root"):
+            copied = function_source(FRICTION_PY, name)
+            original = function_source(TICKETS_PY, name)
+            self.assertIsNotNone(copied, f"friction.py no longer defines {name}")
+            self.assertIsNotNone(original, f"tickets.py no longer defines {name}")
+            self.assertEqual(
+                original,
+                copied,
+                f"{name} has diverged from the tickets.py original it was copied from",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
