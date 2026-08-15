@@ -81,7 +81,13 @@ The copy is checked as well as the spans run in it. A tree entry carrying
 git's ``120000`` mode is the one route out that argv cannot see, so the copy
 is cloned with ``core.symlinks=false`` -- which makes such an entry a file
 holding a path rather than a way through it -- and every entry recording that
-mode is reported. That is the instrument for ``rules/visibility.md`` §5.
+mode is reported. That is the instrument for ``rules/visibility.md`` §5, and
+it is advisory: the clone flag is what enforces confinement, unconditionally
+and whatever the tree holds, so the report adds visibility and not safety. A
+committed symlink is a property of the repository, and this tool owns
+cut-defect detection over an issued ticket set. Failing a cut for it would
+fail every cut in every repository where a symlink is legal, for a reason
+outside what this tool answers for.
 
 cutcheck never edits a ticket; it reports, and the decomposer repairs.
 An extracted command is ticket content and ticket content is untrusted,
@@ -174,8 +180,12 @@ FAMILY_OF = {
     ILLEGAL_EXECUTOR: FAMILY_6,
 }
 # Advisory classes are printed and never set the exit status. A map that is
-# not there is a fact about the run, not a defect of the cut.
-ADVISORY = frozenset({EXTRACTION_GAP, COVERAGE_MAP_ABSENT, VERDICT_IN_OUTPUT})
+# not there is a fact about the run, not a defect of the cut; a committed
+# symlink is a fact about the repository, and confinement does not rest on
+# reporting it -- the clone flag holds whether or not anyone reads this line.
+ADVISORY = frozenset(
+    {EXTRACTION_GAP, COVERAGE_MAP_ABSENT, VERDICT_IN_OUTPUT, SYMLINK_IN_TREE}
+)
 # The report's two summary lines. A reader selects finding lines by filtering
 # stdout on a family, a class name, a criterion number or a ticket id, so
 # neither summary line may carry any of those, nor the path of a script: a

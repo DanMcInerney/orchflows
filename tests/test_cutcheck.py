@@ -993,9 +993,19 @@ class SymlinkModeCheckTest(unittest.TestCase):
         tree = _tree_with_a_symlink_entry(self)
         self.assertEqual(len(cutcheck._symlink_findings("some-run", (tree, tree))), 1)
 
-    def test_the_class_carries_a_family_and_sets_the_exit_status(self):
+    def test_the_class_carries_a_family_and_is_advisory(self):
+        """Reported, and never deciding a cut it is not a defect of.
+
+        `scripts/cutcheck.py` owns cut-defect detection over an issued ticket
+        set (ARCHITECTURE.md). A committed symlink is a property of the
+        repository, and confinement is enforced by the clone flag whether or
+        not anyone reads this line -- so the report carries visibility, not
+        safety, and failing a cut for it would fail every cut in every
+        repository where a symlink is legal.
+        """
+
         self.assertIn(cutcheck.SYMLINK_IN_TREE, cutcheck.FAMILY_OF)
-        self.assertNotIn(cutcheck.SYMLINK_IN_TREE, cutcheck.ADVISORY)
+        self.assertIn(cutcheck.SYMLINK_IN_TREE, cutcheck.ADVISORY)
 
     def test_this_repositorys_own_tree_carries_no_such_entry(self):
         self.assertEqual(cutcheck._symlink_entries(ROOT), [])
@@ -1572,6 +1582,9 @@ class GitNoHistoryDispositionTest(unittest.TestCase):
         self.assertNotIn("git-no-history", source)
 
     def test_the_advisory_set_lost_that_one_member_and_no_other(self):
+        # `symlink-in-tree` joined later and is an addition, not a survival:
+        # the claim this pins is still that GIT_NO_HISTORY left and that no
+        # member standing beside it left with it.
         self.assertEqual(
             cutcheck.ADVISORY,
             frozenset(
@@ -1579,6 +1592,7 @@ class GitNoHistoryDispositionTest(unittest.TestCase):
                     cutcheck.EXTRACTION_GAP,
                     cutcheck.COVERAGE_MAP_ABSENT,
                     cutcheck.VERDICT_IN_OUTPUT,
+                    cutcheck.SYMLINK_IN_TREE,
                 }
             ),
         )
