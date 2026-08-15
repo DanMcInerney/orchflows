@@ -806,6 +806,134 @@ class BareCommandNounTest(unittest.TestCase):
             )
 
 
+# The ticket the execution node id writes beside the tree. Its span carries a
+# relative path so the run happens with the scratch tree as its working
+# directory on every platform, and `authored-here` so discrimination is asked
+# of it -- a `pre-existing` stamp exempts the oracle from execution, which is
+# the way this test would pass while proving nothing.
+QUOTED_TICKET = """---
+id: 01-quoted
+run: cutcheck-quoted
+status: issued
+---
+## Objective
+
+Fixture built beside the tree: the span below is quoted, never stated.
+
+## Completion test
+
+1. **A quoted span reaches no executor.** This criterion states no oracle of
+   its own; it quotes one, such as `python3 writer.py`, and a quotation is
+   read rather than run. oracle_class: deterministic. provenance:
+   authored-here.
+
+## Result
+
+[]
+"""
+
+
+class CommandExtractionTest(unittest.TestCase):
+    """A command a criterion quotes is one it talks about; only a command it
+    states is one this tool runs.
+
+    Three measured shapes, one node id each: a span quoted as what not to do,
+    which graded `missing-path` and failed the gate; one quoted as what the
+    confinement guard refuses, which graded `unconfined-oracle`, so a ticket
+    describing the guard tripped it; and one quoted as what CI runs, which was
+    executed, twice. What tells all three from an oracle is the frame standing
+    immediately in front of the span -- `_scope_closure`'s question about a
+    write verb, asked again of a command, against the discriminator the
+    `cutcheck-mention` fixture already grades.
+    """
+
+    def test_a_span_quoted_as_what_not_to_do_is_not_extracted(self):
+        self.assertEqual(
+            cutcheck._commands(
+                "The suite's verdict is read from its exit status, never "
+                '`grep -E "^Ran" out.txt`.'
+            ),
+            [],
+        )
+
+    def test_a_span_quoted_as_what_the_guard_refuses_is_not_extracted(self):
+        self.assertEqual(
+            cutcheck._commands(
+                "The confinement gate refuses `git log --output=/tmp/x` and "
+                "reports it unrun."
+            ),
+            [],
+        )
+
+    def test_a_span_quoted_as_what_ci_runs_is_not_extracted(self):
+        self.assertEqual(
+            cutcheck._commands(
+                "A whole-module invocation such as "
+                "`python3 -m unittest tests.test_cutcheck`, which is what CI "
+                "runs, reads the same under every item it is stated under."
+            ),
+            [],
+        )
+
+    def test_the_oracle_standing_beside_a_quotation_is_still_extracted(self):
+        """The narrowing direction: one span quoted, one stated, in one criterion."""
+
+        self.assertEqual(
+            cutcheck._commands(
+                '**The installer lists the script.** `grep -n "cutcheck.py" '
+                'install.py` returns the SCRIPT_NAMES line, and the verdict is '
+                'never `grep -E "^Ran" out.txt`.'
+            ),
+            ['grep -n "cutcheck.py" install.py'],
+        )
+
+    def test_a_quoted_command_is_never_executed(self):
+        """Refused before execution, never after it.
+
+        The mark is this run's own directory under `tempfile.gettempdir()`,
+        never a `/tmp` literal, so no neighbouring run can unlink it between
+        the execution and the assertion. The writer runs once directly first:
+        an assertion that a file is absent passes vacuously wherever nothing
+        could have created it, and this host is the one that decides which.
+        """
+
+        scratch = Path(tempfile.mkdtemp(prefix="cutcheck-quoted-"))
+        self.addCleanup(shutil.rmtree, scratch, True)
+        self.assertTrue(scratch.is_dir(), scratch)
+        mark = scratch / "quoted-command-ran"
+        writer = scratch / "writer.py"
+        writer.write_text(
+            "import pathlib\npathlib.Path(r'''{}''').write_text('ran')\n".format(mark),
+            encoding="utf-8",
+        )
+        if cutcheck._run_once("python3 writer.py", scratch) != 0 or not mark.exists():
+            self.skipTest("python3 does not run a file argument on this host")
+        mark.unlink()
+
+        ticket = scratch / "01-quoted.md"
+        ticket.write_text(QUOTED_TICKET, encoding="utf-8")
+        cutcheck._EXIT_CACHE.clear()
+        self.addCleanup(cutcheck._EXIT_CACHE.clear)
+        cutcheck._check_ticket(ticket, scratch, None, {})
+        self.assertFalse(mark.exists(), "the quoted span reached an executor")
+
+    def test_the_set_quoting_all_three_shapes_grades_clean(self):
+        """All three in one issued ticket, read the way a cut reads one.
+
+        The two classes named are the ones the shapes graded as at the
+        baseline, and each set the exit status: a quotation that trips the
+        gate is the defect, not the report of it.
+        """
+
+        result = run_cutcheck("cutcheck-command-mention")
+        violations, _, affirmed = report(result)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(violations, [], result.stdout)
+        self.assertTrue(affirmed, result.stdout)
+        self.assertNotIn(cutcheck.MISSING_PATH, result.stdout)
+        self.assertNotIn(cutcheck.UNCONFINED_ORACLE, result.stdout)
+
+
 class ParserReuseTest(unittest.TestCase):
     def test_frontmatter_and_section_parsers_are_the_ticket_scripts_own(self):
         self.assertIs(cutcheck._parse_frontmatter, tickets._parse_frontmatter)

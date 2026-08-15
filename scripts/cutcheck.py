@@ -85,7 +85,10 @@ the program -- a shell, or an interpreter reading code from ``-c``, ``-e``,
 ``--eval``, ``--exec`` or a bare ``-`` -- is recognized by no extractor, so it
 runs nowhere and surfaces as an extraction gap. So is a span carrying a
 command head and no argument at all: ticket prose names tools in backticks,
-and a bare name decides nothing about the item it is stated under.
+and a bare name decides nothing about the item it is stated under. So is a
+span a criterion quotes rather than states -- one standing behind a denial, a
+refusal or an example -- because a command named as what not to do, as what
+the guard refuses, or as what CI runs is no oracle of the item naming it.
 """
 
 import argparse
@@ -278,6 +281,16 @@ PLACEHOLDER_RE = re.compile(r"[<>]")
 SCOPE_WORD_RE = re.compile(r"^[-_ ]scopes?\b", re.I)
 DENIAL_RE = re.compile(r"\b(?:not|never|no|without|rather than)\s+$", re.I)
 DENIAL_WINDOW = 24
+# A denied write and a quoted command are one question asked twice: is the
+# ticket doing the thing, or talking about it? ``DENIAL_RE`` answers it for a
+# write verb -- the ``cutcheck-mention`` set grades that answer -- and it reads
+# the same standing in front of a command span. Two frames it lacks: a span the
+# guard refuses, and a span named as an example of what something else runs.
+# Adjacency is the whole of the rule and not an economy: of the 611 command
+# spans this repository's ticket corpus states, 104 carry one of these words
+# somewhere in the 60 characters before them and none carries one adjacent, so
+# a window merely scanned for the word would refuse a hundred live oracles.
+MENTION_RE = re.compile(r"\b(?:refuses|refused|such as|like)\s+$", re.I)
 # A citation points at a line; the sentence around it may wrap.
 CITED_LINES = 2
 QUOTE_WINDOW = 80
@@ -435,13 +448,22 @@ def _commands(criterion):
     but a whole-suite invocation naming no node id reads the same under every
     item it is stated under, so it discriminates none of them -- a cut defect
     either way, and the honest report of it is the gap.
+
+    Stating is not quoting, and the frame standing immediately in front of the
+    span is what tells them apart -- ``_scope_closure``'s question about a
+    write verb, asked again of a command. Grading a quotation reaches for a
+    path the item never claimed, refuses the very span a ticket was describing,
+    and runs whatever the prose says something else runs.
     """
 
     found = []
-    for span in BACKTICK_RE.findall(criterion):
-        candidate = span.strip()
+    for match in BACKTICK_RE.finditer(criterion):
+        candidate = match.group(1).strip()
         argv = candidate.split()
         if len(argv) < 2 or argv[0] not in COMMAND_HEADS or _evaluates_code(argv):
+            continue
+        frame = criterion[max(0, match.start() - DENIAL_WINDOW):match.start()]
+        if DENIAL_RE.search(frame) or MENTION_RE.search(frame):
             continue
         found.append(candidate)
     return found
