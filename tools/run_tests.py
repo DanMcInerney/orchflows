@@ -240,6 +240,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose child test output")
     parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="ignore the duration cache: schedule alphabetically, as a cold checkout does",
+    )
+    parser.add_argument(
         "--tests-dir", default=str(DEFAULT_TESTS_DIR), help="directory of test_*.py (default: tests/)"
     )
     child = parser.add_argument_group("child mode (internal)")
@@ -268,7 +273,11 @@ def main(argv=None) -> int:
     )
 
     verbosity = 2 if args.verbose else 1
-    ordered = schedule(selected, load_times())
+    # The cache is gitignored, so CI always schedules alphabetically while
+    # any local checkout that has run once schedules longest-first. Those
+    # are different co-schedulings, and a module only races the modules it
+    # runs beside: `--no-cache` is how a local run reproduces CI's.
+    ordered = schedule(selected, {} if args.no_cache else load_times())
     jobs = min(args.jobs, len(ordered))
     print("running %d modules across %d workers" % (len(ordered), jobs))
     started = time.monotonic()
@@ -298,7 +307,7 @@ def main(argv=None) -> int:
                 finish(future.result())
     wall = time.monotonic() - started
 
-    if tests_dir == DEFAULT_TESTS_DIR.resolve():
+    if tests_dir == DEFAULT_TESTS_DIR.resolve() and not args.no_cache:
         save_times(records)
     return report(records, wall, jobs)
 

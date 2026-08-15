@@ -50,6 +50,12 @@ class IsolateTest(unittest.TestCase):
         git(template, "init", "-q")
         git(template, "config", "user.email", "t@example.invalid")
         git(template, "config", "user.name", "t")
+        # The template is read by every test's copy and written by none.
+        # Auto-gc and background maintenance would still write to it --
+        # a lock file under `.git/objects` that exists when copytree
+        # lists the directory and is gone when it reaches the entry.
+        git(template, "config", "gc.auto", "0")
+        git(template, "config", "maintenance.auto", "false")
         write(template / "kept.md", "committed\n")
         write(template / "changed.md", "committed\n")
         write(template / "gone.md", "committed\n")
@@ -63,7 +69,16 @@ class IsolateTest(unittest.TestCase):
         self.addCleanup(remove_repo_tree, str(self.tmp))
         self.repo = self.tmp / "repo"
         self.dest = self.tmp / "out"
-        shutil.copytree(self._template, self.repo, symlinks=True)
+        # `*.lock` is never copied: a lock names a write in progress, so
+        # carrying one into a fresh repository would be wrong even if it
+        # survived the copy. Belt to the template's braces above -- a git
+        # this suite did not configure is still git.
+        shutil.copytree(
+            self._template,
+            self.repo,
+            symlinks=True,
+            ignore=shutil.ignore_patterns("*.lock"),
+        )
 
     def run_isolate(self, *args):
         """The harness's own report is captured, not interleaved with ours."""

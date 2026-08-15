@@ -1163,15 +1163,32 @@ class TestRefusedNames(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
 
-            # The premise: unguarded, this name does not resolve, it raises.
-            with self.assertRaises((OSError, ValueError)):
+            # Whether a NUL reaches the path layer as an error is the
+            # host's decision, so the premise is measured, not assumed:
+            # POSIX and Windows through 3.12 raise out of the syscall
+            # wrapper, Windows 3.13 normalises the name and answers a
+            # path. `_in_tree` refuses only what it caught raising, so on
+            # that last host the second layer passes this name through --
+            # recorded here, not endorsed. `_safe_name` is what actually
+            # stops it, one layer up, on every host.
+            try:
                 base.joinpath("a\x00b").resolve()
+            except (OSError, ValueError):
+                refused_by_the_path_layer = True
+            else:
+                refused_by_the_path_layer = False
 
-            self.assertIsNone(ui._in_tree(base, "a\x00b"))
-            self.assertIsNone(ui._in_tree(base, "run-gamma", "a\x00b.md"))
+            for parts in (("a\x00b",), ("run-gamma", "a\x00b.md")):
+                with self.subTest(parts=parts):
+                    # The contract that holds everywhere: an answer, never
+                    # an exception, for any string a client can send.
+                    answer = ui._in_tree(base, *parts)
+                    if refused_by_the_path_layer:
+                        self.assertIsNone(answer)
+
             # Non-vacuity: the same call still resolves a name the path
-            # layer accepts, so `None` above is the guard answering and not
-            # a lookup that stopped working.
+            # layer accepts, so the answers above are the guard working
+            # and not a lookup that stopped working.
             self.assertEqual(
                 base.resolve() / "run-gamma", ui._in_tree(base, "run-gamma")
             )

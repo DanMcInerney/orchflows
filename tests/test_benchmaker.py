@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -276,7 +277,17 @@ def _law_scan():
 
 def _live_scan(tree: Path):
     read = 0
-    for path in sorted(tree.rglob("*")):
+    # Pruned during the walk rather than filtered after it. `.git` holds
+    # test_cutcheck's shared scratch clones, whose directories appear and
+    # vanish while this runs, and `rglob` dies on a child that existed
+    # when its parent was listed and did not when it was reached. Nothing
+    # under a skipped tree was ever a live surface, so pruning loses
+    # nothing; the sort is restored so the yield order is unchanged.
+    found = []
+    for parent, dirnames, filenames in os.walk(tree):
+        dirnames[:] = [name for name in dirnames if name not in SKIPPED_TREES]
+        found.extend(Path(parent, name) for name in filenames)
+    for path in sorted(found):
         if not path.is_file():
             continue
         relative = path.relative_to(ROOT)
