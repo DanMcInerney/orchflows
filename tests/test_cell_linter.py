@@ -177,6 +177,22 @@ class TestCellClauseSplitter(unittest.TestCase):
             ),
         )
 
+    def test_a_pointer_clause_keeps_its_exemption_after_the_split(self):
+        """packs/orch-code-pack/references/craft.md:3-6 verbatim: one
+        sentence whose citation sits in the first semicolon half and whose
+        stated deviation sits in the second. Cutting at the ';' before the
+        exemption is applied throws away the half carrying the citation and
+        convicts the survivor -- the deviation half is the other end of the
+        same pointer, and rules/visibility.md §3 requires both."""
+        self.assertEqual(
+            [],
+            validate.cell_clauses(
+                "Read [rules/token-economy.md](../../../rules/token-economy.md) §10 for "
+                "the shape principles every domain shares; the bullets under Shape are "
+                "code's own."
+            ),
+        )
+
 
 class TestCellDuplication(_IsolatedTree):
     SHARED = (

@@ -941,11 +941,13 @@ def cell_clauses(text: str) -> list:
     ('never by count') as duplicated content.
 
     Structure is not content and never compares: table header and
-    delimiter rows, headings, list markers, and any clause citing an
+    delimiter rows, headings, list markers, and any sentence citing an
     owner outside the pack. That last one is the pointer or stated
     deviation rules/visibility.md §3 and rules/token-economy.md §7
     require every pack to share once content moves to one owner --
-    convicting it would drive packs to stop deferring.
+    convicting it would drive packs to stop deferring. It is decided per
+    sentence, before the ';' cut: the deviation half carries no citation
+    of its own, so cutting first strands it outside the exemption.
 
     Whitespace collapses first, so two packs whose only difference is
     where a 75-column line wraps still read as one clause. A clause
@@ -984,10 +986,16 @@ def cell_clauses(text: str) -> list:
     clauses = []
     for block in blocks:
         for sentence in SENTENCE_END_RE.split(block):
+            # The exemption is decided on the whole sentence, before the ';'
+            # cut and never after it: the citation and the deviation it
+            # licenses are the two halves of one pointer, and a filter applied
+            # to the halves keeps the deviation while discarding the citation
+            # that exempts it -- convicting the very sentence the exemption
+            # exists to protect.
+            if OUTSIDE_PACK_CITATION in sentence:
+                continue
             for clause in sentence.split(";"):
                 clause = re.sub(r"\s+", " ", clause).strip().strip(".").strip()
-                if OUTSIDE_PACK_CITATION in clause:
-                    continue
                 if len(clause.split()) >= CELL_CLAUSE_MIN_WORDS:
                     clauses.append(clause)
     return clauses
