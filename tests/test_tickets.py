@@ -3540,13 +3540,13 @@ class TestRunIdentity(unittest.TestCase):
 
 
 class TestAtomicReplace(unittest.TestCase):
-    """`_replace_atomically`'s two platforms, both graded here.
+    """Both sides of the identity document's move, on both platforms.
 
-    The branch that matters runs on Windows only, where `MoveFileEx` refuses
-    a destination another handle holds open, so on every other host it is
-    unreachable code that three cells of the matrix are the first to run.
-    `msvcrt` is the discriminator the module already uses, so setting it is
-    how this host asks the Windows question.
+    The branch that matters runs on Windows only, where a move and an open
+    of one name refuse each other for the instant the move takes, so on
+    every other host it is unreachable code that three cells of the matrix
+    are the first to run. `msvcrt` is the discriminator the module already
+    uses, so setting it is how this host asks the Windows question.
     """
 
     def refusals(self, count: int):
@@ -3621,6 +3621,63 @@ class TestAtomicReplace(unittest.TestCase):
                 self.assertEqual(1, state["calls"])
                 self.assertFalse(source.exists())
                 self.assertEqual("moved\n", target.read_text(encoding="utf-8"))
+
+    def test_an_absent_file_is_an_answer_and_is_never_waited_on(self):
+        """The refusal is waited out; every other `OSError` is a fact. Most
+        run-state writes open a run that has no identity yet, and a budget
+        spent on that would be paid by the ordinary path to spare the rare
+        one."""
+
+        calls = []
+
+        def missing():
+            calls.append(1)
+            raise FileNotFoundError(2, "No such file or directory")
+
+        with mock.patch.object(tickets_mod, "msvcrt", object()):
+            with self.assertRaises(FileNotFoundError):
+                tickets_mod._waiting_out_windows(missing)
+        self.assertEqual(1, len(calls))
+
+    def test_the_reader_waits_out_a_writers_move_and_returns_the_document(self):
+        """The other side of the same instant: an `open` of the name a move
+        is landing on is refused too, and a run-state write that reported it
+        would fail for someone else's write."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "run.json"
+            path.write_text('{"run": "testrun"}\n', encoding="utf-8")
+            real = Path.read_text
+            state = {"left": 3}
+
+            def read_text(self, *args, **kwargs):
+                if state["left"] > 0:
+                    state["left"] -= 1
+                    raise PermissionError(13, "Permission denied")
+                return real(self, *args, **kwargs)
+
+            with mock.patch.object(tickets_mod, "msvcrt", object()), mock.patch.object(
+                Path, "read_text", read_text
+            ):
+                document, error = tickets_mod._read_identity(path)
+            self.assertIsNone(error)
+            self.assertEqual({"run": "testrun"}, document)
+            self.assertEqual(0, state["left"])
+
+    def test_a_reader_refused_past_the_budget_is_still_refused_by_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "run.json"
+            path.write_text('{"run": "testrun"}\n', encoding="utf-8")
+
+            def read_text(self, *args, **kwargs):
+                raise PermissionError(13, "Permission denied")
+
+            with mock.patch.object(tickets_mod, "msvcrt", object()), mock.patch.object(
+                tickets_mod, "REPLACE_BUDGET_SECONDS", 0.05
+            ), mock.patch.object(Path, "read_text", read_text):
+                document, error = tickets_mod._read_identity(path)
+            self.assertIsNone(document)
+            self.assertIn("unreadable run identity", error["error"])
 
 
 class TestRunIdentityCollision(unittest.TestCase):
