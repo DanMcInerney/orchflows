@@ -135,6 +135,19 @@ def schedule(modules, times):
     return sorted(modules, key=lambda name: (-times.get(name, float("inf")), name))
 
 
+def child_env() -> dict:
+    """This process's environment with the child's stdio pinned to UTF-8.
+
+    ``PYTHONIOENCODING`` rather than the interpreter's UTF-8 mode: it moves
+    the pipe encoding and nothing else, so a test still sees the filesystem
+    and locale behaviour of the platform it is grading.
+    """
+
+    env = dict(os.environ)
+    env["PYTHONIOENCODING"] = "utf-8"
+    return env
+
+
 def run_module(module: str, import_root: Path, verbosity: int) -> dict:
     handle, result_path = tempfile.mkstemp(prefix="run_tests_", suffix=".json")
     os.close(handle)
@@ -152,8 +165,14 @@ def run_module(module: str, import_root: Path, verbosity: int) -> dict:
     ]
     started = time.monotonic()
     # Bytes, not text=True: a child may emit anything, and a decode error
-    # in the runner would lose the very output a CI log needs.
-    completed = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    # in the runner would lose the very output a CI log needs. The child is
+    # told to encode its own stdio as UTF-8 so the decode below is faithful
+    # rather than lossy: a Windows child otherwise writes its failure text
+    # in the console codepage, cp1252, and every non-ASCII character in an
+    # assertion message reaches this process as U+FFFD.
+    completed = subprocess.run(
+        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=child_env()
+    )
     duration = time.monotonic() - started
     output = completed.stdout.decode("utf-8", "replace")
     try:
@@ -194,14 +213,33 @@ def detail(record: dict) -> str:
     return "  (" + ", ".join(parts) + ")" if parts else ""
 
 
+def emit(text: str) -> None:
+    """Write captured child output to stdout, whatever it holds.
+
+    A failing module's output is the whole reason a CI log is read, and the
+    console it lands on is not always UTF-8 -- a Windows runner's is cp1252,
+    which cannot encode every character an assertion message may carry.
+    Encoding here with ``backslashreplace`` costs one mangled glyph; letting
+    ``sys.stdout`` raise costs the report, every module after it, and the
+    exit code that says which one failed.
+    """
+
+    stream = getattr(sys.stdout, "buffer", None)
+    if stream is None:  # a stdout that is not a real file (a captured one)
+        sys.stdout.write(text)
+        return
+    sys.stdout.flush()
+    stream.write(text.encode(sys.stdout.encoding or "utf-8", "backslashreplace"))
+    stream.flush()
+
+
 def report(records, wall: float, jobs: int) -> int:
     failed = [record for record in records if not record["ok"]]
     for record in failed:
         print("\n" + "=" * 70)
         print("FAILED MODULE: %s (exit %d)" % (record["module"], record["returncode"]))
         print("=" * 70)
-        sys.stdout.write(record["output"])
-        sys.stdout.flush()
+        emit(record["output"])
 
     totals = {key: sum(r[key] for r in records) for key in ("tests", "failures", "errors", "skipped")}
     print("\n" + "-" * 70)

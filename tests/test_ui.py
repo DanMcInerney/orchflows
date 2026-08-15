@@ -255,6 +255,14 @@ def ticket_paths(discovery: dict) -> list:
     return [ticket["path"] for run in discovery["runs"] for ticket in run["tickets"]]
 
 
+def relative_ticket_paths(discovery: dict) -> list:
+    """The same tickets named against the sink they were found in, so two
+    sinks holding one corpus compare equal wherever either one sits."""
+
+    root = discovery["root"]
+    return [Path(path).relative_to(root).as_posix() for path in ticket_paths(discovery)]
+
+
 def fixture_ticket_count() -> int:
     """Derived from the corpus on disk, so adding a fixture never silently
     weakens a count that exists to keep a test non-vacuous."""
@@ -576,10 +584,15 @@ class TestRootResolution(unittest.TestCase):
                 self.assertEqual(sink, ui.default_root())
             elsewhere = tmp / "elsewhere"
             shutil.copytree(str(sink), str(elsewhere))
+            # Compared sink-relative, never by rewriting one absolute path
+            # into the other: `discover` resolves the root it is handed, and
+            # a resolved temporary directory is not always a rewrite away
+            # from the unresolved one -- on Windows it loses an 8.3 short
+            # name, so the rewrite silently does nothing and the case fails
+            # for a reason that is not the one it grades.
             self.assertEqual(
-                ticket_paths(ui.discover(sink)),
-                [p.replace(str(elsewhere), str(sink))
-                 for p in ticket_paths(ui.discover(elsewhere))],
+                relative_ticket_paths(ui.discover(sink)),
+                relative_ticket_paths(ui.discover(elsewhere)),
             )
 
     def test_the_source_composes_no_sink_path_of_its_own(self):

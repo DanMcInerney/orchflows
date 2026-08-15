@@ -1677,8 +1677,12 @@ def _cmd_improvement(rest):
         else:
             path = improvement_root / COVERAGE_RECORD_NAME
             improvement_root.mkdir(parents=True, exist_ok=True)
-            with open(path, "a", encoding="utf-8", newline="\n") as handle:
-                handle.write(covered.rstrip("\r\n") + "\n")
+            # Through the serialised writer, not a bare `open(..., "a")`:
+            # this record is the one file every workspace on the machine
+            # appends to, and on Windows an unserialised append is a seek
+            # and a write, so two writers take one offset and a whole line
+            # disappears. Same channel as the worklog, same guarantee.
+            _append_one_line(path, covered.rstrip("\r\n") + "\n")
     except OSError as error:
         return {"error": f"unwritable improvement record: {error}"}
     return {

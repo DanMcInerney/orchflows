@@ -3829,31 +3829,51 @@ class TestImprovementWriter(unittest.TestCase):
             use_sink(tmp)
             lines = [f'{{"writer": {i}, "pad": "' + "x" * 2000 + '"}' for i in range(10)]
             with ThreadPoolExecutor(max_workers=10) as pool:
-                list(pool.map(lambda line: run_cmd(tmp, "improvement", "--covered", line), lines))
+                payloads = list(
+                    pool.map(
+                        lambda line: run_cmd(tmp, "improvement", "--covered", line), lines
+                    )
+                )
+            # A writer that reported an error and a writer whose line was lost
+            # are two different defects, and the file check below reports the
+            # second for both -- the payloads are the only place the first is
+            # visible.
+            self.assertEqual([], [p["error"] for p in payloads if "error" in p])
             self.assertTrue(coverage_of().is_file(), "no coverage record was written")
             self.assertEqual(
                 sorted(lines), sorted(coverage_of().read_text(encoding="utf-8").splitlines())
             )
 
-    def test_the_coverage_record_opens_in_append_mode_only(self):
-        """The guard against a later read-modify-write, read off the module
-        itself: a shared stream that is ever read back and rewritten loses a
-        concurrent writer's line, and no runtime case can see that coming."""
+    def test_the_coverage_record_is_written_through_the_serialised_appender(self):
+        """The guard against a lost line and against a later
+        read-modify-write, read off the module itself.
+
+        The branch opens nothing of its own. Every workspace on the machine
+        appends to this one record, and a bare ``open(..., "a")`` is a seek
+        and a write on Windows -- two writers take one offset and a whole
+        line vanishes, which reads like a writer that never ran. So the
+        branch calls ``_append_one_line``, the one place that append is
+        serialised, and the mechanism is graded there by the instrument that
+        grades the worklog's."""
 
         branch = coverage_branch()
         self.assertIsNotNone(
             branch, "no branch of _cmd_improvement names COVERAGE_RECORD_NAME"
         )
-        self.assertEqual(["a"], [mode for stmt in branch for mode in open_modes(stmt)])
-        read_back = [
-            sub.func.attr
-            for stmt in branch
-            for sub in ast.walk(stmt)
-            if isinstance(sub, ast.Call)
-            and isinstance(sub.func, ast.Attribute)
-            and sub.func.attr in {"read", "read_text", "read_bytes", "readline", "readlines"}
-        ]
-        self.assertEqual([], read_back, "the coverage record is appended to, never read back")
+        self.assertEqual([], [mode for stmt in branch for mode in open_modes(stmt)])
+        self.assertEqual(
+            ["_append_one_line"],
+            [
+                sub.func.id
+                for stmt in branch
+                for sub in ast.walk(stmt)
+                if isinstance(sub, ast.Call) and isinstance(sub.func, ast.Name)
+            ],
+            "the coverage record is appended through the serialised writer",
+        )
+        assert_one_append_open_and_no_read(
+            self, inspect.getsource(tickets_mod._append_one_line), "_append_one_line"
+        )
         # and that branch is the only place the record's path is composed
         loads = [
             node
