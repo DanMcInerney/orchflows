@@ -20,6 +20,16 @@
    "cutcheck: no finding outside the advisory set"
   ]
  },
+ "cutcheck-command-mention": {
+  "exit": 0,
+  "lines": [
+   "cutcheck: advisory -- reported, and never setting the exit status:",
+   "01-quoted: family 1: extraction-gap: criterion 2: **A span quoted as what the guard refuses is no oracle.** The confinement gate refuses `git log --ou",
+   "01-quoted: family 1: extraction-gap: criterion 3: **A span quoted as what CI runs is no oracle.** A whole-module invocation such as `python3 -m unitte",
+   "cutcheck-command-mention: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-command-mention/coverage.md",
+   "cutcheck: no finding outside the advisory set"
+  ]
+ },
  "cutcheck-evalhead": {
   "exit": 0,
   "lines": [
