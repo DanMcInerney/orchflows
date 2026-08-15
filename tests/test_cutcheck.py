@@ -706,6 +706,53 @@ class GitEscapeTest(unittest.TestCase):
         self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
 
 
+def _symlink_source(case):
+    """A source tree committing a symlink that points outside itself.
+
+    Two commits, so `HEAD~1` names a range a diff can be asked for, and an
+    `outside/` directory beside the tree that nothing inside it may reach.
+    Built in a temporary directory of its own: the wrong result this pair of
+    tests needs is built beside the tree under test, never in it.
+    """
+
+    root = Path(tempfile.mkdtemp(prefix="cutcheck-symlink-"))
+    case.addCleanup(shutil.rmtree, root, True)
+    outside = root / "outside"
+    outside.mkdir()
+    src = root / "src"
+    (src / "sub").mkdir(parents=True)
+    for args in (
+        ["init", "-q", "."],
+        ["config", "user.email", "cutcheck@example.invalid"],
+        ["config", "user.name", "cutcheck"],
+    ):
+        cutcheck._git(args, src)
+    (src / "sub" / "a.txt").write_text("one\n", encoding="utf-8")
+    os.symlink(str(outside), str(src / "link"))
+    cutcheck._git(["add", "-A"], src)
+    cutcheck._git(["commit", "-qm", "one"], src)
+    (src / "sub" / "a.txt").write_text("one\ntwo\n", encoding="utf-8")
+    cutcheck._git(["add", "-A"], src)
+    cutcheck._git(["commit", "-qm", "two"], src)
+    return root, src, outside
+
+
+def _symlink_copy(case):
+    """The copy `_scratch_tree` builds from that source, and what lies outside.
+
+    The real function, not a re-spelling of it: what is under test is whether
+    the copy this module grades oracles in confines them, so any other clone
+    would grade a different tree than the one cutcheck builds.
+    """
+
+    root, src, outside = _symlink_source(case)
+    scratch_root = root / "scratch"
+    scratch_root.mkdir()
+    tree = cutcheck._scratch_tree("HEAD", src, scratch_root)
+    case.assertIsNotNone(tree, "no scratch copy was built from the symlink source")
+    return tree, outside
+
+
 class GitConfinementGateTest(unittest.TestCase):
     """Which git spans the gate runs, decided from the command text alone."""
 
@@ -755,6 +802,40 @@ class GitConfinementGateTest(unittest.TestCase):
         unparsed = 'git log "'
         self.assertFalse(cutcheck._unconfined_git(unparsed))
         self.assertIsNone(cutcheck._run_once(unparsed, ROOT))
+
+    def test_committed_symlink_cannot_escape_the_copy(self):
+        """The third route `_names_outside_the_copy` names and cannot close.
+
+        `link/PAYLOAD` is neither rooted nor climbing, so the text gate reads
+        it as confined and is right about the token and wrong about the file.
+        Measured at the baseline: 121 bytes landed outside the copy. Only the
+        copy can answer this, so the copy is what has to refuse it.
+        """
+
+        tree, outside = _symlink_copy(self)
+        span = "git diff --output=link/PAYLOAD HEAD~1"
+        self.assertFalse(cutcheck._unconfined_git(span), "the text gate permits it")
+        proc = cutcheck._git(["diff", "--output=link/PAYLOAD", "HEAD~1"], tree)
+        self.assertEqual(
+            sorted(path.name for path in outside.iterdir()),
+            [],
+            "the copy wrote through a committed symlink: {}".format(proc.stderr),
+        )
+
+    def test_a_committed_symlink_cannot_be_read_through_by_an_orderfile(self):
+        """The same route, read rather than written: `-O` opens what it names."""
+
+        tree, outside = _symlink_copy(self)
+        (outside / "orderfile").write_text("sub/a.txt\n", encoding="utf-8")
+        span = "git diff -Olink/orderfile HEAD~1"
+        self.assertFalse(cutcheck._unconfined_git(span), "the text gate permits it")
+        proc = cutcheck._git(["diff", "-Olink/orderfile", "HEAD~1"], tree)
+        self.assertNotEqual(
+            proc.returncode,
+            0,
+            "the copy read an orderfile lying outside it",
+        )
+        self.assertIn("orderfile", proc.stderr)
 
 
 class BareCommandNounTest(unittest.TestCase):

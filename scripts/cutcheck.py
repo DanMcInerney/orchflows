@@ -359,6 +359,16 @@ def _scratch_tree(rev, worktree_root, scratch_root):
     meant. The clone keeps no remote: an oracle is ticket content, and ticket
     content is untrusted, so the scratch tree offers it no path to write back
     out of.
+
+    ``core.symlinks=false`` is the third route out, and the only one the copy
+    rather than the text can close. A committed symlink materialises as a file
+    holding its target's path, so ``--output=link/PAYLOAD`` and
+    ``-O link/orderfile`` -- both spelling a location inside the copy, both
+    landing outside it -- fail on the copy's own filesystem instead. Written
+    into the clone's config with ``--config`` and never with a global ``-c``:
+    the checkout below is a separate process, and only what the config file
+    holds reaches it. Windows already defaults to this, so setting it removes
+    a divergence rather than adding one.
     """
 
     tree = scratch_root / re.sub(r"[^A-Za-z0-9_.-]", "-", rev)
@@ -367,7 +377,15 @@ def _scratch_tree(rev, worktree_root, scratch_root):
     resolved = _git(["rev-parse", rev + "^{commit}"], worktree_root)
     if resolved is None or resolved.returncode != 0:
         return None
-    clone = ["clone", "--quiet", "--no-checkout", str(worktree_root), str(tree)]
+    clone = [
+        "clone",
+        "--quiet",
+        "--no-checkout",
+        "--config",
+        "core.symlinks=false",
+        str(worktree_root),
+        str(tree),
+    ]
     steps = (
         (clone, scratch_root),
         (["checkout", "--quiet", "--detach", resolved.stdout.strip()], tree),
