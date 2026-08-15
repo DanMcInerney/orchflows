@@ -74,6 +74,40 @@ TABLE_DELIM_ROW_RE = re.compile(r"^\|(?:\s*:?-{2,}:?\s*\|)+\s*$")
 LIST_MARKER_RE = re.compile(r"^(?:[-*+]|\d+[.)])\s+")
 SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s+")
 OUTSIDE_PACK_CITATION = "](../"
+# The same citation written as prose instead of a link: the reference file
+# behind a pointer cell opens by naming the cell it satisfies, and the cell
+# is contracts/pack-signature.md's, not the pack's. Dropped for
+# OUTSIDE_PACK_CITATION's reason -- convicting it would drive a reference
+# to stop saying which cell owns it.
+SIGNATURE_CELL_POINTER_RE = re.compile(r"per the signature's [a-z_]+ cell")
+# Spans an owner outside the pack mandates, so two packs carrying one carry
+# it by obligation and not by duplication. Stripped before the
+# near-duplicate ratio and nowhere else: the verbatim tier stays over the
+# whole clause, because free content that is identical under a mandated
+# skeleton is a real duplication and still an error.
+MANDATED_FORM_RES = (
+    # contracts/pack-signature.md: `assembly` is a backticked skill name or
+    # the bare word none, an em-dash, and a gloss naming what stands in for
+    # the assembly. validate_pack_signature errors on any third form, so
+    # both the opener and the naming are obligatory, and only the noun
+    # phrase between them is the pack's own.
+    re.compile(r"^none\s+—\s+"),
+    re.compile(r"\b(?:is|are) the assembly$"),
+    # contracts/verdict.md's oracle_class enum -- three tokens -- and
+    # contracts/work-item.md's provenance enum -- two. Both closed, both
+    # T0-pinned, so every oracle row ends in one of six pairs.
+    re.compile(
+        r"\b(?:deterministic|judged|evidence)\s+(?:pre-existing|authored-here)$"
+    ),
+    # tests/test_adaptive_delivery.py asserts this exact wording in
+    # orch-decompose's body and in both slicing cells that carry it: the
+    # duplication is the invariant, holding every pack to overlap along
+    # dependency order and off the old global-disjointness rule. A pack
+    # cannot state it in its own words without breaking that check.
+    re.compile(
+        r"a write scope overlapping only siblings it is dependency-ordered with"
+    ),
+)
 MD_LINK_RE = re.compile(r"\]\(([^)]+)\)")
 LOOP_TRIGGER_RE = re.compile(r"\biterat(?:e|es|ing)\b|\brepeat until\b", re.IGNORECASE)
 BOUND_TERM_RE = re.compile(r"bound|budget", re.IGNORECASE)
@@ -941,11 +975,13 @@ def cell_clauses(text: str) -> list:
     ('never by count') as duplicated content.
 
     Structure is not content and never compares: table header and
-    delimiter rows, headings, list markers, and any clause citing an
+    delimiter rows, headings, list markers, and any sentence citing an
     owner outside the pack. That last one is the pointer or stated
     deviation rules/visibility.md §3 and rules/token-economy.md §7
     require every pack to share once content moves to one owner --
-    convicting it would drive packs to stop deferring.
+    convicting it would drive packs to stop deferring. It is decided per
+    sentence, before the ';' cut: the deviation half carries no citation
+    of its own, so cutting first strands it outside the exemption.
 
     Whitespace collapses first, so two packs whose only difference is
     where a 75-column line wraps still read as one clause. A clause
@@ -984,10 +1020,18 @@ def cell_clauses(text: str) -> list:
     clauses = []
     for block in blocks:
         for sentence in SENTENCE_END_RE.split(block):
+            # The exemption is decided on the whole sentence, before the ';'
+            # cut and never after it: the citation and the deviation it
+            # licenses are the two halves of one pointer, and a filter applied
+            # to the halves keeps the deviation while discarding the citation
+            # that exempts it -- convicting the very sentence the exemption
+            # exists to protect.
+            if OUTSIDE_PACK_CITATION in sentence or SIGNATURE_CELL_POINTER_RE.search(
+                sentence
+            ):
+                continue
             for clause in sentence.split(";"):
                 clause = re.sub(r"\s+", " ", clause).strip().strip(".").strip()
-                if OUTSIDE_PACK_CITATION in clause:
-                    continue
                 if len(clause.split()) >= CELL_CLAUSE_MIN_WORDS:
                     clauses.append(clause)
     return clauses
@@ -1003,7 +1047,9 @@ CELL_DUPLICATION_ALLOWLIST = (
             "The code and design packs both run on git, so their workspace "
             "cells share the worktree-per-item clause and the conflict "
             "binding, their required_spec_fields share the standards-owner "
-            "pointer, and their oracle tables share the build/type row. A "
+            "pointer, and their oracle tables share the build/type and "
+            "standards-shape rows -- both of which ask the workspace's own "
+            "tooling the same question. A "
             "workspace-kind abstraction factoring those mechanics out is not "
             "worth a permanent concept for two packs: this duplication is "
             "paid consciously and revisited when a third git-workspace pack "
@@ -1017,6 +1063,8 @@ CELL_DUPLICATION_ALLOWLIST = (
             "each frontier item gets its own worktree branched from the run's "
             "current revision at dispatch, merged at the join",
             "build/type the workspace's build and typecheck commands "
+            "deterministic pre-existing",
+            "standards shape the workspace's linter, formatter, or validator "
             "deterministic pre-existing",
         ),
     },
@@ -1038,11 +1086,21 @@ def _cell_content(pkg: dict, cell: str, binding: str):
     return binding, rel(pkg["skill_md"])
 
 
+def free_content(clause: str) -> str:
+    """`clause` minus every span MANDATED_FORM_RES names -- what is left
+    is the pack's own. A remainder under CELL_CLAUSE_MIN_WORDS words is
+    the floor's case exactly: a label, not content."""
+    for pattern in MANDATED_FORM_RES:
+        clause = pattern.sub(" ", clause)
+    return re.sub(r"\s+", " ", clause).strip()
+
+
 def validate_cell_duplication(packages, diag: Diagnostics) -> None:
     """Per signature cell, compare the content behind it across packs:
-    a clause carried verbatim by two packs is an error, a clause pair at
-    CELL_SIMILARITY_THRESHOLD or above is a warning naming both sites.
-    Allowlisted clauses are out of the comparison entirely."""
+    a clause carried verbatim by two packs is an error, a clause pair
+    whose free_content matches at CELL_SIMILARITY_THRESHOLD or above is a
+    warning naming both sites. Allowlisted clauses are out of the
+    comparison entirely."""
     packs = [pkg for pkg in packages if pkg["is_pack"]]
     if len(packs) < 2:
         return
@@ -1078,11 +1136,17 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
                 left_label, left_clauses = per_pack[i]
                 right_label, right_clauses = per_pack[j]
                 for left in left_clauses:
+                    left_free = free_content(left)
+                    if len(left_free.split()) < CELL_CLAUSE_MIN_WORDS:
+                        continue
                     for right in right_clauses:
                         if left == right:
                             continue
+                        right_free = free_content(right)
+                        if len(right_free.split()) < CELL_CLAUSE_MIN_WORDS:
+                            continue
                         ratio = difflib.SequenceMatcher(
-                            None, left, right, autojunk=False
+                            None, left_free, right_free, autojunk=False
                         ).ratio()
                         if ratio >= CELL_SIMILARITY_THRESHOLD:
                             diag.warn(

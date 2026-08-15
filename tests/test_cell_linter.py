@@ -177,6 +177,22 @@ class TestCellClauseSplitter(unittest.TestCase):
             ),
         )
 
+    def test_a_pointer_clause_keeps_its_exemption_after_the_split(self):
+        """packs/orch-code-pack/references/craft.md:3-6 verbatim: one
+        sentence whose citation sits in the first semicolon half and whose
+        stated deviation sits in the second. Cutting at the ';' before the
+        exemption is applied throws away the half carrying the citation and
+        convicts the survivor -- the deviation half is the other end of the
+        same pointer, and rules/visibility.md §3 requires both."""
+        self.assertEqual(
+            [],
+            validate.cell_clauses(
+                "Read [rules/token-economy.md](../../../rules/token-economy.md) §10 for "
+                "the shape principles every domain shares; the bullets under Shape are "
+                "code's own."
+            ),
+        )
+
 
 class TestCellDuplication(_IsolatedTree):
     SHARED = (
@@ -255,6 +271,56 @@ class TestCellDuplication(_IsolatedTree):
         self.assertNotIn(NEAR, out)
 
 
+class TestMandatedEchoExemption(_IsolatedTree):
+    """Three echoes an owner outside the pack mandates, so two packs
+    carrying them carry them by obligation. Each pair below is the real
+    tree's own pair with the domain nouns swapped for synthetic ones, so
+    the synthetic clauses have the real ones' shape and length."""
+
+    # packs/orch-code-pack/SKILL.md:12 and packs/orch-design-pack/SKILL.md:12.
+    ASSEMBLY = (
+        "none — the repository is the assembly",
+        "none — the merged revision's rendered views are the assembly",
+    )
+    # packs/orch-code-pack/references/oracles.md and the design pack's:
+    # both rows end in verdict.md's oracle_class and work-item.md's
+    # provenance, and there are three of the first and two of the second.
+    ORACLE_ROWS = (
+        "| behavior | the ticket's named test commands | deterministic | pre-existing |",
+        "| accessibility floor | the accessibility bar's check command at every "
+        "covered identity | deterministic | pre-existing |",
+    )
+    ORACLE_TABLE = (
+        "# Oracles\n\n"
+        "| criterion kind | oracle | oracle_class | provenance |\n"
+        "| --- | --- | --- | --- |\n"
+        "%s\n"
+    )
+    # packs/*/references/craft.md:3 -- the opener naming the cell the file
+    # satisfies, which every pointer cell's reference carries.
+    CRAFT_OPENER = "# Craft\n\nThe %s domain's terms and shape, per the signature's craft cell.\n"
+
+    # A pack not exercising the assembly echo still needs a legal assembly
+    # that resolves without skills/ and is nobody else's verbatim twin: a
+    # per-pack gloss, since no backticked skill resolves in this tree.
+    def _inert(self, name):
+        return "none — %s stands in" % name
+
+    def test_the_craft_opener_the_assembly_form_and_the_oracle_enums_are_exempt(self):
+        for name, domain in (("openerapack", "alpha"), ("openerbpack", "beta")):
+            self._write_pack(name, assembly=self._inert(name),
+                             files={"references/craft.md": self.CRAFT_OPENER % domain})
+        self._write_pack("formapack", assembly=self.ASSEMBLY[0])
+        self._write_pack("formbpack", assembly=self.ASSEMBLY[1])
+        for name, row in (("enumapack", self.ORACLE_ROWS[0]), ("enumbpack", self.ORACLE_ROWS[1])):
+            self._write_pack(name, assembly=self._inert(name),
+                             files={"references/oracles.md": self.ORACLE_TABLE % row})
+        result = self._run()
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn(VERBATIM, result.stdout)
+        self.assertNotIn(NEAR, result.stdout)
+
+
 class TestAllowlist(unittest.TestCase):
     def test_exactly_one_family(self):
         self.assertEqual(1, len(validate.CELL_DUPLICATION_ALLOWLIST))
@@ -268,6 +334,99 @@ class TestAllowlist(unittest.TestCase):
         result = subprocess.run([sys.executable, str(VALIDATE)], capture_output=True, text=True)
         self.assertEqual(0, result.returncode, result.stdout)
         self.assertNotIn(VERBATIM, result.stdout)
+
+
+# --- the warning ratchet ---------------------------------------------
+#
+# tools/validate.py:1559 returns has_errors inverted, so exit 0 is blind to
+# every WARN it printed. Until this ceiling, nothing anywhere read the
+# count: the tree could slide back to any number and stay green. The
+# ceiling is the claim exit 0 now carries.
+#
+# 47 is what the tree reported at ff30d60, every one of them a
+# near-duplicate cell clause. WARNING_CEILING is the count the tree
+# reports now, set with no headroom on purpose: headroom is a standing
+# licence to regress into it, and every warning still under the ceiling is
+# a duplication nobody has argued for yet. It ratchets down as those are
+# fixed. Raising it is a decision, and it belongs in the commit message
+# that raises it.
+BASELINE_WARNINGS = 47
+WARNING_CEILING = 25
+
+# A clone is the whole tree minus version control, runtime state and
+# caches -- never an extract of the directories the check happens to read
+# today, which would stop grading whatever it left out.
+CLONE_SKIPS = shutil.ignore_patterns(
+    ".git", ".claude", ".orch", "__pycache__", "*.pyc", ".venv", ".mypy_cache"
+)
+
+
+def warning_lines(root):
+    """Every WARN tools/validate.py reports for the tree at `root`.
+    ROOT is validate.py's own parent.parent, so the copy in a clone grades
+    the clone."""
+    result = subprocess.run(
+        [sys.executable, str(Path(root) / "tools" / "validate.py")],
+        capture_output=True,
+        text=True,
+    )
+    return [line for line in result.stdout.splitlines() if line.startswith("WARN")]
+
+
+def ceiling_breach(count):
+    """The ratchet's whole decision: None while the count holds, the
+    sentence naming the breach once it does not. Both tests below call
+    this one function, so the check that grades the real tree is the same
+    check shown to fail against a wrong one."""
+    if count > WARNING_CEILING:
+        return "%d WARN, ceiling %d" % (count, WARNING_CEILING)
+    return None
+
+
+class WarningCeilingTest(unittest.TestCase):
+    # One clause packs/orch-code-pack/references/slicing.md:11 already
+    # owns, restated in a third pack with a single noun changed. This is
+    # what a regression here looks like: not a new kind of finding, one
+    # more copy of a clause that has an owner. The clause carries no span
+    # MANDATED_FORM_RES strips, so the plant is the pack's own content and
+    # the ratio is measured over all of it.
+    REGRESSION = "\n- Dependency edges only where one lane's seam is another's input.\n"
+
+    def _clone_beside_the_tree(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        clone = Path(temporary.name) / "clone"
+        shutil.copytree(ROOT, clone, ignore=CLONE_SKIPS, symlinks=True)
+        return clone
+
+    def test_the_tree_holds_at_or_under_the_ceiling(self):
+        found = warning_lines(ROOT)
+        self.assertIsNone(ceiling_breach(len(found)), "\n".join(found))
+        self.assertLess(
+            len(found),
+            BASELINE_WARNINGS,
+            "the ratchet must stand below the %d measured at ff30d60"
+            % BASELINE_WARNINGS,
+        )
+
+    def test_a_count_above_the_ceiling_fails(self):
+        clone = self._clone_beside_the_tree()
+        held = warning_lines(clone)
+        self.assertIsNone(
+            ceiling_breach(len(held)),
+            "the clone must start where the tree stands, or it grades nothing",
+        )
+        planted = clone / "packs" / "orch-research-pack" / "references" / "slicing.md"
+        planted.write_text(
+            planted.read_text(encoding="utf-8") + self.REGRESSION, encoding="utf-8"
+        )
+        raised = warning_lines(clone)
+        self.assertGreater(len(raised), len(held), "the plant reported nothing")
+        self.assertIsNotNone(
+            ceiling_breach(len(raised)),
+            "%d WARN in the clone did not breach the ceiling of %d"
+            % (len(raised), WARNING_CEILING),
+        )
 
 
 if __name__ == "__main__":
