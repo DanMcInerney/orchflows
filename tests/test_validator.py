@@ -1,5 +1,7 @@
 """Runs tools/validate.py as a subprocess against the live repo, and
 exercises the --pin flag against an isolated copy of contracts/."""
+import contextlib
+import io
 import json
 import shutil
 import subprocess
@@ -17,6 +19,57 @@ import tools.validate as validate  # noqa: E402
 VALIDATE = ROOT / "tools" / "validate.py"
 CONTRACTS = ROOT / "contracts"
 PINS = ROOT / "tests" / "pins.json"
+
+# Compiled once: the isolated-tree tests execute this body per run, in a
+# namespace whose __file__ points at their own copy.
+_VALIDATE_CODE = compile(VALIDATE.read_text(encoding="utf-8"), str(VALIDATE), "exec")
+
+
+class _Result:
+    """The three fields of a CompletedProcess the isolated tests read."""
+
+    def __init__(self, returncode, stdout, stderr):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
+class _IsolatedTree(unittest.TestCase):
+    """A synthetic repo tree -- contracts/, tools/validate.py, the
+    committed pins, plus whatever the test writes -- with validate.py run
+    against it.
+
+    Two spawns per test bought nothing. The pin spawn is gone because the
+    contract bytes here are copied verbatim from the tree pins.json is
+    pinned to (TestPinFlagRoundTrip.test_pin_matches_committed_pins_json
+    is the proof), so copying the file is the same fixture. The run itself
+    is in process because validate.py derives ROOT from its own __file__,
+    so executing its body in a namespace rooted at the copy is the run the
+    subprocess made. The CLI boundary -- argv, exit status, a real
+    interpreter -- stays covered by TestValidatorAgainstRepo and
+    TestPinFlagRoundTrip, which still spawn.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.tmp_path = Path(self.tmp.name)
+        shutil.copytree(CONTRACTS, self.tmp_path / "contracts")
+        (self.tmp_path / "tools").mkdir()
+        shutil.copy(VALIDATE, self.tmp_path / "tools" / "validate.py")
+        (self.tmp_path / "tests").mkdir()
+        shutil.copy(PINS, self.tmp_path / "tests" / "pins.json")
+
+    def _run(self, *args):
+        namespace = {
+            "__name__": "validate_under_test",
+            "__file__": str(self.tmp_path / "tools" / "validate.py"),
+        }
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            exec(_VALIDATE_CODE, namespace)  # noqa: S102 -- the file under test
+            code = namespace["main"](list(args))
+        return _Result(code, out.getvalue(), err.getvalue())
 
 
 class TestValidatorAgainstRepo(unittest.TestCase):
@@ -137,28 +190,10 @@ class TestFrontmatterBoundaryInputs(unittest.TestCase):
         self.assertFalse(diag.has_errors)
 
 
-class TestSyntheticPackageBoundaryInputs(unittest.TestCase):
-    """Full CLI runs (via the isolated tmp-copy pattern already used for
-    --pin) against a synthetic skills/ tree, so the ERROR/exit-code contract
-    is checked at the actual ROOT-relative seam, not just parse_frontmatter."""
-
-    def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
-        self.tmp_path = Path(self.tmp.name)
-        shutil.copytree(CONTRACTS, self.tmp_path / "contracts")
-        (self.tmp_path / "tools").mkdir()
-        shutil.copy(VALIDATE, self.tmp_path / "tools" / "validate.py")
-        self._run("--pin")  # matching pins so only the synthetic package can fail
-
-    def tearDown(self):
-        self.tmp.cleanup()
-
-    def _run(self, *args):
-        return subprocess.run(
-            [sys.executable, str(self.tmp_path / "tools" / "validate.py"), *args],
-            capture_output=True,
-            text=True,
-        )
+class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
+    """Full runs against a synthetic skills/ tree, so the ERROR/exit-code
+    contract is checked at the actual ROOT-relative seam, not just
+    parse_frontmatter."""
 
     def _write_skill(self, name: str, content: bytes, tier: str = "instances"):
         skill_dir = self.tmp_path / "skills" / tier / name
@@ -333,28 +368,13 @@ Return: status, result identity, and verification; then feedback.
 """
 
 
-class TestCompositionContractChecks(unittest.TestCase):
+class TestCompositionContractChecks(_IsolatedTree):
     """validate_compositions against contracts/composition.md, on the
     same isolated tmp-copy pattern as the synthetic package tests."""
 
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
-        self.tmp_path = Path(self.tmp.name)
-        shutil.copytree(CONTRACTS, self.tmp_path / "contracts")
-        (self.tmp_path / "tools").mkdir()
-        shutil.copy(VALIDATE, self.tmp_path / "tools" / "validate.py")
+        super().setUp()
         (self.tmp_path / "compositions").mkdir()
-        self._run("--pin")
-
-    def tearDown(self):
-        self.tmp.cleanup()
-
-    def _run(self, *args):
-        return subprocess.run(
-            [sys.executable, str(self.tmp_path / "tools" / "validate.py"), *args],
-            capture_output=True,
-            text=True,
-        )
 
     def _write_composition(self, name: str, content: str):
         (self.tmp_path / "compositions" / f"{name}.md").write_text(content, encoding="utf-8")
@@ -518,27 +538,9 @@ Return: status, result identity, and verification; then feedback.
         self.assertEqual(0, result.returncode, result.stdout)
 
 
-class TestEnvelopeCheck(unittest.TestCase):
+class TestEnvelopeCheck(_IsolatedTree):
     """validate_envelope against contracts/result.md's bound units, on
     the synthetic skills-tree idiom."""
-
-    def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
-        self.tmp_path = Path(self.tmp.name)
-        shutil.copytree(CONTRACTS, self.tmp_path / "contracts")
-        (self.tmp_path / "tools").mkdir()
-        shutil.copy(VALIDATE, self.tmp_path / "tools" / "validate.py")
-        self._run("--pin")
-
-    def tearDown(self):
-        self.tmp.cleanup()
-
-    def _run(self, *args):
-        return subprocess.run(
-            [sys.executable, str(self.tmp_path / "tools" / "validate.py"), *args],
-            capture_output=True,
-            text=True,
-        )
 
     def _write_skill(self, name: str, body: str, tier: str = "engines"):
         skill_dir = self.tmp_path / "skills" / tier / name

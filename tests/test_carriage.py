@@ -26,6 +26,9 @@ if str(ROOT) not in sys.path:
 
 VALIDATE = ROOT / "tools" / "validate.py"
 CONTRACTS = ROOT / "contracts"
+PINS = ROOT / "tests" / "pins.json"
+
+from tools import validate  # noqa: E402  (needs the sys.path insert above)
 
 
 class _IsolatedTree(unittest.TestCase):
@@ -39,7 +42,12 @@ class _IsolatedTree(unittest.TestCase):
         shutil.copytree(CONTRACTS, self.tmp_path / "contracts")
         (self.tmp_path / "tools").mkdir()
         shutil.copy(VALIDATE, self.tmp_path / "tools" / "validate.py")
-        self._run("--pin")  # matching pins so only synthetic packages can fail
+        # Matching pins, so only the synthetic packages can fail. The
+        # committed pins.json already matches these very contract bytes --
+        # test_validator.py's test_pin_matches_committed_pins_json is what
+        # proves it -- so copy it instead of spawning `--pin` per test.
+        (self.tmp_path / "tests").mkdir()
+        shutil.copy(PINS, self.tmp_path / "tests" / "pins.json")
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -270,28 +278,42 @@ class TestCarriagePackChecks(_IsolatedTree):
 
 
 class TestCarriageAgainstRepo(unittest.TestCase):
-    """The real tree, post followup-sweep ticket 02 (the 9 carriage-
-    deferred sites' callers now carry their callee's Require noun),
-    must clear validate_carriage with zero 'not carried' WARN lines --
-    covered by TestValidatorAgainstRepo's exit-0 assertion in
-    test_validator.py; this guards the fixed state so a caller-noun
-    carriage gap reopening surfaces here instead of silently passing.
-    CARRIAGE_DEFERRED may still hold entries (ticket 06 empties the
-    table) -- this asserts on WARN lines containing 'not carried', not
-    on the table itself, so it tolerates either state."""
+    """The real tree cleared validate_carriage when followup-sweep ticket
+    02 made the 9 deferred sites' callers carry their callee's Require
+    noun, and ticket 06 then emptied `CARRIAGE_DEFERRED`. Both are now
+    settled facts, so this asserts them rather than hedging: the table is
+    empty, which makes `_carriage_flag` raise an error and not a WARN for
+    every gap, and validate_carriage over the real packages reports
+    nothing at all. Runs the checker in process -- the CLI boundary is
+    TestValidatorAgainstRepo's job in test_validator.py."""
 
-    def test_no_carriage_gaps_surface_as_warn(self):
-        result = subprocess.run(
-            [sys.executable, str(VALIDATE)], capture_output=True, text=True
-        )
-        self.assertEqual(0, result.returncode, result.stdout)
-        warn_lines = [ln for ln in result.stdout.splitlines() if ln.startswith("WARN")]
-        carriage_warns = [ln for ln in warn_lines if "not carried" in ln]
+    @classmethod
+    def setUpClass(cls):
+        cls.diag = validate.Diagnostics()
+        packages = validate.discover_packages()
+        for pkg in packages:
+            frontmatter, body = validate.parse_frontmatter(
+                pkg["skill_md"].read_text(encoding="utf-8-sig"),
+                validate.rel(pkg["skill_md"]),
+                cls.diag,
+            )
+            pkg["frontmatter"] = frontmatter or {}
+            pkg["body"] = body or ""
+        cls.parse_items = list(cls.diag.items)
+        validate.validate_carriage(packages, cls.diag)
+        cls.carriage_items = cls.diag.items[len(cls.parse_items):]
+
+    def test_the_carriage_deferral_table_is_empty(self):
+        self.assertEqual({}, validate.CARRIAGE_DEFERRED)
+
+    def test_the_real_tree_reports_no_carriage_gap(self):
+        self.assertEqual([], self.parse_items, "a package failed to parse")
         self.assertEqual(
             [],
-            carriage_warns,
-            "expected zero carriage 'not carried' WARN lines on the real "
-            f"tree; got:\n{result.stdout}",
+            [
+                "%s %s: %s" % item
+                for item in self.carriage_items
+            ],
         )
 
 

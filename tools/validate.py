@@ -99,7 +99,8 @@ MANDATED_FORM_RES = (
     re.compile(
         r"\b(?:deterministic|judged|evidence)\s+(?:pre-existing|authored-here)$"
     ),
-    # tests/test_adaptive_delivery.py asserts this exact wording in
+    # TestDependencyOrderedOverlap in tests/test_static_tree_invariants.py
+    # asserts this exact wording in
     # orch-decompose's body and in both slicing cells that carry it: the
     # duplication is the invariant, holding every pack to overlap along
     # dependency order and off the old global-disjointness rule. A pack

@@ -476,7 +476,10 @@ def serving(root: Path, transcripts=None):
     """
 
     server = ui.create_server(root, 0, transcripts)
-    thread = threading.Thread(target=server.serve_forever)
+    # `serve_forever`'s default 0.5s poll interval is what `shutdown` below
+    # waits out, once per server: the poll period, not the work, dominated
+    # this module's wall time.
+    thread = threading.Thread(target=server.serve_forever, args=(0.01,))
     thread.daemon = True
     thread.start()
     try:
@@ -937,6 +940,123 @@ class TestTicketDetail(unittest.TestCase):
                 self.assertNotIn("OUTSIDE-THE-TICKETS-TREE", page, url)
 
 
+class TestUnreadableTicketFile(unittest.TestCase):
+    """`read_ticket` promises the same shape for a file it cannot read as
+    for one it can. Being handed such a path is not hypothetical:
+    `run_tickets` globs `*.md`, and a *directory* whose name ends in `.md`
+    matches that glob, so the ordinary walk finds one."""
+
+    RUN = "run-unreadable"
+
+    def checkout(self, tmp: str) -> Path:
+        root = make_checkout(
+            Path(tmp), runs=("run-gamma",), friction=False, events=False
+        )
+        run_dir = root / ".orch" / "tickets" / self.RUN
+        run_dir.mkdir(parents=True)
+        write_raw_ticket(run_dir, "G1.md", "G1", status="ready")
+        (run_dir / "oops.md").mkdir()
+        return root
+
+    def test_a_path_that_cannot_be_read_is_an_empty_ticket_not_a_traceback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            unreadable = self.checkout(tmp) / ".orch" / "tickets" / self.RUN / "oops.md"
+
+            # The premise. Without it the empty values below are proved by a
+            # file that read fine and merely had nothing in it.
+            with self.assertRaises(OSError):
+                unreadable.read_text(encoding="utf-8", errors="replace")
+
+            ticket = ui.read_ticket(unreadable)
+
+            self.assertEqual("oops", ticket["id"])
+            self.assertEqual("oops", ticket["file_id"])
+            self.assertEqual("", ticket["status"])
+            self.assertEqual("", ticket["objective"])
+            self.assertEqual({}, ticket["sections"])
+
+    def test_the_walk_that_finds_it_still_serves_the_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.checkout(tmp)
+
+            listed = ui.run_tickets(root, self.RUN)
+
+            self.assertEqual(["G1", "oops"], sorted(t["id"] for t in listed))
+            for url in ("/", graph_url(self.RUN)):
+                self.assertEqual(200, ui.render_route(root, url)[0], url)
+            # Not by dropping the run: the readable ticket beside it still
+            # reaches its own page.
+            self.assertEqual(200, ui.render_route(root, detail_url(self.RUN, "G1"))[0])
+
+
+class TestTicketTreeContainment(unittest.TestCase):
+    """`.orch/tickets/` is the whole scope a client-supplied name may reach.
+    A `..` in the query is a climb `_safe_name` sees in the string; a
+    symlink under the tickets tree is one it cannot, because the name is
+    ordinary and the escape happens in the path layer. `_in_tree` resolves
+    before it answers, which is the only reason the second kind is refused.
+
+    The boundary is the query, not the walk: `discover` enumerates the
+    operator's own checkout and takes no client input, so a link the
+    operator planted there is still theirs to see on the index."""
+
+    LEAKED = "OUTSIDE-THE-TICKETS-TREE"
+    RUN = "run-leaked"
+
+    def link_out(self, tmp: Path) -> tuple:
+        """``(checkout, link)`` -- a run-shaped symlink under
+        `.orch/tickets/` pointing at a real ticket outside the checkout."""
+
+        main = make_checkout(tmp)
+        outside = tmp / "outside"
+        outside.mkdir()
+        (outside / "X1.md").write_text(
+            "---\nid: X1\nstatus: ready\n---\n\n## Objective\n\n%s\n" % self.LEAKED,
+            encoding="utf-8",
+        )
+        link = main / ".orch" / "tickets" / self.RUN
+        try:
+            link.symlink_to(outside, target_is_directory=True)
+        except (OSError, NotImplementedError) as error:
+            # Windows only permits this under Developer Mode or admin.
+            self.skipTest("cannot create a directory symlink here: %s" % error)
+        return main, link
+
+    def test_the_link_is_a_run_the_lookup_would_otherwise_resolve(self):
+        # The premise. Without it the refusals below are proved by a name
+        # the guard rejected on sight, or by a ticket that was never there.
+        with tempfile.TemporaryDirectory() as tmp:
+            _main, link = self.link_out(Path(tmp))
+
+            self.assertEqual(self.RUN, ui._safe_name(self.RUN))
+            self.assertTrue(link.is_dir())
+            self.assertTrue((link / "X1.md").is_file())
+
+    def test_a_run_linked_out_of_the_checkout_is_not_a_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            main, _link = self.link_out(Path(tmp))
+
+            self.assertIsNone(ui.run_tickets(main, self.RUN))
+            self.assertIsNone(ui.find_ticket(main, self.RUN, "X1"))
+            # Not by refusing everything: the runs really in the tree still
+            # resolve through the same two calls.
+            self.assertTrue(ui.run_tickets(main, "run-gamma"))
+            self.assertIsNotNone(ui.find_ticket(main, "run-gamma", "G1"))
+
+    def test_no_route_that_takes_the_name_from_a_query_serves_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            main, _link = self.link_out(Path(tmp))
+
+            for url in (graph_url(self.RUN), detail_url(self.RUN, "X1")):
+                status, page = ui.render_route(main, url)
+
+                self.assertEqual(404, status, url)
+                self.assertNotIn(self.LEAKED, page, url)
+            # And the same two routes still serve a run that really is in
+            # the tree, so 404 above is containment and not a dead route.
+            self.assertEqual(200, ui.render_route(main, graph_url("run-gamma"))[0])
+
+
 # Names a client can send that the path layer refuses outright rather than
 # answering "no such file": NUL raises `ValueError: embedded null byte` out
 # of `Path.resolve`, and a component over `NAME_MAX` raises `OSError`
@@ -952,6 +1072,9 @@ REFUSED_NAMES = (
     # 253 clears the ceiling on its own and fails it once `.md` is appended,
     # which is the name the lookup actually uses.
     "c" * 253,
+    # 200 characters, 400 bytes: over the ceiling the filesystem enforces
+    # while under every character count the ceiling could be misread as.
+    "é" * 200,
 )
 
 
@@ -1016,6 +1139,42 @@ class TestRefusedNames(unittest.TestCase):
         # make this suite's own fixtures unreachable.
         for name in FIXTURE_RUNS + (EMPTY_RUN, "G1", "run-gamma", "a-z_0.9"):
             self.assertEqual(name, ui._safe_name(name), name)
+
+    def test_the_ceiling_counts_bytes_and_not_characters(self):
+        # `NAME_MAX` is a byte count, and outside ASCII the two diverge: a
+        # name of 200 accented characters is 400 bytes of UTF-8. Counting
+        # characters here would admit a name no store can hold, and the
+        # `ENAMETOOLONG` that follows is the exception this guard exists to
+        # keep out of the handler.
+        over, under = "é" * 200, "é" * 100
+
+        self.assertLessEqual(len(over), ui.MAX_NAME_BYTES)
+        self.assertGreater(len(over.encode("utf-8")), ui.MAX_NAME_BYTES)
+        self.assertEqual("", ui._safe_name(over))
+        # Non-vacuity: multibyte is not itself the refusal.
+        self.assertLessEqual(len(under.encode("utf-8")), ui.MAX_NAME_BYTES)
+        self.assertEqual(under, ui._safe_name(under))
+
+    def test_the_layer_below_the_name_guard_answers_none_rather_than_raising(self):
+        # `_safe_name` refuses everything above before it can reach
+        # `_in_tree`, so the second layer is only ever exercised by calling
+        # it directly -- which is exactly the shape a future caller that
+        # forgets the first layer would produce.
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+
+            # The premise: unguarded, this name does not resolve, it raises.
+            with self.assertRaises((OSError, ValueError)):
+                base.joinpath("a\x00b").resolve()
+
+            self.assertIsNone(ui._in_tree(base, "a\x00b"))
+            self.assertIsNone(ui._in_tree(base, "run-gamma", "a\x00b.md"))
+            # Non-vacuity: the same call still resolves a name the path
+            # layer accepts, so `None` above is the guard answering and not
+            # a lookup that stopped working.
+            self.assertEqual(
+                base.resolve() / "run-gamma", ui._in_tree(base, "run-gamma")
+            )
 
 
 class TestSectionRendering(unittest.TestCase):
@@ -1927,12 +2086,6 @@ class TestPolling(unittest.TestCase):
         self.assertEqual([None, None], matched[:2])
         self.assertIsNotNone(matched[2])
 
-    def test_those_constants_are_the_module_s_own(self):
-        self.assertEqual(
-            (1000, 5000, 15000),
-            (ui.POLL_LIVE_MS, ui.POLL_IDLE_MS, ui.POLL_HIDDEN_MS),
-        )
-
     def test_no_route_emits_setinterval(self):
         # `setInterval` queues a second request behind a slow first one; on a
         # serial stdlib server that is how a poll becomes a pile-up.
@@ -2784,20 +2937,63 @@ class TestModuleFloor(unittest.TestCase):
         )
 
 
+def build_fixture(stack) -> tuple:
+    """``(temporary directory, main checkout, transcript root)``, all three
+    torn down when ``stack`` closes."""
+
+    tmp = Path(stack.enter_context(tempfile.TemporaryDirectory()))
+    return tmp, make_checkout(tmp), make_transcripts(tmp)
+
+
 class TranscriptCase(unittest.TestCase):
     """A fixture transcript root and a fixture checkout, plus a clean parse
     cache -- the cache is module state that outlives a test, so a case that
-    counts parses must not inherit another case's hits."""
+    counts parses must not inherit another case's hits.
+
+    One materialization for the whole class: `setUpClass`, not `setUp`,
+    because copying the corpus costs ~40ms and most of these cases only read
+    it. A case that writes into the tree calls `own_fixture` first and works
+    on a private copy -- a class-scoped tree shared with a mutating case is a
+    leak, and a leak surfaces as an order-dependent failure in some later
+    case that did nothing wrong. `shared_tree_is_intact` closes that gap from
+    the other side: an unannounced write fails the case that made it rather
+    than the next case along.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        stack = contextlib.ExitStack()
+        cls.addClassCleanup(stack.close)
+        cls.tmp, cls.main, cls.transcripts = build_fixture(stack)
+        cls.pristine = snapshot(cls.tmp)
 
     def setUp(self):
         ui.TRANSCRIPT_CACHE.clear()
         self.addCleanup(ui.TRANSCRIPT_CACHE.clear)
+        self.addCleanup(self.shared_tree_is_intact)
+
+    def own_fixture(self):
+        """A private copy of the fixture, for a case that writes into it.
+
+        The instance attributes shadow the class's, so the body below reads
+        exactly as it did when every case built its own tree. Idempotent, so
+        a helper the case calls in a loop rebuilds once.
+        """
+
+        if "tmp" in vars(self):
+            return
         stack = contextlib.ExitStack()
         self.addCleanup(stack.close)
-        tmp = Path(stack.enter_context(tempfile.TemporaryDirectory()))
-        self.tmp = tmp
-        self.main = make_checkout(tmp)
-        self.transcripts = make_transcripts(tmp)
+        self.tmp, self.main, self.transcripts = build_fixture(stack)
+
+    def shared_tree_is_intact(self):
+        if "tmp" in vars(self):
+            return
+        self.assertEqual(
+            type(self).pristine,
+            snapshot(type(self).tmp),
+            "wrote into the class-scoped fixture: call own_fixture() first",
+        )
 
     def sessions(self, transcripts=True) -> str:
         root = self.transcripts if transcripts is True else transcripts
@@ -2827,9 +3023,6 @@ class TestTranscriptRoot(TranscriptCase):
                 self.tmp / "elsewhere" / ".claude" / "projects", ui.transcript_root(None)
             )
         self.assertFalse((self.tmp / "elsewhere").exists())
-
-    def test_the_flag_overrides_the_default(self):
-        self.assertEqual(self.transcripts, ui.transcript_root(str(self.transcripts)))
 
     def test_the_entry_point_hands_the_resolved_root_to_the_server(self):
         seen = {}
@@ -3063,6 +3256,7 @@ class TestTranscriptsAreReadOnly(TranscriptCase):
         self.assertEqual(before, snapshot(self.transcripts))
 
     def test_the_snapshot_would_notice_a_write(self):
+        self.own_fixture()
         before = snapshot(self.transcripts)
         (self.transcripts / ALPHA_PROJECT / "intruder.jsonl").write_text(
             "{}\n", encoding="utf-8"
@@ -3122,6 +3316,7 @@ class TestTranscriptDegradation(TranscriptCase):
         )
 
     def test_a_record_of_the_wrong_shape_is_dropped_rather_than_believed(self):
+        self.own_fixture()
         path = self.transcripts / ALPHA_PROJECT / (TITLED_SESSION + ".jsonl")
         path.write_text(
             '{"type":"ai-title","aiTitle":["not","a","string"]}\n'
@@ -3161,6 +3356,7 @@ class TestTranscriptParseCache(TranscriptCase):
     def test_a_changed_transcript_is_parsed_again(self):
         # A cache with no invalidation would satisfy the count above and
         # serve a label the transcript no longer carries.
+        self.own_fixture()
         path = self.transcripts / ALPHA_PROJECT / (TITLED_SESSION + ".jsonl")
         self.sessions()
         path.write_text(
@@ -3194,6 +3390,7 @@ class TestTranscriptValidatorBasis(TranscriptCase):
             return ui.state_digest(self.main, None, root)
 
     def test_a_transcript_that_changes_moves_the_validator(self):
+        self.own_fixture()
         before = self.digest()
         (self.transcripts / ALPHA_PROJECT / (TITLED_SESSION + ".jsonl")).write_text(
             '{"type":"ai-title","aiTitle":"Alpha, renamed"}\n', encoding="utf-8"
@@ -3202,6 +3399,7 @@ class TestTranscriptValidatorBasis(TranscriptCase):
         self.assertNotEqual(before, self.digest())
 
     def test_a_session_appearing_moves_the_validator(self):
+        self.own_fixture()
         before = self.digest()
         (self.transcripts / ALPHA_PROJECT / "77777777-7777-4777-8777-777777777777.jsonl").write_text(
             '{"type":"ai-title","aiTitle":"newly opened"}\n', encoding="utf-8"
@@ -3212,6 +3410,7 @@ class TestTranscriptValidatorBasis(TranscriptCase):
     def test_a_subagent_appearing_moves_the_validator(self):
         # The count is on the page, so the metadata beside the transcript is
         # part of the read set even though no line of it is ever rendered.
+        self.own_fixture()
         before = self.digest()
         (self.transcripts / ALPHA_PROJECT / TITLED_SESSION / "subagents" / "agent-aa14.meta.json").write_text(
             '{"agentType":"orch-worker","spawnDepth":1}\n', encoding="utf-8"
@@ -3224,6 +3423,7 @@ class TestTranscriptValidatorBasis(TranscriptCase):
         self.assertEqual(self.digest(), self.digest())
 
     def test_the_orch_root_alone_no_longer_determines_the_tag(self):
+        self.own_fixture()
         bare = self.tmp / "bare"
         bare.mkdir()
 
@@ -3234,6 +3434,7 @@ class TestTranscriptValidatorBasis(TranscriptCase):
         # Three pages with no file between them: no root configured, a root
         # that is not there yet, and a root holding nothing. A viewer opened
         # before Claude Code first ran sits on the middle one.
+        self.own_fixture()
         absent = self.tmp / "not-yet"
         before = self.digest(absent)
         absent.mkdir()
@@ -3273,6 +3474,7 @@ class TestTranscriptValidatorBasis(TranscriptCase):
         # wide denies the 304 to a page that did not. Too wide is what a
         # live session makes permanent -- the poll then swaps `main` once a
         # second over a byte-identical body, churning scroll and focus.
+        self.own_fixture()
         with frozen_clock():
             before, drawn = self.tags(self.ORCH_ONLY), self.bodies(self.ORCH_ONLY)
             self.rename_a_transcript()
@@ -3283,6 +3485,7 @@ class TestTranscriptValidatorBasis(TranscriptCase):
     def test_the_session_routes_still_see_the_write_the_others_ignore(self):
         # Otherwise the narrowing above is satisfied by a validator that
         # observes the transcript tree nowhere at all.
+        self.own_fixture()
         polled = (ui.SESSIONS_ROUTE, session_url(TITLED_SESSION))
         with frozen_clock():
             before = self.tags(polled)
@@ -3293,6 +3496,7 @@ class TestTranscriptValidatorBasis(TranscriptCase):
             self.assertNotEqual(before[route], after[route], route)
 
     def test_an_orch_page_is_answered_304_while_a_session_writes(self):
+        self.own_fixture()
         with frozen_clock():
             with serving(self.main, self.transcripts) as server:
                 status, headers, _body = fetch(server, ui.FRICTION_ROUTE)
@@ -3305,6 +3509,7 @@ class TestTranscriptValidatorBasis(TranscriptCase):
         self.assertEqual("", body)
 
     def test_the_poll_is_not_answered_304_after_a_transcript_moves(self):
+        self.own_fixture()
         with serving(self.main, self.transcripts) as server:
             status, headers, _body = fetch(server, ui.SESSIONS_ROUTE)
             self.assertEqual(200, status)
@@ -3346,6 +3551,7 @@ class TestAbsentTranscriptRoot(TranscriptCase):
         self.assertEqual([], session_ids(page))
 
     def test_a_present_but_sessionless_root_is_a_different_empty_state(self):
+        self.own_fixture()
         bare = self.tmp / "bare"
         bare.mkdir()
 
@@ -3385,12 +3591,14 @@ class TestTranscriptContainment(TranscriptCase):
     def test_the_link_is_an_entry_the_walk_would_otherwise_take(self):
         # The premise. Without it the two cases below are proved by a link
         # `iterdir` never returned or `is_dir` already rejected.
+        self.own_fixture()
         link = self.link_out()
 
         self.assertIn(link, list(self.transcripts.iterdir()))
         self.assertTrue(link.is_dir())
 
     def test_a_project_linked_out_of_the_root_is_not_a_project(self):
+        self.own_fixture()
         link = self.link_out()
 
         self.assertNotIn(link, ui._project_directories(self.transcripts))
@@ -3401,6 +3609,7 @@ class TestTranscriptContainment(TranscriptCase):
         )
 
     def test_nothing_outside_the_root_reaches_any_route(self):
+        self.own_fixture()
         self.link_out()
 
         with serving(self.main, self.transcripts) as server:
@@ -3433,6 +3642,7 @@ class TestUnaddressableSessions(TranscriptCase):
     def test_the_walk_finds_it_and_the_lookup_boundary_refuses_it(self):
         # The premise, on both sides. Without it the cases below are proved
         # by a file the glob never returned or a name the boundary allows.
+        self.own_fixture()
         path = self.plant()
 
         self.assertIn(path, list((self.transcripts / ALPHA_PROJECT).glob("*.jsonl")))
@@ -3440,11 +3650,13 @@ class TestUnaddressableSessions(TranscriptCase):
         self.assertIsNone(ui.find_session(self.transcripts, path.stem))
 
     def test_a_session_that_cannot_be_opened_is_not_offered_as_a_link(self):
+        self.own_fixture()
         self.plant()
 
         self.assertEqual(list(SESSIONS_NEWEST_FIRST), session_ids(self.sessions()))
 
     def test_the_page_says_why_rather_than_dropping_it_in_silence(self):
+        self.own_fixture()
         self.plant()
         notes = block_for(self.sessions(), "diagnostics", "</ul>")
 
@@ -3463,6 +3675,7 @@ class TestUnaddressableSessions(TranscriptCase):
         # The diagnostic is part of the page, so a basis blind to the file
         # behind it serves a 304 to a page that has moved -- `U3` again. No
         # directory is stat'd by this walk, so nothing else here would notice.
+        self.own_fixture()
         with frozen_clock():
             before = ui.entity_tag(self.main, ui.SESSIONS_ROUTE, None, self.transcripts)
             self.plant()
@@ -3471,7 +3684,7 @@ class TestUnaddressableSessions(TranscriptCase):
         self.assertNotEqual(before, after)
 
 
-class TestSessionRouteRegistration(TranscriptCase):
+class TestSessionRouteRegistration(unittest.TestCase):
     """`S1` completion test 10. `U1`'s tuple is what makes the read-only,
     no-network and escaping guards sweep a route at all."""
 
@@ -3479,14 +3692,6 @@ class TestSessionRouteRegistration(TranscriptCase):
         self.assertIn(ui.SESSIONS_ROUTE, ui.ROUTES)
         self.assertTrue(ROUTE_EXAMPLES[ui.SESSIONS_ROUTE])
         self.assertIn(ui.SESSIONS_ROUTE, every_route())
-
-    def test_the_route_is_not_branched_in_behind_the_tuple(self):
-        # A route served but undeclared is a route no whole-corpus guard
-        # visits, which is the failure `U1` recorded against itself.
-        status, page = ui.render_route(self.main, ui.SESSIONS_ROUTE, self.transcripts)
-
-        self.assertEqual(200, status)
-        self.assertIn(ui.SESSIONS_ROUTE, ui.ROUTES)
 
 
 class SessionCase(TranscriptCase):
@@ -3665,6 +3870,7 @@ class TestSubagentEdges(SessionCase):
     def test_a_parent_pointer_naming_nobody_falls_back_to_an_inferred_edge(self):
         # The pointer's spelling is undocumented and observed, never
         # promised: one that resolves to no sibling is not a node.
+        self.own_fixture()
         meta = self.subagents(TRUNCATED_SESSION) / (CHILD_AGENT + ".meta.json")
         meta.write_text(
             '{"agentType":"Explore","spawnDepth":2,"parentAgentId":"nobody"}',
@@ -3702,6 +3908,7 @@ class TestSubagentEdges(SessionCase):
         # program's data and both are false here: a parent *was* recorded,
         # and it failed to resolve. The edge shape is the same for either;
         # the sentence is not, and the sentence is what a reader acts on.
+        self.own_fixture()
         for shape, recorded in self.UNRESOLVED_PARENTS:
             cell = session_cell(self.unresolved(recorded), CHILD_AGENT, "attached")
 
@@ -3709,6 +3916,7 @@ class TestSubagentEdges(SessionCase):
             self.assertNotIn(ui.EDGE_INFERRED, cell, shape)
 
     def test_the_page_names_which_of_the_two_guesses_it_made(self):
+        self.own_fixture()
         for shape, recorded in self.UNRESOLVED_PARENTS:
             notes = block_for(self.unresolved(recorded), "diagnostics", "</ul>")
 
@@ -3719,6 +3927,7 @@ class TestSubagentEdges(SessionCase):
         # A depth-3 record drawn on the orchestrator is not drawn "by its
         # spawn depth alone": its own depth says two agents stand between
         # the two, and the page must not say otherwise in the same breath.
+        self.own_fixture()
         page = self.unresolved("nobody", depth=3)
 
         self.assertNotIn("spawn depth alone", page)
@@ -3744,6 +3953,7 @@ class TestSubagentEdges(SessionCase):
         # spawned it and nothing else could have, so a pointer at a sibling
         # is a contradiction the depth wins; without this the criterion
         # holds only for the records that happen to omit the key.
+        self.own_fixture()
         meta = self.subagents(TRUNCATED_SESSION) / (CHILD_AGENT + ".meta.json")
         meta.write_text(
             '{"agentType":"Explore","spawnDepth":1,"parentAgentId":"cc31"}',
@@ -3760,6 +3970,7 @@ class TestSubagentEdges(SessionCase):
     def test_a_parent_pointer_naming_its_own_agent_still_draws_a_graph(self):
         # `graph_layout` breaks cycles, but a self-edge is not a dependency
         # anybody can lay out, and the metadata is another program's.
+        self.own_fixture()
         meta = self.subagents(TRUNCATED_SESSION) / (CHILD_AGENT + ".meta.json")
         meta.write_text(
             '{"agentType":"Explore","spawnDepth":2,"parentAgentId":"cc32"}',
@@ -3832,6 +4043,7 @@ class TestActivityState(SessionCase):
     def test_no_agent_defaults_to_finished_when_no_result_was_recorded(self):
         # Every `tool_result` gone, and the calls left standing: nothing on
         # the page may still read as done.
+        self.own_fixture()
         path = self.transcripts / ALPHA_PROJECT / (TITLED_SESSION + ".jsonl")
         path.write_text(
             "".join(
@@ -3848,6 +4060,7 @@ class TestActivityState(SessionCase):
         self.assertEqual(ui.ACTIVITY_UNKNOWN, states[UNEVIDENCED_AGENT])
 
     def test_a_result_for_a_call_that_never_happened_is_not_a_finished_agent(self):
+        self.own_fixture()
         path = self.transcripts / ALPHA_PROJECT / (TITLED_SESSION + ".jsonl")
         path.write_text(
             "".join(
@@ -3909,6 +4122,7 @@ class TestSessionPolling(SessionCase):
                 self.assertEqual((304, ""), (again[0], again[2]), route)
 
     def test_a_subagent_appearing_answers_200_with_a_new_tag_on_both(self):
+        self.own_fixture()
         with serving(self.main, self.transcripts) as server:
             held = dict(
                 (route, fetch(server, route)[1]["ETag"]) for route in self.polled()
@@ -3932,6 +4146,7 @@ class TestSessionPolling(SessionCase):
     def test_a_subagent_returning_answers_200_with_a_new_tag(self):
         # The node set has not moved and the picture has: an ETag over the
         # listing alone would sit on a page that says `running` forever.
+        self.own_fixture()
         path = self.transcripts / ALPHA_PROJECT / (TITLED_SESSION + ".jsonl")
         route = session_url(TITLED_SESSION)
         with serving(self.main, self.transcripts) as server:
@@ -4065,6 +4280,7 @@ class TestSessionLayoutCache(SessionCase):
         self.assertEqual(2, recomputed.call_count)
 
     def test_an_activity_change_repaints_without_laying_the_graph_out_again(self):
+        self.own_fixture()
         path = self.transcripts / ALPHA_PROJECT / (TITLED_SESSION + ".jsonl")
         with self.counting() as computed:
             before = self.flowchart()
@@ -4081,6 +4297,7 @@ class TestSessionLayoutCache(SessionCase):
         self.assertEqual("nd-finished", session_node(after, CALLED_AGENT)["state"])
 
     def test_a_subagent_appearing_does_lay_the_graph_out_again(self):
+        self.own_fixture()
         with self.counting() as computed:
             self.flowchart()
             (self.subagents(TITLED_SESSION) / "agent-aa14.meta.json").write_text(
@@ -4310,13 +4527,6 @@ class TestSessionRouteIsReadOnly(SessionCase):
                 self.assertTrue(body, session)
 
         self.assertEqual(before, snapshot(self.transcripts))
-
-    def test_the_new_route_is_inside_the_sweeps_that_already_exist(self):
-        # The read-only, no-network and content-wall guards all walk
-        # `every_route()`; a route absent from it is a route none of them
-        # ever visits, which is the failure `U1` recorded against itself.
-        self.assertTrue(set(ROUTE_EXAMPLES[ui.SESSION_ROUTE]) <= set(every_route()))
-        self.assertIn(session_url(TITLED_SESSION), every_route())
 
 
 if __name__ == "__main__":

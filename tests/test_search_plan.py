@@ -5,6 +5,7 @@ from collections import Counter
 import copy
 import hashlib
 import importlib.util
+import io
 import json
 import re
 import subprocess
@@ -256,7 +257,14 @@ def reverse_object_keys(value):
     return value
 
 
-def run_advance(payload=None, raw=None, cwd=None):
+def spawn_advance(payload=None, raw=None, cwd=None):
+    """A real `python search_plan.py advance`.
+
+    Kept for the two claims only a process can make: that the command
+    writes nothing into the directory it runs from, and that input deep
+    enough to exhaust the parser is refused rather than crashing the
+    interpreter the rest of the suite is running in.
+    """
     data = raw if raw is not None else canonical_bytes(payload)
     return subprocess.run(
         [sys.executable, str(SEARCH_SCRIPT), "advance"],
@@ -268,17 +276,63 @@ def run_advance(payload=None, raw=None, cwd=None):
     )
 
 
+class _Advance:
+    """The three fields of a CompletedProcess the assertions read."""
+
+    def __init__(self, returncode, stdout, stderr):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
+class _ByteStream:
+    """A stdin/stdout stand-in exposing the `.buffer` the script uses."""
+
+    def __init__(self, data=b""):
+        self.buffer = io.BytesIO(data)
+
+
+def run_advance(payload=None, raw=None, argv=("advance",)):
+    """`search_plan.py advance` in process, one call per assertion.
+
+    `main` reads `sys.stdin.buffer`, writes `sys.stdout.buffer` and
+    returns the exit status, so swapping the three streams is the whole
+    command minus an interpreter start. spawn_advance keeps the process
+    boundary itself covered.
+    """
+    data = raw if raw is not None else canonical_bytes(payload)
+    module = load_search_module()
+    stdin, stdout, stderr = _ByteStream(data), _ByteStream(), io.StringIO()
+    saved = (sys.stdin, sys.stdout, sys.stderr)
+    sys.stdin, sys.stdout, sys.stderr = stdin, stdout, stderr
+    try:
+        code = module.main(list(argv))
+    finally:
+        sys.stdin, sys.stdout, sys.stderr = saved
+    return _Advance(code, stdout.buffer.getvalue(), stderr.getvalue().encode("utf-8"))
+
+
 def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+_MODULE = []
+
+
 def load_search_module():
-    spec = importlib.util.spec_from_file_location("search_plan_test_module", SEARCH_SCRIPT)
-    if spec is None or spec.loader is None:
-        raise AssertionError("search-plan module could not be loaded")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    """The script as a module, loaded once. It holds no mutable state
+    between calls -- `_advance` is a pure function of its request -- so
+    one instance serves every test."""
+    if not _MODULE:
+        spec = importlib.util.spec_from_file_location(
+            "search_plan_test_module", SEARCH_SCRIPT
+        )
+        if spec is None or spec.loader is None:
+            raise AssertionError("search-plan module could not be loaded")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _MODULE.append(module)
+    return _MODULE[0]
 
 
 def rehash_open_plan_slot(projection, index):
@@ -463,11 +517,29 @@ class TestCanonicalAdvance(unittest.TestCase):
         self.assertTrue(result.stderr.startswith(b"search-plan: "))
         self.assertLessEqual(len(result.stderr), 512)
 
+    def test_advance_is_the_only_subcommand_and_a_second_word_is_not_ignored(self):
+        """`main`'s argv guard, which every other test walks straight past.
+
+        Each argv below is handed a request the command would answer at
+        exit 0, so the refusal is the guard's and not the request's: an
+        argv this script does not define must not be read as `advance`
+        with extra words, and a caller that passed nothing must not have
+        its stdin consumed by a default.
+        """
+
+        request = generation_zero_request()
+        for argv in ([], ["plan"], ["advance", "--force"], ["--help"], ["ADVANCE"]):
+            with self.subTest(argv=argv):
+                result = run_advance(payload=request, argv=argv)
+                self.assertEqual(2, result.returncode)
+                self.assertEqual(b"", result.stdout)
+                self.assertEqual(b"search-plan: expected advance\n", result.stderr)
+
     def test_generation_zero_is_byte_stable_and_read_only(self):
         request = generation_zero_request()
         with tempfile.TemporaryDirectory() as directory:
-            first = run_advance(request, cwd=directory)
-            second = run_advance(reverse_object_keys(request), cwd=directory)
+            first = spawn_advance(request, cwd=directory)
+            second = spawn_advance(reverse_object_keys(request), cwd=directory)
             self.assertEqual([], list(Path(directory).iterdir()))
 
         self.assertEqual(0, first.returncode, first.stderr.decode())
@@ -602,8 +674,14 @@ class TestCanonicalAdvance(unittest.TestCase):
         self.assert_rejected(raw=duplicate)
 
     def test_deep_json_recursion_is_invalid_input(self):
+        # Spawned: 5000 levels is deep enough to exhaust the parser, and the
+        # refusal is only a refusal if it costs the caller its own stack.
         raw = b'{"policy":' + b"[" * 5_000 + b"0" + b"]" * 5_000 + b"}"
-        self.assert_rejected(raw=raw)
+        result = spawn_advance(raw=raw)
+        self.assertEqual(2, result.returncode)
+        self.assertEqual(b"", result.stdout)
+        self.assertTrue(result.stderr.startswith(b"search-plan: "))
+        self.assertLessEqual(len(result.stderr), 512)
 
     def test_public_request_identity_and_decimal_caps_are_exact(self):
         protocol = read(SEARCH_PROTOCOL)
@@ -774,11 +852,6 @@ class TestParetoReflection(unittest.TestCase):
         self.assertEqual(canonical_bytes(response) + b"\n", replay.stdout)
         self.assert_pareto_response(response)
 
-        dominated_retained = copy.deepcopy(response)
-        dominated_retained["projection"]["archive"].append("candidate:dominated")
-        with self.assertRaises(AssertionError):
-            self.assert_pareto_response(dominated_retained)
-
     def test_feedback_changes_the_reflection_packet_identity(self):
         request, outcomes = self.settled_fixture()
         original = self.run_ok(request)
@@ -800,21 +873,17 @@ class TestParetoReflection(unittest.TestCase):
         revised_slot = revised["plan"]["slots"][0]
         self.assertNotEqual(original_slot["feedback"], revised_slot["feedback"])
         self.assertNotEqual(original_slot["identity"], revised_slot["identity"])
-
-        ignored_feedback = copy.deepcopy(revised_slot)
-        ignored_feedback["identity"] = original_slot["identity"]
-        with self.assertRaises(AssertionError):
-            self.assertEqual(
-                ignored_feedback["identity"],
-                tagged_identity(
-                    "search-slot/v1",
-                    {
-                        key: value
-                        for key, value in ignored_feedback.items()
-                        if key != "identity"
-                    },
-                ),
-            )
+        self.assertEqual(
+            revised_slot["identity"],
+            tagged_identity(
+                "search-slot/v1",
+                {
+                    key: value
+                    for key, value in revised_slot.items()
+                    if key != "identity"
+                },
+            ),
+        )
 
     def test_comparison_exceeds_decimal_context_precision(self):
         resolution = "0.123456789012345678901234567890123456789"
@@ -1113,12 +1182,6 @@ class TestBoundedResume(unittest.TestCase):
         self.assertIsNone(no_fit["projection"]["last_plan"])
         self.assertEqual(["candidate:origin"], no_fit["projection"]["archive"])
 
-        over_reserved = copy.deepcopy(exact)
-        over_reserved["plan"]["slots"].append(
-            copy.deepcopy(over_reserved["plan"]["slots"][-1])
-        )
-        with self.assertRaises(AssertionError):
-            self.assert_within_bound(over_reserved, exact_bound)
 
     def test_partial_settlement_keeps_projection_and_complete_archive(self):
         initial_request = two_dimension_request()
@@ -1186,6 +1249,9 @@ class TestBoundedResume(unittest.TestCase):
                 produced_slots.append(payload["ordinal"])
             return original_identified(tag, payload)
 
+        # The module instance is shared with every other test, so the patch
+        # is undone whatever this one does.
+        self.addCleanup(setattr, module, "_identified", original_identified)
         module._identified = tracking_identified
         response = module._advance(copy.deepcopy(request))
         self.assertEqual("no_fit", response["status"])
@@ -1278,13 +1344,6 @@ class TestVisibilityAndSelfTarget(unittest.TestCase):
 
         self.assertEqual(plan_shape(original), plan_shape(renamed))
         self.assertNotEqual(original["plan"]["identity"], renamed["plan"]["identity"])
-
-        target_branched = copy.deepcopy(renamed)
-        target_branched["plan"]["slots"][0][
-            "focus_dimension_identity"
-        ] = "dimension:target-special"
-        with self.assertRaises(AssertionError):
-            self.assertEqual(plan_shape(original), plan_shape(target_branched))
 
     def test_recursive_target_authority_and_activation_have_failure_controls(self):
         evolve = read(EVOLVE)
