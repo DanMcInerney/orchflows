@@ -11,8 +11,10 @@ test leaves a criterion without a named oracle and its oracle_class, naming the 
 Open by dispatching the whole ready frontier — every ticket whose `depends_on` are all `complete` — in parallel, one lane per ticket;
 a ticket waiting on a dependency stays `pending`. Each lane runs its one ticket to one accepted result. Claim it through `tickets.py
 claim` (`claimed_by`, `claimed_at`, status `claimed`). Isolate the item per the workspace cell of the pack the ticket names — a ticket
-naming none works at its plain-path write scope — the child establishing the isolation the ticket declares as its own first act
-(workspace.py check), per the complete delegation packet `tickets.py packet` emits: a packet refusal names the part the ticket lacks
+naming none works at its plain-path write scope — the child establishing the isolation the ticket declares as its own first act and
+recording what it derives from and that its baseline is clean, so a later failure is attributable to the run and not to the starting
+state; only an instance inside can prove what it got, which `workspace.py check` grades against the dispatch revision before the
+merge. Establishment rides the complete delegation packet `tickets.py packet` emits: a packet refusal names the part the ticket lacks
 and is the cut's defect, never read the body to repair it yourself. Spawn exactly one fresh child on that packet, dispatched per
 [rules/delegation.md](../../../rules/delegation.md) §1-§2 with its role resolved per [rules/roles.md](../../../rules/roles.md) §4,
 the ticket's executor as the applied skill — an `executor: script:<path>` runs the named script and spawns nothing — or execute

@@ -64,9 +64,7 @@ ROLE_TABLE = {
     "orch-spec": "none",
     "orch-triage": "none",
     # none: named kernel
-    "orch-elicit": "none",
     "orch-integrate": "none",
-    "orch-worklog": "none",
     # none: named utility
     "orch-off": "none",
     "orch-search-plan": "none",
@@ -77,8 +75,6 @@ ROLE_TABLE = {
     # worker
     "orch-investigate": "worker",
     "orch-verify": "worker",
-    "orch-mechanize": "worker",
-    "orch-workspace": "worker",
     "orch-tdd": "worker",
     "orch-draft": "worker",
     "orch-render": "worker",

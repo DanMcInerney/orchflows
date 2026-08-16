@@ -14,7 +14,10 @@ count is a deterministic done-check; a bound; and the context packet the
 iterations carry — design it once via
 [references/context-packet.md](references/context-packet.md).
 
-Create the worklog through `orch-worklog`. Each iteration: start fresh
+Freeze the goal into the run's state through `tickets.py run-state` and
+append every iteration entry, failed approach and queued scope to it
+there — the worklog is the view `tickets.py worklog` renders, never a
+second hand-written file. Each iteration: start fresh
 from the frozen goal plus the worklog — never a prior transcript; take
 one work item; dispatch the body with the packet as delegation inputs,
 per [rules/delegation.md](../../../rules/delegation.md); adjudicate the

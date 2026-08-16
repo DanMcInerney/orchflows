@@ -230,19 +230,19 @@ REPOSITORY_ORCH_SUBDIRECTORIES = frozenset({"canary/", "bin/"})
 # term defined against the old place makes every correct use of it wrong.
 SINK_TERMS = ("tracker", "friction log", "run state")
 
-# The three files outside this item's `write_scope` that name `.orch`
+# The files outside this item's `write_scope` that name `.orch`
 # legitimately — the canary is a git-tracked golden fixture and `bin/` is an
 # installed script directory, neither of them state. Their `.orch` lines are
-# pinned as the bytes they carried at this item's `run_revision`.
+# pinned as the bytes they carried at this item's `run_revision`. The third
+# was `skills/kernel/orch-mechanize/SKILL.md`, deleted at P3: the run-local
+# `.orch/bin/` landing zone is rules/token-economy.md §4's to state, and a
+# skill body no longer restates it.
 CANARY_AND_BIN_LINES = {
     "compositions/drift-canary.md": (
         "`.orch/canary/`, spanning the kernel boundaries: one delegation, one",
     ),
     "skills/workflows/orch-fixture/SKILL.md": (
         "README line. Freeze into `.orch/canary/<name>/`: the spec excerpt the",
-    ),
-    "skills/kernel/orch-mechanize/SKILL.md": (
-        "Write the script in stdlib Python 3, cross-platform, to `.orch/bin/` for",
     ),
 }
 

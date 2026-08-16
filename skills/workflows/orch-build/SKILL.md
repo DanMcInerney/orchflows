@@ -19,8 +19,9 @@ no existing skill already owns the judgment; the tier and landing zone
 are right — data belongs in a pack cell, integration detail in
 scripts, one-off procedure in the spec or prompt, and always-on rules
 in the scope's instruction file, never in a skill body. Start a custom
-workflow from the nearest composition, pinning its open decisions
-through `orch-elicit`. Write to the anatomy and budget; for a pack,
+workflow from the nearest composition, settling its open decisions with
+the user, one question at a time, each answer recorded verbatim.
+Write to the anatomy and budget; for a pack,
 satisfy every
 [signature](../../../contracts/pack-signature.md) cell and its sharing
 constraints; for a composition file, apply
