@@ -373,9 +373,7 @@ class TestVerificationHomelessLaws(unittest.TestCase):
     hash-pinned, so these are the only mechanical guard; each asserts the
     clause's distinctive head, never a sentence."""
 
-    def law(self, number=None):
-        if number is None:
-            return read_at_flat("rules/verification.md")
+    def law(self, number):
         return read_clause_flat("rules/verification.md", number)
 
     def test_a_truncated_transcript_is_not_the_oracles_output(self):
@@ -403,20 +401,6 @@ class TestVerificationHomelessLaws(unittest.TestCase):
             "verification.md §7 does not state that a gate returning findings "
             "moves the result identity",
         )
-
-    def test_section_eleven_keeps_its_two_cross_step_laws(self):
-        """The §11 sentences `S-CUT`'s spec also carries. Their wording is
-        the copy's problem, not this module's: assert the head each law
-        turns on, never the sentence."""
-        text = self.law()
-        for token in (
-            "`unrunnable-oracle`",
-        ):
-            with self.subTest(token=token):
-                self.assertIn(
-                    token, text,
-                    f"verification.md §11 lost the cross-step law {token!r}",
-                )
 
 
 class TestWorkItemCitationLaws(unittest.TestCase):

@@ -7,8 +7,9 @@ Return must file per the ticket/work-item filing law (work-item.md).
 Then four invariants validate.py does not check: ARCHITECTURE.md naming
 the responsibility every `scripts/*.py` owns; every `tickets.py`
 subcommand reached by a skill body or recorded operator-only there; and
-two rules clauses read from their owners -- rules/verification.md §8 on
-proving a copy built beside the tree faithful, rules/improvement.md §1
+two clauses read from their owners -- orch-decompose's cut lens on
+proving a copy built beside the tree faithful, which
+rules/verification.md §8 reaches in one hop, and rules/improvement.md §1
 on where the friction fallback writes when the logger is refused.
 Follows tests/test_validator.py's isolated-tmp-tree-plus-subprocess
 idiom for CLI-level fixtures."""
@@ -459,29 +460,30 @@ class SubcommandReachTest(unittest.TestCase):
 
 
 VERIFICATION = ROOT / "rules" / "verification.md"
+LENS = ROOT / "skills" / "kernel" / "orch-decompose" / "references" / "cut-lens.md"
 
-# What §8's faithfulness clause has to state, keyed to the measurement that
+# What the faithfulness clause has to state, keyed to the measurement that
 # named it: `git archive` drops `.git`, which silently moved 61-65
 # test_cutcheck verdicts; runtime indicts a copy only when short.
 #
-# The fingerprint entry -- `git rev-list --count` and "which revision" --
-# is gone: which command evidences a copy's revision is §8's sentence to
-# write, not this module's to pin (SPEC-ticket-set.md P2, REVIEW-2026-08-15
-# T2). What survives here is shape: that §8 states a faithfulness clause at
-# all, and that a §8 without one is caught.
+# Its owner is the cut lens, not rules/verification.md §8: the git-workspace
+# recipe left the rule every pack inherits for the code pack's cut owner
+# (SPEC-ticket-set.md P3, REVIEW-2026-08-15 T4). §8 keeps the law and names
+# the lens, so both halves are read below -- the recipe from the lens, the
+# one hop to it from §8.
 _FAITHFULNESS_CLAUSE = {
     "what a faithful copy preserves": ("faithful", "everything the oracles read"),
     "clone, never extract": ("clone", "extract", "`.git`"),
     "the one direction runtime indicts in": ("shorter", "longer"),
+    "the fingerprint that settles which revision was read": (
+        "`git rev-list --count`",
+        "which revision",
+    ),
 }
 
-# §8 as it read before the clause landed: it required the wrong result be
-# built beside the tree and never said how to build one.
-_SECTION_8_UNAMENDED = """8. An oracle must be able to fail: a check that cannot FAIL when the
-   claim it stands for is false decides nothing, and its PASS is void.
-   Show it against a wrong result built beside the tree, never by
-   mutating the tree under test, which an interrupted pass leaves mutated.
-"""
+# The lens with the recipe excised: the heading it lives under, to the end
+# of the file.
+_RECIPE_HEADING = "## Proving a copy"
 
 
 def _clause(text, number):
@@ -490,61 +492,54 @@ def _clause(text, number):
     neighbouring clause cannot satisfy an assertion scoped to this one."""
     match = re.search(rf"(?m)^{number}\. (.*?)(?=^\d+\. |\Z)", text, re.S)
     if match is None:
-        raise AssertionError(f"rules/verification.md has no clause {number}")
+        raise AssertionError(f"no clause {number}")
     return re.sub(r"\s+", " ", match.group(1))
 
 
-def _faithfulness_gaps(verification_text):
-    """Which parts of the faithfulness clause verification_text never
-    states. Read from clause 8 alone, which owns how a copy built beside the
-    tree is proved faithful."""
-    clause = _clause(verification_text, 8)
+def _faithfulness_gaps(lens_text):
+    """Which parts of the faithfulness clause `lens_text` never states,
+    read with its whitespace collapsed so a wrapped sentence matches."""
+    flat = re.sub(r"\s+", " ", lens_text)
     return sorted(
         name
         for name, phrases in _FAITHFULNESS_CLAUSE.items()
-        if not all(phrase in clause for phrase in phrases)
+        if not all(phrase in flat for phrase in phrases)
     )
 
 
 class CopyFaithfulnessClauseTest(unittest.TestCase):
     """§8 sends every can-fail demonstration to a copy built beside the
-    tree and, until this clause, never said how to build one. An unproved
-    copy is worse than none: an oracle that reads history answers from
-    whatever the copy carries, and reports nothing when that is not the
-    revision under test."""
+    tree and says nothing about how one is built. An unproved copy is worse
+    than none: an oracle that reads history answers from whatever the copy
+    carries, and reports nothing when that is not the revision under test.
+    So the recipe has to exist at the owner §8 names, and §8 has to name
+    it -- a law whose method sits nowhere is a law no reader can run."""
 
-    def test_section_8_states_what_a_copy_preserves_and_how_that_is_evidenced(self):
-        gaps = _faithfulness_gaps(VERIFICATION.read_text(encoding="utf-8"))
+    def test_the_lens_states_what_a_copy_preserves_and_how_that_is_evidenced(self):
+        gaps = _faithfulness_gaps(LENS.read_text(encoding="utf-8"))
         self.assertEqual(
             [],
             gaps,
-            "rules/verification.md §8 states no faithfulness clause covering: "
+            "the cut lens states no faithfulness clause covering: "
             f"{', '.join(gaps)}",
         )
 
-    def test_the_clause_names_rev_list_count_as_the_fingerprint(self):
+    def test_section_8_reaches_the_owner_in_one_hop(self):
         clause = _clause(VERIFICATION.read_text(encoding="utf-8"), 8)
         self.assertIn(
-            "`git rev-list --count`",
+            "cut-lens.md",
             clause,
-            "verification.md §8 names no fingerprint that proves the copy "
-            "carries the history it is read for",
-        )
-        self.assertIn(
-            "which revision",
-            clause,
-            "verification.md §8 names `git rev-list --count` without saying "
-            "it settles which revision a reading was taken at; a count that "
-            "settles nothing is not re-readable",
+            "verification.md §8 requires a copy built beside the tree and "
+            "names no owner of how one is built faithfully",
         )
 
-    def test_a_section_8_without_the_clause_fails_the_check(self):
+    def test_a_lens_without_the_clause_fails_the_check(self):
         """The can-fail direction, built beside the tree and never by
-        mutating it -- under the clause being added here: a copy of
-        rules/verification.md carrying the §8 that preceded it."""
-        real = VERIFICATION.read_text(encoding="utf-8")
+        mutating it -- under the clause being read here: a copy of the lens
+        with the recipe's section excised."""
+        real = LENS.read_text(encoding="utf-8")
         with tempfile.TemporaryDirectory() as tmp:
-            beside = Path(tmp) / "verification.md"
+            beside = Path(tmp) / "cut-lens.md"
             beside.write_text(real, encoding="utf-8")
             self.assertEqual(
                 [],
@@ -552,12 +547,9 @@ class CopyFaithfulnessClauseTest(unittest.TestCase):
                 "the copy must start with the clause intact, or the excision "
                 "below is not what the check reacted to",
             )
+            self.assertIn(_RECIPE_HEADING, real)
             beside.write_text(
-                re.sub(
-                    r"(?ms)^8\. .*?(?=^9\. )",
-                    lambda _: _SECTION_8_UNAMENDED,
-                    real,
-                ),
+                real[: real.index(_RECIPE_HEADING)],
                 encoding="utf-8",
             )
             self.assertEqual(
