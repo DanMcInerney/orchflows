@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
 """Friction logger. Stdlib-only, cross-platform (Windows + POSIX).
 
-Reliability bar: this script must NEVER block, prompt, or raise, and it
-exits non-zero for exactly one reason -- a ``--category`` outside
-``CATEGORIES``, refused at parse before anything is written. Every other
-code path funnels through ``main``'s broad ``except Exception`` so an
-internal failure is silent and the process still exits 0. Prints exactly
-one line, ``friction logged``, on success; nothing on failure; the
-refusal, naming the set, on stderr.
+Reliability bar: this script must NEVER block, prompt, or raise. It
+exits non-zero for a malformed call -- argv shape or a ``--category``
+outside ``CATEGORIES`` -- refused at parse before anything is written; an
+internal failure still exits 0 but names itself on stderr. Prints exactly
+one line, ``friction logged``, on success, and one line on stderr
+otherwise.
 
-The one refusal is not a retreat from the bar, it serves it: a
-mis-spelled category is the only malformed call that would otherwise
-*succeed*, landing an entry keyed to a cluster ``rules/improvement.md``
-§4 can group on nothing. Refusing costs the caller one corrected retry;
-accepting costs a cycle of self-improvement the entry it was logged for.
-The set is this file's, and the installed logger's usage in
-``templates/host-block.md`` is its one copy.
+Refusing is not a retreat from the bar, it serves it. A mis-spelled
+category is the malformed call that would otherwise *succeed*, landing an
+entry keyed to a cluster ``rules/improvement.md`` §4 can group on
+nothing; a malformed argv loses the entry outright, and exit 0 with an
+empty stdout is not a thing the caller can read that from --
+``templates/host-block.md``'s "append the line by hand whenever the
+logger cannot run" has to have something to trigger on. Refusing costs
+the caller one corrected retry; accepting costs a cycle of
+self-improvement the entry it was logged for. The category set is this
+file's, and the installed logger's usage in ``templates/host-block.md``
+is its one copy.
 
 The one wait it ever takes is the append lock's retry budget: nothing at
 all on POSIX, and on a contended Windows append a bounded half second
@@ -33,7 +36,7 @@ one user-scope root ``scripts/state_root.py`` resolves —
 ``$ORCHFLOWS_STATE_HOME`` or ``~/.orchflows/state``. One stream for
 every repository; the project an entry arose in is a field on the entry,
 never its location. There is no fallback: a write that cannot reach that
-root lands nowhere, silently, per the bar above.
+root lands nowhere, and says so on stderr, per the bar above.
 """
 
 from __future__ import annotations
@@ -100,7 +103,7 @@ class _UsageError(Exception):
 
 
 def _parse_args(argv):
-    """Return (observed, expected, options) or None when argv is malformed."""
+    """Return (observed, expected, options), or raise ``_UsageError``."""
 
     positional = []
     options = {"category": None, "skill": None, "ticket": None, "run": None}
@@ -110,7 +113,9 @@ def _parse_args(argv):
         if token in FLAG_MAP:
             i += 1
             if i >= len(argv):
-                return None
+                raise _UsageError(
+                    "friction.py: {0} needs a value; nothing followed it".format(token)
+                )
             options[FLAG_MAP[token]] = argv[i]
         elif "=" in token and token.split("=", 1)[0] in FLAG_MAP:
             key, _, value = token.partition("=")
@@ -119,7 +124,11 @@ def _parse_args(argv):
             positional.append(token)
         i += 1
     if len(positional) != 2:
-        return None
+        raise _UsageError(
+            'friction.py: expected two positional arguments, "<observed>" '
+            '"<expected>"; read {0} (an unknown flag counts as one). Known '
+            "flags: {1}".format(len(positional), ", ".join(sorted(FLAG_MAP)))
+        )
     return positional[0], positional[1], options
 
 
@@ -401,10 +410,7 @@ def _check_category(options):
 
 
 def _run(argv):
-    parsed = _parse_args(argv)
-    if parsed is None:
-        return False
-    observed, expected, options = parsed
+    observed, expected, options = _parse_args(argv)
     _check_category(options)
     now = datetime.now(timezone.utc)
     entry = _build_entry(observed, expected, options, now)
@@ -412,18 +418,21 @@ def _run(argv):
     path.parent.mkdir(parents=True, exist_ok=True)
     line = json.dumps(entry, ensure_ascii=False) + "\n"
     _append_line(path, line)
-    return True
 
 
 def main(argv=None):
     try:
-        if _run(sys.argv[1:] if argv is None else argv):
-            print("friction logged")
+        _run(sys.argv[1:] if argv is None else argv)
+        print("friction logged")
     except _UsageError as exc:
         print(str(exc), file=sys.stderr)
         return USAGE_EXIT
-    except Exception:
-        pass
+    except Exception as exc:
+        # Still exit 0 -- the bar -- but not silently: the host block's
+        # "append the line by hand whenever the logger cannot run" needs
+        # something to trigger on, and the absence of `friction logged` is
+        # not it. One line, the cause named, never a traceback.
+        print("friction.py: not logged: {0}".format(exc), file=sys.stderr)
     return 0
 
 

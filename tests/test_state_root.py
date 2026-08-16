@@ -458,12 +458,16 @@ class TestThereIsNoFallback(_SinkFixture):
         self.assertNotIn("run_state", payload)
         self.assertEqual(before, listing(self.repo))
 
-    def test_the_logger_stays_silent_exits_zero_and_writes_nothing_under_cwd(self):
+    def test_the_logger_names_the_loss_exits_zero_and_writes_nothing_under_cwd(self):
         before = listing(self.repo)
         done = run_script(FRICTION_PY, "o", "e", cwd=self.repo, sink=self.blocked)
         self.assertEqual(0, done.returncode)
         self.assertEqual("", done.stdout)
-        self.assertEqual("", done.stderr)
+        # Exit 0 is friction.py's bar; silence is not. A lost entry says so
+        # in one line, because the host block's hand-append remedy triggers
+        # on knowing the logger could not run.
+        self.assertIn("not logged", done.stderr)
+        self.assertNotIn("Traceback", done.stderr)
         self.assertEqual(before, listing(self.repo))
 
     def test_the_logger_survives_a_missing_resolver_beside_it(self):
@@ -479,6 +483,8 @@ class TestThereIsNoFallback(_SinkFixture):
         done = run_script(flat / "friction.py", "o", "e", cwd=self.repo, sink=self.sink)
         self.assertEqual(0, done.returncode)
         self.assertEqual("", done.stdout)
+        self.assertNotIn("Traceback", done.stderr)
+        self.assertIn("not logged", done.stderr)
         self.assertFalse((self.sink / "friction").exists())
 
     def test_the_flat_installed_layout_resolves_when_the_resolver_is_beside_it(self):
