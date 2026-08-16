@@ -11,6 +11,7 @@ a network. They shared three transcript builders (`_launch`, `_reply`,
 the definitions above, one each.
 """
 
+import collections
 import contextlib
 import hashlib
 import io
@@ -901,6 +902,93 @@ class TestCodexLiveProfiles(unittest.TestCase):
             injected = codex_live._with_probe_sentinel(rendered, "SENTINEL:planner")
 
         self.assertIn("SENTINEL:planner", injected)
+
+
+# --- benchmarks/routing/cases.json ------------------------------------
+
+
+ROUTING_DIR = Path(__file__).resolve().parents[1] / "benchmarks" / "routing"
+ROUTING_CASES = ROUTING_DIR / "cases.json"
+ROUTE_CLASSES = ("answer", "ticket", "fix", "build", "named")
+CASE_KEYS = {"id", "prompt", "expected", "note", "distractor"}
+# A deleted or never-routed name whose surface words a prompt can borrow
+# without the prompt's correct route changing.
+LURE_WORDS = ("diagnose", "triage", "review", "worklog")
+
+
+class TestRoutingCases(unittest.TestCase):
+    """The case set the routing benchmark measures. Graded here rather than
+    only by the harness that reads it: a case file that has drifted below
+    its spread is worthless whether or not the harness parses it."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.cases = json.loads(ROUTING_CASES.read_text(encoding="utf-8"))
+
+    def _class_of(self, case):
+        return case["expected"].split(":", 1)[0]
+
+    def test_every_case_has_exactly_the_documented_shape(self):
+        self.assertIsInstance(self.cases, list)
+        for case in self.cases:
+            with self.subTest(case=case.get("id")):
+                self.assertEqual(CASE_KEYS, set(case))
+                self.assertIsInstance(case["distractor"], bool)
+                for key in ("id", "prompt", "expected", "note"):
+                    self.assertTrue(case[key].strip(), key)
+
+    def test_case_ids_are_unique(self):
+        ids = [case["id"] for case in self.cases]
+        self.assertEqual(len(ids), len(set(ids)))
+
+    def test_the_set_carries_at_least_twenty_four_cases(self):
+        self.assertGreaterEqual(len(self.cases), 24)
+
+    def test_every_expected_route_is_in_the_enum(self):
+        for case in self.cases:
+            with self.subTest(case=case["id"]):
+                expected = case["expected"]
+                if expected.startswith("named:"):
+                    self.assertTrue(expected.split(":", 1)[1].strip())
+                else:
+                    self.assertIn(expected, ROUTE_CLASSES)
+                    self.assertNotEqual("named", expected, "named needs a name")
+
+    def test_every_class_carries_at_least_four_cases(self):
+        counts = collections.Counter(self._class_of(case) for case in self.cases)
+        self.assertEqual(set(ROUTE_CLASSES), set(counts))
+        for route_class in ROUTE_CLASSES:
+            with self.subTest(route_class=route_class):
+                self.assertGreaterEqual(counts[route_class], 4, counts)
+
+    def test_at_least_four_distractors_borrow_a_lure_word(self):
+        distractors = [case for case in self.cases if case["distractor"]]
+        self.assertGreaterEqual(len(distractors), 4)
+        for case in distractors:
+            with self.subTest(case=case["id"]):
+                prompt = case["prompt"].lower()
+                self.assertTrue(
+                    any(word in prompt for word in LURE_WORDS),
+                    "a distractor must borrow a deleted or non-routed name",
+                )
+                # The whole point: the surface word is a lure, and the
+                # correct route is still one of the three routed classes.
+                self.assertIn(self._class_of(case), ("answer", "ticket", "fix"))
+
+    def test_no_routed_case_reads_as_an_instruction_to_the_grader(self):
+        # Prompts are typed into a live session; a prompt that dictated its
+        # own route would grade the transcript, not the routing.
+        for case in self.cases:
+            with self.subTest(case=case["id"]):
+                self.assertNotIn("ROUTE:", case["prompt"])
+
+    def test_the_readme_states_the_command_and_the_decision_rule(self):
+        readme = ROUTING_DIR / "README.md"
+        text = readme.read_text(encoding="utf-8")
+        self.assertLessEqual(len(text.splitlines()), 25)
+        self.assertIn("tools/live_routing_bench.py", text)
+        self.assertIn("0.05", text)
+        self.assertIn("--claude-adapters", text)
 
 
 if __name__ == "__main__":
