@@ -25,14 +25,15 @@ memorize.
     # a cited answer from a read-only research lane
 
     > ship dark mode
-    # a frozen spec, tickets, parallel subagents, one review gate,
-    # and a final verification against what you asked for
+    # one root ticket that cuts itself into tickets, parallel
+    # subagents, one review gate, and a final verification against
+    # what you asked for
 
     > fix the flaky login test
     # reproduce it, prove the cause, repair it, guard the repair
 
     > research the top three auth libraries, then integrate the winner
-    # a research run chained into a code run, automatically
+    # two root tickets, the second waiting on the first, automatically
 
 Small requests stay small — a one-line question costs a one-line
 answer. Big requests get real project structure. Nothing marks "done"
@@ -40,36 +41,37 @@ except an external check passing.
 
 ## More ways to use it
 
-Routing has four branches — answer, ad-hoc, deliver, fix — and picks
-the smallest one that can prove it's done. Everything else runs only
-when you name it, so the routing table never grows as the library
-does. The routing law is `rules/topology.md` §2, installed at
-`~/.orchflows/host-block.md`. If routing gets in the way, `orch-off`
-stands it down for the session.
+Routing has three branches — answer, ticket, fix — and picks the
+smallest one that can prove it's done. A one-line question costs a
+one-line answer; anything else becomes a ticket, and anything too big
+for one worker becomes a root ticket that cuts itself into the rest.
+Everything else runs only when you name it, so the routing table never
+grows as the library does. The table is installed at
+`~/.orchflows/host-block.md`, the one surface every turn already pays
+for; `rules/topology.md` §2 owns what may enter it. If routing gets in
+the way, `orch-off` stands it down for the session.
 
 Name the bricks yourself when you want a specific shape:
 
-    > orch-loop orch-deliver until `pytest -q` exits 0
+    > orch-loop the build until `pytest -q` exits 0
     > orch-panel these three cache designs — blind judges, pick one
     > evolve this blog post — no benchmark, derive a blind judge panel
     > evolve the summarizer prompt against the frozen benchmark
 
 Or build your own workflow in plain English:
 
-    > build me a workflow that does spec > deliver, then always updates
-      the documentation afterwards (favoring edits and deletions over
-      additions), and automatically PRs and merges it
+    > build me a workflow that researches, then builds, then always
+      updates the documentation afterwards (favoring edits and
+      deletions over additions), and automatically PRs and merges it
 
-That gets admitted as a composition — a workflow file made of three
-combinators (`seq`, `par`, `loop`) over skills and other compositions,
-with its own rules and one end-to-end done check. It's project-local
-and callable by name from then on, like a `/site-work-and-merge` you
-own. `orch-compose` is the engine that runs any composition, including
-the chains routing builds for multi-part requests.
+That gets admitted as a named workflow — a directory of ticket stubs
+with the edges between them written down and one end-to-end done check
+on the last one. It's project-local and callable by name from then on,
+like a `/site-work-and-merge` you own; `orch-frontier` runs it.
 
-Runs survive session death: specs, tickets, and worklogs are files in
-one per-user state sink outside every repository, so a fresh context —
-in any checkout — resumes mid-flight.
+Runs survive session death: every ticket is a file in one per-user
+state sink outside every repository, so a fresh context — in any
+checkout — resumes mid-flight.
 
 Team setup: `python install.py --project PATH` writes a committable
 routing block for a repo. Uninstall: `python install.py --user
@@ -102,8 +104,8 @@ Chain any bricks and put `orch-self-improve` last and you have a
 workflow that upgrades itself:
 
     > my release workflow: orch-investigate what merged since the last
-      tag → orch-deliver the release notes under the content pack →
-      orch-self-improve
+      tag → a root ticket for the release notes under the content pack
+      → orch-self-improve
 
 The coolest part: it runs on itself. I run `orch-self-improve` across
 all sessions in a project, then point a second run at the first one.
@@ -132,12 +134,11 @@ orchflows delivery:
 
 ```mermaid
 flowchart TD
-    spec["orch-spec — freeze exactly what should be made"] --> pack{"pack: code | content | research | design"}
+    spec["orch-spec — freeze exactly what should be made, as one root ticket"] --> pack{"pack: code | content | research | design"}
     pack -->|stamped| ws["orch-workspace — clean, isolated working area"]
-    ws --> dec["orch-decompose — cut the spec into ordered tickets"]
+    ws --> dec["orch-decompose — cut the root ticket into ordered tickets"]
     dec --> frontier["orch-frontier — dispatch every ready ticket"]
-    frontier --> task["orch-task"]
-    task --> del["orch-delegate — hand the ticket to the right agent"]
+    frontier --> del["orch-delegate — hand the ticket to the right agent"]
     del --> exec["executor: orch-tdd | orch-draft / orch-edit | orch-investigate / orch-synthesize | orch-render"]
     exec -.-> chk["orch-check — fresh agent double-checks (when needed)"]
     exec --> integ["orch-integrate — accept or reject the returned work"]
@@ -145,7 +146,7 @@ flowchart TD
     integ -.->|rejected| frontier
     integ --> ver1["orch-verify — run any remaining checks"]
     ver1 --> frontier
-    frontier --> gate["orch-review-fix — critique, repair confirmed defects, re-verify"]
+    frontier --> gate["gate tickets — critique per lens, then repair confirmed defects"]
     gate --> final["orch-verify — final result matches the original request"]
 ```
 
@@ -172,13 +173,13 @@ self-improvement wired into every run.
 
 ### Legos
 
-- **One brick, one job.** `orch-deliver` ships, `orch-critique`
-  attacks, `orch-judge` scores blind, `orch-loop` iterates, the `fix`
-  composition proves the cause before repairing it.
-- **One stud pattern.** Eight frozen contracts — spec, work-item,
-  delegation, verdict, worklog, pack-signature, composition, result —
-  are the only interfaces. Anything that emits one plugs into anything
-  that takes one.
+- **One brick, one job.** `orch-frontier` runs the graph,
+  `orch-critique` attacks, `orch-judge` scores blind, `orch-loop`
+  iterates, the `fix` workflow proves the cause before repairing it.
+- **One stud pattern.** Six frozen contracts — work-item, verdict,
+  worklog, pack-signature, composition, result — are the only
+  interfaces. Anything that emits one plugs into anything that takes
+  one.
 - **One return shape.** Every dispatchable unit returns one result
   envelope — status, result identity, verification — so any unit's
   output feeds any successor's evidence. Three combinators — `seq`,
@@ -198,12 +199,10 @@ bricks either way.
     │
     ├── Layer 0 · contracts/ — Shared forms that keep every part of the system speaking the same language
     │   ├── composition    — Defines a named workflow: steps, edges, invariants, done check
-    │   ├── delegation     — Says what another agent should do, use, avoid, and return
     │   ├── pack-signature — Lists what every project-type setup must provide
     │   ├── result         — The envelope every unit returns: status, result identity, verification
-    │   ├── spec           — Records exactly what the user wants made
     │   ├── verdict        — Records whether a check passed and what proves it
-    │   ├── work-item      — Describes and tracks one piece of work
+    │   ├── work-item      — Describes and tracks one piece of work, from the whole job down to one slice
     │   └── worklog        — Records the progress and current state of a larger job
     │
     ├── Layer 1 · skills/ — Things the agents know how to do
@@ -224,7 +223,6 @@ bricks either way.
     │   │   └── orch-workspace      — Prepares a clean and safe place in which to work
     │   │
     │   ├── engines/ — Reusable ways of organizing work
-    │   │   ├── orch-task      — Takes one ready piece of work from start to acceptance
     │   │   ├── orch-frontier  — Starts each piece of work as soon as the work it needs is finished
     │   │   ├── orch-loop      — Repeats work until an agreed check says it is done
     │   │   ├── orch-panel     — Uses several independent reviewers to compare choices fairly
@@ -232,14 +230,12 @@ bricks either way.
     │   │
     │   ├── workflows/ — Complete processes made from the smaller building blocks
     │   │   ├── orch-build         — Creates or changes a reusable part of the orchflows library
-    │   │   ├── orch-deliver       — Runs a project from the agreed plan to a checked final result
     │   │   ├── orch-diagnose      — Reproduces a problem and finds what is actually causing it
     │   │   ├── orch-eval-design   — Freezes candidate-blind evaluation semantics before construction
     │   │   ├── orch-repair        — Applies the smallest change that fixes a known problem
-    │   │   ├── orch-review-fix    — Reviews the result once, fixes valid problems, and checks it again
     │   │   ├── orch-fixture       — Saves a finished task as an example that can be run again later
     │   │   ├── orch-self-improve  — Studies past difficulties and proposes improvements to the system
-    │   │   ├── orch-spec          — Turns a request into a clear, agreed plan
+    │   │   ├── orch-spec          — Turns a request into one agreed root ticket the rest is cut from
     │   │   └── orch-triage        — Sorts a list of work into what is ready, blocked, or needs a person
     │   │
     │   ├── instances/ — Skills that perform a particular kind of hands-on work
@@ -270,7 +266,7 @@ bricks either way.
         └── skill-tournament     — Tests competing versions of a skill to see which works best
 
 Four layers, dependencies pointing one way. `contracts/` is the narrow
-waist: eight hash-pinned data shapes that are the only interfaces
+waist: six hash-pinned data shapes that are the only interfaces
 between skills. `skills/` is everything callable — kernel primitives
 that call no other skill, engines that add control flow, workflows
 assembled from both, instances that do the domain's hands-on work, and
@@ -282,32 +278,34 @@ invariants, and one done check over the whole chain.
 
 ### Work routing
 
-    UNITS OF WORK — the orchflows ladder
+    THREE BRANCHES — smallest first
     │
-    ├── (floor) Tested script
-    │     no model, no ticket — a unit of certainty, not of work
-    │     orch-mechanize keeps pushing repetition down here
-    │
-    ├── U0 — Direct answer
-    │     question answered from context already in hand
+    ├── answer
+    │     evidence already in hand decides it
     │     no deliverable change → no record, no ticket
     │
-    ├── U1 — Verified ad-hoc ticket
-    │     one ticket + one execution + one external verdict
-    │     U1×N: a small ticket graph with edges, run on the frontier
+    ├── ticket
+    │     one ticket — objective, a completion test naming its own
+    │     checks, fixed inputs, write scope, bound — run on the
+    │     frontier, one execution and one external verdict
+    │     too big for one worker? a root ticket that cuts itself into
+    │     the rest, one review gate, one final verification
     │
-    ├── U2 — The run (spec → delivery)
-    │     a frozen spec governs a ticket graph → rolling frontier →
-    │     one review gate → final verification
-    │
-    └── U3 — Composition
-          control flow OVER units: chained runs, goal loops
+    └── fix
+          a failure whose cause is unknown: reproduce it, prove the
+          cause, repair it, guard the repair
 
-Every request lands on the cheapest rung that can still prove it's
-done. A question you can answer from context costs nothing; a small fix
-gets one ticket and one external verdict; only work that genuinely
-needs a frozen spec pays for one; and repetition keeps getting pushed
-below the floor into tested scripts that need no model at all.
+    (floor) Tested script
+          no model, no ticket — a unit of certainty, not of work
+          orch-mechanize keeps pushing repetition down here
+
+Everything else — `evolve`, `benchmaker`, workflows you name yourself —
+runs only when you name it. Every request lands on the cheapest branch
+that can still prove it's done: a question you can answer from context
+costs nothing; a small change gets one ticket and one external verdict;
+only work that has to be cut pays for a root ticket; and repetition
+keeps getting pushed below the floor into tested scripts that need no
+model at all.
 
 ### Packs
 
@@ -325,8 +323,8 @@ A pack is pure data — no control flow. It supplies the domain's
 vocabulary, oracle classes, executors, workspace rules, and design
 principles, all satisfying one frozen pack-signature, so everything the
 library builds inside a domain stays cohesive. Stamp a different pack
-on the spec and the identical pipeline ships code, documents, research,
-or UI.
+on the root ticket and the identical pipeline ships code, documents,
+research, or UI.
 
 ### Advantages over Anthropic's Dynamic Workflows
 
