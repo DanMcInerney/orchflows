@@ -40,29 +40,8 @@ dependencies point. Terms: `docs/vocabulary.md`.
   Return law's field substance included — is owned by review under the
   library lens. `tests/` also freeze canonical bytes, and
   `tests/pins.json` is where `validate.py` reads them from.
-- `install.sh` / `install.cmd` + `install.py` — setup and teardown.
-  The root wrappers resolve an
-  interpreter (uv → python3 → python, never hardcoded) and pass
-  arguments through to `install.py`. `install.py --user` auto-detects
-  which host halves to configure — Claude Code only when a Claude CLI is
-  on `PATH` (lib copy, `~/.claude/skills/` adapter stubs, role agents,
-  concurrency setting), Codex only when a Codex CLI is on `PATH`
-  (prompts, four redirect skill stubs, role agents, agent-limits config,
-  hooks warning) — erroring with guidance when neither is present.
-  `CLAUDE_CONFIG_DIR` and `CODEX_HOME` replace `~/.claude` and
-  `~/.codex` throughout, matching each CLI. The
-  always-on layer is one appended `@`-import line in the user
-  `CLAUDE.md`/`AGENTS.md` pointing at installer-owned
-  `~/.orchflows/host-block.md`, idempotent, replacing any legacy marker
-  block; Codex takes the same import-line form only if the installed
-  CLI resolves `@file` imports (verified by a read-only probe), else
-  the proven marker-block upsert. Either configured half also writes
-  the install receipt (`source_commit` plus prior-run drift on rerun)
-  and hash-guards removal of its own generated entrypoints.
-  `install.py --project PATH` writes only the two committable routing
-  blocks (project `CLAUDE.md`, `AGENTS.md`) as inline marker blocks —
-  self-contained for teammates — plus a minimal receipt; no project lib
-  copy, no project `.claude`/`.codex` writes.
+- `install.sh` / `install.cmd` + `install.py` — setup and teardown; what
+  each scope writes, detects and removes is `install.py`'s docstring's.
 - `scripts/` — repository-root scripts — stdlib Python 3, Windows and
   POSIX, no network at run time — one owner each:
   `scripts/cutcheck.py` owns cut-defect detection over an issued ticket

@@ -269,8 +269,8 @@ install used to carry beyond that were never load-bearing: friction
 logging resolves the user-scope sink through
 `scripts/state_root.py` from any working directory, and a
 project-pinned lib version was never implemented (its receipt recorded
-no source commit) — so the only committable residue a project needs is
-the routing block that makes its custom items discoverable in-repo; the
+no source commit) — so a project's committable residue is the day-zero
+set [docs/documentation.md](docs/documentation.md) §6 names; the
 user-scope install still resolves every call edge (`orch-build`'s scope
 law).
 
