@@ -13,9 +13,9 @@ Steps:
   priorities as lens.
 - triage — `orch-triage` turns findings into dispositions and
   compacted briefs.
-- deliver — per ready-for-agent brief: a small spec through
-  `orch-spec`, a bounded `orch-deliver`; ready-for-human briefs return
-  to the maintainer.
+- deliver — per ready-for-agent brief: a small root ticket through
+  `orch-spec`, its bounded run drained by `orch-frontier`;
+  ready-for-human briefs return to the maintainer.
 
 Edges: seq audit → triage → deliver — findings are triage's evidence;
 each brief is a deliver spec's evidence.

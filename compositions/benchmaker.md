@@ -27,9 +27,9 @@ Steps:
   synthesis artifacts per the
   [research charter](references/benchmaker-research.md). Skipped when
   a supplied qualified synthesis is reused.
-- acquire — `orch-deliver` of that frozen routing-stamped spec. A
-  non-complete delivery, decision gap, or uncovered remainder returns
-  its partial evidence and stops design.
+- acquire — `orch-frontier` over that frozen routing-stamped root
+  ticket's run. A non-complete delivery, decision gap, or uncovered
+  remainder returns its partial evidence and stops design.
 - design — `orch-eval-design` under the carrier rule. A missing field
   or gap that leaves the intended outcome or materialization
   unobservable returns partial evidence and stops; carry every other
