@@ -29,9 +29,10 @@ dependencies point. Terms: `docs/vocabulary.md`.
 - `rules/` — cross-cutting law (composition, delegation, verification,
   loops, roles, token-economy, topology, visibility, improvement);
   using one is `rules/visibility.md` §3's.
-- `docs/` — `vocabulary.md` owns every library term of art; the rest of
-  the directory is reference material, one owner each, and `ls` is its
-  list.
+- `docs/` — `vocabulary.md` owns every library term of art;
+  `documentation.md` owns documentation design law for this library and
+  the projects it builds; the rest of the directory is reference
+  material, one owner each, and `ls` is its list.
 - `DESIGN.md` — root-level rationale: why each structure is shaped as
   it is; non-normative.
 - `templates/` — host-block source; installer-owned; rendered to
