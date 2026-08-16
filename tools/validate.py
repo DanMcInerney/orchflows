@@ -1114,7 +1114,12 @@ def _cross_tier_candidates(entries) -> set:
             for b in range(a + 1, len(ids)):
                 left, right = ids[a], ids[b]
                 tiers = (entries[left][0], entries[right][0])
-                if tiers[0] != tiers[1] or tiers[0] in SAME_TIER_COMPARED:
+                if tiers[0] != tiers[1]:
+                    candidates.add((left, right))
+                elif tiers[0] in SAME_TIER_COMPARED and entries[left][1] != entries[right][1]:
+                    # Two skills, never one skill against its own clauses:
+                    # a body's Require, its steps and its Return restate one
+                    # fact by design, and that is the pack linter's question.
                     candidates.add((left, right))
     return candidates
 
