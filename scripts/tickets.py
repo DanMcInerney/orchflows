@@ -1302,6 +1302,93 @@ def ticket_defects(text: str, stub: bool = False) -> list:
     return defects
 
 
+PACKS_DIR = "packs"
+REQUIRED_FIELDS_CELL = "required_spec_fields"
+# A field's name is what stands before its explanation; the explanation is
+# prose for a reader, and matching against it would count the pack's own
+# gloss as the stub's mention.
+FIELD_GLOSS_RE = re.compile(r"\s+[—-]{1,2}\s+")
+# Four letters or more: a field's name carries its own nouns, and the short
+# words joining them ("as", "by", "the") are in every sentence ever written.
+FIELD_WORD_RE = re.compile(r"[a-z]{4,}")
+
+
+def _packs_root(directory):
+    """The `packs/` beside this template's tree, or None.
+
+    None is the ordinary answer for an installed copy of this script: it
+    runs against a target repository that carries no `packs/` at all, and a
+    pack it cannot read is not a defect in the stub.
+    """
+
+    directory = Path(directory).resolve()
+    for parent in (directory, *directory.parents):
+        candidate = parent / PACKS_DIR
+        if candidate.is_dir():
+            return candidate
+    return None
+
+
+def _required_spec_fields(packs_root, pack: str) -> list:
+    """The stamped pack's `required_spec_fields` cell, as its field names.
+
+    contracts/pack-signature.md makes the cell a `;`-separated list, and
+    contracts/work-item.md makes each entry an entry of the root ticket's
+    `## Fixed inputs`.
+    """
+
+    text, failure = _read_utf8(packs_root / pack / "SKILL.md", f"pack {pack}")
+    if failure is not None:
+        return []
+    for line in text.splitlines():
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) >= 2 and cells[0] == REQUIRED_FIELDS_CELL:
+            return [field.strip() for field in cells[1].split(";") if field.strip()]
+    return []
+
+
+def _spec_field_defect(text: str, directory):
+    """The root stub's `## Fixed inputs` against its pack's required fields.
+
+    contracts/work-item.md: "The stamped pack's `required_spec_fields` are
+    entries of that `## Fixed inputs`", and `orch-decompose`'s Require
+    rejects a root that lacks them, naming what is missing. That refusal
+    fires inside the decomposer — after dispatch, against a ticket already
+    written and an agent already spending. `packet` grades shape and hands
+    these through, so the same refusal is applied here, where the stub is
+    admitted.
+
+    A stub engaging with none of the fields is the reported case: the pack
+    names each field in its own words and a stub answers in the template's,
+    so anything finer would grade phrasing rather than whether the spec was
+    supplied at all.
+    """
+
+    data = _parse_frontmatter(text)
+    if str(data.get("executor") or "").strip().strip("`") != ROOT_EXECUTOR:
+        return None
+    pack = str(data.get("pack") or "").strip().strip("`")
+    if not pack or PLACEHOLDER_RE.search(pack):
+        return None
+    packs_root = _packs_root(directory)
+    if packs_root is None:
+        return None
+    fields = _required_spec_fields(packs_root, pack)
+    if not fields:
+        return None
+    mentioned = set(FIELD_WORD_RE.findall(_section_body(text, "Fixed inputs").lower()))
+    for field in fields:
+        name = FIELD_GLOSS_RE.split(field, 1)[0]
+        if mentioned & set(FIELD_WORD_RE.findall(name.lower())):
+            return None
+    return (
+        f"root stub stamps {pack} and its `## Fixed inputs` name none of the "
+        f"fields that pack requires ({'; '.join(fields)}); "
+        "orch-decompose refuses a root ticket that lacks them "
+        "(contracts/work-item.md)"
+    )
+
+
 def template_defects(directory) -> list:
     """Every way the template at ``directory`` is off contract, as
     ``(path, message)`` pairs.
@@ -1366,6 +1453,9 @@ def template_defects(directory) -> list:
                 "stub body sections are out of contract order; expected "
                 + ", ".join(REQUIRED_SECTIONS)
             )))
+        spec_defect = _spec_field_defect(text, directory)
+        if spec_defect is not None:
+            defects.append((path, spec_defect))
         dependencies = data.get("depends_on")
         stubs[path.stem] = (text, dependencies if isinstance(dependencies, list) else [])
 
@@ -1971,6 +2061,11 @@ def _template_stubs(directory: Path, values: dict):
                 "error": f"stub {path.name} names id '{declared_id}': a stub's "
                 "id is its file stem, and `depends_on` names ids"
             }
+        # after substitution, because a `{{pack}}` names no pack to read
+        # until a caller supplies one -- and then it does
+        spec_defect = _spec_field_defect(text, directory)
+        if spec_defect is not None:
+            return None, {"error": f"stub {path.stem}: {spec_defect}"}
         stubs[path.stem] = (text, list(data.get("depends_on") or []))
     return stubs, None
 
