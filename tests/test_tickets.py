@@ -4811,6 +4811,17 @@ class TestPacketOmitsTheWorkspaceStepForATicketThatWritesOnlyTickets(unittest.Te
             # stands, and `workspace.py check` grades the same field
             self.assertEqual("required", packet["isolation"])
 
+    def test_isolation_none_omits_the_packet_establishment_step(self):
+        """The other half of the same condition, pinned under this oracle:
+        an item that declares no workspace of its own is never told to
+        establish one. `test_a_scope_a_grant_widened...` below is what shows
+        the check can fail — same class, same call, one line emitted."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            packet = self.packet_for(Path(tmp), UNISOLATED_TICKET)
+            self.assertEqual([], establishment_lines(packet["prompt"]))
+            self.assertNotIn("workspace.py", packet["prompt"])
+
     def test_a_scope_a_grant_widened_earns_the_packet_establishment_step_back(self):
         with tempfile.TemporaryDirectory() as tmp:
             packet = self.packet_for(

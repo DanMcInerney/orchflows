@@ -2992,11 +2992,11 @@ def _cmd_packet(rest):
     # unless this packet states the name it was claimed under. Recovering it
     # from the host's own files is what one engine lane had to do
     # (friction 2026-08-16T09:40). Never invented: absent a claim there is no
-    # name, and the payload says so rather than guessing one.
-    # Carried only where it is a packet part, and the payload says exactly
-    # what the prompt says: an executor that dispatches nothing needs no
-    # identity of its own, and the claim it was taken under is on the ticket
-    # for anyone who wants the raw fact.
+    # name, and the payload says so rather than guessing one. Carried only
+    # where it is a packet part, so the payload says exactly what the prompt
+    # says -- an executor that dispatches nothing needs no identity of its
+    # own, and the claim it was taken under is on the ticket for anyone who
+    # wants the raw fact.
     assigned_name = (
         str(loaded.get("claimed_by") or "").strip() or None
         if executor in DISPATCHING_EXECUTORS
