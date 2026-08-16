@@ -17,9 +17,9 @@ exact reproduction command, and — when the fixture bounds machinery —
 the trace budget file (`<trace>.budget.json`) trace mining reads.
 Redact everything else — a fixture that drags its run's context along
 is not frozen. Score anchors for judged items stay out of the ticket
-itself; judges are blind. Admit by replaying once through `orch-task`
-and matching the golden result; a fixture that does not replay green is
-not admitted.
+itself; judges are blind. Admit by replaying once through `orch-frontier`
+over a directory holding that one ticket, and matching the golden result;
+a fixture that does not replay green is not admitted.
 
 Never: include transcript prose or unpinned identities; harvest an
 unaccepted result; edit the source run's records.

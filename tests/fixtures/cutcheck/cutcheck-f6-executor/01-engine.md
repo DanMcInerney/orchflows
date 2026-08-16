@@ -2,7 +2,7 @@
 id: 01-engine
 run: cutcheck-f6-executor
 status: issued
-executor: orch-task
+executor: orch-panel
 pack: orch-code-pack
 independence: gate
 depends_on: []
