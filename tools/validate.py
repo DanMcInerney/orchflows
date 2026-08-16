@@ -163,6 +163,38 @@ COMPOSITION_BODY_FIELD_RES = {
     "done_check": re.compile(r"^(?:#{1,6}\s+)?\*{0,2}done[ _-]check\*{0,2}\b:?", re.IGNORECASE | re.MULTILINE),
 }
 
+# --- Ticket templates (SPEC-ticket-set.md s2-s3) ---------------------
+#
+# A template is a directory `compositions/<name>/` holding `template.md`
+# plus one ticket stub per other `*.md` file; a stub is a ticket per
+# contracts/work-item.md missing only `run`, `status` and `claimed_*`,
+# with `{{placeholder}}` where instantiation fills a value. These checks
+# are the admission the spec's enforcement clause names: a cyclic
+# template, a stub without an executor or a completion test, or a
+# template with no single terminal stub is rejected here. The .md
+# composition form beside them stays until P4.
+TEMPLATE_MANIFEST = "template.md"
+TEMPLATE_ENTRY_VALUES = {"routed", "named"}
+TEMPLATE_STUB_SECTIONS = (
+    "Objective",
+    "Fixed inputs",
+    "Completion test",
+    "Return fields",
+    "Result",
+    "Verification",
+    "Feedback",
+    "Risks",
+)
+STUB_REQUIRED_KEYS = ("id", "executor", "depends_on", "write_scope", "bound")
+STUB_LIST_KEYS = ("depends_on", "write_scope")
+ORACLE_CLASS_VALUES = {"deterministic", "judged", "evidence"}
+PLACEHOLDER_RE = re.compile(r"\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}")
+SECTION_HEADING_RE = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
+CRITERION_BULLET_RE = re.compile(r"^[-*]\s+(\S.*)$", re.MULTILINE)
+ORACLE_FIELD_RE = re.compile(r"\boracle:\s*\S")
+ORACLE_CLASS_FIELD_RE = re.compile(r"\boracle_class:\s*([A-Za-z-]+)")
+SCRIPT_EXECUTOR_PREFIX = "script:"
+
 # --- Carriage (rules/composition.md rule 10) -------------------------
 #
 # "Every Require item rides a named T0 carrier ... the caller supplies
@@ -1462,6 +1494,274 @@ def validate_compositions(diag: Diagnostics) -> None:
                 )
 
 
+def discover_templates():
+    """Every `compositions/<name>/` directory holding a template.md."""
+    comps_dir = ROOT / "compositions"
+    if not comps_dir.is_dir():
+        return []
+    return sorted(
+        d for d in comps_dir.iterdir()
+        if d.is_dir() and (d / TEMPLATE_MANIFEST).is_file()
+    )
+
+
+def _inline_list(value: str):
+    """The items of an inline `[a, b]` list; None when the value is not
+    list-shaped. parse_frontmatter keeps frontmatter values as raw text
+    and every template list is written inline."""
+    text = value.strip()
+    if not (text.startswith("[") and text.endswith("]")):
+        return None
+    return [item.strip() for item in text[1:-1].split(",") if item.strip()]
+
+
+def _tree_skill_names() -> set:
+    """Every skill package name across the five tiers -- the set a stub's
+    executor resolves against."""
+    names = set()
+    for tier in SKILL_TIERS:
+        tier_dir = ROOT / "skills" / tier
+        if not tier_dir.is_dir():
+            continue
+        names |= {d.name for d in tier_dir.iterdir() if (d / "SKILL.md").is_file()}
+    return names
+
+
+def _validate_template_manifest(path: Path, diag: Diagnostics):
+    """Check one template.md; return its declared placeholder names, or
+    None when it declares no usable list -- with the declaration
+    unreadable, an undeclared placeholder is the manifest's defect and
+    not each stub's."""
+    file_label = rel(path)
+    fm, _ = parse_frontmatter(_read_source(path), file_label, diag)
+    if fm is None:
+        return None
+    name = fm.get("name")
+    directory = path.parent.name
+    if not name:
+        diag.error(file_label, "template frontmatter missing required key 'name'")
+    elif name != directory:
+        diag.error(
+            file_label,
+            f"template name '{name}' does not match directory name '{directory}'",
+        )
+    description = fm.get("description")
+    if not description:
+        diag.error(file_label, "template frontmatter missing required key 'description'")
+    elif len(description) > DESCRIPTION_BUDGET:
+        diag.error(
+            file_label,
+            f"description is {len(description)} chars, exceeds {DESCRIPTION_BUDGET}-char budget",
+        )
+    entry = fm.get("entry")
+    if not entry:
+        diag.error(file_label, "template frontmatter missing required key 'entry'")
+    elif entry not in TEMPLATE_ENTRY_VALUES:
+        diag.error(
+            file_label,
+            f"entry '{entry}' is not one of {sorted(TEMPLATE_ENTRY_VALUES)} "
+            "per SPEC-ticket-set.md",
+        )
+    if "placeholders" not in fm:
+        diag.error(file_label, "template frontmatter missing required key 'placeholders'")
+        return None
+    declared = _inline_list(fm["placeholders"])
+    if declared is None:
+        diag.error(
+            file_label,
+            "'placeholders' is not a list; write [] when the template declares none",
+        )
+        return None
+    return set(declared)
+
+
+def _section_span(body: str, section: str) -> str:
+    """The body text under `## <section>`, up to the next `## ` heading."""
+    headings = list(SECTION_HEADING_RE.finditer(body))
+    for idx, match in enumerate(headings):
+        if match.group(1) != section:
+            continue
+        end = headings[idx + 1].start() if idx + 1 < len(headings) else len(body)
+        return body[match.end():end]
+    return ""
+
+
+def _validate_stub_criteria(body: str, file_label: str, diag: Diagnostics) -> None:
+    """Every completion-test criterion bullet names its oracle and an
+    oracle_class per contracts/verdict.md."""
+    # P2: delegate to scripts.tickets.criterion_defects
+    criteria = CRITERION_BULLET_RE.findall(_section_span(body, "Completion test"))
+    if not criteria:
+        diag.error(file_label, "stub '## Completion test' names no criterion bullet")
+        return
+    for criterion in criteria:
+        if not ORACLE_FIELD_RE.search(criterion):
+            diag.error(
+                file_label,
+                f"completion-test criterion names no 'oracle:': {criterion}",
+            )
+        match = ORACLE_CLASS_FIELD_RE.search(criterion)
+        if match is None:
+            diag.error(
+                file_label,
+                f"completion-test criterion names no 'oracle_class:': {criterion}",
+            )
+        elif match.group(1) not in ORACLE_CLASS_VALUES:
+            diag.error(
+                file_label,
+                f"oracle_class '{match.group(1)}' is not one of "
+                f"{sorted(ORACLE_CLASS_VALUES)} per contracts/verdict.md",
+            )
+
+
+def _validate_stub_executor(
+    executor: str, file_label: str, skill_names: set, diag: Diagnostics
+) -> None:
+    """The executor names a skill in the tree or a script that exists.
+    A placeholder is left to instantiation, which refuses an unfilled
+    one and so checks the filled value."""
+    if PLACEHOLDER_RE.search(executor):
+        return
+    if executor.startswith(SCRIPT_EXECUTOR_PREFIX):
+        target = executor[len(SCRIPT_EXECUTOR_PREFIX):].strip()
+        if not (ROOT / target).exists():
+            diag.error(
+                file_label,
+                f"executor names script '{target}', which does not exist in the tree",
+            )
+        return
+    if executor not in skill_names:
+        diag.error(
+            file_label,
+            f"executor '{executor}' names no skill under skills/ and is not a "
+            "'script:<path>'",
+        )
+
+
+def _validate_template_stub(path: Path, skill_names: set, diag: Diagnostics):
+    """Check one stub against contracts/work-item.md; return the ids its
+    depends_on names and the placeholder names it uses."""
+    file_label = rel(path)
+    text = _read_source(path)
+    used = set(PLACEHOLDER_RE.findall(text))
+    fm, body = parse_frontmatter(text, file_label, diag)
+    if fm is None or body is None:
+        return [], used
+    for key in STUB_REQUIRED_KEYS:
+        if not fm.get(key):
+            diag.error(
+                file_label,
+                f"stub frontmatter missing required key '{key}' per contracts/work-item.md",
+            )
+    if fm.get("executor"):
+        _validate_stub_executor(fm["executor"], file_label, skill_names, diag)
+    stub_id = fm.get("id")
+    if stub_id and stub_id != path.stem:
+        diag.error(
+            file_label,
+            f"stub id '{stub_id}' does not match file stem '{path.stem}'",
+        )
+    depends = []
+    for key in STUB_LIST_KEYS:
+        if not fm.get(key):
+            continue
+        items = _inline_list(fm[key])
+        if items is None:
+            diag.error(
+                file_label,
+                f"'{key}' is not a list; write [] when the stub names none",
+            )
+        elif key == "depends_on":
+            depends = items
+
+    headings = SECTION_HEADING_RE.findall(body)
+    missing = [s for s in TEMPLATE_STUB_SECTIONS if s not in headings]
+    if missing:
+        diag.error(
+            file_label,
+            "stub body missing section(s) "
+            + ", ".join(f"## {s}" for s in missing)
+            + " per contracts/work-item.md",
+        )
+    else:
+        present = [h for h in headings if h in TEMPLATE_STUB_SECTIONS]
+        if present != list(TEMPLATE_STUB_SECTIONS):
+            diag.error(
+                file_label,
+                "stub body sections are out of contract order; expected "
+                + ", ".join(TEMPLATE_STUB_SECTIONS),
+            )
+    if "Completion test" in headings:
+        _validate_stub_criteria(body, file_label, diag)
+    return depends, used
+
+
+def _validate_template_graph(directory: Path, edges: dict, diag: Diagnostics) -> None:
+    """The depends_on graph is acyclic and exactly one stub is terminal.
+    A cycle leaves the terminal rule undefined -- every stub in a cycle
+    is depended on -- so the cycle is the only defect reported."""
+    file_label = rel(directory / TEMPLATE_MANIFEST)
+    graph = {stem: {d for d in deps if d in edges} for stem, deps in edges.items()}
+    cycle = find_cycle(graph)
+    if cycle:
+        diag.error(file_label, f"template depends_on cycle: {' -> '.join(cycle)}")
+        return
+    depended_on = {dep for deps in graph.values() for dep in deps}
+    terminals = sorted(stem for stem in graph if stem not in depended_on)
+    if len(terminals) == 1:
+        return
+    found = (
+        "no terminal stub" if not terminals
+        else f"{len(terminals)} terminal stubs ({', '.join(terminals)})"
+    )
+    diag.error(
+        file_label,
+        f"template has {found}; exactly one stub must be depended on by no other",
+    )
+
+
+def validate_templates(diag: Diagnostics) -> None:
+    """SPEC-ticket-set.md s2-s3: every `compositions/<name>/` template is
+    a manifest plus ticket stubs whose graph is acyclic and terminates in
+    exactly one stub."""
+    skill_names = _tree_skill_names()
+    for directory in discover_templates():
+        manifest_label = rel(directory / TEMPLATE_MANIFEST)
+        declared = _validate_template_manifest(directory / TEMPLATE_MANIFEST, diag)
+        stubs = [
+            path for path in sorted(directory.glob("*.md"))
+            if path.name != TEMPLATE_MANIFEST
+        ]
+        stems = {path.stem for path in stubs}
+        edges = {}
+        used = set()
+        for path in stubs:
+            depends, stub_used = _validate_template_stub(path, skill_names, diag)
+            for dep in depends:
+                if dep not in stems:
+                    diag.error(
+                        rel(path),
+                        f"depends_on names '{dep}', which is not a stub in "
+                        f"template '{directory.name}'",
+                    )
+            edges[path.stem] = depends
+            used |= stub_used
+            if declared is not None:
+                for name in sorted(stub_used - declared):
+                    diag.error(
+                        rel(path),
+                        f"placeholder '{{{{{name}}}}}' is declared by no "
+                        f"'placeholders' entry in {manifest_label}",
+                    )
+        if declared is not None:
+            for name in sorted(declared - used):
+                diag.warn(
+                    manifest_label,
+                    f"declared placeholder '{{{{{name}}}}}' is used by no stub",
+                )
+        _validate_template_graph(directory, edges, diag)
+
+
 # LOOP_TRIGGER_RE fires only on the imperative/procedural verb forms that
 # actually instruct the reader to iterate -- "iterate"/"iterating" or "repeat
 # until" -- never on the bare noun "loop" or "iteration", which this corpus
@@ -1583,6 +1883,7 @@ def run_validation() -> Diagnostics:
     validate_cell_duplication(packages, diag)
     validate_envelope(packages, diag)
     validate_compositions(diag)
+    validate_templates(diag)
     validate_cross_package_links(packages, diag)
     validate_pins(diag)
     validate_sync(diag)
