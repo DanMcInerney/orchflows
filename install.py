@@ -1545,12 +1545,13 @@ def apply_plan(plan: Plan, keep_role_agents: bool | None = None) -> dict:
         if not existed:
             document.dest.parent.mkdir(parents=True, exist_ok=True)
             document.dest.write_text(document.content, encoding="utf-8")
-        # The first recorded action wins, as it does for every other kind:
-        # a document this installer created on day one stays "created" on
-        # every reinstall that finds it, and only one it never wrote is
-        # "kept". Uninstall reads this to know which is which.
+        # "created" once this installer has ever written the document — on
+        # this run, or on an earlier one whose receipt says so — and "kept"
+        # only while it never has. Uninstall reads this to know which is
+        # which, so a kept document the project later removed and this run
+        # rewrote turns "created" rather than inheriting "kept".
         old_entry = old_entries.get((str(document.dest), document.kind), {})
-        action = old_entry.get("install_action") or ("kept" if existed else "created")
+        action = "created" if not existed else (old_entry.get("install_action") or "kept")
         written_files.append(_installed_file(document.dest, document.kind, action))
 
     written_imports = []

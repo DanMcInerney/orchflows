@@ -2608,7 +2608,22 @@ class TestDayZeroBootstrap(unittest.TestCase):
         self.assertEqual("created", entry["install_action"])
         self.assertEqual(digest(vocabulary), entry["sha256"])
 
-    def test_uninstall_removes_no_day_zero_document_and_says_which_it_wrote(self):
+    def test_a_bootstrap_that_rewrites_a_document_the_project_removed_records_created(self):
+        ours = self.project / "ARCHITECTURE.md"
+        ours.write_text("# Ours\n", encoding="utf-8")
+        self.assertEqual("kept", self.recorded(self.bootstrap())[str(ours)]["install_action"])
+        ours.unlink()
+
+        entry = self.recorded(self.bootstrap())[str(ours)]
+
+        # The installer wrote it this run, whatever day one recorded: a
+        # receipt still saying "kept" would tell uninstall to leave alone a
+        # file the installer wrote.
+        self.assertTrue(ours.is_file())
+        self.assertEqual("created", entry["install_action"])
+        self.assertEqual(digest(ours), entry["sha256"])
+
+    def test_a_bootstrap_uninstall_removes_no_day_zero_document_and_says_which_it_wrote(self):
         ours = self.project / "ARCHITECTURE.md"
         ours.write_text("# Ours\n", encoding="utf-8")
         self.bootstrap()
