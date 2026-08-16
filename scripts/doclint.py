@@ -70,28 +70,43 @@ def markdown_files(root: Path) -> list:
     )
 
 
-def resolve_link(source: Path, target: str):
+def resolve_link(source: Path, target: str, root=None):
     """The path ``target`` names when read from ``source``, or ``None``
     when the link is not the repository's to resolve: an external URL, a
-    bare anchor, or a templated path something else fills in. An anchor on
-    a real path is dropped -- the file is what must exist."""
+    bare anchor, a templated path something else fills in, or a
+    root-relative ``/path`` when no ``root`` is given to read it from. An
+    anchor on a real path is dropped -- the file is what must exist. A
+    destination in angle brackets -- markdown's spelling of a path with a
+    space -- is read without them."""
 
-    target = target.split(" ", 1)[0].split("#", 1)[0].strip()
+    target = target.strip()
+    if target.startswith("<") and ">" in target:
+        target = target[1:target.index(">")]
+    else:
+        target = target.split(" ", 1)[0]
+    target = target.split("#", 1)[0].strip()
     if not target or target.startswith(EXTERNAL_PREFIXES) or "{{" in target:
         return None
+    base = source.parent
+    if target.startswith("/"):
+        if root is None:
+            return None
+        base, target = Path(root), target.lstrip("/")
     try:
-        return (source.parent / target).resolve()
+        return (base / target).resolve()
     except OSError:
         return None
 
 
-def dangling_links(source: Path, text: str) -> list:
-    """Every link target in ``text`` that resolves to nothing on disk."""
+def dangling_links(source: Path, text: str, root=None) -> list:
+    """Every link target in ``text`` that resolves to nothing on disk.
+    ``root`` is where a root-relative ``/path`` is read from; without it
+    such a link is not graded."""
 
     missing = []
     for match in LINK_RE.finditer(text):
         target = match.group(1)
-        resolved = resolve_link(source, target)
+        resolved = resolve_link(source, target, root)
         if resolved is not None and not resolved.exists():
             missing.append(target)
     return missing
@@ -199,7 +214,7 @@ def report(root, threshold: float = DEFAULT_NEAR_DUPLICATE_THRESHOLD) -> dict:
     for path in markdown_files(root):
         text = read(path)
         label = path.relative_to(root).as_posix()
-        for target in dangling_links(path, text):
+        for target in dangling_links(path, text, root):
             findings.append({"kind": "dangling-link", "file": label, "target": target})
         for block in paragraphs(text):
             texts.append(block)

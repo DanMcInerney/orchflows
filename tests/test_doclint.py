@@ -91,6 +91,24 @@ class FixtureRootTest(unittest.TestCase):
         self.assertEqual({"guide.md", "index.md"}, {finding["file"], finding["other"]})
         self.assertGreaterEqual(finding["ratio"], 0.99)
 
+    def test_link_shapes_the_library_never_writes_are_still_read_as_links(self):
+        """A project's markdown: a destination in angle brackets, a
+        root-relative path, a title after the path. Each is graded by
+        where it points, not by its spelling."""
+
+        write(self.root / "docs" / "has space.md", "# Spaced\n")
+        write(
+            self.root / "docs" / "shapes.md",
+            "[a](<has space.md>) [b](/guide.md) [c](/gone.md) "
+            "[d](../guide.md \"Guide\") [e]({{root}}/x.md)\n",
+        )
+        findings = [
+            (f["file"], f["target"])
+            for f in doclint.report(self.root)["findings"]
+            if f["kind"] == "dangling-link"
+        ]
+        self.assertEqual([("docs/shapes.md", "/gone.md"), ("index.md", "missing.md")], findings)
+
     def test_a_root_with_neither_reports_nothing(self):
         (self.root / "index.md").unlink()
         (self.root / "guide.md").unlink()
@@ -210,14 +228,23 @@ class OneImplementationTest(unittest.TestCase):
         )
 
     def test_the_near_duplicate_ratio_validate_reports_is_doclints(self):
-        """The verdict, not the wiring: the pair the cross-tier check
-        reports on the real tree is a pair doclint's own method finds at
-        the same ratio."""
+        """The verdict, not the wiring: the cross-tier check, run over two
+        clauses of two tiers, reports the one pair at doclint's ratio and
+        names both sites. Fails if the compiler ever grades a copy by a
+        method of its own, whatever that method imports."""
 
         left, right = "the join adjudicates one returned child result", "the join adjudicates one returned result"
-        pairs = list(doclint.near_duplicate_pairs([left, right], validate.CELL_SIMILARITY_THRESHOLD))
-        self.assertEqual([(0, 1)], [(i, j) for i, j, _ in pairs])
-        self.assertAlmostEqual(doclint.similarity(right, left), pairs[0][2])
+        entries = [("rules", "rules/a.md", "A: " + left, left), ("docs", "docs/b.md", "B: " + right, right)]
+        original = validate._cross_tier_clauses
+        validate._cross_tier_clauses = lambda packages: entries
+        self.addCleanup(setattr, validate, "_cross_tier_clauses", original)
+        diag = validate.Diagnostics()
+        validate.validate_cross_tier_duplication([], diag)
+        (item,) = diag.items
+        _, label, message = item
+        self.assertEqual("rules/a.md", label)
+        self.assertIn("with docs/b.md:", message)
+        self.assertIn(f"at {doclint.similarity(right, left):.2f} with", message)
 
 
 class ValidateLinkCheckTest(unittest.TestCase):
