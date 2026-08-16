@@ -51,7 +51,14 @@ PACK_SIGNATURE_CELLS = (
     "required_spec_fields",
     "craft",
 )
-CRAFT_CELLS_BY_POINTER = ("slicing", "lens", "oracle_policy", "craft")
+# The cells whose content is a whole reference file, so the duplication
+# linter compares what they point at rather than the pointer row. `lens`
+# is not among them: it binds a section of `craft`, not a file of its
+# own, and resolving it to craft.md would compare craft's content twice,
+# once under each cell name (SPEC-ticket-set.md P3, REVIEW-2026-08-15
+# T7). Its row is compared as the text it is, which is three words and
+# so sits under CELL_CLAUSE_MIN_WORDS.
+CRAFT_CELLS_BY_POINTER = ("slicing", "oracle_policy", "craft")
 CRAFT_BUDGET = 60
 # Cross-pack cell linter. Both figures are normative: with autojunk off
 # at the ratio call below, the reported pair set is a function of them
