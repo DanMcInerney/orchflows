@@ -1289,6 +1289,69 @@ class TestPacket(unittest.TestCase):
             payload = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")
             self.assertIn("oracle_class", payload["error"])
 
+    def test_a_script_executor_is_run_rather_than_applied(self):
+        """SPEC-ticket-set.md §3: `executor: script:<path>` names a tested
+        script -- the ladder's floor as a node. The packet says to run it,
+        never to apply a skill: a node with no model in it is the cheapest
+        rung there is, and reading it as a skill name would spend one."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            ticket_path = self.make(
+                tmp, FULL_TICKET.replace("executor: orch-tdd", "executor: script:tools/measure.py")
+            )
+            packet = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")["packet"]
+            self.assertEqual("script:tools/measure.py", packet["executor"])
+            self.assertEqual("tools/measure.py", packet["script"])
+            self.assertNotIn("Apply skill", packet["prompt"])
+            self.assertIn("tools/measure.py", packet["prompt"])
+            # the ticket path is the argument, and stdout is the result
+            self.assertIn(str(ticket_path.resolve()), packet["prompt"])
+            self.assertIn("## Result", packet["prompt"])
+
+    def test_a_skill_executor_still_reads_as_a_skill(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            packet = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")["packet"]
+            self.assertIsNone(packet["script"])
+            self.assertIn("Apply skill orch-tdd", packet["prompt"])
+
+    def test_a_loop_packet_carries_its_body_done_check_and_bound(self):
+        """SPEC-ticket-set.md §3: a loop is a ticket whose sections hold the
+        body, the done-check and the bound. The packet has to name all
+        three, because a loop dispatched without its done-check runs until
+        its bound however early it was actually done."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, FULL_TICKET.replace("executor: orch-tdd", "executor: orch-loop"))
+            packet = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")["packet"]
+            prompt = packet["prompt"]
+            self.assertIn("Apply skill orch-loop", prompt)
+            self.assertIn("## Objective", prompt)
+            self.assertIn("## Completion test", prompt)
+            self.assertIn("30m", prompt)
+
+    def test_a_ticket_that_appears_after_an_earlier_read_is_ordinary(self):
+        """SPEC-ticket-set.md §3(a): a new ticket file is an event, and the
+        support for it is that every call rescans. Nothing is cached
+        between calls, so the second `ready` sees what the first could
+        not."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            first = run_cmd(tmp, "ready", "--run", "testrun")["ready"]
+            self.assertEqual(["T1"], [item["id"] for item in first])
+            newcomer = sink_root() / "tickets" / "testrun" / "T2.md"
+            newcomer.write_text(FULL_TICKET.replace("id: T1", "id: T2"), encoding="utf-8")
+            second = run_cmd(tmp, "ready", "--run", "testrun")["ready"]
+            self.assertEqual(["T1", "T2"], sorted(item["id"] for item in second))
+            packet = run_cmd(tmp, "packet", "testrun", "T2", "--reply-to", "main")
+            self.assertNotIn("error", packet)
+            self.assertEqual("T2", packet["packet"]["id"])
+
     def test_engine_executor_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)

@@ -80,6 +80,11 @@ VALID_STATUSES = {
 # holds them in sync, because an installed copy of this script has no
 # library tree to read the list from.
 TICKET_EXECUTOR_ENGINES = frozenset({"orch-frontier", "orch-loop"})
+LOOP_EXECUTOR = "orch-loop"
+# SPEC-ticket-set.md §3: `executor: script:<path>` names a tested script.
+# It is an executor like any other -- claimable, dispatchable, graded the
+# same -- and differs only in what `packet` tells the child to do with it.
+SCRIPT_EXECUTOR_PREFIX = "script:"
 ENGINE_EXECUTORS = frozenset({"orch-compose", "orch-panel", "orch-task"})
 # contracts/verdict.md's `oracle_class`, and contracts/work-item.md's
 # optional oracle provenance. Both are closed sets, and this script is the
@@ -377,6 +382,19 @@ def normalized_isolation(declared) -> str:
     """
 
     return str(declared or "none").strip().strip("`").strip() or "none"
+
+
+def _executor_script(executor: str):
+    """The path a ``script:<path>`` executor names, or ``None``.
+
+    One reader, so nothing else in this file has to know the prefix's
+    spelling to tell a script node from a skill.
+    """
+
+    text = str(executor or "").strip().strip("`").strip()
+    if not text.startswith(SCRIPT_EXECUTOR_PREFIX):
+        return None
+    return text[len(SCRIPT_EXECUTOR_PREFIX):].strip() or None
 
 
 def establishes_a_git_workspace(pack) -> bool:
@@ -2234,12 +2252,40 @@ def _cmd_packet(rest):
     if missing:
         return {"error": "packet incomplete: " + "; ".join(missing)}
 
-    prompt = [
-        f"Apply skill {executor} to ticket {ticket_path}.",
-        "Read the ticket; it is your complete delegation packet — objective, "
-        "fixed inputs, authority (write_scope, excluded_actions), bounds, "
-        "return fields. Gather nothing outside its fixed inputs.",
-    ]
+    executor_script = _executor_script(executor)
+    if executor_script is not None:
+        # SPEC-ticket-set.md §3: the ladder's floor as a node. No skill is
+        # named and no judgment is asked for -- the script decides, and its
+        # stdout is the whole result. Written as a run-this instruction
+        # rather than as a skill application because the two are dispatched
+        # to different rungs, and the cheapest rung is the point of it.
+        prompt = [
+            f"Run the script {executor_script} with the ticket path as its "
+            f"one argument, from your own workspace: "
+            f"{executor_script} {ticket_path}",
+            "No skill is applied. File the script's stdout verbatim as the "
+            f"ticket's `## Result`, and its exit code and the criterion it "
+            "decides as `## Verification`. Change nothing else.",
+        ]
+    else:
+        prompt = [
+            f"Apply skill {executor} to ticket {ticket_path}.",
+            "Read the ticket; it is your complete delegation packet — objective, "
+            "fixed inputs, authority (write_scope, excluded_actions), bounds, "
+            "return fields. Gather nothing outside its fixed inputs.",
+        ]
+    if executor == LOOP_EXECUTOR:
+        # A loop ticket carries its three parts in its own sections
+        # (SPEC-ticket-set.md §3). Named here because a loop dispatched
+        # without its done-check runs to its bound however early it was
+        # actually done, and one dispatched without its bound does not stop.
+        prompt.append(
+            "This is a loop ticket: the body of each fresh-context pass is "
+            "`## Objective`, the done-check every pass is graded against is "
+            f"`## Completion test`, and the bound on the iterations is "
+            f"{loaded.get('bound')}. Stop at the done-check or at the bound, "
+            "whichever comes first, and record which."
+        )
     if workspace:
         prompt.append(f"Workspace: {workspace}")
     prompt.append(
@@ -2287,6 +2333,7 @@ def _cmd_packet(rest):
             "id": loaded["id"],
             "path": str(ticket_path),
             "executor": executor,
+            "script": executor_script,
             "pack": loaded.get("pack"),
             "profile": loaded.get("profile"),
             "independence": loaded.get("independence") or "checker",
