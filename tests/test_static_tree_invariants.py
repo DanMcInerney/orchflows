@@ -242,19 +242,31 @@ class TestSkillAnatomyOrder(unittest.TestCase):
 class TestDependencyOrderedOverlap(unittest.TestCase):
     """An item's write scope may overlap only siblings it is dependency-ordered
     with, so items with no dependency path between them can never collide
-    however the frontier schedules them."""
+    however the frontier schedules them.
 
-    def test_ordered_cuts_may_overlap(self):
+    The rule has one owner, `orch-decompose`, and only there is its wording
+    asserted: requiring the same sentence in both slicing cells made the
+    duplication mandatory, which is what SPEC-ticket-set.md P2 and
+    REVIEW-2026-08-15 T2 invert (tests pin shapes, not sentences; the
+    validator forbids copies instead of syncing them). What every cut is
+    still held to is the absence of the two older rules a cell could regress
+    to -- neither of which any owner states, so neither is a copy.
+    """
+
+    def test_the_owner_permits_overlap_along_dependency_order(self):
+        self.assertIn(
+            OVERLAP_RULE, read_flat(DECOMPOSE),
+            "orch-decompose, the rule's one owner, does not permit overlap "
+            "only along dependency order",
+        )
+
+    def test_no_cut_states_a_superseded_overlap_rule(self):
         for label, path in (
             ("orch-decompose", DECOMPOSE),
             ("code pack slicing", CODE_SLICING),
             ("design pack slicing", DESIGN_SLICING),
         ):
             text = read_flat(path)
-            self.assertIn(
-                OVERLAP_RULE, text,
-                f"{label} does not permit overlap only along dependency order",
-            )
             self.assertNotIn(
                 "disjoint from its siblings", text,
                 f"{label} still states the old global-disjointness rule, which "
@@ -266,9 +278,10 @@ class TestDependencyOrderedOverlap(unittest.TestCase):
                 "different frontiers can be concurrently in flight and collide",
             )
 
-        code_slicing = read_flat(CODE_SLICING)
+    def test_the_code_cut_puts_the_riskiest_seam_first(self):
         self.assertIn(
-            "the first frontier carries the riskiest seam's tracer", code_slicing,
+            "the first frontier carries the riskiest seam's tracer",
+            read_flat(CODE_SLICING),
             "code pack slicing does not put the riskiest seam's tracer in the "
             "first frontier",
         )

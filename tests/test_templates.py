@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import scripts.tickets as tickets  # noqa: E402  the ticket-shape law's one owner
 from tests.test_validator import _IsolatedTree  # noqa: E402  the harness's one owner
 
 STUB_SECTIONS = (
@@ -290,7 +291,13 @@ class TestStubShape(_TemplateTree):
 
 class TestStubGraph(_TemplateTree):
     """The depends_on graph: every edge lands inside the template, the
-    graph is acyclic, and exactly one stub is terminal."""
+    graph is acyclic, and exactly one stub is terminal.
+
+    All three are reported at the manifest, in scripts/tickets.py's words:
+    the graph is the template's property, not any one stub's, and the
+    script that instantiates it is the law's one owner. Each message still
+    names the stub it found the defect at.
+    """
 
     def test_a_cycle_is_one_error_naming_the_template(self):
         self.write_template(
@@ -302,7 +309,7 @@ class TestStubGraph(_TemplateTree):
             },
         )
         error = self.assert_one_error("compositions/demo/template.md")
-        self.assertIn("cycle", error)
+        self.assertIn("cyclic", error)
 
     def test_a_stub_depending_on_itself_is_a_cycle(self):
         self.write_template(
@@ -314,7 +321,8 @@ class TestStubGraph(_TemplateTree):
             },
         )
         error = self.assert_one_error("compositions/demo/template.md")
-        self.assertIn("cycle", error)
+        self.assertIn("cyclic", error)
+        self.assertIn("verify", error)
 
     def test_two_terminal_stubs_is_one_error(self):
         self.write_template(
@@ -334,8 +342,9 @@ class TestStubGraph(_TemplateTree):
         stubs = dict(GOOD_STUBS)
         stubs["repair"] = stub_md("repair", depends="[diagnose, triage]")
         self.write_template("demo", stubs=stubs)
-        error = self.assert_one_error("compositions/demo/repair.md")
+        error = self.assert_one_error("compositions/demo/template.md")
         self.assertIn("'triage'", error)
+        self.assertIn("repair", error, "the edge's own stub goes unnamed")
 
 
 class TestPlaceholders(_TemplateTree):
@@ -396,6 +405,91 @@ class TestStubExecutorResolves(_TemplateTree):
         result, errors = self.diagnostics()
         self.assertEqual([], errors)
         self.assertEqual(0, result.returncode, result.stdout)
+
+
+class TestTheValidatorRefusesWhatTheOwnerRefuses(_TemplateTree):
+    """`scripts/tickets.py` is the one owner of ticket-shape and
+    template-graph law: `tickets.py new` and `instantiate` grade through
+    it, and the validator now reads it instead of carrying a second
+    spelling. Two spellings is how a stub the cutter admits is refused by
+    the dispatcher — the P1 gate found the two disagreeing on eight inputs
+    and on which executors are legal.
+
+    So the assertion is not that the validator reports *something*: it is
+    that every refusal the owner reports comes back word for word.
+    """
+
+    # One template per defect, all in one tree, so the whole set is read
+    # from a single validate run.
+    OFF_CONTRACT = {
+        "noclass": stub_md(
+            "repair", depends="[diagnose]",
+            criteria=("the tree passes its suite | oracle: the suite",),
+        ),
+        "wrongclass": stub_md(
+            "repair", depends="[diagnose]",
+            criteria=("the tree passes | oracle: the suite | oracle_class: vibes",),
+        ),
+        "nosection": stub_md(
+            "repair", depends="[diagnose]",
+            sections=tuple(s for s in STUB_SECTIONS if s != "Feedback"),
+        ),
+        # An engine dispatches a ticket's executor and cannot be one: the
+        # validator admitted orch-task, orch-compose and orch-panel while
+        # tickets.py refused them, so a template it passed could not be
+        # instantiated.
+        "engine": stub_md("repair", depends="[diagnose]", executor="orch-task"),
+        "noframes": "id: repair\nexecutor: orch-repair\n\n## Objective\n\nnone.\n",
+    }
+
+    def _write_all(self):
+        # The engine case is about legality, not resolution: with the skill
+        # in the tree the validator's own executor check passes, so the one
+        # ERROR left on that stub is the owner's refusal.
+        self.write_skill("orch-task", tier="engines")
+        for name, bad in sorted(self.OFF_CONTRACT.items()):
+            stubs = dict(GOOD_STUBS)
+            stubs["repair"] = bad
+            self.write_template(name, manifest=template_md(name=name), stubs=stubs)
+
+    def test_every_refusal_the_owner_reports_comes_back_verbatim(self):
+        self._write_all()
+        result = self._run()
+        reported = 0
+        for name in sorted(self.OFF_CONTRACT):
+            directory = self.tmp_path / "compositions" / name
+            defects = tickets.template_defects(directory)
+            self.assertTrue(defects, f"{name}: the owner refuses nothing")
+            for path, message in defects:
+                reported += 1
+                with self.subTest(template=name, message=message[:50]):
+                    self.assertIn(message, result.stdout)
+                    self.assertIn(
+                        Path(path).name, result.stdout,
+                        "the finding does not name the file it is about",
+                    )
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertTrue(reported)
+
+    def test_the_owner_and_the_validator_refuse_the_same_stubs(self):
+        """The other direction: no ERROR the validator reports about a
+        stub is one the owner would admit. Without it the validator could
+        keep a private refusal and the two would disagree again."""
+
+        self._write_all()
+        result = self._run()
+        owned = set()
+        for name in sorted(self.OFF_CONTRACT):
+            for _, message in tickets.template_defects(
+                self.tmp_path / "compositions" / name
+            ):
+                owned.add(message)
+        stray = [
+            line for line in result.stdout.splitlines()
+            if line.startswith("ERROR") and "/repair.md" in line
+            and not any(message in line for message in owned)
+        ]
+        self.assertEqual([], stray, result.stdout)
 
 
 if __name__ == "__main__":

@@ -1135,6 +1135,88 @@ def ticket_defects(text: str, stub: bool = False) -> list:
     return defects
 
 
+def template_defects(directory) -> list:
+    """Every way the template at ``directory`` is off contract, as
+    ``(path, message)`` pairs.
+
+    The same law ``instantiate`` applies, read before substitution so the
+    tree's uninstantiated templates can be graded where they sit: each stub
+    against ``ticket_defects(text, stub=True)``, its id against its file
+    stem, its list fields against being lists, its sections against the
+    contract's order, its executor against the engines that cannot be one,
+    and then the graph — edges, cycle, single terminal — through
+    ``_template_order``. A ``{{placeholder}}`` is left alone: it is a defect
+    only once instantiation has refused to fill it.
+
+    Exposed for ``tools/validate.py``, which admits templates into the tree
+    and must admit exactly what this script will instantiate. Two spellings
+    of one law is how a stub the validator passes is refused at
+    instantiation; the paths are returned so the validator can label each
+    finding with the file it is about, and the messages are this script's
+    own words so both report the same refusal.
+    """
+
+    directory = Path(directory)
+    manifest = directory / TEMPLATE_FILE
+    paths = sorted(
+        path for path in directory.glob("*.md") if path.name != TEMPLATE_FILE
+    )
+    if not paths:
+        return [(
+            manifest,
+            f"template {directory.name} holds no stub: a template is "
+            f"{TEMPLATE_FILE} plus one or more <id>.md ticket stubs",
+        )]
+
+    defects = []
+    stubs = {}
+    for path in paths:
+        try:
+            text = path.read_text(encoding="utf-8-sig")
+        except OSError as error:
+            defects.append((path, f"unreadable stub {path.name}: {error}"))
+            continue
+        for defect in ticket_defects(text, stub=True):
+            defects.append((path, defect))
+        data = _parse_frontmatter(text)
+        declared_id = str(data.get("id") or "").strip()
+        if declared_id and declared_id != path.stem:
+            defects.append((path, (
+                f"stub {path.name} names id '{declared_id}': a stub's id is "
+                "its file stem, and `depends_on` names ids"
+            )))
+        for key in ("depends_on", "write_scope"):
+            if key in data and not isinstance(data[key], list):
+                defects.append((path, (
+                    f"'{key}' is not a list; write [] when the stub names none"
+                )))
+        executor = str(data.get("executor") or "").strip().strip("`")
+        if executor in ENGINE_EXECUTORS:
+            defects.append((path, (
+                f"executor '{executor}' is an engine; an engine dispatches a "
+                f"ticket's executor and cannot be one. Name the recording or "
+                f"unit skill that does the work, or return a decision gap "
+                f"from the cut."
+            )))
+        ordered = [
+            SECTION_RANK[name.strip().lower()]
+            for name in _sections(text)
+            if name.strip().lower() in SECTION_RANK
+        ]
+        if ordered != sorted(ordered):
+            defects.append((path, (
+                "stub body sections are out of contract order; expected "
+                + ", ".join(REQUIRED_SECTIONS)
+            )))
+        dependencies = data.get("depends_on")
+        stubs[path.stem] = (text, dependencies if isinstance(dependencies, list) else [])
+
+    _, error = _template_order(stubs)
+    if error is not None:
+        defects.append((manifest, error["error"]))
+    return defects
+
+
 # --- claim staleness --------------------------------------------------------
 
 
