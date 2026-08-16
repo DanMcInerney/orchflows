@@ -13,7 +13,7 @@ field and §3 scope, never by the repository the session stands in.
 
 Open the coverage record first: an entry at or before a covered
 cluster's watermark is answered and does not requalify it; a later one
-is post-merge recurrence, owned by the change that covered it. A
+is post-merge recurrence, owned by the change that covered it; a
 recurring prior cluster routes to
 [rules/improvement.md](../../../rules/improvement.md) §4 `consolidate`.
 
@@ -24,30 +24,30 @@ every correction a [ticket](../../../contracts/work-item.md) records: a
 bounce, its `## Feedback`, a checker's appended `## Result` pass, a
 `## Handoff`, a criterion reading FAIL before the join wrote `complete`.
 
-Cluster by observed-text similarity and assign each cluster its one
-causal owner and scope per §3 yourself: the entry's `skill` field and a
-correction's own named cause record where the defect was felt, not what
-owns it. Apply §4's qualification yourself; the rest stays noise.
+Cluster by observed-text similarity; assign each cluster one causal
+owner and scope per §3 — the entry's `skill` field and a correction's
+named cause record where the defect was felt, not what owns it — and
+apply §4's qualification; the rest stays noise.
 
 For each qualified cluster, write one proposal named `<date>-<slug>.md`
 through `scripts/tickets.py improvement --proposal`, typed `fix` or §4
 `consolidate`: the causal owner as a repository-relative path (the sink
 syncs across machines), its scope, the exact change, every evidence
-entry verbatim, the blame class where a join recorded one. An
-amendment verifies the owner's dependents still hold; a
-ticket-naming entry whose run's frozen statement survives replays
-through `orch-frontier` over that one ticket, in isolation against the
-amended owner, and a red replay disqualifies (§5).
+entry verbatim, the blame class where a join recorded one. A proposal
+verifies the owner's dependents still hold and replays each ticket-naming
+entry whose frozen statement survives through `orch-frontier` over that
+one ticket against the amended owner; a red replay disqualifies (§5).
 
 Rank by evidence strength — green replay, checked contradiction or
-probe, then recurrence — ties breaking toward deletion. The delivery
-that lands a proposal appends its covered line as its last act, through
-`scripts/tickets.py improvement --covered <line>` (§6).
+probe, then recurrence — ties breaking toward deletion. As a run: the
+`self-improve` template's `00-mine` stub; `01-deliver` lands the top
+proposal, appending its covered line through
+`scripts/tickets.py improvement --covered` (§6); `02-close` verifies.
 
-Never: attribute cause beyond what entries show; edit an owner file
-directly; delete or rewrite friction entries; propose two owners in one
-proposal; mine evidence a live run still holds open.
+Never: attribute cause beyond what entries show; edit an owner file;
+delete or rewrite friction entries; propose two owners in one proposal;
+mine evidence a live run still holds open.
 
-Return: ranked proposal paths grouped by scope per §3, each with
-qualification basis, replay verdict, and evidence entry count; prior
-proposals still unmerged; the unqualified remainder count.
+Return: ranked proposal paths by §3 scope, each with qualification
+basis, replay verdict and evidence count; unmerged prior proposals; the
+unqualified remainder count.
