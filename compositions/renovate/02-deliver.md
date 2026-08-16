@@ -25,7 +25,7 @@ whole delivery.
 
 - 01-triage's `## Result` — the dispositions and compacted briefs by
   identity.
-- {{pack}} — this run's stamp, and the default every cut unit inherits.
+- {{pack}} — this run's stamp, which every cut unit takes.
 - {{workspace}} — the target repository: the tree the delivered changes
   land in.
 - The standards owner, by pointer: the workspace's own owner file —
