@@ -812,6 +812,12 @@ class TheHostMirrorResolvesFromAnyCheckoutTest(unittest.TestCase):
     path relative to itself, and this is the check that the path it carries
     actually reaches the owner from where the stub sits.
 
+    Whether a Claude host expands a relative `@` in a project stub was not
+    settled by any ablation this item could run, so the stub carries one line
+    under the include naming the owner in plain words. That line is a second
+    place a machine-specific path could arrive, which is why absoluteness is
+    checked over the whole stub and not over the include alone.
+
     Skipped rather than failed when the pair is not where a project-scope item
     puts them, because the item can be read from a copy and this suite's
     reliability bar is that it passes offline from anywhere.
@@ -834,6 +840,25 @@ class TheHostMirrorResolvesFromAnyCheckoutTest(unittest.TestCase):
         self.assertFalse(target[1:2] == ":", "a committed stub names one machine")
         # Resolved the way a host resolves it: against the stub's own directory.
         self.assertEqual((HOST_MIRROR.parent / target).resolve(), OWNER_SKILL)
+
+    def test_no_line_of_the_stub_names_one_machine(self):
+        # The include is not the only place a path can arrive: the line under it
+        # names the owner for a host that did not expand the include, and a path
+        # spelled from a root would be the same defect wearing prose.
+        body = HOST_MIRROR.read_text(encoding="utf-8")
+
+        for token in body.replace("`", " ").split():
+            with self.subTest(token=token):
+                self.assertFalse(token.lstrip("@").startswith("/"))
+                self.assertNotRegex(token.lstrip("@"), r"^[A-Za-z]:[\\/]")
+
+    def test_the_stub_names_the_owner_for_a_host_that_did_not_expand(self):
+        # The one thing the fallback line has to carry, and the reason it is a
+        # line rather than a paragraph: where to read instead.
+        body = HOST_MIRROR.read_text(encoding="utf-8")
+        after_include = body.split("\n@", 1)[1].split("\n", 1)[1]
+
+        self.assertIn(".orchflows/skills/super-research/SKILL.md", after_include)
 
     def test_the_owner_and_the_mirror_describe_the_item_with_one_string(self):
         # A Claude host routes on the mirror's copy and never reads the owner's,
