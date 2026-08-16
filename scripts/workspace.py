@@ -22,7 +22,9 @@ Exit codes:
     0  success, including ``isolation: none`` or absent, and an item whose
        effective write scope is empty -- authority over no path in any
        workspace, which is the lane ``tickets.py packet`` emits no
-       establishment step for
+       establishment step for -- so long as no recorded branch carries
+       commits the caller's HEAD lacks; one that does is graded in full,
+       and every path it changed is a breach (4)
     1  usage or internal error
     2  isolation-missing
     3  wrong-branch-point
@@ -478,12 +480,14 @@ def _cmd_check(rest):
     # write scope of nothing is authority over no path in any workspace --
     # such an item writes its own ticket sections, and those live in the
     # sink, which no workspace holds -- so packet emits no `start` line for
-    # it and nothing ever stamped it. Graded before the `workspace_branch`
-    # read, because a lane given no establishment step cannot have run one,
-    # and refusing it at no-record refuses it for obeying its own packet.
-    # The stamp does not change the answer either way: a caller may still
-    # have told such a lane to run `start`, and grading that stamp refuses
-    # at isolation-missing or scope-breach an item authorized for nothing.
+    # it. Such a lane is owed no stamp, and each refusal below that stands
+    # for a missing or empty stamp -- no-record, an unresolvable branch, a
+    # tip HEAD already holds -- refuses it for obeying its own packet, so
+    # each is `not required` instead. What an empty scope does not license
+    # is a change: it is authority over nothing, and a recorded branch that
+    # carries commits HEAD lacks is graded in full below, where every path
+    # it changed is a breach (contracts/work-item.md: a result whose
+    # changed artifacts exceed the granted scope is rejected at the join).
     #
     # Effective, never declared: the value `tickets._load_ticket` answers
     # with is the cut's scope plus every recorded grant, so a lane a grant
@@ -494,12 +498,15 @@ def _cmd_check(rest):
     # than dispatching it. Read alike here, an item that never declared
     # what it may change would pass its join whatever it changed.
     effective = data.get(WRITE_SCOPE_KEY)
-    if effective is not None and not tickets._scope_entries(effective):
-        reported.update({WRITE_SCOPE_KEY: [], "verdict": "not required"})
-        return {"check": reported}, EXIT_OK
+    empty = effective is not None and not tickets._scope_entries(effective)
+    if empty:
+        reported[WRITE_SCOPE_KEY] = []
 
     branch = str(data.get(BRANCH_KEY) or "").strip()
     if not branch:
+        if empty:
+            reported["verdict"] = "not required"
+            return {"check": reported}, EXIT_OK
         raise Refused(
             f"{ticket_id} declares {ISOLATION_KEY}: {REQUIRED} and carries no {BRANCH_KEY}: nothing recorded what it "
             "was executed in",
@@ -509,6 +516,9 @@ def _cmd_check(rest):
 
     code, tip, _ = _git("rev-parse", "--verify", "--quiet", f"{branch}^{{commit}}")
     if code != 0:
+        if empty:
+            reported.update({BRANCH_KEY: branch, "verdict": "not required"})
+            return {"check": reported}, EXIT_OK
         raise Refused(
             f"branch {branch!r} does not resolve in this repository",
             EXIT_ISOLATION_MISSING,
@@ -532,12 +542,17 @@ def _cmd_check(rest):
                 "--repo <path>",
                 EXIT_WRONG_VANTAGE,
             )
-        raise Refused(
-            f"branch {branch!r} is the caller's own branch: no distinct branch "
-            "carries the work",
-            EXIT_ISOLATION_MISSING,
-        )
+        if not empty:
+            raise Refused(
+                f"branch {branch!r} is the caller's own branch: no distinct branch "
+                "carries the work",
+                EXIT_ISOLATION_MISSING,
+            )
     if _is_ancestor(tip, "HEAD"):
+        # the caller's own branch lands here too: HEAD is its own ancestor
+        if empty:
+            reported.update({BRANCH_KEY: branch, "tip": tip, "verdict": "not required"})
+            return {"check": reported}, EXIT_OK
         raise Refused(
             f"branch {branch!r} is already an ancestor of the caller's HEAD: no "
             "distinct branch carries the work",
