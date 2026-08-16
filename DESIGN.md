@@ -137,8 +137,14 @@ than an `invariants` field, so the gate is the same graded ticket
 shape every other item already has; and the three combinators are the
 ticket graph's own — a `depends_on` edge, disjoint parallel stubs, a
 loop stub — so there is no second grammar to keep in step with the
-first. `SPEC-ticket-set.md` owns the migration's own record; this
-section owns the rationale.
+first. Git history owns the migration's own record (`SPEC-ticket-set.md`,
+deleted when its last phase landed); this section owns the
+rationale. Its open decisions closed as: ticket sets over a fixed
+`seq` engine, proven on the `fix` fixture; Claude keeps all skill
+adapters — measured 2026-08-16, the verdict and its caveat in
+benchmarks/routing/README.md; `delegation.md` merged into
+`work-item.md`; orch-delegate (the skill) deleted; the five domain
+instances and `orch-loop` kept.
 
 ## Why a `craft` cell
 

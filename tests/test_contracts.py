@@ -58,8 +58,7 @@ class TestContractRegister(unittest.TestCase):
 
     ABSORBED = ("contracts/spec.md", "contracts/delegation.md")
 
-    # The library surfaces a live name has to resolve in. SPEC-ticket-set.md
-    # and REVIEW-* are the records that ordered the deletions and name what
+    # The library surfaces a live name has to resolve in. REVIEW-* are the records that ordered the deletions and name what
     # they buried; `benchmarks/` is frozen fixture data.
     LIVE_SURFACES = (
         "rules", "skills", "packs", "compositions", "docs", "templates",

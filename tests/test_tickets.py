@@ -1102,7 +1102,7 @@ class TestEngineExecutorIsRejected(unittest.TestCase):
 
     def test_engine_list_matches_the_library(self):
         """Every engine is a lawful ticket executor — orch-loop for a loop
-        ticket, orch-frontier for a nested template (SPEC-ticket-set.md §3).
+        ticket, orch-frontier for a nested template (contracts/work-item.md, Executor form).
 
         This was a partition until P4-3: the other half was the engines
         refused as an executor, orch-compose and orch-panel, both deleted
@@ -1311,7 +1311,7 @@ class TestPacket(unittest.TestCase):
             self.assertIn("oracle_class", payload["error"])
 
     def test_a_script_executor_is_run_rather_than_applied(self):
-        """SPEC-ticket-set.md §3: `executor: script:<path>` names a tested
+        """contracts/work-item.md Executor form: `executor: script:<path>` names a tested
         script -- the ladder's floor as a node. The packet says to run it,
         never to apply a skill: a node with no model in it is the cheapest
         rung there is, and reading it as a skill name would spend one."""
@@ -1339,7 +1339,7 @@ class TestPacket(unittest.TestCase):
             self.assertIn("Apply skill orch-tdd", packet["prompt"])
 
     def test_a_loop_packet_carries_its_body_done_check_and_bound(self):
-        """SPEC-ticket-set.md §3: a loop is a ticket whose sections hold the
+        """docs/vocabulary.md `combinator`: a loop is a ticket whose sections hold the
         body, the done-check and the bound. The packet has to name all
         three, because a loop dispatched without its done-check runs until
         its bound however early it was actually done."""
@@ -1363,7 +1363,7 @@ class TestPacket(unittest.TestCase):
             self.assertIn("whichever comes first", prompt)
 
     def test_a_ticket_that_appears_after_an_earlier_read_is_ordinary(self):
-        """SPEC-ticket-set.md §3(a): a new ticket file is an event, and the
+        """orch-frontier's event rule: a new ticket file is an event, and the
         support for it is that every call rescans. Nothing is cached
         between calls, so the second `ready` sees what the first could
         not."""

@@ -1,6 +1,6 @@
 """tools/validate.py's ticket-template checks: a template is a directory
 `compositions/<name>/` holding `template.md` plus one ticket stub per
-other `*.md` file (SPEC-ticket-set.md s2-s3, contracts/work-item.md).
+other `*.md` file (contracts/work-item.md, Template and stub).
 
 Runs on the isolated tmp-tree harness tests/test_validator.py owns, so
 every check is exercised at the real ROOT-relative seam.
@@ -373,7 +373,7 @@ class TestPlaceholders(_TemplateTree):
 
 class TestStubExecutorResolves(_TemplateTree):
     """A stub's executor names a skill in the tree or a script that
-    exists (SPEC-ticket-set.md s3: `executor: script:<path>`)."""
+    exists (contracts/work-item.md Executor form: `executor: script:<path>`)."""
 
     def _with_executor(self, executor):
         stubs = dict(GOOD_STUBS)

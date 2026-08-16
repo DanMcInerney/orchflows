@@ -1,8 +1,8 @@
 """The ticket script's view path: `worklog` renders a run, `gate` writes
 its gate stubs.
 
-SPEC-ticket-set.md §1: the worklog is a view `tickets.py` renders from
-the ticket directory, never a second hand-written file; §2: a root
+contracts/worklog.md: the worklog is a view `tickets.py` renders from
+the ticket directory, never a second hand-written file; work-item.md Root ticket: a root
 ticket's subtree ends in `<root>.gate.critique.<lens>`,
 `<root>.gate.repair`, `<root>.gate.verify`. `tests/test_tickets.py`
 covers the query path and `tests/test_tickets_issue.py` the issue path;
@@ -212,7 +212,7 @@ class WorklogViewTest(unittest.TestCase):
         }
 
     def test_a_template_runs_goal_is_its_terminal_not_its_first_decomposer(self):
-        """SPEC-ticket-set.md §2: the terminal stub's completion test is the
+        """contracts/work-item.md, Template and stub: the terminal stub's completion test is the
         template's done check. `_root_ticket` took the alphabetically-first
         decomposer, which for a template with several cuts is a stub in the
         middle of the graph — so the rendered goal was never the run's."""
@@ -463,7 +463,7 @@ class WorklogRendersTheLiveTemplateTest(unittest.TestCase):
 
 
 class GateStubsTest(unittest.TestCase):
-    """`gate <run> <root>` writes SPEC-ticket-set.md §2's three stubs:
+    """`gate <run> <root>` writes work-item.md Root ticket's three stubs:
     critique per lens (read-only, parallel, over every unit ticket), one
     repair behind them all, one verify carrying the root's acceptance."""
 

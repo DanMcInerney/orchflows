@@ -37,7 +37,7 @@ TOURNAMENT = COMPOSITIONS / "skill-tournament"
 # The campaign bodies deleted when they became templates, plus the last
 # `.md` composition (`fix`), deleted at P4-3 with the second grammar
 # itself. A template beside its own `<name>.md` is what
-# SPEC-ticket-set.md P4 exists to remove: two spellings of one
+# the template conversion (DESIGN.md) removed: two spellings of one
 # composition, and no rule saying which one a run executes.
 SUPERSEDED_BODIES = (
     COMPOSITIONS / "evolve.md",
@@ -291,8 +291,8 @@ class TestDependencyOrderedOverlap(unittest.TestCase):
 
     The rule has one owner, `orch-decompose`, and only there is its wording
     asserted: requiring the same sentence in both slicing cells made the
-    duplication mandatory, which is what SPEC-ticket-set.md P2 and
-    REVIEW-2026-08-15 T2 invert (tests pin shapes, not sentences; the
+    duplication mandatory, which is what
+    REVIEW-2026-08-15 T2 inverts (tests pin shapes, not sentences; the
     validator forbids copies instead of syncing them). What every cut is
     still held to is the absence of the two older rules a cell could regress
     to -- neither of which any owner states, so neither is a copy.
@@ -538,7 +538,7 @@ class TestBenchmarkArchitecture(unittest.TestCase):
 
 
 class TestCompositionTemplates(unittest.TestCase):
-    """The composition set as template directories (SPEC-ticket-set.md P4).
+    """The composition set as template directories (DESIGN.md, amended 2026-08-16).
 
     `scripts/tickets.py` grades a template's shape — ids, edges, one
     terminal — and `tools/validate.py` its manifest. Neither reads which

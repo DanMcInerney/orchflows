@@ -10,7 +10,7 @@ path, and which ``.orch`` mentions may survive.
 
 Its third half is ``tools/validate.py``'s two remaining owned-literal
 checks and the cross-tier duplication check that replaced ``validate_sync``
-(SPEC-ticket-set.md P2, REVIEW-2026-08-15 T2). ``tests/test_sync.py`` held
+(REVIEW-2026-08-15 T2). ``tests/test_sync.py`` held
 them until the sync check it was named for was deleted; what survived it —
 ``scripts/tickets.py``'s ``PACK_WORKSPACE_MECHANISMS`` against the packs'
 own cells, and the friction log's one location against every copy of it —
@@ -178,7 +178,7 @@ class TestContractsNameTheSink(unittest.TestCase):
 
 class TestWorklogStatesRunIdentity(unittest.TestCase):
     """`run.json`'s fields, stated by its one writer: the field list lives in
-    scripts/tickets.py's module docstring (SPEC-ticket-set.md P2), and the
+    scripts/tickets.py's module docstring, and the
     docstring may name these fields and no others, so writer and statement
     cannot drift in either direction."""
 
@@ -534,7 +534,7 @@ def warning_lines(stdout: str):
 class TestSyncCheckIsGone(unittest.TestCase):
     """`validate_sync` kept two spellings of one literal equal to each other.
     P2 deletes it: a fact gets one owner and the compiler reports the copy
-    rather than repairing it (SPEC-ticket-set.md §1, REVIEW-2026-08-15 T2).
+    rather than repairing it (REVIEW-2026-08-15 T2).
     Asserted on the module rather than on its output, because a check that
     stops running still passes every assertion about a clean tree."""
 
@@ -645,7 +645,7 @@ SKILL_MD = (
 class CrossTierDuplicationTest(unittest.TestCase):
     """One clause carried by two tiers is a fact with two owners, and the
     compiler reports it rather than holding the two spellings equal
-    (SPEC-ticket-set.md §1, REVIEW-2026-08-15 T2).
+    (REVIEW-2026-08-15 T2).
 
     Runs on the isolated tmp-tree harness tests/test_validator.py owns, so
     the seam exercised is the real ROOT-relative one, and the tree carries

@@ -13,7 +13,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-# Demoted to a composition, then converted at P4 (SPEC-ticket-set.md §3):
+# Demoted to a composition, then converted at P4 (DESIGN.md, amended 2026-08-16):
 # benchmaker is a template directory of ticket stubs, and the prose steps,
 # edges and invariants it used to state are those stubs' frontmatter.
 OLD_PACKAGE = ROOT / "skills" / "workflows" / "orch-benchmaker"

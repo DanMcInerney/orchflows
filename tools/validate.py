@@ -55,7 +55,7 @@ PACK_SIGNATURE_CELLS = (
 # linter compares what they point at rather than the pointer row. `lens`
 # is not among them: it binds a section of `craft`, not a file of its
 # own, and resolving it to craft.md would compare craft's content twice,
-# once under each cell name (SPEC-ticket-set.md P3, REVIEW-2026-08-15
+# once under each cell name (REVIEW-2026-08-15
 # T7). Its row is compared as the text it is, which is three words and
 # so sits under CELL_CLAUSE_MIN_WORDS.
 CRAFT_CELLS_BY_POINTER = ("slicing", "oracle_policy", "craft")
@@ -121,7 +121,7 @@ TERMINAL_TERM_RE = re.compile(r"stalled|limited|exit|terminal", re.IGNORECASE)
 # contracts/result.md's Binding paragraph binds. Nothing holds the two
 # equal any more: the check that did is deleted in P2, because a second
 # spelling kept equal to its owner is still a second spelling
-# (SPEC-ticket-set.md §1). The residual risk is one-directional and small
+# (REVIEW-2026-08-15 T2). The residual risk is one-directional and small
 # -- a unit dropped from this list stops being checked rather than
 # silently passing a check it fails -- and the contract is hash-pinned, so
 # the paragraph cannot move without a supersession PR.
@@ -148,7 +148,7 @@ ENVELOPE_VOCAB_RES = (
     )),
 )
 
-# --- Ticket templates (SPEC-ticket-set.md s2-s3) ---------------------
+# --- Ticket templates (contracts/work-item.md, Template and stub) ----
 #
 # A template is a directory `compositions/<name>/` holding `template.md`
 # plus one ticket stub per other `*.md` file; a stub is a ticket per
@@ -446,7 +446,7 @@ def _validate_pack_carriage(pkg: dict, by_name: dict, diag: Diagnostics) -> None
 # may send a hand-written file to the old location under `.orch/`.
 #
 # One checked copy, not two. AGENTS.md carries the same sentence and P3
-# deletes it (SPEC-ticket-set.md P2-P3); requiring it here would make that
+# deletes it (REVIEW-2026-08-15 T2); requiring it here would make that
 # deletion break the compiler, and until it happens the duplication is
 # reported by validate_cross_tier_duplication rather than mandated.
 FRICTION_CHECKED_COPIES = ("templates/host-block.md",)
@@ -966,7 +966,7 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
 # library's tiers instead of across the packs of one signature cell. It is
 # what replaces keeping copies in sync: a clause carried by both a rule and
 # a skill body is a fact with two owners, and the compiler names both sites
-# rather than holding the two spellings equal (SPEC-ticket-set.md §1).
+# rather than holding the two spellings equal (REVIEW-2026-08-15 T2).
 #
 # WARN for exactly one phase. The tree still carries the copies P3 deletes,
 # and a compiler that refuses its own tree cannot be run; the finding is
@@ -1398,7 +1398,7 @@ def _validate_template_manifest(path: Path, diag: Diagnostics):
         diag.error(
             file_label,
             f"entry '{entry}' is not one of {sorted(TEMPLATE_ENTRY_VALUES)} "
-            "per SPEC-ticket-set.md",
+            "per contracts/work-item.md",
         )
     if "placeholders" not in fm:
         diag.error(file_label, "template frontmatter missing required key 'placeholders'")
@@ -1455,7 +1455,7 @@ def _tree_skill_names() -> set:
 
 
 def validate_templates(diag: Diagnostics) -> None:
-    """SPEC-ticket-set.md s2-s3: every `compositions/<name>/` template is a
+    """contracts/work-item.md, Template and stub: every `compositions/<name>/` template is a
     manifest plus ticket stubs a run can be instantiated from.
 
     Ticket shape and the depends_on graph are read from

@@ -94,11 +94,11 @@ VALID_STATUSES = {
 # contracts/work-item.md: `executor` is the named skill bound to do the
 # work. Two engines are lawful executors — orch-loop (a loop ticket:
 # body, done-check and bound in its sections) and orch-frontier (a
-# nested template) — per SPEC-ticket-set.md §3. The rest dispatch a
+# nested template) — per contracts/work-item.md, Executor form. The rest dispatch a
 # ticket's executor, so naming one is the call cycle
 # rules/composition.md §3 forbids — an engine would spawn itself.
 LOOP_EXECUTOR = "orch-loop"
-# SPEC-ticket-set.md §3: `executor: script:<path>` names a tested script.
+# contracts/work-item.md, Executor form: `executor: script:<path>` names a tested script.
 # It is an executor like any other -- claimable, dispatchable, graded the
 # same -- and differs only in what `packet` tells the child to do with it.
 SCRIPT_EXECUTOR_PREFIX = "script:"
@@ -227,7 +227,7 @@ WORKLOG_NAME = "worklog.md"
 # `worklog.md`, `run-state --note/--terminal` owns this, and neither can
 # make the other's file unwritable.
 RUN_NOTES_NAME = "notes.md"
-# SPEC-ticket-set.md §1: the worklog is a view rendered from the ticket
+# contracts/worklog.md: the worklog is a view rendered from the ticket
 # directory, never a second hand-written file. This line heads a rendered
 # one, and is how `--write` tells a file it may replace from a file some
 # other writer owns.
@@ -237,7 +237,7 @@ WORKLOG_RENDER_MARKER = "<!-- rendered by tickets.py worklog -->"
 WORKLOG_SECTIONS = (
     "goal", "iterations", "failed approaches", "queued scope", "terminal"
 )
-# The executor that makes a ticket a root ticket (SPEC-ticket-set.md §2).
+# The executor that makes a ticket a root ticket (contracts/work-item.md, Root ticket).
 ROOT_EXECUTOR = "orch-decompose"
 # A loop's iteration tickets, `<x>.iter.NN`: every one is an approach the
 # run walked, so every one belongs under failed approaches whatever its own
@@ -287,7 +287,7 @@ GATE_USAGE = (
     "gate <run> <root-id> [--lens <name>[,<name>]] "
     "[--write-scope <path>[,<path>]] [--acceptance-from <id>]"
 )
-# SPEC-ticket-set.md §2's three gate stub names, and the tickets they close
+# contracts/work-item.md, Root ticket's three gate stub names, and the tickets they close
 # over: the root's whole cut subtree, gate stubs excepted.
 GATE_CRITIQUE_ID = "{root}.gate.critique.{lens}"
 GATE_REPAIR_ID = "{root}.gate.repair"
@@ -2223,7 +2223,7 @@ def _cmd_instantiate(rest):
 
 # --- the gate ----------------------------------------------------------
 #
-# SPEC-ticket-set.md §2: a root ticket's subtree ends in one gate — a
+# contracts/work-item.md, Root ticket: a root ticket's subtree ends in one gate — a
 # read-only critique per stamped lens in parallel, one repair holding the
 # run's write scope behind all of them, and one verify carrying the root's
 # own acceptance. Written as tickets, so the gate is executed by the same
@@ -2736,7 +2736,7 @@ def _cmd_packet(rest):
 
     executor_script = _executor_script(executor)
     if executor_script is not None:
-        # SPEC-ticket-set.md §3: the ladder's floor as a node. No skill is
+        # contracts/work-item.md, Executor form: the ladder's floor as a node. No skill is
         # named and no judgment is asked for -- the script decides, and its
         # stdout is the whole result. Written as a run-this instruction
         # rather than as a skill application because the two are dispatched
@@ -2758,7 +2758,7 @@ def _cmd_packet(rest):
         ]
     if executor == LOOP_EXECUTOR:
         # A loop ticket carries its three parts in its own sections
-        # (SPEC-ticket-set.md §3). Named here because a loop dispatched
+        # (contracts/work-item.md, Executor form). Named here because a loop dispatched
         # without its done-check runs to its bound however early it was
         # actually done, and one dispatched without its bound does not stop.
         prompt.append(
@@ -2938,7 +2938,7 @@ def _cmd_result(rest):
 
 # --- the run view -----------------------------------------------------------
 #
-# SPEC-ticket-set.md §1: a worklog is a view rendered from the ticket
+# contracts/worklog.md: a worklog is a view rendered from the ticket
 # directory, never a second hand-written file. Everything below reads
 # tickets and writes nothing but that view, so there is no state here to
 # fall out of step with the tickets it describes.

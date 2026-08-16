@@ -419,7 +419,7 @@ WARNING_CEILING = 4
 # tiers carry -- a fact with two owners -- and the number ratchets to 0,
 # at which point validate.py's CROSS_TIER_DUPLICATE_LEVEL flips to
 # "ERROR" and a new copy is refused outright rather than counted
-# (SPEC-ticket-set.md P2-P3, REVIEW-2026-08-15 T2). No headroom, for the
+# (REVIEW-2026-08-15 T2). No headroom, for the
 # same reason as above. Raised once, at the P4 gate join (2026-08-16),
 # from 12 to the count the widened corpus reports: the check now reads
 # docs/ (vocabulary.md excepted -- the definitional owner) and

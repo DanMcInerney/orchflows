@@ -468,7 +468,7 @@ LENS = ROOT / "skills" / "kernel" / "orch-decompose" / "references" / "cut-lens.
 #
 # Its owner is the cut lens, not rules/verification.md §8: the git-workspace
 # recipe left the rule every pack inherits for the code pack's cut owner
-# (SPEC-ticket-set.md P3, REVIEW-2026-08-15 T4). §8 keeps the law and names
+# (REVIEW-2026-08-15 T4). §8 keeps the law and names
 # the lens, so both halves are read below -- the recipe from the lens, the
 # one hop to it from §8.
 _FAITHFULNESS_CLAUSE = {

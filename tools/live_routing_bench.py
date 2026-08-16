@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run an opt-in, usage-consuming routing benchmark over two adapter sets.
 
-SPEC-ticket-set.md section 7.2 gates one decision: does Claude ship every skill
+benchmarks/routing/README.md's decision rule gates one question: does Claude ship every skill
 adapter, or only the four both hosts expose? This measures it. For each
 adapter set the probe renders an isolated user-scope install into a fresh
 temporary home, opens a plain temporary git repository as the session's
@@ -404,7 +404,7 @@ def _rate(counts: dict) -> float:
     A session that failed before it could route is neither a route nor a
     misroute, so it leaves the rate rather than entering its numerator --
     otherwise the rate measures how often the CLI was reachable, which is
-    not the question SPEC-ticket-set.md §7.2 asks.
+    not the question the README's decision rule asks.
     """
 
     ran = counts["n"] - counts["errors"]
