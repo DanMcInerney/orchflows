@@ -7,18 +7,16 @@
    A truncated transcript is not the oracle's output: read a verdict by
    redirecting to a file and grepping it, never through `| tail` or
    `| head`, which report the pipe's status rather than the command's.
-2. Verdicts follow [contracts/verdict.md](../contracts/verdict.md):
-   PASS, FAIL, or UNVERIFIED per criterion; an unrun check is
-   UNVERIFIED; overall PASS requires every required criterion and states
-   its weakest oracle_class.
+2. The verdict values, which criteria are required, and how the overall
+   verdict is read are
+   [contracts/verdict.md](../contracts/verdict.md)'s.
 3. Freeze criteria and their oracles before the first unit of work; a
    criterion added mid-run is queued scope, not a moving target. A
    criterion states the condition its oracle decides, never a reading of
    current state — a frozen count is a target, not a check.
 4. Verification never edits its target. A verifier that fixes what it
    checks has become an executor and its verdicts are void.
-5. The class policy in [contracts/verdict.md](../contracts/verdict.md)
-   binds every loop and gate; it is stated once, there.
+5. That contract's class policy binds every loop and gate.
 6. Judged verdicts are rendered fresh from the spec in an independent
    context — never from unit verification output, never by the context
    that produced the artifact.
@@ -42,7 +40,8 @@
 10. Independence enters every unit before its acceptance is final,
     from at least one source outside the executing context: a
     completion test whose oracles all carry `pre-existing` oracle
-    provenance ([contracts/work-item.md](../contracts/work-item.md));
+    provenance ([contracts/work-item.md](../contracts/work-item.md))
+    and each can fail on the objective (§8);
     one fresh checker (`orch-check` — never a second executor)
     reviewing the result and its authored checks and correcting per
     §9, the completion test then re-verified by a further context

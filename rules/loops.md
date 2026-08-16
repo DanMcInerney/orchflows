@@ -1,20 +1,23 @@
 # Loops
 
-1. A loop carries a frozen goal, an external done-check, and a bound. The
-   done-check alone decides success; the bound alone caps cost. A bound
-   is never a success condition, and a loop never carries a step plan —
-   the done-condition does not.
+1. A loop carries a frozen goal, an external done-check, and a bound.
+   The done-check alone decides success; the bound alone caps cost and
+   is never a success condition. A declared iteration count is a
+   done-check (`iterations_run == N`, evidenced by the worklog's
+   iteration entries), never a bound. A loop carries no step plan — the
+   done-condition does not.
 2. Every iteration starts fresh from the frozen goal plus the
    [worklog](../contracts/worklog.md), never from a prior iteration's
    transcript.
 3. One work item per iteration. Verified increments commit; unverified
    work never carries forward as fact.
-4. Failed approaches are recorded with the evidence that killed them; an
-   iteration never re-walks one.
+4. Failed approaches are recorded with the evidence that killed them; a
+   later attempt changes cause, input, or method, and an identical retry
+   is a defect.
 5. Progress is exactly a newly verified increment or a newly killed
-   approach; two consecutive iterations without either exit `stalled`.
-   Exhausting the bound exits `limited`. The terminal set is closed:
-   complete, blocked, stalled, limited, failed.
+   approach; two consecutive iterations without either exit `stalled`,
+   and exhausting the bound exits `limited`. The terminal set is
+   [work-item.md](../contracts/work-item.md)'s.
 6. Discovered scope is queued in the worklog, never merged into the live
    goal.
 7. Nested loops inherit bounds and cannot promote a stalled or limited
@@ -24,16 +27,10 @@
    bounded snapshots, never as an unconverging loop.
 9. A loop's body is a caller-supplied binding: what one iteration
    dispatches — one named skill, a composition, or a caller-owned
-   composite of named skills; a composition's `loop` edge supplies
-   body, done-check, and bound per
-   [contracts/composition.md](../contracts/composition.md). The engine
-   owns iteration and exit; the body carries no judgment over either.
-10. A done-check may be the iteration count itself (`iterations_run ==
-    N`; deterministic; evidence: the worklog's iteration entries). The
-    declared count is then the goal; the bound remains a separate cost
-    cap, and §1 is unchanged by this.
-11. A judged done-check's iteration-time PASS exits iteration
-    provisionally; `complete` requires a fresh final re-judgment from
-    the frozen goal. On that re-judgment's FAIL, findings enter the
-    context packet and iteration resumes while bound remains; bound
-    spent exits `limited`.
+   composite of named skills. The engine owns iteration and exit; the
+   body carries no judgment over either.
+10. A judged done-check's iteration-time PASS exits iteration
+    provisionally; `complete` requires the fresh final re-judgment
+    [verification.md](verification.md) §6 requires. On its FAIL,
+    findings enter the context packet and iteration resumes while bound
+    remains; bound spent exits `limited`.
