@@ -4,9 +4,6 @@
    claim of its own success. A claim is exactly worth its cited oracle
    output — the executor's, and equally a checker's, a judge's or a
    gate's, including any part of the caller's framing it repeats back.
-   A truncated transcript is not the oracle's output: read a verdict by
-   redirecting to a file and grepping it, never through `| tail` or
-   `| head`, which report the pipe's status rather than the command's.
 2. The verdict values, which criteria are required, and how the overall
    verdict is read are
    [contracts/verdict.md](../contracts/verdict.md)'s.
@@ -20,10 +17,10 @@
 6. Judged verdicts are rendered fresh from the spec in an independent
    context — never from unit verification output, never by the context
    that produced the artifact.
-7. Verification evidence is reusable at a join while everything it
-   covers is unchanged; a covered identity changing invalidates exactly
-   the entries that cover it. A gate returning findings moves the
-   result identity.
+7. A gate returning findings moves the result identity; what that
+   costs the entries covering it is
+   [contracts/verdict.md](../contracts/verdict.md)'s invalidation
+   clause.
 8. An oracle must be able to fail: a check that cannot FAIL when the
    claim it stands for is false decides nothing, and its PASS is void.
    Show it against a wrong result built beside the tree, never by

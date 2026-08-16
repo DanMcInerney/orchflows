@@ -367,32 +367,16 @@ class TestVisibilityChannelLaw(unittest.TestCase):
 
 
 class TestVerificationHomelessLaws(unittest.TestCase):
-    """`rules/verification.md` owns two laws no other file states: §1's
-    truncation prohibition, which `scripts/cutcheck.py` enforces, and §7's
-    reuse precondition for a gate that returns findings. Neither is
-    hash-pinned, so these are the only mechanical guard; each asserts the
-    clause's distinctive head, never a sentence."""
+    """`rules/verification.md` owns one law no other file states: §7's
+    reuse precondition for a gate that returns findings. (§1's truncation
+    prohibition left this file: `scripts/cutcheck.py` states the how in its
+    module docstring and enforces it in `SWALLOW_RE`, so the rule no longer
+    restates the shell form.) It is not hash-pinned, so this is the only
+    mechanical guard; it asserts the clause's distinctive head, never a
+    sentence."""
 
     def law(self, number):
         return read_clause_flat("rules/verification.md", number)
-
-    def test_a_truncated_transcript_is_not_the_oracles_output(self):
-        text = self.law(1)
-        self.assertIn(
-            "A truncated transcript is not the oracle's output", text,
-            "verification.md §1 does not state that a truncated transcript "
-            "is not the oracle's output",
-        )
-        for pipe in ("`| tail`", "`| head`"):
-            self.assertIn(
-                pipe, text,
-                f"verification.md §1 does not name {pipe} as a reader that "
-                "reports the pipe's status rather than the command's",
-            )
-        self.assertIn(
-            "redirecting to a file and grepping it", text,
-            "verification.md §1 names no method in place of the pipes it forbids",
-        )
 
     def test_a_gate_returning_findings_moves_the_result_identity(self):
         text = self.law(7)

@@ -17,7 +17,8 @@ defines.
   ticket when decisions or evidence must be gathered first) and
   `orch-frontier` drains what decompose emits; **fix** — a failure with
   unknown cause → `tickets.py instantiate
-  {{ORCH_LIB}}/compositions/fix --run <run>`, then `orch-frontier`.
+  {{ORCH_LIB}}/compositions/fix --run <run> --set failure=<the observed
+  failure> --set workspace=<the tree>`, then `orch-frontier`.
   Everything else — `evolve`, `benchmaker`, other templates — runs only
   when named.
 - Tickets are local markdown at the state sink's `tickets/<run>/` —
@@ -52,5 +53,8 @@ refused the call — append the entry as one JSON line to the state sink's
 `friction/<yyyy-mm>.jsonl`, its root given by
 {{ORCH_LIB}}/rules/visibility.md §6 and outside every worktree, with any
 tool that writes a file (ts, observed, expected, category, host); never
-skip the log. The law itself: {{ORCH_LIB}}/rules/improvement.md §1.
+skip the log. Where the refusal covers writing inside a git worktree,
+that path is one the dispatch permits, and the return names that path so
+the caller can collect it. The law itself:
+{{ORCH_LIB}}/rules/improvement.md §1.
 <!-- END ORCHFLOWS -->

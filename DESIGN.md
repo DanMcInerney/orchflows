@@ -312,8 +312,8 @@ model-logging responsibility of its own.
   code, which is `deterministic` — a class is a property of how a
   verdict is produced, not of what it is about. No new workspace
   semantics either, and the reason is stronger than "one consumer":
-  the library already partitions visibility in four places — `orch-judge`'s
-  blindness, `orch-eval-design`'s candidate-blindness, research lanes,
+  the library already partitions visibility in four places — `orch-verify`'s
+  blind scoring, `orch-eval-design`'s candidate-blindness, research lanes,
   `orch-fixture`'s withheld anchors — and enforces every one at the
   dispatch layer that [contracts/work-item.md](contracts/work-item.md#dispatch)
   owns, through `inputs` and `authority`, never in a `workspace` cell.

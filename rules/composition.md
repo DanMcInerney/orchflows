@@ -33,9 +33,10 @@
 8. Every failure path returns partial results plus the evidence
    gathered; work is never silently discarded.
 9. Generic skills (kernel, engines, workflows, utilities) never name a
-   domain; they reference domain facts only through the stamped pack's
-   cells. A generic body may name the skill the stamped pack's cell
-   binds, only in apposition to the cell reference that binds it.
+   domain; how they reach domain facts is
+   [contracts/pack-signature.md](../contracts/pack-signature.md)'s. A
+   generic body may name the skill the stamped pack's cell binds, only
+   in apposition to the cell reference that binds it.
 10. Every `Require:` item rides a named T0 carrier — a field a T0
     contract defines, never bare prose; the caller supplies each
     callee's `Require` item by that name. A dispatchable unit's

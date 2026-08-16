@@ -28,9 +28,9 @@ never activities; a criterion no oracle can check is a defect to fix
 here, not the decomposer's slack — with exact nouns and verbs from
 [docs/vocabulary.md](../../../docs/vocabulary.md) and the craft cell of
 the pack the stamp will name, so they read as the deliverable's
-searchable names. An exemplar rides `## Fixed inputs` as a pointer to an
-existing artifact plus every property the imitation must carry; an
-unresolved pointer is a defect to fix here.
+searchable names. An exemplar rides `## Fixed inputs` in the form that
+same [root ticket](../../../contracts/work-item.md#root-ticket)
+paragraph mandates; an unresolved pointer is a defect to fix here.
 
 Stamp routing — exactly one pack per
 [rules/topology.md](../../../rules/topology.md). Before Return, verify
