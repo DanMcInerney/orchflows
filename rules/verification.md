@@ -16,7 +16,7 @@
    current state — a frozen count is a target, not a check.
 4. Verification never edits its target. A verifier that fixes what it
    checks has become an executor and its verdicts are void.
-5. That contract's class policy binds every loop and gate.
+5. The class policy is stated once, in that same contract.
 6. Judged verdicts are rendered fresh from the spec in an independent
    context — never from unit verification output, never by the context
    that produced the artifact.
