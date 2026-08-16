@@ -156,7 +156,6 @@
  "cutcheck-f6-executor": {
   "exit": 1,
   "lines": [
-   "01-engine: family 6: illegal-executor: orch-panel is an engine",
    "03-alien: family 6: illegal-executor: orch-render is neither orch-code-pack's executor cell nor its assembly cell",
    "cutcheck: advisory -- reported, and never setting the exit status:",
    "cutcheck-f6-executor: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f6-executor/coverage.md"

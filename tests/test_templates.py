@@ -434,19 +434,10 @@ class TestTheValidatorRefusesWhatTheOwnerRefuses(_TemplateTree):
             "repair", depends="[diagnose]",
             sections=tuple(s for s in STUB_SECTIONS if s != "Feedback"),
         ),
-        # An engine dispatches a ticket's executor and cannot be one: the
-        # validator admitted orch-compose and orch-panel while
-        # tickets.py refused them, so a template it passed could not be
-        # instantiated.
-        "engine": stub_md("repair", depends="[diagnose]", executor="orch-panel"),
-        "noframes": "id: repair\nexecutor: orch-repair\n\n## Objective\n\nnone.\n",
+        "noframes":"id: repair\nexecutor: orch-repair\n\n## Objective\n\nnone.\n",
     }
 
     def _write_all(self):
-        # The engine case is about legality, not resolution: with the skill
-        # in the tree the validator's own executor check passes, so the one
-        # ERROR left on that stub is the owner's refusal.
-        self.write_skill("orch-panel", tier="engines")
         for name, bad in sorted(self.OFF_CONTRACT.items()):
             stubs = dict(GOOD_STUBS)
             stubs["repair"] = bad

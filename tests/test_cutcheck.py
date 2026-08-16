@@ -523,8 +523,8 @@ class PackCellHomeTest(unittest.TestCase):
     repository the run's work lands in. Resolving the cells against the
     invoking worktree meant that from any target carrying no `packs/` --
     which is every target but this one -- `_pack_cells` returned the empty set
-    and family 6 silently fell back to the engine prohibition alone. The check
-    passed by finding nothing to check.
+    and family 6 had nothing left to grade. The check passed by finding
+    nothing to check.
     """
 
     def setUp(self):
@@ -543,17 +543,20 @@ class PackCellHomeTest(unittest.TestCase):
         )
         self.assertEqual(set(), cutcheck._pack_cells("orch-code-pack", self.empty))
 
-    def test_a_library_carrying_no_packs_leaves_only_the_engine_prohibition(self):
+    def test_a_library_carrying_no_packs_grades_nothing_at_all(self):
+        """Since P4-3 the pack cells are the whole of family 6 — the engine
+        prohibition that used to survive an empty library is deleted with the
+        two engines it named. So an empty library is not a weaker grading, it
+        is no grading, which is exactly what `_lib_root` exists to prevent."""
         siblings = {
-            "01-engine": {"id": "01-engine", "executor": "orch-panel",
-                          "pack": "orch-code-pack"},
-            "02-alien": {"id": "02-alien", "executor": "orch-render",
+            "01-alien": {"id": "01-alien", "executor": "orch-render",
+                         "pack": "orch-code-pack"},
+            "02-legal": {"id": "02-legal", "executor": "orch-tdd",
                          "pack": "orch-code-pack"},
         }
-        reported = cutcheck._executor_legality(siblings, self.empty)
-        self.assertEqual(["01-engine"], [item for item, _, _, _ in reported])
+        self.assertEqual([], cutcheck._executor_legality(siblings, self.empty))
         self.assertEqual(
-            ["01-engine", "02-alien"],
+            ["01-alien"],
             [item for item, _, _, _ in cutcheck._executor_legality(siblings, ROOT)],
         )
 
@@ -683,23 +686,26 @@ class ExecutorLegalityTest(unittest.TestCase):
     def test_executor_set_exits_nonzero(self):
         self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
 
-    def test_an_engine_executor_is_reported_with_its_ticket(self):
-        lines = [line for line in self.lines if "01-engine" in line]
-        self.assertEqual(len(lines), 1, self.result.stdout)
-        self.assertIn(cutcheck.ILLEGAL_EXECUTOR, lines[0])
-        self.assertIn("orch-panel", lines[0])
-
     def test_an_executor_no_cell_of_the_pack_names_is_reported(self):
         lines = [line for line in self.lines if "03-alien" in line]
         self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.ILLEGAL_EXECUTOR, lines[0])
         self.assertIn("orch-render", lines[0])
         self.assertIn("orch-code-pack", lines[0])
 
     def test_the_packs_own_executor_cell_is_not_reported(self):
         self.assertNotIn("02-legal", self.result.stdout)
 
-    def test_the_engine_set_is_the_ticket_scripts_own(self):
-        self.assertIs(cutcheck.ENGINE_EXECUTORS, tickets.ENGINE_EXECUTORS)
+    def test_the_surviving_engines_are_lawful_executors(self):
+        """P4-3 deleted the engine prohibition with the two engines it named.
+        Both survivors are lawful ticket executors, and `scripts/tickets.py`
+        is where that set lives — so cutcheck imports it rather than keeping a
+        second copy that could drift."""
+        self.assertEqual(
+            frozenset({"orch-frontier", "orch-loop"}),
+            tickets.TICKET_EXECUTOR_ENGINES,
+        )
+        self.assertFalse(hasattr(cutcheck, "ENGINE_EXECUTORS"))
 
 
 class CoverageTest(unittest.TestCase):

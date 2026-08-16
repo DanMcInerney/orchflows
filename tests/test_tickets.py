@@ -1101,18 +1101,21 @@ class TestEngineExecutorIsRejected(unittest.TestCase):
         return run_dir
 
     def test_engine_list_matches_the_library(self):
-        """The refused engines and the two lawful engine executors
-        (orch-loop: a loop ticket; orch-frontier: a nested template)
-        partition skills/engines/ — SPEC-ticket-set.md §3."""
+        """Every engine is a lawful ticket executor — orch-loop for a loop
+        ticket, orch-frontier for a nested template (SPEC-ticket-set.md §3).
+
+        This was a partition until P4-3: the other half was the engines
+        refused as an executor, orch-compose and orch-panel, both deleted
+        there. A refusal set with no members refuses nothing, so the concept
+        went with them and this is the whole of the pin — an engine added to
+        the library without a decision about it fails right here."""
         engines = {
             path.name
             for path in (ROOT / "skills" / "engines").iterdir()
             if path.is_dir()
         }
-        refused = set(tickets_mod.ENGINE_EXECUTORS)
-        lawful = set(tickets_mod.TICKET_EXECUTOR_ENGINES)
-        self.assertEqual(set(), refused & lawful)
-        self.assertEqual(engines, refused | lawful)
+        self.assertEqual(engines, set(tickets_mod.TICKET_EXECUTOR_ENGINES))
+        self.assertFalse(hasattr(tickets_mod, "ENGINE_EXECUTORS"))
 
     def test_a_loop_or_frontier_executor_is_lawful(self):
         for engine in sorted(tickets_mod.TICKET_EXECUTOR_ENGINES):
@@ -1124,37 +1127,6 @@ class TestEngineExecutorIsRejected(unittest.TestCase):
                 self.assertEqual(["T1"], [t["id"] for t in run_cmd(tmp, "ready")["ready"]])
                 payload = run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-a")
                 self.assertIn("claimed", payload, engine)
-
-    def test_every_engine_is_refused(self):
-        for engine in sorted(tickets_mod.ENGINE_EXECUTORS):
-            with tempfile.TemporaryDirectory() as tmp:
-                tmp = Path(tmp)
-                self.make(tmp, engine)
-                summary = run_cmd(tmp, "list")["tickets"][0]
-                self.assertIn("error", summary, engine)
-                self.assertIn("is an engine", summary["error"])
-
-    def test_an_engine_executor_is_never_ready(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            self.make(tmp, "orch-panel")
-            self.assertEqual([], run_cmd(tmp, "ready")["ready"])
-
-    def test_an_engine_executor_cannot_be_claimed(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            run_dir = self.make(tmp, "orch-panel")
-            payload = run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-a")
-            self.assertIn("is an engine", payload.get("error", ""))
-            self.assertNotIn(
-                "claimed_by", (run_dir / "T1.md").read_text(encoding="utf-8")
-            )
-
-    def test_backticks_and_spacing_do_not_evade_the_check(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            self.make(tmp, "`orch-panel`")
-            self.assertIn("error", run_cmd(tmp, "list")["tickets"][0])
 
     def test_a_lawful_executor_still_passes(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1404,13 +1376,6 @@ class TestPacket(unittest.TestCase):
             packet = run_cmd(tmp, "packet", "testrun", "T2", "--reply-to", "main")
             self.assertNotIn("error", packet)
             self.assertEqual("T2", packet["packet"]["id"])
-
-    def test_engine_executor_is_refused(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            self.make(tmp, FULL_TICKET.replace("executor: orch-tdd", "executor: orch-panel"))
-            payload = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")
-            self.assertIn("is an engine", payload["error"])
 
     def test_unknown_ticket_and_an_empty_sink_are_errors_not_crashes(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -3321,9 +3286,9 @@ class PackWorkspaceTest(unittest.TestCase):
             self.assertEqual(1, len(establishment_lines(prompt)), (pack, prompt))
 
     def test_the_table_is_hardcoded_beside_the_engine_list(self):
-        """The shape `ENGINE_EXECUTORS` set: a module-level literal, not a
-        tree read, because an installed copy of this script runs against a
-        target repository that carries no `packs/` at all."""
+        """The shape `TICKET_EXECUTOR_ENGINES` has: a module-level literal,
+        not a tree read, because an installed copy of this script runs against
+        a target repository that carries no `packs/` at all."""
 
         table = tickets_mod.PACK_WORKSPACE_MECHANISMS
         self.assertIsInstance(table, dict)

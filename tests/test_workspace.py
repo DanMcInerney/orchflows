@@ -450,16 +450,18 @@ class TestTicketsPayloadIsGradedNotItsExitStatus(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             main, run_dir = make_repo(tmp)
-            # `orch-panel` is an engine, which tickets.py reports as an error
-            # inside the payload of an otherwise successful call
+            # A ticket file whose bytes are not UTF-8, which tickets.py
+            # reports as an error inside the payload of an otherwise
+            # successful call. It used to be `executor: orch-panel`, an engine
+            # — P4-3 deleted the two engines that were illegal executors and
+            # the prohibition with them, so this is the payload-error source
+            # that remains for a file `_locate` accepts. Which error it is has
+            # never been this test's subject; that `list` exits 0 carrying
+            # one, and that `workspace.py` grades the payload rather than the
+            # exit status, is.
             ticket = make_ticket(run_dir, "T1")
-            ticket.write_text(
-                ticket.read_text(encoding="utf-8").replace(
-                    "executor: orch-tdd", "executor: orch-panel"
-                ),
-                encoding="utf-8",
-            )
-            before = ticket.read_text(encoding="utf-8")
+            ticket.write_bytes(b"---\nid: T1\nexecutor: \xff\xfe\n---\n")
+            before = ticket.read_bytes()
 
             listed = subprocess.run(
                 [sys.executable, str(TICKETS_PY), "list", "--run", "testrun"],
@@ -471,8 +473,8 @@ class TestTicketsPayloadIsGradedNotItsExitStatus(unittest.TestCase):
             done = run_workspace(main, "start", "testrun", "T1")
 
             self.assertEqual(1, done.returncode, done.stdout)
-            self.assertIn("engine", payload_of(done)["error"])
-            self.assertEqual(before, ticket.read_text(encoding="utf-8"))
+            self.assertIn("unreadable ticket", payload_of(done)["error"])
+            self.assertEqual(before, ticket.read_bytes())
 
 
 class TestScriptShape(unittest.TestCase):

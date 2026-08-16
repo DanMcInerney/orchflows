@@ -63,13 +63,15 @@ of it, and its ``<root>.gate.*`` stubs are named by the keyword rather
 than by id, so neither is read as an item here or paired in family 4.
 
 Executor legality: an item's executor is one its stamped pack's executor
-or assembly cell names, and is never an engine -- an engine dispatches
-an executor rather than being one. The cells are read from the orchflows
-library rather than from the repository under test, which carries no
-packs of its own. An item naming no pack has no cell to resolve against,
-so only the prohibition applies; and a root ticket and its gate stubs
-are graded against the library's own structural executors, which no
-pack's cell names.
+or assembly cell names. The cells are read from the orchflows library
+rather than from the repository under test, which carries no packs of
+its own. An item naming no pack has no cell to resolve against and is
+not graded here; a root ticket and its gate stubs are graded against the
+library's own structural executors, which no pack's cell names; and an
+id sitting inside another root's subtree is reported as a nested root.
+Until P4-3 this family also refused an engine as an executor -- the two
+engines it named are deleted, and both survivors (``orch-loop`` for a
+loop ticket, ``orch-frontier`` for a nested template) are lawful.
 
 Shape: the command text itself carries three defects. A pipeline through
 ``tail`` or ``head`` reports that pipe's exit status, not the check's. A
@@ -125,7 +127,6 @@ from pathlib import Path
 try:  # in-repo; the installed copy sits flat beside tickets.py
     from scripts import state_root
     from scripts.tickets import (
-        ENGINE_EXECUTORS,
         GATE_EXECUTORS,
         ORACLE_CLASS_RE,
         PROVENANCE_RE,
@@ -137,7 +138,6 @@ try:  # in-repo; the installed copy sits flat beside tickets.py
 except ImportError:  # pragma: no cover - the installed copy's path
     import state_root
     from tickets import (
-        ENGINE_EXECUTORS,
         GATE_EXECUTORS,
         ORACLE_CLASS_RE,
         PROVENANCE_RE,
@@ -1492,8 +1492,8 @@ def _lib_root(declared):
     tree under test is whatever repository the run's work lands in, so
     resolving cells against the invoking worktree meant that from any target
     carrying no ``packs/`` -- which is every target but the library's own
-    checkout -- the cell set came back empty and family 6 fell back to the
-    engine prohibition alone. The check passed by finding nothing to check.
+    checkout -- the cell set came back empty and family 6 had nothing left to
+    grade. The check passed by finding nothing to check.
 
     ``--lib`` decides it when the caller names one. Otherwise the tree this
     script runs from, which is the library itself in a checkout of it, and
@@ -1515,11 +1515,10 @@ def _lib_root(declared):
 
 
 def _executor_legality(siblings, lib_root):
-    """Family 6: an executor its pack's cells name, and never an engine.
+    """Family 6: an executor its pack's cells name.
 
-    An engine dispatches a ticket's executor, so naming one as the executor is
-    a call cycle. An item naming no pack has no cell to resolve against, and
-    only the prohibition applies to it.
+    An item naming no pack has no cell to resolve against and is not graded
+    here.
 
     A root ticket and a gate stub are graded against the library instead of
     against the pack. Their executors are structural -- the decomposer is what
@@ -1538,11 +1537,6 @@ def _executor_legality(siblings, lib_root):
         frontmatter = siblings[ticket_id]
         executor = str(frontmatter.get("executor") or "").strip()
         if not executor:
-            continue
-        if executor in ENGINE_EXECUTORS:
-            findings.append(
-                (ticket_id, 0, ILLEGAL_EXECUTOR, "{} is an engine".format(executor))
-            )
             continue
         if ticket_id in roots:
             continue
