@@ -1,6 +1,6 @@
 """K3 Reddit hydration through the Arctic Shift archive.
 
-Measured 2026-08-10 (findings.md §1, "Reddit"): Reddit's own ``.json``
+Measured 2026-08-10 (Reddit): Reddit's own ``.json``
 surfaces return 403 to every User-Agent tried, and its RSS ceiling is one
 to two requests per thirty seconds. Arctic Shift answered six back-to-back
 requests at ~0.25 s with no throttle, returning ``score``,

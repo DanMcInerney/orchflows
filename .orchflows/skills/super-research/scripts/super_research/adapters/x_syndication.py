@@ -1,6 +1,6 @@
 """K2 X profile timelines from the structured data a public page embeds.
 
-Measured 2026-08-10 (findings.md §1, "X"): the syndication profile route
+Measured 2026-08-10 (X): the syndication profile route
 answered 200 in 2.5 s with 378 KB carrying 100 timeline entries, each with
 ``full_text``, ``created_at``, ``favorite_count``, ``retweet_count``,
 ``reply_count``, ``quote_count``, ``conversation_id_str``, ``lang``, and an
@@ -40,7 +40,7 @@ DESCRIPTOR = AdapterDescriptor(
     native_identity_namespace="x",
     representation_kind="native",
     operator_identity="x",
-    # findings.md §1: 2.5 s per request. Nothing on this route was measured
+    # The 2026-08-10 probes: 2.5 s per request. Nothing on this route was measured
     # refusing, so `burst` and `cooldown_ms` keep the protocol's conservative
     # defaults rather than a ceiling nobody observed.
     min_interval_ms=2500,
@@ -63,7 +63,7 @@ TIMELINE_PATH = ("props", "pageProps", "timeline", "entries")
 TWEET_ENTRY_TYPE = "tweet"
 TWEET_PATH = ("content", "tweet")
 
-# Every field findings.md §1 records this route returning per entry. A record
+# Every field the 2026-08-10 probes record this route returning per entry. A record
 # missing one says so, because a caller comparing a timeline needs to know
 # which rows were incomplete rather than which were zero.
 ROSTER_FIELDS = (

@@ -1,6 +1,6 @@
 {
-  "source": "findings.md §1 (carry-over routes), measured 2026-08-10",
-  "note": "Every answer this adapter can be given, and what each one means. Two of them carry the claims that matter. A repository with no open issue and a search that matched nothing are the origin saying there is nothing there, and neither is a payload that moved. And GitHub's documented answer to an anonymous client that has spent its hour is 403 with a message about rate limits — so a 403 here is never `auth_required`: waiting fixes it and a credential is not required to have the capability at all, which is the whole of criterion 1. The payload shapes are this package's belief; findings.md records statuses and a ceiling, not bodies, and offline determinism forbids capturing one here.",
+  "source": "route measurements of 2026-08-10, (carry-over routes)",
+  "note": "Every answer this adapter can be given, and what each one means. Two of them carry the claims that matter. A repository with no open issue and a search that matched nothing are the origin saying there is nothing there, and neither is a payload that moved. And GitHub's documented answer to an anonymous client that has spent its hour is 403 with a message about rate limits — so a 403 here is never `auth_required`: waiting fixes it and a credential is not required to have the capability at all, which is the whole of criterion 1. The payload shapes are this package's belief; the 2026-08-10 probes record statuses and a ceiling, not bodies, and offline determinism forbids capturing one here.",
   "cases": [
     {
       "case_name": "repository_200",

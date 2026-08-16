@@ -1,5 +1,5 @@
 {
-  "source": "findings.md §1 (Instagram), measured 2026-08-10",
+  "source": "route measurements of 2026-08-10, (Instagram)",
   "note": "One measured success and the four ways this route can answer with no profile on it. Each is a different fact and none of them is the others: a username nobody holds is the origin saying so, a payload whose container moved is the shape changing under a K1 client, a 200 that is not JSON is this route no longer answering in JSON, and 401 is the origin's own refusal. The one that matters most is the login page: it says 'Log in' in plain words at HTTP 200, and reading that as a refusal is the false negative the LinkedIn measurement overturned. Only a status line may make this route auth_required.",
   "cases": [
     {

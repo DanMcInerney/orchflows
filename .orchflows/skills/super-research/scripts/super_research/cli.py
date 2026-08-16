@@ -236,12 +236,24 @@ def smoke_lines(
         # Nothing about the platform is said here, including about its field
         # set: there was no origin answer to assert one against, and reporting
         # the row as unmet would be this network's block written down as the
-        # platform's gap.
-        lines.append(
-            "  answered by this host's local network, not by the platform"
-            " (findings.md section 0). This is a statement about this network:"
-            " nothing about the platform is concluded and nothing is degraded."
-        )
+        # platform's gap. Which of the two happened is still the operator's to
+        # know — an appliance answering is a different thing to go and fix from
+        # nobody answering — so the channel decides the standing and this line
+        # decides the sentence.
+        if transport.UNREACHABLE in observation.loss:
+            lines.append(
+                "  no answer came back from anyone — not the origin, and not an"
+                " appliance in front of it. This is a statement about this host's"
+                " connection: nothing about the platform is concluded and nothing"
+                " is degraded."
+            )
+        else:
+            lines.append(
+                "  answered by this host's local network, not by the platform"
+                " (references/evidence.md, the captive-portal caveat). This is a"
+                " statement about this network: nothing about the platform is"
+                " concluded and nothing is degraded."
+            )
         lines.append("  roster field set: not asserted, nothing from the origin to assert it on")
         lines.append(
             "  {0} keeps the standing it had: {1} ({2})".format(
@@ -283,26 +295,6 @@ def smoke_lines(
         )
     )
     return lines
-
-
-def unreachable_lines(error: transport.TransportError) -> List[str]:
-    """What to say when no answer came back at all, from anyone.
-
-    A refused connection, an unresolvable name, or a TLS handshake that failed
-    is the same news as this host's appliance answering: nothing about the
-    platform was concluded, because nothing of the platform was read. It takes
-    the same exit code for that reason. Reporting it as `1` would file a cable
-    nobody plugged in as a row the origin declined to carry, which is the exact
-    error findings.md section 0 exists to prevent, arriving by a different door.
-    """
-
-    return [
-        "the read did not complete: {0}".format(error),
-        "  no answer came back from anyone — not the origin, and not an"
-        " appliance in front of it. This is a statement about this host's"
-        " connection: nothing about the platform is concluded, nothing is"
-        " degraded, and nothing was recorded.",
-    ]
 
 
 def status_lines(
@@ -401,12 +393,6 @@ def main(
             )
         else:
             code, lines = (EXIT_OK, adapter_lines())
-    except transport.TransportError as error:
-        # The one failure that reaches here rather than becoming a typed page:
-        # the read never got an answer to type. Uncaught it left as a traceback
-        # and exit `1`, the code that means the origin answered and the row was
-        # not carried — a local network condition reported as a platform gap.
-        code, lines = (EXIT_LOCAL_NETWORK, unreachable_lines(error))
     finally:
         # The run ends here, so the guest token this process may have minted
         # ends here too. It lives in a module-level store for as long as the

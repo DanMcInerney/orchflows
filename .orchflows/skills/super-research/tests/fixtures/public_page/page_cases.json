@@ -1,6 +1,6 @@
 {
   "_note": [
-    "findings.md §0 measured both selections as control probes: `example.com` and",
+    "the captive-portal caveat measured both selections as control probes: `example.com` and",
     "`wikipedia.org` answered 200 with genuine origin content from this host, while the",
     "network appliance answered `tiktok.com` and `ecosia.org` with a 503 login portal. Those",
     "are the two static documents the evidence records, and they are what this adapter may",

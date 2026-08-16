@@ -1,7 +1,7 @@
 """Run-local cache seam: one run's memory of reads it already made.
 
 Measured Reddit RSS answers 1–2 requests per 30 s per IP, whatever identity
-asks (findings.md §1). A run that re-reads what it just read therefore starves
+asks (measured 2026-08-10). A run that re-reads what it just read therefore starves
 rather than merely running slowly, which is why this cache is a correctness
 requirement and not an optimization.
 
@@ -36,12 +36,12 @@ CACHE_HIT = "cache_hit"
 DEFAULT_TTL_SECONDS = 60.0
 ROUTE_TTL_SECONDS: Dict[str, float] = {
     # A web index's answer to one query is stable across a run's discovery
-    # phase; findings.md §1 observed no throttle here, so this TTL exists to
+    # phase; the 2026-08-10 probes observed no throttle here, so this TTL exists to
     # stop a run asking the same question twice, not to dodge a limit.
     transport.DDG_HTML_ROUTE: 300.0,
     # An archive lookup by fixed id changes only as the archive backfills.
     transport.ARCTIC_SHIFT_POSTS_ROUTE: 900.0,
-    # One author's whole timeline for 2.5 s and 378 KB (findings.md §1), so
+    # One author's whole timeline for 2.5 s and 378 KB (measured 2026-08-10), so
     # this is the route where remembering earns the most. Five minutes bounds
     # how stale an engagement count a caller can be handed, and a run asking
     # for the same author twice is asking the same question.
@@ -52,7 +52,7 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # anywhere else on X.
     transport.X_GUEST_GRAPHQL_ROUTE: 120.0,
     # The least volatile thing in the roster and the most expensive to read:
-    # 577 KB in 1.3 s (findings.md §1) for a block that changes when a member
+    # 577 KB in 1.3 s (measured 2026-08-10) for a block that changes when a member
     # edits their profile and carries no counter at all, so nothing in it goes
     # stale on a run's timescale. It is also the largest answer the evidence
     # has measured, and it fits: 577 KB is inside `MAX_ENTRY_BYTES`, so this
@@ -64,7 +64,7 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # read — 27 KB in 0.7 s, so holding an answer longer buys less and risks
     # handing back a page of results that has moved on.
     transport.LINKEDIN_JOBS_GUEST_SEARCH_ROUTE: 300.0,
-    # The most expensive read in the roster — 455 KB in 2.9 s (findings.md §1)
+    # The most expensive read in the roster — 455 KB in 2.9 s (measured 2026-08-10)
     # — so remembering earns more here per request than anywhere else, and a
     # run asking for the same account twice is asking the same question. It
     # still cannot take the LinkedIn profile's window: that block carries no
@@ -91,7 +91,7 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # asking the same question, and one re-reading it later wants the counts.
     transport.HN_FIREBASE_ITEM_ROUTE: 120.0,
     # The longest window this ticket declares, and the only one in the table
-    # argued from a budget rather than from a latency. findings.md §1 measured
+    # argued from a budget rather than from a latency. The 2026-08-10 probes recorded
     # the anonymous ceiling at 60/hr per bucket: a repeat read here costs a
     # full minute of the hour, where every other route in the roster costs
     # seconds of waiting. A repository's own row — its description, its star
@@ -114,7 +114,7 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # window the web index of a fast-moving front page holds, for that same
     # reason, and here the saving is a third of a minute rather than a second.
     transport.REDDIT_FEED_ROUTE: 180.0,
-    # The cheapest read in the roster — 39 KB in 0.35 s (findings.md §1) — so
+    # The cheapest read in the roster — 39 KB in 0.35 s (measured 2026-08-10) — so
     # this window earns the least of any here per request, and it exists to
     # stop a run asking one channel twice rather than to dodge a limit nobody
     # measured. Five minutes is what every "the same question twice" route in
@@ -231,7 +231,7 @@ def cacheable(
 
     Three kinds of answer may not. One that was not a read: replaying it would
     be this package answering for the origin. One the origin did not produce:
-    findings.md §0's local block, or a transient failure, says nothing about
+    the captive-portal caveat's local block, or a transient failure, says nothing about
     the origin, and holding it would make recovery inside the window
     unreachable. And one too large to hold, which the run's footprint forbids.
     """

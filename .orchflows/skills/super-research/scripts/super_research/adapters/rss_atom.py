@@ -1,6 +1,6 @@
 """K0 syndication: one generic RSS/Atom reader on one selected feed route.
 
-Measured 2026-08-10 (findings.md §1): ``feeds/videos.xml?channel_id=`` answered
+Measured 2026-08-10: ``feeds/videos.xml?channel_id=`` answered
 200 with 39 KB in 0.35 s — the cheapest read in the roster, and the only
 RSS/Atom document the evidence records. That is the one route this adapter
 declares.
@@ -69,7 +69,7 @@ DESCRIPTOR = AdapterDescriptor(
     native_identity_namespace="",
     representation_kind="feed",
     operator_identity="youtube",
-    # findings.md §1: 0.35 s per request. Nothing on this route was measured
+    # The 2026-08-10 probes: 0.35 s per request. Nothing on this route was measured
     # refusing, so `burst` and `cooldown_ms` keep the protocol's conservative
     # defaults rather than a ceiling nobody observed.
     min_interval_ms=350,

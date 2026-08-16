@@ -14,7 +14,7 @@ command is `python scripts/friction.py "<what happened>" "<what was
 expected or missing>"`, same sink, same flags. `orch-off` suspends
 routing for the session on request.
 
-- Project-scope custom item: `super-research` — keyless read-only acquisition from public surfaces — at `.orchflows/skills/super-research/SKILL.md`. The Claude adapter mirror at `.claude/skills/super-research/SKILL.md` is an include stub whose absolute path `scopes.md` mandates and which therefore resolves on one machine only: read the owner, not the mirror.
+- Project-scope custom item: `super-research` — keyless read-only acquisition from public surfaces — at `.orchflows/skills/super-research/SKILL.md`.
 
 ## Required checks
 

@@ -5,7 +5,7 @@ adapter, sees the player answer come back with no caption track listed, and
 concludes that the video has no captions — off a 200 whose title, view count
 and publish date all arrived perfectly. A caller then records something false
 about the video rather than something true about the read, and it does so on
-every video it will ever read, because findings.md §1 measured that empty list
+every video it will ever read, because the 2026-08-10 probes recorded that empty list
 on five clients and three videos without exception.
 
 It also reads the shipped adapter's own ``CAPTION_FETCH_FIELD``, which the

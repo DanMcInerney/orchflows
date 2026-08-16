@@ -141,17 +141,29 @@ ORIGIN_FAILURE = "origin_failure"
 NETWORK_INTERCEPTED = "network_intercepted"
 CHANNEL_VERDICTS = (ORIGIN_CONTENT, ORIGIN_FAILURE, NETWORK_INTERCEPTED)
 
-# The one measured captive-portal signature (findings.md §0, 2026-08-10):
+# The one measured captive-portal signature (evidence.md's captive-portal
+# caveat, measured 2026-08-10):
 # this host's appliance answered tiktok.com and ecosia.org with HTTP 503 and
 # a body carrying this marker, while example.com and wikipedia.org returned
 # genuine 200 origin content. Widening this set requires a new measurement:
 # a marker an origin also emits would record platform behavior as a local
-# block, which is the mirror of the error §0 forbids.
+# block, which is the mirror of the error that caveat forbids.
 CAPTIVE_PORTAL_MARKERS = ('<base href="/login/">',)
 
 
 class TransportError(RuntimeError):
     """An outbound request was refused or could not be completed."""
+
+
+# The typed loss a read that raised :class:`TransportError` leaves on its page.
+# It covers everything that class covers — a read nothing took, and a read this
+# module declined to send (a non-https address, a write-capable method, an
+# undeclared route or credential) — so the exception's text travels with it as
+# the warning that says which. It is declared beside the exception and loaded
+# nowhere here, because the modules that spell it are the ones that meet the
+# failure rather than raise it: `runner` attaches it to the step it ends and
+# bills no call for it, `smoke` reads it to decide which party answered.
+UNREACHABLE = "unreachable"
 
 
 @dataclass(frozen=True)

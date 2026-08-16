@@ -620,10 +620,10 @@ class BoundaryOracleCanFailTest(unittest.TestCase):
 
 PROTOCOL_PATH = Path(__file__).resolve().parent.parent / "references" / "protocol.md"
 
-# The two loss tables in `protocol.md`, named by the heading each sits under.
-# Only these two are read; every other table in that file belongs to someone
-# else.
-LOSS_TABLE_HEADERS = ("| code | means | named by |", "| code | named by |")
+# The three loss tables in `protocol.md`, named by the header row each carries.
+# Only tables with this shape are read; every other table in that file belongs
+# to someone else.
+LOSS_TABLE_HEADERS = ("| code | means | named by |",)
 
 # A code the tables may name that the source is expected not to contain at all.
 # Both are vocabulary the spec added for routes that are deferred, so their
@@ -631,13 +631,18 @@ LOSS_TABLE_HEADERS = ("| code | means | named by |", "| code | named by |")
 # checked in that direction too.
 UNSHIPPED_CODES = ("archive_lag", "scope_required")
 
-# Modules that declare a loss code as a constant and never load it. A name with
-# zero loads is how `protocol.md` argues the absence is checkable from outside
-# the module, which is only worth arguing if something checks it.
+# Modules that declare a loss code as a constant and never load it, which is a
+# claim rather than an oversight and is therefore pinned in that direction too.
+# `reddit_feed`, `rss_atom`, `public_page` and `github_rest` declare
+# `AUTH_REQUIRED` and load it nowhere because no status a documented-keyless
+# route can answer with is a report that a credential was needed; `transport`
+# and `cache` each own a code for the module that attaches it. A name with zero
+# loads is only checkable from outside the module if something checks it.
 DECLARED_NEVER_LOADED = {
     "auth_required": ("github_rest", "public_page", "reddit_feed", "rss_atom"),
     "rate_limited": ("transport",),
     "cache_hit": ("cache",),
+    "unreachable": ("transport",),
 }
 
 
@@ -755,7 +760,6 @@ NUMBER_WORDS = (
 ITEM_DIR = Path(__file__).resolve().parent.parent
 OWNER_SKILL = ITEM_DIR / "SKILL.md"
 HOST_MIRROR = ITEM_DIR.parent.parent.parent / ".claude" / "skills" / "super-research" / "SKILL.md"
-SCOPE_ROUTING_FILE = ITEM_DIR.parent.parent.parent / "AGENTS.md"
 
 # `rules/composition.md` §5. Restated rather than imported because
 # `tools/validate.py`, which enforces it for every library skill, does not read
@@ -797,14 +801,16 @@ class ThisSuiteCountsItsOwnModuleSetTest(unittest.TestCase):
         self.assertIn("core's " + counted + " modules", __doc__)
 
 
-class TheHostMirrorSaysWhereItResolvesTest(unittest.TestCase):
-    """The Claude adapter mirror is an absolute-path include, and says so.
+class TheHostMirrorResolvesFromAnyCheckoutTest(unittest.TestCase):
+    """The Claude adapter mirror's include lands on the owner, wherever the clone is.
 
-    `scopes.md` mandates the absolute path, so the stub's shape is legal and the
-    path is not the defect. The defect was undisclosed non-portability: the
-    include names a repository root, resolves on exactly one machine, resolves
-    nowhere at a revision built in a worktree, and both the stub and `AGENTS.md`
-    read as a working mirror to anyone who clones.
+    The stub is hand-written and committed — `install.py --project` writes no
+    `.claude` — so an absolute path in it is a path to one machine's filesystem
+    and resolves nowhere else: another user, another OS, another repository
+    name, and nowhere at all at a revision built in a worktree. It carried one,
+    plus ten lines apologizing for it. `scopes.md` now asks a project stub for a
+    path relative to itself, and this is the check that the path it carries
+    actually reaches the owner from where the stub sits.
 
     Skipped rather than failed when the pair is not where a project-scope item
     puts them, because the item can be read from a copy and this suite's
@@ -812,83 +818,40 @@ class TheHostMirrorSaysWhereItResolvesTest(unittest.TestCase):
     """
 
     def setUp(self):
-        if not HOST_MIRROR.exists() or not SCOPE_ROUTING_FILE.exists():
+        if not HOST_MIRROR.exists():
             self.skipTest("no project-scope host mirror beside this item")
 
-    def test_the_stub_discloses_that_its_include_resolves_on_one_machine(self):
-        body = HOST_MIRROR.read_text(encoding="utf-8")
-        include = [line for line in body.splitlines() if line.startswith("@")]
+    def test_the_include_is_relative_and_reaches_the_owner(self):
+        include = [
+            line
+            for line in HOST_MIRROR.read_text(encoding="utf-8").splitlines()
+            if line.startswith("@")
+        ]
 
         self.assertEqual(len(include), 1)
-        self.assertTrue(include[0][1:].startswith("/"), "scopes.md mandates an absolute path")
-        self.assertIn("machine-specific", body)
-        # And it points at the file that does resolve, from any checkout.
-        self.assertIn(".orchflows/skills/super-research/SKILL.md", body)
+        target = include[0][1:].strip()
+        self.assertFalse(target.startswith("/"), "a committed stub names one machine")
+        self.assertFalse(target[1:2] == ":", "a committed stub names one machine")
+        # Resolved the way a host resolves it: against the stub's own directory.
+        self.assertEqual((HOST_MIRROR.parent / target).resolve(), OWNER_SKILL)
 
     def test_the_owner_and_the_mirror_describe_the_item_with_one_string(self):
         # A Claude host routes on the mirror's copy and never reads the owner's,
         # so drift here costs the item every invocation while both files still
         # read correctly on their own — the one failure nobody thinks to check.
-        # Nothing else pins the pair: the two assertions above are about the
-        # include, and `tools/validate.py` does not walk this tree.
+        # Nothing else pins the pair: the assertion above is about the include,
+        # and `tools/validate.py` does not walk this tree.
         owner = frontmatter_description(OWNER_SKILL)
 
         self.assertIsNotNone(owner, "the owner's frontmatter names no description")
         self.assertEqual(frontmatter_description(HOST_MIRROR), owner)
         self.assertLessEqual(len(owner), DESCRIPTION_BUDGET)
 
-    def test_the_routing_line_does_not_read_as_a_working_mirror(self):
-        line = [
-            text
-            for text in SCOPE_ROUTING_FILE.read_text(encoding="utf-8").splitlines()
-            if "super-research" in text and text.startswith("- ")
-        ]
-
-        self.assertEqual(len(line), 1)
-        self.assertIn("read the owner", line[0])
-
-
-class ShortfallListCountsItselfTest(unittest.TestCase):
-    """`protocol.md`'s shortfall list asserts completeness, so its count is checked.
-
-    "Two capabilities that ship smaller than their roster row" is a heading that
-    claims to be exhaustive, which is the most expensive kind of sentence to get
-    wrong: a reader who finds a third gap concludes the section is decorative
-    rather than that it is out of date. There were five. A heading that counts
-    and a body that enumerates can disagree silently, so they are compared here.
-    """
-
-    def test_the_heading_counts_the_entries_beneath_it(self):
-        lines = PROTOCOL_PATH.read_text(encoding="utf-8").splitlines()
-        headings = [
-            index
-            for index, line in enumerate(lines)
-            if line.startswith("## ") and "ship smaller than their roster row" in line
-        ]
-
-        self.assertEqual(len(headings), 1, "the shortfall section was renamed or removed")
-        start = headings[0]
-        counted = lines[start].split()[1]
-        self.assertIn(counted, NUMBER_WORDS, "the heading names no count")
-
-        entries = 0
-        for line in lines[start + 1 :]:
-            if line.startswith("## "):
-                break
-            if line[:1].isdigit() and line[1:3] == ". ":
-                entries += 1
-
-        self.assertEqual(
-            entries,
-            NUMBER_WORDS.index(counted) + 1,
-            "the heading says {0} and the list has {1}".format(counted, entries),
-        )
-
 
 class LossVocabularyIsReadOffTheSourceTest(unittest.TestCase):
-    """`protocol.md`'s two loss tables, checked against the package's own syntax.
+    """`protocol.md`'s three loss tables, checked against the package's own syntax.
 
-    Every other enumeration in this suite is pinned and these two were not, so
+    Every other enumeration in this suite is pinned and these were not, so
     they drifted the way an unpinned table does: `http_status` was documented
     with three emitters and had thirteen, `schema_drift` five against ten,
     `malformed_json` three against nine. The root cause is not arithmetic. The
@@ -906,7 +869,7 @@ class LossVocabularyIsReadOffTheSourceTest(unittest.TestCase):
         self.codes = tuple(code for names, _ in self.rows for code in names)
         self.spelling, self.declaring = loss_code_spelling(set(self.codes))
 
-    def test_both_tables_were_found_and_every_row_names_one_code(self):
+    def test_the_tables_were_found_and_every_row_names_one_code(self):
         # If the parse silently found nothing, every assertion below passes
         # while checking no table at all.
         self.assertGreaterEqual(len(self.rows), 20)

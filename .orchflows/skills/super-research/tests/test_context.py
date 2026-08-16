@@ -470,7 +470,7 @@ class WebSearchDiscoveryTest(unittest.TestCase):
         # A paginated page carries an `s` input in the "< Previous" form and
         # another in "Next", and this parser takes the last. Whether the last
         # is the forward one is not in the evidence — page one, which is what
-        # findings.md §1 measured, has only the forward form. Recorded here
+        # The 2026-08-10 probes recorded, has only the forward form. Recorded here
         # rather than guarded, because nothing reads the value:
         # `runner.planned_calls` sets no cursor, which
         # `NothingOverlapsAndNothingPagesTest` pins.
