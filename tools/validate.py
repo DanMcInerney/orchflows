@@ -99,12 +99,12 @@ MANDATED_FORM_RES = (
     re.compile(
         r"\b(?:deterministic|judged|evidence)\s+(?:pre-existing|authored-here)$"
     ),
-    # TestDependencyOrderedOverlap in tests/test_static_tree_invariants.py
-    # asserts this exact wording in
-    # orch-decompose's body and in both slicing cells that carry it: the
-    # duplication is the invariant, holding every pack to overlap along
-    # dependency order and off the old global-disjointness rule. A pack
-    # cannot state it in its own words without breaking that check.
+    # The overlap rule, whose one owner is orch-decompose. Both slicing
+    # cells still carry its wording, so stripping it here is what keeps the
+    # verbatim tier off a copy the tree has not deleted yet; P3 deletes the
+    # copies and this entry goes with them (SPEC-ticket-set.md P2-P3). Until
+    # then the copies are what validate_cross_tier_duplication reports, at
+    # CROSS_TIER_DUPLICATE_LEVEL, rather than what any check mandates.
     re.compile(
         r"a write scope overlapping only siblings it is dependency-ordered with"
     ),

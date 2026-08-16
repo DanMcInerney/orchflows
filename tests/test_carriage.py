@@ -462,13 +462,16 @@ VERIFICATION = ROOT / "rules" / "verification.md"
 
 # What §8's faithfulness clause has to state, keyed to the measurement that
 # named it: `git archive` drops `.git`, which silently moved 61-65
-# test_cutcheck verdicts; `git rev-list --count` fingerprints a tip (417 at
-# 2c8d484, 420 at 7d94c46), so a count recorded beside a reading settles
-# which revision it was taken at; runtime indicts a copy only when short.
+# test_cutcheck verdicts; runtime indicts a copy only when short.
+#
+# The fingerprint entry -- `git rev-list --count` and "which revision" --
+# is gone: which command evidences a copy's revision is §8's sentence to
+# write, not this module's to pin (SPEC-ticket-set.md P2, REVIEW-2026-08-15
+# T2). What survives here is shape: that §8 states a faithfulness clause at
+# all, and that a §8 without one is caught.
 _FAITHFULNESS_CLAUSE = {
     "what a faithful copy preserves": ("faithful", "everything the oracles read"),
     "clone, never extract": ("clone", "extract", "`.git`"),
-    "the fingerprint that evidences it": ("`git rev-list --count`", "which revision"),
     "the one direction runtime indicts in": ("shorter", "longer"),
 }
 
