@@ -40,6 +40,14 @@ BODY_BUDGET = {
     "pack": 150,
 }
 LINK_TARGET_RE = re.compile(r"\]\([^)]*\)")
+# rules/token-economy.md §11: every-turn surfaces tightest, every-dispatch
+# units next, every-run units widest. Ceilings only fall.
+SURFACE_BUDGET = {"templates/host-block.md": 460, "AGENTS.md": 300}
+STUB_INSTRUCTION_BUDGET = 300   # objective + completion test + excluded actions + return fields
+MANIFEST_BUDGET = 250
+STUB_INSTRUCTION_SECTIONS = ("Objective", "Completion test", "Return fields")
+STUB_SECTION_SPLIT_RE = re.compile(r"^## (.+)$", re.MULTILINE)
+EXCLUDED_ACTIONS_RE = re.compile(r"^excluded_actions:\n((?:[ \t]+- .*\n)*)", re.MULTILINE)
 DESCRIPTION_BUDGET = 140
 ALLOWED_FRONTMATTER_KEYS = {"name", "description", "disable-model-invocation", "role"}
 ROLE_PROFILES = {"orch-planner", "orch-worker"}
@@ -738,6 +746,34 @@ def validate_anatomy(body: str, pkg: dict, diag: Diagnostics) -> None:
 def body_words(body: str) -> int:
     """The body's word count with markdown link targets stripped."""
     return len(LINK_TARGET_RE.sub("]", body).split())
+
+
+def _split_frontmatter(text: str):
+    parts = text.split("---", 2)
+    return (parts[1], parts[2]) if len(parts) > 2 else ("", text)
+
+
+def stub_instruction_words(text: str) -> int:
+    """A stub's instruction: its excluded actions plus the Objective,
+    Completion test and Return fields sections — never its Fixed inputs,
+    which are identities (rules/token-economy.md §11)."""
+    front, body = _split_frontmatter(text)
+    excluded = EXCLUDED_ACTIONS_RE.search(front)
+    total = body_words(excluded.group(1)) if excluded else 0
+    parts = STUB_SECTION_SPLIT_RE.split(body)
+    sections = {parts[i].strip(): parts[i + 1] for i in range(1, len(parts) - 1, 2)}
+    return total + sum(body_words(sections.get(name, "")) for name in STUB_INSTRUCTION_SECTIONS)
+
+
+def validate_surface_budgets(diag: Diagnostics) -> None:
+    """The every-turn surfaces against rules/token-economy.md §11."""
+    for name, limit in SURFACE_BUDGET.items():
+        path = ROOT / name
+        if not path.is_file():
+            continue  # a partial tree (isolated fixtures) carries no router
+        n = body_words(_read_source(path))
+        if n > limit:
+            diag.error(name, f"surface has {n} words, exceeds the every-turn budget of {limit}")
 
 
 def validate_budget(body: str, pkg: dict, diag: Diagnostics) -> None:
@@ -1489,11 +1525,18 @@ def validate_templates(diag: Diagnostics) -> None:
         for path, message in tickets.template_defects(directory):
             diag.error(rel(Path(path)), message)
 
+        manifest_text = _read_source(directory / manifest_name)
+        n = body_words(_split_frontmatter(manifest_text)[1])
+        if n > MANIFEST_BUDGET:
+            diag.error(manifest_label, f"manifest has {n} words, exceeds the budget of {MANIFEST_BUDGET}")
         used = set()
         for path in sorted(directory.glob("*.md")):
             if path.name == manifest_name:
                 continue
             text = _read_source(path)
+            n = stub_instruction_words(text)
+            if n > STUB_INSTRUCTION_BUDGET:
+                diag.error(rel(path), f"stub instruction has {n} words, exceeds the budget of {STUB_INSTRUCTION_BUDGET}")
             stub_used = set(tickets.PLACEHOLDER_RE.findall(text))
             used |= stub_used
             executor = tickets._parse_frontmatter(text).get("executor")
@@ -1794,6 +1837,7 @@ def run_validation() -> Diagnostics:
     validate_names(packages, diag)
     validate_lens_anchor(packages, diag)
     validate_markdown_links(diag)
+    validate_surface_budgets(diag)
     validate_pins(diag)
     validate_friction_locations(diag)
     return diag

@@ -14,6 +14,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import scripts.tickets as tickets  # noqa: E402  the ticket-shape law's one owner
+import tools.validate as validate  # noqa: E402  the budget constants' one owner
 from tests.test_validator import _IsolatedTree  # noqa: E402  the harness's one owner
 
 STUB_SECTIONS = (
@@ -485,3 +486,33 @@ class TestTheValidatorRefusesWhatTheOwnerRefuses(_TemplateTree):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTemplateBudgets(_TemplateTree):
+    """rules/token-economy.md §11: a stub's instruction and a manifest are
+    every-dispatch and every-run units with word ceilings; a stub's fixed
+    inputs are identities and never count."""
+
+    def test_a_stub_whose_instruction_exceeds_the_budget_is_one_error(self):
+        fat = "- " + " ".join(["criterion"] * 320) + " | oracle: x | oracle_class: deterministic\n"
+        stubs = dict(GOOD_STUBS)
+        stubs["repair"] = stub_md("repair", depends="[diagnose]", criteria=(fat.strip("- \n"),))
+        self.write_template("demo", stubs=stubs)
+        error = self.assert_one_error("repair.md")
+        self.assertIn("stub instruction has", error)
+        self.assertIn(f"budget of {validate.STUB_INSTRUCTION_BUDGET}", error)
+
+    def test_fixed_inputs_do_not_count_toward_the_stub_budget(self):
+        stubs = dict(GOOD_STUBS)
+        text = stub_md("repair", depends="[diagnose]")
+        text = text.replace("- the defect report\n", "- " + " ".join(["identity"] * 400) + "\n")
+        stubs["repair"] = text
+        self.write_template("demo", stubs=stubs)
+        result, errors = self.diagnostics()
+        self.assertEqual([], errors, result.stdout)
+
+    def test_a_manifest_over_the_budget_is_one_error(self):
+        body = " ".join(["word"] * (validate.MANIFEST_BUDGET + 20))
+        self.write_template("demo", manifest=template_md(body=body))
+        error = self.assert_one_error("template.md")
+        self.assertIn("manifest has", error)

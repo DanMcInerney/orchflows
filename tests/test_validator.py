@@ -760,3 +760,25 @@ class TestWordBudgetAndLinks(_IsolatedTree):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestSurfaceBudgets(_IsolatedTree):
+    """rules/token-economy.md §11: the every-turn surfaces carry the tightest
+    ceilings, and the check reads them from the tree it runs in."""
+
+    def test_a_host_block_over_its_budget_is_refused(self):
+        (self.tmp_path / "templates").mkdir()
+        (self.tmp_path / "templates" / "host-block.md").write_text(
+            " ".join(["word"] * (validate.SURFACE_BUDGET["templates/host-block.md"] + 10)),
+            encoding="utf-8",
+        )
+        result = self._run()
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("templates/host-block.md", result.stdout)
+        self.assertIn("exceeds the every-turn budget", result.stdout)
+
+    def test_the_real_surfaces_sit_under_their_ceilings(self):
+        for name, limit in validate.SURFACE_BUDGET.items():
+            with self.subTest(surface=name):
+                text = (ROOT / name).read_text(encoding="utf-8")
+                self.assertLessEqual(validate.body_words(text), limit)

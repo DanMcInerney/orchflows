@@ -19,10 +19,8 @@
 5. Anatomy: frontmatter (`name` = folder name, `description` ≤140
    chars, `role` ∈ {planner, worker, none} — pack SKILL.md carries no
    `role`), then `Require:`, procedure, `Never:`, `Return:`. Body
-   budgets, counted by `tools/validate.py` in words with link targets
-   stripped: kernel, instances, and utilities 300; engines and
-   workflows 450; pack SKILL.md 150. What the body holds is
-   [token-economy.md](token-economy.md) §6's.
+   budgets and their counting are [token-economy.md](token-economy.md)
+   §11's; what the body holds is its §6's.
 6. Admission: a new skill's contract must be expressible from existing
    skill contracts; otherwise it is a kernel candidate and must show
    that omitting it forces another skill to inline its judgment. Two
