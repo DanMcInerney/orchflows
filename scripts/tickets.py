@@ -69,6 +69,30 @@ VALID_STATUSES = {
 ENGINE_EXECUTORS = frozenset(
     {"orch-compose", "orch-frontier", "orch-loop", "orch-panel", "orch-task"}
 )
+# contracts/verdict.md's `oracle_class`, and contracts/work-item.md's
+# optional oracle provenance. Both are closed sets, and this script is the
+# one place a criterion is graded against them.
+ORACLE_CLASSES = ("deterministic", "judged", "evidence")
+ORACLE_PROVENANCES = ("pre-existing", "authored-here")
+# contracts/work-item.md's compatibility floor, split by what a stub is
+# missing: a stub is a ticket without `run`, `status` and `claimed_*`, so
+# only the first group is required of one. `claimed_by` and `claimed_at`
+# are lifecycle, written on claim, and absent from both groups.
+REQUIRED_TICKET_KEYS = ("id", "executor", "depends_on", "write_scope", "bound")
+REQUIRED_LIFECYCLE_KEYS = ("run", "status")
+# One criterion is one bullet: `- text`, `* text`, or an enumerated
+# `1. text`. Up to three columns of indentation, because four is
+# indented-code content (CommonMark 4.4) and `_fence_run` reads it as such.
+CRITERION_BULLET_RE = re.compile(r"^ {0,3}(?:[-*+]|\d+[.)])\s+")
+# `oracle:` and `oracle_class:` are two keys, not one with a suffix: the
+# literal `oracle:` does not occur inside `oracle_class:`, so a plain search
+# for each answers independently. Case-insensitive because the library's own
+# tickets write `Oracle:` at the head of a sentence. An oracle's value runs
+# to the next `|` or end of line; a class or provenance is one word, so
+# ordinary sentence punctuation around it is not part of it.
+ORACLE_RE = re.compile(r"oracle:\s*([^|\n]*)", re.IGNORECASE)
+ORACLE_CLASS_RE = re.compile(r"oracle_class:\s*([A-Za-z_-]*)", re.IGNORECASE)
+PROVENANCE_RE = re.compile(r"provenance:\s*([A-Za-z_-]*)", re.IGNORECASE)
 DURATION_RE = re.compile(r"^(\d+)(m|h)$")
 DEFAULT_BOUND_MINUTES = 60
 # The shape of every UTC instant this script writes, stated once and read
@@ -107,6 +131,11 @@ SECTION_ORDER = (
     "Return fields",
 ) + EXECUTOR_SECTIONS
 SECTION_RANK = {name.lower(): i for i, name in enumerate(SECTION_ORDER)}
+# The sections a ticket carries whatever its state. `## Handoff` is the one
+# optional section — it exists only once a ticket suspends — so it is the
+# one name in SECTION_ORDER that is not required here.
+OPTIONAL_SECTION = "Handoff"
+REQUIRED_SECTIONS = tuple(name for name in SECTION_ORDER if name != OPTIONAL_SECTION)
 # contracts/work-item.md: the one `isolation` value that means this item
 # executes in a workspace of its own. The sibling script grades the same
 # declaration; the spelling belongs to the contract, not to either script.
@@ -903,6 +932,142 @@ def _load_ticket(path: Path) -> dict:
     if "error" in result:
         result["summary"]["error"] = result["error"]
     return result
+
+
+# --- ticket shape -----------------------------------------------------------
+#
+# The one owner of ticket-shape law in code. `new`, `instantiate` and
+# `packet` all grade through these two functions and nothing grades a
+# ticket any other way: a second spelling of the same law is how an issued
+# ticket passes the cutter and is refused by the dispatcher.
+
+
+def _criteria(section_text: str) -> list:
+    """The completion-test criteria in ``section_text``, one string each.
+
+    A criterion is a bullet; the lines under it that are not bullets are its
+    own continuation, because a criterion long enough to wrap carries its
+    oracle on the second line and reading each line as a criterion would
+    report a defect on a clean one. A bullet inside a fenced block is quoted
+    content — every deliverable here is markdown and executors quote ticket
+    bodies at length — so fences are skipped exactly as ``_scan_sections``
+    skips them.
+    """
+
+    criteria: list = []
+    fence = None
+    for line in section_text.splitlines():
+        run = _fence_run(line)
+        if fence is not None:
+            if run is not None and run[0] == fence[0] and len(run) >= len(fence):
+                fence = None
+            continue
+        if run is not None:
+            fence = run
+            continue
+        stripped = line.strip()
+        if not stripped:
+            continue
+        match = CRITERION_BULLET_RE.match(line)
+        if match:
+            criteria.append(line[match.end():].strip())
+        elif criteria:
+            criteria[-1] = f"{criteria[-1]} {stripped}"
+    return criteria
+
+
+def criterion_defects(section_text: str) -> list:
+    """Every defect in one ``## Completion test`` section, criterion by
+    criterion.
+
+    Per contracts/work-item.md a criterion names its oracle and its
+    oracle_class, and may name its provenance; per contracts/verdict.md the
+    classes are a closed set. Graded per criterion rather than over the
+    section, because a section whose first criterion names a class and whose
+    second names none satisfies any whole-section test while dispatching an
+    unverifiable item.
+    """
+
+    criteria = _criteria(section_text)
+    if not criteria:
+        return [
+            "completion test states no criterion: one bullet per criterion, "
+            "each naming `oracle:` and `oracle_class:`"
+        ]
+    defects = []
+    for number, text in enumerate(criteria, start=1):
+        oracle = ORACLE_RE.search(text)
+        if oracle is None or not oracle.group(1).strip(" `.,;*"):
+            defects.append(
+                f"criterion {number} names no `oracle:` — the exact check that "
+                f"decides it: {text[:60]!r}"
+            )
+        oracle_class = ORACLE_CLASS_RE.search(text)
+        value = oracle_class.group(1).strip().lower() if oracle_class else ""
+        if not value:
+            defects.append(
+                f"criterion {number} names no `oracle_class:` — one of "
+                f"{list(ORACLE_CLASSES)}: {text[:60]!r}"
+            )
+        elif value not in ORACLE_CLASSES:
+            defects.append(
+                f"criterion {number} names oracle_class '{value}', not one of "
+                f"{list(ORACLE_CLASSES)}"
+            )
+        provenance = PROVENANCE_RE.search(text)
+        declared = provenance.group(1).strip().lower() if provenance else ""
+        if provenance is not None and declared not in ORACLE_PROVENANCES:
+            defects.append(
+                f"criterion {number} names provenance '{declared}', not one of "
+                f"{list(ORACLE_PROVENANCES)}"
+            )
+    return defects
+
+
+def ticket_defects(text: str, stub: bool = False) -> list:
+    """Every way ``text`` is not a ticket per contracts/work-item.md.
+
+    ``stub=True`` grades a template's stub: a ticket missing only ``run``,
+    ``status`` and ``claimed_*``, which instantiation adds. Everything else
+    is graded identically, so a stub admitted into a template is a ticket
+    the moment it is instantiated.
+
+    A file with no frontmatter is that one defect and no other: every check
+    below reads the frontmatter or the body it heads, so listing what a
+    non-ticket also lacks says nothing a reader can act on.
+    """
+
+    data = _parse_frontmatter(text)
+    if not data:
+        return [
+            "no frontmatter: a ticket opens with a '---' block "
+            "(contracts/work-item.md)"
+        ]
+    defects = []
+    required = REQUIRED_TICKET_KEYS if stub else (
+        REQUIRED_TICKET_KEYS + REQUIRED_LIFECYCLE_KEYS
+    )
+    for key in ("id", "run", "status", "executor", "depends_on", "write_scope", "bound"):
+        if key in required and key not in data:
+            defects.append(f"frontmatter has no '{key}'")
+    status = data.get("status")
+    if isinstance(status, str) and status.strip():
+        # A stub carries no status, but one that carries a wrong status is
+        # refused as any ticket is: the enum is the contract's, not the
+        # lifecycle stage's.
+        normalized = status.strip().strip("`").strip()
+        if normalized not in VALID_STATUSES:
+            defects.append(
+                f"status '{normalized}' is not one of {sorted(VALID_STATUSES)}"
+            )
+    sections = {name.strip().lower(): body for name, body in _sections(text).items()}
+    for name in REQUIRED_SECTIONS:
+        if name.lower() not in sections:
+            defects.append(f"no '## {name}' section")
+    completion = sections.get("completion test")
+    if completion is not None:
+        defects.extend(criterion_defects(completion))
+    return defects
 
 
 # --- claim staleness --------------------------------------------------------
