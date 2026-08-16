@@ -22,9 +22,9 @@ sentence in the library must be required by one of them.
 4. Star topology: one caller, one join per return; authority
    attenuates downward.
 5. One owner per fact; everything else links.
-6. Requests enter at the smallest structure that holds them;
-   coordination is bought only when parallelism, isolation, or
-   durability forces it.
+6. Coordination is bought only when parallelism, isolation, or
+   durability forces it — the value
+   [rules/topology.md](../rules/topology.md) rule 2's intake serves.
 7. Fixes consume causes, not findings, bounded by the frozen spec's
    license.
 8. Generic bodies are domain-blind; domain deviations live in pack

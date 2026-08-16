@@ -23,8 +23,8 @@ each at a preserved identity.
 
 ## Fixed inputs
 
-- 01-design's `## Result` — the frozen evaluation-design identity, its
-  case specifications, and its declared gaps.
+- 01-design's `## Result`, in full: whatever orch-eval-design's Return
+  filed there.
 - {{pack}} — the run's stamp. This cut stamps a unit's own pack where
   that case's kind differs, chaining single-pack units through frozen
   evidence identities when cases span domains; exactly one pack per

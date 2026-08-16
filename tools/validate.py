@@ -1021,11 +1021,57 @@ SAME_TIER_COMPARED = frozenset({"skills"})
 # carries it because the block is the one text a host reads before it can
 # reach any rule, and it names the owner one line above the copy. Reporting
 # it asks for the copy to go, which would take the licence with it.
+#
+# docs/library-review.md and templates/host-block.md both name
+# rules/visibility.md as the owner of a question they ask about the sink
+# -- the review asks whether a sentence is the only copy of its fact, the
+# block tells a host where the sink is and under which section. Two
+# different questions, and what makes them read alike is the citation
+# both are obliged to carry. Reporting it asks one of them to stop
+# naming its owner.
+#
+# contracts/verdict.md owns the law that a citation must resolve;
+# packs/orch-research-pack/references/oracles.md carries a row saying
+# which oracle decides that criterion in this domain, at which class and
+# provenance. The signature mandates that table, and a pack cannot state
+# an oracle policy without naming the criterion it decides.
+#
+# orch-edit and orch-render both defer craft to "the ticket's craft
+# reference". That phrase is the signature's craft cell reaching the
+# instances, not one instance copying the other: a pack's craft is
+# per-domain and the pointer is how a generic body stays domain-blind.
+#
+# orch-edit and orch-synthesize both forbid an assembly step inventing a
+# claim its inputs did not carry -- sections for one, evidence packets
+# for the other. It is one law with two subjects and no owner: rules/
+# has no assembly rule to hold it, and inventing one for two clauses
+# buys a permanent concept for a sentence. Revisited when a third
+# assembly instance needs it, which is when the rule earns its file.
 LICENSED_COPIES = (
     (
         "rules/visibility.md",
         "templates/host-block.md",
         "untrusted data",
+    ),
+    (
+        "docs/library-review.md",
+        "templates/host-block.md",
+        "rules/visibility.md",
+    ),
+    (
+        "contracts/verdict.md",
+        "packs/orch-research-pack/references/oracles.md",
+        "citation",
+    ),
+    (
+        "skills/instances/orch-render/SKILL.md",
+        "skills/instances/orch-edit/SKILL.md",
+        "per the ticket's craft reference",
+    ),
+    (
+        "skills/instances/orch-synthesize/SKILL.md",
+        "skills/instances/orch-edit/SKILL.md",
+        "Never: introduce",
     ),
 )
 

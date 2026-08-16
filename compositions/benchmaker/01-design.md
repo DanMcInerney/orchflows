@@ -24,8 +24,8 @@ intended coverage, and expected execution cost.
 
 - 00-acquire's `## Result` — the frozen synthesis identity and its
   source identities; the design works from these and gathers nothing.
-- {{target}} and {{outcome}} — the identity and intended observable
-  outcome, still opaque.
+- {{target}} and {{outcome}} — this run's values for the two things
+  orch-eval-design's Require reads off an `objective`, still opaque.
 - [the protocol](../references/benchmaker-protocol.md#licensed-oracle-material) —
   what the frozen evidence licenses as oracle material, and what is not
   a reason to decline casing it.
@@ -38,8 +38,8 @@ intended coverage, and expected execution cost.
 
 ## Return fields
 
-status; result — the frozen evaluation-design identity, stated
-assumptions and explicit gaps; verification; feedback; risks
+status; result — everything orch-eval-design's Return names;
+verification; feedback; risks
 
 ## Result
 

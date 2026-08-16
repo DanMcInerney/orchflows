@@ -1,9 +1,9 @@
 # BenchMaker
 
-The `benchmaker` template builds one qualified
-[benchmark](vocabulary.md#verification) for an opaque target with an
-observable outcome. Its
-[template](../compositions/benchmaker/template.md) owns the chain, its
+Which file owns what in the `benchmaker` template. Its
+[template](../compositions/benchmaker/template.md) states what the
+template builds — a qualified
+[benchmark](vocabulary.md#verification) — and owns the chain, its
 six stubs and what instantiation fills; its
 [protocol](../compositions/references/benchmaker-protocol.md)
 owns the construction craft no stub, rule or contract states; its
@@ -20,10 +20,9 @@ Fixed evidence flows into a frozen
 and independent qualification, then three audit and measurement stages —
 reference audit, attack pass, measurement — into one recorded manifest.
 
-Qualification gates validity. The audit and measurement stages ask the three
-questions it does not: is the expectation right, is the probe passable without
-the work, and does the target find this hard. What each stage may do about its
-answer is
+Qualification gates validity. Which questions the audit and measurement
+stages ask that it does not, and what each stage may do about its
+answer, are
 [the protocol](../compositions/references/benchmaker-protocol.md#audit-and-measurement)'s,
 and what each stub may not do is that stub's own `excluded_actions` —
 [01-design](../compositions/benchmaker/01-design.md),

@@ -18,8 +18,8 @@ criteria per §6, fresh from the spec. Fill each verdict's `evidence`
 field on [verdict.md](../../../contracts/verdict.md)'s terms.
 
 Where the criteria carry a score scale, score each separately before
-any overall number, anchored to the evidence its oracle produced; an
-unscoreable criterion is UNVERIFIED, never interpolated. Blindness is a
+any overall number, anchored to the evidence its oracle produced; a
+score is never interpolated across criteria. Blindness is a
 property of `inputs`, never of this skill: a packet whose inputs carry
 one candidate, its evidence, and the criteria is already a blind lane —
 so never reach past them for a sibling candidate, a sibling's score, or

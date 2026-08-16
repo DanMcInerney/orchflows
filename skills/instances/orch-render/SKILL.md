@@ -15,9 +15,9 @@ markup and style that honestly meets it; capture at the slice's
 identities and read the image — the capture is the check, source text
 proves nothing visual; reconcile every value to a token and its scale
 per the ticket's craft reference; run the ticket's deterministic
-checks. Commit each verified slice. Close by running the ticket's full
-completion test through `orch-verify`, capturing every covered
-identity.
+checks. Commit each verified slice. Close the item as
+[work-item.md](../../../contracts/work-item.md)'s completion-test
+section requires, capturing at every identity it names.
 
 Never: claim a visual result without a capture; hard-code a value a
 token already names; write where the ticket's `write_scope` per

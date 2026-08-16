@@ -92,7 +92,9 @@ parts:
   provenance — `pre-existing` (the oracle exists or is concretely
   specified before the unit's work) or `authored-here` (the executing
   context creates it); absent reads `authored-here`. Independence law:
-  [rules/verification.md](../rules/verification.md) §10.
+  [rules/verification.md](../rules/verification.md) §10. An executor
+  closes its item by running this test through `orch-verify` at the
+  result's fixed identity, over every identity the criteria cover.
 - `## Return fields` — packet `return_contract`: the named fields the
   executor's result must carry. A `status` in this list is the result
   envelope's ([result.md](result.md)), never the ticket frontmatter key
@@ -140,8 +142,8 @@ says what is true.
 - `return_contract` — a dispatch granting a non-empty `write_scope`
   contracts for `changed_artifacts` among the named fields, and a result
   whose changed_artifacts exceed the granted scope is rejected at the
-  join regardless of its verdicts. What a packet naming no durable
-  artifact contracts for is §10's.
+  join regardless of its verdicts. Where the packet names none,
+  [rules/delegation.md](../rules/delegation.md) §10 fixes the return.
 - `reply_to` — the literal identifier the child's closing message must
   address, computed once from the dispatcher's own identity: its own
   assigned name where the dispatcher is itself a named child, `main`
