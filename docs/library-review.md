@@ -38,10 +38,10 @@ sentence in the library must be required by one of them.
 
 ## Report contract (anti-accretion)
 
-- A report lands at the repository root as `REVIEW-<date>.md` — an
-  evidence record no reading-order row loads, cited by identity,
-  excluded from the link check, deleted once its successor's header
-  records what landed.
+- A report lands at the repository root as `REVIEW-<date>.md`, a second
+  report on one date taking a `-<topic>` suffix — an evidence record no
+  reading-order row loads, cited by identity, excluded from the link
+  check, deleted once its successor's header records what landed.
 - The header states: law-text line count (rules/ + contracts/ + skill
   bodies), its delta since the last pass, and validator and test
   state.
