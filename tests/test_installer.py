@@ -2463,6 +2463,23 @@ class TestCodexHooksPreflight(unittest.TestCase):
                 plan.warnings,
             )
 
+    @requires_tomllib
+    def test_no_toml_check_warning_when_this_interpreter_has_tomllib(self):
+        # The other half of the pin above, and the coverage the hooks tests
+        # gave up when they stopped counting every warning: where tomllib
+        # exists the merge is parse-checked, so the warning must not fire.
+        # Nothing to assert below 3.11, where the warning is the truth.
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".codex").mkdir(parents=True)
+
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis("codex"):
+                plan = install.build_plan("user", None)
+
+            self.assertEqual(
+                [], [warning for warning in plan.warnings if "tomllib" in warning], plan.warnings
+            )
+
 
 class TestClaudeConfigDir(unittest.TestCase):
     """``CLAUDE_CONFIG_DIR`` relocates Claude Code's user config directory, so
