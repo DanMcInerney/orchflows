@@ -13,9 +13,8 @@ profile: orch-worker
 
 ## Objective
 
-Every finding carries one disposition — ready-for-agent, needs-info,
-ready-for-human, wontfix — and every ready-for-agent finding carries a
-compacted brief a fresh context can execute from.
+Every finding carries one disposition, and every ready-for-agent finding
+carries a compacted brief a fresh context can execute from.
 
 ## Fixed inputs
 

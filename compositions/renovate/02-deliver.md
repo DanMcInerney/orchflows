@@ -8,7 +8,6 @@ bound: {{brief_bound}} per ready-for-agent brief
 excluded_actions:
   - deliver a brief 01-triage did not disposition ready-for-agent
   - answer a ready-for-human brief on the maintainer's behalf
-  - start a brief without its bound already fixed
 independence: gate
 isolation: required
 profile: orch-worker
@@ -19,15 +18,14 @@ profile: orch-worker
 Every ready-for-agent brief delivered into {{workspace}} with its own
 final verification, and every ready-for-human brief returned to the
 maintainer unanswered. One root ticket over every brief, not one per
-brief: this cut yields a unit per brief and stamps that unit's own pack
-where its kind differs from {{pack}}, so the gate runs once over the
+brief: this cut yields a unit per brief, so the gate runs once over the
 whole delivery.
 
 ## Fixed inputs
 
 - 01-triage's `## Result` — the dispositions and compacted briefs by
   identity.
-- {{pack}} — this run's stamp, and the default every cut unit inherits.
+- {{pack}} — this run's stamp, which every cut unit takes.
 - {{workspace}} — the target repository: the tree the delivered changes
   land in.
 - The standards owner, by pointer: the workspace's own owner file —

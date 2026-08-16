@@ -10,7 +10,6 @@ excluded_actions:
   - naming a cause the reproduction has not toggled
 independence: checker
 isolation: none
-profile: orch-worker
 ---
 
 ## Objective

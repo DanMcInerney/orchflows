@@ -5,7 +5,6 @@ depends_on: []
 write_scope: []
 bound: {{audit_bound}}
 excluded_actions:
-  - start the audit or a brief without its bound already fixed
   - repair a finding instead of returning it
 independence: checker
 isolation: none

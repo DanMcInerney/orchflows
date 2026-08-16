@@ -190,6 +190,7 @@ sections, its `id` and `depends_on` edges, the single terminal stub, the
 acyclic graph, every `{{placeholder}}` instantiation must fill, and every
 refusal it raises — is `scripts/tickets.py`'s `template_defects`, which
 grades each stub in its own words; the manifest is `tools/validate.py`'s.
+A template run's bound is the sum of its stubs' `bound`s.
 
 ## Executor form
 
