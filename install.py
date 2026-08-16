@@ -120,8 +120,13 @@ HOST_BLOCK_TEMPLATE = REPO_ROOT / "templates" / "host-block.md"
 CODEX_LIMITS_START = "# BEGIN ORCHFLOWS AGENT LIMITS"
 CODEX_LIMITS_END = "# END ORCHFLOWS AGENT LIMITS"
 PROFILE_ROLES = ("planner", "worker")
-# The routed composition ``fix`` replaced the demoted ``orch-fix`` skill.
-CODEX_SKILL_REDIRECT_NAMES = ("orch-spec", "orch-frontier", "fix", "orch-build")
+# The four names both hosts expose as first-class adapters; every other
+# name resolves at ``by-name/``. The routed composition ``fix`` replaced the
+# demoted ``orch-fix`` skill.
+SHARED_ADAPTER_NAMES = ("orch-spec", "orch-frontier", "fix", "orch-build")
+# The Codex redirect set is that same set, under its older name.
+CODEX_SKILL_REDIRECT_NAMES = SHARED_ADAPTER_NAMES
+CLAUDE_ADAPTER_SETS = ("all", "four")
 AUTO_REMOVE_KINDS = frozenset(("adapter", "prompt", "codex-skill"))
 CODEX_MAX_THREADS = 20
 CODEX_MAX_DEPTH = 1
@@ -821,7 +826,22 @@ def detect_hosts(home: Path | None = None) -> tuple[bool, bool]:
     )
 
 
-def _build_user_plan() -> Plan:
+def _mints_claude_adapter(name: str, claude_adapter_set: str) -> bool:
+    """Whether ``name`` gets a Claude skill adapter under this adapter set.
+
+    ``all`` mints one per canonical name; ``four`` mints only
+    ``SHARED_ADAPTER_NAMES``, leaving every other name to resolve at
+    ``by-name/`` exactly as it already does on Codex. Nothing else in the
+    plan moves — the routing benchmark SPEC §7.2 gates the decision on
+    needs the two installs to differ in this one surface alone.
+    """
+
+    if claude_adapter_set not in CLAUDE_ADAPTER_SETS:
+        raise ValueError(f"unknown Claude adapter set: {claude_adapter_set}")
+    return claude_adapter_set == "all" or name in SHARED_ADAPTER_NAMES
+
+
+def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
     lib_home = _lib_home("user", None)
     scope_home = _scope_home("user", None)
     bin_dir = _bin_dir("user", None)
@@ -878,7 +898,7 @@ def _build_user_plan() -> Plan:
                 frontmatter + f"\nRead {lib_skill_md} and follow it exactly.\n",
             )
         )
-        if claude_enabled:
+        if claude_enabled and _mints_claude_adapter(name, claude_adapter_set):
             claude_adapters.append(
                 (claude_scope_home / "skills" / name / "SKILL.md", host_legal_frontmatter(frontmatter) + f"@{lib_skill_md}\n")
             )
@@ -908,7 +928,7 @@ def _build_user_plan() -> Plan:
                 frontmatter + f"\nRead {lib_comp_md} and follow it exactly.\n",
             )
         )
-        if claude_enabled:
+        if claude_enabled and _mints_claude_adapter(name, claude_adapter_set):
             claude_adapters.append(
                 (claude_scope_home / "skills" / name / "SKILL.md", host_legal_frontmatter(frontmatter) + f"@{lib_comp_md}\n")
             )
@@ -1024,10 +1044,12 @@ def _build_user_plan() -> Plan:
     )
 
 
-def build_plan(scope: str, project_root: Path | None) -> Plan:
+def build_plan(scope: str, project_root: Path | None, claude_adapter_set: str = "all") -> Plan:
     if scope == "project":
+        # A project install writes no host skill surfaces at all, so the
+        # adapter set has nothing to select.
         return _build_project_plan(_require_project_root(project_root))
-    return _build_user_plan()
+    return _build_user_plan(claude_adapter_set)
 
 
 def plan_entry_count(plan: Plan) -> int:
@@ -1657,6 +1679,16 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--dry-run", action="store_true", help="Print the full plan; write nothing.")
     parser.add_argument(
+        "--claude-adapters",
+        choices=CLAUDE_ADAPTER_SETS,
+        default="all",
+        help=(
+            "Claude skill adapters to mint: all canonical names (default), or only "
+            f"the four both hosts expose ({', '.join(SHARED_ADAPTER_NAMES)}). "
+            "Every other name still resolves at the flat by-name index."
+        ),
+    )
+    parser.add_argument(
         "--uninstall",
         action="store_true",
         help="Remove unchanged generated skills and print receipt-based manual cleanup.",
@@ -1721,7 +1753,7 @@ def main(argv=None) -> int:
         return 0
 
     try:
-        plan = build_plan(scope, project_root)
+        plan = build_plan(scope, project_root, args.claude_adapters)
     except Exception as error:
         print(f"error: could not build install plan: {error}", file=sys.stderr)
         return 1

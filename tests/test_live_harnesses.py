@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 
-"""The four live probe harnesses in tools/: the loop-body e2e, the sweep
-e2e, and the Claude and Codex profile probes.
+"""The five live probe harnesses in tools/: the loop-body e2e, the sweep
+e2e, the Claude and Codex profile probes, and the routing benchmark.
 
-All four read one `claude`/`codex` stream-json transcript and grade it,
-and all four are exercised here with the CLI mocked at the
+All five read one `claude`/`codex` stream-json transcript and grade it,
+and all five are exercised here with the CLI mocked at the
 `subprocess.run` seam -- no probe below ever launches an agent or reaches
 a network. They shared three transcript builders (`_launch`, `_reply`,
 `_stream`) as byte-identical copies in three files; the copies are now
 the definitions above, one each.
+
+The routing benchmark also renders an install per adapter set, so its
+section mocks that `subprocess.run` too: no install below writes outside
+the temporary root the test owns.
 """
 
+import collections
 import contextlib
 import hashlib
 import io
@@ -26,6 +31,7 @@ from unittest import mock
 from tools import live_claude_profiles as claude_live
 from tools import live_codex_profiles as codex_live
 from tools import live_loop_e2e as loop_live
+from tools import live_routing_bench as routing_live
 from tools import live_sweep_e2e as sweep_live
 
 LOOP_AGENT = "orch-loop-body-e2e-42"
@@ -901,6 +907,598 @@ class TestCodexLiveProfiles(unittest.TestCase):
             injected = codex_live._with_probe_sentinel(rendered, "SENTINEL:planner")
 
         self.assertIn("SENTINEL:planner", injected)
+
+
+# --- benchmarks/routing/cases.json ------------------------------------
+
+
+ROUTING_DIR = Path(__file__).resolve().parents[1] / "benchmarks" / "routing"
+ROUTING_CASES = ROUTING_DIR / "cases.json"
+ROUTE_CLASSES = ("answer", "ticket", "fix", "build", "named")
+CASE_KEYS = {"id", "prompt", "expected", "note", "distractor"}
+# A deleted or never-routed name whose surface words a prompt can borrow
+# without the prompt's correct route changing.
+LURE_WORDS = ("diagnose", "triage", "review", "worklog")
+
+
+class TestRoutingCases(unittest.TestCase):
+    """The case set the routing benchmark measures. Graded here rather than
+    only by the harness that reads it: a case file that has drifted below
+    its spread is worthless whether or not the harness parses it."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.cases = json.loads(ROUTING_CASES.read_text(encoding="utf-8"))
+
+    def _class_of(self, case):
+        return case["expected"].split(":", 1)[0]
+
+    def test_every_case_has_exactly_the_documented_shape(self):
+        self.assertIsInstance(self.cases, list)
+        for case in self.cases:
+            with self.subTest(case=case.get("id")):
+                self.assertEqual(CASE_KEYS, set(case))
+                self.assertIsInstance(case["distractor"], bool)
+                for key in ("id", "prompt", "expected", "note"):
+                    self.assertTrue(case[key].strip(), key)
+
+    def test_case_ids_are_unique(self):
+        ids = [case["id"] for case in self.cases]
+        self.assertEqual(len(ids), len(set(ids)))
+
+    def test_the_set_carries_at_least_twenty_four_cases(self):
+        self.assertGreaterEqual(len(self.cases), 24)
+
+    def test_every_expected_route_is_in_the_enum(self):
+        for case in self.cases:
+            with self.subTest(case=case["id"]):
+                expected = case["expected"]
+                if expected.startswith("named:"):
+                    self.assertTrue(expected.split(":", 1)[1].strip())
+                else:
+                    self.assertIn(expected, ROUTE_CLASSES)
+                    self.assertNotEqual("named", expected, "named needs a name")
+
+    def test_every_class_carries_at_least_four_cases(self):
+        counts = collections.Counter(self._class_of(case) for case in self.cases)
+        self.assertEqual(set(ROUTE_CLASSES), set(counts))
+        for route_class in ROUTE_CLASSES:
+            with self.subTest(route_class=route_class):
+                self.assertGreaterEqual(counts[route_class], 4, counts)
+
+    def test_at_least_four_distractors_borrow_a_lure_word(self):
+        distractors = [case for case in self.cases if case["distractor"]]
+        self.assertGreaterEqual(len(distractors), 4)
+        for case in distractors:
+            with self.subTest(case=case["id"]):
+                prompt = case["prompt"].lower()
+                self.assertTrue(
+                    any(word in prompt for word in LURE_WORDS),
+                    "a distractor must borrow a deleted or non-routed name",
+                )
+                # The whole point: the surface word is a lure, and the
+                # correct route is still one of the three routed classes.
+                self.assertIn(self._class_of(case), ("answer", "ticket", "fix"))
+
+    def test_no_routed_case_reads_as_an_instruction_to_the_grader(self):
+        # Prompts are typed into a live session; a prompt that dictated its
+        # own route would grade the transcript, not the routing.
+        for case in self.cases:
+            with self.subTest(case=case["id"]):
+                self.assertNotIn("ROUTE:", case["prompt"])
+
+    def test_the_readme_states_the_command_and_the_decision_rule(self):
+        readme = ROUTING_DIR / "README.md"
+        text = readme.read_text(encoding="utf-8")
+        self.assertLessEqual(len(text.splitlines()), 25)
+        self.assertIn("tools/live_routing_bench.py", text)
+        self.assertIn("0.05", text)
+        self.assertIn("--claude-adapters", text)
+
+
+# --- tools/live_routing_bench.py --------------------------------------
+
+
+def _tool_use(name: str, tool_input: dict, tool_id: str = "t1") -> dict:
+    """A parent-level tool call, the only kind the router's first move can be."""
+
+    return {
+        "type": "assistant",
+        "parent_tool_use_id": None,
+        "message": {
+            "content": [
+                {"type": "tool_use", "id": tool_id, "name": name, "input": tool_input}
+            ]
+        },
+    }
+
+
+def _skill_use(skill: str, tool_id: str = "t1") -> dict:
+    return _tool_use("Skill", {"skill": skill}, tool_id)
+
+
+def _bash_use(command: str, tool_id: str = "t1") -> dict:
+    return _tool_use("Bash", {"command": command}, tool_id)
+
+
+def _result_event(cost: float) -> dict:
+    return {"type": "result", "subtype": "success", "total_cost_usd": cost}
+
+
+class TestRoutingGrading(unittest.TestCase):
+    """Every grading branch, against a fabricated stream-json transcript.
+    No branch below reaches a `claude` process."""
+
+    def _observed(self, events):
+        return routing_live.grade_transcript(_stream(events))["observed"]
+
+    def test_the_two_ticket_skills_grade_as_ticket(self):
+        for skill in ("orch-frontier", "orch-spec"):
+            with self.subTest(skill=skill):
+                self.assertEqual("ticket", self._observed([_skill_use(skill)]))
+
+    def test_issuing_a_ticket_from_bash_grades_as_ticket(self):
+        command = "python ~/.orchflows/bin/tickets.py new --run r --id A --executor orch-tdd"
+        self.assertEqual("ticket", self._observed([_bash_use(command)]))
+
+    def test_the_fix_skill_and_the_fix_instantiation_both_grade_as_fix(self):
+        self.assertEqual("fix", self._observed([_skill_use("fix")]))
+        posix = "tickets.py instantiate ~/.orchflows/lib/compositions/fix --run r"
+        self.assertEqual("fix", self._observed([_bash_use(posix)]))
+
+    def test_a_windows_rendered_fix_path_still_grades_as_fix(self):
+        # The installed library path is what the host block hands the session,
+        # and on Windows it arrives with backslashes.
+        windows = r"tickets.py instantiate C:\Users\x\.orchflows\lib\compositions\fix --run r"
+        self.assertEqual("fix", self._observed([_bash_use(windows)]))
+
+    def test_orch_build_grades_as_build(self):
+        self.assertEqual("build", self._observed([_skill_use("orch-build")]))
+
+    def test_any_other_skill_grades_as_that_name(self):
+        for skill in ("evolve", "benchmaker", "drift-canary", "orch-critique"):
+            with self.subTest(skill=skill):
+                self.assertEqual(f"named:{skill}", self._observed([_skill_use(skill)]))
+
+    def test_a_route_answer_line_grades_as_answer(self):
+        self.assertEqual(
+            "answer", self._observed([_parent_text("ROUTE: answer\nwrite_scope is ...")])
+        )
+
+    def test_a_final_text_with_no_tool_use_grades_as_answer(self):
+        events = [_parent_text("write_scope names the paths a ticket may write.")]
+        self.assertEqual("answer", self._observed(events))
+
+    def test_a_transcript_with_nothing_route_bearing_is_unrouted(self):
+        events = [
+            _tool_use("Read", {"file_path": "/repo/AGENTS.md"}),
+            _bash_use("git status --short", tool_id="t2"),
+        ]
+        self.assertEqual("unrouted", self._observed(events))
+
+    def test_an_empty_transcript_is_unrouted(self):
+        self.assertEqual("unrouted", self._observed([]))
+
+    def test_reading_before_routing_does_not_change_the_route(self):
+        events = [
+            _tool_use("Read", {"file_path": "/repo/scripts/ui.py"}),
+            _skill_use("orch-frontier", tool_id="t2"),
+        ]
+        graded = routing_live.grade_transcript(_stream(events))
+        self.assertEqual("ticket", graded["observed"])
+        self.assertEqual(2, graded["turns"])
+
+    def test_the_first_route_bearing_event_decides_it(self):
+        events = [_skill_use("evolve"), _bash_use("tickets.py new --id A", tool_id="t2")]
+        self.assertEqual("named:evolve", self._observed(events))
+        reversed_events = [
+            _bash_use("tickets.py new --id A"),
+            _skill_use("evolve", tool_id="t2"),
+        ]
+        self.assertEqual("ticket", self._observed(reversed_events))
+
+    def test_a_text_answer_after_a_skill_never_overrides_the_skill(self):
+        events = [_skill_use("fix"), _parent_text("ROUTE: answer")]
+        self.assertEqual("fix", self._observed(events))
+
+    def test_the_deciding_event_is_reported(self):
+        graded = routing_live.grade_transcript(_stream([_skill_use("orch-build")]))
+        self.assertIn("orch-build", graded["first_event"])
+        self.assertIsNone(
+            routing_live.grade_transcript(_stream([]))["first_event"]
+        )
+
+    def test_the_cost_is_taken_from_the_stream_when_it_reports_one(self):
+        events = [_skill_use("fix"), _result_event(0.0125)]
+        self.assertEqual(0.0125, routing_live.grade_transcript(_stream(events))["cost_usd"])
+        self.assertIsNone(
+            routing_live.grade_transcript(_stream([_skill_use("fix")]))["cost_usd"]
+        )
+
+    def test_subagent_events_never_decide_the_route(self):
+        # A child's own tool use is not the session's routing decision.
+        child = {
+            "type": "assistant",
+            "parent_tool_use_id": "t9",
+            "message": {
+                "content": [
+                    {"type": "tool_use", "id": "c1", "name": "Skill", "input": {"skill": "evolve"}}
+                ]
+            },
+        }
+        self.assertEqual("unrouted", self._observed([child]))
+
+    def test_non_dict_stream_entries_are_tolerated(self):
+        events = [_skill_use("orch-build")]
+        events[0]["message"]["content"].insert(0, "bare string block")
+        stream = _stream(events) + '\n"a bare json string"\n[1, 2]'
+        self.assertEqual("build", routing_live.grade_transcript(stream)["observed"])
+
+
+class TestRoutingCaseLoader(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def _write(self, payload):
+        path = self.tmp / "cases.json"
+        path.write_bytes(json.dumps(payload).encode("utf-8"))
+        return path
+
+    def test_the_shipped_case_file_loads(self):
+        self.assertEqual(
+            len(json.loads(ROUTING_CASES.read_text(encoding="utf-8"))),
+            len(routing_live.load_cases(routing_live.DEFAULT_CASES)),
+        )
+
+    def test_a_non_list_is_refused(self):
+        with self.assertRaisesRegex(ValueError, "non-empty list"):
+            routing_live.load_cases(self._write({"cases": []}))
+
+    def test_a_case_missing_a_field_is_refused(self):
+        with self.assertRaisesRegex(ValueError, "expected"):
+            routing_live.load_cases(self._write([{"id": "a", "prompt": "p"}]))
+
+    def test_an_off_enum_expected_route_is_refused(self):
+        payload = [{"id": "a", "prompt": "p", "expected": "escalate", "note": "n"}]
+        with self.assertRaisesRegex(ValueError, "escalate"):
+            routing_live.load_cases(self._write(payload))
+
+    def test_a_named_route_without_a_name_is_refused(self):
+        payload = [{"id": "a", "prompt": "p", "expected": "named:", "note": "n"}]
+        with self.assertRaisesRegex(ValueError, "named"):
+            routing_live.load_cases(self._write(payload))
+
+
+class TestRoutingBenchRun(unittest.TestCase):
+    """The whole benchmark with the CLI seam mocked: two isolated installs,
+    one plain repository each, one graded launch per case per repeat."""
+
+    CASES = [
+        {"id": "a1", "prompt": "what does write_scope mean?", "expected": "answer", "note": ""},
+        {"id": "t1", "prompt": "add a --json flag", "expected": "ticket", "note": ""},
+        {"id": "n1", "prompt": "run evolve on orch-tdd", "expected": "named:evolve", "note": ""},
+    ]
+    # Keyed by prompt so the fake CLI answers each case differently: one
+    # right, one misrouted, one unrouted.
+    TRANSCRIPTS = {
+        "what does write_scope mean?": [_parent_text("the paths a ticket may write")],
+        "add a --json flag": [_skill_use("evolve")],
+        "run evolve on orch-tdd": [_tool_use("Read", {"file_path": "/repo/README.md"})],
+    }
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self._tmp.name)
+        self.calls = []
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def _fake_run(self, command, **kwargs):
+        self.calls.append((list(command), kwargs))
+        stdout = ""
+        if "-p" in command:
+            prompt = command[command.index("-p") + 1]
+            stdout = _stream(self.TRANSCRIPTS[prompt] + [_result_event(0.01)])
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    def _run(self, adapter_sets=("all", "four"), repeat=1):
+        with mock.patch.object(routing_live.subprocess, "run", side_effect=self._fake_run):
+            return routing_live.run_benchmark(
+                adapter_sets=adapter_sets,
+                cases=self.CASES,
+                repeat=repeat,
+                max_turns=3,
+                timeout=5,
+                claude_invocation=["claude"],
+                root=self.root,
+            )
+
+    def _claude_calls(self):
+        return [command for command, _ in self.calls if "-p" in command]
+
+    def _install_calls(self):
+        return [
+            (command, kwargs)
+            for command, kwargs in self.calls
+            if any(str(part).endswith("install.py") for part in command)
+        ]
+
+    def test_one_graded_launch_per_case_per_adapter_set_per_repeat(self):
+        records = self._run(repeat=2)
+        self.assertEqual(len(self.CASES) * 2 * 2, len(records))
+        self.assertEqual(len(records), len(self._claude_calls()))
+        self.assertEqual(
+            {("all", 1), ("all", 2), ("four", 1), ("four", 2)},
+            {(record["adapter_set"], record["repeat"]) for record in records},
+        )
+
+    def test_each_record_carries_the_grade_and_what_decided_it(self):
+        records = {record["case"]: record for record in self._run(adapter_sets=("all",))}
+        self.assertEqual("answer", records["a1"]["observed"])
+        self.assertTrue(records["a1"]["match"])
+        self.assertEqual("named:evolve", records["t1"]["observed"])
+        self.assertFalse(records["t1"]["match"])
+        self.assertEqual("ticket", records["t1"]["expected"])
+        self.assertEqual("unrouted", records["n1"]["observed"])
+        self.assertFalse(records["n1"]["match"])
+        for record in records.values():
+            self.assertEqual(0.01, record["cost_usd"])
+            self.assertGreaterEqual(record["turns"], 1)
+
+    def test_the_launch_command_carries_the_prompt_stream_and_turn_bound(self):
+        self._run(adapter_sets=("all",))
+        command = self._claude_calls()[0]
+        self.assertEqual("claude", command[0])
+        self.assertEqual("stream-json", command[command.index("--output-format") + 1])
+        self.assertEqual("3", command[command.index("--max-turns") + 1])
+        self.assertIn(command[command.index("-p") + 1], self.TRANSCRIPTS)
+
+    def test_each_adapter_set_is_installed_into_its_own_temp_home(self):
+        self._run()
+        installs = self._install_calls()
+        self.assertEqual(2, len(installs))
+        homes = set()
+        for command, kwargs in installs:
+            self.assertIn("--user", command)
+            adapter_set = command[command.index("--claude-adapters") + 1]
+            env = kwargs["env"]
+            home = Path(env["USERPROFILE"])
+            self.assertEqual(Path(env["HOME"]), home)
+            self.assertEqual(self.root, home.parent)
+            self.assertIn(adapter_set, home.name)
+            self.assertEqual(home / ".claude", Path(env["CLAUDE_CONFIG_DIR"]))
+            homes.add(home)
+        self.assertEqual(2, len(homes))
+
+    def test_the_install_env_overrides_every_root_an_install_could_write(self):
+        # A temporary directory can itself live under the real home on this
+        # host, so the property is not "the string never appears" -- it is
+        # that every root an install writes to is redirected away from the
+        # one the developer actually uses, including any value inherited
+        # from the ambient environment.
+        real = Path.home()
+        decoy = str(self.root / "inherited")
+        ambient = {
+            "HOME": decoy,
+            "USERPROFILE": decoy,
+            "CLAUDE_CONFIG_DIR": decoy,
+            "CODEX_HOME": decoy,
+            "ORCHFLOWS_STATE_HOME": decoy,
+        }
+        with mock.patch.dict(os.environ, ambient):
+            self._run()
+
+        overridden = ("HOME", "USERPROFILE", "CLAUDE_CONFIG_DIR", "CODEX_HOME",
+                      "ORCHFLOWS_STATE_HOME")
+        for _, kwargs in self._install_calls():
+            env = kwargs["env"]
+            home = Path(env["USERPROFILE"])
+            self.assertNotEqual(real, home)
+            self.assertEqual(self.root, home.parent)
+            for key in overridden:
+                with self.subTest(key=key):
+                    self.assertNotEqual(decoy, env[key], "an inherited root was carried through")
+                    self.assertTrue(str(Path(env[key])).startswith(str(home)), env[key])
+
+    def test_the_session_runs_in_a_plain_repository_with_no_agents_file(self):
+        self._run(adapter_sets=("four",))
+        cwds = {Path(kwargs["cwd"]) for command, kwargs in self.calls if "-p" in command}
+        self.assertEqual(1, len(cwds))
+        repo = cwds.pop()
+        self.assertEqual(self.root, repo.parent)
+        self.assertFalse((repo / "AGENTS.md").exists())
+        self.assertFalse((repo / "CLAUDE.md").exists())
+        # Every session runs under the same isolated home as its install.
+        for command, kwargs in self.calls:
+            if "-p" in command:
+                self.assertEqual(self.root / "home-four", Path(kwargs["env"]["USERPROFILE"]))
+
+    def test_the_real_home_is_untouched(self):
+        before = sorted(p.name for p in Path.home().glob(".claude/skills/*"))
+        self._run()
+        self.assertEqual(before, sorted(p.name for p in Path.home().glob(".claude/skills/*")))
+
+    def test_no_call_reaches_a_real_claude_or_codex_binary(self):
+        self._run()
+        self.assertTrue(self.calls)
+        for command, _ in self.calls:
+            self.assertNotIn(Path(str(command[0])).stem, {"codex"})
+
+    def test_a_failing_install_is_reported_rather_than_measured(self):
+        def _failing(command, **kwargs):
+            self.calls.append((list(command), kwargs))
+            return subprocess.CompletedProcess(command, 1, stdout="", stderr="boom")
+
+        with mock.patch.object(routing_live.subprocess, "run", side_effect=_failing):
+            with self.assertRaisesRegex(RuntimeError, "boom"):
+                routing_live.run_benchmark(
+                    adapter_sets=("four",),
+                    cases=self.CASES,
+                    repeat=1,
+                    max_turns=3,
+                    timeout=5,
+                    claude_invocation=["claude"],
+                    root=self.root,
+                )
+        self.assertEqual([], self._claude_calls())
+
+    def test_a_timed_out_case_is_recorded_as_unrouted_not_crashed(self):
+        expired = subprocess.TimeoutExpired(["claude"], 5, output="not-json", stderr="slow")
+
+        def _timeout(command, **kwargs):
+            self.calls.append((list(command), kwargs))
+            if "-p" in command:
+                raise expired
+            return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+        with mock.patch.object(routing_live.subprocess, "run", side_effect=_timeout):
+            records = routing_live.run_benchmark(
+                adapter_sets=("four",),
+                cases=self.CASES,
+                repeat=1,
+                max_turns=3,
+                timeout=5,
+                claude_invocation=["claude"],
+                root=self.root,
+            )
+        self.assertEqual(len(self.CASES), len(records))
+        for record in records:
+            self.assertEqual("unrouted", record["observed"])
+            self.assertTrue(record["timed_out"])
+
+
+class TestRoutingSummary(unittest.TestCase):
+    @staticmethod
+    def _record(adapter_set, expected, observed, repeat=1):
+        return {
+            "adapter_set": adapter_set,
+            "case": f"{expected}-{observed}-{repeat}",
+            "repeat": repeat,
+            "expected": expected,
+            "observed": observed,
+            "match": expected == observed,
+        }
+
+    def test_the_summary_counts_matches_misroutes_and_unrouted_per_set(self):
+        records = [
+            self._record("all", "ticket", "ticket"),
+            self._record("all", "ticket", "fix"),
+            self._record("all", "answer", "answer"),
+            self._record("all", "named:evolve", "unrouted"),
+            self._record("four", "ticket", "ticket"),
+            self._record("four", "named:evolve", "named:evolve"),
+        ]
+        summary = routing_live.summarize(records)
+
+        self.assertEqual(4, summary["all"]["n"])
+        self.assertEqual(2, summary["all"]["matched"])
+        self.assertEqual(0.5, summary["all"]["misroute_rate"])
+        self.assertEqual(1, summary["all"]["unrouted"])
+        self.assertEqual(2, summary["four"]["n"])
+        self.assertEqual(0.0, summary["four"]["misroute_rate"])
+        self.assertEqual(0, summary["four"]["unrouted"])
+
+    def test_the_by_class_breakdown_buckets_by_the_expected_class(self):
+        records = [
+            self._record("all", "named:evolve", "named:evolve"),
+            self._record("all", "named:renovate", "ticket"),
+            self._record("all", "fix", "fix"),
+        ]
+        by_class = routing_live.summarize(records)["all"]["by_class"]
+        self.assertEqual({"named", "fix"}, set(by_class))
+        self.assertEqual(2, by_class["named"]["n"])
+        self.assertEqual(1, by_class["named"]["matched"])
+        self.assertEqual(0.5, by_class["named"]["misroute_rate"])
+        self.assertEqual(0.0, by_class["fix"]["misroute_rate"])
+
+    def test_an_empty_record_set_summarizes_to_nothing_rather_than_dividing_by_zero(self):
+        self.assertEqual({}, routing_live.summarize([]))
+
+    def test_the_table_names_every_set_and_its_rate(self):
+        summary = routing_live.summarize(
+            [self._record("all", "ticket", "fix"), self._record("four", "ticket", "ticket")]
+        )
+        table = routing_live.format_table(summary)
+        self.assertIn("all", table)
+        self.assertIn("four", table)
+        self.assertIn("1.0", table)
+
+
+class TestRoutingBenchMain(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+        self.out = self.tmp / "bench.json"
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def _main(self, argv, records):
+        with mock.patch.object(routing_live, "_claude_command", return_value=["claude"]), \
+                mock.patch.object(routing_live, "run_benchmark", return_value=records) as run, \
+                contextlib.redirect_stdout(io.StringIO()) as printed:
+            code = routing_live.main(argv)
+        return code, printed.getvalue(), run
+
+    def test_it_measures_and_exits_zero_even_when_everything_misroutes(self):
+        records = [
+            {
+                "adapter_set": "four",
+                "case": "t1",
+                "repeat": 1,
+                "expected": "ticket",
+                "observed": "unrouted",
+                "match": False,
+            }
+        ]
+        code, printed, _ = self._main(["--adapters", "four", "--out", str(self.out)], records)
+        self.assertEqual(0, code)
+        self.assertIn("four", printed)
+
+    def test_the_written_json_carries_the_records_and_the_summary(self):
+        records = [
+            {
+                "adapter_set": "all",
+                "case": "a1",
+                "repeat": 1,
+                "expected": "answer",
+                "observed": "answer",
+                "match": True,
+            }
+        ]
+        self._main(["--adapters", "all", "--out", str(self.out)], records)
+        payload = json.loads(self.out.read_text(encoding="utf-8"))
+        self.assertEqual(records, payload["records"])
+        self.assertEqual(1, payload["summary"]["all"]["n"])
+        self.assertEqual(0.0, payload["summary"]["all"]["misroute_rate"])
+        # Written as bytes: this host's default text write would emit CRLF.
+        self.assertNotIn(b"\r\n", self.out.read_bytes())
+
+    def test_both_is_the_default_and_names_the_two_sets(self):
+        _, _, run = self._main(["--out", str(self.out)], [])
+        self.assertEqual(("all", "four"), run.call_args.kwargs["adapter_sets"])
+
+    def test_the_repeat_and_turn_bounds_reach_the_run(self):
+        _, _, run = self._main(
+            ["--adapters", "four", "--repeat", "3", "--max-turns", "5", "--out", str(self.out)],
+            [],
+        )
+        self.assertEqual(3, run.call_args.kwargs["repeat"])
+        self.assertEqual(5, run.call_args.kwargs["max_turns"])
+        self.assertEqual(("four",), run.call_args.kwargs["adapter_sets"])
+
+    def test_it_loads_the_shipped_case_set_by_default(self):
+        _, _, run = self._main(["--out", str(self.out)], [])
+        shipped = json.loads(ROUTING_CASES.read_text(encoding="utf-8"))
+        self.assertEqual(
+            [case["id"] for case in shipped],
+            [case["id"] for case in run.call_args.kwargs["cases"]],
+        )
 
 
 if __name__ == "__main__":
