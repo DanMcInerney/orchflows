@@ -2469,5 +2469,98 @@ class TestClaudeAdapterSet(unittest.TestCase):
             )
 
 
+class TestDayZeroBootstrap(unittest.TestCase):
+    """``--project`` also bootstraps the day-zero documents
+    ``docs/documentation.md`` §6 names -- an empty vocabulary and an
+    ownership map -- each carrying the factory that produced it. Day zero
+    happens once: a document the project already holds is left alone, so
+    the second install is never it.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.home = Path(self.tmp.name) / "home"
+        self.project = Path(self.tmp.name) / "project"
+        self.project.mkdir(parents=True)
+        # Unresolved, for the reason test_project_plan_writes_only_...
+        # states: the rendered text carries this spelling, and resolving
+        # it here disagrees on any host whose temp dir holds a symlink.
+        self.user_docs = str(self.home / ".orchflows" / "lib" / "docs")
+
+    def project_plan(self):
+        with patch.object(install.Path, "home", return_value=self.home):
+            return install.build_plan("project", self.project)
+
+    def documents(self, plan) -> dict:
+        return {doc.dest: doc for doc in plan.day_zero}
+
+    def test_a_project_bootstrap_plans_both_day_zero_documents(self):
+        plan = self.project_plan()
+
+        self.assertEqual(
+            {self.project / "docs" / "vocabulary.md", self.project / "ARCHITECTURE.md"},
+            set(self.documents(plan)),
+        )
+
+    def test_each_bootstrapped_document_carries_its_factory(self):
+        documents = self.documents(self.project_plan())
+        vocabulary = documents[self.project / "docs" / "vocabulary.md"].content
+        ownership_map = documents[self.project / "ARCHITECTURE.md"].content
+
+        self.assertIn(self.user_docs + "/vocabulary-authoring.md", vocabulary)
+        self.assertIn(self.user_docs + "/documentation.md", ownership_map)
+        for content in (vocabulary, ownership_map):
+            # Rendered against the user library, like the host block: a
+            # project install carries no library of its own to point at.
+            self.assertNotIn(str(self.project), content)
+
+    def test_the_bootstrapped_vocabulary_is_the_preamble_and_empty_sections(self):
+        vocabulary = self.documents(self.project_plan())[
+            self.project / "docs" / "vocabulary.md"
+        ].content
+        lines = vocabulary.splitlines()
+
+        self.assertEqual("# Vocabulary", lines[0])
+        sections = [line for line in lines if line.startswith("## ")]
+        self.assertEqual(["## Structure", "## Work", "## Verification"], sections)
+        # Empty means empty: an entry is a bullet, and a skeleton has none.
+        self.assertEqual([], [line for line in lines if line.startswith("- ")])
+
+    def test_the_bootstrapped_ownership_map_is_a_one_row_tiers_table(self):
+        ownership_map = self.documents(self.project_plan())[
+            self.project / "ARCHITECTURE.md"
+        ].content
+        rows = [line for line in ownership_map.splitlines() if line.startswith("|")]
+
+        self.assertEqual(3, len(rows), rows)  # header, separator, one row
+        self.assertIn("tier", rows[0])
+        self.assertIn("owner", rows[0])
+
+    def test_a_project_bootstrap_counts_and_prints_its_two_documents(self):
+        plan = self.project_plan()
+        printed = io.StringIO()
+        with redirect_stdout(printed):
+            install.print_plan(plan)
+        output = printed.getvalue()
+
+        self.assertEqual(len(plan.blocks) + 2, install.plan_entry_count(plan))
+        self.assertIn("day-zero documents (2):", output)
+        for dest in self.documents(plan):
+            self.assertIn(str(dest), output)
+
+    def test_a_user_install_bootstraps_no_day_zero_document(self):
+        """The library is not a project day zero: a user install writes
+        neither document, and its planned-entry count does not move."""
+
+        (self.home / ".claude").mkdir(parents=True)
+        with patch.object(install.Path, "home", return_value=self.home), mock_host_clis(
+            "claude", "codex"
+        ):
+            user_plan = install.build_plan("user", None)
+
+        self.assertEqual([], list(user_plan.day_zero))
+
+
 if __name__ == "__main__":
     unittest.main()

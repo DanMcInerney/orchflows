@@ -757,6 +757,17 @@ class ConfigPlan:
 
 
 @dataclass
+class DayZeroPlan:
+    """One day-zero document (``docs/documentation.md`` §6): written only
+    where the project holds none, never replaced."""
+
+    dest: Path
+    content: str
+    kind: str
+    label: str
+
+
+@dataclass
 class ImportPlan:
     dest: Path
     import_target: Path
@@ -784,6 +795,7 @@ class Plan:
     codex_agents: list = field(default_factory=list)     # (dest, content)
     configs: list = field(default_factory=list)          # ConfigPlan
     blocks: list = field(default_factory=list)           # BlockPlan — inline marker blocks
+    day_zero: list = field(default_factory=list)         # DayZeroPlan — written only when absent
     host_block: ConfigPlan | None = None                 # ~/.orchflows/host-block.md, user scope only
     claude_import: ImportPlan | None = None              # CLAUDE.md import line, user scope only
     warnings: list = field(default_factory=list)         # preflight, informational only
@@ -819,6 +831,67 @@ def _host_block_content() -> tuple[str, str, str]:
     return content, start_marker, end_marker
 
 
+_DAY_ZERO_VOCABULARY = """# Vocabulary
+
+This project's nouns. Each term is defined once, here, and used with
+exactly this meaning everywhere — code, documents, tickets, logs. A
+document that needs a different meaning needs a different word.
+
+Sections group by the reader's question; an entry is earned when two
+contexts used one word differently. Factory:
+{{ORCH_DOCS}}/vocabulary-authoring.md.
+
+## Structure
+
+## Work
+
+## Verification
+"""
+
+_DAY_ZERO_OWNERSHIP_MAP = """# Architecture
+
+Codemap: where the thing that does X lives, who owns it, and which way
+dependencies point. Terms: docs/vocabulary.md. Factory, and the design
+law for every document here: {{ORCH_DOCS}}/documentation.md (§6 day
+zero, §7 factories).
+
+## Tiers and ownership
+
+| tier | owner |
+|---|---|
+| (a directory) | (what it owns, and the tiers it may depend on) |
+
+One row per tier, added when a directory earns an owner, never in advance.
+"""
+
+
+def _day_zero_documents(project_root: Path) -> list:
+    """The documents ``docs/documentation.md`` §6 says a project creates on
+    day zero, minus the two the instruction blocks already carry (the router)
+    and the user install already owns (the state sink).
+
+    Each carries the path of the factory that produced it, rendered against
+    the *user* library for ``_host_block_content``'s reason: a project carries
+    no library of its own to point at.
+    """
+
+    docs_dir = _lib_home("user", None) / "docs"
+    return [
+        DayZeroPlan(
+            project_root / "docs" / "vocabulary.md",
+            _DAY_ZERO_VOCABULARY.replace("{{ORCH_DOCS}}", str(docs_dir)),
+            "day-zero",
+            "vocabulary skeleton",
+        ),
+        DayZeroPlan(
+            project_root / "ARCHITECTURE.md",
+            _DAY_ZERO_OWNERSHIP_MAP.replace("{{ORCH_DOCS}}", str(docs_dir)),
+            "day-zero",
+            "ownership map skeleton",
+        ),
+    ]
+
+
 def _build_project_plan(project_root: Path) -> Plan:
     """Thin stub: only the two managed instruction blocks plus a minimal
     receipt. No lib copy, no runtime dirs, no ``.claude``/``.codex`` writes —
@@ -849,6 +922,7 @@ def _build_project_plan(project_root: Path) -> Plan:
         scope_home=scope_home,
         bin_dir=_bin_dir("project", project_root),
         blocks=blocks,
+        day_zero=_day_zero_documents(project_root),
         receipt_path=scope_home / "receipt.json",
         manage_host_surfaces=False,
     )
@@ -1119,6 +1193,7 @@ def plan_entry_count(plan: Plan) -> int:
         + len(plan.codex_agents)
         + len(plan.configs)
         + len(plan.blocks)
+        + len(plan.day_zero)
         + (1 if plan.host_block is not None else 0)
         + (1 if plan.claude_import is not None else 0)
     )
@@ -1181,6 +1256,10 @@ def print_plan(plan: Plan) -> None:
     print(f"managed blocks ({len(plan.blocks)}):")
     for block in plan.blocks:
         print(f"  {block.label}: {block.dest}")
+    print()
+    print(f"day-zero documents ({len(plan.day_zero)}):")
+    for document in plan.day_zero:
+        print(f"  write if absent: {document.dest} ({document.label})")
     print()
     if plan.claude_import is not None:
         print("managed imports (1):")
