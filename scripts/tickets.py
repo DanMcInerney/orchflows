@@ -1825,7 +1825,10 @@ def _cmd_packet(rest):
         missing.append("reply_to (--reply-to)")
     if not executor:
         missing.append("executor (frontmatter)")
-    if not loaded.get("write_scope"):
+    # An empty list is complete authority -- a read-only lane's grant is
+    # exactly nothing outside its own ticket sections; only an absent key
+    # leaves the packet without one.
+    if loaded.get("write_scope") is None:
         missing.append("authority (write_scope)")
     if not loaded.get("bound"):
         missing.append("bounds (bound)")

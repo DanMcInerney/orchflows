@@ -1086,6 +1086,22 @@ class TestPacket(unittest.TestCase):
             payload = run_cmd(tmp, "packet", "testrun", "T1")
             self.assertIn("reply_to (--reply-to)", payload["error"])
 
+    def test_empty_write_scope_is_complete_authority(self):
+        """A read-only lane's grant is exactly nothing outside its own
+        ticket sections: `write_scope: []` is a complete packet, and only
+        an absent key leaves authority missing."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, FULL_TICKET.replace("write_scope: scratch/t1.txt\n", "write_scope: []\n"))
+            payload = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")
+            self.assertIn("packet", payload)
+            self.assertNotIn("error", payload)
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, FULL_TICKET.replace("write_scope: scratch/t1.txt\n", ""))
+            payload = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")
+            self.assertIn("authority (write_scope)", payload["error"])
+
     def test_criterion_without_oracle_class_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
