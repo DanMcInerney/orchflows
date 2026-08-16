@@ -239,7 +239,7 @@ CANARY_AND_BIN_LINES = {
         "`.orch/canary/`, spanning the kernel boundaries: one delegation, one",
     ),
     "skills/workflows/orch-fixture/SKILL.md": (
-        "README line. Freeze into `.orch/canary/<name>/`: the spec excerpt the",
+        "`.orch/canary/README.md` owns: the ticket under `tickets/canary/`, the",
     ),
     "skills/kernel/orch-mechanize/SKILL.md": (
         "Write the script in stdlib Python 3, cross-platform, to `.orch/bin/` for",
