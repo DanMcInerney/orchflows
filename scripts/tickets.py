@@ -1123,10 +1123,26 @@ def _criteria(section_text: str) -> list:
     content — every deliverable here is markdown and executors quote ticket
     bodies at length — so fences are skipped exactly as ``_scan_sections``
     skips them.
+
+    Indentation is the second signal and it is relative: a bullet indented
+    deeper than the bullet that opened the criterion now open is that
+    criterion's own text — a sentence wrapping onto a digit and a period, or
+    a list nested under it — and opens nothing. A bullet at that opening
+    indentation or less opens the next criterion, so a section whose criteria
+    are themselves written indented is still a list.
+
+    An unindented prose line ends the open criterion's continuation and never
+    the list: a criterion written after such a line still surfaces. This
+    function is criterion parsing's one owner — ``criterion_defects`` and
+    ``scripts/cutcheck.py`` both read a completion test through it, and a
+    second spelling is how a section reads one way to the cutter and another
+    way to the refusal that issues it.
     """
 
     criteria: list = []
     fence = None
+    opened_at = 0
+    open_item = False
     for line in section_text.splitlines():
         run = _fence_run(line)
         if fence is not None:
@@ -1141,9 +1157,20 @@ def _criteria(section_text: str) -> list:
             continue
         match = CRITERION_BULLET_RE.match(line)
         if match:
+            depth = len(line) - len(line.lstrip())
+            if open_item and depth > opened_at:
+                criteria[-1] = f"{criteria[-1]} {stripped}"
+                continue
+            opened_at = depth
+            open_item = True
             criteria.append(line[match.end():].strip())
-        elif criteria:
-            criteria[-1] = f"{criteria[-1]} {stripped}"
+            continue
+        if not open_item:
+            continue
+        if not line[0].isspace():
+            open_item = False
+            continue
+        criteria[-1] = f"{criteria[-1]} {stripped}"
     return criteria
 
 

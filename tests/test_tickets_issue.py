@@ -224,6 +224,48 @@ class CriterionDefectsTest(unittest.TestCase):
                 self.assertIn("criterion", defects[0])
 
 
+class CriterionNestingTest(unittest.TestCase):
+    """Indentation, in the one owner of criterion parsing.
+
+    `scripts/cutcheck.py` carried a second parser with these two rules in it
+    and graded the same sections by them; the rules live here now, so a
+    section reads the same to the cutter and to the refusal that issues it.
+    """
+
+    def test_a_list_nested_under_a_criterion_is_that_criterions_own_text(self):
+        section = (
+            "1. the installer names every script | oracle: `grep -n X install.py`\n"
+            "   | oracle_class: deterministic, over\n"
+            "   1. the tuple it opens, and\n"
+            "   2. every name it lists.\n"
+            "2. the second criterion opens on its own | oracle: y "
+            "| oracle_class: judged\n"
+        )
+        criteria = tickets_mod._criteria(section)
+        self.assertEqual(2, len(criteria), criteria)
+        self.assertIn("1. the tuple it opens, and", criteria[0])
+        self.assertEqual([], criterion(section))
+
+    def test_an_unindented_prose_line_ends_the_continuation_not_the_list(self):
+        section = (
+            "1. first | oracle: a | oracle_class: deterministic\n"
+            "\n"
+            "An unindented prose line interrupts the list here.\n"
+            "\n"
+            "  2. second | oracle: b | oracle_class: judged\n"
+        )
+        criteria = tickets_mod._criteria(section)
+        self.assertEqual(2, len(criteria), criteria)
+        self.assertNotIn("unindented prose", criteria[0])
+
+    def test_a_bullet_at_the_opening_indentation_still_opens_its_own_criterion(self):
+        section = (
+            "  - first | oracle: a | oracle_class: deterministic\n"
+            "  - second | oracle: b | oracle_class: judged\n"
+        )
+        self.assertEqual(2, len(tickets_mod._criteria(section)))
+
+
 class TicketDefectsTest(unittest.TestCase):
     """`ticket_defects` is the one owner of ticket shape in code: frontmatter
     keys, the status enum, the body sections, and every criterion defect."""

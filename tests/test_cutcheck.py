@@ -340,7 +340,11 @@ class PhantomCriterionTest(unittest.TestCase):
         )
 
     def test_the_wrapped_stamp_belongs_to_the_criterion_that_wrapped(self):
-        self.assertTrue(cutcheck.PRE_EXISTING_RE.search(self.texts[2]), self.texts[2])
+        self.assertEqual(
+            cutcheck.PRE_EXISTING,
+            cutcheck._stated_provenance(self.texts[2]),
+            self.texts[2],
+        )
 
 
 class NestedEnumerationTest(unittest.TestCase):
@@ -354,7 +358,7 @@ class NestedEnumerationTest(unittest.TestCase):
             "1. the tuple the installer opens, and 2. every script name it lists.",
             first,
         )
-        self.assertTrue(cutcheck.PRE_EXISTING_RE.search(first), first)
+        self.assertEqual(cutcheck.PRE_EXISTING, cutcheck._stated_provenance(first), first)
 
     def test_a_set_whose_criteria_are_written_indented_is_still_a_list(self):
         criteria = fixture_criteria("cutcheck-f1-truncated", "01-truncated.md")
@@ -1629,7 +1633,9 @@ class ProvenanceNegationTest(unittest.TestCase):
             "provenance: pre-existing is never a demonstration that an oracle "
             "can fail.",
         ):
-            self.assertIsNone(cutcheck.PRE_EXISTING_RE.search(text), text)
+            self.assertNotEqual(
+                cutcheck.PRE_EXISTING, cutcheck._stated_provenance(text), text
+            )
 
 
 class ProvenanceStampTest(unittest.TestCase):
@@ -1649,8 +1655,50 @@ class ProvenanceStampTest(unittest.TestCase):
             # A live set stamps this way: the field, then why it is the field.
             "oracle_class: deterministic. provenance: pre-existing (the fixture "
             "exists from item 01).",
+            # The form `tickets.py` writes, in its own gate stubs and in every
+            # ticket `new` renders: the two scripts disagreed on this one and
+            # the library's own stubs were the casualty.
+            "the suite exits 0 | oracle: `python -B -m unittest tests.x.Y` "
+            "| oracle_class: deterministic | provenance: pre-existing",
         ):
-            self.assertTrue(cutcheck.PRE_EXISTING_RE.search(text), text)
+            self.assertEqual(cutcheck.PRE_EXISTING, cutcheck._stated_provenance(text), text)
+
+
+class CriterionOwnerTest(unittest.TestCase):
+    """Criterion parsing has one owner, and this tool is not it.
+
+    Every criterion this tool grades is one `scripts/tickets.py` already
+    refused a ticket over, so a second parser here is a section that reads one
+    way to the cut's refusal and another way to the cut's check. It read that
+    way: a `- ` bullet criterion -- the form `tickets.py new` renders -- was
+    invisible to this tool while being graded there.
+    """
+
+    SECTION = (
+        "- the suite exits 0 | oracle: `grep -n \"cutcheck.py\" install.py` "
+        "| oracle_class: deterministic | provenance: pre-existing\n"
+        "- the docs read well | oracle: the lens | oracle_class: judged\n"
+    )
+
+    def test_a_bullet_criterion_is_read_with_its_class_and_its_provenance(self):
+        criteria = cutcheck._criteria(self.SECTION)
+        self.assertEqual([1, 2], [number for number, _ in criteria])
+        first = dict(criteria)[1]
+        self.assertEqual("deterministic", cutcheck._oracle_class(first))
+        self.assertEqual(cutcheck.PRE_EXISTING, cutcheck._stated_provenance(first))
+        self.assertEqual("judged", cutcheck._oracle_class(dict(criteria)[2]))
+
+    def test_the_criteria_are_the_ones_scripts_tickets_reads(self):
+        self.assertEqual(
+            [text for _, text in cutcheck._criteria(self.SECTION)],
+            tickets._criteria(self.SECTION),
+        )
+
+    def test_the_stated_class_travels_with_an_extraction_gap(self):
+        _, advisories, _ = report(run_cutcheck("cutcheck-f1-truncated"))
+        gaps = [line for line in advisories if cutcheck.EXTRACTION_GAP in line]
+        self.assertEqual(1, len(gaps), advisories)
+        self.assertIn("oracle_class: judgment", gaps[0])
 
 
 class VerdictInOutputTest(unittest.TestCase):
@@ -2128,7 +2176,7 @@ class NodeIdOracleGapTest(unittest.TestCase):
                 for number, criterion in cutcheck._criteria(section):
                     for command in cutcheck._commands(criterion):
                         read.append(command)
-                        if cutcheck.PRE_EXISTING_RE.search(criterion):
+                        if cutcheck._stated_provenance(criterion) == cutcheck.PRE_EXISTING:
                             continue
                         if cutcheck._whole_suite(command, ROOT):
                             gaps.append(

@@ -3,7 +3,7 @@
   "exit": 0,
   "lines": [
    "cutcheck: advisory -- reported, and never setting the exit status:",
-   "01-barenoun: family 1: extraction-gap: criterion 2: **A mention standing alone is an extraction gap.** The only command head this criterion states is `p",
+   "01-barenoun: family 1: extraction-gap: criterion 2: **A mention standing alone is an extraction gap.** The only command head this criterion states is `p | oracle_class: deterministic",
    "cutcheck-barenoun: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-barenoun/coverage.md",
    "cutcheck: no finding outside the advisory set"
   ]
@@ -24,8 +24,8 @@
   "exit": 0,
   "lines": [
    "cutcheck: advisory -- reported, and never setting the exit status:",
-   "01-quoted: family 1: extraction-gap: criterion 2: **A span quoted as what the guard refuses is no oracle.** The confinement gate refuses `git log --ou",
-   "01-quoted: family 1: extraction-gap: criterion 3: **A span quoted as what CI runs is no oracle.** A whole-module invocation such as `python3 -m unitte",
+   "01-quoted: family 1: extraction-gap: criterion 2: **A span quoted as what the guard refuses is no oracle.** The confinement gate refuses `git log --ou | oracle_class: deterministic",
+   "01-quoted: family 1: extraction-gap: criterion 3: **A span quoted as what CI runs is no oracle.** A whole-module invocation such as `python3 -m unitte | oracle_class: deterministic",
    "cutcheck-command-mention: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-command-mention/coverage.md",
    "cutcheck: no finding outside the advisory set"
   ]
@@ -34,7 +34,7 @@
   "exit": 0,
   "lines": [
    "cutcheck: advisory -- reported, and never setting the exit status:",
-   "01-evalhead: family 1: extraction-gap: criterion 1: **An interpreter evaluating its argument is never executed.** `python3 -c \"import pathlib;pathlib.Pa",
+   "01-evalhead: family 1: extraction-gap: criterion 1: **An interpreter evaluating its argument is never executed.** `python3 -c \"import pathlib;pathlib.Pa | oracle_class: deterministic",
    "cutcheck-evalhead: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-evalhead/coverage.md",
    "cutcheck: no finding outside the advisory set"
   ]
@@ -61,7 +61,7 @@
   "exit": 0,
   "lines": [
    "cutcheck: advisory -- reported, and never setting the exit status:",
-   "01-extraction-gap: family 1: extraction-gap: criterion 1: **The boundary reads clearly to a first reader.** A reviewer who has not seen this ticket can name, ",
+   "01-extraction-gap: family 1: extraction-gap: criterion 1: **The boundary reads clearly to a first reader.** A reviewer who has not seen this ticket can name,  | oracle_class: judgment",
    "cutcheck-f1-extraction-gap: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f1-extraction-gap/coverage.md",
    "cutcheck: no finding outside the advisory set"
   ]
@@ -87,7 +87,7 @@
   "exit": 0,
   "lines": [
    "cutcheck: advisory -- reported, and never setting the exit status:",
-   "01-truncated: family 1: extraction-gap: criterion 2: **The criterion after the interruption.** A reviewer names, from the module docstring alone, every f",
+   "01-truncated: family 1: extraction-gap: criterion 2: **The criterion after the interruption.** A reviewer names, from the module docstring alone, every f | oracle_class: judgment",
    "cutcheck-f1-truncated: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f1-truncated/coverage.md",
    "cutcheck: no finding outside the advisory set"
   ]
@@ -125,8 +125,8 @@
    "01-reader: family 4: staged-invalidation: with 02-rewriter: install.py",
    "03-alpha: family 4: scope-collision: with 04-beta: scripts/cutcheck.py",
    "cutcheck: advisory -- reported, and never setting the exit status:",
-   "03-alpha: family 1: extraction-gap: criterion 1: **The shared scope is the whole defect.** The two scopes intersect, which the report names without r",
-   "04-beta: family 1: extraction-gap: criterion 1: **The shared scope is the whole defect.** The two scopes intersect, which the report names without r",
+   "03-alpha: family 1: extraction-gap: criterion 1: **The shared scope is the whole defect.** The two scopes intersect, which the report names without r | oracle_class: deterministic",
+   "04-beta: family 1: extraction-gap: criterion 1: **The shared scope is the whole defect.** The two scopes intersect, which the report names without r | oracle_class: deterministic",
    "cutcheck-f4-pairs: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f4-pairs/coverage.md"
   ]
  },
@@ -219,7 +219,7 @@
   "exit": 0,
   "lines": [
    "cutcheck: advisory -- reported, and never setting the exit status:",
-   "01-shellhead: family 1: extraction-gap: criterion 1: **A shell span is never executed.** `bash -lc 'touch /tmp/cutcheck-shellhead-ran'` is the span; thro",
+   "01-shellhead: family 1: extraction-gap: criterion 1: **A shell span is never executed.** `bash -lc 'touch /tmp/cutcheck-shellhead-ran'` is the span; thro | oracle_class: deterministic",
    "cutcheck-shellhead: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-shellhead/coverage.md",
    "cutcheck: no finding outside the advisory set"
   ]

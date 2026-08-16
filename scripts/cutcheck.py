@@ -119,6 +119,11 @@ try:  # in-repo; the installed copy sits flat beside tickets.py
     from scripts import state_root
     from scripts.tickets import (
         ENGINE_EXECUTORS,
+        GATE_EXECUTORS,
+        ORACLE_CLASS_RE,
+        PROVENANCE_RE,
+        ROOT_EXECUTOR,
+        _criteria as _ticket_criteria,
         _parse_frontmatter,
         _sections,
     )
@@ -126,6 +131,11 @@ except ImportError:  # pragma: no cover - the installed copy's path
     import state_root
     from tickets import (
         ENGINE_EXECUTORS,
+        GATE_EXECUTORS,
+        ORACLE_CLASS_RE,
+        PROVENANCE_RE,
+        ROOT_EXECUTOR,
+        _criteria as _ticket_criteria,
         _parse_frontmatter,
         _sections,
     )
@@ -220,7 +230,6 @@ PACK_NAME_RE = re.compile(r"^[\w-]+$")
 OBJECTIVE_SECTION = "Objective"
 INPUTS_SECTION = "Fixed inputs"
 COMPLETION_SECTION = "Completion test"
-CRITERION_RE = re.compile(r"^\s*(\d+)\.\s+(.*)$")
 BACKTICK_RE = re.compile(r"`([^`]+)`")
 SWALLOW_RE = re.compile(r"\|\s*(?:tail|head)\b")
 CUMULATIVE_RE = re.compile(r"\S+\.\.HEAD\b")
@@ -290,17 +299,20 @@ NODE_SEP = "::"
 # is no evidence on its own.
 FILTER_MATCHES_ALL = "test_"
 # A criterion states the provenance of its own oracle; an oracle stated
-# pre-existing is an invariant, and holding still is what it is for. Stating it
-# is writing the field and nothing else: a sentence boundary opens the phrase,
-# and no word continues it -- a parenthetical may follow, a predicate may not.
-# A criterion that quotes the phrase, denies carrying it, or discusses what it
-# means mentions the stamp instead of making one, and every such mention either
-# sits behind a backtick, an article or a verb, or runs on into the clause that
-# denies it. Grading is the default here, so a stamp written any other way is
-# graded rather than believed.
-PRE_EXISTING_RE = re.compile(
-    r"(?:\A|[.;])\s*provenance:\s*pre-existing(?!\s*[A-Za-z])", re.I
-)
+# pre-existing is an invariant, and holding still is what it is for. The field
+# itself is `scripts/tickets.py`'s -- `PROVENANCE_RE` there is the one spelling,
+# and it reads the `| provenance: x` form that script writes as readily as the
+# sentence form. What is decided here is the frame and not the field: stating a
+# stamp is writing it at a field boundary with no word continuing it -- a
+# parenthetical may follow, a predicate may not. A criterion that quotes the
+# phrase, denies carrying it, or discusses what it means mentions the stamp
+# instead of making one, and every such mention either sits behind a backtick,
+# an article or a verb, or runs on into the clause that denies it. Grading is
+# the default here, so a stamp written any other way is graded rather than
+# believed.
+PRE_EXISTING = "pre-existing"
+STAMP_OPENS_RE = re.compile(r"(?:\A|[.;|])\s*$")
+STAMP_CONTINUES_RE = re.compile(r"\s*[A-Za-z]")
 # Counting prints the verdict rather than exiting on it.
 COUNT_FLAG_RE = re.compile(r"^-[A-Za-z]*c[A-Za-z]*$|^--count$")
 # Under `git` only the long flag counts: `git -c` sets a configuration
@@ -628,41 +640,45 @@ def _same_revision(rev, worktree_root):
 
 
 def _criteria(section):
-    """Every numbered completion-test item, at any indentation.
+    """Every completion-test criterion, numbered as the ticket's own grader
+    numbers them.
 
-    Indentation is the signal and it is relative: a numbered line indented
-    deeper than the line that opened the item now open is that item's own
-    text -- a sentence wrapping onto a digit and a period, or a list nested
-    under it -- and opens nothing. A numbered line at that opening line's
-    indentation or less opens the next item, so a set whose criteria are
-    themselves written indented is still a list; and one met while no item is
-    open always opens one.
-
-    Unindented prose ends an item's continuation, never the list: a criterion
-    written after such a line still surfaces, as an extraction gap at minimum.
+    Parsing is ``scripts/tickets.py``'s. That script refuses a criterion this
+    tool then grades, so two parsers here is exactly how a section reads one
+    way to the cut's refusal and another way to the cut's check: a bullet
+    criterion was invisible to this tool while being graded there. The
+    numbering is positional for the same reason -- ``criterion_defects`` says
+    "criterion 2" about the second criterion in the section, whatever digit
+    the author typed, and a report naming a different number names a
+    criterion its reader cannot find.
     """
 
-    items = []
-    current = None
-    opened_at = 0
-    for line in section.splitlines():
-        match = CRITERION_RE.match(line)
-        if match:
-            depth = len(line) - len(line.lstrip())
-            if current is not None and depth > opened_at:
-                current[1].append(line.strip())
-                continue
-            opened_at = depth
-            current = (int(match.group(1)), [match.group(2)])
-            items.append(current)
+    return list(enumerate(_ticket_criteria(section), start=1))
+
+
+def _oracle_class(criterion):
+    """The class this criterion states its oracle is decided by, or ``""``."""
+
+    match = ORACLE_CLASS_RE.search(criterion)
+    return match.group(1).strip().lower() if match else ""
+
+
+def _stated_provenance(criterion):
+    """The provenance this criterion stamps of its own oracle, or ``""``.
+
+    A stamp, never a mention: the field is read with ``tickets.PROVENANCE_RE``
+    and kept only where the frame around it is a statement -- opened by the
+    start of the criterion, a sentence boundary or the field separator
+    ``tickets.py`` itself writes, and continued by no word.
+    """
+
+    for match in PROVENANCE_RE.finditer(criterion):
+        if not STAMP_OPENS_RE.search(criterion[:match.start()]):
             continue
-        if current is None:
+        if STAMP_CONTINUES_RE.match(criterion[match.end():]):
             continue
-        if line.strip() and not line[0].isspace():
-            current = None
-            continue
-        current[1].append(line.strip())
-    return [(number, " ".join(p for p in parts if p)) for number, parts in items]
+        return match.group(1).strip().lower()
+    return ""
 
 
 def _commands(criterion):
@@ -1437,9 +1453,16 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
         )
         commands = _commands(criterion)
         if not commands:
-            findings.append((ticket_id, number, EXTRACTION_GAP, criterion[:100]))
+            # The stated class travels with the gap: a judged criterion states
+            # no command by design, and one that names a class this tool can
+            # run is under-coverage. The decomposer reads which it has.
+            klass = _oracle_class(criterion)
+            detail = criterion[:100]
+            if klass:
+                detail = "{} | oracle_class: {}".format(detail, klass)
+            findings.append((ticket_id, number, EXTRACTION_GAP, detail))
             continue
-        invariant = bool(PRE_EXISTING_RE.search(criterion))
+        invariant = _stated_provenance(criterion) == PRE_EXISTING
         for command in commands:
             shape = _shape(command)
             if shape:
