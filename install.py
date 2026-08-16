@@ -475,24 +475,34 @@ def load_role_profiles(profiles_md_path: Path = PROFILES_MD):
     return profiles
 
 
-def _role_description(name: str, roles_path: Path) -> str:
-    return f"Orchflows child role {name}; follow the role contract at {roles_path}."
+def _role_description(name: str) -> str:
+    """The routing fact and nothing else. It used to add "follow the role
+    contract at <roles.md>": an imperative with no addressee, listed on
+    every turn to every context holding the Agent tool -- children
+    included -- while the dispatcher's law is already reached through
+    rules/roles.md section 4 (contracts/work-item.md, orch-frontier)."""
+
+    return f"Orchflows child role {name}."
 
 
 # What a rendered role agent instructs, and all it instructs. It opened by
 # sending every child of every role to read rules/roles.md before acting --
 # 149 words loaded before the child had read its own ticket, whose own text
 # already carries the clauses a child acts on (stay in scope; write the
-# return into the durable artifact; deliver it by SendMessage). The contract
-# stays named in the agent's description for whoever dispatches it.
+# return into the durable artifact; deliver it by SendMessage). No rendered
+# role agent file names roles.md anywhere (D-2).
 ROLE_INSTRUCTIONS = "Stay within the delegated scope."
+
+# ``roles_path`` below is unused since D-2 and stays only because
+# tools/live_claude_profiles.py and tools/live_codex_profiles.py pass it;
+# dropping the parameter is theirs to take up with their callers.
 
 
 def render_codex_agent(name: str, profile: dict, roles_path: Path) -> str:
     binding = profile["codex"]
     lines = [
         f"name = {json.dumps(binding['agent_type'])}",
-        f"description = {json.dumps(_role_description(name, roles_path))}",
+        f"description = {json.dumps(_role_description(name))}",
         f"developer_instructions = {json.dumps(ROLE_INSTRUCTIONS)}",
         f"model = {json.dumps(binding['model'])}",
         f"model_reasoning_effort = {json.dumps(binding['model_reasoning_effort'])}",
@@ -507,7 +517,7 @@ def render_claude_agent(name: str, profile: dict, roles_path: Path) -> str:
     lines = [
         "---",
         f"name: {name}",
-        f"description: {json.dumps(_role_description(name, roles_path))}",
+        f"description: {json.dumps(_role_description(name))}",
         f"model: {binding['model']}",
     ]
     if binding.get("effort"):
