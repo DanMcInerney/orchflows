@@ -253,9 +253,15 @@ def channel_of(outcome: str, loss: Tuple[str, ...]) -> str:
     no member for "the origin was never reached", so an outcome cannot tell an
     intercepted read from a platform's own refusal and a reader who assumed it
     could would find nothing here to correct them.
+
+    Two codes answer the same way and for one reason. An appliance answering
+    instead of the origin and nobody answering at all are both statements about
+    this host's connection: no origin was read, so nothing about the platform
+    can be concluded and no standing may move. What differs is only what the
+    operator is told, which is `cli`'s.
     """
 
-    if transport.NETWORK_INTERCEPTED in loss:
+    if transport.NETWORK_INTERCEPTED in loss or transport.UNREACHABLE in loss:
         return ANSWERED_BY_LOCAL_NETWORK
     return ANSWERED_BY_ORIGIN
 

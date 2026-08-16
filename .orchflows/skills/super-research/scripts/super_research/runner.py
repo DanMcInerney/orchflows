@@ -34,7 +34,7 @@ from dataclasses import replace
 from typing import Callable, Dict, List, Optional, Tuple
 
 from . import cache, normalize, router, schema, transport
-from .adapters import AdapterDescriptor, AdapterRequest, NativePage
+from .adapters import AdapterDescriptor, AdapterRequest, NativePage, build_native_page
 from .adapters import fake, github_rest, hacker_news, instagram_public
 from .adapters import linkedin_jobs, linkedin_public, public_page, reddit_archive
 from .adapters import reddit_feed
@@ -277,8 +277,10 @@ def reached_origin(page: NativePage) -> bool:
     adapter refused before making a call at all — a target it does not serve
     costs a page and no read — and billing that as a call would put work in the
     ledger that no origin ever saw. ``refused`` is the one outcome that means
-    the read never left: every other one, including a failure, describes
-    something an origin or the local network actually answered.
+    the read never left: every other one, including a failure and including a
+    read nothing answered, describes a call this host actually spent. An
+    ``unreachable`` page is the sharp case and it is billed: the request went
+    out and the route's budget went with it, whatever came back.
     """
 
     return page.outcome != "refused" and cache.CACHE_HIT not in page.loss
@@ -352,7 +354,23 @@ def run_step(
             truncated = True
             break
         began_us = tick_us(clock)
-        page = call_adapter(step.adapter_id, carrier, request)
+        try:
+            page = call_adapter(step.adapter_id, carrier, request)
+        except transport.TransportError as error:
+            # The one read that comes back with nothing to type — a refused
+            # connection, an unresolvable name, a TLS handshake that failed.
+            # Typed here rather than raised, because raising discards every
+            # step already run: `composition.md` §8 asks a failure path for the
+            # partial result plus the evidence gathered, and everything read
+            # before this call is exactly that. The error's own text is the
+            # only part of it naming where to look, so it rides as a warning.
+            page = build_native_page(
+                descriptor,
+                (),
+                outcome="failed",
+                loss=(transport.UNREACHABLE,),
+                warnings=(str(error),),
+            )
         pages += 1
         page_outcomes.append(page.outcome)
         page_routes.append(page.route_id)

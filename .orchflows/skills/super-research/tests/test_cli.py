@@ -447,10 +447,19 @@ class TheSuiteReachesNoNetworkTest(unittest.TestCase):
                     cli.observe(probe, carrier, clock=clock.monotonic, now=clock.stamp)
 
     def test_an_unseeded_route_fails_loudly_rather_than_egressing(self):
+        # The opener still refuses an unseeded route rather than reaching for a
+        # socket; what changed is where the refusal is read. `run_step` types it
+        # now, so the loud failure is a `failed` step carrying `unreachable` and
+        # no records — a quiet one would be an empty page with outcome `ok`,
+        # which is the shape this row exists to make impossible.
         probe = cli.probe_for("hacker_news")
 
-        with self.assertRaises(transport.TransportError):
-            observe_offline(probe, seeds={})
+        observation, _ = observe_offline(probe, seeds={})
+
+        self.assertEqual(observation.outcome, "failed")
+        self.assertIn(transport.UNREACHABLE, observation.loss)
+        self.assertEqual(observation.records_kept, 0)
+        self.assertEqual(observation.channel, cli.ANSWERED_BY_LOCAL_NETWORK)
 
 
 def load_beside_the_tree(name):

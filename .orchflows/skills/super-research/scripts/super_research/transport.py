@@ -154,6 +154,14 @@ class TransportError(RuntimeError):
     """An outbound request was refused or could not be completed."""
 
 
+# The typed loss a read that raised :class:`TransportError` leaves on its page.
+# It is declared beside the exception and loaded nowhere here, because the two
+# modules that spell it are the two that meet the failure rather than raise it:
+# `runner` attaches it to the step it ends, `smoke` reads it to decide which
+# party answered.
+UNREACHABLE = "unreachable"
+
+
 @dataclass(frozen=True)
 class TransportRequest:
     """One read, spelled completely, before any credential is attached.

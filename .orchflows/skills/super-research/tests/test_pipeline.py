@@ -1240,6 +1240,102 @@ class FusedModeTest(unittest.TestCase):
         )
 
 
+def unreachable_run():
+    """The tracer's two steps, with the second step's route answering nobody.
+
+    A refused connection, an unresolvable name and a failed TLS handshake all
+    arrive as one ``TransportError`` out of ``transport.urlopen_read``, so one
+    seeded exception stands for the whole class. The first step is left alone:
+    what is under test is what survives the second.
+    """
+
+    clock = helpers.FakeClock()
+    responses = dict(tracer_responses())
+    responses[transport.ARCTIC_SHIFT_POSTS_ROUTE] = transport.TransportError(
+        "transport failed for " + transport.ARCTIC_SHIFT_POSTS_ROUTE
+    )
+    carrier, opener = helpers.offline_transport(clock, responses, latencies=ROUTE_LATENCIES)
+    run = runner.run_scheduled(
+        schema.parse_manifest(TWO_STEP_MANIFEST), carrier, clock=clock.monotonic
+    )
+    return run, opener
+
+
+class AStepThatGotNoAnswerIsTypedTest(unittest.TestCase):
+    """A read that got no answer types its own step and costs the run nothing else.
+
+    ``rules/composition.md`` §8: every failure path returns partial results plus
+    the evidence gathered. Until this seam existed a ``TransportError`` on step
+    three unwound the whole dispatch — steps one and two's records, their step
+    results and the ledger went with it, and the caller was left a traceback to
+    file instead of an artifact. The exception is the off-nominal exit of the
+    documented path, so it is the one failure whose partial answer is worth the
+    most: everything already read is what the run cost.
+
+    Typed, not swallowed. ``unreachable`` is a loss code on a ``failed`` step,
+    the error's own text rides along as the step's warning, and the run's
+    outcome reduces to that failure — a caller reading ``outcome`` and ``loss``
+    the way ``SKILL.md`` says to meets this exit there rather than nowhere.
+    """
+
+    def test_the_steps_before_it_keep_their_records_and_their_results(self):
+        run, _ = unreachable_run()
+
+        kept = [record for record in run.artifact.records if record.step_id == "s1-discover"]
+
+        self.assertTrue(kept, "the discovery step's records went with the exception")
+        self.assertEqual(run.artifact.steps[0].outcome, "ok")
+        self.assertEqual(run.artifact.steps[0].records_kept, len(kept))
+
+    def test_the_step_that_got_no_answer_says_so(self):
+        run, _ = unreachable_run()
+
+        failed = run.artifact.steps[1]
+
+        self.assertEqual(failed.step_id, "s2-hydrate")
+        self.assertEqual(failed.outcome, "failed")
+        self.assertIn("unreachable", failed.loss)
+        self.assertIn("unreachable", run.artifact.loss)
+        self.assertEqual(failed.records_kept, 0)
+
+    def test_the_error_text_rides_along_as_that_steps_warning(self):
+        # The only part of this failure that names where to look: which route
+        # never answered. A code says the kind of thing that happened.
+        run, _ = unreachable_run()
+
+        self.assertTrue(
+            any(
+                transport.ARCTIC_SHIFT_POSTS_ROUTE in warning
+                for warning in run.artifact.steps[1].warnings
+            ),
+            "the step names no route for the read that never completed",
+        )
+
+    def test_the_run_reaches_its_ledger_and_bills_the_spent_call(self):
+        # The read left this host and spent the route's budget, so it is a call
+        # the ledger states; what it did not buy is an item.
+        run, opener = unreachable_run()
+
+        sums = runner.ledger_sums(run.ledger)
+
+        self.assertEqual(sums["calls"], len(opener.opened))
+        self.assertEqual(sums["pages"], sum(step.pages for step in run.artifact.steps))
+        self.assertEqual(
+            sums["items"], sum(step.records_received for step in run.artifact.steps)
+        )
+
+    def test_the_oracle_rejects_the_run_that_answered(self):
+        # The same four assertions against the healthy pair: an implementation
+        # that typed every step `failed` would pass the class above and fail
+        # here, so `unreachable` is shown to be attributable to the exception.
+        governor, _, clock = tracer_governor()
+
+        healthy = run_on(clock, governor, TWO_STEP_MANIFEST)
+
+        self.assertNotIn("unreachable", healthy.artifact.loss)
+        self.assertNotEqual(healthy.artifact.steps[1].outcome, "failed")
+
+
 class WorkLedgerTest(unittest.TestCase):
     """Criterion 4, ledger half: causal order is total, and the sums are the artifact's."""
 
