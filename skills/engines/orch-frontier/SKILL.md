@@ -16,8 +16,9 @@ naming none works at its plain-path write scope — the child establishing the i
 and is the cut's defect, never read the body to repair it yourself. Dispatch exactly one fresh child through `orch-delegate` on that
 packet, the ticket's executor as the applied skill — an `executor: script:<path>` runs the named script and spawns nothing — or
 execute inline under [rules/delegation.md](../../../rules/delegation.md) §2's independence condition. Where a criterion's oracle
-carries `authored-here` provenance and the ticket's `independence` reads `checker`, dispatch `orch-check` as one further fresh child
-on that same claimed ticket, whose result and authored checks await the coverage, then re-run the completion test through
+carries `authored-here` provenance and the ticket's `independence` reads `checker`, dispatch `orch-critique` as one further fresh
+child on that same claimed ticket — the ticket's own write scope as that packet's `authority`, which is what makes the critic the
+corrector — whose result and authored checks await the coverage, then re-run the completion test through
 `orch-verify` at the checked result identity — its entries supersede what they cover, per
 [rules/verification.md](../../../rules/verification.md) §10. Accept the child return once through `orch-integrate` under this engine's
 write scope: on `suspended` — the executor has written its `## Handoff` — the item parks, claim fields kept, for the next claim to

@@ -77,7 +77,6 @@ ROLE_TABLE = {
     "orch-synthesize": "planner",
     "orch-decompose": "planner",
     # worker
-    "orch-check": "worker",
     "orch-investigate": "worker",
     "orch-verify": "worker",
     "orch-mechanize": "worker",
