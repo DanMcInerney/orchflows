@@ -2174,6 +2174,8 @@ class TestRuntimeDirsSeedTheSink(unittest.TestCase):
             paths.append(pair[0])
         for block in plan.blocks:
             paths.append(block.dest)
+        for document in plan.day_zero:
+            paths.append(document.dest)
         for extra in (plan.host_block, plan.claude_import):
             if extra is not None:
                 paths.append(extra.dest)
@@ -2618,6 +2620,21 @@ class TestDayZeroBootstrap(unittest.TestCase):
         self.assertEqual(
             [], [entry for entry in report["skill_actions"] if "ARCHITECTURE" in entry["path"]]
         )
+
+    def test_the_bootstrap_is_named_where_its_reader_meets_it(self):
+        """One fact, one owner, twice over: the installer's docstring owns
+        what project scope writes, and ``docs/documentation.md`` §6 owns
+        what day zero creates. Neither reader reaches the other's file."""
+
+        collapsed = " ".join((install.__doc__ or "").split())
+        self.assertIn("day-zero documents", collapsed)
+
+        documentation = (
+            Path(install.__file__).resolve().parent / "docs" / "documentation.md"
+        ).read_text(encoding="utf-8")
+        section = documentation.split("## 6. Bootstrap", 1)[1].split("\n## ", 1)[0]
+        self.assertIn("install.py --project", section)
+        self.assertIn("never overwriting", section)
 
     def test_a_user_install_bootstraps_no_day_zero_document(self):
         """The library is not a project day zero: a user install writes

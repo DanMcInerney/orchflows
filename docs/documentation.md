@@ -101,10 +101,11 @@ candidate by default.
 
 A new project creates on day zero exactly: the router file (routing
 plus the friction law), an empty vocabulary, an ownership map, the
-state sink, and this file by reference. Everything else is earned by a
-failure — a section is added when agents repeatedly get the thing
-wrong, and removed when the convention it guarded changes. Start near
-thirty lines of router; grow only on evidence.
+state sink, and this file by reference. `install.py --project` writes
+the first three, never overwriting one already there. Everything else
+is earned by a failure — a section is added when agents repeatedly get
+the thing wrong, and removed when the convention it guarded changes.
+Start near thirty lines of router; grow only on evidence.
 
 ## 7. Factories
 

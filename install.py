@@ -43,7 +43,10 @@ the installer warns and exits successfully without writing anything.
 Project scope (``--project PATH``) is a thin stub: it writes only the two
 managed instruction blocks (project ``CLAUDE.md``, project ``AGENTS.md``),
 rendered against the *user* library paths since a project carries no
-library of its own, plus a minimal receipt for those blocks. Both stay
+library of its own, the day-zero documents ``docs/documentation.md`` §6
+names (``docs/vocabulary.md``, ``ARCHITECTURE.md``) where the project holds
+none — a document already there is left byte-identical, and the receipt says
+which of the two the installer wrote — plus a minimal receipt. Both blocks stay
 inline marker blocks (never an import) since a project is committable and
 must stay self-contained for teammates without the same ``~/.orchflows``.
 Durable state is user-scope in either scope: an install seeds the one sink
