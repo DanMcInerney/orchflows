@@ -32,17 +32,15 @@
    parallel-safe only against siblings that change nothing that could
    move the verdict it observes, in the workspace where it observes it —
    isolation keeping a sibling's in-flight change out of that workspace
-   qualifies as squarely as disjointness does. Immateriality is shown,
-   never assumed: name the sibling's write and the part of the artifact
-   the verdict turns on, and show the two disjoint under the observing
-   method itself; what is not shown disjoint counts as material.
+   qualifies as squarely as disjointness does. A sibling's write counts
+   as material until shown immaterial.
 4. At most one terminal assembly item per run, depending on every unit
    item. Assembly rewrites its inputs, so unit verification upstream of
    it is invalidated at the join; the final gate re-verifies the
    assembled artifact.
-5. One gate per run: a single `orch-review-fix` pass, one reviewer lane
-   per stamped lens over the same fixed revision, findings validated
-   jointly, one correction pass on the combined set. Never one gate per
+5. One gate per run — the root's `<id>.gate.critique.<lens>` lanes over
+   one fixed revision, `<id>.gate.repair`, `<id>.gate.verify`
+   ([work-item.md](../contracts/work-item.md), Root ticket). Never one gate per
    domain — cross-lens inconsistency is the most valuable finding class.
 6. Escalation rides the ticket's `## Handoff`
    ([work-item.md](../contracts/work-item.md)) under

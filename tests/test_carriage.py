@@ -559,12 +559,15 @@ class CopyFaithfulnessClauseTest(unittest.TestCase):
 
 
 IMPROVEMENT = ROOT / "rules" / "improvement.md"
+HOST_BLOCK = ROOT / "templates" / "host-block.md"
 
-# What §1's fallback clause has to state, keyed to the refusal that named
+# What the fallback clause has to state, keyed to the refusal that named
 # it: the isolation guard refuses writes to any git worktree including the
 # main root, and the fallback the host block spells names a path inside the
 # repository -- so a destination stated only as repository-internal is no
-# destination under the one dispatch that forces the fallback.
+# destination under the one dispatch that forces the fallback. The host
+# block owns the fallback (rules/improvement.md §1 points at it), so the
+# block is where the destination is read.
 _FALLBACK_DESTINATION = {
     "the refusal the fallback has to survive": ("writing inside a git worktree",),
     "a destination reachable under it": ("outside every worktree", "the dispatch permits"),
@@ -581,23 +584,13 @@ _SECOND_ROUTE = re.compile(
 )
 _SPELLED_COMMAND_OR_PATH = re.compile(r"`[^`]*(?:\.py\b|/)[^`]*`")
 
-# §1 as it read before the clause landed: one route, and no word on where
-# the fallback writes when the refusal covers the repository itself.
-_SECTION_1_UNAMENDED = """1. Friction law: on friction — more than two attempts at one step, a
-   missing input, tool, or document, surprising output, a contract gap,
-   or a workaround — the agent logs and continues, through the installed
-   friction logger (the host instruction block names its exact command;
-   this repository's is in `AGENTS.md`). Record observations only, never
-   causes. Categories form a closed set — repeated-attempts,
-   missing-input, missing-tool, missing-doc, contract-gap, tool-failure
-   (a tool erred outright), surprising-output, workaround, misrouting
-   (a wrong skill or lane was dispatched) — advisory evidence for the
-   clusters §4 keys on owner and observed-text similarity.
-   The logger never blocks, prompts, or fails the task; logging
-   is exempt from every bound. Logging friction is part of completing
-   the task: a session that hit friction and logged nothing failed
-   silently.
-"""
+# The clause the block gained, matched as written so the can-fail copy
+# below reads as the block did before it: one destination, and no word on
+# where the fallback writes when the refusal covers the worktree itself.
+_DESTINATION_CLAUSE_RE = re.compile(
+    r" Where the refusal covers writing inside a git worktree,.*?collect it\.",
+    re.S,
+)
 
 _SECOND_ROUTE_SPLICE = (
     "When the logger cannot run, a second logger at "
@@ -605,16 +598,15 @@ _SECOND_ROUTE_SPLICE = (
 )
 
 
-def _fallback_destination_gaps(improvement_text):
-    """Which parts of the fallback-destination clause improvement_text
-    never states. Read from clause 1 alone, which owns the friction law,
-    through the flat-numbered clause reader above -- file-agnostic, only
-    its miss-message names verification.md."""
-    clause = _clause(improvement_text, 1)
+def _fallback_destination_gaps(host_block_text):
+    """Which parts of the fallback-destination clause the host block never
+    states. Read from the block, the fallback's one owner: rules/
+    improvement.md §1 states the law and points here for the route and the
+    destination both, so a gap here is a gap everywhere."""
     return sorted(
         name
         for name, phrases in _FALLBACK_DESTINATION.items()
-        if not all(phrase in clause for phrase in phrases)
+        if not all(phrase in host_block_text for phrase in phrases)
     )
 
 
@@ -634,12 +626,12 @@ class FrictionDestinationTest(unittest.TestCase):
     including the main root. A fallback whose only destination sits inside
     the repository has none exactly when it is reached for."""
 
-    def test_section_one_states_a_destination_that_survives_the_refusal(self):
-        gaps = _fallback_destination_gaps(IMPROVEMENT.read_text(encoding="utf-8"))
+    def test_the_block_states_a_destination_that_survives_the_refusal(self):
+        gaps = _fallback_destination_gaps(HOST_BLOCK.read_text(encoding="utf-8"))
         self.assertEqual(
             [],
             gaps,
-            "rules/improvement.md §1 states no fallback destination covering: "
+            "templates/host-block.md states no fallback destination covering: "
             f"{', '.join(gaps)}",
         )
 
@@ -659,15 +651,15 @@ class FrictionDestinationTest(unittest.TestCase):
             f"no route of its own; it names: {', '.join(extra)}",
         )
 
-    def test_a_section_one_without_the_destination_fails_the_check(self):
+    def test_a_block_without_the_destination_fails_the_check(self):
         """The can-fail direction, built beside the tree and never by
-        mutating it (rules/verification.md §8): a copy of
-        rules/improvement.md carrying the §1 that preceded this clause. The
-        copy carries no history because the check reads clause text and
+        mutating it (rules/verification.md §8): a copy of the host block
+        carrying the fallback paragraph as it read before this clause. The
+        copy carries no history because the check reads block text and
         nothing else."""
-        real = IMPROVEMENT.read_text(encoding="utf-8")
+        real = HOST_BLOCK.read_text(encoding="utf-8")
         with tempfile.TemporaryDirectory() as tmp:
-            beside = Path(tmp) / "improvement.md"
+            beside = Path(tmp) / "host-block.md"
             beside.write_text(real, encoding="utf-8")
             self.assertEqual(
                 [],
@@ -675,14 +667,13 @@ class FrictionDestinationTest(unittest.TestCase):
                 "the copy must start with the clause intact, or the excision "
                 "below is not what the check reacted to",
             )
-            beside.write_text(
-                re.sub(
-                    r"(?ms)^1\. .*?(?=^2\. )",
-                    lambda _: _SECTION_1_UNAMENDED,
-                    real,
-                ),
-                encoding="utf-8",
+            excised = re.sub(_DESTINATION_CLAUSE_RE, "", real, count=1)
+            self.assertNotEqual(
+                real, excised,
+                "the excision matched nothing, so the assertion below would "
+                "prove nothing",
             )
+            beside.write_text(excised, encoding="utf-8")
             self.assertEqual(
                 sorted(_FALLBACK_DESTINATION),
                 _fallback_destination_gaps(beside.read_text(encoding="utf-8")),

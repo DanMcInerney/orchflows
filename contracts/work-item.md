@@ -146,7 +146,7 @@ says what is true.
   address, computed once from the dispatcher's own identity: its own
   assigned name where the dispatcher is itself a named child, `main`
   where it is the top-level orchestrator; why a child cannot infer it is
-  `orch-delegate`'s profiles reference.
+  the profiles reference of orch-frontier.
 
 Blame rule, recorded at every join and routing the finding to its causal
 owner: work the child had to do because a packet field was missing or

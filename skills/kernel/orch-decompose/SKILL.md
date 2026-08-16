@@ -15,14 +15,14 @@ executor cell, the root's `pack` stamp, `isolation` per the pack's workspace cel
 [references/isolation.md](references/isolation.md), a write scope overlapping only siblings it is dependency-ordered
 with, a bound, its edges, and a completion test whose criteria name oracles from the pack's oracle policy, each with its
 provenance; `independence: gate` when a `judged` criterion there rides the final gate. Resolve every deterministic
-oracle against the workspace before freezing the item. Emit at most one terminal assembly item when the pack's
-`assembly` cell names a skill, depending on every unit item.
+oracle against the workspace before freezing the item. Emit the terminal assembly item when the pack's `assembly`
+cell names a skill, on [rules/topology.md](../../../rules/topology.md) §4's terms.
 
 Then run `cutcheck.py <run> --baseline <the revision the set was cut from>`, repair every cut defect it reports with
 `tickets.py amend <run> <id> --section '<name>' --file <path>` on the still-unclaimed ticket and re-run it to exit 0, and
 read its advisory lines; what it cannot decide is [references/cut-lens.md](references/cut-lens.md)'s to judge. Only after that
-repair write the gate stubs — `tickets.py gate <run> <root> --lens <the pack's stamped lens names> --write-scope <the
-run's scope>` — behind the assembly item where the pack named one, so the gate depends on it.
+repair write the gate stubs — `tickets.py gate <run> <root> --lens <a label per stamped lens, the pack's domain by
+default> --write-scope <the run's scope>` — behind the assembly item where the pack named one, so the gate depends on it.
 
 Map every acceptance criterion to an item, to the gate when the pack's lens owns it, or to uncovered remainder; that
 map's durable home is `<state-root>/runs/<run>/coverage.md`. A criterion no slicing covers returns a decision gap naming

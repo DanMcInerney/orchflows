@@ -3,20 +3,13 @@
 1. Friction law: on friction — more than two attempts at one step, a
    missing input, tool, or document, surprising output, a contract gap,
    or a workaround — the agent logs and continues, through the installed
-   friction logger (the host instruction block names its exact command;
-   this repository's is in `AGENTS.md`). Record observations only, never
-   causes. The category is one of the closed set the logger's usage
-   names, which the logger enforces — a call naming another is malformed
-   and refused, not a failed task — and is advisory evidence for the
-   clusters §4 keys on owner and observed-text similarity. The logger
-   never blocks or prompts; logging is exempt from every bound and
-   cannot fail the task. The fallback the block spells is bounded
-   by whatever refused the logger: where that refusal covers writing
-   inside a git worktree, the entry goes to a path outside every
-   worktree that the dispatch permits, and the return names that path
-   so the caller can collect it. Logging friction is part of completing
-   the task: a session that hit friction and logged nothing failed
-   silently.
+   friction logger the host instruction block names, whose fallback that
+   block spells too (this repository's command is in `AGENTS.md`).
+   Record observations only, never causes. The category is one of the
+   closed set the logger enforces, advisory evidence for the clusters §4
+   keys on owner and observed-text similarity. Logging is exempt from
+   every bound. Logging friction is part of completing the task: a
+   session that hit friction and logged nothing failed silently.
 2. Observation changes nothing. Logs and proposals are passive; only a
    human-reviewed merge activates a change, and only a later matching
    run verifies it.

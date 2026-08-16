@@ -221,11 +221,12 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
         (pack_dir / "SKILL.md").write_bytes(content)
 
     def test_a_references_only_directory_is_no_package_and_no_finding(self):
-        """The home `skills/kernel/orch-delegate/references/profiles.md` keeps
-        after its SKILL.md is deleted: rules/roles.md, contracts/work-item.md,
-        templates/host-block.md and install.py all address the file at that
-        path, so the directory outlives the skill. Discovery must read it as
-        no package at all -- not as a package missing its SKILL.md."""
+        """A tier directory holding only `references/` is read as no package
+        at all -- not as a package missing its SKILL.md, which would take the
+        tree red on a directory the library merely has not finished emptying.
+        (Such a home is still no place for a public reference: visibility §4
+        wants an owning body naming the path, which is why `profiles.md` now
+        sits under `skills/engines/orch-frontier/`.)"""
         refs = self.tmp_path / "skills" / "kernel" / "orch-refsonly" / "references"
         refs.mkdir(parents=True)
         (refs / "profiles.md").write_text("A reference with no skill.\n", encoding="utf-8")
@@ -618,6 +619,133 @@ class TestEnvelopeCheck(_IsolatedTree):
         )
         result = self._run()
         self.assertEqual(0, result.returncode, result.stdout)
+
+
+class TestNameResolution(_IsolatedTree):
+    """validate_names: a backticked `orch-*` outside the skill tree still
+    names something in it.
+
+    The call-graph check reads skill bodies only, so a rule, a contract, a
+    doc or a README naming a skill that no longer exists rode through exit 0
+    and a green suite -- which is exactly how `orch-mechanize` survived in
+    rules/token-economy.md and `orch-review-fix` in rules/topology.md after
+    both packages were deleted. A name is a call edge wherever it is
+    backticked (rules/composition.md rule 2), so it resolves or it is a
+    defect.
+    """
+
+    def _write_skill(self, name: str, tier: str = "kernel"):
+        skill_dir = self.tmp_path / "skills" / tier / name
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text(
+            f"---\nname: {name}\ndescription: a synthetic package\nrole: worker\n---\n"
+            "Require: an input.\nNever: overreach.\nReturn: status; result.\n",
+            encoding="utf-8",
+        )
+
+    def _write_rule(self, text: str):
+        # ARCHITECTURE.md is the marker that says this tree is a library
+        # whose tiers a name can resolve in; without it the check skips, as
+        # it does for every fixture that copies half a tree.
+        (self.tmp_path / "ARCHITECTURE.md").write_text("# Tiers\n", encoding="utf-8")
+        rules = self.tmp_path / "rules"
+        rules.mkdir(exist_ok=True)
+        (rules / "synthetic.md").write_text(text, encoding="utf-8")
+
+    def unresolved(self, stdout):
+        """The names this check reported, by name.
+
+        Not the exit code: the fixture tree carries the real contracts/
+        beside one synthetic skill, so every name the contracts legitimately
+        call is unresolvable here for the fixture's own reason. The findings
+        this check makes about the file the test wrote are what it decides.
+        """
+
+        return sorted(
+            line.split("`")[1]
+            for line in stdout.splitlines()
+            if "names no package" in line and "rules/synthetic.md" in line
+        )
+
+    def test_a_backticked_name_with_no_package_is_an_error(self):
+        self._write_skill("orch-real")
+        self._write_rule("1. Mechanizing a step is `orch-nothing`'s.\n")
+        result = self._run()
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("rules/synthetic.md", result.stdout)
+        self.assertEqual(["orch-nothing"], self.unresolved(result.stdout))
+
+    def test_a_backticked_name_with_a_package_is_clean(self):
+        self._write_skill("orch-real")
+        self._write_rule("1. The cut is `orch-real`'s.\n")
+        result = self._run()
+        self.assertEqual([], self.unresolved(result.stdout))
+
+    def test_a_pack_name_resolves_under_packs(self):
+        self._write_skill("orch-real")
+        pack_dir = self.tmp_path / "packs" / "orch-synth-pack"
+        pack_dir.mkdir(parents=True)
+        (pack_dir / "SKILL.md").write_text("---\nname: orch-synth-pack\n"
+                                           "description: a synthetic pack\n---\n",
+                                           encoding="utf-8")
+        self._write_rule("1. The stamp is `orch-synth-pack`'s.\n")
+        result = self._run()
+        self.assertNotIn("`orch-synth-pack` names no package", result.stdout)
+
+    def test_the_two_role_names_are_allowed(self):
+        self._write_skill("orch-real")
+        self._write_rule(
+            "1. Children take one of two roles: `orch-planner` and `orch-worker`.\n"
+        )
+        result = self._run()
+        self.assertEqual([], self.unresolved(result.stdout))
+
+    def test_an_unbackticked_retired_name_is_history_and_not_a_finding(self):
+        """DESIGN.md's supersession paragraphs name skills that were
+        deleted. Plain text is the library's own way of saying `mentioned,
+        not called` (rules/composition.md rule 2), so the check needs no
+        per-file allowlist to let history stand."""
+
+        self._write_skill("orch-real")
+        self._write_rule("1. Three shapes were skills (orch-fix, orch-evolve).\n")
+        result = self._run()
+        self.assertEqual([], self.unresolved(result.stdout))
+
+
+class TestLensAnchor(_IsolatedTree):
+    """validate_lens_anchor: a pack's lens cell anchor lands on a heading.
+
+    The lens row is compared as three words of text and deliberately not
+    resolved, so deleting `## Lens` from a craft reference left the
+    validator at exit 0 and the suite green while every gate lane the pack
+    stamps pointed at a section that was not there.
+    """
+
+    def _write_pack(self, name: str, craft: str):
+        pack_dir = self.tmp_path / "packs" / name
+        (pack_dir / "references").mkdir(parents=True)
+        (pack_dir / "SKILL.md").write_text(
+            f"---\nname: {name}\ndescription: a synthetic pack\n---\n\n"
+            "| cell | binding |\n| --- | --- |\n"
+            "| lens | `orch-critique` with "
+            "[references/craft.md#lens](references/craft.md#lens) |\n",
+            encoding="utf-8",
+        )
+        (pack_dir / "references" / "craft.md").write_text(craft, encoding="utf-8")
+
+    def test_a_lens_anchor_with_no_heading_is_an_error(self):
+        self._write_pack("orch-synth-pack", "# Craft\n\n## Vocabulary\n\nterms.\n")
+        result = self._run()
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("craft.md#lens", result.stdout)
+        self.assertIn("## Lens", result.stdout)
+
+    def test_a_lens_anchor_resolving_to_the_heading_is_clean(self):
+        self._write_pack(
+            "orch-synth-pack", "# Craft\n\n## Vocabulary\n\nterms.\n\n## Lens\n\ncriteria.\n"
+        )
+        result = self._run()
+        self.assertNotIn("craft.md#lens", result.stdout)
 
 
 if __name__ == "__main__":

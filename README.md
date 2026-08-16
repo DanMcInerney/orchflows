@@ -77,7 +77,7 @@ Team setup: `python install.py --project PATH` writes a committable
 routing block for a repo. Uninstall: `python install.py --user
 --uninstall` removes only what it generated; `--dry-run` previews
 either. Default model and effort per role, both hosts:
-[profiles.md](skills/kernel/orch-delegate/references/profiles.md). Edit
+[profiles.md](skills/engines/orch-frontier/references/profiles.md). Edit
 a rendered role agent to run your own; installs ask before replacing it
 and keep it by default.
 
@@ -135,11 +135,9 @@ orchflows delivery:
 ```mermaid
 flowchart TD
     spec["orch-spec — freeze exactly what should be made, as one root ticket"] --> pack{"pack: code | content | research | design"}
-    pack -->|stamped| ws["orch-workspace — clean, isolated working area"]
-    ws --> dec["orch-decompose — cut the root ticket into ordered tickets"]
+    pack -->|stamped| dec["orch-decompose — cut the root ticket into ordered tickets"]
     dec --> frontier["orch-frontier — dispatch every ready ticket"]
-    frontier --> del["orch-delegate — hand the ticket to the right agent"]
-    del --> exec["executor: orch-tdd | orch-draft / orch-edit | orch-investigate / orch-synthesize | orch-render"]
+    frontier --> exec["executor: orch-tdd | orch-draft / orch-edit | orch-investigate / orch-synthesize | orch-render"]
     exec -.-> chk["orch-critique — fresh agent double-checks and corrects (when needed)"]
     exec --> integ["orch-integrate — accept or reject the returned work"]
     chk --> integ
@@ -229,7 +227,7 @@ this README does not keep a second copy of it.
 
     (floor) Tested script
           no model, no ticket — a unit of certainty, not of work
-          orch-mechanize keeps pushing repetition down here
+          `executor: script:` keeps pushing repetition down here
 
 Everything else — `evolve`, `benchmaker`, workflows you name yourself —
 runs only when you name it. Every request lands on the cheapest branch

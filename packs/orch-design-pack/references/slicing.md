@@ -12,5 +12,5 @@ views.
 - Each view item repeats verbatim its identity list, its render,
   capture and diff commands, its accessibility bar and design
   language, and the standards owner pointer.
-- A design-language shift, touching most views at once, is the decision
-  gap [rules/topology.md](../../../rules/topology.md) §3 names.
+- The decision gap is [rules/topology.md](../../../rules/topology.md)
+  §3's.

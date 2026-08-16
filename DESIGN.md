@@ -99,7 +99,7 @@ reader. Human legibility is welcome; it is never the design driver.
 
 Superseded 2026-08-06 (the two-entrypoints spec). Routing once
 enumerated six named "shapes of done," and three of them were whole
-skills (`orch-fix`, `orch-evolve`, `orch-benchmaker`) whose bodies were
+skills (orch-fix, orch-evolve, orch-benchmaker) whose bodies were
 mostly sequencing. Every new recurring shape grew the routing table —
 the one surface every session pays for on every request. The
 replacement splits what a pattern conflated:
@@ -296,7 +296,7 @@ model-logging responsibility of its own.
 - **Workspace style guides** — the standards owner already exists and
   outranks; restating it would create the library's first two-owner
   fact.
-- **A generic `orch-unit` executor.** The generic unit endpoint is
+- **A generic orch-unit executor.** The generic unit endpoint is
   `orch-frontier` over one ticket; executors are the domain leaves a
   pack binds by exact
   name, and [rules/delegation.md](rules/delegation.md) §8 forbids
@@ -312,8 +312,8 @@ model-logging responsibility of its own.
   code, which is `deterministic` — a class is a property of how a
   verdict is produced, not of what it is about. No new workspace
   semantics either, and the reason is stronger than "one consumer":
-  the library already partitions visibility in four places — `orch-judge`'s
-  blindness, `orch-eval-design`'s candidate-blindness, research lanes,
+  the library already partitions visibility in four places — `orch-verify`'s
+  blind scoring, `orch-eval-design`'s candidate-blindness, research lanes,
   `orch-fixture`'s withheld anchors — and enforces every one at the
   dispatch layer that [contracts/work-item.md](contracts/work-item.md#dispatch)
   owns, through `inputs` and `authority`, never in a `workspace` cell.

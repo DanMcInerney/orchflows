@@ -198,7 +198,7 @@ composition).
 - **role** — planner (judgment) or worker (execution); a capability
   class, never a persona; resolution order owned by `rules/roles.md` §4.
 - **profile** — a role's concrete model and effort binding on one host,
-  owned by `skills/kernel/orch-delegate/references/profiles.md`; a
+  owned by `skills/engines/orch-frontier/references/profiles.md`; a
   packet's optional `profile` slot names one explicitly, overriding role
   resolution for that dispatch.
 - **host** — the runtime carrying the agents: Claude Code or Codex.
@@ -225,9 +225,9 @@ composition).
   Two lanes in one workspace are one lane with two authors: neither
   one's oracle output is attributable to its own change. Distinct from
   **independence**, a property of acceptance evidence.
-- **terminal state** — a closed exit; the run-level set is owned by
-  `contracts/worklog.md`, ticket statuses by `contracts/work-item.md` —
-  not the same set.
+- **terminal state** — a closed exit: a ticket status in
+  `contracts/work-item.md`'s terminal set; a run's is its root (or loop)
+  ticket's, per `contracts/worklog.md`.
 - **worklog** — the run view `tickets.py worklog` renders from the ticket
   directory per `contracts/worklog.md`, never a second hand-written
   file; what makes fresh-context iteration and resumption possible.
