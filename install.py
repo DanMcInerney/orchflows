@@ -493,9 +493,11 @@ def _role_description(name: str) -> str:
 # role agent file names roles.md anywhere (D-2).
 ROLE_INSTRUCTIONS = "Stay within the delegated scope."
 
-# ``roles_path`` below is unused since D-2 and stays only because
-# tools/live_claude_profiles.py and tools/live_codex_profiles.py pass it;
-# dropping the parameter is theirs to take up with their callers.
+# ``roles_path`` below is unused since D-2 and stays only because every
+# caller still passes it: install_plan below, tools/live_claude_profiles.py,
+# tools/live_codex_profiles.py, tests/test_installer.py and
+# tests/test_live_harnesses.py. Dropping the parameter is one change across
+# all five, and a scope holding four of them cannot take it.
 
 
 def render_codex_agent(name: str, profile: dict, roles_path: Path) -> str:
