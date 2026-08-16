@@ -25,6 +25,21 @@ PINS = ROOT / "tests" / "pins.json"
 _VALIDATE_CODE = compile(VALIDATE.read_text(encoding="utf-8"), str(VALIDATE), "exec")
 
 
+def loop_lint_warnings(stdout):
+    """Every WARN validate_loop_lint emitted, by its own words.
+
+    The loop-lint cases below are about one check, and a report carries
+    findings from every check that ran -- an isolated tree still holds the
+    real contracts/, so the duplication checks read it too. Asserting over
+    the whole stream made those cases fail on a finding they are not about,
+    and pass on the day the loop lint stops running (tests/test_cell_linter.py
+    holds the same line for its ratchets)."""
+    return [
+        line for line in stdout.splitlines()
+        if line.startswith("WARN") and "iteration/loop" in line
+    ]
+
+
 class _Result:
     """The three fields of a CompletedProcess the isolated tests read."""
 
@@ -307,7 +322,7 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
         )
         result = self._run()
         self.assertEqual(0, result.returncode, result.stdout)
-        self.assertNotIn("WARN", result.stdout)
+        self.assertEqual([], loop_lint_warnings(result.stdout), result.stdout)
 
     def test_orch_triage_shaped_prose_does_not_warn_loop_lint(self):
         """T7: 'never a loop' (description) and 'Never: ... an open-ended
@@ -326,7 +341,7 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
         )
         result = self._run()
         self.assertEqual(0, result.returncode, result.stdout)
-        self.assertNotIn("WARN", result.stdout)
+        self.assertEqual([], loop_lint_warnings(result.stdout), result.stdout)
 
     def test_genuinely_boundless_loop_mention_still_warns(self):
         """A body that actually instructs iteration, with no bound/budget
@@ -343,8 +358,9 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
         )
         result = self._run()
         self.assertEqual(0, result.returncode, result.stdout)
-        self.assertIn("WARN", result.stdout)
-        self.assertIn("boundlesspkg", result.stdout)
+        found = loop_lint_warnings(result.stdout)
+        self.assertTrue(found, result.stdout)
+        self.assertTrue(all("boundlesspkg" in line for line in found), found)
 
 
 GOOD_COMPOSITION = """---

@@ -976,6 +976,146 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
                             )
 
 
+# --- Cross-tier duplication (REVIEW-2026-08-15 T2) --------------------
+#
+# The same clause comparison as validate_cell_duplication, run across the
+# library's tiers instead of across the packs of one signature cell. It is
+# what replaces keeping copies in sync: a clause carried by both a rule and
+# a skill body is a fact with two owners, and the compiler names both sites
+# rather than holding the two spellings equal (SPEC-ticket-set.md §1).
+#
+# WARN for exactly one phase. The tree still carries the copies P3 deletes,
+# and a compiler that refuses its own tree cannot be run; the finding is
+# the inventory P3 works from. At P3's close this flips to "ERROR" and
+# tests/test_cell_linter.py's CROSS_TIER_WARNING_CEILING reaches 0.
+CROSS_TIER_DUPLICATE_LEVEL = "WARN"
+# A copy is found where its words are: two clauses are compared when they
+# share a word carried by no more than this many clauses tree-wide. Above
+# it a word is idiom -- "ticket", "the result" -- and pairing on it means
+# comparing every clause with every other, which at this corpus size is
+# 470,000 SequenceMatcher ratios and 45 seconds of a compiler that must be
+# cheap enough to run on every save. Measured at the value below: every
+# pair the exhaustive comparison reports above 0.66 survives the index, and
+# what it drops sits in the noise band just over the threshold. Normative
+# with the threshold: the two together decide the reported set.
+CROSS_TIER_DISTINCTIVE_MAX = 20
+CROSS_TIER_WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]{3,}")
+# A citation and a name are not content. Every tier cites the same
+# contracts and names the same skills, so a clause that is nothing but
+# links and backticked names is the library's shared vocabulary, and
+# convicting it would drive files to stop pointing at their owners -- the
+# reason cell_clauses already exempts a sentence citing an owner outside
+# its pack. One connective word ("see", "per") does not make it prose.
+CROSS_TIER_CITATION_RES = (
+    re.compile(r"\[[^\]]*\]\([^)]*\)"),
+    re.compile(r"`[^`]*`"),
+)
+CROSS_TIER_PROSE_MIN_WORDS = 2
+
+
+def _cross_tier_prose(clause: str) -> str:
+    """`clause` minus its markdown links and backticked names."""
+    for pattern in CROSS_TIER_CITATION_RES:
+        clause = pattern.sub(" ", clause)
+    return re.sub(r"\s+", " ", clause).strip()
+
+
+def cross_tier_documents(packages):
+    """(tier, label, text) for every file the check reads, tier being the
+    directory the library gave it. Two files of one tier are that tier's
+    own business -- the pack linter already owns that question inside
+    packs -- so only pairs from two tiers are compared."""
+    documents = []
+    for pkg in packages:
+        tier = "packs" if pkg["is_pack"] else "skills"
+        documents.append((tier, rel(pkg["skill_md"]), pkg.get("body") or ""))
+        if pkg["is_pack"]:
+            for reference in sorted((pkg["path"] / "references").glob("*.md")):
+                documents.append(("packs", rel(reference), _read_source(reference)))
+    for tier in ("rules", "contracts"):
+        directory = ROOT / tier
+        if directory.is_dir():
+            for path in sorted(directory.glob("*.md")):
+                documents.append((tier, rel(path), _read_source(path)))
+    host_block = ROOT / "templates" / "host-block.md"
+    if host_block.is_file():
+        documents.append(("templates", rel(host_block), _read_source(host_block)))
+    return documents
+
+
+def _cross_tier_clauses(packages):
+    """Every comparable clause, as (tier, label, clause, free_content,
+    words). Same splitter and same mandated-form stripping as the pack
+    linter, plus the citation exemption above."""
+    entries = []
+    for tier, label, text in cross_tier_documents(packages):
+        for clause in cell_clauses(text):
+            free = free_content(clause)
+            if len(free.split()) < CELL_CLAUSE_MIN_WORDS:
+                continue
+            if len(_cross_tier_prose(free).split()) < CROSS_TIER_PROSE_MIN_WORDS:
+                continue
+            words = frozenset(w.lower() for w in CROSS_TIER_WORD_RE.findall(free))
+            entries.append((tier, label, clause, free, words))
+    return entries
+
+
+def _cross_tier_candidates(entries) -> set:
+    """The (i, j) pairs to compare: two tiers, and a distinctive word in
+    common. Built from an inverted index over the distinctive words, so the
+    cost is the number of candidates rather than the square of the corpus."""
+    frequency = {}
+    for _, _, _, _, words in entries:
+        for word in words:
+            frequency[word] = frequency.get(word, 0) + 1
+    postings = {}
+    for position, (_, _, _, _, words) in enumerate(entries):
+        for word in words:
+            if frequency[word] <= CROSS_TIER_DISTINCTIVE_MAX:
+                postings.setdefault(word, []).append(position)
+    candidates = set()
+    for ids in postings.values():
+        for a in range(len(ids)):
+            for b in range(a + 1, len(ids)):
+                left, right = ids[a], ids[b]
+                if entries[left][0] != entries[right][0]:
+                    candidates.add((left, right))
+    return candidates
+
+
+def validate_cross_tier_duplication(packages, diag: Diagnostics) -> None:
+    """Every clause of every skill body, rule, contract, pack reference and
+    the host-block template against every clause of another tier: a pair
+    matching at CELL_SIMILARITY_THRESHOLD or above is reported at
+    CROSS_TIER_DUPLICATE_LEVEL, naming both sites."""
+    entries = _cross_tier_clauses(packages)
+    by_left = {}
+    for left, right in _cross_tier_candidates(entries):
+        by_left.setdefault(left, []).append(right)
+    emit = diag.warn if CROSS_TIER_DUPLICATE_LEVEL == "WARN" else diag.error
+    matcher = difflib.SequenceMatcher(None, autojunk=False)
+    for left in sorted(by_left):
+        _, left_label, left_clause, left_free, _ = entries[left]
+        matcher.set_seq2(left_free)
+        for right in sorted(by_left[left]):
+            _, right_label, right_clause, right_free, _ = entries[right]
+            matcher.set_seq1(right_free)
+            # The cheap bounds first, both of them upper bounds on the
+            # ratio: difflib computes them without matching anything, and
+            # they answer for four candidates in ten.
+            if matcher.real_quick_ratio() < CELL_SIMILARITY_THRESHOLD:
+                continue
+            if matcher.quick_ratio() < CELL_SIMILARITY_THRESHOLD:
+                continue
+            ratio = matcher.ratio()
+            if ratio >= CELL_SIMILARITY_THRESHOLD:
+                emit(
+                    left_label,
+                    f"cross-tier near-duplicate at {ratio:.2f} with "
+                    f"{right_label}: {left_clause!r} ~ {right_clause!r}",
+                )
+
+
 def validate_craft_budget(pkg: dict, diag: Diagnostics) -> None:
     craft = pkg["path"] / "references" / "craft.md"
     if not craft.is_file():
@@ -1734,6 +1874,7 @@ def run_validation() -> Diagnostics:
     validate_call_graph(packages, diag)
     validate_carriage(packages, diag)
     validate_cell_duplication(packages, diag)
+    validate_cross_tier_duplication(packages, diag)
     validate_envelope(packages, diag)
     validate_compositions(diag)
     validate_templates(diag)

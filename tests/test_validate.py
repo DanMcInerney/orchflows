@@ -673,6 +673,112 @@ class TestPackWorkspaceTableAgainstPacks(unittest.TestCase):
             self.assertIsInstance(node, ast.Constant, ast.dump(node))
 
 
+CROSS_TIER = "cross-tier near-duplicate"
+
+# One sentence long enough to be content by CELL_CLAUSE_MIN_WORDS, written
+# so it carries no span MANDATED_FORM_RES strips: what is compared is the
+# whole of it, and a fixture that matched a mandated form would be measuring
+# the stripper instead of the check.
+COPIED_SENTENCE = (
+    "A claim reaches the record only when the check that decides it has "
+    "already been shown to fail against a wrong result"
+)
+# The two forms the check must not read as content: a markdown link and a
+# backticked skill name, each standing alone as its own clause. Neither
+# opens with `](../`, so nothing here is exempt by the pack linter's
+# outside-the-pack citation rule -- the exemption under test is the
+# cross-tier one.
+CITATION_ONLY = "[the work-item contract](contracts/work-item.md)"
+NAME_ONLY = "`orch-mimic`"
+
+RULE_MD = "# A rule\n\n{body}\n"
+SKILL_MD = (
+    "---\nname: {name}\ndescription: a synthetic skill standing in for a "
+    "tier the cross-tier check reads\nrole: worker\n---\n"
+    "Require: one ticket.\nNever: guess.\nReturn: the ticket.\n{body}\n"
+)
+
+
+class CrossTierDuplicationTest(unittest.TestCase):
+    """One clause carried by two tiers is a fact with two owners, and the
+    compiler reports it rather than holding the two spellings equal
+    (SPEC-ticket-set.md §1, REVIEW-2026-08-15 T2).
+
+    Runs on the isolated tmp-tree harness tests/test_validator.py owns, so
+    the seam exercised is the real ROOT-relative one, and the tree carries
+    exactly the two files the case is about.
+    """
+
+    def setUp(self):
+        from tests.test_validator import _IsolatedTree  # the harness's one owner
+
+        self.harness = _IsolatedTree("run")
+        self.harness.setUp()
+        self.addCleanup(self.harness.doCleanups)
+        self.tmp_path = self.harness.tmp_path
+
+    def _write(self, rule_body: str, skill_body: str, name: str = "orch-echo"):
+        rules = self.tmp_path / "rules"
+        rules.mkdir(parents=True, exist_ok=True)
+        (rules / "duplication.md").write_text(
+            RULE_MD.format(body=rule_body), encoding="utf-8"
+        )
+        self._write_skill(name, skill_body)
+
+    def _write_skill(self, name: str, body: str):
+        skill = self.tmp_path / "skills" / "instances" / name
+        skill.mkdir(parents=True, exist_ok=True)
+        (skill / "SKILL.md").write_text(
+            SKILL_MD.format(name=name, body=body), encoding="utf-8"
+        )
+
+    def _findings(self):
+        result = self.harness._run()
+        return result, [
+            line for line in result.stdout.splitlines() if CROSS_TIER in line
+        ]
+
+    def test_a_rule_sentence_copied_into_a_skill_body_is_reported(self):
+        self._write(COPIED_SENTENCE + ".", COPIED_SENTENCE + ".")
+        result, findings = self._findings()
+        self.assertEqual(1, len(findings), result.stdout)
+        self.assertTrue(findings[0].startswith("WARN "), findings[0])
+        self.assertIn("rules/duplication.md", findings[0])
+        self.assertIn("skills/instances/orch-echo/SKILL.md", findings[0])
+        self.assertIn("at 1.00", findings[0])
+        self.assertEqual(0, result.returncode, result.stdout)
+
+    def test_the_level_is_the_one_the_module_declares(self):
+        """WARN is a phase, not a verdict: the tree carries the copies P3
+        deletes. The constant is what P3 flips, so the level a finding is
+        emitted at has to be read from it rather than hardcoded here."""
+
+        self.assertEqual("WARN", validate.CROSS_TIER_DUPLICATE_LEVEL)
+
+    def test_a_shared_link_and_a_shared_name_are_not_duplication(self):
+        """Every tier cites the same contracts and names the same skills.
+        A clause that is nothing but a citation or a name is the library's
+        shared vocabulary; convicting it would drive files to stop
+        pointing at their owners."""
+
+        shared = f"- {CITATION_ONLY}\n- {NAME_ONLY}\n"
+        self._write(shared, shared)
+        self._write_skill("orch-mimic", "Nothing shared.")
+        result, findings = self._findings()
+        self.assertEqual([], findings, result.stdout)
+        self.assertEqual(0, result.returncode, result.stdout)
+
+    def test_two_files_in_one_tier_are_not_a_cross_tier_pair(self):
+        """The check is about a fact with two owners in two places. Two
+        skills sharing a clause is the skills tier's own business, and the
+        pack linter already owns the same question inside packs."""
+
+        self._write("Nothing here.", COPIED_SENTENCE + ".")
+        self._write_skill("orch-mimic", COPIED_SENTENCE + ".")
+        result, findings = self._findings()
+        self.assertEqual([], findings, result.stdout)
+
+
 VOCABULARY = ROOT / "docs" / "vocabulary.md"
 AGENTS_MD = ROOT / "AGENTS.md"
 HOST_BLOCK = TEMPLATES / "host-block.md"
