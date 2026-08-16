@@ -2,7 +2,7 @@
 
 The design law for agent-facing documentation, in this library and in
 any project built on its orchestrator/subagent pattern. Why it is
-shaped this way is [DESIGN.md](../DESIGN.md)'s. README, the human
+shaped this way is `DESIGN.md`'s. README, the human
 surface, is exempt from everything here except law 10.
 
 ## 1. The razor
@@ -121,7 +121,7 @@ lands. It is proposed and evolves under §5, never from symmetry.
 
 | factory | procedure | library instance | project instance | oracle |
 |---|---|---|---|---|
-| documentation | this file, §6 | `docs/`, `AGENTS.md` | router, vocabulary, ownership map, sink | `tools/validate.py`, `scripts/doclint.py` in a project; library lens |
+| documentation | this file, §6 | `docs/`, `AGENTS.md` | router, vocabulary, ownership map, sink | `tools/validate.py`, `doclint.py` in a project; library lens |
 | vocabulary | [vocabulary-authoring.md](vocabulary-authoring.md) | [vocabulary.md](vocabulary.md); each pack's craft Vocabulary | `<repo>/docs/vocabulary.md` | consumer test; craft budget |
 | pack | [pack-authoring.md](pack-authoring.md) | `packs/` | a scoped pack through `orch-build` | pack-signature checks in `tools/validate.py` |
 | skill | [rules/composition.md](../rules/composition.md) §5, §11; [rules/token-economy.md](../rules/token-economy.md) §6; `orch-build` | `skills/` | `<repo>/.orchflows/skills/<name>` | `tools/validate.py`; library lens |

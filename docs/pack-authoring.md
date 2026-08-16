@@ -7,7 +7,7 @@ lives with its owners — admission, cells, sharing constraints, and craft
 budget in [contracts/pack-signature.md](../contracts/pack-signature.md);
 anatomy and body budgets in [rules/composition.md](../rules/composition.md)
 §5; admission in `orch-build`; each existing pack's rationale in
-[DESIGN.md](../DESIGN.md). This file only orders the work and names
+`DESIGN.md`. This file only orders the work and names
 what each step feeds the next.
 
 1. Admission first, in writing, against the signature's admission
