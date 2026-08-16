@@ -1725,7 +1725,6 @@ class TestRoleAgentInstructions(unittest.TestCase):
     the dispatcher and every child alike -- on every turn, so a contract
     pointer left there is still a roles.md read the file names."""
 
-    ROLES = install.REPO_ROOT / "rules" / "roles.md"
     BODY_CEILING = 80
 
     def test_role_instructions_send_no_child_to_read_the_role_contract(self):
@@ -1736,7 +1735,7 @@ class TestRoleAgentInstructions(unittest.TestCase):
     def test_claude_agent_file_names_no_contract_read_and_stays_under_the_ceiling(self):
         profile = install.load_role_profiles()["orch-worker"]
 
-        rendered = install.render_claude_agent("orch-worker", profile, self.ROLES)
+        rendered = install.render_claude_agent("orch-worker", profile)
 
         self.assertNotIn("roles.md", rendered)
         _frontmatter, body = install.split_frontmatter(rendered)
@@ -1745,7 +1744,7 @@ class TestRoleAgentInstructions(unittest.TestCase):
     def test_codex_agent_file_names_no_contract_read(self):
         profile = install.load_role_profiles()["orch-worker"]
 
-        rendered = install.render_codex_agent("orch-worker", profile, self.ROLES)
+        rendered = install.render_codex_agent("orch-worker", profile)
 
         self.assertNotIn("roles.md", rendered)
         line = next(

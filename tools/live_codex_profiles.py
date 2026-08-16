@@ -198,7 +198,6 @@ def main(argv: list[str] | None = None) -> int:
     selected = tuple(args.profile or PROFILE_NAMES)
 
     profiles = install.load_role_profiles()
-    roles_path = REPO_ROOT / "rules" / "roles.md"
     codex_home = Path(os.environ["CODEX_HOME"]) if "CODEX_HOME" in os.environ else Path.home() / ".codex"
     agents_dir = codex_home / "agents"
     agents_dir.mkdir(parents=True, exist_ok=True)
@@ -216,7 +215,7 @@ def main(argv: list[str] | None = None) -> int:
                 "codex": dict(binding, agent_type=agent_type),
                 "claude": dict(profile["claude"]),
             }
-            rendered = install.render_codex_agent(profile_name, probe_profile, roles_path)
+            rendered = install.render_codex_agent(profile_name, probe_profile)
             agent_path = agents_dir / f"{agent_type}.toml"
             if agent_path.exists():
                 raise FileExistsError(f"refusing to overwrite live probe path: {agent_path}")
