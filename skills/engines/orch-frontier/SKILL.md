@@ -18,9 +18,9 @@ message is a courtesy, never the signal this engine waits on; a lost message
 costs one re-check interval, nothing more. Then recompute on every event — a
 result landing (by message or by that re-check reading a ticket `complete`), a
 new ticket file appearing in the run's directory, a suspension parking its
-item, a claim's lease expiring — never on a schedule of rounds: record what
-landed in the worklog — the tickets alone are the record when the run keeps
-none; reclaim stale claims per that same §11 (a parked item's claim never goes
+item, a claim's lease expiring — never on a schedule of rounds: the tickets are
+the record and `tickets.py worklog <run>` renders the run view from them;
+reclaim stale claims per that same §11 (a parked item's claim never goes
 stale); promote each `pending` ticket whose `depends_on` are now all
 `complete` to `ready` through `tickets.py ready`; set each `pending` ticket
 depending on a `failed`, `blocked`, or `limited` ticket to `blocked`, naming

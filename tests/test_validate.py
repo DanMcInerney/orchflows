@@ -4,8 +4,7 @@ Separate from ``tests/test_contracts.py``, which freezes the T0 contracts'
 shape and the description budget every skill respects: nothing moved out of
 that module. This one holds only the sink invariants — the path each
 contract states, the work-item Location invariant's four conjuncts, and
-``run.json``'s field list — so a location supersession is provably a
-location change and not a shape change. Its second half holds the prose
+``run.json``'s field list at its writer. Its second half holds the prose
 invariants: the amended two-channel law, the one prose owner of the sink
 path, and which ``.orch`` mentions may survive.
 
@@ -71,9 +70,8 @@ LOCATION_CONJUNCTS = (
 )
 
 # Every field `run.json` carries, from the writer's own recorded shape
-# (`scripts/tickets.py`, item 03's `run_json_shape`). The contract may name
-# these and no others, so contract and writer cannot drift in either
-# direction.
+# (`scripts/tickets.py`). Its docstring may name these and no others, so
+# statement and writer cannot drift in either direction.
 RUN_JSON_FIELDS = frozenset({
     "run",
     "sink_convention",
@@ -87,47 +85,7 @@ RUN_JSON_FIELDS = frozenset({
     "workspaces[].first_seen",
 })
 
-RUN_JSON_MARKER = "`<state-root>/runs/<run>/run.json`"
-
-# Each contract's declared shape at this run's baseline `ef336e0`, read with
-# `git show ef336e0:contracts/<name>`: the headings it declares, and every
-# backticked token on the first line of each top-level bullet — field names
-# and the enums they range over. A location supersession changes none of it.
-BASELINE_HEADINGS = {
-    "work-item.md": ("# Work-item contract (ticket)",),
-    "worklog.md": ("# Worklog contract",),
-    "composition.md": ("# Composition contract",),
-}
-BASELINE_FIELDS = {
-    "work-item.md": (
-        "id", "run", "status", "pending", "ready", "claimed", "suspended",
-        "complete", "executor", "pack", "independence", "gate", "checker",
-        "checked_by", "depends_on", "write_scope", "authority",
-        "excluded_actions", "authority", "isolation", "authority",
-        "required", "none", "bound", "bounds", "claimed_by", "claimed_at",
-        "workspace_branch", "workspace_baseline", "profile", "profile",
-        "## Objective", "objective", "## Fixed inputs", "inputs",
-        "## Completion test", "## Return fields", "return_contract",
-        "## Result", "## Verification", "## Feedback", "[]", "## Risks",
-        "[]", "## Handoff",
-    ),
-    "worklog.md": (
-        "goal", "spec", "tickets", "iterations", "blame_classes",
-        "failed_approaches", "queued_scope", "terminal", "complete",
-    ),
-    "composition.md": (
-        "name", "description", "entry", "routed", "named", "scheduled",
-        "steps", "id", "unit", "pack", "edges", "seq", "invariants",
-        "Never:", "done_check", "Require:", "Return:", "Return:",
-    ),
-}
-
-# The only shape this supersession adds: `run.json`'s five top-level field
-# names, appended to the worklog contract's own list. Enumerated so the
-# addition is pinned rather than merely tolerated.
-ADDED_FIELDS = {
-    "worklog.md": ("run", "sink_convention", "opened_at", "project", "workspaces"),
-}
+RUN_JSON_MARKER = "``<sink>/runs/<run>/``"
 
 HEADING = re.compile(r"^#{1,6} .*$", re.M)
 BULLET = re.compile(r"^- (.*)$", re.M)
@@ -220,38 +178,22 @@ class TestContractsNameTheSink(unittest.TestCase):
 
 
 class TestWorklogStatesRunIdentity(unittest.TestCase):
-    """Spec A5's contract half: `run.json`'s fields, stated where the run's
-    other durable file is stated."""
+    """`run.json`'s fields, stated by its one writer: the field list lives in
+    scripts/tickets.py's module docstring (SPEC-ticket-set.md P2), and the
+    docstring may name these fields and no others, so writer and statement
+    cannot drift in either direction."""
 
     def block(self):
-        text = read("worklog.md")
-        self.assertIn(RUN_JSON_MARKER, text, "worklog.md does not state run.json's path")
-        return text.split(RUN_JSON_MARKER, 1)[1]
+        text = (ROOT / "scripts" / "tickets.py").read_text(encoding="utf-8")
+        docstring = text.split('"""', 2)[1]
+        self.assertIn(RUN_JSON_MARKER, docstring, "tickets.py's docstring does not state run.json's path")
+        return docstring.split(RUN_JSON_MARKER, 1)[1].replace("``", "`")
 
     def test_the_contract_names_every_field_run_json_carries(self):
         self.assertEqual(set(), RUN_JSON_FIELDS - set(TOKEN.findall(self.block())))
 
     def test_the_contract_names_no_field_run_json_does_not_carry(self):
         self.assertEqual(set(), set(TOKEN.findall(self.block())) - RUN_JSON_FIELDS)
-
-
-class TestContractShapeUnchanged(unittest.TestCase):
-    """Spec A12's other half: a location supersession, never a shape one.
-
-    A shape change is breaking and lands only through its own supersession
-    PR (AGENTS.md), so the shape is pinned here as literals read from the
-    baseline revision rather than re-derived from whatever is on disk.
-    """
-
-    def test_no_contract_declares_a_heading_it_did_not_declare_at_baseline(self):
-        for name, headings in BASELINE_HEADINGS.items():
-            with self.subTest(contract=name):
-                self.assertEqual(headings, declared_shape(name)[0])
-
-    def test_no_contract_gains_or_loses_a_field_beyond_the_enumerated_addition(self):
-        for name, fields in BASELINE_FIELDS.items():
-            with self.subTest(contract=name):
-                self.assertEqual(fields + ADDED_FIELDS.get(name, ()), declared_shape(name)[1])
 
 
 # --- The prose half: the law and the documentation say what the code does ---

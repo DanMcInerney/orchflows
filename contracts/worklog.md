@@ -1,7 +1,8 @@
 # Worklog contract (run view)
 
 The run's state, rendered: `tickets.py worklog <run>` reads the run's
-ticket directory and prints the view below. There is never a second,
+ticket directory and prints the view below; `--write` lands it at
+`<state-root>/runs/<run>/worklog.md`, replacing only a file it rendered. There is never a second,
 hand-written file — the tickets are the state, and every field here is
 reconstructable from them by observation.
 

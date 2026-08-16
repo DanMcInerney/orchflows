@@ -17,10 +17,10 @@ overlapping only siblings it is dependency-ordered with, a bound, and a
 completion test whose criteria name oracles from the pack's oracle policy,
 each with its provenance; `independence: gate` when a `judged` criterion there
 rides the final gate. Resolve every deterministic oracle against the workspace
-before freezing the item. Add edges; issue `status: pending` for a non-empty
-`depends_on`, `ready` otherwise. Emit at most one terminal assembly item when
-the pack's `assembly` cell names a skill, depending on every unit item, its
-completion test carrying the final gate's criteria.
+before freezing the item. Add edges; issue through `tickets.py new`
+(`pending` with a non-empty `depends_on`, else `ready`). Emit at most one
+terminal assembly item when the pack's `assembly` cell names a skill,
+depending on every unit item; then the gate stubs through `tickets.py gate`.
 
 Map every acceptance criterion to an item, to the gate when the pack's
 lens owns it, or to uncovered remainder; that map's durable home is
