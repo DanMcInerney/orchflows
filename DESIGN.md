@@ -229,21 +229,21 @@ Choices on the record: the renderable unit is a **view**, not a
 `write_scope` ([contracts/work-item.md](contracts/work-item.md), Root
 ticket) — one word, two meanings in one ticket was the alternative.
 "Standards owner" moved from code craft to the library vocabulary when
-this pack became its second consumer — one owner per fact. A new unit executor, `orch-render`,
-was admitted with the pack because the unit loop differs, not merely
-the artifact: red-green requires a check that can fail before code
-exists, while a visual check cannot exist before the view renders —
-`orch-tdd`'s discipline inverted, and one owner per judgment forbids
-stretching it. The authoring order this admission followed is
-[docs/pack-authoring.md](docs/pack-authoring.md).
+this pack became its second consumer — one owner per fact. A new unit
+executor, `orch-render`, was admitted with the pack because the unit
+loop differs, not merely the artifact: red-green requires a check that
+can fail before code exists, while a visual check cannot exist before
+the view renders — `orch-tdd`'s discipline inverted, and one owner per
+judgment forbids stretching it. The authoring order this admission
+followed is [docs/pack-authoring.md](docs/pack-authoring.md).
 
 ## Why install is shaped this way
 
 Audited 2026-07-16 on the user's decision to drop the plugin route for
 `git clone` plus one installer (the plugin experiment and its decisive
-evidence move to Roads not taken, below). `ARCHITECTURE.md` and
-`install.py`'s own docstring own what the installer does; these are the
-four reasons it does it that way. The root wrappers resolve an
+evidence move to Roads not taken, below). `install.py`'s own docstring
+owns what the installer does; these are the four reasons it does it
+that way. The root wrappers resolve an
 interpreter rather than hardcoding one because
 anthropics/claude-code#16131 documents a hardcoded `python3` invocation
 stranding Windows machines with no `python3` on PATH. The always-on
