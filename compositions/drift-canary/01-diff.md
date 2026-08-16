@@ -9,7 +9,6 @@ excluded_actions:
   - treat divergence as failure
 independence: checker
 isolation: none
-profile: orch-worker
 ---
 
 ## Objective
