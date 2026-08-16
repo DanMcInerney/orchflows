@@ -56,7 +56,7 @@ reader. Human legibility is welcome; it is never the design driver.
   (search is memory; diluted attention).
 - **Compositions are the stdlib.** A named workflow is a data file —
   steps, edges, invariants, done check — admitted like any skill and
-  invocable by name (see "Why patterns became grammar plus stdlib"
+  invocable by name (see "Why the named tier is ticket-set templates"
   below).
 - **Tickets and worklogs are markdown on disk.** Files are the only
   memory every context shares and the only store the reader can
@@ -125,7 +125,7 @@ Its open decisions closed as: ticket sets over a fixed `seq` engine,
 proven on the `fix` fixture; Claude keeps all skill adapters — measured
 2026-08-16, the verdict and its caveat in benchmarks/routing/README.md;
 the delegation contract merged into `work-item.md`; orch-delegate (the
-skill) deleted; the five domain instances and `orch-loop` kept.
+skill) deleted; the domain instances and `orch-loop` kept.
 
 ## Why documentation is designed this way
 
@@ -149,7 +149,7 @@ write to an unstated bar the one gate then pays for in rework. The cell
 that closes it is each pack's `references/craft.md` — **Vocabulary**
 and **Shape** — defined by
 [contracts/pack-signature.md](contracts/pack-signature.md) and carried
-to every executor at write time through the slicing's item extensions.
+to every executor through the ticket's `pack` stamp.
 
 Why this shape:
 
@@ -199,8 +199,8 @@ file owns only why each list earned its lines.
   gains its scored dimensions, which is what makes the pack's judged
   voice oracle repeatable across fresh judges.
 - **Research** terms name the evidence discipline (claim, provenance,
-  independence, laundering, gaps, evidence packet) and define the
-  rigor bar the pack's required spec fields demand.
+  independence, laundering, gaps, evidence packet); the rigor bar
+  itself is one of the pack's required spec fields, stated per run.
 - **Design** terms name the rendered-interface discipline (view
   identity, capture, golden capture, token, state, affordance) and
   give the judged design-language oracle its scored dimensions.
@@ -225,9 +225,9 @@ specifics (component libraries, utility-CSS idioms) stay with the
 workspace's standards owner, as genre stays out of content craft.
 
 Choices on the record: the renderable unit is a **view**, not a
-"surface", because the hash-pinned spec contract already uses
-`affected_surfaces` for touched artifacts — one word, two meanings in
-the same spec was the alternative. "Standards owner" moved from code
+"surface", because the root ticket already carries affected surfaces as
+`write_scope` ([contracts/work-item.md](contracts/work-item.md), Root
+ticket) — one word, two meanings in one ticket was the alternative. "Standards owner" moved from code
 craft to the library vocabulary when this pack became its second
 consumer — one owner per fact. A new unit executor, `orch-render`,
 was admitted with the pack because the unit loop differs, not merely
@@ -281,11 +281,7 @@ fact rather than adding hooks, daemons, or a trace-write duty to every
 skill, because instrumentation is machinery every body would carry
 forever while a parser can decay gracefully — `schema_confidence` and
 `parse_errors` price host drift instead of failing the run silently
-(cheap generation; diluted attention). Model attribution stays a
-routing clause on `rules/improvement.md` §3, not new tracing machinery:
-`orch-self-improve` already owns clustering and routing, so reading one
-more fact off a trace is cheaper than giving every skill and host a
-model-logging responsibility of its own.
+(cheap generation; diluted attention).
 
 ## Roads not taken
 
