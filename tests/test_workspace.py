@@ -977,5 +977,52 @@ class NoFormatCallsTest(unittest.TestCase):
         self.assertNotIn(".format(", source)
 
 
+class TestHelpAndVantage(unittest.TestCase):
+    """F-3: the two questions a caller asks this script before it can use it.
+
+    *What are the arguments* -- answered by ``--help`` at exit 0, from
+    anywhere, rather than by the exit-1 refusal an unknown subcommand earns.
+    *Can I grade from here* -- answered by a refusal that names the caller's
+    position, rather than by the verdict ``isolation-missing``, which says
+    the item failed when in fact the caller only stood in the wrong place.
+    Every method here carries ``help_or_vantage`` in its name: it is the
+    ticket's oracle selector.
+    """
+
+    def test_help_or_vantage_bare_help_prints_usage_at_exit_zero(self):
+        # from a directory that is no repository: help answers before any
+        # git or sink question, which is the state a caller asking is in
+        with tempfile.TemporaryDirectory() as tmp:
+            for flag in ("--help", "-h"):
+                with self.subTest(flag=flag):
+                    done = run_workspace(Path(tmp), flag)
+                    self.assertEqual(0, done.returncode, done.stderr)
+                    self.assertIn("usage: workspace.py", done.stdout)
+                    self.assertIn("workspace.py start ", done.stdout)
+                    self.assertIn("workspace.py check ", done.stdout)
+
+    def test_help_or_vantage_each_subcommand_help_prints_its_own_usage(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for command in ("start", "check"):
+                with self.subTest(command=command):
+                    done = run_workspace(Path(tmp), command, "--help")
+                    self.assertEqual(0, done.returncode, done.stderr)
+                    self.assertIn(f"workspace.py {command} ", done.stdout)
+
+    def test_help_or_vantage_help_does_not_swallow_a_real_usage_error(self):
+        # the neighbouring behavior this must not cost: a stray flag is still
+        # exit 1, and a subcommand still refuses without its required flag
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            make_ticket(run_dir, "T1")
+            for args in (("start", "testrun", "T1", "--extra"),
+                         ("check", "testrun", "T1"),
+                         ("dance",),
+                         ()):
+                with self.subTest(args=args):
+                    self.assertEqual(1, run_workspace(main, *args).returncode)
+
+
 if __name__ == "__main__":
     unittest.main()

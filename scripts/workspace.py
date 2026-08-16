@@ -28,6 +28,11 @@ Exit codes:
 Subcommands:
     start <run> <id>
     check <run> <id> --base <rev>
+
+``--help``, on the script or on either subcommand, prints usage on stdout
+and exits 0. It is the one call whose stdout is not a JSON payload: the
+caller asking what the arguments are is a reader, and answering a reader
+with an error payload is how this script used to answer.
 """
 
 from __future__ import annotations
@@ -99,10 +104,18 @@ UNGRADABLE_IN_SCOPE = (" ", "\t", "(", ")")
 # therefore decides by resolving the entry rather than by the character.
 SPACING = (" ", "\t")
 CONTRACT = "contracts/work-item.md"
-USAGE = (
-    "usage: workspace.py start <run> <id>\n"
-    "       workspace.py check <run> <id> --base <rev>"
-)
+# One spelling of each subcommand's arguments, joined into ``USAGE`` for the
+# refusals and printed alone for ``<sub> --help``. Two spellings would drift.
+COMMAND_USAGE = {
+    "start": "workspace.py start <run> <id>",
+    "check": "workspace.py check <run> <id> --base <rev>",
+}
+COMMAND_HELP = {
+    "start": "from inside the workspace: record its branch and baseline into the ticket",
+    "check": "from the integrating checkout: grade the item's isolation and write scope",
+}
+USAGE = "usage: " + "\n       ".join(COMMAND_USAGE.values())
+HELP_FLAGS = ("--help", "-h")
 
 
 class Refused(Exception):
@@ -493,6 +506,23 @@ def _cmd_check(rest):
     return {"check": reported}, EXIT_OK
 
 
+def _help_text(command=None) -> str:
+    """Usage for the whole script, or for one subcommand.
+
+    The exit codes are part of the answer, not decoration: this script's
+    codes are its verdicts, and a caller who reads only the usage line
+    would still have to read the source to learn what a 4 meant.
+    """
+
+    if command is not None:
+        return f"usage: {COMMAND_USAGE[command]}\n\n  {COMMAND_HELP[command]}"
+    lines = [USAGE, ""]
+    lines += [f"  {name}  {COMMAND_HELP[name]}" for name in COMMAND_USAGE]
+    lines += ["", "exit codes:"]
+    lines += [f"  {code}  {verdict}" for code, verdict in sorted(VERDICTS.items())]
+    return "\n".join(lines)
+
+
 def main(argv=None) -> int:
     # A refusal quotes a path and a ticket's own words, either of which can
     # carry a character a cp1252 console cannot encode; a script that crashes
@@ -506,12 +536,20 @@ def main(argv=None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
     handlers = {"start": _cmd_start, "check": _cmd_check}
     command = arguments[0] if arguments else None
+    if command in HELP_FLAGS:
+        print(_help_text())
+        return EXIT_OK
     handler = handlers.get(command)
     if handler is None:
         detail = "missing subcommand" if command is None else f"unknown subcommand: {command}"
         print(json.dumps({"error": detail, "code": EXIT_ERROR}, ensure_ascii=False))
         print(f"workspace: {detail}\n{USAGE}", file=sys.stderr)
         return EXIT_ERROR
+    # after the subcommand is known, so `<sub> --help` answers about that
+    # subcommand, and before the handler, which would read the flag as a stray
+    if any(argument in HELP_FLAGS for argument in arguments[1:]):
+        print(_help_text(command))
+        return EXIT_OK
     try:
         payload, code = handler(arguments[1:])
     except Refused as refusal:
