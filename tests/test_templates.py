@@ -338,5 +338,65 @@ class TestStubGraph(_TemplateTree):
         self.assertIn("'triage'", error)
 
 
+class TestPlaceholders(_TemplateTree):
+    """Every `{{placeholder}}` a stub uses is declared in template.md;
+    a declared placeholder no stub uses is a WARN, never an ERROR."""
+
+    def test_a_placeholder_no_stub_declares_is_one_error(self):
+        stubs = dict(GOOD_STUBS)
+        stubs["repair"] = stub_md("repair", depends="[diagnose]", write_scope="[{{scope}}]")
+        self.write_template("demo", stubs=stubs)
+        error = self.assert_one_error("compositions/demo/repair.md")
+        self.assertIn("{{scope}}", error)
+
+    def test_a_declared_placeholder_no_stub_uses_is_a_warn_not_an_error(self):
+        self.write_template("demo", manifest=template_md(placeholders="[target, spare]"))
+        result, errors = self.diagnostics()
+        self.assertEqual([], errors)
+        self.assertEqual(0, result.returncode, result.stdout)
+        warns = [
+            line for line in result.stdout.splitlines()
+            if line.startswith("WARN") and "compositions/demo" in line
+        ]
+        self.assertEqual(1, len(warns), result.stdout)
+        self.assertIn("{{spare}}", warns[0])
+
+
+class TestStubExecutorResolves(_TemplateTree):
+    """A stub's executor names a skill in the tree or a script that
+    exists (SPEC-ticket-set.md s3: `executor: script:<path>`)."""
+
+    def _with_executor(self, executor):
+        stubs = dict(GOOD_STUBS)
+        stubs["repair"] = stub_md("repair", depends="[diagnose]", executor=executor)
+        return stubs
+
+    def test_an_executor_naming_no_skill_in_the_tree_is_one_error(self):
+        self.write_template("demo", stubs=self._with_executor("orch-nonesuch"))
+        error = self.assert_one_error("compositions/demo/repair.md")
+        self.assertIn("orch-nonesuch", error)
+
+    def test_a_script_executor_whose_path_exists_passes(self):
+        self.write_template("demo", stubs=self._with_executor("script:tools/validate.py"))
+        result, errors = self.diagnostics()
+        self.assertEqual([], errors)
+        self.assertEqual(0, result.returncode, result.stdout)
+
+    def test_a_script_executor_whose_path_is_absent_is_one_error(self):
+        self.write_template("demo", stubs=self._with_executor("script:scripts/absent.py"))
+        error = self.assert_one_error("compositions/demo/repair.md")
+        self.assertIn("scripts/absent.py", error)
+
+    def test_an_executor_carrying_a_placeholder_is_left_to_instantiation(self):
+        stubs = dict(GOOD_STUBS)
+        stubs["repair"] = stub_md("repair", depends="[diagnose]", executor="{{writer}}")
+        self.write_template(
+            "demo", manifest=template_md(placeholders="[target, writer]"), stubs=stubs
+        )
+        result, errors = self.diagnostics()
+        self.assertEqual([], errors)
+        self.assertEqual(0, result.returncode, result.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
