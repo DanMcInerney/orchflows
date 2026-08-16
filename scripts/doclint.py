@@ -77,7 +77,12 @@ def resolve_link(source: Path, target: str, root=None):
     root-relative ``/path`` when no ``root`` is given to read it from. An
     anchor on a real path is dropped -- the file is what must exist. A
     destination in angle brackets -- markdown's spelling of a path with a
-    space -- is read without them."""
+    space -- is read without them.
+
+    A name the path layer refuses to resolve is *not* that ``None``: it is
+    returned unresolved, so it is graded and found missing. A reader cannot
+    follow a link the filesystem will not answer for either, and sharing
+    one channel with "not ours to grade" sent it through unread."""
 
     target = target.strip()
     if target.startswith("<") and ">" in target:
@@ -94,8 +99,11 @@ def resolve_link(source: Path, target: str, root=None):
         base, target = Path(root), target.lstrip("/")
     try:
         return (base / target).resolve()
-    except OSError:
-        return None
+    except (OSError, ValueError):
+        # ValueError as well as OSError: an embedded null is the path layer
+        # refusing the name before the filesystem is asked, and it reached
+        # here uncaught.
+        return base / target
 
 
 def dangling_links(source: Path, text: str, root=None) -> list:

@@ -295,12 +295,37 @@ class TestFindRepoRootNamesTheProject(unittest.TestCase):
         (mod / ".git").write_text("gitdir: ../.git/modules/mod\n", encoding="utf-8")
         self.assertEqual(super_repo, state_root.find_repo_root(mod))
 
-    def test_unparseable_git_file_falls_back_to_the_walk_up_result(self):
+    def test_a_pointer_that_does_not_parse_names_the_worktree(self):
+        # Not a fallback the caller has to guess at: the docstring states
+        # this outcome, and the identity it yields is a real directory the
+        # record can be read back against.
         main = self.make_main()
         vendored = main / "vendored"
         vendored.mkdir()
         (vendored / ".git").write_text("not a gitdir pointer\n", encoding="utf-8")
         self.assertEqual(vendored, state_root.find_repo_root(vendored))
+
+    def test_a_pointer_that_cannot_be_read_names_the_worktree_too(self):
+        # The other arm of one `except`: unreadable, not unparseable. The
+        # answer is the same one and the module states it -- what a reader
+        # may not do is take the returned root as "this worktree's main
+        # checkout was resolved".
+        main = self.make_main()
+        (main / ".git" / "worktrees" / "wt").mkdir(parents=True)
+        wt = self.tmp / "wt"
+        wt.mkdir()
+        (wt / ".git").write_text(
+            f"gitdir: {main / '.git' / 'worktrees' / 'wt'}\n", encoding="utf-8"
+        )
+        with mock.patch.object(Path, "read_text", side_effect=OSError("refused")):
+            self.assertEqual(wt, state_root.find_repo_root(wt))
+
+    def test_the_module_states_both_outcomes_rather_than_promising_one(self):
+        # The docstring claimed every worktree of a repository reports one
+        # project identity; the two cases above are when it does not.
+        text = state_root.__doc__
+        self.assertIn("dereferenced when the pointer parses", text)
+        self.assertIn("names the worktree", text)
 
     def test_no_repository_returns_none(self):
         bare = self.tmp / "bare"

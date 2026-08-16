@@ -20,7 +20,10 @@ harness cannot do — an unresolvable revision, a path escaping the
 repository, a named path present in neither the working tree nor the
 export, a named run directory that is not there or that cannot be
 copied — is refused by name, never skipped: a tree quietly missing what
-a check reads is the same defect as a check that quietly passes.
+a check reads is the same defect as a check that quietly passes. The one
+thing it does with less than it asked for is extract without
+`tarfile`'s `filter=` on an interpreter below 3.11.4, and that is named
+on stderr rather than taken silently.
 """
 
 from __future__ import annotations
@@ -109,6 +112,14 @@ def export(repo: Path, rev: str, dest: Path) -> None:
             try:
                 tar.extractall(str(dest), filter="tar")
             except TypeError:  # filter= is 3.11.4+
+                # Nothing here is skipped without saying so: this host's
+                # interpreter cannot ask for the filter, so the extraction
+                # is the unfiltered one and the report says which it was.
+                print(
+                    "isolate: this interpreter has no tarfile filter= "
+                    "(3.11.4+); extracting unfiltered",
+                    file=sys.stderr,
+                )
                 tar.extractall(str(dest))
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
