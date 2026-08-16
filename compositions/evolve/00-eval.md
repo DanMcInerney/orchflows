@@ -43,8 +43,8 @@ rule, margin, and search policy.
 ## Return fields
 
 status; result — the evaluation identity, its mode, and the criteria,
-promotion rule, margin, search policy and promotion done-check it
-freezes; verification; feedback; risks
+promotion rule, margin and search policy it freezes; verification;
+feedback; risks
 
 ## Result
 

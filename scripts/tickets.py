@@ -1540,9 +1540,9 @@ def _closure_defects(stubs: dict) -> list:
                         continue
                     for item in claim.split(CLAIM_SPLIT):
                         item = item.strip(" `.\"'")
-                        if not item or PLACEHOLDER_RE.search(item):
-                            continue
-                        words = _claim_words(item)
+                        # a `{{placeholder}}` is produced by instantiation, so
+                        # it is not graded -- the words beside it still are
+                        words = _claim_words(PLACEHOLDER_RE.sub(" ", item))
                         if not words or words & returns[producer]:
                             continue
                         named = missing.setdefault(producer, [])
@@ -2364,7 +2364,17 @@ def _cmd_instantiate(rest):
     ordered, error = _template_order(stubs)
     if error is not None:
         return error
-    closure = _closure_defects(stubs)
+    # closure is read on the stubs as written, not as substituted: a filled
+    # placeholder is an identity instantiation produced, and its value's
+    # words are not a claim on any producer -- so this refuses exactly what
+    # `template_defects` refuses on the same directory
+    unsubstituted = {}
+    for stub_id, (_, dependencies) in stubs.items():
+        text, failure = _read_utf8(directory / f"{stub_id}.md", f"stub {stub_id}.md")
+        if failure is not None:
+            return failure
+        unsubstituted[stub_id] = (text, dependencies)
+    closure = _closure_defects(unsubstituted)
     if closure:
         return {"error": "; ".join(message for _, message in closure)}
 

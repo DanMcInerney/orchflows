@@ -632,16 +632,49 @@ class TestProducerConsumerClosure(_TemplateTree):
         self.assertIn("00", messages[0])
 
     def test_an_instantiation_supplied_identity_keeps_closure(self):
-        """A `{{placeholder}}` is produced by the manifest, not by a stub;
-        whether it is declared is tools/validate.py's, so nothing here
-        reports it twice."""
+        """A `{{placeholder}}` read off an upstream Result is produced by
+        the manifest, not by a stub; whether it is declared is
+        tools/validate.py's, so nothing here reports it twice -- and the
+        instantiator, which sees the filled value, agrees with the
+        validator, which sees the placeholder."""
 
         directory = self._template(
             closure_stub(
-                "01", "- {{target}} -- the target being repaired\n", depends="[00]"
+                "01",
+                "- 00's `## Result` -- {{target}}, the reproduction identity\n",
+                depends="[00]",
             )
         )
         self.assertEqual([], self.messages(directory))
+        with _temporary_sink():
+            result = tickets._cmd_instantiate(
+                [str(directory), "--run", "20260101T000000Z-closure",
+                 "--set", "target=zebra-thing"]
+            )
+        self.assertNotIn("error", result, result)
+
+    def test_a_placeholder_beside_a_field_no_producer_returns_breaks_closure(self):
+        """The placeholder is produced; the words beside it are still a
+        claim on the producer, at the validator and at instantiation."""
+
+        directory = self._template(
+            closure_stub(
+                "01",
+                "- 00's `## Result` -- the promotion rule for {{target}}\n",
+                depends="[00]",
+            )
+        )
+        messages = self.messages(directory)
+        self.assertEqual(1, len(messages), messages)
+        self.assertIn("promotion rule", messages[0])
+        with _temporary_sink() as sink:
+            result = tickets._cmd_instantiate(
+                [str(directory), "--run", "20260101T000000Z-closure",
+                 "--set", "target=x"]
+            )
+            self.assertIn("error", result)
+            self.assertIn("promotion rule", result["error"])
+            self.assertEqual([], sorted((sink / "tickets").glob("*/*.md")))
 
     def test_the_validator_reports_the_broken_closure_as_one_error(self):
         self._template(
