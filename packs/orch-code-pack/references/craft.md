@@ -1,7 +1,6 @@
 # Code craft
 
-The code domain's terms and shape, per the signature's craft cell. The
-shape principles every domain shares are
+The shape principles every domain shares are
 [rules/token-economy.md](../../../rules/token-economy.md) §10's.
 
 ## Vocabulary
@@ -30,8 +29,6 @@ shape principles every domain shares are
   kind it was written for.
 
 ## Lens
-
-For `orch-critique`.
 
 - Correctness: does the revision satisfy the spec's acceptance,
   including its failure paths, not only the happy path?

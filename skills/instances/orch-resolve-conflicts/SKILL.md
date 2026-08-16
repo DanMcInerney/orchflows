@@ -19,5 +19,6 @@ a resolution that breaks the build is not a resolution.
 Never: pick a side by recency or size; invent a third behavior neither
 side had.
 
-Return: status; per-conflict rulings with evidence and the oracle
-result; any blocked conflicts with both intents.
+Return: status; result — the resolved revision; verification — the
+oracle result; per-conflict rulings with evidence; any blocked
+conflicts with both intents.

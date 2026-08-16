@@ -9,5 +9,3 @@ each section one job the document needs done, no two sections doing it.
   budget.
 - A section item adds its slot position and the sibling slots it must
   not duplicate.
-- A spec whose acceptance is mostly about the whole — voice, arc — with
-  thin per-section criteria still slices.

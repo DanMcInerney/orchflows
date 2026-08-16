@@ -1,7 +1,5 @@
 # Research oracle policy
 
-Judged rows: [`## Lens`](craft.md#lens).
-
 | criterion kind | oracle | oracle_class | provenance |
 | --- | --- | --- | --- |
 | citations resolve | each cited source fetched or located | evidence | authored-here |

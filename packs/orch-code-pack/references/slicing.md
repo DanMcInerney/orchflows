@@ -1,8 +1,7 @@
 # Code slicing: tracer-bullet tickets
 
 Cut the spec into tracer tickets: each crosses the system end to end
-at one thin point, proving the seams early, then widens — never
-layer-by-layer slices that integrate only at the end; the first
+at one thin point, proving the seams early, then widens; the first
 frontier carries the riskiest seam's tracer.
 
 - Each ticket: one observable behavior, provable by runnable checks from

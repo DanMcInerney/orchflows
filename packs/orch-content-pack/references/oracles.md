@@ -1,7 +1,5 @@
 # Content oracle policy
 
-Judged rows: [`## Lens`](craft.md#lens).
-
 | criterion kind | oracle | oracle_class | provenance |
 | --- | --- | --- | --- |
 | length/structure shape | word count and section presence checks | deterministic | authored-here |
