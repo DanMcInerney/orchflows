@@ -28,7 +28,7 @@ correction's cause record where the defect was felt, not what owns it;
 the rest stays noise.
 
 For each qualified cluster, write one proposal named `<date>-<slug>.md`
-through `scripts/tickets.py improvement --proposal`, typed `fix` or §4
+through `tickets.py improvement --proposal`, typed `fix` or §4
 `consolidate`: the causal owner as a repository-relative path, its
 scope, the exact change, every evidence entry verbatim, the blame class
 where a join recorded one, and each ticket-naming entry whose frozen
