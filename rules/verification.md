@@ -25,8 +25,11 @@
    claim it stands for is false decides nothing, and its PASS is void.
    Show it against a wrong result built beside the tree, never by
    mutating the tree under test, which an interrupted pass leaves
-   mutated. Building that copy faithfully where the tree is a
-   repository is
+   mutated — shown once: by the cut for a `pre-existing` oracle
+   (`scripts/cutcheck.py`'s discrimination family) and by the
+   executor's own red for an `authored-here` one; a verifier reads that
+   record, never rebuilds it. Building that copy faithfully where the
+   tree is a repository is
    [cut-lens.md](../skills/kernel/orch-decompose/references/cut-lens.md)'s.
 9. A correction consumes causes, not findings: one fix per shared
    cause, the smallest set that closes the validated findings,

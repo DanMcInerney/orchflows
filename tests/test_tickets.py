@@ -1856,6 +1856,47 @@ class ResultOverwriteTest(unittest.TestCase):
             self.assertEqual("[]", sections["Risks"])
             self.assertEqual("[]", sections["Feedback"])
 
+    def test_an_empty_collection_stub_is_not_content(self):
+        """A ticket is cut with `[]` in Feedback and Risks. That stub is the
+        empty collection, not a prior writer's work: the executor's first
+        real write into it needs no flag (three lanes in one run each lost
+        a round trip to --replace before this held)."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            ticket = run_dir / "T1.md"
+            ticket.write_text(
+                ticket.read_text(encoding="utf-8") + "\n## Risks\n\n[]\n",
+                encoding="utf-8",
+            )
+            payload = run_cmd(worktree, "result", "testrun", "T1",
+                              "--section", "Risks", "--text", "one real risk")
+            self.assertEqual("write", payload["result"]["mode"])
+            sections = tickets_mod._sections(ticket.read_text(encoding="utf-8"))
+            self.assertEqual("one real risk", sections["Risks"])
+
+    def test_a_level_two_heading_inside_a_body_is_refused(self):
+        """`_sections` reads every `## ` line as a ticket section, so a
+        Result carrying `## Changed artifacts` would split into sections the
+        contract does not name and no verb could remove; refuse it whole."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            ticket = run_dir / "T1.md"
+            before = ticket.read_text(encoding="utf-8")
+            result = run_main(worktree, "result", "testrun", "T1", "--section", "Result",
+                              "--text", "changed x\n\n## Changed artifacts\n\n- y")
+            self.assertEqual(1, result.returncode, result.stdout)
+            error = json.loads(result.stdout)["error"]
+            self.assertIn("level-2 heading", error)
+            self.assertIn("###", error)
+            self.assertEqual(before, ticket.read_text(encoding="utf-8"))
+            ok = run_cmd(worktree, "result", "testrun", "T1", "--section", "Result",
+                         "--text", "changed x\n\n### Changed artifacts\n\n- y")
+            self.assertEqual("write", ok["result"]["mode"])
+
     def test_append_and_replace_together_are_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)

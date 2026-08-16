@@ -8,7 +8,7 @@ bound: <= 80 tool calls
 excluded_actions:
   - let builders qualify their own work
   - accept a builder's own cases or authored oracles as sufficient evidence
-  - return a self-qualified verdict set, or the pending marker presented as finished, where the builder-disjoint context is unreachable
+  - return a self-qualified verdict set where the builder-disjoint context is unreachable
 independence: gate
 isolation: required
 profile: orch-worker

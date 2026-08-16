@@ -6,7 +6,6 @@ depends_on: [02-campaign]
 write_scope: []
 bound: <= 30 tool calls
 excluded_actions:
-  - activate a selected candidate
   - closing on a score card that cites no admitted evidence
   - expose protected evidence
   - add a closing wrapper

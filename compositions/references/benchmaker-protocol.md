@@ -72,9 +72,8 @@ solving it from the prompt and licensed evidence only, then comparing; a
 declared sample of the rest is re-read, and the sample is declared so
 that auditing only the hard cases cannot become difficulty filtering by
 the back door. Record a defect count and each defect's class, never a
-rate — over a small set a rate carries no usable interval. Repair
-before any identity exists; a defect the run declines to repair is a
-declared gap naming the case and the class.
+rate — over a small set a rate carries no usable interval; a defect the
+run declines to repair is a declared gap naming the case and the class.
 
 ### Attack pass
 
@@ -127,9 +126,10 @@ without evidence, and the reference audit is what decides the second.
 Declare the instrument's resolution as `max(measured rerun spread, one
 case)` and report no delta below it.
 
-The record lands outside the package, one entry per measurement event,
-naming the git revision of the benchmark it covers, the full candidate
-identity per §Scoring, the date, the measured scope, and these figures.
+The record lands outside the package — in the measuring ticket's
+`## Result` — one entry per measurement event, naming the git revision
+of the benchmark it covers, the full candidate identity per §Scoring,
+the date, the measured scope, and these figures.
 Name a revision reachable from the default branch: where the pass ran on
 a branch, name the default-branch-reachable ancestor carrying identical
 measured bytes and state that relation in one clause. A squash merge

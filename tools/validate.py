@@ -28,14 +28,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 SKILL_TIERS = ("kernel", "engines", "workflows", "instances", "utilities")
+# Words, not lines: a line count is met by widening lines, and was.
+# Markdown link targets are stripped first so a citation costs its label,
+# not its path.
 BODY_BUDGET = {
-    "kernel": 25,
-    "instances": 25,
-    "utilities": 25,
-    "engines": 40,
-    "workflows": 40,
-    "pack": 20,
+    "kernel": 300,
+    "instances": 300,
+    "utilities": 300,
+    "engines": 450,
+    "workflows": 450,
+    "pack": 150,
 }
+LINK_TARGET_RE = re.compile(r"\]\([^)]*\)")
 DESCRIPTION_BUDGET = 140
 ALLOWED_FRONTMATTER_KEYS = {"name", "description", "disable-model-invocation", "role"}
 ROLE_PROFILES = {"orch-planner", "orch-worker"}
@@ -731,13 +735,18 @@ def validate_anatomy(body: str, pkg: dict, diag: Diagnostics) -> None:
         diag.error(file_label, "skill body missing a sentence starting 'Return'")
 
 
+def body_words(body: str) -> int:
+    """The body's word count with markdown link targets stripped."""
+    return len(LINK_TARGET_RE.sub("]", body).split())
+
+
 def validate_budget(body: str, pkg: dict, diag: Diagnostics) -> None:
     file_label = rel(pkg["skill_md"])
-    n = sum(1 for ln in body.split("\n") if ln.strip())
+    n = body_words(body)
     tier = "pack" if pkg["is_pack"] else pkg["kind"]
     limit = BODY_BUDGET[tier]
     if n > limit:
-        diag.error(file_label, f"body has {n} non-empty lines, exceeds the {tier} budget of {limit}")
+        diag.error(file_label, f"body has {n} words, exceeds the {tier} budget of {limit}")
 
 
 def validate_pack_signature(body: str, pkg: dict, diag: Diagnostics) -> None:
@@ -1568,8 +1577,43 @@ def compute_pins() -> dict:
 def write_pins() -> dict:
     pins = compute_pins()
     PINS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    PINS_FILE.write_text(json.dumps(pins, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    # Bytes with LF: a text-mode write on Windows would land CRLF and
+    # differ from every other host's pin file.
+    PINS_FILE.write_bytes((json.dumps(pins, indent=2, sort_keys=True) + "\n").encode("utf-8"))
     return pins
+
+
+# --- Markdown links resolve (docs/documentation.md law 5) ---------------
+#
+# Every relative markdown link in every .md the library ships resolves to
+# a file in the tree. Anchors are not resolved here (validate_lens_anchor
+# owns the one anchor class a consumer depends on); external URLs and
+# templated paths are skipped. REVIEW-*.md are dated evidence and exempt.
+LINKED_MD_ROOTS = ("rules", "contracts", "docs", "skills", "packs", "compositions", "templates", "benchmarks")
+
+
+def _linked_markdown_files():
+    for name in sorted(ROOT.glob("*.md")):
+        if not name.name.startswith("REVIEW-"):
+            yield name
+    for root in LINKED_MD_ROOTS:
+        yield from sorted((ROOT / root).rglob("*.md"))
+
+
+def validate_markdown_links(diag: Diagnostics) -> None:
+    if not all((ROOT / root).is_dir() for root in LINKED_MD_ROOTS):
+        return  # a partial tree (the isolated test fixtures) is not graded
+    for source in _linked_markdown_files():
+        text = _read_source(source)
+        for match in MD_LINK_RE.finditer(text):
+            target = match.group(1)
+            if "{{" in target:
+                continue
+            resolved = _resolve_link(source, target)
+            if resolved is None:
+                continue
+            if not resolved.exists():
+                diag.error(rel(source), f"markdown link does not resolve: {target}")
 
 
 def validate_pins(diag: Diagnostics) -> None:
@@ -1749,6 +1793,7 @@ def run_validation() -> Diagnostics:
     validate_cross_package_links(packages, diag)
     validate_names(packages, diag)
     validate_lens_anchor(packages, diag)
+    validate_markdown_links(diag)
     validate_pins(diag)
     validate_friction_locations(diag)
     return diag

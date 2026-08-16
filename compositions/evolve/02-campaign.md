@@ -6,7 +6,6 @@ depends_on: [01-eligibility]
 write_scope: [{{mutation_scope}}]
 bound: {{bound}}
 excluded_actions:
-  - change evaluation after campaign open
   - rank an ineligible candidate
   - re-execute or substitute admitted evidence
   - expose protected evidence
@@ -14,7 +13,6 @@ excluded_actions:
   - activate a selected candidate
   - add a closing wrapper
   - unfreezing a campaign constant — evaluation identity, mode, scoring, criteria, evidence adapter, runner, protected evidence policy, controller and planner revisions, mutation authority, search policy, promotion rule, margin and bound are fixed at open, and a changed constant starts a new campaign and reevaluates every retained candidate rather than continuing this one
-  - closing on a promotion — promotion alone never completes the campaign; the done-check does
   - keeping a candidate that lacks PASS on every required admission criterion — kill it, since a score never compensates
   - taking an archive member as anything but an exploration parent
 independence: checker
@@ -43,10 +41,6 @@ incumbent's score card or {{bound}} is spent.
   `search_plan.py advance` performs the selection. Slot, parent and
   spend mapping:
   [the generation protocol](../references/evolve-generation.md).
-- A scoring lane scores and dispatches nothing: the children that apply
-  a candidate are dispatched by this loop's own engine, one host depth
-  below the orchestrator, per
-  [the frontier's profiles](../../skills/engines/orch-frontier/references/profiles.md).
 - Done-check: the frozen promotion rule and margin have been applied
   over the final incumbent's score card and rendered a verdict —
   promoted or kept — or {{bound}} is spent.

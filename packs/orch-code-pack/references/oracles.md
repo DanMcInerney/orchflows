@@ -1,11 +1,10 @@
 # Code oracle policy
 
-All classes deterministic unless a criterion is explicitly judged.
 Judged rows: [`## Lens`](craft.md#lens).
 
 | criterion kind | oracle | oracle_class | provenance |
 | --- | --- | --- | --- |
-| behavior | the ticket's named test commands | deterministic | pre-existing |
+| behavior | the ticket's named test commands | deterministic | authored-here when the unit writes the test, else pre-existing |
 | regression | the full suite the spec names | deterministic | pre-existing |
 | build/type | the workspace's build and typecheck commands | deterministic | pre-existing |
 | standards shape | the workspace's linter, formatter, or validator | deterministic | pre-existing |

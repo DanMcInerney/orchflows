@@ -23,11 +23,10 @@ level, and host.
 - {{canary_set}} — the frozen golden work items under `.orch/canary/`,
   each already a ticket, spanning the kernel boundaries its README
   declares. Read only: the run never writes into it.
-- The items are issued into this run's own `tickets/<run>/` before the
-  drain — one `tickets.py new <run> <id> --file <item>` per golden
-  item, or a copy of the directory — and drained there, so a claim or a
-  result lands on the issued copy and the golden set is still byte-clean
-  at close, which is what criterion 2 grades.
+- The items are issued into a nested run of its own — this ticket's
+  `run` plus `.00-run`, never the outer run — before the drain, so a
+  claim or a result lands on the issued copy and the golden set is
+  still byte-clean at close.
 - The binding this run is testing: model id, effort level, host — the
   change that triggered it.
 

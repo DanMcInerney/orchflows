@@ -1397,8 +1397,7 @@ def template_defects(directory) -> list:
     tree's uninstantiated templates can be graded where they sit: each stub
     against ``ticket_defects(text, stub=True)``, its id against its file
     stem, its list fields against being lists, its sections against the
-    contract's order, its executor against the engines that cannot be one,
-    and then the graph — edges, cycle, single terminal — through
+    contract's order, and then the graph — edges, cycle, single terminal — through
     ``_template_order``. A ``{{placeholder}}`` is left alone: it is a defect
     only once instantiation has refused to fill it.
 
@@ -2299,7 +2298,7 @@ def _gate_body(kind: str, root_id: str, lens: str, scope: list,
     if kind == "critique":
         return [
             ("Objective", f"Every defect in `{root_id}`'s delivered result that "
-             f"the `{lens}` lens finds is reported by identity and severity: an "
+             f"the `{lens}` lens finds is reported by identity with its evidence: an "
              "open search over what the subtree produced, not a re-run of the "
              "criteria it already states."),
             ("Fixed inputs", "\n".join(
@@ -2321,7 +2320,7 @@ def _gate_body(kind: str, root_id: str, lens: str, scope: list,
                 "deterministic | provenance: pre-existing",
             ])),
             ("Return fields", "status; result — ranked findings, each with its "
-             "artifact identity, severity and evidence; verification; feedback; "
+             "artifact identity and evidence; verification; feedback; "
              "risks"),
         ]
     if kind == "repair":
@@ -2882,6 +2881,15 @@ def _cmd_result(rest):
             return failure
     else:
         body = text_arg
+    if any(line.startswith("## ") for line in body.splitlines()):
+        # `_sections` reads every `## ` line as a ticket section, so a body
+        # carrying one would split itself into sections the contract does
+        # not name; a sub-heading inside a section is `###` or deeper.
+        return {
+            "error": f"a '## {canonical}' body may not contain a level-2 heading "
+            "('## ...'): it would be read as a sibling ticket section. Use "
+            "'###' or deeper for sub-headings inside a section"
+        }
     tickets_root = _tickets_root()
     if tickets_root is None:
         return {"error": NO_SINK_ERROR}
@@ -2903,6 +2911,10 @@ def _cmd_result(rest):
     except TicketFormatError as error:
         return {"error": f"{error}. ticket: {ticket_path}"}
     prior = _section_body(text, canonical)
+    if prior.strip() == "[]":
+        # The empty-collection stub a ticket is cut with (Feedback, Risks):
+        # nothing to protect, so the executor's first real write is free.
+        prior = ""
     if prior and not append and not replace:
         # contracts/worklog.md's closing law, read across to the ticket the
         # same executor writes: a write over content already there is refused

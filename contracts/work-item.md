@@ -5,7 +5,7 @@ The one unit of work, plan, and record: a delegation packet made durable
 decomposition emits work items, every executor consumes exactly one,
 every join integrates one. On disk it is a markdown ticket in the local
 tracker — the one durable record of its dispatch, which the executor
-writes its result into. There is no external tracker.
+writes its result into.
 
 Location: `<state-root>/tickets/<run>/<id>.md`, the state root being the
 user-scope sink `scripts/state_root.py` resolves — one per user, outside
@@ -99,9 +99,9 @@ parts:
   executor's result must carry. A `status` in this list is the result
   envelope's ([result.md](result.md)), never the ticket frontmatter key
   above.
-- `## Result` — the executor's, written as produced: what changed, by
-  identity, cited here or in the store the packet names, per
-  rules/delegation.md §10. A §10 checker appends its own pass — findings,
+- `## Result` — the filing law: the executor's, written as produced —
+  what changed, by identity, cited here or in the store the packet
+  names, per rules/delegation.md §10. A §10 checker appends its own pass — findings,
   changes, invalidated entries — and never rewrites the executor's.
 - `## Verification` — verdict entries, one per criterion.
 - `## Feedback` — bounded observations; `[]` when none.

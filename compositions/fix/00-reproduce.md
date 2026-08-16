@@ -26,7 +26,7 @@ behaviour and on nothing else.
 
 ## Completion test
 
-- the reproduction command FAILs at HEAD | oracle: the reproduction command | oracle_class: deterministic | provenance: authored-here
+- the reproduction command FAILs at HEAD and its failure identity names {{failure}}'s observed behaviour | oracle: the reproduction command | oracle_class: deterministic | provenance: authored-here
 - the same command run at HEAD twice gives the same failure identity | oracle: the reproduction command | oracle_class: deterministic | provenance: authored-here
 
 ## Return fields

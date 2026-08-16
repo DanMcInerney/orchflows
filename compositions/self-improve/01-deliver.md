@@ -43,11 +43,13 @@ revision.
 - the proposal's exact change is present at the owner and nowhere outside its scope | oracle: the workspace diff against the recorded baseline | oracle_class: deterministic | provenance: pre-existing
 - the owner's required checks PASS at the landed revision | oracle: the workspace's own check commands, run at that revision | oracle_class: deterministic | provenance: pre-existing
 - the covered line is present in the sink's `improvement/covered.jsonl`, naming the proposal and the landed revision | oracle: `improvement/covered.jsonl` | oracle_class: deterministic | provenance: pre-existing
+- every ticket-naming evidence entry of the proposal replays green through `orch-frontier` over that one ticket against the amended owner, or the proposal records why replay does not apply | oracle: the replay run's terminal ticket status, or the proposal's stated non-applicability | oracle_class: deterministic | provenance: pre-existing
 
 ## Return fields
 
 status; result — the landed revision, the changed artifacts by identity,
-the covered line verbatim; verification; feedback; risks
+the covered line verbatim, and the replay run by identity where one ran;
+verification; feedback; risks
 
 ## Result
 

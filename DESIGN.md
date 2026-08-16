@@ -36,7 +36,7 @@ reader. Human legibility is welcome; it is never the design driver.
 ## Structure → constraint
 
 - **A narrow, hash-pinned waist (`contracts/`).** N workflows, M
-  packs, and H hosts meet in six data shapes: N+M+H mutual
+  packs, and H hosts meet in five data shapes: N+M+H mutual
   understandings instead of N×M×H. Hash-pinned because the reader
   drifts shapes helpfully — renaming a field to a nicer synonym reads
   as a favor and breaks every consumer silently; the pin turns drift
@@ -95,56 +95,49 @@ reader. Human legibility is welcome; it is never the design driver.
   exceeds the install scope that resolves its call edges, or the item
   would dangle (search is memory).
 
-## Why patterns became grammar plus stdlib
+## Why the named tier is ticket-set templates
 
-Superseded 2026-08-06 (the two-entrypoints spec). Routing once
-enumerated six named "shapes of done," and three of them were whole
-skills (orch-fix, orch-evolve, orch-benchmaker) whose bodies were
-mostly sequencing. Every new recurring shape grew the routing table —
-the one surface every session pays for on every request. The
-replacement splits what a pattern conflated:
+Since 2026-08-16 (P4 of the ticket-set redesign; the 2026-08-06
+two-entrypoints spec was the intermediate step, and git history owns
+both migrations). Routing once enumerated named "shapes of done" whose
+bodies were mostly sequencing, and every recurring shape grew the
+routing table — the one surface every session pays for on every
+request. The replacement:
 
-- **The routing table stays fixed while the named tier grows.** Four
-  branches — answer, ad-hoc, deliver, fix — and one closed rule:
-  everything else runs only when named. New workflows land as
-  composition files, so recurring shapes accumulate in the stdlib
-  instead of in the dispatch prose (diluted attention: the always-paid
-  cost never grows).
-- **Invariants survive in composition files.** A demoted pattern's law
-  — evolve's frozen benchmark and blindness, fix's
-  proven-cause-before-repair — moves verbatim into a required
-  `invariants` field, and admission rejects a composition missing
-  `invariants` or a `done_check`; a chain of individually gated runs
-  gets its whole-chain gate from that one field (cheap generation:
-  the gate is data the validator can check, not prose to remember).
+- **The routing table stays fixed while the named tier grows.** Three
+  branches — answer, ticket, fix — and one closed rule: everything else
+  runs only when named. Recurring shapes accumulate as templates under
+  `compositions/`, never in the dispatch prose (diluted attention: the
+  always-paid cost never grows).
+- **A template is tickets, not a second grammar.** A demoted pattern's
+  law rides its stubs' `excluded_actions` and `## Completion test`; the
+  combinators are the ticket graph's own — a `depends_on` edge, disjoint
+  parallel stubs, a loop stub — so `tickets.py instantiate` writes a run
+  and `orch-frontier` drains it with no engine, contract or step file to
+  keep in step with the ticket contract (cheap generation: the gate is
+  the same graded ticket shape every other item has).
 - **The envelope closes the algebra.** Every dispatchable unit returns
-  one envelope — status, result identity, verification — so `seq`,
-  `par`, and `loop` compose anything with anything: a predecessor's
-  result identity is a successor spec's evidence, with no per-pair
-  glue. Three combinators plus one value type replace six patterns,
-  and a multi-kind request chains itself (search is memory: one return
-  shape, one name for it).
+  one envelope — status, result identity, verification — so a
+  predecessor's result identity is a successor's evidence with no
+  per-pair glue (search is memory: one return shape, one name).
 
-Amended 2026-08-16: since P4 the named tier is ticket-set templates and
-nothing else — a directory of ticket stubs plus a `template.md`
-manifest, which `tickets.py instantiate` writes into a run and
-`orch-frontier` drains — and the branches collapse to answer, ticket,
-fix. The step file, its contract, and the engine that executed one are
-deleted. Each bullet above survives in a cheaper place: the routing
-table still holds while templates accumulate; a demoted pattern's law
-rides its stubs' `excluded_actions` and `## Completion test` rather
-than an `invariants` field, so the gate is the same graded ticket
-shape every other item already has; and the three combinators are the
-ticket graph's own — a `depends_on` edge, disjoint parallel stubs, a
-loop stub — so there is no second grammar to keep in step with the
-first. Git history owns the migration's own record (`SPEC-ticket-set.md`,
-deleted when its last phase landed); this section owns the
-rationale. Its open decisions closed as: ticket sets over a fixed
-`seq` engine, proven on the `fix` fixture; Claude keeps all skill
-adapters — measured 2026-08-16, the verdict and its caveat in
-benchmarks/routing/README.md; `delegation.md` merged into
-`work-item.md`; orch-delegate (the skill) deleted; the five domain
-instances and `orch-loop` kept.
+Its open decisions closed as: ticket sets over a fixed `seq` engine,
+proven on the `fix` fixture; Claude keeps all skill adapters — measured
+2026-08-16, the verdict and its caveat in benchmarks/routing/README.md;
+the delegation contract merged into `work-item.md`; orch-delegate (the
+skill) deleted; the five domain instances and `orch-loop` kept.
+
+## Why documentation is designed this way
+
+Every session is a team death. A program is a theory its builders hold
+(Naur), and under agents the theory dies at each context boundary — so
+documentation is not a description for a reader with time. It is the
+theory-rehydration procedure for a reader with a token budget, run
+cold, by role, hundreds of times: the at-rest half of the context
+window, engineered like one — loaded selectively by role and event,
+budgeted, and graded by machines. Bloat is not a style problem; it
+lowers task success. The law that follows is
+[docs/documentation.md](docs/documentation.md).
 
 ## Why a `craft` cell
 
@@ -198,24 +191,19 @@ The craft files own their text — `packs/*/references/craft.md`; this
 file owns only why each list earned its lines.
 
 - **Code** terms name the executor's discipline (seam, tracer,
-  tautological check, idiom); the shape section is
-  the reader's cost model applied to code — exact-search names,
-  one-read modules, flat application call graphs, comments only for
-  the non-derivable, behavior observable at a seam.
+  tautological check, idiom); the shape section is the reader's cost
+  model applied to code.
 - **Content** terms are genre-free: each names a decision every
   document makes — a tweet, a README, and a chapter all have a hook,
   a throughline, an arc, a skim layer, a landing. The voice contract
   gains its scored dimensions, which is what makes the pack's judged
   voice oracle repeatable across fresh judges.
 - **Research** terms name the evidence discipline (claim, provenance,
-  independence, laundering, the registers, dead ends, lane packet)
-  and define the rigor bar the pack's required spec fields demand.
+  independence, laundering, gaps, evidence packet) and define the
+  rigor bar the pack's required spec fields demand.
 - **Design** terms name the rendered-interface discipline (view
   identity, capture, golden capture, token, state, affordance) and
-  give the judged design-language oracle its scored dimensions; the
-  shape section is the reader's cost model rendered — a token is
-  one-name-per-concept for visual decisions, a view owning its states
-  is locality, flat composition is breadth over depth.
+  give the judged design-language oracle its scored dimensions.
 
 ## Why the design pack
 
@@ -278,8 +266,8 @@ redirect stub — a one-line pointer at
 the lib path a live read keeps at zero staleness. Project scope
 collapsed to a routing-block stub because the two things a project
 install used to carry beyond that were never load-bearing: friction
-logging already resolves its target by walking up to `.git` rather
-than depending on installer-created runtime directories, and a
+logging resolves the user-scope sink through
+`scripts/state_root.py` from any working directory, and a
 project-pinned lib version was never implemented (its receipt recorded
 no source commit) — so the only committable residue a project needs is
 the routing block that makes its custom items discoverable in-repo; the

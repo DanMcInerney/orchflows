@@ -38,20 +38,16 @@
    item. Assembly rewrites its inputs, so unit verification upstream of
    it is invalidated at the join; the final gate re-verifies the
    assembled artifact.
-5. One gate per run — the root's `<id>.gate.critique.<lens>` lanes over
-   one fixed revision, `<id>.gate.repair`, `<id>.gate.verify`
-   ([work-item.md](../contracts/work-item.md), Root ticket). Never one gate per
-   domain — cross-lens inconsistency is the most valuable finding class.
-6. Escalation rides the ticket's `## Handoff`
-   ([work-item.md](../contracts/work-item.md)) under
-   [delegation.md](delegation.md) §9's once-per-dispatch bound.
+5. One gate per run over one fixed revision — stubs per
+   [work-item.md](../contracts/work-item.md), Root ticket. Never one gate
+   per domain — cross-lens inconsistency is the most valuable finding
+   class.
+6. Escalation: [delegation.md](delegation.md) §9.
 7. Multi-run work is root tickets on `depends_on` edges: seq is an
    edge, the predecessor's `## Result` identity cited among the
    successor's `## Fixed inputs`; par is the absence of one, which rule
    3's disjointness already governs, joined by a ticket depending on
    all of them; loop is a ticket whose executor is `orch-loop`. A named
    multi-run shape is a template
-   ([work-item.md](../contracts/work-item.md)) instantiated into one
-   run's ticket directory and run by `orch-frontier`, its terminal
-   ticket's completion test gating the whole. Mixed decomposition
-   inside one graph is undefined.
+   ([work-item.md](../contracts/work-item.md)) run by `orch-frontier`.
+   Mixed decomposition inside one graph is undefined.

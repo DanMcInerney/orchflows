@@ -15,37 +15,29 @@ recorded verbatim, without re-interviewing a settled one. When the
 request is itself a consequential decision, stop there: the settled,
 approved statement is the deliverable.
 
-Count the deliverable kinds the end state spans — this decision and its
-evidence ride the Return. One kind → one pack-stamped root ticket. Two
-or more → one root ticket per kind, cut where the deliverable's kind
-changes, each successor `depends_on` its predecessor and carrying that
-predecessor's result identity among its own `## Fixed inputs` — a
-successor is written when that identity exists, not before.
+Count the deliverable kinds the end state spans. One kind → one
+pack-stamped root ticket. Two or more → one root ticket per kind, cut
+where the deliverable's kind changes, each successor `depends_on` its
+predecessor and carrying that predecessor's result identity among its
+own `## Fixed inputs` — a successor is written when that identity
+exists, not before.
 
-Draft each per [contracts/work-item.md](../../../contracts/work-item.md#root-ticket),
-holding its two hard lines — the objective is one observable end state,
-never activities; a criterion no oracle can check is a defect to fix
-here, not the decomposer's slack — with exact nouns and verbs from
+Draft each per
+[contracts/work-item.md](../../../contracts/work-item.md#root-ticket),
+with exact nouns and verbs from
 [docs/vocabulary.md](../../../docs/vocabulary.md) and the craft cell of
 the pack the stamp will name, so they read as the deliverable's
-searchable names. An exemplar rides `## Fixed inputs` in the form that
-same [root ticket](../../../contracts/work-item.md#root-ticket)
-paragraph mandates; an unresolved pointer is a defect to fix here.
+searchable names.
 
 Stamp routing — exactly one pack per
 [rules/topology.md](../../../rules/topology.md). Before Return, verify
 the ticket carries every field the stamped pack's `required_spec_fields`
-cell demands — decomposition otherwise rejects it downstream, naming the
-missing fields; catch that gap here, not there. Write it through
-`tickets.py new <run> <root-id> --executor orch-decompose --pack <the
-stamp> …`, which refuses an off-contract shape before anything lands;
-the rest of the run — its unit tickets, the gate stubs, the worklog view
-`tickets.py worklog` renders, terminal state — opens at decomposition,
-not here.
+cell demands. Write it through `tickets.py new <run> <root-id>
+--executor orch-decompose --pack <the stamp> …`; everything past the
+root ticket opens at decomposition.
 
-Never: stamp two packs in one root ticket (write one per kind instead);
-leave an acceptance criterion oracle-less; restate standards an
-exemplar's owner already states.
+Never: stamp two packs in one root ticket; leave an acceptance criterion
+oracle-less; restate standards an exemplar's owner already states.
 
 Return: the accepted root ticket's id and path, plus each further root
 ticket and its edge where the end state spans more than one kind; the

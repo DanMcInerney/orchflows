@@ -4,28 +4,23 @@ description: Iterate fresh-context passes against an external done-check within 
 role: none
 ---
 
-Require: a frozen goal; the body — what each iteration dispatches, one
-named skill, an orch-frontier ticket over a template, or a
-caller-owned composite of named skills, bound as plain text and never
-backticked, a binding
-rather than a call edge; a
-done-check naming its oracle and oracle_class per
-[contracts/verdict.md](../../../contracts/verdict.md) — the iteration
-count is a deterministic done-check; a bound; and the context packet the
-iterations carry — design it once via
+Require: a frozen goal; the body per
+[rules/loops.md](../../../rules/loops.md) §9, bound as plain text and
+never a call edge; a done-check naming its oracle and oracle_class per
+[contracts/verdict.md](../../../contracts/verdict.md); a bound; and the
+context packet the iterations carry — design it once via
 [references/context-packet.md](references/context-packet.md).
 
-Freeze the goal into the run's state through `tickets.py run-state` and
-append every iteration entry, failed approach and queued scope to it
-there — the worklog is the view `tickets.py worklog` renders, never a
-second hand-written file. Each iteration: start fresh
-from the frozen goal plus the worklog — never a prior transcript; take
-one work item; dispatch the body with the packet as delegation inputs,
-per [rules/delegation.md](../../../rules/delegation.md); adjudicate the
-return at the join through
-`orch-integrate`; let the done-check decide, per the contract's class
-policy. Commit verified increments; record failed approaches; queue
-discovered scope.
+Freeze the goal into the run's state through `tickets.py run-state`.
+Each iteration: issue `<id>.iter.NN` through `tickets.py new`
+([contracts/work-item.md](../../../contracts/work-item.md), Root
+ticket); start fresh from the frozen goal plus the worklog `tickets.py
+worklog` renders — never a prior transcript; dispatch the body with the
+packet as delegation inputs, per
+[rules/delegation.md](../../../rules/delegation.md);
+adjudicate the return through `orch-integrate`; let the done-check
+decide per the contract's class policy. Commit verified increments;
+record failed approaches; queue discovered scope.
 
 Judged exits follow [rules/loops.md](../../../rules/loops.md)'s
 provisional-exit clause: an iteration-time judged PASS never closes the
@@ -34,7 +29,7 @@ run on its own.
 Exit on the first of: done-check PASS (`complete`); two consecutive
 no-progress iterations (`stalled`); bound spent (`limited`); an
 unresolvable dependency (`blocked`); an unrecoverable execution error
-(`failed`). Loops per [rules/loops.md](../../../rules/loops.md).
+(`failed`).
 
 Never: hardcode a body; carry a step plan; widen the goal; count an
 iteration's own claim as the done-check; end a judged-class run on

@@ -3,9 +3,10 @@
 Sixteen benchmark-building tasks that exercise the `benchmaker`
 composition from every angle it claims to cover. This set supersedes
 the thirteen-case hand-authored set: it was produced end to end by
-the `benchmaker` composition run against benchmaker's own fixed
-identity per `docs/benchmaker.md`
-§Self-benchmarking, from a frozen two-lane research synthesis, a
+the `benchmaker` composition (`compositions/benchmaker/template.md`)
+run against benchmaker's own fixed identity, under the self-benchmarking
+rule `docs/benchmaker.md` §Self-benchmarking stated at e66f3b6 (the
+file since deleted), from a frozen two-lane research synthesis, a
 candidate-blind evaluation design, disjoint builder contexts, and an
 independent qualification. Every case's `provenance` key traces to
 the claim register of that synthesis; the evaluation design and

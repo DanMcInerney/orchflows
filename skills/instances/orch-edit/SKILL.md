@@ -5,8 +5,8 @@ role: worker
 ---
 
 Require: the terminal assembly [ticket](../../../contracts/work-item.md)
-with every section item complete; the voice contract and the document
-budget.
+naming the section items it assembles — none is a cut defect, refused;
+the voice contract and the document budget.
 
 Assemble in the outline's order, then edit as one document: one voice
 throughout, the whole brought inside budget, every cut logged. Voice,

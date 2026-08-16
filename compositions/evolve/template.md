@@ -19,7 +19,8 @@ already the campaign's, and the stubs behind it read that instead.
 
 Instantiate with all six placeholders: `target`, the identity being
 evolved; `incumbent`, its fixed starting result/evidence identity;
-`evaluation`, the frozen evaluation identity or `none` when one must be
+`evaluation`, the frozen evaluation identity — carrying mode, criteria,
+promotion rule, margin and search policy — or `none` when one must be
 designed first; `writer`, the skill each candidate is written through;
 `bound`, the campaign's budget; and `mutation_scope`, the candidate
 write scope — `02-campaign`'s, and every other stub is read-only. The

@@ -22,10 +22,10 @@ next cycle's friction.
 
 ## Fixed inputs
 
-- 01-deliver's `## Result` — the landed revision, the changed artifacts
-  and the covered line, by identity.
-- 00-mine's `## Result` — the proposal by path, with its evidence entries
-  and replay verdict.
+- 01-deliver's `## Result` — the landed revision, the changed artifacts,
+  the covered line and the replay run, by identity.
+- 00-mine's `## Result` — the proposal by path, with its evidence
+  entries.
 - {{workspace}} at the landed revision; its required checks as its own
   standards owner names them.
 - rules/improvement.md §5 — the replay condition.
@@ -34,7 +34,7 @@ next cycle's friction.
 
 - the owner's required checks PASS at the landed revision, rerun here | oracle: the workspace's own check commands at that revision | oracle_class: deterministic | provenance: pre-existing
 - the covered line is present in `improvement/covered.jsonl`, naming the proposal and the landed revision | oracle: `improvement/covered.jsonl` | oracle_class: deterministic | provenance: pre-existing
-- every ticket-naming evidence entry of the proposal replays green through `orch-frontier` over that one ticket against the amended owner, or the proposal records why replay does not apply; a delivery with neither exits on docs/vocabulary.md's `limited` clause | oracle: the replay run's terminal ticket status, or the proposal's stated non-applicability | oracle_class: deterministic | provenance: pre-existing
+- the replay run 01-deliver's Result names is terminal `complete`, or the proposal states why replay does not apply | oracle: that run's terminal ticket status, or the proposal's stated non-applicability | oracle_class: deterministic | provenance: pre-existing
 
 ## Return fields
 

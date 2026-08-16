@@ -25,8 +25,7 @@ these fields:
   a manifest carrying it names an unqualified benchmark no campaign
   or consumer may cite, and qualification replaces the marker. The
   marker is schema-legal and never task-complete: it satisfies no
-  objective that asks for a qualified package. Behavior when
-  qualification is unreachable is [the protocol](benchmaker-protocol.md)'s.
+  objective that asks for a qualified package.
 - `expected_cost` — declared units, per-execution limit, and suite estimate.
 - `gaps` — explicit unresolved elements; `[]` when none.
 - `protected_evidence` — the held-back file set, visibility, release policy,

@@ -241,7 +241,7 @@ CANARY_AND_BIN_LINES = {
         "- {{canary_set}} — the frozen golden work items under `.orch/canary/`,",
     ),
     "skills/workflows/orch-fixture/SKILL.md": (
-        "`.orch/canary/README.md` owns: the ticket under `tickets/canary/`, the",
+        "line in the canary set's README. Freeze it into that set, `.orch/canary/`:",
     ),
 }
 
@@ -256,11 +256,13 @@ FALLBACK_NEEDLE = "friction/<yyyy-mm>.jsonl"
 SELF_IMPROVE = "skills/workflows/orch-self-improve/SKILL.md"
 
 # The writer item 10 returned, quoted from its `subcommand` field. Both
-# improvement records reach the sink through it and through nothing else.
-IMPROVEMENT_WRITER = (
-    "scripts/tickets.py improvement --proposal",
-    "scripts/tickets.py improvement --covered",
-)
+# improvement records reach the sink through it and through nothing else:
+# the miner writes proposals, the template's deliver stub writes the
+# covered line — each named where it is written and nowhere else.
+IMPROVEMENT_WRITER = {
+    SELF_IMPROVE: "scripts/tickets.py improvement --proposal",
+    "compositions/self-improve/01-deliver.md": "tickets.py improvement --covered",
+}
 
 # Directories holding no owner: recorded data and a dated review record.
 SKIPPED_DIRECTORIES = frozenset({"benchmarks"})
@@ -460,9 +462,9 @@ class TestSelfImproveSelectsByScopeAndProject(unittest.TestCase):
         self.assertIn("never by the repository the session stands in", collapsed)
 
     def test_both_records_are_written_through_the_installed_writer(self):
-        for invocation in IMPROVEMENT_WRITER:
+        for relpath, invocation in IMPROVEMENT_WRITER.items():
             with self.subTest(invocation=invocation):
-                self.assertIn(invocation, self.text)
+                self.assertIn(invocation, doc(relpath))
 
     def test_the_coverage_record_is_named_once(self):
         self.assertEqual(1, self.text.count("covered.jsonl"))

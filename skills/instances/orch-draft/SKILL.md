@@ -8,11 +8,10 @@ Require: one claimed content [ticket](../../../contracts/work-item.md)
 naming its outline slot, voice contract, citation policy, length
 bound, and fixed evidence.
 
-Write the section from the supplied evidence only; every claim traces
-to it. Hold the voice contract — its dimensions per the ticket's craft
-reference — and the slot's section job in the whole. Cite per the
-spec's citation policy, marking and writing around an unsupportable
-claim as that same craft reference requires.
+Write the section so every claim traces to the fixed evidence; hold
+the voice contract and the slot's section job in the whole. Cite per
+the citation policy; an unsupportable claim is marked and written
+around, never smoothed.
 
 Never: import knowledge outside the evidence set; write into another
 slot; exceed the length bound and call it thoroughness; write true

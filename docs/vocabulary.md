@@ -37,17 +37,18 @@ that needs a different meaning needs a different word.
   run is a **composition instance**.
 - **utility** — a leaf generic skill; with the evaluators, exempt from
   the envelope per `rules/composition.md`.
+- **evaluator** — `orch-critique` or `orch-verify`: a skill rendering
+  findings or verdicts over a fixed artifact and never a deliverable;
+  exempt from the envelope per `rules/composition.md`.
 - **pack** — a T2 package of pure data satisfying the pack signature; a pack
   binds cells and never contains control flow.
 - **cell** — one field of the pack signature (slicing, executor, assembly,
   lens, oracle policy, workspace, required spec fields, craft).
 - **signature** — `contracts/pack-signature.md`: the cells every pack must
   provide and the sharing constraints between them.
-- **composition** — a T3 named workflow: a template directory under
+- **composition** — a T3 named workflow: a template (below) under
   `compositions/` (canonical) or `<repo>/.orchflows/compositions/`
-  (custom), instantiated by `tickets.py instantiate` and run by
-  `orch-frontier`; entry `routed | named`; admitted through
-  `orch-build`.
+  (custom); entry `routed | named`; admitted through `orch-build`.
 - **combinator** — one of the three ways a template composes its stubs:
   a `depends_on` edge, disjoint parallel stubs (no dependency path
   between them, so the frontier may run them together), and a loop stub
@@ -60,9 +61,7 @@ that needs a different meaning needs a different word.
 - **build scope** — where a built item lands and which oracles gate it:
   canonical (the library repository), user, or project. User- and
   project-scope items are custom — outside library law, binding only at
-  their scope; bounds per `orch-build`'s scopes reference. Bare "scope"
-  is never this term: a dispatch's is **write scope**, a proposal's is
-  its **workflow / project / environment scope**.
+  their scope; bounds per `orch-build`'s scopes reference.
 - **rule** — a clause of cross-cutting law in `rules/`; what any other
   file may do with one is `rules/visibility.md` §3's.
 - **call edge** — a resolved backticked skill name in a skill body; the call
@@ -93,9 +92,7 @@ that needs a different meaning needs a different word.
   imitate, by pointer plus each property the imitation must carry
   (`contracts/work-item.md`); always non-normative.
 - **stamp** — the pack fixed at intake, carried by a ticket's `pack`
-  field, which engines thereafter read blind. Choosing a request's
-  branch at intake is **intake routing** — a different act, owned by
-  `rules/topology.md`.
+  field, which engines thereafter read blind.
 - **domain** — the deliverable's kind (code, content, research,
   design); selects exactly one pack per run.
 - **work item / ticket** — a delegation packet made durable: packet parts
@@ -107,8 +104,9 @@ that needs a different meaning needs a different word.
   when `<id>.gate.verify` completes; a successor depends on the root id
   alone.
 - **template** — a directory of ticket stubs plus its `template.md`
-  manifest, instantiated into a run's ticket directory; the one form a
-  composition takes. Shape per `contracts/work-item.md`.
+  manifest, instantiated into a run's ticket directory by `tickets.py
+  instantiate` and run by `orch-frontier`; the one form a composition
+  takes. Shape per `contracts/work-item.md`.
 - **stub** — a template's unit: a ticket missing only `run`, `status`,
   `claimed_*` and any `{{placeholder}}`.
 - **terminal ticket** — the stub no other stub depends on; its
@@ -164,8 +162,8 @@ that needs a different meaning needs a different word.
   source, by identity.
 - **disagreement register** — where disagreement is recorded with both
   sides' evidence, never averaged away.
-- **lens** — the criteria set a reviewer applies, restated fresh from the
-  spec, never from unit output.
+- **lens** — the criteria set a reviewer applies; freshness law
+  `rules/verification.md` §6.
 - **gate** — the single review-fix pass a run crosses before final
   verification; `orch-build`'s admission and a benchmark's
   qualification are not gates.
@@ -195,14 +193,13 @@ composition).
   expressed in the pack's workspace semantics.
 - **join** — the single point where a caller integrates one child
   result, always `orch-integrate`. `rules/delegation.md` owns what
-  happens there and names its own terms: **attenuation** (§4), the
-  closed **disposition** set (§9, and `orch-triage` for its own), and
-  the two **blame** classes — caller under-supplied, child
-  under-delivered.
+  happens there and names its own terms: the closed **disposition** set
+  (§9, and `orch-triage` for its own), and the two **blame** classes —
+  caller under-supplied, child under-delivered.
 - **ladder / rung** — the ordered execution vehicles for one dispatch:
   tested script, inline, worker, planner; per `rules/delegation.md` §2.
-- **role** — planner (judgment) or worker (execution); a capability
-  class, never a persona; resolution order owned by `rules/roles.md` §4.
+- **role** — planner (judgment) or worker (execution); law in
+  `rules/roles.md`.
 - **profile** — a role's concrete model and effort binding on one host,
   owned by `skills/engines/orch-frontier/references/profiles.md`; a
   packet's optional `profile` slot names one explicitly, overriding role
@@ -218,10 +215,7 @@ composition).
   loop is complete (any oracle class per `contracts/verdict.md`; an
   iteration count is a deterministic one), and the resource cap —
   iterations, tool calls, tokens, time — whose exhaustion exits
-  `limited`; success-condition law owned by `rules/loops.md` §1. A
-  delivery whose terminal criteria hold except a guard the template
-  requires — a missing regression check — is `limited`, never
-  `complete`.
+  `limited`; success-condition law owned by `rules/loops.md` §1.
 - **iteration** — one fresh-context pass of a loop from the frozen goal
   plus worklog; two consecutive iterations without progress are a
   **stall**, which `rules/loops.md` exits `stalled`.

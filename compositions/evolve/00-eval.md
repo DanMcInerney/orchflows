@@ -8,7 +8,6 @@ bound: <= 40 tool calls
 excluded_actions:
   - mutating {{target}} or anything in {{mutation_scope}}
   - letting a candidate, variant or score enter the design
-  - call benchmaker
 independence: checker
 isolation: none
 profile: orch-worker
@@ -18,13 +17,14 @@ profile: orch-worker
 
 One candidate-blind evaluation for {{target}}, frozen before any
 candidate exists: its identity, mode, scoring criteria, required
-admission and regression criteria, and artifact-evidence adapter.
+admission and regression criteria, artifact-evidence adapter, promotion
+rule, margin, and search policy.
 
 ## Fixed inputs
 
 - {{evaluation}} — the frozen evaluation identity, or `none`. Skip when
-  a frozen evaluation identity is supplied: the terminal reads it
-  instead.
+  a frozen evaluation identity is supplied: the stubs behind it read
+  that instead.
 - {{incumbent}} — the fixed incumbent result/evidence identity for
   {{target}}, carrying everything orch-eval-design's Require expects an
   `inputs` field to carry.
@@ -38,7 +38,7 @@ admission and regression criteria, and artifact-evidence adapter.
 ## Completion test
 
 - the evaluation identity in force is frozen before generation — {{evaluation}} where that is not `none`, otherwise the identity this ticket's `## Result` names | oracle: the identity cited in `## Result` | oracle_class: deterministic | provenance: pre-existing
-- the design names its mode, scoring criteria, required admission and regression criteria, and evidence adapter, or returns a blocked partial result naming the evaluation-design gap | oracle: the design read against that field list | oracle_class: deterministic | provenance: authored-here
+- the design names its mode, scoring criteria, required admission and regression criteria, evidence adapter, promotion rule, margin, and search policy (`none` or a search-policy/v1 object), or returns a blocked partial result naming the evaluation-design gap | oracle: the design read against that field list | oracle_class: deterministic | provenance: authored-here
 
 ## Return fields
 

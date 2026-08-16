@@ -4,15 +4,21 @@ The loop body `02-campaign` dispatches, one generation per iteration. One
 trusted controller maps each iteration without transferring its promotion
 judgment.
 
-1. Derive the closed search policy, prior projection, settled wrapper, and
-   remaining bound from the frozen spec and latest Worklog entry. Before the
+1. For a search-policy/v1 campaign — a scalar campaign performs step 4
+   alone — derive the closed search policy, prior projection, settled
+   wrapper, and remaining bound from the frozen spec and latest Worklog
+   entry. Before the
    first plan, score the fixed incumbent under the frozen scoring criteria: its
    score card identity and complete numeric dimension vector form the admitted
    origin. If the mapping is incomplete, do not call the planner; return the
    blocked evaluation-design gap.
 2. Accept only the planner's canonical response — its request and response
    shapes are [the search-plan protocol](../../docs/search-plan-protocol.md)'s.
-   Append it to the current iteration through the Worklog owner. The latest
+   Append it to the current iteration through the Worklog owner. A scoring
+   lane scores and dispatches nothing: the children applying a candidate are
+   dispatched by the loop's own engine at the depth
+   [profiles.md](../../skills/engines/orch-frontier/references/profiles.md)
+   allows. The latest
    Worklog entry persists the accepted
    response's complete projection, including every archive member.
 3. For each ordered slot, map focus and public feedback or complementary parents
@@ -34,4 +40,3 @@ On restart, reuse an accepted response. Reconcile or block an ambiguous
 `in_flight` handoff; never redispatch a live slot. Active controller and planner
 revisions remain outside candidate mutation authority. A self-target candidate
 remains non-control and cannot become the active campaign controller or planner.
-A selected result is never activated by this campaign.

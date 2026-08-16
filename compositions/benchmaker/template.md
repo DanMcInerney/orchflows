@@ -29,9 +29,7 @@ the evidence that must exist for it), `bound` (the one caller bound the
 stage allocations
 partition), `pack` (the run's stamp, which `02-materialize`'s cut
 re-stamps per case kind where a case's domain differs) and `package`
-(where the benchmark is written). The run's bound is `00-acquire`'s
-`bound`, the one caller bound every stage's own allocation is
-partitioned from. Construction craft that no stub, rule
+(where the benchmark is written). Construction craft that no stub, rule
 or contract owns is
 [the protocol](../references/benchmaker-protocol.md); the manifest's
 field set is [its own](../references/benchmaker-manifest.md) and

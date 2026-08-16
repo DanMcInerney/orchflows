@@ -1616,11 +1616,16 @@ class VisibilitySymlinkClauseTest(unittest.TestCase):
             self.assertIn(named, clause, clause)
 
     def test_the_clause_keeps_what_it_already_owned(self):
-        """Amended, not replaced: §5 owns three further facts and keeps them."""
+        """Amended, not replaced: §5 keeps the symlink fact; the scripts'
+        stdlib / cross-platform / no-network fact is ARCHITECTURE.md's
+        scripts bullet (moved 2026-08-16, an ownership fact under a symlink
+        clause)."""
 
         clause = _visibility_clause(5)
-        for kept in ("No symlinks", "stdlib Python 3", "cross-platform", "network"):
-            self.assertIn(kept, clause, clause)
+        self.assertIn("No symlinks", clause, clause)
+        bullet = " ".join((ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8").split())
+        for kept in ("stdlib Python 3", "Windows and POSIX", "no network"):
+            self.assertIn(kept, bullet)
 
 
 class BareCommandNounTest(unittest.TestCase):
@@ -2166,8 +2171,10 @@ def record_verdicts():
     """
 
     recorded = {run: verdict(run) for run in fixture_sets()}
-    VERDICTS.write_text(
-        json.dumps(recorded, indent=1, sort_keys=True) + "\n", encoding="utf-8"
+    # Bytes with LF: a text-mode write on Windows would land CRLF and
+    # differ from every other host's recording.
+    VERDICTS.write_bytes(
+        (json.dumps(recorded, indent=1, sort_keys=True) + "\n").encode("utf-8")
     )
 
 

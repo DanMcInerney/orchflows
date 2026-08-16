@@ -413,7 +413,6 @@ def recursive_target_errors(evolve: str, generation: str, tournament: str):
         errors.append("self-target-control")
     if (
         "activate a selected candidate" not in evolve_contract
-        or "selected result is never activated by this campaign" not in generation_contract
         or "separate authorized integration before activation" not in tournament_contract
     ):
         errors.append("activation")

@@ -1,8 +1,6 @@
 # Design craft
 
-The design domain's terms, per the signature's craft cell.
-Framework-free the way content craft is genre-free: each term binds a
-marketing page, a dashboard, and a component library equally; framework
+The design domain's terms, per the signature's craft cell. Framework
 specifics live with the workspace's standards owner.
 
 ## Vocabulary
@@ -26,21 +24,23 @@ specifics live with the workspace's standards owner.
   where a token exists is synonym drift.
 - **scale** — the closed, ordered set of steps a token kind draws from
   (type scale, spacing scale); values land on steps, never between.
-- **hierarchy** — the order attention lands on a view; stated in the
-  spec, judged from captures, carried by size, weight, contrast, and
-  position, never by source order alone.
+- **design language** — the dimensions a judge scores: palette, type,
+  spacing rhythm, density, motion, hierarchy — the order attention
+  lands on a view, carried by size, weight, contrast, and position,
+  never by source order alone.
+- **accessibility bar** — the floor of contrast, focus visibility and
+  semantics, plus the exact check command deciding it.
 - **affordance** — what an element's appearance promises about
   interaction; kept when the behavior behind it matches the promise.
 
 ## Lens
 
-For `orch-critique`. Judge from fresh captures at the spec's covered
-identities.
+For `orch-critique`.
 
 - Design language: every view holds the spec's design language on
   each scored dimension, at every breakpoint.
-- Hierarchy: attention lands in the spec's stated order at every
-  covered identity, and focus order follows it.
+- Hierarchy: attention lands in the design language's stated order at
+  every covered identity, and focus order follows it.
 - Tokens: sampled rendered values trace to tokens and land on their
   scales.
 - States: every enumerated state has a capture; every affordance's
