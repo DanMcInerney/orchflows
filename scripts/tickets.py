@@ -16,6 +16,13 @@ exit 1; success exits 0. No outcome raises a traceback.
 never rendered as an unknown-subcommand error.
 
 Subcommands:
+    new <run> <id> --executor E --objective TEXT --criterion C
+        [--criterion C ...] [--depends-on a,b] [--write-scope p[,p]]
+        [--bound B] [--pack P] [--input I ...] [--excluded X ...]
+        [--profile P] [--independence gate|checker]
+        [--isolation required|none] [--return-fields TEXT]
+    new <run> --file <path>
+    instantiate <template-dir> --run <run> [--set k=v ...]
     list [--run R]
     ready [--run R]
     claim <run> <id> --by <name>
@@ -69,6 +76,30 @@ VALID_STATUSES = {
 ENGINE_EXECUTORS = frozenset(
     {"orch-compose", "orch-frontier", "orch-loop", "orch-panel", "orch-task"}
 )
+# contracts/verdict.md's `oracle_class`, and contracts/work-item.md's
+# optional oracle provenance. Both are closed sets, and this script is the
+# one place a criterion is graded against them.
+ORACLE_CLASSES = ("deterministic", "judged", "evidence")
+ORACLE_PROVENANCES = ("pre-existing", "authored-here")
+# contracts/work-item.md's compatibility floor, split by what a stub is
+# missing: a stub is a ticket without `run`, `status` and `claimed_*`, so
+# only the first group is required of one. `claimed_by` and `claimed_at`
+# are lifecycle, written on claim, and absent from both groups.
+REQUIRED_TICKET_KEYS = ("id", "executor", "depends_on", "write_scope", "bound")
+REQUIRED_LIFECYCLE_KEYS = ("run", "status")
+# One criterion is one bullet: `- text`, `* text`, or an enumerated
+# `1. text`. Up to three columns of indentation, because four is
+# indented-code content (CommonMark 4.4) and `_fence_run` reads it as such.
+CRITERION_BULLET_RE = re.compile(r"^ {0,3}(?:[-*+]|\d+[.)])\s+")
+# `oracle:` and `oracle_class:` are two keys, not one with a suffix: the
+# literal `oracle:` does not occur inside `oracle_class:`, so a plain search
+# for each answers independently. Case-insensitive because the library's own
+# tickets write `Oracle:` at the head of a sentence. An oracle's value runs
+# to the next `|` or end of line; a class or provenance is one word, so
+# ordinary sentence punctuation around it is not part of it.
+ORACLE_RE = re.compile(r"oracle:\s*([^|\n]*)", re.IGNORECASE)
+ORACLE_CLASS_RE = re.compile(r"oracle_class:\s*([A-Za-z_-]*)", re.IGNORECASE)
+PROVENANCE_RE = re.compile(r"provenance:\s*([A-Za-z_-]*)", re.IGNORECASE)
 DURATION_RE = re.compile(r"^(\d+)(m|h)$")
 DEFAULT_BOUND_MINUTES = 60
 # The shape of every UTC instant this script writes, stated once and read
@@ -107,6 +138,11 @@ SECTION_ORDER = (
     "Return fields",
 ) + EXECUTOR_SECTIONS
 SECTION_RANK = {name.lower(): i for i, name in enumerate(SECTION_ORDER)}
+# The sections a ticket carries whatever its state. `## Handoff` is the one
+# optional section — it exists only once a ticket suspends — so it is the
+# one name in SECTION_ORDER that is not required here.
+OPTIONAL_SECTION = "Handoff"
+REQUIRED_SECTIONS = tuple(name for name in SECTION_ORDER if name != OPTIONAL_SECTION)
 # contracts/work-item.md: the one `isolation` value that means this item
 # executes in a workspace of its own. The sibling script grades the same
 # declaration; the spelling belongs to the contract, not to either script.
@@ -152,6 +188,34 @@ RUN_STATE_USAGE = (
     "(--artifact <name> [--replace] | --terminal <state>) "
     "(--file <path> | --text <string>))"
 )
+NEW_USAGE = (
+    "new <run> <id> --executor E --objective TEXT --criterion C "
+    "[--criterion C ...] [--depends-on a,b] [--write-scope p[,p]] [--bound B] "
+    "[--pack P] [--input I ...] [--excluded X ...] [--profile P] "
+    "[--independence gate|checker] [--isolation required|none] "
+    "[--return-fields TEXT] | new <run> --file <path>"
+)
+# The one field `new` supplies a default for: contracts/work-item.md reads an
+# absent lease as DEFAULT_BOUND_MINUTES, so writing that same number is the
+# declaration the reader already gets, said out loud.
+NEW_DEFAULT_BOUND = f"{DEFAULT_BOUND_MINUTES}m"
+NEW_DEFAULT_INPUTS = "None."
+NEW_DEFAULT_RETURN_FIELDS = (
+    "status; result (what changed, by identity); verification; feedback; risks"
+)
+# contracts/work-item.md's two optional enums, checked at the interface that
+# writes them rather than only where they are read.
+INDEPENDENCE_VALUES = ("gate", "checker")
+ISOLATION_VALUES = (REQUIRED_ISOLATION, "none")
+INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
+# A template is a directory: this file, which declares the template's name,
+# entry and placeholders, plus one `<id>.md` ticket stub per node. Every
+# other markdown file in the directory is a stub.
+TEMPLATE_FILE = "template.md"
+# `{{name}}`, and the same name written with spaces inside the braces. The
+# body is anything but a brace, so an unfilled placeholder is findable after
+# substitution and nothing spans two of them.
+PLACEHOLDER_RE = re.compile(r"\{\{\s*([^{}]*?)\s*\}\}")
 IMPROVEMENT_USAGE = (
     "improvement (--proposal <name> (--file <path> | --text <string>) "
     "| --covered <line>)"
@@ -162,6 +226,8 @@ IMPROVEMENT_USAGE = (
 PROPOSALS_DIR = "proposals"
 COVERAGE_RECORD_NAME = "covered.jsonl"
 SUBCOMMAND_USAGE = {
+    "new": NEW_USAGE,
+    "instantiate": INSTANTIATE_USAGE,
     "list": "list [--run R]",
     "ready": "ready [--run R]",
     "claim": "claim <run> <id> --by <name>",
@@ -172,6 +238,11 @@ SUBCOMMAND_USAGE = {
     "improvement": IMPROVEMENT_USAGE,
 }
 SUBCOMMAND_SUMMARY = {
+    "new": "Issue one ticket into the run, refusing any shape `ticket_defects` "
+    "reports before anything is written; --file places one already written.",
+    "instantiate": "Instantiate one template directory into a run's tickets: "
+    "placeholders filled, every stub graded, the graph checked for edges, "
+    "cycles and its single terminal, then written all or none.",
     "list": "Every ticket in the tracker, or in one run, as summaries.",
     "ready": "The tickets whose dependencies are complete and whose claim is "
     "free or stale; promotes an eligible `pending` to `ready`.",
@@ -203,6 +274,20 @@ VALUE_FLAGS = frozenset(
     {
         "--run",
         "--by",
+        "--executor",
+        "--objective",
+        "--criterion",
+        "--depends-on",
+        "--write-scope",
+        "--bound",
+        "--pack",
+        "--input",
+        "--excluded",
+        "--profile",
+        "--independence",
+        "--isolation",
+        "--return-fields",
+        "--set",
         "--section",
         "--file",
         "--text",
@@ -672,10 +757,17 @@ def _set_frontmatter_field(text: str, key: str, value: str) -> str:
     for i in range(1, end):
         line_key = lines[i].split(":", 1)[0].strip()
         if line_key == key:
-            lines[i] = f"{key}: {value}{newline}"
+            lines[i] = _frontmatter_line(key, value, newline)
             return "".join(lines)
-    lines.insert(end, f"{key}: {value}{newline}")
+    lines.insert(end, _frontmatter_line(key, value, newline))
     return "".join(lines)
+
+
+def _frontmatter_line(key: str, value: str, newline: str) -> str:
+    """One scalar frontmatter line. An empty value carries no trailing space:
+    `claimed_by:` is how an unclaimed ticket reads on disk."""
+
+    return f"{key}: {value}{newline}" if value != "" else f"{key}:{newline}"
 
 
 class TicketFormatError(ValueError):
@@ -905,6 +997,142 @@ def _load_ticket(path: Path) -> dict:
     return result
 
 
+# --- ticket shape -----------------------------------------------------------
+#
+# The one owner of ticket-shape law in code. `new`, `instantiate` and
+# `packet` all grade through these two functions and nothing grades a
+# ticket any other way: a second spelling of the same law is how an issued
+# ticket passes the cutter and is refused by the dispatcher.
+
+
+def _criteria(section_text: str) -> list:
+    """The completion-test criteria in ``section_text``, one string each.
+
+    A criterion is a bullet; the lines under it that are not bullets are its
+    own continuation, because a criterion long enough to wrap carries its
+    oracle on the second line and reading each line as a criterion would
+    report a defect on a clean one. A bullet inside a fenced block is quoted
+    content — every deliverable here is markdown and executors quote ticket
+    bodies at length — so fences are skipped exactly as ``_scan_sections``
+    skips them.
+    """
+
+    criteria: list = []
+    fence = None
+    for line in section_text.splitlines():
+        run = _fence_run(line)
+        if fence is not None:
+            if run is not None and run[0] == fence[0] and len(run) >= len(fence):
+                fence = None
+            continue
+        if run is not None:
+            fence = run
+            continue
+        stripped = line.strip()
+        if not stripped:
+            continue
+        match = CRITERION_BULLET_RE.match(line)
+        if match:
+            criteria.append(line[match.end():].strip())
+        elif criteria:
+            criteria[-1] = f"{criteria[-1]} {stripped}"
+    return criteria
+
+
+def criterion_defects(section_text: str) -> list:
+    """Every defect in one ``## Completion test`` section, criterion by
+    criterion.
+
+    Per contracts/work-item.md a criterion names its oracle and its
+    oracle_class, and may name its provenance; per contracts/verdict.md the
+    classes are a closed set. Graded per criterion rather than over the
+    section, because a section whose first criterion names a class and whose
+    second names none satisfies any whole-section test while dispatching an
+    unverifiable item.
+    """
+
+    criteria = _criteria(section_text)
+    if not criteria:
+        return [
+            "completion test states no criterion: one bullet per criterion, "
+            "each naming `oracle:` and `oracle_class:`"
+        ]
+    defects = []
+    for number, text in enumerate(criteria, start=1):
+        oracle = ORACLE_RE.search(text)
+        if oracle is None or not oracle.group(1).strip(" `.,;*"):
+            defects.append(
+                f"criterion {number} names no `oracle:`, the exact check that "
+                f"decides it: {text[:60]!r}"
+            )
+        oracle_class = ORACLE_CLASS_RE.search(text)
+        value = oracle_class.group(1).strip().lower() if oracle_class else ""
+        if not value:
+            defects.append(
+                f"criterion {number} names no `oracle_class:`, one of "
+                f"{list(ORACLE_CLASSES)}: {text[:60]!r}"
+            )
+        elif value not in ORACLE_CLASSES:
+            defects.append(
+                f"criterion {number} names oracle_class '{value}', not one of "
+                f"{list(ORACLE_CLASSES)}"
+            )
+        provenance = PROVENANCE_RE.search(text)
+        declared = provenance.group(1).strip().lower() if provenance else ""
+        if provenance is not None and declared not in ORACLE_PROVENANCES:
+            defects.append(
+                f"criterion {number} names provenance '{declared}', not one of "
+                f"{list(ORACLE_PROVENANCES)}"
+            )
+    return defects
+
+
+def ticket_defects(text: str, stub: bool = False) -> list:
+    """Every way ``text`` is not a ticket per contracts/work-item.md.
+
+    ``stub=True`` grades a template's stub: a ticket missing only ``run``,
+    ``status`` and ``claimed_*``, which instantiation adds. Everything else
+    is graded identically, so a stub admitted into a template is a ticket
+    the moment it is instantiated.
+
+    A file with no frontmatter is that one defect and no other: every check
+    below reads the frontmatter or the body it heads, so listing what a
+    non-ticket also lacks says nothing a reader can act on.
+    """
+
+    data = _parse_frontmatter(text)
+    if not data:
+        return [
+            "no frontmatter: a ticket opens with a '---' block "
+            "(contracts/work-item.md)"
+        ]
+    defects = []
+    required = REQUIRED_TICKET_KEYS if stub else (
+        REQUIRED_TICKET_KEYS + REQUIRED_LIFECYCLE_KEYS
+    )
+    for key in ("id", "run", "status", "executor", "depends_on", "write_scope", "bound"):
+        if key in required and key not in data:
+            defects.append(f"frontmatter has no '{key}'")
+    status = data.get("status")
+    if isinstance(status, str) and status.strip():
+        # A stub carries no status, but one that carries a wrong status is
+        # refused as any ticket is: the enum is the contract's, not the
+        # lifecycle stage's.
+        normalized = status.strip().strip("`").strip()
+        if normalized not in VALID_STATUSES:
+            defects.append(
+                f"status '{normalized}' is not one of {sorted(VALID_STATUSES)}"
+            )
+    sections = {name.strip().lower(): body for name, body in _sections(text).items()}
+    for name in REQUIRED_SECTIONS:
+        if name.lower() not in sections:
+            defects.append(f"no '## {name}' section")
+    completion = sections.get("completion test")
+    if completion is not None:
+        defects.extend(criterion_defects(completion))
+    return defects
+
+
 # --- claim staleness --------------------------------------------------------
 
 
@@ -954,6 +1182,461 @@ def _extract_flag(args: list, flag: str):
             return value
         del args[idx : idx + 1]
     return None
+
+
+def _extract_all(args: list, flag: str) -> list:
+    """Every value of a flag that may be repeated, in the order given.
+
+    ``--criterion`` and ``--input`` name one thing each; a ticket has as
+    many as the cut found. ``_extract_flag`` answers the first and removes
+    it, so draining it is the whole implementation — and a trailing flag
+    with no value is removed and ends the drain rather than looping on it.
+    """
+
+    values = []
+    while flag in args:
+        value = _extract_flag(args, flag)
+        if value is None:
+            break
+        values.append(value)
+    return values
+
+
+# --- issuing ------------------------------------------------------------
+
+
+def _split_commas(value) -> list:
+    """One comma-separated flag value as a list, empty entries dropped."""
+
+    return [part.strip() for part in str(value or "").split(",") if part.strip()]
+
+
+def _frontmatter_list(key: str, values) -> list:
+    """One frontmatter list, as the lines that carry it.
+
+    Inline ``[a, b]`` unless a value carries a comma, which the inline
+    reader (``_parse_frontmatter``) splits on: an excluded action is prose
+    and prose has commas in it, so those go one per line instead. Both
+    shapes read back as the same list.
+    """
+
+    items = list(values)
+    if any("," in item for item in items):
+        return [f"{key}:"] + [f"- {item}" for item in items]
+    return [f"{key}: [{', '.join(items)}]"]
+
+
+def _render_ticket(fields: dict, sections: list) -> str:
+    """One ticket's markdown: frontmatter in the contract's key order, then
+    its body sections in the contract's section order.
+
+    ``fields`` values are already strings or lists; ``None`` omits an
+    optional key entirely, so nothing is written that the reader would have
+    to interpret as absent.
+    """
+
+    lines = ["---"]
+    for key, value in fields.items():
+        if value is None:
+            continue
+        if isinstance(value, list):
+            lines.extend(_frontmatter_list(key, value))
+        else:
+            lines.append(f"{key}: {value}" if value != "" else f"{key}:")
+    lines.append("---")
+    body = []
+    for heading, content in sections:
+        # A blank line under the heading, the shape `_write_section` writes
+        # back into: an executor's first result must not have to reflow the
+        # section the cut left it.
+        body.append(f"\n## {heading}\n")
+        if content:
+            body.append(f"\n{content}\n")
+    return "\n".join(lines) + "\n" + "".join(body)
+
+
+def _cmd_new(rest):
+    """Issue one ticket into the run, or place one already written.
+
+    The cut's own refusal: everything ``ticket_defects`` reports is refused
+    here, before any directory is created, so a ticket that reaches the sink
+    is one every later subcommand accepts. An off-contract cut that lands
+    and is refused at dispatch costs the dispatch; refusing it here costs
+    the flag that was wrong.
+
+    ``--file`` places a ticket its author already wrote, through the same
+    validation and the same refusal to overwrite an id that exists. The run
+    argument and the file's own ``run`` must agree: the argument decides
+    where it lands, and a ticket landing in a run it does not name is a
+    ticket no reader can trace back.
+    """
+
+    args = list(rest)
+    file_arg = _extract_flag(args, "--file")
+    executor = _extract_flag(args, "--executor")
+    objective = _extract_flag(args, "--objective")
+    criteria = _extract_all(args, "--criterion")
+    depends_on = _extract_flag(args, "--depends-on")
+    write_scope = _extract_flag(args, "--write-scope")
+    bound = _extract_flag(args, "--bound")
+    pack = _extract_flag(args, "--pack")
+    inputs = _extract_all(args, "--input")
+    excluded = _extract_all(args, "--excluded")
+    profile = _extract_flag(args, "--profile")
+    independence = _extract_flag(args, "--independence")
+    isolation = _extract_flag(args, "--isolation")
+    return_fields = _extract_flag(args, "--return-fields")
+    stray = next((arg for arg in args if arg.startswith("-")), None)
+    if stray is not None:
+        return {"error": f"new does not accept {stray}. usage: {NEW_USAGE}"}
+
+    if file_arg is not None:
+        supplied = [
+            name
+            for name, value in (
+                ("--executor", executor), ("--objective", objective),
+                ("--criterion", criteria or None), ("--depends-on", depends_on),
+                ("--write-scope", write_scope), ("--bound", bound),
+                ("--pack", pack), ("--input", inputs or None),
+                ("--excluded", excluded or None), ("--profile", profile),
+                ("--independence", independence), ("--isolation", isolation),
+                ("--return-fields", return_fields),
+            )
+            if value is not None
+        ]
+        if supplied:
+            return {
+                "error": f"--file places a ticket already written; it takes none "
+                f"of {supplied}. usage: {NEW_USAGE}"
+            }
+        if len(args) != 1:
+            return {"error": f"usage: {NEW_USAGE}"}
+        return _place_ticket(args[0], file_arg)
+
+    if len(args) != 2:
+        return {"error": f"usage: {NEW_USAGE}"}
+    run, ticket_id = args
+    for kind, value in (("run id", run), ("ticket id", ticket_id)):
+        invalid = _segment_error(kind, value)
+        if invalid is not None:
+            return invalid
+    missing = [
+        name
+        for name, value in (
+            ("--executor", executor), ("--objective", objective),
+            ("--criterion", criteria or None),
+        )
+        if value is None
+    ]
+    if missing:
+        return {
+            "error": f"new requires {', '.join(missing)}. usage: {NEW_USAGE}"
+        }
+    for flag, value, allowed in (
+        ("--independence", independence, INDEPENDENCE_VALUES),
+        ("--isolation", isolation, ISOLATION_VALUES),
+    ):
+        if value is not None and value.strip() not in allowed:
+            return {
+                "error": f"{flag} '{value}' is not one of {list(allowed)} "
+                "(contracts/work-item.md)"
+            }
+
+    dependencies = _split_commas(depends_on)
+    fields = {
+        "id": ticket_id,
+        "run": run,
+        # contracts/work-item.md: an item issued with an incomplete
+        # depends_on starts pending; orch-frontier owns its exit to ready.
+        "status": "pending" if dependencies else "ready",
+        "executor": executor,
+        "pack": pack,
+        "independence": independence,
+        "depends_on": dependencies,
+        "write_scope": _split_commas(write_scope),
+        "excluded_actions": excluded or None,
+        "isolation": isolation,
+        "bound": bound or NEW_DEFAULT_BOUND,
+        "claimed_by": "",
+        "claimed_at": "",
+        "profile": profile,
+    }
+    sections = [
+        ("Objective", objective),
+        ("Fixed inputs", "\n".join(f"- {item}" for item in inputs) or NEW_DEFAULT_INPUTS),
+        ("Completion test", "\n".join(f"- {item}" for item in criteria)),
+        ("Return fields", return_fields or NEW_DEFAULT_RETURN_FIELDS),
+        ("Result", ""),
+        ("Verification", ""),
+        ("Feedback", "[]"),
+        ("Risks", "[]"),
+    ]
+    return _issue_ticket(run, ticket_id, _render_ticket(fields, sections))
+
+
+def _place_ticket(run: str, source: str):
+    """``new --file``: one already-written ticket, validated and placed."""
+
+    invalid = _segment_error("run id", run)
+    if invalid is not None:
+        return invalid
+    try:
+        text = Path(source).read_text(encoding="utf-8")
+    except OSError as error:
+        return {"error": f"unreadable ticket file: {error}"}
+    data = _parse_frontmatter(text)
+    ticket_id = data.get("id") if isinstance(data.get("id"), str) else None
+    if not ticket_id:
+        return {"error": f"ticket file {source} names no 'id' in its frontmatter"}
+    invalid = _segment_error("ticket id", ticket_id)
+    if invalid is not None:
+        return invalid
+    declared = data.get("run")
+    if isinstance(declared, str) and declared.strip() and declared.strip() != run:
+        return {
+            "error": f"ticket file {source} names run '{declared.strip()}', placed "
+            f"into run '{run}': one ticket belongs to one run"
+        }
+    return _issue_ticket(run, ticket_id, text)
+
+
+def _issue_ticket(run: str, ticket_id: str, text: str):
+    """Grade one rendered ticket, then write it — in that order.
+
+    Nothing is created before the grade: a refused cut leaves the run
+    directory exactly as it found it, including not existing.
+    """
+
+    defects = ticket_defects(text)
+    if defects:
+        return {
+            "error": f"ticket {run}/{ticket_id} is off contract "
+            f"(contracts/work-item.md): " + "; ".join(defects)
+        }
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {"error": NO_SINK_ERROR}
+    ticket_path = tickets_root / run / f"{ticket_id}.md"
+    if ticket_path.exists():
+        return {
+            "error": f"ticket id '{ticket_id}' is already issued in run '{run}': "
+            f"{ticket_path}. An id is stable once issued (contracts/work-item.md)"
+        }
+    try:
+        ticket_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(ticket_path, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(text)
+    except OSError as error:
+        return {"error": f"unwritable ticket: {error}"}
+    return {
+        "new": {
+            "run": run,
+            "id": ticket_id,
+            "path": str(ticket_path),
+            "status": _parse_frontmatter(text).get("status"),
+        }
+    }
+
+
+def _template_stubs(directory: Path, values: dict):
+    """``(stubs, error)`` — every stub in the template, substituted and graded.
+
+    ``stubs`` maps a stub id to its text and its dependency ids, in file
+    order. Each stub is substituted first and graded after, because a
+    placeholder standing where an executor or a bound belongs is a defect
+    only until it is filled.
+    """
+
+    paths = sorted(
+        path for path in directory.glob("*.md") if path.name != TEMPLATE_FILE
+    )
+    if not paths:
+        return None, {
+            "error": f"template {directory} holds no stub: a template is "
+            f"{TEMPLATE_FILE} plus one or more <id>.md ticket stubs"
+        }
+    stubs = {}
+    for path in paths:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as error:
+            return None, {"error": f"unreadable stub {path.name}: {error}"}
+        text = PLACEHOLDER_RE.sub(
+            lambda match: values.get(match.group(1), match.group(0)), text
+        )
+        unfilled = PLACEHOLDER_RE.search(text)
+        if unfilled is not None:
+            return None, {
+                "error": f"stub {path.stem} carries the unfilled placeholder "
+                f"'{{{{{unfilled.group(1)}}}}}': supply it with "
+                f"--set {unfilled.group(1)}=<value>"
+            }
+        defects = ticket_defects(text, stub=True)
+        if defects:
+            return None, {
+                "error": f"stub {path.stem} is off contract "
+                f"(contracts/work-item.md): " + "; ".join(defects)
+            }
+        data = _parse_frontmatter(text)
+        declared_id = str(data.get("id") or "").strip()
+        if declared_id != path.stem:
+            return None, {
+                "error": f"stub {path.name} names id '{declared_id}': a stub's "
+                "id is its file stem, and `depends_on` names ids"
+            }
+        stubs[path.stem] = (text, list(data.get("depends_on") or []))
+    return stubs, None
+
+
+def _template_order(stubs: dict):
+    """``(ids_in_topological_order, error)`` for one template's graph.
+
+    Three refusals, in the order that makes each message true: an edge to a
+    stub that is not here, then a cycle, then a terminal count that is not
+    one. The terminal stub's completion test is the template's done check,
+    so two of them is two done checks and none is a graph with no end.
+    """
+
+    for stub_id, (_, dependencies) in stubs.items():
+        for dependency in dependencies:
+            if dependency not in stubs:
+                return None, {
+                    "error": f"stub {stub_id} depends on '{dependency}', which is "
+                    "not a stub in this template"
+                }
+    remaining = {stub_id: set(deps) for stub_id, (_, deps) in stubs.items()}
+    ordered = []
+    while remaining:
+        ready = sorted(
+            stub_id for stub_id, deps in remaining.items() if not deps
+        )
+        if not ready:
+            return None, {
+                "error": "template is cyclic: no stub in "
+                f"{sorted(remaining)} is free of dependencies"
+            }
+        for stub_id in ready:
+            del remaining[stub_id]
+            ordered.append(stub_id)
+        for deps in remaining.values():
+            deps.difference_update(ready)
+    depended_on = {
+        dependency for _, deps in stubs.values() for dependency in deps
+    }
+    terminals = sorted(set(stubs) - depended_on)
+    if len(terminals) != 1:
+        return None, {
+            "error": f"template has {len(terminals)} terminal stubs {terminals}; "
+            "exactly one stub is terminal, and its completion test is the "
+            "template's done check"
+        }
+    return ordered, None
+
+
+def _cmd_instantiate(rest):
+    """Instantiate one template into one run's tickets.
+
+    A template is a directory: ``template.md`` and one file per stub. What
+    happens here is substitution, the same grading every issued ticket gets,
+    the graph checks a directory of files cannot carry (edges, a cycle, the
+    single terminal), and then one write per stub — in that order, so a
+    template refused for its last stub has written none of the others.
+    """
+
+    args = list(rest)
+    run = _extract_flag(args, "--run")
+    settings = _extract_all(args, "--set")
+    stray = next((arg for arg in args if arg.startswith("-")), None)
+    if stray is not None:
+        return {
+            "error": f"instantiate does not accept {stray}. usage: {INSTANTIATE_USAGE}"
+        }
+    if len(args) != 1:
+        return {"error": f"usage: {INSTANTIATE_USAGE}"}
+    if run is None:
+        return {"error": f"instantiate requires --run <run>. usage: {INSTANTIATE_USAGE}"}
+    invalid = _segment_error("run id", run)
+    if invalid is not None:
+        return invalid
+    directory = Path(args[0])
+    if not directory.is_dir():
+        return {"error": f"template directory not found: {directory}"}
+    template_path = directory / TEMPLATE_FILE
+    if not template_path.is_file():
+        return {
+            "error": f"template directory {directory} has no {TEMPLATE_FILE}: it "
+            "declares the template's name, entry and placeholders"
+        }
+    values = {}
+    for setting in settings:
+        key, separator, value = setting.partition("=")
+        if not separator or not key.strip():
+            return {
+                "error": f"--set takes k=v: '{setting}' names no value. "
+                f"usage: {INSTANTIATE_USAGE}"
+            }
+        values[key.strip()] = value
+    try:
+        template = _parse_frontmatter(template_path.read_text(encoding="utf-8"))
+    except OSError as error:
+        return {"error": f"unreadable {TEMPLATE_FILE}: {error}"}
+    declared = template.get("placeholders")
+    declared = declared if isinstance(declared, list) else []
+    unsupplied = [name for name in declared if name not in values]
+    if unsupplied:
+        return {
+            "error": f"{TEMPLATE_FILE} declares the placeholders {unsupplied} that "
+            "no --set supplies"
+        }
+
+    stubs, error = _template_stubs(directory, values)
+    if error is not None:
+        return error
+    ordered, error = _template_order(stubs)
+    if error is not None:
+        return error
+
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {"error": NO_SINK_ERROR}
+    run_dir = tickets_root / run
+    rendered = []
+    for stub_id in ordered:
+        text, dependencies = stubs[stub_id]
+        text = _set_frontmatter_field(text, "run", run)
+        text = _set_frontmatter_field(
+            text, "status", "pending" if dependencies else "ready"
+        )
+        text = _set_frontmatter_field(text, "claimed_by", "")
+        text = _set_frontmatter_field(text, "claimed_at", "")
+        path = run_dir / f"{stub_id}.md"
+        if path.exists():
+            return {
+                "error": f"ticket id '{stub_id}' is already issued in run '{run}': "
+                f"{path}. Nothing was written"
+            }
+        rendered.append((path, text))
+    written = []
+    try:
+        run_dir.mkdir(parents=True, exist_ok=True)
+        for path, text in rendered:
+            with open(path, "w", encoding="utf-8", newline="\n") as handle:
+                handle.write(text)
+            written.append(path)
+    except OSError as error:
+        # All or none: a half-instantiated template is a run with a graph
+        # that has no terminal and dependencies that never complete.
+        for path in written:
+            path.unlink(missing_ok=True)
+        return {"error": f"unwritable ticket: {error}. Nothing was written"}
+    return {
+        "instantiate": {
+            "template": str(template.get("name") or directory.name),
+            "run": run,
+            "ids": ordered,
+            "paths": [str(path) for path, _ in rendered],
+        }
+    }
 
 
 # --- subcommands --------------------------------------------------------
@@ -1152,8 +1835,13 @@ def _cmd_packet(rest):
     completion = sections.get("Completion test", "")
     if not completion:
         missing.append("completion test (## Completion test)")
-    elif "oracle_class" not in completion.lower():
-        missing.append("oracle_class on every completion-test criterion")
+    else:
+        # Through the shape owner, criterion by criterion. The substring test
+        # this replaces read the section once and reported on "every
+        # criterion", so a ticket whose first criterion named a class and
+        # whose second named none was dispatched under a message that said
+        # otherwise.
+        missing.extend(criterion_defects(completion))
     if missing:
         return {"error": "packet incomplete: " + "; ".join(missing)}
 
@@ -1738,14 +2426,18 @@ def _cmd_improvement(rest):
 def _dispatch(argv):
     if not argv:
         return {
-            "error": "missing subcommand: list | ready | claim | set-status | "
-            "packet | result | run-state | improvement"
+            "error": "missing subcommand: new | instantiate | list | ready | "
+            "claim | set-status | packet | result | run-state | improvement"
         }
     command, rest = argv[0], argv[1:]
     if command in HELP_COMMANDS:
         return _cmd_help()
     if command in SUBCOMMAND_USAGE and _help_requested(rest):
         return _cmd_help(command)
+    if command == "new":
+        return _cmd_new(rest)
+    if command == "instantiate":
+        return _cmd_instantiate(rest)
     if command == "list":
         return _cmd_list(rest)
     if command == "ready":
