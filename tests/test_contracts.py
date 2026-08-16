@@ -74,98 +74,109 @@ class TestWorkItemContract(unittest.TestCase):
         ):
             self.assertIn(f"## {header}", text, f"work-item.md is missing body section '## {header}'")
 
-    def test_status_enum_includes_pending_as_non_terminal(self):
+    def test_body_sections_are_listed_in_contract_order(self):
+        text = read("work-item.md").split("## Body sections", 1)[-1].split("\n## Dispatch", 1)[0]
+        order = [
+            "Objective", "Fixed inputs", "Completion test", "Return fields",
+            "Result", "Verification", "Feedback", "Risks", "Handoff",
+        ]
+        seen = [text.index(f"`## {h}`") for h in order]
+        self.assertEqual(seen, sorted(seen), "work-item.md lists the body sections out of contract order")
+
+    def test_status_enum_is_the_eight_ticket_statuses(self):
         text = read("work-item.md")
-        self.assertIn("`pending`", text, "work-item.md is missing the `pending` status")
+        for status in (
+            "pending", "ready", "claimed", "suspended", "complete",
+            "blocked", "failed", "limited",
+        ):
+            self.assertIn(f"`{status}`", text, f"work-item.md is missing the `{status}` status")
         self.assertIn("orch-frontier", text, "work-item.md does not name orch-frontier as the pending->ready owner")
+        self.assertIn("`orch-integrate`", text, "work-item.md does not name the join as the terminal-status writer")
 
     def test_ticket_result_write_is_outside_write_scope(self):
         text = read("work-item.md")
         self.assertIn("outside `write_scope`", text, "work-item.md does not state the ticket write is outside write_scope")
 
-    def test_checker_correction_authority_rides_the_write_scope(self):
-        text = read_flat("work-item.md")
-        self.assertIn(
-            "A §10 checker corrects inside this same `write_scope`", text,
-            "work-item.md does not carry the §10 checker's correction authority",
-        )
-
-    def test_status_enum_includes_suspended_as_non_terminal(self):
-        text = read_flat("work-item.md")
-        self.assertIn("`suspended`", text, "work-item.md is missing the `suspended` status")
-        self.assertIn(
-            "the ticket stays claimed, resumable from its `## Handoff`", text,
-            "work-item.md does not define suspended as the resumable non-terminal wait",
-        )
-
-    def test_join_alone_writes_terminal_status(self):
-        text = read_flat("work-item.md")
-        self.assertIn(
-            "the join alone sets terminal `status`", text,
-            "work-item.md does not reserve terminal status to the join",
-        )
-        self.assertIn(
-            "is set only by the join (`orch-integrate`), never by the executor", text,
-            "work-item.md does not name the join as the sole terminal-status writer",
-        )
-
-    def test_handoff_section_carries_the_three_verbatim_clauses(self):
-        text = read_flat("work-item.md")
-        self.assertIn("`## Handoff`", text, "work-item.md is missing the optional ## Handoff section")
-        for clause in (
-            "A handoff is complete when a fresh agent can resume from it "
-            "without reading the suspended agent's transcript.",
-            "Suspension and escalation each happen at most once per "
-            "ticket; a second is a terminal `blocked`.",
-            "Compact to identities and verdicts; redact transcript prose.",
+    def test_absorbs_the_four_supersession_sections(self):
+        text = read("work-item.md")
+        for heading in (
+            "## Dispatch", "## Root ticket", "## Template and stub",
+            "## Executor form",
         ):
-            self.assertIn(clause, text, f"work-item.md ## Handoff is missing the verbatim clause {clause!r}")
+            self.assertIn(
+                f"\n{heading}\n", text,
+                f"work-item.md is missing the '{heading}' section the "
+                "spec.md/delegation.md absorption adds",
+            )
 
-    def test_handoff_resumption_reuses_accepted_evidence(self):
-        text = read_flat("work-item.md")
+    def test_dispatch_section_names_the_six_packet_parts(self):
+        text = read("work-item.md")
+        for part in (
+            "`objective`", "`inputs`", "`authority`", "`bounds`",
+            "`return_contract`", "`reply_to`",
+        ):
+            self.assertIn(part, text, f"work-item.md does not name the packet part {part}")
+
+    def test_root_ticket_names_its_stamp_and_its_gate_subtree(self):
+        text = read("work-item.md")
+        for token in (
+            "`orch-decompose`", "`required_spec_fields`", "`<id>.NN`",
+            "`<id>.gate.critique.<lens>`", "`<id>.gate.repair`",
+            "`<id>.gate.verify`", "`plan_gate`",
+        ):
+            self.assertIn(token, text, f"work-item.md's root ticket does not name {token}")
+
+    def test_template_and_stub_key_set(self):
+        text = read("work-item.md")
+        for token in (
+            "`template.md`", "`name`", "`description`", "`entry`",
+            "`placeholders`", "`{{placeholder}}`", "terminal stub",
+            "tickets.py instantiate",
+        ):
+            self.assertIn(
+                token, text,
+                f"work-item.md's template register does not name {token}",
+            )
+
+    def test_executor_form_admits_a_tested_script(self):
+        text = read("work-item.md")
         self.assertIn(
-            "On resumption, accepted evidence stays accepted — re-verify "
-            "only entries the handoff marks unverified or invalidated.",
-            text, "work-item.md ## Handoff is missing the resumption-reuse sentence",
+            "`script:<repo-relative path>`", text,
+            "work-item.md does not admit the `script:` executor form",
         )
 
-    def test_filing_law_lands_at_artifact_primacy_strength(self):
+    def test_the_lease_runs_on_artifact_motion_not_wall_clock(self):
         text = read_flat("work-item.md")
-        self.assertIn(
-            "results land as cited artifacts in the ticket", text,
-            "work-item.md is missing the filing law",
+        self.assertEqual(
+            text.count("wall clock"), 1,
+            "work-item.md names wall clock outside the one negating clause",
         )
         self.assertIn(
-            "never as extra return fields", text,
-            "work-item.md filing law does not forbid extra return fields",
+            "never rests on wall clock alone", text,
+            "work-item.md's lease does not negate wall clock as the staleness test",
         )
-        self.assertIn(
-            "rules/delegation.md §10", text,
-            "work-item.md filing law does not cite its owner rules/delegation.md §10",
-        )
+        self.assertIn("60 minutes", text, "work-item.md's lease drops its default duration")
 
-    def test_additive_carriage_sentence(self):
-        text = read_flat("work-item.md")
-        self.assertIn(
-            "An item carries verbatim every spec field its executor's Require names.",
-            text, "work-item.md is missing the additive carriage sentence",
-        )
-
-    def test_ticket_statuses_disambiguated_from_run_terminal_set(self):
-        text = read_flat("work-item.md")
-        self.assertIn(
-            "`stalled` exists only at run level, `suspended` only at ticket level",
-            text, "work-item.md does not disambiguate ticket statuses from the run-level terminal set",
+    def test_carries_no_compatibility_floor(self):
+        self.assertNotIn(
+            "Compatibility floor", read("work-item.md"),
+            "work-item.md still carries the changelog the supersession deletes",
         )
 
     def test_no_reference_to_the_dead_contracts(self):
+        """The dead T0 names, each as it would appear in a sibling link or a
+        repository-relative citation. `rules/delegation.md` is a live T1 file
+        and is not this list's subject."""
         for name in (
-            "work-item.md", "delegation.md", "pack-signature.md", "spec.md",
-            "worklog.md", "verdict.md", "composition.md", "result.md",
+            "work-item.md", "pack-signature.md", "worklog.md", "verdict.md",
+            "composition.md", "result.md",
         ):
             text = read(name)
-            self.assertNotIn("task-result.md", text, f"{name} still references deleted task-result.md")
-            self.assertNotIn("handoff.md", text, f"{name} still references deleted handoff.md")
+            for dead in (
+                "task-result.md", "handoff.md", "(spec.md)", "(delegation.md)",
+                "contracts/spec.md", "contracts/delegation.md",
+            ):
+                self.assertNotIn(dead, text, f"{name} still references deleted {dead}")
 
 
 class TestResultContract(unittest.TestCase):
