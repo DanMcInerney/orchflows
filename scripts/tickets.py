@@ -99,6 +99,12 @@ VALID_STATUSES = {
 # ticket's executor, so naming one is the call cycle
 # rules/composition.md §3 forbids — an engine would spawn itself.
 LOOP_EXECUTOR = "orch-loop"
+# The executors that dispatch children of their own: the two engines, whose
+# whole job is dispatching a ticket's executor (rules/composition.md §3).
+# contracts/work-item.md#dispatch makes `reply_to` the dispatcher's own
+# identity, which a child never infers — so a child that will itself
+# dispatch is the one that must be told the name it answers to.
+DISPATCHING_EXECUTORS = ("orch-frontier", LOOP_EXECUTOR)
 # contracts/work-item.md, Executor form: `executor: script:<path>` names a tested script.
 # It is an executor like any other -- claimable, dispatchable, graded the
 # same -- and differs only in what `packet` tells the child to do with it.
@@ -2928,8 +2934,18 @@ def _cmd_packet(rest):
     # something this command can establish. The sibling resolves from this
     # file's own location, so it points at whichever copy is running.
     isolation = normalized_isolation(loaded.get("isolation"))
-    if isolation == REQUIRED_ISOLATION and establishes_a_git_workspace(
-        loaded.get("pack")
+    # An empty scope is the third condition, and it is about what the item
+    # writes rather than what it declares: an item authorized to change
+    # nothing writes only its own ticket sections, and those live in the
+    # sink, which no workspace holds. A read-only lane sent to establish one
+    # gets a worktree nothing ever writes to (friction 2026-08-16T09:40).
+    # Read through `effective_write_scope`, so a lane a grant has since
+    # given paths to is told to establish the workspace it now needs.
+    writes_workspace_content = bool(loaded.get("write_scope"))
+    if (
+        isolation == REQUIRED_ISOLATION
+        and writes_workspace_content
+        and establishes_a_git_workspace(loaded.get("pack"))
     ):
         prompt.append(
             "Workspace establishment (isolation: required), your first act, "
@@ -2951,6 +2967,47 @@ def _cmd_packet(rest):
     )
     prompt.append(f"{sys.executable} {script} run-state {run_id} --note TEXT")
     prompt.append(f"{sys.executable} {script} run-state {run_id} --artifact NAME --text TEXT")
+    # The filing channel, beside the run-state one. The prompt above tells the
+    # child to write its result into the ticket's own sections; naming only
+    # the run-state commands left it to derive the filing law from `--help`
+    # (friction 2026-08-16T12:00). Same shape, same reason: absolute, one
+    # token per argument, no shell metacharacter.
+    prompt.append(
+        "Filing channel (contracts/work-item.md's filing law), from your own "
+        f"workspace, with SECTION one of {list(EXECUTOR_SECTIONS)}, PATH a "
+        "file in your own workspace and TEXT one line; add --append to write "
+        "after content already there:"
+    )
+    prompt.append(
+        f"{sys.executable} {script} result {run_id} {loaded['id']} "
+        "--section SECTION --file PATH"
+    )
+    prompt.append(
+        f"{sys.executable} {script} result {run_id} {loaded['id']} "
+        "--section SECTION --text TEXT"
+    )
+    # contracts/work-item.md#dispatch: `reply_to` is computed once from the
+    # dispatcher's own identity and never inferred by the child -- so a child
+    # that will itself dispatch cannot compute its children's `reply_to`
+    # unless this packet states the name it was claimed under. Recovering it
+    # from the host's own files is what one engine lane had to do
+    # (friction 2026-08-16T09:40). Never invented: absent a claim there is no
+    # name, and the payload says so rather than guessing one.
+    # Carried only where it is a packet part, and the payload says exactly
+    # what the prompt says: an executor that dispatches nothing needs no
+    # identity of its own, and the claim it was taken under is on the ticket
+    # for anyone who wants the raw fact.
+    assigned_name = (
+        str(loaded.get("claimed_by") or "").strip() or None
+        if executor in DISPATCHING_EXECUTORS
+        else None
+    )
+    if assigned_name is not None:
+        prompt.append(
+            f"Your own assigned name is `{assigned_name}` (the ticket's "
+            "`claimed_by`): every packet you dispatch carries it as that "
+            "child's `reply_to`."
+        )
     prompt.append(f"reply_to: {reply_to} — address your closing message to `{reply_to}`.")
 
     return {
@@ -2964,6 +3021,7 @@ def _cmd_packet(rest):
             "profile": loaded.get("profile"),
             "independence": loaded.get("independence") or "checker",
             "isolation": isolation,
+            "assigned_name": assigned_name,
             "reply_to": reply_to,
             "workspace": workspace,
             "prompt": "\n".join(prompt),

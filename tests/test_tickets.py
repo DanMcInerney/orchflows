@@ -4761,7 +4761,10 @@ class TestPacketNamesTheChildsOwnName(unittest.TestCase):
                     Path(tmp), CLAIMED_TICKET.replace("executor: orch-tdd", f"executor: {executor}")
                 )
                 self.assertEqual("agent-a", packet["assigned_name"])
-                self.assertIn("agent-a", packet["prompt"])
+                # backticked, because the fixture's own paths carry the name
+                # as a substring: an assertion on the bare word passes on a
+                # host whose worktree happens to be called agent-anything
+                self.assertIn("assigned name is `agent-a`", packet["prompt"])
                 # and the two identifiers are distinguishable in the prompt:
                 # one is what this child answers to, one is who it answers
                 self.assertIn("reply_to: main", packet["prompt"])
@@ -4770,7 +4773,7 @@ class TestPacketNamesTheChildsOwnName(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             packet = self.packet_for(Path(tmp), CLAIMED_TICKET)
             self.assertIsNone(packet["assigned_name"])
-            self.assertNotIn("agent-a", packet["prompt"])
+            self.assertNotIn("assigned name", packet["prompt"])
 
     def test_an_unclaimed_packet_carries_no_name_and_is_still_complete(self):
         """Nothing is invented: the name is the claim's, so a packet rendered
