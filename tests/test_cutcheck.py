@@ -3359,7 +3359,18 @@ class BytecodeAdvisoryTest(unittest.TestCase):
     """
 
     def _classes(self, mutated):
-        ticket = FIXTURES / "cutcheck-root-gate" / "00-root.01.md"
+        """Graded through a ticket whose span is a process, because the delta is.
+
+        `cutcheck-root-gate/00-root.01` was the vehicle until the search heads
+        stopped being processes. `_MUTATED` is filled where a span was run, so
+        a `grep` span -- answered in this interpreter now, and writing nothing
+        by construction -- leaves a stubbed `_mutations` with nothing to be
+        read from, and all three assertions below went quiet at once. The
+        subject here is what a span wrote into the copy, so the vehicle is a
+        span that can still write one.
+        """
+
+        ticket = FIXTURES / "cutcheck-git-graded" / "01-git-graded.md"
         cutcheck._EXIT_CACHE.clear()
         with mock.patch.object(cutcheck, "_mutations", lambda tree: list(mutated)):
             findings = cutcheck._check_ticket(ticket, ROOT, None, {})
@@ -3455,6 +3466,124 @@ class SharedScratchHarnessTest(unittest.TestCase):
         self.addCleanup(remove_repo_tree, neighbour)
         self.assertEqual(neighbour.resolve().parent, root.resolve().parent)
         self.assertNotEqual(neighbour, root)
+
+
+class SearchSpanMatcherTest(unittest.TestCase):
+    """A search span is decided by this tool's own matcher, never by a program
+    on PATH.
+
+    `grep` is a head this tool extracts, and it used to be a head this tool
+    executed. Executing it made the verdict a fact about the host rather than
+    about the cut: this same tree, this same command, exit 0 from Git Bash --
+    whose PATH carries GNU grep -- and exit 1 with twenty `unrunnable-oracle`
+    findings from PowerShell, whose PATH does not. The displaced findings were
+    the ones each fixture set exists to pin, so the failure text read exactly
+    like a content regression.
+
+    Answered in the interpreter that is already running, the same span reads
+    the same wherever it is read, and no fixture oracle had to be respelled to
+    get there.
+    """
+
+    def setUp(self):
+        # `_run_once` primes what a tree was carrying, and these probes read the
+        # checkout itself rather than a scratch copy; the entry goes with them.
+        self.addCleanup(cutcheck._MUTATED.clear)
+        self.addCleanup(cutcheck._TREE_STATE.pop, str(ROOT), None)
+
+    def ran(self, command):
+        return cutcheck._run_once(command, ROOT)
+
+    def test_no_process_is_started_for_a_search_span(self):
+        """The claim itself, and the one node that can only pass by holding it.
+
+        Read by refusing the spawn rather than by emptying PATH: what an empty
+        PATH means is the host's own answer -- `execvp` falls back to a
+        confstr default on some libcs -- so a node resting on it grades the
+        libc. A `subprocess.run` that raises grades this module.
+        """
+
+        def refuse(*args, **kwargs):
+            raise AssertionError("a search span reached subprocess.run: {}".format(args))
+
+        with mock.patch.object(cutcheck.subprocess, "run", refuse):
+            self.assertEqual(self.ran('grep -n "family 1" scripts/cutcheck.py'), 0)
+            self.assertEqual(
+                self.ran('grep -rn "zzqq-never-written" install.py'), cutcheck.NO_MATCH
+            )
+
+    def test_the_status_is_the_search_convention_and_not_a_reading_of_its_own(self):
+        """0 selected, 1 nothing selected, 2 nothing this could read.
+
+        The middle one is load-bearing beyond arithmetic: `_discrimination`
+        reads `NO_MATCH` from a search head as `no-hits-both-revisions` and
+        anything else as `fails-both-revisions`, so a matcher returning its own
+        numbers would rename two finding classes.
+        """
+
+        self.assertEqual(self.ran('grep -n "SCRIPT_NAMES" install.py'), 0)
+        self.assertEqual(
+            self.ran('grep -n "zzqq-never-written" install.py'), cutcheck.NO_MATCH
+        )
+        self.assertEqual(self.ran('grep -n "SCRIPT_NAMES" no-such-file.txt'), 2)
+
+    def test_a_directory_is_read_where_the_span_says_recurse_and_not_otherwise(self):
+        self.assertEqual(self.ran('grep -rn "unrunnable-oracle" scripts/'), 0)
+        self.assertEqual(self.ran('grep -n "unrunnable-oracle" scripts/'), 2)
+
+    def test_an_operand_outside_the_copy_is_no_operand_at_all(self):
+        """The copy is the whole of what a span reads, rooted or climbing.
+
+        Shelling out left this to the tool: a span naming `/etc/hosts` read
+        `/etc/hosts`. Deciding it here is where the containment can be held, so
+        it is held.
+        """
+
+        self.assertEqual(self.ran('grep -n "SCRIPT_NAMES" ../install.py'), 2)
+        self.assertEqual(self.ran('grep -n "root" /etc/hosts'), 2)
+
+    def test_an_option_the_matcher_cannot_read_is_extracted_by_nobody(self):
+        """A guessed option would decide a cut from a reading nothing checked.
+
+        Refused at extraction, so the criterion reports the gap a shell-headed
+        span reports, which is advisory and settles nothing -- rather than a
+        status invented for an option this tool never implemented.
+        """
+
+        frame = "1. **The installer lists the script.** `{}` returns a line."
+        self.assertEqual(
+            cutcheck._commands(frame.format('grep -rn "SCRIPT_NAMES" install.py')),
+            ['grep -rn "SCRIPT_NAMES" install.py'],
+        )
+        self.assertEqual(
+            cutcheck._commands(frame.format('grep -A2 "SCRIPT_NAMES" install.py')), []
+        )
+
+    def test_every_search_span_the_fixture_corpus_states_is_readable_here(self):
+        """The corpus is what this repairs, so the corpus is what says it holds.
+
+        A span the matcher cannot read becomes an extraction gap instead of a
+        verdict, which is a quieter regression than the one being repaired.
+        Read off the fixture tree rather than off a list, so a set added after
+        this was written is graded by it too.
+        """
+
+        seen, unreadable = [], []
+        for path in sorted(FIXTURES.rglob("*.md")):
+            for match in cutcheck.BACKTICK_RE.finditer(path.read_text(encoding="utf-8")):
+                span = " ".join(match.group(1).split())
+                head = span.split()[:1]
+                if not head or head[0] not in cutcheck.SEARCH_HEADS:
+                    continue
+                seen.append(span)
+                try:
+                    argv = shlex.split(span)
+                except ValueError:
+                    argv = []
+                if not argv or cutcheck._search_span(argv) is None:
+                    unreadable.append("{}: {}".format(path.name, span))
+        self.assertEqual(unreadable, [])
+        self.assertGreater(len(seen), 20, "an empty reading grades nothing")
 
 
 if __name__ == "__main__":
