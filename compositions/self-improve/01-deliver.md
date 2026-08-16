@@ -12,7 +12,6 @@ excluded_actions:
   - marking a criterion complete on the executor's own claim
 independence: gate
 isolation: required
-profile: orch-planner
 ---
 
 ## Objective
