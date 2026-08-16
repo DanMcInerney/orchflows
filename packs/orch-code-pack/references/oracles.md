@@ -1,7 +1,5 @@
 # Code oracle policy
 
-Judged rows: [`## Lens`](craft.md#lens).
-
 | criterion kind | oracle | oracle_class | provenance |
 | --- | --- | --- | --- |
 | behavior | the ticket's named test commands | deterministic | authored-here when the unit writes the test, else pre-existing |
@@ -11,5 +9,6 @@ Judged rows: [`## Lens`](craft.md#lens).
 | readability/design | the lens's shape criteria | judged | authored-here |
 
 One deviation from [verdict.md](../../../contracts/verdict.md)'s class
-policy: a deterministic row is green when no worse than the workspace's
-recorded baseline by failure identity, not only when it passes outright.
+policy: a deterministic row is green when no worse, by failure identity,
+than the reading the cut froze in the criterion at baseline (verdict.md's
+evidence clause), not only when it passes outright.
