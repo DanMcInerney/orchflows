@@ -731,8 +731,15 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         self.assertIn("deterministic oracle versus by judged oracle", stages)
 
         self.assertNotIn("per-angle vector is the artifact", scoring)
+        # The pinned phrase was "per-angle vector primary and any scalar
+        # derived" until R4 (6b5cafa) trimmed the trailing half out of the
+        # body while this guard was being retargeted at it (R6a, 4e7031a):
+        # each green alone, red merged. What this half of the pair protects
+        # is that the vector is what scoring reports -- a body that drops
+        # the vector drops these three words -- so the pin follows the
+        # surviving statement rather than asking for the trim back.
         self.assertIn(
-            "per-angle vector primary and any scalar derived",
+            "per-angle vector primary",
             squashed(EVAL_DESIGN.read_text(encoding="utf-8")),
         )
         self.assertNotIn("target × model × harness × benchmark", scoring)

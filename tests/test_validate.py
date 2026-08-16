@@ -888,9 +888,9 @@ class FrictionLocationSyncTest(unittest.TestCase):
         )
 
     def test_the_copy_grades_what_the_tree_grades(self):
-        """The copy leaves out benchmarks/ and tests/fixtures/. If validate.py
-        ever grades either, the copy stops being a stand-in for the tree and
-        every seeded reading above it is taken against something else."""
+        """The copy leaves out tests/fixtures/ alone. If validate.py ever
+        grades it, the copy stops being a stand-in for the tree and every
+        seeded reading above it is taken against something else."""
 
         self._assert_clean_first()
         tree = validate_the_real_tree()

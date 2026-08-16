@@ -21,8 +21,8 @@
 6. Discovered scope is queued in the worklog, never merged into the live
    goal.
 7. Nested loops inherit bounds and cannot promote a stalled or limited
-   exit into complete. A child whose internal loop stalls returns
-   `limited` in its result, with the stall evidence.
+   exit into complete: a child returns its internal loop's own exit,
+   with the evidence that decided it.
 8. Work with no terminal done (queue health, upkeep) runs as scheduled
    bounded snapshots, never as an unconverging loop.
 9. A loop's body is a caller-supplied binding: what one iteration

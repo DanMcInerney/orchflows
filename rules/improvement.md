@@ -45,6 +45,6 @@
    `tickets.py improvement --covered`; a `project` proposal, the same
    machinery in its own repository under its own oracles; an
    `environment` proposal is actioned directly by the human and verified
-   by its probe passing. The cycle end to end — mine, deliver, close —
-   is the `self-improve` template under `compositions/`, one run in the
-   sink per cycle.
+   by its probe passing. The cycle end to end — mine, then deliver — is
+   the `self-improve` template under `compositions/`, one run in the sink
+   per cycle.

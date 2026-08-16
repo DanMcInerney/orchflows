@@ -58,7 +58,6 @@ def _build_probe_agents(
     selected: tuple[str, ...] | list[str], pid: int | None = None
 ) -> tuple[dict[str, dict], dict[str, str], dict[str, dict]]:
     profiles = install.load_role_profiles()
-    roles_path = REPO_ROOT / "rules" / "roles.md"
     probe_pid = os.getpid() if pid is None else pid
     agents = {}
     expected = {}
@@ -66,7 +65,7 @@ def _build_probe_agents(
     for profile_name in selected:
         profile = profiles[profile_name]
         metadata, instructions = _parse_rendered_agent(
-            install.render_claude_agent(profile_name, profile, roles_path)
+            install.render_claude_agent(profile_name, profile)
         )
         agent_type = f"{metadata['name']}-e2e-{probe_pid}"
         if _CLAUDE_AGENT_NAME_RE.fullmatch(agent_type) is None:

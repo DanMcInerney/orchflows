@@ -493,12 +493,7 @@ def _role_description(name: str) -> str:
 # role agent file names roles.md anywhere (D-2).
 ROLE_INSTRUCTIONS = "Stay within the delegated scope."
 
-# ``roles_path`` below is unused since D-2 and stays only because
-# tools/live_claude_profiles.py and tools/live_codex_profiles.py pass it;
-# dropping the parameter is theirs to take up with their callers.
-
-
-def render_codex_agent(name: str, profile: dict, roles_path: Path) -> str:
+def render_codex_agent(name: str, profile: dict) -> str:
     binding = profile["codex"]
     lines = [
         f"name = {json.dumps(binding['agent_type'])}",
@@ -512,7 +507,7 @@ def render_codex_agent(name: str, profile: dict, roles_path: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
-def render_claude_agent(name: str, profile: dict, roles_path: Path) -> str:
+def render_claude_agent(name: str, profile: dict) -> str:
     binding = profile["claude"]
     lines = [
         "---",
@@ -1162,7 +1157,6 @@ def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
                     (codex_user_home / "skills" / name / "SKILL.md", pointer)
                 )
 
-    roles_path = (lib_home / "rules" / "roles.md").resolve()
     profiles = load_role_profiles()
     claude_agents = []
     codex_agents = []
@@ -1170,14 +1164,14 @@ def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
         profile = profiles[name]
         if claude_enabled:
             claude_agents.append(
-                (_claude_agents_dir("user", None) / f"{name}.md", render_claude_agent(name, profile, roles_path))
+                (_claude_agents_dir("user", None) / f"{name}.md", render_claude_agent(name, profile))
             )
         if codex_enabled:
             codex_agent_type = profile["codex"]["agent_type"]
             codex_agents.append(
                 (
                     _codex_agents_dir("user", None) / f"{codex_agent_type}.toml",
-                    render_codex_agent(name, profile, roles_path),
+                    render_codex_agent(name, profile),
                 )
             )
 

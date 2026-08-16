@@ -899,9 +899,7 @@ class TestCodexLiveProfiles(unittest.TestCase):
 
     def test_probe_sentinel_injection_does_not_require_tomllib(self):
         profile = codex_live.install.load_role_profiles()["orch-planner"]
-        rendered = codex_live.install.render_codex_agent(
-            "orch-planner", profile, codex_live.REPO_ROOT / "rules" / "roles.md"
-        )
+        rendered = codex_live.install.render_codex_agent("orch-planner", profile)
 
         with mock.patch.object(codex_live.install, "tomllib", None):
             injected = codex_live._with_probe_sentinel(rendered, "SENTINEL:planner")

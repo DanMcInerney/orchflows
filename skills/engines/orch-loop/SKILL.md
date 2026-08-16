@@ -21,9 +21,10 @@ delegation inputs, per
 adjudicate the return through `orch-integrate`; let the done-check
 decide per the contract's class policy.
 
-Exit per [rules/loops.md](../../../rules/loops.md) §5, plus `blocked`
-on an unresolvable dependency and `failed` on an unrecoverable
-execution error.
+Exit `complete` on [rules/loops.md](../../../rules/loops.md) §1's
+done-check and `stalled` or `limited` per §5, plus `blocked` on an
+unresolvable dependency and `failed` on an unrecoverable execution
+error.
 
 Never: count an iteration's own claim as the done-check; end a
 judged-class run on iteration-time green.
