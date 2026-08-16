@@ -108,15 +108,6 @@ MANDATED_FORM_RES = (
     re.compile(
         r"\b(?:deterministic|judged|evidence)\s+(?:pre-existing|authored-here)$"
     ),
-    # The overlap rule, whose one owner is orch-decompose. Both slicing
-    # cells still carry its wording, so stripping it here is what keeps the
-    # verbatim tier off a copy the tree has not deleted yet; P3 deletes the
-    # copies and this entry goes with them (SPEC-ticket-set.md P2-P3). Until
-    # then the copies are what validate_cross_tier_duplication reports, at
-    # CROSS_TIER_DUPLICATE_LEVEL, rather than what any check mandates.
-    re.compile(
-        r"a write scope overlapping only siblings it is dependency-ordered with"
-    ),
 )
 MD_LINK_RE = re.compile(r"\]\(([^)]+)\)")
 LOOP_TRIGGER_RE = re.compile(r"\biterat(?:e|es|ing)\b|\brepeat until\b", re.IGNORECASE)

@@ -15,13 +15,13 @@ Cells:
   in exactly one of two forms: a backticked skill name bound to that
   item, or the bare word none followed by an em-dash gloss naming what
   stands in for the assembly. An empty cell or free prose is malformed.
-- `lens` — the review binding: a named skill, or `orch-critique` plus a
-  lens reference whose criteria are restated fresh from the spec.
+- `lens` — the review binding: a named skill, or `orch-critique` with the
+  pack's craft `## Lens`, whose criteria are restated fresh from the spec.
 - `oracle_policy` — the oracle table: for each criterion kind, the exact
-  oracle and its oracle_class per [verdict.md](verdict.md); where green
-  is measured and what it is compared against; any deviation from
-  verdict.md's class policy. The class policy and the overall verdict
-  rule stay verdict.md's: state a deviation, never a paraphrase.
+  oracle and its oracle_class per [verdict.md](verdict.md); any deviation
+  from verdict.md's class policy. The class policy and the overall verdict
+  rule stay verdict.md's, and where green is measured follows from them:
+  state a deviation, never a paraphrase.
 - `workspace` — what identities, baselines, and write scopes mean in this
   domain (git revisions and paths; document slots; evidence stores).
   Where it uses a term `craft` defines, the cell cites `craft` for the
@@ -31,8 +31,8 @@ Cells:
 - `craft` — reference owning the domain's vocabulary, and its shape where
   the domain has one of its own. Vocabulary is mandated: each term
   defined once and used with exactly that meaning in specs, tickets,
-  lenses, and verdicts; a term no spec field, item extension, lens
-  criterion, or executor consumes is a defect. Shape is optional and
+  lenses, and verdicts; a term no other cell or executor consumes is a
+  defect. Shape is optional and
   carries only the principles this domain does not share with the
   others, outranked by the workspace's own standards on conflict.
   Budget: 60 non-empty lines.
@@ -45,12 +45,12 @@ Sharing constraints, checked at pack review:
   the packet names.
 - Every write scope the slicing cuts is expressible in `workspace`.
 - Every domain term another cell uses — a required spec field, a lens
-  criterion, an item extension — is defined in `craft`.
+  criterion, an item extension — is defined once: in `craft`, or inline
+  in the cell that uses it.
 
 Purity: a pack body contains no delegation language, no stop states, no
-conditionals, and no Return contract. The validator mechanically checks
-the Require/Never/Return labels, the eight-cell table, and that every
-named skill and reference resolves; the rest of purity is checked at
+conditionals, and no Return contract. What the validator mechanically
+checks is `tools/validate.py`'s to say; the rest of purity is checked at
 pack review under the library lens. A pack that wants control flow is a
 signature defect, not a pack feature.
 
