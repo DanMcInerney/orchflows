@@ -181,6 +181,25 @@ RUN_STATE_USAGE = (
     "(--artifact <name> [--replace] | --terminal <state>) "
     "(--file <path> | --text <string>))"
 )
+NEW_USAGE = (
+    "new <run> <id> --executor E --objective TEXT --criterion C "
+    "[--criterion C ...] [--depends-on a,b] [--write-scope p[,p]] [--bound B] "
+    "[--pack P] [--input I ...] [--excluded X ...] [--profile P] "
+    "[--independence gate|checker] [--isolation required|none] "
+    "[--return-fields TEXT] | new <run> --file <path>"
+)
+# The one field `new` supplies a default for: contracts/work-item.md reads an
+# absent lease as DEFAULT_BOUND_MINUTES, so writing that same number is the
+# declaration the reader already gets, said out loud.
+NEW_DEFAULT_BOUND = f"{DEFAULT_BOUND_MINUTES}m"
+NEW_DEFAULT_INPUTS = "None."
+NEW_DEFAULT_RETURN_FIELDS = (
+    "status; result (what changed, by identity); verification; feedback; risks"
+)
+# contracts/work-item.md's two optional enums, checked at the interface that
+# writes them rather than only where they are read.
+INDEPENDENCE_VALUES = ("gate", "checker")
+ISOLATION_VALUES = (REQUIRED_ISOLATION, "none")
 IMPROVEMENT_USAGE = (
     "improvement (--proposal <name> (--file <path> | --text <string>) "
     "| --covered <line>)"
@@ -191,6 +210,7 @@ IMPROVEMENT_USAGE = (
 PROPOSALS_DIR = "proposals"
 COVERAGE_RECORD_NAME = "covered.jsonl"
 SUBCOMMAND_USAGE = {
+    "new": NEW_USAGE,
     "list": "list [--run R]",
     "ready": "ready [--run R]",
     "claim": "claim <run> <id> --by <name>",
@@ -201,6 +221,8 @@ SUBCOMMAND_USAGE = {
     "improvement": IMPROVEMENT_USAGE,
 }
 SUBCOMMAND_SUMMARY = {
+    "new": "Issue one ticket into the run, refusing any shape `ticket_defects` "
+    "reports before anything is written; --file places one already written.",
     "list": "Every ticket in the tracker, or in one run, as summaries.",
     "ready": "The tickets whose dependencies are complete and whose claim is "
     "free or stale; promotes an eligible `pending` to `ready`.",
@@ -232,6 +254,20 @@ VALUE_FLAGS = frozenset(
     {
         "--run",
         "--by",
+        "--executor",
+        "--objective",
+        "--criterion",
+        "--depends-on",
+        "--write-scope",
+        "--bound",
+        "--pack",
+        "--input",
+        "--excluded",
+        "--profile",
+        "--independence",
+        "--isolation",
+        "--return-fields",
+        "--set",
         "--section",
         "--file",
         "--text",
@@ -1121,6 +1157,260 @@ def _extract_flag(args: list, flag: str):
     return None
 
 
+def _extract_all(args: list, flag: str) -> list:
+    """Every value of a flag that may be repeated, in the order given.
+
+    ``--criterion`` and ``--input`` name one thing each; a ticket has as
+    many as the cut found. ``_extract_flag`` answers the first and removes
+    it, so draining it is the whole implementation — and a trailing flag
+    with no value is removed and ends the drain rather than looping on it.
+    """
+
+    values = []
+    while flag in args:
+        value = _extract_flag(args, flag)
+        if value is None:
+            break
+        values.append(value)
+    return values
+
+
+# --- issuing ------------------------------------------------------------
+
+
+def _split_commas(value) -> list:
+    """One comma-separated flag value as a list, empty entries dropped."""
+
+    return [part.strip() for part in str(value or "").split(",") if part.strip()]
+
+
+def _frontmatter_list(key: str, values) -> list:
+    """One frontmatter list, as the lines that carry it.
+
+    Inline ``[a, b]`` unless a value carries a comma, which the inline
+    reader (``_parse_frontmatter``) splits on: an excluded action is prose
+    and prose has commas in it, so those go one per line instead. Both
+    shapes read back as the same list.
+    """
+
+    items = list(values)
+    if any("," in item for item in items):
+        return [f"{key}:"] + [f"- {item}" for item in items]
+    return [f"{key}: [{', '.join(items)}]"]
+
+
+def _render_ticket(fields: dict, sections: list) -> str:
+    """One ticket's markdown: frontmatter in the contract's key order, then
+    its body sections in the contract's section order.
+
+    ``fields`` values are already strings or lists; ``None`` omits an
+    optional key entirely, so nothing is written that the reader would have
+    to interpret as absent.
+    """
+
+    lines = ["---"]
+    for key, value in fields.items():
+        if value is None:
+            continue
+        if isinstance(value, list):
+            lines.extend(_frontmatter_list(key, value))
+        else:
+            lines.append(f"{key}: {value}" if value != "" else f"{key}:")
+    lines.append("---")
+    body = []
+    for heading, content in sections:
+        # A blank line under the heading, the shape `_write_section` writes
+        # back into: an executor's first result must not have to reflow the
+        # section the cut left it.
+        body.append(f"\n## {heading}\n")
+        if content:
+            body.append(f"\n{content}\n")
+    return "\n".join(lines) + "\n" + "".join(body)
+
+
+def _cmd_new(rest):
+    """Issue one ticket into the run, or place one already written.
+
+    The cut's own refusal: everything ``ticket_defects`` reports is refused
+    here, before any directory is created, so a ticket that reaches the sink
+    is one every later subcommand accepts. An off-contract cut that lands
+    and is refused at dispatch costs the dispatch; refusing it here costs
+    the flag that was wrong.
+
+    ``--file`` places a ticket its author already wrote, through the same
+    validation and the same refusal to overwrite an id that exists. The run
+    argument and the file's own ``run`` must agree: the argument decides
+    where it lands, and a ticket landing in a run it does not name is a
+    ticket no reader can trace back.
+    """
+
+    args = list(rest)
+    file_arg = _extract_flag(args, "--file")
+    executor = _extract_flag(args, "--executor")
+    objective = _extract_flag(args, "--objective")
+    criteria = _extract_all(args, "--criterion")
+    depends_on = _extract_flag(args, "--depends-on")
+    write_scope = _extract_flag(args, "--write-scope")
+    bound = _extract_flag(args, "--bound")
+    pack = _extract_flag(args, "--pack")
+    inputs = _extract_all(args, "--input")
+    excluded = _extract_all(args, "--excluded")
+    profile = _extract_flag(args, "--profile")
+    independence = _extract_flag(args, "--independence")
+    isolation = _extract_flag(args, "--isolation")
+    return_fields = _extract_flag(args, "--return-fields")
+    stray = next((arg for arg in args if arg.startswith("-")), None)
+    if stray is not None:
+        return {"error": f"new does not accept {stray}. usage: {NEW_USAGE}"}
+
+    if file_arg is not None:
+        supplied = [
+            name
+            for name, value in (
+                ("--executor", executor), ("--objective", objective),
+                ("--criterion", criteria or None), ("--depends-on", depends_on),
+                ("--write-scope", write_scope), ("--bound", bound),
+                ("--pack", pack), ("--input", inputs or None),
+                ("--excluded", excluded or None), ("--profile", profile),
+                ("--independence", independence), ("--isolation", isolation),
+                ("--return-fields", return_fields),
+            )
+            if value is not None
+        ]
+        if supplied:
+            return {
+                "error": f"--file places a ticket already written; it takes none "
+                f"of {supplied}. usage: {NEW_USAGE}"
+            }
+        if len(args) != 1:
+            return {"error": f"usage: {NEW_USAGE}"}
+        return _place_ticket(args[0], file_arg)
+
+    if len(args) != 2:
+        return {"error": f"usage: {NEW_USAGE}"}
+    run, ticket_id = args
+    for kind, value in (("run id", run), ("ticket id", ticket_id)):
+        invalid = _segment_error(kind, value)
+        if invalid is not None:
+            return invalid
+    missing = [
+        name
+        for name, value in (
+            ("--executor", executor), ("--objective", objective),
+            ("--criterion", criteria or None),
+        )
+        if value is None
+    ]
+    if missing:
+        return {
+            "error": f"new requires {', '.join(missing)}. usage: {NEW_USAGE}"
+        }
+    for flag, value, allowed in (
+        ("--independence", independence, INDEPENDENCE_VALUES),
+        ("--isolation", isolation, ISOLATION_VALUES),
+    ):
+        if value is not None and value.strip() not in allowed:
+            return {
+                "error": f"{flag} '{value}' is not one of {list(allowed)} "
+                "(contracts/work-item.md)"
+            }
+
+    dependencies = _split_commas(depends_on)
+    fields = {
+        "id": ticket_id,
+        "run": run,
+        # contracts/work-item.md: an item issued with an incomplete
+        # depends_on starts pending; orch-frontier owns its exit to ready.
+        "status": "pending" if dependencies else "ready",
+        "executor": executor,
+        "pack": pack,
+        "independence": independence,
+        "depends_on": dependencies,
+        "write_scope": _split_commas(write_scope),
+        "excluded_actions": excluded or None,
+        "isolation": isolation,
+        "bound": bound or NEW_DEFAULT_BOUND,
+        "claimed_by": "",
+        "claimed_at": "",
+        "profile": profile,
+    }
+    sections = [
+        ("Objective", objective),
+        ("Fixed inputs", "\n".join(f"- {item}" for item in inputs) or NEW_DEFAULT_INPUTS),
+        ("Completion test", "\n".join(f"- {item}" for item in criteria)),
+        ("Return fields", return_fields or NEW_DEFAULT_RETURN_FIELDS),
+        ("Result", ""),
+        ("Verification", ""),
+        ("Feedback", "[]"),
+        ("Risks", "[]"),
+    ]
+    return _issue_ticket(run, ticket_id, _render_ticket(fields, sections))
+
+
+def _place_ticket(run: str, source: str):
+    """``new --file``: one already-written ticket, validated and placed."""
+
+    invalid = _segment_error("run id", run)
+    if invalid is not None:
+        return invalid
+    try:
+        text = Path(source).read_text(encoding="utf-8")
+    except OSError as error:
+        return {"error": f"unreadable ticket file: {error}"}
+    data = _parse_frontmatter(text)
+    ticket_id = data.get("id") if isinstance(data.get("id"), str) else None
+    if not ticket_id:
+        return {"error": f"ticket file {source} names no 'id' in its frontmatter"}
+    invalid = _segment_error("ticket id", ticket_id)
+    if invalid is not None:
+        return invalid
+    declared = data.get("run")
+    if isinstance(declared, str) and declared.strip() and declared.strip() != run:
+        return {
+            "error": f"ticket file {source} names run '{declared.strip()}', placed "
+            f"into run '{run}': one ticket belongs to one run"
+        }
+    return _issue_ticket(run, ticket_id, text)
+
+
+def _issue_ticket(run: str, ticket_id: str, text: str):
+    """Grade one rendered ticket, then write it — in that order.
+
+    Nothing is created before the grade: a refused cut leaves the run
+    directory exactly as it found it, including not existing.
+    """
+
+    defects = ticket_defects(text)
+    if defects:
+        return {
+            "error": f"ticket {run}/{ticket_id} is off contract "
+            f"(contracts/work-item.md): " + "; ".join(defects)
+        }
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {"error": NO_SINK_ERROR}
+    ticket_path = tickets_root / run / f"{ticket_id}.md"
+    if ticket_path.exists():
+        return {
+            "error": f"ticket id '{ticket_id}' is already issued in run '{run}': "
+            f"{ticket_path}. An id is stable once issued (contracts/work-item.md)"
+        }
+    try:
+        ticket_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(ticket_path, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(text)
+    except OSError as error:
+        return {"error": f"unwritable ticket: {error}"}
+    return {
+        "new": {
+            "run": run,
+            "id": ticket_id,
+            "path": str(ticket_path),
+            "status": _parse_frontmatter(text).get("status"),
+        }
+    }
+
+
 # --- subcommands --------------------------------------------------------
 
 
@@ -1908,14 +2198,16 @@ def _cmd_improvement(rest):
 def _dispatch(argv):
     if not argv:
         return {
-            "error": "missing subcommand: list | ready | claim | set-status | "
-            "packet | result | run-state | improvement"
+            "error": "missing subcommand: new | list | ready | claim | "
+            "set-status | packet | result | run-state | improvement"
         }
     command, rest = argv[0], argv[1:]
     if command in HELP_COMMANDS:
         return _cmd_help()
     if command in SUBCOMMAND_USAGE and _help_requested(rest):
         return _cmd_help(command)
+    if command == "new":
+        return _cmd_new(rest)
     if command == "list":
         return _cmd_list(rest)
     if command == "ready":
