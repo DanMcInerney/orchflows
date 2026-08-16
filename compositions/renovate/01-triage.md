@@ -21,8 +21,7 @@ compacted brief a fresh context can execute from.
 
 - 00-audit's `## Result` — the ranked findings and their cited evidence,
   by identity.
-- The disposition vocabulary: ready-for-agent, needs-info,
-  ready-for-human, wontfix.
+- The disposition vocabulary, as orch-triage's Require fixes it.
 
 ## Completion test
 

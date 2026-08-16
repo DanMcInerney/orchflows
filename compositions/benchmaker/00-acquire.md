@@ -28,8 +28,8 @@ charter names.
 - {{outcome}} — the intended observable outcome, carried the same way.
 - {{sources}} — the source policy, including judgment permission and
   any bar on a lane's sources.
-- {{rigor}} — the rigor bar: the confidence each load-bearing claim
-  must reach, stated as the evidence that must exist for it.
+- {{rigor}} — this run's value for the rigor bar orch-research-pack's
+  signature requires of a spec.
 - {{bound}} — the one caller bound. Every stage's own bound is an
   allocation from it: nonnegative, totalling no more than it, unused
   allocation carrying forward from a completed stage. A caller bound
@@ -47,8 +47,8 @@ charter names.
 ## Return fields
 
 status; result — the frozen synthesis identity and its source
-identities; verification; feedback; risks — gaps explicit, `[]` when
-none
+identities; verification; feedback; risks — gaps explicit, and
+otherwise filed as contracts/work-item.md requires
 
 ## Result
 

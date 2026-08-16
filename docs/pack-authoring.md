@@ -11,8 +11,9 @@ what each step feeds the next.
 1. Admission first, in writing, against the signature's admission
    line. A cell you cannot later state in the new workspace's
    semantics is evidence the domain is not new.
-2. Workspace second: what identities, baselines, and write scopes
-   mean. Every other cell is expressed in these semantics.
+2. Workspace second — the signature's `workspace` cell, which
+   [contracts/pack-signature.md](../contracts/pack-signature.md)
+   defines. Every other cell is expressed in those semantics.
 3. Oracle policy third: the exact checks with their classes.
    Deterministic rows shape the executor's unit loop; each judged
    dimension owes a craft term, or fresh judges re-invent it per
