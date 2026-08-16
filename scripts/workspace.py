@@ -24,6 +24,11 @@ Exit codes:
     3  wrong-branch-point
     4  scope-breach
     5  no-record
+    6  wrong-vantage: the caller stood in the workspace it asked about, so
+       nothing about the item was graded. Distinct from 2 on purpose -- 2
+       says the item failed, 6 says the question was asked from the wrong
+       place, and an integrator that reads one as the other rejects intact
+       work.
 
 Subcommands:
     start <run> <id>
@@ -82,6 +87,7 @@ EXIT_ISOLATION_MISSING = 2
 EXIT_WRONG_BRANCH_POINT = 3
 EXIT_SCOPE_BREACH = 4
 EXIT_NO_RECORD = 5
+EXIT_WRONG_VANTAGE = 6
 VERDICTS = {
     EXIT_OK: "pass",
     EXIT_ERROR: "error",
@@ -89,6 +95,7 @@ VERDICTS = {
     EXIT_WRONG_BRANCH_POINT: "wrong-branch-point",
     EXIT_SCOPE_BREACH: "scope-breach",
     EXIT_NO_RECORD: "no-record",
+    EXIT_WRONG_VANTAGE: "wrong-vantage",
 }
 # A frontmatter scalar carries the dirty set as one comma-joined line, so a
 # path holding either character cannot be written unambiguously.
@@ -447,6 +454,21 @@ def _cmd_check(rest):
     tip = tip.strip()
     own = _git_out("rev-parse", "--abbrev-ref", "HEAD")
     if branch == own:
+        # Git checks a branch out in at most one tree, so standing on this
+        # item's branch inside a linked worktree is standing inside the item's
+        # own workspace: a fact about the caller's position, not about the
+        # item. In the main checkout the same equality means the item was
+        # executed on the caller's own branch, which is the isolation breach
+        # it has always been. The two are told apart the way ``start`` tells
+        # them apart -- this checkout's top against the main root.
+        top = Path(_git_out("rev-parse", "--show-toplevel")).resolve()
+        if top != root:
+            raise Refused(
+                f"this checkout is the workspace under check: a linked worktree of "
+                f"{root} holding branch {branch!r}, which cannot grade itself. Run "
+                "check from the integrating checkout",
+                EXIT_WRONG_VANTAGE,
+            )
         raise Refused(
             f"branch {branch!r} is the caller's own branch: no distinct branch "
             "carries the work",

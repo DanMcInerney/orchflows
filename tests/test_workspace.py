@@ -1009,6 +1009,47 @@ class TestHelpAndVantage(unittest.TestCase):
                     self.assertEqual(0, done.returncode, done.stderr)
                     self.assertIn(f"workspace.py {command} ", done.stdout)
 
+    @staticmethod
+    def _linked_workspace(tmp: Path):
+        """A repository, a linked worktree holding the item's branch one commit
+        past the base, and a ticket recording it: an isolated item at its join.
+
+        Built inline rather than taken from ``graded_repository``, per that
+        fixture's own rule -- this shape needs a caller standing *in* the
+        linked tree, which the shared fixture's single main checkout is not.
+        """
+
+        main, run_dir = make_repo(tmp)
+        base = git(main, "rev-parse", "HEAD").strip()
+        worktree = add_worktree(main, "wt-branch", tmp / "wt")
+        commit_in(worktree, {"scratch/a.txt": "one\n"}, "item work")
+        make_ticket(
+            run_dir, "T1", scope=("scratch",),
+            extra=((workspace.ISOLATION_KEY, "required"),
+                   (workspace.BRANCH_KEY, "wt-branch")),
+        )
+        return main, worktree, base
+
+    def test_help_or_vantage_check_from_inside_the_workspace_names_the_vantage(self):
+        """The caller stood in the item's own linked worktree. Nothing about
+        the item failed; the grade cannot be taken from here. Answering that
+        with ``isolation-missing`` reports a breach that did not happen, and
+        an integrator reading exit 2 rejects work that is in fact intact."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            _, worktree, base = self._linked_workspace(Path(tmp))
+
+            done = run_workspace(worktree, "check", "testrun", "T1", "--base", base)
+
+            self.assertNotEqual(0, done.returncode, done.stdout)
+            self.assertNotEqual(
+                workspace.EXIT_ISOLATION_MISSING, done.returncode,
+                "a vantage refusal must not masquerade as the item's verdict",
+            )
+            body = payload_of(done)
+            self.assertIn("integrating checkout", body["error"])
+            self.assertNotEqual("isolation-missing", body["verdict"])
+
     def test_help_or_vantage_help_does_not_swallow_a_real_usage_error(self):
         # the neighbouring behavior this must not cost: a stray flag is still
         # exit 1, and a subcommand still refuses without its required flag
