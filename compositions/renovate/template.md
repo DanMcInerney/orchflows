@@ -15,10 +15,13 @@ check — every disposition landed, agent briefs delivered with their
 final verification and human briefs returned to the maintainer.
 
 Instantiate with `workspace`, `priorities`, the two bounds, and `pack`.
-Both bounds are placeholders because `00-audit`'s excluded action binds
-every step downstream of it as well: a brief cut without its bound
+Both bounds are placeholders because a brief cut without its bound
 already fixed is renovation as an unconverging loop wearing a different
-name. `pack` is one because `02-deliver` is a root ticket, and a root
+name, which is why `00-audit` and `02-deliver` each carry that excluded
+action. The run's bound is `00-audit`'s `audit_bound` plus
+`02-deliver`'s `brief_bound` per ready-for-agent brief: the delivery
+root's bound is that per-brief budget, never one brief's for all of
+them. `pack` is one because `02-deliver` is a root ticket, and a root
 ticket without a stamp is one `orch-decompose` rejects at dispatch — the
 run's pack, since its cut stamps a unit whose brief kind differs.
 Each stub is a ticket per
