@@ -1505,14 +1505,67 @@ def discover_templates():
     )
 
 
-def _inline_list(value: str):
-    """The items of an inline `[a, b]` list; None when the value is not
-    list-shaped. parse_frontmatter keeps frontmatter values as raw text
-    and every template list is written inline."""
+def _inline_list(value):
+    """The items of a frontmatter list -- an inline `[a, b]` value, or the
+    list _parse_stub_frontmatter already built from a block list; None
+    when the value is not list-shaped."""
+    if isinstance(value, list):
+        return value
     text = value.strip()
     if not (text.startswith("[") and text.endswith("]")):
         return None
     return [item.strip() for item in text[1:-1].split(",") if item.strip()]
+
+
+def _parse_stub_frontmatter(text: str, file_label: str, diag: Diagnostics):
+    """Parse a stub's frontmatter the way scripts/tickets.py reads a
+    ticket: scalars, inline `[a, b]` lists, and block lists (a bare
+    `key:` followed by `  - item` lines) -- contracts/work-item.md's
+    shape, which SKILL.md frontmatter never carries. Block-list items are
+    returned as a Python list; everything else stays raw text.
+    # P2: delegate to scripts.tickets._parse_frontmatter
+    """
+    lines = text.split("\n")
+    if not lines or lines[0].strip() != "---":
+        diag.error(file_label, "missing opening frontmatter fence '---'")
+        return None, None
+    end_idx = None
+    for i in range(1, len(lines)):
+        if lines[i].strip() == "---":
+            end_idx = i
+            break
+    if end_idx is None:
+        diag.error(file_label, "missing closing frontmatter fence '---'")
+        return None, None
+    fm = {}
+    i = 1
+    while i < end_idx:
+        ln = lines[i]
+        stripped = ln.strip()
+        if not stripped:
+            i += 1
+            continue
+        if ":" not in ln:
+            diag.error(file_label, f"malformed frontmatter line: {ln!r}")
+            i += 1
+            continue
+        key, _, value = ln.partition(":")
+        key = key.strip()
+        value = value.strip()
+        if value == "":
+            items = []
+            j = i + 1
+            while j < end_idx and lines[j].strip().startswith("- "):
+                items.append(lines[j].strip()[2:].strip())
+                j += 1
+            if items:
+                fm[key] = items
+                i = j
+                continue
+        fm[key] = value
+        i += 1
+    body = "\n".join(lines[end_idx + 1:])
+    return fm, body
 
 
 def _tree_skill_names() -> set:
@@ -1644,7 +1697,7 @@ def _validate_template_stub(path: Path, skill_names: set, diag: Diagnostics):
     file_label = rel(path)
     text = _read_source(path)
     used = set(PLACEHOLDER_RE.findall(text))
-    fm, body = parse_frontmatter(text, file_label, diag)
+    fm, body = _parse_stub_frontmatter(text, file_label, diag)
     if fm is None or body is None:
         return [], used
     for key in STUB_REQUIRED_KEYS:
