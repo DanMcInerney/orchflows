@@ -110,6 +110,10 @@ CANONICAL_DIRS = (
 )
 SCRIPT_NAMES = (
     "cutcheck.py",
+    # The documentation factory's oracle. Bodies invoke it by bare filename,
+    # so it resolves from the installed bin dir or not at all -- and it lived
+    # in scripts/ shipping to nothing until this line named it.
+    "doclint.py",
     "friction.py",
     "migrate_state.py",
     # Named by bare filename from the evolve template's campaign stub. It
