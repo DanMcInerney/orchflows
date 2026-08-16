@@ -3503,6 +3503,107 @@ class ScopeOpenLiteralTest(unittest.TestCase):
         )
 
 
+# What `cutcheck-scope-open`'s first ticket takes away, and every file the
+# baseline revision pins it in. Read at the baseline, which is a frozen commit,
+# so this table is a fact about that revision and not about today's tree: the
+# engine name is a member of `ENGINE_EXECUTORS` in `scripts/tickets.py` and of
+# three suites' expectations; the role name is in one transcript fixture and
+# two suites. Eleven under-supplied grants in the 2026-08-16 build were exactly
+# this shape -- a constant or a fixture pinning a name the item was cut to
+# remove, from outside the item's own scope.
+SCOPE_OPEN_PINS = {
+    "scripts/tickets.py": "orch-compose",
+    "tests/test_contracts.py": "orch-compose",
+    "tests/test_roles.py": "orch-compose",
+    "tests/test_installer.py": "orch-planner",
+    "tests/test_live_profiles.py": "orch-planner",
+    "tests/fixtures/transcripts/-Users-dmcinerney-tools-alpha/"
+    "11111111-1111-4111-8111-111111111111/subagents/agent-aa12.meta.json":
+        "orch-planner",
+}
+SCOPE_OPEN_CONSTANT = "scripts/tickets.py"
+SCOPE_OPEN_FIXTURE = next(
+    path for path in SCOPE_OPEN_PINS if path.startswith("tests/fixtures/")
+)
+
+
+class ScopeOpenTest(unittest.TestCase):
+    """A cut closes over what it takes away, or the pin breaks unowned.
+
+    Family 3 asked one direction of the question -- does the grant cover what
+    the item writes -- and the other direction is where the 2026-08-16 build
+    lost eleven items: the grant covered the file being changed and not the
+    test, the constant or the fixture that pinned the name being changed away.
+    Nothing failed at the cut; each item failed in flight, against a pin its
+    executor was not licensed to repair.
+    """
+
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-scope-open")
+        self.lines = [
+            line
+            for line in reported(self.result, cutcheck.FAMILY_3)
+            if cutcheck.SCOPE_OPEN in line
+        ]
+
+    def _pins(self):
+        pins = {}
+        for line in self.lines:
+            where, _, literal = line.split(": ")[3].partition(" pins ")
+            self.assertNotIn(where, pins, "one finding per pinning file")
+            pins[where] = literal
+        return pins
+
+    def test_scope_open_names_each_pinning_file_once_and_says_what_it_pins(self):
+        for line in self.lines:
+            self.assertTrue(line.startswith("01-open: "), line)
+        self.assertEqual(self._pins(), SCOPE_OPEN_PINS, self.result.stdout)
+
+    def test_scope_open_reaches_a_constant_in_scripts_and_a_fixture_in_tests(self):
+        """The two kinds of pin: one a script states, one a fixture holds.
+
+        Named separately from the table above because they are the claim --
+        that the search is not one directory's -- rather than a row of it.
+        """
+
+        pins = self._pins()
+        self.assertEqual(pins.get(SCOPE_OPEN_CONSTANT), "orch-compose", pins)
+        self.assertEqual(pins.get(SCOPE_OPEN_FIXTURE), "orch-planner", pins)
+
+    def test_scope_open_is_silent_where_the_write_scope_carries_the_pins(self):
+        """The same objective, granted the pinning files, and no finding.
+
+        The can-fail direction of the whole class: a check that reported the
+        removal itself would report this ticket too, and a cut nobody can
+        satisfy is a cut nobody reads.
+        """
+
+        self.assertEqual(
+            [line for line in self.lines if line.startswith("02-carried")],
+            [],
+            self.result.stdout,
+        )
+
+    def test_scope_open_sets_the_exit_status(self):
+        self.assertNotIn(cutcheck.SCOPE_OPEN, cutcheck.ADVISORY)
+        self.assertEqual(cutcheck.FAMILY_OF[cutcheck.SCOPE_OPEN], cutcheck.FAMILY_3)
+        self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
+
+    def test_scope_open_says_nothing_about_a_cut_that_takes_nothing_away(self):
+        """Every other fixture set in this suite, and the affirmative one first.
+
+        The class runs over an objective's ordinary prose, and prose is where a
+        false positive comes from. A set that removes nothing states nothing
+        for this to find, whatever else it is reported for.
+        """
+
+        for run in fixture_sets():
+            if run == "cutcheck-scope-open":
+                continue
+            with self.subTest(run=run):
+                self.assertNotIn(cutcheck.SCOPE_OPEN, run_cutcheck(run).stdout)
+
+
 if __name__ == "__main__":
     if "--record" in sys.argv:
         record_verdicts()

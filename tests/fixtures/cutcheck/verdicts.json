@@ -232,6 +232,21 @@
    "cutcheck: no finding outside the advisory set"
   ]
  },
+ "cutcheck-scope-open": {
+  "exit": 1,
+  "lines": [
+   "01-open: family 3: scope-open: scripts/tickets.py pins orch-compose",
+   "01-open: family 3: scope-open: tests/fixtures/transcripts/-Users-dmcinerney-tools-alpha/11111111-1111-4111-8111-111111111111/subagents/agent-aa12.meta.json pins orch-planner",
+   "01-open: family 3: scope-open: tests/test_contracts.py pins orch-compose",
+   "01-open: family 3: scope-open: tests/test_installer.py pins orch-planner",
+   "01-open: family 3: scope-open: tests/test_live_profiles.py pins orch-planner",
+   "01-open: family 3: scope-open: tests/test_roles.py pins orch-compose",
+   "cutcheck: advisory -- reported, and never setting the exit status:",
+   "01-open: family 1: extraction-gap: criterion 1: **Nothing in the tree still spells the two names.** A reviewer reads the tree and finds each name go | oracle_class: judged",
+   "02-carried: family 1: extraction-gap: criterion 1: **Nothing in the tree still spells the two names.** A reviewer reads the tree and finds each name go | oracle_class: judged",
+   "cutcheck-scope-open: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-scope-open/coverage.md"
+  ]
+ },
  "cutcheck-shellhead": {
   "exit": 0,
   "lines": [
