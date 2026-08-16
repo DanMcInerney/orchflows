@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import argparse
 import ast
-import difflib
 import hashlib
 import json
 import re
@@ -72,12 +71,10 @@ PACK_SIGNATURE_CELLS = (
 # so sits under CELL_CLAUSE_MIN_WORDS.
 CRAFT_CELLS_BY_POINTER = ("slicing", "oracle_policy", "craft")
 CRAFT_BUDGET = 60
-# Cross-pack cell linter. Both figures are normative: with autojunk off
-# at the ratio call below, the reported pair set is a function of them
-# alone, so moving either changes what the check means, not only what it
-# finds. SequenceMatcher's default autojunk would break that — it drops
-# characters common in any sequence over 200 characters, suppressing the
-# ratio on exactly the longest clauses.
+# Cross-pack cell linter. Both figures are normative: with `doclint`'s
+# ratio under them the reported pair set is a function of these two and of
+# `doclint.DISTINCTIVE_MAX`, so moving any of them changes what the check
+# means, not only what it finds.
 CELL_SIMILARITY_THRESHOLD = 0.55
 CELL_CLAUSE_MIN_WORDS = 5
 
@@ -993,9 +990,7 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
                         right_free = free_content(right)
                         if len(right_free.split()) < CELL_CLAUSE_MIN_WORDS:
                             continue
-                        ratio = difflib.SequenceMatcher(
-                            None, left_free, right_free, autojunk=False
-                        ).ratio()
+                        ratio = _doclint().similarity(left_free, right_free)
                         if ratio >= CELL_SIMILARITY_THRESHOLD:
                             diag.warn(
                                 left_label,
@@ -1018,17 +1013,12 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
 # the inventory P3 works from. At P3's close this flips to "ERROR" and
 # tests/test_cell_linter.py's CROSS_TIER_WARNING_CEILING reaches 0.
 CROSS_TIER_DUPLICATE_LEVEL = "WARN"
-# A copy is found where its words are: two clauses are compared when they
-# share a word carried by no more than this many clauses tree-wide. Above
-# it a word is idiom -- "ticket", "the result" -- and pairing on it means
-# comparing every clause with every other, which at this corpus size is
-# 470,000 SequenceMatcher ratios and 45 seconds of a compiler that must be
-# cheap enough to run on every save. Measured at the value below: every
-# pair the exhaustive comparison reports above 0.66 survives the index, and
-# what it drops sits in the noise band just over the threshold. Normative
-# with the threshold: the two together decide the reported set.
-CROSS_TIER_DISTINCTIVE_MAX = 20
-CROSS_TIER_WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]{3,}")
+# The pairing index is `doclint.DISTINCTIVE_MAX`'s, and this corpus is
+# where its value was measured: every pair an exhaustive comparison
+# reports above 0.66 survives the index, and what it drops sits in the
+# noise band just over the threshold. Exhaustive here is 470,000 ratios
+# and 45 seconds of a compiler that must be cheap enough to run on every
+# save.
 # A citation and a name are not content. Every tier cites the same
 # contracts and names the same skills, so a clause that is nothing but
 # links and backticked names is the library's shared vocabulary, and
@@ -1170,9 +1160,9 @@ def cross_tier_documents(packages):
 
 
 def _cross_tier_clauses(packages):
-    """Every comparable clause, as (tier, label, clause, free_content,
-    words). Same splitter and same mandated-form stripping as the pack
-    linter, plus the citation exemption above."""
+    """Every comparable clause, as (tier, label, clause, free_content).
+    Same splitter and same mandated-form stripping as the pack linter, plus
+    the citation exemption above."""
     entries = []
     for tier, label, text in cross_tier_documents(packages):
         for clause in cell_clauses(text):
@@ -1181,78 +1171,62 @@ def _cross_tier_clauses(packages):
                 continue
             if len(_cross_tier_prose(free).split()) < CROSS_TIER_PROSE_MIN_WORDS:
                 continue
-            words = frozenset(w.lower() for w in CROSS_TIER_WORD_RE.findall(free))
-            entries.append((tier, label, clause, free, words))
+            entries.append((tier, label, clause, free))
     return entries
 
 
-def _cross_tier_candidates(entries) -> set:
-    """The (i, j) pairs to compare: two tiers, and a distinctive word in
-    common. Built from an inverted index over the distinctive words, so the
-    cost is the number of candidates rather than the square of the corpus."""
-    frequency = {}
-    for _, _, _, _, words in entries:
-        for word in words:
-            frequency[word] = frequency.get(word, 0) + 1
-    postings = {}
-    for position, (_, _, _, _, words) in enumerate(entries):
-        for word in words:
-            if frequency[word] <= CROSS_TIER_DISTINCTIVE_MAX:
-                postings.setdefault(word, []).append(position)
-    candidates = set()
-    for ids in postings.values():
-        for a in range(len(ids)):
-            for b in range(a + 1, len(ids)):
-                left, right = ids[a], ids[b]
-                tiers = (entries[left][0], entries[right][0])
-                if tiers[0] != tiers[1]:
-                    candidates.add((left, right))
-                elif tiers[0] in SAME_TIER_COMPARED and entries[left][1] != entries[right][1]:
-                    # Two skills, never one skill against its own clauses:
-                    # a body's Require, its steps and its Return restate one
-                    # fact by design, and that is the pack linter's question.
-                    candidates.add((left, right))
-    return candidates
+def _cross_tier_accept(entries):
+    """Which of doclint's candidate pairs this library compares: two
+    tiers, or two files of one tier the pack linter cannot see, and never
+    a copy the library licensed."""
+
+    def accept(left: int, right: int) -> bool:
+        left_tier, left_label, left_clause, _ = entries[left]
+        right_tier, right_label, right_clause, _ = entries[right]
+        if left_tier == right_tier:
+            # Two skills, never one skill against its own clauses: a body's
+            # Require, its steps and its Return restate one fact by design,
+            # and that is the pack linter's question.
+            if left_tier not in SAME_TIER_COMPARED or left_label == right_label:
+                return False
+        return not _licensed(left_label, left_clause, right_label, right_clause)
+
+    return accept
 
 
 def validate_cross_tier_duplication(packages, diag: Diagnostics) -> None:
     """Every clause of every skill body, rule, contract, pack reference and
-    the host-block template against every clause of another tier: a pair
-    matching at CELL_SIMILARITY_THRESHOLD or above is reported at
+    the host-block template against every clause of another tier, through
+    `doclint.near_duplicate_pairs`: a pair matching at
+    CELL_SIMILARITY_THRESHOLD or above is reported at
     CROSS_TIER_DUPLICATE_LEVEL, naming both sites."""
     entries = _cross_tier_clauses(packages)
-    by_left = {}
-    for left, right in _cross_tier_candidates(entries):
-        by_left.setdefault(left, []).append(right)
+    tiers = {tier for tier, _, _, _ in entries}
+    if len(tiers) < 2 and not tiers & SAME_TIER_COMPARED:
+        # One tier, and not one compared with itself: nothing to compare
+        # across. That is a partial tree -- the isolated fixtures carry
+        # `contracts/` and `tools/` alone -- which carries no `scripts/`
+        # for `_doclint` to find either.
+        return
     emit = diag.warn if CROSS_TIER_DUPLICATE_LEVEL == "WARN" else diag.error
-    matcher = difflib.SequenceMatcher(None, autojunk=False)
-    for left in sorted(by_left):
-        left_tier, left_label, left_clause, left_free, _ = entries[left]
-        matcher.set_seq2(left_free)
-        for right in sorted(by_left[left]):
-            right_tier, right_label, right_clause, right_free, _ = entries[right]
-            if _licensed(left_label, left_clause, right_label, right_clause):
-                continue
-            matcher.set_seq1(right_free)
-            # The cheap bounds first, both of them upper bounds on the
-            # ratio: difflib computes them without matching anything, and
-            # they answer for four candidates in ten.
-            if matcher.real_quick_ratio() < CELL_SIMILARITY_THRESHOLD:
-                continue
-            if matcher.quick_ratio() < CELL_SIMILARITY_THRESHOLD:
-                continue
-            ratio = matcher.ratio()
-            if ratio >= CELL_SIMILARITY_THRESHOLD:
-                # one finding, one wording: the ratchet in
-                # tests/test_cell_linter.py counts this check by its own
-                # words, and a same-tier pair is the same finding — a clause
-                # with two owners — reached from inside one tier
-                where = "" if left_tier != right_tier else f" (within {left_tier})"
-                emit(
-                    left_label,
-                    f"cross-tier near-duplicate{where} at {ratio:.2f} with "
-                    f"{right_label}: {left_clause!r} ~ {right_clause!r}",
-                )
+    pairs = _doclint().near_duplicate_pairs(
+        [free for _, _, _, free in entries],
+        CELL_SIMILARITY_THRESHOLD,
+        accept=_cross_tier_accept(entries),
+    )
+    for left, right, ratio in pairs:
+        left_tier, left_label, left_clause, _ = entries[left]
+        right_tier, right_label, right_clause, _ = entries[right]
+        # one finding, one wording: the ratchet in
+        # tests/test_cell_linter.py counts this check by its own words,
+        # and a same-tier pair is the same finding — a clause with two
+        # owners — reached from inside one tier
+        where = "" if left_tier != right_tier else f" (within {left_tier})"
+        emit(
+            left_label,
+            f"cross-tier near-duplicate{where} at {ratio:.2f} with "
+            f"{right_label}: {left_clause!r} ~ {right_clause!r}",
+        )
 
 
 def validate_craft_budget(pkg: dict, diag: Diagnostics) -> None:
@@ -1264,23 +1238,13 @@ def validate_craft_budget(pkg: dict, diag: Diagnostics) -> None:
         diag.error(rel(craft), f"craft reference has {n} non-empty lines, exceeds the craft budget of {CRAFT_BUDGET}")
 
 
-def _resolve_link(source_file: Path, target: str):
-    target = target.split(" ", 1)[0].split("#", 1)[0].strip()
-    if not target or target.startswith(("http://", "https://", "mailto:")):
-        return None
-    try:
-        return (source_file.parent / target).resolve()
-    except OSError:
-        return None
-
-
 def validate_reference_links(body: str, pkg: dict, diag: Diagnostics) -> None:
     file_label = rel(pkg["skill_md"])
     for match in MD_LINK_RE.finditer(body):
         target = match.group(1)
         if "references/" not in target:
             continue
-        resolved = _resolve_link(pkg["skill_md"], target)
+        resolved = _doclint().resolve_link(pkg["skill_md"], target)
         if resolved is None:
             continue
         if not resolved.is_file():
@@ -1392,6 +1356,24 @@ def discover_templates(manifest_name: str):
         d for d in comps_dir.iterdir()
         if d.is_dir() and (d / manifest_name).is_file()
     )
+
+
+def _doclint():
+    """`scripts/doclint.py`, the one owner of markdown link resolution and
+    of the near-duplicate method (ARCHITECTURE.md). This compiler is one of
+    its two callers; a project running the script is the other.
+
+    Imported on first use for `_ticket_law`'s reason, one line below:
+    `--pin` and every isolated fixture that carries no `scripts/` still has
+    to run, and only the checks that ask these two questions need the
+    owner. ROOT goes first on the path so a tree grades against its own
+    copy.
+    """
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from scripts import doclint
+
+    return doclint
 
 
 def _ticket_law():
@@ -1587,7 +1569,7 @@ def validate_cross_package_links(packages, diag: Diagnostics) -> None:
         for source_file in sorted(pkg["path"].rglob("*.md")):
             text = _read_source(source_file)
             for match in MD_LINK_RE.finditer(text):
-                resolved = _resolve_link(source_file, match.group(1))
+                resolved = _doclint().resolve_link(source_file, match.group(1))
                 if resolved is None or "references" not in resolved.parts:
                     continue
                 owner_pkg = None
@@ -1646,17 +1628,10 @@ def _linked_markdown_files():
 def validate_markdown_links(diag: Diagnostics) -> None:
     if not all((ROOT / root).is_dir() for root in LINKED_MD_ROOTS):
         return  # a partial tree (the isolated test fixtures) is not graded
+    dangling_links = _doclint().dangling_links
     for source in _linked_markdown_files():
-        text = _read_source(source)
-        for match in MD_LINK_RE.finditer(text):
-            target = match.group(1)
-            if "{{" in target:
-                continue
-            resolved = _resolve_link(source, target)
-            if resolved is None:
-                continue
-            if not resolved.exists():
-                diag.error(rel(source), f"markdown link does not resolve: {target}")
+        for target in dangling_links(source, _read_source(source)):
+            diag.error(rel(source), f"markdown link does not resolve: {target}")
 
 
 def validate_pins(diag: Diagnostics) -> None:
