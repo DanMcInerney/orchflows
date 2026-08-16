@@ -108,6 +108,11 @@ SCRIPT_NAMES = (
     "cutcheck.py",
     "friction.py",
     "migrate_state.py",
+    # Named by bare filename from the evolve template's campaign stub. It
+    # shipped inside a canonical skills/ directory until P4-3 made it a
+    # script; scripts/ is not canonical, so the move un-shipped it and the
+    # stub's instruction pointed at nothing.
+    "search_plan.py",
     "state_root.py",
     "tickets.py",
     "trace.py",

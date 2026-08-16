@@ -76,8 +76,9 @@ dependencies point. Terms: `docs/vocabulary.md`.
   state tree into the sink, never deleting from the source;
   `scripts/search_plan.py` owns the canonical bounded candidate-search
   advance, named by bare filename from the evolve template's campaign
-  stub, its request and response shapes stated beside it in
-  `scripts/search_plan_protocol.md`;
+  stub, its request and response shapes stated in
+  `docs/search-plan-protocol.md` — docs/ is canonical and ships, and a
+  protocol beside the script did not;
   `scripts/state_root.py` owns resolving the state sink,
   the one channel every other script reaches it through;
   `scripts/tickets.py` owns the ticket directory: issuing, instantiating

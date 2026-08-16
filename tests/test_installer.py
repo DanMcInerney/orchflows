@@ -155,6 +155,13 @@ def mock_host_clis(*hosts: str):
     return patch.object(install.shutil, "which", side_effect=lookup)
 
 
+# A bare filename the way a stub writes one: `search_plan.py`, never
+# `scripts/search_plan.py`. A stub that spelled the path would be stale the
+# day the script moved, so the bare form is the contract and this is what
+# reads it.
+BARE_SCRIPT_RE = re.compile(r"\b([a-z_]+\.py)\b")
+
+
 class TestScriptNames(unittest.TestCase):
     """Behavioral replacement: SCRIPT_NAMES only matters if every named
     script actually reaches the installed bin dir with matching content --
@@ -169,6 +176,26 @@ class TestScriptNames(unittest.TestCase):
             self.assertTrue(installed.is_file(), f"{name} was not installed to {plan.bin_dir}")
             source = install.REPO_ROOT / "scripts" / name
             self.assertEqual(source.read_bytes(), installed.read_bytes())
+
+    def test_every_bare_script_a_template_stub_names_is_shipped(self):
+        """A stub that says `python search_plan.py advance` is telling an
+        executor to run a file the installed tree has to carry. The template
+        names it by bare filename on purpose -- the path is the installer's
+        business, not the stub's -- so the only thing standing between the
+        instruction and a `No such file` is this list. `search_plan.py`
+        crossed from a canonical skills/ directory to scripts/ and stopped
+        shipping without a single check going red."""
+
+        named = set()
+        for path in sorted((install.REPO_ROOT / "compositions").rglob("*.md")):
+            named.update(BARE_SCRIPT_RE.findall(path.read_text(encoding="utf-8")))
+        self.assertTrue(named, "no template stub names a bare script; the grep is wrong")
+        missing = sorted(name for name in named if name not in install.SCRIPT_NAMES)
+        self.assertEqual(
+            [],
+            missing,
+            f"template stubs name scripts the installer never ships: {missing}",
+        )
 
     def test_the_installed_writers_resolve_their_sink_from_the_flat_layout(self):
         """The scripts land flat in one bin dir, with no ``scripts`` package
