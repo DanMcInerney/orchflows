@@ -5,8 +5,8 @@ dependencies point. Terms: `docs/vocabulary.md`.
 
 ## Tiers and ownership
 
-- `contracts/` — T0, the narrow waist: six pure data shapes (verdict,
-  work-item, worklog, pack-signature, result, composition).
+- `contracts/` — T0, the narrow waist: five pure data shapes (verdict,
+  work-item, worklog, pack-signature, result).
   Hash-pinned by `tests/`; a shape change is breaking
   even when prose meaning is unchanged.
 - `skills/` — T1, everything callable, one directory per sublayer:
@@ -20,13 +20,12 @@ dependencies point. Terms: `docs/vocabulary.md`.
   domain (code, content, research, design); specificity thickens only in
   `craft` (budgeted).
 - `compositions/` — T3, named workflows, invocable and admitted through
-  `orch-build`. Two forms live here while the ticket set lands:
-  `compositions/<name>/` — a directory of ticket stubs plus its
-  `template.md` manifest, which `tickets.py instantiate` writes into one
-  run's ticket directory for `orch-frontier` to run — and the
-  `compositions/<name>.md` step form per `contracts/composition.md`
-  (steps over skills combined by seq/par/loop; entry
-  routed | named | scheduled). New work takes the template form.
+  `orch-build`. One form: `compositions/<name>/` — a directory of ticket
+  stubs plus its `template.md` manifest (entry routed | named), which
+  `tickets.py instantiate` writes into one run's ticket directory for
+  `orch-frontier` to run. Shape per
+  [contracts/work-item.md](contracts/work-item.md)'s Template and stub
+  section.
 - `rules/` — cross-cutting law (composition, delegation, verification,
   loops, roles, token-economy, topology, visibility, improvement);
   using one is `rules/visibility.md` §3's.

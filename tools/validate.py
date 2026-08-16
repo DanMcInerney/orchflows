@@ -148,24 +148,6 @@ ENVELOPE_VOCAB_RES = (
     )),
 )
 
-# --- Composition contract (contracts/composition.md) -----------------
-#
-# Every compositions/*.md is a normative, invocable workflow carrying
-# the contract's fields. A field counts as present when it appears as a
-# frontmatter key or as a line-leading label/heading in the body;
-# `invariants` also counts via a `Never:` block, which the contract
-# defines it as. Missing `invariants` or `done_check` is the contract's
-# admission-rejection sentence, an ERROR.
-COMPOSITION_ENTRY_VALUES = {"routed", "named", "scheduled"}
-COMPOSITION_REQUIRED_FIELDS = ("steps", "edges")
-COMPOSITION_ADMISSION_FIELDS = ("invariants", "done_check")
-COMPOSITION_BODY_FIELD_RES = {
-    "steps": re.compile(r"^(?:#{1,6}\s+)?\*{0,2}steps\*{0,2}\b:?", re.IGNORECASE | re.MULTILINE),
-    "edges": re.compile(r"^(?:#{1,6}\s+)?\*{0,2}edges\*{0,2}\b:?", re.IGNORECASE | re.MULTILINE),
-    "invariants": re.compile(r"^(?:#{1,6}\s+)?\*{0,2}invariants\*{0,2}\b:?", re.IGNORECASE | re.MULTILINE),
-    "done_check": re.compile(r"^(?:#{1,6}\s+)?\*{0,2}done[ _-]check\*{0,2}\b:?", re.IGNORECASE | re.MULTILINE),
-}
-
 # --- Ticket templates (SPEC-ticket-set.md s2-s3) ---------------------
 #
 # A template is a directory `compositions/<name>/` holding `template.md`
@@ -174,8 +156,10 @@ COMPOSITION_BODY_FIELD_RES = {
 # with `{{placeholder}}` where instantiation fills a value. These checks
 # are the admission the spec's enforcement clause names: a cyclic
 # template, a stub without an executor or a completion test, or a
-# template with no single terminal stub is rejected here. The .md
-# composition form beside them stays until P4.
+# template with no single terminal stub is rejected here. Since P4-3
+# this is the whole of composition admission: the `.md` step form and
+# its contract are deleted, so there is no second set of checks to keep
+# in step with these.
 #
 # What a stub *is* -- its required keys, its list fields, its sections and
 # their order, its criteria, its legal executors -- is not stated here.
@@ -1244,196 +1228,6 @@ def validate_envelope(packages, diag: Diagnostics) -> None:
             )
 
 
-def discover_compositions():
-    comps_dir = ROOT / "compositions"
-    if not comps_dir.is_dir():
-        return []
-    return sorted(p for p in comps_dir.glob("*.md") if p.is_file())
-
-
-def _composition_has_field(field: str, fm: dict, body: str) -> bool:
-    keys = {k.strip().lower().replace("-", "_").replace(" ", "_") for k in fm}
-    if field in keys:
-        return True
-    if COMPOSITION_BODY_FIELD_RES[field].search(body):
-        return True
-    if field == "invariants" and NEVER_RE.search(body):
-        return True  # the contract defines invariants as the Never: block
-    return False
-
-
-# --- Composition content checks (REVIEW-2026-08-06.md thread T2) -----
-#
-# Presence checks (above) pass a vacuous `invariants` block ("Never:
-# violate the laws of physics") or a tautological `done_check` ("status
-# is complete"): both name the field, neither says anything. Authored
-# `steps` blocks in this tree bind their invariants thematically, not
-# by repeating each step id verbatim (id-literal matching false-erred
-# on 7 of 9 real compositions), so step-binding is checked at the
-# achievable granularity contracts/composition.md's admission sentence
-# actually enforces today: the invariants block must share real
-# vocabulary with the steps block as a whole, catching an invariants
-# block disconnected from the composition's own work while not
-# requiring per-step id repetition. A step-by-step id requirement is
-# the stronger form the review's remedy text names; narrowing it further
-# to per-step binding is future work, tracked in this ticket's Feedback,
-# not a regression this check introduces.
-COMPOSITION_FIELD_ORDER = ("steps", "edges", "invariants", "done_check")
-
-
-def _composition_field_span(field: str, body: str):
-    """The body slice from `field`'s own label to the next known
-    field's label (or end of body) -- steps/edges/invariants/done_check
-    appear in that fixed order in every authored composition."""
-    m = COMPOSITION_BODY_FIELD_RES[field].search(body)
-    if not m:
-        return None
-    start = m.end()
-    idx = COMPOSITION_FIELD_ORDER.index(field)
-    end = len(body)
-    for later in COMPOSITION_FIELD_ORDER[idx + 1:]:
-        later_m = COMPOSITION_BODY_FIELD_RES[later].search(body, start)
-        if later_m:
-            end = later_m.start()
-            break
-    else:
-        return_m = RETURN_RE.search(body, start)
-        if return_m:
-            end = return_m.start()
-    return body[start:end]
-
-
-def _composition_content_words(text: str) -> set:
-    return {
-        w for w in _carriage_body_stems(text)
-        if w not in CARRIAGE_QUALIFIERS
-    }
-
-
-def _validate_composition_step_binding(body: str, file_label: str, diag: Diagnostics) -> None:
-    steps_span = _composition_field_span("steps", body)
-    invariants_span = _composition_field_span("invariants", body)
-    if steps_span is None or invariants_span is None:
-        return  # missing field already reported by the admission-fields loop
-    step_words = _composition_content_words(steps_span)
-    invariant_words = _composition_content_words(invariants_span)
-    if step_words and not (step_words & invariant_words):
-        diag.error(
-            file_label,
-            "invariants block shares no vocabulary with the steps block -- "
-            "a step no invariant binds (contracts/composition.md's admission "
-            "sentence)",
-        )
-
-
-DONE_CHECK_STATUS_WORD_RE = re.compile(
-    r"^(?:status|complete[ds]?|blocked|stalled|limited|failed)$", re.IGNORECASE
-)
-DONE_CHECK_COPULA_WORDS = {
-    "is", "are", "was", "were", "be", "been", "being",
-    "has", "have", "had", "it", "its",
-}
-DONE_CHECK_FILLER_WORDS = {
-    # modal/evaluative fillers qualifying a status claim without naming
-    # a second fact (gate finding: "complete successfully" passed)
-    "must", "should", "shall", "may", "can", "will", "indeed",
-    "successfully", "properly", "correctly", "truly", "fully",
-    "when", "then", "and", "or", "not", "no", "with", "without",
-    # the envelope's own field vocabulary — the done_check oracle must
-    # reach beyond the envelope (contracts/composition.md)
-    "result", "identity", "verification", "verified", "verify",
-    "envelope", "verdict", "verdicts",
-}
-
-
-def _validate_composition_done_check(body: str, file_label: str, diag: Diagnostics) -> None:
-    done_span = _composition_field_span("done_check", body)
-    if done_span is None:
-        return  # missing field already reported by the admission-fields loop
-    words = CARRIAGE_WORD_RE.findall(done_span)
-    external_content = [
-        w for w in words
-        if w.lower() not in CARRIAGE_QUALIFIERS
-        and w.lower() not in DONE_CHECK_COPULA_WORDS
-        and w.lower() not in DONE_CHECK_FILLER_WORDS
-        and not DONE_CHECK_STATUS_WORD_RE.match(w)
-    ]
-    if not external_content:
-        diag.error(
-            file_label,
-            "done_check names only the envelope's own status vocabulary "
-            "and no external oracle (contracts/composition.md: done_check "
-            "is 'the end-to-end oracle over the final envelope')",
-        )
-
-
-def validate_compositions(diag: Diagnostics) -> None:
-    """contracts/composition.md: every compositions/*.md is a normative,
-    invocable workflow carrying name, description, entry (routed | named
-    | scheduled), steps, edges, invariants, done_check, and the
-    Require:/Return: envelope law."""
-    for path in discover_compositions():
-        file_label = rel(path)
-        fm, body = parse_frontmatter(_read_source(path), file_label, diag)
-        if fm is None or body is None:
-            continue
-        if not fm.get("name"):
-            diag.error(file_label, "composition frontmatter missing required key 'name'")
-        elif fm["name"] != path.stem:
-            diag.error(
-                file_label,
-                f"composition name '{fm['name']}' does not match file name '{path.stem}'",
-            )
-        if not fm.get("description"):
-            diag.error(file_label, "composition frontmatter missing required key 'description'")
-        elif len(fm["description"]) > DESCRIPTION_BUDGET:
-            diag.error(
-                file_label,
-                f"description is {len(fm['description'])} chars, exceeds {DESCRIPTION_BUDGET}-char budget",
-            )
-        entry = fm.get("entry")
-        if not entry:
-            diag.error(file_label, "composition frontmatter missing required key 'entry'")
-        elif entry not in COMPOSITION_ENTRY_VALUES:
-            diag.error(
-                file_label,
-                f"entry '{entry}' is not one of {sorted(COMPOSITION_ENTRY_VALUES)} "
-                "per contracts/composition.md",
-            )
-        for f in COMPOSITION_REQUIRED_FIELDS:
-            if not _composition_has_field(f, fm, body):
-                diag.error(
-                    file_label,
-                    f"composition missing required field '{f}' per contracts/composition.md",
-                )
-        admission_fields_present = True
-        for f in COMPOSITION_ADMISSION_FIELDS:
-            if not _composition_has_field(f, fm, body):
-                admission_fields_present = False
-                diag.error(
-                    file_label,
-                    f"composition missing '{f}' -- admission rejects a composition "
-                    "missing invariants or done_check (contracts/composition.md)",
-                )
-        if admission_fields_present:
-            _validate_composition_step_binding(body, file_label, diag)
-            _validate_composition_done_check(body, file_label, diag)
-        if not REQUIRE_RE.search(body):
-            diag.error(file_label, "composition body missing a line starting 'Require:'")
-        if not RETURN_RE.search(body):
-            diag.error(file_label, "composition body missing a sentence starting 'Return'")
-        else:
-            clause = _envelope_first_clause(body)
-            missing = _envelope_missing(clause) if clause is not None else []
-            if missing:
-                diag.error(
-                    file_label,
-                    "Return does not lead with the result envelope per contracts/result.md: "
-                    f"first clause carries no {', '.join(missing)} vocabulary "
-                    "and names no work-item carrier",
-                )
-
-
 def discover_templates(manifest_name: str):
     """Every `compositions/<name>/` directory holding the manifest."""
     comps_dir = ROOT / "compositions"
@@ -1826,7 +1620,6 @@ def run_validation() -> Diagnostics:
     validate_cell_duplication(packages, diag)
     validate_cross_tier_duplication(packages, diag)
     validate_envelope(packages, diag)
-    validate_compositions(diag)
     validate_templates(diag)
     validate_cross_package_links(packages, diag)
     validate_names(packages, diag)

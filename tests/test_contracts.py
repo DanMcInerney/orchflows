@@ -58,15 +58,53 @@ class TestContractRegister(unittest.TestCase):
 
     ABSORBED = ("contracts/spec.md", "contracts/delegation.md")
 
+    # The library surfaces a live name has to resolve in. SPEC-ticket-set.md
+    # and REVIEW-* are the records that ordered the deletions and name what
+    # they buried; `benchmarks/` is frozen fixture data.
+    LIVE_SURFACES = (
+        "rules", "skills", "packs", "compositions", "docs", "templates",
+        "README.md", "ARCHITECTURE.md", "DESIGN.md", "AGENTS.md",
+    )
+    # Deleted at P4-3 with the composition-file grammar: the contract that
+    # specified it (its shape is `work-item.md`'s Template and stub section
+    # now), the engine that executed one, the engine whose blind lanes are
+    # `orch-verify` packets, and the workflow the fix template absorbed.
+    DELETED_AT_P4 = (
+        "contracts/composition.md", "orch-compose", "orch-panel", "orch-diagnose",
+    )
+
     def test_the_register_is_the_surviving_t0_files(self):
         names = sorted(p.name for p in CONTRACTS.glob("*.md"))
         self.assertEqual(
             names,
             [
-                "composition.md", "pack-signature.md", "result.md",
+                "pack-signature.md", "result.md",
                 "verdict.md", "work-item.md", "worklog.md",
             ],
             "contracts/ is not the T0 register after the supersession",
+        )
+
+    def test_no_live_library_surface_names_a_thing_p4_deleted(self):
+        """A name that resolves nowhere is worse than no name: a reader
+        follows it, an agent routes at it, and neither finds anything.
+        `validate_names` catches the backticked half in four directories;
+        this catches every spelling across every surface a caller reads."""
+        offenders = []
+        for surface in self.LIVE_SURFACES:
+            node = ROOT / surface
+            paths = sorted(node.rglob("*.md")) if node.is_dir() else [node]
+            for path in paths:
+                if not path.is_file():
+                    continue
+                text = path.read_text(encoding="utf-8")
+                for dead in self.DELETED_AT_P4:
+                    if dead in text:
+                        offenders.append(
+                            f"{path.relative_to(ROOT).as_posix()}: {dead}"
+                        )
+        self.assertEqual(
+            [], sorted(offenders),
+            "these live surfaces still name something P4 deleted",
         )
 
     def test_no_prose_in_the_tree_still_links_the_absorbed_contracts(self):
@@ -207,12 +245,13 @@ class TestWorkItemContract(unittest.TestCase):
         and is not this list's subject."""
         for name in (
             "work-item.md", "pack-signature.md", "worklog.md", "verdict.md",
-            "composition.md", "result.md",
+            "result.md",
         ):
             text = read(name)
             for dead in (
                 "task-result.md", "handoff.md", "(spec.md)", "(delegation.md)",
                 "contracts/spec.md", "contracts/delegation.md",
+                "(composition.md)", "contracts/composition.md",
             ):
                 self.assertNotIn(dead, text, f"{name} still references deleted {dead}")
 
@@ -270,21 +309,27 @@ class TestWorklogContract(unittest.TestCase):
             self.assertIn(value, text, f"worklog.md's terminal set is missing {value}")
 
 
-class TestCompositionContract(unittest.TestCase):
-    def test_contains_the_composition_fields(self):
-        text = read("composition.md")
-        for token in ("`name`", "`description`", "`entry`", "`steps`", "`edges`", "`invariants`", "`done_check`"):
-            self.assertIn(token, text, f"composition.md is missing {token!r}")
-        for entry in ("`routed`", "`named`", "`scheduled`"):
-            self.assertIn(entry, text, f"composition.md is missing entry value {entry!r}")
-        for combinator in ("`seq`", "`par`", "`loop`"):
-            self.assertIn(combinator, text, f"composition.md is missing combinator {combinator!r}")
+class TestTemplateAndStub(unittest.TestCase):
+    """What `contracts/composition.md` used to specify, in the one place
+    that specifies it now. A composition is a template directory, so its
+    shape is a ticket's shape — and `work-item.md` states it by naming the
+    two owners that grade it rather than restating their law."""
 
-    def test_admission_rejects_missing_invariants_or_done_check(self):
-        text = read_flat("composition.md")
+    def test_work_item_owns_the_template_shape(self):
+        text = read_flat("work-item.md")
+        self.assertIn("## Template and stub", read("work-item.md"))
+        for token in ("`template.md`", "`compositions/<name>/`", "`{{placeholder}}`"):
+            self.assertIn(token, text, f"work-item.md is missing {token!r}")
+
+    def test_the_graders_are_named_and_not_restated(self):
+        text = read_flat("work-item.md")
         self.assertIn(
-            "rejects a composition missing `invariants` or `done_check`", text,
-            "composition.md is missing the admission-rejection sentence",
+            "`scripts/tickets.py`'s `template_defects`", text,
+            "work-item.md does not name the owner that grades a stub",
+        )
+        self.assertIn(
+            "`tools/validate.py`", text,
+            "work-item.md does not name the owner that grades the manifest",
         )
 
 

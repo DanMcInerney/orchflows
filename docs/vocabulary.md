@@ -43,11 +43,16 @@ that needs a different meaning needs a different word.
   lens, oracle policy, workspace, required spec fields, craft).
 - **signature** — `contracts/pack-signature.md`: the cells every pack must
   provide and the sharing constraints between them.
-- **composition** — a T3 named workflow, invocable by name; entry
-  `routed | named`; admitted through `orch-build`: a template (below),
-  or a composition file per `contracts/composition.md` while that form
-  is still in the tree. That form's edges use the **combinators** seq,
-  par and loop, which `contracts/composition.md` owns.
+- **composition** — a T3 named workflow: a template directory under
+  `compositions/` (canonical) or `<repo>/.orchflows/compositions/`
+  (custom), instantiated by `tickets.py instantiate` and run by
+  `orch-frontier`; entry `routed | named`; admitted through
+  `orch-build`.
+- **combinator** — one of the three ways a template composes its stubs:
+  a `depends_on` edge, disjoint parallel stubs (no dependency path
+  between them, so the frontier may run them together), and a loop stub
+  (`executor: orch-loop`). There is no fourth, and none of them is a
+  field: each is a shape the ticket graph already carries.
 - **dispatchable unit / envelope** — a skill or composition another may
   bind as a step or loop body, and the leading `Return` fields it must
   carry — status, result identity, verification — per
@@ -101,8 +106,9 @@ that needs a different meaning needs a different word.
   subtree is `<id>.NN` unit tickets plus `<id>.gate.*`; it completes
   when `<id>.gate.verify` completes; a successor depends on the root id
   alone.
-- **template** — a directory of ticket stubs, instantiated into a run's
-  ticket directory; the P1 form of a composition.
+- **template** — a directory of ticket stubs plus its `template.md`
+  manifest, instantiated into a run's ticket directory; the one form a
+  composition takes. Shape per `contracts/work-item.md`.
 - **stub** — a template's unit: a ticket missing only `run`, `status`,
   `claimed_*` and any `{{placeholder}}`.
 - **terminal ticket** — the stub no other stub depends on; its

@@ -51,7 +51,6 @@ TICKETS_PY = ROOT / "scripts" / "tickets.py"
 SINK_PATHS = {
     "work-item.md": "`<state-root>/tickets/<run>/<id>.md`",
     "worklog.md": "`<state-root>/runs/<run>/worklog.md`",
-    "composition.md": "`<state-root>/runs/<run>/composition.md`",
 }
 
 # The `.orch` references allowed to survive anywhere in `contracts/`.

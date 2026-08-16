@@ -175,10 +175,9 @@ self-improvement wired into every run.
   `orch-critique` attacks, `orch-verify` decides done against named
   oracles, `orch-loop` iterates, the `fix` workflow proves the cause
   before repairing it.
-- **One stud pattern.** Six frozen contracts — work-item, verdict,
-  worklog, pack-signature, composition, result — are the only
-  interfaces. Anything that emits one plugs into anything that takes
-  one.
+- **One stud pattern.** Five frozen contracts — work-item, verdict,
+  worklog, pack-signature, result — are the only interfaces. Anything
+  that emits one plugs into anything that takes one.
 - **One return shape.** Every dispatchable unit returns one result
   envelope — status, result identity, verification — so any unit's
   output feeds any successor's evidence. A named workflow is just

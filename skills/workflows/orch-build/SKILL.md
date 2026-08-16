@@ -24,10 +24,9 @@ the user, one question at a time, each answer recorded verbatim.
 Write to the anatomy and budget; for a pack,
 satisfy every
 [signature](../../../contracts/pack-signature.md) cell and its sharing
-constraints; for a composition file, apply
-[contracts/composition.md](../../../contracts/composition.md)'s
-admission sentence; for a contract change, treat any shape change as
-breaking.
+constraints; for a template, `tools/validate.py` and `tickets.py
+instantiate` are the admission; for a contract change, treat any shape
+change as breaking.
 
 Gate the result's artifact identity through `orch-critique` with
 [references/library-lens.md](references/library-lens.md), in a context
