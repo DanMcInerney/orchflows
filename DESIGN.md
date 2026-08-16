@@ -227,9 +227,9 @@ workspace's standards owner, as genre stays out of content craft.
 Choices on the record: the renderable unit is a **view**, not a
 "surface", because the root ticket already carries affected surfaces as
 `write_scope` ([contracts/work-item.md](contracts/work-item.md), Root
-ticket) — one word, two meanings in one ticket was the alternative. "Standards owner" moved from code
-craft to the library vocabulary when this pack became its second
-consumer — one owner per fact. A new unit executor, `orch-render`,
+ticket) — one word, two meanings in one ticket was the alternative.
+"Standards owner" moved from code craft to the library vocabulary when
+this pack became its second consumer — one owner per fact. A new unit executor, `orch-render`,
 was admitted with the pack because the unit loop differs, not merely
 the artifact: red-green requires a check that can fail before code
 exists, while a visual check cannot exist before the view renders —
