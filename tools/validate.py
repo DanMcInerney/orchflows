@@ -2,12 +2,12 @@
 """The orchflows compiler.
 
 Enforces package anatomy, frontmatter, call-graph acyclicity, pack
-signature completeness, T0 hash pins, the composition contract, the
+signature completeness, T0 hash pins, the
 ticket-template contract (whose shape law is scripts/tickets.py's, read
 from there rather than restated), the result-envelope lead, and the
 duplication checks -- per pack cell and across tiers -- that replaced
 keeping copies in sync, per AGENTS.md, ARCHITECTURE.md,
-rules/composition.md, contracts/composition.md, contracts/result.md,
+rules/composition.md, contracts/result.md,
 contracts/work-item.md, and contracts/pack-signature.md. Stdlib only, no
 network.
 
@@ -129,7 +129,7 @@ TERMINAL_TERM_RE = re.compile(r"stalled|limited|exit|terminal", re.IGNORECASE)
 # of prose ordering within that clause; a Return whose first clause
 # instead names the work-item carrier (the ticket) passes, because the
 # ticket's T0 shape carries all three fields -- rule 10's envelope-on-a-
-# named-T0-carrier form, the shape `orch-task` uses.
+# named-T0-carrier form.
 ENVELOPE_UNITS = (
     "orch-investigate",
     "orch-loop",
@@ -1004,11 +1004,45 @@ def _cross_tier_prose(clause: str) -> str:
     return re.sub(r"\s+", " ", clause).strip()
 
 
+# Two files of one tier are usually that tier's own business: the pack
+# linter already owns that question inside packs, and a template's stubs
+# are graded against their own manifest. skills/ has no such second check,
+# so two skill bodies could carry one clause byte for byte while the
+# linter flagged each of them against some innocent third file in another
+# tier -- the one pair it could not see was the pair that mattered.
+SAME_TIER_COMPARED = frozenset({"skills"})
+
+# A copy the library licensed, and the fact it copies. Each entry is
+# (owner, copy, a phrase both carry): the pair alone would exempt these
+# two files from every future duplication, and the phrase keeps the
+# licence to the clause it was granted for.
+#
+# rules/visibility.md §6 owns the untrusted-data rule; templates/host-block.md
+# carries it because the block is the one text a host reads before it can
+# reach any rule, and it names the owner one line above the copy. Reporting
+# it asks for the copy to go, which would take the licence with it.
+LICENSED_COPIES = (
+    (
+        "rules/visibility.md",
+        "templates/host-block.md",
+        "untrusted data",
+    ),
+)
+
+
+def _licensed(left_label: str, left_clause: str, right_label: str, right_clause: str) -> bool:
+    """Whether this pair is a copy the library licensed, for this clause."""
+
+    labels = {left_label.replace("\\", "/"), right_label.replace("\\", "/")}
+    for owner, copy, phrase in LICENSED_COPIES:
+        if labels == {owner, copy} and phrase in left_clause and phrase in right_clause:
+            return True
+    return False
+
+
 def cross_tier_documents(packages):
     """(tier, label, text) for every file the check reads, tier being the
-    directory the library gave it. Two files of one tier are that tier's
-    own business -- the pack linter already owns that question inside
-    packs -- so only pairs from two tiers are compared."""
+    directory the library gave it."""
     documents = []
     for pkg in packages:
         tier = "packs" if pkg["is_pack"] else "skills"
@@ -1016,11 +1050,20 @@ def cross_tier_documents(packages):
         if pkg["is_pack"]:
             for reference in sorted((pkg["path"] / "references").glob("*.md")):
                 documents.append(("packs", rel(reference), _read_source(reference)))
-    for tier in ("rules", "contracts"):
+    for tier in ("rules", "contracts", "docs"):
         directory = ROOT / tier
         if directory.is_dir():
             for path in sorted(directory.glob("*.md")):
                 documents.append((tier, rel(path), _read_source(path)))
+    # Every template stub and every reference beside them. This is where a
+    # composition's own criteria live, and each of the seven templates was
+    # written against a reference it was told to link -- restatement the
+    # check could not see because the corpus stopped at the tiers that
+    # existed when it was written.
+    compositions = ROOT / "compositions"
+    if compositions.is_dir():
+        for path in sorted(compositions.rglob("*.md")):
+            documents.append(("compositions", rel(path), _read_source(path)))
     host_block = ROOT / "templates" / "host-block.md"
     if host_block.is_file():
         documents.append(("templates", rel(host_block), _read_source(host_block)))
@@ -1062,7 +1105,8 @@ def _cross_tier_candidates(entries) -> set:
         for a in range(len(ids)):
             for b in range(a + 1, len(ids)):
                 left, right = ids[a], ids[b]
-                if entries[left][0] != entries[right][0]:
+                tiers = (entries[left][0], entries[right][0])
+                if tiers[0] != tiers[1] or tiers[0] in SAME_TIER_COMPARED:
                     candidates.add((left, right))
     return candidates
 
@@ -1079,10 +1123,12 @@ def validate_cross_tier_duplication(packages, diag: Diagnostics) -> None:
     emit = diag.warn if CROSS_TIER_DUPLICATE_LEVEL == "WARN" else diag.error
     matcher = difflib.SequenceMatcher(None, autojunk=False)
     for left in sorted(by_left):
-        _, left_label, left_clause, left_free, _ = entries[left]
+        left_tier, left_label, left_clause, left_free, _ = entries[left]
         matcher.set_seq2(left_free)
         for right in sorted(by_left[left]):
-            _, right_label, right_clause, right_free, _ = entries[right]
+            right_tier, right_label, right_clause, right_free, _ = entries[right]
+            if _licensed(left_label, left_clause, right_label, right_clause):
+                continue
             matcher.set_seq1(right_free)
             # The cheap bounds first, both of them upper bounds on the
             # ratio: difflib computes them without matching anything, and
@@ -1093,9 +1139,14 @@ def validate_cross_tier_duplication(packages, diag: Diagnostics) -> None:
                 continue
             ratio = matcher.ratio()
             if ratio >= CELL_SIMILARITY_THRESHOLD:
+                # one finding, one wording: the ratchet in
+                # tests/test_cell_linter.py counts this check by its own
+                # words, and a same-tier pair is the same finding — a clause
+                # with two owners — reached from inside one tier
+                where = "" if left_tier != right_tier else f" (within {left_tier})"
                 emit(
                     left_label,
-                    f"cross-tier near-duplicate at {ratio:.2f} with "
+                    f"cross-tier near-duplicate{where} at {ratio:.2f} with "
                     f"{right_label}: {left_clause!r} ~ {right_clause!r}",
                 )
 
@@ -1308,8 +1359,8 @@ def _validate_stub_executor(
 ) -> None:
     """The executor names a skill in the tree or a script that exists --
     the half of executor law that needs the tree, and so cannot live with
-    the rest of it in scripts/tickets.py. Which executors are legal at all
-    is that script's (`ENGINE_EXECUTORS`), and it reports them itself.
+    the rest of it in scripts/tickets.py. What shape an executor may take
+    at all is that script's, and it reports on that itself.
 
     A placeholder is left to instantiation, which refuses an unfilled one
     and so checks the filled value.
@@ -1486,6 +1537,13 @@ def validate_pins(diag: Diagnostics) -> None:
 # owner therefore rode through exit 0 twice (`orch-mechanize`,
 # `orch-review-fix`), which is a rule naming an owner that is not there.
 NAME_CHECKED_DIRS = ("rules", "docs", "contracts", "templates")
+# Read to the bottom, not just the top level. compositions/ is where every
+# template stub lives and every stub names an executor; a pack keeps its
+# craft, slicing and oracle criteria under references/, and so does a skill.
+# All of it calls skills by name, and none of it was on the surface -- the
+# non-recursive glob over four directories above saw the top level and
+# stopped, which is how a stub could name a deleted skill through exit 0.
+NAME_CHECKED_TREES = ("compositions", "packs", "skills")
 NAME_CHECKED_FILES = ("README.md", "DESIGN.md", "ARCHITECTURE.md", "AGENTS.md")
 # `orch-` alone is the prefix, not a name; a name carries at least one
 # segment after it. Plain text is how the library says "mentioned, not
@@ -1531,9 +1589,17 @@ def validate_names(packages, diag: Diagnostics) -> None:
         node = ROOT / directory
         if node.is_dir():
             paths.extend(sorted(node.glob("*.md")))
+    for directory in NAME_CHECKED_TREES:
+        node = ROOT / directory
+        if node.is_dir():
+            paths.extend(sorted(node.rglob("*.md")))
     paths.extend(ROOT / name for name in NAME_CHECKED_FILES)
+    # A package body is `build_call_graph`'s, which reports an unresolvable
+    # name there in its own words; reading it here too would convict one
+    # line twice in two vocabularies.
+    bodies = {pkg["skill_md"].resolve() for pkg in packages}
     for path in paths:
-        if not path.is_file():
+        if not path.is_file() or path.resolve() in bodies:
             continue
         for name in sorted(set(BACKTICKED_NAME_RE.findall(_read_source(path)))):
             if name in known:
