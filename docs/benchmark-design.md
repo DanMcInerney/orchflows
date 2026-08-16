@@ -22,12 +22,13 @@ about whether the target finds the benchmark hard. A benchmark can pass
 every validity check at a 100% target score. Gate validity; **measure**
 difficulty and publish the figure.
 
-Measure in the measurement pass, on the candidate-accessible half
-only — running the target against protected evidence exposes it.
-Publish the score, its scope, the target identity, and the date. Do not
-gate on a band: at a 32-case resolution a 5-9% band admits one
-attainable score, and a gate forces one verdict on the two readings
-below, which demand opposite repairs.
+Where that measurement runs, what it may touch, and what the record it
+lands in must name are
+[the measurement pass](../compositions/references/benchmaker-protocol.md#measurement-pass)'s.
+What is left to a builder is whether to gate on a band, and the answer
+is no: at a 32-case resolution a 5-9% band admits one attainable score,
+and a gate forces one verdict on the two readings below, which demand
+opposite repairs.
 
 A published launch band is one maintainer's stated practice, not a field
 standard. Cite it as an anchor; never as a threshold.
@@ -38,13 +39,14 @@ meta-benchmark's instrument is two numbers per item — difficulty as
 mean correctness across a panel, discrimination as the corrected
 item–total correlation — plus a flag for items where weaker systems
 outperform stronger ones. All three come free from a run made for
-another reason. Report only the resolution the panel carries: at two
-rungs and one trial, difficulty is a three-valued status
-(both-pass, split, both-fail), not a statistic.
+another reason. How much of that instrument a two-rung panel can
+actually carry is fixed in
+[the measurement pass](../compositions/references/benchmaker-protocol.md#measurement-pass).
 
-**A score has three readings, not two.** High: the set is too easy, or
-the oracle is too lenient — opposite repairs, never resolved to one
-without evidence. Low: the case is genuinely hard, **or it is broken**.
+**A score has three readings, not two.** Every status is ambiguous by
+construction, and
+[the measurement pass](../compositions/references/benchmaker-protocol.md#measurement-pass)
+states the pair each one carries and which pass decides between them.
 The same work measures invalidity and discrimination as negatively
 associated (Pearson r ≈ −0.62) and states the rule that follows: treat
 hard as progress only when it co-occurs with low invalidity and
@@ -90,9 +92,9 @@ two-rater audit over ~150 stratified items found weak inter-rater
 agreement on graded dimensions and only moderate agreement on the
 binary fatal-flaw call. Its union fatal-flaw rate was 3.4% — the
 measured good end of the 10-46% band, and what a disciplined pipeline
-achieves rather than what authoring achieves unaided. Record a defect
-count and a taxonomy class; a rate over a small set carries no usable
-interval.
+achieves rather than what authoring achieves unaided. What to record
+from an audit that size, and why not a rate, is
+[the reference audit](../compositions/references/benchmaker-protocol.md#reference-audit)'s.
 
 ## Oracles
 
@@ -125,11 +127,9 @@ the trace re-imports the correct-but-different failure.
 Attackability is architectural. Every one of ten audited agent benchmarks
 was passable at near-perfect scores without solving a task (219 flaws).
 One round of patching cannot tell a fixable benchmark from a structurally
-broken one — only re-running the attacker can. Attempt to pass the
-benchmark without doing the work, in the attack pass, from the
-candidate's own scope. An attack that needs material the candidate
-cannot reach is the strongest result available: it shows the protection
-is load-bearing.
+broken one — only re-running the attacker can. What that attempt may
+draw on, and how to read each of its three outcomes, is
+[the attack pass](../compositions/references/benchmaker-protocol.md#attack-pass)'s.
 
 ## A score is a property of its configuration
 
@@ -143,10 +143,11 @@ worth noting; it is several times larger than any delta the suite can
 resolve.
 
 Two consequences. Report at the configuration level — artifact × model ×
-harness × benchmark — and bind all four into the result identity. And do
-not subtract a harness offset: the same study finds stronger models vary
-*less* across harnesses, so the effect is candidate-dependent and one
-correction term is wrong for every candidate but one.
+harness × benchmark — and bind all four into the result identity. And
+the same study finds stronger models vary *less* across harnesses,
+which is the measurement under
+[the protocol](../compositions/references/benchmaker-protocol.md#scoring)'s
+refusal to subtract an offset.
 
 ## Benchmarks that are generated, not written
 
@@ -183,16 +184,18 @@ changes that should not matter. One case per angle with no within-angle
 redundancy is the maximally diverse configuration and therefore the
 least stable one. The repair is not a better aggregate — at one item per
 angle a geometric or harmonic mean is dominated by a single item. It is
-to report the per-angle vector as the artifact and treat any scalar as
-derived.
+the vector rule
+[the protocol](../compositions/references/benchmaker-protocol.md#scoring)
+states.
 
 Clustered standard errors run up to 3.05× naive on grouped items.
 Detecting a 3-point difference at 80% power needs ~969 independent
 items — which collides with the ≤500-item size guidance. Unresolved;
 record the collision rather than picking a side. Sampling power also
-presumes a super-population; a purposive census of declared coverage has
-none, so declare the instrument's own resolution instead — no delta
-below the measured rerun spread, and none below one item.
+presumes a super-population, and a purposive census of declared coverage
+has none — which is why
+[the measurement pass](../compositions/references/benchmaker-protocol.md#measurement-pass)
+declares an instrument resolution rather than an interval.
 
 Partial credit and binary scoring produce different rankings on the same
 suite. Do not headline a partial score.
