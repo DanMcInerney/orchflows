@@ -1062,14 +1062,14 @@ def criterion_defects(section_text: str) -> list:
         oracle = ORACLE_RE.search(text)
         if oracle is None or not oracle.group(1).strip(" `.,;*"):
             defects.append(
-                f"criterion {number} names no `oracle:` — the exact check that "
+                f"criterion {number} names no `oracle:`, the exact check that "
                 f"decides it: {text[:60]!r}"
             )
         oracle_class = ORACLE_CLASS_RE.search(text)
         value = oracle_class.group(1).strip().lower() if oracle_class else ""
         if not value:
             defects.append(
-                f"criterion {number} names no `oracle_class:` — one of "
+                f"criterion {number} names no `oracle_class:`, one of "
                 f"{list(ORACLE_CLASSES)}: {text[:60]!r}"
             )
         elif value not in ORACLE_CLASSES:
