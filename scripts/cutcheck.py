@@ -6,6 +6,16 @@ reality. Family 3 is scope closure. Family 4 is pairwise safety. Family
 5 is acceptance coverage. Family 6 is executor legality. One invocation
 decides all six.
 
+A reading none of them could make is reported under ``reading`` rather
+than absorbed into whichever family wanted it: a status that did not
+answer, a copy git could not list, a file too large to index, a library
+holding no pack cell. Advisory, because a reading this host could not
+make is no defect of the cut -- and printed, because the alternative is a
+family that graded nothing reading exactly like a family that graded
+everything and found it clean. A revision that could not be cloned at all
+is the one reading that stops the run instead: neither half of a
+discrimination can be graded against a copy that is not there.
+
 Discrimination: an oracle that reads the same at the baseline as it will
 once the work has landed proves nothing. Every extractable oracle runs
 inside a scratch copy of the baseline revision and, when it fails there,
@@ -167,6 +177,7 @@ FAMILY_3 = "family 3"
 FAMILY_4 = "family 4"
 FAMILY_5 = "family 5"
 FAMILY_6 = "family 6"
+READING = "reading"
 ALREADY_PASSES = "already-passes"
 NO_HITS_BOTH_REVISIONS = "no-hits-both-revisions"
 FAILS_BOTH_REVISIONS = "fails-both-revisions"
@@ -191,6 +202,7 @@ COVERAGE_MAP_ABSENT = "coverage-map-absent"
 ILLEGAL_EXECUTOR = "illegal-executor"
 SYMLINK_IN_TREE = "symlink-in-tree"
 BYTECODE_WRITTEN = "bytecode-written"
+UNREAD_HALF = "unread-half"
 FAMILY_OF = {
     ALREADY_PASSES: FAMILY,
     NO_HITS_BOTH_REVISIONS: FAMILY,
@@ -222,6 +234,11 @@ FAMILY_OF = {
     ORPHAN_ITEM: FAMILY_5,
     COVERAGE_MAP_ABSENT: FAMILY_5,
     ILLEGAL_EXECUTOR: FAMILY_6,
+    # No family: a reading that did not happen is a fact about this run on
+    # this host, and the families are what a cut is graded on. It carries a
+    # marker of its own so a reader filters it the way every other line is
+    # filtered, and so no family's line count silently gains a member.
+    UNREAD_HALF: READING,
 }
 # Advisory classes are printed and never set the exit status. A map that is
 # not there is a fact about the run, not a defect of the cut; a committed
@@ -234,8 +251,30 @@ ADVISORY = frozenset(
         VERDICT_IN_OUTPUT,
         SYMLINK_IN_TREE,
         BYTECODE_WRITTEN,
+        UNREAD_HALF,
     }
 )
+# Every reading this invocation could not make, in the order it failed to
+# make them, one line each and each named once. A list on the module beside
+# `_MUTATED`, and for the same reason: what a reading noticed besides its
+# own answer has to reach the report without every function between here
+# and there carrying a second return value for it. Cleared by `main`, so a
+# process grading twice never inherits the first run's readings.
+_UNREAD = []
+
+
+def _unread(what):
+    """Record a reading that did not happen, and what could not be read.
+
+    The defect this closes is one value for two answers. ``None`` meant
+    both "this oracle discriminates" and "no half of it could be read",
+    ``[]`` meant both "this span wrote nothing" and "the status that would
+    have said so failed", and a caller cannot tell a grading that happened
+    from one that did not. Every such site names itself here instead.
+    """
+
+    if what not in _UNREAD:
+        _UNREAD.append(what)
 # The one thing a python oracle writes into the copy by importing anything,
 # and the flag that stops it. Reported in words because the repair is a
 # spelling of the oracle and is stated nowhere else -- not in the pack's
@@ -440,6 +479,10 @@ PIN_SIZE_LIMIT = 512 * 1024
 # and only where some objective takes a literal away. A cut that removes
 # nothing never opens a file here.
 _PIN_INDEX = {}
+# Per tree, what the index could not read, kept beside it for the same span:
+# a cached index is handed to later invocations, and the skipped files are
+# part of what that index is.
+_PIN_SKIPPED = {}
 DOTTED_RE = re.compile(r"\.[A-Za-z0-9]{1,5}$")
 GLOB_RE = re.compile(r"[*?\[\]]")
 # `<run>` stands for whichever run it is: a shape, not a path anything writes.
@@ -676,6 +719,10 @@ def _mutations(tree):
 
     proc = _git(["status", "--porcelain", "--ignored"], tree)
     if proc is None or proc.returncode != 0:
+        # No delta and no census: nobody looked. Returning the empty list
+        # alone reads as "this span wrote nothing", which is the confinement
+        # instrument answering for a reading it never made.
+        _unread("git status in {} failed: confinement unmeasured".format(tree))
         return []
     # Porcelain v1 is two status columns, a space, then the path.
     seen = {line[3:] for line in proc.stdout.splitlines() if len(line) > 3}
@@ -691,12 +738,14 @@ def _symlink_entries(tree):
     Read from the tree, never from the checkout: ``core.symlinks=false`` is
     what confines the copy, and it leaves the recorded mode exactly as
     committed, so this reads the same on Windows and POSIX and under any
-    privilege. A tree carrying no history answers nothing and is reported as
-    nothing -- the clone is what puts history there.
+    privilege. A tree carrying no history answers nothing -- the clone is what
+    puts history there -- and the reading that failed says so rather than
+    reading as a tree recording no symlink.
     """
 
     proc = _git(["ls-tree", "-r", "HEAD"], tree)
     if proc is None or proc.returncode != 0:
+        _unread("ls-tree in {} failed: symlink entries unread".format(tree))
         return []
     return [
         line.partition("\t")[2]
@@ -1301,10 +1350,18 @@ def _discrimination(command, baseline_tree, head_tree):
     all the same. Neither half's non-reading is a failure: a read that timed
     out or could not run decided nothing, and is reported as deciding nothing
     whichever half produced it.
+
+    A half that produced no reading at all -- a command no tokeniser could
+    split into an argv -- returns the same None as an oracle that
+    discriminates, and names itself through ``_unread`` so the two are told
+    apart in the report. ``head_tree`` being None is not that case: it is cut
+    time, where the HEAD half is skipped by design and a failed clone has
+    already stopped the run.
     """
 
     at_baseline = _exit_code(command, baseline_tree)
     if at_baseline is None:
+        _unread("baseline reading decided nothing: {}".format(command))
         return None
     if at_baseline == 0:
         return ALREADY_PASSES
@@ -1313,7 +1370,10 @@ def _discrimination(command, baseline_tree, head_tree):
     if head_tree is None:
         return None
     at_head = _exit_code(command, head_tree)
-    if at_head is None or at_head == 0:
+    if at_head is None:
+        _unread("HEAD reading decided nothing: {}".format(command))
+        return None
+    if at_head == 0:
         return None
     if at_head in (UNRUNNABLE, TIMED_OUT):
         # The same reading the baseline half already refuses to call a failure.
@@ -1632,7 +1692,14 @@ def _pin_index(tree):
 
     key = str(tree)
     if key in _PIN_INDEX:
+        # Replayed, not skipped: the index is cached per tree and outlives the
+        # invocation that built it, so a second run reading the same copy would
+        # otherwise be handed a shorter index than the first and told nothing
+        # about the difference.
+        for what in _PIN_SKIPPED.get(key, ()):
+            _unread(what)
         return _PIN_INDEX[key]
+    skipped = []
     entries = []
     for root in PIN_ROOTS:
         base = tree / root
@@ -1640,13 +1707,25 @@ def _pin_index(tree):
             continue
         for path in sorted(base.rglob("*")):
             try:
-                if not path.is_file() or path.stat().st_size > PIN_SIZE_LIMIT:
+                if not path.is_file():
+                    continue
+                if path.stat().st_size > PIN_SIZE_LIMIT:
+                    # Skipped and said: the index holding no pin from this
+                    # file is a fact about the reading, and read as a fact
+                    # about the file it licenses a grant the file breaks.
+                    skipped.append("{}: past PIN_SIZE_LIMIT, not read for pins".format(
+                        path.relative_to(tree).as_posix()))
                     continue
                 text = path.read_text(encoding="utf-8", errors="replace")
-            except OSError:
+            except OSError as error:
+                skipped.append("{}: not read for pins: {}".format(
+                    path.relative_to(tree).as_posix(), error))
                 continue
             entries.append((path.relative_to(tree).as_posix(), text))
+    for what in skipped:
+        _unread(what)
     _PIN_INDEX[key] = entries
+    _PIN_SKIPPED[key] = skipped
     return entries
 
 
@@ -2003,7 +2082,14 @@ def _lib_root(declared):
     """
 
     if declared:
-        return Path(declared)
+        declared_root = Path(declared)
+        if not (declared_root / PACKS_DIR).is_dir():
+            # Honoured and reported: the caller named this library, so it is
+            # the one read, and a library holding no pack cell is family 6
+            # grading every executor against nothing.
+            _unread("{}: no {}/ there, so family 6 grades nothing".format(
+                declared_root, PACKS_DIR))
+        return declared_root
     candidates = [Path(__file__).resolve().parent.parent]
     try:
         candidates.append(state_root.state_root().parent / "lib")
@@ -2012,6 +2098,8 @@ def _lib_root(declared):
     for candidate in candidates:
         if (candidate / PACKS_DIR).is_dir():
             return candidate
+    _unread("no orchflows library found ({}), so family 6 grades nothing".format(
+        ", ".join(str(candidate) for candidate in candidates)))
     return None
 
 
@@ -2238,6 +2326,10 @@ def main(argv=None):
     )
     args = parser.parse_args(argv)
 
+    # One invocation's readings, never the last one's: this process may grade
+    # more than once, and a stale line would be reported against a run that
+    # did not produce it.
+    del _UNREAD[:]
     worktree_root = _worktree_root()
     run_dir = _run_dir(args.run, worktree_root)
     if run_dir is None or worktree_root is None:
@@ -2256,6 +2348,15 @@ def main(argv=None):
         head_tree = None
         if not _same_revision(args.baseline, worktree_root):
             head_tree = _scratch_tree("HEAD", worktree_root, scratch_root)
+            if head_tree is None:
+                # The baseline half's twin. A HEAD half that arrived as None
+                # is read below as cut time -- no landed work to compare
+                # against -- so every oracle graded clean and the run exited
+                # 0 having read one revision of two. The clone that fails
+                # here fails for the reason it fails there: friction
+                # 04:21:49Z is `MAX_PATH` on this host.
+                print("cutcheck: cannot clone HEAD")
+                return NO_TICKET_SET
         issued = sorted(
             p for p in run_dir.glob("*.md")
             if p.name != COVERAGE_FILE and not p.name.endswith(COVERAGE_SUFFIX)
@@ -2282,6 +2383,10 @@ def main(argv=None):
     finally:
         _remove_scratch_root(scratch_root)
 
+    # Against the run and not against any one ticket: a reading that did not
+    # happen is this invocation's fact, and the item whose grading it cost is
+    # named inside the line where the reading knows it.
+    findings.extend((args.run, 0, UNREAD_HALF, what) for what in _UNREAD)
     outside = [f for f in findings if f[2] not in ADVISORY]
     advisory = [f for f in findings if f[2] in ADVISORY]
     for finding in outside:
