@@ -1194,7 +1194,7 @@ def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
         codex_config, codex_details = render_codex_agent_limits(codex_config_text)
         if not codex_details["toml_checked"]:
             warnings.append(
-                f"warning: this interpreter has no tomllib (Python < 3.11), so "
+                "warning: this interpreter has no tomllib (Python < 3.11), so "
                 f"{codex_config_path} was merged without a TOML parse check."
             )
         configs.append(
