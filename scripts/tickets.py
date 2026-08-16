@@ -23,6 +23,8 @@ Subcommands:
         [--isolation required|none] [--return-fields TEXT]
     new <run> --file <path>
     instantiate <template-dir> --run <run> [--set k=v ...]
+    gate <run> <root-id> --lens <name>[,<name>] --write-scope <path>[,<path>]
+        [--acceptance-from <id>]
     list [--run R]
     ready [--run R]
     claim <run> <id> --by <name>
@@ -237,6 +239,25 @@ INDEPENDENCE_VALUES = ("gate", "checker")
 ISOLATION_VALUES = (REQUIRED_ISOLATION, "none")
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
 WORKLOG_USAGE = "worklog <run> [--write]"
+GATE_USAGE = (
+    "gate <run> <root-id> --lens <name>[,<name>] --write-scope <path>[,<path>] "
+    "[--acceptance-from <id>]"
+)
+# SPEC-ticket-set.md §2's three gate stub names, and the unit tickets they
+# close over: `<root>.NN`, the subtree a decomposition cut.
+GATE_CRITIQUE_ID = "{root}.gate.critique.{lens}"
+GATE_REPAIR_ID = "{root}.gate.repair"
+GATE_VERIFY_ID = "{root}.gate.verify"
+GATE_EXECUTORS = {
+    "critique": "orch-critique",
+    "repair": "orch-repair",
+    "verify": "orch-verify",
+}
+# A cut ticket carries its executor's sections present and empty, so the
+# executor's first write is not an overwrite (`_cmd_result`'s guard).
+GATE_EXECUTOR_SECTIONS = [
+    ("Result", ""), ("Verification", ""), ("Feedback", "[]"), ("Risks", "[]")
+]
 # A template is a directory: this file, which declares the template's name,
 # entry and placeholders, plus one `<id>.md` ticket stub per node. Every
 # other markdown file in the directory is a stub.
@@ -257,6 +278,7 @@ COVERAGE_RECORD_NAME = "covered.jsonl"
 SUBCOMMAND_USAGE = {
     "new": NEW_USAGE,
     "instantiate": INSTANTIATE_USAGE,
+    "gate": GATE_USAGE,
     "list": "list [--run R]",
     "ready": "ready [--run R]",
     "claim": "claim <run> <id> --by <name>",
@@ -273,6 +295,10 @@ SUBCOMMAND_SUMMARY = {
     "instantiate": "Instantiate one template directory into a run's tickets: "
     "placeholders filled, every stub graded, the graph checked for edges, "
     "cycles and its single terminal, then written all or none.",
+    "gate": "Write one root ticket's gate stubs: a read-only critique per "
+    "lens over every `<root>.NN` unit, one repair holding the given scope "
+    "behind them all, and one verify carrying the acceptance verbatim. "
+    "Refused if the root has no units yet, or if a stub already exists.",
     "list": "Every ticket in the tracker, or in one run, as summaries.",
     "ready": "The tickets whose dependencies are complete and whose claim is "
     "free or stale; promotes an eligible `pending` to `ready`.",
@@ -313,6 +339,8 @@ VALUE_FLAGS = frozenset(
         "--criterion",
         "--depends-on",
         "--write-scope",
+        "--lens",
+        "--acceptance-from",
         "--bound",
         "--pack",
         "--input",
@@ -1755,6 +1783,244 @@ def _cmd_instantiate(rest):
     }
 
 
+# --- the gate ----------------------------------------------------------
+#
+# SPEC-ticket-set.md §2: a root ticket's subtree ends in one gate — a
+# read-only critique per stamped lens in parallel, one repair holding the
+# run's write scope behind all of them, and one verify carrying the root's
+# own acceptance. Written as tickets, so the gate is executed by the same
+# frontier that executed the units and needs no engine of its own.
+
+
+def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list,
+               write_scope: list, sections: list, pack=None) -> str:
+    """One gate stub, rendered as a ticket the dispatcher already accepts."""
+
+    fields = {
+        "id": ticket_id,
+        "run": run,
+        "status": "pending" if depends_on else "ready",
+        "executor": executor,
+        "pack": pack,
+        "depends_on": list(depends_on),
+        "write_scope": list(write_scope),
+        "bound": NEW_DEFAULT_BOUND,
+        "claimed_by": "",
+        "claimed_at": "",
+    }
+    return _render_ticket(fields, sections)
+
+
+def _gate_sections(kind: str, root_id: str, lens: str, scope: list,
+                   acceptance_id: str, acceptance: str, units: list) -> list:
+    """The body of one gate stub. One place, so the three read as one gate."""
+
+    return _gate_body(kind, root_id, lens, scope, acceptance_id, acceptance,
+                      units) + GATE_EXECUTOR_SECTIONS
+
+
+def _gate_body(kind: str, root_id: str, lens: str, scope: list,
+               acceptance_id: str, acceptance: str, units: list) -> list:
+    """The four cut-time sections of one gate stub."""
+
+    if kind == "critique":
+        return [
+            ("Objective", f"Every defect in `{root_id}`'s delivered result that "
+             f"the `{lens}` lens finds is reported by identity and severity: an "
+             "open search over what the subtree produced, not a re-run of the "
+             "criteria it already states."),
+            ("Fixed inputs", "\n".join(
+                [f"- lens: `{lens}`",
+                 f"- the `## Result` of each of {units}, by identity",
+                 f"- `{root_id}`'s `## Completion test`, the acceptance this gate "
+                 "closes over:",
+                 "",
+                 acceptance]
+            )),
+            ("Completion test", "\n".join([
+                "- every finding names the artifact identity it was found at and "
+                "the evidence that shows it | oracle: this ticket's `## Result` "
+                f"read under the `{lens}` lens | oracle_class: judged | "
+                "provenance: authored-here",
+                f"- every `## Result` named in the fixed inputs was read | oracle: "
+                "this ticket's `## Result` against that list | oracle_class: "
+                "deterministic | provenance: authored-here",
+            ])),
+            ("Return fields", "status; result — ranked findings, each with its "
+             "artifact identity, severity and evidence; verification; feedback; "
+             "risks"),
+        ]
+    if kind == "repair":
+        return [
+            ("Objective", f"Every accepted finding against `{root_id}` is "
+             f"repaired within {scope}, or declined with a stated reason; "
+             "nothing outside that scope changes."),
+            ("Fixed inputs", "\n".join(
+                [f"- the `## Result` of each critique stub of `{root_id}`, by "
+                 "identity",
+                 f"- write scope: {scope}"]
+            )),
+            ("Completion test", "\n".join([
+                "- every accepted finding is repaired or declined with a stated "
+                "reason | oracle: the critique tickets' findings against this "
+                "ticket's `## Result` | oracle_class: deterministic | "
+                "provenance: authored-here",
+                "- nothing outside the write scope changed | oracle: `git status "
+                "--porcelain` in the run's workspace | oracle_class: "
+                "deterministic | provenance: pre-existing",
+            ])),
+            ("Return fields", "status; result — each finding, its disposition and "
+             "the changed artifact by identity; verification; feedback; risks"),
+        ]
+    return [
+        ("Objective", f"`{acceptance_id}`'s acceptance is decided at the revision "
+         f"`{GATE_REPAIR_ID.format(root=root_id)}` left: one verdict per "
+         "criterion, from the oracle that criterion names."),
+        ("Fixed inputs", "\n".join(
+            [f"- `{acceptance_id}`'s `## Completion test`, the criteria this "
+             "ticket decides, carried verbatim below",
+             f"- the revision `{GATE_REPAIR_ID.format(root=root_id)}` left"]
+        )),
+        ("Completion test", acceptance),
+        ("Return fields", "status; verification — one verdict per criterion with "
+         "the oracle's output; result; feedback; risks"),
+    ]
+
+
+def _cmd_gate(rest):
+    """Write one root ticket's gate stubs into its run.
+
+    Refused rather than half-written: a root with no `<root>.NN` units has
+    nothing for a critique to close over, and a stub id already issued
+    means a gate is already standing — writing a second one would put two
+    repairs on one scope. Nothing lands until every stub is graded.
+    """
+
+    args = list(rest)
+    lens_arg = _extract_flag(args, "--lens")
+    scope_arg = _extract_flag(args, "--write-scope")
+    acceptance_from = _extract_flag(args, "--acceptance-from")
+    stray = next((arg for arg in args if arg.startswith("-")), None)
+    if stray is not None:
+        return {"error": f"gate does not accept {stray}. usage: {GATE_USAGE}"}
+    if len(args) != 2:
+        return {"error": f"usage: {GATE_USAGE}"}
+    run, root_id = args
+    for kind, value in (("run id", run), ("root id", root_id)):
+        invalid = _segment_error(kind, value)
+        if invalid is not None:
+            return invalid
+    lenses = _split_commas(lens_arg)
+    scope = _split_commas(scope_arg)
+    missing = [
+        name
+        for name, value in (("--lens", lenses), ("--write-scope", scope))
+        if not value
+    ]
+    if missing:
+        return {
+            "error": f"gate requires {', '.join(missing)}: one critique stub per "
+            "stamped lens, and the scope the repair holds. usage: " + GATE_USAGE
+        }
+
+    items, error = _run_tickets(run)
+    if error is not None:
+        return error
+    by_id = {item["id"]: item for item in items}
+    root = by_id.get(root_id)
+    if root is None:
+        return {"error": f"root ticket '{root_id}' is not in run '{run}'"}
+    unit_pattern = re.compile(rf"^{re.escape(root_id)}\.\d+$")
+    units = sorted(item_id for item_id in by_id if unit_pattern.match(item_id))
+    if not units:
+        return {
+            "error": f"root ticket '{root_id}' has no `{root_id}.NN` unit ticket "
+            "yet: a gate closes over a cut subtree, so there is nothing here for "
+            "a critique to read"
+        }
+    acceptance_id = acceptance_from or root_id
+    source = by_id.get(acceptance_id)
+    if source is None:
+        return {
+            "error": f"--acceptance-from names '{acceptance_id}', which is not a "
+            f"ticket in run '{run}'"
+        }
+    acceptance = (source.get("sections") or {}).get("Completion test", "").strip()
+    if not acceptance:
+        return {
+            "error": f"ticket '{acceptance_id}' states no `## Completion test`, so "
+            "the verify stub would carry no acceptance"
+        }
+
+    pack = root.get("pack")
+    rendered = []
+    critique_ids = []
+    for lens in lenses:
+        invalid = _segment_error("lens", lens)
+        if invalid is not None:
+            return invalid
+        stub_id = GATE_CRITIQUE_ID.format(root=root_id, lens=lens)
+        critique_ids.append(stub_id)
+        rendered.append((stub_id, _gate_stub(
+            run, stub_id, GATE_EXECUTORS["critique"], units, [],
+            _gate_sections("critique", root_id, lens, scope, acceptance_id,
+                           acceptance, units),
+            pack,
+        )))
+    repair_id = GATE_REPAIR_ID.format(root=root_id)
+    rendered.append((repair_id, _gate_stub(
+        run, repair_id, GATE_EXECUTORS["repair"], critique_ids, scope,
+        _gate_sections("repair", root_id, "", scope, acceptance_id, acceptance,
+                       units),
+        pack,
+    )))
+    verify_id = GATE_VERIFY_ID.format(root=root_id)
+    rendered.append((verify_id, _gate_stub(
+        run, verify_id, GATE_EXECUTORS["verify"], [repair_id], [],
+        _gate_sections("verify", root_id, "", scope, acceptance_id, acceptance,
+                       units),
+        pack,
+    )))
+
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {"error": NO_SINK_ERROR}
+    run_dir = tickets_root / run
+    for stub_id, text in rendered:
+        defects = ticket_defects(text)
+        if defects:
+            return {
+                "error": f"gate stub {stub_id} is off contract "
+                f"(contracts/work-item.md): " + "; ".join(defects)
+            }
+        if (run_dir / f"{stub_id}.md").exists():
+            return {
+                "error": f"gate stub '{stub_id}' is already issued in run "
+                f"'{run}': a root ticket has one gate. Nothing was written"
+            }
+    written = []
+    try:
+        for stub_id, text in rendered:
+            path = run_dir / f"{stub_id}.md"
+            with open(path, "w", encoding="utf-8", newline="\n") as handle:
+                handle.write(text)
+            written.append(path)
+    except OSError as error:
+        for path in written:
+            path.unlink(missing_ok=True)
+        return {"error": f"unwritable gate stub: {error}. Nothing was written"}
+    return {
+        "gate": {
+            "run": run,
+            "root": root_id,
+            "lenses": lenses,
+            "acceptance_from": acceptance_id,
+            "ids": [stub_id for stub_id, _ in rendered],
+            "paths": [str(path) for path in written],
+        }
+    }
+
+
 # --- subcommands --------------------------------------------------------
 
 
@@ -2818,6 +3084,8 @@ def _dispatch(argv):
         return _cmd_new(rest)
     if command == "instantiate":
         return _cmd_instantiate(rest)
+    if command == "gate":
+        return _cmd_gate(rest)
     if command == "list":
         return _cmd_list(rest)
     if command == "ready":

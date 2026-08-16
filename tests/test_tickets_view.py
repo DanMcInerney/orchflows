@@ -352,5 +352,199 @@ class WorklogRendersTheLiveTemplateTest(unittest.TestCase):
             self.assertIn("## goal", json.loads(result.stdout)["worklog"]["markdown"])
 
 
+class GateStubsTest(unittest.TestCase):
+    """`gate <run> <root>` writes SPEC-ticket-set.md §2's three stubs:
+    critique per lens (read-only, parallel, over every unit ticket), one
+    repair behind them all, one verify carrying the root's acceptance."""
+
+    def make(self, sink: Path, units=("R.01", "R.02")) -> Path:
+        tickets = {
+            "R": ticket(
+                "R", status="claimed", executor="orch-decompose",
+                objective="the whole delivery lands",
+                criterion="the suite exits 0 | oracle: `python tools/run_tests.py` "
+                "| oracle_class: deterministic | provenance: pre-existing",
+            )
+        }
+        for unit in units:
+            tickets[unit] = ticket(unit, deps="[R]", objective=f"unit {unit}")
+        return make_run(sink, tickets)
+
+    def gate(self, *extra):
+        return run_cmd(
+            "gate", "testrun", "R", "--lens", "cut-lens",
+            "--write-scope", "scripts/one.py", *extra
+        )
+
+    def stub(self, run_dir: Path, tid: str) -> str:
+        return (run_dir / f"{tid}.md").read_text(encoding="utf-8")
+
+    def test_exactly_the_three_stubs_are_written(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            payload = self.gate()
+            self.assertNotIn("error", payload)
+            self.assertEqual(
+                ["R.gate.critique.cut-lens", "R.gate.repair", "R.gate.verify"],
+                payload["gate"]["ids"],
+            )
+            self.assertEqual(
+                {"R", "R.01", "R.02", "R.gate.critique.cut-lens", "R.gate.repair",
+                 "R.gate.verify"},
+                {path.stem for path in run_dir.glob("*.md")},
+            )
+
+    def test_the_edges_run_units_to_critiques_to_repair_to_verify(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            self.gate()
+            edges = {
+                item["id"]: item["depends_on"]
+                for item in run_cmd("list", "--run", "testrun")["tickets"]
+            }
+            self.assertEqual(["R.01", "R.02"], edges["R.gate.critique.cut-lens"])
+            self.assertEqual(["R.gate.critique.cut-lens"], edges["R.gate.repair"])
+            self.assertEqual(["R.gate.repair"], edges["R.gate.verify"])
+            self.assertIn("status: pending", self.stub(run_dir, "R.gate.verify"))
+
+    def test_the_critique_is_read_only_and_names_its_lens_and_the_acceptance(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            self.gate()
+            text = self.stub(run_dir, "R.gate.critique.cut-lens")
+            self.assertIn("executor: orch-critique", text)
+            self.assertIn("write_scope: []", text)
+            inputs = tickets_mod._sections(text)["Fixed inputs"]
+            self.assertIn("cut-lens", inputs)
+            self.assertIn("the suite exits 0", inputs)
+
+    def test_the_repair_carries_the_given_write_scope(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            self.gate()
+            text = self.stub(run_dir, "R.gate.repair")
+            self.assertIn("executor: orch-repair", text)
+            self.assertIn("write_scope: [scripts/one.py]", text)
+
+    def test_the_verify_carries_the_roots_completion_test_verbatim(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            self.gate()
+            text = self.stub(run_dir, "R.gate.verify")
+            self.assertIn("executor: orch-verify", text)
+            self.assertEqual(
+                tickets_mod._sections(self.stub(run_dir, "R"))["Completion test"],
+                tickets_mod._sections(text)["Completion test"],
+            )
+
+    def test_acceptance_can_be_taken_from_another_ticket(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            self.gate("--acceptance-from", "R.01")
+            self.assertEqual(
+                tickets_mod._sections(self.stub(run_dir, "R.01"))["Completion test"],
+                tickets_mod._sections(self.stub(run_dir, "R.gate.verify"))["Completion test"],
+            )
+
+    def test_two_lenses_are_two_critiques_and_one_repair_behind_both(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            payload = run_cmd(
+                "gate", "testrun", "R", "--lens", "cut-lens,craft",
+                "--write-scope", "scripts/one.py",
+            )
+            self.assertNotIn("error", payload)
+            self.assertEqual(
+                ["R.gate.critique.craft", "R.gate.critique.cut-lens",
+                 "R.gate.repair", "R.gate.verify"],
+                sorted(payload["gate"]["ids"]),
+            )
+            edges = tickets_mod._parse_frontmatter(
+                self.stub(run_dir, "R.gate.repair")
+            )["depends_on"]
+            self.assertEqual(
+                ["R.gate.critique.craft", "R.gate.critique.cut-lens"], sorted(edges)
+            )
+
+    def test_a_second_gate_is_refused_and_the_first_stubs_stand(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            self.gate()
+            before = self.stub(run_dir, "R.gate.repair")
+            payload = self.gate()
+            self.assertIn("error", payload)
+            self.assertIn("R.gate.critique.cut-lens", payload["error"])
+            self.assertEqual(before, self.stub(run_dir, "R.gate.repair"))
+
+    def test_a_root_with_no_unit_tickets_is_refused_and_writes_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink, units=())
+            payload = self.gate()
+            self.assertIn("error", payload)
+            self.assertIn("R.NN", payload["error"])
+            self.assertEqual({"R"}, {path.stem for path in run_dir.glob("*.md")})
+
+    def test_an_unknown_root_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            self.make(sink)
+            payload = run_cmd(
+                "gate", "testrun", "Q", "--lens", "cut-lens",
+                "--write-scope", "scripts/one.py",
+            )
+            self.assertIn("error", payload)
+            self.assertIn("Q", payload["error"])
+
+    def test_the_lens_and_the_write_scope_are_required(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            self.make(sink)
+            for argv in (
+                ("gate", "testrun", "R", "--write-scope", "scripts/one.py"),
+                ("gate", "testrun", "R", "--lens", "cut-lens"),
+            ):
+                with self.subTest(argv=argv):
+                    self.assertIn("error", run_cmd(*argv))
+
+    def test_every_stub_is_a_ticket_the_dispatcher_accepts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = use_sink(tmp)
+            run_dir = self.make(sink)
+            self.gate()
+            for tid in ("R.gate.critique.cut-lens", "R.gate.repair", "R.gate.verify"):
+                with self.subTest(tid):
+                    self.assertEqual([], tickets_mod.ticket_defects(self.stub(run_dir, tid)))
+                    run_cmd("set-status", "testrun", tid, "ready")
+                    payload = run_cmd("packet", "testrun", tid, "--reply-to", "main")
+                    self.assertNotIn("error", payload)
+
+    def test_the_gate_is_the_queued_scopes_edge_in_the_view(self):
+        """The two subcommands meet: what `gate` writes is what `worklog`
+        reads as scope queued behind the root subtree."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            self.gate()
+            (run_dir / "R.04.md").write_text(
+                ticket("R.04", status="pending", deps="[R.gate.verify]",
+                       objective="the successor"),
+                encoding="utf-8",
+            )
+            markdown = run_cmd("worklog", "testrun")["worklog"]["markdown"]
+            queued = markdown.split("## queued scope")[1].split("## terminal")[0]
+            self.assertIn("R.04", queued)
+
+
 if __name__ == "__main__":
     unittest.main()
