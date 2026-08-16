@@ -49,10 +49,11 @@
    [delegation.md](delegation.md) §9's once-per-dispatch bound.
 7. Multi-run work is root tickets on `depends_on` edges: seq is an
    edge, the predecessor's `## Result` identity cited among the
-   successor's `## Fixed inputs`; par is the absence of an edge, which
-   rule 3's disjointness already governs, with the join a ticket
-   depending on all of them; loop is a ticket whose executor is
-   `orch-loop`. A named multi-run shape is a template instantiated into
-   one run's ticket directory and run by `orch-frontier`; its terminal
-   ticket's completion test gates the whole. Mixed decomposition inside
-   one graph is undefined.
+   successor's `## Fixed inputs`; par is the absence of one, which rule
+   3's disjointness already governs, joined by a ticket depending on
+   all of them; loop is a ticket whose executor is `orch-loop`. A named
+   multi-run shape is a template
+   ([work-item.md](../contracts/work-item.md)) instantiated into one
+   run's ticket directory and run by `orch-frontier`, its terminal
+   ticket's completion test gating the whole. Mixed decomposition
+   inside one graph is undefined.

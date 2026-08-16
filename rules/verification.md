@@ -23,8 +23,7 @@
 7. Verification evidence is reusable at a join while everything it
    covers is unchanged; a covered identity changing invalidates exactly
    the entries that cover it. A gate returning findings moves the
-   result identity, so its verdicts are reusable only where the
-   correction left the covered identity unchanged.
+   result identity.
 8. An oracle must be able to fail: a check that cannot FAIL when the
    claim it stands for is false decides nothing, and its PASS is void.
    Show it against a wrong result built beside the tree, never by

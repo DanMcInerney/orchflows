@@ -30,8 +30,8 @@
    method file.
 9. The caller retires a child the moment its result crosses the join
    (rule 5) — accepted, rejected, needs-verify, or suspended — or the
-   dispatch is abandoned; no dispatch outlives its join, and retirement
-   is the dispatching caller's own action, never a separate watchdog.
+   dispatch is abandoned; retirement is the dispatching caller's own
+   action, never a separate watchdog.
    Suspension and escalation cross the ticket's `## Handoff`
    ([work-item.md](../contracts/work-item.md)), never as a failure,
    under a once-per-dispatch bound.
