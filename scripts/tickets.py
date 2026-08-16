@@ -28,6 +28,7 @@ Subcommands:
     list [--run R]
     ready [--run R]
     claim <run> <id> --by <name>
+    grant <run> <id> --write-scope <path>[,<path>] --by <name>
     set-status <run> <id> <status>
     packet <run> <id> --reply-to <name> [--workspace <path>]
     result <run> <id> --section <name> (--file <path> | --text <string>)
@@ -281,6 +282,20 @@ ISOLATION_VALUES = (REQUIRED_ISOLATION, "none")
 AMEND_USAGE = (
     "amend <run> <id> --section <name> (--file <path> | --text <string>)"
 )
+GRANT_USAGE = "grant <run> <id> --write-scope <path>[,<path>] --by <name>"
+# The caller-side widening of a claimed item's authority, written as
+# frontmatter bookkeeping of contracts/work-item.md's `claimed_*` class:
+# what was granted, by whom, and when. `write_scope` stays the cut's own
+# line, untouched, so the two are never confused for one.
+GRANTED_SCOPE_KEY = "granted_scope"
+GRANTED_BY_KEY = "granted_by"
+GRANTED_AT_KEY = "granted_at"
+# The statuses a grant is open in: the ticket is claimed and an executor is
+# working against it (`suspended` stays claimed, contracts/work-item.md).
+# Before a claim the cut owns the scope and a grant would be a second
+# editor of it; after a terminal status the verdict has already been read
+# against the authority the work was done under.
+GRANTABLE_STATUSES = frozenset({"claimed", "suspended"})
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
 WORKLOG_USAGE = "worklog <run> [--write]"
 GATE_USAGE = (
@@ -327,6 +342,7 @@ SUBCOMMAND_USAGE = {
     "list": "list [--run R]",
     "ready": "ready [--run R]",
     "claim": "claim <run> <id> --by <name>",
+    "grant": GRANT_USAGE,
     "set-status": "set-status <run> <id> <status>",
     "packet": "packet <run> <id> --reply-to <name> [--workspace <path>]",
     "result": RESULT_USAGE,
@@ -355,6 +371,11 @@ SUBCOMMAND_SUMMARY = {
     "free or stale; promotes an eligible `pending` to `ready`.",
     "claim": "Take one ready or stale ticket, losing the race rather than "
     "overwriting a live claim.",
+    "grant": "Record one caller-side widening of a claimed item's write "
+    "scope — the paths, the granting caller and the time — as frontmatter "
+    "bookkeeping every reader of the item's authority then honours. Refused "
+    f"on a ticket that is not {sorted(GRANTABLE_STATUSES)}: before a claim "
+    "the cut owns the scope.",
     "set-status": f"Set one ticket's status; terminal status is the join's "
     f"alone. One of {sorted(VALID_STATUSES)}.",
     "packet": "The by-reference dispatch packet for one ticket: path, parts, "
@@ -1126,6 +1147,15 @@ def _load_ticket(path: Path) -> dict:
     result = dict(data)
     result["id"] = ticket_id
     result["path"] = str(path)
+    if "write_scope" in data:
+        # The authority as it now stands — the cut's scope plus every
+        # recorded grant. Every consumer of a ticket's authority loads it
+        # through here (`packet`, the lease's motion, and `workspace.py
+        # check` at the join), so a grant recorded on the ticket is a grant
+        # the join reads. An absent key stays absent: a ticket with no
+        # declared scope is missing a packet part, and inventing an empty
+        # one here would dispatch it as complete.
+        result["write_scope"] = effective_write_scope(data)
     result["summary"] = {
         "run": data.get("run") or path.parent.name,
         "id": ticket_id,
@@ -1137,6 +1167,42 @@ def _load_ticket(path: Path) -> dict:
     if "error" in result:
         result["summary"]["error"] = result["error"]
     return result
+
+
+def _scope_entries(declared) -> list:
+    """One scope field as its entries, whichever shape it was written in.
+
+    A bare scalar is the one-entry list it means — the shape half the
+    tickets in the sink carry — and iterating the string instead yields its
+    characters, a scope of letters that matches nothing and grades nothing.
+    """
+
+    if isinstance(declared, str):
+        entry = declared.strip()
+        return [entry] if entry else []
+    return [
+        str(entry).strip() for entry in (declared or []) if str(entry).strip()
+    ]
+
+
+def effective_write_scope(data: dict) -> list:
+    """The paths this item may change: its cut ``write_scope``, then every
+    caller-side grant, in the order the grants landed.
+
+    One reader for both halves, because they are two writers of one fact.
+    ``write_scope`` is the cut's and is frozen with the cut
+    (contracts/work-item.md: a ticket never widens its own scope);
+    ``granted_scope`` is the caller widening an already-claimed item's
+    authority mid-flight, recorded by ``grant``. Read separately, a result
+    that used a granted path is a scope breach at the join and the grant is
+    a message nobody kept.
+    """
+
+    scope = _scope_entries(data.get("write_scope"))
+    for entry in _scope_entries(data.get(GRANTED_SCOPE_KEY)):
+        if entry not in scope:
+            scope.append(entry)
+    return scope
 
 
 # --- ticket shape -----------------------------------------------------------
@@ -2650,6 +2716,85 @@ def _cmd_claim(rest):
     return {"claimed": claimed}
 
 
+def _cmd_grant(rest):
+    """Record one caller-side widening of a claimed item's write scope.
+
+    The gap this closes: a lane finds a file it must change that the cut did
+    not name, the caller agrees, and nothing on the ticket says so —
+    ``amend`` writes cut-time sections and refuses a claimed ticket, and the
+    item may not widen itself. So the widening was a direct sink edit plus a
+    message, and the result that used it read as a scope breach at the join
+    (friction 2026-08-16T05:29). Written as frontmatter bookkeeping of the
+    ``claimed_*`` class, never a body section: those stay the executor's.
+    """
+
+    args = list(rest)
+    scope = _extract_flag(args, "--write-scope")
+    granted_by = _extract_flag(args, "--by")
+    if len(args) != 2:
+        return {"error": f"usage: {GRANT_USAGE}"}
+    run, ticket_id = args
+    entries = _split_commas(scope)
+    if not entries:
+        return {
+            "error": "grant requires --write-scope <path>[,<path>], the paths "
+            f"this widening adds. usage: {GRANT_USAGE}"
+        }
+    if not (granted_by or "").strip():
+        return {
+            "error": "grant requires --by <name>: the widening is the granting "
+            "caller's, and an unattributed one is the unrecorded edit this "
+            f"subcommand exists to replace. usage: {GRANT_USAGE}"
+        }
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {"error": NO_SINK_ERROR}
+    ticket_path = tickets_root / run / f"{ticket_id}.md"
+    if not ticket_path.is_file():
+        return {"error": f"ticket not found: {run}/{ticket_id}"}
+    text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return failure
+    data = _parse_frontmatter(text)
+    status = str(data.get("status") or "").strip().strip("`").strip()
+    if status not in GRANTABLE_STATUSES:
+        return {
+            "error": f"ticket is not claimed (status '{status}'): a grant widens "
+            "the authority of an item already being worked. Before a claim the "
+            "cut owns the scope — re-place the ticket through `new --file` — and "
+            "after a terminal status the verdict was already read against the "
+            f"authority the work was done under. ticket: {ticket_path}"
+        }
+    granted = _scope_entries(data.get(GRANTED_SCOPE_KEY))
+    for entry in entries:
+        if entry not in granted:
+            granted.append(entry)
+    timestamp = datetime.now(timezone.utc).strftime(UTC_STAMP)
+    # The inline list form, which is what `_frontmatter_list` writes for
+    # entries carrying no separator -- and `_split_commas` has already made
+    # a comma impossible inside one.
+    updated = _set_frontmatter_field(
+        text, GRANTED_SCOPE_KEY, f"[{', '.join(granted)}]"
+    )
+    updated = _set_frontmatter_field(updated, GRANTED_BY_KEY, granted_by.strip())
+    updated = _set_frontmatter_field(updated, GRANTED_AT_KEY, timestamp)
+    try:
+        ticket_path.write_text(updated, encoding="utf-8")
+    except OSError as error:
+        return {"error": f"unwritable ticket: {error}"}
+    return {
+        "grant": {
+            "run": data.get("run") or run,
+            "id": data.get("id") or ticket_id,
+            "granted_scope": granted,
+            "granted_by": granted_by.strip(),
+            "granted_at": timestamp,
+            # what every reader of this item's authority now sees
+            "write_scope": effective_write_scope(_parse_frontmatter(updated)),
+        }
+    }
+
+
 def _cmd_set_status(rest):
     args = list(rest)
     if len(args) != 3:
@@ -3635,8 +3780,8 @@ def _dispatch(argv):
     if not argv:
         return {
             "error": "missing subcommand: new | amend | instantiate | gate | "
-            "list | ready | claim | set-status | packet | result | worklog | "
-            "run-state | improvement"
+            "list | ready | claim | grant | set-status | packet | result | "
+            "worklog | run-state | improvement"
         }
     command, rest = argv[0], argv[1:]
     if command in HELP_COMMANDS:
@@ -3657,6 +3802,8 @@ def _dispatch(argv):
         return _cmd_ready(rest)
     if command == "claim":
         return _cmd_claim(rest)
+    if command == "grant":
+        return _cmd_grant(rest)
     if command == "set-status":
         return _cmd_set_status(rest)
     if command == "packet":
