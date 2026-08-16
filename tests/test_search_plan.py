@@ -27,9 +27,11 @@ TOURNAMENT = ROOT / "compositions" / "skill-tournament"
 # skill wrapped one command and one protocol in a dispatchable contract no
 # caller used as one — the campaign always named the bare filename. The
 # script is the leaf surface now, and its own docstring points at the
-# protocol beside it.
+# protocol under `docs/`, where a document the installer ships reads it —
+# `scripts/` is not a canonical directory, so a protocol beside the script
+# reached no installed tree.
 SEARCH_SCRIPT = ROOT / "scripts" / "search_plan.py"
-SEARCH_PROTOCOL = ROOT / "scripts" / "search_plan_protocol.md"
+SEARCH_PROTOCOL = ROOT / "docs" / "search-plan-protocol.md"
 
 CALL_EDGE_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
 EXECUTOR_RE = re.compile(r"^executor:\s*(\S+)", re.MULTILINE)
@@ -494,7 +496,7 @@ class TestArchitecture(unittest.TestCase):
         # One command, stated once, at the path the script now lives at.
         command = "python scripts/search_plan.py advance"
         self.assertEqual(1, leaf.count(command))
-        self.assertIn("scripts/search_plan_protocol.md", leaf)
+        self.assertIn("docs/search-plan-protocol.md", leaf)
         self.assertNotIn("operation registry", normalized(leaf))
 
     def test_the_campaign_stub_names_the_planner_it_selects_through(self):
