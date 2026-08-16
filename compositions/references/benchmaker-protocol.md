@@ -30,9 +30,7 @@ every trial. A required deterministic failure blocks qualification. Judged
 criteria carry anchors, remain secondary, cannot compensate for required
 deterministic failure, and record their rerun variance.
 
-Resolve every runnable component before replay. Qualification recomputes its
-checks from those bytes and captured outputs; self-declared verdicts or
-evidence never qualify a benchmark.
+Resolve every runnable component before replay.
 
 Fix protected evidence by identity with its visibility and release policy.
 When optimization resistance depends on protected evidence, absence of a
@@ -119,42 +117,26 @@ discriminating set **how many distinct failure signatures produced
 it**: one repeated candidate habit counted N times is not N angles
 discriminating.
 
-Read a status as ambiguous by construction. `both-pass` means the case
-is saturated **or** its oracle is lenient; `both-fail` means the case is
-genuinely hard **or** it is broken. Neither resolves to one reading
-without evidence, and the reference audit is what decides the second.
-Declare the instrument's resolution as `max(measured rerun spread, one
-case)` and report no delta below it.
-
-The record lands outside the package — in the measuring ticket's
-`## Result` — one entry per measurement event, naming the git revision
-of the benchmark it covers, the full candidate identity per §Scoring,
-the date, the measured scope, and these figures.
-Name a revision reachable from the default branch: where the pass ran on
-a branch, name the default-branch-reachable ancestor carrying identical
-measured bytes and state that relation in one clause. A squash merge
-makes no branch commit an ancestor of the default branch, so a branch
-revision dangles once the branch is collected — the failure mode a
-content digest did not have and a revision does.
-
-## Scoring
-
-The per-angle vector is the artifact and any scalar is derived. A
-one-case-per-angle set is maximally diverse and therefore least
-ranking-stable, and at one case per angle no mean repairs that — so
-never headline a scalar, and never sum an aggregate in which one
-saturated criterion pays for one that still discriminates.
-
 Report `(score, cost)` pairs carrying host, price list, and date;
 `pass^k` beside `pass@1` at the declared k for a nondeterministic case;
 and the fraction of criteria decided by deterministic oracle versus by
 judged oracle, which is recorded per criterion and never summed.
 
-A score is a property of target × model × harness × benchmark. Bind
-model id, effort level, host binding, and scaffold into the result
-identity and declare that scores do not cross that boundary. Never
-subtract a harness offset: the effect is candidate-dependent, so one
-correction term is wrong for every candidate but one. Where a claim
-spans a boundary, re-run every retained candidate and report the paired
-per-case verdicts and the count of sign flips, never a rank correlation
-over few candidates.
+The record lands outside the package — in the measuring ticket's
+`## Result` — one entry per measurement event, naming the git revision
+of the benchmark it covers, the full candidate identity the manifest's
+`incomparability` bounds, the date, the measured scope, and these
+figures.
+Name a revision reachable from the default branch: where the pass ran on
+a branch, name the default-branch-reachable ancestor carrying identical
+measured bytes and state that relation in one clause. A squash merge
+makes no branch commit an ancestor of the default branch, so a branch
+revision dangles once the branch is collected.
+
+## Scoring
+
+Never subtract a harness offset: the effect is candidate-dependent, so
+one correction term is wrong for every candidate but one. Where a claim
+spans the incomparability boundary, re-run every retained candidate and
+report the paired per-case verdicts and the count of sign flips, never a
+rank correlation over few candidates.

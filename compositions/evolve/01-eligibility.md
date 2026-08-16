@@ -11,7 +11,6 @@ excluded_actions:
   - generating or scoring a candidate — this stub grades the incumbent
 independence: checker
 isolation: none
-profile: orch-worker
 ---
 
 ## Objective

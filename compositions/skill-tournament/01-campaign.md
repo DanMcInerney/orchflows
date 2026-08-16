@@ -7,7 +7,7 @@ write_scope: [{{surface}}]
 bound: {{bound}}
 excluded_actions:
   - change the benchmark or policy inside the campaign
-  - restate or call evolve's verification, panel, search, or selection internals
+  - restate or call evolve's verification, search, or selection internals
   - activating a selected result here — a selected result requires a separate authorized integration before activation
 independence: checker
 isolation: required
@@ -29,11 +29,12 @@ was scored against.
   ticket's own `run` field plus `.01-campaign`, never the outer run —
   naming every placeholder that manifest declares: target={{skill}},
   incumbent={{skill}}'s fixed result/evidence at its current revision,
-  evaluation=00-benchmark's qualified benchmark revision with {{policy}}
-  as its search policy, writer=orch-build, mutation_scope={{surface}}, bound={{bound}}. Drain
+  evaluation=00-benchmark's qualified benchmark revision with
+  {{policy}}'s search policy, promotion rule and margin,
+  writer=orch-build, mutation_scope={{surface}}, bound={{bound}}. Drain
   that ticket set here.
-- {{policy}} — the frozen optimizer policy and candidate-accessible
-  mappings, fixed for the whole campaign.
+- {{policy}} — the frozen search policy, promotion rule, margin and
+  candidate-accessible mappings, fixed for the whole campaign.
 
 ## Completion test
 

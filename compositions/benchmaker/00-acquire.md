@@ -6,7 +6,6 @@ depends_on: []
 write_scope: [{{package}}]
 bound: <= 120 tool calls
 excluded_actions:
-  - multiply the caller bound
   - let unsupported semantics become invented target truth
 independence: gate
 isolation: required
@@ -30,11 +29,8 @@ charter names.
   any bar on a lane's sources.
 - {{rigor}} — this run's value for the rigor bar orch-research-pack's
   signature requires of a spec.
-- {{bound}} — the one caller bound. Every stage's own bound is an
-  allocation from it: nonnegative, totalling no more than it, unused
-  allocation carrying forward from a completed stage. A caller bound
-  smaller than the stage literals (500) is repartitioned by the
-  instantiating caller before instantiation.
+- {{package}} — the evidence store root the frozen synthesis is written
+  under.
 - [the research charter](../references/benchmaker-research.md) — the
   lane cut, the synthesis artifacts, and the exhibited/protected rule
   this delivery is cut under.

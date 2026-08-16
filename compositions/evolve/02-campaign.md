@@ -41,9 +41,6 @@ incumbent's score card or {{bound}} is spent.
   `search_plan.py advance` performs the selection. Slot, parent and
   spend mapping:
   [the generation protocol](../references/evolve-generation.md).
-- Done-check: the frozen promotion rule and margin have been applied
-  over the final incumbent's score card and rendered a verdict —
-  promoted or kept — or {{bound}} is spent.
 - Context packet: the worklog view `tickets.py worklog` renders —
   goal, iterations, failed approaches, queued scope — beside this
   campaign's own promotion/kill log and the score cards under
@@ -51,7 +48,7 @@ incumbent's score card or {{bound}} is spent.
 
 ## Completion test
 
-- the frozen promotion rule and margin have been applied over the final incumbent's score card and rendered a verdict — promoted or kept — or the bound is spent | oracle: the promotion rule from 01-eligibility's Result, applied to the final score card | oracle_class: deterministic | provenance: pre-existing
+- a candidate has been promoted: the frozen promotion rule and margin met over its score card against the incumbent's | oracle: the promotion rule from 01-eligibility's Result, applied to the score cards | oracle_class: deterministic | provenance: pre-existing
 - every scored candidate's lane carried that candidate alone | oracle: the scoring lane inputs, read against the candidate set | oracle_class: deterministic | provenance: pre-existing
 - every changed path lies inside {{mutation_scope}} | oracle: the workspace diff against the recorded baseline | oracle_class: deterministic | provenance: pre-existing
 

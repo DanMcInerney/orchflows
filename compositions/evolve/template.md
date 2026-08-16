@@ -10,10 +10,7 @@ candidate exists: the incumbent is admitted against it, each generation
 of candidates is written and scored blind against it, and the campaign
 closes on the promotion rule it opened with.
 
-Four stubs, one chain: `00-eval` → `01-eligibility` → `02-campaign` →
-`03-result`. `03-result` is terminal, so its completion test is this
-template's done check — a final score card citing the final incumbent
-identity and its admitted result/evidence. `00-eval` has work to do only
+`00-eval` has work to do only
 where `evaluation` is `none`: a supplied frozen evaluation identity is
 already the campaign's, and the stubs behind it read that instead.
 
@@ -23,10 +20,4 @@ evolved; `incumbent`, its fixed starting result/evidence identity;
 promotion rule, margin and search policy — or `none` when one must be
 designed first; `writer`, the skill each candidate is written through;
 `bound`, the campaign's budget; and `mutation_scope`, the candidate
-write scope — `02-campaign`'s, and every other stub is read-only. The
-run's bound is `02-campaign`'s `bound`, since the campaign is what the
-run spends; the other three stubs carry their own fixed allocations
-beside it. Each
-stub is a ticket per
-[contracts/work-item.md](../../contracts/work-item.md) missing only what
-instantiation adds.
+write scope — `02-campaign`'s, and every other stub is read-only.
