@@ -488,6 +488,41 @@ class GateStubsTest(unittest.TestCase):
             self.assertIn("executor: orch-repair", text)
             self.assertIn("write_scope: [scripts/one.py]", text)
 
+    def test_the_repairs_body_states_its_scope_as_the_paths_it_grants(self):
+        """A Python list repr is not a path anyone can grep for.
+
+        The body rendered `['scripts\\\\one.py']` on Windows -- repr doubles
+        every separator -- so the executor read one spelling in the frontmatter
+        and another in the two sections that tell it what it may write.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            payload = run_cmd(
+                "gate", "testrun", "R", "--lens", "cut-lens",
+                "--write-scope", "scripts\\one.py,docs/two.md",
+            )
+            self.assertNotIn("error", payload)
+            sections = tickets_mod._sections(self.stub(run_dir, "R.gate.repair"))
+            body = sections["Objective"] + sections["Fixed inputs"]
+            for entry in (r"scripts\one.py", "docs/two.md"):
+                self.assertIn(entry, body)
+            self.assertNotIn("\\\\", body)
+            self.assertNotIn("['", body)
+
+    def test_the_critique_states_the_units_it_reads_as_a_list_of_ids(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            self.gate()
+            inputs = tickets_mod._sections(
+                self.stub(run_dir, "R.gate.critique.cut-lens")
+            )["Fixed inputs"]
+            self.assertIn("`R.01`", inputs)
+            self.assertIn("`R.02`", inputs)
+            self.assertNotIn("['", inputs)
+
     def test_the_verify_carries_the_roots_completion_test_verbatim(self):
         with tempfile.TemporaryDirectory() as tmp:
             sink = use_sink(Path(tmp))

@@ -255,7 +255,7 @@ NEW_USAGE = (
     "[--criterion C ...] [--depends-on a,b] [--write-scope p[,p]] [--bound B] "
     "[--pack P] [--input I ...] [--excluded X ...] [--profile P] "
     "[--independence gate|checker] [--isolation required|none] "
-    "[--return-fields TEXT] | new <run> --file <path>"
+    "[--return-fields TEXT] | new <run> [<id>] --file <path>"
 )
 # The one field `new` supplies a default for: contracts/work-item.md reads an
 # absent lease as DEFAULT_BOUND_MINUTES, so writing that same number is the
@@ -1652,9 +1652,14 @@ def _cmd_new(rest):
                 "error": f"--file places a ticket already written; it takes none "
                 f"of {supplied}. usage: {NEW_USAGE}"
             }
-        if len(args) != 1:
+        # The id may stand beside the file. It is in the file already, so the
+        # argument decides nothing and is checked against it -- but a cutter
+        # holds the id in the dispatch that told it what to write, and
+        # refusing the ordinary spelling sent one looking for a subcommand
+        # that does not exist.
+        if not 1 <= len(args) <= 2:
             return {"error": f"usage: {NEW_USAGE}"}
-        return _place_ticket(args[0], file_arg)
+        return _place_ticket(args[0], file_arg, args[1] if len(args) == 2 else None)
 
     if len(args) != 2:
         return {"error": f"usage: {NEW_USAGE}"}
@@ -1717,8 +1722,14 @@ def _cmd_new(rest):
     return _issue_ticket(run, ticket_id, _render_ticket(fields, sections))
 
 
-def _place_ticket(run: str, source: str):
-    """``new --file``: one already-written ticket, validated and placed."""
+def _place_ticket(run: str, source: str, declared_id=None):
+    """``new --file``: one already-written ticket, validated and placed.
+
+    ``declared_id`` is the id the caller stated on the line. The file's own
+    ``id`` is what decides, exactly as its ``run`` field does not: both are
+    checked against the arguments so a ticket landing under a name it does
+    not carry is refused rather than written.
+    """
 
     invalid = _segment_error("run id", run)
     if invalid is not None:
@@ -1734,6 +1745,11 @@ def _place_ticket(run: str, source: str):
     invalid = _segment_error("ticket id", ticket_id)
     if invalid is not None:
         return invalid
+    if declared_id is not None and declared_id.strip() != ticket_id.strip():
+        return {
+            "error": f"placed as '{declared_id}', but ticket file {source} names "
+            f"id '{ticket_id}': an id is the file's, and one ticket has one id"
+        }
     declared = data.get("run")
     if isinstance(declared, str) and declared.strip() and declared.strip() != run:
         return {
@@ -2018,6 +2034,18 @@ def _gate_sections(kind: str, root_id: str, lens: str, scope: list,
                       units) + GATE_EXECUTOR_SECTIONS
 
 
+def _listed_items(values, indent: str = "") -> str:
+    """A frontmatter list stated in prose as the items it holds.
+
+    Never the Python repr of the list. An executor greps its own ticket for
+    the path it may write, and `repr` doubles every separator a Windows path
+    carries, so the body named `scripts\\\\one.py` where the frontmatter --
+    and the filesystem -- said `scripts\\one.py`.
+    """
+
+    return "\n".join(f"{indent}- `{value}`" for value in values)
+
+
 def _gate_body(kind: str, root_id: str, lens: str, scope: list,
                acceptance_id: str, acceptance: str, units: list) -> list:
     """The four cut-time sections of one gate stub."""
@@ -2030,7 +2058,8 @@ def _gate_body(kind: str, root_id: str, lens: str, scope: list,
              "criteria it already states."),
             ("Fixed inputs", "\n".join(
                 [f"- lens: `{lens}`",
-                 f"- the `## Result` of each of {units}, by identity",
+                 "- the `## Result` of each of the following, by identity:",
+                 _listed_items(units, "  "),
                  f"- `{root_id}`'s `## Completion test`, the acceptance this gate "
                  "closes over:",
                  "",
@@ -2052,12 +2081,13 @@ def _gate_body(kind: str, root_id: str, lens: str, scope: list,
     if kind == "repair":
         return [
             ("Objective", f"Every accepted finding against `{root_id}` is "
-             f"repaired within {scope}, or declined with a stated reason; "
-             "nothing outside that scope changes."),
+             "repaired inside this ticket's own write scope, or declined with "
+             "a stated reason; nothing outside that scope changes."),
             ("Fixed inputs", "\n".join(
                 [f"- the `## Result` of each critique stub of `{root_id}`, by "
                  "identity",
-                 f"- write scope: {scope}"]
+                 "- write scope:",
+                 _listed_items(scope, "  ")]
             )),
             ("Completion test", "\n".join([
                 "- every accepted finding is repaired or declined with a stated "

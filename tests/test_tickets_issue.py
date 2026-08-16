@@ -611,6 +611,38 @@ class NewTest(unittest.TestCase):
             self.assertIn("testrun", payload["error"])
             self.assertFalse((sink / "tickets" / "otherrun" / "T1.md").exists())
 
+    def test_the_id_may_be_stated_beside_the_file_when_the_two_agree(self):
+        """`new <run> <id> --file <path>` is what a cutter reaches for.
+
+        The id is in the file and in the dispatch that told the cutter to
+        write it, and stating it twice is the ordinary spelling; refusing that
+        line sent a cutter looking for a subcommand that does not exist.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = use_sink(tmp)
+            source = tmp / "T1.md"
+            source.write_text(GOOD_TICKET, encoding="utf-8")
+            payload = run_cmd("new", "testrun", "T1", "--file", str(source))
+            self.assertNotIn("error", payload)
+            self.assertEqual("T1", payload["new"]["id"])
+            self.assertEqual(
+                GOOD_TICKET, self.ticket_path(sink).read_text(encoding="utf-8")
+            )
+
+    def test_an_id_disagreeing_with_the_file_is_refused_and_placed_nowhere(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = use_sink(tmp)
+            source = tmp / "T1.md"
+            source.write_text(GOOD_TICKET, encoding="utf-8")
+            payload = run_cmd("new", "testrun", "T9", "--file", str(source))
+            self.assertIn("error", payload)
+            self.assertIn("T9", payload["error"])
+            self.assertIn("T1", payload["error"])
+            self.assertFalse(self.ticket_path(sink).exists())
+
     def test_the_exit_codes_are_the_script_s_own(self):
         """The process boundary: a payload carrying `error` exits 1, the cut
         exits 0, and both print one JSON document."""
