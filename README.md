@@ -90,8 +90,8 @@ and keep it by default.
 ### It improves itself
 
 Every run auto-logs its friction — retries, missing inputs,
-workarounds — under an always-on law, and `trace.py` records each
-session's reasoning and secret-redacted tool calls.
+workarounds — under an always-on law, and `trace.py` extracts each
+session's requests, narration and tool calls into one event record.
 `orch-self-improve` mines those logs into proposals you accept or
 reject, each scoped to where the change lands: your **environment** (a
 missing interpreter, a broken tool), your **project** (code or docs
@@ -209,37 +209,6 @@ bricks either way.
 Four layers, dependencies pointing one way. `ARCHITECTURE.md` is the
 codemap — what lives where, who owns it — and `ls` is the current list;
 this README does not keep a second copy of it.
-
-### Work routing
-
-    THREE BRANCHES — smallest first
-    │
-    ├── answer
-    │     evidence already in hand decides it
-    │     no deliverable change → no record, no ticket
-    │
-    ├── ticket
-    │     one ticket — objective, a completion test naming its own
-    │     checks, fixed inputs, write scope, bound — run on the
-    │     frontier, one execution and one external verdict
-    │     too big for one worker? a root ticket that cuts itself into
-    │     the rest, one review gate, one final verification
-    │
-    └── fix
-          a failure whose cause is unknown: reproduce it, prove the
-          cause, repair it, guard the repair
-
-    (floor) Tested script
-          no model, no ticket — a unit of certainty, not of work
-          `executor: script:` keeps pushing repetition down here
-
-Everything else — `evolve`, `benchmaker`, workflows you name yourself —
-runs only when you name it. Every request lands on the cheapest branch
-that can still prove it's done: a question you can answer from context
-costs nothing; a small change gets one ticket and one external verdict;
-only work that has to be cut pays for a root ticket; and repetition
-keeps getting pushed below the floor into tested scripts that need no
-model at all.
 
 ### Packs
 
