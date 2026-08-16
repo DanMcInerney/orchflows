@@ -959,12 +959,24 @@ class TestRoutingCases(unittest.TestCase):
                     self.assertIn(expected, ROUTE_CLASSES)
                     self.assertNotEqual("named", expected, "named needs a name")
 
-    def test_every_class_carries_at_least_four_cases(self):
+    def test_every_class_carries_enough_cases_to_read_a_rate_from(self):
+        """Four apiece, except `build`.
+
+        `build` is not a routed class the block decides — it is one named
+        skill, and a prompt reaches it only by saying `orch-build`. Two
+        cases say it: one new item, one amendment. Padding the class would
+        mean inventing prompts whose honest route is `ticket`, which is what
+        the five it replaced were doing.
+        """
+
         counts = collections.Counter(self._class_of(case) for case in self.cases)
         self.assertEqual(set(ROUTE_CLASSES), set(counts))
+        floors = {"build": 2}
         for route_class in ROUTE_CLASSES:
             with self.subTest(route_class=route_class):
-                self.assertGreaterEqual(counts[route_class], 4, counts)
+                self.assertGreaterEqual(
+                    counts[route_class], floors.get(route_class, 4), counts
+                )
 
     def test_at_least_four_distractors_borrow_a_lure_word(self):
         distractors = [case for case in self.cases if case["distractor"]]
@@ -1069,6 +1081,52 @@ class TestRoutingGrading(unittest.TestCase):
         events = [_parent_text("write_scope names the paths a ticket may write.")]
         self.assertEqual("answer", self._observed(events))
 
+    def test_reading_the_library_and_then_answering_grades_as_answer(self):
+        """Six of the seven `answer` cases need a read before they can be
+        answered — the block's own instruction is to read the owner. Any
+        tool use at all used to sink the transcript to `unrouted`, so the
+        cases that most need reading were the ones that could not pass."""
+
+        events = [
+            _tool_use("Read", {"file_path": "/lib/docs/vocabulary.md"}),
+            _tool_use("Grep", {"pattern": "write_scope"}, tool_id="t2"),
+            _parent_text("write_scope names the paths a ticket may write."),
+        ]
+        self.assertEqual("answer", self._observed(events))
+
+    def test_a_slash_command_is_read_by_its_first_token(self):
+        """`SlashCommand` carries the whole typed line. `/orch-build foo`
+        graded `named:orch-build foo` — a route class no case can expect."""
+
+        self.assertEqual(
+            "build",
+            self._observed([_tool_use("SlashCommand", {"command": "/orch-build a new skill"})]),
+        )
+        self.assertEqual(
+            "named:evolve",
+            self._observed([_tool_use("SlashCommand", {"command": "/evolve orch-tdd"})]),
+        )
+
+    def test_a_by_name_read_is_the_route_the_four_adapter_set_takes(self):
+        """Under `four` the block's fallback for an unadapted name is a read
+        of `by-name/<name>/SKILL.md`. Grading that as no route at all gave
+        the four-adapter set a structural misroute floor on every `named:`
+        case however well the session behaved."""
+
+        for reader in (
+            _tool_use("Read", {"file_path": "/home/u/.orchflows/lib/by-name/evolve/SKILL.md"}),
+            _bash_use("cat ~/.orchflows/lib/by-name/evolve/SKILL.md"),
+            _bash_use(r"type C:\Users\u\.orchflows\lib\by-name\evolve\SKILL.md"),
+        ):
+            with self.subTest(reader["message"]["content"][0]["name"]):
+                self.assertEqual("named:evolve", self._observed([reader]))
+
+    def test_instantiating_a_template_grades_as_that_template(self):
+        for name, expected in (("renovate", "named:renovate"), ("fix", "fix")):
+            with self.subTest(name):
+                command = f"tickets.py instantiate ~/.orchflows/lib/compositions/{name} --run r"
+                self.assertEqual(expected, self._observed([_bash_use(command)]))
+
     def test_a_transcript_with_nothing_route_bearing_is_unrouted(self):
         events = [
             _tool_use("Read", {"file_path": "/repo/AGENTS.md"}),
@@ -1165,6 +1223,23 @@ class TestRoutingCaseLoader(unittest.TestCase):
         path = self.tmp / "cases.json"
         path.write_bytes(json.dumps(payload).encode("utf-8"))
         return path
+
+    def test_only_a_prompt_naming_orch_build_expects_the_build_route(self):
+        """templates/host-block.md routes an unnamed request to answer,
+        ticket or fix, and says everything else runs only when named.
+        `orch-build` appears in the block as a scope-law pointer, not as a
+        route — so five prompts that never said `orch-build` and expected
+        `build` were measuring the benchmark's own invention."""
+
+        cases = json.loads(ROUTING_CASES.read_text(encoding="utf-8"))
+        build = [case for case in cases if case["expected"] == "build"]
+        self.assertEqual(2, len(build), [case["id"] for case in build])
+        for case in build:
+            self.assertIn("orch-build", case["prompt"])
+        for case in cases:
+            if case["expected"] != "build":
+                self.assertNotIn("orch-build", case["prompt"], case["id"])
+        self.assertEqual(30, len(cases))
 
     def test_the_shipped_case_file_loads(self):
         self.assertEqual(
@@ -1365,7 +1440,12 @@ class TestRoutingBenchRun(unittest.TestCase):
                 )
         self.assertEqual([], self._claude_calls())
 
-    def test_a_timed_out_case_is_recorded_as_unrouted_not_crashed(self):
+    def test_a_timed_out_case_is_recorded_as_an_error_not_a_misroute(self):
+        """A session killed at the timeout never got to route. Grading it
+        `unrouted` put it in the misroute numerator and left `errors` at 0,
+        so README's "read no rate while errors is above 0" guard waved
+        through a run where every session had been cut off."""
+
         expired = subprocess.TimeoutExpired(["claude"], 5, output="not-json", stderr="slow")
 
         def _timeout(command, **kwargs):
@@ -1386,8 +1466,34 @@ class TestRoutingBenchRun(unittest.TestCase):
             )
         self.assertEqual(len(self.CASES), len(records))
         for record in records:
-            self.assertEqual("unrouted", record["observed"])
+            self.assertEqual("error", record["observed"])
             self.assertTrue(record["timed_out"])
+
+    def test_the_budget_stops_launching_once_the_spend_passes_it(self):
+        """An opt-in benchmark that spends real usage needs a ceiling that
+        is not the case count: one long session is worth many short ones."""
+
+        records = self._run_with_budget(0.025)
+        # each mocked session reports 0.01; the fourth launch is the one
+        # that would cross 0.025, so three are launched and no more
+        self.assertEqual(3, len(records))
+        self.assertEqual(3, len(self._claude_calls()))
+
+    def test_no_budget_launches_every_case(self):
+        self.assertEqual(len(self.CASES) * 2, len(self._run_with_budget(None)))
+
+    def _run_with_budget(self, budget):
+        with mock.patch.object(routing_live.subprocess, "run", side_effect=self._fake_run):
+            return routing_live.run_benchmark(
+                adapter_sets=("all", "four"),
+                cases=self.CASES,
+                repeat=1,
+                max_turns=3,
+                timeout=5,
+                claude_invocation=["claude"],
+                root=self.root,
+                max_budget_usd=budget,
+            )
 
 
 class TestRoutingSummary(unittest.TestCase):
@@ -1420,6 +1526,40 @@ class TestRoutingSummary(unittest.TestCase):
         self.assertEqual(2, summary["four"]["n"])
         self.assertEqual(0.0, summary["four"]["misroute_rate"])
         self.assertEqual(0, summary["four"]["unrouted"])
+
+    def test_an_error_leaves_the_misroute_rate_and_never_enters_it(self):
+        """A session that failed before it could route is neither a route nor
+        a misroute. Counting it as one made the rate a measure of how often
+        the CLI was reachable."""
+
+        records = [
+            self._record("all", "ticket", "ticket"),
+            self._record("all", "answer", "answer"),
+            self._record("all", "fix", "ticket"),
+            self._record("all", "named:evolve", "error"),
+        ]
+        summary = routing_live.summarize(records)["all"]
+        self.assertEqual(4, summary["n"])
+        self.assertEqual(1, summary["errors"])
+        # one misroute over the three sessions that ran
+        self.assertEqual(round(1 / 3, 4), summary["misroute_rate"])
+
+    def test_a_set_that_only_errored_reports_no_rate_rather_than_a_perfect_one(self):
+        summary = routing_live.summarize(
+            [self._record("four", "ticket", "error")]
+        )["four"]
+        self.assertEqual(1, summary["errors"])
+        self.assertEqual(0.0, summary["misroute_rate"])
+
+    def test_the_summary_records_the_spend_and_the_budget(self):
+        records = [
+            dict(self._record("all", "ticket", "ticket"), cost_usd=0.02),
+            dict(self._record("all", "fix", "fix"), cost_usd=0.03),
+        ]
+        summary = routing_live.summarize(records, max_budget_usd=0.04)["all"]
+        self.assertEqual(0.05, summary["cost_usd"])
+        self.assertEqual(0.04, summary["max_budget_usd"])
+        self.assertTrue(summary["budget_stopped"])
 
     def test_the_by_class_breakdown_buckets_by_the_expected_class(self):
         records = [
@@ -1509,6 +1649,19 @@ class TestRoutingBenchMain(unittest.TestCase):
         self.assertEqual(3, run.call_args.kwargs["repeat"])
         self.assertEqual(5, run.call_args.kwargs["max_turns"])
         self.assertEqual(("four",), run.call_args.kwargs["adapter_sets"])
+
+    def test_the_budget_flag_reaches_the_run_and_the_written_payload(self):
+        code, _, run = self._main(
+            ["--adapters", "four", "--max-budget-usd", "1.50", "--out", str(self.out)], [],
+        )
+        self.assertEqual(0, code)
+        self.assertEqual(1.50, run.call_args.kwargs["max_budget_usd"])
+        payload = json.loads(self.out.read_text(encoding="utf-8"))
+        self.assertEqual(1.50, payload["max_budget_usd"])
+
+    def test_no_budget_is_the_default(self):
+        _, _, run = self._main(["--out", str(self.out)], [])
+        self.assertIsNone(run.call_args.kwargs["max_budget_usd"])
 
     def test_it_loads_the_shipped_case_set_by_default(self):
         _, _, run = self._main(["--out", str(self.out)], [])
