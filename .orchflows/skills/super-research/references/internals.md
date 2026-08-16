@@ -81,7 +81,7 @@ exposed it.
 
 ## How the ladder is enforced
 
-The classes and their four rules are [protocol.md](protocol.md)'s. This is the
+The classes and their three rules are [protocol.md](protocol.md)'s. This is the
 machinery behind them.
 
 A `K1` public client credential is a route constant `routes.py` declares and

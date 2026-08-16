@@ -193,7 +193,7 @@ record carrying a loss code is not a failed read — `youtube_innertube` returns
 carries the metadata it did get.
 
 **named by** is every module whose executable code spells that code, to attach
-it or to read it. Both tables are read back off this file by
+it or to read it. Every table below is read back off this file by
 `test_dependency_boundary.LossVocabularyIsReadOffTheSourceTest`, so a cell that
 stops being true is a red test rather than a sentence nobody re-read.
 
@@ -219,7 +219,7 @@ window would be observable — are not shipped. The two codes are named here so 
 later route adds a code the vocabulary already has, and so nobody reads their
 absence from the source as the vocabulary being smaller than the spec says.
 
-Added after those seven, and the only code here derived across the record set
+Added after those eight, and the only code here derived across the record set
 rather than read off a page:
 
 | code | means | named by |
