@@ -4,9 +4,9 @@
    out-edges: a primitive calls no skill; a composite calls one or
    more. Kernel and utility skills are always primitives (validator-
    enforced for kernel); engines are composites; workflows and
-   instances may be either. Invocation policy for compositions lives in
-   their `entry` field per
-   [contracts/composition.md](../contracts/composition.md).
+   instances may be either. Invocation policy for templates lives in
+   their manifest's `entry` field per
+   [contracts/work-item.md](../contracts/work-item.md#template-and-stub).
 2. Every resolved backticked skill name in a body is a call edge. Name
    each call once, at its prose call site, with the exact backticked
    name; mention a skill without calling it in plain text, never

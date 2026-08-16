@@ -30,18 +30,19 @@ OVERLAP_RULE = "a write scope overlapping only siblings it is dependency-ordered
 
 COMPOSITIONS = ROOT / "compositions"
 EVAL_DESIGN = ROOT / "skills" / "workflows" / "orch-eval-design" / "SKILL.md"
-PANEL = ROOT / "skills" / "engines" / "orch-panel" / "SKILL.md"
 TEMPLATE_FILE = "template.md"
 EVOLVE = COMPOSITIONS / "evolve"
 EVOLVE_GENERATION = COMPOSITIONS / "references" / "evolve-generation.md"
 TOURNAMENT = COMPOSITIONS / "skill-tournament"
-# The two campaign bodies deleted when they became templates. A template
-# beside its own `<name>.md` is the second grammar SPEC-ticket-set.md P4
-# exists to remove: two spellings of one composition, and no rule saying
-# which one a run executes.
+# The campaign bodies deleted when they became templates, plus the last
+# `.md` composition (`fix`), deleted at P4-3 with the second grammar
+# itself. A template beside its own `<name>.md` is what
+# SPEC-ticket-set.md P4 exists to remove: two spellings of one
+# composition, and no rule saying which one a run executes.
 SUPERSEDED_BODIES = (
     COMPOSITIONS / "evolve.md",
     COMPOSITIONS / "skill-tournament.md",
+    COMPOSITIONS / "fix.md",
     COMPOSITIONS / "references" / "evolve-evaluation.md",
 )
 
@@ -58,15 +59,16 @@ FRONTMATTER_RE = re.compile(r"---\n(.*?)\n---\n(.*)", re.DOTALL)
 # assigned, plus a census tripwire: a skill added, removed or renamed without
 # a deliberate role decision fails here.
 ROLE_TABLE = {
-    # none: all engines
-    "orch-compose": "none",
+    # none: all engines. `orch-compose` and `orch-panel` went at P4-3:
+    # nothing runs a composition file any more (a template runs under
+    # `orch-frontier`), and judging is N blind `orch-verify` lanes plus
+    # the loop body's reduce.
     "orch-loop": "none",
-    "orch-panel": "none",
     "orch-frontier": "none",
     # none: all workflows (orch-fix, orch-evolve, orch-benchmaker were
-    # demoted to compositions/, which carry no role)
+    # demoted to compositions/, which carry no role; orch-diagnose went
+    # at P4-3, its body being the fix template's 00-reproduce + 01-cause)
     "orch-build": "none",
-    "orch-diagnose": "none",
     "orch-eval-design": "none",
     "orch-fixture": "none",
     "orch-repair": "none",
@@ -75,9 +77,10 @@ ROLE_TABLE = {
     "orch-triage": "none",
     # none: named kernel
     "orch-integrate": "none",
-    # none: named utility
+    # none: named utility (orch-search-plan went at P4-3: its script is
+    # `scripts/search_plan.py`, named by bare filename, and no skill
+    # wraps it)
     "orch-off": "none",
-    "orch-search-plan": "none",
     # planner
     "orch-critique": "planner",
     "orch-synthesize": "planner",
@@ -190,23 +193,26 @@ class TestTierDirectoriesExist(unittest.TestCase):
 
 class TestPackageNamesMatchFolders(unittest.TestCase):
     def test_every_skill_folder_matches_its_frontmatter_name(self):
-        """A tier directory holding only `references/` is not a package and is
-        skipped: `skills/kernel/orch-delegate/` is that since P3, keeping
-        `references/profiles.md` at the path rules/roles.md,
-        contracts/work-item.md, templates/host-block.md and install.py all
-        address, after its body became rules/delegation.md §1-§2 plus
-        roles.md §4. A directory carrying anything else must still name
-        itself."""
+        """Every directory under a tier is a package: it owns a `SKILL.md`
+        and that file names it.
+
+        Until the P3 gate repair one directory was exempt —
+        `skills/kernel/orch-delegate/`, kept as a references-only home for
+        `profiles.md` after its body became rules/delegation.md §1-§2 plus
+        roles.md §4. The repair moved that reference under
+        `skills/engines/orch-frontier/references/` and deleted the
+        directory, so the exception admitted nothing but a half-deleted
+        package: a skill whose body was removed and whose folder was not
+        passed, and `install.py`'s discovery skipped it silently."""
         for tier in SKILL_TIERS:
             tier_dir = ROOT / "skills" / tier
             for pkg_dir in sorted(p for p in tier_dir.iterdir() if p.is_dir()):
                 skill_md = pkg_dir / "SKILL.md"
-                if not skill_md.is_file():
-                    self.assertEqual(
-                        ["references"], sorted(p.name for p in pkg_dir.iterdir()),
-                        f"{pkg_dir} has no SKILL.md and is not a references-only home",
-                    )
-                    continue
+                self.assertTrue(
+                    skill_md.is_file(),
+                    f"{pkg_dir} is a package directory with no SKILL.md; a "
+                    "tier holds packages and nothing else",
+                )
                 name = frontmatter_name(skill_md)
                 self.assertEqual(name, pkg_dir.name, f"{skill_md} name {name!r} != folder {pkg_dir.name!r}")
 
@@ -431,11 +437,6 @@ class TestBenchmarkArchitecture(unittest.TestCase):
             # evolve's internals.
             "skill-tournament", template_files(TOURNAMENT),
             frozenset(), frozenset(), frozenset(),
-        ),
-        (
-            "orch-panel", (PANEL,),
-            frozenset({"orch-verify", "orch-integrate"}),
-            frozenset(), frozenset(),
         ),
         (
             # Since P4 a campaign is a template, and a template names its

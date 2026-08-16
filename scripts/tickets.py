@@ -97,16 +97,21 @@ VALID_STATUSES = {
 # nested template) — per SPEC-ticket-set.md §3. The rest dispatch a
 # ticket's executor, so naming one is the call cycle
 # rules/composition.md §3 forbids — an engine would spawn itself.
-# The two sets together mirror skills/engines/; tests/test_tickets.py
-# holds them in sync, because an installed copy of this script has no
-# library tree to read the list from.
+# Every engine in skills/engines/ is a lawful ticket executor: orch-loop
+# runs a loop ticket, orch-frontier a nested template. tests/test_tickets.py
+# holds this set to that directory, because an installed copy of this script
+# has no library tree to read the list from.
+#
+# It used to be half of a partition, the other half being engines refused as
+# a ticket executor (orch-compose, orch-panel). P4-3 deleted both of those
+# skills, which left a refusal set with no members -- a rule with nothing to
+# refuse -- so the concept went with them.
 TICKET_EXECUTOR_ENGINES = frozenset({"orch-frontier", "orch-loop"})
 LOOP_EXECUTOR = "orch-loop"
 # SPEC-ticket-set.md §3: `executor: script:<path>` names a tested script.
 # It is an executor like any other -- claimable, dispatchable, graded the
 # same -- and differs only in what `packet` tells the child to do with it.
 SCRIPT_EXECUTOR_PREFIX = "script:"
-ENGINE_EXECUTORS = frozenset({"orch-compose", "orch-panel"})
 # contracts/verdict.md's `oracle_class`, and contracts/work-item.md's
 # optional oracle provenance. Both are closed sets, and this script is the
 # one place a criterion is graded against them.
@@ -1097,7 +1102,12 @@ def _write_section(text: str, heading: str, body: str, append: bool = False) -> 
 def _load_ticket(path: Path) -> dict:
     try:
         text = path.read_text(encoding="utf-8")
-    except OSError as error:
+    except (OSError, UnicodeDecodeError) as error:
+        # UnicodeDecodeError is a ValueError, not an OSError, so bytes that
+        # are not UTF-8 used to escape this handler and take `list` down with
+        # a traceback -- the one shape of unreadable ticket that crashed
+        # instead of reporting. Every caller grades this payload; none of
+        # them survives an exception.
         return {"id": path.stem, "path": str(path), "error": f"unreadable ticket: {error}"}
     try:
         data = _parse_frontmatter(text)
@@ -1107,14 +1117,6 @@ def _load_ticket(path: Path) -> dict:
     result = dict(data)
     result["id"] = ticket_id
     result["path"] = str(path)
-    executor = data.get("executor")
-    if isinstance(executor, str) and executor.strip().strip("`") in ENGINE_EXECUTORS:
-        result["error"] = (
-            f"executor '{executor.strip().strip('`')}' is an engine; an engine "
-            "dispatches a ticket's executor and cannot be one. Name the "
-            "recording or unit skill that does the work, or return a "
-            "decision gap from the cut."
-        )
     result["summary"] = {
         "run": data.get("run") or path.parent.name,
         "id": ticket_id,
@@ -1346,14 +1348,6 @@ def template_defects(directory) -> list:
                 defects.append((path, (
                     f"'{key}' is not a list; write [] when the stub names none"
                 )))
-        executor = str(data.get("executor") or "").strip().strip("`")
-        if executor in ENGINE_EXECUTORS:
-            defects.append((path, (
-                f"executor '{executor}' is an engine; an engine dispatches a "
-                f"ticket's executor and cannot be one. Name the recording or "
-                f"unit skill that does the work, or return a decision gap "
-                f"from the cut."
-            )))
         ordered = [
             SECTION_RANK[name.strip().lower()]
             for name in _sections(text)

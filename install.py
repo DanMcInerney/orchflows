@@ -17,10 +17,11 @@ the installer warns and exits successfully without writing anything.
   ``../../../`` link resolves from its authored location.
 - Claude Code (when a Claude CLI is on ``PATH``): ``~/.claude/skills/<name>/SKILL.md``
   adapter stubs (frontmatter plus an ``@``-include of the library body),
-  role agents, concurrency setting. Compositions (``compositions/*.md``,
-  invocable by name whatever their ``entry``) get the same adapter stubs,
-  by-name entries, and Codex prompts as skills — the stub mechanism is
-  uniform, so routed, named, and scheduled compositions all surface. ``CLAUDE_CONFIG_DIR`` replaces ``~/.claude``
+  role agents, concurrency setting. Compositions (the template directories
+  ``compositions/<name>/``, invocable by name whatever their ``entry``) get
+  the same by-name entries and Codex prompts as skills, and an adapter stub
+  carrying the instantiate command rather than an ``@``-include, since a
+  template is a directory and ``@`` includes a file. ``CLAUDE_CONFIG_DIR`` replaces ``~/.claude``
   throughout, matching the CLI. The always-on instruction layer is
   rendered once to ``~/.orchflows/host-block.md`` (wholly installer-owned)
   and referenced from ``~/.claude/CLAUDE.md`` by one appended ``@<path>``
@@ -365,25 +366,60 @@ def discover_packages():
     return packages
 
 
-def discover_compositions(root: Path = REPO_ROOT):
-    """Every invocable composition: ``compositions/*.md`` with parseable
-    frontmatter carrying an ``entry`` (per contracts/composition.md).
-    A file without frontmatter is library data, not a name surface, and
-    is skipped -- it still reaches the installed lib copy."""
+TEMPLATE_MANIFEST = "template.md"
 
-    compositions = []
+
+def discover_templates(root: Path = REPO_ROOT):
+    """Every invocable composition: a template directory
+    ``compositions/<name>/`` whose ``template.md`` manifest carries an
+    ``entry`` (per contracts/work-item.md's Template and stub section).
+
+    Returns ``(directory, frontmatter, body)`` per template. A directory
+    without a manifest, or a manifest without frontmatter or without
+    ``entry``, is library data rather than a name surface and is skipped
+    -- it still reaches the installed lib copy. ``compositions/references/``
+    is exactly that."""
+
+    templates = []
     comps_root = root / "compositions"
     if not comps_root.is_dir():
-        return compositions
-    for path in sorted(p for p in comps_root.glob("*.md") if p.is_file()):
+        return templates
+    for directory in sorted(p for p in comps_root.iterdir() if p.is_dir()):
+        manifest = directory / TEMPLATE_MANIFEST
+        if not manifest.is_file():
+            continue
         try:
-            frontmatter, body = split_frontmatter(path.read_text(encoding="utf-8"))
+            frontmatter, body = split_frontmatter(manifest.read_text(encoding="utf-8"))
         except ValueError:
             continue
         if not frontmatter_field(frontmatter, "entry"):
             continue
-        compositions.append((path, frontmatter, body))
-    return compositions
+        templates.append((directory, frontmatter, body))
+    return templates
+
+
+def template_adapter_body(name: str, lib_template_dir: Path, frontmatter: str) -> str:
+    """The Claude adapter stub's body for a template.
+
+    A skill's adapter is an ``@``-include of one file; a template is a
+    directory, and ``@`` cannot include one -- so the stub says what the
+    name is and hands over the two commands that run it. The placeholders
+    come from the manifest's own declaration, so a stub can never offer a
+    ``--set`` the template does not take."""
+
+    declared = (frontmatter_field(frontmatter, "placeholders") or "").strip()
+    names = [item.strip() for item in declared.strip("[]").split(",") if item.strip()]
+    sets = "".join(f" --set {item}=<{item}>" for item in names)
+    return (
+        f"`{name}` is a ticket-set template, not a skill body: a directory of\n"
+        f"ticket stubs at {lib_template_dir}, with its manifest and every\n"
+        "stub's objective, write scope and completion test beside it. Read the\n"
+        "manifest first. Instantiate it into one run:\n\n"
+        f"    tickets.py instantiate {lib_template_dir} --run <run>{sets}\n\n"
+        "then run `orch-frontier` over that run, which drains the stubs by\n"
+        "their `depends_on` edges. The terminal stub's completion test is this\n"
+        "template's done check.\n"
+    )
 
 
 # --- host role agents, parsed from the canonical table -----------------
@@ -914,23 +950,31 @@ def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
                     )
                 )
 
-    # Compositions are invocable by name (contracts/composition.md), so they
-    # get the same name surfaces as skills: a by-name pointer, a Claude
-    # adapter stub, a Codex prompt, and — for curated entry points — a Codex
-    # redirect stub. Uniform across entry values: routed, named, scheduled.
-    for comp_path, frontmatter, body in discover_compositions():
-        name = comp_path.stem
+    # Compositions are invocable by name, so they get the same name surfaces
+    # as skills: a by-name pointer, a Claude adapter stub, a Codex prompt,
+    # and — for curated entry points — a Codex redirect stub. Uniform across
+    # entry values: routed and named alike. What differs from a skill is only
+    # what a stub can point at: a template is a directory, so the pointer
+    # names the directory and the adapter carries the two commands that run
+    # it instead of an ``@``-include of a body that does not exist.
+    for template_dir, frontmatter, body in discover_templates():
+        name = template_dir.name
         description = frontmatter_field(frontmatter, "description") or ""
-        lib_comp_md = (lib_home / comp_path.relative_to(REPO_ROOT)).resolve()
-        by_name.append(
-            (
-                lib_home / "by-name" / name / "SKILL.md",
-                frontmatter + f"\nRead {lib_comp_md} and follow it exactly.\n",
-            )
+        lib_template_dir = (lib_home / template_dir.relative_to(REPO_ROOT)).resolve()
+        pointer = (
+            frontmatter
+            + f"\nRead {lib_template_dir / TEMPLATE_MANIFEST} and follow it "
+            f"exactly. It is the manifest of the ticket-set template at "
+            f"{lib_template_dir}.\n"
         )
+        by_name.append((lib_home / "by-name" / name / "SKILL.md", pointer))
         if claude_enabled and _mints_claude_adapter(name, claude_adapter_set):
             claude_adapters.append(
-                (claude_scope_home / "skills" / name / "SKILL.md", host_legal_frontmatter(frontmatter) + f"@{lib_comp_md}\n")
+                (
+                    claude_scope_home / "skills" / name / "SKILL.md",
+                    host_legal_frontmatter(frontmatter)
+                    + template_adapter_body(name, lib_template_dir, frontmatter),
+                )
             )
         if codex_enabled:
             codex_prompts.append(
@@ -938,10 +982,7 @@ def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
             )
             if name in CODEX_SKILL_REDIRECT_NAMES:
                 codex_skills.append(
-                    (
-                        codex_user_home / "skills" / name / "SKILL.md",
-                        frontmatter + f"\nRead {lib_comp_md} and follow it exactly.\n",
-                    )
+                    (codex_user_home / "skills" / name / "SKILL.md", pointer)
                 )
 
     roles_path = (lib_home / "rules" / "roles.md").resolve()

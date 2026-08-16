@@ -125,11 +125,20 @@ replacement splits what a pattern conflated:
   and a multi-kind request chains itself (search is memory: one return
   shape, one name for it).
 
-Amended 2026-08-16: at P1–P4 the named tier stops being step files and
-becomes ticket-set templates — a directory of ticket stubs
+Amended 2026-08-16: since P4 the named tier is ticket-set templates and
+nothing else — a directory of ticket stubs plus a `template.md`
+manifest, which `tickets.py instantiate` writes into a run and
 `orch-frontier` drains — and the branches collapse to answer, ticket,
-fix. `SPEC-ticket-set.md` owns that rationale until its last phase
-lands; this section owns it after.
+fix. The step file, its contract, and the engine that executed one are
+deleted. Each bullet above survives in a cheaper place: the routing
+table still holds while templates accumulate; a demoted pattern's law
+rides its stubs' `excluded_actions` and `## Completion test` rather
+than an `invariants` field, so the gate is the same graded ticket
+shape every other item already has; and the three combinators are the
+ticket graph's own — a `depends_on` edge, disjoint parallel stubs, a
+loop stub — so there is no second grammar to keep in step with the
+first. `SPEC-ticket-set.md` owns the migration's own record; this
+section owns the rationale.
 
 ## Why a `craft` cell
 

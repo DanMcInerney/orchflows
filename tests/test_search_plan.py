@@ -23,23 +23,13 @@ ROOT = Path(__file__).resolve().parents[1]
 EVOLVE = ROOT / "compositions" / "evolve"
 EVOLVE_GENERATION = ROOT / "compositions" / "references" / "evolve-generation.md"
 TOURNAMENT = ROOT / "compositions" / "skill-tournament"
-SEARCH_SKILL = ROOT / "skills" / "utilities" / "orch-search-plan" / "SKILL.md"
-SEARCH_PROTOCOL = (
-    ROOT
-    / "skills"
-    / "utilities"
-    / "orch-search-plan"
-    / "references"
-    / "protocol.md"
-)
-SEARCH_SCRIPT = (
-    ROOT
-    / "skills"
-    / "utilities"
-    / "orch-search-plan"
-    / "scripts"
-    / "search_plan.py"
-)
+# Since P4-3 the planner is a script and nothing else: the `orch-search-plan`
+# skill wrapped one command and one protocol in a dispatchable contract no
+# caller used as one — the campaign always named the bare filename. The
+# script is the leaf surface now, and its own docstring points at the
+# protocol beside it.
+SEARCH_SCRIPT = ROOT / "scripts" / "search_plan.py"
+SEARCH_PROTOCOL = ROOT / "scripts" / "search_plan_protocol.md"
 
 CALL_EDGE_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
 EXECUTOR_RE = re.compile(r"^executor:\s*(\S+)", re.MULTILINE)
@@ -475,7 +465,10 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
     if "promotion" in normalized(tournament):
         errors.append("tournament-promotion")
 
-    leaf_calls = set(CALL_EDGE_RE.findall(leaf)) - {"orch-search-plan"}
+    # The leaf is `scripts/search_plan.py` itself. A script is the ladder's
+    # floor: it dispatches nothing, so any backticked `orch-*` in it is a
+    # call edge that cannot exist.
+    leaf_calls = set(CALL_EDGE_RE.findall(leaf))
     if leaf_calls:
         errors.append("leaf-call")
     return errors
@@ -486,17 +479,22 @@ class TestArchitecture(unittest.TestCase):
         for path in (EVOLVE, TOURNAMENT):
             self.assertTrue(path.is_dir(), f"missing campaign template: {path}")
             self.assertTrue((path / "template.md").is_file(), f"{path} has no manifest")
-        for path in (EVOLVE_GENERATION, SEARCH_SKILL, SEARCH_SCRIPT):
+        for path in (EVOLVE_GENERATION, SEARCH_PROTOCOL, SEARCH_SCRIPT):
             self.assertTrue(path.is_file(), f"missing search-planning surface: {path}")
+        self.assertFalse(
+            (ROOT / "skills" / "utilities" / "orch-search-plan").exists(),
+            "the search planner is a script, not a skill wrapping one command",
+        )
 
         evolve = template_text(EVOLVE)
         generation = read(EVOLVE_GENERATION)
         tournament = template_text(TOURNAMENT)
-        leaf = read(SEARCH_SKILL)
+        leaf = read(SEARCH_SCRIPT)
         self.assertEqual([], architecture_errors(evolve, generation, tournament, leaf))
-        self.assertIn("role: none", leaf)
-        command = "python skills/utilities/orch-search-plan/scripts/search_plan.py advance"
+        # One command, stated once, at the path the script now lives at.
+        command = "python scripts/search_plan.py advance"
         self.assertEqual(1, leaf.count(command))
+        self.assertIn("scripts/search_plan_protocol.md", leaf)
         self.assertNotIn("operation registry", normalized(leaf))
 
     def test_the_campaign_stub_names_the_planner_it_selects_through(self):
@@ -520,7 +518,7 @@ class TestArchitecture(unittest.TestCase):
         evolve = template_text(EVOLVE)
         generation = read(EVOLVE_GENERATION)
         tournament = template_text(TOURNAMENT)
-        leaf = read(SEARCH_SKILL)
+        leaf = read(SEARCH_SCRIPT)
 
         closing = evolve + "\n---\nid: 04-closing\nexecutor: orch-verify\n---\n"
         self.assertIn(
