@@ -4,13 +4,15 @@ The run's state, rendered: `tickets.py worklog <run>` reads the run's
 ticket directory and prints the view below; `--write` lands it at
 `<state-root>/runs/<run>/worklog.md`, replacing only a file it rendered. There is never a second,
 hand-written file — the tickets are the state, and every field here is
-reconstructable from them by observation.
+reconstructable from them by observation. Free notes a run appends
+through `tickets.py run-state --note` land in `runs/<run>/notes.md`
+beside the view and are not the view.
 
 - `goal` — the root ticket's `## Objective` and `## Completion test`
-  verbatim; for a loop run, the loop ticket's done-check and bound.
+  verbatim; for a loop run, the loop ticket's, whose `## Completion
+  test` is the loop's done-check.
 - `iterations` — every ticket in `claimed_at` order, each with its
-  `## Verification` entries and, where its join failed, the blame class
-  that join recorded ([work-item.md](work-item.md)).
+  `## Verification` entries.
 - `failed_approaches` — the `## Result` and `## Feedback` of every
   `failed` or `limited` ticket, and of every loop iteration ticket: the
   approach and the evidence that killed it. A later iteration never
@@ -19,10 +21,9 @@ reconstructable from them by observation.
   discovered work, queued behind the frozen goal and never merged into
   it.
 - `terminal` — empty until the run exits, then the root ticket's
-  `status` — for a loop run the loop ticket's — read in the run-level
-  set `complete` | `blocked` | `stalled` | `limited` | `failed`;
-  `stalled` is a run-level exit no ticket status carries
-  ([work-item.md](work-item.md)). A parked-only pause is not an exit: no
+  `status` — for a loop run the loop ticket's — read in the terminal set
+  [work-item.md](work-item.md) owns: `complete` | `blocked` | `stalled` |
+  `limited` | `failed`. A parked-only pause is not an exit: no
   ticket is claimed, the pause names the external action awaited and
   every ticket queued behind it, and the run resumes from its tickets.
 

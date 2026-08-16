@@ -210,11 +210,15 @@ DEFAULT_RUN_STATE_TREE = "runs"
 # set — `stalled` exists only at run level, `suspended` only at ticket level.
 TERMINAL_STATES = ("complete", "blocked", "stalled", "limited", "failed")
 WORKLOG_NAME = "worklog.md"
+# The free notes a run appends beside the view (contracts/worklog.md). A
+# second name rather than a second writer of one: `worklog --write` owns
+# `worklog.md`, `run-state --note/--terminal` owns this, and neither can
+# make the other's file unwritable.
+RUN_NOTES_NAME = "notes.md"
 # SPEC-ticket-set.md §1: the worklog is a view rendered from the ticket
 # directory, never a second hand-written file. This line heads a rendered
 # one, and is how `--write` tells a file it may replace from a file some
-# other writer owns — `run-state --note`'s append log carries no marker, so
-# it is never overwritten.
+# other writer owns.
 WORKLOG_RENDER_MARKER = "<!-- rendered by tickets.py worklog -->"
 # The view's own headings, in render order: contracts/worklog.md's field
 # names, each answered from the tickets rather than from prose.
@@ -230,8 +234,8 @@ ITERATION_ID_RE = re.compile(r"^.+\.iter\.\d+$")
 # The gate's last stub. A ticket depending on it is scope queued behind the
 # whole root subtree rather than work inside it.
 GATE_VERIFY_SUFFIX = ".gate.verify"
-# The heading that closes a worklog. Written only by `--terminal`, so a
-# worklog carries no terminal placeholder until it closes and the marker
+# The heading that closes a run's notes. Written only by `--terminal`, so
+# the file carries no terminal placeholder until it closes and the marker
 # means what it says: while it is absent the run is open.
 TERMINAL_HEADING = "## terminal"
 RESULT_USAGE = (
@@ -342,7 +346,7 @@ SUBCOMMAND_SUMMARY = {
     "run-state": "Write this run's state under the one user-scope sink, "
     f"in one of {list(RUN_STATE_TREES)} (default "
     f"{DEFAULT_RUN_STATE_TREE}); an artifact that already exists is refused "
-    f"without --replace. --terminal closes the worklog, one of "
+    f"without --replace. --terminal closes the run's notes, one of "
     f"{list(TERMINAL_STATES)}, after which no note is written.",
     "improvement": "Write one improvement evidence record under the sink: "
     "a named proposal file, or one appended line of the coverage record.",
@@ -2743,10 +2747,11 @@ def _render_worklog(run: str, items: list, root: dict) -> str:
 def _write_rendered_worklog(run: str, markdown: str):
     """``(path, error)`` — the view at contracts/worklog.md's own location.
 
-    A worklog this subcommand did not render is refused, not replaced: the
-    append log `run-state --note` writes carries no marker and is the only
-    record of lines no ticket holds. Refusing by marker rather than by
-    mtime or by name means the refusal survives a run that used both.
+    A worklog this subcommand did not render is refused, not replaced: a
+    file written by hand here is the only record of what it holds. The
+    free notes a run appends land beside it under RUN_NOTES_NAME, so this
+    path has one writer; refusing by marker rather than by mtime or by
+    name means the refusal survives a run that predates that split.
     """
 
     runs_root = _runs_root()
@@ -2819,7 +2824,7 @@ def _cmd_worklog(rest):
 
 
 def _is_terminal_heading(line: str) -> bool:
-    """Whether one line closes a worklog.
+    """Whether one line closes a run's notes.
 
     Case-insensitive, and the prefix must end the word: ``## terminal`` and
     ``## terminal: complete`` close, ``## terminals`` is an ordinary
@@ -2865,8 +2870,8 @@ def _append_one_line(path: Path, block: str) -> None:
             msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
 
 
-def _worklog_terminal(path: Path):
-    """The state a worklog closed with, or ``None`` while it is open.
+def _notes_terminal(path: Path):
+    """The state a run's notes closed with, or ``None`` while open.
 
     A read, never a read-modify-write: the note that follows is still one
     append in one call, so a line another workspace added in between
@@ -2896,15 +2901,16 @@ def _cmd_run_state(rest):
     explicit ``newline`` (``scripts/friction.py``) and writes one line in one
     call through ``_append_one_line``, which serialises that call on the
     platform where append is not itself atomic: two workspaces write one
-    repository's worklog concurrently and neither may read-modify-write it. ``--artifact`` is whole-file, which is
-    safe only because the run id partitions it.
+    run's notes concurrently and neither may read-modify-write them.
+    ``--artifact`` is whole-file, which is safe only because the run id
+    partitions it.
 
     One sink holds every project's runs, so a run says which project it is:
-    the first write stamps ``run.json`` beside the worklog, a later write
+    the first write stamps ``run.json`` beside the notes, a later write
     from another workspace of the same project appends itself to it, and a
     write from a *different* project is refused by name. Without that, two
-    projects that pick one run id interleave into one worklog and neither
-    can tell which line is whose.
+    projects that pick one run id interleave into one log and neither can
+    tell which line is whose.
 
     There is no fallback. A write that cannot reach that root is reported as
     an error and lands nowhere else: a run-state write that silently
@@ -3005,17 +3011,17 @@ def _cmd_run_state(rest):
     # run has one identity, not one per tree it happens to write into.
     identity_dir = runs_root / run
     if note is not None or terminal is not None:
-        # contracts/worklog.md: "no note is written past a terminal section".
-        # A closed worklog is closed once: a second close would leave two
-        # answers to "how did this run exit", and a note after one would be
-        # state recorded where no reader looks.
-        closed = _worklog_terminal(run_dir / WORKLOG_NAME)
+        # No note is written past a terminal section. A closed log is closed
+        # once: a second close would leave two answers to "how did this run
+        # exit", and a note after one would be state recorded where no
+        # reader looks.
+        closed = _notes_terminal(run_dir / RUN_NOTES_NAME)
         if closed is not None:
             attempt = "a note" if note is not None else f"a '{terminal}' close"
             return {
-                "error": f"this worklog closed '{closed}': no note is written "
+                "error": f"these notes closed '{closed}': no note is written "
                 f"past a terminal section, and {attempt} would be. "
-                f"worklog: {run_dir / WORKLOG_NAME}"
+                f"notes: {run_dir / RUN_NOTES_NAME}"
             }
     replaced = False
     if artifact is not None:
@@ -3055,7 +3061,7 @@ def _cmd_run_state(rest):
             with open(path, "w", encoding="utf-8", newline="\n") as handle:
                 handle.write(body)
         else:
-            path = run_dir / WORKLOG_NAME
+            path = run_dir / RUN_NOTES_NAME
             if note is not None:
                 block = note.rstrip("\r\n") + "\n"
             else:
