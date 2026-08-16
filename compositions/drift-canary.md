@@ -15,10 +15,11 @@ announced model update.
 Steps:
 - run — `orch-frontier` over a directory holding each canary item as its
   own one-ticket run.
-- diff — compare verdicts and score cards against the golden results;
-  log every divergence as friction, category `surprising-output` —
-  feeding `orch-self-improve` the earliest signal that a skill's
-  wording lands differently on the new model.
+- diff — `orch-verify` over the run's results, `golden.json` the oracle
+  every verdict and score card is read against; log every divergence as
+  friction, category `surprising-output` — feeding `orch-self-improve`
+  the earliest signal that a skill's wording lands differently on the
+  new model.
 
 Edges: seq run → diff — run's result identities are diff's evidence.
 
@@ -29,5 +30,6 @@ canary flags the delta, a human reads it.
 Done check: every canary item ran and every divergence is logged as
 friction.
 
-Return: status, result — the divergence log, verification — the diff
-against golden results; then divergences by item.
+Return: status, result — the divergence log, verification —
+`orch-verify`'s verdicts against `golden.json`; then divergences by
+item.

@@ -5,13 +5,12 @@
    or a workaround — the agent logs and continues, through the installed
    friction logger (the host instruction block names its exact command;
    this repository's is in `AGENTS.md`). Record observations only, never
-   causes. Categories form a closed set — repeated-attempts,
-   missing-input, missing-tool, missing-doc, contract-gap, tool-failure
-   (a tool erred outright), surprising-output, workaround, misrouting
-   (a wrong skill or lane was dispatched) — advisory evidence for the
-   clusters §4 keys on owner and observed-text similarity.
-   The logger never blocks, prompts, or fails the task; logging
-   is exempt from every bound. The fallback the block spells is bounded
+   causes. The category is one of the closed set the logger's usage
+   names, which the logger enforces — a call naming another is malformed
+   and refused, not a failed task — and is advisory evidence for the
+   clusters §4 keys on owner and observed-text similarity. The logger
+   never blocks or prompts; logging is exempt from every bound and
+   cannot fail the task. The fallback the block spells is bounded
    by whatever refused the logger: where that refusal covers writing
    inside a git worktree, the entry goes to a path outside every
    worktree that the dispatch permits, and the return names that path
@@ -30,11 +29,7 @@
    friction arose in; `workflow` — library or custom workflow files
    at any build scope.
    Blame classes recorded at joins (caller under-supplied vs child
-   under-delivered) are the router. A cluster present in traces under
-   one role binding and observed absent in comparable traces under a
-   higher role tier (per the ladder,
-   [rules/delegation.md](delegation.md) §2) routes to `profiles.md`;
-   with no comparable traces it stays unattributed.
+   under-delivered) are the router.
 4. A proposal qualifies on recurrence — the same owner-assigned
    cluster, grouped by observed-text similarity, at least three times,
    or across two distinct sessions, where a differing run or host
@@ -51,8 +46,10 @@
    re-run that item against the amended owner and pass before it is
    proposed for merge. A proposal that cannot replay says so.
 6. The library improves through the same delivery machinery it provides.
-   Scope routes activation: an accepted `workflow` proposal becomes a
-   spec delivered under the code pack with the validator and tests as
-   oracles; a `project` proposal, the same machinery in its own
-   repository under its own oracles; an `environment` proposal is
-   actioned directly by the human and verified by its probe passing.
+   Scope routes activation: an accepted `workflow` proposal is a root
+   ticket delivered under the code pack with the validator and tests as
+   oracles, whose last act appends the proposal's covered line through
+   `tickets.py improvement --covered`; a `project` proposal, the same
+   machinery in its own repository under its own oracles; an
+   `environment` proposal is actioned directly by the human and verified
+   by its probe passing.

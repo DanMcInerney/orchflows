@@ -8,13 +8,13 @@ Require: one completed [ticket](../../../contracts/work-item.md) with
 its accepted result and the run's frozen statement still present — its
 spec, or for an ad-hoc run the ticket itself.
 
-Choose what the fixture proves — one boundary or judgment, stated in its
-README line. Freeze into `.orch/canary/<name>/`: the spec excerpt the
-item depended on, the ticket, every fixed input pinned by identity,
+Choose what the fixture proves — one boundary or judgment, stated as its
+line in the canary set's README. Freeze into that set, whose layout
+`.orch/canary/README.md` owns: the ticket under `tickets/canary/`, the
+spec excerpt the item depended on, every fixed input pinned by identity,
 every artifact an oracle compares against by content (golden captures,
-external sources archived), the golden verdicts or score anchors, the
-exact reproduction command, and — when the fixture bounds machinery —
-the trace budget file (`<trace>.budget.json`) trace mining reads.
+external sources archived), and its golden verdicts or score anchors in
+`golden.json`.
 Redact everything else — a fixture that drags its run's context along
 is not frozen. Score anchors for judged items stay out of the ticket
 itself; judges are blind. Admit by replaying once through `orch-frontier`
