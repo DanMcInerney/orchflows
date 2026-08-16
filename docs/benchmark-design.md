@@ -3,8 +3,7 @@
 Field evidence distilled to what changes a builder's behavior. These
 are findings, not law:
 [the protocol](../compositions/references/benchmaker-protocol.md) owns
-what BenchMaker enforces and
-[the redesign spec](benchmaker-redesign-spec.md) owns what changes.
+what BenchMaker enforces.
 
 Two evidence sets, and every figure below belongs to one of them. Most
 trace to

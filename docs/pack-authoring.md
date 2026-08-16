@@ -4,7 +4,7 @@ The order of work when adding a domain pack. The law lives with its
 owners — admission, cells, sharing constraints, and craft budget in
 [contracts/pack-signature.md](../contracts/pack-signature.md); anatomy
 and body budgets in [rules/composition.md](../rules/composition.md)
-§5; the build gate in `orch-build`; each existing pack's rationale in
+§5; admission in `orch-build`; each existing pack's rationale in
 [DESIGN.md](../DESIGN.md). This file only orders the work and names
 what each step feeds the next.
 
@@ -30,4 +30,4 @@ what each step feeds the next.
    Then the description, in the packs' shared idiom, ending in its
    "Stamp when …" sentence.
 
-Close with `orch-build`'s gate.
+Close with `orch-build`'s admission.

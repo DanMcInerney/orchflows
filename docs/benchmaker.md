@@ -44,8 +44,3 @@ may target a fixed BenchMaker identity and return a benchmark. A separately
 invoked Evolve campaign may consume it. A later benchmark revision must be
 built and independently qualified before a later Evolve campaign; neither
 workflow activates it automatically.
-
-## Migration
-
-Replace `orch-bench` calls with `orch-eval-design`, and any `orch-benchmaker`
-invocation with the named `benchmaker` composition. No alias remains.

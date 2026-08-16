@@ -116,8 +116,6 @@ DATED_RECORDS = {
         "the 2026-08-07 independent-qualifier verdicts, captured observations",
     "benchmarks/benchmaker/provenance/synthesis.md":
         "the frozen claim register — every case's provenance resolves by row",
-    "docs/benchmaker-redesign-spec.md":
-        "the dated design record; its revision sections describe the removal",
 }
 # Three sites under `cases/` where a retired word is a *target's* own
 # vocabulary rather than the library's law. Rewording them to dodge a grep

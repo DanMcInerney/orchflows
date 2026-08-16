@@ -246,10 +246,12 @@ CANARY_AND_BIN_LINES = {
     ),
 }
 
-# Both files carrying the friction-law fallback: the instruction a blocked
+# The one file carrying the friction-law fallback: the instruction a blocked
 # agent follows when the logger cannot run. Stale, it loses evidence in
-# silence rather than failing a check.
-FALLBACK_FILES = ("AGENTS.md", "templates/host-block.md")
+# silence rather than failing a check, so it has one owner and no copy --
+# AGENTS.md pointed a second copy at the same tree until P3 deleted it, and
+# `test_agents_md_carries_no_second_fallback_copy` keeps it deleted.
+FALLBACK_FILES = ("templates/host-block.md",)
 FALLBACK_NEEDLE = "friction/<yyyy-mm>.jsonl"
 
 SELF_IMPROVE = "skills/workflows/orch-self-improve/SKILL.md"
@@ -884,17 +886,21 @@ class FrictionLocationSyncTest(unittest.TestCase):
         self.assertEqual(1, seeded.returncode, self._reading(f"a blocked case naming {inside} must fail: {seeded.stdout}"))
         self.assertIn("host-block.md", seeded.stdout, self._reading(f"the drifted copy goes unnamed: {seeded.stdout}"))
 
-    def test_the_agents_md_copy_is_no_longer_the_validators_to_require(self):
-        """The same drift in AGENTS.md, which P3 deletes: the validator must
-        stop requiring that copy now, or P3's deletion breaks the compiler."""
+    def test_agents_md_carries_no_second_fallback_copy(self):
+        """AGENTS.md carried the same blocked-case instruction until P3
+        deleted it. A copy no check requires is a copy free to drift, so
+        what is checkable now is that it stays gone: AGENTS.md names the
+        owner and no tree of the sink."""
 
-        tree = self._resolved_tree()
         self._assert_clean_first()
-        self._seed("AGENTS.md", "`" + tree, "`" + self.IN_REPOSITORY + tree)
-        seeded = self._validate_in_copy()
-        self.assertEqual(
-            0, seeded.returncode,
-            self._reading(f"AGENTS.md is no longer a checked copy: {seeded.stdout}"),
+        agents = (self._wrong_result_tree() / "AGENTS.md").read_text(encoding="utf-8")
+        self.assertNotIn(
+            self._resolved_tree(), agents,
+            self._reading("AGENTS.md names a sink tree again: one owner, no copy"),
+        )
+        self.assertIn(
+            "templates/host-block.md", agents,
+            self._reading("AGENTS.md points a blocked agent at no owner"),
         )
 
     def test_the_location_is_read_from_its_owner(self):

@@ -7,7 +7,10 @@ that needs a different meaning needs a different word.
 ## Structure
 
 - **tier** — one of four layers: T0 contracts, T1 skills, T2 packs, T3
-  compositions. Coupling between tiers passes only through T0.
+  compositions. T0 is the only data interface between them; a higher
+  tier may still name a lower one's files and skills, per
+  `ARCHITECTURE.md`'s dependency direction. A role's capability is a
+  **capability class**, never a tier.
 - **contract** — a T0 file defining a pure data shape. Hash-pinned; a shape
   change (below) is breaking even when prose meaning is unchanged.
 - **shape change** — a change to a named field or enum in a T0 contract;
@@ -17,15 +20,23 @@ that needs a different meaning needs a different word.
   sit below and many packs and workflows sit above.
 - **skill** — one callable package: a directory whose `SKILL.md` states a
   contract in Require / procedure / Never / Return anatomy.
-- **kernel** — the five frozen primitives — critique, decompose,
-  integrate, investigate, verify; a kernel skill calls no skill.
-- **engine** — a control-flow skill (task, frontier, loop, panel):
-  declarative shape, validator-linted bounds, no domain judgment.
+- **body** — a skill's procedure text: the always-paid part of its
+  `SKILL.md`, budgeted by `rules/token-economy.md`. What a loop
+  iteration dispatches is its **loop body** (`rules/loops.md`), named in
+  plain text by the caller and never a call edge.
+- **kernel** — the primitive skills under `skills/kernel/`; a kernel
+  skill calls no skill.
+- **engine** — a control-flow skill: declarative shape,
+  validator-linted bounds, no domain judgment.
 - **workflow** — an assembled skill calling engines, primitives, or
-  other workflows; always domain-blind.
-- **instance** — a concrete domain executor or lens (tdd, draft, edit,
-  render); the one binding a pack cell names for a capability.
-- **utility** — a leaf generic skill outside the waist (visualize).
+  other workflows; always domain-blind. A T3 composition is a **named
+  workflow**; an improvement proposal's third scope is **workflow
+  scope** (`rules/improvement.md`).
+- **instance** — a concrete domain executor or lens: the one binding a
+  pack cell names for a capability. A composition instantiated into a
+  run is a **composition instance**.
+- **utility** — a leaf generic skill; with the evaluators, exempt from
+  the envelope per `rules/composition.md`.
 - **pack** — a T2 package of pure data satisfying the pack signature; a pack
   binds cells and never contains control flow.
 - **cell** — one field of the pack signature (slicing, executor, assembly,
@@ -35,26 +46,23 @@ that needs a different meaning needs a different word.
 - **composition** — a T3 named workflow, invocable by name; entry
   `routed | named`; admitted through `orch-build`: a template (below),
   or a composition file per `contracts/composition.md` while that form
-  is still in the tree.
-- **combinator** — an inter-run operator a composition's edges use:
-  seq (result identity → successor `evidence`), par (disjoint write
-  scopes plus a named join), loop (through `orch-loop`); owned by
-  `contracts/composition.md`.
-- **dispatchable unit** — a skill or composition a combinator may bind
-  as a step or body; its `Return` leads with the envelope.
-- **envelope** — the leading `Return` fields of every dispatchable
-  unit — status, result identity, verification — per
+  is still in the tree. That form's edges use the **combinators** seq,
+  par and loop, which `contracts/composition.md` owns.
+- **dispatchable unit / envelope** — a skill or composition another may
+  bind as a step or loop body, and the leading `Return` fields it must
+  carry — status, result identity, verification — per
   `contracts/result.md`.
-- **scope** — where a built item lands and which oracles gate it:
+- **build scope** — where a built item lands and which oracles gate it:
   canonical (the library repository), user, or project. User- and
   project-scope items are custom — outside library law, binding only at
-  their scope; bounds per `orch-build`'s scopes reference.
+  their scope; bounds per `orch-build`'s scopes reference. Bare "scope"
+  is never this term: a dispatch's is **write scope**, a proposal's is
+  its **workflow / project / environment scope**.
 - **rule** — a clause of cross-cutting law in `rules/`; what any other
   file may do with one is `rules/visibility.md` §3's.
 - **call edge** — a resolved backticked skill name in a skill body; the call
-  graph is acyclic.
-- **carriage** — a `Require` item riding a named T0 field; rule 10 of
-  `rules/composition.md`.
+  graph is acyclic. A `Require` item riding a named T0 field instead is
+  **carriage**, rule 10 of `rules/composition.md`.
 - **craft** — the pack cell owning a domain's vocabulary and shape
   principles; cell contract in `contracts/pack-signature.md`.
 
@@ -79,8 +87,10 @@ that needs a different meaning needs a different word.
 - **exemplar** — an artifact a root ticket's `## Fixed inputs` names to
   imitate, by pointer plus each property the imitation must carry
   (`contracts/work-item.md`); always non-normative.
-- **stamp / routing** — the spec field fixed at intake — the pack —
-  which engines thereafter read blind.
+- **stamp** — the pack fixed at intake, carried by a ticket's `pack`
+  field, which engines thereafter read blind. Choosing a request's
+  branch at intake is **intake routing** — a different act, owned by
+  `rules/topology.md`.
 - **domain** — the deliverable's kind (code, content, research,
   design); selects exactly one pack per run.
 - **work item / ticket** — a delegation packet made durable: packet parts
@@ -150,71 +160,43 @@ that needs a different meaning needs a different word.
   sides' evidence, never averaged away.
 - **lens** — the criteria set a reviewer applies, restated fresh from the
   spec, never from unit output.
-
-The benchmark pipeline has exactly four artifact roles:
-
-- **evaluation design** — the candidate-comparison-blind artifact frozen by
-  `orch-eval-design`: target boundary, case specifications, criteria with
-  oracles, classes, required status and anchors, scoring and aggregation,
-  intended coverage, source identities, expected execution cost, assumptions,
-  and gaps.
-- **benchmark** — the runnable artifact qualified by the
-  `benchmaker` composition; its manifest carries the field set
-  `compositions/references/benchmaker-manifest.md` owns.
-- **score card** — `orch-verify`'s artifact for one fixed candidate against
-  frozen scoring criteria: per-criterion scores with verdicts, oracle classes,
-  and evidence, plus overall score and confidence.
-- **evolution result** — the `evolve` composition's campaign artifact: final incumbent
-  identity and closing score card, frozen evaluation identity and mode,
-  optional benchmark revision, campaign history, partial evidence, feedback,
-  gaps, and bounds spent.
-- **evaluation mode** — benchmark executes one frozen qualified runner; judged
-  scores one fixed artifact snapshot through a frozen candidate-blind Judge
-  brief. Both bind one evaluation and scoring identity before candidates. The
-  evaluation identity covers mode, scoring contract, Judge brief or runner,
-  evidence adapter, and optional benchmark revision.
+- **gate** — the single review-fix pass a run crosses before final
+  verification; `orch-build`'s admission and a benchmark's
+  qualification are not gates.
 - **judge** — scoring one fixed candidate against frozen criteria, blind to
   other candidates: `orch-verify` where the criteria carry a score scale,
   blindness being a property of the packet's `inputs`, not of a skill.
-- **judgment shapes** — critique returns findings, judge returns score
-  cards, verify returns verdicts; no skill returns another's shape.
-- **incumbent** — the current holder a variant challenges; the
-  `evolve` composition owns its prose.
-- **gate** — the single review-fix pass a run crosses before final
-  verification.
+
+The benchmark pipeline's artifacts are named here and defined by their
+producers, never restated: **evaluation design** (`orch-eval-design`'s
+Return), **benchmark** and its manifest field set
+(`compositions/references/benchmaker-manifest.md`), **score card**
+(`orch-verify`'s Return where the criteria carry a scale), **evolution
+result**, **evaluation mode** and **incumbent** (the `evolve`
+composition).
 
 ## Delegation
 
-- **dispatch** — sending one delegation packet to one fresh child; a
-  packet-only dispatch is a ticket the dispatcher does not persist.
-- **delegation packet** — the one dispatch currency, and a ticket's own
-  dispatch fields: objective, inputs, authority, bounds, return
-  contract, reply_to, per `contracts/work-item.md`; an optional
-  one-shot `profile` overrides role resolution for the dispatch naming
-  it only.
+- **dispatch / delegation packet** — sending one packet to one fresh
+  child, and the packet itself: a ticket's own dispatch fields —
+  objective, inputs, authority, bounds, return contract, reply_to, per
+  `contracts/work-item.md`, plus an optional one-shot `profile`
+  overriding role resolution for that dispatch alone. A packet-only
+  dispatch is a ticket the dispatcher does not persist.
 - **authority** — the write scope plus named excluded actions a dispatch
   grants; per `contracts/work-item.md`.
 - **write scope** — the capability naming exactly what a child may change,
   expressed in the pack's workspace semantics.
-- **attenuation** — a child's write scope is a subset of its caller's,
-  at every depth; `rules/delegation.md` §4.
-- **independent lanes** — concurrently dispatched work whose write scopes
-  and whose workspaces are both disjoint. Lanes sharing a workspace are
-  one lane with two authors: neither one's oracle output is attributable
-  to its own change. Distinct from **independence**, which is a property
-  of acceptance evidence.
-- **join** — the single point where a caller integrates one child result,
-  always `orch-integrate`; per `rules/delegation.md` §5.
-- **disposition** — the ruled outcome of one adjudication; each
-  adjudicator owns its closed set — join per `rules/delegation.md` §9,
-  triage per `orch-triage`.
-- **blame** — the mechanical fault class at a failed join: caller
-  under-supplied (Require breached) or child under-delivered (Return
-  breached).
+- **join** — the single point where a caller integrates one child
+  result, always `orch-integrate`. `rules/delegation.md` owns what
+  happens there and names its own terms: **attenuation** (§4), the
+  closed **disposition** set (§9, and `orch-triage` for its own), and
+  the two **blame** classes — caller under-supplied, child
+  under-delivered.
 - **ladder / rung** — the ordered execution vehicles for one dispatch:
   tested script, inline, worker, planner; per `rules/delegation.md` §2.
 - **role** — planner (judgment) or worker (execution); a capability
-  tier, never a persona; resolution order owned by `rules/roles.md` §4.
+  class, never a persona; resolution order owned by `rules/roles.md` §4.
 - **profile** — a role's concrete model and effort binding on one host,
   owned by `skills/kernel/orch-delegate/references/profiles.md`; a
   packet's optional `profile` slot names one explicitly, overriding role
@@ -223,28 +205,26 @@ The benchmark pipeline has exactly four artifact roles:
 
 ## Iteration
 
-- **body** — what a loop iteration dispatches: one named skill, or a
-  caller-owned composite of named skills; a caller-supplied binding
-  named in plain text, never a call edge.
 - **context packet** — the converged state an iteration receives beside
   the frozen goal and worklog; design owned by `orch-loop`'s packet
   reference.
-- **bound** — a resource cap (iterations, tool calls, tokens, time);
-  exhausting it exits `limited`; success-condition law owned by
-  `rules/loops.md` §1.
-- **done-check** — the external oracle that alone decides a loop is
-  complete; any oracle class per `contracts/verdict.md`; the iteration
-  count is a deterministic done-check.
+- **done-check / bound** — the external oracle that alone decides a
+  loop is complete (any oracle class per `contracts/verdict.md`; an
+  iteration count is a deterministic one), and the resource cap —
+  iterations, tool calls, tokens, time — whose exhaustion exits
+  `limited`; success-condition law owned by `rules/loops.md` §1.
 - **iteration** — one fresh-context pass of a loop from the frozen goal
-  plus worklog.
+  plus worklog; two consecutive iterations without progress are a
+  **stall**, which `rules/loops.md` exits `stalled`.
 - **frontier** — the set of work items dispatchable now — every dependency
   `complete` — recomputed by `orch-frontier` on every event and dispatched
   as it forms, never batched.
-- **lane** — any independent parallel branch sharing no output and no
-  write scope (panel, or blind evidence work items; sharing = writing
-  the same artifact or slot, not returning same-named fields).
-- **stall** — two consecutive iterations without progress (a newly
-  verified increment or a newly killed approach).
+- **lane** — any independent parallel branch whose write scope and
+  whose workspace are both disjoint from every other's (sharing =
+  writing the same artifact or slot, not returning same-named fields).
+  Two lanes in one workspace are one lane with two authors: neither
+  one's oracle output is attributable to its own change. Distinct from
+  **independence**, a property of acceptance evidence.
 - **terminal state** — a closed exit; the run-level set is owned by
   `contracts/worklog.md`, ticket statuses by `contracts/work-item.md` —
   not the same set.
@@ -270,26 +250,20 @@ The benchmark pipeline has exactly four artifact roles:
   `tickets/`; read by self-improvement as evidence only.
 - **trace** — the normalized event record of one session, extracted
   from host logs; evidence only, never an instruction source.
-- **machinery ratio** — a trace's mechanical event count over the
-  expected budget a fixture declares beside the trace
-  (`<trace>.budget.json`).
-- **mining cycle** — one windowed execution of `orch-self-improve` over
-  the evidence pool; its proposals are its durable output.
 - **coverage record** — the append-only record of which merged change
   answers which cluster, and from when — one line per change and
-  cluster, appended at merge and never by a cycle.
-- **watermark** — the position in an evidence input at or before which
-  a covered cluster is answered; a later matching entry is post-merge
-  recurrence, owned by the change that covered it.
+  cluster, appended at merge and never by a cycle. Its **watermark** is
+  the position in an evidence input at or before which a covered
+  cluster is answered; a later matching entry is post-merge recurrence,
+  owned by the change that covered it.
 - **proposal** — one qualified improvement (per `rules/improvement.md`
   §4) with a single causal owner, one scope — environment | project |
   workflow, per §3 — and its evidence entries; passive until a human
   acts on it (§6).
-- **replay** — re-running the friction-producing work against a proposed
-  change; a proposal that can replay must replay green before merge.
 - **fixture** — one completed ticket frozen into a self-contained
   replayable unit with golden results; the raw material of tournaments,
-  canaries, and replay.
+  canaries, and **replay** — re-running the friction-producing work
+  against a proposed change, per `rules/improvement.md` §5.
 - **tournament** — evolve applied to the library itself: competing skill
   variants run the same frozen items and are judged by the same oracles.
 - **canary** — a frozen set of golden work items with known-good results,
