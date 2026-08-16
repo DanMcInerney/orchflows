@@ -36,7 +36,9 @@ Recompute on every event — a result landing, a new ticket file in the
 run's directory, a suspension, a claim going stale. A parked item's
 claim never goes stale. Promote each `pending` ticket
 whose `depends_on` are all `complete` to `ready` through `tickets.py
-ready` and dispatch it at once; set each `pending` ticket depending on a
+ready` and dispatch it at once, reading that command's `skipped` list as
+tickets it could not read or grade — state to report, never nothing
+ready; set each `pending` ticket depending on a
 ticket in any other terminal status to `blocked`, naming its blocker — a
 failure blocks exactly its dependents. A parked item's dependents wait
 for the caller to satisfy the excluded action and re-ready it; a caller
