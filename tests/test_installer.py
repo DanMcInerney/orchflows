@@ -1747,6 +1747,21 @@ class TestBootstrapWrappers(unittest.TestCase):
             r'where python[^\n]*\n(?:.*\n)*?\s*python "%target%" %\*',
         )
 
+    def test_wrapper_comments_credit_the_uv_first_order_not_a_path_check(self):
+        # A PATH check does not avoid the Store stub: on Windows `where
+        # python3` resolves the stub itself. What avoids it is trying uv
+        # first, which is what both wrappers do -- so that is what they say
+        # (F Q7).
+        for name in ("install.sh", "install.cmd"):
+            text = (install.REPO_ROOT / name).read_text(encoding="utf-8")
+            comments = "\n".join(
+                line for line in text.splitlines() if line.startswith(("#", "rem "))
+            )
+            with self.subTest(wrapper=name):
+                self.assertNotIn("PATH check", comments)
+                self.assertIn("uv", comments)
+                self.assertIn("stub", comments)
+
 
 class TestDeclaredPythonFloor(unittest.TestCase):
     """The supported floor lives in two places that have to agree:
@@ -1840,9 +1855,14 @@ class TestHostBlockRendering(unittest.TestCase):
         self.assertNotIn("{{PYTHON}}", rendered)
         self.assertNotIn("{{ORCH_LIB}}", rendered)
 
-    def test_resolved_python_interpreter_falls_back_when_unset(self):
+    def test_resolved_python_interpreter_refuses_a_bare_name(self):
+        # The rendered host block hands every agent this command. A bare
+        # "python" is a Windows Store stub on this host and several like it,
+        # so a plan built without a real interpreter path is worth refusing
+        # rather than shipping (F F9).
         with patch.object(install.sys, "executable", ""):
-            self.assertEqual("python", install.resolved_python_interpreter())
+            with self.assertRaises(ValueError):
+                install.resolved_python_interpreter()
         with patch.object(install.sys, "executable", "/usr/bin/python3"):
             self.assertEqual("/usr/bin/python3", install.resolved_python_interpreter())
 
@@ -2307,14 +2327,23 @@ class TestCodexHooksPreflight(unittest.TestCase):
 
             self.assertEqual([], install._codex_hooks_warnings(codex_home))
 
-    def test_no_warning_when_hooks_file_absent_or_invalid(self):
+    def test_no_warning_when_hooks_file_absent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual([], install._codex_hooks_warnings(Path(tmp)))
+
+    def test_an_unreadable_hooks_file_says_it_was_not_checked(self):
+        # "No dangling paths" and "I could not look" are different answers;
+        # returning [] for both let a broken hooks.json read as a clean
+        # preflight (F F9).
         with tempfile.TemporaryDirectory() as tmp:
             codex_home = Path(tmp)
-
-            self.assertEqual([], install._codex_hooks_warnings(codex_home))
-
             (codex_home / "hooks.json").write_text("not json", encoding="utf-8")
-            self.assertEqual([], install._codex_hooks_warnings(codex_home))
+
+            warnings = install._codex_hooks_warnings(codex_home)
+
+            self.assertEqual(1, len(warnings))
+            self.assertIn(str(codex_home / "hooks.json"), warnings[0])
+            self.assertIn("not checked", warnings[0])
 
     def test_never_deletes_or_edits_hooks_json(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -2342,6 +2371,23 @@ class TestCodexHooksPreflight(unittest.TestCase):
 
             self.assertEqual(1, len(plan.warnings))
             self.assertIn("orch-missing", plan.warnings[0])
+
+    def test_user_plan_says_when_the_codex_config_could_not_be_toml_checked(self):
+        # Below 3.11 there is no tomllib, so the merged config.toml is written
+        # unparsed. Silently is how a malformed merge reaches a user's Codex.
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".codex").mkdir(parents=True)
+
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "codex"
+            ), patch.object(install, "tomllib", None):
+                plan = install.build_plan("user", None)
+
+            self.assertTrue(
+                any("tomllib" in warning for warning in plan.warnings),
+                plan.warnings,
+            )
 
 
 class TestClaudeConfigDir(unittest.TestCase):

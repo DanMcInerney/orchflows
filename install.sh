@@ -1,8 +1,9 @@
 #!/bin/sh
 # Bootstrap wrapper for install.py: resolves an interpreter
 # (uv -> python3 -> python) and delegates, forwarding all arguments.
-# Never hardcodes a bare python3/python without a PATH check first — see
-# anthropics/claude-code#16131 for the Windows trap this avoids.
+# uv is tried first because a bare python3/python can be the Windows Store
+# stub, which `command -v` finds and cannot tell apart from an interpreter
+# -- see anthropics/claude-code#16131 for the trap the order avoids.
 dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 target="$dir/install.py"
 if command -v uv >/dev/null 2>&1; then

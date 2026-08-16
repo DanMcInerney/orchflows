@@ -306,8 +306,9 @@ def _codex_hooks_warnings(codex_home: Path) -> list[str]:
         return []
     try:
         data = json.loads(hooks_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return []
+    except (OSError, json.JSONDecodeError) as error:
+        # Not [] -- that is this preflight's word for "no dangling paths".
+        return [f"warning: {hooks_path} could not be read ({error}); its orchflows paths were not checked"]
     warnings = []
     seen = set()
     for value in _iter_json_strings(data):
@@ -526,10 +527,19 @@ def template_markers(template_text: str):
 
 
 def resolved_python_interpreter() -> str:
-    """The interpreter install.py verified itself running under (``sys.executable``);
-    falls back to the bare command only when the platform cannot report one."""
+    """The interpreter install.py verified itself running under
+    (``sys.executable``). Refuses when the platform reports none rather than
+    rendering a bare ``python`` into every command the host block hands an
+    agent: on Windows that name is commonly the Store stub, so the fallback
+    shipped a command that fails on first use."""
 
-    return sys.executable or "python"
+    if not sys.executable:
+        raise ValueError(
+            "this platform reports no sys.executable, so no interpreter path "
+            "can be rendered into the host block; rerun install.py with an "
+            "interpreter that reports one"
+        )
+    return sys.executable
 
 
 def _git_dirs(repo_root: Path) -> tuple[Path, Path] | None:
@@ -799,6 +809,10 @@ def render_codex_agent_limits(text: str) -> tuple[str, dict]:
             "agents.max_depth": CODEX_MAX_DEPTH,
         },
         "previous": previous,
+        # False below 3.11: the merge above ran, but nothing parsed the file
+        # before or after it. The caller warns rather than letting an
+        # unchecked merge read like a checked one.
+        "toml_checked": tomllib is not None,
     }
     return updated, details
 
@@ -1152,6 +1166,7 @@ def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
             )
 
     configs = []
+    warnings = _codex_hooks_warnings(codex_user_home) if codex_enabled else []
     if claude_enabled:
         claude_settings_path = _claude_settings_path("user", None)
         claude_settings_text = (
@@ -1171,6 +1186,11 @@ def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
         codex_config_path = _codex_config_path("user", None)
         codex_config_text = codex_config_path.read_text(encoding="utf-8") if codex_config_path.is_file() else ""
         codex_config, codex_details = render_codex_agent_limits(codex_config_text)
+        if not codex_details["toml_checked"]:
+            warnings.append(
+                f"warning: this interpreter has no tomllib (Python < 3.11), so "
+                f"{codex_config_path} was merged without a TOML parse check."
+            )
         configs.append(
             ConfigPlan(
                 codex_config_path,
@@ -1226,7 +1246,7 @@ def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
         host_block=host_block_plan,
         claude_import=claude_import_plan,
         receipt_path=scope_home / "receipt.json",
-        warnings=_codex_hooks_warnings(codex_user_home) if codex_enabled else [],
+        warnings=warnings,
         claude_enabled=claude_enabled,
         codex_enabled=codex_enabled,
     )
