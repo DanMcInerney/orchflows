@@ -3604,6 +3604,75 @@ class ScopeOpenTest(unittest.TestCase):
                 self.assertNotIn(cutcheck.SCOPE_OPEN, run_cutcheck(run).stdout)
 
 
+class ScopeOpenWordLiteralTest(unittest.TestCase):
+    """An enum member or a set member is a word, and the objective still names it.
+
+    The literal kinds the class exists for are a path, a skill name, an enum
+    member and a set member. The first two carry a separator; a status like
+    `limited` or an independence value like `gate` carries none, and a bare
+    word would name the whole tree. A span the objective sets in backticks is
+    a literal on the author's word, and the tree's ordinary uses of the same
+    word -- `delegate` for `gate`, `orch-composer` for `orch-compose` -- are
+    told apart at the pin, which reads whole tokens.
+    """
+
+    def test_scope_open_reads_a_backticked_word_as_a_literal(self):
+        self.assertEqual(
+            cutcheck._literals(
+                "Remove the status `limited` from the ticket lifecycle enum."
+            ),
+            ["limited"],
+        )
+        self.assertEqual(
+            cutcheck._literals("Remove `gate` from the independence set."),
+            ["gate"],
+        )
+        self.assertEqual(
+            cutcheck._literals("Remove the status limited from the enum."), []
+        )
+
+    def test_scope_open_pins_whole_tokens_only(self):
+        self.assertTrue(cutcheck._pins("gate", 'independence: "gate"'))
+        self.assertTrue(cutcheck._pins("gate", "the gate."))
+        self.assertFalse(cutcheck._pins("gate", "delegate to the aggregate"))
+        self.assertTrue(cutcheck._pins("orch-compose", '{"orch-compose", "x"}'))
+        self.assertTrue(
+            cutcheck._pins("orch-compose", "skills/engines/orch-compose/SKILL.md")
+        )
+        self.assertFalse(cutcheck._pins("orch-compose", "orch-composer"))
+        self.assertTrue(cutcheck._pins("friction.py", "run scripts/friction.py."))
+        self.assertFalse(cutcheck._pins("friction.py", "friction.pyc"))
+        self.assertTrue(cutcheck._pins("LIMITED", "Status.LIMITED"))
+
+    def test_scope_open_reports_the_word_pin_and_not_the_word_inside_another(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tree = Path(tmp)
+            (tree / "tests").mkdir()
+            (tree / "tests" / "pin.py").write_text(
+                'INDEPENDENCE = {"gate", "checker"}\n', encoding="utf-8"
+            )
+            (tree / "tests" / "noise.py").write_text(
+                "def delegate(): return aggregate()\n", encoding="utf-8"
+            )
+            (tree / "tests" / "longer.py").write_text(
+                'NAMES = {"orch-composer"}\n', encoding="utf-8"
+            )
+            objective = (
+                "Remove `gate` from the independence set and delete the skill "
+                "`orch-compose`."
+            )
+            self.assertEqual(
+                cutcheck._scope_open({"write_scope": []}, objective, tree),
+                [(cutcheck.SCOPE_OPEN, "tests/pin.py pins gate")],
+            )
+            self.assertEqual(
+                cutcheck._scope_open(
+                    {"write_scope": ["tests/pin.py"]}, objective, tree
+                ),
+                [],
+            )
+
+
 if __name__ == "__main__":
     if "--record" in sys.argv:
         record_verdicts()

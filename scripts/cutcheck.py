@@ -1328,12 +1328,32 @@ def _literals(objective):
         window = flat[match.end():end]
         if len(flat) > end and not flat[end].isspace():
             window = window.rpartition(" ")[0]
-        spans = _paths_in(window) + [s.strip() for s in BACKTICK_RE.findall(window)]
-        for token in spans:
+        # A span the objective itself sets in backticks is a literal on the
+        # author's word, separator or none: `limited`, `checker`, `gate` are
+        # enum and set members a cut removes, and the tree's ordinary uses of
+        # the same word are told apart at the pin by ``_pins``' boundaries.
+        spans = [(t, False) for t in _paths_in(window)]
+        spans += [(s.strip(), True) for s in BACKTICK_RE.findall(window)]
+        for token, marked in spans:
             for candidate in (token, token.rsplit("/", 1)[-1]):
-                if _is_literal(candidate) and candidate not in found:
+                literal = _is_literal(candidate) or (
+                    marked and bool(LITERAL_RE.match(candidate))
+                )
+                if literal and candidate not in found:
                     found.append(candidate)
     return found
+
+
+def _pins(literal, text):
+    """Does ``text`` state ``literal`` as a name, not as the inside of one?
+
+    Whole-token: `orch-compose` is not pinned by `orch-composer`, `gate` not
+    by `delegate`, `friction.py` not by `friction.pyc`. A path separator, a
+    dot, a quote or a bracket on either side is a boundary; a word character
+    or a dash is not.
+    """
+
+    return re.search(r"(?<![\w-])" + re.escape(literal) + r"(?![\w-])", text) is not None
 
 
 def _pin_index(tree):
@@ -1396,7 +1416,7 @@ def _scope_open(frontmatter, objective, tree):
         pinning = [
             literal
             for literal in literals
-            if literal in text and not _covered(rel, [literal])
+            if _pins(literal, text) and not _covered(rel, [literal])
         ]
         if pinning:
             findings.append(
