@@ -17,7 +17,11 @@ installed into its own throwaway home (`install.py --user
 
 Opt-in and usage-consuming: it launches one live `claude` session per
 case per adapter set per repeat. It measures and always exits 0 — it
-never gates a suite.
+never gates a suite. Each session runs under an isolated config dir, so
+the CLI must be logged in through a mechanism that survives that
+isolation (`claude setup-token`, or an API key in the environment); a
+session that fails before routing grades `error`, never a route, and the
+`errors` column must read 0 before the rates mean anything.
 
 **Decision rule.** Four adapters ship if their misroute rate over this
 case set is no more than the all-adapters rate plus 0.05; otherwise all

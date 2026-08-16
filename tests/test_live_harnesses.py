@@ -1079,6 +1079,24 @@ class TestRoutingGrading(unittest.TestCase):
     def test_an_empty_transcript_is_unrouted(self):
         self.assertEqual("unrouted", self._observed([]))
 
+    def test_an_unauthenticated_session_grades_error_not_answer(self):
+        # The first live run: a fresh config dir has no login, the CLI
+        # answers "Not logged in" as assistant text and a result event with
+        # is_error -- which the text rule read as `answer`.
+        events = [
+            {
+                "type": "assistant",
+                "parent_tool_use_id": None,
+                "is_api_error_message": True,
+                "error": "authentication_failed",
+                "message": {"content": [{"type": "text", "text": "Not logged in \u00b7 Please run /login"}]},
+            },
+            {"type": "result", "is_error": True, "result": "Not logged in", "total_cost_usd": 0},
+        ]
+        graded = routing_live.grade_transcript(_stream(events))
+        self.assertEqual("error", graded["observed"])
+        self.assertIn("error", graded["first_event"])
+
     def test_reading_before_routing_does_not_change_the_route(self):
         events = [
             _tool_use("Read", {"file_path": "/repo/scripts/ui.py"}),

@@ -20,6 +20,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -41,6 +42,10 @@ ADAPTER_CHOICES = ADAPTER_SETS + ("both",)
 ROUTE_CLASSES = ("answer", "ticket", "fix", "build", "named")
 CASE_FIELDS = ("id", "prompt", "expected", "note")
 UNROUTED = "unrouted"
+# A session that failed before it could route -- an API error, an
+# unauthenticated CLI -- is neither a route nor a misroute; the first
+# live run graded "Not logged in" as `answer` and read 100% misroute.
+ERROR = "error"
 
 # The host block's routing table, read as transcript evidence.
 TICKET_SKILLS = frozenset({"orch-frontier", "orch-spec"})
@@ -130,8 +135,12 @@ def _decide(events: list) -> tuple[str, str | None, int]:
     saw_tool_use = False
     saw_text = False
     for event in events:
+        if event.get("type") == "result" and event.get("is_error"):
+            return ERROR, f"result(is_error: {str(event.get('result', ''))[:120]})", turns
         if event.get("type") != "assistant" or event.get("parent_tool_use_id") is not None:
             continue
+        if event.get("is_api_error_message") or event.get("error"):
+            return ERROR, f"assistant(error: {str(event.get('error', ''))[:120]})", turns
         turns += 1
         for block in (event.get("message") or {}).get("content") or []:
             if not isinstance(block, dict):
@@ -332,15 +341,16 @@ def summarize(records) -> dict:
     summary: dict = {}
     for record in records:
         bucket = summary.setdefault(
-            record["adapter_set"], {"n": 0, "matched": 0, "unrouted": 0, "by_class": {}}
+            record["adapter_set"], {"n": 0, "matched": 0, "unrouted": 0, "errors": 0, "by_class": {}}
         )
         by_class = bucket["by_class"].setdefault(
-            route_class(record["expected"]), {"n": 0, "matched": 0, "unrouted": 0}
+            route_class(record["expected"]), {"n": 0, "matched": 0, "unrouted": 0, "errors": 0}
         )
         for counts in (bucket, by_class):
             counts["n"] += 1
             counts["matched"] += 1 if record["match"] else 0
             counts["unrouted"] += 1 if record["observed"] == UNROUTED else 0
+            counts["errors"] += 1 if record["observed"] == ERROR else 0
     for bucket in summary.values():
         bucket["misroute_rate"] = _rate(bucket["n"], bucket["matched"])
         for by_class in bucket["by_class"].values():
@@ -350,7 +360,7 @@ def summarize(records) -> dict:
 
 def format_table(summary: dict) -> str:
     lines = [
-        f"{'adapter set':<12} {'n':>4} {'matched':>8} {'misroute':>9} {'unrouted':>9}  by class"
+        f"{'adapter set':<12} {'n':>4} {'matched':>8} {'misroute':>9} {'unrouted':>9} {'errors':>7}  by class"
     ]
     for adapter_set in sorted(summary):
         bucket = summary[adapter_set]
@@ -360,7 +370,7 @@ def format_table(summary: dict) -> str:
         )
         lines.append(
             f"{adapter_set:<12} {bucket['n']:>4} {bucket['matched']:>8} "
-            f"{bucket['misroute_rate']:>9.3f} {bucket['unrouted']:>9}  {by_class}"
+            f"{bucket['misroute_rate']:>9.3f} {bucket['unrouted']:>9} {bucket['errors']:>7}  {by_class}"
         )
     return "\n".join(lines)
 
@@ -379,7 +389,13 @@ def main(argv: list | None = None) -> int:
     cases = load_cases(args.cases)
     claude_invocation = _claude_command()
 
-    with tempfile.TemporaryDirectory(prefix="orchflows-routing-bench-") as tmp:
+    # mkdtemp + rmtree(ignore_errors=True), not TemporaryDirectory: on
+    # Windows a session's child process can still hold the temp repo when
+    # the last case returns, and TemporaryDirectory's cleanup then raises
+    # and discards the records a paid run just produced. The directory is
+    # scratch; a leftover is cheaper than a lost measurement.
+    tmp = tempfile.mkdtemp(prefix="orchflows-routing-bench-")
+    try:
         records = run_benchmark(
             adapter_sets=adapter_sets,
             cases=cases,
@@ -389,6 +405,8 @@ def main(argv: list | None = None) -> int:
             claude_invocation=claude_invocation,
             root=Path(tmp),
         )
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
     summary = summarize(records)
     print(format_table(summary))
