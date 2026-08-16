@@ -13,14 +13,12 @@ Cut the root ticket into [work items](../../../contracts/work-item.md)
 under the slicing — cut count per
 [rules/topology.md](../../../rules/topology.md) §3 — issued as
 `<root>.NN` into the root's own run directory through `tickets.py new`.
-Each item takes the pack's executor and the root's stamp,
-`isolation: required` when the pack's workspace cell names
-a mechanism and the item's write scope lies inside it, a write scope
-overlapping only siblings it is dependency-ordered with, a bound, its
-edges, and a completion test whose criteria name oracles from the pack's
-oracle policy, each with its provenance; `independence: gate` when a
-`judged` criterion there rides the final gate. Resolve every
-deterministic oracle against the workspace before freezing the item.
+Each item takes `isolation: required` when the pack's workspace cell
+names a mechanism and the item's write scope lies inside it, a write
+scope overlapping only siblings it is dependency-ordered with, a bound,
+its edges, and a completion test whose criteria name oracles from the
+pack's oracle policy, each with its provenance; `independence: gate`
+when a `judged` criterion there rides the final gate.
 Emit the assembly item the pack's cell names, on §4's terms.
 
 Then run `cutcheck.py` against the revision the set was cut from,
@@ -28,16 +26,12 @@ repair every cut defect it reports through `tickets.py amend` and re-run
 it to exit 0; its advisories and what it cannot decide are
 [references/cut-lens.md](references/cut-lens.md)'s to judge. Only then
 write the gate stubs through `tickets.py gate`, one lens per stamped
-lens over the run's scope, behind the assembly item where one exists.
+lens over the run's scope.
 
 Map every acceptance criterion to an item, the gate, or uncovered
-remainder at `<state-root>/runs/<run>/<root>.coverage.md`; a criterion
-no slicing covers returns a decision gap (§3). When the root's
-`plan_gate` is true, the cut ends in the root's `## Handoff` as a
-suspension, resumed on approval.
+remainder at `<state-root>/runs/<run>/<root>.coverage.md`.
 
-Never: branch on the domain here; widen the run's scope; edit the root
-ticket's frozen statement.
+Never: edit the root ticket's frozen statement.
 
 Return: status; result — the ticket directory; verification — the
 cutcheck result; then item ids with edges, uncovered remainder (`[]`
