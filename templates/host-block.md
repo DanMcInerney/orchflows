@@ -16,9 +16,10 @@ defines.
   `orch-decompose` with the pack stamped (`orch-spec` writes that root
   ticket when decisions or evidence must be gathered first) and
   `orch-frontier` drains what decompose emits; **fix** — a failure with
-  unknown cause → `tickets.py instantiate compositions/fix`, then
-  `orch-frontier`. Everything else — `evolve`, `benchmaker`, other
-  templates — runs only when named.
+  unknown cause → `tickets.py instantiate
+  {{ORCH_LIB}}/compositions/fix --run <run>`, then `orch-frontier`.
+  Everything else — `evolve`, `benchmaker`, other templates — runs only
+  when named.
 - Tickets are local markdown at the state sink's `tickets/<run>/` —
   there is no external tracker. Executors write results into their own
   ticket.
