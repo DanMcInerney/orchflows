@@ -1,7 +1,8 @@
 """A smoke that reads a blocked read as the platform's fault.
 
 Written beside the tree and never imported by the package. It makes the one
-mistake findings.md §0 was written to prevent, in the one way the code invites:
+mistake the captive-portal caveat was written to prevent, in the one way
+the code invites:
 it branches on ``outcome``. A response this host's network appliance produced
 comes back ``failed`` exactly like a platform refusal does, because the outcome
 vocabulary has no member for "the origin was never reached" — so an

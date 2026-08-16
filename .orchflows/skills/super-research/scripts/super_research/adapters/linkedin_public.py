@@ -1,6 +1,6 @@
 """K2 LinkedIn public profiles from the structured data the page embeds.
 
-Measured 2026-08-10 (findings.md §1, "LinkedIn"): ``linkedin.com/in/<slug>``
+Measured 2026-08-10 (LinkedIn): ``linkedin.com/in/<slug>``
 answered 200 in 1.3 s with 577 KB carrying a **complete** ``ld+json`` Person
 block — ``name``, ``jobTitle[]``, ``addressLocality``, ``description``,
 ``worksFor[]`` and ``alumniOf[]``. That is the largest single divergence from
@@ -22,7 +22,7 @@ would eventually report.
 
 This module reads ``linkedin.com/in/<slug>`` and only that.
 ``linkedin.com/company/<slug>`` is a different path and would be a different
-route; findings.md records a marker name for it and no field set, so a company
+route; the 2026-08-10 probes record a marker name for it and no field set, so a company
 parser would be inferred rather than read.
 """
 
@@ -51,7 +51,7 @@ DESCRIPTOR = AdapterDescriptor(
     native_identity_namespace="linkedin",
     representation_kind="native",
     operator_identity="linkedin",
-    # findings.md §1: 1.3 s per request. Nothing on this route was measured
+    # The 2026-08-10 probes: 1.3 s per request. Nothing on this route was measured
     # refusing, so `burst` and `cooldown_ms` keep the protocol's conservative
     # defaults rather than a ceiling nobody observed.
     min_interval_ms=1300,
@@ -81,7 +81,7 @@ GRAPH_KEY = "@graph"
 NODE_TYPE_KEY = "@type"
 PERSON_TYPE = "Person"
 
-# Every field findings.md §1 records this block carrying, under the block's own
+# Every field the 2026-08-10 probes record this block carrying, under the block's own
 # keys. A record missing one says so.
 NAME_KEY = "name"
 JOB_TITLE_KEY = "jobTitle"

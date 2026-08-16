@@ -1,5 +1,5 @@
 {
-  "source": "findings.md §1 (LinkedIn), measured 2026-08-10",
+  "source": "route measurements of 2026-08-10, (LinkedIn)",
   "note": "The confusion this table exists to catch. The prior spec placed LinkedIn entirely outside the roster on an assumed 999 authwall; measured, linkedin.com/in/<slug> answers 200 with a complete ld+json Person block, and the 'sign in to' / 'join now' strings sit in that same page as navigation chrome. So the chrome cannot decide anything: at 200 with a block the answer is the profile, at 200 without one it is schema_drift, and the only thing that may make this route a refusal is the origin's own status line. Six of the seven bodies below carry the chrome, and the answers differ anyway.",
   "cases": [
     {

@@ -78,7 +78,7 @@ class PublicClientCredential:
 
 
 PUBLIC_CLIENT_CREDENTIALS: Dict[str, PublicClientCredential] = {
-    # findings.md §1 (YouTube) records this key elided, as `AIzaSy...11qcW8`:
+    # The 2026-08-10 probes (YouTube) records this key elided, as `AIzaSy...11qcW8`:
     # it is embedded in youtube.com's own page source, and no account or
     # console project is involved. The middle is not in the evidence, so the
     # value below must be re-proved against a live probe before any YouTube
@@ -90,7 +90,7 @@ PUBLIC_CLIENT_CREDENTIALS: Dict[str, PublicClientCredential] = {
         name="key",
         value="AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8",
     ),
-    # findings.md §1 (Instagram) records this one in full: the measured probe
+    # The 2026-08-10 probes (Instagram) records this one in full: the measured probe
     # sent `x-ig-app-id: 936619743392459` and got 200 with profile data.
     INSTAGRAM_WEB_APP_ID: PublicClientCredential(
         credential_id=INSTAGRAM_WEB_APP_ID,
@@ -99,7 +99,7 @@ PUBLIC_CLIENT_CREDENTIALS: Dict[str, PublicClientCredential] = {
         name="x-ig-app-id",
         value="936619743392459",
     ),
-    # findings.md §1 (X) records the activation returning 200 with a guest
+    # The 2026-08-10 probes (X) records the activation returning 200 with a guest
     # token but does not record the bearer the probe sent. This is the bearer
     # x.com ships in its own logged-out web bundle; like the InnerTube key it
     # must be re-proved live before the X routes are declared live. The guest
@@ -189,7 +189,7 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         operator_identity="x",
         credential_id=X_GUEST_PUBLIC_BEARER,
     ),
-    # findings.md §1 (X): 200, 378 KB in 2.5 s, carrying 100 timeline entries
+    # The 2026-08-10 probes (X): 200, 378 KB in 2.5 s, carrying 100 timeline entries
     # in the page's own `__NEXT_DATA__`. The handle is a path segment, not a
     # query parameter.
     X_SYNDICATION_TIMELINE_ROUTE: RouteConstant(
@@ -202,7 +202,7 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         operator_identity="x",
         path_params=("screen_name",),
     ),
-    # findings.md §1 (X): three GraphQL operations answered 200 with a guest
+    # The 2026-08-10 probes (X): three GraphQL operations answered 200 with a guest
     # token. The evidence records the activation origin and not this one, so
     # the endpoint is pinned to the origin the evidence does record; criterion
     # 12's live smoke is what proves it. Both path segments come from the
@@ -221,7 +221,7 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         path_params=("query_id", "operation_name"),
         token_route_id=X_GUEST_ACTIVATE_ROUTE,
     ),
-    # findings.md §1 (LinkedIn): 200, 27 KB in 0.7 s, ten jobs per page each
+    # The 2026-08-10 probes (LinkedIn): 200, 27 KB in 0.7 s, ten jobs per page each
     # carrying a jobPosting URN, a title, a company and a datetime, with
     # `start=` paginating. A guest surface in the plainest sense — no account,
     # no token, and no vendor-published credential attached here or anywhere.
@@ -234,7 +234,7 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         accept="text/html",
         operator_identity="linkedin",
     ),
-    # findings.md §1 (LinkedIn): 200, 577 KB in 1.3 s, carrying a complete
+    # The 2026-08-10 probes (LinkedIn): 200, 577 KB in 1.3 s, carrying a complete
     # ld+json Person block — **not** the 999 authwall the superseded spec put
     # this whole platform outside the roster for. The slug is a path segment,
     # so the endpoint's shape stays owned here and only the value is the
@@ -250,7 +250,7 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         operator_identity="linkedin",
         path_params=("slug",),
     ),
-    # findings.md §1 (YouTube): `youtubei/v1/search` answered 200 with 2.27 MB
+    # The 2026-08-10 probes (YouTube): `youtubei/v1/search` answered 200 with 2.27 MB
     # in 1.4 s, `youtubei/v1/next` 200 with 1.12 MB in 2.2 s, and
     # `youtubei/v1/player` 200 with 21 KB in 0.3 s — all three keyless, under
     # the web key youtube.com embeds in its own page source. The endpoint is a
@@ -285,7 +285,7 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
             ("continuation", ("continuation",)),
         ),
     ),
-    # findings.md §1 (Instagram): `api/v1/users/web_profile_info/?username=`
+    # The 2026-08-10 probes (Instagram): `api/v1/users/web_profile_info/?username=`
     # under `x-ig-app-id: 936619743392459` answered 200 with 455 KB in 2.9 s,
     # carrying username, biography, followers, post count and 12 recent posts.
     # The evidence records the path and the header and not the host, so the
@@ -302,7 +302,7 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         operator_identity="instagram",
         credential_id=INSTAGRAM_WEB_APP_ID,
     ),
-    # findings.md §1 (carry-over routes): `hn.algolia.com/api/v1/search_by_date`
+    # The 2026-08-10 probes (carry-over routes): `hn.algolia.com/api/v1/search_by_date`
     # answered 200 with full-text HN search, and `.../search?tags=comment`
     # answered 200 for comments. The endpoint is a path segment, so both are one
     # route with one budget, the way the InnerTube operations are; the tag that
@@ -323,7 +323,8 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         operator_identity="algolia",
         path_params=("endpoint",),
     ),
-    # findings.md §1 (carry-over routes): `hacker-news.firebaseio.com/v0/item/<id>`
+    # The 2026-08-10 probes (carry-over routes):
+    # `hacker-news.firebaseio.com/v0/item/<id>`
     # answered 200 with `by`, `descendants` and the `kids` tree — the one
     # surface that carries a story's comment tree, and the one with no search.
     # Firebase names a resource's representation with a path suffix rather than
@@ -340,7 +341,7 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         path_params=("item_id",),
         path_suffix=".json",
     ),
-    # findings.md §1 (carry-over routes): `api.github.com` answered anonymously,
+    # The 2026-08-10 probes (carry-over routes): `api.github.com` answered anonymously,
     # and `api.github.com/rate_limit` reported the anonymous ceiling as 60/hr
     # for **core** and 60/hr for **code_search** — two buckets, measured apart.
     # They are two routes here for that reason and for one more: a repository's
@@ -365,7 +366,7 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         # the repository.
         path_params=("owner", "repo", "resource"),
     ),
-    # findings.md §1 (carry-over routes): `api.github.com/search/repositories`
+    # The 2026-08-10 probes (carry-over routes): `api.github.com/search/repositories`
     # answered 200 anonymously. The index is a path segment and the question is
     # `q`, which is how GitHub spells both.
     GITHUB_SEARCH_ROUTE: RouteConstant(
@@ -378,7 +379,7 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         operator_identity="github",
         path_params=("index",),
     ),
-    # findings.md §1 (Reddit): `www.reddit.com/r/<sub>.rss` answered 200 with
+    # The 2026-08-10 probes (Reddit): `www.reddit.com/r/<sub>.rss` answered 200 with
     # 32 KB in 1.4 s carrying title, link, author and updated — the one Reddit
     # surface that answered this host at all. Every `.json` form answered 403,
     # on `www.`, `old.` and `api.` alike, to a curl UA, a custom app UA and a
@@ -399,7 +400,7 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         path_params=("subreddit",),
         path_suffix=".rss",
     ),
-    # findings.md §1 (YouTube): `feeds/videos.xml?channel_id=` answered 200 with
+    # The 2026-08-10 probes (YouTube): `feeds/videos.xml?channel_id=` answered 200 with
     # 39 KB in 0.35 s — the cheapest read in the roster, and the one RSS/Atom
     # document the evidence measures. The channel is a query parameter, which is
     # how the measured url spells it.
@@ -419,11 +420,13 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
     # The two documents `public_page` may select between, and the reason it is a
     # selected read rather than an HTTP primitive: a page's host and endpoint are
     # declared here like every other route's, and a caller fills one declared
-    # segment. findings.md §0 measured both — `example.com` and `wikipedia.org`
-    # returned 200 with genuine origin content from this host while the network
-    # appliance answered other domains with a 503 login portal.
+    # segment. The captive-portal caveat's control probes measured both —
+    # `example.com` and `wikipedia.org` returned 200 with genuine origin content
+    # from this host while the network appliance answered other domains with a
+    # 503 login portal.
     #
-    # The article host is this package's belief: §0 records `wikipedia.org` and
+    # The article host is this package's belief: the caveat records
+    # `wikipedia.org` and
     # articles live on the language subdomain. Unproven until criterion 12's
     # live smoke, exactly as the Instagram and X GraphQL origins are.
     PUBLIC_PAGE_ARTICLE_ROUTE: RouteConstant(
@@ -437,8 +440,9 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         path_params=("title",),
     ),
     # The channel control: one document, no argument, and an answer known before
-    # it is asked. It is what §0's caveat is built on — a read whose content is
-    # fixed is the only read that can tell "this network is answering for the
+    # it is asked. It is what the captive-portal caveat is built on — a read
+    # whose content is fixed is the only read that can tell "this network is
+    # answering for the
     # origin" from "the origin has nothing", and `channel_verdict` needs
     # something to be right about.
     PUBLIC_PAGE_CONTROL_ROUTE: RouteConstant(

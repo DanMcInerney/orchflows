@@ -1,6 +1,6 @@
 """K1 X reads authorized by an anonymous guest token.
 
-Measured 2026-08-10 (findings.md §1, "X"): the activation route issues a
+Measured 2026-08-10 (X): the activation route issues a
 guest token freely, and with it ``TweetResultByRestId`` and
 ``UserByScreenName`` answered 200 in 0.5 s and ``UserTweets`` in 2.3 s,
 cursor-paginated. No account, no console project, no cost.
@@ -41,7 +41,7 @@ TWEET_OPERATION = "TweetResultByRestId"
 USER_OPERATION = "UserByScreenName"
 TIMELINE_OPERATION = "UserTweets"
 
-# The rotating half of every url this adapter builds. findings.md §1 records
+# The rotating half of every url this adapter builds. The 2026-08-10 probes record
 # these three operations answering 200 with a current id at probe time; it does
 # not record the literal ids, so the values below are the ones this package
 # last held and are unproven until criterion 12's live smoke. That is the
@@ -54,7 +54,7 @@ GUEST_QUERY_IDS = {
     TIMELINE_OPERATION: "V7H0Ap3_Hh2FyS75OCDO3Q",
 }
 
-# findings.md §1 (X) recorded the shape of the way back, having walked into it:
+# The 2026-08-10 probes (X) recorded the shape of the way back, having walked into it:
 # X moved its bundles from the responsive-web layout to an x-web layout whose
 # logged-out entry bundle hides the chunk graph behind ESM dynamic imports, so
 # a naive regex over one file no longer finds anything.
@@ -79,7 +79,7 @@ DESCRIPTOR = AdapterDescriptor(
     native_identity_namespace="x",
     representation_kind="native",
     operator_identity="x",
-    # findings.md §1: 0.5 s per request for the two single-object operations.
+    # The 2026-08-10 probes: 0.5 s per request for the two single-object operations.
     # `UserTweets` answered in 2.3 s, which is that operation's latency and not
     # a second ceiling: one route, one budget. Nothing here was measured
     # refusing, so burst and cooldown keep the conservative defaults.
@@ -102,7 +102,7 @@ DESCRIPTOR = AdapterDescriptor(
 # the mint was the one request in the package that left under no ceiling at
 # all — the governor refuses to pace a route no adapter declares.
 #
-# Same three numbers as the read: findings.md §1 measured this origin at 0.5 s
+# Same three numbers as the read: the 2026-08-10 probes recorded this origin at 0.5 s
 # per request and the activation is a request to it. Nothing here was measured
 # refusing, so burst and cooldown keep the conservative defaults, exactly as
 # the read's do.
@@ -160,8 +160,8 @@ FOLLOWERS_FIELD = "followers_count"
 # an answer nobody can account for.
 TYPENAME_FIELD = "__typename"
 
-# The statuses that separate a rotated identifier from a refusal. findings.md
-# §1 measured both: the stale ids answered 404, and the evidence states that a
+# The statuses that separate a rotated identifier from a refusal. The
+# 2026-08-10 probes recorded both: the stale ids answered 404, and a
 # guest-blocked operation answers 403 or 401.
 STALE_IDENTIFIER_STATUS = 404
 AUTHORIZATION_STATUSES = (401, 403)

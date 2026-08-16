@@ -78,14 +78,14 @@ IDENTITY_ROTATION_NAMES = (
 REDDIT_FEED_ROUTE = "reddit_feed"
 GITHUB_REST_ROUTE = "github_rest"
 
-# findings.md §1, Reddit: four RSS requests back to back returned one 200 and
+# The 2026-08-10 probes, Reddit: four RSS requests back to back returned one 200 and
 # three 429s; after a thirty-second cooldown, paced one per six seconds, it
 # returned two 200s and then 429ed again. The measured ceiling is one to two
 # per ~30 s per IP, and it is User-Agent independent. A client that respects a
 # limit takes the floor of a measured range, never its ceiling.
 REDDIT_FEED_BUDGET = runner.RouteBudget(min_interval_ms=30000, burst=1, cooldown_ms=30000)
 
-# findings.md §1, carry-over routes: `api.github.com/rate_limit` reported the
+# The 2026-08-10 probes, carry-over routes: `api.github.com/rate_limit` reported the
 # anonymous ceiling as 60/hr for core and code_search. GitHub spends that as
 # one hourly bucket, so sixty reads may leave at once and one refills per
 # minute; the cooldown is the window the bucket resets in.
@@ -183,7 +183,7 @@ STAGED_HYDRATION_MANIFEST = {
 }
 REPEAT_ROUTES = (transport.DDG_HTML_ROUTE, transport.ARCTIC_SHIFT_POSTS_ROUTE)
 
-# findings.md §1: Arctic Shift's `/api/posts/ids` was measured at 1.5 s. No
+# The 2026-08-10 probes: Arctic Shift's `/api/posts/ids` was measured at 1.5 s. No
 # latency was recorded for the DuckDuckGo HTML endpoint, so the helper's own
 # default stands in for it; what the comparison needs is two routes that cost
 # visibly different amounts, and these are the two the tracer already reads.

@@ -626,7 +626,8 @@ class ThirdPartyArchiveTest(unittest.TestCase):
     Arctic Shift is volunteer-run and has no uptime guarantee and no
     obligation to be complete. A caller who reads its answer as Reddit's own
     reads a mirror's gap as a platform gap — the mirror image of the
-    interception rule §0 turns on — so the label and the operator travel on
+    interception rule the captive-portal caveat turns on — so the label and
+    the operator travel on
     every row, and the row is where a caller reads them.
     """
 

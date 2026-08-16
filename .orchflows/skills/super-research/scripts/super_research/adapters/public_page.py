@@ -1,6 +1,6 @@
 """K0 one *selected* public document, read as a document.
 
-Measured 2026-08-10 (findings.md §0, control probes): ``example.com`` and
+Measured 2026-08-10 (control probes): ``example.com`` and
 ``wikipedia.org`` answered 200 with genuine origin content from this host, while
 the network appliance answered other domains with a 503 login portal. Those are
 the two static documents the evidence records, and they are what this adapter
@@ -83,7 +83,7 @@ DESCRIPTOR = AdapterDescriptor(
 )
 
 # The channel control: one document, no argument, and an answer known before it
-# is asked. findings.md §0's whole caveat rests on a read like this one — only
+# is asked. The captive-portal caveat rests on a read like this one — only
 # a document whose content is fixed can tell "this network is answering for the
 # origin" from "the origin has nothing to say".
 CONTROL_DESCRIPTOR = AdapterDescriptor(

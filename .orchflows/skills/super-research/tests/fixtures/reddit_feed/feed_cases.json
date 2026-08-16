@@ -1,7 +1,7 @@
 {
   "_note": [
     "Every answer this route can give, and what each one costs an operator.",
-    "findings.md §1 (Reddit) measures two of these directly: `www.reddit.com/r/<sub>.rss`",
+    "The 2026-08-10 probes (Reddit) recorded two of these directly: `www.reddit.com/r/<sub>.rss`",
     "answered 200 with 32 KB in 1.4 s carrying title, link, author and updated, and four",
     "requests back to back answered 1x 200 then 3x 429. The 403 row and the two 200 rows",
     "that are not the happy path are this adapter's declared handling rather than",

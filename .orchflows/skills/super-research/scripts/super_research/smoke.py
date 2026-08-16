@@ -18,7 +18,7 @@ capability. The one branch that matters most reads ``loss`` and never
 ``outcome`` — a response this host's own network appliance produced comes back
 ``failed`` like any other blocked read, and only the loss code says the origin
 was never reached. Recording that as a platform gap is the exact error
-findings.md §0 exists to prevent.
+evidence.md's captive-portal caveat exists to prevent.
 
 Two records, and the second is why the first can be believed. The ledger holds
 successes and only ever gains one, so the absence of a stamp there used to be

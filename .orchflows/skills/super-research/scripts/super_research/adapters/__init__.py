@@ -221,7 +221,7 @@ def fetch_one_page(
 
     The channel verdict is consulted here, once, ahead of any status test a
     ``parse`` may run: a response the local network produced never reaches
-    ``parse`` and is recorded as `network_intercepted`, so findings.md §0's
+    ``parse`` and is recorded as `network_intercepted`, so the captive-portal caveat's
     rule — a local block is never a platform gap — holds for every adapter,
     including the ones that do not exist yet. An adapter inherits it by
     calling this function rather than ``carrier.fetch``, and needs no branch

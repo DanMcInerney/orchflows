@@ -141,12 +141,13 @@ ORIGIN_FAILURE = "origin_failure"
 NETWORK_INTERCEPTED = "network_intercepted"
 CHANNEL_VERDICTS = (ORIGIN_CONTENT, ORIGIN_FAILURE, NETWORK_INTERCEPTED)
 
-# The one measured captive-portal signature (findings.md §0, 2026-08-10):
+# The one measured captive-portal signature (evidence.md's captive-portal
+# caveat, measured 2026-08-10):
 # this host's appliance answered tiktok.com and ecosia.org with HTTP 503 and
 # a body carrying this marker, while example.com and wikipedia.org returned
 # genuine 200 origin content. Widening this set requires a new measurement:
 # a marker an origin also emits would record platform behavior as a local
-# block, which is the mirror of the error §0 forbids.
+# block, which is the mirror of the error that caveat forbids.
 CAPTIVE_PORTAL_MARKERS = ('<base href="/login/">',)
 
 

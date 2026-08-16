@@ -15,7 +15,7 @@ missing page answers, and one status away from the 401/403 a blocked
 operation answers. An adapter that read that 404 as "no results" would turn
 a scheduled outage into an empty answer nobody could attribute, and one that
 read it as `auth_required` would report a keyless route as credentialed.
-findings.md §1 measured both halves: `SearchTimeline` and `TweetDetail`
+The 2026-08-10 probes recorded both halves: `SearchTimeline` and `TweetDetail`
 returned 404 from stale ids while the three operations whose ids were current
 returned 200, and a guest-blocked operation returns 403 or 401. That claim is
 checked over a case table and shown to be falsifiable by three wrong adapters
@@ -73,7 +73,7 @@ this package invented.
 
 Every test here runs offline against fixtures under `fixtures/x/`,
 `fixtures/linkedin/`, `fixtures/youtube/` and `fixtures/instagram/`. Those
-fixtures carry the shape and field set findings.md §1 records; the evidence
+fixtures carry the shape and field set the 2026-08-10 probes record; the evidence
 records no captured bodies, and this package may not reach the network to make
 one, so what they prove is that this code reads that shape correctly.
 Criterion 12's live smoke is what proves the shape.
@@ -120,7 +120,7 @@ ADAPTER_DIR = PACKAGE_DIR / "adapters"
 GUEST_QUERY_ID = "V7H0Ap3_Hh2FyS75OCDO3Q"
 MINTED_GUEST_TOKEN = "1804400000000000000"
 
-# findings.md §1 (X): every field the syndication row records this route
+# The 2026-08-10 probes (X): every field the syndication row records this route
 # returning for each of its 100 timeline entries.
 SYNDICATION_ROSTER_FIELDS = (
     "full_text",
@@ -317,7 +317,7 @@ class XRouteConstantTest(unittest.TestCase):
             transport.X_SYNDICATION_TIMELINE_ROUTE, {"screen_name": "simonw"}
         )
 
-        # findings.md §1 (X): syndication.twitter.com/srv/timeline-profile/
+        # The 2026-08-10 probes (X): syndication.twitter.com/srv/timeline-profile/
         # screen-name/<u> returned 200 with 100 timeline entries.
         self.assertEqual(
             request.url,
@@ -780,7 +780,7 @@ class SyndicationDescriptorTest(unittest.TestCase):
     """The descriptor T04's seam reads: measured ceiling, class, declared metric."""
 
     def test_the_route_is_paced_by_the_interval_the_evidence_measured(self):
-        # findings.md §1 (X): 2.5 s per request. No refusal was observed on
+        # The 2026-08-10 probes (X): 2.5 s per request. No refusal was observed on
         # this route, so burst and cooldown keep the conservative defaults
         # rather than a number nobody measured.
         descriptor = x_syndication.DESCRIPTOR
@@ -977,7 +977,7 @@ class GuestDescriptorTest(unittest.TestCase):
     def test_the_activation_it_spends_declares_a_budget_of_its_own(self):
         # The governor refuses to pace a route no adapter declares, and an
         # activation is a request of its own — so it needs its own row. Same
-        # ceiling as the reads it authorizes: findings.md §1 measured one
+        # ceiling as the reads it authorizes: the 2026-08-10 probes recorded one
         # origin at 0.5 s per request, and the activation is a request there.
         surfaces = {
             descriptor.route_id: descriptor
@@ -1503,7 +1503,7 @@ class LinkedInRouteConstantTest(unittest.TestCase):
             {"keywords": "reliability engineer", "location": "Seattle", "start": "10"},
         )
 
-        # findings.md §1 (LinkedIn): linkedin.com/jobs-guest/jobs/api/
+        # The 2026-08-10 probes (LinkedIn): linkedin.com/jobs-guest/jobs/api/
         # seeMoreJobPostings/search returned 200 with 10 jobs, start= paginating.
         self.assertEqual(
             request.url,
@@ -1517,7 +1517,7 @@ class LinkedInRouteConstantTest(unittest.TestCase):
             transport.LINKEDIN_PUBLIC_PROFILE_ROUTE, {"slug": "avery-lindqvist-8a41b207"}
         )
 
-        # findings.md §1 (LinkedIn): linkedin.com/in/<slug> returned 200 with a
+        # The 2026-08-10 probes (LinkedIn): linkedin.com/in/<slug> returned 200 with a
         # complete ld+json Person block. The slug is a path segment, so the
         # endpoint's shape stays transport's and only the value is the caller's.
         self.assertEqual(
@@ -1544,7 +1544,7 @@ class LinkedInRouteConstantTest(unittest.TestCase):
 
 JOBS_REQUEST = adapters.AdapterRequest(step_id="s1-li", query="reliability engineer")
 
-# findings.md §1 (LinkedIn): every field the jobs row records this route
+# The 2026-08-10 probes (LinkedIn): every field the jobs row records this route
 # returning per card, named as the evidence names them rather than as the
 # record spells them, so the check reads against the roster row.
 LINKEDIN_JOBS_ROSTER_FIELDS = ("urn_id", "title", "company", "posted_date")
@@ -1724,7 +1724,7 @@ class LinkedInJobsDescriptorTest(unittest.TestCase):
     """The descriptor T04's seam reads: measured ceiling, class, declared metrics."""
 
     def test_the_route_is_paced_by_the_interval_the_evidence_measured(self):
-        # findings.md §1 (LinkedIn): 0.7 s per request. Nothing on this route
+        # The 2026-08-10 probes (LinkedIn): 0.7 s per request. Nothing on this route
         # was measured refusing, so burst and cooldown keep the conservative
         # defaults rather than a ceiling nobody observed.
         descriptor = linkedin_jobs.DESCRIPTOR
@@ -1770,7 +1770,7 @@ LINKEDIN_PROFILE_REQUEST = adapters.AdapterRequest(
     step_id="s1-li", target_ids=(PROFILE_SLUG,)
 )
 
-# findings.md §1 (LinkedIn): every field the profile row records the ld+json
+# The 2026-08-10 probes (LinkedIn): every field the profile row records the ld+json
 # Person block carrying, named as the evidence names them.
 LINKEDIN_PROFILE_ROSTER_FIELDS = (
     "name",
@@ -1922,7 +1922,7 @@ class LinkedInPublicDescriptorTest(unittest.TestCase):
     """The descriptor T04's seam reads: measured ceiling, class, declared metrics."""
 
     def test_the_route_is_paced_by_the_interval_the_evidence_measured(self):
-        # findings.md §1 (LinkedIn): 1.3 s per request. Nothing on this route
+        # The 2026-08-10 probes (LinkedIn): 1.3 s per request. Nothing on this route
         # was measured refusing, so burst and cooldown keep the conservative
         # defaults rather than a ceiling nobody observed.
         descriptor = linkedin_public.DESCRIPTOR
@@ -2423,7 +2423,7 @@ class LinkedInOneCallOnePageTest(unittest.TestCase):
                 self.assertEqual(page.outcome, "failed")
 
 
-# findings.md §1 (LinkedIn public profile): 577 KB per answer, the largest in
+# The 2026-08-10 probes (LinkedIn public profile): 577 KB per answer, the largest in
 # the roster. Held against `MAX_ENTRY_BYTES` below, because whether a route's
 # declared window can ever bind depends on it.
 MEASURED_LINKEDIN_BYTES = 577 * 1024
@@ -2501,7 +2501,7 @@ class LinkedInRouteTtlTest(unittest.TestCase):
         )
 
     def test_a_body_the_size_the_evidence_measured_is_held_rather_than_served_through(self):
-        # findings.md §1 measured this route at 577 KB — the largest answer in
+        # The 2026-08-10 probes recorded this route at 577 KB — the largest answer in
         # the roster, and the one its 900 s window exists for. The window is
         # real at the size the evidence actually measured, not only at some
         # smaller page. Stated here rather than in prose so it cannot rot.
@@ -2751,7 +2751,7 @@ class YoutubeInstagramRouteConstantTest(unittest.TestCase):
             },
         )
 
-        # findings.md §1 (YouTube): `youtubei/v1/search` with the public web key
+        # The 2026-08-10 probes (YouTube): `youtubei/v1/search` with the public web key
         # answered 200 with 2.27 MB of keyless search. The endpoint is a path
         # segment, so one route serves all three operations and only the
         # segment's value comes from the caller.
@@ -2781,7 +2781,7 @@ class YoutubeInstagramRouteConstantTest(unittest.TestCase):
             transport.INSTAGRAM_WEB_PROFILE_ROUTE, {"username": "nasa"}
         )
 
-        # findings.md §1 (Instagram): `api/v1/users/web_profile_info/?username=`
+        # The 2026-08-10 probes (Instagram): `api/v1/users/web_profile_info/?username=`
         # under `x-ig-app-id` answered 200 with 455 KB of profile and 12 posts.
         self.assertEqual(
             request.url,
@@ -2974,7 +2974,7 @@ class YoutubeInstagramRouteConstantTest(unittest.TestCase):
 INSTAGRAM_USERNAME = "harbourlight.optics"
 INSTAGRAM_REQUEST = adapters.AdapterRequest(step_id="s1-ig", target_ids=(INSTAGRAM_USERNAME,))
 
-# findings.md §1 (Instagram): every field the roster row records this route
+# The 2026-08-10 probes (Instagram): every field the roster row records this route
 # returning, for the profile and for each of the 12 recent posts, named as the
 # evidence names them rather than as a record spells them.
 INSTAGRAM_PROFILE_ROSTER_FIELDS = ("username", "biography", "followers", "post_count")
@@ -3288,7 +3288,7 @@ class InstagramDescriptorTest(unittest.TestCase):
     """The descriptor T04's seam reads: measured ceiling, class, declared metric."""
 
     def test_the_route_is_paced_by_the_interval_the_evidence_measured(self):
-        # findings.md §1 (Instagram): 2.9 s per request, the slowest read in
+        # The 2026-08-10 probes (Instagram): 2.9 s per request, the slowest read in
         # the roster. Nothing here was measured refusing, so burst and cooldown
         # keep the conservative defaults rather than a ceiling nobody observed.
         descriptor = instagram_public.DESCRIPTOR
@@ -3343,7 +3343,7 @@ YOUTUBE_VIDEO_ID = "dQw4w9WgXcQ"
 YOUTUBE_SEARCH_TARGET = "search:local models"
 YOUTUBE_COMMENT_CURSOR = "Eg0SC2RRdzR3OVdnWGNRGAYyJSIRIgtkUXc0dzlXZ1hjUTAA"
 
-# findings.md §1 (YouTube): the roster row records a field set for `player` and
+# The 2026-08-10 probes (YouTube): the roster row records a field set for `player` and
 # names only the capability for the other two. These are the three the evidence
 # enumerates, named as it names them.
 YOUTUBE_PLAYER_ROSTER_FIELDS = ("title", "viewCount", "publishDate")
@@ -3748,7 +3748,7 @@ class InnerTubeDescriptorTest(unittest.TestCase):
     """The descriptor T04's seam reads, and the identifier that rotates under it."""
 
     def test_the_route_is_paced_by_the_interval_the_evidence_measured(self):
-        # findings.md §1 (YouTube): 1.4 s for search, which is the roster row's
+        # The 2026-08-10 probes (YouTube): 1.4 s for search, which is the roster row's
         # declared ceiling. `next` at 2.2 s and `player` at 0.3 s are those
         # operations' latencies and not second ceilings: one route, one budget.
         descriptor = youtube_innertube.DESCRIPTOR
@@ -3846,7 +3846,7 @@ def assert_captions_are_never_reported_absent(case, adapter_id, pages):
 
     A player answer listing no caption track, read as a video with no captions,
     asserts something false about the video rather than about the read — and it
-    is the one findings.md §1 measured on every client and every video, so it
+    is the one the 2026-08-10 probes recorded on every client and every video, so it
     is the answer this adapter will meet every single time.
 
     A player answer that did list tracks, read as withheld, is the mirror: it
@@ -3985,7 +3985,7 @@ class AttestationIsNotAnAbsenceTest(unittest.TestCase):
                 # measured on: a module that quotes evidence for its own typing
                 # under a status nobody probed is its own witness.
                 self.assertEqual(
-                    "findings.md §1 measured this status" in warning,
+                    "The 2026-08-10 probes recorded this status" in warning,
                     status in youtube_innertube.ATTESTED_PLAYABILITY,
                 )
 
@@ -4071,7 +4071,7 @@ class TheUnheldVideoIsNotToldFromTheWithheldOneTest(unittest.TestCase):
 
     So this package does not tell a video the origin no longer holds from one it
     withholds, and nothing here may imply that it does. ``ERROR`` is not a
-    signature of "gone": findings.md §1 measured it across five clients and
+    signature of "gone": the 2026-08-10 probes recorded it across five clients and
     three videos that existed. One observation of one id is not a law either,
     which is why these rows pin the fusion and nothing beyond it — **no loss
     code is named**, so a later, better-warranted typing that moves both
@@ -4335,7 +4335,7 @@ class YoutubeInstagramOneCallOnePageTest(unittest.TestCase):
                 self.assertEqual(len(opener.opened), 1)
 
 
-# findings.md §1 (Instagram): 455 KB per answer. Held against `MAX_ENTRY_BYTES`
+# The 2026-08-10 probes (Instagram): 455 KB per answer. Held against `MAX_ENTRY_BYTES`
 # below, because whether a route's declared window can ever bind depends on it.
 MEASURED_INSTAGRAM_BYTES = 455 * 1024
 
@@ -4452,8 +4452,8 @@ class YoutubeInstagramRouteTtlTest(unittest.TestCase):
         self.assertNotIn(transport.YOUTUBE_INNERTUBE_ROUTE, cache.ROUTE_TTL_SECONDS)
 
     def test_two_of_the_three_innertube_answers_are_too_large_to_hold_anyway(self):
-        # And the window would not bind even if the verb changed: findings.md
-        # §1 measured search at 2.27 MB and next at 1.12 MB, both past
+        # And the window would not bind even if the verb changed: the
+        # 2026-08-10 probes recorded search at 2.27 MB and next at 1.12 MB, both past
         # `MAX_ENTRY_BYTES`, so only the 21 KB player answer could ever be
         # held. The smaller of the two is what fixes the ceiling on that
         # constant — a cap above 1.12 MB would start holding it.
@@ -4733,7 +4733,7 @@ class YoutubeInstagramArtifactSeamTest(unittest.TestCase):
         )
 
 
-# findings.md §1, carry-over routes: the four surfaces this ticket reads, named
+# The 2026-08-10 probes, carry-over routes: the four surfaces this ticket reads, named
 # here as the evidence names them so the route checks read against the roster
 # row rather than against an adapter's own constants.
 HN_ALGOLIA_ENDPOINTS = ("search", "search_by_date")
@@ -4779,7 +4779,7 @@ class HackerNewsGithubRouteConstantTest(unittest.TestCase):
             {"endpoint": "search_by_date", "query": "local models"},
         )
 
-        # findings.md §1, carry-over: `hn.algolia.com/api/v1/search_by_date`
+        # The 2026-08-10 probes, carry-over: `hn.algolia.com/api/v1/search_by_date`
         # answered 200 with full-text HN search — the capability the prior
         # spec's Firebase-only adapter did not have at all.
         self.assertEqual(
@@ -4803,7 +4803,7 @@ class HackerNewsGithubRouteConstantTest(unittest.TestCase):
             {"endpoint": "search", "query": "cuda", "tags": HN_COMMENT_TAG},
         )
 
-        # findings.md §1, carry-over: `hn.algolia.com/api/v1/search?tags=comment`
+        # The 2026-08-10 probes, carry-over: `hn.algolia.com/api/v1/search?tags=comment`
         # answered 200 for comment search.
         self.assertEqual(
             request.url, "https://hn.algolia.com/api/v1/search?query=cuda&tags=comment"
@@ -4814,7 +4814,7 @@ class HackerNewsGithubRouteConstantTest(unittest.TestCase):
             transport.HN_FIREBASE_ITEM_ROUTE, {"item_id": HN_STORY_ID}
         )
 
-        # findings.md §1, carry-over: `hacker-news.firebaseio.com/v0/item/<id>`
+        # The 2026-08-10 probes, carry-over: `hacker-news.firebaseio.com/v0/item/<id>`
         # answered 200 with `by`, `descendants` and the `kids` tree. Firebase
         # spells a resource's representation as a path suffix rather than as an
         # Accept header, so the suffix is part of the endpoint's shape and is
@@ -4849,7 +4849,7 @@ class HackerNewsGithubRouteConstantTest(unittest.TestCase):
             transport.GITHUB_REST_ROUTE, {"owner": GITHUB_OWNER, "repo": GITHUB_REPO}
         )
 
-        # findings.md §1, carry-over: `api.github.com` answered anonymously.
+        # The 2026-08-10 probes, carry-over: `api.github.com` answered anonymously.
         self.assertEqual(
             bare.url, "https://api.github.com/repos/" + GITHUB_OWNER + "/" + GITHUB_REPO
         )
@@ -4867,14 +4867,15 @@ class HackerNewsGithubRouteConstantTest(unittest.TestCase):
             transport.GITHUB_SEARCH_ROUTE, {"index": GITHUB_SEARCH_INDEX, "q": "llama.cpp"}
         )
 
-        # findings.md §1, carry-over: `api.github.com/search/repositories`
+        # The 2026-08-10 probes, carry-over: `api.github.com/search/repositories`
         # answered 200 anonymously.
         self.assertEqual(
             request.url, "https://api.github.com/search/repositories?q=llama.cpp"
         )
 
     def test_all_four_are_documented_keyless_and_need_no_credential_of_any_kind(self):
-        # findings.md §3 places "HN Algolia + Firebase, GitHub anon" in `K0`,
+        # protocol.md's access ladder places "HN Algolia + Firebase, GitHub
+        # anon" in `K0`,
         # the documented-keyless class, and the spec's roster row repeats it.
         for route_id in self._routes():
             with self.subTest(route=route_id):
@@ -4952,7 +4953,7 @@ class HackerNewsGithubRouteConstantTest(unittest.TestCase):
 
 HN_FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "hacker_news"
 
-# findings.md §1 (carry-over routes): the three fields the evidence names the
+# The 2026-08-10 probes (carry-over routes): the three fields the evidence names the
 # Firebase item route returning, named as the evidence names them rather than
 # as a record spells them.
 HN_ITEM_ROSTER_FIELDS = ("by", "descendants", "kids")
@@ -5034,7 +5035,7 @@ class HackerNewsSearchTest(unittest.TestCase):
     def test_a_step_naming_only_a_query_asks_the_endpoint_the_evidence_measured(self):
         _, opener = hn_page("algolia_search_by_date.json", query="local models")
 
-        # findings.md §1: `hn.algolia.com/api/v1/search_by_date` answered 200
+        # The 2026-08-10 probes: `hn.algolia.com/api/v1/search_by_date` answered 200
         # with full-text HN search. A caller wanting relevance names `search:`.
         self.assertEqual(len(opener.opened), 1)
         self.assertEqual(opener.opened[0].route_id, transport.HN_ALGOLIA_SEARCH_ROUTE)
@@ -5046,7 +5047,7 @@ class HackerNewsSearchTest(unittest.TestCase):
         _, opener = hn_page("algolia_comment_search.json", query="comments:kv cache")
         asked = urllib.parse.urlsplit(opener.opened[0].url)
 
-        # findings.md §1: `.../search?tags=comment` answered 200 for comments.
+        # The 2026-08-10 probes: `.../search?tags=comment` answered 200 for comments.
         self.assertEqual(asked.path, "/api/v1/search")
         self.assertEqual(
             sorted(urllib.parse.parse_qsl(asked.query)),
@@ -5187,7 +5188,7 @@ class HackerNewsItemTest(unittest.TestCase):
         page, opener = hn_page("firebase_story.json", target_id=HN_STORY_ID)
         story = page.records[0]
 
-        # findings.md §1: `by`, `descendants`, and the `kids` tree.
+        # The 2026-08-10 probes: `by`, `descendants`, and the `kids` tree.
         self.assertEqual(len(page.records), 1)
         self.assertEqual(story.author, "kessel_run")
         self.assertEqual(counts_of(story)["descendants"], 233)
@@ -5427,7 +5428,7 @@ class HackerNewsDescriptorTest(unittest.TestCase):
                 self.assertEqual(descriptor.volatile_identifiers, ())
 
     def test_nothing_was_measured_here_so_nothing_is_declared(self):
-        # findings.md §1 records "no throttle observed" and no latency for
+        # The 2026-08-10 probes record "no throttle observed" and no latency for
         # either surface. An unmeasured ceiling is not one to spend, so both
         # keep the protocol's conservative defaults rather than a number this
         # ticket would have had to invent.
@@ -5538,7 +5539,7 @@ def gh_page(fixture, status=200, query="", target_id="", cursor="", module=None)
 class GithubReadTest(unittest.TestCase):
     """Four capabilities out of one anonymous client, and the row each returns.
 
-    findings.md §1 measured `api.github.com` answering anonymously and
+    The 2026-08-10 probes recorded `api.github.com` answering anonymously and
     `rate_limit` reporting the ceiling that answer costs. The roster row names
     repos, issues, releases and search, and each is read here at the field set
     GitHub publishes it with — under GitHub's own names, because a name
@@ -5640,7 +5641,7 @@ class GithubReadTest(unittest.TestCase):
         page, opener = gh_page("search_repositories.json", query="gpu benchmark")
         asked = urllib.parse.urlsplit(opener.opened[0].url)
 
-        # findings.md §1: `api.github.com/search/repositories` answered 200
+        # The 2026-08-10 probes: `api.github.com/search/repositories` answered 200
         # anonymously, and `rate_limit` counts it against its own bucket.
         self.assertEqual(opener.opened[0].route_id, transport.GITHUB_SEARCH_ROUTE)
         self.assertEqual(asked.path, "/search/repositories")
@@ -5793,7 +5794,7 @@ class GithubDescriptorTest(unittest.TestCase):
     """Two buckets, measured apart, declared apart, and paced apart."""
 
     def test_the_core_bucket_declares_the_ceiling_the_evidence_measured(self):
-        # findings.md §1: `api.github.com/rate_limit` reported the anonymous
+        # The 2026-08-10 probes: `api.github.com/rate_limit` reported the anonymous
         # ceiling as 60/hr. GitHub spends that as one hourly bucket, so sixty
         # reads may leave at once and one refills per minute. T04 seeded these
         # three numbers as a replay constant before this route existed; the
@@ -6408,7 +6409,7 @@ class SecondSurfaceIsPacedTest(unittest.TestCase):
         )
 
     def test_githubs_hour_leaves_sixty_at_once_and_then_refills_one_a_minute(self):
-        # findings.md §1: 60/hr anonymous, spent as one bucket. The declared
+        # The 2026-08-10 probes: 60/hr anonymous, spent as one bucket. The declared
         # burst is what lets a run do useful work at all under a ceiling that
         # tight, and the interval is what stops it doing so twice.
         governor, opener, _ = self._paced(
@@ -6440,7 +6441,7 @@ class HackerNewsGithubRouteTtlTest(unittest.TestCase):
     and one outside it that goes back.
 
     The GitHub pair is the one where the argument is not only volatility.
-    findings.md §1 measured the anonymous ceiling at 60/hr per bucket — the
+    The 2026-08-10 probes recorded the anonymous ceiling at 60/hr per bucket — the
     tightest in the roster after Reddit's feed — so a repeat read there costs a
     minute of the hour rather than a second of latency, and that is a different
     kind of expensive from the 2.9 s Instagram profile.
@@ -6918,16 +6919,16 @@ class HackerNewsGithubArtifactSeamTest(unittest.TestCase):
 # evidence names them, so a route check reads against the roster row rather
 # than against an adapter's own constants.
 #
-# findings.md §1, Reddit: `www.reddit.com/r/<sub>.rss` answered 200 with 32 KB
+# The 2026-08-10 probes, Reddit: `www.reddit.com/r/<sub>.rss` answered 200 with 32 KB
 # in 1.4 s carrying title, link, author and updated, at a ceiling of 1–2
 # requests per ~30 s per IP. Every `.json` form answered 403 to three unrelated
 # User-Agents.
 REDDIT_SUBREDDIT = "LocalLLaMA"
 REDDIT_FEED_FIELDS = ("title", "link", "author", "updated")
-# findings.md §1, carry-over: `feeds/videos.xml?channel_id=` answered 200 with
+# The 2026-08-10 probes, carry-over: `feeds/videos.xml?channel_id=` answered 200 with
 # 39 KB in 0.35 s — the one RSS/Atom document in the evidence.
 FEED_CHANNEL_ID = "UCharbourlight0000000000"
-# findings.md §0, control probes: `example.com` and `wikipedia.org` answered
+# the captive-portal caveat, control probes: `example.com` and `wikipedia.org` answered
 # 200 with genuine origin content from this host, while the appliance answered
 # `tiktok.com` and `ecosia.org` with a 503 login portal. Those two are the only
 # static documents the evidence measures, and they are what `public_page` may
@@ -6968,7 +6969,7 @@ class FeedPageRouteConstantTest(unittest.TestCase):
     the first.
 
     The Reddit route carries the second claim: `.rss` is the only Reddit
-    surface here. findings.md §1 measured `.json` answering 403 to three
+    surface here. The 2026-08-10 probes recorded `.json` answering 403 to three
     unrelated User-Agents from three hosts, which is IP-class blocking no
     header set changes, so it is not a route and not a fallback.
     """
@@ -6981,7 +6982,7 @@ class FeedPageRouteConstantTest(unittest.TestCase):
             transport.REDDIT_FEED_ROUTE, {"subreddit": REDDIT_SUBREDDIT}
         )
 
-        # findings.md §1, Reddit: `www.reddit.com/r/<sub>.rss`, 200, 32 KB,
+        # The 2026-08-10 probes, Reddit: `www.reddit.com/r/<sub>.rss`, 200, 32 KB,
         # 1.4 s. Reddit names the representation with a path suffix the way
         # Firebase does, so the suffix is part of the endpoint's shape and is
         # owned in the route table rather than composed by an adapter.
@@ -7025,7 +7026,7 @@ class FeedPageRouteConstantTest(unittest.TestCase):
             transport.YOUTUBE_CHANNEL_FEED_ROUTE, {"channel_id": FEED_CHANNEL_ID}
         )
 
-        # findings.md §1: `feeds/videos.xml?channel_id=` answered 200 with
+        # The 2026-08-10 probes: `feeds/videos.xml?channel_id=` answered 200 with
         # 39 KB in 0.35 s. The channel is a query parameter, which is how the
         # measured url spells it, and not a path segment.
         self.assertEqual(
@@ -7170,7 +7171,7 @@ def feed_page(fixture, status=200, subreddit=REDDIT_SUBREDDIT, module=None):
 
 
 def feed_roster_row(record):
-    """One entry's roster row, named as findings.md §1 names it."""
+    """One entry's roster row, named as the 2026-08-10 probes name it."""
 
     return {
         "title": record.title,
@@ -7183,7 +7184,7 @@ def feed_roster_row(record):
 class RedditFeedTest(unittest.TestCase):
     """The freshness probe, and the four fields it is allowed to have.
 
-    findings.md §1 measured `www.reddit.com/r/<sub>.rss` at 200, 32 KB, 1.4 s,
+    The 2026-08-10 probes recorded `www.reddit.com/r/<sub>.rss` at 200, 32 KB, 1.4 s,
     returning title, link, author and updated — and nothing else. Reddit's own
     `.json` surfaces answered 403 to three unrelated User-Agents from three
     hosts, which is IP-class blocking rather than a header problem, so this is
@@ -7344,7 +7345,7 @@ class RedditFeedDescriptorTest(unittest.TestCase):
     def test_the_route_declares_the_ceiling_the_evidence_measured(self):
         budget = runner.route_budgets()[transport.REDDIT_FEED_ROUTE]
 
-        # findings.md §1: four requests back to back answered 1x 200 then
+        # The 2026-08-10 probes: four requests back to back answered 1x 200 then
         # 3x 429; after a thirty-second cooldown, paced one per six seconds, it
         # answered 2x 200 and then 429ed again; a custom UA changed nothing.
         # The effective ceiling is 1–2 per ~30 s per IP, and a client that
@@ -7553,7 +7554,7 @@ def rss_atom_page(fixture, status=200, channel_id=FEED_CHANNEL_ID, module=None):
 class RssAtomReaderTest(unittest.TestCase):
     """One parser over both syndication vocabularies, on one selected route.
 
-    The roster row's "generic" is the parser and not the route. findings.md §1
+    The roster row's "generic" is the parser and not the route. The 2026-08-10 probes
     measured one RSS/Atom document — `feeds/videos.xml?channel_id=`, 200, 39 KB,
     0.35 s — and that is the one route this adapter declares. The RSS 2.0 half
     of the row, enclosures and transcript links, is proven against a document of
@@ -7758,7 +7759,7 @@ class RssAtomDescriptorTest(unittest.TestCase):
     def test_the_route_is_paced_by_the_interval_the_evidence_measured(self):
         budget = runner.route_budgets()[transport.YOUTUBE_CHANNEL_FEED_ROUTE]
 
-        # findings.md §1: 0.35 s per request, the cheapest read in the roster.
+        # The 2026-08-10 probes: 0.35 s per request, the cheapest read in the roster.
         # Nothing on this route was measured refusing, so `burst` and
         # `cooldown_ms` keep the protocol's conservative defaults rather than a
         # ceiling nobody observed.

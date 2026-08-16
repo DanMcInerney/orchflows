@@ -1,5 +1,5 @@
 {
-  "source": "findings.md §1 (YouTube), measured 2026-08-10",
+  "source": "route measurements of 2026-08-10, (YouTube)",
   "note": "The false-capability trap this whole half exists for. Across WEB, MWEB, TVHTML5, ANDROID and IOS on three videos, captionTracks came back empty every time, and playability degraded to UNPLAYABLE after the first metadata call. The evidence names the cause: PoToken/BotGuard attestation. An adapter that reported that as 'this video has no captions' would assert something false about the video, and one that reported the UNPLAYABLE as a credential problem would call a keyless route credentialed. `captions_withheld` is the column the caption oracle reads: true where the response listed no caption track, false where it listed some, and null where the case is not a player call at all. The row listing tracks is not a shape this package has ever measured - it exists so that 'empty means withheld' can be false, without which the claim would be satisfied by typing every player response the same way.",
   "cases": [
     {

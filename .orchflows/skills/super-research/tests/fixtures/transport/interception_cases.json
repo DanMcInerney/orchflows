@@ -1,5 +1,5 @@
 {
-  "source": "findings.md §0, measured 2026-08-10 from this host",
+  "source": "the captive-portal caveat, measured 2026-08-10 from this host",
   "cases": [
     {
       "case_name": "appliance_portal_503",
@@ -34,7 +34,7 @@
       "status": 403,
       "body_fixture": "origin_authwall.html",
       "expected_verdict": "origin_failure",
-      "evidence": "measured shape: Reddit's .json surfaces answered 403 to every User-Agent tried (findings.md §1)"
+      "evidence": "measured shape: Reddit's .json surfaces answered 403 to every User-Agent tried (measured 2026-08-10)"
     },
     {
       "case_name": "origin_content",

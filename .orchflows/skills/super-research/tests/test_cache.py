@@ -251,7 +251,7 @@ def called_names(path):
 # A byte count as this package's own prose writes one, and what it means. The
 # package spells a measured body in KB and MB and the cap in KiB, and means
 # binary multiples throughout — `MEASURED_INSTAGRAM_BYTES` in `test_adapters`
-# is `455 * 1024` for the "455 KB" findings.md records.
+# is `455 * 1024` for the "455 KB" the 2026-08-10 probes record.
 SIZE_UNIT_BYTES = {"KB": 1024, "KiB": 1024, "MB": 1024 * 1024, "MiB": 1024 * 1024}
 STATED_SIZE = re.compile(r"(\d+(?:\.\d+)?)\s*(KB|KiB|MB|MiB)\b")
 STATED_HEADROOM = re.compile(r"(\d+(?:\.\d+)?)\s*(KB|KiB|MB|MiB) of headroom")
@@ -649,7 +649,7 @@ class CacheabilityTest(unittest.TestCase):
         self.assertEqual((first.cache_hit, second.cache_hit, reads), (False, False, 2))
 
     def test_a_local_network_block_is_never_remembered(self):
-        # findings.md §0: an appliance answering for the origin says nothing
+        # the captive-portal caveat: an appliance answering for the origin says nothing
         # about the origin. Holding one for a TTL would freeze a transient
         # local block and re-serve it as though the origin had spoken.
         intercepted = (503, "<html>" + transport.CAPTIVE_PORTAL_MARKERS[0] + "</html>", "text/html")
@@ -976,7 +976,7 @@ class RouteTtlTableTest(unittest.TestCase):
                 self.assertGreater(cache.ttl_seconds(route_id), 0.0)
 
 
-# What findings.md §1 actually measured, in the sizes it recorded them. The
+# What the 2026-08-10 probes actually recorded, in the sizes it recorded them. The
 # first two are the largest answers in the roster; the third is the smallest
 # measurement above the cap, so it is the one that fixes the cap's ceiling.
 MEASURED_LINKEDIN_BYTES = 577 * 1024
@@ -1015,13 +1015,13 @@ class MeasuredBodyTest(unittest.TestCase):
         return run_cache.serve(request, carrier.fetch).cache_hit
 
     def test_the_largest_answer_the_evidence_measured_is_held(self):
-        # findings.md §1: LinkedIn's public profile, 577 KB in 1.3 s — the
+        # The 2026-08-10 probes: LinkedIn's public profile, 577 KB in 1.3 s — the
         # roster's most expensive read and its longest declared window. A cap
         # below this meant that window had never once bound on a real page.
         self.assertTrue(self.held(MEASURED_LINKEDIN_BYTES))
 
     def test_the_second_largest_answer_the_evidence_measured_is_held(self):
-        # findings.md §1: Instagram's web profile, 455 KB in 2.9 s.
+        # The 2026-08-10 probes: Instagram's web profile, 455 KB in 2.9 s.
         self.assertTrue(self.held(MEASURED_INSTAGRAM_BYTES))
 
     def test_a_body_past_the_cap_is_still_served_through(self):

@@ -1,6 +1,6 @@
 """K0 Hacker News over two surfaces: Algolia for search, Firebase for the tree.
 
-Measured 2026-08-10 (findings.md §1, "Carry-over routes"):
+Measured 2026-08-10 (Carry-over routes):
 ``hn.algolia.com/api/v1/search_by_date`` answered 200 with full-text HN search,
 ``hn.algolia.com/api/v1/search?tags=comment`` answered 200 for comment search,
 and ``hacker-news.firebaseio.com/v0/item/<id>`` answered 200 with ``by``,
@@ -76,7 +76,7 @@ DESCRIPTOR = AdapterDescriptor(
     native_identity_namespace="hackernews",
     representation_kind="native",
     operator_identity="hacker-news",
-    # findings.md §1 records "no throttle observed" for HN and no latency for
+    # The 2026-08-10 probes record "no throttle observed" for HN and no latency for
     # either surface. An unmeasured ceiling is not one to spend, so all three
     # numbers stay the protocol's conservative defaults rather than a figure
     # this adapter would have had to invent.
