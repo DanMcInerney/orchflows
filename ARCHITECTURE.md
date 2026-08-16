@@ -84,7 +84,9 @@ dependencies point. Terms: `docs/vocabulary.md`.
   executor's own sections, the rendered worklog view, and the run-state
   and improvement records under the sink; its `tickets.py
   help` is operator-only: usage a reader asks for, never a step a skill
-  runs; `scripts/trace.py` owns trace extraction, consumed by
+  runs; its `tickets.py grant` is operator-only: widening a claimed
+  item's authority is the dispatching caller's decision, never a step the
+  item's own executor runs; `scripts/trace.py` owns trace extraction, consumed by
   `orch-self-improve`; `scripts/ui.py` owns the read-only local view of
   run state; `scripts/workspace.py` owns the workspace lifecycle stamps
   and the isolation grade at the join.
