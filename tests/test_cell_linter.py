@@ -426,7 +426,7 @@ WARNING_CEILING = 4
 # compositions/ and compares skills against skills, and what it found
 # there had two owners all along; the deletions are the next ticket's,
 # and the number only falls from here.
-CROSS_TIER_WARNING_CEILING = 43
+CROSS_TIER_WARNING_CEILING = 6
 
 # A clone is the whole tree minus version control, runtime state and
 # caches -- never an extract of the directories the check happens to read
