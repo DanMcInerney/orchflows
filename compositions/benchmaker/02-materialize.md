@@ -29,8 +29,12 @@ each at a preserved identity.
   that case's kind differs, chaining single-pack units through frozen
   evidence identities when cases span domains; exactly one pack per
   unit.
-- {{package}} — where the materialized case set is written. Builders'
-  write scopes are disjoint.
+- {{package}} — the target repository: where the materialized case set
+  is written. Builders' write scopes are disjoint.
+- The standards owner, by pointer: the workspace's own owner file —
+  AGENTS.md or its equivalent.
+- Acceptance as runnable checks: the workspace's required checks as
+  that owner names them, beside this stub's own completion test.
 
 ## Completion test
 

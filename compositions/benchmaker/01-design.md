@@ -26,10 +26,9 @@ intended coverage, and expected execution cost.
   source identities; the design works from these and gathers nothing.
 - {{target}} and {{outcome}} — the identity and intended observable
   outcome, still opaque.
-- A concrete input, output or trace the frozen evidence exhibits is
-  licensed oracle material: the design anchors an oracle to it or
-  records why casing it is impossible, and a judgment that it is an
-  implementation artifact is not such a reason.
+- [the protocol](../references/benchmaker-protocol.md#licensed-oracle-material) —
+  what the frozen evidence licenses as oracle material, and what is not
+  a reason to decline casing it.
 
 ## Completion test
 

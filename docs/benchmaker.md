@@ -19,16 +19,16 @@ Fixed evidence flows into a frozen
 [evaluation design](vocabulary.md#verification), then exact materialization
 and independent qualification, then three audit and measurement stages —
 reference audit, attack pass, measurement — into one recorded manifest.
-BenchMaker never mutates the target, generates candidates, promotes, or
-activates anything.
 
 Qualification gates validity. The audit and measurement stages ask the three
 questions it does not: is the expectation right, is the probe passable without
-the work, and does the target find this hard. The first two repair or declare
-a gap; the third only records, because a difficulty gate collapses two
-readings that demand opposite repairs. Difficulty is bought from horizon
-length, outcome specificity, and a stricter correct oracle — never from a
-candidate's scores, and the coverage floor is never traded for speed.
+the work, and does the target find this hard. What each stage may do about its
+answer is
+[the protocol](../compositions/references/benchmaker-protocol.md#audit-and-measurement)'s,
+and what each stub may not do is that stub's own `excluded_actions` —
+[01-design](../compositions/benchmaker/01-design.md),
+[02-materialize](../compositions/benchmaker/02-materialize.md) and
+[05-measure](../compositions/benchmaker/05-measure.md).
 
 Benchmark execution produces fixed evidence. `orch-verify` decides required
 eligibility before it may score that same evidence against a scale; a

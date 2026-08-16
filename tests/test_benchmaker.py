@@ -127,9 +127,14 @@ STUB_INVARIANTS = {
     "05-measure": (
         "compare candidates",
         "promote or activate anything",
-        "call Evolve",
+        "call evolve",
     ),
 }
+# The one invariant two stubs are each accountable for. `04-audit`'s attack
+# pass produces candidate-shaped artifacts, so the clause that binds the
+# materializer binds the auditor too, and the rule below reads this instead of
+# demanding a single carrier. Anything not named here still rides one stub.
+SHARED_INVARIANTS = {"generate a candidate": {"02-materialize", "04-audit"}}
 # The done check, verbatim, which is the terminal stub's first criterion.
 DONE_CHECK = (
     "the manifest's qualification verdict set covers every component but its "
@@ -499,7 +504,7 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         self.assertLessEqual(len(self.fields["description"]), 140)
         declared = self.fields["placeholders"]
         self.assertEqual(
-            "[target, outcome, sources, bound, pack, package]", declared
+            "[target, outcome, sources, rigor, bound, pack, package]", declared
         )
         # Every declared placeholder reaches a stub. `validate.py` warns here;
         # a warning is not what a caller who filled a dead `--set` needs.
@@ -551,7 +556,9 @@ class TestCanonicalBenchmaker(unittest.TestCase):
                             for action in fields.get("excluded_actions", [])
                         )
                     }
-                    self.assertEqual({stub}, carriers)
+                    self.assertEqual(
+                        SHARED_INVARIANTS.get(clause, {stub}), carriers
+                    )
 
     def test_the_stages_that_stop_the_chain_say_what_they_return(self):
         """Acquisition and design are the two stages that can end the run
@@ -916,7 +923,9 @@ class TestCanonicalBenchmaker(unittest.TestCase):
             self.stub_fields["04-audit"]["excluded_actions"],
         )
         self.assertIn("declared as a gap", audit)
-        self.assertIn("cannot fail", measure)
+        # What recording-only means is the protocol's one statement of it; the
+        # stub carries the link, not a fifth copy of the rationale.
+        self.assertIn("benchmaker-protocol.md#measurement-pass", measure)
         # Triage is the measurement stage's own first pass, never a fourth
         # stage, so no stub may name it as one.
         self.assertEqual([], re.findall(r"triage(?! pass| measurement)", audit))
