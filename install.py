@@ -56,7 +56,9 @@ the project it arose in as a field rather than by its location. Of
 copies scripts — installed scripts are not state.
 
 The receipt records ``source_commit`` (the installed-from repo's git HEAD,
-null when unavailable); a rerun whose HEAD has moved prints the drift.
+read from a clone or a worktree checkout); a rerun whose HEAD has moved
+prints the drift, and a null commit says on stderr which read came up empty.
+A receipt that will not read is refused, never overwritten as if absent.
 
 ``--dry-run`` builds and prints the exact same plan an install would apply,
 without writing anything. ``--uninstall`` removes only unchanged generated
@@ -614,6 +616,21 @@ def resolve_source_commit(repo_root: Path = REPO_ROOT) -> str | None:
         if len(parts) == 2 and parts[1] == ref:
             return parts[0]
     return None
+
+
+def source_commit_warning(commit: str | None, repo_root: Path = REPO_ROOT) -> str | None:
+    """One line, when the receipt's ``source_commit`` is null, naming which
+    read came up empty — otherwise a null reads as 'this installer has no such
+    field' and the missing drift report looks like agreement."""
+
+    if commit:
+        return None
+    dirs = _git_dirs(repo_root)
+    if dirs is None:
+        reason = f"no readable .git in {repo_root}"
+    else:
+        reason = f"HEAD in {dirs[0]} resolves to no commit"
+    return f"warning: source commit unresolved ({reason}); the next install cannot report drift"
 
 
 def source_commit_drift_message(old_receipt: dict | None, new_commit: str | None) -> str | None:
@@ -1324,12 +1341,17 @@ def print_plan(plan: Plan) -> None:
 
 
 def _load_json(path: Path):
+    """``None`` only when there is no file. A file that will not read or will
+    not parse raises: read as ``None`` it would pass for a first install, and
+    the receipt it could not read is the only record of what to remove and
+    what this installer wrote."""
+
     if not path.is_file():
         return None
     try:
         return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"{path} is unreadable ({error}); move it aside and rerun") from error
 
 
 def _sha256_file(path: Path) -> str:
@@ -1972,7 +1994,11 @@ def main(argv=None) -> int:
     if scope == "user" and not plan.claude_enabled and not plan.codex_enabled:
         return 0
 
-    old_receipt = _load_json(plan.receipt_path)
+    try:
+        old_receipt = _load_json(plan.receipt_path)
+    except ValueError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
     try:
         receipt = apply_plan(plan, keep_role_agents=True if args.yes else None)
     except Exception as error:
@@ -1982,6 +2008,9 @@ def main(argv=None) -> int:
     drift = source_commit_drift_message(old_receipt, receipt.get("source_commit"))
     if drift:
         print(drift)
+    unresolved = source_commit_warning(receipt.get("source_commit"))
+    if unresolved:
+        print(unresolved, file=sys.stderr)
 
     print_summary(plan)
     return 0
