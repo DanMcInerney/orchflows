@@ -22,8 +22,9 @@ export, a named run directory that is not there or that cannot be
 copied — is refused by name, never skipped: a tree quietly missing what
 a check reads is the same defect as a check that quietly passes. The one
 thing it does with less than it asked for is extract without
-`tarfile`'s `filter=` on an interpreter below 3.11.4, and that is named
-on stderr rather than taken silently.
+`tarfile`'s `filter=` on an interpreter that predates it — 3.12, or the
+3.8.17/3.9.17/3.10.12/3.11.4 backports — and that is named on stderr
+rather than taken silently.
 """
 
 from __future__ import annotations
@@ -111,13 +112,16 @@ def export(repo: Path, rev: str, dest: Path) -> None:
         with tarfile.open(archive) as tar:
             try:
                 tar.extractall(str(dest), filter="tar")
-            except TypeError:  # filter= is 3.11.4+
+            except TypeError:  # filter= is 3.12+ and the backports
+                # (3.8.17/3.9.17/3.10.12/3.11.4), so "below 3.12" does not
+                # settle it and this asks rather than reads a version.
                 # Nothing here is skipped without saying so: this host's
                 # interpreter cannot ask for the filter, so the extraction
                 # is the unfiltered one and the report says which it was.
                 print(
                     "isolate: this interpreter has no tarfile filter= "
-                    "(3.11.4+); extracting unfiltered",
+                    "(3.12, or the 3.8.17/3.9.17/3.10.12/3.11.4 backports); "
+                    "extracting unfiltered",
                     file=sys.stderr,
                 )
                 tar.extractall(str(dest))

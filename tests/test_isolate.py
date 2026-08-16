@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 import unittest
 from pathlib import Path
@@ -236,8 +237,9 @@ class IsolateTest(IsolateFixture):
         self.assertEqual(0, self.run_isolate("--force"))
 
     def test_an_interpreter_without_the_tar_filter_names_the_downgrade(self):
-        """`filter="tar"` arrived in 3.11.4; below it the extraction runs
-        unfiltered. The docstring says nothing here is skipped, and this is
+        """`filter="tar"` arrived in 3.12 and the 3.8.17/3.9.17/3.10.12/3.11.4
+        backports; before them the extraction runs unfiltered. The docstring
+        says nothing here is skipped, and this is
         a check weakened on hosts the floor still admits -- so the export
         still happens and says on stderr that it happened unfiltered."""
 
@@ -256,9 +258,39 @@ class IsolateTest(IsolateFixture):
         self.assertIn("filter", self.err.getvalue())
         self.assertIn("isolate:", self.err.getvalue())
 
+    @unittest.skipUnless(
+        hasattr(tarfile, "data_filter"),
+        "this interpreter has no tarfile filter=, so isolate names the downgrade",
+    )
     def test_an_interpreter_with_the_filter_says_nothing(self):
         self.assertEqual(0, self.run_isolate())
         self.assertEqual("", self.err.getvalue())
+
+    def test_the_silent_case_is_skipped_where_the_interpreter_has_no_filter(self):
+        """The case above asserts silence, and silence is only owed where the
+        interpreter can ask for the filter -- 3.12 and the 3.8.17/3.9.17/
+        3.10.12/3.11.4 backports. On an older admitted host the downgrade line
+        is printed, wanted, and true, so the case must skip rather than fail;
+        the sibling above is what pins that arm. This host cannot be such an
+        interpreter, so a child imports the module with `tarfile.data_filter`
+        removed -- the condition is read at import -- and reads the mark."""
+
+        child = (
+            "import sys, tarfile\n"
+            "if hasattr(tarfile, 'data_filter'):\n"
+            "    del tarfile.data_filter\n"
+            "sys.path.insert(0, %r)\n"
+            "from tests.test_isolate import IsolateTest\n"
+            "case = IsolateTest.test_an_interpreter_with_the_filter_says_nothing\n"
+            "sys.exit(0 if getattr(case, '__unittest_skip__', False) else 1)\n"
+        ) % str(ROOT)
+        probe = subprocess.run(
+            [sys.executable, "-B", "-c", child],
+            cwd=str(ROOT),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        self.assertEqual(0, probe.returncode, probe.stderr.decode("utf-8", "replace"))
 
 
 class TestIsolateCopiesFromSink(IsolateFixture):
