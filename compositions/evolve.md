@@ -30,12 +30,13 @@ Steps:
 - campaign — `orch-loop` over the body mapped by the
   [generation protocol](references/evolve-generation.md). It uses one frozen
   `orch-panel` binding before the first plan and after each candidate set, then
-  calls `orch-search-plan`, `orch-worklog`, `orch-delegate`, and `orch-integrate`
-  around the frozen writer and evaluation, reusing the eligibility Verify binding.
+  calls `orch-search-plan` and `orch-integrate` around the frozen writer and
+  evaluation, dispatched per rules/delegation.md, its run state rendered by
+  `tickets.py worklog`, reusing the eligibility Verify binding.
 
 Edges: seq evaluation → eligibility → campaign; loop campaign — generation body,
-frozen bound, and a fresh `orch-judge` done-check over the final incumbent and
-its admitted result/evidence.
+frozen bound, and a fresh `orch-verify` done-check — blind: inputs carry only
+this candidate — over the final incumbent and its admitted result/evidence.
 
 Invariants:
 - Freeze the evaluation identity, evaluation mode, scoring, criteria, evidence

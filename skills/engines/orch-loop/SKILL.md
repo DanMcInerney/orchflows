@@ -16,8 +16,9 @@ iterations carry — design it once via
 
 Create the worklog through `orch-worklog`. Each iteration: start fresh
 from the frozen goal plus the worklog — never a prior transcript; take
-one work item; dispatch the body with the packet as delegation inputs
-through `orch-delegate`; adjudicate the return at the join through
+one work item; dispatch the body with the packet as delegation inputs,
+per [rules/delegation.md](../../../rules/delegation.md); adjudicate the
+return at the join through
 `orch-integrate`; let the done-check decide, per the contract's class
 policy. Commit verified increments; record failed approaches; queue
 discovered scope.

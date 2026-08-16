@@ -18,8 +18,9 @@ provenance; `independence: gate` when a `judged` criterion there rides the final
 oracle against the workspace before freezing the item. Emit at most one terminal assembly item when the pack's
 `assembly` cell names a skill, depending on every unit item.
 
-Then run `cutcheck.py <run> --baseline <the revision the set was cut from>`, repair every violation, and read its
-advisory lines; what it cannot decide is [references/cut-lens.md](references/cut-lens.md)'s to judge. Only after that
+Then run `cutcheck.py <run> --baseline <the revision the set was cut from>`, repair every cut defect it reports with
+`tickets.py amend <run> <id> --section '<name>' --file <path>` on the still-unclaimed ticket and re-run it to exit 0, and
+read its advisory lines; what it cannot decide is [references/cut-lens.md](references/cut-lens.md)'s to judge. Only after that
 repair write the gate stubs — `tickets.py gate <run> <root> --lens <the pack's stamped lens names> --write-scope <the
 run's scope>` — behind the assembly item where the pack named one, so the gate depends on it.
 

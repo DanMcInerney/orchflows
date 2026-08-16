@@ -19,7 +19,8 @@ predecessor step's result identity carried as the successor spec's
 evidence — access to that identity is the workspace this engine
 supplies; this engine never drafts or edits a spec itself, only
 triggers the re-entry. `par`: dispatch each branch as a fresh child
-through `orch-delegate` with a complete packet — objective, inputs,
+per [rules/delegation.md](../../../rules/delegation.md) with a complete
+packet — objective, inputs,
 authority, bounds, return contract, reply_to — and bring every
 branch's return to its named join by way of `orch-integrate` before
 any downstream step trusts it; branches hold disjoint write scopes

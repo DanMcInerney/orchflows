@@ -617,7 +617,17 @@ class Diagnostics:
 
 
 def discover_packages():
-    """Return every skill/pack package as a dict with path, kind, skill_md."""
+    """Return every skill/pack package as a dict with path, kind, skill_md.
+
+    A tier directory holding only ``references/`` is not a package and is
+    not a defect: ``skills/kernel/orch-delegate/`` is exactly that since
+    P3 -- the skill body became rules/delegation.md §1-§2 plus roles.md
+    §4, while ``references/profiles.md`` stayed put because rules/roles.md,
+    contracts/work-item.md, templates/host-block.md and install.py all
+    address it at that path. The ``is_file()`` guard is what makes that
+    home legal; dropping it would report the directory as a package with
+    no SKILL.md and take the tree red.
+    """
     packages = []
     for tier in SKILL_TIERS:
         tier_dir = ROOT / "skills" / tier
