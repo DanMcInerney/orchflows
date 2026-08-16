@@ -41,7 +41,7 @@ BODY_BUDGET = {
 LINK_TARGET_RE = re.compile(r"\]\([^)]*\)")
 # rules/token-economy.md §11: every-turn surfaces tightest, every-dispatch
 # units next, every-run units widest. Ceilings only fall.
-SURFACE_BUDGET = {"templates/host-block.md": 460, "AGENTS.md": 300}
+SURFACE_BUDGET = {"templates/host-block.md": 400, "AGENTS.md": 300}
 STUB_INSTRUCTION_BUDGET = 300   # objective + completion test + excluded actions + return fields
 MANIFEST_BUDGET = 250
 STUB_INSTRUCTION_SECTIONS = ("Objective", "Completion test", "Return fields")
