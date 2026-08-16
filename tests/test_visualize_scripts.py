@@ -1,11 +1,18 @@
 """The two orch-visualize scripts: the Mermaid verifier's fence rules,
 exit codes and boundary inputs, and the HTML renderer's self-containment,
-cdn fallback and id salting.
+refusals and id salting.
 
-Both subjects sit in skills/utilities/orch-visualize/scripts/, both are
-driven with npx made unresolvable so the verifier's structural fallback
-and the renderer's cdn fallback fire deterministically on any host, and
-both once carried their own copy of that environment. Nothing here ever
+Both subjects sit in skills/utilities/orch-visualize/scripts/. Neither
+has a fallback tier: the verifier judges a diagram only when the pinned
+Mermaid CLI read it, and the renderer produces inline SVG or nothing. So
+the CLI is stubbed at the one boundary either script crosses --
+`subprocess.run` -- by `_StubCli`, which chooses the exit code, the
+diagnostic text and the SVG left behind; the scripts' own reading of
+that output stays under test. Cases that want no CLI at all pass
+`cli=None` and run with `PATH` emptied, which is a PATH `shutil.which`
+resolves nothing on whatever the host really has installed; the case
+that wants no vl-convert makes its import fail through `sys.modules`,
+so the renderer's real import branch is what refuses. Nothing here ever
 spawns npx or a Mermaid CLI process.
 
 Each case calls the script's own `main` in-process under a redirected
@@ -56,11 +63,19 @@ SAMPLE = (
     "```\n"
 )
 
+# One node box inside a viewBox that contains it: the geometry checks
+# read this and find nothing wrong, so a case that wants a geometry
+# finding says so with its own SVG rather than by accident of this one.
+FAKE_SVG = (
+    b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">'
+    b'<g class="node" transform="translate(10,10)">'
+    b'<rect x="0" y="0" width="40" height="20"/></g></svg>'
+)
+
 # An empty PATH is a PATH shutil.which can resolve nothing on, whatever
-# the host really has installed, so both fallbacks are taken by decision
-# rather than by accident of what is on the machine. The vl-convert knob
-# is the renderer's equivalent switch for the vega path.
-NO_NPX = {"PATH": "", "ORCH_VIZ_NO_VLCONVERT": "1"}
+# the host really has installed, so the no-CLI cases refuse by decision
+# rather than by accident of what is on the machine.
+NO_NPX = {"PATH": ""}
 
 Result = namedtuple("Result", "returncode stdout stderr")
 
@@ -73,37 +88,66 @@ def _no_npx_env():
     return env
 
 
+class _StubCli:
+    """The pinned Mermaid CLI, stubbed at `subprocess.run`.
+
+    A case names the CLI's exit code, the text it writes and the bytes it
+    leaves at the `-o` path (the last argument of the command both
+    scripts build). Everything the scripts do with that -- locating a
+    syntax error, insisting on an `<svg>` element, reading geometry --
+    runs for real."""
+
+    def __init__(self, returncode: int = 0, stderr: str = "", svg=FAKE_SVG):
+        self.returncode = returncode
+        self.stderr = stderr
+        self.svg = svg
+        self.calls = 0
+
+    def __call__(self, command, **kwargs):
+        self.calls += 1
+        if self.svg is not None:
+            Path(command[-1]).write_bytes(self.svg)
+        return subprocess.CompletedProcess(command, self.returncode, "", self.stderr)
+
+
 class _ScriptCase(unittest.TestCase):
-    """A private directory per case, and both entry points called
-    in-process with npx unresolvable."""
+    """A private directory per case, both entry points called in-process,
+    and the Mermaid CLI stubbed unless the case asks for none."""
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.directory = Path(self.tmp.name)
 
-    def call(self, module, argv):
+    def call(self, module, argv, cli=None):
         out, err = io.StringIO(), io.StringIO()
-        with mock.patch.dict(os.environ, NO_NPX), contextlib.redirect_stdout(
-            out
-        ), contextlib.redirect_stderr(err):
+        patches = [mock.patch.dict(os.environ, NO_NPX)]
+        if cli is not None:
+            patches.append(mock.patch.object(module, "_find_npx", lambda: "npx"))
+            patches.append(mock.patch.object(subprocess, "run", cli))
+        with contextlib.ExitStack() as stack:
+            for patch in patches:
+                stack.enter_context(patch)
+            stack.enter_context(contextlib.redirect_stdout(out))
+            stack.enter_context(contextlib.redirect_stderr(err))
             returncode = module.main([str(argument) for argument in argv])
         return Result(returncode, out.getvalue(), err.getvalue())
 
-    def run_verifier(self, markdown: str, *extra_args: str):
+    def run_verifier(self, markdown: str, *extra_args: str, cli=_StubCli()):
         path = self.directory / "diagram.md"
         path.write_text(markdown, encoding="utf-8")
-        return self.call(verify_mermaid, [path, *extra_args])
+        return self.call(verify_mermaid, [path, *extra_args], cli=cli)
 
-    def run_verifier_bytes(self, raw: bytes):
+    def run_verifier_bytes(self, raw: bytes, cli=_StubCli()):
         path = self.directory / "diagram.md"
         path.write_bytes(raw)
-        return self.call(verify_mermaid, [path])
+        return self.call(verify_mermaid, [path], cli=cli)
 
-    def run_renderer(self, markdown: str, name: str = "page.md", *extra_args: str):
+    def run_renderer(self, markdown: str, *extra_args: str, name: str = "page.md",
+                     cli=None):
         md = self.directory / name
         md.write_text(markdown, encoding="utf-8")
-        return self.call(render_html, [md, *extra_args])
+        return self.call(render_html, [md, *extra_args], cli=cli)
 
     def run_renderer_bytes(self, raw: bytes, name: str = "page.md"):
         md = self.directory / name
@@ -133,10 +177,14 @@ class TestCommandLineEntry(unittest.TestCase):
         )
 
     def test_non_codepage_unicode_never_crashes_the_verifier(self):
-        # U+2225 and CJK are unencodable in cp1252; the verifier must judge
-        # the diagram, not the console codepage (friction 2026-07-16).
+        # U+2225 and CJK are unencodable in cp1252; the verdict must ride
+        # a stdout the console codepage cannot carry (friction
+        # 2026-07-16), so the page sits in a directory whose name needs
+        # UTF-8 and the payload names that path.
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "diagram.md"
+            directory = Path(tmp) / "lanes ∥ 中文"
+            directory.mkdir()
+            path = directory / "diagram.md"
             path.write_text(
                 "```mermaid\n"
                 "flowchart TD\n"
@@ -145,104 +193,129 @@ class TestCommandLineEntry(unittest.TestCase):
                 encoding="utf-8",
             )
             result = self._run(VERIFIER, path)
-        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        # No CLI on this PATH: no verdict, exit 2, and the tool named.
+        self.assertEqual(2, result.returncode, result.stdout + result.stderr)
         payload = json.loads(result.stdout)
-        self.assertEqual("pass", payload["status"])
-        self.assertEqual(1, payload["graphs"])
-        self.assertEqual("structural-only", payload["mode"])
+        self.assertEqual("error", payload["status"])
+        self.assertIn("Mermaid CLI", payload["message"])
+        self.assertIn("∥ 中文", payload["file"])
 
-    def test_cdn_fallback_html_shape_when_npx_is_unavailable(self):
+    def test_renderer_without_the_cli_writes_no_page_and_exits_two(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "page.md"
             path.write_text(SAMPLE, encoding="utf-8")
             result = self._run(RENDERER, path)
-            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertEqual(2, result.returncode, result.stdout + result.stderr)
             payload = json.loads(result.stdout)
-            self.assertEqual("rendered", payload["status"])
-            self.assertEqual(1, payload["graphs"])
-            self.assertEqual("cdn", payload["mode"])
-            page = Path(payload["page"]).read_text(encoding="utf-8")
-        self.assertIn("<title>", page)
-        self.assertIn("unicode", page)
-        self.assertIn('<pre class="mermaid">', page)
-        self.assertIn("a[&quot;start&quot;] --&gt; b[&quot;done&quot;]", page)
-        self.assertIn("cdn.jsdelivr.net", page)
-        self.assertNotIn("<svg", page)
-        self.assertIn("<code>code</code>", page)
-        self.assertIn("<strong>bold</strong>", page)
+            self.assertEqual("error", payload["status"])
+            self.assertEqual(
+                [1], [entry["graph"] for entry in payload["render_errors"]]
+            )
+            self.assertFalse(path.with_suffix(".html").exists())
 
 
 # --- verify_mermaid ----------------------------------------------------
 
 
-class TestVerifierRobustness(_ScriptCase):
-    def test_broken_diagram_still_fails_cleanly(self):
-        result = self.run_verifier(
-            "```mermaid\n"
-            "flowchart TD\n"
-            "    a[unclosed --> b\n"
-            "```\n"
-        )
+class TestVerifierRequiresTheMermaidCli(_ScriptCase):
+    """No CLI is not a verdict. With npx unresolvable, or with a CLI that
+    ran but could not judge, the verifier refuses (exit 2) and names the
+    cause -- it never reports a pass the Mermaid parser never confirmed."""
+
+    DIAGRAM = "```mermaid\nflowchart TD\n    a[\"start\"] --> b[\"done\"]\n```\n"
+
+    def test_missing_cli_exits_two_and_names_the_tool(self):
+        result = self.run_verifier(self.DIAGRAM, cli=None)
+        self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual("error", payload["status"])
+        self.assertIn("Mermaid CLI", payload["message"])
+        self.assertIn("npx", payload["message"])
+        self.assertNotIn("structural", result.stdout)
+
+    def test_a_cli_that_cannot_judge_exits_two_carrying_its_own_text(self):
+        for label, cli in (
+            ("the CLI left no file", _StubCli(svg=None)),
+            ("the CLI wrote something other than an SVG", _StubCli(svg=b"<html/>")),
+            ("a non-zero exit with no parse error", _StubCli(1, "ENOENT: chrome")),
+            (
+                "a parse error with no location",
+                _StubCli(1, "Error: Parse error somewhere in there"),
+            ),
+        ):
+            with self.subTest(cause=label):
+                result = self.run_verifier(self.DIAGRAM, cli=cli)
+                self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+                payload = json.loads(result.stdout)
+                self.assertEqual("error", payload["status"])
+                self.assertEqual(
+                    [1], [entry["graph"] for entry in payload["tool_errors"]]
+                )
+                self.assertTrue(payload["tool_errors"][0]["text"])
+
+    def test_a_located_parse_error_is_a_failure_at_its_source_line(self):
+        cli = _StubCli(1, "Parse error on line 2, column 5:\nExpecting 'SQE', got 'x'")
+        result = self.run_verifier("# Page\n\n" + self.DIAGRAM, cli=cli)
         self.assertEqual(1, result.returncode, result.stdout + result.stderr)
         payload = json.loads(result.stdout)
         self.assertEqual("fail", payload["status"])
-        self.assertTrue(payload["failures"])
-        self.assertEqual("unbalanced_brackets", payload["failures"][0]["rule"])
-        self.assertTrue(payload["failures"][0]["structural_only"])
+        failure = payload["failures"][0]
+        self.assertEqual("cli_syntax_error", failure["rule"])
+        # Fence body opens on file line 4; the CLI's line 2 is file line 5.
+        self.assertEqual(5, failure["source_line"])
 
+    def test_a_diagram_the_cli_read_passes_and_records_the_version(self):
+        result = self.run_verifier(self.DIAGRAM)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual("pass", payload["status"])
+        self.assertEqual("cli", payload["mode"])
+        self.assertEqual(verify_mermaid.MERMAID_VERSION, payload["mermaid_version"])
 
-class TestStructuralFallbackRules(_ScriptCase):
-    """Each structural-fallback rule pinned by one dedicated input that
-    triggers exactly that rule and no other, with the failure carrying
-    both the rule name and the structural_only marker. The three dangling
-    forms differ only in the line that names the missing node, so they
-    are rows here rather than three copies of one assertion."""
+    def test_geometry_that_cannot_run_is_warned_not_counted_as_checked(self):
+        result = self.run_verifier(
+            self.DIAGRAM, "--lint", cli=_StubCli(svg=b"<svg not really xml at all")
+        )
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual("pass", payload["status"])
+        self.assertEqual(0, payload["lint"]["geometry_checked"])
+        self.assertTrue(
+            any("geometry" in warning for warning in payload["lint"]["warnings"]),
+            payload["lint"]["warnings"],
+        )
 
-    CASES = (
-        (
-            "unknown_diagram_type",
-            "notARealDiagramType\n    a --> b\n",
-            None,
-        ),
-        (
-            "duplicate_node_label",
-            'flowchart TD\n    a["first label"] --> b["second"]\n'
-            '    a["different label"] --> c["third"]\n',
-            None,
-        ),
-        (
-            "dangling_reference",
-            'flowchart TD\n    a["start"] --> b["end"]\n'
-            '    click missingNode "https://example.com"\n',
-            "missingNode",
-        ),
-        (
-            "dangling_reference",
-            'flowchart TD\n    a["start"] --> b["end"]\n'
-            "    style missingNode fill:#f00\n",
-            "missingNode",
-        ),
-        (
-            "dangling_reference",
-            'flowchart TD\n    a["start"] --> b["end"]\n'
-            "    class missingNode someClass\n",
-            "missingNode",
-        ),
-    )
+    def test_geometry_that_positions_no_declared_node_is_warned_not_counted(self):
+        # A well-formed SVG carrying none of the source's nodes as
+        # positioned boxes measured nothing; that is not a clean layout.
+        result = self.run_verifier(
+            self.DIAGRAM,
+            "--lint",
+            cli=_StubCli(svg=b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 9"/>'),
+        )
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(0, payload["lint"]["geometry_checked"])
+        self.assertTrue(
+            any("positions none" in warning for warning in payload["lint"]["warnings"]),
+            payload["lint"]["warnings"],
+        )
 
-    def test_each_structural_rule_is_detected_alone_and_marked(self):
-        for rule, source, named in self.CASES:
-            with self.subTest(rule=rule, source=source):
-                result = self.run_verifier("```mermaid\n%s```\n" % source)
-                self.assertEqual(1, result.returncode, result.stdout + result.stderr)
-                payload = json.loads(result.stdout)
-                self.assertEqual("fail", payload["status"])
-                self.assertEqual(
-                    [rule], [failure["rule"] for failure in payload["failures"]]
-                )
-                self.assertTrue(payload["failures"][0]["structural_only"])
-                if named is not None:
-                    self.assertIn(named, payload["failures"][0]["message"])
+    def test_overlapping_nodes_in_the_rendered_layout_fail_the_lint(self):
+        overlapping = (
+            b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">'
+            b'<g class="node" transform="translate(10,10)">'
+            b'<rect x="0" y="0" width="40" height="40"/></g>'
+            b'<g class="node" transform="translate(20,20)">'
+            b'<rect x="0" y="0" width="40" height="40"/></g></svg>'
+        )
+        result = self.run_verifier(self.DIAGRAM, "--lint", cli=_StubCli(svg=overlapping))
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertIn(
+            "lint_geometry_overlap",
+            [failure["rule"] for failure in payload["failures"]],
+        )
 
 
 class TestBoundaryInputs(_ScriptCase):
@@ -262,8 +335,11 @@ class TestBoundaryInputs(_ScriptCase):
 
     def test_file_without_any_fence_passes_as_prose_only(self):
         # The form ladder's first rungs (sentence, list, table) draw
-        # nothing, so a fence-free prose page is a legal verified page.
-        result = self.run_verifier("# Just a heading\n\nSome prose with no fence at all.\n")
+        # nothing, so a fence-free prose page is a legal verified page --
+        # and one no CLI is needed for.
+        result = self.run_verifier(
+            "# Just a heading\n\nSome prose with no fence at all.\n", cli=None
+        )
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         payload = json.loads(result.stdout)
         self.assertEqual("pass", payload["status"])
@@ -303,11 +379,10 @@ class TestBoundaryInputs(_ScriptCase):
         payload = json.loads(result.stdout)
         self.assertEqual("pass", payload["status"])
         self.assertEqual(1, payload["graphs"])
-        self.assertEqual("structural-only", payload["mode"])
 
 
 class TestElkFrontmatter(_ScriptCase):
-    def test_elk_frontmatter_diagram_passes_structural_check(self):
+    def test_elk_frontmatter_diagram_passes_the_lint(self):
         result = self.run_verifier(
             "```mermaid\n"
             "---\n"
@@ -316,7 +391,8 @@ class TestElkFrontmatter(_ScriptCase):
             "---\n"
             "flowchart TD\n"
             '    a["start work"] --> b["done"]\n'
-            "```\n"
+            "```\n",
+            "--lint",
         )
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         payload = json.loads(result.stdout)
@@ -433,11 +509,12 @@ class TestLegibilityLint(_ScriptCase):
         payload = json.loads(result.stdout)
         self.assertEqual("pass", payload["status"])
         self.assertEqual([], payload["lint"]["warnings"])
-        self.assertEqual(0, payload["lint"]["geometry_checked"])
+        self.assertEqual(1, payload["lint"]["geometry_checked"])
 
 
 class TestStaticFences(_ScriptCase):
-    """vega-lite and viz-html fences are verified without any mermaid block."""
+    """vega-lite and viz-html fences are verified without any mermaid
+    block -- and so without any CLI."""
 
     def test_each_static_fence_rule_is_detected(self):
         cases = (
@@ -463,7 +540,7 @@ class TestStaticFences(_ScriptCase):
         )
         for rule, source in cases:
             with self.subTest(rule=rule):
-                result = self.run_verifier(source)
+                result = self.run_verifier(source, cli=None)
                 self.assertEqual(1, result.returncode, result.stdout + result.stderr)
                 payload = json.loads(result.stdout)
                 self.assertIn(rule, [failure["rule"] for failure in payload["failures"]])
@@ -472,7 +549,8 @@ class TestStaticFences(_ScriptCase):
         result = self.run_verifier(
             "```vega-lite\n"
             '{"mark": "bar", "data": {"values": []}}\n'
-            "```\n"
+            "```\n",
+            cli=None,
         )
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         payload = json.loads(result.stdout)
@@ -485,7 +563,8 @@ class TestStaticFences(_ScriptCase):
         result = self.run_verifier(
             "```viz-html\n"
             '<table class="viz-compare"><tr><th>axis</th><td>value</td></tr></table>\n'
-            "```\n"
+            "```\n",
+            cli=None,
         )
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         payload = json.loads(result.stdout)
@@ -494,6 +573,72 @@ class TestStaticFences(_ScriptCase):
 
 
 # --- render_html -------------------------------------------------------
+
+
+class TestRendererHasNoCdnMode(_ScriptCase):
+    """The page carries its diagrams as inline SVG or it is not written.
+
+    There is no `<pre class="mermaid">` tier loading Mermaid from a CDN at
+    view time, and so no "cdn" mode for a caller to have to refuse: an
+    unrendered fence is an error naming its cause."""
+
+    def test_a_rendered_page_is_inline_svg_and_loads_nothing(self):
+        result = self.run_renderer(SAMPLE, cli=_StubCli())
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual("rendered", payload["status"])
+        self.assertNotIn("mode", payload)  # one way to render leaves no mode to report
+        self.assertEqual(1, payload["graphs"])
+        page = Path(payload["page"]).read_text(encoding="utf-8")
+        self.assertIn("<svg", page)
+        self.assertIn("unicode", page)
+        self.assertIn("<code>code</code>", page)
+        self.assertIn("<strong>bold</strong>", page)
+        self.assertNotIn("cdn.jsdelivr.net", page)
+        self.assertNotIn("<script", page)
+        self.assertNotIn('class="mermaid"', page)
+
+    def test_each_unrendered_fence_is_an_error_and_no_page_is_written(self):
+        cases = (
+            ("mermaid, no CLI", SAMPLE, None, "npx"),
+            (
+                "mermaid, a CLI whose output is not an SVG",
+                SAMPLE,
+                _StubCli(svg=b"<html>an error page</html>"),
+                "no SVG element",
+            ),
+            (
+                "vega-lite, no vl-convert",
+                '```vega-lite\n{"mark": "bar", "data": {"values": [{"x": 1}]}}\n```\n',
+                None,
+                "vl-convert",
+            ),
+        )
+        for label, markdown, cli, named in cases:
+            # `vl_convert` mapped to None makes its import raise on any
+            # host, so the renderer's own import branch is what refuses.
+            with self.subTest(case=label), mock.patch.dict(
+                sys.modules, {"vl_convert": None}
+            ):
+                result = self.run_renderer(markdown, cli=cli)
+                self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+                payload = json.loads(result.stdout)
+                self.assertEqual("error", payload["status"])
+                self.assertIsNone(payload["page"])
+                self.assertEqual(1, len(payload["render_errors"]))
+                self.assertIn(named, payload["render_errors"][0]["text"])
+                self.assertFalse((self.directory / "page.html").exists())
+
+    def test_oversized_fence_body_still_renders_without_crashing(self):
+        lines = ["flowchart TD"]
+        for index in range(2000):
+            lines.append(f'    n{index}["label {index}"] --> n{index + 1}["label {index + 1}"]')
+        markdown = "# Big\n\n```mermaid\n" + "\n".join(lines) + "\n```\n"
+        result = self.run_renderer(markdown, cli=_StubCli())
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual("rendered", payload["status"])
+        self.assertEqual(1, payload["graphs"])
 
 
 class TestRenderHtml(_ScriptCase):
@@ -522,7 +667,7 @@ class TestRenderHtml(_ScriptCase):
         # A directory that does not exist: OSError on every platform,
         # needing no permission the test runner might have.
         out = self.directory / "no-such-directory" / "page.html"
-        result = self.call(render_html, [md, "--out", out])
+        result = self.call(render_html, [md, "--out", out], cli=_StubCli())
         self.assertEqual(2, result.returncode, result.stdout + result.stderr)
         payload = json.loads(result.stdout)
         self.assertEqual("error", payload["status"])
@@ -558,23 +703,6 @@ class TestRenderHtmlBoundaryInputs(_ScriptCase):
         self.assertNotIn('class="mermaid"', page)
         self.assertNotIn("<svg", page)
 
-    def test_oversized_fence_body_still_renders_without_crashing(self):
-        lines = ["flowchart TD"]
-        node_count = 2000
-        for index in range(node_count):
-            lines.append(f'    n{index}["label {index}"] --> n{index + 1}["label {index + 1}"]')
-        source = "\n".join(lines) + "\n"
-        markdown = f"# Big\n\n```mermaid\n{source}```\n"
-        result = self.run_renderer(markdown)
-        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-        payload = json.loads(result.stdout)
-        self.assertEqual("rendered", payload["status"])
-        self.assertEqual(1, payload["graphs"])
-        self.assertEqual("cdn", payload["mode"])
-        page = Path(payload["page"]).read_text(encoding="utf-8")
-        self.assertIn('<pre class="mermaid">', page)
-        self.assertIn("label 1999", page)
-
 
 class TestKitAndChartFences(_ScriptCase):
     def test_viz_html_fence_passes_markup_through(self):
@@ -593,21 +721,6 @@ class TestKitAndChartFences(_ScriptCase):
         self.assertIn('<section class="viz">', page)
         self.assertIn("<li>step one</li>", page)
         self.assertIn(".viz-steps", page)
-
-    def test_vega_lite_fence_falls_back_to_cdn(self):
-        result = self.run_renderer(
-            "```vega-lite\n"
-            '{"mark": "bar", "data": {"values": [{"x": 1}]}}\n'
-            "```\n"
-        )
-        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-        payload = json.loads(result.stdout)
-        self.assertEqual("cdn", payload["mode"])
-        self.assertEqual(1, payload["charts"])
-        page = Path(payload["page"]).read_text(encoding="utf-8")
-        self.assertIn('<pre class="vega-lite">', page)
-        self.assertIn("vega-embed", page)
-        self.assertNotIn("mermaid.esm", page)
 
 
 class TestSvgIdSalting(unittest.TestCase):

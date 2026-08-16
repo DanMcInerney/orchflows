@@ -4,10 +4,7 @@ description: Render any supplied subject as a verified visual page of diagrams, 
 role: worker
 ---
 
-Require: the subject — supplied or named content only; decide nothing
-about it. Label every inferred connection inferred. The page plus its
-prose preserves what the subject states; any single visual may omit,
-never assert falsely.
+Require: the subject — supplied or named content only.
 
 Choose each visual's form by the subject's dominant relationship, on
 the ladder in [references/authoring.md](references/authoring.md), and
@@ -19,13 +16,13 @@ workspace; the rendered `<subject>.html` beside it is the deliverable.
 Verify: run this package's `scripts/verify_mermaid.py --lint`; one
 correction pass on rejection, then stop. Render with
 `scripts/render_html.py`, view the page, correct once from a defect
-list. Verified only when the verifier exits 0 and the render reports
-mode svg — cdn is never verified; anything else returns failed with the
+list. Verified when both exit 0; anything else returns failed with the
 page path and the diagnostic.
 
-Never: decorate beyond the subject's own vocabulary; describe an
-unverified page as verified; add evidence the subject did not supply.
+Never: decorate beyond the subject's own vocabulary; assert what the
+subject does not state or leave an inferred connection unlabeled;
+describe an unverified page as verified.
 
-Return: status, the rendered page path with mode — the deliverable;
+Return: status, the rendered page path — the deliverable;
 then the markdown source path, graph, chart, and component counts,
 verifier evidence, and per-visual explanations.

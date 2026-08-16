@@ -28,23 +28,19 @@ No diagram is a valid outcome.
 
 ## Mermaid
 
-Core types only: flowchart, sequenceDiagram, stateDiagram-v2,
-classDiagram, erDiagram, timeline, pie, gantt — the lint rejects the
-rest. On flowchart and state, lead the fence with ELK frontmatter
-(hosts without the plugin fall back to dagre, so layout is never
-load-bearing):
+The lint rejects `-beta` types, mindmap, journey and zenuml; use the
+eight core types — flowchart, sequenceDiagram, stateDiagram-v2,
+classDiagram, erDiagram, timeline, pie, gantt. On flowchart and state,
+lead the fence with ELK frontmatter:
 
     ---
     config:
       layout: elk
     ---
 
-Labels verb-object within the lint's word budget, quoted when
-punctuated. Decision branches always labeled `|so|`. Subgraphs flat
-within the lint's depth budget, single-line titles, no `direction`
-when any member links outside. classDef within the lint's count
-budget; color marks structure, meaning never rides color alone. One
-direction per diagram.
+Labels verb-object; color marks structure, meaning never rides color
+alone; one direction per diagram. Label, depth, classDef and branch
+budgets are `verify_mermaid.py --lint`'s; its output names each breach.
 
 ## Staging
 

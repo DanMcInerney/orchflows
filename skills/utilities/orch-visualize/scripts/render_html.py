@@ -2,24 +2,22 @@
 """Render a verified visual Markdown page to one self-contained HTML file.
 
 Three fence kinds are rendered:
-  ```mermaid    -> inline SVG via the pinned Mermaid CLI; when the CLI is
-                   unavailable or fails, the fence source is carried in
-                   ``<pre class="mermaid">`` and Mermaid loads from the CDN
-                   at view time (mode "cdn").
-  ```vega-lite  -> inline SVG via vl-convert when importable; otherwise the
-                   spec is carried in ``<pre class="vega-lite">`` and
-                   vega-embed loads from the CDN at view time (mode "cdn").
-                   ORCH_VIZ_NO_VLCONVERT=1 forces that fallback (tests).
+  ```mermaid    -> inline SVG via the pinned Mermaid CLI.
+  ```vega-lite  -> inline SVG via vl-convert (the vl-convert-python
+                   package), which is imported only when a chart is met.
   ```viz-html   -> passed through inside ``<section class="viz">``; the kit
                    classes (viz-steps, viz-timeline, viz-compare, viz-boxes,
                    viz-callout) are styled by the page stylesheet.
 
-Every inline SVG gets its ids salted per visual so clip paths, markers,
-and gradients cannot cross-contaminate on one page. Page colors ride CSS
-custom properties with a prefers-color-scheme default and [data-theme]
-overrides. All file and subprocess boundaries are explicit UTF-8 — never
-the console codepage. Always exits 0 except on unreadable input or
-unwritable output (2).
+The page is self-contained inline SVG or it is not written: a fence that
+cannot be rendered is named in "render_errors" and exits 2, so no page
+loads a diagram from a CDN at view time and none is delivered half
+drawn. Every inline SVG gets its ids salted per visual so clip paths,
+markers, and gradients cannot cross-contaminate on one page. Page colors
+ride CSS custom properties with a prefers-color-scheme default and
+[data-theme] overrides. All file and subprocess boundaries are explicit
+UTF-8 — never the console codepage. Exits 0 on a written page, 2 on
+unreadable input, unwritable output, or any unrendered fence.
 
 Usage:
     render_html.py <page.md> [--out <page.html>]   -> result JSON on stdout
@@ -29,7 +27,6 @@ from __future__ import annotations
 import argparse
 import html
 import json
-import os
 import re
 import subprocess
 import sys
@@ -47,24 +44,6 @@ from verify_mermaid import (  # noqa: E402
 ANY_FENCE_RE = re.compile(
     r"^```(?P<kind>mermaid|vega-lite|viz-html)[ \t]*\r?\n(?P<body>.*?)^```[ \t]*$",
     re.MULTILINE | re.DOTALL,
-)
-
-CDN_SCRIPT = (
-    '<script type="module">import mermaid from '
-    '"https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";'
-    "mermaid.initialize({startOnLoad:true});</script>"
-)
-
-VEGA_CDN_SCRIPT = (
-    '<script src="https://cdn.jsdelivr.net/npm/vega@6"></script>\n'
-    '<script src="https://cdn.jsdelivr.net/npm/vega-lite@6"></script>\n'
-    '<script src="https://cdn.jsdelivr.net/npm/vega-embed@7"></script>\n'
-    "<script>document.querySelectorAll('pre.vega-lite').forEach(function (pre) {"
-    "var spec = JSON.parse(pre.textContent);"
-    "var holder = document.createElement('div');"
-    "pre.replaceWith(holder);"
-    "vegaEmbed(holder, spec, {actions: false});"
-    "});</script>"
 )
 
 # Panels stay light in dark mode on purpose: CLI-rendered SVGs assume a
@@ -87,7 +66,6 @@ PAGE_CSS = """
                    border: 1px solid var(--line); border-radius: 4px;
                    overflow-x: auto; }
   figure.diagram svg { max-width: none; }
-  figure.diagram pre { color: #1d2229; }
   section.viz { margin: 16px 0; padding: 16px; background: var(--panel);
                 border: 1px solid var(--line); border-radius: 4px;
                 overflow-x: auto; color: #1d2229; }
@@ -115,6 +93,8 @@ PAGE_CSS = """
 
 
 def render_svg(source: str, npx: str, temporary_directory: Path, index: int):
+    """Returns (svg, error); exactly one of the two is None."""
+
     output_path = temporary_directory / f"render-{index}.svg"
     command = [npx, "--yes", MERMAID_PACKAGE, "-i", "-", "-o", str(output_path)]
     try:
@@ -128,31 +108,37 @@ def render_svg(source: str, npx: str, temporary_directory: Path, index: int):
             timeout=TIMEOUT_SECONDS,
             check=False,
         )
-    except (OSError, subprocess.SubprocessError, UnicodeError):
-        return None
+    except (OSError, subprocess.SubprocessError, UnicodeError) as error:
+        return None, f"{MERMAID_PACKAGE} did not run: {error}"
     if result.returncode != 0:
-        return None
+        detail = " ".join((result.stderr or result.stdout or "").split())[:400]
+        return None, f"{MERMAID_PACKAGE} exited {result.returncode}: {detail}"
     try:
         svg = output_path.read_text(encoding="utf-8")
-    except OSError:
-        return None
-    return svg if "<svg" in svg else None
+    except OSError as error:
+        return None, f"the rendered SVG was unreadable: {error}"
+    if "<svg" not in svg:
+        return None, "the CLI wrote no SVG element"
+    return svg, None
 
 
 def render_vega_svg(spec_source: str):
-    """Vega-Lite spec -> SVG via vl-convert when importable; None otherwise."""
+    """Vega-Lite spec -> SVG via vl-convert; (svg, error) as above."""
 
-    if os.environ.get("ORCH_VIZ_NO_VLCONVERT"):
-        return None
     try:
         import vl_convert
-    except Exception:
-        return None
+    except Exception as error:
+        return None, (
+            f"vl-convert is not importable ({error}); install the "
+            "vl-convert-python package and rerun"
+        )
     try:
         svg = vl_convert.vegalite_to_svg(vl_spec=json.loads(spec_source))
-    except Exception:
-        return None
-    return svg if "<svg" in svg else None
+    except Exception as error:
+        return None, f"vl-convert rejected the spec: {error}"
+    if "<svg" not in svg:
+        return None, "vl-convert returned no SVG element"
+    return svg, None
 
 
 def _salt_svg(svg: str, index: int) -> str:
@@ -228,12 +214,15 @@ def _prose_to_html(prose: str) -> str:
 
 
 def build_page(markdown: str, title: str, npx):
-    """Returns (html_text, mode, graph_count, chart_count, component_count)."""
+    """Returns (html_text, errors, graph_count, chart_count, component_count).
+
+    `errors` names every fence that did not become inline SVG; a page
+    with any is not a deliverable and the caller must not write it."""
 
     text = _normalize_newlines(markdown)
     pieces: list[str] = []
     graphs = charts = components = salt = 0
-    mermaid_fallback = vega_fallback = False
+    errors: list[dict[str, object]] = []
     cursor = 0
     with tempfile.TemporaryDirectory(prefix="orch-render-") as temporary:
         temporary_directory = Path(temporary)
@@ -244,34 +233,27 @@ def build_page(markdown: str, title: str, npx):
             if kind == "mermaid":
                 graphs += 1
                 salt += 1
-                svg = (
-                    render_svg(source, npx, temporary_directory, salt)
-                    if npx is not None
-                    else None
-                )
-                if svg is not None:
-                    pieces.append(
-                        f'<figure class="diagram">{_salt_svg(svg, salt)}</figure>'
+                if npx is None:
+                    svg, error = None, (
+                        "the Mermaid CLI is unavailable: npx was not found on PATH"
                     )
                 else:
-                    mermaid_fallback = True
+                    svg, error = render_svg(source, npx, temporary_directory, salt)
+                if svg is None:
+                    errors.append({"fence": "mermaid", "graph": graphs, "text": error})
+                else:
                     pieces.append(
-                        '<figure class="diagram"><pre class="mermaid">'
-                        f"{html.escape(source)}</pre></figure>"
+                        f'<figure class="diagram">{_salt_svg(svg, salt)}</figure>'
                     )
             elif kind == "vega-lite":
                 charts += 1
                 salt += 1
-                svg = render_vega_svg(source)
-                if svg is not None:
+                svg, error = render_vega_svg(source)
+                if svg is None:
+                    errors.append({"fence": "vega-lite", "chart": charts, "text": error})
+                else:
                     pieces.append(
                         f'<figure class="diagram">{_salt_svg(svg, salt)}</figure>'
-                    )
-                else:
-                    vega_fallback = True
-                    pieces.append(
-                        '<figure class="diagram"><pre class="vega-lite">'
-                        f"{html.escape(source)}</pre></figure>"
                     )
             else:  # viz-html: verified kit markup passes through untouched
                 components += 1
@@ -279,20 +261,13 @@ def build_page(markdown: str, title: str, npx):
             cursor = match.end()
         pieces.append(_prose_to_html(text[cursor:]))
     body = "\n".join(piece for piece in pieces if piece)
-    scripts: list[str] = []
-    if mermaid_fallback:
-        scripts.append(CDN_SCRIPT)
-    if vega_fallback:
-        scripts.append(VEGA_CDN_SCRIPT)
-    mode = "cdn" if scripts else "svg"
-    script = "\n".join(scripts)
     page = (
         "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n"
         f"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
         f"<title>{html.escape(title)}</title>\n<style>{PAGE_CSS}</style>\n</head>\n"
-        f"<body>\n<main>\n{body}\n</main>\n{script}\n</body>\n</html>\n"
+        f"<body>\n<main>\n{body}\n</main>\n</body>\n</html>\n"
     )
-    return page, mode, graphs, charts, components
+    return page, errors, graphs, charts, components
 
 
 def main(argv=None) -> int:
@@ -315,14 +290,21 @@ def main(argv=None) -> int:
             title = line[2:].strip()
             break
 
-    page, mode, graphs, charts, components = build_page(markdown, title, _find_npx())
+    page, errors, graphs, charts, components = build_page(markdown, title, _find_npx())
+    if errors:
+        for error in errors:
+            print(f"render_html.py: {error['fence']}: {error['text']}", file=sys.stderr)
+        print(json.dumps({"status": "error", "page": None, "render_errors": errors,
+                          "graphs": graphs, "charts": charts,
+                          "components": components}, ensure_ascii=True))
+        return 2
     try:
         out.write_text(page, encoding="utf-8")
     except OSError as error:
         print(json.dumps({"status": "error", "message": f"cannot write output: {error}"},
                          ensure_ascii=True))
         return 2
-    print(json.dumps({"status": "rendered", "page": str(out), "mode": mode,
+    print(json.dumps({"status": "rendered", "page": str(out),
                       "graphs": graphs, "charts": charts,
                       "components": components}, ensure_ascii=True))
     return 0
