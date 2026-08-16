@@ -99,7 +99,7 @@ reader. Human legibility is welcome; it is never the design driver.
 
 Superseded 2026-08-06 (the two-entrypoints spec). Routing once
 enumerated six named "shapes of done," and three of them were whole
-skills (`orch-fix`, `orch-evolve`, `orch-benchmaker`) whose bodies were
+skills (orch-fix, orch-evolve, orch-benchmaker) whose bodies were
 mostly sequencing. Every new recurring shape grew the routing table —
 the one surface every session pays for on every request. The
 replacement splits what a pattern conflated:
@@ -296,7 +296,7 @@ model-logging responsibility of its own.
 - **Workspace style guides** — the standards owner already exists and
   outranks; restating it would create the library's first two-owner
   fact.
-- **A generic `orch-unit` executor.** The generic unit endpoint is
+- **A generic orch-unit executor.** The generic unit endpoint is
   `orch-frontier` over one ticket; executors are the domain leaves a
   pack binds by exact
   name, and [rules/delegation.md](rules/delegation.md) §8 forbids
