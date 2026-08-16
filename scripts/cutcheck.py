@@ -46,7 +46,14 @@ Scope closure: the write scope covers every path the item says it
 writes, evidence sinks included, and no excluded action names a path the
 scope grants. A path the item only reads is no defect: observing is not
 naming, and neither is mentioning -- a placeholder, a denied write, the
-grant's own name.
+grant's own name. The same grant is read the other way round as well: a
+literal the objective deletes, moves or renames -- a path, a skill name, an
+enum member, a set member -- is searched for through the tree's checks,
+scripts, prose and compositions, and every file outside the grant that pins
+it is reported once, named with the literal. The item cannot land without
+breaking that file and is not licensed to repair it, so either the cut
+carries the pin or the item is re-cut. A denied removal takes nothing away,
+and a file sitting inside what is removed is no pin left behind by it.
 
 Pairwise safety: for every pair the DAG leaves unordered -- ordering is
 reachability through ``depends_on``, not adjacency -- write scopes are
@@ -168,6 +175,7 @@ UNRESOLVED_CITATION = "unresolved-citation"
 QUOTE_NOT_AT_CITATION = "quote-not-at-citation"
 UNSCOPED_WRITE = "unscoped-write"
 SCOPE_CONTRADICTION = "scope-contradiction"
+SCOPE_OPEN = "scope-open"
 SCOPE_COLLISION = "scope-collision"
 STAGED_INVALIDATION = "staged-invalidation"
 ORPHAN_CRITERION = "orphan-criterion"
@@ -200,6 +208,7 @@ FAMILY_OF = {
     QUOTE_NOT_AT_CITATION: FAMILY_2,
     UNSCOPED_WRITE: FAMILY_3,
     SCOPE_CONTRADICTION: FAMILY_3,
+    SCOPE_OPEN: FAMILY_3,
     SCOPE_COLLISION: FAMILY_4,
     STAGED_INVALIDATION: FAMILY_4,
     ORPHAN_CRITERION: FAMILY_5,
@@ -364,6 +373,35 @@ WRITE_RE = re.compile(
     r"|append|appends|record|records)\b",
     re.IGNORECASE,
 )
+# The other half of family 3: not what the item adds, what it takes away. An
+# objective that deletes, moves or renames a literal has to carry every file
+# that pins it, or the pin breaks where nobody is licensed to repair it.
+REMOVAL_RE = re.compile(
+    r"\b(?:delete|deletes|deleting|deleted|remove|removes|removing|removed"
+    r"|rename|renames|renaming|renamed|move|moves|moving|moved"
+    r"|drop|drops|dropping|dropped)\b",
+    re.IGNORECASE,
+)
+REMOVAL_WINDOW = 80
+# A literal is a token specific enough for a pin to be about it: it carries a
+# separator -- a path's slash, a skill name's dash, a constant's underscore, an
+# extension's dot. Every file in a tree holds ordinary words, so a bare one
+# would name the whole tree and say nothing about this cut.
+LITERAL_RE = re.compile(r"^[A-Za-z0-9][\w./-]{2,}$")
+LITERAL_MARKS = ("-", "_", "/", ".")
+# Where a literal gets pinned: the checks that assert it, the scripts that hold
+# it as a constant, the prose that names it, the compositions that call it. A
+# root the repository under test does not carry costs nothing to look for, and
+# a tree of source the removal does not touch is not searched at all.
+PIN_ROOTS = ("compositions", "docs", "scripts", "tests")
+# Bytes past which a file is not prose anybody pins a name in. A cap and not a
+# filter on suffix: what a repository keeps under these roots is its own
+# business, and the reading is a substring search that decodes anything.
+PIN_SIZE_LIMIT = 512 * 1024
+# Per tree, every file under PIN_ROOTS with its text, read once per invocation
+# and only where some objective takes a literal away. A cut that removes
+# nothing never opens a file here.
+_PIN_INDEX = {}
 DOTTED_RE = re.compile(r"\.[A-Za-z0-9]{1,5}$")
 GLOB_RE = re.compile(r"[*?\[\]]")
 # `<run>` stands for whichever run it is: a shape, not a path anything writes.
@@ -1257,6 +1295,136 @@ def _scope_closure(frontmatter, prose):
     return findings
 
 
+def _is_literal(token):
+    """Is this token specific enough that a file pinning it means something?
+
+    Three characters and a separator. `gate`, `set` and `the` are words every
+    tree is full of; `orch-compose`, `SCRIPT_NAMES` and `scripts/tickets.py`
+    are things one file states and another depends on.
+    """
+
+    return bool(LITERAL_RE.match(token)) and any(m in token for m in LITERAL_MARKS)
+
+
+def _literals(objective):
+    """Every literal this objective says it deletes, moves or renames.
+
+    The window and the denial frame are ``_scope_closure``'s, asked of a verb
+    that takes away rather than one that adds: a write the ticket denies
+    commits it to nothing, and neither does a removal it denies.
+
+    A path is read twice -- whole, and as the name it ends in. The pin is
+    usually on the name: ``scripts/tickets.py`` spells a deleted engine as a
+    set member and nothing outside the library spells the directory it lived
+    in, so reading the path alone finds no pin and reports the cut clean.
+    """
+
+    flat = _flat(objective)
+    found = []
+    for match in REMOVAL_RE.finditer(flat):
+        if DENIAL_RE.search(flat[max(0, match.start() - DENIAL_WINDOW):match.start()]):
+            continue
+        end = match.end() + REMOVAL_WINDOW
+        window = flat[match.end():end]
+        if len(flat) > end and not flat[end].isspace():
+            window = window.rpartition(" ")[0]
+        # A span the objective itself sets in backticks is a literal on the
+        # author's word, separator or none: `limited`, `checker`, `gate` are
+        # enum and set members a cut removes, and the tree's ordinary uses of
+        # the same word are told apart at the pin by ``_pins``' boundaries.
+        spans = [(t, False) for t in _paths_in(window)]
+        spans += [(s.strip(), True) for s in BACKTICK_RE.findall(window)]
+        for token, marked in spans:
+            for candidate in (token, token.rsplit("/", 1)[-1]):
+                literal = _is_literal(candidate) or (
+                    marked and bool(LITERAL_RE.match(candidate))
+                )
+                if literal and candidate not in found:
+                    found.append(candidate)
+    return found
+
+
+def _pins(literal, text):
+    """Does ``text`` state ``literal`` as a name, not as the inside of one?
+
+    Whole-token: `orch-compose` is not pinned by `orch-composer`, `gate` not
+    by `delegate`, `friction.py` not by `friction.pyc`. A path separator, a
+    dot, a quote or a bracket on either side is a boundary; a word character
+    or a dash is not.
+    """
+
+    return re.search(r"(?<![\w-])" + re.escape(literal) + r"(?![\w-])", text) is not None
+
+
+def _pin_index(tree):
+    """Every file under ``PIN_ROOTS`` of this tree, with its text, read once.
+
+    Read from the baseline copy, where every other file-reading family reads:
+    a pin is a fact about the tree the ticket was cut from, which the work then
+    changes. Built lazily and cached per tree, because the only cut that pays
+    for it is one whose objective takes a literal away.
+    """
+
+    key = str(tree)
+    if key in _PIN_INDEX:
+        return _PIN_INDEX[key]
+    entries = []
+    for root in PIN_ROOTS:
+        base = tree / root
+        if not base.is_dir():
+            continue
+        for path in sorted(base.rglob("*")):
+            try:
+                if not path.is_file() or path.stat().st_size > PIN_SIZE_LIMIT:
+                    continue
+                text = path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            entries.append((path.relative_to(tree).as_posix(), text))
+    _PIN_INDEX[key] = entries
+    return entries
+
+
+def _scope_open(frontmatter, objective, tree):
+    """Family 3, the other direction: does the grant close over what is removed?
+
+    ``_scope_closure`` asks whether the grant covers what the item writes. This
+    asks whether it covers what the rest of the tree pins: a path, a skill
+    name, an enum member, a set member the objective deletes, moves or renames,
+    which some file outside the grant states. The item cannot land without
+    breaking that file and cannot repair it, so either the cut carries the
+    pinning file or the cut is wrong -- and nothing about the item's own text
+    says so, which is why eleven such grants were issued in one build and each
+    failed in flight instead of at the cut.
+
+    One finding per pinning file, naming the file and the literal, because the
+    repair is per file: a grant is extended once however many of the item's
+    literals one file happens to hold, so the most specific literal it holds is
+    the one named. A file the grant already covers is no finding, and neither
+    is one sitting inside the literal being removed -- what goes with the
+    deletion is not a pin left behind by it.
+    """
+
+    literals = _literals(objective)
+    if not literals or tree is None:
+        return []
+    scope = _listed(frontmatter, "write_scope")
+    findings = []
+    for rel, text in _pin_index(tree):
+        if _covered(rel, scope):
+            continue
+        pinning = [
+            literal
+            for literal in literals
+            if _pins(literal, text) and not _covered(rel, [literal])
+        ]
+        if pinning:
+            findings.append(
+                (SCOPE_OPEN, "{} pins {}".format(rel, max(pinning, key=len)))
+            )
+    return findings
+
+
 def _oracle_reads(text):
     """Every path this item's oracles reach for, across its completion test."""
 
@@ -1750,6 +1918,12 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
     findings.extend(
         (ticket_id, 0, klass, detail)
         for klass, detail in _scope_closure(frontmatter, _prose(body))
+    )
+    findings.extend(
+        (ticket_id, 0, klass, detail)
+        for klass, detail in _scope_open(
+            frontmatter, _prose(sections.get(OBJECTIVE_SECTION, "")), baseline_tree
+        )
     )
     return findings
 

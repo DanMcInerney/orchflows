@@ -3457,6 +3457,222 @@ class SharedScratchHarnessTest(unittest.TestCase):
         self.assertNotEqual(neighbour, root)
 
 
+class ScopeOpenLiteralTest(unittest.TestCase):
+    """What an objective says it deletes, moves or renames.
+
+    A literal is specific enough to be pinned: a path, a name carrying a
+    separator, a constant. An ordinary word is not one, because every file in
+    the tree holds ordinary words and a finding against all of them says
+    nothing about this cut.
+    """
+
+    def test_scope_open_reads_a_deleted_path_and_the_name_it_ends_in(self):
+        """The pin is usually on the basename, never on the path that held it.
+
+        `scripts/tickets.py` spells the engine as a set member; nothing outside
+        the library spells the directory it lives in. Reading only the path
+        would find no pin and report a clean cut.
+        """
+
+        self.assertEqual(
+            cutcheck._literals(
+                "The item deletes the skill directory `skills/engines/orch-compose`."
+            ),
+            ["skills/engines/orch-compose", "orch-compose"],
+        )
+
+    def test_scope_open_reads_a_renamed_name_that_is_no_path_at_all(self):
+        self.assertEqual(
+            cutcheck._literals(
+                "The item renames the role profile `orch-planner` to `orch-lead`."
+            ),
+            ["orch-planner", "orch-lead"],
+        )
+
+    def test_scope_open_reads_no_literal_out_of_an_ordinary_word(self):
+        self.assertEqual(cutcheck._literals("The item deletes the gate."), [])
+
+    def test_scope_open_leaves_a_denied_removal_alone(self):
+        """The question `_scope_closure` asks of a write verb, asked of this one."""
+
+        self.assertEqual(
+            cutcheck._literals(
+                "The item never deletes `skills/engines/orch-compose`."
+            ),
+            [],
+        )
+
+
+# What `cutcheck-scope-open`'s first ticket takes away, and every file the
+# baseline revision pins it in. Read at the baseline, which is a frozen commit,
+# so this table is a fact about that revision and not about today's tree: the
+# engine name is a member of `ENGINE_EXECUTORS` in `scripts/tickets.py` and of
+# three suites' expectations; the role name is in one transcript fixture and
+# two suites. Eleven under-supplied grants in the 2026-08-16 build were exactly
+# this shape -- a constant or a fixture pinning a name the item was cut to
+# remove, from outside the item's own scope.
+SCOPE_OPEN_PINS = {
+    "scripts/tickets.py": "orch-compose",
+    "tests/test_contracts.py": "orch-compose",
+    "tests/test_roles.py": "orch-compose",
+    "tests/test_installer.py": "orch-planner",
+    "tests/test_live_profiles.py": "orch-planner",
+    "tests/fixtures/transcripts/-Users-dmcinerney-tools-alpha/"
+    "11111111-1111-4111-8111-111111111111/subagents/agent-aa12.meta.json":
+        "orch-planner",
+}
+SCOPE_OPEN_CONSTANT = "scripts/tickets.py"
+SCOPE_OPEN_FIXTURE = next(
+    path for path in SCOPE_OPEN_PINS if path.startswith("tests/fixtures/")
+)
+
+
+class ScopeOpenTest(unittest.TestCase):
+    """A cut closes over what it takes away, or the pin breaks unowned.
+
+    Family 3 asked one direction of the question -- does the grant cover what
+    the item writes -- and the other direction is where the 2026-08-16 build
+    lost eleven items: the grant covered the file being changed and not the
+    test, the constant or the fixture that pinned the name being changed away.
+    Nothing failed at the cut; each item failed in flight, against a pin its
+    executor was not licensed to repair.
+    """
+
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-scope-open")
+        self.lines = [
+            line
+            for line in reported(self.result, cutcheck.FAMILY_3)
+            if cutcheck.SCOPE_OPEN in line
+        ]
+
+    def _pins(self):
+        pins = {}
+        for line in self.lines:
+            where, _, literal = line.split(": ")[3].partition(" pins ")
+            self.assertNotIn(where, pins, "one finding per pinning file")
+            pins[where] = literal
+        return pins
+
+    def test_scope_open_names_each_pinning_file_once_and_says_what_it_pins(self):
+        for line in self.lines:
+            self.assertTrue(line.startswith("01-open: "), line)
+        self.assertEqual(self._pins(), SCOPE_OPEN_PINS, self.result.stdout)
+
+    def test_scope_open_reaches_a_constant_in_scripts_and_a_fixture_in_tests(self):
+        """The two kinds of pin: one a script states, one a fixture holds.
+
+        Named separately from the table above because they are the claim --
+        that the search is not one directory's -- rather than a row of it.
+        """
+
+        pins = self._pins()
+        self.assertEqual(pins.get(SCOPE_OPEN_CONSTANT), "orch-compose", pins)
+        self.assertEqual(pins.get(SCOPE_OPEN_FIXTURE), "orch-planner", pins)
+
+    def test_scope_open_is_silent_where_the_write_scope_carries_the_pins(self):
+        """The same objective, granted the pinning files, and no finding.
+
+        The can-fail direction of the whole class: a check that reported the
+        removal itself would report this ticket too, and a cut nobody can
+        satisfy is a cut nobody reads.
+        """
+
+        self.assertEqual(
+            [line for line in self.lines if line.startswith("02-carried")],
+            [],
+            self.result.stdout,
+        )
+
+    def test_scope_open_sets_the_exit_status(self):
+        self.assertNotIn(cutcheck.SCOPE_OPEN, cutcheck.ADVISORY)
+        self.assertEqual(cutcheck.FAMILY_OF[cutcheck.SCOPE_OPEN], cutcheck.FAMILY_3)
+        self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
+
+    def test_scope_open_says_nothing_about_a_cut_that_takes_nothing_away(self):
+        """Every other fixture set in this suite, and the affirmative one first.
+
+        The class runs over an objective's ordinary prose, and prose is where a
+        false positive comes from. A set that removes nothing states nothing
+        for this to find, whatever else it is reported for.
+        """
+
+        for run in fixture_sets():
+            if run == "cutcheck-scope-open":
+                continue
+            with self.subTest(run=run):
+                self.assertNotIn(cutcheck.SCOPE_OPEN, run_cutcheck(run).stdout)
+
+
+class ScopeOpenWordLiteralTest(unittest.TestCase):
+    """An enum member or a set member is a word, and the objective still names it.
+
+    The literal kinds the class exists for are a path, a skill name, an enum
+    member and a set member. The first two carry a separator; a status like
+    `limited` or an independence value like `gate` carries none, and a bare
+    word would name the whole tree. A span the objective sets in backticks is
+    a literal on the author's word, and the tree's ordinary uses of the same
+    word -- `delegate` for `gate`, `orch-composer` for `orch-compose` -- are
+    told apart at the pin, which reads whole tokens.
+    """
+
+    def test_scope_open_reads_a_backticked_word_as_a_literal(self):
+        self.assertEqual(
+            cutcheck._literals(
+                "Remove the status `limited` from the ticket lifecycle enum."
+            ),
+            ["limited"],
+        )
+        self.assertEqual(
+            cutcheck._literals("Remove `gate` from the independence set."),
+            ["gate"],
+        )
+        self.assertEqual(
+            cutcheck._literals("Remove the status limited from the enum."), []
+        )
+
+    def test_scope_open_pins_whole_tokens_only(self):
+        self.assertTrue(cutcheck._pins("gate", 'independence: "gate"'))
+        self.assertTrue(cutcheck._pins("gate", "the gate."))
+        self.assertFalse(cutcheck._pins("gate", "delegate to the aggregate"))
+        self.assertTrue(cutcheck._pins("orch-compose", '{"orch-compose", "x"}'))
+        self.assertTrue(
+            cutcheck._pins("orch-compose", "skills/engines/orch-compose/SKILL.md")
+        )
+        self.assertFalse(cutcheck._pins("orch-compose", "orch-composer"))
+        self.assertTrue(cutcheck._pins("friction.py", "run scripts/friction.py."))
+        self.assertFalse(cutcheck._pins("friction.py", "friction.pyc"))
+        self.assertTrue(cutcheck._pins("LIMITED", "Status.LIMITED"))
+
+    def test_scope_open_reports_the_word_pin_and_not_the_word_inside_another(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tree = Path(tmp)
+            (tree / "tests").mkdir()
+            (tree / "tests" / "pin.py").write_text(
+                'INDEPENDENCE = {"gate", "checker"}\n', encoding="utf-8"
+            )
+            (tree / "tests" / "noise.py").write_text(
+                "def delegate(): return aggregate()\n", encoding="utf-8"
+            )
+            (tree / "tests" / "longer.py").write_text(
+                'NAMES = {"orch-composer"}\n', encoding="utf-8"
+            )
+            objective = (
+                "Remove `gate` from the independence set and delete the skill "
+                "`orch-compose`."
+            )
+            self.assertEqual(
+                cutcheck._scope_open({"write_scope": []}, objective, tree),
+                [(cutcheck.SCOPE_OPEN, "tests/pin.py pins gate")],
+            )
+            self.assertEqual(
+                cutcheck._scope_open(
+                    {"write_scope": ["tests/pin.py"]}, objective, tree
+                ),
+                [],
+            )
+
+
 if __name__ == "__main__":
     if "--record" in sys.argv:
         record_verdicts()
