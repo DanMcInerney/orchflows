@@ -163,6 +163,38 @@ COMPOSITION_BODY_FIELD_RES = {
     "done_check": re.compile(r"^(?:#{1,6}\s+)?\*{0,2}done[ _-]check\*{0,2}\b:?", re.IGNORECASE | re.MULTILINE),
 }
 
+# --- Ticket templates (SPEC-ticket-set.md s2-s3) ---------------------
+#
+# A template is a directory `compositions/<name>/` holding `template.md`
+# plus one ticket stub per other `*.md` file; a stub is a ticket per
+# contracts/work-item.md missing only `run`, `status` and `claimed_*`,
+# with `{{placeholder}}` where instantiation fills a value. These checks
+# are the admission the spec's enforcement clause names: a cyclic
+# template, a stub without an executor or a completion test, or a
+# template with no single terminal stub is rejected here. The .md
+# composition form beside them stays until P4.
+TEMPLATE_MANIFEST = "template.md"
+TEMPLATE_ENTRY_VALUES = {"routed", "named"}
+TEMPLATE_STUB_SECTIONS = (
+    "Objective",
+    "Fixed inputs",
+    "Completion test",
+    "Return fields",
+    "Result",
+    "Verification",
+    "Feedback",
+    "Risks",
+)
+STUB_REQUIRED_KEYS = ("id", "executor", "depends_on", "write_scope", "bound")
+STUB_LIST_KEYS = ("depends_on", "write_scope")
+ORACLE_CLASS_VALUES = {"deterministic", "judged", "evidence"}
+PLACEHOLDER_RE = re.compile(r"\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}")
+SECTION_HEADING_RE = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
+CRITERION_BULLET_RE = re.compile(r"^[-*]\s+(\S.*)$", re.MULTILINE)
+ORACLE_FIELD_RE = re.compile(r"\boracle:\s*\S")
+ORACLE_CLASS_FIELD_RE = re.compile(r"\boracle_class:\s*([A-Za-z-]+)")
+SCRIPT_EXECUTOR_PREFIX = "script:"
+
 # --- Carriage (rules/composition.md rule 10) -------------------------
 #
 # "Every Require item rides a named T0 carrier ... the caller supplies
@@ -1462,6 +1494,80 @@ def validate_compositions(diag: Diagnostics) -> None:
                 )
 
 
+def discover_templates():
+    """Every `compositions/<name>/` directory holding a template.md."""
+    comps_dir = ROOT / "compositions"
+    if not comps_dir.is_dir():
+        return []
+    return sorted(
+        d for d in comps_dir.iterdir()
+        if d.is_dir() and (d / TEMPLATE_MANIFEST).is_file()
+    )
+
+
+def _inline_list(value: str):
+    """The items of an inline `[a, b]` list; None when the value is not
+    list-shaped. parse_frontmatter keeps frontmatter values as raw text
+    and every template list is written inline."""
+    text = value.strip()
+    if not (text.startswith("[") and text.endswith("]")):
+        return None
+    return [item.strip() for item in text[1:-1].split(",") if item.strip()]
+
+
+def _validate_template_manifest(path: Path, diag: Diagnostics) -> set:
+    """Check one template.md; return its declared placeholder names."""
+    file_label = rel(path)
+    fm, _ = parse_frontmatter(_read_source(path), file_label, diag)
+    if fm is None:
+        return set()
+    name = fm.get("name")
+    directory = path.parent.name
+    if not name:
+        diag.error(file_label, "template frontmatter missing required key 'name'")
+    elif name != directory:
+        diag.error(
+            file_label,
+            f"template name '{name}' does not match directory name '{directory}'",
+        )
+    description = fm.get("description")
+    if not description:
+        diag.error(file_label, "template frontmatter missing required key 'description'")
+    elif len(description) > DESCRIPTION_BUDGET:
+        diag.error(
+            file_label,
+            f"description is {len(description)} chars, exceeds {DESCRIPTION_BUDGET}-char budget",
+        )
+    entry = fm.get("entry")
+    if not entry:
+        diag.error(file_label, "template frontmatter missing required key 'entry'")
+    elif entry not in TEMPLATE_ENTRY_VALUES:
+        diag.error(
+            file_label,
+            f"entry '{entry}' is not one of {sorted(TEMPLATE_ENTRY_VALUES)} "
+            "per SPEC-ticket-set.md",
+        )
+    if "placeholders" not in fm:
+        diag.error(file_label, "template frontmatter missing required key 'placeholders'")
+        return set()
+    declared = _inline_list(fm["placeholders"])
+    if declared is None:
+        diag.error(
+            file_label,
+            "'placeholders' is not a list; write [] when the template declares none",
+        )
+        return set()
+    return set(declared)
+
+
+def validate_templates(diag: Diagnostics) -> None:
+    """SPEC-ticket-set.md s2-s3: every `compositions/<name>/` template is
+    a manifest plus ticket stubs whose graph is acyclic and terminates in
+    exactly one stub."""
+    for directory in discover_templates():
+        _validate_template_manifest(directory / TEMPLATE_MANIFEST, diag)
+
+
 # LOOP_TRIGGER_RE fires only on the imperative/procedural verb forms that
 # actually instruct the reader to iterate -- "iterate"/"iterating" or "repeat
 # until" -- never on the bare noun "loop" or "iteration", which this corpus
@@ -1583,6 +1689,7 @@ def run_validation() -> Diagnostics:
     validate_cell_duplication(packages, diag)
     validate_envelope(packages, diag)
     validate_compositions(diag)
+    validate_templates(diag)
     validate_cross_package_links(packages, diag)
     validate_pins(diag)
     validate_sync(diag)
