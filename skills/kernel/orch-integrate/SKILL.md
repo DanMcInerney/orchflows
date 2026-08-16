@@ -29,7 +29,7 @@ Classify by blame per the [work-item contract](../../../contracts/work-item.md#d
 the class in the worklog — the ticket when the run keeps none. The join alone writes terminal status (`tickets.py set-status`).
 
 Never: trust out-of-scope output; re-run a covered oracle; repair the result yourself; reach
-needs-verify on a packet-graded return; treat `suspended` as a failure or let the child write terminal status.
+needs-verify on a packet-graded return; reject a `suspended` return, or let the child write terminal status.
 
 Return: disposition — accepted, rejected(blame), suspended (route to resume), or ticket-grade-only
 needs-verify with the exact uncovered criteria — plus invalidated evidence and the integrated state.
