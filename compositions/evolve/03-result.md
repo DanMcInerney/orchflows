@@ -8,6 +8,8 @@ bound: <= 30 tool calls
 excluded_actions:
   - activate a selected candidate
   - closing on a score card that cites no admitted evidence
+  - expose protected evidence
+  - add a closing wrapper
 independence: checker
 isolation: none
 profile: orch-worker
@@ -30,7 +32,6 @@ the promotion done-check the campaign opened with.
 ## Completion test
 
 - the final score card cites the final incumbent identity and its admitted result/evidence and satisfies the frozen promotion done-check | oracle: the promotion done-check from the frozen evaluation, applied to the final score card | oracle_class: deterministic | provenance: pre-existing
-- benchmark mode's card is the qualified runner's output; judged mode's card is scored blind against the frozen criteria | oracle: the score card read against the frozen evaluation's mode and criteria | oracle_class: judged | provenance: pre-existing
 - the evaluation identity behind the final card is the one 01-eligibility admitted {{incumbent}} under | oracle: the two identities compared | oracle_class: deterministic | provenance: pre-existing
 
 ## Return fields

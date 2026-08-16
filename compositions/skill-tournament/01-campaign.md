@@ -8,6 +8,7 @@ bound: {{bound}}
 excluded_actions:
   - change the benchmark or policy inside the campaign
   - install a winner
+  - restate or call evolve's verification, panel, search, or selection internals
   - activating a selected result here — a selected result requires a separate authorized integration before activation
 independence: checker
 isolation: required
@@ -25,10 +26,12 @@ was scored against.
 
 - 00-benchmark's `## Result` — the qualified benchmark revision, by
   identity. It is the campaign's evaluation and is read, never rebuilt.
-- Instantiate compositions/evolve into this run with target={{skill}},
+- Instantiate compositions/evolve into a nested run of its own — this
+  ticket's own `run` field plus `.01-campaign`, never the outer run —
+  naming every placeholder that manifest declares: target={{skill}},
   incumbent={{skill}}'s fixed result/evidence at its current revision,
   evaluation=00-benchmark's qualified benchmark revision,
-  writer=orch-build, mutation_scope={{surface}}, bound={{bound}}; drain
+  writer=orch-build, mutation_scope={{surface}}, bound={{bound}}. Drain
   that ticket set here.
 - {{policy}} — the frozen optimizer policy and candidate-accessible
   mappings, fixed for the whole campaign.

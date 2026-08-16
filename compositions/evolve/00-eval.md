@@ -8,6 +8,7 @@ bound: <= 40 tool calls
 excluded_actions:
   - mutating {{target}} or anything in {{mutation_scope}}
   - letting a candidate, variant or score enter the design
+  - call benchmaker
 independence: checker
 isolation: none
 profile: orch-worker
