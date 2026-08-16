@@ -103,6 +103,11 @@ ORACLE_RE = re.compile(r"oracle:\s*([^|\n]*)", re.IGNORECASE)
 ORACLE_CLASS_RE = re.compile(r"oracle_class:\s*([A-Za-z_-]*)", re.IGNORECASE)
 PROVENANCE_RE = re.compile(r"provenance:\s*([A-Za-z_-]*)", re.IGNORECASE)
 DURATION_RE = re.compile(r"^(\d+)(m|h)$")
+# The punctuation a `## Result` citation is wrapped in — code spans, quotes,
+# brackets, list separators — so a cited path is one token between them, and
+# the trailing sentence punctuation that is not part of a filename.
+RESULT_TOKEN_SPLIT_RE = re.compile(r"[\s`\"'<>()\[\]{},;|]+")
+RESULT_TOKEN_STRIP = ".:!?*_-"
 DEFAULT_BOUND_MINUTES = 60
 # The shape of every UTC instant this script writes, stated once and read
 # wherever one is stamped: a claim's `claimed_at` and a run's `opened_at`
@@ -1163,13 +1168,95 @@ def _parse_iso(value):
         return None
 
 
-def _is_stale(claimed_at, bound_minutes: int, now: datetime) -> bool:
-    """A claim with no timestamp or an unparsable one is treated as stale."""
+def _cited_paths(section_text: str, base: Path) -> list:
+    """Every existing file one section cites, resolved from ``base``.
+
+    A ``## Result`` names what changed by identity, and a file's identity is
+    its path, so the candidates are the section's tokens: split on
+    whitespace and the markdown punctuation a citation is wrapped in, then
+    kept only when the filesystem agrees the name exists. A candidate with
+    neither a separator nor a suffix is dropped before that -- ordinary
+    prose words would otherwise stat a same-named file in the caller's
+    directory and read it as this ticket's artifact.
+
+    A relative citation resolves against the directory the call stands in,
+    which is the workspace whose motion is being asked about; an absolute
+    one is the citation that means the same thing from anywhere.
+    """
+
+    found = []
+    for token in RESULT_TOKEN_SPLIT_RE.split(section_text or ""):
+        candidate = token.strip(RESULT_TOKEN_STRIP)
+        if not candidate:
+            continue
+        if "/" not in candidate and "\\" not in candidate and "." not in candidate[1:]:
+            continue
+        try:
+            path = Path(candidate)
+            if not path.is_absolute():
+                path = base / path
+            if path.is_file():
+                found.append(path)
+        except (OSError, ValueError):
+            # an unstattable name is not this reader's error to report: it is
+            # simply not evidence that anything moved
+            continue
+    return found
+
+
+def _last_motion(ticket_path: Path, result_text: str, base: Path):
+    """The most recent write to the ticket or to what its ``## Result``
+    names, or ``None`` when nothing is readable."""
+
+    latest = None
+    for path in [ticket_path, *_cited_paths(result_text, base)]:
+        try:
+            stamp = path.stat().st_mtime
+        except OSError:
+            continue
+        moment = datetime.fromtimestamp(stamp, timezone.utc)
+        if latest is None or moment > latest:
+            latest = moment
+    return latest
+
+
+def _is_stale(claimed_at, bound_minutes: int, now: datetime, last_motion=None) -> bool:
+    """Whether a claim may be taken away: nothing has moved for a lease.
+
+    The lease runs from the later of the claim and ``last_motion`` -- the
+    most recent write to the ticket's own sections or to any artifact its
+    ``## Result`` names (REVIEW-2026-08-15.md T3). A lane still writing is
+    never reclaimable however long ago it claimed, which is what stops one
+    item having two live executors (rules/delegation.md §11); a lane that
+    has stopped is reclaimable exactly as before.
+
+    A claim with no timestamp or an unparsable one is stale whatever is
+    moving: the lease it would be measured against has no start, so there
+    is nothing for motion to extend.
+    """
 
     parsed = _parse_iso(claimed_at)
     if parsed is None:
         return True
+    if last_motion is not None and last_motion > parsed:
+        parsed = last_motion
     return (now - parsed) > timedelta(minutes=bound_minutes)
+
+
+def _claim_is_stale(ticket_path, text: str, data: dict, now: datetime) -> bool:
+    """``_is_stale`` for one ticket on disk, motion and all.
+
+    The one place ``ready`` and ``claim`` both ask from, so the two cannot
+    answer differently about one claim -- a listing that offers a ticket the
+    claim path then refuses is a frontier that dispatches nothing.
+    """
+
+    return _is_stale(
+        data.get("claimed_at"),
+        _parse_bound_minutes(data.get("bound")),
+        now,
+        _last_motion(Path(ticket_path), _sections(text).get("Result", ""), _cwd()),
+    )
 
 
 # --- argument helpers --------------------------------------------------------
@@ -1704,8 +1791,13 @@ def _cmd_ready(rest):
                 data["summary"]["status"] = "ready"
                 eligible = True
             elif status == "claimed":
-                bound_minutes = _parse_bound_minutes(data.get("bound"))
-                eligible = _is_stale(data.get("claimed_at"), bound_minutes, now)
+                try:
+                    text = Path(data["path"]).read_text(encoding="utf-8")
+                except OSError:
+                    # unreadable now, though it parsed a moment ago: the
+                    # holder is doing something to it, which is motion
+                    continue
+                eligible = _claim_is_stale(data["path"], text, data, now)
             if eligible:
                 ready_items.append(data["summary"])
     return {"ready": ready_items}
@@ -1730,8 +1822,7 @@ def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime
     data = _parse_frontmatter(prior_text)
     status = data.get("status")
     if status == "claimed":
-        bound_minutes = _parse_bound_minutes(data.get("bound"))
-        if not _is_stale(data.get("claimed_at"), bound_minutes, now):
+        if not _claim_is_stale(ticket_path, prior_text, data, now):
             return {"error": f"ticket already claimed and not stale: {ticket_path.stem}"}
     elif status != "ready":
         return {"error": f"ticket is not claimable in status '{status}': {ticket_path.stem}"}

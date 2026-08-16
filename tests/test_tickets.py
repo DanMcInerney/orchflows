@@ -215,9 +215,10 @@ class SequencedPath:
 
     ``_do_claim`` takes the path as an argument, so two threads can be given
     two instrumented paths onto one file and meet in a chosen interleaving
-    instead of whichever one the scheduler happens to produce. Only the three
-    attributes ``_do_claim`` touches are forwarded; the subject keeps its
-    signature and its body.
+    instead of whichever one the scheduler happens to produce. Only the
+    attributes ``_do_claim`` touches are forwarded -- the two calls, the
+    stem it names a refusal by, and the fspath the staleness check stats
+    for motion; the subject keeps its signature and its body.
     """
 
     def __init__(self, path: Path, before_read=None, after_read=None, after_write=None):
@@ -229,6 +230,9 @@ class SequencedPath:
     @property
     def stem(self):
         return self._path.stem
+
+    def __fspath__(self):
+        return str(self._path)
 
     def read_text(self, *args, **kwargs):
         if self._before_read is not None:
@@ -374,10 +378,13 @@ class TestClaim(unittest.TestCase):
             ticket_path = run_dir / "T1.md"
             first = run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-a")
             self.assertIn("claimed", first)
-            # backdate the claim well past the ticket's 30m bound so it reads stale
+            # backdate the claim well past the ticket's 30m bound, and the
+            # file with it: staleness is motion as well as the clock, so a
+            # claim whose ticket was written a moment ago is still moving
             text = ticket_path.read_text(encoding="utf-8")
             text = tickets_mod._set_frontmatter_field(text, "claimed_at", "2020-01-01T00:00:00Z")
             ticket_path.write_text(text, encoding="utf-8")
+            backdate(ticket_path, 10 * 24 * 60)
             second = run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-b")
             self.assertEqual("agent-b", second["claimed"]["claimed_by"])
             self.assertIn("claimed_by: agent-b", ticket_path.read_text(encoding="utf-8"))
@@ -503,10 +510,14 @@ class TestInvalidStatus(unittest.TestCase):
 
 def make_claimed_repo(tmp: Path, claims: dict) -> Path:
     """A repo of claimed tickets, each carrying its own ``bound`` and
-    ``claimed_at``.
+    ``claimed_at``, and each with nothing moving.
 
-    The two fields staleness is computed from, and the two `make_repo` holds
-    fixed -- so anything grading a claim's age or its owner varies them here.
+    The fields staleness is computed from, and the ones `make_repo` holds
+    fixed -- so anything grading a claim's age or its owner varies them
+    here. Each ticket's mtime is put back to the moment it was claimed
+    (far back when that moment is unreadable): staleness reads artifact
+    motion as well as the clock, and a fixture that wrote its tickets a
+    millisecond ago is a fixture where every claim is still moving.
     """
 
     run_dir = make_repo(tmp, {tid: ("claimed", "[]") for tid in claims})
@@ -518,6 +529,13 @@ def make_claimed_repo(tmp: Path, claims: dict) -> Path:
                 f"bound: {bound}\nclaimed_by: agent-a\nclaimed_at: {claimed_at}",
             ),
             encoding="utf-8",
+        )
+        claimed = tickets_mod._parse_iso(claimed_at)
+        backdate(
+            path,
+            10 * 24 * 60
+            if claimed is None
+            else (datetime.now(timezone.utc) - claimed).total_seconds() / 60,
         )
     return run_dir
 
@@ -634,6 +652,151 @@ class TimeParseFallbackTest(unittest.TestCase):
             })
             ready = {item["id"] for item in run_cmd(tmp, "ready")["ready"]}
         self.assertEqual({"T2", "T3"}, ready)
+
+
+RESULT_TICKET = """---
+id: {tid}
+run: testrun
+status: claimed
+executor: orch-tdd
+depends_on: []
+write_scope: [{artifact}]
+bound: {bound}
+claimed_by: agent-a
+claimed_at: {claimed_at}
+---
+
+## Objective
+
+Test ticket.
+
+## Result
+
+Changed `{artifact}` on the workspace branch.
+"""
+
+
+def backdate(path: Path, minutes: int) -> None:
+    """Move one file's mtime ``minutes`` into the past.
+
+    A fixture that writes a ticket has just written it, so on disk that
+    ticket is moving now. Every case that means "nothing has moved" has to
+    say so, which is what this says.
+    """
+
+    when = (datetime.now(timezone.utc) - timedelta(minutes=minutes)).timestamp()
+    os.utime(path, (when, when))
+
+
+class LeaseByArtifactMotionTest(unittest.TestCase):
+    """REVIEW-2026-08-15.md T3: the lease is artifact motion, not the clock.
+
+    A purely temporal `_is_stale` hands a lane's ticket away while that
+    lane is still writing, which is the two-live-lanes rules/delegation.md
+    §11 forbids. A claim is stale only when nothing has moved for longer
+    than the lease -- neither the ticket's own sections nor any artifact
+    path its `## Result` names.
+    """
+
+    def make(self, tmp: Path, *, bound: str = "30m", claimed_at: str = None,
+             claim_age: int = 90, ticket_age: int = 90, artifact_age: int = 90,
+             artifact: str = "scratch/built.txt") -> Path:
+        sink = use_sink(tmp)
+        (tmp / ".git").mkdir(exist_ok=True)
+        target = tmp / artifact
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("built\n", encoding="utf-8")
+        backdate(target, artifact_age)
+        run_dir = sink / "tickets" / "testrun"
+        run_dir.mkdir(parents=True, exist_ok=True)
+        path = run_dir / "T1.md"
+        path.write_text(
+            RESULT_TICKET.format(
+                tid="T1", artifact=artifact, bound=bound,
+                claimed_at=minutes_ago(claim_age) if claimed_at is None else claimed_at,
+            ),
+            encoding="utf-8",
+        )
+        backdate(path, ticket_age)
+        return run_dir
+
+    def reclaimable(self, tmp: Path) -> bool:
+        listed = [item["id"] for item in run_cmd(tmp, "ready", "--run", "testrun")["ready"]]
+        return listed == ["T1"]
+
+    def test_a_claim_past_its_lease_with_a_still_artifact_is_stale(self):
+        """The baseline the two cases below are read against: nothing has
+        moved since the claim, so the lease expires as it always did."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            self.assertTrue(self.reclaimable(tmp))
+
+    def test_a_moving_result_artifact_holds_the_claim_past_the_lease(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, artifact_age=2)
+            self.assertFalse(self.reclaimable(tmp))
+            payload = run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-b")
+            self.assertIn("error", payload)
+            self.assertIn("claimed_by: agent-a", (tmp / "state-sink" / "tickets"
+                          / "testrun" / "T1.md").read_text(encoding="utf-8"))
+
+    def test_a_moving_ticket_holds_the_claim_past_the_lease(self):
+        """The other half of the rule: an executor writing its own sections
+        is motion, even when the artifact it names has not landed yet."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, ticket_age=1)
+            self.assertFalse(self.reclaimable(tmp))
+
+    def test_an_artifact_the_result_does_not_name_moves_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            stranger = tmp / "scratch" / "unnamed.txt"
+            stranger.write_text("fresh\n", encoding="utf-8")
+            self.assertTrue(self.reclaimable(tmp))
+
+    def test_no_timestamp_is_stale_however_recently_the_artifact_moved(self):
+        """The pre-existing rule, kept: a claim with no readable
+        `claimed_at` is reclaimable on sight. Motion cannot rescue a claim
+        whose age is unknown -- the lease it would be measured against has
+        no start."""
+
+        for claimed_at in ("", "yesterday"):
+            with self.subTest(claimed_at=claimed_at), tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                self.make(tmp, claimed_at=claimed_at, artifact_age=0, ticket_age=0)
+                self.assertTrue(self.reclaimable(tmp))
+
+    def test_motion_is_read_against_the_lease_not_a_fixed_hour(self):
+        """A stated bound still decides: the same two-hour-old motion is
+        inside a `3h` lease and outside a `30m` one."""
+
+        for bound, expected in (("3h", False), ("30m", True)):
+            with self.subTest(bound=bound), tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                self.make(tmp, bound=bound, claim_age=200, ticket_age=120,
+                          artifact_age=120)
+                self.assertEqual(expected, self.reclaimable(tmp))
+
+    def test_the_helper_takes_the_motion_it_is_given(self):
+        now = datetime(2026, 8, 15, 12, 0, 0, tzinfo=timezone.utc)
+        claimed = "2026-08-15T10:00:00Z"
+        self.assertTrue(tickets_mod._is_stale(claimed, 30, now))
+        self.assertFalse(
+            tickets_mod._is_stale(
+                claimed, 30, now, datetime(2026, 8, 15, 11, 45, tzinfo=timezone.utc)
+            )
+        )
+        self.assertTrue(
+            tickets_mod._is_stale(
+                claimed, 30, now, datetime(2026, 8, 15, 11, 0, tzinfo=timezone.utc)
+            )
+        )
 
 
 class OSErrorHandlerTest(unittest.TestCase):
