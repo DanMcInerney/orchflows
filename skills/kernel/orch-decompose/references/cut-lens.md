@@ -6,9 +6,9 @@ division.
 
 ## Delegated
 
-- [`scripts/cutcheck.py`](../../../../scripts/cutcheck.py) decides
-  family 1, family 2, family 3, family 4, family 5 and family 6; its
-  module docstring owns what each one is. Read its report.
+- `scripts/cutcheck.py` decides family 1, family 2, family 3, family 4,
+  family 5 and family 6; its module docstring owns what each one is.
+  Read its report.
 
 ## Kept
 
