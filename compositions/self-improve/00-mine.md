@@ -6,11 +6,7 @@ depends_on: []
 write_scope: []
 bound: <= 60 tool calls
 excluded_actions:
-  - attributing cause beyond what entries show
-  - editing an owner file directly
-  - deleting or rewriting a friction entry
-  - proposing two owners in one proposal
-  - mining evidence a live run still holds open
+  - everything the orch-self-improve skill body's Never clause forbids
 independence: checker
 isolation: none
 profile: orch-planner
@@ -26,7 +22,8 @@ target, or the finding that nothing qualified.
 
 ## Fixed inputs
 
-- {{window}} — the sessions, runs, projects, or period this cycle mines.
+- {{window}} — this run's value for the window orch-self-improve's
+  Require defines.
 - The state sink's `friction/`, `runs/`, `tickets/` and
   `improvement/covered.jsonl`, at their root per
   rules/visibility.md §6, read as data.
@@ -40,10 +37,8 @@ target, or the finding that nothing qualified.
 
 ## Return fields
 
-status; result — ranked proposal paths, each with qualification basis,
-replay verdict and evidence entry count; the top-ranked proposal by
-path; prior proposals still unmerged; the unqualified remainder count;
-verification; feedback; risks
+status; result — everything orch-self-improve's Return names, and the
+top-ranked proposal by path; verification; feedback; risks
 
 ## Result
 

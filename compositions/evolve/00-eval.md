@@ -26,8 +26,8 @@ admission and regression criteria, and artifact-evidence adapter.
   a frozen evaluation identity is supplied: the terminal reads it
   instead.
 - {{incumbent}} — the fixed incumbent result/evidence identity for
-  {{target}}, with its source identities, source policy, judgment
-  permission, and the applicable pack craft, lens and oracle references.
+  {{target}}, carrying everything orch-eval-design's Require expects an
+  `inputs` field to carry.
 - The design is written into this ticket's `## Result` and nowhere else,
   so the evaluation-design scope stays disjoint from {{mutation_scope}}:
   no evaluation is designed inside the scope its candidates mutate.
