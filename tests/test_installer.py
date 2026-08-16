@@ -127,6 +127,21 @@ def removed_unchanged(report: dict) -> set:
     }
 
 
+def dangling_path_warnings(plan) -> list:
+    """The hooks preflight's own warnings, selected by kind.
+
+    A plan carries every true warning the run found, and which ones exist
+    depends on the interpreter -- below 3.11 a codex plan also warns that
+    the config merge went unparsed. Counting ``plan.warnings`` therefore
+    pinned the interpreter, not the preflight; these tests mean "the hooks
+    warning is here, once", so they select it and count that."""
+    return [
+        warning
+        for warning in plan.warnings
+        if "references a missing orchflows path" in warning
+    ]
+
+
 requires_tomllib = unittest.skipIf(
     install.tomllib is None,
     "reading back generated TOML requires tomllib (Python 3.11+); "
@@ -2427,8 +2442,9 @@ class TestCodexHooksPreflight(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), mock_host_clis("codex"):
                 plan = install.build_plan("user", None)
 
-            self.assertEqual(1, len(plan.warnings))
-            self.assertIn("orch-missing", plan.warnings[0])
+            dangling = dangling_path_warnings(plan)
+            self.assertEqual(1, len(dangling), plan.warnings)
+            self.assertIn("orch-missing", dangling[0])
 
     def test_user_plan_says_when_the_codex_config_could_not_be_toml_checked(self):
         # Below 3.11 there is no tomllib, so the merged config.toml is written
@@ -2532,8 +2548,10 @@ class TestCodexHome(unittest.TestCase):
             ), mock_host_clis("codex"):
                 plan = install.build_plan("user", None)
 
-            self.assertEqual(1, len(plan.warnings))
-            self.assertIn("orch-missing", plan.warnings[0])
+            dangling = dangling_path_warnings(plan)
+            self.assertEqual(1, len(dangling), plan.warnings)
+            self.assertIn(str(codex_home / "hooks.json"), dangling[0])
+            self.assertIn("orch-missing", dangling[0])
 
     def test_blank_codex_home_falls_back_to_home(self):
         with tempfile.TemporaryDirectory() as tmp:
