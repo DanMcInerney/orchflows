@@ -1722,6 +1722,13 @@ def run_validation() -> Diagnostics:
 
 
 def main(argv=None) -> int:
+    # Diagnostics quote library prose, which carries characters a cp1252
+    # console cannot encode; a validator that crashes while printing its
+    # own finding reports nothing. Replace, never raise.
+    try:
+        sys.stdout.reconfigure(errors="replace")
+    except (AttributeError, ValueError):  # pragma: no cover - not a TextIOWrapper
+        pass
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--pin",
