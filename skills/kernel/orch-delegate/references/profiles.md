@@ -36,6 +36,22 @@ three tokens with the host separator. On collision, append the host
 separator plus the first available positive integer. A resumed child
 keeps its name.
 
+## Watching a lane (Claude Code)
+
+Wake and completion notifications are lossy here
+(anthropics/claude-code#39632), so a caller arms its own re-check of a
+lane's durable run state at dispatch — through the host's scheduler, or
+a bounded wait loop where it has none — and states that cadence when
+arming, never coarser than the lane's bound read as a duration. Each
+reading is judged by
+[rules/delegation.md](../../../../rules/delegation.md) §11: an idle
+notification or an unanswered nudge decides nothing. A dispatch that
+launches an external process whose outcome its return depends on either
+holds its turn until that outcome lands in durable state, or records the
+process and its expected artifact in the run's notes
+(`tickets.py run-state --note`) at launch, as helper lanes are recorded,
+so the re-check covers it.
+
 On Claude Code, a named child's return travels only by explicit
 SendMessage to the spawner; plain final text is undelivered. The
 spawner's own name — or `main` when the spawner is the top-level
