@@ -47,8 +47,8 @@
     contract mandating its content. Ceilings order by load frequency,
     because a file loaded by every child on every turn costs its length
     times the children forever, whatever the model: every-turn surfaces
-    tightest — the host block 460 words and at most eight standing
-    demands, a project's routing block 460, this repository's
+    tightest — the host block 400 words and at most eight standing
+    demands, a project's routing block 400, this repository's
     `AGENTS.md` 300, a role agent file 80; every-dispatch units next —
     kernel, instance and utility bodies 300, pack `SKILL.md` 150, a
     stub's instruction (objective, completion test, excluded actions,
@@ -65,4 +65,7 @@
     falls on evidence — a tournament in which the shorter candidate
     holds its benchmark within margin, or a review whose deletions land
     — never on taste, and never rises for a new model: a stronger model
-    needs less how, not more.
+    needs less how, not more. On 2026-08-16 the host block's ceiling fell
+    460 → 400 with the deletions that landed, the demand cap staying
+    eight, on the evidence that adherence answers to the count of
+    standing demands and their conflict, not to length at a fixed count.
