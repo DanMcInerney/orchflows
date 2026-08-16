@@ -177,6 +177,25 @@ class TestScriptNames(unittest.TestCase):
             source = install.REPO_ROOT / "scripts" / name
             self.assertEqual(source.read_bytes(), installed.read_bytes())
 
+    def test_build_plan_ships_doclint_the_documentation_oracle(self):
+        """The test above grades ``SCRIPT_NAMES`` against itself: drop a name
+        and both sides of its assertion shrink together, so it stays green on
+        a script the installer silently stopped shipping. ``doclint.py`` is
+        the documentation factory's oracle and the bodies that invoke it name
+        it by bare filename, which resolves only from the installed bin dir --
+        so the name is pinned here, from outside the tuple."""
+
+        plan = relocated_user_install()[0]
+        installed = plan.bin_dir / "doclint.py"
+        self.assertIn(
+            installed,
+            [destination for _, destination in plan.scripts],
+            "the plan never carries doclint.py to the bin dir",
+        )
+        self.assertTrue(installed.is_file(), f"doclint.py never reached {plan.bin_dir}")
+        source = install.REPO_ROOT / "scripts" / "doclint.py"
+        self.assertEqual(source.read_bytes(), installed.read_bytes())
+
     def test_every_bare_script_a_template_stub_names_is_shipped(self):
         """A stub that says `python search_plan.py advance` is telling an
         executor to run a file the installed tree has to carry. The template
