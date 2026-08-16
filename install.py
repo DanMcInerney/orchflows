@@ -28,8 +28,9 @@ the installer warns and exits successfully without writing anything.
   import line — idempotent, migrating any legacy inline marker block found
   there from an older install.
 - Codex (when a Codex CLI is on ``PATH``): prompts, four redirect skill stubs
-  (``~/.codex/skills/<name>/SKILL.md`` for ``orch-spec``, ``orch-task``,
-  ``fix``, ``orch-build``) that point at the library instead of
+  (``~/.codex/skills/<name>/SKILL.md`` for ``orch-spec``,
+  ``orch-frontier``, ``fix``, ``orch-build``) that point at the library
+  instead of
   duplicating it, role agents, agent-limits config. ``CODEX_HOME`` replaces
   ``~/.codex`` throughout, matching the CLI. The always-on layer
   stays an inline marker block upserted into ``~/.codex/AGENTS.md`` — a
@@ -108,6 +109,11 @@ SCRIPT_NAMES = (
     "cutcheck.py",
     "friction.py",
     "migrate_state.py",
+    # Named by bare filename from the evolve template's campaign stub. It
+    # shipped inside a canonical skills/ directory until P4-3 made it a
+    # script; scripts/ is not canonical, so the move un-shipped it and the
+    # stub's instruction pointed at nothing.
+    "search_plan.py",
     "state_root.py",
     "tickets.py",
     "trace.py",

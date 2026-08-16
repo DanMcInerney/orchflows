@@ -241,6 +241,10 @@ SCRATCH_PREFIX = "cutcheck-"
 # The acceptance-coverage map: one row per spec criterion, naming the item,
 # the gate, or declared remainder that answers for it.
 COVERAGE_FILE = "coverage.md"
+# One map per root, named for the root that wrote it. The bare
+# `coverage.md` is the one-root spelling and still read as one.
+COVERAGE_SUFFIX = "." + COVERAGE_FILE
+GATE_PREFIX_SEPARATOR = "."
 COVERAGE_OWNERS = ("gate", "remainder")
 TICKETS_DIR = "tickets"
 CANARY_DIR = "canary"
@@ -1389,7 +1393,7 @@ def _pairwise(siblings, reads):
     return findings
 
 
-def _coverage_path(run_dir):
+def _coverage_path(run_dir, name=COVERAGE_FILE):
     """Where the acceptance-coverage map lives for a resolved ticket root.
 
     The map is found beside the root cutcheck already resolved, never at one
@@ -1398,10 +1402,49 @@ def _coverage_path(run_dir):
     """
 
     if run_dir.parent.name != TICKETS_DIR:
-        return run_dir / COVERAGE_FILE
+        return run_dir / name
     if run_dir.parent.parent.name == CANARY_DIR:
         return None
-    return run_dir.parent.parent / RUNS_DIR / run_dir.name / COVERAGE_FILE
+    return run_dir.parent.parent / RUNS_DIR / run_dir.name / name
+
+
+def _map_for_root(run_dir, root, single: bool):
+    """One root's map: ``<root>.coverage.md``, or the legacy single map.
+
+    A run holds one map per root because it holds one cut per root. A
+    template instantiates several top-level decomposers into one run, and
+    one map for all of them means each root's criteria are read against
+    every other root's items -- and the last decomposer to write overwrites
+    what the others wrote.
+
+    The legacy ``coverage.md`` is still read where it still means what it
+    said: one root, and no map of its own.
+    """
+
+    path = _coverage_path(run_dir, root + COVERAGE_SUFFIX)
+    if path is not None and path.is_file():
+        return path
+    legacy = _coverage_path(run_dir, COVERAGE_FILE)
+    if single and legacy is not None and legacy.is_file():
+        return legacy
+    return path
+
+
+def _issued_under(siblings, root):
+    """The ids of one root's cut: ``<root>.NN``, its gate stubs excepted.
+
+    Never a sibling top-level stub. A template's stubs are the template's
+    graph, not any one root's decomposition, so grading them against a
+    root's map convicts every honest template of orphaning the items it
+    never issued.
+    """
+
+    prefix = root + GATE_PREFIX_SEPARATOR
+    return [
+        item_id
+        for item_id in sorted(siblings)
+        if item_id.startswith(prefix) and _gate_stub_of(item_id, [root]) is None
+    ]
 
 
 def _coverage_rows(path):
@@ -1435,7 +1478,33 @@ def _relative(path, roots):
     return Path(path).as_posix()
 
 
-def _coverage(run, run_dir, issued, roots):
+def _coverage_findings(run, run_dir, siblings, roots):
+    """Family 5, once per root the set holds.
+
+    A run with no decomposer at all has one issued set and one map, which is
+    what it always had. A run with roots has one of each per root.
+    """
+
+    root_ids = _root_ids(siblings)
+    if not root_ids:
+        return _coverage(
+            run, _coverage_path(run_dir), _issued_items(siblings, []), roots
+        )
+    findings = []
+    single = len(root_ids) == 1
+    for root in root_ids:
+        findings.extend(
+            _coverage(
+                root if not single else run,
+                _map_for_root(run_dir, root, single),
+                _issued_under(siblings, root),
+                roots,
+            )
+        )
+    return findings
+
+
+def _coverage(run, path, issued, roots):
     """Family 5: the map and the issued set answer for each other, both ways.
 
     A criterion reaches an item, the gate, or declared remainder; an item is
@@ -1443,7 +1512,6 @@ def _coverage(run, run_dir, issued, roots):
     direction against, so the absence is the only thing reported.
     """
 
-    path = _coverage_path(run_dir)
     if path is None or not path.is_file():
         where = (
             _relative(path, roots) if path is not None else "none for this ticket root"
@@ -1749,7 +1817,10 @@ def main(argv=None):
         head_tree = None
         if not _same_revision(args.baseline, worktree_root):
             head_tree = _scratch_tree("HEAD", worktree_root, scratch_root)
-        issued = sorted(p for p in run_dir.glob("*.md") if p.name != COVERAGE_FILE)
+        issued = sorted(
+            p for p in run_dir.glob("*.md")
+            if p.name != COVERAGE_FILE and not p.name.endswith(COVERAGE_SUFFIX)
+        )
         siblings = {}
         reads = {}
         for path in issued:
@@ -1766,14 +1837,7 @@ def main(argv=None):
         # line naming it absolutely would be machine-specific again.
         roots = (state_root.state_root(), worktree_root,
                  state_root.find_repo_root(Path.cwd()))
-        findings.extend(
-            _coverage(
-                args.run,
-                run_dir,
-                _issued_items(siblings, _root_ids(siblings)),
-                roots,
-            )
-        )
+        findings.extend(_coverage_findings(args.run, run_dir, siblings, roots))
         findings.extend(_executor_legality(siblings, _lib_root(args.lib)))
         findings.extend(_symlink_findings(args.run, (baseline_tree, head_tree)))
     finally:

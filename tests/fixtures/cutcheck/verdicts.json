@@ -153,6 +153,14 @@
    "cutcheck: no finding outside the advisory set"
   ]
  },
+ "cutcheck-f5-template": {
+  "exit": 0,
+  "lines": [
+   "cutcheck: advisory -- reported, and never setting the exit status:",
+   "02-materialize: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-f5-template/02-materialize.coverage.md",
+   "cutcheck: no finding outside the advisory set"
+  ]
+ },
  "cutcheck-f6-executor": {
   "exit": 1,
   "lines": [

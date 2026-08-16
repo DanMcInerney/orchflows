@@ -711,13 +711,35 @@ class CrossTierDuplicationTest(unittest.TestCase):
         self.assertEqual([], findings, result.stdout)
         self.assertEqual(0, result.returncode, result.stdout)
 
-    def test_two_files_in_one_tier_are_not_a_cross_tier_pair(self):
-        """The check is about a fact with two owners in two places. Two
-        skills sharing a clause is the skills tier's own business, and the
-        pack linter already owns the same question inside packs."""
+    def test_two_skills_sharing_a_clause_are_reported_and_two_packs_are_not(self):
+        """One tier's internal business is a second linter's — where there
+        is one. Inside packs the pack linter already asks this question, and
+        the cross-tier pass stays out. skills/ has no such check at all, so
+        skipping same-tier pairs there meant two skill bodies could carry a
+        clause byte for byte while each was flagged against an innocent third
+        file in another tier: the one pair that mattered was the one pair
+        nothing compared.
+        """
 
         self._write("Nothing here.", COPIED_SENTENCE + ".")
         self._write_skill("orch-mimic", COPIED_SENTENCE + ".")
+        result, findings = self._findings()
+        self.assertEqual(1, len(findings), result.stdout)
+        self.assertIn("skills/instances/orch-echo/SKILL.md", findings[0])
+        self.assertIn("skills/instances/orch-mimic/SKILL.md", findings[0])
+        self.assertIn("(within skills)", findings[0])
+        self.assertEqual(("skills",), tuple(sorted(validate.SAME_TIER_COMPARED)))
+
+    def test_two_packs_sharing_a_clause_stay_the_pack_linters(self):
+        self._write("Nothing here.", "Nothing shared.")
+        for name in ("orch-alpha-pack", "orch-beta-pack"):
+            pack = self.tmp_path / "packs" / name
+            pack.mkdir(parents=True, exist_ok=True)
+            (pack / "SKILL.md").write_text(
+                f"---\nname: {name}\ndescription: a synthetic pack\n---\n\n"
+                f"| cell | binding |\n| --- | --- |\n| slicing | {COPIED_SENTENCE} |\n",
+                encoding="utf-8",
+            )
         result, findings = self._findings()
         self.assertEqual([], findings, result.stdout)
 

@@ -97,16 +97,6 @@ VALID_STATUSES = {
 # nested template) — per SPEC-ticket-set.md §3. The rest dispatch a
 # ticket's executor, so naming one is the call cycle
 # rules/composition.md §3 forbids — an engine would spawn itself.
-# Every engine in skills/engines/ is a lawful ticket executor: orch-loop
-# runs a loop ticket, orch-frontier a nested template. tests/test_tickets.py
-# holds this set to that directory, because an installed copy of this script
-# has no library tree to read the list from.
-#
-# It used to be half of a partition, the other half being engines refused as
-# a ticket executor (orch-compose, orch-panel). P4-3 deleted both of those
-# skills, which left a refusal set with no members -- a rule with nothing to
-# refuse -- so the concept went with them.
-TICKET_EXECUTOR_ENGINES = frozenset({"orch-frontier", "orch-loop"})
 LOOP_EXECUTOR = "orch-loop"
 # SPEC-ticket-set.md §3: `executor: script:<path>` names a tested script.
 # It is an executor like any other -- claimable, dispatchable, graded the
@@ -717,7 +707,9 @@ def _read_identity(path: Path):
         # No document, and no reachable place for one. An unreachable sink is
         # the run-state write's own error to report, in its own words.
         return None, None
-    except OSError as error:
+    except (OSError, UnicodeDecodeError) as error:
+        # the widening `_read_utf8` makes everywhere else; this read cannot
+        # use the helper because the retry wrapper is the point of it
         return None, {"error": f"unreadable run identity {path}: {error}"}
     try:
         data = json.loads(text)
@@ -1099,16 +1091,33 @@ def _write_section(text: str, heading: str, body: str, append: bool = False) -> 
     return "".join(lines[:found]) + segment + "".join(lines[end:])
 
 
-def _load_ticket(path: Path) -> dict:
+def _read_utf8(path, subject: str = "ticket", encoding: str = "utf-8"):
+    """One file's text as ``(text, None)``, or ``(None, {"error": ...})``.
+
+    Both exceptions in one place because they are one failure to a caller --
+    the file is there and its bytes cannot be read -- and because they are
+    not one exception to Python: ``UnicodeDecodeError`` is a ``ValueError``,
+    not an ``OSError``, so a handler written for unreadable files let
+    non-UTF-8 bytes through as a traceback on a channel whose whole contract
+    is one JSON document. Every read site in this script goes through here,
+    so the next one cannot be written with half the handler.
+    """
+
+    # The object handed in does the reading whenever it can, and only a
+    # plain string is wrapped: a caller may pass a path-like stand-in whose
+    # `read_text` is the seam the caller is testing, and `Path(path)` would
+    # quietly discard it and read the real file instead.
+    reader = path if hasattr(path, "read_text") else Path(path)
     try:
-        text = path.read_text(encoding="utf-8")
+        return reader.read_text(encoding=encoding), None
     except (OSError, UnicodeDecodeError) as error:
-        # UnicodeDecodeError is a ValueError, not an OSError, so bytes that
-        # are not UTF-8 used to escape this handler and take `list` down with
-        # a traceback -- the one shape of unreadable ticket that crashed
-        # instead of reporting. Every caller grades this payload; none of
-        # them survives an exception.
-        return {"id": path.stem, "path": str(path), "error": f"unreadable ticket: {error}"}
+        return None, {"error": f"unreadable {subject}: {error}"}
+
+
+def _load_ticket(path: Path) -> dict:
+    text, failure = _read_utf8(path)
+    if failure is not None:
+        return {"id": path.stem, "path": str(path), "error": failure["error"]}
     try:
         data = _parse_frontmatter(text)
     except Exception:
@@ -1293,6 +1302,93 @@ def ticket_defects(text: str, stub: bool = False) -> list:
     return defects
 
 
+PACKS_DIR = "packs"
+REQUIRED_FIELDS_CELL = "required_spec_fields"
+# A field's name is what stands before its explanation; the explanation is
+# prose for a reader, and matching against it would count the pack's own
+# gloss as the stub's mention.
+FIELD_GLOSS_RE = re.compile(r"\s+[—-]{1,2}\s+")
+# Four letters or more: a field's name carries its own nouns, and the short
+# words joining them ("as", "by", "the") are in every sentence ever written.
+FIELD_WORD_RE = re.compile(r"[a-z]{4,}")
+
+
+def _packs_root(directory):
+    """The `packs/` beside this template's tree, or None.
+
+    None is the ordinary answer for an installed copy of this script: it
+    runs against a target repository that carries no `packs/` at all, and a
+    pack it cannot read is not a defect in the stub.
+    """
+
+    directory = Path(directory).resolve()
+    for parent in (directory, *directory.parents):
+        candidate = parent / PACKS_DIR
+        if candidate.is_dir():
+            return candidate
+    return None
+
+
+def _required_spec_fields(packs_root, pack: str) -> list:
+    """The stamped pack's `required_spec_fields` cell, as its field names.
+
+    contracts/pack-signature.md makes the cell a `;`-separated list, and
+    contracts/work-item.md makes each entry an entry of the root ticket's
+    `## Fixed inputs`.
+    """
+
+    text, failure = _read_utf8(packs_root / pack / "SKILL.md", f"pack {pack}")
+    if failure is not None:
+        return []
+    for line in text.splitlines():
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) >= 2 and cells[0] == REQUIRED_FIELDS_CELL:
+            return [field.strip() for field in cells[1].split(";") if field.strip()]
+    return []
+
+
+def _spec_field_defect(text: str, directory):
+    """The root stub's `## Fixed inputs` against its pack's required fields.
+
+    contracts/work-item.md: "The stamped pack's `required_spec_fields` are
+    entries of that `## Fixed inputs`", and `orch-decompose`'s Require
+    rejects a root that lacks them, naming what is missing. That refusal
+    fires inside the decomposer — after dispatch, against a ticket already
+    written and an agent already spending. `packet` grades shape and hands
+    these through, so the same refusal is applied here, where the stub is
+    admitted.
+
+    A stub engaging with none of the fields is the reported case: the pack
+    names each field in its own words and a stub answers in the template's,
+    so anything finer would grade phrasing rather than whether the spec was
+    supplied at all.
+    """
+
+    data = _parse_frontmatter(text)
+    if str(data.get("executor") or "").strip().strip("`") != ROOT_EXECUTOR:
+        return None
+    pack = str(data.get("pack") or "").strip().strip("`")
+    if not pack or PLACEHOLDER_RE.search(pack):
+        return None
+    packs_root = _packs_root(directory)
+    if packs_root is None:
+        return None
+    fields = _required_spec_fields(packs_root, pack)
+    if not fields:
+        return None
+    mentioned = set(FIELD_WORD_RE.findall(_section_body(text, "Fixed inputs").lower()))
+    for field in fields:
+        name = FIELD_GLOSS_RE.split(field, 1)[0]
+        if mentioned & set(FIELD_WORD_RE.findall(name.lower())):
+            return None
+    return (
+        f"root stub stamps {pack} and its `## Fixed inputs` name none of the "
+        f"fields that pack requires ({'; '.join(fields)}); "
+        "orch-decompose refuses a root ticket that lacks them "
+        "(contracts/work-item.md)"
+    )
+
+
 def template_defects(directory) -> list:
     """Every way the template at ``directory`` is off contract, as
     ``(path, message)`` pairs.
@@ -1329,10 +1425,9 @@ def template_defects(directory) -> list:
     defects = []
     stubs = {}
     for path in paths:
-        try:
-            text = path.read_text(encoding="utf-8-sig")
-        except OSError as error:
-            defects.append((path, f"unreadable stub {path.name}: {error}"))
+        text, failure = _read_utf8(path, f"stub {path.name}", encoding="utf-8-sig")
+        if failure is not None:
+            defects.append((path, failure["error"]))
             continue
         for defect in ticket_defects(text, stub=True):
             defects.append((path, defect))
@@ -1358,6 +1453,9 @@ def template_defects(directory) -> list:
                 "stub body sections are out of contract order; expected "
                 + ", ".join(REQUIRED_SECTIONS)
             )))
+        spec_defect = _spec_field_defect(text, directory)
+        if spec_defect is not None:
+            defects.append((path, spec_defect))
         dependencies = data.get("depends_on")
         stubs[path.stem] = (text, dependencies if isinstance(dependencies, list) else [])
 
@@ -1751,10 +1849,9 @@ def _place_ticket(run: str, source: str, declared_id=None):
     invalid = _segment_error("run id", run)
     if invalid is not None:
         return invalid
-    try:
-        text = Path(source).read_text(encoding="utf-8")
-    except OSError as error:
-        return {"error": f"unreadable ticket file: {error}"}
+    text, failure = _read_utf8(source, "ticket file")
+    if failure is not None:
+        return failure
     data = _parse_frontmatter(text)
     ticket_id = data.get("id") if isinstance(data.get("id"), str) else None
     if not ticket_id:
@@ -1819,10 +1916,9 @@ def _cmd_amend(rest):
             f"usage: {AMEND_USAGE}"
         }
     if file_arg is not None:
-        try:
-            body = Path(file_arg).read_text(encoding="utf-8")
-        except OSError as error:
-            return {"error": f"unreadable body file: {error}"}
+        body, failure = _read_utf8(file_arg, "body file")
+        if failure is not None:
+            return failure
     else:
         body = text_arg
 
@@ -1832,10 +1928,9 @@ def _cmd_amend(rest):
     ticket_path = tickets_root / run / f"{ticket_id}.md"
     if not ticket_path.is_file():
         return {"error": f"ticket not found: {run}/{ticket_id}"}
-    try:
-        text = ticket_path.read_text(encoding="utf-8")
-    except OSError as error:
-        return {"error": f"unreadable ticket: {error}"}
+    text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return failure
     frontmatter = _parse_frontmatter(text)
     claimed_by = str(frontmatter.get("claimed_by") or "").strip()
     if claimed_by:
@@ -1940,10 +2035,9 @@ def _template_stubs(directory: Path, values: dict):
         }
     stubs = {}
     for path in paths:
-        try:
-            text = path.read_text(encoding="utf-8")
-        except OSError as error:
-            return None, {"error": f"unreadable stub {path.name}: {error}"}
+        text, failure = _read_utf8(path, f"stub {path.name}")
+        if failure is not None:
+            return None, failure
         text = PLACEHOLDER_RE.sub(
             lambda match: values.get(match.group(1), match.group(0)), text
         )
@@ -1967,6 +2061,11 @@ def _template_stubs(directory: Path, values: dict):
                 "error": f"stub {path.name} names id '{declared_id}': a stub's "
                 "id is its file stem, and `depends_on` names ids"
             }
+        # after substitution, because a `{{pack}}` names no pack to read
+        # until a caller supplies one -- and then it does
+        spec_defect = _spec_field_defect(text, directory)
+        if spec_defect is not None:
+            return None, {"error": f"stub {path.stem}: {spec_defect}"}
         stubs[path.stem] = (text, list(data.get("depends_on") or []))
     return stubs, None
 
@@ -2059,10 +2158,10 @@ def _cmd_instantiate(rest):
                 f"usage: {INSTANTIATE_USAGE}"
             }
         values[key.strip()] = value
-    try:
-        template = _parse_frontmatter(template_path.read_text(encoding="utf-8"))
-    except OSError as error:
-        return {"error": f"unreadable {TEMPLATE_FILE}: {error}"}
+    manifest, failure = _read_utf8(template_path, TEMPLATE_FILE)
+    if failure is not None:
+        return failure
+    template = _parse_frontmatter(manifest)
     declared = template.get("placeholders")
     declared = declared if isinstance(declared, list) else []
     unsupplied = [name for name in declared if name not in values]
@@ -2482,9 +2581,8 @@ def _cmd_ready(rest):
                 data["summary"]["status"] = "ready"
                 eligible = True
             elif status == "claimed":
-                try:
-                    text = Path(data["path"]).read_text(encoding="utf-8")
-                except OSError:
+                text, failure = _read_utf8(data["path"])
+                if failure is not None:
                     # unreadable now, though it parsed a moment ago: the
                     # holder is doing something to it, which is motion
                     continue
@@ -2504,10 +2602,9 @@ def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime
     check, so two concurrent claimants could both believe they had won).
     """
 
-    try:
-        current_text = ticket_path.read_text(encoding="utf-8")
-    except OSError as error:
-        return {"error": f"unreadable ticket: {error}"}
+    current_text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return failure
     if current_text != prior_text:
         return {"error": "ticket changed since read; lost the claim race, retry"}
     data = _parse_frontmatter(prior_text)
@@ -2542,7 +2639,9 @@ def _cmd_claim(rest):
     loaded = _load_ticket(ticket_path)
     if "error" in loaded:
         return {"error": loaded["error"]}
-    prior_text = ticket_path.read_text(encoding="utf-8")
+    prior_text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return failure
     now = datetime.now(timezone.utc)
     result = _do_claim(ticket_path, prior_text, claimed_by, now)
     if "error" in result:
@@ -2565,7 +2664,9 @@ def _cmd_set_status(rest):
     ticket_path = tickets_root / run / f"{ticket_id}.md"
     if not ticket_path.is_file():
         return {"error": f"ticket not found: {run}/{ticket_id}"}
-    text = ticket_path.read_text(encoding="utf-8")
+    text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return failure
     updated = _set_frontmatter_field(text, "status", status)
     ticket_path.write_text(updated, encoding="utf-8")
     return {"set_status": {"run": run, "id": ticket_id, "status": status}}
@@ -2599,10 +2700,10 @@ def _cmd_packet(rest):
     loaded = _load_ticket(ticket_path)
     if "error" in loaded:
         return {"error": loaded["error"]}
-    try:
-        sections = _sections(ticket_path.read_text(encoding="utf-8"))
-    except OSError as error:
-        return {"error": f"unreadable ticket: {error}"}
+    text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return failure
+    sections = _sections(text)
 
     executor = (loaded.get("executor") or "").strip().strip("`")
     missing = []
@@ -2776,10 +2877,9 @@ def _cmd_result(rest):
     if file_arg is not None:
         # read from the caller's own workspace, while the ticket written is
         # the main checkout's — that split is the point of this subcommand
-        try:
-            body = Path(file_arg).read_text(encoding="utf-8")
-        except OSError as error:
-            return {"error": f"unreadable body file: {error}"}
+        body, failure = _read_utf8(file_arg, "body file")
+        if failure is not None:
+            return failure
     else:
         body = text_arg
     tickets_root = _tickets_root()
@@ -2788,8 +2888,10 @@ def _cmd_result(rest):
     ticket_path = tickets_root / run / f"{ticket_id}.md"
     if not ticket_path.is_file():
         return {"error": f"ticket not found: {run}/{ticket_id}"}
+    text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return failure
     try:
-        text = ticket_path.read_text(encoding="utf-8")
         # Rendered before the overwrite guard reads anything, and written
         # after it: a ticket this writer cannot write safely is refused as
         # such whatever flags were passed, and the guard never reports on a
@@ -2800,8 +2902,6 @@ def _cmd_result(rest):
         rendered = _write_section(text, canonical, body, append)
     except TicketFormatError as error:
         return {"error": f"{error}. ticket: {ticket_path}"}
-    except OSError as error:
-        return {"error": f"unreadable ticket: {error}"}
     prior = _section_body(text, canonical)
     if prior and not append and not replace:
         # contracts/worklog.md's closing law, read across to the ticket the
@@ -2862,10 +2962,8 @@ def _run_tickets(run: str):
     items = []
     for path in sorted(run_dir.glob("*.md")) if run_dir.is_dir() else []:
         loaded = _load_ticket(path)
-        try:
-            loaded["sections"] = _sections(path.read_text(encoding="utf-8"))
-        except OSError:
-            loaded["sections"] = {}
+        text, failure = _read_utf8(path)
+        loaded["sections"] = {} if failure is not None else _sections(text)
         items.append(loaded)
     if not items:
         return None, {
@@ -2878,26 +2976,47 @@ def _executor_of(item: dict) -> str:
     return str(item.get("executor") or "").strip().strip("`").strip()
 
 
-def _root_ticket(items: list) -> dict:
-    """The run's root ticket, by SPEC-ticket-set.md §2's three rules.
+def _run_goal(items: list) -> tuple:
+    """``(ticket, kind)`` — the ticket this run's goal is read from.
 
-    The decomposer first, since that is what a root ticket *is*; then the
-    ticket no other depends on, which is the terminal of an instantiated
-    template; then the first id, so a directory of unrelated ad-hoc
-    tickets still renders a view rather than refusing one.
+    One decomposer and a subtree under it is a cut: the root ticket is the
+    goal, because the acceptance the run is graded on is the one it wrote.
+    A template is not that shape. Its stubs are top-level ids with edges
+    between them and several of them may be decomposers, and SPEC-ticket-
+    set.md §2 makes the *terminal* stub's completion test the template's
+    done check — so reading the alphabetically-first decomposer rendered
+    the goal of a stub in the middle of the graph and called it the run's.
+
+    Which shape a run is, from the run: a stub graph is edges among
+    top-level ids, or more than one decomposer. Then the terminal, which is
+    the one ticket nothing depends on. A directory of unrelated ad-hoc
+    tickets falls through to the first id, so it renders a view rather than
+    refusing one.
     """
 
     ordered = sorted(items, key=lambda item: item["id"])
-    roots = [item for item in ordered if _executor_of(item) == ROOT_EXECUTOR]
-    if roots:
-        return roots[0]
+    ids = {item["id"] for item in ordered}
     depended = {
         dependency
         for item in ordered
         for dependency in (item.get("depends_on") or [])
     }
     free = [item for item in ordered if item["id"] not in depended]
-    return free[0] if len(free) == 1 else ordered[0]
+    roots = [item for item in ordered if _executor_of(item) == ROOT_EXECUTOR]
+    top_level = [item for item in ordered if "." not in item["id"]]
+    graph = len(roots) > 1 or any(
+        dependency in ids
+        for item in top_level
+        for dependency in (item.get("depends_on") or [])
+        if "." not in str(dependency)
+    )
+    if graph and len(free) == 1:
+        return free[0], "terminal"
+    if roots:
+        return roots[0], "root"
+    if len(free) == 1:
+        return free[0], "terminal"
+    return ordered[0], "root"
 
 
 def _quoted(body: str) -> list:
@@ -2928,7 +3047,7 @@ def _claim_order(items: list) -> list:
     )
 
 
-def _render_worklog(run: str, items: list, root: dict) -> str:
+def _render_worklog(run: str, items: list, root: dict, kind: str = "root") -> str:
     """The run view: contracts/worklog.md's fields, answered from tickets."""
 
     sections = root.get("sections") or {}
@@ -2943,7 +3062,8 @@ def _render_worklog(run: str, items: list, root: dict) -> str:
         "",
         "## goal",
         "",
-        f"Root ticket `{root['id']}` — executor `{_executor_of(root) or 'none'}`.",
+        f"{kind.capitalize()} ticket `{root['id']}` — executor "
+        f"`{_executor_of(root) or 'none'}`.",
         "",
         "Objective:",
         "",
@@ -3011,8 +3131,8 @@ def _render_worklog(run: str, items: list, root: dict) -> str:
     lines.extend(["", "## terminal", ""])
     if status in TERMINAL_STATES:
         lines.extend([
-            f"`{status}` — the root ticket `{root['id']}`'s status. A run "
-            "exits when its root ticket does.",
+            f"`{status}` — the {kind} ticket `{root['id']}`'s status. A run "
+            f"exits when its {kind} ticket does.",
             "",
         ])
     return "\n".join(lines)
@@ -3033,10 +3153,9 @@ def _write_rendered_worklog(run: str, markdown: str):
         return None, {"error": NO_SINK_ERROR}
     path = runs_root / run / WORKLOG_NAME
     if path.exists():
-        try:
-            existing = path.read_text(encoding="utf-8")
-        except OSError as error:
-            return None, {"error": f"unreadable worklog {path}: {error}"}
+        existing, failure = _read_utf8(path, f"worklog {path}")
+        if failure is not None:
+            return None, failure
         # a byte-order mark ahead of the marker still opens a rendered file
         if not existing.lstrip("\ufeff").startswith(WORKLOG_RENDER_MARKER):
             return None, {
@@ -3079,8 +3198,8 @@ def _cmd_worklog(rest):
     items, error = _run_tickets(run)
     if error is not None:
         return error
-    root = _root_ticket(items)
-    markdown = _render_worklog(run, items, root)
+    root, kind = _run_goal(items)
+    markdown = _render_worklog(run, items, root, kind)
     path = None
     if write:
         path, error = _write_rendered_worklog(run, markdown)
@@ -3090,6 +3209,7 @@ def _cmd_worklog(rest):
         "worklog": {
             "run": run,
             "root": root["id"],
+            "goal_kind": kind,
             "tickets": len(items),
             "path": str(path) if path is not None else None,
             "markdown": markdown,
@@ -3152,9 +3272,8 @@ def _notes_terminal(path: Path):
     survives untouched.
     """
 
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError:
+    text, failure = _read_utf8(path)
+    if failure is not None:
         return None
     for line in text.splitlines():
         if _is_terminal_heading(line):
@@ -3254,10 +3373,9 @@ def _cmd_run_state(rest):
             }
         if file_arg is not None:
             # read from the caller's own workspace, write at the main root
-            try:
-                body = Path(file_arg).read_text(encoding="utf-8")
-            except OSError as error:
-                return {"error": f"unreadable body file: {error}"}
+            body, failure = _read_utf8(file_arg, "body file")
+            if failure is not None:
+                return failure
         else:
             body = text_arg
     elif file_arg is not None or text_arg is not None:
@@ -3461,10 +3579,9 @@ def _cmd_improvement(rest):
             }
         if file_arg is not None:
             # read from the caller's own workspace, write in the sink
-            try:
-                body = Path(file_arg).read_text(encoding="utf-8")
-            except OSError as error:
-                return {"error": f"unreadable body file: {error}"}
+            body, failure = _read_utf8(file_arg, "body file")
+            if failure is not None:
+                return failure
         else:
             body = text_arg
     elif file_arg is not None or text_arg is not None:

@@ -509,6 +509,53 @@ class TestNameResolution(_IsolatedTree):
         result = self._run()
         self.assertEqual([], self.unresolved(result.stdout))
 
+    def _write_named(self, relative: str, text: str):
+        """One file at `relative`, in a tree marked as the library."""
+
+        (self.tmp_path / "ARCHITECTURE.md").write_text("# Tiers\n", encoding="utf-8")
+        path = self.tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def test_every_checked_directory_is_checked(self):
+        """One case per directory the check reads, because the list was a
+        tuple of four names with one synthetic rules/ file behind it: dropping
+        "docs", "contracts" or "templates" from it failed nothing, and
+        compositions/ — where every template stub lives, each one naming its
+        executor — was never in it at all. A stub calling a deleted skill is
+        the exact failure this check exists for, and it was outside the
+        surface."""
+
+        self._write_skill("orch-real")
+        checked = (
+            "rules/synthetic.md",
+            "docs/synthetic.md",
+            "contracts/synthetic.md",
+            "templates/synthetic.md",
+            "README.md",
+            # recursive, all three: a stub, a nested reference, a pack
+            # reference and a skill reference are each a file the old
+            # non-recursive glob over four top-level directories never saw
+            "compositions/demo/00-step.md",
+            "compositions/references/protocol.md",
+            "packs/orch-synth-pack/references/craft.md",
+            "skills/kernel/orch-real/references/notes.md",
+        )
+        for relative in checked:
+            with self.subTest(relative):
+                path = self._write_named(relative, "The step is `orch-nothing`'s.\n")
+                try:
+                    result = self._run()
+                    reported = [
+                        line for line in result.stdout.splitlines()
+                        if "orch-nothing" in line and relative in line.replace("\\", "/")
+                    ]
+                    self.assertEqual(1, len(reported), result.stdout)
+                    self.assertEqual(1, result.returncode, result.stdout)
+                finally:
+                    path.unlink()
+
     def test_an_unbackticked_retired_name_is_history_and_not_a_finding(self):
         """DESIGN.md's supersession paragraphs name skills that were
         deleted. Plain text is the library's own way of saying `mentioned,
@@ -519,6 +566,116 @@ class TestNameResolution(_IsolatedTree):
         self._write_rule("1. Three shapes were skills (orch-fix, orch-evolve).\n")
         result = self._run()
         self.assertEqual([], self.unresolved(result.stdout))
+
+
+class TestDuplicationCorpus(_IsolatedTree):
+    """validate_cross_tier_duplication's corpus and its one licensed pair.
+
+    The check read packs, skills, rules, contracts and the host block —
+    compositions/ and docs/ were outside it, which is why seven templates
+    could copy a reference they were told to link, and two skills could
+    carry a byte-identical clause with the linter flagging each of them
+    against an innocent third file instead of against each other.
+    """
+
+    CLAUSE = "\n- The cut names the acceptance the executor is graded on.\n"
+
+    def _write_skill(self, name: str, body: str = "", tier: str = "kernel"):
+        skill_dir = self.tmp_path / "skills" / tier / name
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text(
+            f"---\nname: {name}\ndescription: a synthetic package\nrole: worker\n---\n"
+            f"Require: an input.\nNever: overreach.\nReturn: status; result.\n{body}",
+            encoding="utf-8",
+        )
+
+    def _write(self, relative: str, text: str):
+        path = self.tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+
+    def duplicates(self, stdout, *labels):
+        return [
+            line for line in stdout.splitlines()
+            if "near-duplicate" in line
+            and all(label in line.replace("\\", "/") for label in labels)
+        ]
+
+    def test_a_template_stub_restating_a_rule_is_reported(self):
+        self._write_skill("orch-real")
+        self._write("rules/synthetic.md", "# Rule\n" + self.CLAUSE)
+        self._write("compositions/demo/00-step.md", "# Stub\n" + self.CLAUSE)
+        result = self._run()
+        self.assertTrue(
+            self.duplicates(result.stdout, "compositions/demo/00-step.md",
+                            "rules/synthetic.md"),
+            result.stdout,
+        )
+
+    def test_a_doc_restating_a_rule_is_reported(self):
+        self._write_skill("orch-real")
+        self._write("rules/synthetic.md", "# Rule\n" + self.CLAUSE)
+        self._write("docs/guide.md", "# Guide\n" + self.CLAUSE)
+        result = self._run()
+        self.assertTrue(
+            self.duplicates(result.stdout, "docs/guide.md", "rules/synthetic.md"),
+            result.stdout,
+        )
+
+    def test_two_skills_carrying_one_clause_are_reported_against_each_other(self):
+        """Same-tier pairs were skipped whole, on the reasoning that one
+        tier's internal business is the pack linter's — which is true of
+        packs and false of skills, where no per-tier linter runs at all. So
+        two byte-identical skill clauses were invisible while each was
+        flagged against some unrelated pack cell."""
+
+        self._write_skill("orch-real", self.CLAUSE)
+        self._write_skill("orch-other", self.CLAUSE, tier="instances")
+        result = self._run()
+        self.assertTrue(
+            self.duplicates(
+                result.stdout,
+                "skills/instances/orch-other/SKILL.md",
+                "skills/kernel/orch-real/SKILL.md",
+            ),
+            result.stdout,
+        )
+
+
+class TestLicensedCopies(unittest.TestCase):
+    """A copy the library licensed and named an owner for is not a finding.
+
+    templates/host-block.md carries rules/visibility.md §6's untrusted-data
+    clause on purpose — the block is the one text a host reads before it can
+    reach the rule — and names the owner one line above the copy. Counting
+    it as an unowned duplication asks for the copy to be deleted, which
+    would delete the licence with it."""
+
+    def test_the_visibility_copy_in_the_host_block_is_licensed(self):
+        pairs = {
+            frozenset((left, right)) for left, right, _ in validate.LICENSED_COPIES
+        }
+        self.assertIn(
+            frozenset(("rules/visibility.md", "templates/host-block.md")), pairs
+        )
+
+    def test_the_licensed_pair_is_not_reported_against_the_real_tree(self):
+        result = subprocess.run(
+            [sys.executable, str(VALIDATE)], capture_output=True, text=True,
+        )
+        # the reported file and the file it is reported against, not any
+        # line that happens to quote either path inside a clause
+        pair = ("rules/visibility.md", "templates/host-block.md")
+        reported = [
+            line for line in result.stdout.splitlines()
+            if "near-duplicate" in line
+            and any(
+                line.replace("\\", "/").startswith(f"WARN {owner}:")
+                and f"with {copy}:" in line.replace("\\", "/")
+                for owner, copy in (pair, pair[::-1])
+            )
+        ]
+        self.assertEqual([], reported, result.stdout)
 
 
 class TestLensAnchor(_IsolatedTree):

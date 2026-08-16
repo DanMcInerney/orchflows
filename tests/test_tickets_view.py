@@ -191,6 +191,52 @@ class WorklogViewTest(unittest.TestCase):
             self.assertIn("every unit ticket is complete", goal)
             self.assertNotIn("the first unit", goal)
 
+    def template_run(self) -> dict:
+        """An instantiated template: three top-level cuts and a chain, the
+        shape `compositions/benchmaker` instantiates to."""
+
+        return {
+            "00-acquire": ticket(
+                "00-acquire", executor="orch-decompose",
+                objective="the evidence is acquired"),
+            "01-design": ticket("01-design", deps="[00-acquire]",
+                                objective="the evaluation is designed"),
+            "02-materialize": ticket(
+                "02-materialize", executor="orch-decompose", deps="[01-design]",
+                objective="the benchmark is built"),
+            "03-qualify": ticket(
+                "03-qualify", executor="orch-decompose", deps="[02-materialize]",
+                objective="the benchmark is qualified"),
+            "05-measure": ticket("05-measure", deps="[03-qualify]",
+                                 objective="the measurement is recorded"),
+        }
+
+    def test_a_template_runs_goal_is_its_terminal_not_its_first_decomposer(self):
+        """SPEC-ticket-set.md §2: the terminal stub's completion test is the
+        template's done check. `_root_ticket` took the alphabetically-first
+        decomposer, which for a template with several cuts is a stub in the
+        middle of the graph — so the rendered goal was never the run's."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            make_run(sink, self.template_run())
+            payload = run_cmd("worklog", "testrun")["worklog"]
+            self.assertEqual("05-measure", payload["root"])
+            self.assertEqual("terminal", payload["goal_kind"])
+            goal = payload["markdown"].split("## iterations")[0]
+            self.assertIn("Terminal ticket `05-measure`", goal)
+            self.assertIn("the measurement is recorded", goal)
+            self.assertNotIn("the evidence is acquired", goal)
+
+    def test_a_single_cut_run_still_reads_its_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            make_run(sink, three_ticket_run())
+            payload = run_cmd("worklog", "testrun")["worklog"]
+            self.assertEqual("R", payload["root"])
+            self.assertEqual("root", payload["goal_kind"])
+            self.assertIn("Root ticket `R`", payload["markdown"])
+
     def test_the_root_is_the_decomposer_however_the_ids_sort(self):
         with tempfile.TemporaryDirectory() as tmp:
             sink = use_sink(Path(tmp))

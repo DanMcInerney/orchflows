@@ -1103,6 +1103,232 @@ class InstantiateTest(unittest.TestCase):
             self.assertIn("--run", payload["error"])
 
 
+SYNTH_PACK = """---
+name: orch-synth-pack
+description: a synthetic pack
+---
+
+| cell | binding |
+| --- | --- |
+| executor | `orch-tdd` |
+| required_spec_fields | target repository; standards owner by pointer; \
+acceptance as runnable checks — the commands that decide it |
+"""
+
+
+def make_pack(root: Path, name: str = "orch-synth-pack", text: str = SYNTH_PACK) -> Path:
+    """A stamped pack beside the template, as the library tree lays them out."""
+
+    path = root / "packs" / name
+    path.mkdir(parents=True, exist_ok=True)
+    (path / "SKILL.md").write_text(text, encoding="utf-8")
+    return path
+
+
+def root_stub(fixed_inputs: str, pack: str = "orch-synth-pack") -> str:
+    """A root stub: the decomposer, a stamped pack, and one Fixed inputs."""
+
+    return stub("A", executor="orch-decompose", scope="scratch/x.txt").replace(
+        "executor: orch-decompose", f"executor: orch-decompose\npack: {pack}"
+    ).replace("## Fixed inputs\n\nNone.", f"## Fixed inputs\n\n{fixed_inputs}")
+
+
+class RootStubSpecFieldsTest(unittest.TestCase):
+    """contracts/work-item.md: the stamped pack's `required_spec_fields` are
+    entries of the root ticket's `## Fixed inputs`, and orch-decompose's
+    Require rejects a root that lacks them.
+
+    That refusal fires inside the decomposer — after dispatch, in a child's
+    context, against a ticket already written. `packet` grades shape and
+    passes these through, so a template could ship a root stub its own
+    executor cannot run and nothing said so until an agent was spending on
+    it. The check belongs where the stub is admitted."""
+
+    def defects(self, directory: Path):
+        return [message for _, message in tickets_mod.template_defects(directory)]
+
+    def test_a_root_stub_naming_none_of_the_required_fields_is_a_defect(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            use_sink(tmp)
+            make_pack(tmp)
+            directory = make_template(tmp, {
+                "A": root_stub("- a directory of items to cut\n"),
+                "B": stub("B", "[A]"),
+            })
+            defects = self.defects(directory)
+            self.assertEqual(1, len(defects), defects)
+            for field in ("target repository", "standards owner by pointer",
+                          "acceptance as runnable checks"):
+                self.assertIn(field, defects[0])
+            self.assertIn("orch-synth-pack", defects[0])
+
+    def test_a_root_stub_naming_a_required_field_is_clean(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            use_sink(tmp)
+            make_pack(tmp)
+            directory = make_template(tmp, {
+                "A": root_stub("- the target repository: scripts/\n"),
+                "B": stub("B", "[A]"),
+            })
+            self.assertEqual([], self.defects(directory))
+
+    def test_a_non_root_stub_is_not_asked_for_the_fields(self):
+        """`pack` is optional on a unit stub and binds its workspace cell,
+        not a cut. Only the ticket a decomposition is cut from carries the
+        spec's fields."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            use_sink(tmp)
+            make_pack(tmp)
+            unit = stub("A", scope="scratch/x.txt").replace(
+                "executor: orch-tdd", "executor: orch-tdd\npack: orch-synth-pack"
+            )
+            directory = make_template(tmp, {"A": unit, "B": stub("B", "[A]")})
+            self.assertEqual([], self.defects(directory))
+
+    def test_a_placeholder_pack_is_graded_once_instantiation_fills_it(self):
+        """A stub whose pack is `{{pack}}` names no pack to read until a
+        caller supplies one — and then it does, so instantiate applies the
+        same check the tree's own grading applies."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            use_sink(tmp)
+            make_pack(tmp)
+            directory = make_template(tmp, {
+                "A": root_stub("- a directory of items to cut\n", pack="{{pack}}"),
+                "B": stub("B", "[A]"),
+            })
+            self.assertEqual([], self.defects(directory))
+
+            payload = run_cmd(
+                "instantiate", str(directory), "--run", "testrun",
+                "--set", "pack=orch-synth-pack", "--set", "target=scripts/a.py",
+            )
+            self.assertIn("error", payload)
+            self.assertIn("target repository", payload["error"])
+
+    def test_a_tree_with_no_packs_directory_grades_nothing(self):
+        """An installed copy of this script runs against a target repository
+        that carries no `packs/` at all. No pack to read is not a defect in
+        the stub."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            use_sink(tmp)
+            directory = make_template(tmp, {
+                "A": root_stub("- a directory of items to cut\n"),
+                "B": stub("B", "[A]"),
+            })
+            self.assertEqual([], self.defects(directory))
+
+
+class NonUtf8BytesTest(unittest.TestCase):
+    """Bytes that are not UTF-8 are the one shape of unreadable file that
+    crashed instead of reporting: `UnicodeDecodeError` is a `ValueError`, so
+    every `except OSError` around a read let it through as a traceback on a
+    channel whose whole contract is one JSON document. A ticket arrives from
+    a hand edit, a copy off another host, a template checked out with a
+    different encoding — none of which is exotic enough to earn a stack
+    trace."""
+
+    def corrupt(self, path: Path) -> Path:
+        # a lone 0xFF: valid latin-1, invalid UTF-8 at the first byte, so no
+        # decoder guesses its way past it
+        path.write_bytes(b"\xff" + path.read_bytes())
+        return path
+
+    def test_an_unreadable_ticket_is_a_named_error_from_list_and_packet(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = use_sink(tmp)
+            self.corrupt(place(sink, "testrun", "T1", GOOD_TICKET))
+
+            listed = run_cmd("list", "--run", "testrun")["tickets"]
+            self.assertEqual(1, len(listed), listed)
+            self.assertIn("unreadable ticket", listed[0]["error"])
+
+            done = run_full(tmp, "packet", "testrun", "T1", "--reply-to", "main")
+            self.assertEqual(1, done.returncode, done.stdout)
+            self.assertIn("unreadable ticket", json.loads(done.stdout)["error"])
+
+    def test_an_unreadable_stub_refuses_the_instantiation_by_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            use_sink(tmp)
+            directory = make_template(tmp, three_stubs())
+            self.corrupt(directory / "B.md")
+
+            done = run_full(
+                tmp, "instantiate", str(directory), "--run", "testrun",
+                "--set", "target=scripts/a.py",
+            )
+            self.assertEqual(1, done.returncode, done.stdout)
+            error = json.loads(done.stdout)["error"]
+            self.assertIn("unreadable stub B.md", error)
+
+    def test_an_unreadable_manifest_refuses_the_instantiation_by_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            use_sink(tmp)
+            directory = make_template(tmp, three_stubs())
+            self.corrupt(directory / "template.md")
+
+            done = run_full(
+                tmp, "instantiate", str(directory), "--run", "testrun",
+                "--set", "target=scripts/a.py",
+            )
+            self.assertEqual(1, done.returncode, done.stdout)
+            self.assertIn("unreadable template.md", json.loads(done.stdout)["error"])
+
+    def test_an_unreadable_body_file_refuses_the_amend(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = use_sink(tmp)
+            place(sink, "testrun", "T1", GOOD_TICKET)
+            body = tmp / "body.md"
+            body.write_text("a repaired objective\n", encoding="utf-8")
+            self.corrupt(body)
+
+            done = run_full(
+                tmp, "amend", "testrun", "T1", "--section", "Objective",
+                "--file", str(body),
+            )
+            self.assertEqual(1, done.returncode, done.stdout)
+            self.assertIn("unreadable body file", json.loads(done.stdout)["error"])
+
+    def test_an_unreadable_source_refuses_the_new(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            use_sink(tmp)
+            source = tmp / "source.md"
+            source.write_text(GOOD_TICKET, encoding="utf-8")
+            self.corrupt(source)
+
+            done = run_full(tmp, "new", "testrun", "T1", "--file", str(source))
+            self.assertEqual(1, done.returncode, done.stdout)
+            self.assertIn("unreadable ticket file", json.loads(done.stdout)["error"])
+
+    def test_an_unreadable_ticket_still_renders_the_run_view(self):
+        """`worklog` sections one file per ticket after `_load_ticket` has
+        already graded it; the second read had no guard of its own, so the
+        whole view died on one bad file."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = use_sink(tmp)
+            place(sink, "testrun", "T1", GOOD_TICKET)
+            self.corrupt(place(sink, "testrun", "T2", GOOD_TICKET.replace("id: T1", "id: T2")))
+
+            done = run_full(tmp, "worklog", "testrun")
+            payload = json.loads(done.stdout)
+            self.assertEqual(0, done.returncode, done.stdout)
+            self.assertNotIn("error", payload)
+
+
 class RefusalTextTest(unittest.TestCase):
     """A refusal is read where it is printed. Windows consoles decode this
     script's stdout as cp1252, so a non-ASCII character in a refusal reaches

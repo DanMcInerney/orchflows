@@ -53,6 +53,14 @@ FIX_SKILL = "fix"
 BUILD_SKILL = "orch-build"
 SKILL_TOOLS = frozenset({"Skill", "SlashCommand"})
 ANSWER_LINE_RE = re.compile(r"^ROUTE:\s*answer", re.IGNORECASE | re.MULTILINE)
+# Under `--claude-adapters four` an unadapted name has no adapter to invoke,
+# and the block's fallback is to read the library's own entry for it. That
+# read *is* the route; grading it as no route gave `four` a structural
+# misroute floor on every `named:` case however well the session behaved.
+BY_NAME_RE = re.compile(r"/by-name/([a-z0-9][a-z0-9-]*)/SKILL\.md", re.IGNORECASE)
+# The same name reached the other way: a template is instantiated from its
+# own directory under the installed library.
+TEMPLATE_RE = re.compile(r"/compositions/([a-z0-9][a-z0-9-]*)")
 
 
 # --- cases -------------------------------------------------------------
@@ -85,10 +93,18 @@ def load_cases(path) -> list:
 
 
 def _skill_name(block_input: dict) -> str | None:
+    """The name a Skill or SlashCommand event invokes.
+
+    `SlashCommand` carries the whole typed line in `command`, arguments
+    included, so the first whitespace token is the name and the rest is what
+    was said to it. Reading the line whole graded `/orch-build foo` as
+    `named:orch-build foo` -- a route class no case can expect.
+    """
+
     for key in ("skill", "name", "command"):
         value = block_input.get(key)
         if isinstance(value, str) and value.strip():
-            return value.strip().lstrip("/")
+            return value.split()[0].strip().lstrip("/")
     return None
 
 
@@ -102,15 +118,40 @@ def _classify_skill(skill: str) -> str:
     return f"named:{skill}"
 
 
+def _named_in(text: str) -> str | None:
+    """The library name a path in `text` reaches, or None.
+
+    The host block hands the session an installed library path, and on
+    Windows that path arrives with backslashes; separators are normalized so
+    one rule reads both hosts.
+    """
+
+    normalized = text.replace("\\", "/")
+    match = BY_NAME_RE.search(normalized)
+    if match:
+        return match.group(1)
+    if "instantiate" in normalized:
+        match = TEMPLATE_RE.search(normalized)
+        if match:
+            return match.group(1)
+    return None
+
+
 def _classify_bash(command: str) -> str | None:
-    # The host block hands the session an installed library path, and on
-    # Windows that path arrives with backslashes; separators are normalized
-    # so one rule reads both hosts.
-    normalized = command.replace("\\", "/")
-    if "tickets.py new" in normalized:
+    if "tickets.py new" in command.replace("\\", "/"):
         return "ticket"
-    if "instantiate" in normalized and "/fix" in normalized:
-        return "fix"
+    name = _named_in(command)
+    return _classify_skill(name) if name else None
+
+
+def _classify_read(block_input: dict) -> str | None:
+    """A read of the library's own entry for a name, from any input value."""
+
+    for value in block_input.values():
+        if isinstance(value, str):
+            match = BY_NAME_RE.search(value.replace("\\", "/"))
+            if match:
+                return _classify_skill(match.group(1))
     return None
 
 
@@ -132,7 +173,6 @@ def _decide(events: list) -> tuple[str, str | None, int]:
     """
 
     turns = 0
-    saw_tool_use = False
     saw_text = False
     for event in events:
         if event.get("type") == "result" and event.get("is_error"):
@@ -153,7 +193,6 @@ def _decide(events: list) -> tuple[str, str | None, int]:
                 continue
             if block.get("type") != "tool_use":
                 continue
-            saw_tool_use = True
             name = block.get("name")
             block_input = block.get("input") or {}
             if name in SKILL_TOOLS:
@@ -165,8 +204,16 @@ def _decide(events: list) -> tuple[str, str | None, int]:
                 observed = _classify_bash(command)
                 if observed:
                     return observed, f"Bash({command[:120]})", turns
-    if saw_text and not saw_tool_use:
-        return "answer", "text(final assistant text, no tool use)", turns
+            else:
+                observed = _classify_read(block_input)
+                if observed:
+                    return observed, f"{name}({observed})", turns
+    # A read is not a route. Six of the seven `answer` cases are settled by
+    # a file the block tells the session to open, so requiring an untouched
+    # transcript failed the cases that most needed one; what makes an answer
+    # an answer is that nothing route-bearing happened before it.
+    if saw_text:
+        return "answer", "text(final assistant text, no route-bearing tool use)", turns
     return UNROUTED, None, turns
 
 
@@ -286,6 +333,13 @@ def _run_case(
     except subprocess.TimeoutExpired as exc:
         stdout, returncode, timed_out = _captured_text(exc.stdout), 124, True
     graded = grade_transcript(stdout)
+    if timed_out:
+        # A session killed at the timeout never got to route: it is neither a
+        # route nor a misroute, which is what ERROR means here. Grading it
+        # `unrouted` put it in the misroute numerator and left `errors` at 0,
+        # so the "read no rate while errors is above 0" guard saw nothing.
+        graded["observed"] = ERROR
+        graded["first_event"] = f"timeout({timeout}s)"
     graded["returncode"] = returncode
     graded["timed_out"] = timed_out
     return graded
@@ -300,15 +354,25 @@ def run_benchmark(
     timeout: int,
     claude_invocation: list,
     root: Path,
+    max_budget_usd: float | None = None,
 ) -> list:
     records = []
+    # What has been spent, across every set and repeat. The bound is money,
+    # not case count: one long session is worth many short ones, and the
+    # thing an opt-in usage-consuming probe has to be able to stop is the
+    # next launch.
+    spent = 0.0
     for adapter_set in adapter_sets:
+        if max_budget_usd is not None and spent >= max_budget_usd:
+            break
         home = Path(root) / f"home-{adapter_set}"
         _render_install(adapter_set, home, timeout)
         env = _isolated_env(home)
         repo = _make_repo(Path(root) / f"repo-{adapter_set}", timeout)
         for index in range(1, repeat + 1):
             for case in cases:
+                if max_budget_usd is not None and spent >= max_budget_usd:
+                    return records
                 graded = _run_case(
                     claude_invocation, case["prompt"], repo, env, max_turns, timeout
                 )
@@ -326,6 +390,7 @@ def run_benchmark(
                 }
                 if graded["cost_usd"] is not None:
                     record["cost_usd"] = graded["cost_usd"]
+                    spent += graded["cost_usd"]
                 records.append(record)
     return records
 
@@ -333,15 +398,25 @@ def run_benchmark(
 # --- reporting ---------------------------------------------------------
 
 
-def _rate(total: int, matched: int) -> float:
-    return round((total - matched) / total, 4) if total else 0.0
+def _rate(counts: dict) -> float:
+    """Misroutes over the sessions that ran.
+
+    A session that failed before it could route is neither a route nor a
+    misroute, so it leaves the rate rather than entering its numerator --
+    otherwise the rate measures how often the CLI was reachable, which is
+    not the question SPEC-ticket-set.md §7.2 asks.
+    """
+
+    ran = counts["n"] - counts["errors"]
+    return round((ran - counts["matched"]) / ran, 4) if ran > 0 else 0.0
 
 
-def summarize(records) -> dict:
+def summarize(records, max_budget_usd: float | None = None) -> dict:
     summary: dict = {}
     for record in records:
         bucket = summary.setdefault(
-            record["adapter_set"], {"n": 0, "matched": 0, "unrouted": 0, "errors": 0, "by_class": {}}
+            record["adapter_set"],
+            {"n": 0, "matched": 0, "unrouted": 0, "errors": 0, "cost_usd": 0.0, "by_class": {}},
         )
         by_class = bucket["by_class"].setdefault(
             route_class(record["expected"]), {"n": 0, "matched": 0, "unrouted": 0, "errors": 0}
@@ -351,10 +426,15 @@ def summarize(records) -> dict:
             counts["matched"] += 1 if record["match"] else 0
             counts["unrouted"] += 1 if record["observed"] == UNROUTED else 0
             counts["errors"] += 1 if record["observed"] == ERROR else 0
+        bucket["cost_usd"] = round(bucket["cost_usd"] + (record.get("cost_usd") or 0.0), 6)
+    spent = sum(bucket["cost_usd"] for bucket in summary.values())
     for bucket in summary.values():
-        bucket["misroute_rate"] = _rate(bucket["n"], bucket["matched"])
+        bucket["misroute_rate"] = _rate(bucket)
         for by_class in bucket["by_class"].values():
-            by_class["misroute_rate"] = _rate(by_class["n"], by_class["matched"])
+            by_class["misroute_rate"] = _rate(by_class)
+        if max_budget_usd is not None:
+            bucket["max_budget_usd"] = max_budget_usd
+            bucket["budget_stopped"] = spent >= max_budget_usd
     return summary
 
 
@@ -382,6 +462,12 @@ def main(argv: list | None = None) -> int:
     parser.add_argument("--repeat", type=int, default=1)
     parser.add_argument("--max-turns", type=int, default=3)
     parser.add_argument("--timeout", type=int, default=240)
+    parser.add_argument(
+        "--max-budget-usd",
+        type=float,
+        default=None,
+        help="Stop launching new sessions once the summed cost_usd passes this.",
+    )
     parser.add_argument("--out", default=None, help="Write the full result JSON here.")
     args = parser.parse_args(argv)
 
@@ -404,11 +490,12 @@ def main(argv: list | None = None) -> int:
             timeout=args.timeout,
             claude_invocation=claude_invocation,
             root=Path(tmp),
+            max_budget_usd=args.max_budget_usd,
         )
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
-    summary = summarize(records)
+    summary = summarize(records, max_budget_usd=args.max_budget_usd)
     print(format_table(summary))
     if args.out:
         payload = {
@@ -416,6 +503,7 @@ def main(argv: list | None = None) -> int:
             "adapter_sets": list(adapter_sets),
             "repeat": args.repeat,
             "max_turns": args.max_turns,
+            "max_budget_usd": args.max_budget_usd,
             "records": records,
             "summary": summary,
         }

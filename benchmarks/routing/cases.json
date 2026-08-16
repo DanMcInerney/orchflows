@@ -141,37 +141,37 @@
   },
   {
     "id": "build-friction-summary-skill",
-    "prompt": "write a new orchflows skill that summarizes a run's friction entries",
+    "prompt": "use orch-build to write a new orchflows skill that summarizes a run's friction entries",
     "expected": "build",
-    "note": "A new library item; orch-build owns admission.",
+    "note": "Names orch-build outright, which is the only thing that makes build a route: the host block routes an unnamed request to answer, ticket or fix.",
     "distractor": false
   },
   {
     "id": "build-amend-tdd",
-    "prompt": "amend orch-tdd so it names its craft reference explicitly",
+    "prompt": "with orch-build, amend orch-tdd so it names its craft reference explicitly",
     "expected": "build",
-    "note": "An amendment to an existing skill still crosses the admission tests.",
+    "note": "Named again, and an amendment rather than a new item: naming is what decides the route, not what the change is to.",
     "distractor": false
   },
   {
     "id": "build-migration-pack",
     "prompt": "create a new domain pack for database-migration deliverables",
-    "expected": "build",
-    "note": "A pack is a library item; same route as a skill.",
+    "expected": "ticket",
+    "note": "A pack is a library item, but the prompt names nothing: under templates/host-block.md an unnamed request routes to a ticket, whose executor is orch-decompose when one executor cannot meet it. Expecting build here measured the benchmark's own invention.",
     "distractor": false
   },
   {
     "id": "build-project-custom-skill",
     "prompt": "make a project-scope custom skill for our deploy checklist",
-    "expected": "build",
-    "note": "Scoped custom item; orch-build owns the scope law too.",
+    "expected": "ticket",
+    "note": "Same: orch-build owns the scope law, and the block still routes an unnamed request to a ticket. What the ticket's executor reaches for is the ticket's business.",
     "distractor": false
   },
   {
     "id": "build-benchmark-contract",
     "prompt": "add a new contract for benchmark manifests under contracts/",
-    "expected": "build",
-    "note": "A T0 addition; the admission path, not a bare ticket.",
+    "expected": "ticket",
+    "note": "A T0 addition and unnamed, so a ticket. This is the pair to the two build cases above: same kind of work, different route, because one names orch-build and the other does not.",
     "distractor": false
   },
   {

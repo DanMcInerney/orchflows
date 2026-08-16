@@ -7,7 +7,7 @@ Reads one UTF-8 JSON request on stdin -- frozen policy, prior
 projection, settled public outcomes, remaining bound -- and writes one
 canonical `search-advance/v1` response plus LF to stdout. Invalid input
 exits 2 with empty stdout and one bounded diagnostic on stderr. The
-request and response shapes are `scripts/search_plan_protocol.md`'s.
+request and response shapes are `docs/search-plan-protocol.md`'s.
 
 Reads no repository state, writes no file, launches no process, uses no
 model, network, service, or non-standard-library dependency.
