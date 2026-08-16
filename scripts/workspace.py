@@ -19,7 +19,10 @@ failure mode, and every ``tickets.py`` call it makes is graded by parsing
 the returned payload, never by exit status.
 
 Exit codes:
-    0  success, including ``isolation: none`` or absent
+    0  success, including ``isolation: none`` or absent, and an item whose
+       effective write scope is empty -- authority over no path in any
+       workspace, which is the lane ``tickets.py packet`` emits no
+       establishment step for
     1  usage or internal error
     2  isolation-missing
     3  wrong-branch-point
@@ -469,6 +472,31 @@ def _cmd_check(rest):
         reported.update({ISOLATION_KEY: isolation, "verdict": "not required"})
         return {"check": reported}, EXIT_OK
     reported[ISOLATION_KEY] = isolation
+
+    # The other condition `tickets.py packet` puts the establishment step
+    # behind, read here as the same fact about the same item: an effective
+    # write scope of nothing is authority over no path in any workspace --
+    # such an item writes its own ticket sections, and those live in the
+    # sink, which no workspace holds -- so packet emits no `start` line for
+    # it and nothing ever stamped it. Graded before the `workspace_branch`
+    # read, because a lane given no establishment step cannot have run one,
+    # and refusing it at no-record refuses it for obeying its own packet.
+    # The stamp does not change the answer either way: a caller may still
+    # have told such a lane to run `start`, and grading that stamp refuses
+    # at isolation-missing or scope-breach an item authorized for nothing.
+    #
+    # Effective, never declared: the value `tickets._load_ticket` answers
+    # with is the cut's scope plus every recorded grant, so a lane a grant
+    # has since given paths to is graded in full again.
+    #
+    # Present and empty, never absent: the loader leaves an absent key
+    # absent, and packet refuses that ticket as an incomplete packet rather
+    # than dispatching it. Read alike here, an item that never declared
+    # what it may change would pass its join whatever it changed.
+    effective = data.get(WRITE_SCOPE_KEY)
+    if effective is not None and not tickets._scope_entries(effective):
+        reported.update({WRITE_SCOPE_KEY: [], "verdict": "not required"})
+        return {"check": reported}, EXIT_OK
 
     branch = str(data.get(BRANCH_KEY) or "").strip()
     if not branch:
