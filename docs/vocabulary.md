@@ -71,12 +71,13 @@ that needs a different meaning needs a different word.
   the ticket files the whole record — no worklog.
 - **unit** — one work item's execution by one context; the scope
   `rules/verification.md` §10 binds.
-- **spec** — the frozen statement of a deliverable per `contracts/spec.md`;
-  input to decomposition; `orch-spec` is its only editor, at intake —
-  every other reader, `orch-decompose` included while cutting, treats
-  it as frozen.
-- **exemplar** — an artifact a spec's `exemplars` field names to imitate;
-  field contract in `contracts/spec.md`; always non-normative.
+- **spec** — a run's frozen statement, carried by its root ticket per
+  `contracts/work-item.md`; input to decomposition; `orch-spec` is its
+  only editor, at intake — every other reader, `orch-decompose`
+  included while cutting, treats it as frozen.
+- **exemplar** — an artifact a root ticket's `## Fixed inputs` names to
+  imitate, by pointer plus each property the imitation must carry
+  (`contracts/work-item.md`); always non-normative.
 - **stamp / routing** — the spec field fixed at intake — the pack —
   which engines thereafter read blind.
 - **domain** — the deliverable's kind (code, content, research,
@@ -181,13 +182,15 @@ The benchmark pipeline has exactly four artifact roles:
 
 ## Delegation
 
-- **dispatch** — sending one delegation packet to one fresh child.
-- **delegation packet** — the one dispatch currency: objective, inputs,
-  authority, bounds, return contract, per `contracts/delegation.md`; an
-  optional one-shot `profile` overrides role resolution for the dispatch
-  naming it only.
+- **dispatch** — sending one delegation packet to one fresh child; a
+  packet-only dispatch is a ticket the dispatcher does not persist.
+- **delegation packet** — the one dispatch currency, and a ticket's own
+  dispatch fields: objective, inputs, authority, bounds, return
+  contract, reply_to, per `contracts/work-item.md`; an optional
+  one-shot `profile` overrides role resolution for the dispatch naming
+  it only.
 - **authority** — the write scope plus named excluded actions a dispatch
-  grants; per `contracts/delegation.md`.
+  grants; per `contracts/work-item.md`.
 - **write scope** — the capability naming exactly what a child may change,
   expressed in the pack's workspace semantics.
 - **attenuation** — a child's write scope is a subset of its caller's,
@@ -242,10 +245,12 @@ The benchmark pipeline has exactly four artifact roles:
 - **terminal state** — a closed exit; the run-level set is owned by
   `contracts/worklog.md`, ticket statuses by `contracts/work-item.md` —
   not the same set.
-- **worklog** — the run's persistent state file per `contracts/worklog.md`;
-  what makes fresh-context iteration and resumption possible.
+- **worklog** — the run view `tickets.py worklog` renders from the ticket
+  directory per `contracts/worklog.md`, never a second hand-written
+  file; what makes fresh-context iteration and resumption possible.
 - **handoff** — the suspension, resumption, or escalation record: a
-  ticket's `## Handoff` section, per `contracts/work-item.md`.
+  ticket's `## Handoff` section, per `contracts/work-item.md`; a
+  packet-only dispatch has none, and stops instead.
 
 ## Improvement
 

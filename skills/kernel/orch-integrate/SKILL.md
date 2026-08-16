@@ -7,7 +7,7 @@ role: none
 Require: one child return — the completed ticket per
 [work-item.md](../../../contracts/work-item.md), or a bare packet's
 contracted return fields with the originating
-[delegation packet](../../../contracts/delegation.md) — plus the
+[delegation packet](../../../contracts/work-item.md#dispatch) — plus the
 caller's own write scope.
 
 Grade by dispatch type: a work item takes the ticket grade — verification must cover every
@@ -15,7 +15,7 @@ frozen criterion at its stated identities, with independence per [rules/verifica
 (`authored-here` coverage rides `independence`: `gate` defers to the downstream gate, `checker` requires `checked_by`),
 needs-verify reachable; `suspended` is ticket-grade only, routing to resume from the ticket's `## Handoff`. A bare packet
 takes the packet grade — no completion test, so disposition stays accepted or rejected(blame) only; an exclusion-stop is
-adjudicated on its contracted return per [delegation.md](../../../contracts/delegation.md) — the caller re-dispatches with a ticket when resume matters.
+adjudicated on its contracted return per [work-item.md](../../../contracts/work-item.md#dispatch) — the caller re-dispatches with a ticket when resume matters.
 
 Check always: the returning child's name matches the ticket's `claimed_by` —
 a mismatch is rejected(child), a lapsed claim returning outside its bound,
@@ -25,7 +25,7 @@ has changed since it was produced; a non-empty write scope's return must
 name its changed artifacts, any unattributed change is rejected(child).
 Reuse covered, uninvalidated evidence; re-verify nothing it already proves.
 
-Classify by blame per the [delegation contract](../../../contracts/delegation.md) and record
+Classify by blame per the [work-item contract](../../../contracts/work-item.md#dispatch) and record
 the class in the worklog — the ticket when the run keeps none. The join alone writes terminal status (`tickets.py set-status`).
 
 Never: trust out-of-scope output; re-run a covered oracle; repair the result yourself; reach

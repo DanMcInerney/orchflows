@@ -1041,7 +1041,7 @@ status, changed_artifacts, verification.
 
 
 class TestPacket(unittest.TestCase):
-    """`packet` is the by-reference dispatch of contracts/delegation.md: the
+    """`packet` is the by-reference dispatch of contracts/work-item.md: the
     dispatcher gets a path and a refusal check, never the ticket body."""
 
     def make(self, tmp: Path, body: str = FULL_TICKET) -> Path:

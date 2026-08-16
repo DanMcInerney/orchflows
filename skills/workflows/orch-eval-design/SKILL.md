@@ -5,7 +5,7 @@ role: none
 ---
 
 Require: one complete
-[delegation packet](../../../contracts/delegation.md). Its `objective`
+[delegation packet](../../../contracts/work-item.md#dispatch). Its `objective`
 carries the target identity and intended observable outcome;
 `inputs` carry fixed evidence, source identities, source policy, and
 applicable pack craft, lens, and oracle references plus judgment

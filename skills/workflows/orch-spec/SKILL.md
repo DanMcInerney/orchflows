@@ -24,7 +24,7 @@ falling where the deliverable's kind changes, each successor's
 `evidence` citing its predecessor's result identity — a successor spec
 is written when that identity exists, not before.
 
-Draft each spec per [contracts/spec.md](../../../contracts/spec.md),
+Draft each spec per [contracts/work-item.md](../../../contracts/work-item.md#root-ticket),
 holding its two hard lines — the objective is one observable end
 state, never activities; a criterion no oracle can check is a spec
 defect to fix here, not the decomposer's slack — with exact nouns and

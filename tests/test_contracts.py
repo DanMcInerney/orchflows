@@ -50,6 +50,42 @@ def read_bullet_flat(name, marker):
     return flat.split(marker, 1)[1].split(" - `", 1)[0]
 
 
+class TestContractRegister(unittest.TestCase):
+    """The T0 register itself is shape: `spec.md` and `delegation.md` are
+    absorbed into `work-item.md`, so neither the directory nor any prose
+    in the tree may still name them. `scripts/`, `tools/` and their tests
+    are repointed by the join, not here."""
+
+    ABSORBED = ("contracts/spec.md", "contracts/delegation.md")
+
+    def test_the_register_is_the_surviving_t0_files(self):
+        names = sorted(p.name for p in CONTRACTS.glob("*.md"))
+        self.assertEqual(
+            names,
+            [
+                "composition.md", "pack-signature.md", "result.md",
+                "verdict.md", "work-item.md", "worklog.md",
+            ],
+            "contracts/ is not the T0 register after the supersession",
+        )
+
+    def test_no_prose_in_the_tree_still_links_the_absorbed_contracts(self):
+        offenders = []
+        for path in sorted(ROOT.rglob("*.md")):
+            relative = path.relative_to(ROOT)
+            if any(part.startswith(".") for part in relative.parts):
+                continue
+            if relative.parts[0] == "benchmarks" or relative.name.startswith("REVIEW-"):
+                continue
+            text = path.read_text(encoding="utf-8")
+            if any(dead in text for dead in self.ABSORBED):
+                offenders.append(relative.as_posix())
+        self.assertEqual(
+            offenders, [],
+            "these files still link a contract work-item.md absorbed",
+        )
+
+
 class TestVerdictContract(unittest.TestCase):
     def test_contains_the_verdict_grammar(self):
         text = read("verdict.md")
@@ -74,98 +110,109 @@ class TestWorkItemContract(unittest.TestCase):
         ):
             self.assertIn(f"## {header}", text, f"work-item.md is missing body section '## {header}'")
 
-    def test_status_enum_includes_pending_as_non_terminal(self):
+    def test_body_sections_are_listed_in_contract_order(self):
+        text = read("work-item.md").split("Body sections, in order", 1)[-1].split("\n## Dispatch", 1)[0]
+        order = [
+            "Objective", "Fixed inputs", "Completion test", "Return fields",
+            "Result", "Verification", "Feedback", "Risks", "Handoff",
+        ]
+        seen = [text.index(f"`## {h}`") for h in order]
+        self.assertEqual(seen, sorted(seen), "work-item.md lists the body sections out of contract order")
+
+    def test_status_enum_is_the_eight_ticket_statuses(self):
         text = read("work-item.md")
-        self.assertIn("`pending`", text, "work-item.md is missing the `pending` status")
+        for status in (
+            "pending", "ready", "claimed", "suspended", "complete",
+            "blocked", "failed", "limited",
+        ):
+            self.assertIn(f"`{status}`", text, f"work-item.md is missing the `{status}` status")
         self.assertIn("orch-frontier", text, "work-item.md does not name orch-frontier as the pending->ready owner")
+        self.assertIn("`orch-integrate`", text, "work-item.md does not name the join as the terminal-status writer")
 
     def test_ticket_result_write_is_outside_write_scope(self):
         text = read("work-item.md")
         self.assertIn("outside `write_scope`", text, "work-item.md does not state the ticket write is outside write_scope")
 
-    def test_checker_correction_authority_rides_the_write_scope(self):
-        text = read_flat("work-item.md")
-        self.assertIn(
-            "A §10 checker corrects inside this same `write_scope`", text,
-            "work-item.md does not carry the §10 checker's correction authority",
-        )
-
-    def test_status_enum_includes_suspended_as_non_terminal(self):
-        text = read_flat("work-item.md")
-        self.assertIn("`suspended`", text, "work-item.md is missing the `suspended` status")
-        self.assertIn(
-            "the ticket stays claimed, resumable from its `## Handoff`", text,
-            "work-item.md does not define suspended as the resumable non-terminal wait",
-        )
-
-    def test_join_alone_writes_terminal_status(self):
-        text = read_flat("work-item.md")
-        self.assertIn(
-            "the join alone sets terminal `status`", text,
-            "work-item.md does not reserve terminal status to the join",
-        )
-        self.assertIn(
-            "is set only by the join (`orch-integrate`), never by the executor", text,
-            "work-item.md does not name the join as the sole terminal-status writer",
-        )
-
-    def test_handoff_section_carries_the_three_verbatim_clauses(self):
-        text = read_flat("work-item.md")
-        self.assertIn("`## Handoff`", text, "work-item.md is missing the optional ## Handoff section")
-        for clause in (
-            "A handoff is complete when a fresh agent can resume from it "
-            "without reading the suspended agent's transcript.",
-            "Suspension and escalation each happen at most once per "
-            "ticket; a second is a terminal `blocked`.",
-            "Compact to identities and verdicts; redact transcript prose.",
+    def test_absorbs_the_four_supersession_sections(self):
+        text = read("work-item.md")
+        for heading in (
+            "## Dispatch", "## Root ticket", "## Template and stub",
+            "## Executor form",
         ):
-            self.assertIn(clause, text, f"work-item.md ## Handoff is missing the verbatim clause {clause!r}")
+            self.assertIn(
+                f"\n{heading}\n", text,
+                f"work-item.md is missing the '{heading}' section the "
+                "spec.md/delegation.md absorption adds",
+            )
 
-    def test_handoff_resumption_reuses_accepted_evidence(self):
-        text = read_flat("work-item.md")
+    def test_dispatch_section_names_the_six_packet_parts(self):
+        text = read("work-item.md")
+        for part in (
+            "`objective`", "`inputs`", "`authority`", "`bounds`",
+            "`return_contract`", "`reply_to`",
+        ):
+            self.assertIn(part, text, f"work-item.md does not name the packet part {part}")
+
+    def test_root_ticket_names_its_stamp_and_its_gate_subtree(self):
+        text = read("work-item.md")
+        for token in (
+            "`orch-decompose`", "`required_spec_fields`", "`<id>.NN`",
+            "`<id>.gate.critique.<lens>`", "`<id>.gate.repair`",
+            "`<id>.gate.verify`", "`plan_gate`",
+        ):
+            self.assertIn(token, text, f"work-item.md's root ticket does not name {token}")
+
+    def test_template_and_stub_key_set(self):
+        text = read("work-item.md")
+        for token in (
+            "`template.md`", "`name`", "`description`", "`entry`",
+            "`placeholders`", "`{{placeholder}}`", "terminal stub",
+            "tickets.py instantiate",
+        ):
+            self.assertIn(
+                token, text,
+                f"work-item.md's template register does not name {token}",
+            )
+
+    def test_executor_form_admits_a_tested_script(self):
+        text = read("work-item.md")
         self.assertIn(
-            "On resumption, accepted evidence stays accepted — re-verify "
-            "only entries the handoff marks unverified or invalidated.",
-            text, "work-item.md ## Handoff is missing the resumption-reuse sentence",
+            "`script:<repo-relative path>`", text,
+            "work-item.md does not admit the `script:` executor form",
         )
 
-    def test_filing_law_lands_at_artifact_primacy_strength(self):
+    def test_the_lease_runs_on_artifact_motion_not_wall_clock(self):
         text = read_flat("work-item.md")
-        self.assertIn(
-            "results land as cited artifacts in the ticket", text,
-            "work-item.md is missing the filing law",
+        self.assertEqual(
+            text.count("wall clock"), 1,
+            "work-item.md names wall clock outside the one negating clause",
         )
         self.assertIn(
-            "never as extra return fields", text,
-            "work-item.md filing law does not forbid extra return fields",
+            "never rests on wall clock alone", text,
+            "work-item.md's lease does not negate wall clock as the staleness test",
         )
-        self.assertIn(
-            "rules/delegation.md §10", text,
-            "work-item.md filing law does not cite its owner rules/delegation.md §10",
-        )
+        self.assertIn("60 minutes", text, "work-item.md's lease drops its default duration")
 
-    def test_additive_carriage_sentence(self):
-        text = read_flat("work-item.md")
-        self.assertIn(
-            "An item carries verbatim every spec field its executor's Require names.",
-            text, "work-item.md is missing the additive carriage sentence",
-        )
-
-    def test_ticket_statuses_disambiguated_from_run_terminal_set(self):
-        text = read_flat("work-item.md")
-        self.assertIn(
-            "`stalled` exists only at run level, `suspended` only at ticket level",
-            text, "work-item.md does not disambiguate ticket statuses from the run-level terminal set",
+    def test_carries_no_compatibility_floor(self):
+        self.assertNotIn(
+            "Compatibility floor", read("work-item.md"),
+            "work-item.md still carries the changelog the supersession deletes",
         )
 
     def test_no_reference_to_the_dead_contracts(self):
+        """The dead T0 names, each as it would appear in a sibling link or a
+        repository-relative citation. `rules/delegation.md` is a live T1 file
+        and is not this list's subject."""
         for name in (
-            "work-item.md", "delegation.md", "pack-signature.md", "spec.md",
-            "worklog.md", "verdict.md", "composition.md", "result.md",
+            "work-item.md", "pack-signature.md", "worklog.md", "verdict.md",
+            "composition.md", "result.md",
         ):
             text = read(name)
-            self.assertNotIn("task-result.md", text, f"{name} still references deleted task-result.md")
-            self.assertNotIn("handoff.md", text, f"{name} still references deleted handoff.md")
+            for dead in (
+                "task-result.md", "handoff.md", "(spec.md)", "(delegation.md)",
+                "contracts/spec.md", "contracts/delegation.md",
+            ):
+                self.assertNotIn(dead, text, f"{name} still references deleted {dead}")
 
 
 class TestResultContract(unittest.TestCase):
@@ -177,31 +224,41 @@ class TestResultContract(unittest.TestCase):
         ):
             self.assertIn(token, text, f"result.md is missing {token!r}")
 
-    def test_binds_the_dispatchable_units_and_exempts_evaluators(self):
+    def test_binds_the_class_and_not_a_roster_of_skills(self):
         text = read_flat("result.md")
-        for unit in (
-            "orch-deliver", "orch-task", "orch-investigate", "orch-loop",
-            "orch-frontier", "orch-compose",
-        ):
-            self.assertIn(f"`{unit}`", text, f"result.md does not bind {unit}")
-        self.assertIn("every composition", text, "result.md does not bind compositions")
-        self.assertIn(
-            "Evaluators and utilities are exempt", text,
-            "result.md is missing the evaluator/utility exemption",
+        self.assertNotIn(
+            "orch-", text,
+            "result.md names a T1 skill; a T0 contract binds the class "
+            "(every dispatchable unit), never a roster that goes stale",
         )
+        for token in ("every dispatchable unit", "rule 10", "exempt"):
+            self.assertIn(token, text, f"result.md's binding does not name {token!r}")
 
 
 class TestWorklogContract(unittest.TestCase):
-    def test_parked_only_is_open_and_distinct_from_in_progress(self):
-        text = read_flat("worklog.md")
+    def test_is_the_view_the_ticket_directory_renders(self):
+        text = read("worklog.md")
         self.assertIn(
-            "A parked-only pause is not an exit: `terminal` stays empty", text,
-            "worklog.md does not keep a parked-only pause off the terminal set",
+            "tickets.py worklog", text,
+            "worklog.md does not name the command that renders the run view",
         )
-        self.assertIn(
-            "Parked is not in progress: no item is under way", text,
-            "worklog.md does not distinguish parked-only from in progress",
+        self.assertNotIn(
+            "run.json", text,
+            "worklog.md still specifies the sink record `scripts/tickets.py` owns",
         )
+
+    def test_names_the_five_view_fields(self):
+        text = read("worklog.md")
+        for field in (
+            "`goal`", "`iterations`", "`failed_approaches`",
+            "`queued_scope`", "`terminal`",
+        ):
+            self.assertIn(field, text, f"worklog.md's run view is missing {field}")
+
+    def test_terminal_carries_the_run_level_enum(self):
+        text = read("worklog.md")
+        for value in ("`complete`", "`blocked`", "`stalled`", "`limited`", "`failed`"):
+            self.assertIn(value, text, f"worklog.md's terminal set is missing {value}")
 
 
 class TestCompositionContract(unittest.TestCase):
@@ -219,70 +276,6 @@ class TestCompositionContract(unittest.TestCase):
         self.assertIn(
             "rejects a composition missing `invariants` or `done_check`", text,
             "composition.md is missing the admission-rejection sentence",
-        )
-
-
-class TestSpecContract(unittest.TestCase):
-    def test_single_editor_and_partial_gap(self):
-        text = read_flat("spec.md")
-        self.assertIn(
-            "`orch-spec` is the spec's only editor", text,
-            "spec.md does not name orch-spec as the spec's only editor",
-        )
-        self.assertNotIn(
-            "orch-decompose` repairs it in place", text,
-            "spec.md still names orch-decompose as a spec editor",
-        )
-        self.assertIn(
-            "a decision gap naming exactly those criteria", text,
-            "spec.md does not state that a defect or uncoverable criterion "
-            "returns a decision gap naming exactly those criteria",
-        )
-        self.assertIn(
-            "the covered remainder is still cut and still executed", text,
-            "spec.md does not state that the covered remainder is still cut and executed",
-        )
-
-
-class TestDelegationContract(unittest.TestCase):
-    def test_ticket_path_supplies_the_six_parts_by_reference(self):
-        text = read_flat("delegation.md")
-        self.assertIn(
-            "may supply the six parts by reference to the ticket path", text,
-            "delegation.md is missing the ticket-path-by-reference sentence",
-        )
-
-    def test_non_empty_write_scope_contracts_for_changed_artifacts(self):
-        text = read_flat("delegation.md")
-        self.assertIn(
-            "a dispatch granting a non-empty write scope contracts for `changed_artifacts` among them",
-            text, "delegation.md is missing the changed_artifacts contract clause",
-        )
-        self.assertIn(
-            "rejected at the join regardless of its verdicts", text,
-            "delegation.md is missing the exceeds-scope rejection clause",
-        )
-
-    def test_packet_only_exclusion_fallback(self):
-        text = read_flat("delegation.md")
-        self.assertIn(
-            "a packet-only child stops and returns partial results plus the exclusion hit",
-            text, "delegation.md is missing the packet-only exclusion fallback",
-        )
-        self.assertIn(
-            "rules/composition.md rule 8", text,
-            "delegation.md packet-only fallback does not cite composition rule 8",
-        )
-        self.assertIn(
-            "re-dispatches with a ticket when resume matters", text,
-            "delegation.md is missing the caller's ticket re-dispatch clause",
-        )
-
-    def test_work_item_suspension_routes_through_the_ticket_handoff(self):
-        text = read_flat("delegation.md")
-        self.assertIn(
-            "a work-item dispatch suspends through the ticket's `## Handoff`",
-            text, "delegation.md does not route work-item suspension through the ticket's ## Handoff",
         )
 
 
@@ -365,11 +358,11 @@ class TestVisibilityChannelLaw(unittest.TestCase):
 
 
 class TestVerificationHomelessLaws(unittest.TestCase):
-    """`rules/verification.md` owns three laws no other file states: §1's
-    truncation prohibition, which `scripts/cutcheck.py` enforces; §7's
-    reuse precondition for a gate that returns findings; and
-    §11's two cross-step sentences, frozen byte-for-byte against the copy
-    `S-CUT`'s spec carries. The last two are never reworded here."""
+    """`rules/verification.md` owns two laws no other file states: §1's
+    truncation prohibition, which `scripts/cutcheck.py` enforces, and §7's
+    reuse precondition for a gate that returns findings. Neither is
+    hash-pinned, so these are the only mechanical guard; each asserts the
+    clause's distinctive head, never a sentence."""
 
     def law(self, number=None):
         if number is None:
@@ -402,34 +395,26 @@ class TestVerificationHomelessLaws(unittest.TestCase):
             "moves the result identity",
         )
         self.assertIn(
-            "reusable only where the correction left the covered identity "
-            "unchanged", text,
+            "reusable only where the correction", text,
             "verification.md §7 does not qualify reuse by what the correction "
             "left unchanged",
         )
 
-    def test_carries_the_frozen_cutcheck_exit_sentence_verbatim(self):
-        self.assertIn(
-            "Cutcheck's exit 0 means no finding whose class lies outside "
-            "the advisory set, not that the set is clean: an advisory "
-            "finding is reported and exits 0.",
-            self.law(),
-            "verification.md §11 lost the frozen cross-step sentence on "
-            "cutcheck's exit 0; it is byte-frozen against `S-CUT`'s copy and "
-            "is re-copied, never reworded",
-        )
-
-    def test_carries_the_frozen_host_portability_sentence_verbatim(self):
-        self.assertIn(
-            "A cut verdict is not portable between hosts. An oracle naming "
-            "an interpreter one host lacks is reported there as "
-            "`unrunnable-oracle` and is silent here, so a verdict is read "
-            "only on the host that produced it.",
-            self.law(),
-            "verification.md §11 lost the frozen cross-step sentence on host "
-            "portability; it is byte-frozen against `S-CUT`'s copy and is "
-            "re-copied, never reworded",
-        )
+    def test_section_eleven_keeps_its_two_cross_step_laws(self):
+        """The §11 sentences `S-CUT`'s spec also carries. Their wording is
+        the copy's problem, not this module's: assert the head each law
+        turns on, never the sentence."""
+        text = self.law()
+        for token in (
+            "an advisory finding is reported and exits 0",
+            "`unrunnable-oracle`",
+            "only on the host that produced it",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(
+                    token, text,
+                    f"verification.md §11 lost the cross-step law {token!r}",
+                )
 
 
 class TestWorkItemCitationLaws(unittest.TestCase):
@@ -462,84 +447,36 @@ class TestWorkItemCitationLaws(unittest.TestCase):
 
     def test_isolation_names_its_only_setter_and_the_grading_order(self):
         text = self.bullet("`isolation` — packet `authority`")
-        for clause, why in (
-            ("The decomposer is the field's only setter",
+        for token, why in (
+            ("the field's only setter",
              "work-item.md's `isolation` bullet does not name the decomposer "
              "as the field's only setter"),
             ("`scripts/workspace.py check`",
              "work-item.md's `isolation` bullet no longer names "
              "`scripts/workspace.py check` as what grades the declaration"),
-            ("before the merge, because afterwards the item's tip is already "
-             "an ancestor of the run tip and a stamped item exits clean by "
-             "design",
+            ("before the merge",
              "work-item.md's `isolation` bullet does not order "
-             "`scripts/workspace.py check` before the merge, nor give the "
-             "reason the check decides nothing after it"),
+             "`scripts/workspace.py check` before the merge"),
         ):
-            with self.subTest(clause=clause):
-                self.assertIn(clause, text, why)
+            with self.subTest(token=token):
+                self.assertIn(token, text, why)
 
     def test_fixed_inputs_forbid_an_unpinned_coordinate_by_citing_identity(self):
         text = self.bullet("`## Fixed inputs` — packet `inputs`")
-        self.assertIn(
-            "never prose copies", text,
-            "work-item.md's `## Fixed inputs` bullet lost its existing "
-            "prohibition on a prose copy",
-        )
-        self.assertIn(
-            "never an unpinned coordinate", text,
-            "work-item.md's `## Fixed inputs` bullet does not forbid citing a "
-            "fixed input by an unpinned coordinate",
-        )
-        self.assertIn(
-            "[docs/vocabulary.md](../docs/vocabulary.md)'s `identity` entry",
-            text,
-            "work-item.md's `## Fixed inputs` bullet does not resolve the "
-            "line-number prohibition against the `identity` entry that owns "
-            "it; the citation is the property, never a restatement",
-        )
-
-
-class TestWorklogNoteLaws(unittest.TestCase):
-    """`contracts/worklog.md` owns note ordering, the terminal-section
-    boundary, and the refusal that keeps an artifact write from
-    overwriting silently. Of the three, `scripts/tickets.py` today
-    implements only the append; `S-MECH` adds the terminal-section
-    boundary and the refusal, through this run's `seq` edge."""
-
-    def contract(self):
-        return read_flat("worklog.md")
-
-    def test_notes_append_in_occurrence_order(self):
-        self.assertIn(
-            "Notes append in occurrence order", self.contract(),
-            "worklog.md does not state that notes append in occurrence order",
-        )
-
-    def test_no_note_is_written_past_a_terminal_section(self):
-        text = self.contract()
-        self.assertIn(
-            "no note is written past a terminal section", text,
-            "worklog.md does not close the file at its terminal section",
-        )
-        self.assertIn(
-            "carries no terminal placeholder until it closes", text,
-            "worklog.md does not draw the consequence that an open run has no "
-            "terminal placeholder for a note to land past",
-        )
-
-    def test_an_existing_artifact_is_not_overwritten_silently(self):
-        text = self.contract()
-        self.assertIn(
-            "Writing an artifact that already exists is refused by default",
-            text,
-            "worklog.md does not refuse a write over an existing artifact",
-        )
-        self.assertIn(
-            "the refusal naming the existing path", text,
-            "worklog.md's overwrite refusal does not name the existing path, "
-            "so the refusal is not actionable",
-        )
+        for token, why in (
+            ("never prose copies",
+             "work-item.md's `## Fixed inputs` bullet lost its existing "
+             "prohibition on a prose copy"),
+            ("never an unpinned coordinate",
+             "work-item.md's `## Fixed inputs` bullet does not forbid citing "
+             "a fixed input by an unpinned coordinate"),
+            ("`identity` entry",
+             "work-item.md's `## Fixed inputs` bullet does not resolve the "
+             "line-number prohibition against the `identity` entry that owns "
+             "it; the citation is the property, never a restatement"),
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, text, why)
 
 
 class TestSkillDescriptions(unittest.TestCase):

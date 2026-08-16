@@ -1,7 +1,7 @@
 # Delegation
 
 1. Every dispatch carries a complete
-   [delegation packet](../contracts/delegation.md); a dispatch missing a
+   [delegation packet](../contracts/work-item.md#dispatch); a dispatch missing a
    part, or naming an identity that does not resolve where it says it
    is, is refused, not repaired.
 2. The inline rung is glue only: dispatch mechanics, joins, user
