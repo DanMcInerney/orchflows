@@ -1049,6 +1049,74 @@ class TestHelpAndVantage(unittest.TestCase):
             body = payload_of(done)
             self.assertIn("integrating checkout", body["error"])
             self.assertNotEqual("isolation-missing", body["verdict"])
+            # a refusal that names no way forward costs the caller the same
+            # search the exit-2 masquerade did
+            self.assertIn("--repo", body["error"])
+
+    def test_help_or_vantage_check_repo_grades_the_named_checkout(self):
+        """``--repo`` is the way out the vantage refusal names: the caller
+        stays where it is and git is run in the checkout it named."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            main, worktree, base = self._linked_workspace(Path(tmp))
+
+            done = run_workspace(
+                worktree, "check", "testrun", "T1", "--base", base,
+                "--repo", str(main),
+            )
+
+            self.assertEqual(0, done.returncode, done.stdout + done.stderr)
+            body = payload_of(done)["check"]
+            self.assertEqual("pass", body["verdict"])
+            self.assertEqual(["scratch/a.txt"], body["changed"])
+
+    def test_help_or_vantage_check_repo_answers_from_outside_any_repository(self):
+        """The grade follows the named checkout, not the caller's cwd. Run from
+        a directory git knows nothing about, the same call refuses without
+        ``--repo`` and passes with it -- so the flag moved where git ran."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, _, base = self._linked_workspace(tmp)
+            outside = tmp / "elsewhere"
+            outside.mkdir()
+
+            unaimed = run_workspace(outside, "check", "testrun", "T1", "--base", base)
+            self.assertEqual(1, unaimed.returncode, unaimed.stdout)
+            self.assertIn("git repository", payload_of(unaimed)["error"])
+
+            done = run_workspace(
+                outside, "check", "testrun", "T1", "--base", base,
+                "--repo", str(main),
+            )
+
+            self.assertEqual(0, done.returncode, done.stdout + done.stderr)
+            self.assertEqual("pass", payload_of(done)["check"]["verdict"])
+
+    def test_help_or_vantage_check_repo_without_a_path_is_refused_not_ignored(self):
+        """A flag whose value went missing must not fall back to the caller's
+        own checkout: that grades a checkout nobody named and reports pass."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            main, _, base = self._linked_workspace(Path(tmp))
+
+            done = run_workspace(main, "check", "testrun", "T1", "--base", base, "--repo")
+
+            self.assertEqual(1, done.returncode, done.stdout)
+            self.assertIn("--repo", payload_of(done)["error"])
+
+    def test_help_or_vantage_check_repo_naming_no_directory_is_refused_by_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, _, base = self._linked_workspace(tmp)
+            missing = str(tmp / "no-such-checkout")
+
+            done = run_workspace(
+                main, "check", "testrun", "T1", "--base", base, "--repo", missing,
+            )
+
+            self.assertEqual(1, done.returncode, done.stdout)
+            self.assertIn(missing, payload_of(done)["error"])
 
     def test_help_or_vantage_help_does_not_swallow_a_real_usage_error(self):
         # the neighbouring behavior this must not cost: a stray flag is still

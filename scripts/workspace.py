@@ -32,7 +32,12 @@ Exit codes:
 
 Subcommands:
     start <run> <id>
-    check <run> <id> --base <rev>
+    check <run> <id> --base <rev> [--repo <path>]
+
+``check`` grades from the integrating checkout, and refuses at code 6 when
+run from inside the workspace it was asked about. ``--repo <path>`` aims it
+at another checkout instead: every git call and the repository root both
+come from there, so the caller need not stand where the answer lives.
 
 ``--help``, on the script or on either subcommand, prints usage on stdout
 and exits 0. It is the one call whose stdout is not a JSON payload: the
@@ -115,7 +120,7 @@ CONTRACT = "contracts/work-item.md"
 # refusals and printed alone for ``<sub> --help``. Two spellings would drift.
 COMMAND_USAGE = {
     "start": "workspace.py start <run> <id>",
-    "check": "workspace.py check <run> <id> --base <rev>",
+    "check": "workspace.py check <run> <id> --base <rev> [--repo <path>]",
 }
 COMMAND_HELP = {
     "start": "from inside the workspace: record its branch and baseline into the ticket",
@@ -139,11 +144,18 @@ class Refused(Exception):
 # --- git, always the caller's own -------------------------------------------
 
 
+# The checkout every ``_git`` call runs in. ``None`` -- the caller's own tree,
+# and subprocess's own default, so an unaimed call is what it always was. Set
+# once by ``check --repo`` before its first git call and never after: a grade
+# whose facts came from two checkouts is not a grade.
+_GIT_CWD = None
+
+
 def _git(*args: str):
-    """Run git in the caller's own tree: never ``-C``, never a redirect."""
+    """Run git in the tree under grade: the caller's own, or ``--repo``'s."""
 
     completed = subprocess.run(
-        ["git", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        ["git", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=_GIT_CWD
     )
     return (
         completed.returncode,
@@ -194,18 +206,23 @@ def _graded(payload, what: str) -> dict:
     return payload
 
 
-def _locate(run: str, ticket_id: str):
+def _locate(run: str, ticket_id: str, where=None):
     """This workspace's repository root, and the ticket's one path in the sink.
 
     Two questions with two answers. The root says *which project this
     workspace is*, which is what grades isolation and write scope. The
     ticket lives in the user-scope sink ``scripts/state_root.py`` resolves,
     identical from every workspace in every repository.
+
+    ``where`` is the checkout to answer the first question about, defaulting
+    to the caller's own. ``check --repo`` passes the checkout it was aimed
+    at, so the root and the git calls come from the same tree.
     """
 
-    root = state_root.find_repo_root(Path.cwd())
+    start = Path(where) if where is not None else Path.cwd()
+    root = state_root.find_repo_root(start)
     if root is None:
-        raise Refused("not inside a git repository")
+        raise Refused(f"not inside a git repository: {start}")
     path = state_root.tickets_root() / run / f"{ticket_id}.md"
     if not path.is_file():
         raise Refused(f"ticket not found: {run}/{ticket_id}")
@@ -420,12 +437,28 @@ def _cmd_check(rest):
     not the presence of a linked tree the host may already have removed —
     are the verdict."""
 
+    global _GIT_CWD
     args = list(rest)
+    # read off the untouched argv: ``_extract_flag`` drops a valueless flag
+    # and returns the same ``None`` an absent one does, and the two must not
+    # read alike here -- an ignored ``--repo`` grades the caller's own
+    # checkout and reports pass for a checkout nobody named
+    aimed = "--repo" in rest
     base = _extract_flag(args, "--base")
+    repo = _extract_flag(args, "--repo")
     run, ticket_id = _positional(args, 2, "check")
     if base is None:
         raise Refused(f"check requires --base <rev>. {USAGE}")
-    root, path = _locate(run, ticket_id)
+    if aimed and repo is None:
+        raise Refused(f"--repo takes <path>. {USAGE}")
+    if repo is not None:
+        named = Path(repo).expanduser()
+        if not named.is_dir():
+            raise Refused(f"--repo '{repo}' is not a directory")
+        # before the first git call, and before ``_locate``, so every fact
+        # below is the named checkout's
+        _GIT_CWD = str(named.resolve())
+    root, path = _locate(run, ticket_id, _GIT_CWD)
     data = _graded(tickets._load_ticket(path), f"read {run}/{ticket_id}")
     reported = {"run": run, "id": ticket_id, "ticket": str(path)}
 
@@ -466,7 +499,8 @@ def _cmd_check(rest):
             raise Refused(
                 f"this checkout is the workspace under check: a linked worktree of "
                 f"{root} holding branch {branch!r}, which cannot grade itself. Run "
-                "check from the integrating checkout",
+                "check from the integrating checkout, or name that checkout with "
+                "--repo <path>",
                 EXIT_WRONG_VANTAGE,
             )
         raise Refused(
@@ -555,6 +589,11 @@ def main(argv=None) -> int:
             stream.reconfigure(errors="replace")
         except (AttributeError, ValueError):  # pragma: no cover - not a TextIOWrapper
             pass
+    # this process's git aim, held only for the call below: ``main`` is called
+    # more than once in one process by the tests, and an aim left set would
+    # grade the next call's item against the last call's checkout
+    global _GIT_CWD
+    _GIT_CWD = None
     arguments = list(sys.argv[1:] if argv is None else argv)
     handlers = {"start": _cmd_start, "check": _cmd_check}
     command = arguments[0] if arguments else None
