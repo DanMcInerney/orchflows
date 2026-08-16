@@ -3316,9 +3316,18 @@ PACKS_SEGMENT = "packs"
 # scripts/cutcheck.py reads `<worktree_root>/packs/<pack>/SKILL.md`, where the
 # root is the cut's own tree, handed in by the caller. That is a read of the
 # repository under grading, not of the tree the script was installed from, and
-# it already tolerates the tree's absence. It is the one module allowed a
-# string naming the tree, named here so a second one cannot arrive unnoticed.
-TREE_READING_SCRIPTS = {"cutcheck.py"}
+# it already tolerates the tree's absence.
+#
+# scripts/tickets.py joined it for the same reason and under the same terms:
+# `template_defects` and `instantiate` grade a root stub against the
+# `required_spec_fields` of the pack it stamps (contracts/work-item.md), and
+# `_packs_root` walks up from the *template directory the caller named* --
+# never from `__file__` -- returning None when no `packs/` stands beside it,
+# which is the ordinary answer for an installed copy. That is the discrimination
+# the test below keeps: a tree read anchored on the caller's argument is
+# allowed here; one anchored on the script's own location is not, and no
+# module resolves a pack-to-mechanism binding by reading anything.
+TREE_READING_SCRIPTS = {"cutcheck.py", "tickets.py"}
 
 
 def code_strings(source: str) -> list:
@@ -3378,9 +3387,24 @@ class NoLibraryTreeReadTest(unittest.TestCase):
     away, so this stays a true statement about a tree that already has one.
     """
 
-    def test_the_ticket_script_names_no_library_tree_path(self):
-        found = names_the_tree(TICKETS_PY.read_text(encoding="utf-8"))
-        self.assertEqual([], found, f"scripts/tickets.py names the tree: {found}")
+    def test_the_ticket_script_never_anchors_a_tree_read_on_its_own_location(self):
+        """The one thing the installed script cannot do is look beside
+        itself for a library. `_packs_root` walks up from the directory the
+        caller named, so a template graded where it sits finds the packs
+        beside it and an installed copy finds none — which is why the check
+        it feeds returns nothing rather than refusing every stub."""
+
+        source = TICKETS_PY.read_text(encoding="utf-8")
+        self.assertIn("def _packs_root", source)
+        packs_root = source.split("def _packs_root", 1)[1].split("\ndef ", 1)[0]
+        self.assertNotIn("__file__", packs_root)
+        self.assertIn("Path(directory)", packs_root)
+        # and the pack-to-mechanism table is still a literal, not a read
+        self.assertIsInstance(tickets_mod.PACK_WORKSPACE_MECHANISMS, dict)
+
+    def test_a_template_with_no_packs_beside_it_is_graded_without_one(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertIsNone(tickets_mod._packs_root(Path(tmp)))
 
     def test_no_module_outside_the_named_one_names_it(self):
         naming = {
