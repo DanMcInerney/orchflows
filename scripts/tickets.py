@@ -87,6 +87,7 @@ VALID_STATUSES = {
     "suspended",
     "complete",
     "blocked",
+    "stalled",
     "failed",
     "limited",
 }
@@ -95,7 +96,7 @@ VALID_STATUSES = {
 # body, done-check and bound in its sections) and orch-frontier (a
 # nested template) — per SPEC-ticket-set.md §3. The rest dispatch a
 # ticket's executor, so naming one is the call cycle
-# rules/composition.md §3 forbids — orch-task would spawn orch-task.
+# rules/composition.md §3 forbids — an engine would spawn itself.
 # The two sets together mirror skills/engines/; tests/test_tickets.py
 # holds them in sync, because an installed copy of this script has no
 # library tree to read the list from.
@@ -105,7 +106,7 @@ LOOP_EXECUTOR = "orch-loop"
 # It is an executor like any other -- claimable, dispatchable, graded the
 # same -- and differs only in what `packet` tells the child to do with it.
 SCRIPT_EXECUTOR_PREFIX = "script:"
-ENGINE_EXECUTORS = frozenset({"orch-compose", "orch-panel", "orch-task"})
+ENGINE_EXECUTORS = frozenset({"orch-compose", "orch-panel"})
 # contracts/verdict.md's `oracle_class`, and contracts/work-item.md's
 # optional oracle provenance. Both are closed sets, and this script is the
 # one place a criterion is graded against them.
@@ -150,8 +151,8 @@ SINK_CONVENTION = 2
 NO_SINK_ERROR = (
     "cannot resolve the state sink: no $ORCHFLOWS_STATE_HOME and no home directory"
 )
-# contracts/delegation.md: a work-item dispatch may supply the six packet
-# parts by reference to the ticket path. These are the parts that live in
+# contracts/work-item.md#dispatch: a work-item dispatch may supply the six
+# packet parts by reference to the ticket path. These are the parts that live in
 # a body section; authority and bounds live in frontmatter, and reply_to
 # is the dispatcher's own, never the item's.
 PACKET_SECTIONS = (
@@ -185,7 +186,7 @@ REQUIRED_ISOLATION = "required"
 # Each pack's `workspace` cell names its mechanism first, before the cell's
 # colon; this is that name, per pack. Only a git mechanism has a workspace
 # `scripts/workspace.py start` can establish, so only those packs are emitted
-# a step for. Mirrors packs/; tests/test_sync.py holds the two in sync,
+# a step for. Mirrors packs/; tests/test_validate.py holds the two in sync,
 # because an installed copy of this script runs against a target repository
 # with no library tree to read the cell from.
 PACK_WORKSPACE_MECHANISMS = {
@@ -205,16 +206,22 @@ GIT_WORKSPACE_MECHANISMS = frozenset({"git", "git plus render"})
 # and `.orch/friction/` is the logger's — neither is writable from here.
 RUN_STATE_TREES = ("runs", "research", "improvement", "handoffs")
 DEFAULT_RUN_STATE_TREE = "runs"
-# contracts/worklog.md's run-level `terminal` set, in the contract's order.
-# Deliberately not VALID_STATUSES: the contract states the two are not one
-# set — `stalled` exists only at run level, `suspended` only at ticket level.
+# contracts/work-item.md's terminal set, in the contract's order: the
+# subset of VALID_STATUSES the join alone writes, and the one set a run's
+# `terminal` (contracts/worklog.md) and a result envelope's `status`
+# (contracts/result.md) are read in. `pending`, `ready`, `claimed` and
+# `suspended` are the non-terminal remainder.
 TERMINAL_STATES = ("complete", "blocked", "stalled", "limited", "failed")
 WORKLOG_NAME = "worklog.md"
+# The free notes a run appends beside the view (contracts/worklog.md). A
+# second name rather than a second writer of one: `worklog --write` owns
+# `worklog.md`, `run-state --note/--terminal` owns this, and neither can
+# make the other's file unwritable.
+RUN_NOTES_NAME = "notes.md"
 # SPEC-ticket-set.md §1: the worklog is a view rendered from the ticket
 # directory, never a second hand-written file. This line heads a rendered
 # one, and is how `--write` tells a file it may replace from a file some
-# other writer owns — `run-state --note`'s append log carries no marker, so
-# it is never overwritten.
+# other writer owns.
 WORKLOG_RENDER_MARKER = "<!-- rendered by tickets.py worklog -->"
 # The view's own headings, in render order: contracts/worklog.md's field
 # names, each answered from the tickets rather than from prose.
@@ -230,8 +237,8 @@ ITERATION_ID_RE = re.compile(r"^.+\.iter\.\d+$")
 # The gate's last stub. A ticket depending on it is scope queued behind the
 # whole root subtree rather than work inside it.
 GATE_VERIFY_SUFFIX = ".gate.verify"
-# The heading that closes a worklog. Written only by `--terminal`, so a
-# worklog carries no terminal placeholder until it closes and the marker
+# The heading that closes a run's notes. Written only by `--terminal`, so
+# the file carries no terminal placeholder until it closes and the marker
 # means what it says: while it is absent the run is open.
 TERMINAL_HEADING = "## terminal"
 RESULT_USAGE = (
@@ -265,11 +272,11 @@ ISOLATION_VALUES = (REQUIRED_ISOLATION, "none")
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
 WORKLOG_USAGE = "worklog <run> [--write]"
 GATE_USAGE = (
-    "gate <run> <root-id> --lens <name>[,<name>] --write-scope <path>[,<path>] "
-    "[--acceptance-from <id>]"
+    "gate <run> <root-id> --lens <name>[,<name>] "
+    "[--write-scope <path>[,<path>]] [--acceptance-from <id>]"
 )
-# SPEC-ticket-set.md §2's three gate stub names, and the unit tickets they
-# close over: `<root>.NN`, the subtree a decomposition cut.
+# SPEC-ticket-set.md §2's three gate stub names, and the tickets they close
+# over: the root's whole cut subtree, gate stubs excepted.
 GATE_CRITIQUE_ID = "{root}.gate.critique.{lens}"
 GATE_REPAIR_ID = "{root}.gate.repair"
 GATE_VERIFY_ID = "{root}.gate.verify"
@@ -321,9 +328,10 @@ SUBCOMMAND_SUMMARY = {
     "placeholders filled, every stub graded, the graph checked for edges, "
     "cycles and its single terminal, then written all or none.",
     "gate": "Write one root ticket's gate stubs: a read-only critique per "
-    "lens over every `<root>.NN` unit, one repair holding the given scope "
-    "behind them all, and one verify carrying the acceptance verbatim. "
-    "Refused if the root has no units yet, or if a stub already exists.",
+    "lens over the root's whole cut subtree, one repair holding the scope "
+    "(the root's own, unless --write-scope names one) behind them all, and "
+    "one verify carrying the acceptance verbatim. Refused if the root has "
+    "no subtree yet, or if a stub already exists.",
     "list": "Every ticket in the tracker, or in one run, as summaries.",
     "ready": "The tickets whose dependencies are complete and whose claim is "
     "free or stale; promotes an eligible `pending` to `ready`.",
@@ -342,7 +350,7 @@ SUBCOMMAND_SUMMARY = {
     "run-state": "Write this run's state under the one user-scope sink, "
     f"in one of {list(RUN_STATE_TREES)} (default "
     f"{DEFAULT_RUN_STATE_TREE}); an artifact that already exists is refused "
-    f"without --replace. --terminal closes the worklog, one of "
+    f"without --replace. --terminal closes the run's notes, one of "
     f"{list(TERMINAL_STATES)}, after which no note is written.",
     "improvement": "Write one improvement evidence record under the sink: "
     "a named proposal file, or one appended line of the coverage record.",
@@ -1343,8 +1351,8 @@ def _parse_iso(value):
         return None
 
 
-def _cited_paths(section_text: str, base: Path) -> list:
-    """Every existing file one section cites, resolved from ``base``.
+def _cited_paths(section_text: str, write_scope=()) -> list:
+    """Every existing file one section cites, absolutely, inside ``write_scope``.
 
     A ``## Result`` names what changed by identity, and a file's identity is
     its path, so the candidates are the section's tokens: split on
@@ -1354,11 +1362,20 @@ def _cited_paths(section_text: str, base: Path) -> list:
     prose words would otherwise stat a same-named file in the caller's
     directory and read it as this ticket's artifact.
 
-    A relative citation resolves against the directory the call stands in,
-    which is the workspace whose motion is being asked about; an absolute
-    one is the citation that means the same thing from anywhere.
+    Only absolute citations count. A relative one names a different file
+    from every directory it is read in, and this reader is the frontier's,
+    not the executor's: under ``isolation: required`` the writer moves the
+    file in its own worktree while the reader stats the same relative path
+    in the main checkout -- a live lane read as dead, or a sibling's motion
+    counted as this one's.
+
+    A ticket with a ``write_scope`` counts only citations inside it, so a
+    Result naming a shared or always-moving path -- a log, the friction
+    stream, a sibling's output -- cannot keep a dead lane unreclaimable.
     """
 
+    scope = [_scope_segments(entry) for entry in (write_scope or [])]
+    scope = [entry for entry in scope if entry]
     found = []
     for token in RESULT_TOKEN_SPLIT_RE.split(section_text or ""):
         candidate = token.strip(RESULT_TOKEN_STRIP)
@@ -1368,10 +1385,11 @@ def _cited_paths(section_text: str, base: Path) -> list:
             continue
         try:
             path = Path(candidate)
-            if not path.is_absolute():
-                path = base / path
-            if path.is_file():
-                found.append(path)
+            if not path.is_absolute() or not path.is_file():
+                continue
+            if scope and not any(_inside_scope(path, entry) for entry in scope):
+                continue
+            found.append(path)
         except (OSError, ValueError):
             # an unstattable name is not this reader's error to report: it is
             # simply not evidence that anything moved
@@ -1379,12 +1397,37 @@ def _cited_paths(section_text: str, base: Path) -> list:
     return found
 
 
-def _last_motion(ticket_path: Path, result_text: str, base: Path):
+def _scope_segments(entry) -> list:
+    """One `write_scope` entry as path segments, separator-neutral."""
+
+    text = str(entry or "").strip().strip("`").strip()
+    return [part for part in text.replace("\\", "/").split("/") if part and part != "."]
+
+
+def _inside_scope(path: Path, segments: list) -> bool:
+    """Whether an absolute path names, or sits under, one scope entry.
+
+    Matched on whole segments rather than by string prefix, because a
+    `write_scope` is written relative to the workspace while the citation
+    is absolute: the two meet only where the entry's segments occur in the
+    path in order. Segment-wise, so `tests` never matches `tests-old` and
+    `a/bc` is never read as inside `a/b`.
+    """
+
+    parts = [part for part in str(path).replace("\\", "/").split("/") if part]
+    width = len(segments)
+    return any(
+        parts[start:start + width] == segments
+        for start in range(len(parts) - width + 1)
+    )
+
+
+def _last_motion(ticket_path: Path, result_text: str, write_scope=()):
     """The most recent write to the ticket or to what its ``## Result``
-    names, or ``None`` when nothing is readable."""
+    names inside ``write_scope``, or ``None`` when nothing is readable."""
 
     latest = None
-    for path in [ticket_path, *_cited_paths(result_text, base)]:
+    for path in [ticket_path, *_cited_paths(result_text, write_scope)]:
         try:
             stamp = path.stat().st_mtime
         except OSError:
@@ -1430,7 +1473,11 @@ def _claim_is_stale(ticket_path, text: str, data: dict, now: datetime) -> bool:
         data.get("claimed_at"),
         _parse_bound_minutes(data.get("bound")),
         now,
-        _last_motion(Path(ticket_path), _sections(text).get("Result", ""), _cwd()),
+        _last_motion(
+            Path(ticket_path),
+            _sections(text).get("Result", ""),
+            data.get("write_scope") or (),
+        ),
     )
 
 
@@ -2036,16 +2083,10 @@ def _cmd_gate(rest):
         if invalid is not None:
             return invalid
     lenses = _split_commas(lens_arg)
-    scope = _split_commas(scope_arg)
-    missing = [
-        name
-        for name, value in (("--lens", lenses), ("--write-scope", scope))
-        if not value
-    ]
-    if missing:
+    if not lenses:
         return {
-            "error": f"gate requires {', '.join(missing)}: one critique stub per "
-            "stamped lens, and the scope the repair holds. usage: " + GATE_USAGE
+            "error": "gate requires --lens: one critique stub per stamped "
+            "lens. usage: " + GATE_USAGE
         }
 
     items, error = _run_tickets(run)
@@ -2055,13 +2096,35 @@ def _cmd_gate(rest):
     root = by_id.get(root_id)
     if root is None:
         return {"error": f"root ticket '{root_id}' is not in run '{run}'"}
-    unit_pattern = re.compile(rf"^{re.escape(root_id)}\.\d+$")
-    units = sorted(item_id for item_id in by_id if unit_pattern.match(item_id))
+    # contracts/work-item.md: the root ticket's `write_scope` *is* the run's
+    # scope, and the repair holds that scope. Read from the root when the
+    # caller names none, so the one fact has one statement -- a caller that
+    # retypes it is a caller that can mistype it.
+    scope = (
+        _split_commas(scope_arg) if scope_arg is not None
+        else list(root.get("write_scope") or [])
+    )
+    if not scope:
+        return {
+            "error": f"gate requires --write-scope: the scope the repair "
+            f"holds, and root ticket '{root_id}' declares none to default "
+            "to. usage: " + GATE_USAGE
+        }
+    # The gate closes over the whole cut subtree, not `<root>.NN` alone: an
+    # assembly item the pack's assembly cell names carries no unit id shape,
+    # and a critique that does not depend on it can complete -- taking the
+    # root with it -- while assembly is still running.
+    gate_prefix = f"{root_id}.gate."
+    units = sorted(
+        item_id for item_id in by_id
+        if item_id.startswith(f"{root_id}.")
+        and not item_id.startswith(gate_prefix)
+    )
     if not units:
         return {
-            "error": f"root ticket '{root_id}' has no `{root_id}.NN` unit ticket "
-            "yet: a gate closes over a cut subtree, so there is nothing here for "
-            "a critique to read"
+            "error": f"root ticket '{root_id}' has no `{root_id}.` subtree "
+            "ticket yet: a gate closes over a cut subtree, so there is "
+            "nothing here for a critique to read"
         }
     acceptance_id = acceptance_from or root_id
     source = by_id.get(acceptance_id)
@@ -2302,7 +2365,8 @@ def _cmd_packet(rest):
     """Emit the by-reference dispatch packet for one ticket.
 
     The dispatcher never has to read the ticket body: this refuses a packet
-    missing a part and names it (contracts/delegation.md, orch-delegate), and
+    missing a part and names it (contracts/work-item.md#dispatch,
+    orch-delegate), and
     resolves the one absolute ticket path every worktree agrees on
     (contracts/work-item.md). Only the three values a ticket cannot carry are
     supplied here — reply_to belongs to the dispatch rather than the item, the
@@ -2729,24 +2793,29 @@ def _render_worklog(run: str, items: list, root: dict) -> str:
             f"- `{item['id']}` — status `{item.get('status') or 'none'}` — "
             f"waits behind `{str(dependency).strip()}`"
         )
-    lines.extend([
-        "",
-        "## terminal",
-        "",
-        f"`{root.get('status') or 'none'}` — the root ticket `{root['id']}`'s "
-        "status. A run exits when its root ticket does.",
-        "",
-    ])
+    # contracts/worklog.md: `terminal` is empty until the run exits. A root
+    # still `claimed` or `ready` is a run that has not exited, and printing
+    # that status here would answer "how did this run end" with a lifecycle
+    # state no reader may act on.
+    status = str(root.get("status") or "").strip()
+    lines.extend(["", "## terminal", ""])
+    if status in TERMINAL_STATES:
+        lines.extend([
+            f"`{status}` — the root ticket `{root['id']}`'s status. A run "
+            "exits when its root ticket does.",
+            "",
+        ])
     return "\n".join(lines)
 
 
 def _write_rendered_worklog(run: str, markdown: str):
     """``(path, error)`` — the view at contracts/worklog.md's own location.
 
-    A worklog this subcommand did not render is refused, not replaced: the
-    append log `run-state --note` writes carries no marker and is the only
-    record of lines no ticket holds. Refusing by marker rather than by
-    mtime or by name means the refusal survives a run that used both.
+    A worklog this subcommand did not render is refused, not replaced: a
+    file written by hand here is the only record of what it holds. The
+    free notes a run appends land beside it under RUN_NOTES_NAME, so this
+    path has one writer; refusing by marker rather than by mtime or by
+    name means the refusal survives a run that predates that split.
     """
 
     runs_root = _runs_root()
@@ -2819,7 +2888,7 @@ def _cmd_worklog(rest):
 
 
 def _is_terminal_heading(line: str) -> bool:
-    """Whether one line closes a worklog.
+    """Whether one line closes a run's notes.
 
     Case-insensitive, and the prefix must end the word: ``## terminal`` and
     ``## terminal: complete`` close, ``## terminals`` is an ordinary
@@ -2865,8 +2934,8 @@ def _append_one_line(path: Path, block: str) -> None:
             msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
 
 
-def _worklog_terminal(path: Path):
-    """The state a worklog closed with, or ``None`` while it is open.
+def _notes_terminal(path: Path):
+    """The state a run's notes closed with, or ``None`` while open.
 
     A read, never a read-modify-write: the note that follows is still one
     append in one call, so a line another workspace added in between
@@ -2896,15 +2965,16 @@ def _cmd_run_state(rest):
     explicit ``newline`` (``scripts/friction.py``) and writes one line in one
     call through ``_append_one_line``, which serialises that call on the
     platform where append is not itself atomic: two workspaces write one
-    repository's worklog concurrently and neither may read-modify-write it. ``--artifact`` is whole-file, which is
-    safe only because the run id partitions it.
+    run's notes concurrently and neither may read-modify-write them.
+    ``--artifact`` is whole-file, which is safe only because the run id
+    partitions it.
 
     One sink holds every project's runs, so a run says which project it is:
-    the first write stamps ``run.json`` beside the worklog, a later write
+    the first write stamps ``run.json`` beside the notes, a later write
     from another workspace of the same project appends itself to it, and a
     write from a *different* project is refused by name. Without that, two
-    projects that pick one run id interleave into one worklog and neither
-    can tell which line is whose.
+    projects that pick one run id interleave into one log and neither can
+    tell which line is whose.
 
     There is no fallback. A write that cannot reach that root is reported as
     an error and lands nowhere else: a run-state write that silently
@@ -2961,8 +3031,8 @@ def _cmd_run_state(rest):
             if terminal not in TERMINAL_STATES:
                 return {
                     "error": f"unknown terminal state '{terminal}': one of "
-                    f"{list(TERMINAL_STATES)}. A ticket status is not a run's "
-                    "terminal state (contracts/worklog.md)"
+                    f"{list(TERMINAL_STATES)}, the terminal set "
+                    "contracts/work-item.md owns"
                 }
         if (file_arg is None) == (text_arg is None):
             carries = (
@@ -3005,23 +3075,23 @@ def _cmd_run_state(rest):
     # run has one identity, not one per tree it happens to write into.
     identity_dir = runs_root / run
     if note is not None or terminal is not None:
-        # contracts/worklog.md: "no note is written past a terminal section".
-        # A closed worklog is closed once: a second close would leave two
-        # answers to "how did this run exit", and a note after one would be
-        # state recorded where no reader looks.
-        closed = _worklog_terminal(run_dir / WORKLOG_NAME)
+        # No note is written past a terminal section. A closed log is closed
+        # once: a second close would leave two answers to "how did this run
+        # exit", and a note after one would be state recorded where no
+        # reader looks.
+        closed = _notes_terminal(run_dir / RUN_NOTES_NAME)
         if closed is not None:
             attempt = "a note" if note is not None else f"a '{terminal}' close"
             return {
-                "error": f"this worklog closed '{closed}': no note is written "
+                "error": f"these notes closed '{closed}': no note is written "
                 f"past a terminal section, and {attempt} would be. "
-                f"worklog: {run_dir / WORKLOG_NAME}"
+                f"notes: {run_dir / RUN_NOTES_NAME}"
             }
     replaced = False
     if artifact is not None:
         target = run_dir / artifact
-        # contracts/worklog.md: "Writing an artifact that already exists is
-        # refused by default, the refusal naming the existing path." This is
+        # Writing an artifact that already exists is refused by default, the
+        # refusal naming the existing path. This is
         # the one whole-file write on a channel two workspaces share, so a
         # truncation here erases a sibling's evidence leaving no trace that
         # it existed. The run id partitions the path, which is what makes the
@@ -3055,7 +3125,7 @@ def _cmd_run_state(rest):
             with open(path, "w", encoding="utf-8", newline="\n") as handle:
                 handle.write(body)
         else:
-            path = run_dir / WORKLOG_NAME
+            path = run_dir / RUN_NOTES_NAME
             if note is not None:
                 block = note.rstrip("\r\n") + "\n"
             else:

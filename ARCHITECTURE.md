@@ -5,9 +5,9 @@ dependencies point. Terms: `docs/vocabulary.md`.
 
 ## Tiers and ownership
 
-- `contracts/` — T0, the narrow waist: eight pure data shapes (verdict,
-  work-item, delegation, spec, worklog, pack-signature, result,
-  composition). Hash-pinned by `tests/`; a shape change is breaking
+- `contracts/` — T0, the narrow waist: six pure data shapes (verdict,
+  work-item, worklog, pack-signature, result, composition).
+  Hash-pinned by `tests/`; a shape change is breaking
   even when prose meaning is unchanged.
 - `skills/` — T1, everything callable, in four sublayers: `kernel/`
   (primitives, call no skill, frozen), `engines/` (control flow),

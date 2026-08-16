@@ -199,7 +199,7 @@ class TestScriptNames(unittest.TestCase):
             self.assertEqual(0, noted.returncode, noted.stderr)
             payload = json.loads(noted.stdout)
             self.assertNotIn("error", payload)
-            worklog = sink / "runs" / "testrun" / "worklog.md"
+            worklog = sink / "runs" / "testrun" / "notes.md"
             self.assertEqual(str(worklog), payload["run_state"]["path"])
             self.assertEqual("installed\n", worklog.read_text(encoding="utf-8"))
 

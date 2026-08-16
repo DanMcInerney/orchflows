@@ -830,7 +830,7 @@ class TestStatusPresentation(unittest.TestCase):
     def test_the_map_covers_exactly_the_contract_status_set(self):
         statuses = contract_statuses()
 
-        self.assertEqual(8, len(statuses), statuses)
+        self.assertEqual(9, len(statuses), statuses)
         self.assertEqual(set(statuses), set(ui.STATUS_PRESENTATION))
         self.assertEqual(set(statuses), set(tickets_mod.VALID_STATUSES))
 
@@ -847,8 +847,8 @@ class TestStatusPresentation(unittest.TestCase):
         self.assertEqual(len(triples), len(set(triples)))
         # The word alone would make every triple unique, so the channel that
         # has to carry the state on its own is also checked on its own.
-        self.assertEqual(8, len({p.glyph for p in seen}))
-        self.assertEqual(8, len({p.word for p in seen}))
+        self.assertEqual(9, len({p.glyph for p in seen}))
+        self.assertEqual(9, len({p.word for p in seen}))
 
     def test_an_unknown_status_maps_to_the_named_fallback_and_never_raises(self):
         for value in ("", "fabulous", "COMPLETE", "<script>", "3", "complete "):
@@ -861,7 +861,7 @@ class TestStatusPresentation(unittest.TestCase):
             [ui.status_presentation(status).hue for status in contract_statuses()],
         )
 
-    def test_eight_statuses_collapse_onto_exactly_six_hues_two_of_them_shared(self):
+    def test_nine_statuses_collapse_onto_exactly_six_hues_two_of_them_shared(self):
         statuses = contract_statuses()
         hues = [ui.status_presentation(status).hue for status in statuses]
 
@@ -869,11 +869,20 @@ class TestStatusPresentation(unittest.TestCase):
         shared = sorted(hue for hue in set(hues) if hues.count(hue) > 1)
         self.assertEqual(2, len(shared), shared)
         for hue in shared:
-            pair = [s for s in statuses if ui.status_presentation(s).hue == hue]
-            self.assertEqual(2, len(pair), pair)
-            # A shared hue is legible only because the other channels differ.
-            self.assertEqual(2, len({ui.status_presentation(s).glyph for s in pair}), pair)
-            self.assertEqual(2, len({ui.status_presentation(s).border for s in pair}), pair)
+            group = [s for s in statuses if ui.status_presentation(s).hue == hue]
+            self.assertGreater(len(group), 1, group)
+            # A shared hue is legible only because the other channels differ,
+            # so every state on it differs from every other on both.
+            self.assertEqual(
+                len(group),
+                len({ui.status_presentation(s).glyph for s in group}),
+                group,
+            )
+            self.assertEqual(
+                len(group),
+                len({ui.status_presentation(s).border for s in group}),
+                group,
+            )
 
     def test_blocked_is_amber_and_failed_owns_red_alone(self):
         blocked = ui.status_presentation("blocked")
