@@ -1,11 +1,12 @@
 # BenchMaker
 
-The `benchmaker` composition builds one qualified
+The `benchmaker` template builds one qualified
 [benchmark](vocabulary.md#verification) for an opaque target with an
 observable outcome. Its
-[composition](../compositions/benchmaker.md) owns invocation; its
+[template](../compositions/benchmaker/template.md) owns the chain, its
+six stubs and what instantiation fills; its
 [protocol](../compositions/references/benchmaker-protocol.md)
-owns construction and qualification; its
+owns the construction craft no stub, rule or contract states; its
 [research charter](../compositions/references/benchmaker-research.md)
 owns acquisition's lane cut and synthesis shape; its
 [manifest](../compositions/references/benchmaker-manifest.md) owns the
@@ -30,12 +31,12 @@ length, outcome specificity, and a stricter correct oracle — never from a
 candidate's scores, and the coverage floor is never traded for speed.
 
 Benchmark execution produces fixed evidence. `orch-verify` decides required
-eligibility before `orch-judge` may create a
-[score card](vocabulary.md#verification) citing that same evidence; Judge
-never re-executes or substitutes it. Required failure never enters ranking.
-The `evolve` composition consumes the qualified benchmark at one revision and
-returns an [evolution result](vocabulary.md#verification) without calling
-BenchMaker or revising that benchmark.
+eligibility before it may score that same evidence against a scale; a
+[score card](vocabulary.md#verification) never re-executes or substitutes the
+evidence it cites. Required failure never enters ranking. The `evolve`
+composition consumes the qualified benchmark at one revision and returns an
+[evolution result](vocabulary.md#verification) without calling BenchMaker or
+revising that benchmark.
 
 ## Self-benchmarking
 

@@ -457,8 +457,21 @@ class TestCompositionTemplates(unittest.TestCase):
     check, passes every other check in the tree.
     """
 
-    # template name -> ({stub id: executor}, terminal stub id)
+    # template name -> ({stub id: executor}, terminal stub id). benchmaker's
+    # chain is `tests/test_benchmaker.py`'s to pin in full; what belongs here
+    # is that the tree's composition set is these directories.
     TEMPLATES = {
+        "benchmaker": (
+            {
+                "00-acquire": "orch-decompose",
+                "01-design": "orch-eval-design",
+                "02-materialize": "orch-decompose",
+                "03-qualify": "orch-decompose",
+                "04-audit": "orch-critique",
+                "05-measure": "orch-verify",
+            },
+            "05-measure",
+        ),
         "drift-canary": (
             {"00-run": "orch-frontier", "01-diff": "orch-verify"},
             "01-diff",
