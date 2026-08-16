@@ -1783,8 +1783,9 @@ def _parse_iso(value):
         return None
 
 
-def _cited_paths(section_text: str, write_scope=()) -> list:
-    """Every existing file one section cites, absolutely, inside ``write_scope``.
+def _cited_paths(section_text: str, write_scope=()):
+    """Every existing file one section cites, absolutely, inside
+    ``write_scope``, as ``(paths, unreadable)``.
 
     A ``## Result`` names what changed by identity, and a file's identity is
     its path, so the candidates are the section's tokens: split on
@@ -2933,7 +2934,7 @@ def _cmd_ready(rest):
                 except (OSError, ValueError) as error:
                     skipped.append({
                         "id": data["id"],
-                        "reason": f"eligible to promote to ready, and the "
+                        "reason": "eligible to promote to ready, and the "
                         f"write failed: {error}",
                     })
                     continue
@@ -2948,7 +2949,7 @@ def _cmd_ready(rest):
                     # that died mid-write.
                     skipped.append({
                         "id": data["id"],
-                        "reason": f"claimed, and unreadable at the moment its "
+                        "reason": "claimed, and unreadable at the moment its "
                         f"claim was graded: {failure['error']}",
                     })
                     continue
