@@ -3,11 +3,13 @@
 
 Enforces package anatomy, frontmatter, call-graph acyclicity, pack
 signature completeness, T0 hash pins, the composition contract, the
-result-envelope lead, and owned-literal sync (budgets, envelope units,
-friction categories) against their rules/ and contracts/ owners, per
-AGENTS.md, ARCHITECTURE.md, rules/composition.md,
-contracts/composition.md, contracts/result.md, and
-contracts/pack-signature.md. Stdlib only, no network.
+ticket-template contract (whose shape law is scripts/tickets.py's, read
+from there rather than restated), the result-envelope lead, and the
+duplication checks -- per pack cell and across tiers -- that replaced
+keeping copies in sync, per AGENTS.md, ARCHITECTURE.md,
+rules/composition.md, contracts/composition.md, contracts/result.md,
+contracts/work-item.md, and contracts/pack-signature.md. Stdlib only, no
+network.
 
 Exit 0 clean. Exit 1 with one line per violation:
     ERROR|WARN <file>: <message>
@@ -117,9 +119,15 @@ TERMINAL_TERM_RE = re.compile(r"stalled|limited|exit|terminal", re.IGNORECASE)
 # --- Result envelope (contracts/result.md) ---------------------------
 #
 # The bound dispatchable units lead their Return: with the envelope --
-# status, result identity, verification. ENVELOPE_UNITS is an owned
-# literal checked against contracts/result.md's Binding paragraph by
-# validate_sync. Mechanized as a first-clause vocabulary lint, tolerant
+# status, result identity, verification. ENVELOPE_UNITS names the units
+# contracts/result.md's Binding paragraph binds. Nothing holds the two
+# equal any more: the check that did is deleted in P2, because a second
+# spelling kept equal to its owner is still a second spelling
+# (SPEC-ticket-set.md §1). The residual risk is one-directional and small
+# -- a unit dropped from this list stops being checked rather than
+# silently passing a check it fails -- and the contract is hash-pinned, so
+# the paragraph cannot move without a supersession PR.
+# Mechanized as a first-clause vocabulary lint, tolerant
 # of prose ordering within that clause; a Return whose first clause
 # instead names the work-item carrier (the ticket) passes, because the
 # ticket's T0 shape carries all three fields -- rule 10's envelope-on-a-
@@ -451,231 +459,23 @@ def _validate_pack_carriage(pkg: dict, by_name: dict, diag: Diagnostics) -> None
             )
 
 
-# --- Sync (spec criterion 3) ------------------------------------------
-#
-# Owned literals get checked against their owner, never restated as a
-# second source: BODY_BUDGET/DESCRIPTION_BUDGET against
-# rules/composition.md §5, ENVELOPE_UNITS against contracts/result.md's
-# Binding paragraph, the friction-category list in
-# templates/host-block.md and AGENTS.md against rules/improvement.md
-# rule 1's closed set, and the same two copies' friction-completion
-# clause against rule 1's sentence. The owner files are prose, so
-# parsing below anchors on enum/number tokens rather than sentence
-# shape, per the carriage checks above.
-SYNC_RULE_HEADER_RE = re.compile(r"^(\d+)\.\s", re.MULTILINE)
-SYNC_DESC_BUDGET_RE = re.compile(r"description.{0,15}?(\d+)\s*chars")
-SYNC_KIU_BUDGET_RE = re.compile(r"kernel,\s*instances,\s*and\s*utilities\s+(\d+)\s+lines")
-SYNC_EW_BUDGET_RE = re.compile(r"engines\s+and\s+workflows\s+(\d+)")
-SYNC_PACK_BUDGET_RE = re.compile(r"pack SKILL\.md\s+(\d+)")
-SYNC_CLOSED_SET_RE = re.compile(r"closed set\s*[–—]\s*(.*?)\s*[–—]", re.DOTALL)
-SYNC_CATEGORY_TOKEN_RE = re.compile(r"^[a-z]+(?:-[a-z]+)*$")
-SYNC_FLAG_CATEGORY_RE = re.compile(r"--category.{0,10}?\(([^)]*)\)", re.DOTALL)
-SYNC_FRICTION_CLAUSE_RE = re.compile(
-    r"Logging friction is part of completing.*?failed\s+silently\.", re.DOTALL
-)
-SYNC_CLAUSE_CONNECTOR_RE = re.compile(r"[:–—]")
-
-
-def _sync_extract_numbered_rule(text: str, number: int):
-    """The raw text of rule `number` in a `rules/*.md` flat numbered
-    list -- from just after its own 'N. ' line-start marker up to (not
-    including) the next rule's marker."""
-    matches = list(SYNC_RULE_HEADER_RE.finditer(text))
-    for i, m in enumerate(matches):
-        if int(m.group(1)) == number:
-            end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-            return text[m.end():end]
-    return None
-
-
-def _sync_validate_budgets(composition_text: str, diag: Diagnostics) -> None:
-    file_label = rel(ROOT / "tools" / "validate.py")
-    owner_label = rel(ROOT / "rules" / "composition.md")
-    rule5 = _sync_extract_numbered_rule(composition_text, 5)
-    if rule5 is None:
-        diag.error(owner_label, "could not locate rule 5 (Anatomy/body budgets) to check BODY_BUDGET and DESCRIPTION_BUDGET against")
-        return
-    norm = re.sub(r"\s+", " ", rule5)
-    matches = {
-        "description budget": SYNC_DESC_BUDGET_RE.search(norm),
-        "kernel/instances/utilities budget": SYNC_KIU_BUDGET_RE.search(norm),
-        "engines/workflows budget": SYNC_EW_BUDGET_RE.search(norm),
-        "pack budget": SYNC_PACK_BUDGET_RE.search(norm),
-    }
-    missing = [name for name, m in matches.items() if m is None]
-    if missing:
-        diag.error(owner_label, f"rule 5 prose does not state: {', '.join(missing)} -- validate_sync ungrounded")
-        return
-    owner_budgets = {
-        "kernel": int(matches["kernel/instances/utilities budget"].group(1)),
-        "instances": int(matches["kernel/instances/utilities budget"].group(1)),
-        "utilities": int(matches["kernel/instances/utilities budget"].group(1)),
-        "engines": int(matches["engines/workflows budget"].group(1)),
-        "workflows": int(matches["engines/workflows budget"].group(1)),
-        "pack": int(matches["pack budget"].group(1)),
-    }
-    for tier, expected in owner_budgets.items():
-        actual = BODY_BUDGET.get(tier)
-        if actual != expected:
-            diag.error(
-                file_label,
-                f"BODY_BUDGET[{tier!r}] = {actual} but rules/composition.md §5 states {expected}",
-            )
-    owner_desc = int(matches["description budget"].group(1))
-    if DESCRIPTION_BUDGET != owner_desc:
-        diag.error(
-            file_label,
-            f"DESCRIPTION_BUDGET = {DESCRIPTION_BUDGET} but rules/composition.md §5 states {owner_desc}",
-        )
-
-
-SYNC_RESULT_BINDING_RE = re.compile(r"^Binding:(.*?)(?:\n[ \t]*\n|\Z)", re.MULTILINE | re.DOTALL)
-
-
-def _sync_validate_envelope_units(diag: Diagnostics) -> None:
-    """ENVELOPE_UNITS against contracts/result.md's Binding paragraph --
-    the one owner of which dispatchable units the envelope binds."""
-    result_path = ROOT / "contracts" / "result.md"
-    if not result_path.is_file():
-        return  # owner absent (isolated fixtures) -- not this check's tree
-    file_label = rel(ROOT / "tools" / "validate.py")
-    m = SYNC_RESULT_BINDING_RE.search(_read_source(result_path))
-    if m is None:
-        diag.error(
-            rel(result_path),
-            "could not locate the 'Binding:' paragraph naming the envelope-bound units to check ENVELOPE_UNITS against",
-        )
-        return
-    owner_units = set(CALL_TOKEN_RE.findall(m.group(1)))
-    if owner_units != set(ENVELOPE_UNITS):
-        diag.error(
-            file_label,
-            f"ENVELOPE_UNITS = {sorted(ENVELOPE_UNITS)} does not match the bound units named "
-            f"in contracts/result.md: {sorted(owner_units)}",
-        )
-
-
-def _sync_parse_closed_categories(rule_text: str):
-    norm = re.sub(r"\s+", " ", rule_text)
-    m = SYNC_CLOSED_SET_RE.search(norm)
-    if not m:
-        return None
-    categories = set()
-    for segment in m.group(1).split(","):
-        seg = re.sub(r"\([^)]*\)", "", segment).strip()
-        if SYNC_CATEGORY_TOKEN_RE.match(seg):
-            categories.add(seg)
-    return categories or None
-
-
-def _sync_parse_flag_categories(text: str):
-    norm = re.sub(r"\s+", " ", text)
-    m = SYNC_FLAG_CATEGORY_RE.search(norm)
-    if not m:
-        return None
-    categories = set()
-    for tok in m.group(1).split("|"):
-        tok = tok.strip()
-        if SYNC_CATEGORY_TOKEN_RE.match(tok):
-            categories.add(tok)
-    return categories or None
-
-
-def _sync_validate_category_copy(path: Path, owner_categories: set, diag: Diagnostics) -> None:
-    file_label = rel(path)
-    if not path.is_file():
-        diag.error(file_label, "friction category copy is missing")
-        return
-    copy_categories = _sync_parse_flag_categories(_read_source(path))
-    if copy_categories is None:
-        diag.error(file_label, "could not locate the '--category' friction category list to check against rules/improvement.md")
-        return
-    if copy_categories != owner_categories:
-        detail = []
-        missing = sorted(owner_categories - copy_categories)
-        extra = sorted(copy_categories - owner_categories)
-        if missing:
-            detail.append(f"missing {missing}")
-        if extra:
-            detail.append(f"unexpected {extra}")
-        diag.error(
-            file_label,
-            f"friction category list out of sync with rules/improvement.md §1 closed set: {'; '.join(detail)}",
-        )
-
-
-def _sync_normalize_clause(text: str) -> str:
-    """Whitespace- and connector-tolerant normal form for a prose
-    clause: line wraps and the colon/dash a sentence uses to join its
-    two halves are cosmetic, per rules/improvement.md rule 1's
-    friction-completion sentence vs. its templates/host-block.md and
-    AGENTS.md copies (one uses ':', the copies an em dash)."""
-    text = SYNC_CLAUSE_CONNECTOR_RE.sub(" ", text)
-    return re.sub(r"\s+", " ", text).strip()
-
-
-def _sync_validate_friction_clause_copy(path: Path, owner_clause: str, diag: Diagnostics) -> None:
-    file_label = rel(path)
-    if not path.is_file():
-        diag.error(file_label, "friction-completion clause copy is missing")
-        return
-    copy_text = _sync_normalize_clause(_read_source(path))
-    if owner_clause not in copy_text:
-        diag.error(
-            file_label,
-            "friction-completion clause out of sync with rules/improvement.md §1 "
-            "('Logging friction is part of completing the task ... failed silently.')",
-        )
-
-
-def validate_sync(diag: Diagnostics) -> None:
-    """Spec criterion 3: BODY_BUDGET/DESCRIPTION_BUDGET vs.
-    rules/composition.md §5; ENVELOPE_UNITS vs. contracts/result.md's
-    Binding paragraph; the friction-category list and the
-    friction-completion clause in templates/host-block.md and AGENTS.md
-    vs. rules/improvement.md rule 1's closed set and sentence. A drifted
-    copy gets aligned to its owner, never the reverse -- owners stay
-    frozen."""
-    _sync_validate_envelope_units(diag)
-
-    composition_path = ROOT / "rules" / "composition.md"
-    improvement_path = ROOT / "rules" / "improvement.md"
-    if not composition_path.is_file() or not improvement_path.is_file():
-        return  # owners absent (isolated fixtures exercising other checks) -- not this check's tree
-    composition_text = _read_source(composition_path)
-    improvement_text = _read_source(improvement_path)
-
-    _sync_validate_budgets(composition_text, diag)
-
-    rule1_improvement = _sync_extract_numbered_rule(improvement_text, 1)
-    owner_categories = _sync_parse_closed_categories(rule1_improvement) if rule1_improvement else None
-    if owner_categories is None:
-        diag.error(rel(improvement_path), "could not locate rule 1's friction-category closed set to check copies against")
-        return
-    for copy_path in (ROOT / "templates" / "host-block.md", ROOT / "AGENTS.md"):
-        _sync_validate_category_copy(copy_path, owner_categories, diag)
-
-    clause_m = SYNC_FRICTION_CLAUSE_RE.search(rule1_improvement)
-    if clause_m is None:
-        diag.error(rel(improvement_path), "could not locate rule 1's friction-completion clause to check copies against")
-        return
-    owner_clause = _sync_normalize_clause(clause_m.group(0))
-    for copy_path in (ROOT / "templates" / "host-block.md", ROOT / "AGENTS.md"):
-        _sync_validate_friction_clause_copy(copy_path, owner_clause, diag)
-
-
 # --- Friction log location ---------------------------------------------
 #
-# The Sync section's discipline over a second owner: scripts/state_root.py
-# owns where the friction log goes (ARCHITECTURE.md's scripts/ tier), so
-# the tree it resolves is read from `friction_root` and never restated
-# here. The sink root under it is rules/visibility.md §6's, checked
-# against the resolver by tests/test_validate.py, and no copy restates
-# it. What the copies do name is the tree: docs/vocabulary.md's
-# **friction log** term, and the blocked-case sentence in
-# templates/host-block.md and AGENTS.md -- a fallback the shell refused
-# inside a worktree has to land outside every worktree, so no copy may
-# send a hand-written file to the old location under `.orch/`.
+# A location, not a sentence: scripts/state_root.py owns where the friction
+# log goes (ARCHITECTURE.md's scripts/ tier), so the tree it resolves is
+# read from `friction_root` and never restated here. The sink root under it
+# is rules/visibility.md §6's, checked against the resolver by
+# tests/test_validate.py, and no copy restates it. What the copies name is
+# the tree: docs/vocabulary.md's **friction log** term, and the
+# blocked-case sentence in templates/host-block.md -- a fallback the shell
+# refused inside a worktree has to land outside every worktree, so no copy
+# may send a hand-written file to the old location under `.orch/`.
+#
+# One checked copy, not two. AGENTS.md carries the same sentence and P3
+# deletes it (SPEC-ticket-set.md P2-P3); requiring it here would make that
+# deletion break the compiler, and until it happens the duplication is
+# reported by validate_cross_tier_duplication rather than mandated.
+FRICTION_CHECKED_COPIES = ("templates/host-block.md",)
 FRICTION_OWNER = ROOT / "scripts" / "state_root.py"
 FRICTION_RESOLVER = "friction_root"
 FRICTION_IN_REPOSITORY = ".orch/"
@@ -781,8 +581,8 @@ def validate_friction_locations(diag: Diagnostics) -> None:
     if tree is None:
         return
     _friction_validate_term(tree, diag)
-    for copy_path in (ROOT / "templates" / "host-block.md", ROOT / "AGENTS.md"):
-        _friction_validate_fallback_copy(copy_path, tree, diag)
+    for name in FRICTION_CHECKED_COPIES:
+        _friction_validate_fallback_copy(ROOT / name, tree, diag)
 
 
 CONTRACTS_DIR = ROOT / "contracts"
@@ -1939,7 +1739,6 @@ def run_validation() -> Diagnostics:
     validate_templates(diag)
     validate_cross_package_links(packages, diag)
     validate_pins(diag)
-    validate_sync(diag)
     validate_friction_locations(diag)
     return diag
 
