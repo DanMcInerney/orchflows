@@ -111,6 +111,14 @@ EMPTY_NO_TYPE = "no agent type recorded"
 EMPTY_NO_DESCRIPTION = "no description recorded"
 EMPTY_NO_DEPTH = "no spawn depth recorded"
 
+# The one marker for the other thing: not absent, unread. Every EMPTY_ above
+# is a claim about what the sink holds, and rendering one of them because a
+# read failed states that claim on no evidence -- an empty ticket, a friction
+# month that never happened, zero events, no transcript root. This says which
+# it was, once, in the words every reader of these pages already knows the
+# shape of.
+DIAGNOSTIC_UNREADABLE = "could not be read"
+
 # `contracts/work-item.md`: `suspended` "stays claimed", so the lease keeps
 # running and elapsed-against-bound still measures something. Under every
 # other status the claim is not live and a growing meter would be a lie --
@@ -515,12 +523,14 @@ def parse_verification(body: str) -> dict:
 
 def read_ticket(path: Path) -> dict:
     """One ticket's presentation fields. An unreadable or malformed file
-    yields the same shape with empty values -- never an exception."""
+    yields the same shape with empty values -- never an exception -- and
+    carries ``unreadable`` so the page can say which of the two it was."""
 
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
+        unreadable = False
     except OSError:
-        text = ""
+        text, unreadable = "", True
     front = _parse_frontmatter(text)
     sections = split_sections(text)
     return {
@@ -538,6 +548,7 @@ def read_ticket(path: Path) -> dict:
         "depends_on": _sequence(front.get("depends_on")),
         "objective": sections.get("Objective", ""),
         "sections": sections,
+        "unreadable": unreadable,
         "path": str(path),
     }
 
@@ -709,9 +720,17 @@ DIAGNOSTIC_ID_COLLISION = "one id declared by two files"
 
 
 def identity_diagnostics(tickets) -> list:
-    """Every place a run's tickets disagree about their own identity."""
+    """Every place a run's tickets disagree about their own identity, and
+    every one the walk found and could not read."""
 
     diagnostics = [
+        "{0}: {1}{2}".format(
+            DIAGNOSTIC_UNREADABLE, ticket["file_id"], TICKET_SUFFIX
+        )
+        for ticket in tickets
+        if ticket.get("unreadable")
+    ]
+    diagnostics += [
         "{0}: {1} in {2}{3}".format(
             DIAGNOSTIC_ID_MISMATCH, ticket["id"], ticket["file_id"], TICKET_SUFFIX
         )
@@ -782,20 +801,26 @@ def _read_jsonl(text: str, entries: list) -> int:
 
 def read_friction(root) -> dict:
     """Every friction entry under ``root``, newest first, with a count of
-    the lines that could not be read as one."""
+    the lines that could not be read as one and the names of the month
+    files that could not be read at all."""
 
     directory = Path(root).joinpath(*FRICTION_DIR)
     entries = []
     skipped = 0
+    unreadable = []
     for path in sorted(directory.glob("*" + JSONL_SUFFIX)) if directory.is_dir() else ():
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
-            # Unreadable this poll; the next one tries again.
+            # Unreadable this poll; the next one tries again -- but a whole
+            # month dropping out of the feed with no note reads as a month
+            # with no friction in it, which is the one thing this log exists
+            # to disprove.
+            unreadable.append(path.name)
             continue
         skipped += _read_jsonl(text, entries)
     entries.sort(key=_stamp_order, reverse=True)
-    return {"entries": entries, "skipped": skipped}
+    return {"entries": entries, "skipped": skipped, "unreadable": unreadable}
 
 
 def read_events(root, run: str):
@@ -823,12 +848,13 @@ def read_events(root, run: str):
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         # Unreadable this poll; the next one tries again. Silence is the
-        # documented answer for an absent log, and this is not that.
-        return {"entries": [], "skipped": 0}
+        # documented answer for an absent log, and this is not that -- nor
+        # is "0 events", which is what an empty payload draws.
+        return {"entries": [], "skipped": 0, "unreadable": True}
     entries = []
     skipped = _read_jsonl(text, entries)
     entries.sort(key=_stamp_order, reverse=True)
-    return {"entries": entries, "skipped": skipped}
+    return {"entries": entries, "skipped": skipped, "unreadable": False}
 
 
 def active_claims(discovery: dict) -> list:
@@ -1623,9 +1649,12 @@ def discover_sessions(transcripts=None) -> dict:
         }
     root = Path(transcripts)
     try:
-        present = root.is_dir()
+        present, refused = root.is_dir(), False
     except OSError:
-        present = False
+        # "no transcript root at this path" is a fact about the path; a
+        # listing the host refused is a fact about this poll, and an
+        # operator can act on exactly one of them.
+        present, refused = False, True
     if not present:
         return {
             "root": root,
@@ -1633,7 +1662,7 @@ def discover_sessions(transcripts=None) -> dict:
             "projects": (),
             "sessions": [],
             "unaddressable": (),
-            "diagnostics": [],
+            "diagnostics": [DIAGNOSTIC_UNREADABLE] if refused else [],
             "empty": EMPTY_NO_TRANSCRIPTS,
         }
     projects = _project_directories(root)
@@ -1649,6 +1678,12 @@ def discover_sessions(transcripts=None) -> dict:
         for path in sorted(project.glob("*" + JSONL_SUFFIX)):
             identity = _stat_identity(path)
             if identity is None:
+                # A session the walk found and the path layer will not
+                # describe. Dropping the row silently leaves a shorter
+                # listing that looks complete.
+                diagnostics.append(
+                    "{0}: {1}".format(DIAGNOSTIC_UNREADABLE, path.name)
+                )
                 continue
             if not _safe_name(path.stem):
                 # The detail route looks a session up by this id and
@@ -2220,6 +2255,7 @@ def render_events(log) -> str:
     parts = [
         '<section class="events">\n<h2>events</h2>\n',
         '<p class="count">{0}</p>\n'.format(html.escape(counted)),
+        render_diagnostics([DIAGNOSTIC_UNREADABLE] if log.get("unreadable") else []),
     ]
     if entries:
         parts.append('<ul class="feed">\n')
@@ -2290,6 +2326,12 @@ def render_friction(log: dict) -> str:
     body = [
         "<h1>friction</h1>\n",
         '<p class="count">{0}</p>\n'.format(html.escape(counted)),
+        render_diagnostics(
+            [
+                "{0}: {1}".format(DIAGNOSTIC_UNREADABLE, name)
+                for name in log["unreadable"]
+            ]
+        ),
     ]
     if entries:
         body.append('<ul class="feed">\n')
@@ -2307,9 +2349,10 @@ def render_friction(log: dict) -> str:
                 )
             )
         body.append("</ul>\n")
-    elif not log["skipped"]:
-        # With skipped lines the count line already says a log was found and
-        # what became of it; claiming there is none would be the wrong story.
+    elif not log["skipped"] and not log["unreadable"]:
+        # With skipped lines or an unread month the lines above already say a
+        # log was found and what became of it; claiming there is none would
+        # be the wrong story.
         body.append('<p class="empty">{0}</p>\n'.format(html.escape(EMPTY_NO_FRICTION)))
     body.append('<p class="back"><a href="/">all runs</a></p>\n')
     return _page("friction", "".join(body))

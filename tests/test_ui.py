@@ -1144,6 +1144,37 @@ class TestUnreadableTicketFile(unittest.TestCase):
             self.assertEqual("", ticket["objective"])
             self.assertEqual({}, ticket["sections"])
 
+    def test_the_read_failure_is_marked_rather_than_read_as_an_empty_ticket(self):
+        # Same shape, yes -- but not the same *values* as a ticket that read
+        # fine and said nothing. "unset" and "no objective recorded" are what
+        # the page draws for a ticket that is there and empty.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.sink(tmp)
+
+            unread = ui.read_ticket(root / "tickets" / self.RUN / "oops.md")
+            read = ui.read_ticket(root / "tickets" / self.RUN / "G1.md")
+
+            self.assertTrue(unread["unreadable"])
+            self.assertFalse(read["unreadable"])
+
+    def test_every_page_listing_it_names_it_unread_rather_than_showing_it_empty(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.sink(tmp)
+
+            for url in ("/", graph_url(self.RUN)):
+                page = ui.render_route(root, url)[1]
+                self.assertIn(ui.DIAGNOSTIC_UNREADABLE, page, url)
+                self.assertIn("oops.md", page, url)
+
+    def test_a_run_of_readable_tickets_carries_no_such_diagnostic(self):
+        # Otherwise the assertion above is met by a page that warns always.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_sink(Path(tmp), friction=False, events=False)
+
+            page = ui.render_route(root, "/")[1]
+
+            self.assertNotIn(ui.DIAGNOSTIC_UNREADABLE, page)
+
     def test_the_walk_that_finds_it_still_serves_the_run(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = self.sink(tmp)
@@ -2441,7 +2472,26 @@ class TestFrictionFeed(unittest.TestCase):
             log.write_text('"a bare string"\n42\nnull\n[]\n', encoding="utf-8")
             read = ui.read_friction(root)
 
-            self.assertEqual({"entries": [], "skipped": 4}, read)
+            self.assertEqual({"entries": [], "skipped": 4, "unreadable": []}, read)
+
+    def test_a_month_file_that_cannot_be_read_is_named_rather_than_dropped(self):
+        # A *directory* named like a month file matches the glob, which is
+        # how this path is reachable without a chmod Windows ignores. The
+        # month vanishing from the feed with no count and no note is the
+        # friction law's own evidence going missing quietly.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_sink(Path(tmp), friction=False)
+            (root / "friction" / "2026-09.jsonl").mkdir(parents=True)
+
+            read = ui.read_friction(root)
+            page = ui.render_route(root, ui.FRICTION_ROUTE)[1]
+
+            self.assertEqual(["2026-09.jsonl"], read["unreadable"])
+            self.assertIn(ui.DIAGNOSTIC_UNREADABLE, page)
+            self.assertIn("2026-09.jsonl", page)
+            # "no friction log under this root" would be the wrong story: one
+            # was found and could not be read.
+            self.assertNotIn(ui.EMPTY_NO_FRICTION, page)
 
 
 EVENT_RUN = "run-gamma"
@@ -2534,6 +2584,28 @@ class TestEventsSeam(unittest.TestCase):
             self.assertEqual(3, len(read["entries"]))
             self.assertIn("2 unreadable lines", block_for(self.graph(main, EVENT_RUN), "events"))
             self.assertNotIn("a half-written line", self.graph(main, EVENT_RUN))
+
+    def test_a_log_that_is_there_and_cannot_be_read_is_not_zero_events(self):
+        # `None` is the seam's "no file" half and renders as silence. A file
+        # found and not read is the other half: "0 events" claims a stream
+        # nothing was read from.
+        with tempfile.TemporaryDirectory() as tmp:
+            main = make_sink(Path(tmp))
+
+            with patch.object(Path, "read_text", side_effect=OSError("gone")):
+                read = ui.read_events(main, EVENT_RUN)
+
+            self.assertTrue(read["unreadable"])
+            self.assertIn(ui.DIAGNOSTIC_UNREADABLE, ui.render_events(read))
+
+    def test_a_readable_log_is_marked_read(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            main = make_sink(Path(tmp))
+
+            read = ui.read_events(main, EVENT_RUN)
+
+            self.assertFalse(read["unreadable"])
+            self.assertNotIn(ui.DIAGNOSTIC_UNREADABLE, ui.render_events(read))
 
     def test_an_untrusted_event_reaches_the_page_escaped(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -3740,6 +3812,28 @@ class TestAbsentTranscriptRoot(TranscriptCase):
         page = self.sessions(bare)
 
         self.assertIn(ui.EMPTY_NO_SESSIONS, block_for(page, "empty", "</p>"))
+
+    def test_a_root_the_host_will_not_answer_for_is_not_an_absent_root(self):
+        # "no transcript root at this path" is a fact about the path. A
+        # listing the host refused is a fact about this poll, and the
+        # operator can act on exactly one of them.
+        with patch.object(Path, "is_dir", side_effect=OSError("gone")):
+            found = ui.discover_sessions(self.transcripts)
+
+        self.assertIn(ui.DIAGNOSTIC_UNREADABLE, " ".join(found["diagnostics"]))
+        self.assertIn(ui.DIAGNOSTIC_UNREADABLE, ui.render_sessions(found))
+
+    def test_a_session_file_that_will_not_stat_is_named_rather_than_dropped(self):
+        with patch.object(ui, "_stat_identity", return_value=None):
+            found = ui.discover_sessions(self.transcripts)
+
+        self.assertEqual([], found["sessions"])
+        self.assertIn(ui.DIAGNOSTIC_UNREADABLE, " ".join(found["diagnostics"]))
+
+    def test_a_healthy_root_carries_no_such_diagnostic(self):
+        found = ui.discover_sessions(self.transcripts)
+
+        self.assertNotIn(ui.DIAGNOSTIC_UNREADABLE, " ".join(found["diagnostics"]))
 
 
 class TestTranscriptContainment(TranscriptCase):
