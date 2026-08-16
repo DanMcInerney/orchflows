@@ -39,15 +39,14 @@ Child names are unique within a run; a resumed child keeps its name.
 Wake and completion notifications are lossy here
 (anthropics/claude-code#39632), so a caller arms its own re-check of a
 lane's durable run state at dispatch — through the host's scheduler
-where it has one, else the caller's own re-check on each notification
-and at its next turn, never a wait loop, which the host block bars in a
-worktree-isolated session — and states that cadence when arming, never
-coarser than the lane's bound read as a duration. Each
-reading is judged by
+where it has one, at a stated cadence never coarser than the lane's
+bound read as a duration; else the caller's own re-check on each
+notification and at its next turn, never a wait loop, which the host
+block bars in a worktree-isolated session. Each reading is judged by
 [rules/delegation.md](../../../../rules/delegation.md) §11: an idle
 notification or an unanswered nudge decides nothing. A launched
-external process is that §11's: hold the turn until its outcome lands
-in durable state, or record it at launch.
+external process is delegation.md §11's: hold the turn until its
+outcome lands in durable state, or record it at launch.
 
 On Claude Code, a named child's return travels only by explicit
 SendMessage to the spawner; plain final text is undelivered. `reply_to`
