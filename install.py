@@ -530,14 +530,57 @@ def resolved_python_interpreter() -> str:
     return sys.executable or "python"
 
 
+def _git_dirs(repo_root: Path) -> tuple[Path, Path] | None:
+    """``(git_dir, common_dir)`` for a checkout, or ``None`` when neither can
+    be read. In an ordinary clone both are ``<root>/.git``. In a git worktree
+    (``.git`` is a *file* holding ``gitdir: <path>``) HEAD lives in that
+    gitdir while ``refs/`` and ``packed-refs`` live in the shared checkout the
+    gitdir's ``commondir`` names — so the two differ, and reading HEAD's ref
+    from the wrong one is why a worktree install used to record no commit."""
+
+    marker = repo_root / ".git"
+    if marker.is_dir():
+        return marker, marker
+    if not marker.is_file():
+        return None
+    try:
+        pointer = marker.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    git_dir = None
+    for line in pointer.splitlines():
+        if line.startswith("gitdir:"):
+            git_dir = Path(line.partition(":")[2].strip())
+            break
+    if git_dir is None or not str(git_dir):
+        return None
+    if not git_dir.is_absolute():
+        git_dir = repo_root / git_dir
+    common_file = git_dir / "commondir"
+    common_dir = git_dir
+    if common_file.is_file():
+        try:
+            common = Path(common_file.read_text(encoding="utf-8").strip())
+        except OSError:
+            return None
+        if common.parts:
+            common_dir = common if common.is_absolute() else git_dir / common
+    return git_dir, common_dir
+
+
 def resolve_source_commit(repo_root: Path = REPO_ROOT) -> str | None:
     """The git HEAD commit of the repo this installer runs from, read directly
     from ``.git`` (no subprocess, no dependency on ``git`` being on PATH).
-    Returns ``None`` whenever no ordinary ``.git`` checkout can be read —
-    absent ``.git``, a worktree gitdir-file, a detached ref that resolves to
-    nothing, or any I/O error."""
+    Handles both a clone and a worktree checkout (``_git_dirs``). Returns
+    ``None`` whenever no checkout can be read — absent ``.git``, a gitdir
+    pointer that does not parse, a ref that resolves to nothing, or any I/O
+    error."""
 
-    head_file = repo_root / ".git" / "HEAD"
+    dirs = _git_dirs(repo_root)
+    if dirs is None:
+        return None
+    git_dir, common_dir = dirs
+    head_file = git_dir / "HEAD"
     if not head_file.is_file():
         return None
     try:
@@ -549,14 +592,15 @@ def resolve_source_commit(repo_root: Path = REPO_ROOT) -> str | None:
     if not content.startswith("ref:"):
         return content
     ref = content.split(":", 1)[1].strip()
-    ref_path = repo_root / ".git" / ref
-    if ref_path.is_file():
-        try:
-            sha = ref_path.read_text(encoding="utf-8").strip()
-        except OSError:
-            return None
-        return sha or None
-    packed_refs = repo_root / ".git" / "packed-refs"
+    for root in (git_dir, common_dir):
+        ref_path = root / ref
+        if ref_path.is_file():
+            try:
+                sha = ref_path.read_text(encoding="utf-8").strip()
+            except OSError:
+                return None
+            return sha or None
+    packed_refs = common_dir / "packed-refs"
     if not packed_refs.is_file():
         return None
     try:

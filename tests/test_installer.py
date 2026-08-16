@@ -1522,6 +1522,55 @@ class TestSourceCommit(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             self.assertIsNone(install.resolve_source_commit(Path(tmp)))
 
+    @staticmethod
+    def _worktree(root: Path, gitdir_line: str = None) -> Path:
+        """A git worktree layout: ``<root>/wt/.git`` is a *file* pointing at
+        ``<root>/main/.git/worktrees/wt``, which holds this worktree's HEAD
+        and a ``commondir`` pointer to the shared ``.git`` where refs live.
+        Every agent worktree in this repository has exactly this shape."""
+
+        main_git = root / "main" / ".git"
+        (main_git / "refs" / "heads").mkdir(parents=True)
+        worktree_git = main_git / "worktrees" / "wt"
+        worktree_git.mkdir(parents=True)
+        (worktree_git / "HEAD").write_text("ref: refs/heads/work\n", encoding="utf-8")
+        (worktree_git / "commondir").write_text("../..\n", encoding="utf-8")
+        repo = root / "wt"
+        repo.mkdir()
+        pointer = gitdir_line if gitdir_line is not None else f"gitdir: {worktree_git}"
+        (repo / ".git").write_text(pointer + "\n", encoding="utf-8")
+        return repo
+
+    def test_resolve_source_commit_follows_a_worktree_gitdir_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = self._worktree(root)
+            (root / "main" / ".git" / "refs" / "heads" / "work").write_text(
+                "beadfeed\n", encoding="utf-8"
+            )
+
+            self.assertEqual("beadfeed", install.resolve_source_commit(repo))
+
+    def test_resolve_source_commit_reads_a_worktree_ref_from_packed_refs(self):
+        # The worktree's own gitdir holds no refs/ at all: HEAD names a branch
+        # whose only record is the shared checkout's packed-refs, reachable
+        # only through commondir.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = self._worktree(root)
+            (root / "main" / ".git" / "packed-refs").write_text(
+                "# pack-refs with: peeled fully-peeled sorted\nfeedface refs/heads/work\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual("feedface", install.resolve_source_commit(repo))
+
+    def test_resolve_source_commit_is_none_on_an_unparseable_gitdir_pointer(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self._worktree(Path(tmp), gitdir_line="not a gitdir pointer")
+
+            self.assertIsNone(install.resolve_source_commit(repo))
+
     def test_source_commit_drift_message_only_on_actual_change(self):
         self.assertIsNone(install.source_commit_drift_message(None, "abc"))
         self.assertIsNone(install.source_commit_drift_message({"source_commit": None}, "abc"))
