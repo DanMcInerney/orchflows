@@ -4755,7 +4755,21 @@ class TestPacketNamesTheChildsOwnName(unittest.TestCase):
         return run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")["packet"]
 
     def test_a_packet_for_a_dispatching_executor_states_the_name_it_was_claimed_under(self):
-        for executor in tickets_mod.DISPATCHING_EXECUTORS:
+        # The set is read from the tree, never from the constant under test:
+        # iterating `DISPATCHING_EXECUTORS` passed with no assertion at all
+        # once the constant was emptied (rules/verification.md §8). The
+        # executors that dispatch are the engines (rules/composition.md §3),
+        # and the engines directory is the pin `TestEngineExecutorIsRejected`
+        # already holds — so an engine added there without being added to
+        # the constant fails here, by name.
+        engines = sorted(
+            path.name
+            for path in (ROOT / "skills" / "engines").iterdir()
+            if path.is_dir()
+        )
+        self.assertEqual(engines, sorted(tickets_mod.DISPATCHING_EXECUTORS))
+        self.assertIn("orch-frontier", engines)  # the friction's own lane
+        for executor in engines:
             with self.subTest(executor), tempfile.TemporaryDirectory() as tmp:
                 packet = self.packet_for(
                     Path(tmp), CLAIMED_TICKET.replace("executor: orch-tdd", f"executor: {executor}")
