@@ -254,27 +254,6 @@ ADVISORY = frozenset(
         UNREAD_HALF,
     }
 )
-# Every reading this invocation could not make, in the order it failed to
-# make them, one line each and each named once. A list on the module beside
-# `_MUTATED`, and for the same reason: what a reading noticed besides its
-# own answer has to reach the report without every function between here
-# and there carrying a second return value for it. Cleared by `main`, so a
-# process grading twice never inherits the first run's readings.
-_UNREAD = []
-
-
-def _unread(what):
-    """Record a reading that did not happen, and what could not be read.
-
-    The defect this closes is one value for two answers. ``None`` meant
-    both "this oracle discriminates" and "no half of it could be read",
-    ``[]`` meant both "this span wrote nothing" and "the status that would
-    have said so failed", and a caller cannot tell a grading that happened
-    from one that did not. Every such site names itself here instead.
-    """
-
-    if what not in _UNREAD:
-        _UNREAD.append(what)
 # The one thing a python oracle writes into the copy by importing anything,
 # and the flag that stops it. Reported in words because the repair is a
 # spelling of the oracle and is stated nowhere else -- not in the pack's
@@ -523,6 +502,26 @@ _TREE_STATE = {}
 # What the span now running wrote into its copy. Drained per command by
 # `_check_ticket`, which is the only caller that knows whose finding it is.
 _MUTATED = []
+# Every reading this invocation could not make, in the order it failed to make
+# them, each named once. A list beside `_MUTATED` and for its reason: what a
+# reading noticed besides its own answer reaches the report without every
+# function between here and there carrying a second return value for it.
+# Drained by `main`, which is the only caller that knows whose run it is.
+_UNREAD = []
+
+
+def _unread(what):
+    """Record a reading that did not happen, and what could not be read.
+
+    The defect this closes is one value standing for two answers. ``None``
+    meant both "this oracle discriminates" and "no half of it could be
+    read"; ``[]`` meant both "this span wrote nothing" and "the status that
+    would have said so failed"; and a caller cannot tell a grading that
+    happened from one that did not. Every such site names itself here.
+    """
+
+    if what not in _UNREAD:
+        _UNREAD.append(what)
 
 
 def _git(args, cwd):
