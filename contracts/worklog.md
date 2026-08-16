@@ -1,47 +1,30 @@
-# Worklog contract
+# Worklog contract (run view)
 
-The run's persistent state file: what makes fresh-context iteration,
-resumption, and post-hoc improvement possible. One per run, at
-`<state-root>/runs/<run>/worklog.md`, where the state root is the
-user-scope sink `scripts/state_root.py` resolves — one per user, outside
-every repository. Iterations read it instead of transcripts; transcripts
-are never state.
+The run's state, rendered: `tickets.py worklog <run>` reads the run's
+ticket directory and prints the view below. There is never a second,
+hand-written file — the tickets are the state, and every field here is
+reconstructable from them by observation.
 
-- `goal` — the frozen objective and acceptance — or the done-check for
-  a loop run — verbatim; never edited after iteration 1.
-- `spec` — path to the stamped spec; `tickets` — path to the run's ticket
-  directory.
-- `iterations` — one entry per pass: what ran, verdicts by identity,
-  budget spent.
-- `blame_classes` — one entry per failed join: the blame class and the
-  owner it routes to, per the delegation contract.
-- `failed_approaches` — every approach that did not work, with the
-  evidence that killed it; an iteration never re-walks an entry here.
-- `queued_scope` — discovered work outside the frozen goal; queued, never
-  merged into the live goal.
-- `terminal` — empty until the run exits, then exactly one of: `complete`
-  | `blocked` | `stalled` | `limited` | `failed`, with the deciding
-  evidence. A parked-only pause is not an exit: `terminal` stays empty
-  and the run resumes from its tickets. Parked is not in progress: no
-  item is under way, and the pause names the external action awaited
-  and every item queued behind it.
+- `goal` — the root ticket's `## Objective` and `## Completion test`
+  verbatim; for a loop run, the loop ticket's done-check and bound.
+- `iterations` — every ticket in `claimed_at` order, each with its
+  `## Verification` entries and, where its join failed, the blame class
+  that join recorded ([work-item.md](work-item.md)).
+- `failed_approaches` — the `## Result` and `## Feedback` of every
+  `failed` or `limited` ticket, and of every loop iteration ticket: the
+  approach and the evidence that killed it. A later iteration never
+  re-walks one.
+- `queued_scope` — the tickets that `depends_on` the run's gate:
+  discovered work, queued behind the frozen goal and never merged into
+  it.
+- `terminal` — empty until the run exits, then the root ticket's
+  `status` — for a loop run the loop ticket's — read in the run-level
+  set `complete` | `blocked` | `stalled` | `limited` | `failed`;
+  `stalled` is a run-level exit no ticket status carries
+  ([work-item.md](work-item.md)). A parked-only pause is not an exit: no
+  ticket is claimed, the pause names the external action awaited and
+  every ticket queued behind it, and the run resumes from its tickets.
 
-Notes append in occurrence order, and no note is written past a terminal
-section: a worklog carries no terminal placeholder until it closes.
-Writing an artifact that already exists is refused by default, the
-refusal naming the existing path.
-
-Beside it, `<state-root>/runs/<run>/run.json` — the run's identity, written
-on the run's first state write, appended to and never rewritten:
-
-- `run` — the run id; equals the name of the directory holding this file.
-- `sink_convention` — integer: the sink layout this record was written under.
-- `opened_at` — when the run's first write landed; never rewritten.
-- `project` — which project owns this run id; never rewritten once set.
-  `project.root` — absolute path of the **main** checkout, a linked worktree
-  resolved to it and a submodule to its superproject; `project.origin` — the
-  origin url, null when the repository has no remote; `project.name` — the
-  root's base name, a human label, never compared.
-- `workspaces` — every workspace that has written to this run, in first-write
-  order. `workspaces[].path` — that workspace itself, **not** its main
-  checkout; `workspaces[].first_seen` — when its first write landed.
+Fresh-context iteration, resumption, and post-hoc improvement read this
+view instead of transcripts; transcripts are never state. The sink
+layout it is rendered from is `scripts/tickets.py`'s.

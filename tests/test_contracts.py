@@ -188,31 +188,41 @@ class TestResultContract(unittest.TestCase):
         ):
             self.assertIn(token, text, f"result.md is missing {token!r}")
 
-    def test_binds_the_dispatchable_units_and_exempts_evaluators(self):
+    def test_binds_the_class_and_not_a_roster_of_skills(self):
         text = read_flat("result.md")
-        for unit in (
-            "orch-deliver", "orch-task", "orch-investigate", "orch-loop",
-            "orch-frontier", "orch-compose",
-        ):
-            self.assertIn(f"`{unit}`", text, f"result.md does not bind {unit}")
-        self.assertIn("every composition", text, "result.md does not bind compositions")
-        self.assertIn(
-            "Evaluators and utilities are exempt", text,
-            "result.md is missing the evaluator/utility exemption",
+        self.assertNotIn(
+            "orch-", text,
+            "result.md names a T1 skill; a T0 contract binds the class "
+            "(every dispatchable unit), never a roster that goes stale",
         )
+        for token in ("every dispatchable unit", "rule 10", "exempt"):
+            self.assertIn(token, text, f"result.md's binding does not name {token!r}")
 
 
 class TestWorklogContract(unittest.TestCase):
-    def test_parked_only_is_open_and_distinct_from_in_progress(self):
-        text = read_flat("worklog.md")
+    def test_is_the_view_the_ticket_directory_renders(self):
+        text = read("worklog.md")
         self.assertIn(
-            "A parked-only pause is not an exit: `terminal` stays empty", text,
-            "worklog.md does not keep a parked-only pause off the terminal set",
+            "tickets.py worklog", text,
+            "worklog.md does not name the command that renders the run view",
         )
-        self.assertIn(
-            "Parked is not in progress: no item is under way", text,
-            "worklog.md does not distinguish parked-only from in progress",
+        self.assertNotIn(
+            "run.json", text,
+            "worklog.md still specifies the sink record `scripts/tickets.py` owns",
         )
+
+    def test_names_the_five_view_fields(self):
+        text = read("worklog.md")
+        for field in (
+            "`goal`", "`iterations`", "`failed_approaches`",
+            "`queued_scope`", "`terminal`",
+        ):
+            self.assertIn(field, text, f"worklog.md's run view is missing {field}")
+
+    def test_terminal_carries_the_run_level_enum(self):
+        text = read("worklog.md")
+        for value in ("`complete`", "`blocked`", "`stalled`", "`limited`", "`failed`"):
+            self.assertIn(value, text, f"worklog.md's terminal set is missing {value}")
 
 
 class TestCompositionContract(unittest.TestCase):
@@ -508,48 +518,6 @@ class TestWorkItemCitationLaws(unittest.TestCase):
             "work-item.md's `## Fixed inputs` bullet does not resolve the "
             "line-number prohibition against the `identity` entry that owns "
             "it; the citation is the property, never a restatement",
-        )
-
-
-class TestWorklogNoteLaws(unittest.TestCase):
-    """`contracts/worklog.md` owns note ordering, the terminal-section
-    boundary, and the refusal that keeps an artifact write from
-    overwriting silently. Of the three, `scripts/tickets.py` today
-    implements only the append; `S-MECH` adds the terminal-section
-    boundary and the refusal, through this run's `seq` edge."""
-
-    def contract(self):
-        return read_flat("worklog.md")
-
-    def test_notes_append_in_occurrence_order(self):
-        self.assertIn(
-            "Notes append in occurrence order", self.contract(),
-            "worklog.md does not state that notes append in occurrence order",
-        )
-
-    def test_no_note_is_written_past_a_terminal_section(self):
-        text = self.contract()
-        self.assertIn(
-            "no note is written past a terminal section", text,
-            "worklog.md does not close the file at its terminal section",
-        )
-        self.assertIn(
-            "carries no terminal placeholder until it closes", text,
-            "worklog.md does not draw the consequence that an open run has no "
-            "terminal placeholder for a note to land past",
-        )
-
-    def test_an_existing_artifact_is_not_overwritten_silently(self):
-        text = self.contract()
-        self.assertIn(
-            "Writing an artifact that already exists is refused by default",
-            text,
-            "worklog.md does not refuse a write over an existing artifact",
-        )
-        self.assertIn(
-            "the refusal naming the existing path", text,
-            "worklog.md's overwrite refusal does not name the existing path, "
-            "so the refusal is not actionable",
         )
 
 

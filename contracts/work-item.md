@@ -25,8 +25,7 @@ Mapped to packet parts, lifecycle, and graph position:
 - `status`: `pending` | `ready` | `claimed` | `suspended` | `complete` |
   `blocked` | `failed` | `limited` — lifecycle; transitions per
   `orch-frontier`. `pending` and `suspended` are the two non-terminal
-  waits: a ticket issued with an incomplete `depends_on` starts
-  `pending`; a suspended ticket stays claimed, resumable from its
+  waits; a suspended ticket stays claimed, resumable from its
   `## Handoff`. `complete` requires PASS on every required criterion;
   nothing else does. Terminal status — `complete`, `blocked`, `failed`,
   `limited` — is set only by the join (`orch-integrate`), never by the
