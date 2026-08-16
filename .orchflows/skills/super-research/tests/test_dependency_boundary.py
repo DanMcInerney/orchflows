@@ -620,10 +620,10 @@ class BoundaryOracleCanFailTest(unittest.TestCase):
 
 PROTOCOL_PATH = Path(__file__).resolve().parent.parent / "references" / "protocol.md"
 
-# The two loss tables in `protocol.md`, named by the heading each sits under.
-# Only these two are read; every other table in that file belongs to someone
-# else.
-LOSS_TABLE_HEADERS = ("| code | means | named by |", "| code | named by |")
+# The three loss tables in `protocol.md`, named by the header row each carries.
+# Only tables with this shape are read; every other table in that file belongs
+# to someone else.
+LOSS_TABLE_HEADERS = ("| code | means | named by |",)
 
 # A code the tables may name that the source is expected not to contain at all.
 # Both are vocabulary the spec added for routes that are deferred, so their
@@ -631,13 +631,18 @@ LOSS_TABLE_HEADERS = ("| code | means | named by |", "| code | named by |")
 # checked in that direction too.
 UNSHIPPED_CODES = ("archive_lag", "scope_required")
 
-# Modules that declare a loss code as a constant and never load it. A name with
-# zero loads is how `protocol.md` argues the absence is checkable from outside
-# the module, which is only worth arguing if something checks it.
+# Modules that declare a loss code as a constant and never load it, which is a
+# claim rather than an oversight and is therefore pinned in that direction too.
+# `reddit_feed`, `rss_atom`, `public_page` and `github_rest` declare
+# `AUTH_REQUIRED` and load it nowhere because no status a documented-keyless
+# route can answer with is a report that a credential was needed; `transport`
+# and `cache` each own a code for the module that attaches it. A name with zero
+# loads is only checkable from outside the module if something checks it.
 DECLARED_NEVER_LOADED = {
     "auth_required": ("github_rest", "public_page", "reddit_feed", "rss_atom"),
     "rate_limited": ("transport",),
     "cache_hit": ("cache",),
+    "unreachable": ("transport",),
 }
 
 

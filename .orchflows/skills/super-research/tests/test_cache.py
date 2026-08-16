@@ -41,7 +41,7 @@ from super_research import cache, runner, schema, transport
 
 PACKAGE_DIR = Path(__file__).resolve().parent.parent / "scripts" / "super_research"
 CACHE_SOURCE = PACKAGE_DIR / "cache.py"
-PROTOCOL_SOURCE = Path(__file__).resolve().parent.parent / "references" / "protocol.md"
+INTERNALS_SOURCE = Path(__file__).resolve().parent.parent / "references" / "internals.md"
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "cache"
 # T01's tracer fixtures, read rather than copied: the strongest repeat-read
 # claim is over the run's own end-to-end path, on the run's own data.
@@ -321,10 +321,10 @@ def footprint_comment():
     return " ".join(comment_blocks(lines[start:end]))
 
 
-def protocol_footprint_paragraphs():
-    """Every paragraph in ``protocol.md`` that states the footprint law."""
+def document_footprint_paragraphs():
+    """Every paragraph in ``internals.md`` that states the footprint law."""
 
-    text = PROTOCOL_SOURCE.read_text(encoding="utf-8")
+    text = INTERNALS_SOURCE.read_text(encoding="utf-8")
     return [
         " ".join(block.split())
         for block in text.split("\n\n")
@@ -1046,16 +1046,16 @@ class FootprintLawTest(unittest.TestCase):
     """Criterion 4: the declared footprint law says what the constants do.
 
     The law is stated twice — once beside the constants in `cache.py`, once in
-    `protocol.md` for a reader who never opens the source — and a run's whole
+    `internals.md` for a reader who never opens the source — and a run's whole
     memory ceiling is the product of two numbers. Either sentence drifting from
     the constants turns a bound a caller relies on into a wrong number that
     nothing reddens to report, so both are parsed here rather than restated.
     """
 
-    def protocol_sentence(self):
-        stated = protocol_footprint_paragraphs()
+    def document_sentence(self):
+        stated = document_footprint_paragraphs()
 
-        self.assertEqual(len(stated), 1, "the footprint law is stated once in protocol.md")
+        self.assertEqual(len(stated), 1, "the footprint law is stated once in internals.md")
         return stated[0]
 
     def test_the_source_sentence_names_both_halves_of_the_bound(self):
@@ -1064,8 +1064,8 @@ class FootprintLawTest(unittest.TestCase):
         self.assertIn("MAX_ENTRY_BYTES", stated)
         self.assertIn("MAX_ENTRIES", stated)
 
-    def test_the_protocol_sentence_states_the_constants_the_package_holds(self):
-        stated = self.protocol_sentence()
+    def test_the_document_sentence_states_the_constants_the_package_holds(self):
+        stated = self.document_sentence()
         entries = STATED_ENTRIES.findall(stated)
         entry_bytes = STATED_ENTRY_BYTES.findall(stated)
 
@@ -1079,7 +1079,7 @@ class FootprintLawTest(unittest.TestCase):
         # correctly and still state the ceiling wrong.
         for where, stated in (
             ("cache.py", footprint_comment()),
-            ("protocol.md", self.protocol_sentence()),
+            ("internals.md", self.document_sentence()),
         ):
             with self.subTest(sentence=where):
                 product = STATED_PRODUCT.findall(stated)
