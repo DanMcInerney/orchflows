@@ -36,7 +36,7 @@ reader. Human legibility is welcome; it is never the design driver.
 ## Structure → constraint
 
 - **A narrow, hash-pinned waist (`contracts/`).** N workflows, M
-  packs, and H hosts meet in eight data shapes: N+M+H mutual
+  packs, and H hosts meet in six data shapes: N+M+H mutual
   understandings instead of N×M×H. Hash-pinned because the reader
   drifts shapes helpfully — renaming a field to a nicer synonym reads
   as a favor and breaks every consumer silently; the pin turns drift
@@ -125,46 +125,23 @@ replacement splits what a pattern conflated:
   and a multi-kind request chains itself (search is memory: one return
   shape, one name for it).
 
-## The craft gap
+Amended 2026-08-16: at P1–P4 the named tier stops being step files and
+becomes ticket-set templates — a directory of ticket stubs
+`orch-frontier` drains — and the branches collapse to answer, ticket,
+fix. `SPEC-ticket-set.md` owns that rationale until its last phase
+lands; this section owns it after.
 
-Audited 2026-07-15. Each pack binds how work cuts (slicing), how done
-is decided (oracles), and how review reads (lens). No pack binds what
-its domain's terms mean or what good shape is at write time:
+## Why a `craft` cell
 
-- `voice contract` is a required spec field, an `orch-draft` and
-  `orch-edit` Require, a lens criterion, and a judged oracle row —
-  and is defined nowhere; its scored dimensions have no owner (now
-  `packs/orch-content-pack/references/craft.md`, below).
-- `rigor bar` (research) is likewise undefined; `orch-tdd` tests at
-  "public seams" with the term unowned.
-- `orch-spec` draws a spec's nouns from `docs/vocabulary.md` "and the
-  domain's own names" — a pointer with no target: vocabulary.md owns
-  only the library's nouns, by design.
-- Executors reference contracts only; nothing tells `orch-draft` what
-  a hook is, or `orch-tdd` what shape costs its reader least.
-
-The predicted cost: judged criteria whose terms are undefined resolve
-differently in every fresh judge context, so gate verdicts churn; and
-executors write to an unstated bar, so the one gate carries rework it
-was designed to eliminate.
-
-## The fix: a `craft` cell
-
-One reference per pack, `references/craft.md`, two sections —
-**Vocabulary**, the domain's terms defined once and used with exactly
-that meaning in specs, tickets, lenses, and verdicts; **Shape**, the
-few artifact-form principles that hold across every workspace in the
-domain. Wired as a cell of
-[contracts/pack-signature.md](contracts/pack-signature.md), landed as
-a T0 supersession:
-
-- `orch-spec` resolves "the domain's own names" through the stamped
-  pack's craft cell — the pointer gains a target.
-- Each pack's slicing lists the craft reference in its item
-  extensions, so every ticket carries it and every executor reads it
-  at write time, inside the delegation packet's inputs.
-- Each lens grounds its criteria in craft terms instead of glossing
-  them inline.
+Since 2026-07-15. Each pack bound how work cuts, how done is decided,
+and how review reads; none bound what its domain's terms mean or what
+good shape is at write time. Undefined judged terms resolve differently
+in every fresh judge context, so gate verdicts churn, and executors
+write to an unstated bar the one gate then pays for in rework. The cell
+that closes it is each pack's `references/craft.md` — **Vocabulary**
+and **Shape** — defined by
+[contracts/pack-signature.md](contracts/pack-signature.md) and carried
+to every executor at write time through the slicing's item extensions.
 
 Why this shape:
 
@@ -261,41 +238,28 @@ stretching it. The authoring order this admission followed is
 
 Audited 2026-07-16 on the user's decision to drop the plugin route for
 `git clone` plus one installer (the plugin experiment and its decisive
-evidence move to Roads not taken, below). `install.sh` (POSIX) and
-`install.cmd` (Windows) resolve an interpreter — `uv run --no-project
-python` → `python3` → `python`, never a bare hardcoded one — before
-calling `install.py`, because anthropics/claude-code#16131 documents a
-hardcoded `python3` invocation stranding Windows machines with no
-`python3` on PATH; the wrapper is the fix. `install.py` auto-detects
-which host halves to configure from `~/.claude` and `~/.codex`
-presence rather than asking, because installed harnesses are a fact on
-disk, not a preference to elicit, and it errors with guidance when
-neither is present rather than completing silently having configured
-nothing. The always-on instruction layer is one line the installer
-appends to the user's own `CLAUDE.md` — an `@`-import pointing at
-`~/.orchflows/host-block.md`, a file the installer fully owns — rather
-than a block it rewrites in place inside a file it does not own,
-because SuperClaude's overwrite-CLAUDE.md data-loss complaints are the
-field evidence for what the latter costs users on every reinstall; the
-import line is idempotent and any legacy marker block is stripped on
-upgrade. Codex takes the same import-line form only where the installed
-CLI resolves `@file` imports, verified once per install via a
-read-only `codex debug prompt-input` probe in a scratch repo before any
-`~/.codex` write; where it does not, the installer keeps the proven
-marker-block upsert rather than risk an unverified import syntax.
-Receipts gain `source_commit` (the git HEAD of the repo installed from)
-and print previous → current commit drift on rerun because no surveyed
-library in this space does install drift detection, and an installer
-that silently reapplies stale content over a newer clone is a bug its
-own user has no way to see.
+evidence move to Roads not taken, below). `ARCHITECTURE.md` and
+`install.py`'s own docstring own what the installer does; these are the
+four reasons it does it that way. The root wrappers resolve an
+interpreter rather than hardcoding one because
+anthropics/claude-code#16131 documents a hardcoded `python3` invocation
+stranding Windows machines with no `python3` on PATH. The always-on
+layer is an appended `@`-import to a file the installer fully owns,
+never a block rewritten inside a file it does not, because
+SuperClaude's overwrite-CLAUDE.md data-loss complaints price the
+latter on every reinstall. Receipts carry `source_commit` and print
+drift on rerun because no surveyed library in this space detects
+install drift, and an installer that silently reapplies stale content
+over a newer clone is a bug its own user cannot see.
 
-Codex reads `~/.codex/skills` as one global, unscoped catalog whose
+The fourth is the catalog tax. Codex reads `~/.codex/skills` as one
+global, unscoped catalog whose
 name and description are paid on every turn in every project
 regardless of use, while a skill's body is read live from disk only at
 invocation; mirroring the whole library there would tax every session
 for skills most turns never invoke, so prompts stay Codex's primary
-surface and only four entry points (`orch-spec`, `orch-task`,
-`fix`, `orch-build`) get a redirect stub — a one-line pointer at
+surface and only the four entry points `install.py` names get a
+redirect stub — a one-line pointer at
 the lib path a live read keeps at zero staleness. Project scope
 collapsed to a routing-block stub because the two things a project
 install used to carry beyond that were never load-bearing: friction
@@ -320,25 +284,6 @@ routing clause on `rules/improvement.md` §3, not new tracing machinery:
 more fact off a trace is cheaper than giving every skill and host a
 model-logging responsibility of its own.
 
-## Why the spec has two editors
-
-Superseded 2026-07-17. A spec has exactly two editors across its
-life, never a third: `orch-spec` drafts and stamps it at intake,
-`orch-decompose` repairs it in place when cutting surfaces a defect —
-an oracle-less criterion, a field the slicing needs that conflicts or
-is missing. Every other engine only ever reads a frozen artifact.
-`orch-spec` previously ran a dedicated `orch-critique` pass before
-stamping to catch exactly those defects — a third reader, dispatched
-as a full adversarial child, paid to find what the second reader
-would find for free the moment it opened the spec to cut it.
-Collapsing to two removes that redundant pass without carving out an
-exception: the decomposer already has to read the spec closely enough
-to cut it, so letting it correct what it finds there is the same act
-as cutting, not a departure from it. The boundary holds where it
-always did — a required field missing at intake is still a
-caller-under-supplied rejection, and `orch-decompose` still never
-widens the run's scope or branches on domain.
-
 ## Roads not taken
 
 - **A central domain glossary in `docs/`** — wrong owner, and an
@@ -352,7 +297,8 @@ widens the run's scope or branches on domain.
   outranks; restating it would create the library's first two-owner
   fact.
 - **A generic `orch-unit` executor.** The generic unit endpoint is
-  `orch-task`; executors are the domain leaves a pack binds by exact
+  `orch-frontier` over one ticket; executors are the domain leaves a
+  pack binds by exact
   name, and [rules/delegation.md](rules/delegation.md) §8 forbids
   splitting a named executor into a generic shell plus a method file —
   a cut proposed once and ruled fatal. Red-green stays inside `orch-tdd`
