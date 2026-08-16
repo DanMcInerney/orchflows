@@ -35,9 +35,9 @@ For each qualified cluster, write one proposal named `<date>-<slug>.md`
 through `scripts/tickets.py improvement --proposal`, typed `fix` or §4
 `consolidate`: the single causal owner and its scope; the exact change;
 every evidence entry verbatim; the blame class where a join recorded one.
-An amendment verifies the owner's dependents still hold. A ticket-naming
-entry whose run's frozen statement survives replays through `orch-task`
-in isolation against the amended owner — a red replay disqualifies (§5).
+An amendment verifies the owner's dependents still hold. A ticket-naming entry whose run's frozen
+statement survives replays through `orch-frontier` over that one ticket, in isolation against the
+amended owner — a red replay disqualifies (§5).
 
 Rank by evidence strength — green replay, checked contradiction or
 probe, then recurrence — ties breaking toward deletion. Proposals

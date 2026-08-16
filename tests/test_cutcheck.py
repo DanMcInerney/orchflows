@@ -524,7 +524,7 @@ class ExecutorLegalityTest(unittest.TestCase):
         lines = [line for line in self.lines if "01-engine" in line]
         self.assertEqual(len(lines), 1, self.result.stdout)
         self.assertIn(cutcheck.ILLEGAL_EXECUTOR, lines[0])
-        self.assertIn("orch-task", lines[0])
+        self.assertIn("orch-panel", lines[0])
 
     def test_an_executor_no_cell_of_the_pack_names_is_reported(self):
         lines = [line for line in self.lines if "03-alien" in line]

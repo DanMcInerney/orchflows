@@ -1,10 +1,14 @@
 """The cut lens and cutcheck's defect families answer for each other.
 
-`skills/workflows/orch-deliver/references/cut-lens.md` says what a critique
+`skills/kernel/orch-decompose/references/cut-lens.md` says what a critique
 over an issued ticket set looks for; `scripts/cutcheck.py` says what the tool
 decides. Only a reader noticing held the two together, so a family the checker
 gained or lost changed nothing in the lens, and five families standing in for
 six was silent.
+
+The lens sits with the cutter: `orch-decompose` issues the set, runs the
+checker, and repairs what it reports, so the judgments the checker cannot
+decide are the same package's to state.
 """
 
 import re
@@ -12,7 +16,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-LENS = ROOT / "skills" / "workflows" / "orch-deliver" / "references" / "cut-lens.md"
+LENS = ROOT / "skills" / "kernel" / "orch-decompose" / "references" / "cut-lens.md"
 CHECKER_PATH = "scripts/cutcheck.py"
 CHECKER = ROOT / CHECKER_PATH
 

@@ -1,7 +1,7 @@
 # Cut lens (for `orch-critique` over an issued ticket set)
 
-Judge the cut, never the deliverable, from the frozen spec and the
-issued items alone. Every defect family falls on one side of this
+Judge the cut, never the deliverable, from the frozen root ticket and
+the issued items alone. Every defect family falls on one side of this
 division.
 
 ## Delegated
@@ -13,8 +13,9 @@ division.
 
 ## Kept
 
-- Unowned outcome: some item's completion test observes the spec's
-  outcome across item boundaries, in the pack's workspace semantics — a
+- Unowned outcome: some item's completion test observes the root
+  ticket's outcome across item boundaries, in the pack's workspace
+  semantics — a
   set whose oracles each exercise only inputs they construct themselves
   decides nothing about what crosses between them.
 - Slicing fidelity: the cut is the shape the stamped pack's `slicing`

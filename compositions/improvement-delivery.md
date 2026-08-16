@@ -12,7 +12,8 @@ Steps:
 - spec — `orch-spec` per accepted proposal, with the proposal and its
   evidence entries as frozen evidence, the validator and tests as
   oracles.
-- deliver — `orch-deliver`, pack `orch-code-pack`, with the cluster's
+- deliver — the root ticket each accepted spec wrote, stamped
+  `orch-code-pack`, drained by `orch-frontier`, with the cluster's
   fixture (harvested by `orch-fixture` when the friction first
   qualified) rerun as the regression guard.
 

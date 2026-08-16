@@ -121,7 +121,7 @@ CODEX_LIMITS_START = "# BEGIN ORCHFLOWS AGENT LIMITS"
 CODEX_LIMITS_END = "# END ORCHFLOWS AGENT LIMITS"
 PROFILE_ROLES = ("planner", "worker")
 # The routed composition ``fix`` replaced the demoted ``orch-fix`` skill.
-CODEX_SKILL_REDIRECT_NAMES = ("orch-spec", "orch-task", "fix", "orch-build")
+CODEX_SKILL_REDIRECT_NAMES = ("orch-spec", "orch-frontier", "fix", "orch-build")
 AUTO_REMOVE_KINDS = frozenset(("adapter", "prompt", "codex-skill"))
 CODEX_MAX_THREADS = 20
 CODEX_MAX_DEPTH = 1

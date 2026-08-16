@@ -414,7 +414,7 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         self.assertLess(self.body.index("Never:"), self.body.index("Return:"))
         calls = re.findall(r"`(orch-[a-z0-9-]+)`", self.body)
         self.assertEqual(
-            ["orch-spec", "orch-deliver", "orch-eval-design"], calls
+            ["orch-spec", "orch-frontier", "orch-eval-design"], calls
         )
         self.assertEqual(
             1,
@@ -469,7 +469,7 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         body = squashed(self.body)
         stages = (
             "freeze one evidence-acquisition spec",
-            "`orch-deliver` of that frozen routing-stamped spec",
+            "`orch-frontier` over that frozen routing-stamped root ticket's run",
             "design — `orch-eval-design`",
             "materialize the selected case specifications",
             "qualify the assembled benchmark",

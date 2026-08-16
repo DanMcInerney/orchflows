@@ -13,7 +13,8 @@ scoring with a known rubric anchor. Trigger: any profiles.md change or
 announced model update.
 
 Steps:
-- run — `orch-task` over each canary item.
+- run — `orch-frontier` over a directory holding each canary item as its
+  own one-ticket run.
 - diff — compare verdicts and score cards against the golden results;
   log every divergence as friction, category `surprising-output` —
   feeding `orch-self-improve` the earliest signal that a skill's
