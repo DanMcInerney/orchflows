@@ -29,25 +29,24 @@ declared. Buy difficulty from horizon length, outcome specificity, and a
 stricter oracle that stays correct — never from a looser check, and
 never from a candidate's scores.
 
-Record case specifications, each with its execution tier and the
-reference outside the package its expected outcome is anchored to or
-`none` with a reason; required criteria with named oracles,
-`oracle_class`, required status, and judged anchors per
-[contracts/verdict.md](../../../contracts/verdict.md); scoring and
-aggregation, the per-angle vector primary and any scalar derived;
-intended coverage; source identities and provenance; expected
-execution cost; and, where a campaign will consume the evaluation, the
-promotion rule, margin and search policy (`none` or a search-policy/v1
-object). For judged evaluation, also one candidate-blind Judge
-brief: target, intended outcome, criteria, scale, anchors, exclusions,
-and aggregation. Freeze the result at one package-owned
-evaluation-design identity before benchmark construction or candidate
-scoring.
+Freeze the result at one package-owned identity before benchmark
+construction or candidate scoring.
 
 Never: gather research; materialize or execute cases; inspect or compare
 candidates; generate or promote variants; revise the design from scores;
 select, retain or remove a case by a candidate's success or failure;
 prescribe a generation procedure where outcome semantics suffice.
 
-Return: one frozen package-owned evaluation-design identity, stated
-assumptions, explicit gaps, and changed artifacts.
+Return: one frozen package-owned evaluation-design identity carrying
+case specifications with execution tier and anchor (or `none` with a
+reason); required criteria with oracle, `oracle_class` and required
+status per
+[contracts/verdict.md](../../../contracts/verdict.md) and judged
+anchors; scoring and aggregation, the per-angle vector primary;
+intended coverage; source identities and provenance; expected execution
+cost; where a campaign will consume it, promotion rule, margin and
+search policy (`none` or a
+[search-policy/v1](../../../docs/search-plan-protocol.md) object); for
+judged evaluation one candidate-blind Judge brief — target, outcome,
+criteria, scale, anchors, exclusions, aggregation; stated assumptions;
+explicit gaps; changed artifacts.

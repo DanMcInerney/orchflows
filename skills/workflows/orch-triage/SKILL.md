@@ -1,6 +1,6 @@
 ---
 name: orch-triage
-description: Triage a queue of items into agent-ready dispositions with compacted briefs. Use before any of them is dispatched; a snapshot, never a loop.
+description: Triage a queue of items into agent-ready dispositions with compacted briefs. Use before any of them is dispatched.
 role: none
 ---
 
@@ -12,8 +12,7 @@ never deep investigation, which is the dispatched work's job. An item
 disposed ready-for-agent gets a compacted brief: objective, the evidence
 already known, and the recommended entrypoint skill. needs-info names
 exactly what is missing; ready-for-human names why an agent should not
-decide it. Reread an item immediately before writing it; another session
-may have moved it.
+decide it.
 
 Never: fix items while triaging; dispose an item on a stale read; let
 the snapshot become an open-ended loop.

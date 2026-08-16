@@ -260,7 +260,7 @@ SELF_IMPROVE = "skills/workflows/orch-self-improve/SKILL.md"
 # the miner writes proposals, the template's deliver stub writes the
 # covered line — each named where it is written and nowhere else.
 IMPROVEMENT_WRITER = {
-    SELF_IMPROVE: "scripts/tickets.py improvement --proposal",
+    SELF_IMPROVE: "tickets.py improvement --proposal",
     "compositions/self-improve/01-deliver.md": "tickets.py improvement --covered",
 }
 
