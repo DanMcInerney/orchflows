@@ -4,7 +4,8 @@ description: Execute a ticket dependency graph by rolling frontier dispatch — 
 role: none
 ---
 
-Require: a run's ticket directory forming a finite acyclic dependency
+Require: a run's ticket directory — tickets issued through `tickets.py
+new` or `tickets.py instantiate` — forming a finite acyclic dependency
 graph, and the run's bound — from the spec, or named by the caller
 for an ad-hoc set.
 
