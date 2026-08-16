@@ -115,7 +115,7 @@ SCRIPT_NAMES = (
 )
 CLAUDE_CLI_CANDIDATES = ("claude", "claude.exe", "claude.cmd")
 CODEX_CLI_CANDIDATES = ("codex", "codex.exe", "codex.cmd")
-PROFILES_MD = REPO_ROOT / "skills" / "kernel" / "orch-delegate" / "references" / "profiles.md"
+PROFILES_MD = REPO_ROOT / "skills" / "engines" / "orch-frontier" / "references" / "profiles.md"
 HOST_BLOCK_TEMPLATE = REPO_ROOT / "templates" / "host-block.md"
 CODEX_LIMITS_START = "# BEGIN ORCHFLOWS AGENT LIMITS"
 CODEX_LIMITS_END = "# END ORCHFLOWS AGENT LIMITS"

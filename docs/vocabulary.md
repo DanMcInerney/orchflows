@@ -198,7 +198,7 @@ composition).
 - **role** — planner (judgment) or worker (execution); a capability
   class, never a persona; resolution order owned by `rules/roles.md` §4.
 - **profile** — a role's concrete model and effort binding on one host,
-  owned by `skills/kernel/orch-delegate/references/profiles.md`; a
+  owned by `skills/engines/orch-frontier/references/profiles.md`; a
   packet's optional `profile` slot names one explicitly, overriding role
   resolution for that dispatch.
 - **host** — the runtime carrying the agents: Claude Code or Codex.

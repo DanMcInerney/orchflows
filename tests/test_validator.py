@@ -221,11 +221,12 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
         (pack_dir / "SKILL.md").write_bytes(content)
 
     def test_a_references_only_directory_is_no_package_and_no_finding(self):
-        """The home `skills/kernel/orch-delegate/references/profiles.md` keeps
-        after its SKILL.md is deleted: rules/roles.md, contracts/work-item.md,
-        templates/host-block.md and install.py all address the file at that
-        path, so the directory outlives the skill. Discovery must read it as
-        no package at all -- not as a package missing its SKILL.md."""
+        """A tier directory holding only `references/` is read as no package
+        at all -- not as a package missing its SKILL.md, which would take the
+        tree red on a directory the library merely has not finished emptying.
+        (Such a home is still no place for a public reference: visibility §4
+        wants an owning body naming the path, which is why `profiles.md` now
+        sits under `skills/engines/orch-frontier/`.)"""
         refs = self.tmp_path / "skills" / "kernel" / "orch-refsonly" / "references"
         refs.mkdir(parents=True)
         (refs / "profiles.md").write_text("A reference with no skill.\n", encoding="utf-8")

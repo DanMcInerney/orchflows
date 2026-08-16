@@ -77,7 +77,7 @@ Team setup: `python install.py --project PATH` writes a committable
 routing block for a repo. Uninstall: `python install.py --user
 --uninstall` removes only what it generated; `--dry-run` previews
 either. Default model and effort per role, both hosts:
-[profiles.md](skills/kernel/orch-delegate/references/profiles.md). Edit
+[profiles.md](skills/engines/orch-frontier/references/profiles.md). Edit
 a rendered role agent to run your own; installs ask before replacing it
 and keep it by default.
 

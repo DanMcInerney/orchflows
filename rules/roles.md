@@ -9,7 +9,7 @@
    - `orch-worker` — execution: implementation, repair, investigation,
      diagnosis, and shape-checked mechanics.
 3. Concrete model and effort bindings per host are owned solely by
-   [profiles.md](../skills/kernel/orch-delegate/references/profiles.md).
+   [profiles.md](../skills/engines/orch-frontier/references/profiles.md).
 4. Resolve role at each dispatch, against the active host's profile
    bindings (clause 3), in order: an explicit packet profile wins; else
    the applied skill's declared role; a `none` declaration or a

@@ -53,4 +53,4 @@
     recorded in the run's notes at launch; either recorded nowhere is
     child under-delivered at the join. How a caller watches a lane on a
     given host is
-    [profiles.md](../skills/kernel/orch-delegate/references/profiles.md)'s.
+    [profiles.md](../skills/engines/orch-frontier/references/profiles.md)'s.
