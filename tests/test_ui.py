@@ -1166,6 +1166,38 @@ class TestUnreadableTicketFile(unittest.TestCase):
                 self.assertIn(ui.DIAGNOSTIC_UNREADABLE, page, url)
                 self.assertIn("oops.md", page, url)
 
+    def test_the_ticket_page_itself_names_the_read_failure(self):
+        # The index and the run page name it through `identity_diagnostics`;
+        # the ticket's own page is the one a reader lands on from either,
+        # and there "unset" with no sections is what an empty ticket draws.
+        # A *file* that will not read, this time: the directory above never
+        # reaches `render_ticket` (`find_ticket` wants `is_file()`), and the
+        # page it draws instead -- "no ticket oops in run ..." -- is the
+        # route-layer collapse the ticket's ## Risks 1 queues, not this.
+        real = Path.read_text
+
+        def refused_for_g1(self, *args, **kwargs):
+            if self.name == "G1.md":
+                raise OSError("refused")
+            return real(self, *args, **kwargs)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.sink(tmp)
+
+            with patch.object(Path, "read_text", refused_for_g1):
+                status, page = ui.render_route(root, detail_url(self.RUN, "G1"))
+
+            self.assertEqual(200, status)
+            self.assertIn(ui.DIAGNOSTIC_UNREADABLE, page)
+
+    def test_a_readable_ticket_page_carries_no_such_diagnostic(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.sink(tmp)
+
+            page = ui.render_route(root, detail_url(self.RUN, "G1"))[1]
+
+            self.assertNotIn(ui.DIAGNOSTIC_UNREADABLE, page)
+
     def test_a_run_of_readable_tickets_carries_no_such_diagnostic(self):
         # Otherwise the assertion above is met by a page that warns always.
         with tempfile.TemporaryDirectory() as tmp:
@@ -4291,6 +4323,24 @@ class TestActivityState(SessionCase):
         self.assertIn(
             agent_stamp(UNEVIDENCED_AGENT), session_cell(page, UNEVIDENCED_AGENT, "when")
         )
+
+    def test_a_subagent_whose_files_will_not_stat_is_not_dated_at_the_epoch(self):
+        # `read_agents` takes a subagent's last activity off its files' mtimes;
+        # a file the path layer will not describe used to leave that at 0,
+        # which `_stamp` draws as 1970-01-01 -- a real-looking time for a
+        # read that failed. The listing above already names a *session* file
+        # that will not stat; this is the same failure one level down.
+        real = ui._stat_identity
+
+        def refused_under_subagents(path):
+            return None if "subagents" in path.parts else real(path)
+
+        with patch.object(ui, "_stat_identity", refused_under_subagents):
+            page = self.flowchart()
+
+        cell = session_cell(page, UNEVIDENCED_AGENT, "when")
+        self.assertIn(ui.DIAGNOSTIC_UNREADABLE, cell)
+        self.assertNotIn("1970-01-01", cell)
 
     def test_a_tool_call_that_is_not_an_agent_call_is_evidence_of_nothing(self):
         # `toolu_alpha_03` is `agent-aa13`'s id, and the transcript carries a

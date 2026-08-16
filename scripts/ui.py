@@ -1558,9 +1558,11 @@ def _agent_depth(value):
     return value if isinstance(value, int) and not isinstance(value, bool) else None
 
 
-def _agent_record(meta: Path, modified: int) -> dict:
+def _agent_record(meta: Path, modified) -> dict:
     """The named metadata fields of one subagent, each degrading to an
-    absence rather than to a traceback."""
+    absence rather than to a traceback. ``modified`` is the newest mtime of
+    the subagent's files, or ``None`` when the path layer would describe
+    none of them -- not 0, which ``_stamp`` would draw as the epoch."""
 
     record = {
         "id": _agent_id(meta),
@@ -1605,7 +1607,7 @@ def read_agents(path: Path) -> list:
             activity[agent] = max(activity.get(agent, 0), identity[2])
         if file.name.endswith(AGENT_META_SUFFIX):
             metas.append(file)
-    return [_agent_record(meta, activity.get(_agent_id(meta), 0)) for meta in metas]
+    return [_agent_record(meta, activity.get(_agent_id(meta))) for meta in metas]
 
 
 def _project_directories(root: Path) -> list:
@@ -2626,7 +2628,11 @@ def render_agents(session: dict) -> str:
                         html.escape(agent["evidence"])
                     ),
                     "attached": _attachment(agent, known),
-                    "when": html.escape(_stamp(agent["modified"])),
+                    "when": html.escape(
+                        DIAGNOSTIC_UNREADABLE
+                        if agent["modified"] is None
+                        else _stamp(agent["modified"])
+                    ),
                 },
                 agent["id"],
             )
@@ -2798,6 +2804,12 @@ def render_ticket(run: str, ticket: dict) -> str:
                 executor=_cell(ticket["executor"], EMPTY_UNSET),
             ),
             '<p class="root">{0}</p>\n'.format(html.escape(ticket["path"])),
+            # The index and the run page name an unread ticket through
+            # `identity_diagnostics`; this page is where a reader lands from
+            # either, and "unset" with no sections is what an empty one draws.
+            render_diagnostics(
+                [DIAGNOSTIC_UNREADABLE] if ticket.get("unreadable") else []
+            ),
             render_claim(ticket),
             render_sections(ticket["sections"]),
             '<p class="back"><a href="/">all runs</a></p>\n',
