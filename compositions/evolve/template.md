@@ -10,9 +10,9 @@ candidate exists: the incumbent is admitted against it, each generation
 of candidates is written and scored blind against it, and the campaign
 closes on the promotion rule it opened with.
 
-`00-eval` has work to do only
-where `evaluation` is `none`: a supplied frozen evaluation identity is
-already the campaign's, and the stubs behind it read that instead.
+`00-eval` has work to do only where `evaluation` is `none`: a supplied
+frozen evaluation identity is already the campaign's, and the stubs
+behind it read that instead.
 
 Instantiate with all six placeholders: `target`, the identity being
 evolved; `incumbent`, its fixed starting result/evidence identity;
