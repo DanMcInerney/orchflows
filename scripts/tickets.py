@@ -707,7 +707,9 @@ def _read_identity(path: Path):
         # No document, and no reachable place for one. An unreachable sink is
         # the run-state write's own error to report, in its own words.
         return None, None
-    except OSError as error:
+    except (OSError, UnicodeDecodeError) as error:
+        # the widening `_read_utf8` makes everywhere else; this read cannot
+        # use the helper because the retry wrapper is the point of it
         return None, {"error": f"unreadable run identity {path}: {error}"}
     try:
         data = json.loads(text)
@@ -1089,16 +1091,33 @@ def _write_section(text: str, heading: str, body: str, append: bool = False) -> 
     return "".join(lines[:found]) + segment + "".join(lines[end:])
 
 
-def _load_ticket(path: Path) -> dict:
+def _read_utf8(path, subject: str = "ticket", encoding: str = "utf-8"):
+    """One file's text as ``(text, None)``, or ``(None, {"error": ...})``.
+
+    Both exceptions in one place because they are one failure to a caller --
+    the file is there and its bytes cannot be read -- and because they are
+    not one exception to Python: ``UnicodeDecodeError`` is a ``ValueError``,
+    not an ``OSError``, so a handler written for unreadable files let
+    non-UTF-8 bytes through as a traceback on a channel whose whole contract
+    is one JSON document. Every read site in this script goes through here,
+    so the next one cannot be written with half the handler.
+    """
+
+    # The object handed in does the reading whenever it can, and only a
+    # plain string is wrapped: a caller may pass a path-like stand-in whose
+    # `read_text` is the seam the caller is testing, and `Path(path)` would
+    # quietly discard it and read the real file instead.
+    reader = path if hasattr(path, "read_text") else Path(path)
     try:
-        text = path.read_text(encoding="utf-8")
+        return reader.read_text(encoding=encoding), None
     except (OSError, UnicodeDecodeError) as error:
-        # UnicodeDecodeError is a ValueError, not an OSError, so bytes that
-        # are not UTF-8 used to escape this handler and take `list` down with
-        # a traceback -- the one shape of unreadable ticket that crashed
-        # instead of reporting. Every caller grades this payload; none of
-        # them survives an exception.
-        return {"id": path.stem, "path": str(path), "error": f"unreadable ticket: {error}"}
+        return None, {"error": f"unreadable {subject}: {error}"}
+
+
+def _load_ticket(path: Path) -> dict:
+    text, failure = _read_utf8(path)
+    if failure is not None:
+        return {"id": path.stem, "path": str(path), "error": failure["error"]}
     try:
         data = _parse_frontmatter(text)
     except Exception:
@@ -1319,10 +1338,9 @@ def template_defects(directory) -> list:
     defects = []
     stubs = {}
     for path in paths:
-        try:
-            text = path.read_text(encoding="utf-8-sig")
-        except OSError as error:
-            defects.append((path, f"unreadable stub {path.name}: {error}"))
+        text, failure = _read_utf8(path, f"stub {path.name}", encoding="utf-8-sig")
+        if failure is not None:
+            defects.append((path, failure["error"]))
             continue
         for defect in ticket_defects(text, stub=True):
             defects.append((path, defect))
@@ -1741,10 +1759,9 @@ def _place_ticket(run: str, source: str, declared_id=None):
     invalid = _segment_error("run id", run)
     if invalid is not None:
         return invalid
-    try:
-        text = Path(source).read_text(encoding="utf-8")
-    except OSError as error:
-        return {"error": f"unreadable ticket file: {error}"}
+    text, failure = _read_utf8(source, "ticket file")
+    if failure is not None:
+        return failure
     data = _parse_frontmatter(text)
     ticket_id = data.get("id") if isinstance(data.get("id"), str) else None
     if not ticket_id:
@@ -1809,10 +1826,9 @@ def _cmd_amend(rest):
             f"usage: {AMEND_USAGE}"
         }
     if file_arg is not None:
-        try:
-            body = Path(file_arg).read_text(encoding="utf-8")
-        except OSError as error:
-            return {"error": f"unreadable body file: {error}"}
+        body, failure = _read_utf8(file_arg, "body file")
+        if failure is not None:
+            return failure
     else:
         body = text_arg
 
@@ -1822,10 +1838,9 @@ def _cmd_amend(rest):
     ticket_path = tickets_root / run / f"{ticket_id}.md"
     if not ticket_path.is_file():
         return {"error": f"ticket not found: {run}/{ticket_id}"}
-    try:
-        text = ticket_path.read_text(encoding="utf-8")
-    except OSError as error:
-        return {"error": f"unreadable ticket: {error}"}
+    text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return failure
     frontmatter = _parse_frontmatter(text)
     claimed_by = str(frontmatter.get("claimed_by") or "").strip()
     if claimed_by:
@@ -1930,10 +1945,9 @@ def _template_stubs(directory: Path, values: dict):
         }
     stubs = {}
     for path in paths:
-        try:
-            text = path.read_text(encoding="utf-8")
-        except OSError as error:
-            return None, {"error": f"unreadable stub {path.name}: {error}"}
+        text, failure = _read_utf8(path, f"stub {path.name}")
+        if failure is not None:
+            return None, failure
         text = PLACEHOLDER_RE.sub(
             lambda match: values.get(match.group(1), match.group(0)), text
         )
@@ -2049,10 +2063,10 @@ def _cmd_instantiate(rest):
                 f"usage: {INSTANTIATE_USAGE}"
             }
         values[key.strip()] = value
-    try:
-        template = _parse_frontmatter(template_path.read_text(encoding="utf-8"))
-    except OSError as error:
-        return {"error": f"unreadable {TEMPLATE_FILE}: {error}"}
+    manifest, failure = _read_utf8(template_path, TEMPLATE_FILE)
+    if failure is not None:
+        return failure
+    template = _parse_frontmatter(manifest)
     declared = template.get("placeholders")
     declared = declared if isinstance(declared, list) else []
     unsupplied = [name for name in declared if name not in values]
@@ -2472,9 +2486,8 @@ def _cmd_ready(rest):
                 data["summary"]["status"] = "ready"
                 eligible = True
             elif status == "claimed":
-                try:
-                    text = Path(data["path"]).read_text(encoding="utf-8")
-                except OSError:
+                text, failure = _read_utf8(data["path"])
+                if failure is not None:
                     # unreadable now, though it parsed a moment ago: the
                     # holder is doing something to it, which is motion
                     continue
@@ -2494,10 +2507,9 @@ def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime
     check, so two concurrent claimants could both believe they had won).
     """
 
-    try:
-        current_text = ticket_path.read_text(encoding="utf-8")
-    except OSError as error:
-        return {"error": f"unreadable ticket: {error}"}
+    current_text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return failure
     if current_text != prior_text:
         return {"error": "ticket changed since read; lost the claim race, retry"}
     data = _parse_frontmatter(prior_text)
@@ -2532,7 +2544,9 @@ def _cmd_claim(rest):
     loaded = _load_ticket(ticket_path)
     if "error" in loaded:
         return {"error": loaded["error"]}
-    prior_text = ticket_path.read_text(encoding="utf-8")
+    prior_text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return failure
     now = datetime.now(timezone.utc)
     result = _do_claim(ticket_path, prior_text, claimed_by, now)
     if "error" in result:
@@ -2555,7 +2569,9 @@ def _cmd_set_status(rest):
     ticket_path = tickets_root / run / f"{ticket_id}.md"
     if not ticket_path.is_file():
         return {"error": f"ticket not found: {run}/{ticket_id}"}
-    text = ticket_path.read_text(encoding="utf-8")
+    text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return failure
     updated = _set_frontmatter_field(text, "status", status)
     ticket_path.write_text(updated, encoding="utf-8")
     return {"set_status": {"run": run, "id": ticket_id, "status": status}}
@@ -2589,10 +2605,10 @@ def _cmd_packet(rest):
     loaded = _load_ticket(ticket_path)
     if "error" in loaded:
         return {"error": loaded["error"]}
-    try:
-        sections = _sections(ticket_path.read_text(encoding="utf-8"))
-    except OSError as error:
-        return {"error": f"unreadable ticket: {error}"}
+    text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return failure
+    sections = _sections(text)
 
     executor = (loaded.get("executor") or "").strip().strip("`")
     missing = []
@@ -2766,10 +2782,9 @@ def _cmd_result(rest):
     if file_arg is not None:
         # read from the caller's own workspace, while the ticket written is
         # the main checkout's — that split is the point of this subcommand
-        try:
-            body = Path(file_arg).read_text(encoding="utf-8")
-        except OSError as error:
-            return {"error": f"unreadable body file: {error}"}
+        body, failure = _read_utf8(file_arg, "body file")
+        if failure is not None:
+            return failure
     else:
         body = text_arg
     tickets_root = _tickets_root()
@@ -2778,8 +2793,10 @@ def _cmd_result(rest):
     ticket_path = tickets_root / run / f"{ticket_id}.md"
     if not ticket_path.is_file():
         return {"error": f"ticket not found: {run}/{ticket_id}"}
+    text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return failure
     try:
-        text = ticket_path.read_text(encoding="utf-8")
         # Rendered before the overwrite guard reads anything, and written
         # after it: a ticket this writer cannot write safely is refused as
         # such whatever flags were passed, and the guard never reports on a
@@ -2790,8 +2807,6 @@ def _cmd_result(rest):
         rendered = _write_section(text, canonical, body, append)
     except TicketFormatError as error:
         return {"error": f"{error}. ticket: {ticket_path}"}
-    except OSError as error:
-        return {"error": f"unreadable ticket: {error}"}
     prior = _section_body(text, canonical)
     if prior and not append and not replace:
         # contracts/worklog.md's closing law, read across to the ticket the
@@ -2852,10 +2867,8 @@ def _run_tickets(run: str):
     items = []
     for path in sorted(run_dir.glob("*.md")) if run_dir.is_dir() else []:
         loaded = _load_ticket(path)
-        try:
-            loaded["sections"] = _sections(path.read_text(encoding="utf-8"))
-        except OSError:
-            loaded["sections"] = {}
+        text, failure = _read_utf8(path)
+        loaded["sections"] = {} if failure is not None else _sections(text)
         items.append(loaded)
     if not items:
         return None, {
@@ -3023,10 +3036,9 @@ def _write_rendered_worklog(run: str, markdown: str):
         return None, {"error": NO_SINK_ERROR}
     path = runs_root / run / WORKLOG_NAME
     if path.exists():
-        try:
-            existing = path.read_text(encoding="utf-8")
-        except OSError as error:
-            return None, {"error": f"unreadable worklog {path}: {error}"}
+        existing, failure = _read_utf8(path, f"worklog {path}")
+        if failure is not None:
+            return None, failure
         # a byte-order mark ahead of the marker still opens a rendered file
         if not existing.lstrip("\ufeff").startswith(WORKLOG_RENDER_MARKER):
             return None, {
@@ -3142,9 +3154,8 @@ def _notes_terminal(path: Path):
     survives untouched.
     """
 
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError:
+    text, failure = _read_utf8(path)
+    if failure is not None:
         return None
     for line in text.splitlines():
         if _is_terminal_heading(line):
@@ -3244,10 +3255,9 @@ def _cmd_run_state(rest):
             }
         if file_arg is not None:
             # read from the caller's own workspace, write at the main root
-            try:
-                body = Path(file_arg).read_text(encoding="utf-8")
-            except OSError as error:
-                return {"error": f"unreadable body file: {error}"}
+            body, failure = _read_utf8(file_arg, "body file")
+            if failure is not None:
+                return failure
         else:
             body = text_arg
     elif file_arg is not None or text_arg is not None:
@@ -3451,10 +3461,9 @@ def _cmd_improvement(rest):
             }
         if file_arg is not None:
             # read from the caller's own workspace, write in the sink
-            try:
-                body = Path(file_arg).read_text(encoding="utf-8")
-            except OSError as error:
-                return {"error": f"unreadable body file: {error}"}
+            body, failure = _read_utf8(file_arg, "body file")
+            if failure is not None:
+                return failure
         else:
             body = text_arg
     elif file_arg is not None or text_arg is not None:
