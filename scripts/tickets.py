@@ -16,6 +16,13 @@ exit 1; success exits 0. No outcome raises a traceback.
 never rendered as an unknown-subcommand error.
 
 Subcommands:
+    new <run> <id> --executor E --objective TEXT --criterion C
+        [--criterion C ...] [--depends-on a,b] [--write-scope p[,p]]
+        [--bound B] [--pack P] [--input I ...] [--excluded X ...]
+        [--profile P] [--independence gate|checker]
+        [--isolation required|none] [--return-fields TEXT]
+    new <run> --file <path>
+    instantiate <template-dir> --run <run> [--set k=v ...]
     list [--run R]
     ready [--run R]
     claim <run> <id> --by <name>
@@ -200,6 +207,15 @@ NEW_DEFAULT_RETURN_FIELDS = (
 # writes them rather than only where they are read.
 INDEPENDENCE_VALUES = ("gate", "checker")
 ISOLATION_VALUES = (REQUIRED_ISOLATION, "none")
+INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
+# A template is a directory: this file, which declares the template's name,
+# entry and placeholders, plus one `<id>.md` ticket stub per node. Every
+# other markdown file in the directory is a stub.
+TEMPLATE_FILE = "template.md"
+# `{{name}}`, and the same name written with spaces inside the braces. The
+# body is anything but a brace, so an unfilled placeholder is findable after
+# substitution and nothing spans two of them.
+PLACEHOLDER_RE = re.compile(r"\{\{\s*([^{}]*?)\s*\}\}")
 IMPROVEMENT_USAGE = (
     "improvement (--proposal <name> (--file <path> | --text <string>) "
     "| --covered <line>)"
@@ -211,6 +227,7 @@ PROPOSALS_DIR = "proposals"
 COVERAGE_RECORD_NAME = "covered.jsonl"
 SUBCOMMAND_USAGE = {
     "new": NEW_USAGE,
+    "instantiate": INSTANTIATE_USAGE,
     "list": "list [--run R]",
     "ready": "ready [--run R]",
     "claim": "claim <run> <id> --by <name>",
@@ -223,6 +240,9 @@ SUBCOMMAND_USAGE = {
 SUBCOMMAND_SUMMARY = {
     "new": "Issue one ticket into the run, refusing any shape `ticket_defects` "
     "reports before anything is written; --file places one already written.",
+    "instantiate": "Instantiate one template directory into a run's tickets: "
+    "placeholders filled, every stub graded, the graph checked for edges, "
+    "cycles and its single terminal, then written all or none.",
     "list": "Every ticket in the tracker, or in one run, as summaries.",
     "ready": "The tickets whose dependencies are complete and whose claim is "
     "free or stale; promotes an eligible `pending` to `ready`.",
@@ -737,10 +757,17 @@ def _set_frontmatter_field(text: str, key: str, value: str) -> str:
     for i in range(1, end):
         line_key = lines[i].split(":", 1)[0].strip()
         if line_key == key:
-            lines[i] = f"{key}: {value}{newline}"
+            lines[i] = _frontmatter_line(key, value, newline)
             return "".join(lines)
-    lines.insert(end, f"{key}: {value}{newline}")
+    lines.insert(end, _frontmatter_line(key, value, newline))
     return "".join(lines)
+
+
+def _frontmatter_line(key: str, value: str, newline: str) -> str:
+    """One scalar frontmatter line. An empty value carries no trailing space:
+    `claimed_by:` is how an unclaimed ticket reads on disk."""
+
+    return f"{key}: {value}{newline}" if value != "" else f"{key}:{newline}"
 
 
 class TicketFormatError(ValueError):
@@ -1407,6 +1434,207 @@ def _issue_ticket(run: str, ticket_id: str, text: str):
             "id": ticket_id,
             "path": str(ticket_path),
             "status": _parse_frontmatter(text).get("status"),
+        }
+    }
+
+
+def _template_stubs(directory: Path, values: dict):
+    """``(stubs, error)`` — every stub in the template, substituted and graded.
+
+    ``stubs`` maps a stub id to its text and its dependency ids, in file
+    order. Each stub is substituted first and graded after, because a
+    placeholder standing where an executor or a bound belongs is a defect
+    only until it is filled.
+    """
+
+    paths = sorted(
+        path for path in directory.glob("*.md") if path.name != TEMPLATE_FILE
+    )
+    if not paths:
+        return None, {
+            "error": f"template {directory} holds no stub: a template is "
+            f"{TEMPLATE_FILE} plus one or more <id>.md ticket stubs"
+        }
+    stubs = {}
+    for path in paths:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as error:
+            return None, {"error": f"unreadable stub {path.name}: {error}"}
+        text = PLACEHOLDER_RE.sub(
+            lambda match: values.get(match.group(1), match.group(0)), text
+        )
+        unfilled = PLACEHOLDER_RE.search(text)
+        if unfilled is not None:
+            return None, {
+                "error": f"stub {path.stem} carries the unfilled placeholder "
+                f"'{{{{{unfilled.group(1)}}}}}': supply it with "
+                f"--set {unfilled.group(1)}=<value>"
+            }
+        defects = ticket_defects(text, stub=True)
+        if defects:
+            return None, {
+                "error": f"stub {path.stem} is off contract "
+                f"(contracts/work-item.md): " + "; ".join(defects)
+            }
+        data = _parse_frontmatter(text)
+        declared_id = str(data.get("id") or "").strip()
+        if declared_id != path.stem:
+            return None, {
+                "error": f"stub {path.name} names id '{declared_id}': a stub's "
+                "id is its file stem, and `depends_on` names ids"
+            }
+        stubs[path.stem] = (text, list(data.get("depends_on") or []))
+    return stubs, None
+
+
+def _template_order(stubs: dict):
+    """``(ids_in_topological_order, error)`` for one template's graph.
+
+    Three refusals, in the order that makes each message true: an edge to a
+    stub that is not here, then a cycle, then a terminal count that is not
+    one. The terminal stub's completion test is the template's done check,
+    so two of them is two done checks and none is a graph with no end.
+    """
+
+    for stub_id, (_, dependencies) in stubs.items():
+        for dependency in dependencies:
+            if dependency not in stubs:
+                return None, {
+                    "error": f"stub {stub_id} depends on '{dependency}', which is "
+                    "not a stub in this template"
+                }
+    remaining = {stub_id: set(deps) for stub_id, (_, deps) in stubs.items()}
+    ordered = []
+    while remaining:
+        ready = sorted(
+            stub_id for stub_id, deps in remaining.items() if not deps
+        )
+        if not ready:
+            return None, {
+                "error": "template is cyclic: no stub in "
+                f"{sorted(remaining)} is free of dependencies"
+            }
+        for stub_id in ready:
+            del remaining[stub_id]
+            ordered.append(stub_id)
+        for deps in remaining.values():
+            deps.difference_update(ready)
+    depended_on = {
+        dependency for _, deps in stubs.values() for dependency in deps
+    }
+    terminals = sorted(set(stubs) - depended_on)
+    if len(terminals) != 1:
+        return None, {
+            "error": f"template has {len(terminals)} terminal stubs {terminals}; "
+            "exactly one stub is terminal, and its completion test is the "
+            "template's done check"
+        }
+    return ordered, None
+
+
+def _cmd_instantiate(rest):
+    """Instantiate one template into one run's tickets.
+
+    A template is a directory: ``template.md`` and one file per stub. What
+    happens here is substitution, the same grading every issued ticket gets,
+    the graph checks a directory of files cannot carry (edges, a cycle, the
+    single terminal), and then one write per stub — in that order, so a
+    template refused for its last stub has written none of the others.
+    """
+
+    args = list(rest)
+    run = _extract_flag(args, "--run")
+    settings = _extract_all(args, "--set")
+    stray = next((arg for arg in args if arg.startswith("-")), None)
+    if stray is not None:
+        return {
+            "error": f"instantiate does not accept {stray}. usage: {INSTANTIATE_USAGE}"
+        }
+    if len(args) != 1:
+        return {"error": f"usage: {INSTANTIATE_USAGE}"}
+    if run is None:
+        return {"error": f"instantiate requires --run <run>. usage: {INSTANTIATE_USAGE}"}
+    invalid = _segment_error("run id", run)
+    if invalid is not None:
+        return invalid
+    directory = Path(args[0])
+    if not directory.is_dir():
+        return {"error": f"template directory not found: {directory}"}
+    template_path = directory / TEMPLATE_FILE
+    if not template_path.is_file():
+        return {
+            "error": f"template directory {directory} has no {TEMPLATE_FILE}: it "
+            "declares the template's name, entry and placeholders"
+        }
+    values = {}
+    for setting in settings:
+        key, separator, value = setting.partition("=")
+        if not separator or not key.strip():
+            return {
+                "error": f"--set takes k=v: '{setting}' names no value. "
+                f"usage: {INSTANTIATE_USAGE}"
+            }
+        values[key.strip()] = value
+    try:
+        template = _parse_frontmatter(template_path.read_text(encoding="utf-8"))
+    except OSError as error:
+        return {"error": f"unreadable {TEMPLATE_FILE}: {error}"}
+    declared = template.get("placeholders")
+    declared = declared if isinstance(declared, list) else []
+    unsupplied = [name for name in declared if name not in values]
+    if unsupplied:
+        return {
+            "error": f"{TEMPLATE_FILE} declares the placeholders {unsupplied} that "
+            "no --set supplies"
+        }
+
+    stubs, error = _template_stubs(directory, values)
+    if error is not None:
+        return error
+    ordered, error = _template_order(stubs)
+    if error is not None:
+        return error
+
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {"error": NO_SINK_ERROR}
+    run_dir = tickets_root / run
+    rendered = []
+    for stub_id in ordered:
+        text, dependencies = stubs[stub_id]
+        text = _set_frontmatter_field(text, "run", run)
+        text = _set_frontmatter_field(
+            text, "status", "pending" if dependencies else "ready"
+        )
+        text = _set_frontmatter_field(text, "claimed_by", "")
+        text = _set_frontmatter_field(text, "claimed_at", "")
+        path = run_dir / f"{stub_id}.md"
+        if path.exists():
+            return {
+                "error": f"ticket id '{stub_id}' is already issued in run '{run}': "
+                f"{path}. Nothing was written"
+            }
+        rendered.append((path, text))
+    written = []
+    try:
+        run_dir.mkdir(parents=True, exist_ok=True)
+        for path, text in rendered:
+            with open(path, "w", encoding="utf-8", newline="\n") as handle:
+                handle.write(text)
+            written.append(path)
+    except OSError as error:
+        # All or none: a half-instantiated template is a run with a graph
+        # that has no terminal and dependencies that never complete.
+        for path in written:
+            path.unlink(missing_ok=True)
+        return {"error": f"unwritable ticket: {error}. Nothing was written"}
+    return {
+        "instantiate": {
+            "template": str(template.get("name") or directory.name),
+            "run": run,
+            "ids": ordered,
+            "paths": [str(path) for path, _ in rendered],
         }
     }
 
@@ -2198,8 +2426,8 @@ def _cmd_improvement(rest):
 def _dispatch(argv):
     if not argv:
         return {
-            "error": "missing subcommand: new | list | ready | claim | "
-            "set-status | packet | result | run-state | improvement"
+            "error": "missing subcommand: new | instantiate | list | ready | "
+            "claim | set-status | packet | result | run-state | improvement"
         }
     command, rest = argv[0], argv[1:]
     if command in HELP_COMMANDS:
@@ -2208,6 +2436,8 @@ def _dispatch(argv):
         return _cmd_help(command)
     if command == "new":
         return _cmd_new(rest)
+    if command == "instantiate":
+        return _cmd_instantiate(rest)
     if command == "list":
         return _cmd_list(rest)
     if command == "ready":
