@@ -1640,15 +1640,15 @@ def _linked_markdown_files():
 
 
 def validate_markdown_links(diag: Diagnostics) -> None:
-    # The one skip site that does NOT say so yet: one absent root silences
-    # link resolution library-wide, and the `diag.warn(root, SKIPPED)` that
-    # belongs here turns tests/test_validate.py's FrictionLocationSyncTest
-    # red -- its tree copy omits `benchmarks/`, so the copy has never graded
-    # links at all and its "the copy grades what the tree grades" assertion
-    # would report the difference. That file has another owner; see this
-    # run's R9b Handoff.
-    if not all((ROOT / root).is_dir() for root in LINKED_MD_ROOTS):
-        return  # a partial tree (the isolated test fixtures) is not graded
+    absent = [root for root in LINKED_MD_ROOTS if not (ROOT / root).is_dir()]
+    if absent:
+        # A partial tree (the isolated test fixtures) is not graded -- and
+        # this skip is the whole check, not one file's: one absent root
+        # silences link resolution over every other root, so each is named
+        # and the operator restores them in one pass rather than eight.
+        for root in absent:
+            diag.warn(root, SKIPPED)
+        return
     dangling_links = _doclint().dangling_links
     for source in _linked_markdown_files():
         for target in dangling_links(source, _read_source(source)):

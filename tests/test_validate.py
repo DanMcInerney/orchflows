@@ -809,14 +809,17 @@ class FrictionLocationSyncTest(unittest.TestCase):
 
     # --- the two wrong-result readings (rules/verification.md §8) ------
 
-    # Version control, runtime state, caches -- and the two data corpora
-    # that hold 1275 of the tree's 1492 files while validate.py grades
-    # neither: the copy reports the identical exit code and warning count
-    # without them, and `test_the_copy_grades_what_the_tree_grades` is what
-    # says so on every run.
+    # Version control, runtime state, caches -- and `tests/fixtures`, the
+    # corpus validate.py does not grade. `benchmarks` used to be skipped
+    # beside it on the same reasoning, and that reasoning was wrong: it is
+    # one of `LINKED_MD_ROOTS`, so a copy without it made
+    # `validate_markdown_links` skip link resolution over the whole copy --
+    # silently, until the check learned to say so. The copy carries it now,
+    # and `test_the_copy_grades_what_the_tree_grades` is what says on every
+    # run that the copy is still the tree's stand-in.
     COPY_SKIPS = shutil.ignore_patterns(
         ".git", ".claude", ".orch", "__pycache__", "*.pyc", ".venv", ".mypy_cache",
-        "benchmarks", "fixtures",
+        "fixtures",
     )
     _copy = None
     _revisions = None

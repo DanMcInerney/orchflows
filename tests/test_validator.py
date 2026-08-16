@@ -231,9 +231,29 @@ class TestASkippedCheckSaysSo(_IsolatedTree):
             "templates/host-block.md",    # the other surface budget
             "compositions",               # the template contract
             "ARCHITECTURE.md",            # the backticked-name check
+            "docs",                       # markdown link resolution
+            "benchmarks",                 # ditto: one absent root silences it
         ):
             with self.subTest(owner=owner):
                 self.assertIn(owner, named)
+
+    def test_the_link_check_names_every_root_that_bought_its_silence(self):
+        # This skip is not one file's but the whole check's:
+        # `validate_markdown_links` grades nothing at all unless every root
+        # is there, so a report naming only the first would leave the
+        # operator restoring roots one run at a time. `contracts/` is the
+        # control -- the isolated tree has it, and a check that named it
+        # would be naming roots it did not miss.
+        result = self._run()
+        named = self._skipped(result.stdout)
+
+        for root in validate.LINKED_MD_ROOTS:
+            with self.subTest(root=root):
+                present = (self.tmp_path / root).is_dir()
+                self.assertEqual(
+                    not present, any(line.startswith("WARN " + root + ":") for line in named)
+                )
+        self.assertTrue((self.tmp_path / "contracts").is_dir())
 
     def test_a_check_that_starts_and_finds_half_its_tree_says_that_too(self):
         # With the friction owner present the check runs and then finds no
