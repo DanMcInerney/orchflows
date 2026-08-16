@@ -218,6 +218,14 @@ DEFAULT_RUN_STATE_TREE = "runs"
 # (contracts/result.md) are read in. `pending`, `ready`, `claimed` and
 # `suspended` are the non-terminal remainder.
 TERMINAL_STATES = ("complete", "blocked", "stalled", "limited", "failed")
+# The statuses `amend` is open in: the ticket is issued and nothing has
+# been worked against it. `claimed` and `suspended` carry an executor
+# working against the cut-time sections and every terminal status carries a
+# verdict read against them, so the criteria move under neither.
+AMENDABLE_STATUSES = frozenset({"pending", "ready"})
+# A pack's name around its domain: `orch-code-pack` is the code domain's.
+PACK_NAME_PREFIX = "orch-"
+PACK_NAME_SUFFIX = "-pack"
 WORKLOG_NAME = "worklog.md"
 # The free notes a run appends beside the view (contracts/worklog.md). A
 # second name rather than a second writer of one: `worklog --write` owns
@@ -281,7 +289,7 @@ AMEND_USAGE = (
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
 WORKLOG_USAGE = "worklog <run> [--write]"
 GATE_USAGE = (
-    "gate <run> <root-id> --lens <name>[,<name>] "
+    "gate <run> <root-id> [--lens <name>[,<name>]] "
     "[--write-scope <path>[,<path>]] [--acceptance-from <id>]"
 )
 # SPEC-ticket-set.md §2's three gate stub names, and the tickets they close
@@ -336,12 +344,14 @@ SUBCOMMAND_SUMMARY = {
     "reports before anything is written; --file places one already written.",
     "amend": f"Repair one cut-time section {list(CUT_SECTIONS)} of an issued "
     "ticket, through the same refusal `new` applies; refused once the ticket "
-    "is claimed, and never a section the executor writes (that is `result`).",
+    f"is claimed or has left {sorted(AMENDABLE_STATUSES)}, and never a "
+    "section the executor writes (that is `result`).",
     "instantiate": "Instantiate one template directory into a run's tickets: "
     "placeholders filled, every stub graded, the graph checked for edges, "
     "cycles and its single terminal, then written all or none.",
     "gate": "Write one root ticket's gate stubs: a read-only critique per "
-    "lens over the root's whole cut subtree, one repair holding the scope "
+    "lens (--lens; absent, the stamped pack's domain) over the root's whole "
+    "cut subtree, one repair holding the scope "
     "(the root's own, unless --write-scope names one) behind them all, and "
     "one verify carrying the acceptance verbatim. Refused if the root has "
     "no subtree yet, or if a stub already exists.",
@@ -1832,13 +1842,28 @@ def _cmd_amend(rest):
         text = ticket_path.read_text(encoding="utf-8")
     except OSError as error:
         return {"error": f"unreadable ticket: {error}"}
-    claimed_by = str(_parse_frontmatter(text).get("claimed_by") or "").strip()
+    frontmatter = _parse_frontmatter(text)
+    claimed_by = str(frontmatter.get("claimed_by") or "").strip()
     if claimed_by:
         return {
             "error": f"ticket {run}/{ticket_id} is claimed by '{claimed_by}': its "
             "cut-time sections are frozen once an executor is working against "
             "them (rules/verification.md §3). Queue the change as its own "
             "scope, or take the claim back first"
+        }
+    # The claim is not the whole lifecycle: `set-status` and `result` never
+    # require one, so a ticket run inline -- never claimed -- and then set
+    # `complete` was still open to an amended `## Completion test`, the
+    # criteria moving after the verdict rather than under a working
+    # executor. Amend is the cutter's channel, so it is open exactly while
+    # the ticket is still waiting to be worked.
+    status = str(frontmatter.get("status") or "").strip()
+    if status not in AMENDABLE_STATUSES:
+        return {
+            "error": f"ticket {run}/{ticket_id} is '{status}': its cut-time "
+            "sections are frozen outside "
+            f"{sorted(AMENDABLE_STATUSES)} (rules/verification.md §3). Queue "
+            "the change as its own scope"
         }
     try:
         rendered = _write_section(text, canonical, body)
@@ -2112,6 +2137,22 @@ def _cmd_instantiate(rest):
 # frontier that executed the units and needs no engine of its own.
 
 
+def _pack_domain(pack) -> str:
+    """The domain label of a stamped pack: `orch-code-pack` -> `code`.
+
+    contracts/pack-signature.md's `lens` cell binds `orch-critique` with the
+    pack's craft `## Lens` and names no label of its own, so there is one
+    label a caller never has to invent: the domain the pack is named for.
+    """
+
+    name = str(pack or "").strip()
+    if name.startswith(PACK_NAME_PREFIX):
+        name = name[len(PACK_NAME_PREFIX):]
+    if name.endswith(PACK_NAME_SUFFIX):
+        name = name[: -len(PACK_NAME_SUFFIX)]
+    return name
+
+
 def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list,
                write_scope: list, sections: list, pack=None) -> str:
     """One gate stub, rendered as a ticket the dispatcher already accepts."""
@@ -2122,6 +2163,13 @@ def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list,
         "status": "pending" if depends_on else "ready",
         "executor": executor,
         "pack": pack,
+        # rules/verification.md §10: a lane's acceptance never rests only on
+        # checks it authored, and the frontier's checker path keys on
+        # `checker`, which absence reads as. These criteria were written
+        # here, before any gate lane existed, and `<root>.gate.verify` is
+        # the re-verification the field names -- so the gate says so rather
+        # than inheriting the wrong default.
+        "independence": "gate",
         "depends_on": list(depends_on),
         "write_scope": list(write_scope),
         "bound": NEW_DEFAULT_BOUND,
@@ -2174,10 +2222,10 @@ def _gate_body(kind: str, root_id: str, lens: str, scope: list,
                 "- every finding names the artifact identity it was found at and "
                 "the evidence that shows it | oracle: this ticket's `## Result` "
                 f"read under the `{lens}` lens | oracle_class: judged | "
-                "provenance: authored-here",
+                "provenance: pre-existing",
                 f"- every `## Result` named in the fixed inputs was read | oracle: "
                 "this ticket's `## Result` against that list | oracle_class: "
-                "deterministic | provenance: authored-here",
+                "deterministic | provenance: pre-existing",
             ])),
             ("Return fields", "status; result — ranked findings, each with its "
              "artifact identity, severity and evidence; verification; feedback; "
@@ -2198,7 +2246,7 @@ def _gate_body(kind: str, root_id: str, lens: str, scope: list,
                 "- every accepted finding is repaired or declined with a stated "
                 "reason | oracle: the critique tickets' findings against this "
                 "ticket's `## Result` | oracle_class: deterministic | "
-                "provenance: authored-here",
+                "provenance: pre-existing",
                 "- nothing outside the write scope changed | oracle: `git status "
                 "--porcelain` in the run's workspace | oracle_class: "
                 "deterministic | provenance: pre-existing",
@@ -2245,12 +2293,6 @@ def _cmd_gate(rest):
         if invalid is not None:
             return invalid
     lenses = _split_commas(lens_arg)
-    if not lenses:
-        return {
-            "error": "gate requires --lens: one critique stub per stamped "
-            "lens. usage: " + GATE_USAGE
-        }
-
     items, error = _run_tickets(run)
     if error is not None:
         return error
@@ -2258,6 +2300,18 @@ def _cmd_gate(rest):
     root = by_id.get(root_id)
     if root is None:
         return {"error": f"root ticket '{root_id}' is not in run '{run}'"}
+    # One critique stub per stamped lens, and the label a caller does not
+    # name is the stamped pack's domain -- the decomposer stamped it once
+    # and never has to improvise a second name for the same lens. A root
+    # carrying no stamp has no domain to read, so the refusal stands.
+    if not lenses:
+        lenses = _split_commas(_pack_domain(root.get("pack")))
+    if not lenses:
+        return {
+            "error": "gate requires --lens: one critique stub per stamped "
+            f"lens, and root ticket '{root_id}' names no pack whose domain "
+            "could stand in. usage: " + GATE_USAGE
+        }
     # contracts/work-item.md: the root ticket's `write_scope` *is* the run's
     # scope, and the repair holds that scope. Read from the root when the
     # caller names none, so the one fact has one statement -- a caller that

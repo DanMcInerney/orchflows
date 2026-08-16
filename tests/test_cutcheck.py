@@ -624,6 +624,57 @@ class RootGateLayoutTest(unittest.TestCase):
         self.assertEqual(cutcheck.ILLEGAL_EXECUTOR, findings[0][2])
 
 
+class NestedRootTest(unittest.TestCase):
+    """A root is the set's own source, never a unit inside another root's.
+
+    `rules/topology.md` §7: mixed decomposition inside one graph is
+    undefined. Reading every `orch-decompose` ticket as a root made a
+    `<root>.NN` unit issued with that executor legal, and exempted anything
+    it carried under `.gate.` from families 4 and 5 -- the cut defect hiding
+    behind the exemption written for the honest layout.
+    """
+
+    def test_a_nested_root_is_reported_as_a_nested_root(self):
+        siblings = {
+            "00-root": {"id": "00-root", "executor": cutcheck.ROOT_EXECUTOR},
+            "00-root.01": {"id": "00-root.01", "executor": cutcheck.ROOT_EXECUTOR},
+        }
+        findings = cutcheck._executor_legality(siblings, ROOT)
+        self.assertEqual(1, len(findings), findings)
+        self.assertEqual("00-root.01", findings[0][0])
+        self.assertEqual(cutcheck.ILLEGAL_EXECUTOR, findings[0][2])
+        self.assertIn("nested root", findings[0][3])
+
+    def test_a_nested_roots_gate_stub_is_no_longer_exempt(self):
+        siblings = {
+            "00-root": {"id": "00-root", "executor": cutcheck.ROOT_EXECUTOR},
+            "00-root.01": {"id": "00-root.01", "executor": cutcheck.ROOT_EXECUTOR},
+            "00-root.01.gate.repair": {
+                "id": "00-root.01.gate.repair", "executor": "orch-repair"
+            },
+        }
+        roots = cutcheck._root_ids(siblings)
+        self.assertEqual(["00-root"], roots)
+        self.assertIsNone(cutcheck._gate_stub_of("00-root.01.gate.repair", roots))
+        self.assertIn("00-root.01.gate.repair", cutcheck._issued_items(siblings, roots))
+
+    def test_a_top_level_decompose_stub_beside_others_is_still_a_root(self):
+        """`compositions/self-improve/01-deliver` is exactly this shape.
+
+        A template's terminal-ish stub carries `orch-decompose` beside stubs
+        no root owns; no other root's id prefixes it, so it is a root of its
+        own and nothing about it is reported.
+        """
+
+        siblings = {
+            "00-mine": {"id": "00-mine", "executor": "orch-self-improve"},
+            "01-deliver": {"id": "01-deliver", "executor": cutcheck.ROOT_EXECUTOR},
+            "02-close": {"id": "02-close", "executor": "orch-integrate"},
+        }
+        self.assertEqual(["01-deliver"], cutcheck._root_ids(siblings))
+        self.assertEqual([], cutcheck._executor_legality(siblings, ROOT))
+
+
 class ExecutorLegalityTest(unittest.TestCase):
     def setUp(self):
         self.result = run_cutcheck("cutcheck-f6-executor")

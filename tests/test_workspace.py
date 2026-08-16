@@ -294,6 +294,36 @@ class TestStartFailureBehavior(unittest.TestCase):
     def test_a_scope_entry_carrying_a_parenthesis_is_refused_at_start(self):
         self._refuses_scope_entry("scripts/(tests)")
 
+    def _accepts_scope_entry(self, entry_of):
+        """A space is prose only where there is no path by that name.
+
+        `C:\\Users\\Dan M\\...` and `/Users/Dan McInerney/...` are exactly
+        paths, and a refusal keyed to the character alone refuses the host
+        rather than the cut. The parenthesis stays refused: it is the shape
+        the prose entries this guard was written for actually carry.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            worktree = add_worktree(main, "wt-branch", tmp / "wt")
+            spaced = worktree / "a dir"
+            spaced.mkdir()
+            make_ticket(run_dir, "T1", scope=("scratch", entry_of(spaced)))
+
+            done = run_workspace(worktree, "start", "testrun", "T1")
+
+            self.assertEqual(0, done.returncode, done.stdout + done.stderr)
+
+    def test_a_relative_scope_entry_that_is_an_existing_spaced_path_is_kept(self):
+        self._accepts_scope_entry(lambda spaced: spaced.name)
+
+    def test_an_absolute_scope_entry_that_is_an_existing_spaced_path_is_kept(self):
+        self._accepts_scope_entry(lambda spaced: str(spaced))
+
+    def test_a_spaced_entry_that_is_no_path_is_still_refused(self):
+        self._refuses_scope_entry("scratch and tests/")
+
     def test_a_bare_path_scope_is_recorded_as_before(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)

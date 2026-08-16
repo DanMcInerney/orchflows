@@ -1285,14 +1285,37 @@ def _first_overlap(paths, scopes):
     return None
 
 
-def _root_ids(siblings):
-    """Every id in this set whose executor makes it a root ticket."""
+def _decomposers(siblings):
+    """Every id in this set whose executor is the decomposer."""
 
     return sorted(
         item_id
         for item_id, frontmatter in siblings.items()
         if str(frontmatter.get("executor") or "").strip() == ROOT_EXECUTOR
     )
+
+
+def _root_ids(siblings):
+    """Every id in this set whose executor and position make it a root ticket.
+
+    The executor alone does not: a `<root>.NN` unit issued with it is a
+    nested decomposition, which ``rules/topology.md`` §7 leaves undefined,
+    and reading it as a root would grant it the root's exemption from
+    families 4, 5 and 6 -- the honest layout's exemption sheltering the one
+    shape it was never written for. A decomposer no other decomposer's id
+    prefixes is a root, so a template's top-level stub stands as a root
+    beside its siblings.
+    """
+
+    decomposers = _decomposers(siblings)
+    return [
+        item_id
+        for item_id in decomposers
+        if not any(
+            other != item_id and item_id.startswith(other + ".")
+            for other in decomposers
+        )
+    ]
 
 
 def _gate_stub_of(ticket_id, roots):
@@ -1503,7 +1526,9 @@ def _executor_legality(siblings, lib_root):
     makes a root a root, and the gate's three are what ``tickets.py gate``
     writes -- so no pack's executor cell names them and none should have to.
     Graded against the cell they were all illegal, which failed a cut for
-    carrying the shape the contract requires of it.
+    carrying the shape the contract requires of it. A decomposer that is not
+    a root -- an id inside another root's subtree -- gets neither grading and
+    is reported here as a nested root.
     """
 
     findings = []
@@ -1520,6 +1545,18 @@ def _executor_legality(siblings, lib_root):
             )
             continue
         if ticket_id in roots:
+            continue
+        if executor == ROOT_EXECUTOR:
+            findings.append(
+                (
+                    ticket_id,
+                    0,
+                    ILLEGAL_EXECUTOR,
+                    "{} here is a nested root: this id sits inside another "
+                    "root's subtree, and mixed decomposition inside one graph "
+                    "is undefined (rules/topology.md §7)".format(executor),
+                )
+            )
             continue
         if _gate_stub_of(ticket_id, roots) is not None:
             if executor not in GATE_STUB_EXECUTORS:

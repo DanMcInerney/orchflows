@@ -262,7 +262,7 @@ class NarrowConsoleTest(unittest.TestCase):
 
 
 class AmendTest(unittest.TestCase):
-    """`amend` is the cutter's repair channel, and it closes at the claim.
+    """`amend` is the cutter's repair channel, open while nothing is worked.
 
     `cutcheck.py` reports; the decomposer repairs. Until now no subcommand
     could touch an issued ticket's cut-time content, so the repair the cut's
@@ -324,6 +324,32 @@ class AmendTest(unittest.TestCase):
             )
             self.assertIn("error", payload)
             self.assertIn("someone", payload["error"])
+            self.assertEqual(before, path.read_text(encoding="utf-8"))
+
+    def test_a_never_claimed_complete_ticket_is_refused(self):
+        """The claim is not the whole lifecycle.
+
+        An ad-hoc ticket run inline is never claimed, and `set-status` and
+        `result` never require a claim -- so a ticket carrying a verdict was
+        still open to an amended `## Completion test`, which is the moving
+        target rules/verification.md §3 forbids, arriving after the verdict
+        rather than under a working executor.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.place(tmp)
+            self.assertNotIn(
+                "error", run_cmd("set-status", "testrun", "T1", "complete")
+            )
+            before = path.read_text(encoding="utf-8")
+            payload = run_cmd(
+                "amend", "testrun", "T1", "--section", "Completion test",
+                "--text", "- the suite exits 0 | oracle: `python -m unittest` "
+                "| oracle_class: deterministic | provenance: pre-existing",
+            )
+            self.assertIn("error", payload)
+            self.assertIn("complete", payload["error"])
             self.assertEqual(before, path.read_text(encoding="utf-8"))
 
     def test_a_section_the_executor_writes_is_refused_and_names_result(self):

@@ -114,13 +114,19 @@ def run_full(cwd: Path, *args):
 def ticket(tid: str, *, status: str = "complete", executor: str = "orch-tdd",
            deps: str = "[]", claimed_at: str = "", claimed_by: str = "agent-a",
            objective: str = "one end state", criterion: str = GOOD_CRITERION,
-           result: str = "", verification: str = "", feedback: str = "[]") -> str:
-    return TICKET.format(
+           result: str = "", verification: str = "", feedback: str = "[]",
+           pack: str = "") -> str:
+    text = TICKET.format(
         tid=tid, status=status, executor=executor, deps=deps,
         claimed_at=claimed_at, claimed_by=claimed_by, objective=objective,
         criterion=criterion, result=result, verification=verification,
         feedback=feedback,
     )
+    if pack:
+        text = text.replace(
+            f"executor: {executor}\n", f"executor: {executor}\npack: {pack}\n", 1
+        )
+    return text
 
 
 def make_run(sink: Path, tickets: dict) -> Path:
@@ -415,13 +421,14 @@ class GateStubsTest(unittest.TestCase):
     critique per lens (read-only, parallel, over every unit ticket), one
     repair behind them all, one verify carrying the root's acceptance."""
 
-    def make(self, sink: Path, units=("R.01", "R.02")) -> Path:
+    def make(self, sink: Path, units=("R.01", "R.02"), pack: str = "") -> Path:
         tickets = {
             "R": ticket(
                 "R", status="claimed", executor="orch-decompose",
                 objective="the whole delivery lands",
                 criterion="the suite exits 0 | oracle: `python tools/run_tests.py` "
                 "| oracle_class: deterministic | provenance: pre-existing",
+                pack=pack,
             )
         }
         for unit in units:
@@ -682,6 +689,74 @@ class GateStubsTest(unittest.TestCase):
                     run_cmd("set-status", "testrun", tid, "ready")
                     payload = run_cmd("packet", "testrun", tid, "--reply-to", "main")
                     self.assertNotIn("error", payload)
+
+    def test_every_stub_declares_its_independence_as_the_gate(self):
+        """`rules/verification.md` §10: acceptance resting only on checks
+        the executing context authored is UNVERIFIED, and the frontier's
+        checker path keys on `independence: checker`. A gate lane authored
+        none of these criteria and re-verification is the gate's own
+        `<root>.gate.verify`, so the field says `gate` rather than reading
+        `checker` by absence.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            self.gate()
+            for tid in ("R.gate.critique.cut-lens", "R.gate.repair",
+                        "R.gate.verify"):
+                with self.subTest(tid):
+                    self.assertIn("independence: gate", self.stub(run_dir, tid))
+
+    def test_every_criterion_the_gate_writes_is_pre_existing(self):
+        """The script authored these criteria before the lane existed, so
+        their provenance is the lane's, not the criterion's: `pre-existing`
+        per contracts/work-item.md. The verify stub carries the root's own
+        `## Completion test` verbatim and is not re-stamped here.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            self.gate()
+            for tid in ("R.gate.critique.cut-lens", "R.gate.repair"):
+                with self.subTest(tid):
+                    body = self.stub(run_dir, tid).split("## Completion test")[1]
+                    body = body.split("## Return fields")[0]
+                    self.assertNotIn("provenance: authored-here", body)
+                    self.assertIn("provenance: pre-existing", body)
+
+    def test_the_lens_defaults_to_the_stamped_packs_domain(self):
+        """`--lens` names a label, and the pack's lens cell names none.
+
+        The stamped pack's domain is that label -- the pack name without
+        `orch-` and `-pack` -- so the decomposer that stamped the root has
+        already said it and never has to improvise a second name.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink, pack="orch-code-pack")
+            payload = run_cmd(
+                "gate", "testrun", "R", "--write-scope", "scripts/one.py"
+            )
+            self.assertNotIn("error", payload)
+            self.assertEqual(["code"], payload["gate"]["lenses"])
+            self.assertIn("R.gate.critique.code", payload["gate"]["ids"])
+            self.assertIn("`code`", self.stub(run_dir, "R.gate.critique.code"))
+
+    def test_a_root_with_no_pack_still_requires_the_lens(self):
+        """The default is the stamp's; a root carrying no stamp has none to
+        read, and the refusal that names `--lens` stands."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            self.make(sink)
+            payload = run_cmd(
+                "gate", "testrun", "R", "--write-scope", "scripts/one.py"
+            )
+            self.assertIn("error", payload)
+            self.assertIn("--lens", payload["error"])
 
     def test_the_gate_is_the_queued_scopes_edge_in_the_view(self):
         """The two subcommands meet: what `gate` writes is what `worklog`
