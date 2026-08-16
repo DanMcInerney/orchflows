@@ -24,6 +24,12 @@ missing effort control it is no stop on its own — what an unisolated
 child then shares with its siblings is the caller's to weigh before
 dispatching them.
 
+On Claude Code a dispatched child spawns its own children only one
+level down from the orchestrator. So a stub whose executor must itself
+dispatch — an engine stub, or a blind scoring lane that spawns the
+children applying each candidate — is run by the engine at depth one,
+or inline in the engine's own context.
+
 On Codex, `agent_type` selects the installed profile; `task_name` only
 labels the child. A spawn surface that omits `agent_type` cannot apply a
 profile and stops the dispatch. Codex V2 profile selection uses a

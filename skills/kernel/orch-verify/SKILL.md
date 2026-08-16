@@ -14,8 +14,8 @@ Run every oracle not already covered by a prior entry whose `covers`
 are unchanged at the fixed result, per
 [rules/verification.md](../../../rules/verification.md) §7. Prefer the
 named external check over judgment wherever both exist. Render judged
-criteria per §6, fresh from the spec. Cite what each oracle
-actually produced; a verdict without evidence is UNVERIFIED.
+criteria per §6, fresh from the spec. Fill each verdict's `evidence`
+field on [verdict.md](../../../contracts/verdict.md)'s terms.
 
 Where the criteria carry a score scale, score each separately before
 any overall number, anchored to the evidence its oracle produced; an

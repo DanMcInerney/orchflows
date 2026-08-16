@@ -26,8 +26,8 @@
 8. Work with no terminal done (queue health, upkeep) runs as scheduled
    bounded snapshots, never as an unconverging loop.
 9. A loop's body is a caller-supplied binding: what one iteration
-   dispatches — one named skill, a composition, or a caller-owned
-   composite of named skills. The engine owns iteration and exit; the
+   dispatches — one named skill, an orch-frontier ticket over a
+   template, or a caller-owned composite of named skills. The engine owns iteration and exit; the
    body carries no judgment over either.
 10. A judged done-check's iteration-time PASS exits iteration
     provisionally; `complete` requires the fresh final re-judgment

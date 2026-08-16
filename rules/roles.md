@@ -14,7 +14,7 @@
    bindings (clause 3), in order: an explicit packet profile wins; else
    the applied skill's declared role; a `none` declaration or a
    dispatch naming no applied skill takes only a caller-named profile
-   (name `orch-planner` for a dispatched composition body unless
+   (name `orch-planner` for a dispatched template stub unless
    judgment says otherwise); absent a caller-named profile the dispatch
    is refused, never substituted silently.
 5. An override binds only the dispatch naming it; it never propagates to

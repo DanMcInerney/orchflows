@@ -11,9 +11,8 @@ bound, and fixed evidence.
 Write the section from the supplied evidence only; every claim traces
 to it. Hold the voice contract — its dimensions per the ticket's craft
 reference — and the slot's section job in the whole. Cite per the
-spec's citation policy.
-Mark any needed claim the evidence cannot support as a gap in the
-ticket, and write around it.
+spec's citation policy, marking and writing around an unsupportable
+claim as that same craft reference requires.
 
 Never: import knowledge outside the evidence set; write into another
 slot; exceed the length bound and call it thoroughness; write true
