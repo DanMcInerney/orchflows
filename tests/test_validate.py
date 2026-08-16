@@ -238,8 +238,8 @@ SINK_TERMS = ("tracker", "friction log", "run state")
 # `.orch/bin/` landing zone is rules/token-economy.md §4's to state, and a
 # skill body no longer restates it.
 CANARY_AND_BIN_LINES = {
-    "compositions/drift-canary.md": (
-        "`.orch/canary/`, spanning the kernel boundaries: one delegation, one",
+    "compositions/drift-canary/00-run.md": (
+        "- {{canary_set}} — the frozen golden work items under `.orch/canary/`,",
     ),
     "skills/workflows/orch-fixture/SKILL.md": (
         "`.orch/canary/README.md` owns: the ticket under `tickets/canary/`, the",

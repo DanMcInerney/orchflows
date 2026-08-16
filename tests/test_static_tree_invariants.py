@@ -536,5 +536,78 @@ class TestBenchmarkArchitecture(unittest.TestCase):
                 self.assertEqual("named", split_document(manifest)[0].get("entry"))
 
 
+class TestCompositionTemplates(unittest.TestCase):
+    """The composition set as template directories (SPEC-ticket-set.md P4).
+
+    `scripts/tickets.py` grades a template's shape — ids, edges, one
+    terminal — and `tools/validate.py` its manifest. Neither reads which
+    executor each stub binds or which stub the chain ends at, and those are
+    the decisions a composition used to state in prose: a step rebound to a
+    different skill, or a terminal moved off the stub carrying the done
+    check, passes every other check in the tree.
+    """
+
+    # template name -> ({stub id: executor}, terminal stub id). benchmaker's
+    # chain is `tests/test_benchmaker.py`'s to pin in full; what belongs here
+    # is that the tree's composition set is these directories.
+    TEMPLATES = {
+        "benchmaker": (
+            {
+                "00-acquire": "orch-decompose",
+                "01-design": "orch-eval-design",
+                "02-materialize": "orch-decompose",
+                "03-qualify": "orch-decompose",
+                "04-audit": "orch-critique",
+                "05-measure": "orch-verify",
+            },
+            "05-measure",
+        ),
+        "drift-canary": (
+            {"00-run": "orch-frontier", "01-diff": "orch-verify"},
+            "01-diff",
+        ),
+        "renovate": (
+            {
+                "00-audit": "orch-critique",
+                "01-triage": "orch-triage",
+                "02-deliver": "orch-decompose",
+            },
+            "02-deliver",
+        ),
+    }
+
+    @staticmethod
+    def _stubs(name):
+        tickets = validate._ticket_law()
+        directory = COMPOSITIONS / name
+        return {
+            path.stem: tickets._parse_frontmatter(
+                path.read_text(encoding="utf-8")
+            )
+            for path in sorted(directory.glob("*.md"))
+            if path.name != tickets.TEMPLATE_FILE
+        }
+
+    def test_each_template_binds_the_executors_its_composition_named(self):
+        for name, (expected, _) in self.TEMPLATES.items():
+            with self.subTest(template=name):
+                stubs = self._stubs(name)
+                self.assertEqual(
+                    expected,
+                    {stub: fields.get("executor") for stub, fields in stubs.items()},
+                )
+
+    def test_each_template_ends_at_the_stub_carrying_its_done_check(self):
+        for name, (_, terminal) in self.TEMPLATES.items():
+            with self.subTest(template=name):
+                stubs = self._stubs(name)
+                depended = {
+                    edge
+                    for fields in stubs.values()
+                    for edge in fields.get("depends_on", [])
+                }
+                self.assertEqual({terminal}, set(stubs) - depended)
+
+
 if __name__ == "__main__":
     unittest.main()

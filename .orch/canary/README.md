@@ -1,7 +1,7 @@
 # Canary fixture
 
 This is the drift canary described in
-[compositions/drift-canary.md](../../compositions/drift-canary.md): five
+[compositions/drift-canary/](../../compositions/drift-canary/): five
 frozen golden work items under `tickets/canary/` spanning the kernel
 seams — a trivial delegation (`canary-delegate`), a join scope rejection
 (`canary-scope-reject`), a verification with a deliberately failing
