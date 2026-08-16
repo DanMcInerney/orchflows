@@ -76,10 +76,10 @@ checkout — resumes mid-flight.
 Team setup: `python install.py --project PATH` writes a committable
 routing block for a repo. Uninstall: `python install.py --user
 --uninstall` removes only what it generated; `--dry-run` previews
-either. Default model bindings: the planner/reviewer is Fable 5 on
-high effort (Claude Code) or GPT-5.6 Sol on ultra (Codex); workers are
-Opus 5 on high and GPT-5.6 Sol on high. Edit a rendered role agent to
-run your own; installs ask before replacing it and keep it by default.
+either. Default model and effort per role, both hosts:
+[profiles.md](skills/kernel/orch-delegate/references/profiles.md). Edit
+a rendered role agent to run your own; installs ask before replacing it
+and keep it by default.
 
 ## The interesting parts
 
@@ -140,7 +140,7 @@ flowchart TD
     dec --> frontier["orch-frontier — dispatch every ready ticket"]
     frontier --> del["orch-delegate — hand the ticket to the right agent"]
     del --> exec["executor: orch-tdd | orch-draft / orch-edit | orch-investigate / orch-synthesize | orch-render"]
-    exec -.-> chk["orch-check — fresh agent double-checks (when needed)"]
+    exec -.-> chk["orch-critique — fresh agent double-checks and corrects (when needed)"]
     exec --> integ["orch-integrate — accept or reject the returned work"]
     chk --> integ
     integ -.->|rejected| frontier
@@ -174,21 +174,18 @@ self-improvement wired into every run.
 ### Legos
 
 - **One brick, one job.** `orch-frontier` runs the graph,
-  `orch-critique` attacks, `orch-judge` scores blind, `orch-loop`
-  iterates, the `fix` workflow proves the cause before repairing it.
+  `orch-critique` attacks, `orch-verify` decides done against named
+  oracles, `orch-loop` iterates, the `fix` workflow proves the cause
+  before repairing it.
 - **One stud pattern.** Six frozen contracts — work-item, verdict,
   worklog, pack-signature, composition, result — are the only
   interfaces. Anything that emits one plugs into anything that takes
   one.
 - **One return shape.** Every dispatchable unit returns one result
   envelope — status, result identity, verification — so any unit's
-  output feeds any successor's evidence. Three combinators — `seq`,
-  `par`, `loop` — are the whole grammar; a composition is just those
-  combinators over named bricks, written down in a file.
-- **Swappable baseplates.** Workflows are domain-blind; a pack
-  (code | content | research | design) is pure data that retargets
-  the whole tower. The pipeline that ships a feature also ships a
-  research report — swap one pack, change zero control flow.
+  output feeds any successor's evidence. A named workflow is just
+  tickets with the edges between them written down, so a chain needs
+  no per-pair glue.
 
 You snap bricks by naming them; the agent snaps them by routing. Same
 bricks either way.
@@ -197,84 +194,19 @@ bricks either way.
 
     orchflows
     │
-    ├── Layer 0 · contracts/ — Shared forms that keep every part of the system speaking the same language
-    │   ├── composition    — Defines a named workflow: steps, edges, invariants, done check
-    │   ├── pack-signature — Lists what every project-type setup must provide
-    │   ├── result         — The envelope every unit returns: status, result identity, verification
-    │   ├── verdict        — Records whether a check passed and what proves it
-    │   ├── work-item      — Describes and tracks one piece of work, from the whole job down to one slice
-    │   └── worklog        — Records the progress and current state of a larger job
-    │
-    ├── Layer 1 · skills/ — Things the agents know how to do
-    │   │
-    │   ├── kernel/ — Basic building blocks used by the rest of the system
-    │   │   ├── orch-check          — Has a fresh agent double-check the work and correct problems
-    │   │   ├── orch-critique       — Reviews something and lists the most important problems
-    │   │   ├── orch-decompose      — Breaks a large job into smaller pieces in the right order
-    │   │   ├── orch-delegate       — Hands one clearly defined task to another agent
-    │   │   ├── orch-elicit         — Asks the user when a decision cannot safely be made for them
-    │   │   ├── orch-integrate      — Decides whether returned work is acceptable and can be used
-    │   │   ├── orch-investigate    — Researches one focused question using reliable evidence
-    │   │   ├── orch-judge          — Rates one option using standards agreed on beforehand
-    │   │   ├── orch-mechanize      — Turns a repeatedly performed step into a reusable script
-    │   │   ├── orch-synthesize     — Combines findings from several sources into one answer
-    │   │   ├── orch-verify         — Runs the agreed checks to see whether the work passes
-    │   │   ├── orch-worklog        — Updates the job's progress record
-    │   │   └── orch-workspace      — Prepares a clean and safe place in which to work
-    │   │
-    │   ├── engines/ — Reusable ways of organizing work
-    │   │   ├── orch-frontier  — Starts each piece of work as soon as the work it needs is finished
-    │   │   ├── orch-loop      — Repeats work until an agreed check says it is done
-    │   │   ├── orch-panel     — Uses several independent reviewers to compare choices fairly
-    │   │   └── orch-compose   — Runs a saved workflow step by step and checks the whole at the end
-    │   │
-    │   ├── workflows/ — Complete processes made from the smaller building blocks
-    │   │   ├── orch-build         — Creates or changes a reusable part of the orchflows library
-    │   │   ├── orch-diagnose      — Reproduces a problem and finds what is actually causing it
-    │   │   ├── orch-eval-design   — Freezes candidate-blind evaluation semantics before construction
-    │   │   ├── orch-repair        — Applies the smallest change that fixes a known problem
-    │   │   ├── orch-fixture       — Saves a finished task as an example that can be run again later
-    │   │   ├── orch-self-improve  — Studies past difficulties and proposes improvements to the system
-    │   │   ├── orch-spec          — Turns a request into one agreed root ticket the rest is cut from
-    │   │   └── orch-triage        — Sorts a list of work into what is ready, blocked, or needs a person
-    │   │
-    │   ├── instances/ — Skills that perform a particular kind of hands-on work
-    │   │   ├── orch-tdd               — Writes software in small steps and checks each step with tests
-    │   │   ├── orch-resolve-conflicts — Decides how to combine two sets of changes that clash
-    │   │   ├── orch-draft             — Writes one section using only the supplied information
-    │   │   ├── orch-edit              — Combines separate sections into one consistent document
-    │   │   └── orch-render            — Builds a screen and checks how it actually looks and behaves
-    │   │
-    │   └── utilities/ — Small optional helpers
-    │       ├── orch-visualize   — Turns supplied information into a visual page
-    │       ├── orch-search-plan — Produces replayable candidate-search plans
-    │       └── orch-off         — Stops orchflows from automatically choosing skills
-    │
-    ├── Layer 2 · packs/ — Setups for different kinds of projects
-    │   ├── orch-code-pack     — Tells the system how to organize, save, and check software work
-    │   ├── orch-content-pack  — Tells the system how to organize and review written documents
-    │   ├── orch-research-pack — Tells the system how to answer questions using trustworthy sources
-    │   └── orch-design-pack   — Tells the system how to build and visually check interfaces
-    │
-    └── Layer 3 · compositions/ — Named workflows built from the skills, callable like any skill
-        ├── benchmaker           — Builds and qualifies a runnable benchmark
-        ├── drift-canary         — Reruns known examples to detect changes in agent behavior
-        ├── evolve               — Produces several versions and selects the strongest one
-        ├── fix                  — Finds the cause of a problem, repairs it, and proves it stays fixed
-        ├── improvement-delivery — Turns an approved process improvement into a tested change
-        ├── renovate             — Reviews an existing project and completes selected improvements
-        └── skill-tournament     — Tests competing versions of a skill to see which works best
+    ├── Layer 0 · contracts/ — the narrow waist: hash-pinned data shapes, the only
+    │                         interface between everything above them
+    ├── Layer 1 · skills/    — everything callable: kernel/ primitives that call no
+    │                         skill, engines/ that add control flow, workflows/
+    │                         assembled from both, instances/ that do a domain's
+    │                         hands-on work, utilities/
+    ├── Layer 2 · packs/     — per-domain data (code, content, research, design),
+    │                         never control flow
+    └── Layer 3 · compositions/ — named workflows, callable like any skill
 
-Four layers, dependencies pointing one way. `contracts/` is the narrow
-waist: six hash-pinned data shapes that are the only interfaces
-between skills. `skills/` is everything callable — kernel primitives
-that call no other skill, engines that add control flow, workflows
-assembled from both, instances that do the domain's hands-on work, and
-a couple of utilities. `packs/` is per-domain data, never control flow.
-`compositions/` is the stdlib: normative, admitted workflow files over
-skills and other compositions, each declaring how it enters (`routed`
-in the intake table, `named` only on request, or `scheduled`), its
-invariants, and one done check over the whole chain.
+Four layers, dependencies pointing one way. `ARCHITECTURE.md` is the
+codemap — what lives where, who owns it — and `ls` is the current list;
+this README does not keep a second copy of it.
 
 ### Work routing
 
@@ -328,20 +260,16 @@ research, or UI.
 
 ### Advantages over Anthropic's Dynamic Workflows
 
-- **Cross-harness.** One library drives both Claude Code and Codex, on
-  Windows and POSIX.
-- **Workflows persist.** A custom workflow is admitted as a
-  project-local skill — versioned, callable by name, improvable — not
-  regenerated from scratch each session.
-- **Verification is structural.** Named oracles, fresh-context
-  checkers, and one review gate stand between an executor's claim and
-  "done" — the agent never grades its own homework.
-- **Self-improving.** Friction and full session traces are always
-  logged; `orch-self-improve` mines them into concrete fixes to the
-  workflows themselves — including to itself.
-- **Survives session death.** Specs, tickets, and worklogs are files in
-  a per-user state sink outside every repository, so any fresh context,
-  in any checkout, can resume a run mid-flight.
-- **Smallest-first routing.** One intake for everything: a one-line
-  question never pays workflow ceremony, and a launch never gets
-  typo-fix rigor.
+Against the shipped runtime as documented on 2026-08-15
+([the workflows docs](https://code.claude.com/docs/en/workflows)) —
+saved workflows are no longer the difference, so this is what is:
+
+- **Cross-harness.** One library drives both Claude Code and Codex.
+- **Verification is contractual, not merely available.** Adversarial
+  review is house advice there; here a named oracle and one review gate
+  are law between an executor's claim and "done".
+- **Self-improving.** Nothing there mines runs into fixes; here friction
+  and traces feed `orch-self-improve`, including on itself.
+- **Survives session death.** Exit mid-run and a workflow starts fresh
+  there; here every ticket is a file in a per-user state sink, so any
+  fresh context in any checkout resumes mid-flight.
