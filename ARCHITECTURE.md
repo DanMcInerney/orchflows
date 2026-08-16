@@ -19,10 +19,14 @@ dependencies point. Terms: `docs/vocabulary.md`.
   `contracts/pack-signature.md`, never control flow. One pack per
   domain (code, content, research, design); specificity thickens only in
   `craft` (budgeted).
-- `compositions/` — T3, named workflows: steps over skills and
-  compositions combined by seq/par/loop per
-  `contracts/composition.md`; invocable; entry
-  routed | named | scheduled; admitted through `orch-build`.
+- `compositions/` — T3, named workflows, invocable and admitted through
+  `orch-build`. Two forms live here while the ticket set lands:
+  `compositions/<name>/` — a directory of ticket stubs plus its
+  `template.md` manifest, which `tickets.py instantiate` writes into one
+  run's ticket directory for `orch-frontier` to run — and the
+  `compositions/<name>.md` step form per `contracts/composition.md`
+  (steps over skills combined by seq/par/loop; entry
+  routed | named | scheduled). New work takes the template form.
 - `rules/` — cross-cutting law (composition, delegation, verification,
   loops, roles, token-economy, topology, visibility, improvement);
   using one is `rules/visibility.md` §3's.
@@ -64,7 +68,8 @@ dependencies point. Terms: `docs/vocabulary.md`.
   copy, no project `.claude`/`.codex` writes.
 - `scripts/` — repository-root scripts, one owner each:
   `scripts/cutcheck.py` owns cut-defect detection over an issued ticket
-  set, read by `orch-deliver`'s cut lens; `scripts/friction.py` owns
+  set, run by `orch-decompose` and read by its cut lens;
+  `scripts/friction.py` owns
   friction logging; `scripts/isolate.py` owns exporting one revision
   into a tree beside the repository, where a check reads one lane's
   result alone; `scripts/migrate_state.py` owns copying a pre-existing

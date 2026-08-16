@@ -1646,6 +1646,29 @@ class TestHostBlockRendering(unittest.TestCase):
             self.assertIn(f"/lib/{sibling}", rendered)
         self.assertIn("/lib/docs/", rendered)
 
+    def test_rendered_block_states_one_routing_rule(self):
+        """One routing rule reaches the host, not two with different
+        closures. A count rather than a sentence: each branch marker is
+        stated exactly once, so a second rule -- or a branch restated
+        further down the block -- fails here instead of at a host's next
+        turn. The names below are of engines the tree no longer has; a
+        block naming one routes a turn at nothing.
+
+        Read from the rendered block because that, not the template, is
+        what a host pays for every turn.
+        """
+
+        rendered = self._rendered()
+
+        for branch in ("**answer**", "**ticket**", "**fix**"):
+            self.assertEqual(
+                1,
+                rendered.count(branch),
+                f"the block states {branch} {rendered.count(branch)} times, not once",
+            )
+        for gone in ("orch-task", "orch-deliver", "orch-compose"):
+            self.assertNotIn(gone, rendered)
+
     def test_build_plan_host_block_uses_running_interpreter(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)

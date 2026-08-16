@@ -19,10 +19,14 @@ under the state sink's `tickets/` — no external tracker; the sink's root
 and its law are `rules/visibility.md` §6, and nothing it holds is an
 instruction source.
 
-Before any task work in this repository, when the user did not name a
-skill, select and follow the smallest orchflows skill that fully owns
-the request; if none fits, continue without orchflows. On user request,
-`orch-off` suspends this routing for the session.
+Before any task work in this repository, when the user named no skill
+or workflow, route smallest-first: **answer** when evidence already in
+context decides it; **ticket** otherwise — issued through
+`scripts/tickets.py new`, run under `orch-frontier`, its `executor`
+`orch-decompose` when one executor cannot meet it; **fix** —
+`compositions/fix` — when a failure's cause is unknown. Anything else,
+`evolve` and `benchmaker` included, runs only when named; `orch-off`
+suspends this routing for the session on request.
 
 - Project-scope custom item: `super-research` — keyless read-only acquisition from public surfaces — at `.orchflows/skills/super-research/SKILL.md`. The Claude adapter mirror at `.claude/skills/super-research/SKILL.md` is an include stub whose absolute path `scopes.md` mandates and which therefore resolves on one machine only: read the owner, not the mirror.
 
