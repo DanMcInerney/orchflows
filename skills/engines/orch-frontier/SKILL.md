@@ -25,10 +25,9 @@ stale); promote each `pending` ticket whose `depends_on` are now all
 `complete` to `ready` through `tickets.py ready`; set each `pending` ticket
 depending on a `failed`, `blocked`, or `limited` ticket to `blocked`, naming
 its blocker — a failure blocks exactly its dependents, the rest of the graph
-rolls on; dispatch everything newly `ready` immediately. A ticket whose
-executor is orch-decompose is a root ticket: it completes when its
-`<id>.gate.verify` ticket completes, and a ticket depending on the root waits
-for that. A named template is instantiated by
+rolls on; dispatch everything newly `ready` immediately. The join sets a root ticket
+`complete` when its `<id>.gate.verify` completes; a dependent of the root
+waits for that. A named template is instantiated by
 `tickets.py instantiate <template> --run <run> --set k=v`, then run by this
 engine over the resulting directory. A suspension parks its item at the event
 step — neither complete nor failed, its dependents wait: the caller satisfies

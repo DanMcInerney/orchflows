@@ -32,11 +32,9 @@ that needs a different meaning needs a different word.
 - **signature** — `contracts/pack-signature.md`: the cells every pack must
   provide and the sharing constraints between them.
 - **composition** — a T3 named workflow, invocable by name; entry
-  `routed | named | scheduled`; admitted through `orch-build`. As of P1
-  it *is* a template — the directory `compositions/<name>/` of ticket
-  stubs; the composition-file form (steps over skills and compositions
-  combined by the combinators, per `contracts/composition.md`) is
-  retired at P4.
+  `routed | named`; admitted through `orch-build`: a template (below),
+  or a composition file per `contracts/composition.md` while that form
+  is still in the tree.
 - **combinator** — an inter-run operator a composition's edges use:
   seq (result identity → successor `evidence`), par (disjoint write
   scopes plus a named join), loop (through `orch-loop`); owned by

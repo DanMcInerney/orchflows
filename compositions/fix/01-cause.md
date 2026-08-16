@@ -3,13 +3,13 @@ id: 01-cause
 executor: orch-loop
 pack: orch-code-pack
 depends_on: [00-reproduce]
-write_scope: [{{workspace}}]
+write_scope: []
 bound: <= 8 iterations
 excluded_actions:
   - repairing the cause once it is proven
-  - leaving a toggled candidate in {{workspace}}
+  - changing any artifact in {{workspace}} (the toggle is shown in a throwaway clone beside it)
 independence: checker
-isolation: required
+isolation: none
 profile: orch-worker
 ---
 
@@ -31,7 +31,6 @@ toggles the reproduction between FAIL and PASS.
 ## Completion test
 
 - done-check: the candidate cause toggled toggles the failure — the reproduction FAILs with it present and PASSes with it toggled, at the same revision | oracle: the reproduction command from 00-reproduce's Result, run at both toggle states | oracle_class: deterministic | provenance: pre-existing
-- the bound is spent without that toggle demonstrated, and the loop exits `limited` carrying the killed-hypothesis digest | oracle: the iteration count against this stub's bound | oracle_class: deterministic | provenance: pre-existing
 
 ## Return fields
 

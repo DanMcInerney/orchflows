@@ -21,8 +21,8 @@ returning unobserved.
 
 ## Fixed inputs
 
-- 02-repair's `## Result` — the changed artifacts and the repaired
-  revision, by identity.
+- 02-repair's `## Result` — the changed artifacts, the repaired
+  revision, and the regression check, by identity.
 - 00-reproduce's `## Result` — the reproduction command and the failure
   identity.
 - The oracles {{workspace}} already gates on, named by its standards
@@ -31,7 +31,7 @@ returning unobserved.
 ## Completion test
 
 - every original oracle PASSes at the repaired revision | oracle: the workspace's own check commands, rerun at that revision | oracle_class: deterministic | provenance: pre-existing
-- one new regression check FAILs on the old behaviour and PASSes on the new — a fix without it is `limited`, never `complete` | oracle: the regression check run at the pre-repair revision and at the repaired revision | oracle_class: deterministic | provenance: authored-here
+- 02-repair's regression check FAILs at the pre-repair revision (in a clone) and PASSes at the repaired revision — a fix without such a check is `limited`, never `complete` | oracle: the regression check named in 02-repair's Result, run at both revisions | oracle_class: deterministic | provenance: pre-existing
 
 ## Return fields
 

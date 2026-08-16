@@ -18,6 +18,6 @@ regression check. A fix that reaches it without that guard is
 
 Instantiate with both placeholders: `failure`, the observed failure as
 reported, and `workspace`, the repository or tree it lives in —
-`02-repair`'s write scope and nothing wider. Each stub is a ticket per
+`02-repair`'s write scope; every other stub is read-only. Each stub is a ticket per
 [contracts/work-item.md](../../contracts/work-item.md) missing only
 what instantiation adds.
