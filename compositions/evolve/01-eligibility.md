@@ -36,8 +36,9 @@ what permits generation to open, and nothing else does.
 
 ## Return fields
 
-status; result — the admission verdicts and the evaluation identity they
-were taken under; verification; feedback; risks
+status; result — the admission verdicts and the frozen evaluation
+identity, mode, criteria, promotion rule and margin they were taken
+under; verification; feedback; risks
 
 ## Result
 

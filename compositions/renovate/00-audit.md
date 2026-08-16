@@ -31,8 +31,9 @@ on, under {{priorities}} as the lens.
 
 ## Return fields
 
-status; result — everything orch-critique's Return names, and the
-revision audited; verification; feedback; risks
+status; result — everything orch-critique's Return names: the ranked
+findings with the evidence each cites, by identity, and the revision
+audited; verification; feedback; risks
 
 ## Result
 

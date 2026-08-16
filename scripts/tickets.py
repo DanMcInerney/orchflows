@@ -1461,6 +1461,185 @@ def _spec_field_defect(text: str, directory):
     )
 
 
+# --- producer/consumer closure ---------------------------------------------
+#
+# A stub reads what a stub before it wrote: "01-eligibility's `## Result`" in
+# a `## Fixed inputs` bullet, "the promotion rule from 00-eval's Result" in an
+# oracle. That identity exists only if the named stub's `## Return fields`
+# names the thing being read. A thread with a producer at one end and nothing
+# at the other dispatches a child whose fixed input was never written, and it
+# instantiates exactly as cleanly as a closed one -- eleven of the eighteen
+# composition threads read in the 2026-08-16 review broke there.
+#
+# The grading is coarse on purpose, in the manner of `_spec_field_defect`
+# above: a reader names its items in the reader's words and a producer names
+# them in the producer's, so an item is produced when it shares one content
+# word, folded to its first four letters, with the producer's `## Return
+# fields`. Words that collide under the fold cost a defect that goes
+# unreported; words that do not collide never invent one. What stays refused
+# is the case the review found -- a named field the producer's return names
+# nowhere at all.
+RESULT_READ_RE = re.compile(r"([A-Za-z0-9][A-Za-z0-9._-]*)'s\s+`?(?:##\s*)?Result`?")
+NUMBERED_ID_RE = re.compile(r"^[0-9]")
+CLAIM_DASH_RE = re.compile(r"\s+(?:—|–|--)\s+")
+# The claim ends where the reader stops describing what it takes and starts
+# saying what it will do with it — the next criterion field, the next input,
+# the colon before its own elaboration, the end of the sentence — and its
+# items are the list the reader wrote, its commas. Splitting finer, on every
+# `and`, manufactures items out of trailing constraints ("it is read, never
+# rebuilt") and spends the check's credibility on them.
+CLAIM_END_RE = re.compile(r";|\||:|\.(?:\s|$)")
+CLAIM_CLAUSE_RE = re.compile(r"[|;:,()]")
+CLAIM_CARRIER_RE = re.compile(r"\s+(?:from|in|of|at|by|against|per)\s*$")
+CLAIM_SPLIT = ","
+CLAIM_WORD_RE = re.compile(r"[a-z]{4,}")
+CLAIM_STEM = 4
+# Function words a sentence carries whatever it is about: counted, they would
+# close a thread on "the" and "under" rather than on the field being read.
+CLAIM_STOPWORDS = frozenset({
+    "also", "against", "another", "before", "being", "both", "does", "each",
+    "else", "every", "from", "have", "here", "into", "itself", "just", "like",
+    "more", "much", "name", "named", "names", "naming", "only", "other",
+    "over", "read", "reads", "same", "some", "such", "taken", "takes", "than",
+    "that", "their", "them", "then", "there", "these", "they", "this",
+    "those", "under", "upon", "very", "were", "what", "when", "where",
+    "which", "while", "with", "within", "without", "would",
+})
+
+
+def _claim_words(text: str) -> set:
+    """One phrase's content words, folded to their first four letters."""
+
+    return {
+        word[:CLAIM_STEM]
+        for word in CLAIM_WORD_RE.findall(text.lower())
+        if word not in CLAIM_STOPWORDS
+    }
+
+
+def _bullets(section: str) -> list:
+    """One section's bullets, each rejoined from its continuation lines."""
+
+    bullets: list = []
+    for line in section.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("- ") or not bullets:
+            bullets.append(stripped[2:] if stripped.startswith("- ") else stripped)
+        else:
+            bullets[-1] += " " + stripped
+    return bullets
+
+
+def _result_reads(bullet: str) -> list:
+    """``(producer_id, claim)`` for every upstream Result one bullet reads.
+
+    The claim is the reader's own words for what it is taking, on whichever
+    side of the reference it put them: after the dash in a fixed input
+    (``<id>'s `## Result` -- the verdicts``), before the reference in an
+    oracle (``the verdicts from <id>'s Result``).
+    """
+
+    reads = []
+    for match in RESULT_READ_RE.finditer(bullet):
+        after = bullet[match.end():]
+        dash = CLAIM_DASH_RE.search(after)
+        if dash is not None and RESULT_READ_RE.search(after[: dash.start()]) is None:
+            claim = CLAIM_END_RE.split(after[dash.end():])[0]
+            following = RESULT_READ_RE.search(claim)
+            if following is not None:
+                claim = claim[: following.start()]
+        else:
+            before = CLAIM_CLAUSE_RE.split(bullet[: match.start()])[-1]
+            claim = CLAIM_CARRIER_RE.sub(" ", before)
+        reads.append((match.group(1), claim))
+    return reads
+
+
+def _upstream(stubs: dict) -> dict:
+    """Each stub id to every stub the graph orders before it."""
+
+    upstream = {stub_id: set(deps) for stub_id, (_, deps) in stubs.items()}
+    growing = True
+    while growing:
+        growing = False
+        for stub_id, deps in upstream.items():
+            grown = set(deps)
+            for dependency in deps:
+                grown |= upstream.get(dependency, set())
+            grown.discard(stub_id)
+            if grown != deps:
+                upstream[stub_id] = grown
+                growing = True
+    return upstream
+
+
+def _closure_defects(stubs: dict) -> list:
+    """``(reader_id, message)`` per producer a stub reads and does not get.
+
+    Three refusals, one per way a read misses: a stub that is not here, a
+    stub nothing orders first, and a field the producer's `## Return fields`
+    does not name. Aggregated per reader-producer pair, so one broken thread
+    is one defect naming both ends of it.
+    """
+
+    returns = {
+        stub_id: _claim_words(_section_body(text, "Return fields"))
+        for stub_id, (text, _) in stubs.items()
+    }
+    upstream = _upstream(stubs)
+    defects = []
+    for stub_id in sorted(stubs):
+        text, _ = stubs[stub_id]
+        unknown: list = []
+        unordered: list = []
+        missing: dict = {}
+        for heading in ("Fixed inputs", "Completion test"):
+            for bullet in _bullets(_section_body(text, heading)):
+                for producer, claim in _result_reads(bullet):
+                    if producer == stub_id:
+                        continue
+                    if producer not in stubs:
+                        # `this ticket's Result`, `the campaign's Result`: an
+                        # ordinary possessive, not a stub this template holds.
+                        if NUMBERED_ID_RE.match(producer) and producer not in unknown:
+                            unknown.append(producer)
+                        continue
+                    if producer not in upstream[stub_id]:
+                        if producer not in unordered:
+                            unordered.append(producer)
+                        continue
+                    for item in claim.split(CLAIM_SPLIT):
+                        item = item.strip(" `.\"'")
+                        # a `{{placeholder}}` is produced by instantiation, so
+                        # it is not graded -- the words beside it still are
+                        words = _claim_words(PLACEHOLDER_RE.sub(" ", item))
+                        if not words or words & returns[producer]:
+                            continue
+                        named = missing.setdefault(producer, [])
+                        if item not in named:
+                            named.append(item)
+        for producer in unknown:
+            defects.append((stub_id, (
+                f"stub {stub_id} reads {producer}'s `## Result`, and "
+                f"{producer} is not a stub in this template"
+            )))
+        for producer in unordered:
+            defects.append((stub_id, (
+                f"stub {stub_id} reads {producer}'s `## Result` without "
+                f"depending on {producer}: nothing orders {producer} first, "
+                f"so {stub_id} is dispatched against a Result not yet written"
+            )))
+        for producer, named in missing.items():
+            defects.append((stub_id, (
+                f"stub {stub_id} reads {producer}'s `## Result` for "
+                + "; ".join(f"'{item}'" for item in named)
+                + f", which {producer}'s `## Return fields` does not name"
+            )))
+    return defects
+
+
 def template_defects(directory) -> list:
     """Every way the template at ``directory`` is off contract, as
     ``(path, message)`` pairs.
@@ -1469,9 +1648,12 @@ def template_defects(directory) -> list:
     tree's uninstantiated templates can be graded where they sit: each stub
     against ``ticket_defects(text, stub=True)``, its id against its file
     stem, its list fields against being lists, its sections against the
-    contract's order, and then the graph — edges, cycle, single terminal — through
-    ``_template_order``. A ``{{placeholder}}`` is left alone: it is a defect
-    only once instantiation has refused to fill it.
+    contract's order, then the graph — edges, cycle, single terminal — through
+    ``_template_order``, and along those edges the producer/consumer closure
+    through ``_closure_defects``. A ``{{placeholder}}`` is left alone: it is
+    a defect only once instantiation has refused to fill it, and whether the
+    manifest declares one is ``tools/validate.py``'s, which owns the
+    manifest and reports it there in one spelling.
 
     Exposed for ``tools/validate.py``, which admits templates into the tree
     and must admit exactly what this script will instantiate. Two spellings
@@ -1495,6 +1677,7 @@ def template_defects(directory) -> list:
 
     defects = []
     stubs = {}
+    stub_paths = {}
     for path in paths:
         text, failure = _read_utf8(path, f"stub {path.name}", encoding="utf-8-sig")
         if failure is not None:
@@ -1529,10 +1712,15 @@ def template_defects(directory) -> list:
             defects.append((path, spec_defect))
         dependencies = data.get("depends_on")
         stubs[path.stem] = (text, dependencies if isinstance(dependencies, list) else [])
+        stub_paths[path.stem] = path
 
     _, error = _template_order(stubs)
     if error is not None:
         defects.append((manifest, error["error"]))
+    else:
+        # after the graph is sound, since closure is read along its edges
+        for stub_id, message in _closure_defects(stubs):
+            defects.append((stub_paths.get(stub_id, manifest), message))
     return defects
 
 
@@ -2248,6 +2436,19 @@ def _cmd_instantiate(rest):
     ordered, error = _template_order(stubs)
     if error is not None:
         return error
+    # closure is read on the stubs as written, not as substituted: a filled
+    # placeholder is an identity instantiation produced, and its value's
+    # words are not a claim on any producer -- so this refuses exactly what
+    # `template_defects` refuses on the same directory
+    unsubstituted = {}
+    for stub_id, (_, dependencies) in stubs.items():
+        text, failure = _read_utf8(directory / f"{stub_id}.md", f"stub {stub_id}.md")
+        if failure is not None:
+            return failure
+        unsubstituted[stub_id] = (text, dependencies)
+    closure = _closure_defects(unsubstituted)
+    if closure:
+        return {"error": "; ".join(message for _, message in closure)}
 
     tickets_root = _tickets_root()
     if tickets_root is None:
