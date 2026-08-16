@@ -76,7 +76,11 @@ checkout — resumes mid-flight.
 Team setup: `python install.py --project PATH` writes a committable
 routing block for a repo. Uninstall: `python install.py --user
 --uninstall` removes only what it generated; `--dry-run` previews
-either. Default model and effort per role, both hosts:
+either. `--claude-adapters {all,four}` chooses how much of the library
+Claude gets first-class adapters for — `all` (the default) mints one per
+package and template, `four` mints only `orch-spec`, `orch-frontier`,
+`fix` and `orch-build` and leaves every other name to resolve at
+`by-name/`. Default model and effort per role, both hosts:
 [profiles.md](skills/engines/orch-frontier/references/profiles.md). Edit
 a rendered role agent to run your own; installs ask before replacing it
 and keep it by default.

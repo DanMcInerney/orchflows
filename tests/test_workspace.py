@@ -150,6 +150,67 @@ def add_worktree(main: Path, branch: str, path: Path) -> Path:
 
 
 @unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
+class TestCheckDisambiguatesItsRevisionRanges(unittest.TestCase):
+    """A revision range is not a filename, and git only knows that if it is
+    told. `git diff A...B` with no `--` makes git stat `A...B` as a path
+    before settling it as a range; on this host a long absolute revision in
+    the range came back `fatal: ... Filename too long` and the whole grade
+    died on a name nobody meant as a file. `--` after the range settles it."""
+
+    def test_every_range_is_terminated_before_the_pathspec(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            make_ticket(
+                run_dir, "T1",
+                extra=((workspace.ISOLATION_KEY, "required"),
+                       (workspace.BRANCH_KEY, "wt-branch")),
+            )
+            calls = []
+            original = workspace._git
+
+            def recorded_git(*args):
+                # canned, not the real git: the point is the argv shape, and
+                # a real repository would have to be built up to two commits
+                # on two branches to reach the two calls under test
+                calls.append(args)
+                if args[:3] == ("rev-parse", "--verify", "--quiet"):
+                    return 0, ("tip\n" if args[3].startswith("wt-branch") else "basecommit\n"), ""
+                if args[:2] == ("rev-parse", "--abbrev-ref"):
+                    return 0, "main\n", ""
+                if args[0] == "merge-base":  # tip not in HEAD; base is in tip
+                    return (1 if args[3] == "HEAD" else 0), "", ""
+                if args[0] == "diff":
+                    return 0, "scratch/a.txt\n", ""
+                if args[0] == "rev-list":
+                    return 0, "1\n", ""
+                raise AssertionError(f"unexpected git call: {args}")
+
+            cwd = os.getcwd()
+            noise = io.StringIO()
+            try:
+                os.chdir(str(main))
+                workspace._git = recorded_git
+                with redirect_stdout(noise), redirect_stderr(noise):
+                    code = workspace.main(["check", "testrun", "T1", "--base", "some-base"])
+            finally:
+                os.chdir(cwd)
+                workspace._git = original
+
+            self.assertEqual(0, code, noise.getvalue())
+            ranged = [args for args in calls if any(".." in arg for arg in args)]
+            self.assertEqual(
+                [
+                    ("diff", "--name-only", "--no-renames", "basecommit...tip", "--"),
+                    ("rev-list", "--count", "basecommit..tip", "--"),
+                ],
+                ranged,
+            )
+            for args in ranged:
+                self.assertEqual("--", args[-1], args)
+
+
+@unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
 class TestStartRecordsWhatItObserved(unittest.TestCase):
     """Completion criterion 1: ``start`` records the branch and the baseline
     it observed, into the main-root ticket, creating no ``.orch/`` beside it."""

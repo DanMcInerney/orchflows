@@ -129,7 +129,7 @@ drift-canary, self-improve (new, named), skill-tournament = evolve with
 `orch-search-plan` (→ `scripts/`); installer stubs for templates.
 
 **P5 — proof.** Fixtures: `fix` replay; one code delivery through the
-root-ticket path; evolve open on a fixture. The routing benchmark (47
+root-ticket path; evolve open on a fixture. The routing benchmark (33
 vs 4 adapters). Ablations from REVIEW §5. Sink checks: worklog view
 renders for every run; ticket refusals fire on the 27 off-enum / 32
 frontmatter-less legacy tickets.

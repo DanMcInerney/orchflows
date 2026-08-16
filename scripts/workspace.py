@@ -458,11 +458,14 @@ def _cmd_check(rest):
         )
 
     # three-dot, from the merge base: a breach that arrives inside a merge
-    # commit is invisible to `git log --name-only` and visible here
+    # commit is invisible to `git log --name-only` and visible here.
+    # `--` terminates the revisions: without it git stats the range as a
+    # filename first, and a long absolute revision came back "Filename too
+    # long" -- a grade lost to a name nobody meant as a path.
     changed = [
         line
         for line in _git_out(
-            "diff", "--name-only", "--no-renames", f"{base_commit}...{tip}"
+            "diff", "--name-only", "--no-renames", f"{base_commit}...{tip}", "--"
         ).splitlines()
         if line
     ]
@@ -484,7 +487,7 @@ def _cmd_check(rest):
             changed=changed,
         )
     reported["commits"] = int(
-        _git_out("rev-list", "--count", f"{base_commit}..{tip}") or 0
+        _git_out("rev-list", "--count", f"{base_commit}..{tip}", "--") or 0
     )
     reported["verdict"] = "pass"
     return {"check": reported}, EXIT_OK
