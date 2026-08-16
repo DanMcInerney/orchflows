@@ -97,16 +97,6 @@ VALID_STATUSES = {
 # nested template) — per SPEC-ticket-set.md §3. The rest dispatch a
 # ticket's executor, so naming one is the call cycle
 # rules/composition.md §3 forbids — an engine would spawn itself.
-# Every engine in skills/engines/ is a lawful ticket executor: orch-loop
-# runs a loop ticket, orch-frontier a nested template. tests/test_tickets.py
-# holds this set to that directory, because an installed copy of this script
-# has no library tree to read the list from.
-#
-# It used to be half of a partition, the other half being engines refused as
-# a ticket executor (orch-compose, orch-panel). P4-3 deleted both of those
-# skills, which left a refusal set with no members -- a rule with nothing to
-# refuse -- so the concept went with them.
-TICKET_EXECUTOR_ENGINES = frozenset({"orch-frontier", "orch-loop"})
 LOOP_EXECUTOR = "orch-loop"
 # SPEC-ticket-set.md §3: `executor: script:<path>` names a tested script.
 # It is an executor like any other -- claimable, dispatchable, graded the

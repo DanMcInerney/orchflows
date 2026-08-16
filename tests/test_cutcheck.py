@@ -698,14 +698,17 @@ class ExecutorLegalityTest(unittest.TestCase):
 
     def test_the_surviving_engines_are_lawful_executors(self):
         """P4-3 deleted the engine prohibition with the two engines it named.
-        Both survivors are lawful ticket executors, and `scripts/tickets.py`
-        is where that set lives — so cutcheck imports it rather than keeping a
-        second copy that could drift."""
-        self.assertEqual(
-            frozenset({"orch-frontier", "orch-loop"}),
-            tickets.TICKET_EXECUTOR_ENGINES,
-        )
+        Both survivors are lawful ticket executors, and neither script keeps a
+        list of them: with nothing left to refuse, no code path branches on
+        membership, so the library tree is the only statement of the set."""
+        engines = {
+            path.name
+            for path in (ROOT / "skills" / "engines").iterdir()
+            if path.is_dir()
+        }
+        self.assertEqual({"orch-frontier", "orch-loop"}, engines)
         self.assertFalse(hasattr(cutcheck, "ENGINE_EXECUTORS"))
+        self.assertFalse(hasattr(tickets, "TICKET_EXECUTOR_ENGINES"))
 
 
 class CoverageTest(unittest.TestCase):

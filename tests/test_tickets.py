@@ -1114,11 +1114,15 @@ class TestEngineExecutorIsRejected(unittest.TestCase):
             for path in (ROOT / "skills" / "engines").iterdir()
             if path.is_dir()
         }
-        self.assertEqual(engines, set(tickets_mod.TICKET_EXECUTOR_ENGINES))
+        self.assertEqual({"orch-frontier", "orch-loop"}, engines)
         self.assertFalse(hasattr(tickets_mod, "ENGINE_EXECUTORS"))
+        # The script no longer names the set at all: nothing in it branched
+        # on membership once the refusal half went, and a constant only a
+        # test reads is a fact with no consumer. The tree above is the pin.
+        self.assertFalse(hasattr(tickets_mod, "TICKET_EXECUTOR_ENGINES"))
 
     def test_a_loop_or_frontier_executor_is_lawful(self):
-        for engine in sorted(tickets_mod.TICKET_EXECUTOR_ENGINES):
+        for engine in ("orch-frontier", "orch-loop"):
             with tempfile.TemporaryDirectory() as tmp:
                 tmp = Path(tmp)
                 self.make(tmp, engine)
@@ -3286,9 +3290,9 @@ class PackWorkspaceTest(unittest.TestCase):
             self.assertEqual(1, len(establishment_lines(prompt)), (pack, prompt))
 
     def test_the_table_is_hardcoded_beside_the_engine_list(self):
-        """The shape `TICKET_EXECUTOR_ENGINES` has: a module-level literal,
-        not a tree read, because an installed copy of this script runs against
-        a target repository that carries no `packs/` at all."""
+        """A module-level literal, not a tree read, because an installed copy
+        of this script runs against a target repository that carries no
+        `packs/` at all."""
 
         table = tickets_mod.PACK_WORKSPACE_MECHANISMS
         self.assertIsInstance(table, dict)
