@@ -11,7 +11,7 @@ in the state sink: eight blind read-only `orch-critique` lanes (H the
 handoff; S1 kernel+engines; S2 workflows+utilities; S3 instances+packs;
 S4 compositions; S5 super-research; D documentation; F fallbacks), one
 `orch-synthesize` join over their packets, then thirteen repair tickets
-(R1–R5, R6a/b, R7, R8, R9a/b, R10, C-1) each run as executor → §10
+(R1–R5, R6a/b, R7, R8, R9a/b, R10, C-1, C-2) each run as executor → §10
 checker → fresh re-verifier → `orch-integrate` → `--no-ff` merge, in
 host worktrees. Every lane's ticket, checker pass and verdict is in the
 sink; this file records what landed.
@@ -29,10 +29,10 @@ sink; this file records what landed.
   54,405 → 50,792 (−3,613, −6.6%). Executor-child load for one
   `orch-tdd` dispatch, by the R-2 method: 2,590 → 887 words.
 - **Validator** exit 0, 0 ERROR, 8 WARN (the same eight near-duplicate
-  pairs as at 3615116); **tests** 1,903 → 2,002 (+99, every one a red-first pin of a behaviour a lane changed), 0 failures
+  pairs as at 3615116); **tests** 1,903 → 2,003 (+100, every one a red-first pin of a behaviour a lane changed), 0 failures
   under the sharded runner and the serial discover; `install.py
   --dry-run` 229 → 228 (self-improve/02-close no longer shipped); `git
-  diff --check` clean; preflight under every CI interpreter installed here recorded in the run's notes.
+  diff --check` clean; preflight ok on 3.9 / 3.11 / 3.12 (the interpreters installed here; 3.13 and non-Windows stay CI's) — its first run was red on 3.9 alone, closed by C-2.
 - **Friction** this run: 9 entries; 62 synthesized threads from 72
   lane findings, 75 coverage rows, nothing dropped.
 
