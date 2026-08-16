@@ -313,6 +313,14 @@ CHECKED_BY_KEY = "checked_by"
 # stays claimed, contracts/work-item.md). Before a claim there is no result
 # to check, and terminal status is the join's, read after the check.
 CHECKABLE_STATUSES = GRANTABLE_STATUSES
+# rules/verification.md §10's two further-context children on one already
+# claimed item: the checker, and the re-verifier that reads its correction.
+# `packet --executor` is theirs alone and is not a general override — a
+# second executor for one item is what rules/delegation.md §11 forbids, and
+# the ticket's own `executor` is the graph position the cut froze.
+CHECKER_EXECUTOR = "orch-critique"
+REVERIFIER_EXECUTOR = "orch-verify"
+CHECKER_PATH_EXECUTORS = (CHECKER_EXECUTOR, REVERIFIER_EXECUTOR)
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
 WORKLOG_USAGE = "worklog <run> [--write]"
 GATE_USAGE = (
@@ -362,7 +370,10 @@ SUBCOMMAND_USAGE = {
     "grant": GRANT_USAGE,
     "check": CHECK_USAGE,
     "set-status": "set-status <run> <id> <status>",
-    "packet": "packet <run> <id> --reply-to <name> [--workspace <path>]",
+    "packet": (
+        "packet <run> <id> --reply-to <name> [--workspace <path>] "
+        f"[--executor {' | '.join(CHECKER_PATH_EXECUTORS)}]"
+    ),
     "result": RESULT_USAGE,
     "worklog": WORKLOG_USAGE,
     "run-state": RUN_STATE_USAGE,
@@ -401,7 +412,11 @@ SUBCOMMAND_SUMMARY = {
     "set-status": f"Set one ticket's status; terminal status is the join's "
     f"alone. One of {sorted(VALID_STATUSES)}.",
     "packet": "The by-reference dispatch packet for one ticket: path, parts, "
-    "and the commands the child runs from its own workspace.",
+    "and the commands the child runs from its own workspace. --executor "
+    f"({' | '.join(CHECKER_PATH_EXECUTORS)}) emits it for one further "
+    "rules/verification.md §10 child on the same claimed item instead — the "
+    "checker, which corrects inside the ticket's write scope and records its "
+    "pass through `check`, or the re-verifier, which is granted no write.",
     "result": f"Write one of the executor's own sections {list(EXECUTOR_SECTIONS)}; "
     "a section already carrying content is refused without --append or --replace.",
     "worklog": "Render this run's worklog view from its tickets — goal, "
@@ -3101,6 +3116,62 @@ def _cmd_set_status(rest):
     return {"set_status": {"run": run, "id": ticket_id, "status": status}}
 
 
+def _further_child_prompt(executor, loaded: dict, ticket_path: Path, run_id, script):
+    """The head of a packet for one further rules/verification.md §10 child.
+
+    Two shapes, because the two children have opposite authority. The
+    checker is handed the item's own write scope and the verb that records
+    its pass; the re-verifier is handed neither, and told which identity to
+    verify at. Everything after this -- the filing and run-state channels,
+    ``reply_to`` -- is what the executor got, unchanged: hand-writing these
+    packets beside the frontier is what left them without it (S1 F1).
+    """
+
+    head = [
+        f"Apply skill {executor} to ticket {ticket_path}.",
+        "Read the ticket; it is your complete delegation packet — objective, "
+        "fixed inputs, bounds, return fields. Gather nothing outside its "
+        "fixed inputs.",
+    ]
+    claimed_by = str(loaded.get("claimed_by") or "").strip() or "another context"
+    branch = str(loaded.get("workspace_branch") or "").strip()
+    at_identity = (
+        f"the workspace the ticket's `workspace_branch` names ({branch})"
+        if branch
+        else "the identity the ticket's `## Result` records"
+    )
+    if executor == CHECKER_EXECUTOR:
+        scope = effective_write_scope(loaded)
+        head.append(
+            "This is the rules/verification.md §10 checker's pass on a result "
+            f"{claimed_by} produced under its claim, never a re-execution of "
+            "the item: the lens is the ticket's own `## Completion test`, at "
+            f"{at_identity}."
+        )
+        head.append(
+            f"Your authority is the ticket's own write scope, {scope} — correct "
+            "inside it, and append your findings, changes and the verification "
+            "entries they invalidate to `## Result`. Record the pass, after "
+            "correcting, with:"
+        )
+        head.append(
+            f"{sys.executable} {script} check {run_id} {loaded['id']} --by NAME"
+        )
+    else:
+        head.append(
+            "This is the rules/verification.md §10 re-verification of a checked "
+            f"result, never a re-execution of the item: run the ticket's "
+            f"`## Completion test` at {at_identity}, reusing prior "
+            "`## Verification` entries whose `covers` are unchanged there."
+        )
+        head.append(
+            "Your authority grants no write: the item's workspace and its "
+            "`## Result` are another context's, and `## Verification` is the "
+            "one section you file."
+        )
+    return head
+
+
 def _cmd_packet(rest):
     """Emit the by-reference dispatch packet for one ticket.
 
@@ -3117,8 +3188,20 @@ def _cmd_packet(rest):
     args = list(rest)
     reply_to = _extract_flag(args, "--reply-to")
     workspace = _extract_flag(args, "--workspace")
+    further = _extract_flag(args, "--executor")
     if len(args) != 2:
         return {"error": f"usage: {SUBCOMMAND_USAGE['packet']}"}
+    if further is not None:
+        further = further.strip().strip("`").strip()
+        if further not in CHECKER_PATH_EXECUTORS:
+            return {
+                "error": f"--executor takes {' or '.join(CHECKER_PATH_EXECUTORS)}, "
+                f"not '{further}': it emits the packet for one further "
+                "rules/verification.md §10 child on an item another executor "
+                "already holds, never a second executor for the item "
+                "(rules/delegation.md §11). The ticket's own `executor` is the "
+                "cut's, and `amend` is what changes it."
+            }
     run, ticket_id = args
     tickets_root = _tickets_root()
     if tickets_root is None:
@@ -3163,8 +3246,29 @@ def _cmd_packet(rest):
     if missing:
         return {"error": "packet incomplete: " + "; ".join(missing)}
 
+    if further is not None:
+        status = str(loaded.get("status") or "").strip().strip("`").strip()
+        if status not in CHECKABLE_STATUSES:
+            return {
+                "error": f"ticket is not claimed (status '{status}'): a further "
+                "§10 child reads a result an executor produced under a claim. "
+                "Dispatch the item's own executor first — this packet without "
+                f"--executor. ticket: {ticket_path}"
+            }
+
+    run_id = loaded.get("run") or run
+    script = Path(__file__).resolve()
     executor_script = _executor_script(executor)
-    if executor_script is not None:
+    if further is not None:
+        # The item keeps its own executor and its own claim; this child is the
+        # further context rules/verification.md §10 requires. Only the head of
+        # the prompt differs -- every channel below is the one the executor
+        # was given, which is the whole reason the packet is emitted here
+        # rather than hand-written beside the frontier (S1 F1).
+        executor_script = None
+        executor = further
+        prompt = _further_child_prompt(further, loaded, ticket_path, run_id, script)
+    elif executor_script is not None:
         # contracts/work-item.md, Executor form: the ladder's floor as a node. No skill is
         # named and no judgment is asked for -- the script decides, and its
         # stdout is the whole result. Written as a run-this instruction
@@ -3203,8 +3307,19 @@ def _cmd_packet(rest):
         "Write your result into the ticket's own sections as you produce it, "
         "never in one write at the end; the join alone sets terminal status."
     )
-    run_id = loaded.get("run") or run
-    script = Path(__file__).resolve()
+    if executor_script is None and further is None:
+        # The close law, beside the filing law it belongs to. These are
+        # contracts/work-item.md:95-97, :107-108 and :109-118 — the three
+        # sentences of a 1,690-word file an executor could reach only by
+        # following its body's link there, which is what the link was
+        # followed for (S3 F1). Carried for the item's own skill executor
+        # alone: a script node runs no completion test and files no
+        # Feedback, and each further §10 child's own head states its close.
+        prompt.append(
+            "Close by running `## Completion test` through `orch-verify` at "
+            "the result identity; `[]` fills an empty Feedback or Risks; an "
+            "excluded action suspends through `## Handoff`."
+        )
     # contracts/work-item.md's `isolation`: absent reads `none`, and only
     # `required` is told to establish anything, so a lane that must not stamp
     # itself is never handed the command. The pack is the second condition:
@@ -3221,8 +3336,14 @@ def _cmd_packet(rest):
     # Read through `effective_write_scope`, so a lane a grant has since
     # given paths to is told to establish the workspace it now needs.
     writes_workspace_content = bool(loaded.get("write_scope"))
+    # A further §10 child is the fourth condition, and it is a refusal rather
+    # than an omission: `workspace.py start` records the branch its caller is
+    # standing in over the executor's own, and that record is the `--base` the
+    # join grades the merge against. The checker works in the workspace the
+    # executor's record names; the re-verifier reads it.
     if (
-        isolation == REQUIRED_ISOLATION
+        further is None
+        and isolation == REQUIRED_ISOLATION
         and writes_workspace_content
         and establishes_a_git_workspace(loaded.get("pack"))
     ):

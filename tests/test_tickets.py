@@ -5079,5 +5079,144 @@ class TestCheckedByVerb(unittest.TestCase):
         self.assertIn("check", tickets_mod._dispatch([])["error"])
 
 
+CLAIMED_ISOLATED_TICKET = ISOLATED_TICKET.replace(
+    "status: ready", "status: claimed\nclaimed_by: agent-a"
+)
+
+
+class TestCheckerPathPacket(unittest.TestCase):
+    """`packet --executor` is rules/verification.md §10's two further-context
+    children on one claimed item: the checker and the re-verifier.
+
+    Without it the frontier hand-wrote both packets, so neither carried the
+    filing channel, the authority or the run-state channel this script owns
+    (S1 F1). It is not a general executor override: a second executor for
+    one item is what rules/delegation.md §11 forbids.
+    """
+
+    def make(self, tmp: Path, body: str = CLAIMED_ISOLATED_TICKET) -> Path:
+        return make_packet_repo(tmp, body)
+
+    def packet(self, tmp: Path, *extra):
+        return run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main", *extra)
+
+    def test_without_the_flag_the_packet_is_the_ticket_executors(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            packet = self.packet(tmp)["packet"]
+            self.assertEqual("orch-tdd", packet["executor"])
+            self.assertIn("Apply skill orch-tdd", packet["prompt"])
+            self.assertNotIn("tickets.py check", packet["prompt"])
+
+    def test_a_critique_packet_names_the_skill_the_scope_and_the_check_verb(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            packet = self.packet(tmp, "--executor", "orch-critique")["packet"]
+            prompt = packet["prompt"]
+            self.assertEqual("orch-critique", packet["executor"])
+            self.assertIn("Apply skill orch-critique", prompt)
+            # the ticket's own write scope is the checker's authority
+            self.assertIn("scratch/t1.txt", prompt)
+            # and the verb it runs after correcting, one token per argument
+            check_lines = [
+                line for line in prompt.splitlines()
+                if line.split()[2:4] == ["check", "testrun"]
+            ]
+            self.assertEqual(1, len(check_lines), prompt)
+            self.assertIn("--by", check_lines[0])
+            self.assertEqual(Path(check_lines[0].split()[1]).name, "tickets.py")
+
+    def test_a_verify_packet_names_the_skill_the_identity_and_no_write(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            packet = self.packet(tmp, "--executor", "orch-verify")["packet"]
+            prompt = packet["prompt"]
+            self.assertEqual("orch-verify", packet["executor"])
+            self.assertIn("Apply skill orch-verify", prompt)
+            self.assertIn("## Completion test", prompt)
+            self.assertIn("no write", prompt)
+            # a re-verifier corrects nothing, so it is never sent the verb
+            self.assertNotIn("tickets.py check", prompt)
+
+    def test_neither_further_child_re_establishes_the_workspace(self):
+        """`workspace.py start` records the branch the caller stands in over
+        the executor's own — and that record is the `--base` the join grades
+        the merge against. A further child on the same item never runs it."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            self.assertEqual(1, len(establishment_lines(self.packet(tmp)["packet"]["prompt"])))
+            for executor in ("orch-critique", "orch-verify"):
+                prompt = self.packet(tmp, "--executor", executor)["packet"]["prompt"]
+                self.assertEqual([], establishment_lines(prompt), prompt)
+                self.assertNotIn("workspace.py", prompt)
+
+    def test_an_executor_outside_the_checker_path_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            payload = self.packet(tmp, "--executor", "orch-repair")
+            self.assertIn("orch-repair", payload["error"])
+            self.assertIn("orch-critique", payload["error"])
+            self.assertNotIn("packet", payload)
+
+    def test_a_further_child_on_an_unclaimed_ticket_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, ISOLATED_TICKET)
+            payload = self.packet(tmp, "--executor", "orch-critique")
+            self.assertIn("not claimed", payload["error"])
+            self.assertNotIn("packet", payload)
+
+
+class TestPacketCarriesTheCloseLaw(unittest.TestCase):
+    """The packet already carried contracts/work-item.md's filing law; the
+    close was the half only the body's link to that 1,690-word file reached
+    (S3 F1) — the completion test run through `orch-verify` at the result
+    identity, `[]` for an empty section, and suspension through `## Handoff`."""
+
+    CLOSE = (
+        "Close by running `## Completion test` through `orch-verify` at the "
+        "result identity; `[]` fills an empty Feedback or Risks; an excluded "
+        "action suspends through `## Handoff`."
+    )
+
+    def prompt_for(self, tmp: Path, body: str = FULL_TICKET, *extra):
+        make_packet_repo(tmp, body)
+        return run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main", *extra)[
+            "packet"
+        ]["prompt"]
+
+    def test_a_skill_executors_packet_carries_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertIn(self.CLOSE, " ".join(self.prompt_for(Path(tmp)).split()))
+
+    def test_a_script_executors_packet_does_not(self):
+        """A script node runs no completion test and files no Feedback: its
+        stdout is the whole result (contracts/work-item.md, Executor form)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            prompt = self.prompt_for(
+                Path(tmp),
+                FULL_TICKET.replace("executor: orch-tdd", "executor: script:tools/m.py"),
+            )
+            self.assertNotIn("orch-verify", prompt)
+
+    def test_neither_further_child_is_told_to_close_the_item(self):
+        """rules/verification.md §10: the re-verifier *is* the close, and the
+        checker's close is its correction plus `check`."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_packet_repo(tmp, CLAIMED_ISOLATED_TICKET)
+            for executor in ("orch-critique", "orch-verify"):
+                prompt = run_cmd(
+                    tmp, "packet", "testrun", "T1", "--reply-to", "main",
+                    "--executor", executor,
+                )["packet"]["prompt"]
+                self.assertNotIn("Close by running", prompt)
+
+
 if __name__ == "__main__":
     unittest.main()
