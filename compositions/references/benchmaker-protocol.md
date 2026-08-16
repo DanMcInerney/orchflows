@@ -51,9 +51,8 @@ those, in this order, after qualification:
 Two measurement passes, not one: the cheap pass targets the expensive
 audit, and the second produces the recorded figure. Where the design
 declares an expensive execution class, justify the second pass for this
-run or declare its absence a gap. Each stage carries its own allocation
-from the caller bound's partition, and none of them renders a pass/fail
-verdict on the benchmark.
+run or declare its absence a gap. None of these stages renders a
+pass/fail verdict on the benchmark.
 
 ### Reference audit
 

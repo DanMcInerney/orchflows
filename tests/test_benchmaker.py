@@ -171,6 +171,10 @@ MOVED_OUT_OF_PROTOCOL = (
 # both, or it has come back in the second place after leaving the first.
 RETIRED_FROM_PROTOCOL = (
     ("partition one caller bound", "an allocation from it"),
+    # The §Audit-and-measurement copy of the same mechanism, which the first
+    # row could not see: it survived the 2026-08-16 repair and was caught by
+    # the R6a check. Absent from the protocol and from the template both.
+    ("the caller bound's partition", "the caller bound"),
 )
 PROTOCOL_LINE_CEILING = 160
 # Package-relative, so the deletion check and the by-path grep below both
