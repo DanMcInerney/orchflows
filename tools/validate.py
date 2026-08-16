@@ -51,7 +51,14 @@ PACK_SIGNATURE_CELLS = (
     "required_spec_fields",
     "craft",
 )
-CRAFT_CELLS_BY_POINTER = ("slicing", "lens", "oracle_policy", "craft")
+# The cells whose content is a whole reference file, so the duplication
+# linter compares what they point at rather than the pointer row. `lens`
+# is not among them: it binds a section of `craft`, not a file of its
+# own, and resolving it to craft.md would compare craft's content twice,
+# once under each cell name (SPEC-ticket-set.md P3, REVIEW-2026-08-15
+# T7). Its row is compared as the text it is, which is three words and
+# so sits under CELL_CLAUSE_MIN_WORDS.
+CRAFT_CELLS_BY_POINTER = ("slicing", "oracle_policy", "craft")
 CRAFT_BUDGET = 60
 # Cross-pack cell linter. Both figures are normative: with autojunk off
 # at the ratio call below, the reported pair set is a function of them
@@ -100,15 +107,6 @@ MANDATED_FORM_RES = (
     # T0-pinned, so every oracle row ends in one of six pairs.
     re.compile(
         r"\b(?:deterministic|judged|evidence)\s+(?:pre-existing|authored-here)$"
-    ),
-    # The overlap rule, whose one owner is orch-decompose. Both slicing
-    # cells still carry its wording, so stripping it here is what keeps the
-    # verbatim tier off a copy the tree has not deleted yet; P3 deletes the
-    # copies and this entry goes with them (SPEC-ticket-set.md P2-P3). Until
-    # then the copies are what validate_cross_tier_duplication reports, at
-    # CROSS_TIER_DUPLICATE_LEVEL, rather than what any check mandates.
-    re.compile(
-        r"a write scope overlapping only siblings it is dependency-ordered with"
     ),
 )
 MD_LINK_RE = re.compile(r"\]\(([^)]+)\)")

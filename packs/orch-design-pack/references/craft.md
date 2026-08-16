@@ -1,12 +1,9 @@
 # Design craft
 
-The design domain's terms and shape, per the signature's craft cell.
+The design domain's terms, per the signature's craft cell.
 Framework-free the way content craft is genre-free: each term binds a
 marketing page, a dashboard, and a component library equally; framework
-specifics live with the workspace's standards owner. Read
-[rules/token-economy.md](../../../rules/token-economy.md) §10 for the
-shape principles every domain shares; the bullets under Shape are the
-rendered domain's own.
+specifics live with the workspace's standards owner.
 
 ## Vocabulary
 
@@ -29,22 +26,26 @@ rendered domain's own.
   where a token exists is synonym drift.
 - **scale** — the closed, ordered set of steps a token kind draws from
   (type scale, spacing scale); values land on steps, never between.
-- **design language** — the spec field of this name: the dimensions a
-  judge scores — palette, type, spacing rhythm, density, motion.
 - **hierarchy** — the order attention lands on a view; stated in the
   spec, judged from captures, carried by size, weight, contrast, and
   position, never by source order alone.
 - **affordance** — what an element's appearance promises about
   interaction; kept when the behavior behind it matches the promise.
-- **accessibility bar** — the spec field of this name: the floor —
-  contrast, focus visibility, semantics — and the exact check command
-  that decides it.
 
-## Shape
+## Lens
 
-- Token before value: every visual decision is made once, at a token,
-  and referenced everywhere; a per-element exception is a defect
-  unless the standards owner grants it.
-- The unit is a view: all its states co-located with it.
-- Empty, loading, and error are states of the view, not afterthoughts;
-  a state the spec enumerates and no capture shows is unfinished work.
+For `orch-critique`. Judge from fresh captures at the spec's covered
+identities.
+
+- Design language: every view holds the spec's design language on
+  each scored dimension, at every breakpoint.
+- Hierarchy: attention lands in the spec's stated order at every
+  covered identity, and focus order follows it.
+- Tokens: sampled rendered values trace to tokens and land on their
+  scales.
+- States: every enumerated state has a capture; every affordance's
+  promise is kept by the behavior behind it.
+- Accessibility: the bar holds past its check command — meaning survives
+  without color, and keyboard reach matches pointer reach.
+- Consistency: one decision resolves one way on every view;
+  cross-view drift is the finding class only this lens sees.
