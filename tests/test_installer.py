@@ -2467,8 +2467,11 @@ class TestCodexHooksPreflight(unittest.TestCase):
     def test_no_toml_check_warning_when_this_interpreter_has_tomllib(self):
         # The other half of the pin above, and the coverage the hooks tests
         # gave up when they stopped counting every warning: where tomllib
-        # exists the merge is parse-checked, so the warning must not fire.
-        # Nothing to assert below 3.11, where the warning is the truth.
+        # exists the merge is parse-checked, so the warning must not fire --
+        # and a clean codex user plan then has no true warning left, so the
+        # whole list is asserted empty, which is what catches any spurious
+        # warning on this path. Nothing to assert below 3.11, where the
+        # TOML-merge warning is the truth.
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             (home / ".codex").mkdir(parents=True)
@@ -2476,9 +2479,7 @@ class TestCodexHooksPreflight(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), mock_host_clis("codex"):
                 plan = install.build_plan("user", None)
 
-            self.assertEqual(
-                [], [warning for warning in plan.warnings if "tomllib" in warning], plan.warnings
-            )
+            self.assertEqual([], plan.warnings)
 
 
 class TestClaudeConfigDir(unittest.TestCase):
