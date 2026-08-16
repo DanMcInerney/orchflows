@@ -364,6 +364,22 @@ WRITE_RE = re.compile(
     r"|append|appends|record|records)\b",
     re.IGNORECASE,
 )
+# The other half of family 3: not what the item adds, what it takes away. An
+# objective that deletes, moves or renames a literal has to carry every file
+# that pins it, or the pin breaks where nobody is licensed to repair it.
+REMOVAL_RE = re.compile(
+    r"\b(?:delete|deletes|deleting|deleted|remove|removes|removing|removed"
+    r"|rename|renames|renaming|renamed|move|moves|moving|moved"
+    r"|drop|drops|dropping|dropped)\b",
+    re.IGNORECASE,
+)
+REMOVAL_WINDOW = 80
+# A literal is a token specific enough for a pin to be about it: it carries a
+# separator -- a path's slash, a skill name's dash, a constant's underscore, an
+# extension's dot. Every file in a tree holds ordinary words, so a bare one
+# would name the whole tree and say nothing about this cut.
+LITERAL_RE = re.compile(r"^[A-Za-z0-9][\w./-]{2,}$")
+LITERAL_MARKS = ("-", "_", "/", ".")
 DOTTED_RE = re.compile(r"\.[A-Za-z0-9]{1,5}$")
 GLOB_RE = re.compile(r"[*?\[\]]")
 # `<run>` stands for whichever run it is: a shape, not a path anything writes.
@@ -1255,6 +1271,47 @@ def _scope_closure(frontmatter, prose):
                     findings.append((SCOPE_CONTRADICTION, "{} | {}".format(action, entry)))
                     break
     return findings
+
+
+def _is_literal(token):
+    """Is this token specific enough that a file pinning it means something?
+
+    Three characters and a separator. `gate`, `set` and `the` are words every
+    tree is full of; `orch-compose`, `SCRIPT_NAMES` and `scripts/tickets.py`
+    are things one file states and another depends on.
+    """
+
+    return bool(LITERAL_RE.match(token)) and any(m in token for m in LITERAL_MARKS)
+
+
+def _literals(objective):
+    """Every literal this objective says it deletes, moves or renames.
+
+    The window and the denial frame are ``_scope_closure``'s, asked of a verb
+    that takes away rather than one that adds: a write the ticket denies
+    commits it to nothing, and neither does a removal it denies.
+
+    A path is read twice -- whole, and as the name it ends in. The pin is
+    usually on the name: ``scripts/tickets.py`` spells a deleted engine as a
+    set member and nothing outside the library spells the directory it lived
+    in, so reading the path alone finds no pin and reports the cut clean.
+    """
+
+    flat = _flat(objective)
+    found = []
+    for match in REMOVAL_RE.finditer(flat):
+        if DENIAL_RE.search(flat[max(0, match.start() - DENIAL_WINDOW):match.start()]):
+            continue
+        end = match.end() + REMOVAL_WINDOW
+        window = flat[match.end():end]
+        if len(flat) > end and not flat[end].isspace():
+            window = window.rpartition(" ")[0]
+        spans = _paths_in(window) + [s.strip() for s in BACKTICK_RE.findall(window)]
+        for token in spans:
+            for candidate in (token, token.rsplit("/", 1)[-1]):
+                if _is_literal(candidate) and candidate not in found:
+                    found.append(candidate)
+    return found
 
 
 def _oracle_reads(text):

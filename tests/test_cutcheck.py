@@ -3457,6 +3457,52 @@ class SharedScratchHarnessTest(unittest.TestCase):
         self.assertNotEqual(neighbour, root)
 
 
+class ScopeOpenLiteralTest(unittest.TestCase):
+    """What an objective says it deletes, moves or renames.
+
+    A literal is specific enough to be pinned: a path, a name carrying a
+    separator, a constant. An ordinary word is not one, because every file in
+    the tree holds ordinary words and a finding against all of them says
+    nothing about this cut.
+    """
+
+    def test_scope_open_reads_a_deleted_path_and_the_name_it_ends_in(self):
+        """The pin is usually on the basename, never on the path that held it.
+
+        `scripts/tickets.py` spells the engine as a set member; nothing outside
+        the library spells the directory it lives in. Reading only the path
+        would find no pin and report a clean cut.
+        """
+
+        self.assertEqual(
+            cutcheck._literals(
+                "The item deletes the skill directory `skills/engines/orch-compose`."
+            ),
+            ["skills/engines/orch-compose", "orch-compose"],
+        )
+
+    def test_scope_open_reads_a_renamed_name_that_is_no_path_at_all(self):
+        self.assertEqual(
+            cutcheck._literals(
+                "The item renames the role profile `orch-planner` to `orch-lead`."
+            ),
+            ["orch-planner", "orch-lead"],
+        )
+
+    def test_scope_open_reads_no_literal_out_of_an_ordinary_word(self):
+        self.assertEqual(cutcheck._literals("The item deletes the gate."), [])
+
+    def test_scope_open_leaves_a_denied_removal_alone(self):
+        """The question `_scope_closure` asks of a write verb, asked of this one."""
+
+        self.assertEqual(
+            cutcheck._literals(
+                "The item never deletes `skills/engines/orch-compose`."
+            ),
+            [],
+        )
+
+
 if __name__ == "__main__":
     if "--record" in sys.argv:
         record_verdicts()
