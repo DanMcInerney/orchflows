@@ -57,12 +57,19 @@ Coverage: the run's acceptance-coverage map, read beside whichever
 ticket root resolved, is checked both ways against the issued set. Every
 criterion reaches an item, the gate, or declared remainder, and every
 item is named by some criterion. A root with no map has nothing to read
-against, so the absence is all that is reported.
+against, so the absence is all that is reported. The issued set is the
+work items: a root ticket is the acceptance's source rather than an item
+of it, and its ``<root>.gate.*`` stubs are named by the keyword rather
+than by id, so neither is read as an item here or paired in family 4.
 
 Executor legality: an item's executor is one its stamped pack's executor
 or assembly cell names, and is never an engine -- an engine dispatches
-an executor rather than being one. An item naming no pack has no cell to
-resolve against, so only the prohibition applies.
+an executor rather than being one. The cells are read from the orchflows
+library rather than from the repository under test, which carries no
+packs of its own. An item naming no pack has no cell to resolve against,
+so only the prohibition applies; and a root ticket and its gate stubs
+are graded against the library's own structural executors, which no
+pack's cell names.
 
 Shape: the command text itself carries three defects. A pipeline through
 ``tail`` or ``head`` reports that pipe's exit status, not the check's. A
@@ -119,6 +126,11 @@ try:  # in-repo; the installed copy sits flat beside tickets.py
     from scripts import state_root
     from scripts.tickets import (
         ENGINE_EXECUTORS,
+        GATE_EXECUTORS,
+        ORACLE_CLASS_RE,
+        PROVENANCE_RE,
+        ROOT_EXECUTOR,
+        _criteria as _ticket_criteria,
         _parse_frontmatter,
         _sections,
     )
@@ -126,6 +138,11 @@ except ImportError:  # pragma: no cover - the installed copy's path
     import state_root
     from tickets import (
         ENGINE_EXECUTORS,
+        GATE_EXECUTORS,
+        ORACLE_CLASS_RE,
+        PROVENANCE_RE,
+        ROOT_EXECUTOR,
+        _criteria as _ticket_criteria,
         _parse_frontmatter,
         _sections,
     )
@@ -158,6 +175,7 @@ ORPHAN_ITEM = "orphan-item"
 COVERAGE_MAP_ABSENT = "coverage-map-absent"
 ILLEGAL_EXECUTOR = "illegal-executor"
 SYMLINK_IN_TREE = "symlink-in-tree"
+BYTECODE_WRITTEN = "bytecode-written"
 FAMILY_OF = {
     ALREADY_PASSES: FAMILY,
     NO_HITS_BOTH_REVISIONS: FAMILY,
@@ -169,6 +187,10 @@ FAMILY_OF = {
     # the tree instead of the token: whether anything the copy holds reaches
     # out of it. `_names_outside_the_copy` says they are one problem twice.
     SYMLINK_IN_TREE: FAMILY,
+    # Family 1 for the same reason and one step milder: it is what the copy
+    # was written into with, read as a spelling of the oracle rather than as a
+    # reach out of the copy.
+    BYTECODE_WRITTEN: FAMILY,
     EXTRACTION_GAP: FAMILY,
     VERDICT_IN_OUTPUT: FAMILY,
     UNRUNNABLE_ORACLE: FAMILY,
@@ -190,8 +212,20 @@ FAMILY_OF = {
 # symlink is a fact about the repository, and confinement does not rest on
 # reporting it -- the clone flag holds whether or not anyone reads this line.
 ADVISORY = frozenset(
-    {EXTRACTION_GAP, COVERAGE_MAP_ABSENT, VERDICT_IN_OUTPUT, SYMLINK_IN_TREE}
+    {
+        EXTRACTION_GAP,
+        COVERAGE_MAP_ABSENT,
+        VERDICT_IN_OUTPUT,
+        SYMLINK_IN_TREE,
+        BYTECODE_WRITTEN,
+    }
 )
+# The one thing a python oracle writes into the copy by importing anything,
+# and the flag that stops it. Reported in words because the repair is a
+# spelling of the oracle and is stated nowhere else -- not in the pack's
+# oracle policy, not in the decomposer's skill, not in this report until now.
+BYTECODE_RE = re.compile(r"(?:^|/)__pycache__/|\.py[co]$")
+BYTECODE_REPAIR = "the interpreter's own cache; spell this oracle with `-B`"
 # The report's two summary lines. A reader selects finding lines by filtering
 # stdout on a family, a class name, a criterion number or a ticket id, so
 # neither summary line may carry any of those, nor the path of a script: a
@@ -199,10 +233,10 @@ ADVISORY = frozenset(
 ADVISORY_HEADING = "cutcheck: advisory -- reported, and never setting the exit status:"
 NO_FINDING_OUTSIDE = "cutcheck: no finding outside the advisory set"
 SCRATCH_NOT_REMOVED = "cutcheck: scratch root not removed"
-NO_SCRATCH_ROOT = "cutcheck: no scratch root under the git common dir of"
-# One directory under the git common dir holds every copy every cut makes, so
-# a root outliving its run is findable rather than scattered.
-SCRATCH_DIR = "cutcheck-scratch"
+NO_SCRATCH_ROOT = "cutcheck: no scratch root could be placed for"
+# Every copy any cut makes is one directory under the host's temp root, named
+# so a root outliving its run is findable rather than anonymous.
+SCRATCH_PREFIX = "cutcheck-"
 
 # The acceptance-coverage map: one row per spec criterion, naming the item,
 # the gate, or declared remainder that answers for it.
@@ -211,6 +245,11 @@ COVERAGE_OWNERS = ("gate", "remainder")
 TICKETS_DIR = "tickets"
 CANARY_DIR = "canary"
 RUNS_DIR = "runs"
+# The three executors `tickets.py gate` writes into a root's gate stubs. They
+# are the library's own nodes, so no pack cell names them and none has to.
+GATE_STUB_EXECUTORS = frozenset(GATE_EXECUTORS.values())
+# What makes an id a gate stub of a root that is in this set.
+GATE_INFIX = ".gate."
 # A pack's executor and assembly cells are the only executors it binds.
 PACKS_DIR = "packs"
 PACK_CELL_RE = re.compile(r"^\|\s*(?:executor|assembly)\s*\|([^|]*)\|", re.M)
@@ -220,7 +259,6 @@ PACK_NAME_RE = re.compile(r"^[\w-]+$")
 OBJECTIVE_SECTION = "Objective"
 INPUTS_SECTION = "Fixed inputs"
 COMPLETION_SECTION = "Completion test"
-CRITERION_RE = re.compile(r"^\s*(\d+)\.\s+(.*)$")
 BACKTICK_RE = re.compile(r"`([^`]+)`")
 SWALLOW_RE = re.compile(r"\|\s*(?:tail|head)\b")
 CUMULATIVE_RE = re.compile(r"\S+\.\.HEAD\b")
@@ -290,17 +328,20 @@ NODE_SEP = "::"
 # is no evidence on its own.
 FILTER_MATCHES_ALL = "test_"
 # A criterion states the provenance of its own oracle; an oracle stated
-# pre-existing is an invariant, and holding still is what it is for. Stating it
-# is writing the field and nothing else: a sentence boundary opens the phrase,
-# and no word continues it -- a parenthetical may follow, a predicate may not.
-# A criterion that quotes the phrase, denies carrying it, or discusses what it
-# means mentions the stamp instead of making one, and every such mention either
-# sits behind a backtick, an article or a verb, or runs on into the clause that
-# denies it. Grading is the default here, so a stamp written any other way is
-# graded rather than believed.
-PRE_EXISTING_RE = re.compile(
-    r"(?:\A|[.;])\s*provenance:\s*pre-existing(?!\s*[A-Za-z])", re.I
-)
+# pre-existing is an invariant, and holding still is what it is for. The field
+# itself is `scripts/tickets.py`'s -- `PROVENANCE_RE` there is the one spelling,
+# and it reads the `| provenance: x` form that script writes as readily as the
+# sentence form. What is decided here is the frame and not the field: stating a
+# stamp is writing it at a field boundary with no word continuing it -- a
+# parenthetical may follow, a predicate may not. A criterion that quotes the
+# phrase, denies carrying it, or discusses what it means mentions the stamp
+# instead of making one, and every such mention either sits behind a backtick,
+# an article or a verb, or runs on into the clause that denies it. Grading is
+# the default here, so a stamp written any other way is graded rather than
+# believed.
+PRE_EXISTING = "pre-existing"
+STAMP_OPENS_RE = re.compile(r"(?:\A|[.;|])\s*$")
+STAMP_CONTINUES_RE = re.compile(r"\s*[A-Za-z]")
 # Counting prints the verdict rather than exiting on it.
 COUNT_FLAG_RE = re.compile(r"^-[A-Za-z]*c[A-Za-z]*$|^--count$")
 # Under `git` only the long flag counts: `git -c` sets a configuration
@@ -407,36 +448,27 @@ def _run_dir(run, worktree_root):
 def _scratch_root(worktree_root):
     """One invocation's private directory for the copies it grades in.
 
-    Placed under the git common dir, which is the one directory that is the
-    tool's to write in, answers the same from every worktree, and sits with the
-    object store a local clone hardlinks from -- whatever volume the worktree
-    itself is on. Enumerable too: every copy any cut ever leaves is under one
-    ``cutcheck-scratch``, so a stale one can be found without a search.
+    The host's temp root, so the length of a scratch path is a fact about the
+    host and never about the tree being graded. Placing it inside the target's
+    own git storage put it beside the object store a local clone hardlinks
+    from, which is faster and which made the tool unusable on Windows: a
+    copy's paths are then the target's path plus a scratch directory plus a
+    revision directory plus the deepest path in the revision, and a
+    183-character worktree root took ``git clone`` past ``MAX_PATH`` on its own
+    template copy -- which ``core.longpaths=true`` does not cover, so every
+    invocation from that tree exited before grading anything. Speed gives way
+    to running at all; the copy is still a clone, so it still carries history.
 
-    ``--git-common-dir``, and not the three neighbours it is easily confused
-    with. ``worktree_root.parent`` is the repository's *parent* from a main
-    checkout, which is how 24M landed outside every ignore file the repository
-    has; a literal ``.git`` is an 85-byte file in a linked worktree; and
-    ``--git-dir`` resolves to ``.git/worktrees/<name>``, so two worktrees
-    grading one run would not share a place. The answer comes back relative
-    -- a bare ``.git`` -- from a main checkout and absolute from a linked
-    worktree, so it is joined to the tree it was asked about before use.
+    ``worktree_root`` no longer decides where the copies land -- that is the
+    whole of the change -- and stays as the argument the caller and the test
+    harness both hold this seam by.
 
-    ``None`` where there is no common dir to place it under, which is any
-    directory outside a repository; the caller has a ticket set it cannot
-    grade and says so.
+    ``None`` where the temp root will not take a directory; the caller has a
+    ticket set it cannot grade and says so.
     """
 
-    proc = _git(["rev-parse", "--git-common-dir"], worktree_root)
-    if proc is None or proc.returncode != 0:
-        return None
-    common = Path(proc.stdout.strip())
-    if not common.is_absolute():
-        common = worktree_root / common
     try:
-        parent = common.resolve() / SCRATCH_DIR
-        parent.mkdir(parents=True, exist_ok=True)
-        return Path(tempfile.mkdtemp(prefix=".cutcheck-", dir=str(parent)))
+        return Path(tempfile.mkdtemp(prefix=SCRATCH_PREFIX))
     except OSError:
         return None
 
@@ -628,41 +660,45 @@ def _same_revision(rev, worktree_root):
 
 
 def _criteria(section):
-    """Every numbered completion-test item, at any indentation.
+    """Every completion-test criterion, numbered as the ticket's own grader
+    numbers them.
 
-    Indentation is the signal and it is relative: a numbered line indented
-    deeper than the line that opened the item now open is that item's own
-    text -- a sentence wrapping onto a digit and a period, or a list nested
-    under it -- and opens nothing. A numbered line at that opening line's
-    indentation or less opens the next item, so a set whose criteria are
-    themselves written indented is still a list; and one met while no item is
-    open always opens one.
-
-    Unindented prose ends an item's continuation, never the list: a criterion
-    written after such a line still surfaces, as an extraction gap at minimum.
+    Parsing is ``scripts/tickets.py``'s. That script refuses a criterion this
+    tool then grades, so two parsers here is exactly how a section reads one
+    way to the cut's refusal and another way to the cut's check: a bullet
+    criterion was invisible to this tool while being graded there. The
+    numbering is positional for the same reason -- ``criterion_defects`` says
+    "criterion 2" about the second criterion in the section, whatever digit
+    the author typed, and a report naming a different number names a
+    criterion its reader cannot find.
     """
 
-    items = []
-    current = None
-    opened_at = 0
-    for line in section.splitlines():
-        match = CRITERION_RE.match(line)
-        if match:
-            depth = len(line) - len(line.lstrip())
-            if current is not None and depth > opened_at:
-                current[1].append(line.strip())
-                continue
-            opened_at = depth
-            current = (int(match.group(1)), [match.group(2)])
-            items.append(current)
+    return list(enumerate(_ticket_criteria(section), start=1))
+
+
+def _oracle_class(criterion):
+    """The class this criterion states its oracle is decided by, or ``""``."""
+
+    match = ORACLE_CLASS_RE.search(criterion)
+    return match.group(1).strip().lower() if match else ""
+
+
+def _stated_provenance(criterion):
+    """The provenance this criterion stamps of its own oracle, or ``""``.
+
+    A stamp, never a mention: the field is read with ``tickets.PROVENANCE_RE``
+    and kept only where the frame around it is a statement -- opened by the
+    start of the criterion, a sentence boundary or the field separator
+    ``tickets.py`` itself writes, and continued by no word.
+    """
+
+    for match in PROVENANCE_RE.finditer(criterion):
+        if not STAMP_OPENS_RE.search(criterion[:match.start()]):
             continue
-        if current is None:
+        if STAMP_CONTINUES_RE.match(criterion[match.end():]):
             continue
-        if line.strip() and not line[0].isspace():
-            current = None
-            continue
-        current[1].append(line.strip())
-    return [(number, " ".join(p for p in parts if p)) for number, parts in items]
+        return match.group(1).strip().lower()
+    return ""
 
 
 def _commands(criterion):
@@ -1249,6 +1285,48 @@ def _first_overlap(paths, scopes):
     return None
 
 
+def _root_ids(siblings):
+    """Every id in this set whose executor makes it a root ticket."""
+
+    return sorted(
+        item_id
+        for item_id, frontmatter in siblings.items()
+        if str(frontmatter.get("executor") or "").strip() == ROOT_EXECUTOR
+    )
+
+
+def _gate_stub_of(ticket_id, roots):
+    """The root this id is a gate stub of, or None.
+
+    Anchored to a root the set actually holds, never to the infix alone: a
+    unit ticket may be named anything, and the gate stubs are the ones one of
+    these roots owns.
+    """
+
+    for root in roots:
+        if ticket_id.startswith(root + GATE_INFIX):
+            return root
+    return None
+
+
+def _issued_items(siblings, roots):
+    """The ids that are work items of this cut, root and gate stubs excepted.
+
+    A root is the acceptance's source, so no criterion of the map it wrote
+    names it; the gate stubs are named by the keyword ``gate``, never by id.
+    Neither is a parallel work item either: a root does not run beside its own
+    subtree, and a gate runs behind all of it, so the pairs family 4 asks
+    about are the pairs among these ids. Grading either as an issued item
+    fails every honest cut in the layout the work-item contract requires.
+    """
+
+    return [
+        item_id
+        for item_id in sorted(siblings)
+        if item_id not in roots and _gate_stub_of(item_id, roots) is None
+    ]
+
+
 def _pairwise(siblings, reads):
     """Family 4: the pairs the DAG leaves free to run at the same time.
 
@@ -1260,7 +1338,7 @@ def _pairwise(siblings, reads):
     """
 
     findings = []
-    ids = sorted(siblings)
+    ids = _issued_items(siblings, _root_ids(siblings))
     ancestors = {item: _ancestors(item, siblings) for item in ids}
     for index, left in enumerate(ids):
         for right in ids[index + 1:]:
@@ -1365,16 +1443,17 @@ def _coverage(run, run_dir, issued, roots):
     return findings
 
 
-def _pack_cells(pack, worktree_root):
+def _pack_cells(pack, lib_root):
     """The skills a pack's ``executor`` and ``assembly`` cells name.
 
-    A pack this tree does not carry, or one whose cells name no skill, binds
+    Read from the orchflows library, never from the repository under test. A
+    pack that library does not carry, or one whose cells name no skill, binds
     nothing here -- an assembly cell reading "none" is such a cell.
     """
 
-    if worktree_root is None or not PACK_NAME_RE.match(pack):
+    if lib_root is None or not PACK_NAME_RE.match(pack):
         return set()
-    path = worktree_root / PACKS_DIR / pack / "SKILL.md"
+    path = Path(lib_root) / PACKS_DIR / pack / "SKILL.md"
     if not path.is_file():
         return set()
     names = set()
@@ -1383,16 +1462,53 @@ def _pack_cells(pack, worktree_root):
     return names
 
 
-def _executor_legality(siblings, worktree_root):
+def _lib_root(declared):
+    """The orchflows library whose pack cells family 6 reads, or None.
+
+    Never the target repository. A pack cell is a fact about orchflows and the
+    tree under test is whatever repository the run's work lands in, so
+    resolving cells against the invoking worktree meant that from any target
+    carrying no ``packs/`` -- which is every target but the library's own
+    checkout -- the cell set came back empty and family 6 fell back to the
+    engine prohibition alone. The check passed by finding nothing to check.
+
+    ``--lib`` decides it when the caller names one. Otherwise the tree this
+    script runs from, which is the library itself in a checkout of it, and
+    failing that the install beside the resolved state sink, which is where
+    ``install.py`` puts the packs on this host.
+    """
+
+    if declared:
+        return Path(declared)
+    candidates = [Path(__file__).resolve().parent.parent]
+    try:
+        candidates.append(state_root.state_root().parent / "lib")
+    except OSError:  # pragma: no cover - a home directory that will not resolve
+        pass
+    for candidate in candidates:
+        if (candidate / PACKS_DIR).is_dir():
+            return candidate
+    return None
+
+
+def _executor_legality(siblings, lib_root):
     """Family 6: an executor its pack's cells name, and never an engine.
 
     An engine dispatches a ticket's executor, so naming one as the executor is
     a call cycle. An item naming no pack has no cell to resolve against, and
     only the prohibition applies to it.
+
+    A root ticket and a gate stub are graded against the library instead of
+    against the pack. Their executors are structural -- the decomposer is what
+    makes a root a root, and the gate's three are what ``tickets.py gate``
+    writes -- so no pack's executor cell names them and none should have to.
+    Graded against the cell they were all illegal, which failed a cut for
+    carrying the shape the contract requires of it.
     """
 
     findings = []
     cells = {}
+    roots = _root_ids(siblings)
     for ticket_id in sorted(siblings):
         frontmatter = siblings[ticket_id]
         executor = str(frontmatter.get("executor") or "").strip()
@@ -1403,11 +1519,26 @@ def _executor_legality(siblings, worktree_root):
                 (ticket_id, 0, ILLEGAL_EXECUTOR, "{} is an engine".format(executor))
             )
             continue
+        if ticket_id in roots:
+            continue
+        if _gate_stub_of(ticket_id, roots) is not None:
+            if executor not in GATE_STUB_EXECUTORS:
+                findings.append(
+                    (
+                        ticket_id,
+                        0,
+                        ILLEGAL_EXECUTOR,
+                        "{} is none of the gate's executors {}".format(
+                            executor, sorted(GATE_STUB_EXECUTORS)
+                        ),
+                    )
+                )
+            continue
         pack = str(frontmatter.get("pack") or "").strip()
         if not pack:
             continue
         if pack not in cells:
-            cells[pack] = _pack_cells(pack, worktree_root)
+            cells[pack] = _pack_cells(pack, lib_root)
         if cells[pack] and executor not in cells[pack]:
             findings.append(
                 (
@@ -1437,9 +1568,16 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
         )
         commands = _commands(criterion)
         if not commands:
-            findings.append((ticket_id, number, EXTRACTION_GAP, criterion[:100]))
+            # The stated class travels with the gap: a judged criterion states
+            # no command by design, and one that names a class this tool can
+            # run is under-coverage. The decomposer reads which it has.
+            klass = _oracle_class(criterion)
+            detail = criterion[:100]
+            if klass:
+                detail = "{} | oracle_class: {}".format(detail, klass)
+            findings.append((ticket_id, number, EXTRACTION_GAP, detail))
             continue
-        invariant = bool(PRE_EXISTING_RE.search(criterion))
+        invariant = _stated_provenance(criterion) == PRE_EXISTING
         for command in commands:
             shape = _shape(command)
             if shape:
@@ -1480,10 +1618,24 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
             # Named once per path however many graded copies the span wrote
             # into: two revisions of one repository are one span's worth of
             # defect, not two.
+            wrote = sorted(set(_MUTATED))
+            bytecode = [path for path in wrote if BYTECODE_RE.search(path)]
             findings.extend(
-                (ticket_id, number, UNCONFINED_ORACLE, "{}: {}".format(wrote, command))
-                for wrote in sorted(set(_MUTATED))
+                (ticket_id, number, UNCONFINED_ORACLE, "{}: {}".format(path, command))
+                for path in wrote
+                if path not in bytecode
             )
+            if bytecode:
+                findings.append(
+                    (
+                        ticket_id,
+                        number,
+                        BYTECODE_WRITTEN,
+                        "{}: {}: {}".format(
+                            ", ".join(bytecode), BYTECODE_REPAIR, command
+                        ),
+                    )
+                )
             if klass is not None:
                 findings.append((ticket_id, number, klass, command))
     header = "\n".join(
@@ -1539,6 +1691,13 @@ def main(argv=None):
         required=True,
         help="revision the ticket set was cut from",
     )
+    parser.add_argument(
+        "--lib",
+        default=None,
+        help="orchflows library whose pack cells an executor is read against; "
+        "defaults to the library this script runs from, then to the install "
+        "beside the state sink. Never the repository under test",
+    )
     args = parser.parse_args(argv)
 
     worktree_root = _worktree_root()
@@ -1576,8 +1735,15 @@ def main(argv=None):
         # line naming it absolutely would be machine-specific again.
         roots = (state_root.state_root(), worktree_root,
                  state_root.find_repo_root(Path.cwd()))
-        findings.extend(_coverage(args.run, run_dir, sorted(siblings), roots))
-        findings.extend(_executor_legality(siblings, worktree_root))
+        findings.extend(
+            _coverage(
+                args.run,
+                run_dir,
+                _issued_items(siblings, _root_ids(siblings)),
+                roots,
+            )
+        )
+        findings.extend(_executor_legality(siblings, _lib_root(args.lib)))
         findings.extend(_symlink_findings(args.run, (baseline_tree, head_tree)))
     finally:
         _remove_scratch_root(scratch_root)

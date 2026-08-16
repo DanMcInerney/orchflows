@@ -165,6 +165,12 @@ PACKET_SECTIONS = (
 # join's alone — which is why `result` writes no frontmatter at all.
 EXECUTOR_SECTIONS = ("Result", "Verification", "Feedback", "Risks", "Handoff")
 EXECUTOR_SECTIONS_BY_KEY = {name.lower(): name for name in EXECUTOR_SECTIONS}
+# The sections the cut writes and `amend` repairs: the packet the child is
+# dispatched with. Their one editor before a claim is the decomposer; after
+# one they are frozen, because a criterion that moves under a working
+# executor is the moving target rules/verification.md §3 forbids.
+CUT_SECTIONS = ("Objective", "Fixed inputs", "Completion test", "Return fields")
+CUT_SECTIONS_BY_KEY = {name.lower(): name for name in CUT_SECTIONS}
 # contracts/work-item.md states the sections in this order; a created section
 # takes its place in it, never the end of the file.
 SECTION_ORDER = (
@@ -255,7 +261,7 @@ NEW_USAGE = (
     "[--criterion C ...] [--depends-on a,b] [--write-scope p[,p]] [--bound B] "
     "[--pack P] [--input I ...] [--excluded X ...] [--profile P] "
     "[--independence gate|checker] [--isolation required|none] "
-    "[--return-fields TEXT] | new <run> --file <path>"
+    "[--return-fields TEXT] | new <run> [<id>] --file <path>"
 )
 # The one field `new` supplies a default for: contracts/work-item.md reads an
 # absent lease as DEFAULT_BOUND_MINUTES, so writing that same number is the
@@ -269,6 +275,9 @@ NEW_DEFAULT_RETURN_FIELDS = (
 # writes them rather than only where they are read.
 INDEPENDENCE_VALUES = ("gate", "checker")
 ISOLATION_VALUES = (REQUIRED_ISOLATION, "none")
+AMEND_USAGE = (
+    "amend <run> <id> --section <name> (--file <path> | --text <string>)"
+)
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
 WORKLOG_USAGE = "worklog <run> [--write]"
 GATE_USAGE = (
@@ -309,6 +318,7 @@ PROPOSALS_DIR = "proposals"
 COVERAGE_RECORD_NAME = "covered.jsonl"
 SUBCOMMAND_USAGE = {
     "new": NEW_USAGE,
+    "amend": AMEND_USAGE,
     "instantiate": INSTANTIATE_USAGE,
     "gate": GATE_USAGE,
     "list": "list [--run R]",
@@ -324,6 +334,9 @@ SUBCOMMAND_USAGE = {
 SUBCOMMAND_SUMMARY = {
     "new": "Issue one ticket into the run, refusing any shape `ticket_defects` "
     "reports before anything is written; --file places one already written.",
+    "amend": f"Repair one cut-time section {list(CUT_SECTIONS)} of an issued "
+    "ticket, through the same refusal `new` applies; refused once the ticket "
+    "is claimed, and never a section the executor writes (that is `result`).",
     "instantiate": "Instantiate one template directory into a run's tickets: "
     "placeholders filled, every stub graded, the graph checked for edges, "
     "cycles and its single terminal, then written all or none.",
@@ -1123,10 +1136,26 @@ def _criteria(section_text: str) -> list:
     content — every deliverable here is markdown and executors quote ticket
     bodies at length — so fences are skipped exactly as ``_scan_sections``
     skips them.
+
+    Indentation is the second signal and it is relative: a bullet indented
+    deeper than the bullet that opened the criterion now open is that
+    criterion's own text — a sentence wrapping onto a digit and a period, or
+    a list nested under it — and opens nothing. A bullet at that opening
+    indentation or less opens the next criterion, so a section whose criteria
+    are themselves written indented is still a list.
+
+    An unindented prose line ends the open criterion's continuation and never
+    the list: a criterion written after such a line still surfaces. This
+    function is criterion parsing's one owner — ``criterion_defects`` and
+    ``scripts/cutcheck.py`` both read a completion test through it, and a
+    second spelling is how a section reads one way to the cutter and another
+    way to the refusal that issues it.
     """
 
     criteria: list = []
     fence = None
+    opened_at = 0
+    open_item = False
     for line in section_text.splitlines():
         run = _fence_run(line)
         if fence is not None:
@@ -1141,9 +1170,20 @@ def _criteria(section_text: str) -> list:
             continue
         match = CRITERION_BULLET_RE.match(line)
         if match:
+            depth = len(line) - len(line.lstrip())
+            if open_item and depth > opened_at:
+                criteria[-1] = f"{criteria[-1]} {stripped}"
+                continue
+            opened_at = depth
+            open_item = True
             criteria.append(line[match.end():].strip())
-        elif criteria:
-            criteria[-1] = f"{criteria[-1]} {stripped}"
+            continue
+        if not open_item:
+            continue
+        if not line[0].isspace():
+            open_item = False
+            continue
+        criteria[-1] = f"{criteria[-1]} {stripped}"
     return criteria
 
 
@@ -1625,9 +1665,14 @@ def _cmd_new(rest):
                 "error": f"--file places a ticket already written; it takes none "
                 f"of {supplied}. usage: {NEW_USAGE}"
             }
-        if len(args) != 1:
+        # The id may stand beside the file. It is in the file already, so the
+        # argument decides nothing and is checked against it -- but a cutter
+        # holds the id in the dispatch that told it what to write, and
+        # refusing the ordinary spelling sent one looking for a subcommand
+        # that does not exist.
+        if not 1 <= len(args) <= 2:
             return {"error": f"usage: {NEW_USAGE}"}
-        return _place_ticket(args[0], file_arg)
+        return _place_ticket(args[0], file_arg, args[1] if len(args) == 2 else None)
 
     if len(args) != 2:
         return {"error": f"usage: {NEW_USAGE}"}
@@ -1690,8 +1735,14 @@ def _cmd_new(rest):
     return _issue_ticket(run, ticket_id, _render_ticket(fields, sections))
 
 
-def _place_ticket(run: str, source: str):
-    """``new --file``: one already-written ticket, validated and placed."""
+def _place_ticket(run: str, source: str, declared_id=None):
+    """``new --file``: one already-written ticket, validated and placed.
+
+    ``declared_id`` is the id the caller stated on the line. The file's own
+    ``id`` is what decides, exactly as its ``run`` field does not: both are
+    checked against the arguments so a ticket landing under a name it does
+    not carry is refused rather than written.
+    """
 
     invalid = _segment_error("run id", run)
     if invalid is not None:
@@ -1707,6 +1758,11 @@ def _place_ticket(run: str, source: str):
     invalid = _segment_error("ticket id", ticket_id)
     if invalid is not None:
         return invalid
+    if declared_id is not None and declared_id.strip() != ticket_id.strip():
+        return {
+            "error": f"placed as '{declared_id}', but ticket file {source} names "
+            f"id '{ticket_id}': an id is the file's, and one ticket has one id"
+        }
     declared = data.get("run")
     if isinstance(declared, str) and declared.strip() and declared.strip() != run:
         return {
@@ -1714,6 +1770,98 @@ def _place_ticket(run: str, source: str):
             f"into run '{run}': one ticket belongs to one run"
         }
     return _issue_ticket(run, ticket_id, text)
+
+
+def _cmd_amend(rest):
+    """Repair one cut-time section of an issued, unclaimed ticket.
+
+    `cutcheck.py` reports cut defects and never edits; the decomposer
+    repairs. Without this the repair had to be a hand edit of the file in the
+    sink, which is the one write path around every refusal `new` applies to
+    the same bytes -- so the amended ticket is graded here exactly as an
+    issued one, and refused whole rather than written half.
+
+    The claim is the closing condition. A cut-time section is the packet the
+    child was dispatched with; moving one under a working executor is the
+    moving target rules/verification.md §3 forbids, and what an executor
+    writes is `result`'s in either direction.
+    """
+
+    args = list(rest)
+    section = _extract_flag(args, "--section")
+    file_arg = _extract_flag(args, "--file")
+    text_arg = _extract_flag(args, "--text")
+    stray = next((arg for arg in args if arg.startswith("-")), None)
+    if stray is not None:
+        return {"error": f"amend does not accept {stray}. usage: {AMEND_USAGE}"}
+    if len(args) != 2:
+        return {"error": f"usage: {AMEND_USAGE}"}
+    run, ticket_id = args
+    if section is None:
+        return {
+            "error": f"amend requires --section <name>, one of {list(CUT_SECTIONS)}. "
+            f"usage: {AMEND_USAGE}"
+        }
+    canonical = CUT_SECTIONS_BY_KEY.get(section.strip().strip("#").strip().lower())
+    if canonical is None:
+        return {
+            "error": f"section '{section}' is not one of the cut-time sections "
+            f"{list(CUT_SECTIONS)}; the sections an executor writes are written "
+            f"with `result`"
+        }
+    if (file_arg is None) == (text_arg is None):
+        return {
+            "error": "amend takes one of --file <path> or --text <string>. "
+            f"usage: {AMEND_USAGE}"
+        }
+    if file_arg is not None:
+        try:
+            body = Path(file_arg).read_text(encoding="utf-8")
+        except OSError as error:
+            return {"error": f"unreadable body file: {error}"}
+    else:
+        body = text_arg
+
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {"error": NO_SINK_ERROR}
+    ticket_path = tickets_root / run / f"{ticket_id}.md"
+    if not ticket_path.is_file():
+        return {"error": f"ticket not found: {run}/{ticket_id}"}
+    try:
+        text = ticket_path.read_text(encoding="utf-8")
+    except OSError as error:
+        return {"error": f"unreadable ticket: {error}"}
+    claimed_by = str(_parse_frontmatter(text).get("claimed_by") or "").strip()
+    if claimed_by:
+        return {
+            "error": f"ticket {run}/{ticket_id} is claimed by '{claimed_by}': its "
+            "cut-time sections are frozen once an executor is working against "
+            "them (rules/verification.md §3). Queue the change as its own "
+            "scope, or take the claim back first"
+        }
+    try:
+        rendered = _write_section(text, canonical, body)
+    except TicketFormatError as error:
+        return {"error": f"{error}. ticket: {ticket_path}"}
+    defects = ticket_defects(rendered)
+    if defects:
+        return {
+            "error": f"the amended ticket {run}/{ticket_id} would be off contract "
+            f"(contracts/work-item.md): " + "; ".join(defects)
+        }
+    try:
+        ticket_path.write_text(rendered, encoding="utf-8")
+    except OSError as error:
+        return {"error": f"unwritable ticket: {error}"}
+    return {
+        "amend": {
+            "run": run,
+            "id": ticket_id,
+            "section": canonical,
+            "path": str(ticket_path),
+        }
+    }
 
 
 def _issue_ticket(run: str, ticket_id: str, text: str):
@@ -1991,6 +2139,18 @@ def _gate_sections(kind: str, root_id: str, lens: str, scope: list,
                       units) + GATE_EXECUTOR_SECTIONS
 
 
+def _listed_items(values, indent: str = "") -> str:
+    """A frontmatter list stated in prose as the items it holds.
+
+    Never the Python repr of the list. An executor greps its own ticket for
+    the path it may write, and `repr` doubles every separator a Windows path
+    carries, so the body named `scripts\\\\one.py` where the frontmatter --
+    and the filesystem -- said `scripts\\one.py`.
+    """
+
+    return "\n".join(f"{indent}- `{value}`" for value in values)
+
+
 def _gate_body(kind: str, root_id: str, lens: str, scope: list,
                acceptance_id: str, acceptance: str, units: list) -> list:
     """The four cut-time sections of one gate stub."""
@@ -2003,7 +2163,8 @@ def _gate_body(kind: str, root_id: str, lens: str, scope: list,
              "criteria it already states."),
             ("Fixed inputs", "\n".join(
                 [f"- lens: `{lens}`",
-                 f"- the `## Result` of each of {units}, by identity",
+                 "- the `## Result` of each of the following, by identity:",
+                 _listed_items(units, "  "),
                  f"- `{root_id}`'s `## Completion test`, the acceptance this gate "
                  "closes over:",
                  "",
@@ -2025,12 +2186,13 @@ def _gate_body(kind: str, root_id: str, lens: str, scope: list,
     if kind == "repair":
         return [
             ("Objective", f"Every accepted finding against `{root_id}` is "
-             f"repaired within {scope}, or declined with a stated reason; "
-             "nothing outside that scope changes."),
+             "repaired inside this ticket's own write scope, or declined with "
+             "a stated reason; nothing outside that scope changes."),
             ("Fixed inputs", "\n".join(
                 [f"- the `## Result` of each critique stub of `{root_id}`, by "
                  "identity",
-                 f"- write scope: {scope}"]
+                 "- write scope:",
+                 _listed_items(scope, "  ")]
             )),
             ("Completion test", "\n".join([
                 "- every accepted finding is repaired or declined with a stated "
@@ -3295,9 +3457,9 @@ def _cmd_improvement(rest):
 def _dispatch(argv):
     if not argv:
         return {
-            "error": "missing subcommand: new | instantiate | list | ready | "
-            "claim | set-status | packet | result | worklog | run-state | "
-            "improvement"
+            "error": "missing subcommand: new | amend | instantiate | gate | "
+            "list | ready | claim | set-status | packet | result | worklog | "
+            "run-state | improvement"
         }
     command, rest = argv[0], argv[1:]
     if command in HELP_COMMANDS:
@@ -3306,6 +3468,8 @@ def _dispatch(argv):
         return _cmd_help(command)
     if command == "new":
         return _cmd_new(rest)
+    if command == "amend":
+        return _cmd_amend(rest)
     if command == "instantiate":
         return _cmd_instantiate(rest)
     if command == "gate":
@@ -3332,6 +3496,16 @@ def _dispatch(argv):
 
 
 def main(argv=None):
+    # The payload quotes ticket prose, which carries characters a cp1252
+    # console cannot encode, and `worklog` quotes a whole run of it: the view
+    # was lost outright to the encoding of the terminal it was being shown on.
+    # `ensure_ascii=False` stays -- it is what keeps a path and a criterion
+    # readable in the payload -- so the console's inability to spell a
+    # character is answered at the stream. Replace, never raise.
+    try:
+        sys.stdout.reconfigure(errors="replace")
+    except (AttributeError, ValueError):  # pragma: no cover - not a TextIOWrapper
+        pass
     arguments = sys.argv[1:] if argv is None else argv
     try:
         result = _dispatch(arguments)
