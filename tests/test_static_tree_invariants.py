@@ -463,6 +463,14 @@ class TestCompositionTemplates(unittest.TestCase):
             {"00-run": "orch-frontier", "01-diff": "orch-verify"},
             "01-diff",
         ),
+        "renovate": (
+            {
+                "00-audit": "orch-critique",
+                "01-triage": "orch-triage",
+                "02-deliver": "orch-decompose",
+            },
+            "02-deliver",
+        ),
     }
 
     @staticmethod
