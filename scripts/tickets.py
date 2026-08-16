@@ -30,6 +30,7 @@ Subcommands:
     packet <run> <id> --reply-to <name> [--workspace <path>]
     result <run> <id> --section <name> (--file <path> | --text <string>)
            [--append | --replace]
+    worklog <run> [--write]
     run-state <run> [--tree <name>] (--note <line> |
              (--artifact <name> [--replace] | --terminal <state>)
              (--file <path> | --text <string>))
@@ -182,6 +183,26 @@ DEFAULT_RUN_STATE_TREE = "runs"
 # set — `stalled` exists only at run level, `suspended` only at ticket level.
 TERMINAL_STATES = ("complete", "blocked", "stalled", "limited", "failed")
 WORKLOG_NAME = "worklog.md"
+# SPEC-ticket-set.md §1: the worklog is a view rendered from the ticket
+# directory, never a second hand-written file. This line heads a rendered
+# one, and is how `--write` tells a file it may replace from a file some
+# other writer owns — `run-state --note`'s append log carries no marker, so
+# it is never overwritten.
+WORKLOG_RENDER_MARKER = "<!-- rendered by tickets.py worklog -->"
+# The view's own headings, in render order: contracts/worklog.md's field
+# names, each answered from the tickets rather than from prose.
+WORKLOG_SECTIONS = (
+    "goal", "iterations", "failed approaches", "queued scope", "terminal"
+)
+# The executor that makes a ticket a root ticket (SPEC-ticket-set.md §2).
+ROOT_EXECUTOR = "orch-decompose"
+# A loop's iteration tickets, `<x>.iter.NN`: every one is an approach the
+# run walked, so every one belongs under failed approaches whatever its own
+# status says — an iteration that "completed" still did not end the loop.
+ITERATION_ID_RE = re.compile(r"^.+\.iter\.\d+$")
+# The gate's last stub. A ticket depending on it is scope queued behind the
+# whole root subtree rather than work inside it.
+GATE_VERIFY_SUFFIX = ".gate.verify"
 # The heading that closes a worklog. Written only by `--terminal`, so a
 # worklog carries no terminal placeholder until it closes and the marker
 # means what it says: while it is absent the run is open.
@@ -215,6 +236,7 @@ NEW_DEFAULT_RETURN_FIELDS = (
 INDEPENDENCE_VALUES = ("gate", "checker")
 ISOLATION_VALUES = (REQUIRED_ISOLATION, "none")
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
+WORKLOG_USAGE = "worklog <run> [--write]"
 # A template is a directory: this file, which declares the template's name,
 # entry and placeholders, plus one `<id>.md` ticket stub per node. Every
 # other markdown file in the directory is a stub.
@@ -241,6 +263,7 @@ SUBCOMMAND_USAGE = {
     "set-status": "set-status <run> <id> <status>",
     "packet": "packet <run> <id> --reply-to <name> [--workspace <path>]",
     "result": RESULT_USAGE,
+    "worklog": WORKLOG_USAGE,
     "run-state": RUN_STATE_USAGE,
     "improvement": IMPROVEMENT_USAGE,
 }
@@ -261,6 +284,10 @@ SUBCOMMAND_SUMMARY = {
     "and the commands the child runs from its own workspace.",
     "result": f"Write one of the executor's own sections {list(EXECUTOR_SECTIONS)}; "
     "a section already carrying content is refused without --append or --replace.",
+    "worklog": "Render this run's worklog view from its tickets — goal, "
+    "iterations, failed approaches, queued scope, terminal — as markdown on "
+    "the payload; --write also puts it at the run's worklog path, replacing a "
+    "view rendered here and never a worklog written by anything else.",
     "run-state": "Write this run's state under the one user-scope sink, "
     f"in one of {list(RUN_STATE_TREES)} (default "
     f"{DEFAULT_RUN_STATE_TREE}); an artifact that already exists is refused "
@@ -2115,6 +2142,262 @@ def _cmd_result(rest):
     }
 
 
+# --- the run view -----------------------------------------------------------
+#
+# SPEC-ticket-set.md §1: a worklog is a view rendered from the ticket
+# directory, never a second hand-written file. Everything below reads
+# tickets and writes nothing but that view, so there is no state here to
+# fall out of step with the tickets it describes.
+
+
+def _run_tickets(run: str):
+    """``(tickets, error)`` — every ticket in one run, sections included.
+
+    An empty or absent run is an error rather than an empty view: a view
+    of nothing reads as a run that did nothing, which is the one thing it
+    must not be mistakable for.
+    """
+
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return None, {"error": NO_SINK_ERROR}
+    invalid = _segment_error("run id", run)
+    if invalid is not None:
+        return None, invalid
+    run_dir = tickets_root / run
+    items = []
+    for path in sorted(run_dir.glob("*.md")) if run_dir.is_dir() else []:
+        loaded = _load_ticket(path)
+        try:
+            loaded["sections"] = _sections(path.read_text(encoding="utf-8"))
+        except OSError:
+            loaded["sections"] = {}
+        items.append(loaded)
+    if not items:
+        return None, {
+            "error": f"run '{run}' holds no ticket to render: {run_dir}"
+        }
+    return items, None
+
+
+def _executor_of(item: dict) -> str:
+    return str(item.get("executor") or "").strip().strip("`").strip()
+
+
+def _root_ticket(items: list) -> dict:
+    """The run's root ticket, by SPEC-ticket-set.md §2's three rules.
+
+    The decomposer first, since that is what a root ticket *is*; then the
+    ticket no other depends on, which is the terminal of an instantiated
+    template; then the first id, so a directory of unrelated ad-hoc
+    tickets still renders a view rather than refusing one.
+    """
+
+    ordered = sorted(items, key=lambda item: item["id"])
+    roots = [item for item in ordered if _executor_of(item) == ROOT_EXECUTOR]
+    if roots:
+        return roots[0]
+    depended = {
+        dependency
+        for item in ordered
+        for dependency in (item.get("depends_on") or [])
+    }
+    free = [item for item in ordered if item["id"] not in depended]
+    return free[0] if len(free) == 1 else ordered[0]
+
+
+def _quoted(body: str) -> list:
+    """One ticket's section body, as lines of a markdown quotation.
+
+    Quoted rather than inlined because a ticket body carries headings of
+    its own — every deliverable here is markdown and executors quote
+    theirs at length — and a view whose structure a quotation can add to
+    is a view no reader can trust the shape of.
+    """
+
+    text = str(body or "").strip()
+    if not text:
+        return ["> (empty)"]
+    return [f"> {line}" if line.strip() else ">" for line in text.splitlines()]
+
+
+def _claim_order(items: list) -> list:
+    """Tickets in `claimed_at` order, the never-claimed last by id."""
+
+    return sorted(
+        items,
+        key=lambda item: (
+            not str(item.get("claimed_at") or "").strip(),
+            str(item.get("claimed_at") or ""),
+            item["id"],
+        ),
+    )
+
+
+def _render_worklog(run: str, items: list, root: dict) -> str:
+    """The run view: contracts/worklog.md's fields, answered from tickets."""
+
+    sections = root.get("sections") or {}
+    lines = [
+        WORKLOG_RENDER_MARKER,
+        "",
+        f"# run {run}",
+        "",
+        f"Rendered from this run's tickets by `tickets.py worklog {run}`. The "
+        "ticket directory is the state; this file is a view of it, and an edit "
+        "made here is lost at the next render.",
+        "",
+        "## goal",
+        "",
+        f"Root ticket `{root['id']}` — executor `{_executor_of(root) or 'none'}`.",
+        "",
+        "Objective:",
+        "",
+        *_quoted(sections.get("Objective")),
+        "",
+        "Completion test:",
+        "",
+        *_quoted(sections.get("Completion test")),
+        "",
+        "## iterations",
+        "",
+    ]
+    for item in _claim_order(items):
+        stamp = str(item.get("claimed_at") or "").strip()
+        lines.append(
+            f"- `{item['id']}` — executor `{_executor_of(item) or 'none'}` — "
+            f"status `{item.get('status') or 'none'}` — "
+            + (f"claimed {stamp}" if stamp else "never claimed")
+        )
+        verification = (item.get("sections") or {}).get("Verification")
+        if str(verification or "").strip():
+            lines.extend(["", *_quoted(verification), ""])
+    lines.extend(["", "## failed approaches", ""])
+    abandoned = [
+        item
+        for item in _claim_order(items)
+        if item.get("status") in ("failed", "limited")
+        or ITERATION_ID_RE.match(item["id"])
+    ]
+    if not abandoned:
+        lines.extend(["None recorded.", ""])
+    for item in abandoned:
+        body = item.get("sections") or {}
+        lines.extend([
+            f"### `{item['id']}` — status `{item.get('status') or 'none'}`",
+            "",
+            "Result:",
+            "",
+            *_quoted(body.get("Result")),
+            "",
+            "Feedback:",
+            "",
+            *_quoted(body.get("Feedback")),
+            "",
+        ])
+    lines.extend(["## queued scope", ""])
+    queued = [
+        (item, dependency)
+        for item in sorted(items, key=lambda item: item["id"])
+        for dependency in (item.get("depends_on") or [])
+        if str(dependency).strip().endswith(GATE_VERIFY_SUFFIX)
+    ]
+    if not queued:
+        lines.append("None recorded.")
+    for item, dependency in queued:
+        lines.append(
+            f"- `{item['id']}` — status `{item.get('status') or 'none'}` — "
+            f"waits behind `{str(dependency).strip()}`"
+        )
+    lines.extend([
+        "",
+        "## terminal",
+        "",
+        f"`{root.get('status') or 'none'}` — the root ticket `{root['id']}`'s "
+        "status. A run exits when its root ticket does.",
+        "",
+    ])
+    return "\n".join(lines)
+
+
+def _write_rendered_worklog(run: str, markdown: str):
+    """``(path, error)`` — the view at contracts/worklog.md's own location.
+
+    A worklog this subcommand did not render is refused, not replaced: the
+    append log `run-state --note` writes carries no marker and is the only
+    record of lines no ticket holds. Refusing by marker rather than by
+    mtime or by name means the refusal survives a run that used both.
+    """
+
+    runs_root = _runs_root()
+    if runs_root is None:
+        return None, {"error": NO_SINK_ERROR}
+    path = runs_root / run / WORKLOG_NAME
+    if path.exists():
+        try:
+            existing = path.read_text(encoding="utf-8")
+        except OSError as error:
+            return None, {"error": f"unreadable worklog {path}: {error}"}
+        # a byte-order mark ahead of the marker still opens a rendered file
+        if not existing.lstrip("\ufeff").startswith(WORKLOG_RENDER_MARKER):
+            return None, {
+                "error": f"{path} was not rendered by this subcommand (it does "
+                f"not open with '{WORKLOG_RENDER_MARKER}'): refusing to "
+                "overwrite a worklog someone else wrote. Move it aside first"
+            }
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(markdown)
+    except OSError as error:
+        return None, {"error": f"unwritable worklog: {error}"}
+    return path, None
+
+
+def _cmd_worklog(rest):
+    """Render one run's worklog view from its tickets.
+
+    The markdown rides the JSON payload rather than standing alone on
+    stdout: this script's one output convention is a single JSON document
+    per invocation, which is what lets every caller read a failure the
+    same way, and `packet` already delivers a multi-line prompt the same
+    way. `--write` puts the same bytes where contracts/worklog.md's
+    readers look.
+    """
+
+    args = list(rest)
+    write = "--write" in args
+    while "--write" in args:
+        args.remove("--write")
+    stray = next((arg for arg in args if arg.startswith("-")), None)
+    if stray is not None:
+        return {
+            "error": f"worklog does not accept {stray}. usage: {WORKLOG_USAGE}"
+        }
+    if len(args) != 1:
+        return {"error": f"usage: {WORKLOG_USAGE}"}
+    run = args[0]
+    items, error = _run_tickets(run)
+    if error is not None:
+        return error
+    root = _root_ticket(items)
+    markdown = _render_worklog(run, items, root)
+    path = None
+    if write:
+        path, error = _write_rendered_worklog(run, markdown)
+        if error is not None:
+            return error
+    return {
+        "worklog": {
+            "run": run,
+            "root": root["id"],
+            "tickets": len(items),
+            "path": str(path) if path is not None else None,
+            "markdown": markdown,
+        }
+    }
+
+
 def _is_terminal_heading(line: str) -> bool:
     """Whether one line closes a worklog.
 
@@ -2523,7 +2806,8 @@ def _dispatch(argv):
     if not argv:
         return {
             "error": "missing subcommand: new | instantiate | list | ready | "
-            "claim | set-status | packet | result | run-state | improvement"
+            "claim | set-status | packet | result | worklog | run-state | "
+            "improvement"
         }
     command, rest = argv[0], argv[1:]
     if command in HELP_COMMANDS:
@@ -2546,6 +2830,8 @@ def _dispatch(argv):
         return _cmd_packet(rest)
     if command == "result":
         return _cmd_result(rest)
+    if command == "worklog":
+        return _cmd_worklog(rest)
     if command == "run-state":
         return _cmd_run_state(rest)
     if command == "improvement":
