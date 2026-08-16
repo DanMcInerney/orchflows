@@ -4450,6 +4450,41 @@ class DocstringHonestyTest(unittest.TestCase):
         self.assertNotIn("never as a non-zero exit", docstring)
 
 
+class RunIdentitySpecificationTest(unittest.TestCase):
+    """REVIEW-2026-08-15.md T3: `run.json` is this script's format, so its
+    specification is stated where the writer is rather than in a T0
+    contract that owns nothing else about it. The document written is
+    unchanged — the spec moved, the bytes did not."""
+
+    def test_the_docstring_states_every_field_of_the_document(self):
+        docstring = tickets_mod.__doc__ or ""
+        self.assertIn(tickets_mod.RUN_IDENTITY_NAME, docstring)
+        for field in ("run", "sink_convention", "opened_at", "project.root",
+                      "project.origin", "project.name", "workspaces[].path",
+                      "workspaces[].first_seen"):
+            with self.subTest(field):
+                self.assertIn(field, docstring)
+
+    def test_the_document_written_carries_exactly_those_keys(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_repo(tmp, {"T1": ("ready", "[]")})
+            run_main(tmp, "run-state", "testrun", "--note", "opened")
+            identity = json.loads(
+                (sink_root() / "runs" / "testrun" / tickets_mod.RUN_IDENTITY_NAME)
+                .read_text(encoding="utf-8")
+            )
+            self.assertEqual(
+                ["opened_at", "project", "run", "sink_convention", "workspaces"],
+                sorted(identity),
+            )
+            self.assertEqual(["name", "origin", "root"], sorted(identity["project"]))
+            self.assertEqual(
+                ["first_seen", "path"], sorted(identity["workspaces"][0])
+            )
+            self.assertEqual(tickets_mod.SINK_CONVENTION, identity["sink_convention"])
+
+
 def dispatch_subcommands() -> list:
     """Every name ``_dispatch`` accepts, read off its own comparisons.
 

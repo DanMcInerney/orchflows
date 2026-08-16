@@ -38,6 +38,26 @@ Subcommands:
              (--file <path> | --text <string>))
     improvement --proposal <name> (--file <path> | --text <string>)
     improvement --covered <line>
+
+``run.json`` — the run's identity document, at ``<sink>/runs/<run>/``
+beside the worklog, written on the run's first state write, appended to
+and never rewritten. This script is its only writer, so its
+specification is stated here rather than in a contract that owns nothing
+else about it:
+
+- ``run`` — the run id; equals the name of the directory holding the file.
+- ``sink_convention`` — integer: the sink layout it was written under.
+- ``opened_at`` — when the run's first write landed; never rewritten.
+- ``project`` — which project owns this run id; never rewritten once set.
+  ``project.root`` — absolute path of the **main** checkout, a linked
+  worktree resolved to it and a submodule to its superproject;
+  ``project.origin`` — the origin url, null when the repository has no
+  remote; ``project.name`` — the root's base name, a human label, never
+  compared.
+- ``workspaces`` — every workspace that has written to this run, in
+  first-write order. ``workspaces[].path`` — that workspace itself, **not**
+  its main checkout; ``workspaces[].first_seen`` — when its first write
+  landed.
 """
 
 from __future__ import annotations
@@ -1376,14 +1396,19 @@ def _split_commas(value) -> list:
 def _frontmatter_list(key: str, values) -> list:
     """One frontmatter list, as the lines that carry it.
 
-    Inline ``[a, b]`` unless a value carries a comma, which the inline
-    reader (``_parse_frontmatter``) splits on: an excluded action is prose
-    and prose has commas in it, so those go one per line instead. Both
-    shapes read back as the same list.
+    The inline form ``[a, b]`` splits on the comma and on nothing else —
+    a semicolon inside an entry is part of that entry
+    (``_parse_frontmatter``). So an entry carrying a comma, or a semicolon
+    a reader might take for a separator, is written in the block form
+    instead, one ``- entry`` per line: an excluded action is prose, and
+    prose has commas in it. No second inline separator is offered, because
+    one written shape read two ways is how a scope that was granted and a
+    scope that was refused come to be the same line. Both shapes read back
+    as the same list.
     """
 
     items = list(values)
-    if any("," in item for item in items):
+    if any("," in item or ";" in item for item in items):
         return [f"{key}:"] + [f"- {item}" for item in items]
     return [f"{key}: [{', '.join(items)}]"]
 
