@@ -339,7 +339,7 @@ class TestEveryWriterLandsInTheSink(_SinkFixture):
             cwd=self.repo, sink=self.sink,
         )
         payload = json.loads(done.stdout)
-        worklog = self.sink / "runs" / "testrun" / "worklog.md"
+        worklog = self.sink / "runs" / "testrun" / "notes.md"
         self.assertEqual(str(worklog.resolve()), payload["run_state"]["path"])
         self.assertEqual("slice one landed\n", worklog.read_text(encoding="utf-8"))
         self.assert_repo_untouched()
@@ -388,7 +388,7 @@ class TestEveryWriterLandsInTheSink(_SinkFixture):
                    cwd=self.repo, sink=self.sink)
         run_script(TICKETS_PY, "run-state", "testrun", "--note", "from clone two",
                    cwd=second, sink=self.sink)
-        worklog = self.sink / "runs" / "testrun" / "worklog.md"
+        worklog = self.sink / "runs" / "testrun" / "notes.md"
         self.assertEqual(
             ["from clone one", "from clone two"],
             worklog.read_text(encoding="utf-8").splitlines(),
@@ -410,11 +410,11 @@ class TestEveryWriterLandsInTheSink(_SinkFixture):
         runs = self.sink / "runs"
         self.assertEqual(
             "from repo one\n",
-            (runs / "run-one" / "worklog.md").read_text(encoding="utf-8"),
+            (runs / "run-one" / "notes.md").read_text(encoding="utf-8"),
         )
         self.assertEqual(
             "from repo two\n",
-            (runs / "run-two" / "worklog.md").read_text(encoding="utf-8"),
+            (runs / "run-two" / "notes.md").read_text(encoding="utf-8"),
         )
         self.assertFalse((second / ".orch").exists())
         self.assert_repo_untouched()
@@ -428,7 +428,7 @@ class TestEveryWriterLandsInTheSink(_SinkFixture):
         self.assertNotIn("error", payload)
         self.assertEqual(
             "no git in sight\n",
-            (self.sink / "runs" / "testrun" / "worklog.md").read_text(encoding="utf-8"),
+            (self.sink / "runs" / "testrun" / "notes.md").read_text(encoding="utf-8"),
         )
         self.assertFalse((bare / ".orch").exists())
 
@@ -495,7 +495,7 @@ class TestThereIsNoFallback(_SinkFixture):
         self.assertNotIn("error", json.loads(noted.stdout))
         self.assertEqual(
             "flat\n",
-            (self.sink / "runs" / "testrun" / "worklog.md").read_text(encoding="utf-8"),
+            (self.sink / "runs" / "testrun" / "notes.md").read_text(encoding="utf-8"),
         )
 
 

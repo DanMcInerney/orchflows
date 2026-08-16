@@ -8,12 +8,13 @@ tracker — the one durable record of its dispatch, which the executor
 writes its result into. There is no external tracker.
 
 Location: `<state-root>/tickets/<run>/<id>.md`, the state root being the
-user-scope sink `scripts/state_root.py` resolves per
-[rules/visibility.md](../rules/visibility.md) §6, so one run's tickets
-have one path from every workspace and outlive all of them. A dispatch
-names that path absolutely; an `excluded_actions` forbidding a directory
-always carves out the run's own directory in the sink, since the
-executor is required to write its Result there.
+user-scope sink `scripts/state_root.py` resolves — one per user, outside
+every repository. One run's tickets have exactly one path, identical from
+the orchestrator, from every executor workspace, after any workspace is
+removed, and after the repository is removed. A dispatch names it
+absolutely; an `excluded_actions` forbidding a directory always carves out
+the run's own directory in the sink, since the executor writes its Result
+there.
 
 Frontmatter, mapped to packet parts, lifecycle, and graph position:
 
@@ -75,8 +76,7 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
   rules/roles.md §4; absent, role resolves from the executor's declared
   role.
 - `plan_gate` — optional, root ticket only: `true` suspends the root
-  through its `## Handoff` after the cut, resumed on approval; the
-  frontier parks meanwhile.
+  through its `## Handoff` after the cut, parking the frontier.
 
 Body sections, in order — completion test plus the packet's remaining
 parts:
@@ -175,8 +175,8 @@ Its subtree is `<id>.NN` unit tickets plus the gate stubs
 parallel), `<id>.gate.repair` (write authority over the run scope, behind
 every critique) and `<id>.gate.verify` (behind repair, carrying the
 root's acceptance); a loop ticket's iterations are `<id>.iter.NN`.
-Completion and succession are that vocabulary's `root ticket` entry.
-Discovered scope is a ticket that `depends_on` the run's gate.
+Completion and succession are that vocabulary's `root ticket` entry, and
+discovered scope is a ticket that `depends_on` the run's gate.
 
 ## Template and stub
 
@@ -193,8 +193,7 @@ grades each stub in its own words; the manifest is `tools/validate.py`'s.
 
 `executor` names a skill in the tree, or `script:<repo-relative path>`
 naming a tested script — the ladder's floor as a graph node, so a
-deterministic step is a ticket like any other and costs no agent. In a
-stub either form may be a `{{placeholder}}`.
+deterministic step is a ticket like any other and costs no agent.
 
 Rules: uncovered remainder belongs to the run's queued scope, never to a
 ticket; a ticket never widens its own scope or bound; domains extend the

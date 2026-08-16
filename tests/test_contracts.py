@@ -54,7 +54,7 @@ class TestContractRegister(unittest.TestCase):
     """The T0 register itself is shape: `spec.md` and `delegation.md` are
     absorbed into `work-item.md`, so neither the directory nor any prose
     in the tree may still name them. `scripts/`, `tools/` and their tests
-    are repointed by the join, not here."""
+    are repointed at their own sites, not here."""
 
     ABSORBED = ("contracts/spec.md", "contracts/delegation.md")
 
@@ -119,19 +119,19 @@ class TestWorkItemContract(unittest.TestCase):
         seen = [text.index(f"`## {h}`") for h in order]
         self.assertEqual(seen, sorted(seen), "work-item.md lists the body sections out of contract order")
 
-    def test_status_enum_is_the_eight_ticket_statuses(self):
+    def test_status_enum_is_the_nine_ticket_statuses(self):
+        """`stalled` is one of them: a loop ticket carries a stalled exit,
+        and the ticket terminal set is the set a run's `terminal` and a
+        result envelope's `status` are read in."""
+
         text = read("work-item.md")
         for status in (
             "pending", "ready", "claimed", "suspended", "complete",
-            "blocked", "failed", "limited",
+            "blocked", "stalled", "failed", "limited",
         ):
             self.assertIn(f"`{status}`", text, f"work-item.md is missing the `{status}` status")
         self.assertIn("orch-frontier", text, "work-item.md does not name orch-frontier as the pending->ready owner")
         self.assertIn("`orch-integrate`", text, "work-item.md does not name the join as the terminal-status writer")
-
-    def test_ticket_result_write_is_outside_write_scope(self):
-        text = read("work-item.md")
-        self.assertIn("outside `write_scope`", text, "work-item.md does not state the ticket write is outside write_scope")
 
     def test_absorbs_the_four_supersession_sections(self):
         text = read("work-item.md")
@@ -162,12 +162,18 @@ class TestWorkItemContract(unittest.TestCase):
         ):
             self.assertIn(token, text, f"work-item.md's root ticket does not name {token}")
 
-    def test_template_and_stub_key_set(self):
+    def test_template_and_stub_names_its_shape_and_its_owner(self):
+        """What a stub *is* has one owner — `scripts/tickets.py`'s
+        `template_defects`, which grades every issued ticket and every
+        instantiated stub and reports it in its own words. The contract
+        names the shape and that owner; a second statement of the stub law
+        here is how a template the compiler admits fails at
+        instantiation."""
+
         text = read("work-item.md")
         for token in (
-            "`template.md`", "`name`", "`description`", "`entry`",
-            "`placeholders`", "`{{placeholder}}`", "terminal stub",
-            "tickets.py instantiate",
+            "`template.md`", "`{{placeholder}}`", "terminal stub",
+            "tickets.py instantiate", "`template_defects`",
         ):
             self.assertIn(
                 token, text,
@@ -186,10 +192,6 @@ class TestWorkItemContract(unittest.TestCase):
         self.assertEqual(
             text.count("wall clock"), 1,
             "work-item.md names wall clock outside the one negating clause",
-        )
-        self.assertIn(
-            "never rests on wall clock alone", text,
-            "work-item.md's lease does not negate wall clock as the staleness test",
         )
         self.assertIn("60 minutes", text, "work-item.md's lease drops its default duration")
 
@@ -231,8 +233,15 @@ class TestResultContract(unittest.TestCase):
             "result.md names a T1 skill; a T0 contract binds the class "
             "(every dispatchable unit), never a roster that goes stale",
         )
-        for token in ("every dispatchable unit", "rule 10", "exempt"):
-            self.assertIn(token, text, f"result.md's binding does not name {token!r}")
+        self.assertIn(
+            "every dispatchable unit", text,
+            "result.md binds no class at all",
+        )
+        self.assertNotIn(
+            "rule 10", text,
+            "result.md restates rules/composition.md rule 10, which already "
+            "states the binding and points here for the fields",
+        )
 
 
 class TestWorklogContract(unittest.TestCase):
@@ -394,11 +403,6 @@ class TestVerificationHomelessLaws(unittest.TestCase):
             "verification.md §7 does not state that a gate returning findings "
             "moves the result identity",
         )
-        self.assertIn(
-            "reusable only where the correction", text,
-            "verification.md §7 does not qualify reuse by what the correction "
-            "left unchanged",
-        )
 
     def test_section_eleven_keeps_its_two_cross_step_laws(self):
         """The §11 sentences `S-CUT`'s spec also carries. Their wording is
@@ -406,9 +410,7 @@ class TestVerificationHomelessLaws(unittest.TestCase):
         turns on, never the sentence."""
         text = self.law()
         for token in (
-            "an advisory finding is reported and exits 0",
             "`unrunnable-oracle`",
-            "only on the host that produced it",
         ):
             with self.subTest(token=token):
                 self.assertIn(

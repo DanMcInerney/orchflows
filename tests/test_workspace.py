@@ -374,12 +374,12 @@ class TestTicketsPayloadIsGradedNotItsExitStatus(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             main, run_dir = make_repo(tmp)
-            # `orch-task` is an engine, which tickets.py reports as an error
+            # `orch-panel` is an engine, which tickets.py reports as an error
             # inside the payload of an otherwise successful call
             ticket = make_ticket(run_dir, "T1")
             ticket.write_text(
                 ticket.read_text(encoding="utf-8").replace(
-                    "executor: orch-tdd", "executor: orch-task"
+                    "executor: orch-tdd", "executor: orch-panel"
                 ),
                 encoding="utf-8",
             )

@@ -672,7 +672,7 @@ Test ticket.
 
 ## Result
 
-Changed `{artifact}` on the workspace branch.
+Changed `{cited}` on the workspace branch.
 """
 
 
@@ -700,7 +700,18 @@ class LeaseByArtifactMotionTest(unittest.TestCase):
 
     def make(self, tmp: Path, *, bound: str = "30m", claimed_at: str = None,
              claim_age: int = 90, ticket_age: int = 90, artifact_age: int = 90,
-             artifact: str = "scratch/built.txt") -> Path:
+             artifact: str = "scratch/built.txt", cited: str = None,
+             scope: str = None) -> Path:
+        """One claimed ticket over `artifact`.
+
+        `## Result` cites the artifact absolutely by default, which is the
+        only citation `_cited_paths` reads: a relative one names a
+        different file from every directory, and this reader is the
+        frontier's, not the executor's. `cited` and `scope` override the
+        citation and the declared `write_scope` independently, which is
+        how the two refusals below are exercised.
+        """
+
         sink = use_sink(tmp)
         (tmp / ".git").mkdir(exist_ok=True)
         target = tmp / artifact
@@ -712,7 +723,9 @@ class LeaseByArtifactMotionTest(unittest.TestCase):
         path = run_dir / "T1.md"
         path.write_text(
             RESULT_TICKET.format(
-                tid="T1", artifact=artifact, bound=bound,
+                tid="T1", artifact=artifact if scope is None else scope,
+                cited=str(target.resolve()) if cited is None else cited,
+                bound=bound,
                 claimed_at=minutes_ago(claim_age) if claimed_at is None else claimed_at,
             ),
             encoding="utf-8",
@@ -750,6 +763,38 @@ class LeaseByArtifactMotionTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             self.make(tmp, ticket_age=1)
+            self.assertFalse(self.reclaimable(tmp))
+
+    def test_a_relative_citation_is_not_read_as_this_lane_s_motion(self):
+        """The reader's directory is not the writer's: under
+        `isolation: required` the executor moves the file in its own
+        worktree while the frontier stats the same relative path in the
+        main checkout. A relative citation therefore counts for nothing,
+        and only the ticket's own mtime can hold this claim."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, artifact_age=2, cited="scratch/built.txt")
+            self.assertTrue(self.reclaimable(tmp))
+
+    def test_a_citation_outside_write_scope_holds_no_claim(self):
+        """A `## Result` naming a shared or always-moving path -- a log, a
+        sibling's output -- would otherwise make a dead lane
+        unreclaimable. Only what the ticket was granted counts."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, artifact_age=2, scope="scratch/other.txt")
+            self.assertTrue(self.reclaimable(tmp))
+
+    def test_a_scopeless_ticket_still_reads_its_absolute_citation(self):
+        """An empty `write_scope` bounds nothing, so the citation alone
+        decides -- an ad-hoc ticket granted no scope still holds its lane
+        while its named artifact moves."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, artifact_age=2, scope="")
             self.assertFalse(self.reclaimable(tmp))
 
     def test_an_artifact_the_result_does_not_name_moves_nothing(self):
@@ -916,7 +961,7 @@ class OSErrorHandlerTest(unittest.TestCase):
                 worktree, "run-state", "testrun",
                 "--terminal", "complete", "--text", "the deciding evidence",
             )
-            log = worklog_of()
+            log = notes_of()
             self.assertIn("complete", log.read_text(encoding="utf-8"))
             with refusing_to_read(log, PermissionError):
                 payload = run_cmd(worktree, "run-state", "testrun", "--note", "past the close")
@@ -1092,13 +1137,13 @@ class TestEngineExecutorIsRejected(unittest.TestCase):
     def test_an_engine_executor_is_never_ready(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            self.make(tmp, "orch-task")
+            self.make(tmp, "orch-panel")
             self.assertEqual([], run_cmd(tmp, "ready")["ready"])
 
     def test_an_engine_executor_cannot_be_claimed(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            run_dir = self.make(tmp, "orch-task")
+            run_dir = self.make(tmp, "orch-panel")
             payload = run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-a")
             self.assertIn("is an engine", payload.get("error", ""))
             self.assertNotIn(
@@ -1329,9 +1374,17 @@ class TestPacket(unittest.TestCase):
             packet = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")["packet"]
             prompt = packet["prompt"]
             self.assertIn("Apply skill orch-loop", prompt)
-            self.assertIn("## Objective", prompt)
-            self.assertIn("## Completion test", prompt)
-            self.assertIn("30m", prompt)
+            # The sentence itself, not the two headings: a prompt that
+            # merely names `## Objective` and `## Completion test` carries
+            # them as words, and only this clause binds each to its role.
+            self.assertIn(
+                "This is a loop ticket: the body of each fresh-context pass "
+                "is `## Objective`, the done-check every pass is graded "
+                "against is `## Completion test`, and the bound on the "
+                "iterations is 30m.",
+                prompt,
+            )
+            self.assertIn("whichever comes first", prompt)
 
     def test_a_ticket_that_appears_after_an_earlier_read_is_ordinary(self):
         """SPEC-ticket-set.md §3(a): a new ticket file is an event, and the
@@ -1355,7 +1408,7 @@ class TestPacket(unittest.TestCase):
     def test_engine_executor_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            self.make(tmp, FULL_TICKET.replace("executor: orch-tdd", "executor: orch-task"))
+            self.make(tmp, FULL_TICKET.replace("executor: orch-tdd", "executor: orch-panel"))
             payload = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")
             self.assertIn("is an engine", payload["error"])
 
@@ -1909,8 +1962,10 @@ class ResultOverwriteTest(unittest.TestCase):
 # --- the run-state channel ---------------------------------------------------
 
 
-def worklog_of(run: str = "testrun") -> Path:
-    return sink_root() / "runs" / run / "worklog.md"
+def notes_of(run: str = "testrun") -> Path:
+    """`run-state --note`'s target: the run's free notes, beside the
+    rendered view and never it (contracts/worklog.md)."""
+    return sink_root() / "runs" / run / tickets_mod.RUN_NOTES_NAME
 
 
 def run_dir_of(run: str = "testrun") -> Path:
@@ -1985,10 +2040,10 @@ class TestRunStateWorklog(unittest.TestCase):
             payload = run_cmd(worktree, "run-state", "testrun", "--note", "slice one landed")
             self.assertEqual("note", payload["run_state"]["mode"])
             self.assertEqual(
-                str(worklog_of().resolve()), payload["run_state"]["path"]
+                str(notes_of().resolve()), payload["run_state"]["path"]
             )
             self.assertEqual(
-                "slice one landed\n", worklog_of().read_text(encoding="utf-8")
+                "slice one landed\n", notes_of().read_text(encoding="utf-8")
             )
             # the run tree is the sink's alone
             self.assertFalse((worktree / ".orch").exists())
@@ -2002,7 +2057,7 @@ class TestRunStateWorklog(unittest.TestCase):
             tmp = Path(tmp)
             main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
             run_cmd(worktree, "run-state", "testrun", "--note", "first from the channel")
-            with open(worklog_of(), "a", encoding="utf-8", newline="\n") as handle:
+            with open(notes_of(), "a", encoding="utf-8", newline="\n") as handle:
                 handle.write("second from another worktree\n")
             run_cmd(worktree, "run-state", "testrun", "--note", "third from the channel")
             self.assertEqual(
@@ -2011,7 +2066,7 @@ class TestRunStateWorklog(unittest.TestCase):
                     "second from another worktree",
                     "third from the channel",
                 ],
-                worklog_of().read_text(encoding="utf-8").splitlines(),
+                notes_of().read_text(encoding="utf-8").splitlines(),
             )
 
     def test_concurrent_notes_all_land_whole(self):
@@ -2036,7 +2091,7 @@ class TestRunStateWorklog(unittest.TestCase):
             self.assertEqual([], [p["error"] for p in payloads if "error" in p])
             self.assertEqual(
                 sorted(notes),
-                sorted(worklog_of().read_text(encoding="utf-8").splitlines()),
+                sorted(notes_of().read_text(encoding="utf-8").splitlines()),
             )
 
 
@@ -2241,7 +2296,7 @@ class TerminalNoteTest(unittest.TestCase):
             tmp = Path(tmp)
             main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
             run_cmd(worktree, "run-state", "testrun", "--note", "the first line")
-            text = worklog_of().read_text(encoding="utf-8")
+            text = notes_of().read_text(encoding="utf-8")
             self.assertEqual("the first line\n", text)
             self.assertNotIn(tickets_mod.TERMINAL_HEADING, text)
             for state in tickets_mod.TERMINAL_STATES:
@@ -2265,9 +2320,9 @@ class TerminalNoteTest(unittest.TestCase):
             error = json.loads(result.stdout)["error"]
             self.assertIn("terminal", error)
             self.assertIn("complete", error)
-            self.assertIn(str(worklog_of().resolve()), error)
+            self.assertIn(str(notes_of().resolve()), error)
 
-            lines = worklog_of().read_text(encoding="utf-8").splitlines()
+            lines = notes_of().read_text(encoding="utf-8").splitlines()
             # the notes are in occurrence order, the close is after them, and
             # the fourth note is nowhere in the file
             self.assertEqual(["note one", "note two"], lines[:2])
@@ -2281,12 +2336,12 @@ class TerminalNoteTest(unittest.TestCase):
             main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
             run_cmd(worktree, "run-state", "testrun", "--terminal", "complete",
                     "--text", "the deciding evidence")
-            before = worklog_of().read_text(encoding="utf-8")
+            before = notes_of().read_text(encoding="utf-8")
             result = run_main(worktree, "run-state", "testrun", "--terminal", "failed",
                               "--text", "a second close")
             self.assertEqual(1, result.returncode, result.stdout)
             self.assertIn("complete", json.loads(result.stdout)["error"])
-            self.assertEqual(before, worklog_of().read_text(encoding="utf-8"))
+            self.assertEqual(before, notes_of().read_text(encoding="utf-8"))
 
     # Both halves of what stood here are graded by TestRunStateWorklog, each
     # asserting more: the interleave by
@@ -2380,7 +2435,7 @@ class TerminalNoteTest(unittest.TestCase):
             result = run_main(worktree, "run-state", "testrun", "--terminal", "complete")
             self.assertEqual(1, result.returncode, result.stdout)
             self.assertIn("--text", json.loads(result.stdout)["error"])
-            self.assertFalse(worklog_of().exists())
+            self.assertFalse(notes_of().exists())
 
     def test_every_run_level_terminal_state_closes_and_the_states_are_the_contract(self):
         for state in tickets_mod.TERMINAL_STATES:
@@ -2391,7 +2446,7 @@ class TerminalNoteTest(unittest.TestCase):
                         "--text", "the deciding evidence")
                 self.assertIn(
                     f"## terminal: {state}",
-                    worklog_of().read_text(encoding="utf-8"),
+                    notes_of().read_text(encoding="utf-8"),
                 )
                 result = run_main(worktree, "run-state", "testrun", "--note", "past it")
                 self.assertEqual(1, result.returncode, f"{state}: {result.stdout}")
@@ -2412,7 +2467,7 @@ class TerminalNoteTest(unittest.TestCase):
                 result = run_main(worktree, "run-state", "testrun", "--note", forged)
                 self.assertEqual(1, result.returncode, f"{forged!r}: {result.stdout}")
                 self.assertIn("--terminal", json.loads(result.stdout)["error"])
-            self.assertFalse(worklog_of().exists())
+            self.assertFalse(notes_of().exists())
 
     def test_the_close_is_per_run_and_per_tree(self):
         """A closed run does not close another run, and a closed research
@@ -2433,7 +2488,7 @@ class TerminalNoteTest(unittest.TestCase):
             )
             self.assertEqual(
                 "a research lane's own log\n",
-                (tree_dir_of("research") / "worklog.md").read_text(
+                (tree_dir_of("research") / "notes.md").read_text(
                     encoding="utf-8"
                 ),
             )
@@ -2548,7 +2603,7 @@ class ArtifactOverwriteTest(unittest.TestCase):
                 self.assertIn("run_state", payload, line)
             self.assertEqual(
                 ["one", "two", "three"],
-                worklog_of().read_text(encoding="utf-8").splitlines(),
+                notes_of().read_text(encoding="utf-8").splitlines(),
             )
 
 
@@ -2598,7 +2653,7 @@ class OrchTreesTest(unittest.TestCase):
             main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
             note = run_cmd(worktree, "run-state", "testrun", "--note", "a line")
             self.assertEqual("runs", note["run_state"]["tree"])
-            self.assertEqual(str(worklog_of().resolve()), note["run_state"]["path"])
+            self.assertEqual(str(notes_of().resolve()), note["run_state"]["path"])
             artifact = run_cmd(worktree, "run-state", "testrun", "--artifact",
                                "evidence.md", "--text", "bytes\n")
             self.assertEqual("runs", artifact["run_state"]["tree"])
@@ -2688,7 +2743,7 @@ class TestRunStateRootResolution(unittest.TestCase):
             self.assertIn("run_state", payload)
             self.assertEqual(1, len(calls))
             self.assertEqual(
-                "resolved in process\n", worklog_of().read_text(encoding="utf-8")
+                "resolved in process\n", notes_of().read_text(encoding="utf-8")
             )
             # nothing can shell out to git that never imports a way to:
             # the whole script's import set, not a word match on its prose
@@ -2719,10 +2774,10 @@ class TestRunStateRootResolution(unittest.TestCase):
             main, worktree = make_real_worktree(Path(tmp))
             payload = run_json(worktree, "run-state", "testrun", "--note", "from a real worktree")
             self.assertEqual(
-                str(worklog_of().resolve()), payload["run_state"]["path"]
+                str(notes_of().resolve()), payload["run_state"]["path"]
             )
             self.assertEqual(
-                "from a real worktree\n", worklog_of().read_text(encoding="utf-8")
+                "from a real worktree\n", notes_of().read_text(encoding="utf-8")
             )
             self.assertFalse((worktree / ".orch").exists())
             self.assertFalse((main / ".orch").exists())
@@ -3283,7 +3338,7 @@ class PackWorkspaceTest(unittest.TestCase):
             index -= 1
             comment.insert(0, lines[index])
         comment = "\n".join(comment)
-        for token in ("packs/", "tests/test_sync.py", "workspace"):
+        for token in ("packs/", "tests/test_validate.py", "workspace"):
             self.assertIn(token, comment, comment)
 
 
@@ -3487,10 +3542,10 @@ class TestExecutedRunStateSeam(unittest.TestCase):
             payload = json.loads(noted.stdout)
             # exit 0 and an error-free payload are one fact, asserted as two
             self.assertNotIn("error", payload)
-            self.assertEqual(str(worklog_of().resolve()), payload["run_state"]["path"])
+            self.assertEqual(str(notes_of().resolve()), payload["run_state"]["path"])
             self.assertEqual(
                 "seam-note-from-the-linked-tree\n",
-                worklog_of().read_text(encoding="utf-8"),
+                notes_of().read_text(encoding="utf-8"),
             )
 
             artifact_argv = artifact_line.split()
@@ -3583,7 +3638,7 @@ class TestRunIdentity(unittest.TestCase):
             self.assertRegex(doc["opened_at"], STAMP_RE)
             self.assertEqual([str(repo.resolve())], workspaces_of())
             self.assertEqual(doc["opened_at"], doc["workspaces"][0]["first_seen"])
-            self.assertEqual("one\n", worklog_of().read_text(encoding="utf-8"))
+            self.assertEqual("one\n", notes_of().read_text(encoding="utf-8"))
 
     def test_the_timestamp_shape_has_one_owner_in_this_script(self):
         """A second literal is how `claimed_at` and `opened_at` come to
@@ -3608,13 +3663,13 @@ class TestRunIdentity(unittest.TestCase):
             use_sink(tmp)
             repo = make_clone(tmp / "repo", None)
             run_dir_of().mkdir(parents=True)
-            worklog_of().write_text("a line from before\n", encoding="utf-8")
+            notes_of().write_text("a line from before\n", encoding="utf-8")
             self.assertNotIn(
                 "error", run_cmd(repo, "run-state", "testrun", "--note", "after")
             )
             self.assertEqual(
                 ["a line from before", "after"],
-                worklog_of().read_text(encoding="utf-8").splitlines(),
+                notes_of().read_text(encoding="utf-8").splitlines(),
             )
             doc = identity_doc()
             self.assertEqual(str(repo.resolve()), doc["project"]["root"])
@@ -3638,7 +3693,7 @@ class TestRunIdentity(unittest.TestCase):
             )
             self.assertEqual(
                 ["from the first clone", "from the second"],
-                worklog_of().read_text(encoding="utf-8").splitlines(),
+                notes_of().read_text(encoding="utf-8").splitlines(),
             )
 
     def test_one_url_spelled_two_ways_by_one_transport_is_one_project(self):
@@ -3682,7 +3737,7 @@ class TestRunIdentity(unittest.TestCase):
             self.assertEqual(opened, identity_of().read_bytes())
             self.assertEqual(
                 ["one", "two", "three"],
-                worklog_of().read_text(encoding="utf-8").splitlines(),
+                notes_of().read_text(encoding="utf-8").splitlines(),
             )
 
     def test_the_origin_is_read_from_the_main_checkouts_config(self):
@@ -3760,7 +3815,7 @@ class TestRunIdentity(unittest.TestCase):
                 self.assertNotIn("error", payload)
             # exactly two files: one identity, one worklog, no `.tmp` left behind
             self.assertEqual(
-                ["run.json", "worklog.md"],
+                ["notes.md", "run.json"],
                 sorted(path.name for path in run_dir_of().iterdir()),
             )
             doc = identity_doc()  # parses, so no writer saw a torn file
@@ -3768,7 +3823,7 @@ class TestRunIdentity(unittest.TestCase):
             self.assertEqual([str(repo.resolve())], workspaces_of())
             self.assertEqual(
                 sorted(notes),
-                sorted(worklog_of().read_text(encoding="utf-8").splitlines()),
+                sorted(notes_of().read_text(encoding="utf-8").splitlines()),
             )
 
     def test_the_identity_is_moved_into_place_never_written_over(self):
@@ -3953,9 +4008,9 @@ class TestRunIdentityCollision(unittest.TestCase):
 
     def assert_nothing_moved(self, identity: bytes, worklog: bytes):
         self.assertEqual(identity, identity_of().read_bytes())
-        self.assertEqual(worklog, worklog_of().read_bytes())
+        self.assertEqual(worklog, notes_of().read_bytes())
         self.assertEqual(
-            ["run.json", "worklog.md"],
+            ["notes.md", "run.json"],
             sorted(path.name for path in run_dir_of().iterdir()),
         )
         self.assertFalse((sink_root() / "tickets").exists())
@@ -3964,7 +4019,7 @@ class TestRunIdentityCollision(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             _alpha, beta = self.opened_by_alpha(tmp)
-            identity, worklog = identity_bytes(), worklog_of().read_bytes()
+            identity, worklog = identity_bytes(), notes_of().read_bytes()
             payload = run_cmd(beta, "run-state", "testrun", "--note", "beta tried")
             self.assertNotIn("run_state", payload)
             self.assertIn("acme/alpha", payload["error"])
@@ -3975,7 +4030,7 @@ class TestRunIdentityCollision(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             _alpha, beta = self.opened_by_alpha(tmp)
-            identity, worklog = identity_bytes(), worklog_of().read_bytes()
+            identity, worklog = identity_bytes(), notes_of().read_bytes()
             payload = run_cmd(
                 beta, "run-state", "testrun", "--artifact", "beta.md", "--text", "x"
             )
@@ -4029,7 +4084,7 @@ class TestRunIdentityCollision(unittest.TestCase):
             use_sink(tmp)
             repo = make_clone(tmp / "repo", ALPHA)
             run_cmd(repo, "run-state", "testrun", "--note", "one")
-            worklog = worklog_of().read_bytes()
+            worklog = notes_of().read_bytes()
             for corrupt in ("{ not json", '"a string, not an object"'):
                 with self.subTest(corrupt):
                     identity_of().write_text(corrupt, encoding="utf-8")
@@ -4037,7 +4092,7 @@ class TestRunIdentityCollision(unittest.TestCase):
                     self.assertNotIn("run_state", payload)
                     self.assertIn(str(identity_of()), payload["error"])
                     self.assertEqual(corrupt, identity_of().read_text(encoding="utf-8"))
-                    self.assertEqual(worklog, worklog_of().read_bytes())
+                    self.assertEqual(worklog, notes_of().read_bytes())
 
 
 class TestNoFallback(unittest.TestCase):
@@ -4578,7 +4633,7 @@ class HelpTest(unittest.TestCase):
             payload = json.loads(result.stdout)
             self.assertNotIn("help", payload)
             self.assertEqual("note", payload["run_state"]["mode"])
-            self.assertEqual("--help\n", worklog_of().read_text(encoding="utf-8"))
+            self.assertEqual("--help\n", notes_of().read_text(encoding="utf-8"))
 
     def test_the_usage_table_covers_exactly_the_dispatched_subcommands(self):
         self.assertEqual(

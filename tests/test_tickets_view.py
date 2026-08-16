@@ -245,11 +245,49 @@ class WorklogViewTest(unittest.TestCase):
             self.assertIn("R.03", queued)
             self.assertNotIn("R.01", queued)
 
-    def test_terminal_is_the_root_tickets_status(self):
+    def test_terminal_is_empty_while_the_root_is_still_claimed(self):
+        """contracts/worklog.md: `terminal` is empty until the run exits.
+        A `claimed` root is a run that has not exited, and rendering that
+        lifecycle state here answers "how did this run end" with a state
+        no reader may act on."""
+
         with tempfile.TemporaryDirectory() as tmp:
             sink = use_sink(Path(tmp))
             make_run(sink, three_ticket_run())
-            self.assertIn("claimed", self.render().split("## terminal")[1])
+            self.assertEqual("", self.render().split("## terminal")[1].strip())
+
+    def test_terminal_is_the_root_tickets_status_once_it_is_terminal(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = make_run(sink, three_ticket_run())
+            (run_dir / "R.md").write_text(
+                ticket("R", status="complete", executor="orch-decompose",
+                       objective="the whole delivery lands"),
+                encoding="utf-8",
+            )
+            self.assertIn("complete", self.render().split("## terminal")[1])
+
+    def test_a_loop_run_reads_its_goal_and_its_exit_off_the_loop_ticket(self):
+        """A loop run has no `orch-decompose` root: the loop ticket is the
+        one nothing depends on, so its `## Objective` and its done-check
+        (`## Completion test`) are the goal, and its own `stalled` exit is
+        the run's."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            make_run(sink, {
+                "L": ticket("L", status="stalled", executor="orch-loop",
+                            objective="the flake is gone",
+                            criterion="the suite is green twice running "
+                            "| oracle: the suite | oracle_class: deterministic"),
+                "L.iter.01": ticket("L.iter.01", status="complete",
+                                    result="pass one narrowed the parser"),
+            })
+            markdown = self.render()
+            goal = markdown.split("## goal")[1].split("## iterations")[0]
+            self.assertIn("the flake is gone", goal)
+            self.assertIn("the suite is green twice running", goal)
+            self.assertIn("stalled", markdown.split("## terminal")[1])
 
     def test_an_empty_or_unknown_run_is_a_named_error(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -277,6 +315,26 @@ class WorklogWriteTest(unittest.TestCase):
             text = path.read_text(encoding="utf-8")
             self.assertTrue(text.startswith(tickets_mod.WORKLOG_RENDER_MARKER))
             self.assertIn("## iterations", text)
+
+    def test_a_note_and_the_rendered_view_are_two_files_in_one_run(self):
+        """F1's split: `run-state --note` has its own file, so the view
+        `--write` lands is never a file some other writer owns."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            make_run(sink, three_ticket_run())
+            noted = run_cmd("run-state", "testrun", "--note", "slice one landed")
+            notes = sink / "runs" / "testrun" / tickets_mod.RUN_NOTES_NAME
+            self.assertEqual(str(notes), noted["run_state"]["path"])
+            payload = run_cmd("worklog", "testrun", "--write")
+            self.assertNotIn("error", payload)
+            self.assertEqual(str(self.worklog_path(sink)), payload["worklog"]["path"])
+            self.assertEqual("slice one landed\n", notes.read_text(encoding="utf-8"))
+            self.assertTrue(
+                self.worklog_path(sink)
+                .read_text(encoding="utf-8")
+                .startswith(tickets_mod.WORKLOG_RENDER_MARKER)
+            )
 
     def test_a_second_render_replaces_the_first(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -490,8 +548,66 @@ class GateStubsTest(unittest.TestCase):
             run_dir = self.make(sink, units=())
             payload = self.gate()
             self.assertIn("error", payload)
-            self.assertIn("R.NN", payload["error"])
+            self.assertIn("R.` subtree", payload["error"])
             self.assertEqual({"R"}, {path.stem for path in run_dir.glob("*.md")})
+
+    def test_the_critique_depends_on_an_assembly_item_outside_the_nn_shape(self):
+        """orch-decompose emits a terminal assembly item depending on every
+        unit; no id shape is fixed for it. A critique that does not depend
+        on it can complete -- taking the root with it -- while assembly is
+        still running."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            (run_dir / "R.assembly.md").write_text(
+                ticket("R.assembly", status="pending", deps="[R.01,R.02]",
+                       objective="the units become one deliverable"),
+                encoding="utf-8",
+            )
+            self.gate()
+            edges = {
+                item["id"]: item["depends_on"]
+                for item in run_cmd("list", "--run", "testrun")["tickets"]
+            }
+            self.assertEqual(
+                ["R.01", "R.02", "R.assembly"],
+                edges["R.gate.critique.cut-lens"],
+            )
+
+    def test_the_gate_stubs_are_not_their_own_dependencies(self):
+        """The subtree the critique closes over excludes the gate itself:
+        a critique depending on the repair that depends on it is a cycle."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            self.make(sink)
+            self.gate()
+            edges = {
+                item["id"]: item["depends_on"]
+                for item in run_cmd("list", "--run", "testrun")["tickets"]
+            }
+            self.assertEqual(["R.01", "R.02"], edges["R.gate.critique.cut-lens"])
+
+    def test_the_write_scope_defaults_to_the_root_tickets_own(self):
+        """contracts/work-item.md: the root's `write_scope` is the run's
+        scope and the repair holds it, so the caller states it once."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            root = run_dir / "R.md"
+            root.write_text(
+                root.read_text(encoding="utf-8").replace(
+                    "write_scope: []", "write_scope: [scripts/one.py]"
+                ),
+                encoding="utf-8",
+            )
+            payload = run_cmd("gate", "testrun", "R", "--lens", "cut-lens")
+            self.assertNotIn("error", payload)
+            self.assertIn(
+                "write_scope: [scripts/one.py]", self.stub(run_dir, "R.gate.repair")
+            )
 
     def test_an_unknown_root_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -504,7 +620,11 @@ class GateStubsTest(unittest.TestCase):
             self.assertIn("error", payload)
             self.assertIn("Q", payload["error"])
 
-    def test_the_lens_and_the_write_scope_are_required(self):
+    def test_the_lens_is_required_and_so_is_a_scope_to_default_to(self):
+        """`--lens` has no source but the caller. `--write-scope` has one
+        -- the root ticket -- so it is refused only when the root declares
+        none either."""
+
         with tempfile.TemporaryDirectory() as tmp:
             sink = use_sink(Path(tmp))
             self.make(sink)

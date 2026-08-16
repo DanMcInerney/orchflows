@@ -190,10 +190,13 @@ COMPOSITION_BODY_FIELD_RES = {
 # needs the tree. A second statement of the same law is how a template the
 # compiler admits fails at instantiation, which is what the P1 gate found
 # across eight inputs and the executor enum.
-TEMPLATE_MANIFEST = "template.md"
+#
+# The manifest's name, the placeholder syntax and the `script:` prefix are
+# that script's too, imported from it below rather than spelled again here:
+# a second spelling of the placeholder syntax admitted `{{lens name}}` into
+# the tree and hid it from the manifest-balance check, because instantiation
+# refuses an unfilled one by a wider pattern than this file matched.
 TEMPLATE_ENTRY_VALUES = {"routed", "named"}
-PLACEHOLDER_RE = re.compile(r"\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}")
-SCRIPT_EXECUTOR_PREFIX = "script:"
 
 # --- Carriage (rules/composition.md rule 10) -------------------------
 #
@@ -1426,14 +1429,14 @@ def validate_compositions(diag: Diagnostics) -> None:
                 )
 
 
-def discover_templates():
-    """Every `compositions/<name>/` directory holding a template.md."""
+def discover_templates(manifest_name: str):
+    """Every `compositions/<name>/` directory holding the manifest."""
     comps_dir = ROOT / "compositions"
     if not comps_dir.is_dir():
         return []
     return sorted(
         d for d in comps_dir.iterdir()
-        if d.is_dir() and (d / TEMPLATE_MANIFEST).is_file()
+        if d.is_dir() and (d / manifest_name).is_file()
     )
 
 
@@ -1502,7 +1505,7 @@ def _validate_template_manifest(path: Path, diag: Diagnostics):
 
 
 def _validate_stub_executor(
-    executor: str, file_label: str, skill_names: set, diag: Diagnostics
+    executor: str, file_label: str, skill_names: set, diag: Diagnostics, tickets
 ) -> None:
     """The executor names a skill in the tree or a script that exists --
     the half of executor law that needs the tree, and so cannot live with
@@ -1512,10 +1515,10 @@ def _validate_stub_executor(
     A placeholder is left to instantiation, which refuses an unfilled one
     and so checks the filled value.
     """
-    if PLACEHOLDER_RE.search(executor):
+    if tickets.PLACEHOLDER_RE.search(executor):
         return
-    if executor.startswith(SCRIPT_EXECUTOR_PREFIX):
-        target = executor[len(SCRIPT_EXECUTOR_PREFIX):].strip()
+    if executor.startswith(tickets.SCRIPT_EXECUTOR_PREFIX):
+        target = executor[len(tickets.SCRIPT_EXECUTOR_PREFIX):].strip()
         if not (ROOT / target).exists():
             diag.error(
                 file_label,
@@ -1554,28 +1557,31 @@ def validate_templates(diag: Diagnostics) -> None:
     placeholder balance between manifest and stubs, and whether an executor
     names a skill or a script that exists.
     """
-    directories = discover_templates()
-    if not directories:
-        return  # no template to grade, so no owner to load
+    if not (ROOT / "compositions").is_dir():
+        return  # no composition tree, so no template and no owner to load
     tickets = _ticket_law()
+    manifest_name = tickets.TEMPLATE_FILE
+    directories = discover_templates(manifest_name)
+    if not directories:
+        return
     skill_names = _tree_skill_names()
     for directory in directories:
-        manifest_label = rel(directory / TEMPLATE_MANIFEST)
-        declared = _validate_template_manifest(directory / TEMPLATE_MANIFEST, diag)
+        manifest_label = rel(directory / manifest_name)
+        declared = _validate_template_manifest(directory / manifest_name, diag)
         for path, message in tickets.template_defects(directory):
             diag.error(rel(Path(path)), message)
 
         used = set()
         for path in sorted(directory.glob("*.md")):
-            if path.name == TEMPLATE_MANIFEST:
+            if path.name == manifest_name:
                 continue
             text = _read_source(path)
-            stub_used = set(PLACEHOLDER_RE.findall(text))
+            stub_used = set(tickets.PLACEHOLDER_RE.findall(text))
             used |= stub_used
             executor = tickets._parse_frontmatter(text).get("executor")
             if isinstance(executor, str) and executor.strip():
                 _validate_stub_executor(
-                    executor.strip(), rel(path), skill_names, diag
+                    executor.strip(), rel(path), skill_names, diag, tickets
                 )
             if declared is not None:
                 for name in sorted(stub_used - declared):
