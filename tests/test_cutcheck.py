@@ -2412,11 +2412,10 @@ ALLOWED_STATE_LITERALS = {
     "scripts/isolate.py": {".orchflows-state"},
     # Item 05 criterion 4: a trace may cover a session that predates the
     # migration, so the harvester matches the repository shape as well as
-    # the sink's. These match a path in someone else's transcript; they
-    # compose no path this host reads.
+    # the sink's. This matches a path in someone else's transcript; it
+    # composes no path this host reads.
     "scripts/trace.py": {
         r"(?:\.orch|\.orchflows[/\\]state)",
-        ".orch/runs/*/spec-*.md",
     },
     "scripts/ui.py": set(),
     "tools/live_sweep_e2e.py": set(),
