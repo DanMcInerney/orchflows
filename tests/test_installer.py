@@ -2510,8 +2510,10 @@ class TestDayZeroBootstrap(unittest.TestCase):
         vocabulary = documents[self.project / "docs" / "vocabulary.md"].content
         ownership_map = documents[self.project / "ARCHITECTURE.md"].content
 
-        self.assertIn(self.user_docs + "/vocabulary-authoring.md", vocabulary)
-        self.assertIn(self.user_docs + "/documentation.md", ownership_map)
+        # One native path per factory, not a directory plus a separator
+        # the host may not use: this is what the reader opens.
+        self.assertIn(str(Path(self.user_docs) / "vocabulary-authoring.md"), vocabulary)
+        self.assertIn(str(Path(self.user_docs) / "documentation.md"), ownership_map)
         for content in (vocabulary, ownership_map):
             # Rendered against the user library, like the host block: a
             # project install carries no library of its own to point at.

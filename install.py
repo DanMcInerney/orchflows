@@ -842,7 +842,7 @@ document that needs a different meaning needs a different word.
 
 Sections group by the reader's question; an entry is earned when two
 contexts used one word differently. Factory:
-{{ORCH_DOCS}}/vocabulary-authoring.md.
+{{FACTORY}}.
 
 ## Structure
 
@@ -855,8 +855,7 @@ _DAY_ZERO_OWNERSHIP_MAP = """# Architecture
 
 Codemap: where the thing that does X lives, who owns it, and which way
 dependencies point. Terms: docs/vocabulary.md. Factory, and the design
-law for every document here: {{ORCH_DOCS}}/documentation.md (§6 day
-zero, §7 factories).
+law for every document here: {{FACTORY}} (§6 day zero, §7 factories).
 
 ## Tiers and ownership
 
@@ -882,13 +881,13 @@ def _day_zero_documents(project_root: Path) -> list:
     return [
         DayZeroPlan(
             project_root / "docs" / "vocabulary.md",
-            _DAY_ZERO_VOCABULARY.replace("{{ORCH_DOCS}}", str(docs_dir)),
+            _DAY_ZERO_VOCABULARY.replace("{{FACTORY}}", str(docs_dir / "vocabulary-authoring.md")),
             "day-zero",
             "vocabulary skeleton",
         ),
         DayZeroPlan(
             project_root / "ARCHITECTURE.md",
-            _DAY_ZERO_OWNERSHIP_MAP.replace("{{ORCH_DOCS}}", str(docs_dir)),
+            _DAY_ZERO_OWNERSHIP_MAP.replace("{{FACTORY}}", str(docs_dir / "documentation.md")),
             "day-zero",
             "ownership map skeleton",
         ),
