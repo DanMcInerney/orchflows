@@ -8,34 +8,36 @@ Require: a run's ticket directory forming a finite acyclic dependency
 graph, and the run's bound — from the spec, or named by the caller
 for an ad-hoc set.
 
-Open by dispatching the whole ready frontier — every ticket whose
-`depends_on` are all `complete` — in parallel through `orch-task`, one
-dispatch per ticket, as independent lanes; a ticket waiting on a
-dependency stays `pending`. Arm the caller's own re-check of every
-open ticket's durable file at dispatch, per
-[rules/delegation.md](../../../rules/delegation.md) §11 — a child's
-closing message is a courtesy, never the signal this engine waits on;
-a lost or misdirected message costs one re-check interval, nothing
-more. Then recompute on every event — a result landing (by message or
-by that re-check reading a ticket `complete`), a suspension parking
-its item, a claim's lease expiring — never on a schedule of rounds:
-record what landed in the worklog — the tickets alone are the record
-when the run keeps none; reclaim stale claims per
-[rules/delegation.md](../../../rules/delegation.md)
-§11 (a parked item's claim never goes stale); promote
-each `pending` ticket whose `depends_on` are now all `complete` to
-`ready` through `tickets.py ready`; set each `pending` ticket
-depending on a `failed`, `blocked`, or `limited` ticket to `blocked`,
-naming its blocker — a failure blocks exactly its dependents, the rest
-of the graph rolls on; dispatch everything newly `ready` immediately.
-A suspension parks its item at the event step — neither complete nor
-failed, its dependents wait: the caller satisfies the excluded action
-at that step and re-readies the ticket; a caller that cannot satisfy
-it exits with the parked remainder — resume is its own caller's
-re-dispatch, never this engine's. The engine exits when no ticket is
-`ready` or `pending` and no live dispatch remains — parked items
-return in the open remainder — and exits `limited` when the run bound
-is spent with tickets still open; bounds inherit downward.
+Open by dispatching the whole ready frontier — every ticket whose `depends_on`
+are all `complete` — in parallel through `orch-task`, one dispatch per ticket,
+as independent lanes; a ticket waiting on a dependency stays `pending`. Arm
+the caller's own re-check of every open ticket's durable file at dispatch, per
+[rules/delegation.md](../../../rules/delegation.md) §11 — a child's closing
+message is a courtesy, never the signal this engine waits on; a lost message
+costs one re-check interval, nothing more. Then recompute on every event — a
+result landing (by message or by that re-check reading a ticket `complete`), a
+new ticket file appearing in the run's directory, a suspension parking its
+item, a claim's lease expiring — never on a schedule of rounds: record what
+landed in the worklog — the tickets alone are the record when the run keeps
+none; reclaim stale claims per that same §11 (a parked item's claim never goes
+stale); promote each `pending` ticket whose `depends_on` are now all
+`complete` to `ready` through `tickets.py ready`; set each `pending` ticket
+depending on a `failed`, `blocked`, or `limited` ticket to `blocked`, naming
+its blocker — a failure blocks exactly its dependents, the rest of the graph
+rolls on; dispatch everything newly `ready` immediately. A ticket whose
+executor is orch-decompose is a root ticket: it completes when its
+`<id>.gate.verify` ticket completes, and a ticket depending on the root waits
+for that. A named template is instantiated by
+`tickets.py instantiate <template> --run <run> --set k=v`, then run by this
+engine over the resulting directory. A suspension parks its item at the event
+step — neither complete nor failed, its dependents wait: the caller satisfies
+the excluded
+action at that step and re-readies the ticket; a caller that cannot satisfy it
+exits with the parked remainder — resume is its own caller's re-dispatch,
+never this engine's. The engine exits when no ticket is `ready` or `pending`
+and no live dispatch remains — parked items return in the open remainder — and
+exits `limited` when the run bound is spent with tickets still open; bounds
+inherit downward.
 
 Never: start a dependent before its dependencies are complete; hold a
 ready ticket back to batch it with others; hide a blocked subtree in a

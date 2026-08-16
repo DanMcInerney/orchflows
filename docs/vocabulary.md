@@ -31,10 +31,12 @@ that needs a different meaning needs a different word.
   lens, oracle policy, workspace, required spec fields, craft).
 - **signature** — `contracts/pack-signature.md`: the cells every pack must
   provide and the sharing constraints between them.
-- **composition** — a T3 named workflow: steps over skills and
-  compositions combined by the combinators, per
-  `contracts/composition.md`; invocable by name; entry
-  `routed | named | scheduled`; admitted through `orch-build`.
+- **composition** — a T3 named workflow, invocable by name; entry
+  `routed | named | scheduled`; admitted through `orch-build`. As of P1
+  it *is* a template — the directory `compositions/<name>/` of ticket
+  stubs; the composition-file form (steps over skills and compositions
+  combined by the combinators, per `contracts/composition.md`) is
+  retired at P4.
 - **combinator** — an inter-run operator a composition's edges use:
   seq (result identity → successor `evidence`), par (disjoint write
   scopes plus a named join), loop (through `orch-loop`); owned by
@@ -85,6 +87,16 @@ that needs a different meaning needs a different word.
   ⊕ completion test ⊕ lifecycle ⊕ graph position, per
   `contracts/work-item.md`; on disk, a markdown ticket the executor writes
   to. The two words name the same thing; ticket is the on-disk view.
+- **root ticket** — a ticket whose executor is `orch-decompose`; its
+  subtree is `<id>.NN` unit tickets plus `<id>.gate.*`; it completes
+  when `<id>.gate.verify` completes; a successor depends on the root id
+  alone.
+- **template** — a directory of ticket stubs, instantiated into a run's
+  ticket directory; the P1 form of a composition.
+- **stub** — a template's unit: a ticket missing only `run`, `status`,
+  `claimed_*` and any `{{placeholder}}`.
+- **terminal ticket** — the stub no other stub depends on; its
+  completion test is the template's done check.
 - **ad-hoc ticket** — a work item the orchestrator cuts directly from a
   one-off request: a delegation packet persisted with a completion test,
   not a separate species — same contract shape, run id
