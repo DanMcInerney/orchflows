@@ -12,9 +12,9 @@ Per slice, under the ticket's craft reference: write the check, replace
 tautological checks, watch it fail for the stated reason, make it pass
 with the least code that honestly passes, then reconcile. Commit each
 verified slice. Suspend through the ticket's `## Handoff` when honest
-passage needs scope the ticket does not grant. Close by running the
-ticket's completion test through `orch-verify` at the result's fixed
-identity.
+passage needs scope the ticket does not grant. Close the item as
+[work-item.md](../../../contracts/work-item.md)'s completion-test
+section requires.
 
 Never: write code before its failing check; weaken or rewrite a check
 to fit the code; leave the workspace off a committed baseline; touch

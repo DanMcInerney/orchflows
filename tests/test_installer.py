@@ -15,7 +15,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path, PurePosixPath
 from unittest.mock import patch
 
@@ -155,6 +155,13 @@ def mock_host_clis(*hosts: str):
     return patch.object(install.shutil, "which", side_effect=lookup)
 
 
+# A bare filename the way a stub writes one: `search_plan.py`, never
+# `scripts/search_plan.py`. A stub that spelled the path would be stale the
+# day the script moved, so the bare form is the contract and this is what
+# reads it.
+BARE_SCRIPT_RE = re.compile(r"\b([a-z_]+\.py)\b")
+
+
 class TestScriptNames(unittest.TestCase):
     """Behavioral replacement: SCRIPT_NAMES only matters if every named
     script actually reaches the installed bin dir with matching content --
@@ -169,6 +176,26 @@ class TestScriptNames(unittest.TestCase):
             self.assertTrue(installed.is_file(), f"{name} was not installed to {plan.bin_dir}")
             source = install.REPO_ROOT / "scripts" / name
             self.assertEqual(source.read_bytes(), installed.read_bytes())
+
+    def test_every_bare_script_a_template_stub_names_is_shipped(self):
+        """A stub that says `python search_plan.py advance` is telling an
+        executor to run a file the installed tree has to carry. The template
+        names it by bare filename on purpose -- the path is the installer's
+        business, not the stub's -- so the only thing standing between the
+        instruction and a `No such file` is this list. `search_plan.py`
+        crossed from a canonical skills/ directory to scripts/ and stopped
+        shipping without a single check going red."""
+
+        named = set()
+        for path in sorted((install.REPO_ROOT / "compositions").rglob("*.md")):
+            named.update(BARE_SCRIPT_RE.findall(path.read_text(encoding="utf-8")))
+        self.assertTrue(named, "no template stub names a bare script; the grep is wrong")
+        missing = sorted(name for name in named if name not in install.SCRIPT_NAMES)
+        self.assertEqual(
+            [],
+            missing,
+            f"template stubs name scripts the installer never ships: {missing}",
+        )
 
     def test_the_installed_writers_resolve_their_sink_from_the_flat_layout(self):
         """The scripts land flat in one bin dir, with no ``scripts`` package
@@ -199,7 +226,7 @@ class TestScriptNames(unittest.TestCase):
             self.assertEqual(0, noted.returncode, noted.stderr)
             payload = json.loads(noted.stdout)
             self.assertNotIn("error", payload)
-            worklog = sink / "runs" / "testrun" / "worklog.md"
+            worklog = sink / "runs" / "testrun" / "notes.md"
             self.assertEqual(str(worklog), payload["run_state"]["path"])
             self.assertEqual("installed\n", worklog.read_text(encoding="utf-8"))
 
@@ -581,11 +608,14 @@ class TestScopedHostConfiguration(unittest.TestCase):
             ):
                 plan = install.build_plan("user", None)
 
-            # Compositions are invocable by name and get the same adapter
-            # stubs as skills, whatever their entry value.
-            compositions = install.discover_compositions()
+            # Compositions are invocable by name and get an adapter stub like
+            # skills, whatever their entry value. What differs is the body: a
+            # skill's is an `@`-include of one file, and a template is a
+            # directory, which `@` cannot include.
+            templates = install.discover_templates()
+            template_names = {directory.name for directory, _, _ in templates}
             self.assertEqual(
-                len(install.discover_packages()) + len(compositions),
+                len(install.discover_packages()) + len(templates),
                 len(plan.claude_adapters),
             )
             expected_lib_path = (home / ".orchflows" / "lib").resolve()
@@ -597,14 +627,19 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertIn("description:", frontmatter)
                 self.assertNotIn("role:", frontmatter)
                 self.assertNotIn("entry:", frontmatter)
-                self.assertTrue(body.strip().startswith("@"))
+                self.assertNotIn("placeholders:", frontmatter)
+                if dest.parent.name in template_names:
+                    self.assertNotIn("@", body)
+                    self.assertIn("tickets.py instantiate", body)
+                    self.assertIn("orch-frontier", body)
+                else:
+                    self.assertTrue(body.strip().startswith("@"))
                 self.assertIn(str(expected_lib_path), body)
 
-            composition_names = {path.stem for path, _, _ in compositions}
             expected_stub_names = {
                 name
                 for name in install.CODEX_SKILL_REDIRECT_NAMES
-                if name.startswith("orch-") or name in composition_names
+                if name.startswith("orch-") or name in template_names
             }
             self.assertEqual(
                 expected_stub_names,
@@ -619,33 +654,52 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertIn(str(expected_lib_path), body)
                 self.assertIn("follow it exactly.", body)
 
-    def test_discover_compositions_requires_frontmatter_with_entry(self):
+    def test_discover_templates_requires_a_manifest_with_entry(self):
+        """A name surface is a template directory whose manifest declares an
+        `entry`. Everything else under `compositions/` is library data: the
+        shared `references/` tree, a directory mid-authoring, and — the case
+        this replaces — any stray top-level `*.md`, which was the second
+        grammar's whole surface until P4-3 deleted it."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             comps = root / "compositions"
-            comps.mkdir()
-            (comps / "fix.md").write_text(
-                "---\nname: fix\ndescription: routed fix chain\nentry: routed\n---\n\n"
-                "Require: a failure.\n\nReturn: status, result, verification.\n",
+            (comps / "fix").mkdir(parents=True)
+            (comps / "fix" / "template.md").write_text(
+                "---\nname: fix\ndescription: routed fix chain\nentry: routed\n"
+                "placeholders: [failure]\n---\n\nFour stubs, one chain.\n",
                 encoding="utf-8",
             )
-            (comps / "legacy.md").write_text(
-                "# legacy example\n\nprose only, no frontmatter\n", encoding="utf-8"
+            (comps / "fix" / "00-reproduce.md").write_text(
+                "---\nid: 00-reproduce\n---\n\nstub\n", encoding="utf-8"
             )
-            (comps / "no-entry.md").write_text(
+            (comps / "references").mkdir()
+            (comps / "references" / "shared.md").write_text("prose\n", encoding="utf-8")
+            (comps / "no-entry").mkdir()
+            (comps / "no-entry" / "template.md").write_text(
                 "---\nname: no-entry\ndescription: missing entry\n---\n\nbody\n",
                 encoding="utf-8",
             )
-            found = install.discover_compositions(root)
-            self.assertEqual(["fix.md"], [path.name for path, _, _ in found])
-            path, frontmatter, body = found[0]
-            self.assertEqual("routed", install.frontmatter_field(frontmatter, "entry"))
-            self.assertIn("Require: a failure.", body)
+            (comps / "unfrontmattered").mkdir()
+            (comps / "unfrontmattered" / "template.md").write_text(
+                "# no frontmatter\n\nprose only\n", encoding="utf-8"
+            )
+            (comps / "legacy.md").write_text(
+                "---\nname: legacy\ndescription: the deleted step form\n"
+                "entry: routed\n---\n\nSteps: one.\n",
+                encoding="utf-8",
+            )
 
-    def test_composition_surfaces_cover_every_entry_value(self):
-        # Routed, named, and scheduled compositions all surface as Claude
-        # adapters, Codex prompts, and by-name entries -- the named tier is
-        # unreachable from a host without them (SPEC §8).
+            found = install.discover_templates(root)
+            self.assertEqual(["fix"], [directory.name for directory, _, _ in found])
+            directory, frontmatter, body = found[0]
+            self.assertEqual("routed", install.frontmatter_field(frontmatter, "entry"))
+            self.assertEqual("[failure]", install.frontmatter_field(frontmatter, "placeholders"))
+            self.assertIn("Four stubs, one chain.", body)
+
+    def test_template_surfaces_cover_every_entry_value(self):
+        # Routed and named templates alike surface as Claude adapters, Codex
+        # prompts, and by-name entries -- the named tier is unreachable from
+        # a host without them (SPEC §8).
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
@@ -655,23 +709,32 @@ class TestScopedHostConfiguration(unittest.TestCase):
             ):
                 plan = install.build_plan("user", None)
 
-            compositions = install.discover_compositions()
-            if not compositions:
-                self.skipTest("no invocable compositions in this tree")
+            templates = install.discover_templates()
+            if not templates:
+                self.skipTest("no invocable templates in this tree")
             adapter_names = {dest.parent.name for dest, _ in plan.claude_adapters}
             prompt_names = {dest.stem for dest, _ in plan.codex_prompts}
             by_name_names = {dest.parent.name for dest, _ in plan.by_name}
             lib_comps = (home / ".orchflows" / "lib" / "compositions").resolve()
-            for path, frontmatter, _ in compositions:
-                name = path.stem
+            for directory, frontmatter, _ in templates:
+                name = directory.name
                 self.assertIn(name, adapter_names)
                 self.assertIn(name, prompt_names)
                 self.assertIn(name, by_name_names)
+                # Both stubs point at the template directory: the adapter to
+                # instantiate it, the pointer to read its manifest.
                 adapter = next(c for d, c in plan.claude_adapters if d.parent.name == name)
-                self.assertIn(str(lib_comps / path.name), adapter)
+                self.assertIn(str(lib_comps / name), adapter)
                 pointer = next(c for d, c in plan.by_name if d.parent.name == name)
-                self.assertIn(str(lib_comps / path.name), pointer)
+                self.assertIn(str(lib_comps / name / "template.md"), pointer)
                 self.assertIn("entry:", pointer)
+                # Every `--set` the adapter offers is a placeholder the
+                # manifest declares, so a reader cannot be handed one
+                # `tickets.py instantiate` will refuse.
+                declared = (install.frontmatter_field(frontmatter, "placeholders") or "")
+                names = {item.strip() for item in declared.strip("[]").split(",") if item.strip()}
+                offered = set(re.findall(r"--set (\w+)=", adapter))
+                self.assertEqual(names, offered, name)
 
     def test_user_plan_writes_flat_by_name_index_for_every_package(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -686,12 +749,12 @@ class TestScopedHostConfiguration(unittest.TestCase):
             by_name_root = (home / ".orchflows" / "lib" / "by-name").resolve()
             expected_lib_path = (home / ".orchflows" / "lib").resolve()
             packages = install.discover_packages()
-            compositions = install.discover_compositions()
+            templates = install.discover_templates()
             # One flat entry per canonical name — skills across every tier,
-            # packs, and invocable compositions alike — no tier in the path.
-            self.assertEqual(len(packages) + len(compositions), len(plan.by_name))
+            # packs, and invocable templates alike — no tier in the path.
+            self.assertEqual(len(packages) + len(templates), len(plan.by_name))
             self.assertEqual(
-                {p.parent.name for p in packages} | {p.stem for p, _, _ in compositions},
+                {p.parent.name for p in packages} | {d.name for d, _, _ in templates},
                 {dest.parent.name for dest, _ in plan.by_name},
             )
             for dest, content in plan.by_name:
@@ -713,7 +776,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 plan = install.build_plan("user", None)
             self.assertEqual([], plan.claude_adapters)
             self.assertEqual(
-                len(install.discover_packages()) + len(install.discover_compositions()),
+                len(install.discover_packages()) + len(install.discover_templates()),
                 len(plan.by_name),
             )
 
@@ -1646,6 +1709,29 @@ class TestHostBlockRendering(unittest.TestCase):
             self.assertIn(f"/lib/{sibling}", rendered)
         self.assertIn("/lib/docs/", rendered)
 
+    def test_rendered_block_states_one_routing_rule(self):
+        """One routing rule reaches the host, not two with different
+        closures. A count rather than a sentence: each branch marker is
+        stated exactly once, so a second rule -- or a branch restated
+        further down the block -- fails here instead of at a host's next
+        turn. The names below are of engines the tree no longer has; a
+        block naming one routes a turn at nothing.
+
+        Read from the rendered block because that, not the template, is
+        what a host pays for every turn.
+        """
+
+        rendered = self._rendered()
+
+        for branch in ("**answer**", "**ticket**", "**fix**"):
+            self.assertEqual(
+                1,
+                rendered.count(branch),
+                f"the block states {branch} {rendered.count(branch)} times, not once",
+            )
+        for gone in ("orch-task", "orch-deliver", "orch-compose"):
+            self.assertNotIn(gone, rendered)
+
     def test_build_plan_host_block_uses_running_interpreter(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)
@@ -2236,6 +2322,151 @@ class TestRuntimeDirsSeedTheSink(unittest.TestCase):
         )
         self.assertNotIn("project runtime directories", collapsed)
         self.assertEqual((".orchflows", "state"), install.STATE_SINK_SUBPATH)
+
+
+class TestClaudeAdapterSet(unittest.TestCase):
+    """``--claude-adapters {all,four}``: the switch SPEC §7.2's routing
+    benchmark measures. ``four`` mints Claude skill adapters only for the
+    shared four-adapter set; every other surface -- the flat by-name index,
+    the Codex prompts and redirect skills, the role agents, the host block --
+    is the same plan either way. ``all`` is the default and is what HEAD
+    already planned."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.home = Path(self._tmp.name)
+        (self.home / ".claude").mkdir(parents=True)
+        (self.home / ".codex").mkdir(parents=True)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def _plan(self, adapter_set=None):
+        args = ("user", None) if adapter_set is None else ("user", None, adapter_set)
+        with patch.object(install.Path, "home", return_value=self.home), mock_host_clis(
+            "claude", "codex"
+        ):
+            return install.build_plan(*args)
+
+    @staticmethod
+    def _names(pairs):
+        return {dest.parent.name for dest, _ in pairs}
+
+    def test_the_shared_four_names_the_set_both_hosts_expose(self):
+        self.assertEqual(
+            ("orch-spec", "orch-frontier", "fix", "orch-build"),
+            install.SHARED_ADAPTER_NAMES,
+        )
+        # The Codex redirect set and the Claude four-adapter set are one set,
+        # not two tuples that happen to agree today.
+        self.assertIs(install.SHARED_ADAPTER_NAMES, install.CODEX_SKILL_REDIRECT_NAMES)
+
+    def test_four_mints_exactly_the_four_shared_adapters(self):
+        plan = self._plan("four")
+        self.assertEqual(set(install.SHARED_ADAPTER_NAMES), self._names(plan.claude_adapters))
+        self.assertEqual(4, len(plan.claude_adapters))
+
+    def test_all_is_the_default_and_mints_every_package_and_template(self):
+        default = self._plan()
+        explicit = self._plan("all")
+        expected = len(install.discover_packages()) + len(install.discover_templates())
+        self.assertEqual(expected, len(default.claude_adapters))
+        self.assertEqual(
+            [(dest, content) for dest, content in default.claude_adapters],
+            [(dest, content) for dest, content in explicit.claude_adapters],
+        )
+        self.assertLess(len(install.SHARED_ADAPTER_NAMES), expected)
+
+    def test_four_changes_nothing_but_the_claude_adapter_list(self):
+        every = self._plan("all")
+        four = self._plan("four")
+        self.assertEqual(every.by_name, four.by_name)
+        self.assertEqual(every.codex_prompts, four.codex_prompts)
+        self.assertEqual(every.codex_skills, four.codex_skills)
+        self.assertEqual(every.claude_agents, four.claude_agents)
+        self.assertEqual(every.codex_agents, four.codex_agents)
+        self.assertEqual(every.lib_copies, four.lib_copies)
+        self.assertEqual(every.scripts, four.scripts)
+        self.assertEqual(every.blocks, four.blocks)
+        self.assertEqual(every.host_block.content, four.host_block.content)
+
+    def test_the_four_adapters_carry_the_same_content_they_carry_under_all(self):
+        every = dict(self._plan("all").claude_adapters)
+        for dest, content in self._plan("four").claude_adapters:
+            self.assertEqual(every[dest], content)
+
+    def test_the_plan_count_and_printout_follow_the_adapter_set(self):
+        every = self._plan("all")
+        four = self._plan("four")
+        dropped = len(every.claude_adapters) - len(four.claude_adapters)
+        self.assertEqual(
+            install.plan_entry_count(every) - dropped, install.plan_entry_count(four)
+        )
+        printed = io.StringIO()
+        with redirect_stdout(printed):
+            install.print_plan(four)
+        self.assertIn("Claude Code skill adapters (4)", printed.getvalue())
+
+    def test_the_receipt_records_only_the_minted_adapters(self):
+        plan = self._plan("four")
+        # The library copy is the whole cost of an apply and nothing here
+        # reads it; the adapter writes and the receipt are what is graded.
+        plan.lib_copies = []
+        with patch.object(install.Path, "home", return_value=self.home):
+            receipt = install.apply_plan(plan, keep_role_agents=True)
+        adapters = [
+            entry for entry in receipt["files"] if entry["kind"] == "adapter"
+        ]
+        self.assertEqual(4, len(adapters))
+        self.assertEqual(
+            set(install.SHARED_ADAPTER_NAMES),
+            {Path(entry["path"]).parent.name for entry in adapters},
+        )
+
+    def test_the_cli_defaults_to_all_and_carries_four_into_the_plan(self):
+        def _dry_run(argv):
+            with patch.object(install.Path, "home", return_value=self.home), mock_host_clis(
+                "claude", "codex"
+            ):
+                buffer = io.StringIO()
+                with redirect_stdout(buffer):
+                    code = install.main(argv)
+            self.assertEqual(0, code)
+            return buffer.getvalue()
+
+        every = len(install.discover_packages()) + len(install.discover_templates())
+        self.assertIn(
+            f"Claude Code skill adapters ({every})", _dry_run(["--user", "--dry-run"])
+        )
+        self.assertIn(
+            f"Claude Code skill adapters ({every})",
+            _dry_run(["--user", "--dry-run", "--claude-adapters", "all"]),
+        )
+        self.assertIn(
+            "Claude Code skill adapters (4)",
+            _dry_run(["--user", "--dry-run", "--claude-adapters", "four"]),
+        )
+
+    def test_the_parser_accepts_the_two_sets_and_refuses_any_other(self):
+        parser = install.build_arg_parser()
+        self.assertEqual("all", parser.parse_args(["--user"]).claude_adapters)
+        for adapter_set in ("all", "four"):
+            self.assertEqual(
+                adapter_set,
+                parser.parse_args(["--user", "--claude-adapters", adapter_set]).claude_adapters,
+            )
+        with self.assertRaises(SystemExit) as raised, redirect_stderr(io.StringIO()):
+            parser.parse_args(["--user", "--claude-adapters", "some"])
+        self.assertEqual(2, raised.exception.code)
+
+    def test_a_project_plan_ignores_the_adapter_set(self):
+        project = self.home / "project"
+        project.mkdir()
+        with patch.object(install.Path, "home", return_value=self.home):
+            self.assertEqual(
+                install.build_plan("project", project, "all").blocks,
+                install.build_plan("project", project, "four").blocks,
+            )
 
 
 if __name__ == "__main__":

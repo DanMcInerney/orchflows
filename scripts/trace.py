@@ -30,10 +30,6 @@ Usage:
     trace.py --codex <rollout.jsonl-or-dir>        -> trace JSON on stdout
     trace.py --claude <path> --mermaid             -> Mermaid flowchart
     trace.py --codex <path> --mermaid              -> Mermaid flowchart
-    trace.py --observations <trace.json...> [--run-state <root>]
-                                                    -> one finding per
-                                                       line, friction-entry
-                                                       shape, on stdout
 
 ``--claude PATH``: PATH is either the main transcript file (its sibling
 directory ``<stem>/subagents/`` is read too, matching the live
@@ -45,12 +41,8 @@ holding ``main.jsonl`` and ``subagents/``.
 of rollout files (one thread per file; parent/child linked by
 ``source.subagent.thread_spawn.parent_thread_id``).
 
-``--observations``: PATH arguments are already-extracted trace JSON
-files (the output of ``--claude``/``--codex``). Mines three finding
-classes -- repeated tool failure, pack/deliverable-kind misrouting
-(needs ``--run-state``), and machinery ratio against a fixture-declared
-budget (a sibling ``<trace>.budget.json`` with ``expected_event_budget``
-and optional ``threshold``, default 1.0).
+Extraction only. Findings are `orch-self-improve`'s to synthesize from
+the sink's own streams; this script mines nothing.
 """
 from __future__ import annotations
 
@@ -66,7 +58,6 @@ HOST_CODEX = "codex"
 
 EXIT_CODE_RE = re.compile(r"[Ee]xit code:?\s*(-?\d+)")
 SHELL_COMMAND_RE = re.compile(r'command["\']?\s*:\s*"((?:[^"\\]|\\.)*)"')
-PACK_KIND_RE = re.compile(r"pack `orch-([a-z]+)-pack`")
 # Both roots a run-state path can carry. The sink is where every writer
 # lands now (``scripts/state_root.py``); the repository shape stays matched
 # because a trace may cover a session that predates the migration, and
@@ -79,13 +70,6 @@ RUN_ID_RE = re.compile(
 )
 TEXT_CLIP = 2000  # chars kept of request/narration text; one owner
 HARNESS_TEXT_MARKERS = ("<system-reminder>", "<command-name>", "<local-command-stdout>")
-CODE_EXTENSIONS = (".py", ".js", ".ts", ".tsx", ".jsx", ".go", ".rs", ".java", ".rb", ".c", ".cpp", ".sh", ".ps1")
-CONTENT_EXTENSIONS = (".md", ".docx", ".txt")
-# Markup/style is ambiguous between the design and code kinds; both are
-# observed so neither declaration false-positives. Research has no
-# extension signal at all and is never inferred.
-DESIGN_EXTENSIONS = (".html", ".css", ".scss", ".sass", ".less", ".svg")
-ORCH_STATE_RE = re.compile(STATE_ROOT_RE + r"[/\\](?:runs|tickets)[/\\]")
 
 CODEX_BOILERPLATE_MARKERS = (
     "<recommended_plugins>",
@@ -102,10 +86,6 @@ CODEX_BOILERPLATE_MARKERS = (
 # --------------------------------------------------------------------------
 # shared helpers
 # --------------------------------------------------------------------------
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
 
 def _parse_ts(value):
     if not isinstance(value, str) or not value:
@@ -655,218 +635,6 @@ def render_mermaid(trace: dict) -> str:
 
 
 # --------------------------------------------------------------------------
-# Observations miner (criterion 4)
-# --------------------------------------------------------------------------
-
-def _kind_tokens(command: str):
-    # Suffix matching over whitespace-split tokens: substring containment
-    # would read ".css" as ".c" and ".config" as ".c".
-    for raw in command.replace('"', " ").replace("'", " ").split():
-        yield raw.rstrip(".,;:)]}").lower()
-
-
-def _observed_kinds(trace: dict):
-    kinds = set()
-    for ev in trace.get("events", []):
-        if ev.get("type") != "tool_call":
-            continue
-        command = str(ev.get("command", ""))
-        if ORCH_STATE_RE.search(command):
-            # Ticket and run bookkeeping is not deliverable work; every
-            # executor writes its .md ticket regardless of pack.
-            continue
-        for token in _kind_tokens(command):
-            if token.endswith(CODE_EXTENSIONS):
-                kinds.add("code")
-            if token.endswith(CONTENT_EXTENSIONS):
-                kinds.add("content")
-            if token.endswith(DESIGN_EXTENSIONS):
-                kinds.add("design")
-                kinds.add("code")
-    return kinds
-
-
-def _sole_host(hosts):
-    hosts = {h for h in hosts if h}
-    return hosts.pop() if len(hosts) == 1 else "unknown"
-
-
-def _find_repeated_tool_failures(traces):
-    # Total-count semantics: a command failing twice anywhere — inside one
-    # trace or spread across several — is a repeat. Per-trace dedup would
-    # make single-session mining unable to fire at all.
-    counts = {}
-    trace_paths_in = {}
-    hosts_in = {}
-    for path, trace in traces:
-        for ev in trace.get("events", []):
-            if ev.get("type") != "tool_call":
-                continue
-            exit_code = ev.get("exit")
-            if isinstance(exit_code, int) and exit_code != 0:
-                command = ev.get("command", "unknown")
-                counts[command] = counts.get(command, 0) + 1
-                trace_paths_in.setdefault(command, set()).add(str(path))
-                hosts_in.setdefault(command, set()).add(trace.get("host", "unknown"))
-    now = _now_iso()
-    findings = []
-    for command, count in sorted(counts.items()):
-        if count >= 2:
-            n_traces = len(trace_paths_in[command])
-            unit = "traces" if n_traces != 1 else "trace"
-            findings.append({
-                "ts": now,
-                "observed": f"command `{command}` failed with a nonzero exit {count} times across {n_traces} {unit}",
-                "expected": "a repeated tool failure is fixed before reuse, not repeated unchanged",
-                "category": "tool-failure",
-                "host": _sole_host(hosts_in.get(command, set())),
-                "source": "trace",
-            })
-    return findings
-
-
-def _spec_files(run_state: Path):
-    """Every run's spec under ``run_state``, whichever root it is.
-
-    A sink holds ``runs/<id>/``; a repository whose state predates the
-    migration holds ``.orch/runs/<id>/``, and item 08 copies rather than
-    moves, so a caller may hand either. Both are read for the same reason
-    ``RUN_ID_RE`` matches both.
-    """
-
-    found = {}
-    for pattern in ("runs/*/spec-*.md", ".orch/runs/*/spec-*.md"):
-        for spec_file in run_state.glob(pattern):
-            found[str(spec_file)] = spec_file
-    return list(found.values())
-
-
-def _declared_pack_kinds(run_state: Path, run_ids=None):
-    kinds = set()
-    for spec_file in sorted(_spec_files(run_state)):
-        if run_ids is not None and spec_file.parent.name not in run_ids:
-            continue
-        try:
-            text = spec_file.read_text(encoding="utf-8-sig")
-        except OSError:
-            continue
-        match = PACK_KIND_RE.search(text)
-        if match:
-            kinds.add(match.group(1))
-    return kinds
-
-
-def _find_misrouting_pack(traces, run_state: Path):
-    # A trace carrying runs_touched is judged against its own runs'
-    # declared pack; one without keeps the all-runs unambiguity guard.
-    # More than one declared kind in scope stays silent — never guess.
-    findings = []
-    global_kinds = None
-    for _path, trace in traces:
-        raw = trace.get("runs_touched")
-        run_ids = [str(r) for r in raw] if isinstance(raw, list) else []
-        if run_ids:
-            kinds = _declared_pack_kinds(run_state, set(run_ids))
-            scope = f"run(s) {sorted(run_ids)}"
-        else:
-            if global_kinds is None:
-                global_kinds = _declared_pack_kinds(run_state)
-            kinds = global_kinds
-            scope = "run-state"
-        if len(kinds) != 1:
-            continue
-        declared = next(iter(kinds))
-        if declared not in ("code", "content", "design"):
-            # research (and any future kind) has no extension signal; an
-            # uninferable declaration is never judged.
-            continue
-        observed = _observed_kinds(trace)
-        if observed and declared not in observed:
-            findings.append({
-                "ts": _now_iso(),
-                "observed": f"trace shows deliverable kind(s) {sorted(observed)} but {scope} declares pack `orch-{declared}-pack`",
-                "expected": "observed deliverable work matches the declared pack",
-                "category": "misrouting",
-                "host": trace.get("host", "unknown"),
-                "source": "trace",
-            })
-    return findings
-
-
-def _machinery_count(trace: dict) -> float:
-    total = 0
-    max_depth = 0
-    for ev in trace.get("events", []):
-        etype = ev.get("type")
-        if etype in ("tool_call", "subagent", "skill_invocation"):
-            total += 1
-        if etype == "subagent":
-            depth = ev.get("depth")
-            if isinstance(depth, int):
-                max_depth = max(max_depth, depth)
-            else:
-                max_depth = max(max_depth, 1)
-    return total + max_depth
-
-
-def _find_machinery_ratio(trace_paths):
-    findings = []
-    now = _now_iso()
-    for path in trace_paths:
-        budget_path = path.with_suffix(path.suffix + ".budget.json") if path.suffix != ".json" else path.with_name(path.stem + ".budget.json")
-        if not budget_path.is_file():
-            continue
-        try:
-            budget = json.loads(budget_path.read_text(encoding="utf-8"))
-            trace = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-        expected = budget.get("expected_event_budget")
-        if not isinstance(expected, (int, float)) or expected <= 0:
-            continue
-        threshold = budget.get("threshold", 1.0)
-        ratio = _machinery_count(trace) / expected
-        if ratio > threshold:
-            findings.append({
-                "ts": now,
-                "observed": f"machinery ratio {ratio:.2f} exceeds threshold {threshold} for {path.name}",
-                "expected": f"mechanical event volume stays within the declared budget ({expected})",
-                "category": "misrouting",
-                "host": trace.get("host", "unknown"),
-                "source": "trace",
-            })
-    return findings
-
-
-def mine_observations(trace_paths, run_state):
-    traces = []
-    findings = []
-    for p in trace_paths:
-        p = Path(p)
-        try:
-            data = json.loads(p.read_text(encoding="utf-8-sig"))
-        except (OSError, json.JSONDecodeError) as exc:
-            # An unreadable input must be visible in the output: a silent
-            # skip makes "nothing read" indistinguishable from "no findings".
-            findings.append({
-                "ts": _now_iso(),
-                "observed": f"trace input {p} unreadable: {exc}",
-                "expected": "every mining input is read; an unreadable input is reported, never silently skipped",
-                "category": "tool-failure",
-                "host": "unknown",
-                "source": "miner",
-            })
-            continue
-        traces.append((p, data))
-
-    findings.extend(_find_repeated_tool_failures(traces))
-    if run_state is not None:
-        findings.extend(_find_misrouting_pack(traces, Path(run_state)))
-    findings.extend(_find_machinery_ratio([Path(p) for p in trace_paths]))
-    return findings
-
-
-# --------------------------------------------------------------------------
 # CLI
 # --------------------------------------------------------------------------
 
@@ -874,8 +642,6 @@ def build_parser():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--claude", metavar="PATH", help="extract a trace from one Claude Code session")
     parser.add_argument("--codex", metavar="PATH", help="extract a trace from one Codex thread tree")
-    parser.add_argument("--observations", nargs="+", metavar="TRACE", help="mine already-extracted trace JSON files")
-    parser.add_argument("--run-state", metavar="ROOT", help="state sink root (or a repository still holding one), for pack/deliverable-kind misrouting checks")
     parser.add_argument("--mermaid", action="store_true", help="render the extracted trace as a Mermaid flowchart")
     return parser
 
@@ -893,10 +659,6 @@ def main(argv=None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
-        if args.observations:
-            for finding in mine_observations(args.observations, args.run_state):
-                print(json.dumps(finding, ensure_ascii=True))
-            return 0
         if args.claude:
             trace = extract_claude(Path(args.claude))
         elif args.codex:

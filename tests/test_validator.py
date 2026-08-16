@@ -25,6 +25,21 @@ PINS = ROOT / "tests" / "pins.json"
 _VALIDATE_CODE = compile(VALIDATE.read_text(encoding="utf-8"), str(VALIDATE), "exec")
 
 
+def loop_lint_warnings(stdout):
+    """Every WARN validate_loop_lint emitted, by its own words.
+
+    The loop-lint cases below are about one check, and a report carries
+    findings from every check that ran -- an isolated tree still holds the
+    real contracts/, so the duplication checks read it too. Asserting over
+    the whole stream made those cases fail on a finding they are not about,
+    and pass on the day the loop lint stops running (tests/test_cell_linter.py
+    holds the same line for its ratchets)."""
+    return [
+        line for line in stdout.splitlines()
+        if line.startswith("WARN") and "iteration/loop" in line
+    ]
+
+
 class _Result:
     """The three fields of a CompletedProcess the isolated tests read."""
 
@@ -205,6 +220,21 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
         pack_dir.mkdir(parents=True)
         (pack_dir / "SKILL.md").write_bytes(content)
 
+    def test_a_references_only_directory_is_no_package_and_no_finding(self):
+        """A tier directory holding only `references/` is read as no package
+        at all -- not as a package missing its SKILL.md, which would take the
+        tree red on a directory the library merely has not finished emptying.
+        (Such a home is still no place for a public reference: visibility §4
+        wants an owning body naming the path, which is why `profiles.md` now
+        sits under `skills/engines/orch-frontier/`.)"""
+        refs = self.tmp_path / "skills" / "kernel" / "orch-refsonly" / "references"
+        refs.mkdir(parents=True)
+        (refs / "profiles.md").write_text("A reference with no skill.\n", encoding="utf-8")
+        result = self._run()
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("orch-refsonly", result.stdout)
+        self.assertEqual("", result.stderr.strip())
+
     def test_missing_closing_fence_is_error_line_and_exit_1_no_traceback(self):
         self._write_skill(
             "badpkg",
@@ -307,7 +337,7 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
         )
         result = self._run()
         self.assertEqual(0, result.returncode, result.stdout)
-        self.assertNotIn("WARN", result.stdout)
+        self.assertEqual([], loop_lint_warnings(result.stdout), result.stdout)
 
     def test_orch_triage_shaped_prose_does_not_warn_loop_lint(self):
         """T7: 'never a loop' (description) and 'Never: ... an open-ended
@@ -326,7 +356,7 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
         )
         result = self._run()
         self.assertEqual(0, result.returncode, result.stdout)
-        self.assertNotIn("WARN", result.stdout)
+        self.assertEqual([], loop_lint_warnings(result.stdout), result.stdout)
 
     def test_genuinely_boundless_loop_mention_still_warns(self):
         """A body that actually instructs iteration, with no bound/budget
@@ -343,199 +373,9 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
         )
         result = self._run()
         self.assertEqual(0, result.returncode, result.stdout)
-        self.assertIn("WARN", result.stdout)
-        self.assertIn("boundlesspkg", result.stdout)
-
-
-GOOD_COMPOSITION = """---
-name: {name}
-description: a synthetic composition exercising the contract checks
-entry: {entry}
----
-
-Require: a frozen input.
-
-Steps:
-- one — `orch-task`.
-
-Edges: seq one.
-
-Invariants — Never: skip the orch-task dispatch or widen its scope.
-
-Done check: the final envelope's verification covers the result.
-
-Return: status, result identity, and verification; then feedback.
-"""
-
-
-class TestCompositionContractChecks(_IsolatedTree):
-    """validate_compositions against contracts/composition.md, on the
-    same isolated tmp-copy pattern as the synthetic package tests."""
-
-    def setUp(self):
-        super().setUp()
-        (self.tmp_path / "compositions").mkdir()
-
-    def _write_composition(self, name: str, content: str):
-        (self.tmp_path / "compositions" / f"{name}.md").write_text(content, encoding="utf-8")
-
-    def test_contract_conforming_composition_passes(self):
-        for entry in ("routed", "named", "scheduled"):
-            self._write_composition(f"good-{entry}", GOOD_COMPOSITION.format(name=f"good-{entry}", entry=entry))
-        result = self._run()
-        self.assertEqual(0, result.returncode, result.stdout)
-
-    def test_entry_outside_the_closed_set_is_error(self):
-        self._write_composition("badentry", GOOD_COMPOSITION.format(name="badentry", entry="automatic"))
-        result = self._run()
-        self.assertEqual(1, result.returncode)
-        self.assertIn("entry 'automatic'", result.stdout)
-        self.assertIn("contracts/composition.md", result.stdout)
-
-    def test_missing_invariants_and_done_check_are_admission_errors(self):
-        bad = GOOD_COMPOSITION.format(name="gutted", entry="named")
-        bad = bad.replace("Invariants — Never: skip the orch-task dispatch or widen its scope.\n\n", "")
-        bad = bad.replace("Done check: the final envelope's verification covers the result.\n\n", "")
-        self._write_composition("gutted", bad)
-        result = self._run()
-        self.assertEqual(1, result.returncode)
-        self.assertIn("missing 'invariants'", result.stdout)
-        self.assertIn("missing 'done_check'", result.stdout)
-        self.assertIn("admission rejects", result.stdout)
-
-    def test_missing_steps_and_edges_are_errors(self):
-        bad = GOOD_COMPOSITION.format(name="stepless", entry="named")
-        bad = bad.replace("Steps:\n- one — `orch-task`.\n\n", "")
-        bad = bad.replace("Edges: seq one.\n\n", "")
-        self._write_composition("stepless", bad)
-        result = self._run()
-        self.assertEqual(1, result.returncode)
-        self.assertIn("required field 'steps'", result.stdout)
-        self.assertIn("required field 'edges'", result.stdout)
-
-    def test_name_mismatch_and_missing_frontmatter_are_errors(self):
-        self._write_composition("misnamed", GOOD_COMPOSITION.format(name="other", entry="named"))
-        self._write_composition("bare", "# bare (no frontmatter)\n\nprose only\n")
-        result = self._run()
-        self.assertEqual(1, result.returncode)
-        self.assertIn("does not match file name 'misnamed'", result.stdout)
-        self.assertIn("missing opening frontmatter fence", result.stdout)
-
-    def test_composition_return_missing_the_envelope_is_error(self):
-        bad = GOOD_COMPOSITION.format(name="bareret", entry="named")
-        bad = bad.replace(
-            "Return: status, result identity, and verification; then feedback.",
-            "Return: assumptions and feedback.",
-        )
-        self._write_composition("bareret", bad)
-        result = self._run()
-        self.assertEqual(1, result.returncode)
-        self.assertIn("does not lead with the result envelope", result.stdout)
-
-    def test_invariants_block_vacuous_of_all_step_content_is_error(self):
-        """T2: validate.py:903-953 checked presence only -- an
-        'invariants' block that shares no vocabulary with any step
-        (REVIEW-2026-08-06.md's own example: 'Never: violate the laws
-        of physics') passed. Now it is an ERROR naming the unbound
-        step(s)."""
-        vacuous = """---
-name: gapless
-description: a synthetic composition with a vacuous invariants block
-entry: named
----
-
-Require: a frozen input.
-
-Steps:
-- acquire-spec — `orch-spec`: freeze one evidence-acquisition spec.
-- materialize — `orch-deliver` of that frozen spec.
-
-Edges: seq acquire-spec → materialize.
-
-Invariants — Never: violate the laws of physics.
-
-Done check: the final envelope's verification covers the result.
-
-Return: status, result identity, and verification; then feedback.
-"""
-        self._write_composition("gapless", vacuous)
-        result = self._run()
-        self.assertEqual(1, result.returncode)
-        self.assertIn("invariants", result.stdout)
-        self.assertIn("gapless", result.stdout)
-
-    def test_invariants_block_binding_at_least_one_step_passes(self):
-        bound = """---
-name: gapbound
-description: a synthetic composition whose invariants bind its steps
-entry: named
----
-
-Require: a frozen input.
-
-Steps:
-- acquire-spec — `orch-spec`: freeze one evidence-acquisition spec.
-- materialize — `orch-deliver` of that frozen spec.
-
-Edges: seq acquire-spec → materialize.
-
-Invariants — Never: materialize before the spec is frozen; skip the
-acquire-spec step.
-
-Done check: the final envelope's verification covers the result.
-
-Return: status, result identity, and verification; then feedback.
-"""
-        self._write_composition("gapbound", bound)
-        result = self._run()
-        self.assertEqual(0, result.returncode, result.stdout)
-
-    def test_done_check_naming_only_envelope_status_is_error(self):
-        """T2: a tautological done_check ('status is complete') names
-        only the envelope's own status vocabulary and no external
-        oracle -- ERROR."""
-        tautological = GOOD_COMPOSITION.format(name="tautdone", entry="named")
-        tautological = tautological.replace(
-            "Done check: the final envelope's verification covers the result.",
-            "Done check: the status is complete.",
-        )
-        self._write_composition("tautdone", tautological)
-        result = self._run()
-        self.assertEqual(1, result.returncode)
-        self.assertIn("done_check", result.stdout)
-        self.assertIn("tautdone", result.stdout)
-
-    def test_done_check_with_filler_qualifiers_only_is_error(self):
-        """Gate repair: modal/evaluative fillers and the envelope's own
-        field vocabulary do not count as an external oracle -- ERROR."""
-        for filler in (
-            "the status is complete successfully.",
-            "the status must be complete indeed.",
-            "status is complete when verified.",
-        ):
-            with self.subTest(filler=filler):
-                gamed = GOOD_COMPOSITION.format(
-                    name="fillerdone", entry="named"
-                )
-                gamed = gamed.replace(
-                    "Done check: the final envelope's verification covers the result.",
-                    "Done check: " + filler,
-                )
-                self._write_composition("fillerdone", gamed)
-                result = self._run()
-                self.assertEqual(1, result.returncode)
-                self.assertIn("done_check", result.stdout)
-
-    def test_done_check_naming_an_external_oracle_passes(self):
-        real_shaped = GOOD_COMPOSITION.format(name="realdone", entry="named")
-        real_shaped = real_shaped.replace(
-            "Done check: the final envelope's verification covers the result.",
-            "Done check: the sealed manifest's qualification verdict set "
-            "covers the benchmark identity.",
-        )
-        self._write_composition("realdone", real_shaped)
-        result = self._run()
-        self.assertEqual(0, result.returncode, result.stdout)
+        found = loop_lint_warnings(result.stdout)
+        self.assertTrue(found, result.stdout)
+        self.assertTrue(all("boundlesspkg" in line for line in found), found)
 
 
 class TestEnvelopeCheck(_IsolatedTree):
@@ -588,6 +428,290 @@ class TestEnvelopeCheck(_IsolatedTree):
         )
         result = self._run()
         self.assertEqual(0, result.returncode, result.stdout)
+
+
+class TestNameResolution(_IsolatedTree):
+    """validate_names: a backticked `orch-*` outside the skill tree still
+    names something in it.
+
+    The call-graph check reads skill bodies only, so a rule, a contract, a
+    doc or a README naming a skill that no longer exists rode through exit 0
+    and a green suite -- which is exactly how `orch-mechanize` survived in
+    rules/token-economy.md and `orch-review-fix` in rules/topology.md after
+    both packages were deleted. A name is a call edge wherever it is
+    backticked (rules/composition.md rule 2), so it resolves or it is a
+    defect.
+    """
+
+    def _write_skill(self, name: str, tier: str = "kernel"):
+        skill_dir = self.tmp_path / "skills" / tier / name
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text(
+            f"---\nname: {name}\ndescription: a synthetic package\nrole: worker\n---\n"
+            "Require: an input.\nNever: overreach.\nReturn: status; result.\n",
+            encoding="utf-8",
+        )
+
+    def _write_rule(self, text: str):
+        # ARCHITECTURE.md is the marker that says this tree is a library
+        # whose tiers a name can resolve in; without it the check skips, as
+        # it does for every fixture that copies half a tree.
+        (self.tmp_path / "ARCHITECTURE.md").write_text("# Tiers\n", encoding="utf-8")
+        rules = self.tmp_path / "rules"
+        rules.mkdir(exist_ok=True)
+        (rules / "synthetic.md").write_text(text, encoding="utf-8")
+
+    def unresolved(self, stdout):
+        """The names this check reported, by name.
+
+        Not the exit code: the fixture tree carries the real contracts/
+        beside one synthetic skill, so every name the contracts legitimately
+        call is unresolvable here for the fixture's own reason. The findings
+        this check makes about the file the test wrote are what it decides.
+        """
+
+        return sorted(
+            line.split("`")[1]
+            for line in stdout.splitlines()
+            if "names no package" in line and "rules/synthetic.md" in line
+        )
+
+    def test_a_backticked_name_with_no_package_is_an_error(self):
+        self._write_skill("orch-real")
+        self._write_rule("1. Mechanizing a step is `orch-nothing`'s.\n")
+        result = self._run()
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("rules/synthetic.md", result.stdout)
+        self.assertEqual(["orch-nothing"], self.unresolved(result.stdout))
+
+    def test_a_backticked_name_with_a_package_is_clean(self):
+        self._write_skill("orch-real")
+        self._write_rule("1. The cut is `orch-real`'s.\n")
+        result = self._run()
+        self.assertEqual([], self.unresolved(result.stdout))
+
+    def test_a_pack_name_resolves_under_packs(self):
+        self._write_skill("orch-real")
+        pack_dir = self.tmp_path / "packs" / "orch-synth-pack"
+        pack_dir.mkdir(parents=True)
+        (pack_dir / "SKILL.md").write_text("---\nname: orch-synth-pack\n"
+                                           "description: a synthetic pack\n---\n",
+                                           encoding="utf-8")
+        self._write_rule("1. The stamp is `orch-synth-pack`'s.\n")
+        result = self._run()
+        self.assertNotIn("`orch-synth-pack` names no package", result.stdout)
+
+    def test_the_two_role_names_are_allowed(self):
+        self._write_skill("orch-real")
+        self._write_rule(
+            "1. Children take one of two roles: `orch-planner` and `orch-worker`.\n"
+        )
+        result = self._run()
+        self.assertEqual([], self.unresolved(result.stdout))
+
+    def _write_named(self, relative: str, text: str):
+        """One file at `relative`, in a tree marked as the library."""
+
+        (self.tmp_path / "ARCHITECTURE.md").write_text("# Tiers\n", encoding="utf-8")
+        path = self.tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def test_every_checked_directory_is_checked(self):
+        """One case per directory the check reads, because the list was a
+        tuple of four names with one synthetic rules/ file behind it: dropping
+        "docs", "contracts" or "templates" from it failed nothing, and
+        compositions/ — where every template stub lives, each one naming its
+        executor — was never in it at all. A stub calling a deleted skill is
+        the exact failure this check exists for, and it was outside the
+        surface."""
+
+        self._write_skill("orch-real")
+        checked = (
+            "rules/synthetic.md",
+            "docs/synthetic.md",
+            "contracts/synthetic.md",
+            "templates/synthetic.md",
+            "README.md",
+            # recursive, all three: a stub, a nested reference, a pack
+            # reference and a skill reference are each a file the old
+            # non-recursive glob over four top-level directories never saw
+            "compositions/demo/00-step.md",
+            "compositions/references/protocol.md",
+            "packs/orch-synth-pack/references/craft.md",
+            "skills/kernel/orch-real/references/notes.md",
+        )
+        for relative in checked:
+            with self.subTest(relative):
+                path = self._write_named(relative, "The step is `orch-nothing`'s.\n")
+                try:
+                    result = self._run()
+                    reported = [
+                        line for line in result.stdout.splitlines()
+                        if "orch-nothing" in line and relative in line.replace("\\", "/")
+                    ]
+                    self.assertEqual(1, len(reported), result.stdout)
+                    self.assertEqual(1, result.returncode, result.stdout)
+                finally:
+                    path.unlink()
+
+    def test_an_unbackticked_retired_name_is_history_and_not_a_finding(self):
+        """DESIGN.md's supersession paragraphs name skills that were
+        deleted. Plain text is the library's own way of saying `mentioned,
+        not called` (rules/composition.md rule 2), so the check needs no
+        per-file allowlist to let history stand."""
+
+        self._write_skill("orch-real")
+        self._write_rule("1. Three shapes were skills (orch-fix, orch-evolve).\n")
+        result = self._run()
+        self.assertEqual([], self.unresolved(result.stdout))
+
+
+class TestDuplicationCorpus(_IsolatedTree):
+    """validate_cross_tier_duplication's corpus and its one licensed pair.
+
+    The check read packs, skills, rules, contracts and the host block —
+    compositions/ and docs/ were outside it, which is why seven templates
+    could copy a reference they were told to link, and two skills could
+    carry a byte-identical clause with the linter flagging each of them
+    against an innocent third file instead of against each other.
+    """
+
+    CLAUSE = "\n- The cut names the acceptance the executor is graded on.\n"
+
+    def _write_skill(self, name: str, body: str = "", tier: str = "kernel"):
+        skill_dir = self.tmp_path / "skills" / tier / name
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text(
+            f"---\nname: {name}\ndescription: a synthetic package\nrole: worker\n---\n"
+            f"Require: an input.\nNever: overreach.\nReturn: status; result.\n{body}",
+            encoding="utf-8",
+        )
+
+    def _write(self, relative: str, text: str):
+        path = self.tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+
+    def duplicates(self, stdout, *labels):
+        return [
+            line for line in stdout.splitlines()
+            if "near-duplicate" in line
+            and all(label in line.replace("\\", "/") for label in labels)
+        ]
+
+    def test_a_template_stub_restating_a_rule_is_reported(self):
+        self._write_skill("orch-real")
+        self._write("rules/synthetic.md", "# Rule\n" + self.CLAUSE)
+        self._write("compositions/demo/00-step.md", "# Stub\n" + self.CLAUSE)
+        result = self._run()
+        self.assertTrue(
+            self.duplicates(result.stdout, "compositions/demo/00-step.md",
+                            "rules/synthetic.md"),
+            result.stdout,
+        )
+
+    def test_a_doc_restating_a_rule_is_reported(self):
+        self._write_skill("orch-real")
+        self._write("rules/synthetic.md", "# Rule\n" + self.CLAUSE)
+        self._write("docs/guide.md", "# Guide\n" + self.CLAUSE)
+        result = self._run()
+        self.assertTrue(
+            self.duplicates(result.stdout, "docs/guide.md", "rules/synthetic.md"),
+            result.stdout,
+        )
+
+    def test_two_skills_carrying_one_clause_are_reported_against_each_other(self):
+        """Same-tier pairs were skipped whole, on the reasoning that one
+        tier's internal business is the pack linter's — which is true of
+        packs and false of skills, where no per-tier linter runs at all. So
+        two byte-identical skill clauses were invisible while each was
+        flagged against some unrelated pack cell."""
+
+        self._write_skill("orch-real", self.CLAUSE)
+        self._write_skill("orch-other", self.CLAUSE, tier="instances")
+        result = self._run()
+        self.assertTrue(
+            self.duplicates(
+                result.stdout,
+                "skills/instances/orch-other/SKILL.md",
+                "skills/kernel/orch-real/SKILL.md",
+            ),
+            result.stdout,
+        )
+
+
+class TestLicensedCopies(unittest.TestCase):
+    """A copy the library licensed and named an owner for is not a finding.
+
+    templates/host-block.md carries rules/visibility.md §6's untrusted-data
+    clause on purpose — the block is the one text a host reads before it can
+    reach the rule — and names the owner one line above the copy. Counting
+    it as an unowned duplication asks for the copy to be deleted, which
+    would delete the licence with it."""
+
+    def test_the_visibility_copy_in_the_host_block_is_licensed(self):
+        pairs = {
+            frozenset((left, right)) for left, right, _ in validate.LICENSED_COPIES
+        }
+        self.assertIn(
+            frozenset(("rules/visibility.md", "templates/host-block.md")), pairs
+        )
+
+    def test_the_licensed_pair_is_not_reported_against_the_real_tree(self):
+        result = subprocess.run(
+            [sys.executable, str(VALIDATE)], capture_output=True, text=True,
+        )
+        # the reported file and the file it is reported against, not any
+        # line that happens to quote either path inside a clause
+        pair = ("rules/visibility.md", "templates/host-block.md")
+        reported = [
+            line for line in result.stdout.splitlines()
+            if "near-duplicate" in line
+            and any(
+                line.replace("\\", "/").startswith(f"WARN {owner}:")
+                and f"with {copy}:" in line.replace("\\", "/")
+                for owner, copy in (pair, pair[::-1])
+            )
+        ]
+        self.assertEqual([], reported, result.stdout)
+
+
+class TestLensAnchor(_IsolatedTree):
+    """validate_lens_anchor: a pack's lens cell anchor lands on a heading.
+
+    The lens row is compared as three words of text and deliberately not
+    resolved, so deleting `## Lens` from a craft reference left the
+    validator at exit 0 and the suite green while every gate lane the pack
+    stamps pointed at a section that was not there.
+    """
+
+    def _write_pack(self, name: str, craft: str):
+        pack_dir = self.tmp_path / "packs" / name
+        (pack_dir / "references").mkdir(parents=True)
+        (pack_dir / "SKILL.md").write_text(
+            f"---\nname: {name}\ndescription: a synthetic pack\n---\n\n"
+            "| cell | binding |\n| --- | --- |\n"
+            "| lens | `orch-critique` with "
+            "[references/craft.md#lens](references/craft.md#lens) |\n",
+            encoding="utf-8",
+        )
+        (pack_dir / "references" / "craft.md").write_text(craft, encoding="utf-8")
+
+    def test_a_lens_anchor_with_no_heading_is_an_error(self):
+        self._write_pack("orch-synth-pack", "# Craft\n\n## Vocabulary\n\nterms.\n")
+        result = self._run()
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("craft.md#lens", result.stdout)
+        self.assertIn("## Lens", result.stdout)
+
+    def test_a_lens_anchor_resolving_to_the_heading_is_clean(self):
+        self._write_pack(
+            "orch-synth-pack", "# Craft\n\n## Vocabulary\n\nterms.\n\n## Lens\n\ncriteria.\n"
+        )
+        result = self._run()
+        self.assertNotIn("craft.md#lens", result.stdout)
 
 
 if __name__ == "__main__":

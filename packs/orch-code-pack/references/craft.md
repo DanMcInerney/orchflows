@@ -1,9 +1,8 @@
 # Code craft
 
-The code domain's terms and shape, per the signature's craft cell. Read
-[rules/token-economy.md](../../../rules/token-economy.md) §10 for the
-shape principles every domain shares; the bullets under Shape are
-code's own.
+The code domain's terms and shape, per the signature's craft cell. The
+shape principles every domain shares are
+[rules/token-economy.md](../../../rules/token-economy.md) §10's.
 
 ## Vocabulary
 
@@ -18,8 +17,6 @@ code's own.
 
 ## Shape
 
-- Never assemble an identifier by string concatenation; never drift to
-  a synonym across modules.
 - Locality: the unit is a module at roughly one-read size (~100–500
   lines).
 - Explicit over clever: static, followable call sites; no runtime
@@ -27,12 +24,21 @@ code's own.
   language servers at once.
 - Comments state only what code cannot: invariants, ordering
   constraints, why-not-the-obvious.
-- Nonzero exit is data: an expected nonzero exit from a read-only
-  probe (a search with no matches, `git diff --no-index` on differing
-  inputs) reports a result, not a tool failure — one probe's expected
-  nonzero exit, or one absent path, never fails its sibling lanes in a
-  parallel inspection.
-- Shell probes use one dialect end to end. On Windows, pass `rg` concrete
-  literal roots and use `-g` for filename globs; prefer literal or fixed-string
-  patterns and the fewest quoting layers. In PowerShell, accumulate loop
-  results before piping or formatting them.
+
+## Lens
+
+For `orch-critique`. Read every diff inside the surrounding file it
+lands in — a hunk alone hides the context a false positive needs.
+
+- Correctness: does the revision satisfy the spec's acceptance,
+  including its failure paths, not only the happy path?
+- Contract fidelity: does every public seam still honor its declared
+  Require/Return shape for callers outside this revision?
+- Scope: does every changed line sit inside the ticket's write scope
+  and the spec's stated surface, with nothing incidental swept in?
+- Shape: does the revision hold the idiom and simplification bar above
+  rather than import a foreign pattern? The standards owner is a
+  citable violation class.
+
+Weigh in this order — a shape finding never outranks a correctness
+finding.

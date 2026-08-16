@@ -22,6 +22,10 @@ CONTRACTS = ROOT / "contracts"
 
 VERBATIM = "cell content duplicated verbatim"
 NEAR = "cell content near-duplicate"
+# validate.py's other duplication finding: the same clause comparison run
+# across the library's tiers rather than across one signature cell. Named
+# here because this module owns both ratchets.
+CROSS_TIER = "cross-tier near-duplicate"
 
 _REAL_TREE_RUN = None
 
@@ -386,22 +390,43 @@ class TestAllowlist(unittest.TestCase):
         self.assertNotIn(VERBATIM, result.stdout)
 
 
-# --- the warning ratchet ---------------------------------------------
+# --- the warning ratchets ---------------------------------------------
 #
-# tools/validate.py:1559 returns has_errors inverted, so exit 0 is blind to
-# every WARN it printed. Until this ceiling, nothing anywhere read the
+# tools/validate.py returns has_errors inverted, so exit 0 is blind to
+# every WARN it printed. Until these ceilings, nothing anywhere read the
 # count: the tree could slide back to any number and stay green. The
-# ceiling is the claim exit 0 now carries.
+# ceilings are the claim exit 0 now carries.
+#
+# One ceiling per kind of finding, never one over the total. A total
+# counted two unrelated claims as one number, so a new kind of check could
+# not be added without either raising the cell ratchet -- which is what it
+# exists to forbid -- or being suppressed. A kind with no ceiling of its
+# own is simply not ratcheted, which is the decision made out loud rather
+# than by arithmetic.
 #
 # 47 is what the tree reported at ff30d60, every one of them a
-# near-duplicate cell clause. WARNING_CEILING is the count the tree
-# reports now, set with no headroom on purpose: headroom is a standing
-# licence to regress into it, and every warning still under the ceiling is
-# a duplication nobody has argued for yet. It ratchets down as those are
-# fixed. Raising it is a decision, and it belongs in the commit message
-# that raises it.
+# near-duplicate cell clause. WARNING_CEILING is the count of those the
+# tree reports now, set with no headroom on purpose: headroom is a
+# standing licence to regress into it, and every warning still under the
+# ceiling is a duplication nobody has argued for yet. It ratchets down as
+# those are fixed. Raising it is a decision, and it belongs in the commit
+# message that raises it.
 BASELINE_WARNINGS = 47
-WARNING_CEILING = 25
+WARNING_CEILING = 4
+
+# The cross-tier linter's own ratchet (validate.py's
+# validate_cross_tier_duplication). Every one of these is a clause two
+# tiers carry -- a fact with two owners -- and the number ratchets to 0,
+# at which point validate.py's CROSS_TIER_DUPLICATE_LEVEL flips to
+# "ERROR" and a new copy is refused outright rather than counted
+# (REVIEW-2026-08-15 T2). No headroom, for the
+# same reason as above. Raised once, at the P4 gate join (2026-08-16),
+# from 12 to the count the widened corpus reports: the check now reads
+# docs/ (vocabulary.md excepted -- the definitional owner) and
+# compositions/ and compares skills against skills, and what it found
+# there had two owners all along; the deletions are the next ticket's,
+# and the number only falls from here.
+CROSS_TIER_WARNING_CEILING = 6
 
 # A clone is the whole tree minus version control, runtime state and
 # caches -- never an extract of the directories the check happens to read
@@ -428,18 +453,26 @@ def run_validate(root):
     )
 
 
-def warning_lines(stdout):
-    """Every WARN in a validate.py report."""
-    return [line for line in stdout.splitlines() if line.startswith("WARN")]
+def warning_lines(stdout, kind=None):
+    """Every WARN in a validate.py report, or every WARN of one kind.
+
+    The kind is the finding's own words -- NEAR, CROSS_TIER -- because that
+    is what a ceiling is about. Counting whatever a run printed makes one
+    check's regression indistinguishable from another check's arrival."""
+    return [
+        line for line in stdout.splitlines()
+        if line.startswith("WARN") and (kind is None or kind in line)
+    ]
 
 
-def ceiling_breach(count):
-    """The ratchet's whole decision: None while the count holds, the
-    sentence naming the breach once it does not. Both tests below call
+def ceiling_breach(count, ceiling=None, kind=NEAR):
+    """A ratchet's whole decision: None while the count holds, the
+    sentence naming the breach once it does not. Every test below calls
     this one function, so the check that grades the real tree is the same
     check shown to fail against a wrong one."""
-    if count > WARNING_CEILING:
-        return "%d WARN, ceiling %d" % (count, WARNING_CEILING)
+    ceiling = WARNING_CEILING if ceiling is None else ceiling
+    if count > ceiling:
+        return "%d WARN (%s), ceiling %d" % (count, kind, ceiling)
     return None
 
 
@@ -460,7 +493,7 @@ class WarningCeilingTest(unittest.TestCase):
         return clone
 
     def test_the_tree_holds_at_or_under_the_ceiling(self):
-        found = warning_lines(validate_the_real_tree().stdout)
+        found = warning_lines(validate_the_real_tree().stdout, NEAR)
         self.assertIsNone(ceiling_breach(len(found)), "\n".join(found))
         self.assertLess(
             len(found),
@@ -469,24 +502,54 @@ class WarningCeilingTest(unittest.TestCase):
             % BASELINE_WARNINGS,
         )
 
+    def test_the_tree_holds_at_or_under_the_cross_tier_ceiling(self):
+        """The copies P3 deletes, counted while they are still here. The
+        ceiling only ever moves down: a clause that gains a second owner
+        after this point is a regression, and this is what says so."""
+
+        found = warning_lines(validate_the_real_tree().stdout, CROSS_TIER)
+        self.assertIsNone(
+            ceiling_breach(len(found), CROSS_TIER_WARNING_CEILING, CROSS_TIER),
+            "\n".join(found),
+        )
+
+    def test_the_two_ratchets_count_disjoint_findings(self):
+        """Two ceilings over one report only mean anything if no finding is
+        counted by both -- and if together they cover the report, so a WARN
+        of some third kind is visible as a kind with no ceiling rather than
+        as slack in one of these."""
+
+        stdout = validate_the_real_tree().stdout
+        near = set(warning_lines(stdout, NEAR))
+        cross = set(warning_lines(stdout, CROSS_TIER))
+        self.assertEqual(set(), near & cross)
+        self.assertEqual(set(warning_lines(stdout)), near | cross)
+
     def test_a_count_above_the_ceiling_fails(self):
-        held = warning_lines(validate_the_real_tree().stdout)
+        tree_report = validate_the_real_tree().stdout
+        held = warning_lines(tree_report, NEAR)
         clone = self._clone_beside_the_tree()
         planted = clone / "packs" / "orch-research-pack" / "references" / "slicing.md"
         planted.write_text(
             planted.read_text(encoding="utf-8") + self.REGRESSION, encoding="utf-8"
         )
-        raised = warning_lines(run_validate(clone).stdout)
+        clone_report = run_validate(clone).stdout
+        raised = warning_lines(clone_report, NEAR)
         # The clone's report has to be the tree's report plus the plant, and
         # the containment is what says so: a finding the tree makes and the
         # clone does not is CLONE_SKIPS having dropped something validate.py
         # grades, which would make the plant evidence about a subset of the
-        # tree rather than about the check. Asserting it here rather than in
-        # a second, unplanted run of the clone keeps the reading at one
-        # validate.py run per tree.
+        # tree rather than about the check. Over every kind of WARN, not
+        # only the planted one: what CLONE_SKIPS could drop is a file, and a
+        # dropped file goes quiet in every check that reads it. Asserting it
+        # here rather than in a second, unplanted run of the clone keeps the
+        # reading at one validate.py run per tree.
         self.assertEqual(
             [],
-            [line for line in held if line not in raised],
+            [
+                line for line in warning_lines(tree_report)
+                if line not in warning_lines(clone_report)
+            ],
             "the clone lost findings the tree reports: CLONE_SKIPS dropped "
             "something validate.py grades",
         )

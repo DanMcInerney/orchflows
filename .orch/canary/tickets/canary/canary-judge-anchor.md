@@ -2,14 +2,15 @@
 id: canary-judge-anchor
 run: canary
 status: ready
-executor: orch-judge
+executor: orch-verify
 depends_on: []
 write_scope: .orch/canary/scratch/judge/scorecard.json
 bound: 5 tool calls
 ---
 ## Objective
-Score the prose sample below against the rubric; write one score card
-to scorecard.json.
+Score the prose sample below against the rubric on its 1-5 scale --
+1 is the criterion unmet, 5 is met with nothing left to fix -- and
+write one score card to scorecard.json.
 ## Fixed inputs
 Prose (10 lines, verbatim):
 Oracle-based verification beats self-report because a model grading
@@ -25,7 +26,7 @@ Keep them separate, and the loop policy for each stays legible.
 Rubric (1-5 each): Clarity - one claim per sentence, no hedging; Evidence - claims backed by a mechanism/example, not asserted; Structure - piece builds in order toward one conclusion.
 ## Completion test
 1. scorecard.json has one score 1-5 with quoted evidence per
-   criterion. Oracle: orch-judge rubric scoring above. oracle_class:
+   criterion. Oracle: the rubric's 1-5 scale above. oracle_class:
    judged.
 ## Return fields
 status, changed_artifacts, verification.

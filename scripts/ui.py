@@ -194,6 +194,10 @@ STATUS_PRESENTATION = {
     # doubled border -- a wall, and the channel that separates it from
     # `blocked` on the shared amber.
     "limited": StatusPresentation("▤", "limited", "--st-attention", "3px double"),
+    # U+21BB CLOCKWISE OPEN CIRCLE ARROW: iterating without progress and
+    # stopped for it. Amber like the other two ends that are neither a
+    # success nor a fault, and told apart from them by glyph and border.
+    "stalled": StatusPresentation("↻", "stalled", "--st-attention", "2px dotted"),
 }
 
 # The sink is untrusted data, so the status field can hold anything. It gets

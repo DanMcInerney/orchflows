@@ -1,11 +1,12 @@
 # BenchMaker
 
-The `benchmaker` composition builds one qualified
-[benchmark](vocabulary.md#verification) for an opaque target with an
-observable outcome. Its
-[composition](../compositions/benchmaker.md) owns invocation; its
+Which file owns what in the `benchmaker` template. Its
+[template](../compositions/benchmaker/template.md) states what the
+template builds — a qualified
+[benchmark](vocabulary.md#verification) — and owns the chain, its
+six stubs and what instantiation fills; its
 [protocol](../compositions/references/benchmaker-protocol.md)
-owns construction and qualification; its
+owns the construction craft no stub, rule or contract states; its
 [research charter](../compositions/references/benchmaker-research.md)
 owns acquisition's lane cut and synthesis shape; its
 [manifest](../compositions/references/benchmaker-manifest.md) owns the
@@ -18,24 +19,23 @@ Fixed evidence flows into a frozen
 [evaluation design](vocabulary.md#verification), then exact materialization
 and independent qualification, then three audit and measurement stages —
 reference audit, attack pass, measurement — into one recorded manifest.
-BenchMaker never mutates the target, generates candidates, promotes, or
-activates anything.
 
-Qualification gates validity. The audit and measurement stages ask the three
-questions it does not: is the expectation right, is the probe passable without
-the work, and does the target find this hard. The first two repair or declare
-a gap; the third only records, because a difficulty gate collapses two
-readings that demand opposite repairs. Difficulty is bought from horizon
-length, outcome specificity, and a stricter correct oracle — never from a
-candidate's scores, and the coverage floor is never traded for speed.
+Qualification gates validity. Which questions the audit and measurement
+stages ask that it does not, and what each stage may do about its
+answer, are
+[the protocol](../compositions/references/benchmaker-protocol.md#audit-and-measurement)'s,
+and what each stub may not do is that stub's own `excluded_actions` —
+[01-design](../compositions/benchmaker/01-design.md),
+[02-materialize](../compositions/benchmaker/02-materialize.md) and
+[05-measure](../compositions/benchmaker/05-measure.md).
 
 Benchmark execution produces fixed evidence. `orch-verify` decides required
-eligibility before `orch-judge` may create a
-[score card](vocabulary.md#verification) citing that same evidence; Judge
-never re-executes or substitutes it. Required failure never enters ranking.
-The `evolve` composition consumes the qualified benchmark at one revision and
-returns an [evolution result](vocabulary.md#verification) without calling
-BenchMaker or revising that benchmark.
+eligibility before it may score that same evidence against a scale; a
+[score card](vocabulary.md#verification) never re-executes or substitutes the
+evidence it cites. Required failure never enters ranking. The `evolve`
+composition consumes the qualified benchmark at one revision and returns an
+[evolution result](vocabulary.md#verification) without calling BenchMaker or
+revising that benchmark.
 
 ## Self-benchmarking
 
@@ -44,8 +44,3 @@ may target a fixed BenchMaker identity and return a benchmark. A separately
 invoked Evolve campaign may consume it. A later benchmark revision must be
 built and independently qualified before a later Evolve campaign; neither
 workflow activates it automatically.
-
-## Migration
-
-Replace `orch-bench` calls with `orch-eval-design`, and any `orch-benchmaker`
-invocation with the named `benchmaker` composition. No alias remains.

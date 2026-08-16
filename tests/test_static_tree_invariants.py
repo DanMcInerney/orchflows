@@ -30,10 +30,21 @@ OVERLAP_RULE = "a write scope overlapping only siblings it is dependency-ordered
 
 COMPOSITIONS = ROOT / "compositions"
 EVAL_DESIGN = ROOT / "skills" / "workflows" / "orch-eval-design" / "SKILL.md"
-PANEL = ROOT / "skills" / "engines" / "orch-panel" / "SKILL.md"
-EVOLVE = COMPOSITIONS / "evolve.md"
+TEMPLATE_FILE = "template.md"
+EVOLVE = COMPOSITIONS / "evolve"
 EVOLVE_GENERATION = COMPOSITIONS / "references" / "evolve-generation.md"
-TOURNAMENT = COMPOSITIONS / "skill-tournament.md"
+TOURNAMENT = COMPOSITIONS / "skill-tournament"
+# The campaign bodies deleted when they became templates, plus the last
+# `.md` composition (`fix`), deleted at P4-3 with the second grammar
+# itself. A template beside its own `<name>.md` is what
+# the template conversion (DESIGN.md) removed: two spellings of one
+# composition, and no rule saying which one a run executes.
+SUPERSEDED_BODIES = (
+    COMPOSITIONS / "evolve.md",
+    COMPOSITIONS / "skill-tournament.md",
+    COMPOSITIONS / "fix.md",
+    COMPOSITIONS / "references" / "evolve-evaluation.md",
+)
 
 CALL_EDGE_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
@@ -48,43 +59,35 @@ FRONTMATTER_RE = re.compile(r"---\n(.*?)\n---\n(.*)", re.DOTALL)
 # assigned, plus a census tripwire: a skill added, removed or renamed without
 # a deliberate role decision fails here.
 ROLE_TABLE = {
-    # none: all engines
-    "orch-compose": "none",
+    # none: all engines. `orch-compose` and `orch-panel` went at P4-3:
+    # nothing runs a composition file any more (a template runs under
+    # `orch-frontier`), and judging is N blind `orch-verify` lanes plus
+    # the loop body's reduce.
     "orch-loop": "none",
-    "orch-panel": "none",
-    "orch-task": "none",
     "orch-frontier": "none",
     # none: all workflows (orch-fix, orch-evolve, orch-benchmaker were
-    # demoted to compositions/, which carry no role)
+    # demoted to compositions/, which carry no role; orch-diagnose went
+    # at P4-3, its body being the fix template's 00-reproduce + 01-cause)
     "orch-build": "none",
-    "orch-deliver": "none",
-    "orch-diagnose": "none",
     "orch-eval-design": "none",
     "orch-fixture": "none",
     "orch-repair": "none",
-    "orch-review-fix": "none",
     "orch-self-improve": "none",
     "orch-spec": "none",
     "orch-triage": "none",
     # none: named kernel
-    "orch-delegate": "none",
-    "orch-elicit": "none",
     "orch-integrate": "none",
-    "orch-worklog": "none",
-    # none: named utility
+    # none: named utility (orch-search-plan went at P4-3: its script is
+    # `scripts/search_plan.py`, named by bare filename, and no skill
+    # wraps it)
     "orch-off": "none",
-    "orch-search-plan": "none",
     # planner
     "orch-critique": "planner",
-    "orch-judge": "planner",
     "orch-synthesize": "planner",
     "orch-decompose": "planner",
     # worker
-    "orch-check": "worker",
     "orch-investigate": "worker",
     "orch-verify": "worker",
-    "orch-mechanize": "worker",
-    "orch-workspace": "worker",
     "orch-tdd": "worker",
     "orch-draft": "worker",
     "orch-render": "worker",
@@ -120,20 +123,47 @@ def read_flat(path: Path) -> str:
 
 def split_document(path: Path):
     """(frontmatter fields, body). A references file carries no frontmatter
-    and is all body."""
+    and is all body.
+
+    Only unindented `key: value` lines are fields: a ticket stub writes
+    `excluded_actions:` as a block of `  - ...` items, which belong to the
+    key above them and carry no colon of their own.
+    """
     text = path.read_text(encoding="utf-8")
     match = FRONTMATTER_RE.fullmatch(text)
     if match is None:
         return {}, text
     fields = {}
     for line in match.group(1).splitlines():
+        if not line[:1].strip() or ":" not in line:
+            continue
         key, value = line.split(":", 1)
-        fields[key] = value.strip()
+        fields[key.strip()] = value.strip()
     return fields, match.group(2)
 
 
 def bodies(*paths: Path) -> str:
     return "".join(split_document(path)[1] for path in paths)
+
+
+def template_files(directory: Path):
+    """One template's files in the order a reader meets them: `00-...`
+    through the terminal stub, then the manifest."""
+    stubs = sorted(p for p in directory.glob("*.md") if p.name != TEMPLATE_FILE)
+    return tuple(stubs) + (directory / TEMPLATE_FILE,)
+
+
+def stub_graph(directory: Path):
+    """{stub id: (executor, depends_on)} for one template."""
+    graph = {}
+    for path in template_files(directory)[:-1]:
+        fields = split_document(path)[0]
+        depends = fields.get("depends_on", "[]").strip("[] ")
+        graph[path.stem] = (
+            fields.get("executor"),
+            [item.strip() for item in depends.split(",") if item.strip()],
+        )
+    return graph
 
 
 class TestFrozenRoleTable(unittest.TestCase):
@@ -163,11 +193,26 @@ class TestTierDirectoriesExist(unittest.TestCase):
 
 class TestPackageNamesMatchFolders(unittest.TestCase):
     def test_every_skill_folder_matches_its_frontmatter_name(self):
+        """Every directory under a tier is a package: it owns a `SKILL.md`
+        and that file names it.
+
+        Until the P3 gate repair one directory was exempt —
+        `skills/kernel/orch-delegate/`, kept as a references-only home for
+        `profiles.md` after its body became rules/delegation.md §1-§2 plus
+        roles.md §4. The repair moved that reference under
+        `skills/engines/orch-frontier/references/` and deleted the
+        directory, so the exception admitted nothing but a half-deleted
+        package: a skill whose body was removed and whose folder was not
+        passed, and `install.py`'s discovery skipped it silently."""
         for tier in SKILL_TIERS:
             tier_dir = ROOT / "skills" / tier
             for pkg_dir in sorted(p for p in tier_dir.iterdir() if p.is_dir()):
                 skill_md = pkg_dir / "SKILL.md"
-                self.assertTrue(skill_md.is_file(), f"{pkg_dir} has no SKILL.md")
+                self.assertTrue(
+                    skill_md.is_file(),
+                    f"{pkg_dir} is a package directory with no SKILL.md; a "
+                    "tier holds packages and nothing else",
+                )
                 name = frontmatter_name(skill_md)
                 self.assertEqual(name, pkg_dir.name, f"{skill_md} name {name!r} != folder {pkg_dir.name!r}")
 
@@ -242,19 +287,31 @@ class TestSkillAnatomyOrder(unittest.TestCase):
 class TestDependencyOrderedOverlap(unittest.TestCase):
     """An item's write scope may overlap only siblings it is dependency-ordered
     with, so items with no dependency path between them can never collide
-    however the frontier schedules them."""
+    however the frontier schedules them.
 
-    def test_ordered_cuts_may_overlap(self):
+    The rule has one owner, `orch-decompose`, and only there is its wording
+    asserted: requiring the same sentence in both slicing cells made the
+    duplication mandatory, which is what
+    REVIEW-2026-08-15 T2 inverts (tests pin shapes, not sentences; the
+    validator forbids copies instead of syncing them). What every cut is
+    still held to is the absence of the two older rules a cell could regress
+    to -- neither of which any owner states, so neither is a copy.
+    """
+
+    def test_the_owner_permits_overlap_along_dependency_order(self):
+        self.assertIn(
+            OVERLAP_RULE, read_flat(DECOMPOSE),
+            "orch-decompose, the rule's one owner, does not permit overlap "
+            "only along dependency order",
+        )
+
+    def test_no_cut_states_a_superseded_overlap_rule(self):
         for label, path in (
             ("orch-decompose", DECOMPOSE),
             ("code pack slicing", CODE_SLICING),
             ("design pack slicing", DESIGN_SLICING),
         ):
             text = read_flat(path)
-            self.assertIn(
-                OVERLAP_RULE, text,
-                f"{label} does not permit overlap only along dependency order",
-            )
             self.assertNotIn(
                 "disjoint from its siblings", text,
                 f"{label} still states the old global-disjointness rule, which "
@@ -266,9 +323,10 @@ class TestDependencyOrderedOverlap(unittest.TestCase):
                 "different frontiers can be concurrently in flight and collide",
             )
 
-        code_slicing = read_flat(CODE_SLICING)
+    def test_the_code_cut_puts_the_riskiest_seam_first(self):
         self.assertIn(
-            "the first frontier carries the riskiest seam's tracer", code_slicing,
+            "the first frontier carries the riskiest seam's tracer",
+            read_flat(CODE_SLICING),
             "code pack slicing does not put the riskiest seam's tracer in the "
             "first frontier",
         )
@@ -377,24 +435,44 @@ class TestBenchmarkArchitecture(unittest.TestCase):
         (
             # The tournament binds the evolve campaign and its writer, never
             # evolve's internals.
-            "skill-tournament", (TOURNAMENT,), frozenset(), frozenset(), frozenset(),
+            "skill-tournament", template_files(TOURNAMENT),
+            frozenset(), frozenset(), frozenset(),
         ),
         (
-            "orch-panel", (PANEL,),
-            frozenset({"orch-judge", "orch-delegate", "orch-integrate"}),
-            frozenset(), frozenset(),
+            # Since P4 a campaign is a template, and a template names its
+            # executors in stub frontmatter -- `executor: orch-loop` -- never
+            # as a backticked call edge in prose. orch-loop's Require says the
+            # same of the body it dispatches: "bound as plain text and never
+            # backticked, a binding rather than a call edge". So the whole
+            # template, manifest and loop-body reference included, carries no
+            # call edge at all; who runs what is
+            # test_the_evolve_template_names_its_executors_in_frontmatter.
+            "evolve", template_files(EVOLVE) + (EVOLVE_GENERATION,),
+            frozenset(), frozenset(), frozenset(),
         ),
-        (
-            "evolve", (EVOLVE, EVOLVE_GENERATION), None,
-            frozenset({
-                "orch-eval-design", "orch-loop", "orch-delegate", "orch-integrate",
-                "orch-verify", "orch-panel", "orch-judge", "orch-search-plan",
-                "orch-worklog",
-            }),
-            # The demoted skills stay demoted: a reappearing edge would route
-            # a campaign into a skill that no longer exists.
-            frozenset({"orch-bench", "orch-benchmaker"}),
-        ),
+    )
+
+    # The executor per stub, and the chain they hang on. `orch-verify` twice:
+    # eligibility opens the campaign, the final score card closes it.
+    EVOLVE_GRAPH = {
+        "00-eval": ("orch-eval-design", []),
+        "01-eligibility": ("orch-verify", ["00-eval"]),
+        "02-campaign": ("orch-loop", ["01-eligibility"]),
+        "03-result": ("orch-verify", ["02-campaign"]),
+    }
+    TOURNAMENT_GRAPH = {
+        "00-benchmark": ("orch-frontier", []),
+        "01-campaign": ("orch-frontier", ["00-benchmark"]),
+    }
+    # The demoted owners stay demoted: a reappearing name would route a
+    # campaign into a skill that no longer runs it. `orch-judge` and
+    # `orch-delegate` joined them at P3 -- scoring is `orch-verify` with a
+    # scale, dispatch is rules/delegation.md, the worklog is a `tickets.py`
+    # view -- and `orch-panel` at P4, where judging became N blind verify
+    # lanes plus the loop body's reduce.
+    DEMOTED = (
+        "orch-bench", "orch-benchmaker", "orch-judge", "orch-delegate",
+        "orch-worklog", "orch-panel",
     )
 
     def test_each_body_calls_exactly_the_edges_its_architecture_declares(self):
@@ -406,22 +484,130 @@ class TestBenchmarkArchitecture(unittest.TestCase):
                 self.assertLessEqual(set(at_least), calls)
                 self.assertEqual(set(), calls & set(never))
 
-    def test_evolve_verifies_before_it_ranks_and_panels_before_it_judges(self):
-        """Required eligibility is checked before survivors are ranked, and the
-        panel's score cards exist before the judge's done-check reads them.
+    def test_the_evolve_template_names_its_executors_in_frontmatter(self):
+        """Who runs each step, and what each step waits on. Read off the
+        stubs because that is what `tickets.py instantiate` writes into a
+        run: a stub's `executor` is the dispatch, and its `depends_on` is
+        the edge the frontier drains."""
+        self.assertEqual(self.EVOLVE_GRAPH, stub_graph(EVOLVE))
+        self.assertEqual(self.TOURNAMENT_GRAPH, stub_graph(TOURNAMENT))
+
+    def test_evolve_verifies_before_it_ranks_and_before_it_closes(self):
+        """Required eligibility is checked before any candidate is written,
+        and the campaign's scores exist before the done-check reads them.
         Either inversion is a campaign that ranks ineligible candidates or
-        judges nothing."""
-        combined = bodies(EVOLVE, EVOLVE_GENERATION)
-        self.assertLess(combined.index("`orch-verify`"), combined.index("`orch-panel`"))
-        self.assertLess(combined.index("`orch-panel`"), combined.index("`orch-judge`"))
+        closes on nothing. Both ends are `orch-verify` since P3; since P4 the
+        order between them is the dependency chain, not the order two
+        sentences happen to sit in."""
+        graph = stub_graph(EVOLVE)
+        self.assertEqual("orch-verify", graph["01-eligibility"][0])
+        self.assertEqual(["01-eligibility"], graph["02-campaign"][1])
+        self.assertEqual("orch-verify", graph["03-result"][0])
+        self.assertEqual(["02-campaign"], graph["03-result"][1])
+        terminal = [
+            stub for stub in graph
+            if not any(stub in depends for _, depends in graph.values())
+        ]
+        self.assertEqual(["03-result"], terminal)
+
+    def test_no_demoted_owner_reappears_in_either_campaign(self):
+        for directory in (EVOLVE, TOURNAMENT):
+            text = "".join(
+                path.read_text(encoding="utf-8")
+                for path in template_files(directory)
+            )
+            for name in self.DEMOTED:
+                with self.subTest(template=directory.name, demoted=name):
+                    self.assertNotIn(name, text)
+
+    def test_the_superseded_campaign_bodies_stay_deleted(self):
+        """A template beside its own `<name>.md` is two grammars for one
+        composition, with no rule saying which a run executes."""
+        for path in SUPERSEDED_BODIES:
+            with self.subTest(body=path.name):
+                self.assertFalse(path.exists(), f"{path} is the template's twin")
 
     def test_the_campaigns_stay_manual_only_entries(self):
         """`entry: named` is what keeps a campaign off the router. validate.py
-        checks the value is one of routed | named | scheduled; which one each
-        campaign carries is the decision."""
-        for path in (EVOLVE, TOURNAMENT):
-            with self.subTest(composition=path.name):
-                self.assertEqual("named", split_document(path)[0].get("entry"))
+        checks the value is one of routed | named; which one each campaign
+        carries is the decision."""
+        for directory in (EVOLVE, TOURNAMENT):
+            with self.subTest(template=directory.name):
+                manifest = directory / TEMPLATE_FILE
+                self.assertEqual("named", split_document(manifest)[0].get("entry"))
+
+
+class TestCompositionTemplates(unittest.TestCase):
+    """The composition set as template directories (DESIGN.md, amended 2026-08-16).
+
+    `scripts/tickets.py` grades a template's shape — ids, edges, one
+    terminal — and `tools/validate.py` its manifest. Neither reads which
+    executor each stub binds or which stub the chain ends at, and those are
+    the decisions a composition used to state in prose: a step rebound to a
+    different skill, or a terminal moved off the stub carrying the done
+    check, passes every other check in the tree.
+    """
+
+    # template name -> ({stub id: executor}, terminal stub id). benchmaker's
+    # chain is `tests/test_benchmaker.py`'s to pin in full; what belongs here
+    # is that the tree's composition set is these directories.
+    TEMPLATES = {
+        "benchmaker": (
+            {
+                "00-acquire": "orch-decompose",
+                "01-design": "orch-eval-design",
+                "02-materialize": "orch-decompose",
+                "03-qualify": "orch-decompose",
+                "04-audit": "orch-critique",
+                "05-measure": "orch-verify",
+            },
+            "05-measure",
+        ),
+        "drift-canary": (
+            {"00-run": "orch-frontier", "01-diff": "orch-verify"},
+            "01-diff",
+        ),
+        "renovate": (
+            {
+                "00-audit": "orch-critique",
+                "01-triage": "orch-triage",
+                "02-deliver": "orch-decompose",
+            },
+            "02-deliver",
+        ),
+    }
+
+    @staticmethod
+    def _stubs(name):
+        tickets = validate._ticket_law()
+        directory = COMPOSITIONS / name
+        return {
+            path.stem: tickets._parse_frontmatter(
+                path.read_text(encoding="utf-8")
+            )
+            for path in sorted(directory.glob("*.md"))
+            if path.name != tickets.TEMPLATE_FILE
+        }
+
+    def test_each_template_binds_the_executors_its_composition_named(self):
+        for name, (expected, _) in self.TEMPLATES.items():
+            with self.subTest(template=name):
+                stubs = self._stubs(name)
+                self.assertEqual(
+                    expected,
+                    {stub: fields.get("executor") for stub, fields in stubs.items()},
+                )
+
+    def test_each_template_ends_at_the_stub_carrying_its_done_check(self):
+        for name, (_, terminal) in self.TEMPLATES.items():
+            with self.subTest(template=name):
+                stubs = self._stubs(name)
+                depended = {
+                    edge
+                    for fields in stubs.values()
+                    for edge in fields.get("depends_on", [])
+                }
+                self.assertEqual({terminal}, set(stubs) - depended)
 
 
 if __name__ == "__main__":

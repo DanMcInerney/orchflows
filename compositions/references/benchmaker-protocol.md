@@ -1,130 +1,17 @@
 # BenchMaker protocol
 
-These stages are exhaustive: evidence acquisition, evaluation-design
-invocation, materialization, qualification, the three audit and
-measurement stages, and the manifest.
+Benchmark craft for a domain with no pack: what the stubs of
+[the benchmaker template](../benchmaker/template.md) call, and nothing
+they, a contract, or a rule already state.
 
-## Intake and bound
+## Licensed oracle material
 
-Keep the target identity opaque. Carry its intended observable outcome,
-evidence access, and cost limits without defining its evaluation boundary. The
-evaluation-design owner records an unobservable outcome or unavailable oracle
-as an explicit gap.
-
-Before work, partition one caller bound across evidence, design,
-materialization, qualification, and the audit and measurement stages.
-An unpriced stage is a stage that gets skipped or overruns. Allocations
-are nonnegative and their total cannot exceed the caller bound; unused
-allocation from a completed stage may carry forward. Never copy the
-caller bound into a stage, internal spec, delivery, or lane.
-
-Fix the evidence identities, source policy, judgment permission, applicable
-pack references, benchmark write scope, excluded actions, protected-evidence
-policy, and contracted return fields. Every internal spec selects one
-applicable pack; exactly one pack per internal spec.
-
-Declare, before work, the target's execution class and the execution
-budget that class carries — per §Execution tier and difficulty — and the
-authority each candidate context will receive at the measurement pass.
-
-## Internal call carriage
-
-Every internal Spec, Deliver, and evaluation-design invocation carries one
-complete delegation packet. `objective` names that stage's observable result;
-`inputs` bind fixed upstream identities, inherited constraints, and applicable
-pack references, plus the frozen stamped spec identity for Deliver;
-`authority` restricts stage write scope and exclusions; `bounds` carries only
-the stage allocation, expected execution cost, and unused carry;
-`return_contract` points to the callee's canonical Return; `reply_to` names the
-literal closing recipient.
-
-Each Spec selects one applicable pack and its paired Deliver preserves that
-stamp. Qualification authority is disjoint from builders. A packet receives
-the stage allocation, never the caller bound.
-
-## Evidence acquisition
-
-Reuse a supplied qualified synthesis only when its identity, provenance,
-boundary coverage, and the
-[research charter](benchmaker-research.md)'s artifacts are fixed. Otherwise
-obtain a converged synthesis under the source policy — lanes and artifacts
-per that charter — before evaluation design.
-
-Freeze the synthesis and sources at one result identity. Unsupported semantics
-remain gaps; they never become invented target truth. A non-complete delivery,
-decision gap, unresolved source, or uncovered remainder returns partial
-evidence and stops the later stages.
-
-## Evaluation design
-
-Accept only those contracted fields at one package-owned identity. A missing
-field or gap that leaves the intended outcome or materialization unobservable
-returns partial evidence and stops materialization; carry every other declared
-gap into qualification and the manifest. BenchMaker neither fixes the
-evaluation boundary nor selects, revises, or interprets its case and scoring
-semantics. A concrete input, output, or trace the frozen evidence exhibits is
-licensed oracle material: an accepted design anchors an oracle to it or records
-why casing it is impossible, and a judgment that it is an implementation
-artifact is not such a reason.
-
-## Execution tier and difficulty
-
-The target's own execution cost sets the pace. The declared coverage
-floor never moves with it. Intake declares one execution class, and the
-class fixes each case's execution tier and the suite's wall-clock
-ceiling — never which angles are cased.
-
-**Cheap execution — every case fast.** Where a case's probe grades an
-artifact that already exists, every case sits in the smallest tier whose
-outcome its angle can be observed in, and the suite sweep stays inside a
-declared ceiling. Speed here is not economy: the recorded measurement
-pass runs the whole set at two rungs twice, so a slow suite is a
-measurement pass that does not run.
-
-**Expensive execution — declare it, do not hide it.** Where a case asks
-a candidate to produce the artifact, as BenchMaker's own set does, the
-per-case cost belongs to the target and the suite ceiling rises with it.
-The coverage floor does not fall, and §Audit and measurement's two
-measurement passes are justified per run rather than assumed.
-
-**Speed is bought from the probe, never from the coverage floor, the
-oracle, or the horizon the outcome needs.** A case moved to a faster
-tier by loosening its oracle or shortening its horizon has bought a
-`both-pass` reading, which no measurement can tell from a lenient
-oracle. Where an angle's outcome is unobservable within the declared
-tier, raise that case's tier and record why; never drop the angle.
-
-**Difficulty is built, never filtered.** The licensed levers are horizon
-length, outcome specificity, and a stricter oracle that stays correct.
-Never select or retain a case by target failure, never remove one for
-low discrimination, and never revise the design from a candidate's
-scores. A recorded status routes a case to §Audit and measurement's
-reference audit; only a named correctness defect removes it.
-
-## Materialization
-
-Materialize the selected case specifications without selecting, adding,
-removing, ranking, rewriting, or substituting a case. Each construction spec
-uses one applicable pack and only its allocation; when cases span domains,
-chain single-pack runs through frozen evidence identities.
-
-Keep builders' write scopes disjoint. Preserve each case, runner, scoring, and
-provenance identity. Candidate and search contexts cannot read, choose,
-rewrite, retire, or receive item-level feedback from protected evidence.
+A concrete input, output, or trace the frozen evidence exhibits is
+licensed oracle material: an accepted design anchors an oracle to it or
+records why casing it is impossible, and a judgment that it is an
+implementation artifact is not such a reason.
 
 ## Qualification
-
-Qualify the assembled result at a fixed identity in a context independent of
-its builders. Builders never qualify their own cases or authored oracles as
-sufficient evidence.
-
-Independence per [rules/verification.md](../../rules/verification.md)
-§10 is the caller's to supply. A dispatch withholding the authority to
-reach a builder-disjoint context makes this stage unreachable: the run
-returns blocked naming that authority — never a self-qualified verdict
-set, never the pending marker presented as finished. A caller unable to
-supply it declares qualification unreachable at intake, so the
-deficiency is a recorded gap rather than a builder's apparent failure.
 
 Check oracle failability, coverage, discrimination, reproducibility,
 redundancy, provenance, and execution cost independently. Every oracle must be
@@ -135,9 +22,9 @@ intended behavior absent, and a bad variant counts only when shown to change
 the observable outcome — an equivalent variant is excluded, not scored. An
 inert variant shown equivalent is itself a finding: the chosen outcome does
 not observe the intended behavior, recorded as a gap with discrimination
-UNVERIFIED for that behavior. Where
-no known-bad variant can exist, absence of bad seeds leaves discrimination
-UNVERIFIED and an explicit gap. For a nondeterministic outcome, qualification
+UNVERIFIED for that behavior. Where no known-bad variant can exist, absence
+of bad seeds leaves discrimination UNVERIFIED and an explicit gap. For a
+nondeterministic outcome, qualification
 fixes a declared trial count; good variants pass and bad variants fail on
 every trial. A required deterministic failure blocks qualification. Judged
 criteria carry anchors, remain secondary, cannot compensate for required
@@ -164,11 +51,11 @@ those, in this order, after qualification:
       → recorded measurement
 
 Two measurement passes, not one: the cheap pass targets the expensive
-audit, and the second produces the recorded figure. Where §Execution
-tier and difficulty declares an expensive class, justify the second pass
-for this run or declare its absence a gap. Each stage carries its own
-allocation from the intake partition, and none of them renders a
-pass/fail verdict on the benchmark.
+audit, and the second produces the recorded figure. Where the design
+declares an expensive execution class, justify the second pass for this
+run or declare its absence a gap. Each stage carries its own allocation
+from the caller bound's partition, and none of them renders a pass/fail
+verdict on the benchmark.
 
 ### Reference audit
 
@@ -202,11 +89,12 @@ reach, which shows the protection is load-bearing. `FAILED` or `BLOCKED`
 over the candidate scope is the candidate-inaccessible check
 §Qualification leaves UNVERIFIED in its absence.
 
-The attack taxonomy is a **dated** checklist and new classes append with
-their date; freezing it freezes one year's attack surface as permanent
-law. Repair `SUCCEEDED` findings within the remaining allocation,
-cheapest first. Every hole left unrepaired is declared with the attack
-that works. An undeclared hole is the failure; a declared one is a gap.
+The attack taxonomy is a **dated** checklist, authored per package by
+this pass, and new classes append with their date; freezing it freezes
+one year's attack surface as permanent law. Repair `SUCCEEDED` findings
+within the remaining allocation, cheapest first. Every hole left
+unrepaired is declared with the attack that works. An undeclared hole is
+the failure; a declared one is a gap.
 
 ### Measurement pass
 
@@ -270,9 +158,3 @@ correction term is wrong for every candidate but one. Where a claim
 spans a boundary, re-run every retained candidate and report the paired
 per-case verdicts and the count of sign flips, never a rank correlation
 over few candidates.
-
-## Manifest and return
-
-Record the qualified result in the package's
-[manifest](benchmaker-manifest.md), which owns its field set and how a
-component reference resolves.

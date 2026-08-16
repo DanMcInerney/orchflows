@@ -340,7 +340,11 @@ class PhantomCriterionTest(unittest.TestCase):
         )
 
     def test_the_wrapped_stamp_belongs_to_the_criterion_that_wrapped(self):
-        self.assertTrue(cutcheck.PRE_EXISTING_RE.search(self.texts[2]), self.texts[2])
+        self.assertEqual(
+            cutcheck.PRE_EXISTING,
+            cutcheck._stated_provenance(self.texts[2]),
+            self.texts[2],
+        )
 
 
 class NestedEnumerationTest(unittest.TestCase):
@@ -354,7 +358,7 @@ class NestedEnumerationTest(unittest.TestCase):
             "1. the tuple the installer opens, and 2. every script name it lists.",
             first,
         )
-        self.assertTrue(cutcheck.PRE_EXISTING_RE.search(first), first)
+        self.assertEqual(cutcheck.PRE_EXISTING, cutcheck._stated_provenance(first), first)
 
     def test_a_set_whose_criteria_are_written_indented_is_still_a_list(self):
         criteria = fixture_criteria("cutcheck-f1-truncated", "01-truncated.md")
@@ -512,6 +516,168 @@ class CanarySetTest(unittest.TestCase):
         self.assertIn("extra.txt", lines[0])
 
 
+class PackCellHomeTest(unittest.TestCase):
+    """Family 6 reads the library's packs, never the target repository's.
+
+    A pack cell is a fact about orchflows, and the tree under test is whatever
+    repository the run's work lands in. Resolving the cells against the
+    invoking worktree meant that from any target carrying no `packs/` --
+    which is every target but this one -- `_pack_cells` returned the empty set
+    and family 6 had nothing left to grade. The check passed by finding
+    nothing to check.
+    """
+
+    def setUp(self):
+        self.empty = Path(tempfile.mkdtemp(prefix="cutcheck-nopacks-"))
+        self.addCleanup(remove_repo_tree, self.empty)
+
+    def test_the_library_is_the_tree_this_tool_runs_from(self):
+        self.assertEqual(cutcheck._lib_root(None), ROOT)
+
+    def test_an_explicit_lib_decides_it(self):
+        self.assertEqual(cutcheck._lib_root(str(self.empty)), self.empty)
+
+    def test_the_packs_of_that_library_are_what_the_cells_come_from(self):
+        self.assertIn(
+            "orch-tdd", cutcheck._pack_cells("orch-code-pack", cutcheck._lib_root(None))
+        )
+        self.assertEqual(set(), cutcheck._pack_cells("orch-code-pack", self.empty))
+
+    def test_a_library_carrying_no_packs_grades_nothing_at_all(self):
+        """Since P4-3 the pack cells are the whole of family 6 — the engine
+        prohibition that used to survive an empty library is deleted with the
+        two engines it named. So an empty library is not a weaker grading, it
+        is no grading, which is exactly what `_lib_root` exists to prevent."""
+        siblings = {
+            "01-alien": {"id": "01-alien", "executor": "orch-render",
+                         "pack": "orch-code-pack"},
+            "02-legal": {"id": "02-legal", "executor": "orch-tdd",
+                         "pack": "orch-code-pack"},
+        }
+        self.assertEqual([], cutcheck._executor_legality(siblings, self.empty))
+        self.assertEqual(
+            ["01-alien"],
+            [item for item, _, _, _ in cutcheck._executor_legality(siblings, ROOT)],
+        )
+
+    def test_the_flag_that_names_the_library_is_documented(self):
+        spawned = run_cutcheck_subprocess(["--help"])
+        self.assertEqual(spawned.returncode, 0, spawned.stderr)
+        self.assertIn("--lib", " ".join(spawned.stdout.split()))
+
+
+class RootGateLayoutTest(unittest.TestCase):
+    """The layout every honest root cut has, graded as the contract writes it.
+
+    A root ticket sits in the run directory beside its own `<root>.NN` units
+    and its `<root>.gate.*` stubs. Read as issued items they convict every
+    honest cut: the root is named by no criterion of the map it is the source
+    of, each gate stub is named by the keyword `gate` and never by its id, and
+    the root and the repair both hold the run's scope with no edge between
+    them. `rules/verification.md` §11 makes the cut's verdict this tool re-run
+    to exit 0, and the skill orders the gate step next, so a verdict that
+    cannot survive the gate is a verdict read once and never again.
+    """
+
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-root-gate")
+
+    def test_the_whole_layout_exits_zero(self):
+        self.assertEqual(self.result.returncode, 0, self.result.stdout)
+
+    def test_no_finding_stands_outside_the_advisory_set(self):
+        violations, _, affirmed = report(self.result)
+        self.assertEqual(violations, [], self.result.stdout)
+        self.assertTrue(affirmed, self.result.stdout)
+
+    def test_neither_the_root_nor_a_gate_stub_is_an_orphan_item(self):
+        for line in self.result.stdout.splitlines():
+            self.assertNotIn(cutcheck.ORPHAN_ITEM, line, self.result.stdout)
+
+    def test_the_root_and_the_repair_sharing_the_run_scope_is_no_collision(self):
+        self.assertNotIn(cutcheck.SCOPE_COLLISION, self.result.stdout)
+        self.assertNotIn(cutcheck.STAGED_INVALIDATION, self.result.stdout)
+
+    def test_the_structural_executors_are_legal_under_the_stamped_pack(self):
+        """The pack's executor cell names `orch-tdd` and nothing else.
+
+        Graded against that cell, the decomposer and the gate's three
+        executors are all illegal, which would fail the cut for carrying the
+        shape the contract requires of it. They are the library's own nodes,
+        so they are graded against the library's own names.
+        """
+
+        self.assertNotIn(cutcheck.ILLEGAL_EXECUTOR, self.result.stdout)
+
+    def test_a_unit_ticket_is_still_graded_against_the_packs_cell(self):
+        self.assertIn(
+            cutcheck.ILLEGAL_EXECUTOR, run_cutcheck("cutcheck-f6-executor").stdout
+        )
+
+    def test_a_gate_stub_naming_an_executor_the_gate_never_writes_is_reported(self):
+        siblings = {
+            "00-root": {"id": "00-root", "executor": cutcheck.ROOT_EXECUTOR},
+            "00-root.gate.repair": {
+                "id": "00-root.gate.repair", "executor": "orch-tdd"
+            },
+        }
+        findings = cutcheck._executor_legality(siblings, ROOT)
+        self.assertEqual(1, len(findings), findings)
+        self.assertEqual("00-root.gate.repair", findings[0][0])
+        self.assertEqual(cutcheck.ILLEGAL_EXECUTOR, findings[0][2])
+
+
+class NestedRootTest(unittest.TestCase):
+    """A root is the set's own source, never a unit inside another root's.
+
+    `rules/topology.md` §7: mixed decomposition inside one graph is
+    undefined. Reading every `orch-decompose` ticket as a root made a
+    `<root>.NN` unit issued with that executor legal, and exempted anything
+    it carried under `.gate.` from families 4 and 5 -- the cut defect hiding
+    behind the exemption written for the honest layout.
+    """
+
+    def test_a_nested_root_is_reported_as_a_nested_root(self):
+        siblings = {
+            "00-root": {"id": "00-root", "executor": cutcheck.ROOT_EXECUTOR},
+            "00-root.01": {"id": "00-root.01", "executor": cutcheck.ROOT_EXECUTOR},
+        }
+        findings = cutcheck._executor_legality(siblings, ROOT)
+        self.assertEqual(1, len(findings), findings)
+        self.assertEqual("00-root.01", findings[0][0])
+        self.assertEqual(cutcheck.ILLEGAL_EXECUTOR, findings[0][2])
+        self.assertIn("nested root", findings[0][3])
+
+    def test_a_nested_roots_gate_stub_is_no_longer_exempt(self):
+        siblings = {
+            "00-root": {"id": "00-root", "executor": cutcheck.ROOT_EXECUTOR},
+            "00-root.01": {"id": "00-root.01", "executor": cutcheck.ROOT_EXECUTOR},
+            "00-root.01.gate.repair": {
+                "id": "00-root.01.gate.repair", "executor": "orch-repair"
+            },
+        }
+        roots = cutcheck._root_ids(siblings)
+        self.assertEqual(["00-root"], roots)
+        self.assertIsNone(cutcheck._gate_stub_of("00-root.01.gate.repair", roots))
+        self.assertIn("00-root.01.gate.repair", cutcheck._issued_items(siblings, roots))
+
+    def test_a_top_level_decompose_stub_beside_others_is_still_a_root(self):
+        """`compositions/self-improve/01-deliver` is exactly this shape.
+
+        A template's terminal-ish stub carries `orch-decompose` beside stubs
+        no root owns; no other root's id prefixes it, so it is a root of its
+        own and nothing about it is reported.
+        """
+
+        siblings = {
+            "00-mine": {"id": "00-mine", "executor": "orch-self-improve"},
+            "01-deliver": {"id": "01-deliver", "executor": cutcheck.ROOT_EXECUTOR},
+            "02-close": {"id": "02-close", "executor": "orch-integrate"},
+        }
+        self.assertEqual(["01-deliver"], cutcheck._root_ids(siblings))
+        self.assertEqual([], cutcheck._executor_legality(siblings, ROOT))
+
+
 class ExecutorLegalityTest(unittest.TestCase):
     def setUp(self):
         self.result = run_cutcheck("cutcheck-f6-executor")
@@ -520,23 +686,29 @@ class ExecutorLegalityTest(unittest.TestCase):
     def test_executor_set_exits_nonzero(self):
         self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
 
-    def test_an_engine_executor_is_reported_with_its_ticket(self):
-        lines = [line for line in self.lines if "01-engine" in line]
-        self.assertEqual(len(lines), 1, self.result.stdout)
-        self.assertIn(cutcheck.ILLEGAL_EXECUTOR, lines[0])
-        self.assertIn("orch-task", lines[0])
-
     def test_an_executor_no_cell_of_the_pack_names_is_reported(self):
         lines = [line for line in self.lines if "03-alien" in line]
         self.assertEqual(len(lines), 1, self.result.stdout)
+        self.assertIn(cutcheck.ILLEGAL_EXECUTOR, lines[0])
         self.assertIn("orch-render", lines[0])
         self.assertIn("orch-code-pack", lines[0])
 
     def test_the_packs_own_executor_cell_is_not_reported(self):
         self.assertNotIn("02-legal", self.result.stdout)
 
-    def test_the_engine_set_is_the_ticket_scripts_own(self):
-        self.assertIs(cutcheck.ENGINE_EXECUTORS, tickets.ENGINE_EXECUTORS)
+    def test_the_surviving_engines_are_lawful_executors(self):
+        """P4-3 deleted the engine prohibition with the two engines it named.
+        Both survivors are lawful ticket executors, and neither script keeps a
+        list of them: with nothing left to refuse, no code path branches on
+        membership, so the library tree is the only statement of the set."""
+        engines = {
+            path.name
+            for path in (ROOT / "skills" / "engines").iterdir()
+            if path.is_dir()
+        }
+        self.assertEqual({"orch-frontier", "orch-loop"}, engines)
+        self.assertFalse(hasattr(cutcheck, "ENGINE_EXECUTORS"))
+        self.assertFalse(hasattr(tickets, "TICKET_EXECUTOR_ENGINES"))
 
 
 class CoverageTest(unittest.TestCase):
@@ -577,8 +749,69 @@ class AbsentMapTest(unittest.TestCase):
         self.assertNotIn(cutcheck.ORPHAN_ITEM, self.result.stdout)
 
 
+class ThreeRootCoverageTest(unittest.TestCase):
+    """A template instantiates several top-level cuts into one run, and
+    family 5 was written for one.
+
+    One map per run meant each root's criteria were read against every other
+    root's items — so every top-level stub of a template was ORPHAN_ITEM
+    against whichever map happened to be there, and three decomposers writing
+    `coverage.md` overwrote one another. The map is now the root's, named for
+    it, and a root's issued set is `<root>.NN` and nothing else.
+    """
+
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-f5-template")
+        self.lines = reported(self.result, cutcheck.FAMILY_5)
+
+    def test_a_top_level_stub_of_the_template_is_never_an_orphan_item(self):
+        self.assertNotIn(cutcheck.ORPHAN_ITEM, self.result.stdout)
+        for stub in ("01-design", "02-materialize"):
+            self.assertNotIn(f"{stub}: family 5: {cutcheck.ORPHAN_ITEM}",
+                             self.result.stdout)
+
+    def test_the_root_with_a_map_is_answered_by_its_own_subtree(self):
+        self.assertNotIn(cutcheck.ORPHAN_CRITERION, self.result.stdout)
+        self.assertEqual(1, len(self.lines), self.result.stdout)
+
+    def test_the_absent_map_is_reported_against_the_root_that_owes_it(self):
+        self.assertIn(cutcheck.COVERAGE_MAP_ABSENT, self.lines[0])
+        self.assertTrue(self.lines[0].startswith("02-materialize:"), self.lines[0])
+        self.assertIn("02-materialize.coverage.md", self.lines[0])
+        self.assertEqual(0, self.result.returncode, self.result.stdout)
+
+    def test_each_roots_issued_set_is_its_own_subtree(self):
+        siblings = {
+            "00-acquire": {"executor": "orch-decompose"},
+            "00-acquire.01": {"executor": "orch-tdd"},
+            "00-acquire.gate.verify": {"executor": "orch-verify"},
+            "01-design": {"executor": "orch-tdd"},
+            "02-materialize": {"executor": "orch-decompose"},
+        }
+        self.assertEqual(["00-acquire.01"],
+                         cutcheck._issued_under(siblings, "00-acquire"))
+        self.assertEqual([], cutcheck._issued_under(siblings, "02-materialize"))
+
+
 class CoverageHomeTest(unittest.TestCase):
     """The map is found beside the ticket root cutcheck resolved, not at a path."""
+
+    def test_a_single_root_still_reads_the_legacy_map(self):
+        """`runs/<run>/coverage.md` is the one-root spelling and every run in
+        the sink already carries one. It keeps meaning what it said."""
+
+        fixture = ROOT / "tests" / "fixtures" / "cutcheck" / "cutcheck-root-gate"
+        self.assertEqual(
+            fixture / "coverage.md",
+            cutcheck._map_for_root(fixture, "00-root", True),
+        )
+
+    def test_several_roots_never_fall_back_to_one_shared_map(self):
+        fixture = ROOT / "tests" / "fixtures" / "cutcheck" / "cutcheck-root-gate"
+        self.assertEqual(
+            fixture / "00-root.coverage.md",
+            cutcheck._map_for_root(fixture, "00-root", False),
+        )
 
     def test_a_fixture_set_carries_its_map_beside_its_tickets(self):
         fixture = ROOT / "tests" / "fixtures" / "cutcheck" / "cutcheck-f5-coverage"
@@ -1629,7 +1862,9 @@ class ProvenanceNegationTest(unittest.TestCase):
             "provenance: pre-existing is never a demonstration that an oracle "
             "can fail.",
         ):
-            self.assertIsNone(cutcheck.PRE_EXISTING_RE.search(text), text)
+            self.assertNotEqual(
+                cutcheck.PRE_EXISTING, cutcheck._stated_provenance(text), text
+            )
 
 
 class ProvenanceStampTest(unittest.TestCase):
@@ -1649,8 +1884,50 @@ class ProvenanceStampTest(unittest.TestCase):
             # A live set stamps this way: the field, then why it is the field.
             "oracle_class: deterministic. provenance: pre-existing (the fixture "
             "exists from item 01).",
+            # The form `tickets.py` writes, in its own gate stubs and in every
+            # ticket `new` renders: the two scripts disagreed on this one and
+            # the library's own stubs were the casualty.
+            "the suite exits 0 | oracle: `python -B -m unittest tests.x.Y` "
+            "| oracle_class: deterministic | provenance: pre-existing",
         ):
-            self.assertTrue(cutcheck.PRE_EXISTING_RE.search(text), text)
+            self.assertEqual(cutcheck.PRE_EXISTING, cutcheck._stated_provenance(text), text)
+
+
+class CriterionOwnerTest(unittest.TestCase):
+    """Criterion parsing has one owner, and this tool is not it.
+
+    Every criterion this tool grades is one `scripts/tickets.py` already
+    refused a ticket over, so a second parser here is a section that reads one
+    way to the cut's refusal and another way to the cut's check. It read that
+    way: a `- ` bullet criterion -- the form `tickets.py new` renders -- was
+    invisible to this tool while being graded there.
+    """
+
+    SECTION = (
+        "- the suite exits 0 | oracle: `grep -n \"cutcheck.py\" install.py` "
+        "| oracle_class: deterministic | provenance: pre-existing\n"
+        "- the docs read well | oracle: the lens | oracle_class: judged\n"
+    )
+
+    def test_a_bullet_criterion_is_read_with_its_class_and_its_provenance(self):
+        criteria = cutcheck._criteria(self.SECTION)
+        self.assertEqual([1, 2], [number for number, _ in criteria])
+        first = dict(criteria)[1]
+        self.assertEqual("deterministic", cutcheck._oracle_class(first))
+        self.assertEqual(cutcheck.PRE_EXISTING, cutcheck._stated_provenance(first))
+        self.assertEqual("judged", cutcheck._oracle_class(dict(criteria)[2]))
+
+    def test_the_criteria_are_the_ones_scripts_tickets_reads(self):
+        self.assertEqual(
+            [text for _, text in cutcheck._criteria(self.SECTION)],
+            tickets._criteria(self.SECTION),
+        )
+
+    def test_the_stated_class_travels_with_an_extraction_gap(self):
+        _, advisories, _ = report(run_cutcheck("cutcheck-f1-truncated"))
+        gaps = [line for line in advisories if cutcheck.EXTRACTION_GAP in line]
+        self.assertEqual(1, len(gaps), advisories)
+        self.assertIn("oracle_class: judgment", gaps[0])
 
 
 class VerdictInOutputTest(unittest.TestCase):
@@ -1935,6 +2212,7 @@ class GitNoHistoryDispositionTest(unittest.TestCase):
                     cutcheck.COVERAGE_MAP_ABSENT,
                     cutcheck.VERDICT_IN_OUTPUT,
                     cutcheck.SYMLINK_IN_TREE,
+                    cutcheck.BYTECODE_WRITTEN,
                 }
             ),
         )
@@ -2128,7 +2406,7 @@ class NodeIdOracleGapTest(unittest.TestCase):
                 for number, criterion in cutcheck._criteria(section):
                     for command in cutcheck._commands(criterion):
                         read.append(command)
-                        if cutcheck.PRE_EXISTING_RE.search(criterion):
+                        if cutcheck._stated_provenance(criterion) == cutcheck.PRE_EXISTING:
                             continue
                         if cutcheck._whole_suite(command, ROOT):
                             gaps.append(
@@ -2255,11 +2533,10 @@ ALLOWED_STATE_LITERALS = {
     "scripts/isolate.py": {".orchflows-state"},
     # Item 05 criterion 4: a trace may cover a session that predates the
     # migration, so the harvester matches the repository shape as well as
-    # the sink's. These match a path in someone else's transcript; they
-    # compose no path this host reads.
+    # the sink's. This matches a path in someone else's transcript; it
+    # composes no path this host reads.
     "scripts/trace.py": {
         r"(?:\.orch|\.orchflows[/\\]state)",
-        ".orch/runs/*/spec-*.md",
     },
     "scripts/ui.py": set(),
     "tools/live_sweep_e2e.py": set(),
@@ -2973,21 +3250,24 @@ def placement_repo(case):
 
 
 class ScratchRootPlacementTest(unittest.TestCase):
-    """Where the copies land: a directory the tool owns, beside the object store.
+    """Where the copies land: the system temp directory, and nowhere the target
+    decides.
 
-    `worktree_root.parent` answered differently from each origin and owned
-    neither answer. From a main checkout it is the repository's *parent*, which
-    is how 24M landed outside every ignore file this repository has and
-    invisible to any sweep scoped to it; from a linked worktree it is the
-    worktree directory, gitignored, where five more roots were sitting. The
-    common dir answers the same from both, is git's own storage rather than
-    anyone's source tree, and holds the object store a local clone hardlinks
-    from -- whichever volume the worktree itself is on.
+    Placement inside the target's own git common dir put the copies beside the
+    object store a clone hardlinks from, which is faster, and made the whole
+    tool unusable on Windows: the copy's paths are the target's path plus
+    `.git/cutcheck-scratch/.cutcheck-XXXXXXXX/<rev>/` plus the deepest path in
+    the revision, and a 183-character worktree root took `git clone` past
+    MAX_PATH on its own template copy -- which `core.longpaths=true` does not
+    cover. Every invocation from that tree exited 2 before grading anything.
+
+    So the length of a scratch path is now a fact about the host's temp
+    directory rather than about the tree being graded, and speed gives way to
+    running at all.
     """
 
     def setUp(self):
         self.main, self.linked = placement_repo(self)
-        self.common = (self.main / ".git").resolve()
 
     def _root(self, origin):
         root = cutcheck._scratch_root(origin)
@@ -2995,86 +3275,112 @@ class ScratchRootPlacementTest(unittest.TestCase):
         self.addCleanup(remove_repo_tree, root)
         return root.resolve()
 
-    def test_the_root_lands_under_the_common_dir_from_a_main_checkout(self):
-        # `--git-common-dir` answers a bare `.git` here -- relative to the cwd
-        # it was asked in, and the one spelling difference between the two
-        # origins. Resolved, or a main checkout places its copies relative to
-        # wherever the process happened to be standing.
-        self.assertEqual(self._root(self.main).parent.parent, self.common)
+    def test_the_root_lands_under_the_system_temp_directory(self):
+        for origin in (self.main, self.linked):
+            with self.subTest(origin=origin.name):
+                self.assertEqual(
+                    self._root(origin).parent,
+                    Path(tempfile.gettempdir()).resolve(),
+                )
 
-    def test_the_root_lands_under_the_common_dir_from_a_linked_worktree(self):
-        root = self._root(self.linked)
-        self.assertEqual(root.parent.parent, self.common)
-        # Not `--git-dir`, which resolves to `.git/worktrees/<name>` and would
-        # give each worktree grading one run a root of its own.
-        self.assertNotIn("worktrees", root.parent.relative_to(self.common).parts)
-        # The placement this replaces.
-        self.assertNotEqual(root.parent, self.linked.parent.resolve())
-
-    def test_both_origins_place_their_roots_in_one_directory(self):
-        # One directory, and a distinct root inside it per invocation: two cuts
-        # running at once share the place and never the tree.
-        main_root, linked_root = self._root(self.main), self._root(self.linked)
-        self.assertEqual(main_root.parent, linked_root.parent)
-        self.assertNotEqual(main_root, linked_root)
-
-    def test_the_scratch_root_shares_a_filesystem_with_the_tree(self):
-        """Criterion 5: the clone hardlinks, so it must not cross a volume.
-
-        `st_dev` equality is necessary and, on a single-volume host, decides
-        nothing: every path on this machine reports one `st_dev`, the system
-        temp directory included, so the rejected placement passes that clause
-        too. Containment under the common dir is what carries the claim on
-        every host -- it is the object store's own directory, so no volume
-        boundary can appear between them however the host is mounted.
-        """
-
+    def test_no_copy_lands_inside_the_tree_being_graded(self):
         for origin in (self.main, self.linked):
             with self.subTest(origin=origin.name):
                 root = self._root(origin)
-                objects = self.common / "objects"
-                self.assertEqual(root.parent.parent, self.common)
-                self.assertEqual(
-                    os.stat(str(root)).st_dev, os.stat(str(objects)).st_dev
-                )
-                self.assertEqual(
-                    os.stat(str(root)).st_dev, os.stat(str(origin)).st_dev
-                )
+                self.assertNotIn(origin.resolve(), root.parents)
 
-    def test_a_clone_into_the_scratch_root_hardlinks_the_object_store(self):
-        """Criterion 5's other half, asserted rather than timed.
+    def test_the_scratch_path_is_no_longer_the_targets_path_plus_a_suffix(self):
+        """The MAX_PATH regression, stated as the length it broke on.
 
-        A timing is a number to report and never an oracle -- runtime tracks
-        the checkout as much as the tree, and only a short one indicts. Whether
-        the objects are shared is a fact `st_nlink` states outright.
+        A root derived from the tree grows with it; this one does not, so the
+        183-character worktree that could clone nothing is the same length here
+        as a two-character one.
+        """
+
+        deep = Path(tempfile.mkdtemp(prefix="cutcheck-deep-"))
+        self.addCleanup(remove_repo_tree, deep)
+        long_tree = deep / ("d" * 60) / ("e" * 60) / ("f" * 40)
+        long_tree.mkdir(parents=True)
+        # Both sides raw: the claim is that the target's path length does not
+        # reach the scratch path, so both spellings must come from the same
+        # mkdtemp. Resolving one side compares two spellings of the temp root
+        # instead -- an 8.3 TEMP component on Windows runners and macOS's
+        # /var -> /private/var symlink each made only the resolved side longer.
+        near = cutcheck._scratch_root(self.main)
+        self.assertIsNotNone(near, "the near tree got no scratch root")
+        self.addCleanup(remove_repo_tree, near)
+        far = cutcheck._scratch_root(long_tree)
+        self.assertIsNotNone(far, "a deep tree got no scratch root")
+        self.addCleanup(remove_repo_tree, far)
+        self.assertEqual(len(str(near)), len(str(far)))
+
+    def test_each_invocation_gets_a_root_of_its_own(self):
+        # Two cuts running at once share the directory and never the tree.
+        first, second = self._root(self.main), self._root(self.linked)
+        self.assertNotEqual(first, second)
+        self.assertEqual(first.parent, second.parent)
+
+    def test_a_clone_into_the_scratch_root_carries_the_revisions_history(self):
+        """What the placement still has to buy: a copy that is a clone.
+
+        Hardlinking was the old placement's argument and it is gone with it --
+        the temp directory may be another volume, and a full object copy there
+        is correct and slower. What may not be given up is history: an oracle
+        reading a copy with no `.git` reads whichever repository encloses it.
         """
 
         root = self._root(self.linked)
-        probe = root / "probe"
-        try:
-            os.link(str(self.common / "HEAD"), str(probe))
-        except (AttributeError, OSError, NotImplementedError) as exc:
-            self.skipTest("this filesystem will not hardlink: {}".format(exc))
-        probe.unlink()
         tree = cutcheck._scratch_tree("HEAD", self.linked, root)
         self.assertIsNotNone(tree, "no scratch tree was cloned")
-        objects = tree / ".git" / "objects"
-        self.assertTrue(
-            [p for p in objects.rglob("*") if p.is_file() and p.stat().st_nlink > 1],
-            "the clone copied every object instead of linking it",
-        )
+        self.assertTrue((tree / ".git").exists(), "the copy carries no history")
 
-    def test_a_directory_outside_any_repository_gets_no_scratch_root(self):
-        outside = Path(tempfile.mkdtemp(prefix="cutcheck-outside-"))
-        self.addCleanup(shutil.rmtree, outside)
-        proc = cutcheck._git(["rev-parse", "--git-common-dir"], outside)
-        if proc is not None and proc.returncode == 0:
-            self.skipTest(
-                "the temp directory is itself inside a repository: {}".format(
-                    proc.stdout.strip()
-                )
-            )
-        self.assertIsNone(cutcheck._scratch_root(outside))
+    def test_the_module_names_no_directory_inside_the_target_any_more(self):
+        source = (ROOT / "scripts" / "cutcheck.py").read_text(encoding="utf-8")
+        self.assertNotIn("cutcheck-scratch", source)
+        self.assertNotIn("git-common-dir", source)
+
+
+class BytecodeAdvisoryTest(unittest.TestCase):
+    """Importing a package writes bytecode, and that is a spelling note.
+
+    A python oracle that imports anything writes `__pycache__/` into the copy,
+    and the delta reading convicted the first one graded as `unconfined-oracle`
+    -- an exit-setting class whose repair, `-B`, is stated in no skill, no
+    oracle policy and no report. What a copy writes back into itself is the
+    hazard that class is for; bytecode is the interpreter's own cache, lands
+    inside the copy, and is answered by a flag. So the report says the flag.
+    """
+
+    def _classes(self, mutated):
+        ticket = FIXTURES / "cutcheck-root-gate" / "00-root.01.md"
+        cutcheck._EXIT_CACHE.clear()
+        with mock.patch.object(cutcheck, "_mutations", lambda tree: list(mutated)):
+            findings = cutcheck._check_ticket(ticket, ROOT, None, {})
+        return findings, [klass for _, _, klass, _ in findings]
+
+    def test_bytecode_alone_is_advisory_and_names_the_flag_that_answers_it(self):
+        findings, classes = self._classes(["tests/__pycache__/"])
+        self.assertIn(cutcheck.BYTECODE_WRITTEN, classes, findings)
+        self.assertNotIn(cutcheck.UNCONFINED_ORACLE, classes, findings)
+        detail = [f[3] for f in findings if f[2] == cutcheck.BYTECODE_WRITTEN][0]
+        self.assertIn("tests/__pycache__/", detail)
+        self.assertIn("-B", detail)
+
+    def test_the_advisory_class_never_sets_the_exit_status(self):
+        self.assertIn(cutcheck.BYTECODE_WRITTEN, cutcheck.ADVISORY)
+
+    def test_anything_else_the_span_wrote_is_still_the_exit_setting_class(self):
+        findings, classes = self._classes(["scratch.txt"])
+        self.assertIn(cutcheck.UNCONFINED_ORACLE, classes, findings)
+        self.assertNotIn(cutcheck.BYTECODE_WRITTEN, classes, findings)
+
+    def test_a_span_writing_both_is_reported_for_both(self):
+        findings, classes = self._classes(["tests/__pycache__/", "scratch.txt"])
+        self.assertIn(cutcheck.UNCONFINED_ORACLE, classes, findings)
+        self.assertIn(cutcheck.BYTECODE_WRITTEN, classes, findings)
+        wrote = [f[3] for f in findings if f[2] == cutcheck.UNCONFINED_ORACLE][0]
+        self.assertIn("scratch.txt", wrote)
+        self.assertNotIn("__pycache__", wrote)
 
 
 class SharedScratchHarnessTest(unittest.TestCase):
@@ -3128,25 +3434,19 @@ class SharedScratchHarnessTest(unittest.TestCase):
     def test_the_shared_root_is_this_processs_own_inside_the_tools_place(self):
         """Two suites at once share the directory and never a tree.
 
-        The root is under the git **common** dir, which is the main checkout's
-        and answers the same from all 62 worktrees of this repository, so a
-        fixed name here would be two concurrent runs writing one tree. It is a
-        `mkdtemp` of the tool's own making instead, and the neighbour built
-        below is what says so rather than the prefix.
+        The place is the host's temp directory, which every process on the
+        machine shares, so a fixed name here would be two concurrent runs
+        writing one tree. It is a `mkdtemp` of the tool's own making instead,
+        and the neighbour built below is what says so rather than the prefix.
         """
 
         root = shared_root()
         self.assertEqual(shared_root(), root, "a second root is a second pair of clones")
         self.assertTrue(root.is_dir(), root)
-        self.assertEqual(root.parent.name, cutcheck.SCRATCH_DIR)
-        common = cutcheck._git(["rev-parse", "--git-common-dir"], ROOT)
-        self.assertEqual(common.returncode, 0, common.stderr)
-        self.assertEqual(
-            root.parent.parent, (ROOT / common.stdout.strip()).resolve()
-        )
+        self.assertEqual(root.resolve().parent, Path(tempfile.gettempdir()).resolve())
         neighbour = cutcheck._scratch_root(ROOT)
         self.addCleanup(remove_repo_tree, neighbour)
-        self.assertEqual(neighbour.parent, root.parent)
+        self.assertEqual(neighbour.resolve().parent, root.resolve().parent)
         self.assertNotEqual(neighbour, root)
 
 

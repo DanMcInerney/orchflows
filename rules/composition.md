@@ -4,10 +4,9 @@
    out-edges: a primitive calls no skill; a composite calls one or
    more. Kernel and utility skills are always primitives (validator-
    enforced for kernel); engines are composites; workflows and
-   instances may be either — their sublayer names the judgment's role,
-   not its out-degree. Invocation policy for compositions lives in
-   their `entry` field per
-   [contracts/composition.md](../contracts/composition.md).
+   instances may be either. Invocation policy for templates lives in
+   their manifest's `entry` field per
+   [contracts/work-item.md](../contracts/work-item.md#template-and-stub).
 2. Every resolved backticked skill name in a body is a call edge. Name
    each call once, at its prose call site, with the exact backticked
    name; mention a skill without calling it in plain text, never
@@ -20,36 +19,24 @@
 5. Anatomy: frontmatter (`name` = folder name, `description` ≤140
    chars, `role` ∈ {planner, worker, none} — pack SKILL.md carries no
    `role`), then `Require:`, procedure, `Never:`, `Return:`. Body
-   budgets: kernel, instances, and utilities 25 lines; engines and
-   workflows 40; pack SKILL.md 20 — enforceable because observable:
-   `tools/validate.py` counts the artifact's non-empty lines against a
-   budget and nothing checks a rate. Cutoffs, not measured optima; the count is of non-empty
-   lines, and no width bound exists or is intended. What the body holds
-   is [token-economy.md](token-economy.md) §6's.
+   budgets, counted by `tools/validate.py` in non-empty lines: kernel,
+   instances, and utilities 25; engines and workflows 40; pack
+   SKILL.md 20. What the body holds is
+   [token-economy.md](token-economy.md) §6's.
 6. Admission: a new skill's contract must be expressible from existing
    skill contracts; otherwise it is a kernel candidate and must show
    that omitting it forces another skill to inline its judgment. Two
    skills whose contracts match the same task is a defect — one owner
    per judgment.
-7. Parallel branches share no output field and no write scope. Reads are
-   scope too: a branch whose completion test observes artifacts outside
-   its own write scope ([topology.md](topology.md) §3) is parallel-safe
-   only against siblings that change nothing that could move the
-   verdict it observes, in the workspace where it observes it —
-   isolation that keeps a sibling's in-flight change out of that
-   workspace qualifies as squarely as disjointness does. Immateriality
-   is shown, never assumed: name the sibling's write and the part of
-   the artifact the verdict turns on, and show the two disjoint under
-   the observing method itself; what is not shown disjoint counts as
-   material. A retry changes cause, input, or method; an identical
-   retry is a defect.
+7. Parallel branches share no output field and no write scope; what a
+   branch's reads cost in parallel is [topology.md](topology.md) §3's.
 8. Every failure path returns partial results plus the evidence
    gathered; work is never silently discarded.
-9. Generic skills (kernel, engines, workflows, utilities) never name a domain;
-   they reference domain facts only through the stamped pack's cells. A
+9. Generic skills (kernel, engines, workflows, utilities) never name a
+   domain; how they reach domain facts is
+   [contracts/pack-signature.md](../contracts/pack-signature.md)'s. A
    generic body may name the skill the stamped pack's cell binds, only
-   in apposition to the cell reference that binds it — the cell's data
-   surfacing, never a domain leak.
+   in apposition to the cell reference that binds it.
 10. Every `Require:` item rides a named T0 carrier — a field a T0
     contract defines, never bare prose; the caller supplies each
     callee's `Require` item by that name. A dispatchable unit's

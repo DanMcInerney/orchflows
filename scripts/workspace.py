@@ -88,6 +88,17 @@ VERDICTS = {
 # A frontmatter scalar carries the dirty set as one comma-joined line, so a
 # path holding either character cannot be written unambiguously.
 AMBIGUOUS = (",", '"', "'")
+# ``contracts/work-item.md``: ``write_scope`` is exactly what the item may
+# change -- paths, and this script compares them against the paths a diff
+# names. A space or a parenthesis makes an entry prose ("scripts/ and tests/",
+# "docs/ (tests only)"), which matches no path, so either every change reads
+# as a breach or the grant covers nothing and none does. Refused at ``start``,
+# where the cut can still fix it, rather than graded at the join.
+UNGRADABLE_IN_SCOPE = (" ", "\t", "(", ")")
+# The two of them a real path can carry, which ``_refuse_ungradable_scope``
+# therefore decides by resolving the entry rather than by the character.
+SPACING = (" ", "\t")
+CONTRACT = "contracts/work-item.md"
 USAGE = (
     "usage: workspace.py start <run> <id>\n"
     "       workspace.py check <run> <id> --base <rev>"
@@ -216,18 +227,72 @@ def _positional(rest, count: int, command: str) -> list:
     return args
 
 
+def _exists_as_path(entry: str, root) -> bool:
+    """Whether ``entry`` names something that is actually there.
+
+    Absolute as it stands, or relative to the workspace root -- the same two
+    readings ``check`` gives a scope entry when it splits a diff against it.
+    """
+
+    try:
+        candidate = Path(entry)
+        if candidate.is_absolute():
+            return candidate.exists()
+        return root is not None and (Path(root) / entry).exists()
+    except OSError:  # pragma: no cover - a name the filesystem rejects
+        return False
+
+
+def _refuse_ungradable_scope(declared, root=None) -> None:
+    """Refuse a ``write_scope`` entry no path comparison can read.
+
+    The grant is what ``check`` grades a branch's diff against, so an entry
+    that is prose rather than a path grades nothing and says so nowhere: the
+    scope silently covers no path the branch touched, and the breach it was
+    written to prevent passes. Raised at ``start`` -- the first thing an
+    isolated item runs -- so the answer arrives while the cut can still be
+    repaired, rather than at the join with the work already done.
+
+    A space is evidence of prose, never proof of it: a home directory with a
+    space in its name makes an ordinary path carry one, and refusing that
+    refuses the host rather than the cut. So a spaced entry that resolves to
+    something on disk is a path and is kept; one that resolves to nothing is
+    the phrase this guard was written for. A parenthesis needs no such test
+    -- it is the annotation shape itself ("docs/ (tests only)"), and a path
+    carrying one still reads as one entry only by accident.
+    """
+
+    entries = [declared] if isinstance(declared, str) else list(declared or [])
+    for raw in entries:
+        entry = str(raw).strip().strip("`").strip()
+        for character in UNGRADABLE_IN_SCOPE:
+            if character not in entry:
+                continue
+            if character in SPACING and _exists_as_path(entry, root):
+                break
+            raise Refused(
+                f"{WRITE_SCOPE_KEY} entry '{entry}' contains {character!r} and "
+                f"names no path here: per {CONTRACT} an entry is exactly a "
+                "path this item may change, and a phrase matches none, so "
+                "nothing here can grade it. Cut the scope as one bare path "
+                "per entry"
+            )
+
+
 def _cmd_start(rest):
     """Record what this workspace is, from inside it. It does not claim."""
 
     run, ticket_id = _positional(rest, 2, "start")
     root, path = _locate(run, ticket_id)
-    _graded(tickets._load_ticket(path), f"read {run}/{ticket_id}")
+    data = _graded(tickets._load_ticket(path), f"read {run}/{ticket_id}")
     # the snapshot the stamps are written against, taken before the git calls
     # below and not after them: those calls are the seconds a concurrent
     # `set-status` lands in, and a snapshot taken past them absorbs the write
     # this guard exists to report
     prior_text = path.read_text(encoding="utf-8")
     top = Path(_git_out("rev-parse", "--show-toplevel")).resolve()
+    # after `top`, which is the root a relative scope entry resolves against
+    _refuse_ungradable_scope(data.get(WRITE_SCOPE_KEY), top)
     branch = _git_out("rev-parse", "--abbrev-ref", "HEAD")
     head = _git_out("rev-parse", "HEAD")
     dirty = sorted(set(_dirty_paths()))
@@ -393,11 +458,14 @@ def _cmd_check(rest):
         )
 
     # three-dot, from the merge base: a breach that arrives inside a merge
-    # commit is invisible to `git log --name-only` and visible here
+    # commit is invisible to `git log --name-only` and visible here.
+    # `--` terminates the revisions: without it git stats the range as a
+    # filename first, and a long absolute revision came back "Filename too
+    # long" -- a grade lost to a name nobody meant as a path.
     changed = [
         line
         for line in _git_out(
-            "diff", "--name-only", "--no-renames", f"{base_commit}...{tip}"
+            "diff", "--name-only", "--no-renames", f"{base_commit}...{tip}", "--"
         ).splitlines()
         if line
     ]
@@ -419,13 +487,22 @@ def _cmd_check(rest):
             changed=changed,
         )
     reported["commits"] = int(
-        _git_out("rev-list", "--count", f"{base_commit}..{tip}") or 0
+        _git_out("rev-list", "--count", f"{base_commit}..{tip}", "--") or 0
     )
     reported["verdict"] = "pass"
     return {"check": reported}, EXIT_OK
 
 
 def main(argv=None) -> int:
+    # A refusal quotes a path and a ticket's own words, either of which can
+    # carry a character a cp1252 console cannot encode; a script that crashes
+    # while printing its verdict reports none. The same treatment
+    # `scripts/tickets.py` and `tools/validate.py` give their one print.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError):  # pragma: no cover - not a TextIOWrapper
+            pass
     arguments = list(sys.argv[1:] if argv is None else argv)
     handlers = {"start": _cmd_start, "check": _cmd_check}
     command = arguments[0] if arguments else None

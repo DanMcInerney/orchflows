@@ -4,15 +4,16 @@ The order of work when adding a domain pack. The law lives with its
 owners — admission, cells, sharing constraints, and craft budget in
 [contracts/pack-signature.md](../contracts/pack-signature.md); anatomy
 and body budgets in [rules/composition.md](../rules/composition.md)
-§5; the build gate in `orch-build`; each existing pack's rationale in
+§5; admission in `orch-build`; each existing pack's rationale in
 [DESIGN.md](../DESIGN.md). This file only orders the work and names
 what each step feeds the next.
 
 1. Admission first, in writing, against the signature's admission
    line. A cell you cannot later state in the new workspace's
    semantics is evidence the domain is not new.
-2. Workspace second: what identities, baselines, and write scopes
-   mean. Every other cell is expressed in these semantics.
+2. Workspace second — the signature's `workspace` cell, which
+   [contracts/pack-signature.md](../contracts/pack-signature.md)
+   defines. Every other cell is expressed in those semantics.
 3. Oracle policy third: the exact checks with their classes.
    Deterministic rows shape the executor's unit loop; each judged
    dimension owes a craft term, or fresh judges re-invent it per
@@ -30,4 +31,4 @@ what each step feeds the next.
    Then the description, in the packs' shared idiom, ending in its
    "Stamp when …" sentence.
 
-Close with `orch-build`'s gate.
+Close with `orch-build`'s admission.

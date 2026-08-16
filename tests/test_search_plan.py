@@ -15,28 +15,26 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EVOLVE = ROOT / "compositions" / "evolve.md"
+# Since P4 both campaigns are ticket-set templates: a `template.md`
+# manifest plus the stubs `tickets.py instantiate` writes into a run. The
+# text graded below is the whole directory, stubs first, because the law
+# that used to be one composition body is now spread across the stubs
+# that carry it.
+EVOLVE = ROOT / "compositions" / "evolve"
 EVOLVE_GENERATION = ROOT / "compositions" / "references" / "evolve-generation.md"
-TOURNAMENT = ROOT / "compositions" / "skill-tournament.md"
-SEARCH_SKILL = ROOT / "skills" / "utilities" / "orch-search-plan" / "SKILL.md"
-SEARCH_PROTOCOL = (
-    ROOT
-    / "skills"
-    / "utilities"
-    / "orch-search-plan"
-    / "references"
-    / "protocol.md"
-)
-SEARCH_SCRIPT = (
-    ROOT
-    / "skills"
-    / "utilities"
-    / "orch-search-plan"
-    / "scripts"
-    / "search_plan.py"
-)
+TOURNAMENT = ROOT / "compositions" / "skill-tournament"
+# Since P4-3 the planner is a script and nothing else: the `orch-search-plan`
+# skill wrapped one command and one protocol in a dispatchable contract no
+# caller used as one — the campaign always named the bare filename. The
+# script is the leaf surface now, and its own docstring points at the
+# protocol under `docs/`, where a document the installer ships reads it —
+# `scripts/` is not a canonical directory, so a protocol beside the script
+# reached no installed tree.
+SEARCH_SCRIPT = ROOT / "scripts" / "search_plan.py"
+SEARCH_PROTOCOL = ROOT / "docs" / "search-plan-protocol.md"
 
 CALL_EDGE_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
+EXECUTOR_RE = re.compile(r"^executor:\s*(\S+)", re.MULTILINE)
 
 
 def canonical_bytes(value):
@@ -316,6 +314,13 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def template_text(directory: Path) -> str:
+    """One template as one string: `00-...` through the terminal stub,
+    then the manifest."""
+    stubs = sorted(p for p in directory.glob("*.md") if p.name != "template.md")
+    return "".join(read(path) for path in stubs + [directory / "template.md"])
+
+
 _MODULE = []
 
 
@@ -418,40 +423,54 @@ def recursive_target_errors(evolve: str, generation: str, tournament: str):
 def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str):
     errors = []
     combined_evolve = evolve + generation
-    evolve_calls = Counter(CALL_EDGE_RE.findall(combined_evolve))
-    required = {
-        "orch-delegate",
-        "orch-eval-design",
-        "orch-integrate",
-        "orch-judge",
-        "orch-loop",
-        "orch-panel",
-        "orch-search-plan",
-        "orch-verify",
-        "orch-worklog",
-    }
-    if evolve_calls != Counter({name: 1 for name in required}):
+    # Who runs each step is the stubs' `executor`, not a backticked name in
+    # prose. `orch-verify` twice: eligibility opens the campaign, the final
+    # score card closes it. Since P3 it is also the one scorer -- `orch-judge`
+    # merged into it (a score scale in the criteria), `orch-delegate` into
+    # rules/delegation.md, `orch-worklog` into the `tickets.py` view -- and
+    # since P4 `orch-panel` too, judging being N blind verify lanes plus the
+    # loop body's reduce. None of the four may reappear.
+    executors = Counter(EXECUTOR_RE.findall(evolve))
+    required = Counter({
+        "orch-eval-design": 1,
+        "orch-loop": 1,
+        "orch-verify": 2,
+    })
+    if executors != required:
         errors.append("evolve-call-graph")
-    eligibility = evolve[evolve.index("- eligibility") : evolve.index("- campaign")]
-    campaign = evolve[evolve.index("- campaign") : evolve.index("Edges:")]
-    if "`orch-verify`" not in eligibility:
+    eligibility = evolve[
+        evolve.index("id: 01-eligibility") : evolve.index("id: 02-campaign")
+    ]
+    campaign = evolve[evolve.index("id: 02-campaign") : evolve.index("id: 03-result")]
+    if "executor: orch-verify" not in eligibility:
         errors.append("eligibility-unit")
-    if "eligibility Verify binding" not in campaign:
+    # The campaign reuses the eligibility verdicts rather than re-taking
+    # them: it cites that stub's Result as its own fixed input.
+    if "01-eligibility's `## Result`" not in campaign:
         errors.append("generation-verify-binding")
-    if re.search(r"^-\s*closing\b", evolve, re.IGNORECASE | re.MULTILINE):
+    if re.search(r"^id:\s*04-", evolve, re.MULTILINE):
         errors.append("closing-wrapper")
-    if normalized(combined_evolve).count("`orch-judge`") != 1:
-        errors.append("judge-owner")
+    for demoted in ("orch-panel", "orch-judge", "orch-delegate", "orch-worklog"):
+        if demoted in combined_evolve:
+            errors.append("judge-owner")
+            break
+    # A template binds its executors in frontmatter; a backticked call edge
+    # in the prose is the second grammar P4 removed.
+    if set(CALL_EDGE_RE.findall(combined_evolve)):
+        errors.append("evolve-call-edge")
 
     tournament_calls = set(CALL_EDGE_RE.findall(tournament))
     if tournament_calls:
         errors.append("tournament-internal-call")
-    if "writer binding orch-build" not in normalized(tournament):
+    if "writer=orch-build" not in normalized(tournament):
         errors.append("tournament-writer-binding")
     if "promotion" in normalized(tournament):
         errors.append("tournament-promotion")
 
-    leaf_calls = set(CALL_EDGE_RE.findall(leaf)) - {"orch-search-plan"}
+    # The leaf is `scripts/search_plan.py` itself. A script is the ladder's
+    # floor: it dispatches nothing, so any backticked `orch-*` in it is a
+    # call edge that cannot exist.
+    leaf_calls = set(CALL_EDGE_RE.findall(leaf))
     if leaf_calls:
         errors.append("leaf-call")
     return errors
@@ -459,18 +478,35 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
 
 class TestArchitecture(unittest.TestCase):
     def test_thin_evolve_owns_one_campaign_call_graph(self):
-        for path in (EVOLVE, EVOLVE_GENERATION, TOURNAMENT, SEARCH_SKILL, SEARCH_SCRIPT):
+        for path in (EVOLVE, TOURNAMENT):
+            self.assertTrue(path.is_dir(), f"missing campaign template: {path}")
+            self.assertTrue((path / "template.md").is_file(), f"{path} has no manifest")
+        for path in (EVOLVE_GENERATION, SEARCH_PROTOCOL, SEARCH_SCRIPT):
             self.assertTrue(path.is_file(), f"missing search-planning surface: {path}")
+        self.assertFalse(
+            (ROOT / "skills" / "utilities" / "orch-search-plan").exists(),
+            "the search planner is a script, not a skill wrapping one command",
+        )
 
-        evolve = read(EVOLVE)
+        evolve = template_text(EVOLVE)
         generation = read(EVOLVE_GENERATION)
-        tournament = read(TOURNAMENT)
-        leaf = read(SEARCH_SKILL)
+        tournament = template_text(TOURNAMENT)
+        leaf = read(SEARCH_SCRIPT)
         self.assertEqual([], architecture_errors(evolve, generation, tournament, leaf))
-        self.assertIn("role: none", leaf)
-        command = "python skills/utilities/orch-search-plan/scripts/search_plan.py advance"
+        # One command, stated once, at the path the script now lives at.
+        command = "python scripts/search_plan.py advance"
         self.assertEqual(1, leaf.count(command))
+        self.assertIn("docs/search-plan-protocol.md", leaf)
         self.assertNotIn("operation registry", normalized(leaf))
+
+    def test_the_campaign_stub_names_the_planner_it_selects_through(self):
+        """The one caller of the search planner is the loop body, and it
+        names the script by bare filename -- the path moves when the script
+        does, and a template that named the path would be stale the day it
+        moved."""
+        campaign = read(EVOLVE / "02-campaign.md")
+        self.assertIn("search_plan.py advance", campaign)
+        self.assertEqual("orch-loop", EXECUTOR_RE.search(campaign).group(1))
 
     def test_planner_is_evaluation_mode_agnostic(self):
         protocol = read(SEARCH_PROTOCOL)
@@ -481,12 +517,12 @@ class TestArchitecture(unittest.TestCase):
         self.assertNotIn('"benchmark_revision"', script)
 
     def test_known_wrong_ownership_fixtures_are_rejected(self):
-        evolve = read(EVOLVE)
+        evolve = template_text(EVOLVE)
         generation = read(EVOLVE_GENERATION)
-        tournament = read(TOURNAMENT)
-        leaf = read(SEARCH_SKILL)
+        tournament = template_text(TOURNAMENT)
+        leaf = read(SEARCH_SCRIPT)
 
-        closing = evolve + "\n- closing — a fresh `orch-judge` wrapper.\n"
+        closing = evolve + "\n---\nid: 04-closing\nexecutor: orch-verify\n---\n"
         self.assertIn(
             "closing-wrapper",
             architecture_errors(closing, generation, tournament, leaf),
@@ -501,8 +537,13 @@ class TestArchitecture(unittest.TestCase):
             "leaf-call",
             architecture_errors(evolve, generation, tournament, extra_leaf_call),
         )
+        readmitted_panel = generation + "\nScore the set through `orch-panel`.\n"
+        self.assertIn(
+            "judge-owner",
+            architecture_errors(evolve, readmitted_panel, tournament, leaf),
+        )
 
-        unresolved = evolve.replace("`orch-verify`", "Verify", 1)
+        unresolved = evolve.replace("executor: orch-verify", "executor: orch-critique", 1)
         self.assertIn(
             "eligibility-unit",
             architecture_errors(unresolved, generation, tournament, leaf),
@@ -1346,9 +1387,9 @@ class TestVisibilityAndSelfTarget(unittest.TestCase):
         self.assertNotEqual(original["plan"]["identity"], renamed["plan"]["identity"])
 
     def test_recursive_target_authority_and_activation_have_failure_controls(self):
-        evolve = read(EVOLVE)
+        evolve = template_text(EVOLVE)
         generation = read(EVOLVE_GENERATION)
-        tournament = read(TOURNAMENT)
+        tournament = template_text(TOURNAMENT)
         self.assertEqual([], recursive_target_errors(evolve, generation, tournament))
 
         controls = {

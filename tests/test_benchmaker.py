@@ -13,9 +13,14 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-# Demoted per contracts/composition.md: benchmaker is a named composition.
+# Demoted to a composition, then converted at P4 (DESIGN.md, amended 2026-08-16):
+# benchmaker is a template directory of ticket stubs, and the prose steps,
+# edges and invariants it used to state are those stubs' frontmatter.
 OLD_PACKAGE = ROOT / "skills" / "workflows" / "orch-benchmaker"
-SKILL = ROOT / "compositions" / "benchmaker.md"
+OLD_COMPOSITION = ROOT / "compositions" / "benchmaker.md"
+TEMPLATE = ROOT / "compositions" / "benchmaker"
+TEMPLATE_MANIFEST = TEMPLATE / "template.md"
+EVAL_DESIGN = ROOT / "skills" / "workflows" / "orch-eval-design" / "SKILL.md"
 PROTOCOL = ROOT / "compositions" / "references" / "benchmaker-protocol.md"
 MANIFEST_CONTRACT = ROOT / "compositions" / "references" / "benchmaker-manifest.md"
 PACKAGE = ROOT / "benchmarks" / "benchmaker"
@@ -93,7 +98,74 @@ ATTACK_OUTCOMES = ("SUCCEEDED", "FAILED", "BLOCKED")
 # (`benchmaker-protocol.md`, "Two measurement passes, not one"), so the count
 # the step declares is three and the stages it names are these.
 AUDIT_STAGES = ("reference audit", "attack pass", "measurement")
-COUNT_WORDS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five"}
+# The chain the six stubs are, in id order: each stub's executor, and the
+# predecessor its `depends_on` names. What no other check reads is which skill
+# a step binds -- tickets.py grades the graph's shape, not its content -- and a
+# step rebound to a different executor is a different composition.
+STUB_CHAIN = (
+    ("00-acquire", "orch-decompose", []),
+    ("01-design", "orch-eval-design", ["00-acquire"]),
+    ("02-materialize", "orch-decompose", ["01-design"]),
+    ("03-qualify", "orch-decompose", ["02-materialize"]),
+    ("04-audit", "orch-critique", ["03-qualify"]),
+    ("05-measure", "orch-verify", ["04-audit"]),
+)
+TERMINAL_STUB = "05-measure"
+# Every invariant the composition stated as prose, on the stub it binds and on
+# no other. Distributed rather than repeated: a Never clause on all six stubs
+# is a clause no stub is accountable for.
+STUB_INVARIANTS = {
+    "00-acquire": ("multiply the caller bound",),
+    "01-design": (
+        "move the declared coverage floor with the target's execution cost",
+        "buy speed from the coverage floor, the oracle, or the horizon the "
+        "outcome needs",
+        "buy difficulty from filtering on a candidate's scores",
+    ),
+    "02-materialize": ("mutate the target", "generate a candidate"),
+    "03-qualify": ("let builders qualify their own work",),
+    "05-measure": (
+        "compare candidates",
+        "promote or activate anything",
+        "call evolve",
+    ),
+}
+# The one invariant two stubs are each accountable for. `04-audit`'s attack
+# pass produces candidate-shaped artifacts, so the clause that binds the
+# materializer binds the auditor too, and the rule below reads this instead of
+# demanding a single carrier. Anything not named here still rides one stub.
+SHARED_INVARIANTS = {"generate a candidate": {"02-materialize", "04-audit"}}
+# The done check, verbatim, which is the terminal stub's first criterion.
+DONE_CHECK = (
+    "the manifest's qualification verdict set covers every component but its "
+    "own — covered PASS on every required criterion, gaps explicit "
+    "(`[]` when none)"
+)
+# What the protocol stopped stating at P4: the phrase it dropped, the file the
+# law went to, and what that file says instead. A triple rather than a
+# deletion list, because a phrase deleted from the protocol and from the tree
+# at once is a lost law, not a trim -- and the two halves fail separately.
+MOVED_OUT_OF_PROTOCOL = (
+    ("partition one caller bound", TEMPLATE / "00-acquire.md", "an allocation from it"),
+    ("Internal call carriage", ROOT / "contracts" / "work-item.md", "## Dispatch"),
+    ("coverage floor never moves", EVAL_DESIGN, "coverage floor is not tradable"),
+    (
+        "Materialize the selected case specifications",
+        TEMPLATE / "02-materialize.md",
+        "select, add, remove, rank, rewrite or substitute a case",
+    ),
+    (
+        "Builders never qualify",
+        TEMPLATE / "03-qualify.md",
+        "let builders qualify their own work",
+    ),
+    (
+        "Record the qualified result in the package's",
+        TEMPLATE / "05-measure.md",
+        "recording the qualified result in the package's manifest",
+    ),
+)
+PROTOCOL_LINE_CEILING = 160
 # Package-relative, so the deletion check and the by-path grep below both
 # derive from this one list rather than re-listing it.
 RETIRED_SEAL_PATHS = ("benchmark.lock", "SEALS.md", "tools/seal_set.py")
@@ -116,8 +188,6 @@ DATED_RECORDS = {
         "the 2026-08-07 independent-qualifier verdicts, captured observations",
     "benchmarks/benchmaker/provenance/synthesis.md":
         "the frozen claim register — every case's provenance resolves by row",
-    "docs/benchmaker-redesign-spec.md":
-        "the dated design record; its revision sections describe the removal",
 }
 # Three sites under `cases/` where a retired word is a *target's* own
 # vocabulary rather than the library's law. Rewording them to dodge a grep
@@ -397,156 +467,137 @@ def write_json(path: Path, value: dict) -> None:
     )
 
 
+def ticket_law():
+    """`scripts/tickets.py`, the owner of ticket and template shape. A stub's
+    frontmatter carries list values, which `split_frontmatter` above cannot
+    read: it splits every line on ':' and a list item has none."""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from scripts import tickets
+
+    return tickets
+
+
 class TestCanonicalBenchmaker(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.skill_text = SKILL.read_text(encoding="utf-8")
-        cls.fields, cls.body = split_frontmatter(cls.skill_text)
+        cls.fields, _ = split_frontmatter(
+            TEMPLATE_MANIFEST.read_text(encoding="utf-8")
+        )
+        cls.stubs = {
+            path.stem: path.read_text(encoding="utf-8")
+            for path in sorted(TEMPLATE.glob("*.md"))
+            if path.name != TEMPLATE_MANIFEST.name
+        }
+        tickets = ticket_law()
+        cls.stub_fields = {
+            stub: tickets._parse_frontmatter(text)
+            for stub, text in cls.stubs.items()
+        }
         cls.protocol = PROTOCOL.read_text(encoding="utf-8")
         cls.manifest_contract = MANIFEST_CONTRACT.read_text(encoding="utf-8")
 
-    def test_composition_anatomy_calls_and_delegation_mapping(self):
+    def test_template_manifest_declares_the_shape_instantiation_fills(self):
         self.assertEqual("benchmaker", self.fields["name"])
-        # Manual-only survives the demotion as entry: named.
+        # Manual-only survives both conversions as entry: named.
         self.assertEqual("named", self.fields["entry"])
         self.assertLessEqual(len(self.fields["description"]), 140)
-        self.assertLess(self.body.index("Require:"), self.body.index("Never:"))
-        self.assertLess(self.body.index("Never:"), self.body.index("Return:"))
-        calls = re.findall(r"`(orch-[a-z0-9-]+)`", self.body)
+        declared = self.fields["placeholders"]
         self.assertEqual(
-            ["orch-spec", "orch-deliver", "orch-eval-design"], calls
+            "[target, outcome, sources, rigor, bound, pack, package]", declared
         )
+        # Every declared placeholder reaches a stub. `validate.py` warns here;
+        # a warning is not what a caller who filled a dead `--set` needs.
+        used = set(re.findall(r"\{\{([a-z_]+)\}\}", "".join(self.stubs.values())))
         self.assertEqual(
-            1,
-            self.body.count(
-                "[internal-call carrier rule]"
-                "(references/benchmaker-protocol.md#internal-call-carriage)"
-            ),
-        )
-        self.assertGreaterEqual(
-            self.body.count("[manifest](references/benchmaker-manifest.md)"), 1
+            {item.strip() for item in declared[1:-1].split(",")}, used
         )
 
-        require = squashed(
-            self.body[
-                self.body.index("Require:") : self.body.index(
-                    "\n\n", self.body.index("Require:")
-                )
-            ]
+    def test_every_stub_is_a_ticket_this_template_can_instantiate(self):
+        """The shape law is `scripts/tickets.py`'s, and it is the same law
+        `instantiate` applies -- so a stub this passes is a ticket the moment
+        a run fills it, and no stub in this template needs its own spelling of
+        the contract."""
+        tickets = ticket_law()
+        self.assertEqual(
+            [], [(str(path), message) for path, message in tickets.template_defects(TEMPLATE)]
         )
-        for packet_field in (
-            "objective",
-            "inputs",
-            "authority",
-            "bounds",
-            "return_contract",
-            "reply_to",
-        ):
-            self.assertIn(f"`{packet_field}`", require)
-        for mapped_value in (
-            "target identity",
-            "intended observable outcome",
-            "evidence identities",
-            "source policy",
-            "judgment permission",
-            "benchmark write scope",
-            "excluded actions",
-            "one caller bound",
-            "status",
-            # There is no benchmark identity to return; a benchmark's version
-            # is its git revision. The case set's mirror of this packet line
-            # (`cs-run-conduct/evidence/packet.md`) says the same words.
-            "the benchmark's revision",
-            "qualification",
-            "gaps",
-            "bounds spent",
-            "changed artifacts",
-            "literal return address",
-        ):
-            self.assertIn(mapped_value, require)
 
-    def test_ordered_stages_return_partial_evidence_and_do_not_evolve(self):
-        body = squashed(self.body)
-        stages = (
-            "freeze one evidence-acquisition spec",
-            "`orch-deliver` of that frozen routing-stamped spec",
-            "design — `orch-eval-design`",
-            "materialize the selected case specifications",
-            "qualify the assembled benchmark",
+    def test_the_chain_binds_one_executor_per_step_and_one_terminal(self):
+        self.assertEqual(
+            [stub for stub, _, _ in STUB_CHAIN], sorted(self.stub_fields)
         )
-        positions = [body.index(stage) for stage in stages]
-        self.assertEqual(sorted(positions), positions)
-        self.assertIn("one applicable pack per internal spec", body)
-        self.assertIn("partial evidence", body)
+        for stub, executor, depends_on in STUB_CHAIN:
+            with self.subTest(stub=stub):
+                self.assertEqual(executor, self.stub_fields[stub]["executor"])
+                self.assertEqual(depends_on, self.stub_fields[stub]["depends_on"])
+        depended = {
+            edge
+            for fields in self.stub_fields.values()
+            for edge in fields["depends_on"]
+        }
+        self.assertEqual({TERMINAL_STUB}, set(self.stub_fields) - depended)
+        # The terminal stub's completion test is the composition's done check,
+        # verbatim: that is what makes the template's promise checkable at all.
+        self.assertIn(
+            DONE_CHECK,
+            squashed(markdown_section(self.stubs[TERMINAL_STUB], "Completion test")),
+        )
 
-        # Every prohibition that is not seal-derived survives; only "revise a
-        # benchmark in place" goes, and the qualification discipline stays.
-        never = body[body.index("Never:") : body.index("Return:")]
-        for forbidden_action in (
-            "mutate the target",
-            "generate a candidate",
-            "compare candidates",
-            "promote",
-            "activate",
-            "call Evolve",
-            "let builders qualify their own work",
-            "multiply the caller bound",
-        ):
-            self.assertIn(forbidden_action, never)
-        self.assertNotIn("in place", never)
+    def test_each_invariant_rides_the_stub_it_binds_and_no_other(self):
+        for stub, clauses in STUB_INVARIANTS.items():
+            for clause in clauses:
+                with self.subTest(stub=stub, clause=clause):
+                    carriers = {
+                        other
+                        for other, fields in self.stub_fields.items()
+                        if any(
+                            clause in action
+                            for action in fields.get("excluded_actions", [])
+                        )
+                    }
+                    self.assertEqual(
+                        SHARED_INVARIANTS.get(clause, {stub}), carriers
+                    )
 
-        returned = body[body.index("Return:") :]
-        self.assertIn("the closing result addresses `reply_to`", returned)
-        for field in (
-            "status",
-            # There is no benchmark identity to return; a benchmark's version
-            # is its git revision. The case set's mirror of this packet line
-            # (`cs-run-conduct/evidence/packet.md`) says the same words.
-            "the benchmark's revision",
-            "qualification",
-            "gaps",
-            "bounds spent",
-            "changed artifacts",
-        ):
-            self.assertIn(field, returned)
-        self.assertIn("partial evidence", returned)
+    def test_the_stages_that_stop_the_chain_say_what_they_return(self):
+        """Acquisition and design are the two stages that can end the run
+        early. Both return what they have rather than closing over it, and a
+        stub that dropped the clause would look complete while stopping."""
+        for stub in ("00-acquire", "01-design"):
+            with self.subTest(stub=stub):
+                self.assertIn("partial evidence", squashed(self.stubs[stub]))
+        self.assertIn(
+            "partial evidence",
+            squashed(markdown_section(self.stubs[TERMINAL_STUB], "Return fields")),
+        )
 
-    def test_protocol_is_domain_blind_single_pack_and_single_bound(self):
+    def test_protocol_is_domain_blind_and_keeps_only_unowned_craft(self):
+        """What survives is benchmark craft for a domain with no pack. The
+        restatements went to the owner each already had: the packet to the
+        work-item contract, the coverage floor to `orch-eval-design`, and the
+        stage rules to the stub that carries out the stage."""
         headings = re.findall(r"^## (.+)$", self.protocol, re.MULTILINE)
         self.assertEqual(
             [
-                "Intake and bound",
-                "Internal call carriage",
-                "Evidence acquisition",
-                "Evaluation design",
-                "Execution tier and difficulty",
-                "Materialization",
+                "Licensed oracle material",
                 "Qualification",
                 "Audit and measurement",
                 "Scoring",
-                "Manifest and return",
             ],
             headings,
         )
-        packed = squashed(self.protocol)
-        for phrase in (
-            "partition one caller bound",
-            "evidence, design, materialization, qualification, and the audit "
-            "and measurement stages",
-            "total cannot exceed",
-            "unused allocation",
-            "Never copy the caller bound",
-            "one applicable pack",
-            "exactly one pack per internal spec",
-            "chain single-pack runs through frozen evidence identities",
-            "supplied qualified synthesis",
-            "source policy",
-            "expected execution cost",
-        ):
-            self.assertIn(phrase, packed)
+        self.assertLessEqual(
+            len(self.protocol.splitlines()), PROTOCOL_LINE_CEILING
+        )
+        for phrase, owner, owner_phrase in MOVED_OUT_OF_PROTOCOL:
+            with self.subTest(phrase=phrase):
+                self.assertNotIn(phrase, squashed(self.protocol))
+                self.assertIn(
+                    owner_phrase, squashed(owner.read_text(encoding="utf-8"))
+                )
         self.assertIn(
-            "BenchMaker neither fixes the evaluation boundary nor selects",
-            packed,
+            "licensed oracle material", squashed(self.protocol)
         )
 
         known_pack_names = [
@@ -556,33 +607,6 @@ class TestCanonicalBenchmaker(unittest.TestCase):
             self.assertNotIn(pack_name, self.protocol)
         for forbidden_owner in ("`orch-bench`", "`orch-evolve`"):
             self.assertNotIn(forbidden_owner, self.protocol)
-
-    def test_internal_call_carriage_rule_maps_every_packet(self):
-        carriage = squashed(
-            markdown_section(self.protocol, "Internal call carriage")
-        )
-        self.assertIn(
-            "Every internal Spec, Deliver, and evaluation-design invocation",
-            carriage,
-        )
-        for packet_field in (
-            "objective",
-            "inputs",
-            "authority",
-            "bounds",
-            "return_contract",
-            "reply_to",
-        ):
-            self.assertIn(f"`{packet_field}`", carriage)
-        for invariant in (
-            "one applicable pack",
-            "stage allocation",
-            "never the caller bound",
-            "callee's canonical Return",
-            "closing recipient",
-            "Qualification authority is disjoint from builders",
-        ):
-            self.assertIn(invariant, carriage)
 
     def test_protocol_qualifies_required_failures_and_protected_evidence(self):
         qualification = squashed(markdown_section(self.protocol, "Qualification"))
@@ -607,28 +631,22 @@ class TestCanonicalBenchmaker(unittest.TestCase):
             "UNVERIFIED",
         ):
             self.assertIn(policy, qualification)
-        self.assertIn("Builders never qualify", qualification)
 
-    def test_protocol_prices_speed_below_the_coverage_floor(self):
-        tier = squashed(markdown_section(self.protocol, "Execution tier and difficulty"))
-        # The coverage floor outranks cost, in both directions of the split.
-        self.assertIn("declared coverage floor never moves", tier)
-        self.assertIn("smallest tier", tier)
-        self.assertIn("suite ceiling rises", tier)
-        self.assertIn("raise that case's tier and record why; never drop the angle", tier)
-        # Speed and difficulty each name what they may not be bought from.
+    def test_the_coverage_floor_law_has_one_owner_and_one_carrier(self):
+        """`orch-eval-design` states the law -- it is the skill that fixes
+        tiers -- and 01-design's excluded actions are what bind this
+        template's design step to it. Three owners was the finding; two
+        statements of one law would be the same finding again."""
+        owner = squashed(EVAL_DESIGN.read_text(encoding="utf-8"))
+        self.assertIn("The coverage floor is not tradable", owner)
         self.assertIn(
-            "Speed is bought from the probe, never from the coverage floor, "
-            "the oracle, or the horizon",
-            tier,
+            "Buy difficulty from horizon length, outcome specificity, and a "
+            "stricter oracle that stays correct",
+            owner,
         )
-        self.assertIn("Difficulty is built, never filtered", tier)
-        for forbidden in (
-            "Never select or retain a case by target failure",
-            "never remove one for low discrimination",
-            "never revise the design from a candidate's scores",
-        ):
-            self.assertIn(forbidden, tier)
+        for phrase in ("coverage floor", "Difficulty is built", "execution tier"):
+            with self.subTest(phrase=phrase):
+                self.assertNotIn(phrase, self.protocol)
 
     def test_protocol_orders_and_bounds_the_three_audit_stages(self):
         stages = squashed(markdown_section(self.protocol, "Audit and measurement"))
@@ -883,33 +901,34 @@ class TestCanonicalBenchmaker(unittest.TestCase):
                     "the law scan read nothing under {}".format(tree),
                 )
 
-    def test_composition_runs_the_audit_stages_and_records_the_manifest(self):
-        body = squashed(self.body)
-        self.assertIn("- audit-and-measure —", body)
-        self.assertLess(body.index("- materialize —"), body.index("- qualify —"))
-        self.assertLess(body.index("- qualify —"), body.index("- audit-and-measure —"))
-        self.assertIn("materialize → qualify → audit-and-measure", body)
-        # The new seam carries an identity, as every other join does.
-        self.assertIn("the assembled case set is qualify's evidence", body)
-        self.assertIn("the qualified assembly is audit-and-measure's", body)
-        step = body[body.index("- audit-and-measure —") : body.index("Edges:")]
-        # The count the step declares equals the number of activities the same
-        # sentence names — counted off the text, never off a list this file
-        # holds, or a fourth activity could be named under a declared three and
-        # nothing here would see it. That was the baseline defect.
-        declaration = step[step.index("the protocol's") :]
-        listed = declaration[declaration.index(":") + 1 : declaration.index(" — ")]
-        activities = [activity.strip() for activity in listed.split(", then ")]
-        self.assertIn(f"the protocol's {COUNT_WORDS[len(activities)]} stages", step)
-        self.assertEqual(len(AUDIT_STAGES), len(activities))
-        # Named in the protocol's own execution order, which the step declares.
-        self.assertIn("stages in order", step)
-        for stage, activity in zip(AUDIT_STAGES, activities):
-            self.assertIn(stage, activity)
-        # Triage is the measurement stage's own first pass, never a fourth.
-        self.assertEqual([], re.findall(r"triage(?! pass)", step))
-        self.assertIn("Record the manifest after they close", body)
-        self.assertIn("declared coverage floor never moves", body)
+    def test_the_audit_and_measure_stages_are_split_across_two_stubs(self):
+        """The three stages the protocol orders sit in two stubs: the two that
+        repair or declare are `04-audit`'s, and the one that only records is
+        `05-measure`'s, behind it. Collapsing them into one stub would put the
+        recording pass in a context that may still repair, which is the
+        difficulty gate the protocol refuses."""
+        audit = squashed(self.stubs["04-audit"])
+        measure = squashed(self.stubs[TERMINAL_STUB])
+        for stage in AUDIT_STAGES[:2]:
+            with self.subTest(stage=stage):
+                self.assertIn(stage, audit)
+        self.assertIn("measurement pass", measure)
+        self.assertEqual(
+            ["04-audit"], self.stub_fields[TERMINAL_STUB]["depends_on"]
+        )
+        # 04-audit repairs or declares and renders no verdict; 05-measure
+        # records the manifest. Neither one does the other's job.
+        self.assertIn(
+            "render a pass/fail verdict on the benchmark",
+            self.stub_fields["04-audit"]["excluded_actions"],
+        )
+        self.assertIn("declared as a gap", audit)
+        # What recording-only means is the protocol's one statement of it; the
+        # stub carries the link, not a fifth copy of the rationale.
+        self.assertIn("benchmaker-protocol.md#measurement-pass", measure)
+        # Triage is the measurement stage's own first pass, never a fourth
+        # stage, so no stub may name it as one.
+        self.assertEqual([], re.findall(r"triage(?! pass| measurement)", audit))
 
 
 class TestBenchmarkFixture(unittest.TestCase):
@@ -1253,9 +1272,15 @@ class TestBenchmarkFixture(unittest.TestCase):
 
 class TestCanonicalSurface(unittest.TestCase):
     def test_canonical_owner_exists_and_stale_surfaces_are_absent(self):
-        for path in (SKILL, PROTOCOL, MANIFEST_CONTRACT):
+        for path in (TEMPLATE_MANIFEST, PROTOCOL, MANIFEST_CONTRACT):
             self.assertTrue(path.is_file(), f"missing canonical surface: {path}")
-        for path in (PROJECT_OWNER, PROJECT_PROTOCOL, CLAUDE_ADAPTER, OLD_PACKAGE):
+        for path in (
+            PROJECT_OWNER,
+            PROJECT_PROTOCOL,
+            CLAUDE_ADAPTER,
+            OLD_PACKAGE,
+            OLD_COMPOSITION,
+        ):
             self.assertFalse(path.exists(), f"stale surface: {path}")
 
         for skill_path in (ROOT / "skills").rglob("SKILL.md"):

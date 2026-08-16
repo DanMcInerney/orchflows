@@ -14,11 +14,22 @@ Run every oracle not already covered by a prior entry whose `covers`
 are unchanged at the fixed result, per
 [rules/verification.md](../../../rules/verification.md) §7. Prefer the
 named external check over judgment wherever both exist. Render judged
-criteria per §6, fresh from the spec. Cite what each oracle
-actually produced; a verdict without evidence is UNVERIFIED.
+criteria per §6, fresh from the spec. Fill each verdict's `evidence`
+field on [verdict.md](../../../contracts/verdict.md)'s terms.
+
+Where the criteria carry a score scale, score each separately before
+any overall number, anchored to the evidence its oracle produced; a
+score is never interpolated across criteria. Blindness is a
+property of `inputs`, never of this skill: a packet whose inputs carry
+one candidate, its evidence, and the criteria is already a blind lane —
+so never reach past them for a sibling candidate, a sibling's score, or
+the candidate's provenance.
 
 Never: edit the target; skip a criterion silently; upgrade UNVERIFIED to
-PASS by inference; reuse an entry whose `covers` has changed.
+PASS by inference; reuse an entry whose `covers` has changed; let one
+criterion bleed into another; score authorship or effort.
 
 Return: one verdict entry per criterion and the overall verdict stating
-its weakest oracle_class.
+its weakest oracle_class — or a score card, those entries with their
+scores plus the overall score and the confidence it deserves, when the
+criteria carry a scale.

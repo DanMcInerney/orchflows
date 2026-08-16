@@ -1,18 +1,31 @@
 #!/usr/bin/env python3
 """Friction logger. Stdlib-only, cross-platform (Windows + POSIX).
 
-Reliability bar: this script must NEVER block, prompt, raise, or exit
-non-zero, no matter what. Every code path funnels through ``main``'s
-broad ``except Exception`` so an internal failure is silent and the
-process still exits 0. Prints exactly one line, ``friction logged``, on
-success; nothing on failure.
+Reliability bar: this script must NEVER block, prompt, or raise, and it
+exits non-zero for exactly one reason -- a ``--category`` outside
+``CATEGORIES``, refused at parse before anything is written. Every other
+code path funnels through ``main``'s broad ``except Exception`` so an
+internal failure is silent and the process still exits 0. Prints exactly
+one line, ``friction logged``, on success; nothing on failure; the
+refusal, naming the set, on stderr.
+
+The one refusal is not a retreat from the bar, it serves it: a
+mis-spelled category is the only malformed call that would otherwise
+*succeed*, landing an entry keyed to a cluster ``rules/improvement.md``
+§4 can group on nothing. Refusing costs the caller one corrected retry;
+accepting costs a cycle of self-improvement the entry it was logged for.
+The set is this file's, and the installed logger's usage in
+``templates/host-block.md`` is its one copy.
 
 The one wait it ever takes is the append lock's retry budget: nothing at
 all on POSIX, and on a contended Windows append a bounded half second
 that ends in the write either way. See ``_acquire_append_lock``.
 
 Usage:
-    python friction.py "<observed>" "<expected>" [--category C]
+    python friction.py "<observed>" "<expected>"
+        [--category repeated-attempts | missing-input | missing-tool |
+                    missing-doc | contract-gap | tool-failure |
+                    surprising-output | workaround | misrouting]
         [--skill S] [--ticket T] [--run R]
 
 Log location: ``<sink>/friction/<YYYY-MM>.jsonl``, where the sink is the
@@ -44,6 +57,24 @@ FLAG_MAP = {
     "--ticket": "ticket",
     "--run": "run",
 }
+# The closed set rules/improvement.md §1 names without enumerating: this
+# file owns it, the host block's usage line is the one copy an agent
+# reads, and a call naming anything else is refused rather than filed.
+CATEGORIES = (
+    "repeated-attempts",
+    "missing-input",
+    "missing-tool",
+    "missing-doc",
+    "contract-gap",
+    "tool-failure",
+    "surprising-output",
+    "workaround",
+    "misrouting",
+)
+# The one non-zero exit, kept off 0 and off 1: 2 is the usage-error code
+# argparse itself uses, so a caller reading exit codes rather than stderr
+# still reads "you called it wrong" and not "the log failed".
+USAGE_EXIT = 2
 SESSION_ENV_VARS = (
     "CLAUDE_SESSION_ID",
     "CLAUDE_CODE_SESSION_ID",
@@ -61,6 +92,11 @@ APPEND_LOCK_RETRY_SECONDS = 0.01
 SOURCE_RUN = "run"
 SOURCE_CWD = "cwd"
 SOURCE_NONE = "none"
+
+
+class _UsageError(Exception):
+    """A call this logger refuses. Raised before any write, and the only
+    exception ``main`` lets past its broad swallow."""
 
 
 def _parse_args(argv):
@@ -347,11 +383,29 @@ def _append_line(path: Path, line: str) -> None:
                     pass
 
 
+def _check_category(options):
+    """Raise ``_UsageError`` for a ``--category`` outside the set.
+
+    An omitted flag is not a bad one: it files as ``uncategorized``,
+    which the stream already knows how to read.
+    """
+
+    category = options.get("category")
+    if category is None or category in CATEGORIES:
+        return
+    raise _UsageError(
+        "friction.py: unknown --category {0!r}; the closed set is: {1}".format(
+            category, ", ".join(CATEGORIES)
+        )
+    )
+
+
 def _run(argv):
     parsed = _parse_args(argv)
     if parsed is None:
         return False
     observed, expected, options = parsed
+    _check_category(options)
     now = datetime.now(timezone.utc)
     entry = _build_entry(observed, expected, options, now)
     path = _target_path(now)
@@ -365,6 +419,9 @@ def main(argv=None):
     try:
         if _run(sys.argv[1:] if argv is None else argv):
             print("friction logged")
+    except _UsageError as exc:
+        print(str(exc), file=sys.stderr)
+        return USAGE_EXIT
     except Exception:
         pass
     return 0

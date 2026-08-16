@@ -1,0 +1,212 @@
+[
+  {
+    "id": "answer-write-scope",
+    "prompt": "what does write_scope mean in a ticket?",
+    "expected": "answer",
+    "note": "A definition the contract already in context settles; nothing is changed and nothing has failed.",
+    "distractor": false
+  },
+  {
+    "id": "answer-oracle-class",
+    "prompt": "what's the difference between oracle and oracle_class in a completion test?",
+    "expected": "answer",
+    "note": "Two named fields of one contract; the session reads and answers.",
+    "distractor": false
+  },
+  {
+    "id": "answer-frontier-vs-loop",
+    "prompt": "when do I use orch-frontier instead of orch-loop?",
+    "expected": "answer",
+    "note": "Names two engines but asks about them; a question about a skill is not a request to run it.",
+    "distractor": false
+  },
+  {
+    "id": "answer-project-scope",
+    "prompt": "does a project-scope install copy the library, or does it borrow the user one?",
+    "expected": "answer",
+    "note": "Settled by install.py's own docstring and the host block; no change requested.",
+    "distractor": false
+  },
+  {
+    "id": "answer-where-state-lives",
+    "prompt": "where do tickets and run state actually live on disk?",
+    "expected": "answer",
+    "note": "The host block names the sink; the answer is a path, not a change.",
+    "distractor": false
+  },
+  {
+    "id": "answer-lure-worklog",
+    "prompt": "what does the worklog view show for a run?",
+    "expected": "answer",
+    "note": "Distractor: 'worklog' was a skill and is now a rendered view; the prompt still only asks what it shows.",
+    "distractor": true
+  },
+  {
+    "id": "answer-lure-triage",
+    "prompt": "what does triage mean in this repo's vocabulary?",
+    "expected": "answer",
+    "note": "Distractor: 'triage' names a workflow, but the prompt asks for the term's meaning.",
+    "distractor": true
+  },
+  {
+    "id": "ticket-ui-json-flag",
+    "prompt": "add a --json flag to scripts/ui.py",
+    "expected": "ticket",
+    "note": "A bounded change to one file with an obvious oracle; one executor meets it.",
+    "distractor": false
+  },
+  {
+    "id": "ticket-friction-quiet",
+    "prompt": "add a --quiet flag to scripts/friction.py so it stops printing the confirmation line",
+    "expected": "ticket",
+    "note": "Bounded, single-file, testable; no failure to diagnose.",
+    "distractor": false
+  },
+  {
+    "id": "ticket-vocabulary-entry",
+    "prompt": "add a docs/vocabulary.md entry for 'terminal ticket'",
+    "expected": "ticket",
+    "note": "A documentation change with a named home; still one ticket.",
+    "distractor": false
+  },
+  {
+    "id": "ticket-refusal-test",
+    "prompt": "write a unit test proving tickets.py refuses a status that isn't in the enum",
+    "expected": "ticket",
+    "note": "A test to add, not a failure to explain; one executor, one check.",
+    "distractor": false
+  },
+  {
+    "id": "ticket-readme-drift",
+    "prompt": "the README still describes the old install steps -- bring it in line with install.py",
+    "expected": "ticket",
+    "note": "Known cause, bounded edit; nothing to diagnose.",
+    "distractor": false
+  },
+  {
+    "id": "ticket-lure-review",
+    "prompt": "review scripts/state_root.py and delete the dead branches you find",
+    "expected": "ticket",
+    "note": "Distractor: 'review' is a lens name, but the deliverable is a bounded code change.",
+    "distractor": true
+  },
+  {
+    "id": "ticket-lure-worklog",
+    "prompt": "add a tickets.py worklog subcommand that renders the view",
+    "expected": "ticket",
+    "note": "Distractor: 'worklog' again, this time as a feature to build in one file.",
+    "distractor": true
+  },
+  {
+    "id": "fix-flaky-ui-test",
+    "prompt": "test_ui is flaky on CI, sometimes red",
+    "expected": "fix",
+    "note": "A failure whose cause is unknown -- the canonical fix route.",
+    "distractor": false
+  },
+  {
+    "id": "fix-dry-run-unicode",
+    "prompt": "install.py --dry-run blows up with a UnicodeDecodeError on my Windows box",
+    "expected": "fix",
+    "note": "Reproducible failure, cause unproven; diagnosis precedes the change.",
+    "distractor": false
+  },
+  {
+    "id": "fix-ready-empty",
+    "prompt": "tickets.py ready prints nothing even though two tickets are open",
+    "expected": "fix",
+    "note": "Wrong observable behavior with no known cause.",
+    "distractor": false
+  },
+  {
+    "id": "fix-suite-hangs",
+    "prompt": "the suite has been hanging on tests/test_live_harnesses.py since yesterday and I don't know why",
+    "expected": "fix",
+    "note": "Explicitly unknown cause; the prompt says so.",
+    "distractor": false
+  },
+  {
+    "id": "fix-lure-diagnose",
+    "prompt": "diagnose why validate.py reports a duplicate that isn't there",
+    "expected": "fix",
+    "note": "Distractor: 'diagnose' was a skill name; the route is the fix template, not a named skill.",
+    "distractor": true
+  },
+  {
+    "id": "fix-lure-triage",
+    "prompt": "triage this for me: the by-name index is missing orch-verify after a reinstall",
+    "expected": "fix",
+    "note": "Distractor: 'triage' as a verb over a single unexplained failure.",
+    "distractor": true
+  },
+  {
+    "id": "build-friction-summary-skill",
+    "prompt": "use orch-build to write a new orchflows skill that summarizes a run's friction entries",
+    "expected": "build",
+    "note": "Names orch-build outright, which is the only thing that makes build a route: the host block routes an unnamed request to answer, ticket or fix.",
+    "distractor": false
+  },
+  {
+    "id": "build-amend-tdd",
+    "prompt": "with orch-build, amend orch-tdd so it names its craft reference explicitly",
+    "expected": "build",
+    "note": "Named again, and an amendment rather than a new item: naming is what decides the route, not what the change is to.",
+    "distractor": false
+  },
+  {
+    "id": "build-migration-pack",
+    "prompt": "create a new domain pack for database-migration deliverables",
+    "expected": "ticket",
+    "note": "A pack is a library item, but the prompt names nothing: under templates/host-block.md an unnamed request routes to a ticket, whose executor is orch-decompose when one executor cannot meet it. Expecting build here measured the benchmark's own invention.",
+    "distractor": false
+  },
+  {
+    "id": "build-project-custom-skill",
+    "prompt": "make a project-scope custom skill for our deploy checklist",
+    "expected": "ticket",
+    "note": "Same: orch-build owns the scope law, and the block still routes an unnamed request to a ticket. What the ticket's executor reaches for is the ticket's business.",
+    "distractor": false
+  },
+  {
+    "id": "build-benchmark-contract",
+    "prompt": "add a new contract for benchmark manifests under contracts/",
+    "expected": "ticket",
+    "note": "A T0 addition and unnamed, so a ticket. This is the pair to the two build cases above: same kind of work, different route, because one names orch-build and the other does not.",
+    "distractor": false
+  },
+  {
+    "id": "named-evolve",
+    "prompt": "run evolve on orch-tdd",
+    "expected": "named:evolve",
+    "note": "Named outright; nothing else may substitute for it.",
+    "distractor": false
+  },
+  {
+    "id": "named-benchmaker",
+    "prompt": "run benchmaker for the code pack",
+    "expected": "named:benchmaker",
+    "note": "Named outright.",
+    "distractor": false
+  },
+  {
+    "id": "named-renovate",
+    "prompt": "run renovate on scripts/",
+    "expected": "named:renovate",
+    "note": "Named outright, and a routed lane would happily swallow it as a ticket.",
+    "distractor": false
+  },
+  {
+    "id": "named-drift-canary",
+    "prompt": "run drift-canary against the new worker model binding",
+    "expected": "named:drift-canary",
+    "note": "Named outright; a hyphenated name the four-adapter install must still resolve.",
+    "distractor": false
+  },
+  {
+    "id": "named-skill-tournament",
+    "prompt": "run skill-tournament on orch-critique",
+    "expected": "named:skill-tournament",
+    "note": "Named outright; resolves at by-name/ when no adapter carries it.",
+    "distractor": false
+  }
+]

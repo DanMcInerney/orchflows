@@ -150,6 +150,67 @@ def add_worktree(main: Path, branch: str, path: Path) -> Path:
 
 
 @unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
+class TestCheckDisambiguatesItsRevisionRanges(unittest.TestCase):
+    """A revision range is not a filename, and git only knows that if it is
+    told. `git diff A...B` with no `--` makes git stat `A...B` as a path
+    before settling it as a range; on this host a long absolute revision in
+    the range came back `fatal: ... Filename too long` and the whole grade
+    died on a name nobody meant as a file. `--` after the range settles it."""
+
+    def test_every_range_is_terminated_before_the_pathspec(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            make_ticket(
+                run_dir, "T1",
+                extra=((workspace.ISOLATION_KEY, "required"),
+                       (workspace.BRANCH_KEY, "wt-branch")),
+            )
+            calls = []
+            original = workspace._git
+
+            def recorded_git(*args):
+                # canned, not the real git: the point is the argv shape, and
+                # a real repository would have to be built up to two commits
+                # on two branches to reach the two calls under test
+                calls.append(args)
+                if args[:3] == ("rev-parse", "--verify", "--quiet"):
+                    return 0, ("tip\n" if args[3].startswith("wt-branch") else "basecommit\n"), ""
+                if args[:2] == ("rev-parse", "--abbrev-ref"):
+                    return 0, "main\n", ""
+                if args[0] == "merge-base":  # tip not in HEAD; base is in tip
+                    return (1 if args[3] == "HEAD" else 0), "", ""
+                if args[0] == "diff":
+                    return 0, "scratch/a.txt\n", ""
+                if args[0] == "rev-list":
+                    return 0, "1\n", ""
+                raise AssertionError(f"unexpected git call: {args}")
+
+            cwd = os.getcwd()
+            noise = io.StringIO()
+            try:
+                os.chdir(str(main))
+                workspace._git = recorded_git
+                with redirect_stdout(noise), redirect_stderr(noise):
+                    code = workspace.main(["check", "testrun", "T1", "--base", "some-base"])
+            finally:
+                os.chdir(cwd)
+                workspace._git = original
+
+            self.assertEqual(0, code, noise.getvalue())
+            ranged = [args for args in calls if any(".." in arg for arg in args)]
+            self.assertEqual(
+                [
+                    ("diff", "--name-only", "--no-renames", "basecommit...tip", "--"),
+                    ("rev-list", "--count", "basecommit..tip", "--"),
+                ],
+                ranged,
+            )
+            for args in ranged:
+                self.assertEqual("--", args[-1], args)
+
+
+@unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
 class TestStartRecordsWhatItObserved(unittest.TestCase):
     """Completion criterion 1: ``start`` records the branch and the baseline
     it observed, into the main-root ticket, creating no ``.orch/`` beside it."""
@@ -258,6 +319,82 @@ class TestStartFailureBehavior(unittest.TestCase):
 
     def test_a_dirty_path_with_a_quote_is_refused_by_name(self):
         self._refuses_dirty_name("it's.txt")
+
+    def _refuses_scope_entry(self, entry: str):
+        """A grant no machine can read is refused where it is still cheap.
+
+        `check` splits a diff's paths against these entries and reports what
+        falls outside them. An entry carrying a space or a parenthesis is
+        prose -- "scripts/ (tests only)", "docs and rules" -- and matches no
+        path at all, so every path the branch changed reads as a breach, or
+        the grant silently covers nothing and every change passes. Either way
+        the reading is wrong, and it is wrong at the join, hours after the
+        cut that could have fixed it. So `start`, which every isolated item
+        runs first, refuses it and names the contract that says a scope entry
+        is a path.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            ticket = make_ticket(run_dir, "T1", scope=("scratch", entry))
+            before = ticket.read_text(encoding="utf-8")
+            worktree = add_worktree(main, "wt-branch", tmp / "wt")
+
+            done = run_workspace(worktree, "start", "testrun", "T1")
+
+            self.assertEqual(1, done.returncode, done.stdout)
+            error = payload_of(done)["error"]
+            self.assertIn(entry, error)
+            self.assertIn("contracts/work-item.md", error)
+            self.assertEqual(before, ticket.read_text(encoding="utf-8"))
+
+    def test_a_scope_entry_carrying_a_space_is_refused_at_start(self):
+        self._refuses_scope_entry("scripts/ and tests/")
+
+    def test_a_scope_entry_carrying_a_parenthesis_is_refused_at_start(self):
+        self._refuses_scope_entry("scripts/(tests)")
+
+    def _accepts_scope_entry(self, entry_of):
+        """A space is prose only where there is no path by that name.
+
+        `C:\\Users\\Dan M\\...` and `/Users/Dan McInerney/...` are exactly
+        paths, and a refusal keyed to the character alone refuses the host
+        rather than the cut. The parenthesis stays refused: it is the shape
+        the prose entries this guard was written for actually carry.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            worktree = add_worktree(main, "wt-branch", tmp / "wt")
+            spaced = worktree / "a dir"
+            spaced.mkdir()
+            make_ticket(run_dir, "T1", scope=("scratch", entry_of(spaced)))
+
+            done = run_workspace(worktree, "start", "testrun", "T1")
+
+            self.assertEqual(0, done.returncode, done.stdout + done.stderr)
+
+    def test_a_relative_scope_entry_that_is_an_existing_spaced_path_is_kept(self):
+        self._accepts_scope_entry(lambda spaced: spaced.name)
+
+    def test_an_absolute_scope_entry_that_is_an_existing_spaced_path_is_kept(self):
+        self._accepts_scope_entry(lambda spaced: str(spaced))
+
+    def test_a_spaced_entry_that_is_no_path_is_still_refused(self):
+        self._refuses_scope_entry("scratch and tests/")
+
+    def test_a_bare_path_scope_is_recorded_as_before(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            make_ticket(run_dir, "T1", scope=("scripts/one.py", "tests/"))
+            worktree = add_worktree(main, "wt-branch", tmp / "wt")
+
+            done = run_workspace(worktree, "start", "testrun", "T1")
+
+            self.assertEqual(0, done.returncode, done.stdout + done.stderr)
 
     def test_a_lost_frontmatter_write_race_leaves_the_winner_in_place(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -374,16 +511,18 @@ class TestTicketsPayloadIsGradedNotItsExitStatus(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             main, run_dir = make_repo(tmp)
-            # `orch-task` is an engine, which tickets.py reports as an error
-            # inside the payload of an otherwise successful call
+            # A ticket file whose bytes are not UTF-8, which tickets.py
+            # reports as an error inside the payload of an otherwise
+            # successful call. It used to be `executor: orch-panel`, an engine
+            # — P4-3 deleted the two engines that were illegal executors and
+            # the prohibition with them, so this is the payload-error source
+            # that remains for a file `_locate` accepts. Which error it is has
+            # never been this test's subject; that `list` exits 0 carrying
+            # one, and that `workspace.py` grades the payload rather than the
+            # exit status, is.
             ticket = make_ticket(run_dir, "T1")
-            ticket.write_text(
-                ticket.read_text(encoding="utf-8").replace(
-                    "executor: orch-tdd", "executor: orch-task"
-                ),
-                encoding="utf-8",
-            )
-            before = ticket.read_text(encoding="utf-8")
+            ticket.write_bytes(b"---\nid: T1\nexecutor: \xff\xfe\n---\n")
+            before = ticket.read_bytes()
 
             listed = subprocess.run(
                 [sys.executable, str(TICKETS_PY), "list", "--run", "testrun"],
@@ -395,8 +534,8 @@ class TestTicketsPayloadIsGradedNotItsExitStatus(unittest.TestCase):
             done = run_workspace(main, "start", "testrun", "T1")
 
             self.assertEqual(1, done.returncode, done.stdout)
-            self.assertIn("engine", payload_of(done)["error"])
-            self.assertEqual(before, ticket.read_text(encoding="utf-8"))
+            self.assertIn("unreadable ticket", payload_of(done)["error"])
+            self.assertEqual(before, ticket.read_bytes())
 
 
 class TestScriptShape(unittest.TestCase):

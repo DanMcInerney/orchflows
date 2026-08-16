@@ -2,12 +2,14 @@
 """The orchflows compiler.
 
 Enforces package anatomy, frontmatter, call-graph acyclicity, pack
-signature completeness, T0 hash pins, the composition contract, the
-result-envelope lead, and owned-literal sync (budgets, envelope units,
-friction categories) against their rules/ and contracts/ owners, per
-AGENTS.md, ARCHITECTURE.md, rules/composition.md,
-contracts/composition.md, contracts/result.md, and
-contracts/pack-signature.md. Stdlib only, no network.
+signature completeness, T0 hash pins, the
+ticket-template contract (whose shape law is scripts/tickets.py's, read
+from there rather than restated), the result-envelope lead, and the
+duplication checks -- per pack cell and across tiers -- that replaced
+keeping copies in sync, per AGENTS.md, ARCHITECTURE.md,
+rules/composition.md, contracts/result.md,
+contracts/work-item.md, and contracts/pack-signature.md. Stdlib only, no
+network.
 
 Exit 0 clean. Exit 1 with one line per violation:
     ERROR|WARN <file>: <message>
@@ -49,7 +51,14 @@ PACK_SIGNATURE_CELLS = (
     "required_spec_fields",
     "craft",
 )
-CRAFT_CELLS_BY_POINTER = ("slicing", "lens", "oracle_policy", "craft")
+# The cells whose content is a whole reference file, so the duplication
+# linter compares what they point at rather than the pointer row. `lens`
+# is not among them: it binds a section of `craft`, not a file of its
+# own, and resolving it to craft.md would compare craft's content twice,
+# once under each cell name (REVIEW-2026-08-15
+# T7). Its row is compared as the text it is, which is three words and
+# so sits under CELL_CLAUSE_MIN_WORDS.
+CRAFT_CELLS_BY_POINTER = ("slicing", "oracle_policy", "craft")
 CRAFT_BUDGET = 60
 # Cross-pack cell linter. Both figures are normative: with autojunk off
 # at the ratio call below, the reported pair set is a function of them
@@ -99,15 +108,6 @@ MANDATED_FORM_RES = (
     re.compile(
         r"\b(?:deterministic|judged|evidence)\s+(?:pre-existing|authored-here)$"
     ),
-    # TestDependencyOrderedOverlap in tests/test_static_tree_invariants.py
-    # asserts this exact wording in
-    # orch-decompose's body and in both slicing cells that carry it: the
-    # duplication is the invariant, holding every pack to overlap along
-    # dependency order and off the old global-disjointness rule. A pack
-    # cannot state it in its own words without breaking that check.
-    re.compile(
-        r"a write scope overlapping only siblings it is dependency-ordered with"
-    ),
 )
 MD_LINK_RE = re.compile(r"\]\(([^)]+)\)")
 LOOP_TRIGGER_RE = re.compile(r"\biterat(?:e|es|ing)\b|\brepeat until\b", re.IGNORECASE)
@@ -117,19 +117,22 @@ TERMINAL_TERM_RE = re.compile(r"stalled|limited|exit|terminal", re.IGNORECASE)
 # --- Result envelope (contracts/result.md) ---------------------------
 #
 # The bound dispatchable units lead their Return: with the envelope --
-# status, result identity, verification. ENVELOPE_UNITS is an owned
-# literal checked against contracts/result.md's Binding paragraph by
-# validate_sync. Mechanized as a first-clause vocabulary lint, tolerant
+# status, result identity, verification. ENVELOPE_UNITS names the units
+# contracts/result.md's Binding paragraph binds. Nothing holds the two
+# equal any more: the check that did is deleted in P2, because a second
+# spelling kept equal to its owner is still a second spelling
+# (REVIEW-2026-08-15 T2). The residual risk is one-directional and small
+# -- a unit dropped from this list stops being checked rather than
+# silently passing a check it fails -- and the contract is hash-pinned, so
+# the paragraph cannot move without a supersession PR.
+# Mechanized as a first-clause vocabulary lint, tolerant
 # of prose ordering within that clause; a Return whose first clause
 # instead names the work-item carrier (the ticket) passes, because the
 # ticket's T0 shape carries all three fields -- rule 10's envelope-on-a-
-# named-T0-carrier form, the shape `orch-task` uses.
+# named-T0-carrier form.
 ENVELOPE_UNITS = (
-    "orch-deliver",
-    "orch-task",
     "orch-investigate",
     "orch-loop",
-    "orch-compose",
     "orch-frontier",
 )
 ENVELOPE_VOCAB_RES = (
@@ -145,23 +148,34 @@ ENVELOPE_VOCAB_RES = (
     )),
 )
 
-# --- Composition contract (contracts/composition.md) -----------------
+# --- Ticket templates (contracts/work-item.md, Template and stub) ----
 #
-# Every compositions/*.md is a normative, invocable workflow carrying
-# the contract's fields. A field counts as present when it appears as a
-# frontmatter key or as a line-leading label/heading in the body;
-# `invariants` also counts via a `Never:` block, which the contract
-# defines it as. Missing `invariants` or `done_check` is the contract's
-# admission-rejection sentence, an ERROR.
-COMPOSITION_ENTRY_VALUES = {"routed", "named", "scheduled"}
-COMPOSITION_REQUIRED_FIELDS = ("steps", "edges")
-COMPOSITION_ADMISSION_FIELDS = ("invariants", "done_check")
-COMPOSITION_BODY_FIELD_RES = {
-    "steps": re.compile(r"^(?:#{1,6}\s+)?\*{0,2}steps\*{0,2}\b:?", re.IGNORECASE | re.MULTILINE),
-    "edges": re.compile(r"^(?:#{1,6}\s+)?\*{0,2}edges\*{0,2}\b:?", re.IGNORECASE | re.MULTILINE),
-    "invariants": re.compile(r"^(?:#{1,6}\s+)?\*{0,2}invariants\*{0,2}\b:?", re.IGNORECASE | re.MULTILINE),
-    "done_check": re.compile(r"^(?:#{1,6}\s+)?\*{0,2}done[ _-]check\*{0,2}\b:?", re.IGNORECASE | re.MULTILINE),
-}
+# A template is a directory `compositions/<name>/` holding `template.md`
+# plus one ticket stub per other `*.md` file; a stub is a ticket per
+# contracts/work-item.md missing only `run`, `status` and `claimed_*`,
+# with `{{placeholder}}` where instantiation fills a value. These checks
+# are the admission the spec's enforcement clause names: a cyclic
+# template, a stub without an executor or a completion test, or a
+# template with no single terminal stub is rejected here. Since P4-3
+# this is the whole of composition admission: the `.md` step form and
+# its contract are deleted, so there is no second set of checks to keep
+# in step with these.
+#
+# What a stub *is* -- its required keys, its list fields, its sections and
+# their order, its criteria, its legal executors -- is not stated here.
+# `scripts/tickets.py` owns it, grades every issued ticket and every
+# instantiated stub against it, and reports it in its own words
+# (`template_defects`); validate_templates reads that and adds only what
+# needs the tree. A second statement of the same law is how a template the
+# compiler admits fails at instantiation, which is what the P1 gate found
+# across eight inputs and the executor enum.
+#
+# The manifest's name, the placeholder syntax and the `script:` prefix are
+# that script's too, imported from it below rather than spelled again here:
+# a second spelling of the placeholder syntax admitted `{{lens name}}` into
+# the tree and hid it from the manifest-balance check, because instantiation
+# refuses an unfilled one by a wider pattern than this file matched.
+TEMPLATE_ENTRY_VALUES = {"routed", "named"}
 
 # --- Carriage (rules/composition.md rule 10) -------------------------
 #
@@ -419,231 +433,23 @@ def _validate_pack_carriage(pkg: dict, by_name: dict, diag: Diagnostics) -> None
             )
 
 
-# --- Sync (spec criterion 3) ------------------------------------------
-#
-# Owned literals get checked against their owner, never restated as a
-# second source: BODY_BUDGET/DESCRIPTION_BUDGET against
-# rules/composition.md §5, ENVELOPE_UNITS against contracts/result.md's
-# Binding paragraph, the friction-category list in
-# templates/host-block.md and AGENTS.md against rules/improvement.md
-# rule 1's closed set, and the same two copies' friction-completion
-# clause against rule 1's sentence. The owner files are prose, so
-# parsing below anchors on enum/number tokens rather than sentence
-# shape, per the carriage checks above.
-SYNC_RULE_HEADER_RE = re.compile(r"^(\d+)\.\s", re.MULTILINE)
-SYNC_DESC_BUDGET_RE = re.compile(r"description.{0,15}?(\d+)\s*chars")
-SYNC_KIU_BUDGET_RE = re.compile(r"kernel,\s*instances,\s*and\s*utilities\s+(\d+)\s+lines")
-SYNC_EW_BUDGET_RE = re.compile(r"engines\s+and\s+workflows\s+(\d+)")
-SYNC_PACK_BUDGET_RE = re.compile(r"pack SKILL\.md\s+(\d+)")
-SYNC_CLOSED_SET_RE = re.compile(r"closed set\s*[–—]\s*(.*?)\s*[–—]", re.DOTALL)
-SYNC_CATEGORY_TOKEN_RE = re.compile(r"^[a-z]+(?:-[a-z]+)*$")
-SYNC_FLAG_CATEGORY_RE = re.compile(r"--category.{0,10}?\(([^)]*)\)", re.DOTALL)
-SYNC_FRICTION_CLAUSE_RE = re.compile(
-    r"Logging friction is part of completing.*?failed\s+silently\.", re.DOTALL
-)
-SYNC_CLAUSE_CONNECTOR_RE = re.compile(r"[:–—]")
-
-
-def _sync_extract_numbered_rule(text: str, number: int):
-    """The raw text of rule `number` in a `rules/*.md` flat numbered
-    list -- from just after its own 'N. ' line-start marker up to (not
-    including) the next rule's marker."""
-    matches = list(SYNC_RULE_HEADER_RE.finditer(text))
-    for i, m in enumerate(matches):
-        if int(m.group(1)) == number:
-            end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-            return text[m.end():end]
-    return None
-
-
-def _sync_validate_budgets(composition_text: str, diag: Diagnostics) -> None:
-    file_label = rel(ROOT / "tools" / "validate.py")
-    owner_label = rel(ROOT / "rules" / "composition.md")
-    rule5 = _sync_extract_numbered_rule(composition_text, 5)
-    if rule5 is None:
-        diag.error(owner_label, "could not locate rule 5 (Anatomy/body budgets) to check BODY_BUDGET and DESCRIPTION_BUDGET against")
-        return
-    norm = re.sub(r"\s+", " ", rule5)
-    matches = {
-        "description budget": SYNC_DESC_BUDGET_RE.search(norm),
-        "kernel/instances/utilities budget": SYNC_KIU_BUDGET_RE.search(norm),
-        "engines/workflows budget": SYNC_EW_BUDGET_RE.search(norm),
-        "pack budget": SYNC_PACK_BUDGET_RE.search(norm),
-    }
-    missing = [name for name, m in matches.items() if m is None]
-    if missing:
-        diag.error(owner_label, f"rule 5 prose does not state: {', '.join(missing)} -- validate_sync ungrounded")
-        return
-    owner_budgets = {
-        "kernel": int(matches["kernel/instances/utilities budget"].group(1)),
-        "instances": int(matches["kernel/instances/utilities budget"].group(1)),
-        "utilities": int(matches["kernel/instances/utilities budget"].group(1)),
-        "engines": int(matches["engines/workflows budget"].group(1)),
-        "workflows": int(matches["engines/workflows budget"].group(1)),
-        "pack": int(matches["pack budget"].group(1)),
-    }
-    for tier, expected in owner_budgets.items():
-        actual = BODY_BUDGET.get(tier)
-        if actual != expected:
-            diag.error(
-                file_label,
-                f"BODY_BUDGET[{tier!r}] = {actual} but rules/composition.md §5 states {expected}",
-            )
-    owner_desc = int(matches["description budget"].group(1))
-    if DESCRIPTION_BUDGET != owner_desc:
-        diag.error(
-            file_label,
-            f"DESCRIPTION_BUDGET = {DESCRIPTION_BUDGET} but rules/composition.md §5 states {owner_desc}",
-        )
-
-
-SYNC_RESULT_BINDING_RE = re.compile(r"^Binding:(.*?)(?:\n[ \t]*\n|\Z)", re.MULTILINE | re.DOTALL)
-
-
-def _sync_validate_envelope_units(diag: Diagnostics) -> None:
-    """ENVELOPE_UNITS against contracts/result.md's Binding paragraph --
-    the one owner of which dispatchable units the envelope binds."""
-    result_path = ROOT / "contracts" / "result.md"
-    if not result_path.is_file():
-        return  # owner absent (isolated fixtures) -- not this check's tree
-    file_label = rel(ROOT / "tools" / "validate.py")
-    m = SYNC_RESULT_BINDING_RE.search(_read_source(result_path))
-    if m is None:
-        diag.error(
-            rel(result_path),
-            "could not locate the 'Binding:' paragraph naming the envelope-bound units to check ENVELOPE_UNITS against",
-        )
-        return
-    owner_units = set(CALL_TOKEN_RE.findall(m.group(1)))
-    if owner_units != set(ENVELOPE_UNITS):
-        diag.error(
-            file_label,
-            f"ENVELOPE_UNITS = {sorted(ENVELOPE_UNITS)} does not match the bound units named "
-            f"in contracts/result.md: {sorted(owner_units)}",
-        )
-
-
-def _sync_parse_closed_categories(rule_text: str):
-    norm = re.sub(r"\s+", " ", rule_text)
-    m = SYNC_CLOSED_SET_RE.search(norm)
-    if not m:
-        return None
-    categories = set()
-    for segment in m.group(1).split(","):
-        seg = re.sub(r"\([^)]*\)", "", segment).strip()
-        if SYNC_CATEGORY_TOKEN_RE.match(seg):
-            categories.add(seg)
-    return categories or None
-
-
-def _sync_parse_flag_categories(text: str):
-    norm = re.sub(r"\s+", " ", text)
-    m = SYNC_FLAG_CATEGORY_RE.search(norm)
-    if not m:
-        return None
-    categories = set()
-    for tok in m.group(1).split("|"):
-        tok = tok.strip()
-        if SYNC_CATEGORY_TOKEN_RE.match(tok):
-            categories.add(tok)
-    return categories or None
-
-
-def _sync_validate_category_copy(path: Path, owner_categories: set, diag: Diagnostics) -> None:
-    file_label = rel(path)
-    if not path.is_file():
-        diag.error(file_label, "friction category copy is missing")
-        return
-    copy_categories = _sync_parse_flag_categories(_read_source(path))
-    if copy_categories is None:
-        diag.error(file_label, "could not locate the '--category' friction category list to check against rules/improvement.md")
-        return
-    if copy_categories != owner_categories:
-        detail = []
-        missing = sorted(owner_categories - copy_categories)
-        extra = sorted(copy_categories - owner_categories)
-        if missing:
-            detail.append(f"missing {missing}")
-        if extra:
-            detail.append(f"unexpected {extra}")
-        diag.error(
-            file_label,
-            f"friction category list out of sync with rules/improvement.md §1 closed set: {'; '.join(detail)}",
-        )
-
-
-def _sync_normalize_clause(text: str) -> str:
-    """Whitespace- and connector-tolerant normal form for a prose
-    clause: line wraps and the colon/dash a sentence uses to join its
-    two halves are cosmetic, per rules/improvement.md rule 1's
-    friction-completion sentence vs. its templates/host-block.md and
-    AGENTS.md copies (one uses ':', the copies an em dash)."""
-    text = SYNC_CLAUSE_CONNECTOR_RE.sub(" ", text)
-    return re.sub(r"\s+", " ", text).strip()
-
-
-def _sync_validate_friction_clause_copy(path: Path, owner_clause: str, diag: Diagnostics) -> None:
-    file_label = rel(path)
-    if not path.is_file():
-        diag.error(file_label, "friction-completion clause copy is missing")
-        return
-    copy_text = _sync_normalize_clause(_read_source(path))
-    if owner_clause not in copy_text:
-        diag.error(
-            file_label,
-            "friction-completion clause out of sync with rules/improvement.md §1 "
-            "('Logging friction is part of completing the task ... failed silently.')",
-        )
-
-
-def validate_sync(diag: Diagnostics) -> None:
-    """Spec criterion 3: BODY_BUDGET/DESCRIPTION_BUDGET vs.
-    rules/composition.md §5; ENVELOPE_UNITS vs. contracts/result.md's
-    Binding paragraph; the friction-category list and the
-    friction-completion clause in templates/host-block.md and AGENTS.md
-    vs. rules/improvement.md rule 1's closed set and sentence. A drifted
-    copy gets aligned to its owner, never the reverse -- owners stay
-    frozen."""
-    _sync_validate_envelope_units(diag)
-
-    composition_path = ROOT / "rules" / "composition.md"
-    improvement_path = ROOT / "rules" / "improvement.md"
-    if not composition_path.is_file() or not improvement_path.is_file():
-        return  # owners absent (isolated fixtures exercising other checks) -- not this check's tree
-    composition_text = _read_source(composition_path)
-    improvement_text = _read_source(improvement_path)
-
-    _sync_validate_budgets(composition_text, diag)
-
-    rule1_improvement = _sync_extract_numbered_rule(improvement_text, 1)
-    owner_categories = _sync_parse_closed_categories(rule1_improvement) if rule1_improvement else None
-    if owner_categories is None:
-        diag.error(rel(improvement_path), "could not locate rule 1's friction-category closed set to check copies against")
-        return
-    for copy_path in (ROOT / "templates" / "host-block.md", ROOT / "AGENTS.md"):
-        _sync_validate_category_copy(copy_path, owner_categories, diag)
-
-    clause_m = SYNC_FRICTION_CLAUSE_RE.search(rule1_improvement)
-    if clause_m is None:
-        diag.error(rel(improvement_path), "could not locate rule 1's friction-completion clause to check copies against")
-        return
-    owner_clause = _sync_normalize_clause(clause_m.group(0))
-    for copy_path in (ROOT / "templates" / "host-block.md", ROOT / "AGENTS.md"):
-        _sync_validate_friction_clause_copy(copy_path, owner_clause, diag)
-
-
 # --- Friction log location ---------------------------------------------
 #
-# The Sync section's discipline over a second owner: scripts/state_root.py
-# owns where the friction log goes (ARCHITECTURE.md's scripts/ tier), so
-# the tree it resolves is read from `friction_root` and never restated
-# here. The sink root under it is rules/visibility.md §6's, checked
-# against the resolver by tests/test_validate.py, and no copy restates
-# it. What the copies do name is the tree: docs/vocabulary.md's
-# **friction log** term, and the blocked-case sentence in
-# templates/host-block.md and AGENTS.md -- a fallback the shell refused
-# inside a worktree has to land outside every worktree, so no copy may
-# send a hand-written file to the old location under `.orch/`.
+# A location, not a sentence: scripts/state_root.py owns where the friction
+# log goes (ARCHITECTURE.md's scripts/ tier), so the tree it resolves is
+# read from `friction_root` and never restated here. The sink root under it
+# is rules/visibility.md §6's, checked against the resolver by
+# tests/test_validate.py, and no copy restates it. What the copies name is
+# the tree: docs/vocabulary.md's **friction log** term, and the
+# blocked-case sentence in templates/host-block.md -- a fallback the shell
+# refused inside a worktree has to land outside every worktree, so no copy
+# may send a hand-written file to the old location under `.orch/`.
+#
+# One checked copy, not two. AGENTS.md carries the same sentence and P3
+# deletes it (REVIEW-2026-08-15 T2); requiring it here would make that
+# deletion break the compiler, and until it happens the duplication is
+# reported by validate_cross_tier_duplication rather than mandated.
+FRICTION_CHECKED_COPIES = ("templates/host-block.md",)
 FRICTION_OWNER = ROOT / "scripts" / "state_root.py"
 FRICTION_RESOLVER = "friction_root"
 FRICTION_IN_REPOSITORY = ".orch/"
@@ -749,8 +555,8 @@ def validate_friction_locations(diag: Diagnostics) -> None:
     if tree is None:
         return
     _friction_validate_term(tree, diag)
-    for copy_path in (ROOT / "templates" / "host-block.md", ROOT / "AGENTS.md"):
-        _friction_validate_fallback_copy(copy_path, tree, diag)
+    for name in FRICTION_CHECKED_COPIES:
+        _friction_validate_fallback_copy(ROOT / name, tree, diag)
 
 
 CONTRACTS_DIR = ROOT / "contracts"
@@ -792,7 +598,17 @@ class Diagnostics:
 
 
 def discover_packages():
-    """Return every skill/pack package as a dict with path, kind, skill_md."""
+    """Return every skill/pack package as a dict with path, kind, skill_md.
+
+    A tier directory holding only ``references/`` is not a package and is
+    not a defect in itself -- the ``is_file()`` guard below reads it as no
+    package rather than as a package missing its SKILL.md. It is not a
+    home a reference may keep, though: ``rules/visibility.md`` §4 makes a
+    references file public only where its owner's body names the local
+    path, and a directory with no body names nothing. ``profiles.md``
+    therefore lives under ``skills/engines/orch-frontier/``, whose body
+    names it.
+    """
     packages = []
     for tier in SKILL_TIERS:
         tier_dir = ROOT / "skills" / tier
@@ -1144,6 +960,256 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
                             )
 
 
+# --- Cross-tier duplication (REVIEW-2026-08-15 T2) --------------------
+#
+# The same clause comparison as validate_cell_duplication, run across the
+# library's tiers instead of across the packs of one signature cell. It is
+# what replaces keeping copies in sync: a clause carried by both a rule and
+# a skill body is a fact with two owners, and the compiler names both sites
+# rather than holding the two spellings equal (REVIEW-2026-08-15 T2).
+#
+# WARN for exactly one phase. The tree still carries the copies P3 deletes,
+# and a compiler that refuses its own tree cannot be run; the finding is
+# the inventory P3 works from. At P3's close this flips to "ERROR" and
+# tests/test_cell_linter.py's CROSS_TIER_WARNING_CEILING reaches 0.
+CROSS_TIER_DUPLICATE_LEVEL = "WARN"
+# A copy is found where its words are: two clauses are compared when they
+# share a word carried by no more than this many clauses tree-wide. Above
+# it a word is idiom -- "ticket", "the result" -- and pairing on it means
+# comparing every clause with every other, which at this corpus size is
+# 470,000 SequenceMatcher ratios and 45 seconds of a compiler that must be
+# cheap enough to run on every save. Measured at the value below: every
+# pair the exhaustive comparison reports above 0.66 survives the index, and
+# what it drops sits in the noise band just over the threshold. Normative
+# with the threshold: the two together decide the reported set.
+CROSS_TIER_DISTINCTIVE_MAX = 20
+CROSS_TIER_WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]{3,}")
+# A citation and a name are not content. Every tier cites the same
+# contracts and names the same skills, so a clause that is nothing but
+# links and backticked names is the library's shared vocabulary, and
+# convicting it would drive files to stop pointing at their owners -- the
+# reason cell_clauses already exempts a sentence citing an owner outside
+# its pack. One connective word ("see", "per") does not make it prose.
+CROSS_TIER_CITATION_RES = (
+    re.compile(r"\[[^\]]*\]\([^)]*\)"),
+    re.compile(r"`[^`]*`"),
+)
+CROSS_TIER_PROSE_MIN_WORDS = 2
+
+
+def _cross_tier_prose(clause: str) -> str:
+    """`clause` minus its markdown links and backticked names."""
+    for pattern in CROSS_TIER_CITATION_RES:
+        clause = pattern.sub(" ", clause)
+    return re.sub(r"\s+", " ", clause).strip()
+
+
+# Two files of one tier are usually that tier's own business: the pack
+# linter already owns that question inside packs, and a template's stubs
+# are graded against their own manifest. skills/ has no such second check,
+# so two skill bodies could carry one clause byte for byte while the
+# linter flagged each of them against some innocent third file in another
+# tier -- the one pair it could not see was the pair that mattered.
+SAME_TIER_COMPARED = frozenset({"skills"})
+
+# A copy the library licensed, and the fact it copies. Each entry is
+# (owner, copy, a phrase both carry): the pair alone would exempt these
+# two files from every future duplication, and the phrase keeps the
+# licence to the clause it was granted for.
+#
+# rules/visibility.md §6 owns the untrusted-data rule; templates/host-block.md
+# carries it because the block is the one text a host reads before it can
+# reach any rule, and it names the owner one line above the copy. Reporting
+# it asks for the copy to go, which would take the licence with it.
+#
+# docs/library-review.md and templates/host-block.md both name
+# rules/visibility.md as the owner of a question they ask about the sink
+# -- the review asks whether a sentence is the only copy of its fact, the
+# block tells a host where the sink is and under which section. Two
+# different questions, and what makes them read alike is the citation
+# both are obliged to carry. Reporting it asks one of them to stop
+# naming its owner.
+#
+# contracts/verdict.md owns the law that a citation must resolve;
+# packs/orch-research-pack/references/oracles.md carries a row saying
+# which oracle decides that criterion in this domain, at which class and
+# provenance. The signature mandates that table, and a pack cannot state
+# an oracle policy without naming the criterion it decides.
+#
+# orch-edit and orch-render both defer craft to "the ticket's craft
+# reference". That phrase is the signature's craft cell reaching the
+# instances, not one instance copying the other: a pack's craft is
+# per-domain and the pointer is how a generic body stays domain-blind.
+#
+# orch-edit and orch-synthesize both forbid an assembly step inventing a
+# claim its inputs did not carry -- sections for one, evidence packets
+# for the other. It is one law with two subjects and no owner: rules/
+# has no assembly rule to hold it, and inventing one for two clauses
+# buys a permanent concept for a sentence. Revisited when a third
+# assembly instance needs it, which is when the rule earns its file.
+LICENSED_COPIES = (
+    (
+        "rules/visibility.md",
+        "templates/host-block.md",
+        "untrusted data",
+    ),
+    (
+        "docs/library-review.md",
+        "templates/host-block.md",
+        "rules/visibility.md",
+    ),
+    (
+        "contracts/verdict.md",
+        "packs/orch-research-pack/references/oracles.md",
+        "citation",
+    ),
+    (
+        "skills/instances/orch-render/SKILL.md",
+        "skills/instances/orch-edit/SKILL.md",
+        "per the ticket's craft reference",
+    ),
+    (
+        "skills/instances/orch-synthesize/SKILL.md",
+        "skills/instances/orch-edit/SKILL.md",
+        "Never: introduce",
+    ),
+)
+
+
+def _licensed(left_label: str, left_clause: str, right_label: str, right_clause: str) -> bool:
+    """Whether this pair is a copy the library licensed, for this clause."""
+
+    labels = {left_label.replace("\\", "/"), right_label.replace("\\", "/")}
+    for owner, copy, phrase in LICENSED_COPIES:
+        if labels == {owner, copy} and phrase in left_clause and phrase in right_clause:
+            return True
+    return False
+
+
+def cross_tier_documents(packages):
+    """(tier, label, text) for every file the check reads, tier being the
+    directory the library gave it."""
+    documents = []
+    for pkg in packages:
+        tier = "packs" if pkg["is_pack"] else "skills"
+        documents.append((tier, rel(pkg["skill_md"]), pkg.get("body") or ""))
+        if pkg["is_pack"]:
+            for reference in sorted((pkg["path"] / "references").glob("*.md")):
+                documents.append(("packs", rel(reference), _read_source(reference)))
+    for tier in ("rules", "contracts", "docs"):
+        directory = ROOT / tier
+        if directory.is_dir():
+            for path in sorted(directory.glob("*.md")):
+                # docs/vocabulary.md is the definitional owner of every
+                # term: an entry is one line naming the term's meaning and
+                # its owner, so a contract or skill using the term in its
+                # defined sense reads as its near-duplicate by construction.
+                # That pair is the relation the vocabulary exists to create,
+                # not a second owner; the file stays out of this corpus.
+                if tier == "docs" and path.name == "vocabulary.md":
+                    continue
+                documents.append((tier, rel(path), _read_source(path)))
+    # Every template stub and every reference beside them. This is where a
+    # composition's own criteria live, and each of the seven templates was
+    # written against a reference it was told to link -- restatement the
+    # check could not see because the corpus stopped at the tiers that
+    # existed when it was written.
+    compositions = ROOT / "compositions"
+    if compositions.is_dir():
+        for path in sorted(compositions.rglob("*.md")):
+            documents.append(("compositions", rel(path), _read_source(path)))
+    host_block = ROOT / "templates" / "host-block.md"
+    if host_block.is_file():
+        documents.append(("templates", rel(host_block), _read_source(host_block)))
+    return documents
+
+
+def _cross_tier_clauses(packages):
+    """Every comparable clause, as (tier, label, clause, free_content,
+    words). Same splitter and same mandated-form stripping as the pack
+    linter, plus the citation exemption above."""
+    entries = []
+    for tier, label, text in cross_tier_documents(packages):
+        for clause in cell_clauses(text):
+            free = free_content(clause)
+            if len(free.split()) < CELL_CLAUSE_MIN_WORDS:
+                continue
+            if len(_cross_tier_prose(free).split()) < CROSS_TIER_PROSE_MIN_WORDS:
+                continue
+            words = frozenset(w.lower() for w in CROSS_TIER_WORD_RE.findall(free))
+            entries.append((tier, label, clause, free, words))
+    return entries
+
+
+def _cross_tier_candidates(entries) -> set:
+    """The (i, j) pairs to compare: two tiers, and a distinctive word in
+    common. Built from an inverted index over the distinctive words, so the
+    cost is the number of candidates rather than the square of the corpus."""
+    frequency = {}
+    for _, _, _, _, words in entries:
+        for word in words:
+            frequency[word] = frequency.get(word, 0) + 1
+    postings = {}
+    for position, (_, _, _, _, words) in enumerate(entries):
+        for word in words:
+            if frequency[word] <= CROSS_TIER_DISTINCTIVE_MAX:
+                postings.setdefault(word, []).append(position)
+    candidates = set()
+    for ids in postings.values():
+        for a in range(len(ids)):
+            for b in range(a + 1, len(ids)):
+                left, right = ids[a], ids[b]
+                tiers = (entries[left][0], entries[right][0])
+                if tiers[0] != tiers[1]:
+                    candidates.add((left, right))
+                elif tiers[0] in SAME_TIER_COMPARED and entries[left][1] != entries[right][1]:
+                    # Two skills, never one skill against its own clauses:
+                    # a body's Require, its steps and its Return restate one
+                    # fact by design, and that is the pack linter's question.
+                    candidates.add((left, right))
+    return candidates
+
+
+def validate_cross_tier_duplication(packages, diag: Diagnostics) -> None:
+    """Every clause of every skill body, rule, contract, pack reference and
+    the host-block template against every clause of another tier: a pair
+    matching at CELL_SIMILARITY_THRESHOLD or above is reported at
+    CROSS_TIER_DUPLICATE_LEVEL, naming both sites."""
+    entries = _cross_tier_clauses(packages)
+    by_left = {}
+    for left, right in _cross_tier_candidates(entries):
+        by_left.setdefault(left, []).append(right)
+    emit = diag.warn if CROSS_TIER_DUPLICATE_LEVEL == "WARN" else diag.error
+    matcher = difflib.SequenceMatcher(None, autojunk=False)
+    for left in sorted(by_left):
+        left_tier, left_label, left_clause, left_free, _ = entries[left]
+        matcher.set_seq2(left_free)
+        for right in sorted(by_left[left]):
+            right_tier, right_label, right_clause, right_free, _ = entries[right]
+            if _licensed(left_label, left_clause, right_label, right_clause):
+                continue
+            matcher.set_seq1(right_free)
+            # The cheap bounds first, both of them upper bounds on the
+            # ratio: difflib computes them without matching anything, and
+            # they answer for four candidates in ten.
+            if matcher.real_quick_ratio() < CELL_SIMILARITY_THRESHOLD:
+                continue
+            if matcher.quick_ratio() < CELL_SIMILARITY_THRESHOLD:
+                continue
+            ratio = matcher.ratio()
+            if ratio >= CELL_SIMILARITY_THRESHOLD:
+                # one finding, one wording: the ratchet in
+                # tests/test_cell_linter.py counts this check by its own
+                # words, and a same-tier pair is the same finding — a clause
+                # with two owners — reached from inside one tier
+                where = "" if left_tier != right_tier else f" (within {left_tier})"
+                emit(
+                    left_label,
+                    f"cross-tier near-duplicate{where} at {ratio:.2f} with "
+                    f"{right_label}: {left_clause!r} ~ {right_clause!r}",
+                )
+
+
 def validate_craft_budget(pkg: dict, diag: Diagnostics) -> None:
     craft = pkg["path"] / "references" / "craft.md"
     if not craft.is_file():
@@ -1272,193 +1338,172 @@ def validate_envelope(packages, diag: Diagnostics) -> None:
             )
 
 
-def discover_compositions():
+def discover_templates(manifest_name: str):
+    """Every `compositions/<name>/` directory holding the manifest."""
     comps_dir = ROOT / "compositions"
     if not comps_dir.is_dir():
         return []
-    return sorted(p for p in comps_dir.glob("*.md") if p.is_file())
+    return sorted(
+        d for d in comps_dir.iterdir()
+        if d.is_dir() and (d / manifest_name).is_file()
+    )
 
 
-def _composition_has_field(field: str, fm: dict, body: str) -> bool:
-    keys = {k.strip().lower().replace("-", "_").replace(" ", "_") for k in fm}
-    if field in keys:
-        return True
-    if COMPOSITION_BODY_FIELD_RES[field].search(body):
-        return True
-    if field == "invariants" and NEVER_RE.search(body):
-        return True  # the contract defines invariants as the Never: block
-    return False
+def _ticket_law():
+    """`scripts/tickets.py`, the one owner of ticket-shape and
+    template-graph law.
+
+    Imported here rather than at module scope: `--pin` and every isolated
+    fixture that carries no `scripts/` still has to run, and this is the
+    only check that needs the owner. ROOT goes first on the path so a tree
+    grades against its own copy.
+    """
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from scripts import tickets
+
+    return tickets
 
 
-# --- Composition content checks (REVIEW-2026-08-06.md thread T2) -----
-#
-# Presence checks (above) pass a vacuous `invariants` block ("Never:
-# violate the laws of physics") or a tautological `done_check` ("status
-# is complete"): both name the field, neither says anything. Authored
-# `steps` blocks in this tree bind their invariants thematically, not
-# by repeating each step id verbatim (id-literal matching false-erred
-# on 7 of 9 real compositions), so step-binding is checked at the
-# achievable granularity contracts/composition.md's admission sentence
-# actually enforces today: the invariants block must share real
-# vocabulary with the steps block as a whole, catching an invariants
-# block disconnected from the composition's own work while not
-# requiring per-step id repetition. A step-by-step id requirement is
-# the stronger form the review's remedy text names; narrowing it further
-# to per-step binding is future work, tracked in this ticket's Feedback,
-# not a regression this check introduces.
-COMPOSITION_FIELD_ORDER = ("steps", "edges", "invariants", "done_check")
-
-
-def _composition_field_span(field: str, body: str):
-    """The body slice from `field`'s own label to the next known
-    field's label (or end of body) -- steps/edges/invariants/done_check
-    appear in that fixed order in every authored composition."""
-    m = COMPOSITION_BODY_FIELD_RES[field].search(body)
-    if not m:
+def _validate_template_manifest(path: Path, diag: Diagnostics):
+    """Check one template.md; return its declared placeholder names, or
+    None when it declares no usable list -- with the declaration
+    unreadable, an undeclared placeholder is the manifest's defect and
+    not each stub's."""
+    file_label = rel(path)
+    fm, _ = parse_frontmatter(_read_source(path), file_label, diag)
+    if fm is None:
         return None
-    start = m.end()
-    idx = COMPOSITION_FIELD_ORDER.index(field)
-    end = len(body)
-    for later in COMPOSITION_FIELD_ORDER[idx + 1:]:
-        later_m = COMPOSITION_BODY_FIELD_RES[later].search(body, start)
-        if later_m:
-            end = later_m.start()
-            break
-    else:
-        return_m = RETURN_RE.search(body, start)
-        if return_m:
-            end = return_m.start()
-    return body[start:end]
-
-
-def _composition_content_words(text: str) -> set:
-    return {
-        w for w in _carriage_body_stems(text)
-        if w not in CARRIAGE_QUALIFIERS
-    }
-
-
-def _validate_composition_step_binding(body: str, file_label: str, diag: Diagnostics) -> None:
-    steps_span = _composition_field_span("steps", body)
-    invariants_span = _composition_field_span("invariants", body)
-    if steps_span is None or invariants_span is None:
-        return  # missing field already reported by the admission-fields loop
-    step_words = _composition_content_words(steps_span)
-    invariant_words = _composition_content_words(invariants_span)
-    if step_words and not (step_words & invariant_words):
+    name = fm.get("name")
+    directory = path.parent.name
+    if not name:
+        diag.error(file_label, "template frontmatter missing required key 'name'")
+    elif name != directory:
         diag.error(
             file_label,
-            "invariants block shares no vocabulary with the steps block -- "
-            "a step no invariant binds (contracts/composition.md's admission "
-            "sentence)",
+            f"template name '{name}' does not match directory name '{directory}'",
+        )
+    description = fm.get("description")
+    if not description:
+        diag.error(file_label, "template frontmatter missing required key 'description'")
+    elif len(description) > DESCRIPTION_BUDGET:
+        diag.error(
+            file_label,
+            f"description is {len(description)} chars, exceeds {DESCRIPTION_BUDGET}-char budget",
+        )
+    entry = fm.get("entry")
+    if not entry:
+        diag.error(file_label, "template frontmatter missing required key 'entry'")
+    elif entry not in TEMPLATE_ENTRY_VALUES:
+        diag.error(
+            file_label,
+            f"entry '{entry}' is not one of {sorted(TEMPLATE_ENTRY_VALUES)} "
+            "per contracts/work-item.md",
+        )
+    if "placeholders" not in fm:
+        diag.error(file_label, "template frontmatter missing required key 'placeholders'")
+        return None
+    declared = fm["placeholders"].strip()
+    if not (declared.startswith("[") and declared.endswith("]")):
+        diag.error(
+            file_label,
+            "'placeholders' is not a list; write [] when the template declares none",
+        )
+        return None
+    return {item.strip() for item in declared[1:-1].split(",") if item.strip()}
+
+
+def _validate_stub_executor(
+    executor: str, file_label: str, skill_names: set, diag: Diagnostics, tickets
+) -> None:
+    """The executor names a skill in the tree or a script that exists --
+    the half of executor law that needs the tree, and so cannot live with
+    the rest of it in scripts/tickets.py. What shape an executor may take
+    at all is that script's, and it reports on that itself.
+
+    A placeholder is left to instantiation, which refuses an unfilled one
+    and so checks the filled value.
+    """
+    if tickets.PLACEHOLDER_RE.search(executor):
+        return
+    if executor.startswith(tickets.SCRIPT_EXECUTOR_PREFIX):
+        target = executor[len(tickets.SCRIPT_EXECUTOR_PREFIX):].strip()
+        if not (ROOT / target).exists():
+            diag.error(
+                file_label,
+                f"executor names script '{target}', which does not exist in the tree",
+            )
+        return
+    if executor not in skill_names:
+        diag.error(
+            file_label,
+            f"executor '{executor}' names no skill under skills/ and is not a "
+            "'script:<path>'",
         )
 
 
-DONE_CHECK_STATUS_WORD_RE = re.compile(
-    r"^(?:status|complete[ds]?|blocked|stalled|limited|failed)$", re.IGNORECASE
-)
-DONE_CHECK_COPULA_WORDS = {
-    "is", "are", "was", "were", "be", "been", "being",
-    "has", "have", "had", "it", "its",
-}
-DONE_CHECK_FILLER_WORDS = {
-    # modal/evaluative fillers qualifying a status claim without naming
-    # a second fact (gate finding: "complete successfully" passed)
-    "must", "should", "shall", "may", "can", "will", "indeed",
-    "successfully", "properly", "correctly", "truly", "fully",
-    "when", "then", "and", "or", "not", "no", "with", "without",
-    # the envelope's own field vocabulary — the done_check oracle must
-    # reach beyond the envelope (contracts/composition.md)
-    "result", "identity", "verification", "verified", "verify",
-    "envelope", "verdict", "verdicts",
-}
-
-
-def _validate_composition_done_check(body: str, file_label: str, diag: Diagnostics) -> None:
-    done_span = _composition_field_span("done_check", body)
-    if done_span is None:
-        return  # missing field already reported by the admission-fields loop
-    words = CARRIAGE_WORD_RE.findall(done_span)
-    external_content = [
-        w for w in words
-        if w.lower() not in CARRIAGE_QUALIFIERS
-        and w.lower() not in DONE_CHECK_COPULA_WORDS
-        and w.lower() not in DONE_CHECK_FILLER_WORDS
-        and not DONE_CHECK_STATUS_WORD_RE.match(w)
-    ]
-    if not external_content:
-        diag.error(
-            file_label,
-            "done_check names only the envelope's own status vocabulary "
-            "and no external oracle (contracts/composition.md: done_check "
-            "is 'the end-to-end oracle over the final envelope')",
-        )
-
-
-def validate_compositions(diag: Diagnostics) -> None:
-    """contracts/composition.md: every compositions/*.md is a normative,
-    invocable workflow carrying name, description, entry (routed | named
-    | scheduled), steps, edges, invariants, done_check, and the
-    Require:/Return: envelope law."""
-    for path in discover_compositions():
-        file_label = rel(path)
-        fm, body = parse_frontmatter(_read_source(path), file_label, diag)
-        if fm is None or body is None:
+def _tree_skill_names() -> set:
+    """Every skill package name across the five tiers -- the set a stub's
+    executor resolves against."""
+    names = set()
+    for tier in SKILL_TIERS:
+        tier_dir = ROOT / "skills" / tier
+        if not tier_dir.is_dir():
             continue
-        if not fm.get("name"):
-            diag.error(file_label, "composition frontmatter missing required key 'name'")
-        elif fm["name"] != path.stem:
-            diag.error(
-                file_label,
-                f"composition name '{fm['name']}' does not match file name '{path.stem}'",
-            )
-        if not fm.get("description"):
-            diag.error(file_label, "composition frontmatter missing required key 'description'")
-        elif len(fm["description"]) > DESCRIPTION_BUDGET:
-            diag.error(
-                file_label,
-                f"description is {len(fm['description'])} chars, exceeds {DESCRIPTION_BUDGET}-char budget",
-            )
-        entry = fm.get("entry")
-        if not entry:
-            diag.error(file_label, "composition frontmatter missing required key 'entry'")
-        elif entry not in COMPOSITION_ENTRY_VALUES:
-            diag.error(
-                file_label,
-                f"entry '{entry}' is not one of {sorted(COMPOSITION_ENTRY_VALUES)} "
-                "per contracts/composition.md",
-            )
-        for f in COMPOSITION_REQUIRED_FIELDS:
-            if not _composition_has_field(f, fm, body):
-                diag.error(
-                    file_label,
-                    f"composition missing required field '{f}' per contracts/composition.md",
+        names |= {d.name for d in tier_dir.iterdir() if (d / "SKILL.md").is_file()}
+    return names
+
+
+def validate_templates(diag: Diagnostics) -> None:
+    """contracts/work-item.md, Template and stub: every `compositions/<name>/` template is a
+    manifest plus ticket stubs a run can be instantiated from.
+
+    Ticket shape and the depends_on graph are read from
+    `scripts/tickets.py`, which grades every issued ticket and every
+    instantiated stub: the validator admits into the tree exactly what that
+    script will accept, in that script's own words. What stays here is what
+    needs the tree the script has no access to -- the manifest, the
+    placeholder balance between manifest and stubs, and whether an executor
+    names a skill or a script that exists.
+    """
+    if not (ROOT / "compositions").is_dir():
+        return  # no composition tree, so no template and no owner to load
+    tickets = _ticket_law()
+    manifest_name = tickets.TEMPLATE_FILE
+    directories = discover_templates(manifest_name)
+    if not directories:
+        return
+    skill_names = _tree_skill_names()
+    for directory in directories:
+        manifest_label = rel(directory / manifest_name)
+        declared = _validate_template_manifest(directory / manifest_name, diag)
+        for path, message in tickets.template_defects(directory):
+            diag.error(rel(Path(path)), message)
+
+        used = set()
+        for path in sorted(directory.glob("*.md")):
+            if path.name == manifest_name:
+                continue
+            text = _read_source(path)
+            stub_used = set(tickets.PLACEHOLDER_RE.findall(text))
+            used |= stub_used
+            executor = tickets._parse_frontmatter(text).get("executor")
+            if isinstance(executor, str) and executor.strip():
+                _validate_stub_executor(
+                    executor.strip(), rel(path), skill_names, diag, tickets
                 )
-        admission_fields_present = True
-        for f in COMPOSITION_ADMISSION_FIELDS:
-            if not _composition_has_field(f, fm, body):
-                admission_fields_present = False
-                diag.error(
-                    file_label,
-                    f"composition missing '{f}' -- admission rejects a composition "
-                    "missing invariants or done_check (contracts/composition.md)",
-                )
-        if admission_fields_present:
-            _validate_composition_step_binding(body, file_label, diag)
-            _validate_composition_done_check(body, file_label, diag)
-        if not REQUIRE_RE.search(body):
-            diag.error(file_label, "composition body missing a line starting 'Require:'")
-        if not RETURN_RE.search(body):
-            diag.error(file_label, "composition body missing a sentence starting 'Return'")
-        else:
-            clause = _envelope_first_clause(body)
-            missing = _envelope_missing(clause) if clause is not None else []
-            if missing:
-                diag.error(
-                    file_label,
-                    "Return does not lead with the result envelope per contracts/result.md: "
-                    f"first clause carries no {', '.join(missing)} vocabulary "
-                    "and names no work-item carrier",
+            if declared is not None:
+                for name in sorted(stub_used - declared):
+                    diag.error(
+                        rel(path),
+                        f"placeholder '{{{{{name}}}}}' is declared by no "
+                        f"'placeholders' entry in {manifest_label}",
+                    )
+        if declared is not None:
+            for name in sorted(declared - used):
+                diag.warn(
+                    manifest_label,
+                    f"declared placeholder '{{{{{name}}}}}' is used by no stub",
                 )
 
 
@@ -1545,6 +1590,123 @@ def validate_pins(diag: Diagnostics) -> None:
             diag.error(rel(PINS_FILE), PIN_MESSAGE)
 
 
+# Where a backticked `orch-*` is a call edge the call-graph check never
+# sees: rules/composition.md rule 2 makes any backticked name one, and
+# `build_call_graph` reads skill bodies only. A rule pointing at a deleted
+# owner therefore rode through exit 0 twice (`orch-mechanize`,
+# `orch-review-fix`), which is a rule naming an owner that is not there.
+NAME_CHECKED_DIRS = ("rules", "docs", "contracts", "templates")
+# Read to the bottom, not just the top level. compositions/ is where every
+# template stub lives and every stub names an executor; a pack keeps its
+# craft, slicing and oracle criteria under references/, and so does a skill.
+# All of it calls skills by name, and none of it was on the surface -- the
+# non-recursive glob over four directories above saw the top level and
+# stopped, which is how a stub could name a deleted skill through exit 0.
+NAME_CHECKED_TREES = ("compositions", "packs", "skills")
+NAME_CHECKED_FILES = ("README.md", "DESIGN.md", "ARCHITECTURE.md", "AGENTS.md")
+# `orch-` alone is the prefix, not a name; a name carries at least one
+# segment after it. Plain text is how the library says "mentioned, not
+# called" (rule 2 again), so DESIGN.md's supersession history needs no
+# allowlist -- it just does not backtick the names it is burying.
+BACKTICKED_NAME_RE = re.compile(r"`(orch-[a-z0-9]+(?:-[a-z0-9]+)*)`")
+# The lens cell is a pointer into a section, and the row is compared as
+# three words of text (see CELL_CLAUSE_MIN_WORDS above) rather than
+# resolved -- so nothing looked at whether the section is there.
+# The marker that says this tree is the library and not an isolated
+# fixture. Same idiom as validate_friction_locations' owner check: a
+# fixture copies the real contracts/ beside a synthetic skills/, and
+# resolving one against the other would convict the contracts for the
+# fixture's own emptiness. ARCHITECTURE.md is the tier map, so a tree
+# without it has no tier map for a name to resolve against.
+NAME_CHECK_MARKER = ROOT / "ARCHITECTURE.md"
+LENS_ROW_RE = re.compile(r"^\|\s*lens\s*\|(.*)\|\s*$", re.MULTILINE)
+LENS_ANCHOR_RE = re.compile(r"\(([^)]*#[^)]*)\)")
+HEADING_RE = re.compile(r"^#+\s+(.*\S)\s*$", re.MULTILINE)
+
+
+def _heading_slugs(text: str) -> set:
+    """Every heading in `text`, as the anchor a link would reach it by."""
+    slugs = set()
+    for title in HEADING_RE.findall(text):
+        slug = re.sub(r"[^a-z0-9\s-]", "", title.lower())
+        slugs.add(re.sub(r"\s+", "-", slug).strip("-"))
+    return slugs
+
+
+def validate_names(packages, diag: Diagnostics) -> None:
+    """Every backticked `orch-*` outside the skill tree resolves inside it.
+
+    Skipped where the tree is not the library -- no packages, or no
+    ARCHITECTURE.md to mark it as the tree whose tiers a name resolves in.
+    """
+
+    if not packages or not NAME_CHECK_MARKER.is_file():
+        return
+    known = {pkg["path"].name for pkg in packages} | set(ROLE_PROFILES)
+    paths = []
+    for directory in NAME_CHECKED_DIRS:
+        node = ROOT / directory
+        if node.is_dir():
+            paths.extend(sorted(node.glob("*.md")))
+    for directory in NAME_CHECKED_TREES:
+        node = ROOT / directory
+        if node.is_dir():
+            paths.extend(sorted(node.rglob("*.md")))
+    paths.extend(ROOT / name for name in NAME_CHECKED_FILES)
+    # A package body is `build_call_graph`'s, which reports an unresolvable
+    # name there in its own words; reading it here too would convict one
+    # line twice in two vocabularies.
+    bodies = {pkg["skill_md"].resolve() for pkg in packages}
+    for path in paths:
+        if not path.is_file() or path.resolve() in bodies:
+            continue
+        for name in sorted(set(BACKTICKED_NAME_RE.findall(_read_source(path)))):
+            if name in known:
+                continue
+            diag.error(
+                rel(path),
+                f"`{name}` names no package: no skills/<tier>/{name}/SKILL.md "
+                f"and no packs/{name}/SKILL.md. A backticked name is a call "
+                "edge (rules/composition.md rule 2); name it in plain text to "
+                "mention it without calling it",
+            )
+
+
+def validate_lens_anchor(packages, diag: Diagnostics) -> None:
+    """Each pack's lens cell anchor lands on a heading that exists.
+
+    contracts/pack-signature.md binds the lens to `orch-critique` plus the
+    pack's craft `## Lens`, and every gate lane the pack stamps reads its
+    criteria there. Deleting the heading left the validator at exit 0.
+    """
+
+    for pkg in packages:
+        if not pkg["is_pack"]:
+            continue
+        row = LENS_ROW_RE.search(pkg.get("body") or "")
+        if row is None:
+            continue  # a missing cell is validate_pack_signature's finding
+        file_label = rel(pkg["skill_md"])
+        for target in LENS_ANCHOR_RE.findall(row.group(1)):
+            relative, _, anchor = target.partition("#")
+            craft = (pkg["skill_md"].parent / relative).resolve()
+            if not craft.is_file():
+                diag.error(
+                    file_label,
+                    f"lens cell anchor `{target}` names no file at "
+                    f"{relative} beside this pack",
+                )
+                continue
+            if anchor.lower() not in _heading_slugs(_read_source(craft)):
+                diag.error(
+                    file_label,
+                    f"lens cell anchor `{target}` lands nowhere: "
+                    f"{rel(craft)} carries no heading reached by "
+                    f"`#{anchor}` — the cell binds a `## Lens` section, so "
+                    "that section has to be there",
+                )
+
+
 def validate_unique_names(packages, diag: Diagnostics) -> None:
     seen = {}
     for pkg in packages:
@@ -1581,16 +1743,25 @@ def run_validation() -> Diagnostics:
     validate_call_graph(packages, diag)
     validate_carriage(packages, diag)
     validate_cell_duplication(packages, diag)
+    validate_cross_tier_duplication(packages, diag)
     validate_envelope(packages, diag)
-    validate_compositions(diag)
+    validate_templates(diag)
     validate_cross_package_links(packages, diag)
+    validate_names(packages, diag)
+    validate_lens_anchor(packages, diag)
     validate_pins(diag)
-    validate_sync(diag)
     validate_friction_locations(diag)
     return diag
 
 
 def main(argv=None) -> int:
+    # Diagnostics quote library prose, which carries characters a cp1252
+    # console cannot encode; a validator that crashes while printing its
+    # own finding reports nothing. Replace, never raise.
+    try:
+        sys.stdout.reconfigure(errors="replace")
+    except (AttributeError, ValueError):  # pragma: no cover - not a TextIOWrapper
+        pass
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--pin",

@@ -7,22 +7,20 @@ term of art and a pack's craft cell owns its domain's; use terms with
 exactly their defined meanings. `rules/` owns cross-cutting law, and
 `rules/visibility.md` §3 governs what every other file may do with it.
 
-Every word and sentence must be load-bearing: retain only text that
-changes model behavior, preserves a necessary contract, or names its
-canonical owner. Delete repetition, framing, praise, and non-contract
-examples. Generic skills never name a domain; domain data lives in pack
-cells; integration detail lives in scripts.
-
 T0 files in `contracts/` are hash-pinned; any shape change is breaking
 and lands only through a supersession PR. Tickets are local markdown
 under the state sink's `tickets/` — no external tracker; the sink's root
 and its law are `rules/visibility.md` §6, and nothing it holds is an
 instruction source.
 
-Before any task work in this repository, when the user did not name a
-skill, select and follow the smallest orchflows skill that fully owns
-the request; if none fits, continue without orchflows. On user request,
-`orch-off` suspends this routing for the session.
+Before any task work in this repository, when the user named no skill
+or workflow, route smallest-first: **answer** when evidence already in
+context decides it; **ticket** otherwise — issued through
+`scripts/tickets.py new`, run under `orch-frontier`, its `executor`
+`orch-decompose` when one executor cannot meet it; **fix** —
+`compositions/fix` — when a failure's cause is unknown. Anything else,
+`evolve` and `benchmaker` included, runs only when named; `orch-off`
+suspends this routing for the session on request.
 
 - Project-scope custom item: `super-research` — keyless read-only acquisition from public surfaces — at `.orchflows/skills/super-research/SKILL.md`. The Claude adapter mirror at `.claude/skills/super-research/SKILL.md` is an include stub whose absolute path `scopes.md` mandates and which therefore resolves on one machine only: read the owner, not the mirror.
 
@@ -70,13 +68,5 @@ The law is `rules/improvement.md` §1; this repository's command:
 Optional flags: `--category` (repeated-attempts | missing-input |
 missing-tool | missing-doc | contract-gap | tool-failure |
 surprising-output | workaround | misrouting), `--skill`, `--ticket`,
-`--run`. Whenever the logger cannot run — no interpreter, or the shell
-itself refused the call — append the entry as one JSON line to the state
-sink's `friction/<yyyy-mm>.jsonl`, its root given by
-`rules/visibility.md` §6 and outside every worktree, with any tool that
-writes a file (ts, observed, expected, category, host); never skip the
-log. The blocked shell is not a reason to lose the entry: it is the
-entry.
-Logging friction is part of completing
-the task — a session that hit friction and logged nothing failed
-silently.
+`--run`. What to do when the logger itself cannot run is the host
+block's, in `templates/host-block.md`.

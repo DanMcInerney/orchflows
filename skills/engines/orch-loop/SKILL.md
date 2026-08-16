@@ -5,8 +5,9 @@ role: none
 ---
 
 Require: a frozen goal; the body — what each iteration dispatches, one
-named skill, a composition by name, or a caller-owned composite of
-named skills, bound as plain text and never backticked, a binding
+named skill, an orch-frontier ticket over a template, or a
+caller-owned composite of named skills, bound as plain text and never
+backticked, a binding
 rather than a call edge; a
 done-check naming its oracle and oracle_class per
 [contracts/verdict.md](../../../contracts/verdict.md) — the iteration
@@ -14,10 +15,14 @@ count is a deterministic done-check; a bound; and the context packet the
 iterations carry — design it once via
 [references/context-packet.md](references/context-packet.md).
 
-Create the worklog through `orch-worklog`. Each iteration: start fresh
+Freeze the goal into the run's state through `tickets.py run-state` and
+append every iteration entry, failed approach and queued scope to it
+there — the worklog is the view `tickets.py worklog` renders, never a
+second hand-written file. Each iteration: start fresh
 from the frozen goal plus the worklog — never a prior transcript; take
-one work item; dispatch the body with the packet as delegation inputs
-through `orch-delegate`; adjudicate the return at the join through
+one work item; dispatch the body with the packet as delegation inputs,
+per [rules/delegation.md](../../../rules/delegation.md); adjudicate the
+return at the join through
 `orch-integrate`; let the done-check decide, per the contract's class
 policy. Commit verified increments; record failed approaches; queue
 discovered scope.

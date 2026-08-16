@@ -19,14 +19,14 @@ no existing skill already owns the judgment; the tier and landing zone
 are right — data belongs in a pack cell, integration detail in
 scripts, one-off procedure in the spec or prompt, and always-on rules
 in the scope's instruction file, never in a skill body. Start a custom
-workflow from the nearest composition, pinning its open decisions
-through `orch-elicit`. Write to the anatomy and budget; for a pack,
+workflow from the nearest composition, settling its open decisions the
+way [orch-spec](../orch-spec/SKILL.md) settles a spec's.
+Write to the anatomy and budget; for a pack,
 satisfy every
 [signature](../../../contracts/pack-signature.md) cell and its sharing
-constraints; for a composition file, apply
-[contracts/composition.md](../../../contracts/composition.md)'s
-admission sentence; for a contract change, treat any shape change as
-breaking.
+constraints; for a template, `tools/validate.py` and `tickets.py
+instantiate` are the admission; for a contract change, treat any shape
+change as breaking.
 
 Gate the result's artifact identity through `orch-critique` with
 [references/library-lens.md](references/library-lens.md), in a context

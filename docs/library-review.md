@@ -1,7 +1,7 @@
 # Library review prompt
 
 The standing prompt for a full review of this library. Run it through
-`orch-critique`: one trace lane per pack plus the ad-hoc lane, and one
+`orch-critique`: one path-walk lane per pack plus the ad-hoc lane, and one
 lane per question below. Findings feed `orch-repair` or tickets. The
 prompt shrinks under its own law: a question that has produced nothing
 for two passes is folded or deleted; it grows only when a constitution
@@ -13,27 +13,25 @@ The principles this library exists to enforce. They do not change when
 models improve; every review question derives from them, and every
 sentence in the library must be required by one of them.
 
-1. External evidence decides completion; a claim is worth its cited
-   oracle output, and an oracle must be able to fail.
-2. Independence enters every unit before final acceptance — authorship
-   is part of adequacy.
-3. Criteria are frozen before work; a moving target is queued scope.
-4. One durable record per unit of work; results live in artifacts,
-   never only in transport.
-5. Star topology: one caller, one join per return; authority
+1. Completion is decided by evidence from outside the executing
+   context that could have failed.
+2. Criteria are frozen before work; a moving target is queued scope.
+3. One durable, honest record per unit: results live in artifacts,
+   never only in transport, and disagreement, rationale, and
+   contradiction are recorded as found, never smoothed.
+4. Star topology: one caller, one join per return; authority
    attenuates downward.
-6. One owner per fact; everything else links.
-7. Requests enter at the smallest structure that holds them;
-   coordination is bought only when parallelism, isolation, or
-   durability forces it.
-8. Fixes consume causes, not findings, bounded by the frozen spec's
+5. One owner per fact; everything else links.
+6. Coordination is bought only when parallelism, isolation, or
+   durability forces it — the value
+   [rules/topology.md](../rules/topology.md) rule 2's intake serves.
+7. Fixes consume causes, not findings, bounded by the frozen spec's
    license.
-9. Generic bodies are domain-blind; domain data lives in pack cells.
-10. Determinism over inference: a repeated deterministic step becomes
-    a script.
-11. The record is honest: disagreement, rationale, and contradiction
-    are recorded as found, never smoothed.
-12. The library learns by deletion as much as by addition; every
+8. Generic bodies are domain-blind; domain deviations live in pack
+   cells.
+9. Determinism over inference: a repeated deterministic step becomes
+   a script.
+10. The library learns by deletion as much as by addition; every
     sentence must be load-bearing.
 
 ## Report contract (anti-accretion)
@@ -54,7 +52,7 @@ sentence in the library must be required by one of them.
   defect, each with the fixture ablation that would prove it safe.
 - No fixes; a lane with nothing to report says so in one line.
 
-## The traces — does it run?
+## The path walks — does it run?
 
 One realistic request per pack, plus one through the ad-hoc lane
 (single ticket, the checker path, and an ad-hoc set). Walk the exact

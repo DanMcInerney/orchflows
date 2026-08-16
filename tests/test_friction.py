@@ -10,6 +10,7 @@ import io
 import json
 import os
 import stat
+import subprocess
 import sys
 import sysconfig
 import tempfile
@@ -274,6 +275,64 @@ class TestMainMalformedArgvIsSilentNoop(_IsolatedRepoTestCase):
 
     def test_unknown_equals_flag_is_absorbed_as_positional_and_rejected(self):
         self._assert_noop(["--bogus=value", "o", "e"])
+
+
+class TestOffEnumCategoryIsRefused(_IsolatedRepoTestCase):
+    """The one malformed call the logger answers out loud.
+
+    Every other malformed argv above loses the entry silently and the
+    caller can see that it did -- nothing is printed, nothing is written.
+    A category outside the closed set is the one that would otherwise
+    *succeed*: the entry lands carrying a key `rules/improvement.md` §4
+    can cluster on with nothing, and no one reads the stream again until
+    the next cycle. So it is refused at parse, before any write, with the
+    set named -- the caller's next attempt is a corrected flag, not a
+    duplicate entry.
+    """
+
+    def _run_main_stderr(self, argv):
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            rc = friction.main(argv)
+        return rc, out.getvalue(), err.getvalue()
+
+    def test_an_off_enum_category_is_refused_and_nothing_is_written(self):
+        rc, out, err = self._run_main_stderr(["o", "e", "--category", "bogus"])
+        self.assertNotEqual(0, rc)
+        self.assertEqual("", out)
+        self.assertFalse(self._log_path().exists())
+        self.assertIn("bogus", err)
+
+    def test_the_refusal_names_every_category_the_logger_accepts(self):
+        _, _, err = self._run_main_stderr(["o", "e", "--category", "bogus"])
+        for category in friction.CATEGORIES:
+            with self.subTest(category=category):
+                self.assertIn(category, err)
+
+    def test_every_named_category_is_accepted(self):
+        for category in friction.CATEGORIES:
+            with self.subTest(category=category):
+                rc, out, err = self._run_main_stderr(["o", "e", "--category", category])
+                self.assertEqual(0, rc)
+                self.assertEqual("friction logged", out.strip())
+                self.assertEqual("", err)
+
+    def test_an_empty_category_is_refused_rather_than_read_as_absent(self):
+        rc, _, _ = self._run_main_stderr(["o", "e", "--category="])
+        self.assertNotEqual(0, rc)
+        self.assertFalse(self._log_path().exists())
+
+    def test_the_process_exit_code_carries_the_refusal(self):
+        """`main` returning 2 is only the contract if the process does. The
+        CLI path is `raise SystemExit(main(...))`, so it is read here."""
+        env = dict(os.environ, **{STATE_HOME_ENV_VAR: str(self.sink)})
+        result = subprocess.run(
+            [sys.executable, str(FRICTION_PY), "o", "e", "--category", "bogus"],
+            capture_output=True, text=True, cwd=str(self.repo), env=env,
+        )
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("misrouting", result.stderr)
+        self.assertFalse(self._log_path().exists())
 
 
 class TestMainAdversarialFailuresStaySilentAndExitZero(_IsolatedRepoTestCase):

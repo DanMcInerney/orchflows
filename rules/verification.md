@@ -4,45 +4,30 @@
    claim of its own success. A claim is exactly worth its cited oracle
    output — the executor's, and equally a checker's, a judge's or a
    gate's, including any part of the caller's framing it repeats back.
-   A truncated transcript is not the oracle's output: read a verdict by
-   redirecting to a file and grepping it, never through `| tail` or
-   `| head`, which report the pipe's status rather than the command's.
-2. Verdicts follow [contracts/verdict.md](../contracts/verdict.md):
-   PASS, FAIL, or UNVERIFIED per criterion; an unrun check is
-   UNVERIFIED; overall PASS requires every required criterion and states
-   its weakest oracle_class.
+2. The verdict values, which criteria are required, and how the overall
+   verdict is read are
+   [contracts/verdict.md](../contracts/verdict.md)'s.
 3. Freeze criteria and their oracles before the first unit of work; a
    criterion added mid-run is queued scope, not a moving target. A
    criterion states the condition its oracle decides, never a reading of
    current state — a frozen count is a target, not a check.
 4. Verification never edits its target. A verifier that fixes what it
    checks has become an executor and its verdicts are void.
-5. The class policy in [contracts/verdict.md](../contracts/verdict.md)
-   binds every loop and gate; it is stated once, there.
+5. The class policy is stated once, in that same contract.
 6. Judged verdicts are rendered fresh from the spec in an independent
    context — never from unit verification output, never by the context
    that produced the artifact.
-7. Verification evidence is reusable at a join while everything it
-   covers is unchanged; a covered identity changing invalidates exactly
-   the entries that cover it. A gate returning findings moves the
-   result identity, so its verdicts are reusable only where the
-   correction left the covered identity unchanged.
+7. A gate returning findings moves the result identity; what that
+   costs the entries covering it is
+   [contracts/verdict.md](../contracts/verdict.md)'s invalidation
+   clause.
 8. An oracle must be able to fail: a check that cannot FAIL when the
    claim it stands for is false decides nothing, and its PASS is void.
    Show it against a wrong result built beside the tree, never by
-   mutating the tree under test, which an interrupted pass leaves mutated.
-   Build that copy by clone, never by extract: an extract drops `.git`,
-   so an oracle reading history reads whichever repository encloses the
-   copy, or errors, and changes its verdict with no diagnostic. A copy
-   is faithful when everything the oracles read is present in it
-   unchanged, including what they read without naming it; evidence that
-   with `git rev-list --count` run in the copy and recorded beside every
-   reading taken there — one count proves the history came across and
-   fingerprints which revision was read, so `OK` beside a count is
-   re-readable where a bare `OK` is not. Runtime indicts a copy only
-   when short: shorter than expected means broken, longer means nothing,
-   and runtime tracks the checkout as much as the tree, so loose-object
-   and ref counts belong beside a timing reading.
+   mutating the tree under test, which an interrupted pass leaves
+   mutated. Building that copy faithfully where the tree is a
+   repository is
+   [cut-lens.md](../skills/kernel/orch-decompose/references/cut-lens.md)'s.
 9. A correction consumes causes, not findings: one fix per shared
    cause, the smallest set that closes the validated findings,
    preferring the fix that simplifies. A cause whose coherent fix
@@ -51,21 +36,18 @@
 10. Independence enters every unit before its acceptance is final,
     from at least one source outside the executing context: a
     completion test whose oracles all carry `pre-existing` oracle
-    provenance ([contracts/work-item.md](../contracts/work-item.md));
-    one fresh checker (`orch-check` — never a second executor)
-    reviewing the result and its authored checks and correcting per
-    §9, the completion test then re-verified by a further context
-    that rendered no part of the result; a judged verdict per §6; or
-    the downstream gate the ticket's `independence` field names.
+    provenance ([contracts/work-item.md](../contracts/work-item.md)) and
+    each can fail on the objective (§8); one fresh checker
+    (`orch-critique` under the ticket's own write scope — never a second
+    executor) reviewing the result and its authored checks and
+    correcting per §9, the completion test then re-verified by a further
+    context that rendered no part of the result; a judged verdict per
+    §6; or the downstream gate the ticket's `independence` field names.
     Acceptance resting only on checks the executing context authored
     is UNVERIFIED.
 11. A repair by the context that found the defect is accepted only on a
     check that did no part of the repair: repairing makes that context an
-    executor from that moment (§4), claiming no verdict of its own. The
-    cut's is `cutcheck.py` re-run to exit 0 against the revision the set
-    was cut from. Cutcheck's exit 0 means no finding whose class lies
-    outside the advisory set, not that the set is clean: an advisory
-    finding is reported and exits 0. A cut verdict is not portable
-    between hosts. An oracle naming an interpreter one host lacks is
-    reported there as `unrunnable-oracle` and is silent here, so a
-    verdict is read only on the host that produced it.
+    executor from that moment (§4), claiming no verdict of its own. What
+    that check is for a cut, and why a verdict is read only on the host
+    that produced it, are
+    [cut-lens.md](../skills/kernel/orch-decompose/references/cut-lens.md)'s.

@@ -4,18 +4,46 @@ Separate from ``tests/test_contracts.py``, which freezes the T0 contracts'
 shape and the description budget every skill respects: nothing moved out of
 that module. This one holds only the sink invariants — the path each
 contract states, the work-item Location invariant's four conjuncts, and
-``run.json``'s field list — so a location supersession is provably a
-location change and not a shape change. Its second half holds the prose
+``run.json``'s field list at its writer. Its second half holds the prose
 invariants: the amended two-channel law, the one prose owner of the sink
 path, and which ``.orch`` mentions may survive.
+
+Its third half is ``tools/validate.py``'s two remaining owned-literal
+checks and the cross-tier duplication check that replaced ``validate_sync``
+(REVIEW-2026-08-15 T2). ``tests/test_sync.py`` held
+them until the sync check it was named for was deleted; what survived it —
+``scripts/tickets.py``'s ``PACK_WORKSPACE_MECHANISMS`` against the packs'
+own cells, and the friction log's one location against every copy of it —
+lives here now, because a copy checked against its owner is the same
+subject as a copy the compiler refuses outright.
 """
+import ast
 import os
 import re
+import shutil
+import subprocess
+import sys
+import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
 CONTRACTS = ROOT / "contracts"
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+import scripts.friction as friction_mod  # noqa: E402
+import scripts.state_root as state_root  # noqa: E402  the sink resolver's one owner
+import scripts.tickets as tickets_mod  # noqa: E402
+import tools.validate as validate  # noqa: E402
+from tests.tree_removal import remove_repo_tree  # noqa: E402  the removal's one owner
+
+VALIDATE = ROOT / "tools" / "validate.py"
+PACKS = ROOT / "packs"
+TEMPLATES = ROOT / "templates"
+TICKETS_PY = ROOT / "scripts" / "tickets.py"
 
 # The one path each contract states for the record it owns. The resolver's
 # rule and the environment variable's semantics stay with their owner,
@@ -23,7 +51,6 @@ CONTRACTS = ROOT / "contracts"
 SINK_PATHS = {
     "work-item.md": "`<state-root>/tickets/<run>/<id>.md`",
     "worklog.md": "`<state-root>/runs/<run>/worklog.md`",
-    "composition.md": "`<state-root>/runs/<run>/composition.md`",
 }
 
 # The `.orch` references allowed to survive anywhere in `contracts/`.
@@ -42,9 +69,8 @@ LOCATION_CONJUNCTS = (
 )
 
 # Every field `run.json` carries, from the writer's own recorded shape
-# (`scripts/tickets.py`, item 03's `run_json_shape`). The contract may name
-# these and no others, so contract and writer cannot drift in either
-# direction.
+# (`scripts/tickets.py`). Its docstring may name these and no others, so
+# statement and writer cannot drift in either direction.
 RUN_JSON_FIELDS = frozenset({
     "run",
     "sink_convention",
@@ -58,47 +84,7 @@ RUN_JSON_FIELDS = frozenset({
     "workspaces[].first_seen",
 })
 
-RUN_JSON_MARKER = "`<state-root>/runs/<run>/run.json`"
-
-# Each contract's declared shape at this run's baseline `ef336e0`, read with
-# `git show ef336e0:contracts/<name>`: the headings it declares, and every
-# backticked token on the first line of each top-level bullet — field names
-# and the enums they range over. A location supersession changes none of it.
-BASELINE_HEADINGS = {
-    "work-item.md": ("# Work-item contract (ticket)",),
-    "worklog.md": ("# Worklog contract",),
-    "composition.md": ("# Composition contract",),
-}
-BASELINE_FIELDS = {
-    "work-item.md": (
-        "id", "run", "status", "pending", "ready", "claimed", "suspended",
-        "complete", "executor", "pack", "independence", "gate", "checker",
-        "checked_by", "depends_on", "write_scope", "authority",
-        "excluded_actions", "authority", "isolation", "authority",
-        "required", "none", "bound", "bounds", "claimed_by", "claimed_at",
-        "workspace_branch", "workspace_baseline", "profile", "profile",
-        "## Objective", "objective", "## Fixed inputs", "inputs",
-        "## Completion test", "## Return fields", "return_contract",
-        "## Result", "## Verification", "## Feedback", "[]", "## Risks",
-        "[]", "## Handoff",
-    ),
-    "worklog.md": (
-        "goal", "spec", "tickets", "iterations", "blame_classes",
-        "failed_approaches", "queued_scope", "terminal", "complete",
-    ),
-    "composition.md": (
-        "name", "description", "entry", "routed", "named", "scheduled",
-        "steps", "id", "unit", "pack", "edges", "seq", "invariants",
-        "Never:", "done_check", "Require:", "Return:", "Return:",
-    ),
-}
-
-# The only shape this supersession adds: `run.json`'s five top-level field
-# names, appended to the worklog contract's own list. Enumerated so the
-# addition is pinned rather than merely tolerated.
-ADDED_FIELDS = {
-    "worklog.md": ("run", "sink_convention", "opened_at", "project", "workspaces"),
-}
+RUN_JSON_MARKER = "``<sink>/runs/<run>/``"
 
 HEADING = re.compile(r"^#{1,6} .*$", re.M)
 BULLET = re.compile(r"^- (.*)$", re.M)
@@ -191,38 +177,22 @@ class TestContractsNameTheSink(unittest.TestCase):
 
 
 class TestWorklogStatesRunIdentity(unittest.TestCase):
-    """Spec A5's contract half: `run.json`'s fields, stated where the run's
-    other durable file is stated."""
+    """`run.json`'s fields, stated by its one writer: the field list lives in
+    scripts/tickets.py's module docstring, and the
+    docstring may name these fields and no others, so writer and statement
+    cannot drift in either direction."""
 
     def block(self):
-        text = read("worklog.md")
-        self.assertIn(RUN_JSON_MARKER, text, "worklog.md does not state run.json's path")
-        return text.split(RUN_JSON_MARKER, 1)[1]
+        text = (ROOT / "scripts" / "tickets.py").read_text(encoding="utf-8")
+        docstring = text.split('"""', 2)[1]
+        self.assertIn(RUN_JSON_MARKER, docstring, "tickets.py's docstring does not state run.json's path")
+        return docstring.split(RUN_JSON_MARKER, 1)[1].replace("``", "`")
 
     def test_the_contract_names_every_field_run_json_carries(self):
         self.assertEqual(set(), RUN_JSON_FIELDS - set(TOKEN.findall(self.block())))
 
     def test_the_contract_names_no_field_run_json_does_not_carry(self):
         self.assertEqual(set(), set(TOKEN.findall(self.block())) - RUN_JSON_FIELDS)
-
-
-class TestContractShapeUnchanged(unittest.TestCase):
-    """Spec A12's other half: a location supersession, never a shape one.
-
-    A shape change is breaking and lands only through its own supersession
-    PR (AGENTS.md), so the shape is pinned here as literals read from the
-    baseline revision rather than re-derived from whatever is on disk.
-    """
-
-    def test_no_contract_declares_a_heading_it_did_not_declare_at_baseline(self):
-        for name, headings in BASELINE_HEADINGS.items():
-            with self.subTest(contract=name):
-                self.assertEqual(headings, declared_shape(name)[0])
-
-    def test_no_contract_gains_or_loses_a_field_beyond_the_enumerated_addition(self):
-        for name, fields in BASELINE_FIELDS.items():
-            with self.subTest(contract=name):
-                self.assertEqual(fields + ADDED_FIELDS.get(name, ()), declared_shape(name)[1])
 
 
 # --- The prose half: the law and the documentation say what the code does ---
@@ -259,26 +229,28 @@ REPOSITORY_ORCH_SUBDIRECTORIES = frozenset({"canary/", "bin/"})
 # term defined against the old place makes every correct use of it wrong.
 SINK_TERMS = ("tracker", "friction log", "run state")
 
-# The three files outside this item's `write_scope` that name `.orch`
+# The files outside this item's `write_scope` that name `.orch`
 # legitimately — the canary is a git-tracked golden fixture and `bin/` is an
 # installed script directory, neither of them state. Their `.orch` lines are
-# pinned as the bytes they carried at this item's `run_revision`.
+# pinned as the bytes they carried at this item's `run_revision`. The third
+# was `skills/kernel/orch-mechanize/SKILL.md`, deleted at P3: the run-local
+# `.orch/bin/` landing zone is rules/token-economy.md §4's to state, and a
+# skill body no longer restates it.
 CANARY_AND_BIN_LINES = {
-    "compositions/drift-canary.md": (
-        "`.orch/canary/`, spanning the kernel boundaries: one delegation, one",
+    "compositions/drift-canary/00-run.md": (
+        "- {{canary_set}} — the frozen golden work items under `.orch/canary/`,",
     ),
     "skills/workflows/orch-fixture/SKILL.md": (
-        "README line. Freeze into `.orch/canary/<name>/`: the spec excerpt the",
-    ),
-    "skills/kernel/orch-mechanize/SKILL.md": (
-        "Write the script in stdlib Python 3, cross-platform, to `.orch/bin/` for",
+        "`.orch/canary/README.md` owns: the ticket under `tickets/canary/`, the",
     ),
 }
 
-# Both files carrying the friction-law fallback: the instruction a blocked
+# The one file carrying the friction-law fallback: the instruction a blocked
 # agent follows when the logger cannot run. Stale, it loses evidence in
-# silence rather than failing a check.
-FALLBACK_FILES = ("AGENTS.md", "templates/host-block.md")
+# silence rather than failing a check, so it has one owner and no copy --
+# AGENTS.md pointed a second copy at the same tree until P3 deleted it, and
+# `test_agents_md_carries_no_second_fallback_copy` keeps it deleted.
+FALLBACK_FILES = ("templates/host-block.md",)
 FALLBACK_NEEDLE = "friction/<yyyy-mm>.jsonl"
 
 SELF_IMPROVE = "skills/workflows/orch-self-improve/SKILL.md"
@@ -534,6 +506,432 @@ class TestOnlyCanaryAndBinMentionsSurvive(unittest.TestCase):
                 if "canary" not in block and "bin/" not in block:
                     stray.append("{0}:{1}: {2}".format(relpath, index + 1, line.strip()))
         self.assertEqual([], stray)
+
+
+# --- tools/validate.py: the checks that outlived validate_sync ---------
+
+
+def validate_the_real_tree():
+    """One `validate.py` run over this repository, shared by every case that
+    reads it. Nothing here mutates the tree, so a second run can only return
+    the first one's answer half a second later."""
+
+    global _REAL_TREE_RUN
+    if _REAL_TREE_RUN is None:
+        _REAL_TREE_RUN = subprocess.run(
+            [sys.executable, str(VALIDATE)], capture_output=True, text=True
+        )
+    return _REAL_TREE_RUN
+
+
+_REAL_TREE_RUN = None
+
+
+def warning_lines(stdout: str):
+    return [line for line in stdout.splitlines() if line.startswith("WARN")]
+
+
+class TestSyncCheckIsGone(unittest.TestCase):
+    """`validate_sync` kept two spellings of one literal equal to each other.
+    P2 deletes it: a fact gets one owner and the compiler reports the copy
+    rather than repairing it (REVIEW-2026-08-15 T2).
+    Asserted on the module rather than on its output, because a check that
+    stops running still passes every assertion about a clean tree."""
+
+    def test_the_module_exposes_no_sync_check(self):
+        with self.assertRaises(AttributeError):
+            validate.validate_sync
+
+    def test_no_sync_helper_survives_in_the_source(self):
+        source = VALIDATE.read_text(encoding="utf-8")
+        self.assertNotIn("validate_sync", source)
+        self.assertNotIn("_sync_", source)
+
+    def test_the_module_that_tested_it_is_gone_too(self):
+        self.assertFalse((ROOT / "tests" / "test_sync.py").exists())
+
+
+def workspace_mechanism(skill_md: Path) -> str:
+    """The mechanism a pack's `workspace` cell names: the text before that
+    cell's first colon, which is where every pack states it."""
+
+    for line in skill_md.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        parts = stripped.split("|", 3)
+        if len(parts) < 4 or parts[1].strip() != "workspace":
+            continue
+        cell = parts[2].strip()
+        head, sep, _ = cell.partition(":")
+        if not sep:
+            raise AssertionError(f"{skill_md}: workspace cell names no mechanism: {cell}")
+        return head.strip()
+    raise AssertionError(f"{skill_md}: no `workspace` row")
+
+
+class TestPackWorkspaceTableAgainstPacks(unittest.TestCase):
+    """scripts/tickets.py's PACK_WORKSPACE_MECHANISMS against its owners, the
+    packs' own `workspace` cells. `packet` emits the establishment step only
+    for a git mechanism, so a cell that changes mechanism without the table
+    changing with it silently stops -- or starts -- stamping a lane. The one
+    literal copy that was never validate.py's, and so outlives the check that
+    was."""
+
+    def test_the_table_covers_exactly_the_packs_that_exist(self):
+        packs = {path.name for path in PACKS.iterdir() if (path / "SKILL.md").is_file()}
+        self.assertEqual(packs, set(tickets_mod.PACK_WORKSPACE_MECHANISMS))
+
+    def test_every_entry_matches_its_cell(self):
+        for pack, mechanism in sorted(tickets_mod.PACK_WORKSPACE_MECHANISMS.items()):
+            self.assertEqual(
+                mechanism,
+                workspace_mechanism(PACKS / pack / "SKILL.md"),
+                f"{pack}: table and workspace cell disagree",
+            )
+
+    def test_the_git_set_names_only_mechanisms_the_cells_name(self):
+        named = set(tickets_mod.PACK_WORKSPACE_MECHANISMS.values())
+        self.assertLessEqual(set(tickets_mod.GIT_WORKSPACE_MECHANISMS), named)
+
+    def test_the_table_is_a_literal_not_a_read_of_the_tree(self):
+        """Without this the two checks above are vacuous: a table computed
+        from `packs/` matches `packs/` by construction, and the installed
+        script that has no `packs/` is the one that breaks."""
+
+        tree = ast.parse(TICKETS_PY.read_text(encoding="utf-8"))
+        found = [
+            node.value
+            for node in tree.body
+            if isinstance(node, ast.Assign)
+            and any(
+                isinstance(target, ast.Name)
+                and target.id == "PACK_WORKSPACE_MECHANISMS"
+                for target in node.targets
+            )
+        ]
+        self.assertEqual(1, len(found), "expected one module-level assignment")
+        self.assertIsInstance(found[0], ast.Dict)
+        for node in [*found[0].keys, *found[0].values]:
+            self.assertIsInstance(node, ast.Constant, ast.dump(node))
+
+
+CROSS_TIER = "cross-tier near-duplicate"
+
+# One sentence long enough to be content by CELL_CLAUSE_MIN_WORDS, written
+# so it carries no span MANDATED_FORM_RES strips: what is compared is the
+# whole of it, and a fixture that matched a mandated form would be measuring
+# the stripper instead of the check.
+COPIED_SENTENCE = (
+    "A claim reaches the record only when the check that decides it has "
+    "already been shown to fail against a wrong result"
+)
+# The two forms the check must not read as content: a markdown link and a
+# backticked skill name, each standing alone as its own clause. Neither
+# opens with `](../`, so nothing here is exempt by the pack linter's
+# outside-the-pack citation rule -- the exemption under test is the
+# cross-tier one.
+CITATION_ONLY = "[the work-item contract](contracts/work-item.md)"
+NAME_ONLY = "`orch-mimic`"
+
+RULE_MD = "# A rule\n\n{body}\n"
+SKILL_MD = (
+    "---\nname: {name}\ndescription: a synthetic skill standing in for a "
+    "tier the cross-tier check reads\nrole: worker\n---\n"
+    "Require: one ticket.\nNever: guess.\nReturn: the ticket.\n{body}\n"
+)
+
+
+class CrossTierDuplicationTest(unittest.TestCase):
+    """One clause carried by two tiers is a fact with two owners, and the
+    compiler reports it rather than holding the two spellings equal
+    (REVIEW-2026-08-15 T2).
+
+    Runs on the isolated tmp-tree harness tests/test_validator.py owns, so
+    the seam exercised is the real ROOT-relative one, and the tree carries
+    exactly the two files the case is about.
+    """
+
+    def setUp(self):
+        from tests.test_validator import _IsolatedTree  # the harness's one owner
+
+        self.harness = _IsolatedTree("run")
+        self.harness.setUp()
+        self.addCleanup(self.harness.doCleanups)
+        self.tmp_path = self.harness.tmp_path
+
+    def _write(self, rule_body: str, skill_body: str, name: str = "orch-echo"):
+        rules = self.tmp_path / "rules"
+        rules.mkdir(parents=True, exist_ok=True)
+        (rules / "duplication.md").write_text(
+            RULE_MD.format(body=rule_body), encoding="utf-8"
+        )
+        self._write_skill(name, skill_body)
+
+    def _write_skill(self, name: str, body: str):
+        skill = self.tmp_path / "skills" / "instances" / name
+        skill.mkdir(parents=True, exist_ok=True)
+        (skill / "SKILL.md").write_text(
+            SKILL_MD.format(name=name, body=body), encoding="utf-8"
+        )
+
+    def _findings(self):
+        result = self.harness._run()
+        return result, [
+            line for line in result.stdout.splitlines() if CROSS_TIER in line
+        ]
+
+    def test_a_rule_sentence_copied_into_a_skill_body_is_reported(self):
+        self._write(COPIED_SENTENCE + ".", COPIED_SENTENCE + ".")
+        result, findings = self._findings()
+        self.assertEqual(1, len(findings), result.stdout)
+        self.assertTrue(findings[0].startswith("WARN "), findings[0])
+        self.assertIn("rules/duplication.md", findings[0])
+        self.assertIn("skills/instances/orch-echo/SKILL.md", findings[0])
+        self.assertIn("at 1.00", findings[0])
+        self.assertEqual(0, result.returncode, result.stdout)
+
+    def test_the_level_is_the_one_the_module_declares(self):
+        """WARN is a phase, not a verdict: the tree carries the copies P3
+        deletes. The constant is what P3 flips, so the level a finding is
+        emitted at has to be read from it rather than hardcoded here."""
+
+        self.assertEqual("WARN", validate.CROSS_TIER_DUPLICATE_LEVEL)
+
+    def test_a_shared_link_and_a_shared_name_are_not_duplication(self):
+        """Every tier cites the same contracts and names the same skills.
+        A clause that is nothing but a citation or a name is the library's
+        shared vocabulary; convicting it would drive files to stop
+        pointing at their owners."""
+
+        shared = f"- {CITATION_ONLY}\n- {NAME_ONLY}\n"
+        self._write(shared, shared)
+        self._write_skill("orch-mimic", "Nothing shared.")
+        result, findings = self._findings()
+        self.assertEqual([], findings, result.stdout)
+        self.assertEqual(0, result.returncode, result.stdout)
+
+    def test_two_skills_sharing_a_clause_are_reported_and_two_packs_are_not(self):
+        """One tier's internal business is a second linter's — where there
+        is one. Inside packs the pack linter already asks this question, and
+        the cross-tier pass stays out. skills/ has no such check at all, so
+        skipping same-tier pairs there meant two skill bodies could carry a
+        clause byte for byte while each was flagged against an innocent third
+        file in another tier: the one pair that mattered was the one pair
+        nothing compared.
+        """
+
+        self._write("Nothing here.", COPIED_SENTENCE + ".")
+        self._write_skill("orch-mimic", COPIED_SENTENCE + ".")
+        result, findings = self._findings()
+        self.assertEqual(1, len(findings), result.stdout)
+        self.assertIn("skills/instances/orch-echo/SKILL.md", findings[0])
+        self.assertIn("skills/instances/orch-mimic/SKILL.md", findings[0])
+        self.assertIn("(within skills)", findings[0])
+        self.assertEqual(("skills",), tuple(sorted(validate.SAME_TIER_COMPARED)))
+
+    def test_two_packs_sharing_a_clause_stay_the_pack_linters(self):
+        self._write("Nothing here.", "Nothing shared.")
+        for name in ("orch-alpha-pack", "orch-beta-pack"):
+            pack = self.tmp_path / "packs" / name
+            pack.mkdir(parents=True, exist_ok=True)
+            (pack / "SKILL.md").write_text(
+                f"---\nname: {name}\ndescription: a synthetic pack\n---\n\n"
+                f"| cell | binding |\n| --- | --- |\n| slicing | {COPIED_SENTENCE} |\n",
+                encoding="utf-8",
+            )
+        result, findings = self._findings()
+        self.assertEqual([], findings, result.stdout)
+
+
+VOCABULARY = ROOT / "docs" / "vocabulary.md"
+AGENTS_MD = ROOT / "AGENTS.md"
+HOST_BLOCK = TEMPLATES / "host-block.md"
+TERM_ENTRY_RE = re.compile(r"^- \*\*friction log\*\*.*?(?=\n- \*\*|\Z)", re.MULTILINE | re.DOTALL)
+BLOCKED_CASE_RE = re.compile(r"Whenever the logger cannot run.*?never skip the log\.")
+
+
+def _collapse(text: str) -> str:
+    return re.sub(r"\s+", " ", text)
+
+
+class FrictionLocationSyncTest(unittest.TestCase):
+    """The friction log's one location, resolved by scripts/state_root.py's
+    `friction_root`, against every copy of it: docs/vocabulary.md's
+    **friction log** term names the sink tree, and so does the
+    blocked-case sentence in templates/host-block.md --
+    rules/improvement.md §1 sends a write its refusal blocks inside a
+    worktree outside every worktree, which the sink is, and
+    rules/visibility.md §6 leaves no hand-written file under `.orch/`.
+    The expectation is derived by running the owner, never restated here.
+
+    AGENTS.md carries the same sentence and the validator no longer reads
+    it: P3 deletes that copy, and until then the compiler reports it as a
+    cross-tier duplicate rather than requiring it to stay word-perfect."""
+
+    IN_REPOSITORY = ".orch/"
+
+    @staticmethod
+    def _resolved_tree():
+        """The sink tree the log lands in, spelled as a copy spells it,
+        from the logger's own resolver run against a scratch sink: the
+        root is user-scope and identical from anywhere, so what a copy
+        can name -- and what this compares -- is the tree under it."""
+
+        stamp = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        with tempfile.TemporaryDirectory(prefix="friction-sink-") as sink:
+            with mock.patch.dict(os.environ, {state_root.ENV_VAR: sink}):
+                landed = friction_mod._target_path(stamp).parent
+                return landed.relative_to(state_root.state_root()).as_posix() + "/"
+
+    def _blocked_case(self, path: Path) -> str:
+        match = BLOCKED_CASE_RE.search(_collapse(path.read_text(encoding="utf-8")))
+        self.assertIsNotNone(match, f"{path.name}: no blocked-case friction sentence to read")
+        return match.group(0)
+
+    def test_the_term_entry_names_the_location_the_logger_resolves(self):
+        match = TERM_ENTRY_RE.search(VOCABULARY.read_text(encoding="utf-8"))
+        self.assertIsNotNone(match, "docs/vocabulary.md: no **friction log** term entry")
+        entry = _collapse(match.group(0))
+        tree = self._resolved_tree()
+        self.assertIn(tree, entry, f"the term owner does not name {tree}: {entry}")
+
+    def test_the_checked_copy_spells_the_blocked_case_destination(self):
+        tree = self._resolved_tree()
+        sentence = self._blocked_case(HOST_BLOCK)
+        self.assertIn(tree, sentence, f"host-block.md: blocked case does not spell {tree}")
+        self.assertNotIn(
+            self.IN_REPOSITORY, sentence,
+            f"host-block.md: blocked case still sends the entry to {self.IN_REPOSITORY}",
+        )
+
+    # --- the two wrong-result readings (rules/verification.md §8) ------
+
+    # Version control, runtime state, caches -- and the two data corpora
+    # that hold 1275 of the tree's 1492 files while validate.py grades
+    # neither: the copy reports the identical exit code and warning count
+    # without them, and `test_the_copy_grades_what_the_tree_grades` is what
+    # says so on every run.
+    COPY_SKIPS = shutil.ignore_patterns(
+        ".git", ".claude", ".orch", "__pycache__", "*.pyc", ".venv", ".mypy_cache",
+        "benchmarks", "fixtures",
+    )
+    _copy = None
+    _revisions = None
+    _clean = None
+
+    @classmethod
+    def _wrong_result_tree(cls):
+        """A copy beside the tree -- never the tree itself, which an
+        interrupted seeding leaves mutated -- carrying the working-tree
+        state of every file the check reads, so an uncommitted slice is what
+        gets read.
+
+        A `git clone` would carry the *committed* state and cost four
+        seconds; this carries the working tree directly, which is what the
+        clone's five-file overlay existed to reconstruct. Dropping `.git`
+        costs nothing: validate.py runs no git (it contains no subprocess
+        call at all), and the revision this reading is against is read off
+        the tree the copy was taken from.
+        """
+
+        if cls._copy is None:
+            scratch = Path(tempfile.mkdtemp(prefix="friction-locations-"))
+            cls.addClassCleanup(setattr, cls, "_copy", None)
+            cls.addClassCleanup(setattr, cls, "_clean", None)
+            cls.addClassCleanup(remove_repo_tree, scratch)
+            copy = scratch / "copy"
+            shutil.copytree(ROOT, copy, ignore=cls.COPY_SKIPS, symlinks=True)
+            cls._revisions = subprocess.run(
+                ["git", "-C", str(ROOT), "rev-list", "--count", "HEAD"],
+                capture_output=True, text=True, check=True,
+            ).stdout.strip()
+            cls._copy = copy
+        return cls._copy
+
+    def _reading(self, label: str) -> str:
+        return f"{label} [working-tree copy, git rev-list --count {self._revisions}]"
+
+    @staticmethod
+    def _validate(root):
+        return subprocess.run(
+            [sys.executable, str(Path(root) / "tools" / "validate.py")],
+            capture_output=True, text=True,
+        )
+
+    def _validate_in_copy(self):
+        return self._validate(self._wrong_result_tree())
+
+    def _seed(self, rel_path: str, old: str, new: str) -> None:
+        path = self._wrong_result_tree() / rel_path
+        text = path.read_text(encoding="utf-8")
+        self.assertIn(old, text, self._reading(f"{rel_path}: seed assumption stale, {old!r} absent"))
+        self.addCleanup(path.write_text, text, "utf-8")
+        path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+    def _assert_clean_first(self):
+        """The unseeded reading, taken once and shared. It is the same tree
+        in the same state for every case here, and it cost a full validate
+        run per case to keep asking."""
+
+        cls = type(self)
+        if cls._clean is None:
+            cls._clean = self._validate_in_copy()
+        self.assertEqual(
+            0, cls._clean.returncode,
+            self._reading(f"unseeded copy must pass first: {cls._clean.stdout}"),
+        )
+
+    def test_the_copy_grades_what_the_tree_grades(self):
+        """The copy leaves out benchmarks/ and tests/fixtures/. If validate.py
+        ever grades either, the copy stops being a stand-in for the tree and
+        every seeded reading above it is taken against something else."""
+
+        self._assert_clean_first()
+        tree = validate_the_real_tree()
+        self.assertEqual(0, tree.returncode, tree.stdout)
+        self.assertEqual(
+            warning_lines(tree.stdout),
+            warning_lines(self._clean.stdout),
+            self._reading("the copy and the tree do not report the same findings"),
+        )
+
+    def test_a_copy_naming_the_repository_location_fails(self):
+        tree = self._resolved_tree()
+        inside = self.IN_REPOSITORY + tree
+        self._assert_clean_first()
+        # seeded inside the backticked path, which one line carries whole:
+        # the prose around it wraps, and `_seed` reads the file unwrapped
+        self._seed("templates/host-block.md", "`" + tree, "`" + inside)
+        seeded = self._validate_in_copy()
+        self.assertEqual(1, seeded.returncode, self._reading(f"a blocked case naming {inside} must fail: {seeded.stdout}"))
+        self.assertIn("host-block.md", seeded.stdout, self._reading(f"the drifted copy goes unnamed: {seeded.stdout}"))
+
+    def test_agents_md_carries_no_second_fallback_copy(self):
+        """AGENTS.md carried the same blocked-case instruction until P3
+        deleted it. A copy no check requires is a copy free to drift, so
+        what is checkable now is that it stays gone: AGENTS.md names the
+        owner and no tree of the sink."""
+
+        self._assert_clean_first()
+        agents = (self._wrong_result_tree() / "AGENTS.md").read_text(encoding="utf-8")
+        self.assertNotIn(
+            self._resolved_tree(), agents,
+            self._reading("AGENTS.md names a sink tree again: one owner, no copy"),
+        )
+        self.assertIn(
+            "templates/host-block.md", agents,
+            self._reading("AGENTS.md points a blocked agent at no owner"),
+        )
+
+    def test_the_location_is_read_from_its_owner(self):
+        self._assert_clean_first()
+        self._seed("scripts/state_root.py", '/ "friction"', '/ "friction-moved"')
+        seeded = self._validate_in_copy()
+        self.assertEqual(1, seeded.returncode, self._reading(f"a location changed in the owner alone must fail: {seeded.stdout}"))
+        for copy_name in ("vocabulary.md", "host-block.md"):
+            with self.subTest(copy=copy_name):
+                self.assertIn(copy_name, seeded.stdout, self._reading(f"{copy_name} still names the location the owner left: {seeded.stdout}"))
 
 
 if __name__ == "__main__":

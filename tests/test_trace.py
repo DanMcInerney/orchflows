@@ -1,4 +1,4 @@
-"""Session trace extractor: shape, drift-tolerance, mining, and Mermaid oracles."""
+"""Session trace extractor: shape, drift-tolerance, and Mermaid oracles."""
 
 import json
 import re
@@ -202,29 +202,6 @@ class TestTraceV2(unittest.TestCase):
             self.assertEqual(1, len(requests))
             self.assertEqual("a real follow-up question", requests[0]["text"])
 
-    def test_malformed_runs_touched_does_not_poison_mining(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            bad = tmp / "bad.json"
-            bad.write_text(json.dumps({
-                "host": "claude-code", "session_id": "b", "schema_confidence": 1.0,
-                "runs_touched": 12345,
-                "events": [
-                    {"type": "tool_call", "command": "pytest", "exit": 1, "ts": "2026-01-01T00:00:00Z"},
-                    {"type": "tool_call", "command": "pytest", "exit": 1, "ts": "2026-01-01T00:01:00Z"},
-                ],
-                "parse_errors": [],
-            }), encoding="utf-8")
-            run_state = tmp / "repo"
-            spec_dir = run_state / ".orch" / "runs" / "runa"
-            spec_dir.mkdir(parents=True)
-            (spec_dir / "spec-deliver.md").write_text(
-                "routing: pattern `deliver`, pack `orch-content-pack`\n", encoding="utf-8"
-            )
-            findings = trace.mine_observations([bad], run_state)
-            failures = [f for f in findings if f["category"] == "tool-failure"]
-            self.assertEqual(1, len(failures))
-
     def test_is_error_result_without_exit_text_is_a_failure(self):
         with tempfile.TemporaryDirectory() as tmp:
             lines = []
@@ -242,11 +219,6 @@ class TestTraceV2(unittest.TestCase):
             result = self._extract_lines(tmp, lines)
             calls = [e for e in result["events"] if e["type"] == "tool_call"]
             self.assertEqual([1, 1], [e["exit"] for e in calls])
-            trace_path = Path(tmp) / "t.json"
-            trace_path.write_text(json.dumps(result), encoding="utf-8")
-            findings = trace.mine_observations([trace_path], None)
-            failures = [f for f in findings if f["category"] == "tool-failure"]
-            self.assertEqual(1, len(failures))
 
     def test_thinking_blocks_are_not_narration(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -298,42 +270,6 @@ class TestTraceV2(unittest.TestCase):
             narrations = [e for e in result["events"] if e["type"] == "narration"]
             self.assertEqual(1, len(narrations))
             self.assertIn("code pack", narrations[0]["text"])
-
-    def test_misrouting_scoped_by_runs_touched(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            run_state = tmp / "repo"
-            for run, pack in (("runa", "orch-content-pack"), ("runb", "orch-code-pack")):
-                spec_dir = run_state / ".orch" / "runs" / run
-                spec_dir.mkdir(parents=True)
-                (spec_dir / "spec-deliver.md").write_text(
-                    f"routing: pattern `deliver`, pack `{pack}`\n", encoding="utf-8"
-                )
-            code_events = [{"type": "tool_call", "command": "Write:/repo/module.py", "exit": 0, "ts": "2026-01-01T00:00:00Z"}]
-            mismatch = tmp / "mismatch.json"
-            mismatch.write_text(json.dumps({
-                "host": "claude-code", "session_id": "m", "schema_confidence": 1.0,
-                "runs_touched": ["runa"], "events": code_events, "parse_errors": [],
-            }), encoding="utf-8")
-            match = tmp / "match.json"
-            match.write_text(json.dumps({
-                "host": "claude-code", "session_id": "n", "schema_confidence": 1.0,
-                "runs_touched": ["runb"], "events": code_events, "parse_errors": [],
-            }), encoding="utf-8")
-            findings = trace.mine_observations([mismatch, match], run_state)
-            misrouting = [f for f in findings if f["category"] == "misrouting"]
-            self.assertEqual(1, len(misrouting))
-            self.assertIn("runa", misrouting[0]["observed"])
-            self.assertIn("orch-content-pack", misrouting[0]["observed"])
-
-    def test_bom_prefixed_trace_input_is_readable(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "bom.json"
-            payload = {"host": "claude-code", "session_id": "b", "schema_confidence": 1.0,
-                       "events": [], "parse_errors": []}
-            path.write_bytes(b"\xef\xbb\xbf" + json.dumps(payload).encode("utf-8"))
-            findings = trace.mine_observations([path], None)
-            self.assertEqual([], [f for f in findings if f["source"] == "miner"])
 
 
 class TestTraceHarvestsSinkPaths(unittest.TestCase):
@@ -418,48 +354,6 @@ class TestTraceHarvestsSinkPaths(unittest.TestCase):
             self.assertIsNotNone(match, path)
             self.assertEqual("R1", match.group(1), path)
 
-    def test_state_bookkeeping_under_either_root_is_not_deliverable_work(self):
-        """The same widening on the misrouting side: writing a ticket is
-        bookkeeping wherever the ticket lives, so it contributes no kind."""
-
-        code = {"type": "tool_call", "command": "Edit:/repo/src/a.py",
-                "exit": 0, "ts": "2026-01-01T00:00:00Z"}
-        for root in (self.SINK, "/repo/.orch"):
-            bookkeeping = {
-                "type": "tool_call",
-                "command": "Edit:{0}/tickets/{1}/T1.md".format(root, self.RUN),
-                "exit": 0,
-                "ts": "2026-01-01T00:01:00Z",
-            }
-            self.assertEqual(
-                set(), trace._observed_kinds({"events": [bookkeeping]}), root
-            )
-            self.assertEqual(
-                {"code"},
-                trace._observed_kinds({"events": [bookkeeping, code]}),
-                root,
-            )
-
-    def test_a_spec_is_found_under_a_sink_and_under_a_repository(self):
-        """`--run-state` may name either root, because item 08 copies rather
-        than moves and both exist on disk at once."""
-
-        with tempfile.TemporaryDirectory() as tmp:
-            sink, repo = Path(tmp) / "sink", Path(tmp) / "repo"
-            for base, run in ((sink / "runs", "sinkrun"),
-                              (repo / ".orch" / "runs", "reporun")):
-                (base / run).mkdir(parents=True)
-                (base / run / "spec-deliver.md").write_text(
-                    "stamped pack `orch-code-pack`\n", encoding="utf-8"
-                )
-
-            self.assertEqual({"code"}, trace._declared_pack_kinds(sink))
-            self.assertEqual({"code"}, trace._declared_pack_kinds(repo))
-            self.assertEqual(
-                ["spec-deliver.md"], [p.name for p in trace._spec_files(sink)]
-            )
-            self.assertEqual(set(), trace._declared_pack_kinds(Path(tmp) / "absent"))
-
 
 class TestClaudeBoundaryInputs(unittest.TestCase):
     """Boundary hardening: empty file, BOM-only, oversized line, an entirely
@@ -537,231 +431,6 @@ class TestClaudeBoundaryInputs(unittest.TestCase):
             self.assertEqual([], result["events"])
             self.assertEqual(0.0, result["schema_confidence"])
 
-
-class TestObservations(unittest.TestCase):
-    def _write_trace(self, tmp: Path, name: str, events, host="claude-code"):
-        path = tmp / name
-        path.write_text(json.dumps({
-            "host": host,
-            "session_id": name,
-            "schema_confidence": 1.0,
-            "events": events,
-            "parse_errors": [],
-        }), encoding="utf-8")
-        return path
-
-    def test_repeated_tool_failure_across_two_traces(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            a = self._write_trace(tmp, "a.json", [
-                {"type": "tool_call", "command": "pytest", "exit": 1, "ts": "2026-01-01T00:00:00Z"},
-            ])
-            b = self._write_trace(tmp, "b.json", [
-                {"type": "tool_call", "command": "pytest", "exit": 1, "ts": "2026-01-01T00:00:00Z"},
-            ])
-            findings = trace.mine_observations([a, b], None)
-            failures = [f for f in findings if f["category"] == "tool-failure"]
-            self.assertEqual(1, len(failures))
-            finding = failures[0]
-            self.assertEqual("trace", finding["source"])
-            self.assertIn("pytest", finding["observed"])
-            self.assertIn("2 traces", finding["observed"])
-            for key in ("ts", "observed", "expected", "category", "host", "source"):
-                self.assertIn(key, finding)
-
-    def test_single_trace_failure_is_not_a_finding(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            a = self._write_trace(tmp, "a.json", [
-                {"type": "tool_call", "command": "pytest", "exit": 1, "ts": "2026-01-01T00:00:00Z"},
-            ])
-            findings = trace.mine_observations([a], None)
-            self.assertEqual([], [f for f in findings if f["category"] == "tool-failure"])
-
-    def test_repeated_failure_within_one_trace_is_a_finding(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            a = self._write_trace(tmp, "a.json", [
-                {"type": "tool_call", "command": "pytest", "exit": 1, "ts": "2026-01-01T00:00:00Z"},
-                {"type": "tool_call", "command": "pytest", "exit": 1, "ts": "2026-01-01T00:01:00Z"},
-            ])
-            findings = trace.mine_observations([a], None)
-            failures = [f for f in findings if f["category"] == "tool-failure"]
-            self.assertEqual(1, len(failures))
-            self.assertIn("2 times across 1 trace", failures[0]["observed"])
-            self.assertEqual("trace", failures[0]["source"])
-
-    def test_unreadable_trace_input_is_reported(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            missing = Path(tmp) / "no-such-trace.json"
-            findings = trace.mine_observations([missing], None)
-            self.assertEqual(1, len(findings))
-            self.assertEqual("miner", findings[0]["source"])
-            self.assertIn("unreadable", findings[0]["observed"])
-            for key in ("ts", "observed", "expected", "category", "host", "source"):
-                self.assertIn(key, findings[0])
-
-    def test_misrouting_pack_mismatch(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            run_state = tmp / "repo"
-            spec_dir = run_state / ".orch" / "runs" / "testrun"
-            spec_dir.mkdir(parents=True)
-            (spec_dir / "spec-deliver.md").write_text(
-                "routing: pattern `deliver`, pack `orch-content-pack`\n", encoding="utf-8"
-            )
-            trace_path = self._write_trace(tmp, "code-trace.json", [
-                {"type": "tool_call", "command": "Write:/repo/module.py", "exit": 0, "ts": "2026-01-01T00:00:00Z"},
-            ])
-            findings = trace.mine_observations([trace_path], run_state)
-            misrouting = [f for f in findings if f["category"] == "misrouting"]
-            self.assertEqual(1, len(misrouting))
-            self.assertIn("orch-content-pack", misrouting[0]["observed"])
-            self.assertIn("code", misrouting[0]["observed"])
-
-    def test_misrouting_matching_kind_is_not_a_finding(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            run_state = tmp / "repo"
-            spec_dir = run_state / ".orch" / "runs" / "testrun"
-            spec_dir.mkdir(parents=True)
-            (spec_dir / "spec-deliver.md").write_text(
-                "routing: pattern `deliver`, pack `orch-content-pack`\n", encoding="utf-8"
-            )
-            trace_path = self._write_trace(tmp, "content-trace.json", [
-                {"type": "tool_call", "command": "Write:/repo/README.md", "exit": 0, "ts": "2026-01-01T00:00:00Z"},
-            ])
-            findings = trace.mine_observations([trace_path], run_state)
-            self.assertEqual([], [f for f in findings if f["category"] == "misrouting"])
-
-    def _run_state_with(self, tmp: Path, run: str, pack: str) -> Path:
-        run_state = tmp / "repo"
-        spec_dir = run_state / ".orch" / "runs" / run
-        spec_dir.mkdir(parents=True)
-        (spec_dir / "spec-deliver.md").write_text(
-            f"routing: pattern `deliver`, pack `{pack}`\n", encoding="utf-8"
-        )
-        return run_state
-
-    def test_design_run_with_markup_and_ticket_write_is_not_misrouted(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            run_state = self._run_state_with(tmp, "designrun", "orch-design-pack")
-            a = self._write_trace(tmp, "d.json", [
-                {"type": "tool_call", "command": "Write:/repo/component.html", "exit": 0, "ts": "2026-01-01T00:00:00Z"},
-                {"type": "tool_call", "command": "Write:/repo/styles.css", "exit": 0, "ts": "2026-01-01T00:01:00Z"},
-                {"type": "tool_call", "command": "Edit:/repo/.orch/tickets/designrun/T1.md", "exit": 0, "ts": "2026-01-01T00:02:00Z"},
-            ])
-            findings = trace.mine_observations([a], run_state)
-            self.assertEqual([], [f for f in findings if f["category"] == "misrouting"])
-
-    def test_research_declaration_is_never_judged(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            run_state = self._run_state_with(tmp, "resrun", "orch-research-pack")
-            a = self._write_trace(tmp, "r.json", [
-                {"type": "tool_call", "command": "Read:/repo/docs/source.md", "exit": 0, "ts": "2026-01-01T00:00:00Z"},
-            ])
-            findings = trace.mine_observations([a], run_state)
-            self.assertEqual([], [f for f in findings if f["category"] == "misrouting"])
-
-    def test_extension_match_is_suffix_not_substring(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            run_state = self._run_state_with(tmp, "docrun", "orch-content-pack")
-            a = self._write_trace(tmp, "s.json", [
-                {"type": "tool_call", "command": "Write:/repo/notes.config", "exit": 0, "ts": "2026-01-01T00:00:00Z"},
-                {"type": "tool_call", "command": "Write:/repo/guide.md", "exit": 0, "ts": "2026-01-01T00:01:00Z"},
-            ])
-            findings = trace.mine_observations([a], run_state)
-            self.assertEqual([], [f for f in findings if f["category"] == "misrouting"])
-
-    def test_ticket_only_writes_never_fire_misrouting(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            run_state = self._run_state_with(tmp, "coderun", "orch-code-pack")
-            a = self._write_trace(tmp, "t.json", [
-                {"type": "tool_call", "command": "Edit:/repo/.orch/tickets/coderun/T1.md", "exit": 0, "ts": "2026-01-01T00:00:00Z"},
-            ])
-            findings = trace.mine_observations([a], run_state)
-            self.assertEqual([], [f for f in findings if f["category"] == "misrouting"])
-
-    def test_misrouting_ambiguous_declared_packs_is_silent(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            run_state = tmp / "repo"
-            for run, pack in (("runa", "orch-content-pack"), ("runb", "orch-code-pack")):
-                spec_dir = run_state / ".orch" / "runs" / run
-                spec_dir.mkdir(parents=True)
-                (spec_dir / "spec-deliver.md").write_text(
-                    f"routing: pattern `deliver`, pack `{pack}`\n", encoding="utf-8"
-                )
-            trace_path = self._write_trace(tmp, "code-trace.json", [
-                {"type": "tool_call", "command": "Write:/repo/module.py", "exit": 0, "ts": "2026-01-01T00:00:00Z"},
-            ])
-            findings = trace.mine_observations([trace_path], run_state)
-            self.assertEqual([], [f for f in findings if f["category"] == "misrouting"])
-
-    def test_machinery_ratio_exceeds_threshold(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            events = (
-                [{"type": "tool_call", "command": "x", "exit": 0, "ts": "2026-01-01T00:00:00Z"} for _ in range(3)]
-                + [{"type": "skill_invocation", "name": "s", "ts": "2026-01-01T00:00:00Z"}]
-                + [{"type": "subagent", "agent_type": "a", "model": "m", "effort": "e", "depth": 2,
-                    "ts": "2026-01-01T00:00:00Z"}]
-            )
-            trace_path = self._write_trace(tmp, "ratio-trace.json", events)
-            (tmp / "ratio-trace.budget.json").write_text(
-                json.dumps({"expected_event_budget": 4, "threshold": 1.0}), encoding="utf-8"
-            )
-            findings = trace.mine_observations([trace_path], None)
-            ratio_findings = [f for f in findings if f["category"] == "misrouting"]
-            self.assertEqual(1, len(ratio_findings))
-            self.assertIn("1.75", ratio_findings[0]["observed"])
-
-    def test_machinery_ratio_without_budget_file_is_silent(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            trace_path = self._write_trace(tmp, "no-budget-trace.json", [
-                {"type": "tool_call", "command": "x", "exit": 0, "ts": "2026-01-01T00:00:00Z"},
-            ])
-            findings = trace.mine_observations([trace_path], None)
-            self.assertEqual([], findings)
-
-    def test_cli_observations_mode(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            a = self._write_trace(tmp, "a.json", [
-                {"type": "tool_call", "command": "pytest", "exit": 1, "ts": "2026-01-01T00:00:00Z"},
-            ])
-            b = self._write_trace(tmp, "b.json", [
-                {"type": "tool_call", "command": "pytest", "exit": 1, "ts": "2026-01-01T00:00:00Z"},
-            ])
-            result = run_cli(["--observations", str(a), str(b)])
-            self.assertEqual(0, result.returncode)
-            lines = [ln for ln in result.stdout.splitlines() if ln.strip()]
-            self.assertEqual(1, len(lines))
-            finding = json.loads(lines[0])
-            self.assertEqual("tool-failure", finding["category"])
-
-    def test_mining_end_to_end_over_extracted_fixture_trace(self):
-        extracted = trace.extract_claude(FIXTURES / "claude" / "clean")
-        with tempfile.TemporaryDirectory() as tmp:
-            trace_path = Path(tmp) / "session.json"
-            trace_path.write_text(json.dumps(extracted), encoding="utf-8")
-            budget_path = Path(tmp) / "session.budget.json"
-            budget_path.write_text(
-                json.dumps({"expected_event_budget": 1, "threshold": 0.1}),
-                encoding="utf-8",
-            )
-            findings = trace.mine_observations([trace_path], run_state=None)
-        self.assertTrue(findings, "expected at least one finding from the fixture trace")
-        for finding in findings:
-            for key in ("ts", "observed", "expected", "category", "host", "source"):
-                self.assertIn(key, finding)
-            self.assertEqual("trace", finding["source"])
-            self.assertEqual(extracted["host"], finding["host"])
 
 
 if __name__ == "__main__":
