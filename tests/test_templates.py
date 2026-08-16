@@ -288,5 +288,55 @@ class TestStubShape(_TemplateTree):
         self.assertIn("no criterion", error)
 
 
+class TestStubGraph(_TemplateTree):
+    """The depends_on graph: every edge lands inside the template, the
+    graph is acyclic, and exactly one stub is terminal."""
+
+    def test_a_cycle_is_one_error_naming_the_template(self):
+        self.write_template(
+            "demo",
+            stubs={
+                "diagnose": stub_md("diagnose", depends="[verify]"),
+                "repair": stub_md("repair", depends="[diagnose]"),
+                "verify": stub_md("verify", depends="[repair]"),
+            },
+        )
+        error = self.assert_one_error("compositions/demo/template.md")
+        self.assertIn("cycle", error)
+
+    def test_a_stub_depending_on_itself_is_a_cycle(self):
+        self.write_template(
+            "demo",
+            stubs={
+                "diagnose": stub_md("diagnose"),
+                "repair": stub_md("repair", depends="[diagnose]"),
+                "verify": stub_md("verify", depends="[repair, verify]"),
+            },
+        )
+        error = self.assert_one_error("compositions/demo/template.md")
+        self.assertIn("cycle", error)
+
+    def test_two_terminal_stubs_is_one_error(self):
+        self.write_template(
+            "demo",
+            stubs={
+                "diagnose": stub_md("diagnose"),
+                "repair": stub_md("repair", depends="[diagnose]"),
+                "verify": stub_md("verify"),
+            },
+        )
+        error = self.assert_one_error("compositions/demo/template.md")
+        self.assertIn("terminal", error)
+        self.assertIn("repair", error)
+        self.assertIn("verify", error)
+
+    def test_depends_on_naming_a_stub_outside_the_template_is_one_error(self):
+        stubs = dict(GOOD_STUBS)
+        stubs["repair"] = stub_md("repair", depends="[diagnose, triage]")
+        self.write_template("demo", stubs=stubs)
+        error = self.assert_one_error("compositions/demo/repair.md")
+        self.assertIn("'triage'", error)
+
+
 if __name__ == "__main__":
     unittest.main()

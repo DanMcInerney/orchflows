@@ -1653,16 +1653,53 @@ def _validate_template_stub(path: Path, diag: Diagnostics) -> list:
     return depends
 
 
+def _validate_template_graph(directory: Path, edges: dict, diag: Diagnostics) -> None:
+    """The depends_on graph is acyclic and exactly one stub is terminal.
+    A cycle leaves the terminal rule undefined -- every stub in a cycle
+    is depended on -- so the cycle is the only defect reported."""
+    file_label = rel(directory / TEMPLATE_MANIFEST)
+    graph = {stem: {d for d in deps if d in edges} for stem, deps in edges.items()}
+    cycle = find_cycle(graph)
+    if cycle:
+        diag.error(file_label, f"template depends_on cycle: {' -> '.join(cycle)}")
+        return
+    depended_on = {dep for deps in graph.values() for dep in deps}
+    terminals = sorted(stem for stem in graph if stem not in depended_on)
+    if len(terminals) == 1:
+        return
+    found = (
+        "no terminal stub" if not terminals
+        else f"{len(terminals)} terminal stubs ({', '.join(terminals)})"
+    )
+    diag.error(
+        file_label,
+        f"template has {found}; exactly one stub must be depended on by no other",
+    )
+
+
 def validate_templates(diag: Diagnostics) -> None:
     """SPEC-ticket-set.md s2-s3: every `compositions/<name>/` template is
     a manifest plus ticket stubs whose graph is acyclic and terminates in
     exactly one stub."""
     for directory in discover_templates():
         _validate_template_manifest(directory / TEMPLATE_MANIFEST, diag)
-        for path in sorted(directory.glob("*.md")):
-            if path.name == TEMPLATE_MANIFEST:
-                continue
-            _validate_template_stub(path, diag)
+        stubs = [
+            path for path in sorted(directory.glob("*.md"))
+            if path.name != TEMPLATE_MANIFEST
+        ]
+        stems = {path.stem for path in stubs}
+        edges = {}
+        for path in stubs:
+            depends = _validate_template_stub(path, diag)
+            for dep in depends:
+                if dep not in stems:
+                    diag.error(
+                        rel(path),
+                        f"depends_on names '{dep}', which is not a stub in "
+                        f"template '{directory.name}'",
+                    )
+            edges[path.stem] = depends
+        _validate_template_graph(directory, edges, diag)
 
 
 # LOOP_TRIGGER_RE fires only on the imperative/procedural verb forms that
