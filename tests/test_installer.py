@@ -581,11 +581,14 @@ class TestScopedHostConfiguration(unittest.TestCase):
             ):
                 plan = install.build_plan("user", None)
 
-            # Compositions are invocable by name and get the same adapter
-            # stubs as skills, whatever their entry value.
-            compositions = install.discover_compositions()
+            # Compositions are invocable by name and get an adapter stub like
+            # skills, whatever their entry value. What differs is the body: a
+            # skill's is an `@`-include of one file, and a template is a
+            # directory, which `@` cannot include.
+            templates = install.discover_templates()
+            template_names = {directory.name for directory, _, _ in templates}
             self.assertEqual(
-                len(install.discover_packages()) + len(compositions),
+                len(install.discover_packages()) + len(templates),
                 len(plan.claude_adapters),
             )
             expected_lib_path = (home / ".orchflows" / "lib").resolve()
@@ -597,14 +600,19 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertIn("description:", frontmatter)
                 self.assertNotIn("role:", frontmatter)
                 self.assertNotIn("entry:", frontmatter)
-                self.assertTrue(body.strip().startswith("@"))
+                self.assertNotIn("placeholders:", frontmatter)
+                if dest.parent.name in template_names:
+                    self.assertNotIn("@", body)
+                    self.assertIn("tickets.py instantiate", body)
+                    self.assertIn("orch-frontier", body)
+                else:
+                    self.assertTrue(body.strip().startswith("@"))
                 self.assertIn(str(expected_lib_path), body)
 
-            composition_names = {path.stem for path, _, _ in compositions}
             expected_stub_names = {
                 name
                 for name in install.CODEX_SKILL_REDIRECT_NAMES
-                if name.startswith("orch-") or name in composition_names
+                if name.startswith("orch-") or name in template_names
             }
             self.assertEqual(
                 expected_stub_names,
@@ -619,33 +627,52 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertIn(str(expected_lib_path), body)
                 self.assertIn("follow it exactly.", body)
 
-    def test_discover_compositions_requires_frontmatter_with_entry(self):
+    def test_discover_templates_requires_a_manifest_with_entry(self):
+        """A name surface is a template directory whose manifest declares an
+        `entry`. Everything else under `compositions/` is library data: the
+        shared `references/` tree, a directory mid-authoring, and — the case
+        this replaces — any stray top-level `*.md`, which was the second
+        grammar's whole surface until P4-3 deleted it."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             comps = root / "compositions"
-            comps.mkdir()
-            (comps / "fix.md").write_text(
-                "---\nname: fix\ndescription: routed fix chain\nentry: routed\n---\n\n"
-                "Require: a failure.\n\nReturn: status, result, verification.\n",
+            (comps / "fix").mkdir(parents=True)
+            (comps / "fix" / "template.md").write_text(
+                "---\nname: fix\ndescription: routed fix chain\nentry: routed\n"
+                "placeholders: [failure]\n---\n\nFour stubs, one chain.\n",
                 encoding="utf-8",
             )
-            (comps / "legacy.md").write_text(
-                "# legacy example\n\nprose only, no frontmatter\n", encoding="utf-8"
+            (comps / "fix" / "00-reproduce.md").write_text(
+                "---\nid: 00-reproduce\n---\n\nstub\n", encoding="utf-8"
             )
-            (comps / "no-entry.md").write_text(
+            (comps / "references").mkdir()
+            (comps / "references" / "shared.md").write_text("prose\n", encoding="utf-8")
+            (comps / "no-entry").mkdir()
+            (comps / "no-entry" / "template.md").write_text(
                 "---\nname: no-entry\ndescription: missing entry\n---\n\nbody\n",
                 encoding="utf-8",
             )
-            found = install.discover_compositions(root)
-            self.assertEqual(["fix.md"], [path.name for path, _, _ in found])
-            path, frontmatter, body = found[0]
-            self.assertEqual("routed", install.frontmatter_field(frontmatter, "entry"))
-            self.assertIn("Require: a failure.", body)
+            (comps / "unfrontmattered").mkdir()
+            (comps / "unfrontmattered" / "template.md").write_text(
+                "# no frontmatter\n\nprose only\n", encoding="utf-8"
+            )
+            (comps / "legacy.md").write_text(
+                "---\nname: legacy\ndescription: the deleted step form\n"
+                "entry: routed\n---\n\nSteps: one.\n",
+                encoding="utf-8",
+            )
 
-    def test_composition_surfaces_cover_every_entry_value(self):
-        # Routed, named, and scheduled compositions all surface as Claude
-        # adapters, Codex prompts, and by-name entries -- the named tier is
-        # unreachable from a host without them (SPEC §8).
+            found = install.discover_templates(root)
+            self.assertEqual(["fix"], [directory.name for directory, _, _ in found])
+            directory, frontmatter, body = found[0]
+            self.assertEqual("routed", install.frontmatter_field(frontmatter, "entry"))
+            self.assertEqual("[failure]", install.frontmatter_field(frontmatter, "placeholders"))
+            self.assertIn("Four stubs, one chain.", body)
+
+    def test_template_surfaces_cover_every_entry_value(self):
+        # Routed and named templates alike surface as Claude adapters, Codex
+        # prompts, and by-name entries -- the named tier is unreachable from
+        # a host without them (SPEC §8).
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
@@ -655,23 +682,32 @@ class TestScopedHostConfiguration(unittest.TestCase):
             ):
                 plan = install.build_plan("user", None)
 
-            compositions = install.discover_compositions()
-            if not compositions:
-                self.skipTest("no invocable compositions in this tree")
+            templates = install.discover_templates()
+            if not templates:
+                self.skipTest("no invocable templates in this tree")
             adapter_names = {dest.parent.name for dest, _ in plan.claude_adapters}
             prompt_names = {dest.stem for dest, _ in plan.codex_prompts}
             by_name_names = {dest.parent.name for dest, _ in plan.by_name}
             lib_comps = (home / ".orchflows" / "lib" / "compositions").resolve()
-            for path, frontmatter, _ in compositions:
-                name = path.stem
+            for directory, frontmatter, _ in templates:
+                name = directory.name
                 self.assertIn(name, adapter_names)
                 self.assertIn(name, prompt_names)
                 self.assertIn(name, by_name_names)
+                # Both stubs point at the template directory: the adapter to
+                # instantiate it, the pointer to read its manifest.
                 adapter = next(c for d, c in plan.claude_adapters if d.parent.name == name)
-                self.assertIn(str(lib_comps / path.name), adapter)
+                self.assertIn(str(lib_comps / name), adapter)
                 pointer = next(c for d, c in plan.by_name if d.parent.name == name)
-                self.assertIn(str(lib_comps / path.name), pointer)
+                self.assertIn(str(lib_comps / name / "template.md"), pointer)
                 self.assertIn("entry:", pointer)
+                # Every `--set` the adapter offers is a placeholder the
+                # manifest declares, so a reader cannot be handed one
+                # `tickets.py instantiate` will refuse.
+                declared = (install.frontmatter_field(frontmatter, "placeholders") or "")
+                names = {item.strip() for item in declared.strip("[]").split(",") if item.strip()}
+                offered = set(re.findall(r"--set (\w+)=", adapter))
+                self.assertEqual(names, offered, name)
 
     def test_user_plan_writes_flat_by_name_index_for_every_package(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -686,12 +722,12 @@ class TestScopedHostConfiguration(unittest.TestCase):
             by_name_root = (home / ".orchflows" / "lib" / "by-name").resolve()
             expected_lib_path = (home / ".orchflows" / "lib").resolve()
             packages = install.discover_packages()
-            compositions = install.discover_compositions()
+            templates = install.discover_templates()
             # One flat entry per canonical name — skills across every tier,
-            # packs, and invocable compositions alike — no tier in the path.
-            self.assertEqual(len(packages) + len(compositions), len(plan.by_name))
+            # packs, and invocable templates alike — no tier in the path.
+            self.assertEqual(len(packages) + len(templates), len(plan.by_name))
             self.assertEqual(
-                {p.parent.name for p in packages} | {p.stem for p, _, _ in compositions},
+                {p.parent.name for p in packages} | {d.name for d, _, _ in templates},
                 {dest.parent.name for dest, _ in plan.by_name},
             )
             for dest, content in plan.by_name:
@@ -713,7 +749,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 plan = install.build_plan("user", None)
             self.assertEqual([], plan.claude_adapters)
             self.assertEqual(
-                len(install.discover_packages()) + len(install.discover_compositions()),
+                len(install.discover_packages()) + len(install.discover_templates()),
                 len(plan.by_name),
             )
 
@@ -2303,10 +2339,10 @@ class TestClaudeAdapterSet(unittest.TestCase):
         self.assertEqual(set(install.SHARED_ADAPTER_NAMES), self._names(plan.claude_adapters))
         self.assertEqual(4, len(plan.claude_adapters))
 
-    def test_all_is_the_default_and_mints_every_package_and_composition(self):
+    def test_all_is_the_default_and_mints_every_package_and_template(self):
         default = self._plan()
         explicit = self._plan("all")
-        expected = len(install.discover_packages()) + len(install.discover_compositions())
+        expected = len(install.discover_packages()) + len(install.discover_templates())
         self.assertEqual(expected, len(default.claude_adapters))
         self.assertEqual(
             [(dest, content) for dest, content in default.claude_adapters],
@@ -2371,7 +2407,7 @@ class TestClaudeAdapterSet(unittest.TestCase):
             self.assertEqual(0, code)
             return buffer.getvalue()
 
-        every = len(install.discover_packages()) + len(install.discover_compositions())
+        every = len(install.discover_packages()) + len(install.discover_templates())
         self.assertIn(
             f"Claude Code skill adapters ({every})", _dry_run(["--user", "--dry-run"])
         )
