@@ -224,6 +224,142 @@ class CriterionDefectsTest(unittest.TestCase):
                 self.assertIn("criterion", defects[0])
 
 
+class NarrowConsoleTest(unittest.TestCase):
+    """A payload quoting ticket prose prints to a console that cannot spell it.
+
+    `worklog --write` raised UnicodeEncodeError from its one `print` over a
+    ticket carrying an arrow: the run's whole view was lost to the encoding of
+    the terminal it was being shown on. The payload stays UTF-8 by contract --
+    `ensure_ascii=False` is what keeps a path or a criterion readable in it --
+    so the console's own inability to spell a character is answered where it
+    arises, at the stream.
+    """
+
+    ARROW = "→"
+
+    def test_a_payload_holding_an_unencodable_character_still_prints(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = use_sink(tmp)
+            source = tmp / "T1.md"
+            source.write_text(
+                GOOD_TICKET.replace("Add `double(n)`.", f"n {self.ARROW} 2n."),
+                encoding="utf-8",
+            )
+            self.assertNotIn(
+                "error", run_cmd("new", "testrun", "--file", str(source))
+            )
+            environment = dict(os.environ)
+            environment["PYTHONIOENCODING"] = "cp1252"
+            environment[STATE_HOME_ENV_VAR] = str(sink)
+            completed = subprocess.run(
+                [sys.executable, str(TICKETS_PY), "worklog", "testrun"],
+                capture_output=True, cwd=str(tmp), env=environment,
+            )
+            self.assertEqual(0, completed.returncode, completed.stderr)
+            self.assertIn(b"worklog", completed.stdout)
+            self.assertNotIn(b"UnicodeEncodeError", completed.stderr)
+
+
+class AmendTest(unittest.TestCase):
+    """`amend` is the cutter's repair channel, and it closes at the claim.
+
+    `cutcheck.py` reports; the decomposer repairs. Until now no subcommand
+    could touch an issued ticket's cut-time content, so the repair the cut's
+    own oracle demanded was made by editing the file in the sink by hand --
+    outside every refusal `new` applies to the same bytes. What the executor
+    writes stays `result`'s, and what has been claimed is frozen: a criterion
+    that moves under a working executor is the moving target
+    rules/verification.md §3 forbids.
+    """
+
+    def place(self, tmp: Path, text: str = GOOD_TICKET) -> Path:
+        sink = use_sink(tmp)
+        source = tmp / "T1.md"
+        source.write_text(text, encoding="utf-8")
+        self.assertNotIn("error", run_cmd("new", "testrun", "--file", str(source)))
+        return sink / "tickets" / "testrun" / "T1.md"
+
+    def test_a_cut_time_section_is_replaced_on_an_unclaimed_ticket(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.place(tmp)
+            amended = (
+                "- the suite exits 0 | oracle: `python -B -m unittest tests.x.Y` "
+                "| oracle_class: deterministic | provenance: pre-existing"
+            )
+            payload = run_cmd(
+                "amend", "testrun", "T1", "--section", "Completion test",
+                "--text", amended,
+            )
+            self.assertNotIn("error", payload)
+            self.assertEqual("Completion test", payload["amend"]["section"])
+            sections = tickets_mod._sections(path.read_text(encoding="utf-8"))
+            self.assertEqual(amended, sections["Completion test"].strip())
+            self.assertIn("Add `double(n)`", sections["Objective"])
+
+    def test_the_body_may_come_from_a_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.place(tmp)
+            body = tmp / "objective.md"
+            body.write_text("Add `triple(n)`.\n", encoding="utf-8")
+            payload = run_cmd(
+                "amend", "testrun", "T1", "--section", "Objective",
+                "--file", str(body),
+            )
+            self.assertNotIn("error", payload)
+            self.assertIn("triple", path.read_text(encoding="utf-8"))
+
+    def test_a_claimed_ticket_is_refused_and_left_exactly_as_it_was(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.place(tmp)
+            self.assertNotIn(
+                "error", run_cmd("claim", "testrun", "T1", "--by", "someone")
+            )
+            before = path.read_text(encoding="utf-8")
+            payload = run_cmd(
+                "amend", "testrun", "T1", "--section", "Objective", "--text", "no",
+            )
+            self.assertIn("error", payload)
+            self.assertIn("someone", payload["error"])
+            self.assertEqual(before, path.read_text(encoding="utf-8"))
+
+    def test_a_section_the_executor_writes_is_refused_and_names_result(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.place(tmp)
+            payload = run_cmd(
+                "amend", "testrun", "T1", "--section", "Result", "--text", "x",
+            )
+            self.assertIn("error", payload)
+            self.assertIn("result", payload["error"])
+
+    def test_an_amendment_that_would_take_the_ticket_off_contract_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.place(tmp)
+            before = path.read_text(encoding="utf-8")
+            payload = run_cmd(
+                "amend", "testrun", "T1", "--section", "Completion test",
+                "--text", "- the suite exits 0",
+            )
+            self.assertIn("error", payload)
+            self.assertIn("oracle", payload["error"])
+            self.assertEqual(before, path.read_text(encoding="utf-8"))
+
+    def test_a_ticket_that_is_not_there_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.place(tmp)
+            payload = run_cmd(
+                "amend", "testrun", "T9", "--section", "Objective", "--text", "x",
+            )
+            self.assertIn("error", payload)
+            self.assertIn("T9", payload["error"])
+
+
 class CriterionNestingTest(unittest.TestCase):
     """Indentation, in the one owner of criterion parsing.
 

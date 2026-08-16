@@ -259,6 +259,52 @@ class TestStartFailureBehavior(unittest.TestCase):
     def test_a_dirty_path_with_a_quote_is_refused_by_name(self):
         self._refuses_dirty_name("it's.txt")
 
+    def _refuses_scope_entry(self, entry: str):
+        """A grant no machine can read is refused where it is still cheap.
+
+        `check` splits a diff's paths against these entries and reports what
+        falls outside them. An entry carrying a space or a parenthesis is
+        prose -- "scripts/ (tests only)", "docs and rules" -- and matches no
+        path at all, so every path the branch changed reads as a breach, or
+        the grant silently covers nothing and every change passes. Either way
+        the reading is wrong, and it is wrong at the join, hours after the
+        cut that could have fixed it. So `start`, which every isolated item
+        runs first, refuses it and names the contract that says a scope entry
+        is a path.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            ticket = make_ticket(run_dir, "T1", scope=("scratch", entry))
+            before = ticket.read_text(encoding="utf-8")
+            worktree = add_worktree(main, "wt-branch", tmp / "wt")
+
+            done = run_workspace(worktree, "start", "testrun", "T1")
+
+            self.assertEqual(1, done.returncode, done.stdout)
+            error = payload_of(done)["error"]
+            self.assertIn(entry, error)
+            self.assertIn("contracts/work-item.md", error)
+            self.assertEqual(before, ticket.read_text(encoding="utf-8"))
+
+    def test_a_scope_entry_carrying_a_space_is_refused_at_start(self):
+        self._refuses_scope_entry("scripts/ and tests/")
+
+    def test_a_scope_entry_carrying_a_parenthesis_is_refused_at_start(self):
+        self._refuses_scope_entry("scripts/(tests)")
+
+    def test_a_bare_path_scope_is_recorded_as_before(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            make_ticket(run_dir, "T1", scope=("scripts/one.py", "tests/"))
+            worktree = add_worktree(main, "wt-branch", tmp / "wt")
+
+            done = run_workspace(worktree, "start", "testrun", "T1")
+
+            self.assertEqual(0, done.returncode, done.stdout + done.stderr)
+
     def test_a_lost_frontmatter_write_race_leaves_the_winner_in_place(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
