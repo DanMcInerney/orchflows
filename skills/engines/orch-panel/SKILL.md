@@ -13,15 +13,16 @@ runs; and the lane count per candidate.
 
 Carry the frozen candidate-blind Judge brief verbatim into every packet. For each candidate,
 form the declared number of complete delegation packets. Each packet's objective
-asks `orch-judge` to score exactly one fixed candidate identity from its admitted
-evidence; inputs contain only that identity, its exact result/evidence identity,
+asks `orch-verify` to score exactly one fixed candidate identity from its admitted
+evidence — blind: inputs carry only this candidate; inputs contain only that identity, its exact result/evidence identity,
 the frozen evaluation mode, frozen evaluation and scoring identities, brief, and
 frozen scoring criteria. Benchmark mode evidence names executed runner/oracle output; judged
 mode evidence names the static artifact snapshot. Authority grants no target
 write; bounds cap the lane; return_contract requests one score card citing the
 exact evidence identity; reply_to names the dispatcher.
 
-Dispatch packets in parallel through `orch-delegate`. Keep every lane blind to
+Dispatch packets in parallel per
+[rules/delegation.md](../../../rules/delegation.md). Keep every lane blind to
 all other candidates, provenance, lanes, and scores; every child return crosses
 `orch-integrate` with the caller's write scope.
 

@@ -419,18 +419,20 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
     errors = []
     combined_evolve = evolve + generation
     evolve_calls = Counter(CALL_EDGE_RE.findall(combined_evolve))
-    required = {
-        "orch-delegate",
-        "orch-eval-design",
-        "orch-integrate",
-        "orch-judge",
-        "orch-loop",
-        "orch-panel",
-        "orch-search-plan",
-        "orch-verify",
-        "orch-worklog",
-    }
-    if evolve_calls != Counter({name: 1 for name in required}):
+    # `orch-verify` twice: eligibility opens the campaign, the scoring
+    # done-check closes it. Since P3 it is also the one scorer -- `orch-judge`
+    # merged into it (a score scale in the criteria), `orch-delegate` into
+    # rules/delegation.md, `orch-worklog` into the `tickets.py` view -- so none
+    # of the three may reappear as an edge.
+    required = Counter({
+        "orch-eval-design": 1,
+        "orch-integrate": 1,
+        "orch-loop": 1,
+        "orch-panel": 1,
+        "orch-search-plan": 1,
+        "orch-verify": 2,
+    })
+    if evolve_calls != required:
         errors.append("evolve-call-graph")
     eligibility = evolve[evolve.index("- eligibility") : evolve.index("- campaign")]
     campaign = evolve[evolve.index("- campaign") : evolve.index("Edges:")]
@@ -440,7 +442,7 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
         errors.append("generation-verify-binding")
     if re.search(r"^-\s*closing\b", evolve, re.IGNORECASE | re.MULTILINE):
         errors.append("closing-wrapper")
-    if normalized(combined_evolve).count("`orch-judge`") != 1:
+    if normalized(combined_evolve).count("`orch-verify`") != 2:
         errors.append("judge-owner")
 
     tournament_calls = set(CALL_EDGE_RE.findall(tournament))
@@ -486,7 +488,7 @@ class TestArchitecture(unittest.TestCase):
         tournament = read(TOURNAMENT)
         leaf = read(SEARCH_SKILL)
 
-        closing = evolve + "\n- closing — a fresh `orch-judge` wrapper.\n"
+        closing = evolve + "\n- closing — a fresh `orch-verify` wrapper.\n"
         self.assertIn(
             "closing-wrapper",
             architecture_errors(closing, generation, tournament, leaf),

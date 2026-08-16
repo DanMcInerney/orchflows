@@ -220,6 +220,20 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
         pack_dir.mkdir(parents=True)
         (pack_dir / "SKILL.md").write_bytes(content)
 
+    def test_a_references_only_directory_is_no_package_and_no_finding(self):
+        """The home `skills/kernel/orch-delegate/references/profiles.md` keeps
+        after its SKILL.md is deleted: rules/roles.md, contracts/work-item.md,
+        templates/host-block.md and install.py all address the file at that
+        path, so the directory outlives the skill. Discovery must read it as
+        no package at all -- not as a package missing its SKILL.md."""
+        refs = self.tmp_path / "skills" / "kernel" / "orch-refsonly" / "references"
+        refs.mkdir(parents=True)
+        (refs / "profiles.md").write_text("A reference with no skill.\n", encoding="utf-8")
+        result = self._run()
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("orch-refsonly", result.stdout)
+        self.assertEqual("", result.stderr.strip())
+
     def test_missing_closing_fence_is_error_line_and_exit_1_no_traceback(self):
         self._write_skill(
             "badpkg",

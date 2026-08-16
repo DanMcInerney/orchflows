@@ -17,8 +17,19 @@ named external check over judgment wherever both exist. Render judged
 criteria per §6, fresh from the spec. Cite what each oracle
 actually produced; a verdict without evidence is UNVERIFIED.
 
+Where the criteria carry a score scale, score each separately before
+any overall number, anchored to the evidence its oracle produced; an
+unscoreable criterion is UNVERIFIED, never interpolated. Blindness is a
+property of `inputs`, never of this skill: a packet whose inputs carry
+one candidate, its evidence, and the criteria is already a blind lane —
+so never reach past them for a sibling candidate, a sibling's score, or
+the candidate's provenance.
+
 Never: edit the target; skip a criterion silently; upgrade UNVERIFIED to
-PASS by inference; reuse an entry whose `covers` has changed.
+PASS by inference; reuse an entry whose `covers` has changed; let one
+criterion bleed into another; score authorship or effort.
 
 Return: one verdict entry per criterion and the overall verdict stating
-its weakest oracle_class.
+its weakest oracle_class — or a score card, those entries with their
+scores plus the overall score and the confidence it deserves, when the
+criteria carry a scale.

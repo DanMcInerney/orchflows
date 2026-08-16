@@ -9,11 +9,11 @@ concerns.
 
 Gather the facts the frozen statement depends on through
 `orch-investigate` — one bounded question: what exists, what
-constrains, what the request actually touches. Settle the decisions
-only the user can make through `orch-elicit`; synthesize settled
-decisions without re-interviewing. When the request is itself a
-consequential decision, stop there: the settled, approved statement is
-the deliverable.
+constrains, what the request actually touches. Settle decisions only the
+user can make with the user, one question at a time, each answer
+recorded verbatim, without re-interviewing a settled one. When the
+request is itself a consequential decision, stop there: the settled,
+approved statement is the deliverable.
 
 Count the deliverable kinds the end state spans — this decision and its
 evidence ride the Return. One kind → one pack-stamped root ticket. Two

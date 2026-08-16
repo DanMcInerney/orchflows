@@ -17,7 +17,8 @@ that needs a different meaning needs a different word.
   sit below and many packs and workflows sit above.
 - **skill** — one callable package: a directory whose `SKILL.md` states a
   contract in Require / procedure / Never / Return anatomy.
-- **kernel** — the frozen primitive skills; a kernel skill calls no skill.
+- **kernel** — the five frozen primitives — critique, decompose,
+  integrate, investigate, verify; a kernel skill calls no skill.
 - **engine** — a control-flow skill (task, frontier, loop, panel):
   declarative shape, validator-linted bounds, no domain judgment.
 - **workflow** — an assembled skill calling engines, primitives, or
@@ -134,7 +135,8 @@ that needs a different meaning needs a different word.
 - **independence** — acceptance evidence originating outside the
   executing context; sources and law in `rules/verification.md` §10.
   Research craft narrows the term for sources: no shared upstream.
-- **checker** — the fresh reviewer-corrector context (`orch-check`)
+- **checker** — the fresh reviewer-corrector context (`orch-critique`
+  dispatched with the ticket's write scope as its packet `authority`)
   through which independence enters a unit whose checks were authored
   in-unit; corrects but never renders verdicts; law in
   `rules/verification.md` §10.
@@ -159,7 +161,7 @@ The benchmark pipeline has exactly four artifact roles:
 - **benchmark** — the runnable artifact qualified by the
   `benchmaker` composition; its manifest carries the field set
   `compositions/references/benchmaker-manifest.md` owns.
-- **score card** — `orch-judge`'s artifact for one fixed candidate against
+- **score card** — `orch-verify`'s artifact for one fixed candidate against
   frozen scoring criteria: per-criterion scores with verdicts, oracle classes,
   and evidence, plus overall score and confidence.
 - **evolution result** — the `evolve` composition's campaign artifact: final incumbent
@@ -172,7 +174,8 @@ The benchmark pipeline has exactly four artifact roles:
   evaluation identity covers mode, scoring contract, Judge brief or runner,
   evidence adapter, and optional benchmark revision.
 - **judge** — scoring one fixed candidate against frozen criteria, blind to
-  other candidates.
+  other candidates: `orch-verify` where the criteria carry a score scale,
+  blindness being a property of the packet's `inputs`, not of a skill.
 - **judgment shapes** — critique returns findings, judge returns score
   cards, verify returns verdicts; no skill returns another's shape.
 - **incumbent** — the current holder a variant challenges; the

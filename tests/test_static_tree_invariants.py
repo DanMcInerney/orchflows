@@ -64,24 +64,17 @@ ROLE_TABLE = {
     "orch-spec": "none",
     "orch-triage": "none",
     # none: named kernel
-    "orch-delegate": "none",
-    "orch-elicit": "none",
     "orch-integrate": "none",
-    "orch-worklog": "none",
     # none: named utility
     "orch-off": "none",
     "orch-search-plan": "none",
     # planner
     "orch-critique": "planner",
-    "orch-judge": "planner",
     "orch-synthesize": "planner",
     "orch-decompose": "planner",
     # worker
-    "orch-check": "worker",
     "orch-investigate": "worker",
     "orch-verify": "worker",
-    "orch-mechanize": "worker",
-    "orch-workspace": "worker",
     "orch-tdd": "worker",
     "orch-draft": "worker",
     "orch-render": "worker",
@@ -160,11 +153,23 @@ class TestTierDirectoriesExist(unittest.TestCase):
 
 class TestPackageNamesMatchFolders(unittest.TestCase):
     def test_every_skill_folder_matches_its_frontmatter_name(self):
+        """A tier directory holding only `references/` is not a package and is
+        skipped: `skills/kernel/orch-delegate/` is that since P3, keeping
+        `references/profiles.md` at the path rules/roles.md,
+        contracts/work-item.md, templates/host-block.md and install.py all
+        address, after its body became rules/delegation.md §1-§2 plus
+        roles.md §4. A directory carrying anything else must still name
+        itself."""
         for tier in SKILL_TIERS:
             tier_dir = ROOT / "skills" / tier
             for pkg_dir in sorted(p for p in tier_dir.iterdir() if p.is_dir()):
                 skill_md = pkg_dir / "SKILL.md"
-                self.assertTrue(skill_md.is_file(), f"{pkg_dir} has no SKILL.md")
+                if not skill_md.is_file():
+                    self.assertEqual(
+                        ["references"], sorted(p.name for p in pkg_dir.iterdir()),
+                        f"{pkg_dir} has no SKILL.md and is not a references-only home",
+                    )
+                    continue
                 name = frontmatter_name(skill_md)
                 self.assertEqual(name, pkg_dir.name, f"{skill_md} name {name!r} != folder {pkg_dir.name!r}")
 
@@ -391,19 +396,24 @@ class TestBenchmarkArchitecture(unittest.TestCase):
         ),
         (
             "orch-panel", (PANEL,),
-            frozenset({"orch-judge", "orch-delegate", "orch-integrate"}),
+            frozenset({"orch-verify", "orch-integrate"}),
             frozenset(), frozenset(),
         ),
         (
             "evolve", (EVOLVE, EVOLVE_GENERATION), None,
             frozenset({
-                "orch-eval-design", "orch-loop", "orch-delegate", "orch-integrate",
-                "orch-verify", "orch-panel", "orch-judge", "orch-search-plan",
-                "orch-worklog",
+                "orch-eval-design", "orch-loop", "orch-integrate",
+                "orch-verify", "orch-panel", "orch-search-plan",
             }),
             # The demoted skills stay demoted: a reappearing edge would route
-            # a campaign into a skill that no longer exists.
-            frozenset({"orch-bench", "orch-benchmaker"}),
+            # a campaign into a skill that no longer exists. `orch-judge` and
+            # `orch-delegate` join them at P3: scoring is `orch-verify` with a
+            # scale, dispatch is rules/delegation.md, and the worklog is a
+            # `tickets.py` view.
+            frozenset({
+                "orch-bench", "orch-benchmaker", "orch-judge", "orch-delegate",
+                "orch-worklog",
+            }),
         ),
     )
 
@@ -418,12 +428,14 @@ class TestBenchmarkArchitecture(unittest.TestCase):
 
     def test_evolve_verifies_before_it_ranks_and_panels_before_it_judges(self):
         """Required eligibility is checked before survivors are ranked, and the
-        panel's score cards exist before the judge's done-check reads them.
+        panel's score cards exist before the scoring done-check reads them.
         Either inversion is a campaign that ranks ineligible candidates or
-        judges nothing."""
+        judges nothing. Both ends are `orch-verify` since P3 — eligibility at
+        the first occurrence, the done-check at the last — so the order is read
+        off the two ends of the same name."""
         combined = bodies(EVOLVE, EVOLVE_GENERATION)
         self.assertLess(combined.index("`orch-verify`"), combined.index("`orch-panel`"))
-        self.assertLess(combined.index("`orch-panel`"), combined.index("`orch-judge`"))
+        self.assertLess(combined.index("`orch-panel`"), combined.rindex("`orch-verify`"))
 
     def test_the_campaigns_stay_manual_only_entries(self):
         """`entry: named` is what keeps a campaign off the router. validate.py
