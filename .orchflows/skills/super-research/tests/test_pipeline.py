@@ -1247,6 +1247,12 @@ def unreachable_run():
     arrive as one ``TransportError`` out of ``transport.urlopen_read``, so one
     seeded exception stands for the whole class. The first step is left alone:
     what is under test is what survives the second.
+
+    Run on the real governor rather than a bare transport, because the shipped
+    path is governed and the governor is where a call's cost is decided: a bare
+    transport's opener records the read that raised, the governor neither
+    charges nor logs it, and only the governed run can show which of the two
+    the ledger agrees with.
     """
 
     clock = helpers.FakeClock()
@@ -1255,10 +1261,8 @@ def unreachable_run():
         "transport failed for " + transport.ARCTIC_SHIFT_POSTS_ROUTE
     )
     carrier, opener = helpers.offline_transport(clock, responses, latencies=ROUTE_LATENCIES)
-    run = runner.run_scheduled(
-        schema.parse_manifest(TWO_STEP_MANIFEST), carrier, clock=clock.monotonic
-    )
-    return run, opener
+    governor = real_governor(carrier, None, clock)
+    return run_on(clock, governor, TWO_STEP_MANIFEST), opener, governor
 
 
 class AStepThatGotNoAnswerIsTypedTest(unittest.TestCase):
@@ -1279,7 +1283,7 @@ class AStepThatGotNoAnswerIsTypedTest(unittest.TestCase):
     """
 
     def test_the_steps_before_it_keep_their_records_and_their_results(self):
-        run, _ = unreachable_run()
+        run, _, _ = unreachable_run()
 
         kept = [record for record in run.artifact.records if record.step_id == "s1-discover"]
 
@@ -1288,7 +1292,7 @@ class AStepThatGotNoAnswerIsTypedTest(unittest.TestCase):
         self.assertEqual(run.artifact.steps[0].records_kept, len(kept))
 
     def test_the_step_that_got_no_answer_says_so(self):
-        run, _ = unreachable_run()
+        run, _, _ = unreachable_run()
 
         failed = run.artifact.steps[1]
 
@@ -1301,7 +1305,7 @@ class AStepThatGotNoAnswerIsTypedTest(unittest.TestCase):
     def test_the_error_text_rides_along_as_that_steps_warning(self):
         # The only part of this failure that names where to look: which route
         # never answered. A code says the kind of thing that happened.
-        run, _ = unreachable_run()
+        run, _, _ = unreachable_run()
 
         self.assertTrue(
             any(
@@ -1311,14 +1315,20 @@ class AStepThatGotNoAnswerIsTypedTest(unittest.TestCase):
             "the step names no route for the read that never completed",
         )
 
-    def test_the_run_reaches_its_ledger_and_bills_the_spent_call(self):
-        # The read left this host and spent the route's budget, so it is a call
-        # the ledger states; what it did not buy is an item.
-        run, opener = unreachable_run()
+    def test_the_run_reaches_its_ledger_and_bills_no_call_for_the_read_nobody_took(self):
+        # The read reached the opener and nothing answered it. The governor is
+        # where a route's budget is spent, and it charges an interval and logs
+        # a read only after the carrier returns — so it holds no entry for this
+        # one and its arrival clock for the route never moved. The ledger says
+        # the same: `calls` equals the governor's log, one short of what the
+        # opener saw, and the page is still a page.
+        run, opener, governor = unreachable_run()
 
         sums = runner.ledger_sums(run.ledger)
 
-        self.assertEqual(sums["calls"], len(opener.opened))
+        self.assertEqual(sums["calls"], len(governor.log))
+        self.assertEqual(len(opener.opened), len(governor.log) + 1)
+        self.assertNotIn(transport.ARCTIC_SHIFT_POSTS_ROUTE, governor._route_arrival_us)
         self.assertEqual(sums["pages"], sum(step.pages for step in run.artifact.steps))
         self.assertEqual(
             sums["items"], sum(step.records_received for step in run.artifact.steps)

@@ -205,7 +205,7 @@ The eight codes this delivery adds to the retained vocabulary:
 | `stale_identifier` | a vendor identifier rotated; the read was refused, not empty | `x_guest` (404), `youtube_innertube` (400) |
 | `attestation_required` | the origin withheld a payload behind an attestation this package does not perform | `youtube_innertube`, for the two playability statuses evidence.md §"Route measurements of 2026-08-10" records and for a withheld caption list; `cli`, which reads it |
 | `network_intercepted` | the local network answered, not the origin | `transport`, `adapters`, `smoke` |
-| `unreachable` | no answer came back from anyone — not the origin, and not an appliance in front of it | `runner`, which ends the step on it; `smoke` and `cli`, which read it |
+| `unreachable` | the read raised instead of answering: nothing took it — not the origin, and not an appliance in front of it — or the transport itself declined to send it (an address that is not https, a write-capable method, a route or credential it does not declare). The exception's own text rides as the step's warning and says which; the ledger bills no call for it | `runner`, which ends the step on it; `smoke` and `cli`, which read it |
 | `cache_hit` | this run's own memory answered | `adapters`, `runner` |
 | `archive_lag` | an archive's coverage trails the platform | nothing: **absent from the source entirely** |
 | `scope_required` | an archive query needs a scope it was not given | nothing: **absent from the source entirely** |

@@ -66,11 +66,14 @@ has the same shape, with one anonymous hour counted in two buckets.
 ### A page is not a call
 
 A page is what an adapter returned. A call is what an origin was asked to spend.
-`runner.reached_origin` is the one place that decides, and it is false in **two**
-ways: the run's own memory answered (`cache_hit`), or the adapter refused before
-making a call at all (`outcome == "refused"`). `refused` is the one outcome
-meaning the read never left; every other one, failures included and `unreachable`
-with them, describes a call this host actually spent.
+`runner.reached_origin` is the one place that decides, and it is false in **three**
+ways: the run's own memory answered (`cache_hit`), the adapter refused before
+making a call at all (`outcome == "refused"`), or the read raised and nothing took
+it (`unreachable`). The third follows the governor: `_paced_fetch` charges a
+route's interval and logs the read only after the carrier returns, so a fetch that
+raised spent nothing there, and a ledger billing it would disagree with the
+governor's log the suite pins it equal to. Every other outcome, failures included,
+describes an answer this host actually got.
 
 Inferring "reached the origin" from "not a cache hit" is indistinguishable from
 correct until an adapter can refuse *without* calling — a target it does not

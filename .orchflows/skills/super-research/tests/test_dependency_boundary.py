@@ -849,9 +849,9 @@ class TheHostMirrorResolvesFromAnyCheckoutTest(unittest.TestCase):
 
 
 class LossVocabularyIsReadOffTheSourceTest(unittest.TestCase):
-    """`protocol.md`'s two loss tables, checked against the package's own syntax.
+    """`protocol.md`'s three loss tables, checked against the package's own syntax.
 
-    Every other enumeration in this suite is pinned and these two were not, so
+    Every other enumeration in this suite is pinned and these were not, so
     they drifted the way an unpinned table does: `http_status` was documented
     with three emitters and had thirteen, `schema_drift` five against ten,
     `malformed_json` three against nine. The root cause is not arithmetic. The
@@ -869,7 +869,7 @@ class LossVocabularyIsReadOffTheSourceTest(unittest.TestCase):
         self.codes = tuple(code for names, _ in self.rows for code in names)
         self.spelling, self.declaring = loss_code_spelling(set(self.codes))
 
-    def test_both_tables_were_found_and_every_row_names_one_code(self):
+    def test_the_tables_were_found_and_every_row_names_one_code(self):
         # If the parse silently found nothing, every assertion below passes
         # while checking no table at all.
         self.assertGreaterEqual(len(self.rows), 20)

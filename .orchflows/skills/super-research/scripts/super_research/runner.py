@@ -272,18 +272,26 @@ def _refused_step(step: schema.AcquisitionStep, route_id: str, reason: str) -> s
 def reached_origin(page: NativePage) -> bool:
     """Whether this page cost the origin a read.
 
-    Two ways it did not, and until an adapter could refuse there was only one.
+    Three ways it did not, and until an adapter could refuse there was only one.
     A run's own memory answered, which is what ``cache_hit`` says. Or the
     adapter refused before making a call at all — a target it does not serve
     costs a page and no read — and billing that as a call would put work in the
-    ledger that no origin ever saw. ``refused`` is the one outcome that means
-    the read never left: every other one, including a failure and including a
-    read nothing answered, describes a call this host actually spent. An
-    ``unreachable`` page is the sharp case and it is billed: the request went
-    out and the route's budget went with it, whatever came back.
+    ledger that no origin ever saw. Or the read raised instead of answering,
+    which is what ``unreachable`` says: nothing took the request, and the
+    governor — the one place a route's budget is spent — charges no interval
+    and logs no read for a fetch that raised (``pacing.RateGovernor._paced_fetch``
+    charges and logs only after the carrier returns). Billing it here would put
+    a call in the ledger that the governor's own log does not have, and the two
+    are pinned equal. ``refused`` and ``unreachable`` are the two outcomes that
+    mean no origin was asked to spend anything; every other one, failures
+    included, describes an answer this host actually got.
     """
 
-    return page.outcome != "refused" and cache.CACHE_HIT not in page.loss
+    return (
+        page.outcome != "refused"
+        and cache.CACHE_HIT not in page.loss
+        and transport.UNREACHABLE not in page.loss
+    )
 
 
 def _offers_another_page(
@@ -358,7 +366,10 @@ def run_step(
             page = call_adapter(step.adapter_id, carrier, request)
         except transport.TransportError as error:
             # The one read that comes back with nothing to type — a refused
-            # connection, an unresolvable name, a TLS handshake that failed.
+            # connection, an unresolvable name, a TLS handshake that failed, or
+            # the transport declining to send it at all (`transport.urlopen_read`
+            # raises the same class for a non-https address, a write-capable
+            # method and an undeclared route or credential).
             # Typed here rather than raised, because raising discards every
             # step already run: `composition.md` §8 asks a failure path for the
             # partial result plus the evidence gathered, and everything read

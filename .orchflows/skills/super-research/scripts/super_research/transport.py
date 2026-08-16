@@ -156,10 +156,13 @@ class TransportError(RuntimeError):
 
 
 # The typed loss a read that raised :class:`TransportError` leaves on its page.
-# It is declared beside the exception and loaded nowhere here, because the two
-# modules that spell it are the two that meet the failure rather than raise it:
-# `runner` attaches it to the step it ends, `smoke` reads it to decide which
-# party answered.
+# It covers everything that class covers — a read nothing took, and a read this
+# module declined to send (a non-https address, a write-capable method, an
+# undeclared route or credential) — so the exception's text travels with it as
+# the warning that says which. It is declared beside the exception and loaded
+# nowhere here, because the modules that spell it are the ones that meet the
+# failure rather than raise it: `runner` attaches it to the step it ends and
+# bills no call for it, `smoke` reads it to decide which party answered.
 UNREACHABLE = "unreachable"
 
 
