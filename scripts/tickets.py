@@ -68,14 +68,16 @@ VALID_STATUSES = {
     "limited",
 }
 # contracts/work-item.md: `executor` is the named skill bound to do the
-# work. An engine is what dispatches a ticket's executor, so naming one
-# here is the call cycle rules/composition.md §3 forbids — orch-task
-# would spawn orch-task. Mirrors skills/engines/; tests/test_tickets.py
-# holds the two in sync, because an installed copy of this script has no
+# work. Two engines are lawful executors — orch-loop (a loop ticket:
+# body, done-check and bound in its sections) and orch-frontier (a
+# nested template) — per SPEC-ticket-set.md §3. The rest dispatch a
+# ticket's executor, so naming one is the call cycle
+# rules/composition.md §3 forbids — orch-task would spawn orch-task.
+# The two sets together mirror skills/engines/; tests/test_tickets.py
+# holds them in sync, because an installed copy of this script has no
 # library tree to read the list from.
-ENGINE_EXECUTORS = frozenset(
-    {"orch-compose", "orch-frontier", "orch-loop", "orch-panel", "orch-task"}
-)
+TICKET_EXECUTOR_ENGINES = frozenset({"orch-frontier", "orch-loop"})
+ENGINE_EXECUTORS = frozenset({"orch-compose", "orch-panel", "orch-task"})
 # contracts/verdict.md's `oracle_class`, and contracts/work-item.md's
 # optional oracle provenance. Both are closed sets, and this script is the
 # one place a criterion is graded against them.

@@ -893,12 +893,29 @@ class TestEngineExecutorIsRejected(unittest.TestCase):
         return run_dir
 
     def test_engine_list_matches_the_library(self):
+        """The refused engines and the two lawful engine executors
+        (orch-loop: a loop ticket; orch-frontier: a nested template)
+        partition skills/engines/ — SPEC-ticket-set.md §3."""
         engines = {
             path.name
             for path in (ROOT / "skills" / "engines").iterdir()
             if path.is_dir()
         }
-        self.assertEqual(engines, set(tickets_mod.ENGINE_EXECUTORS))
+        refused = set(tickets_mod.ENGINE_EXECUTORS)
+        lawful = set(tickets_mod.TICKET_EXECUTOR_ENGINES)
+        self.assertEqual(set(), refused & lawful)
+        self.assertEqual(engines, refused | lawful)
+
+    def test_a_loop_or_frontier_executor_is_lawful(self):
+        for engine in sorted(tickets_mod.TICKET_EXECUTOR_ENGINES):
+            with tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                self.make(tmp, engine)
+                summary = run_cmd(tmp, "list")["tickets"][0]
+                self.assertNotIn("error", summary, engine)
+                self.assertEqual(["T1"], [t["id"] for t in run_cmd(tmp, "ready")["ready"]])
+                payload = run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-a")
+                self.assertIn("claimed", payload, engine)
 
     def test_every_engine_is_refused(self):
         for engine in sorted(tickets_mod.ENGINE_EXECUTORS):
@@ -928,7 +945,7 @@ class TestEngineExecutorIsRejected(unittest.TestCase):
     def test_backticks_and_spacing_do_not_evade_the_check(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            self.make(tmp, "`orch-frontier`")
+            self.make(tmp, "`orch-panel`")
             self.assertIn("error", run_cmd(tmp, "list")["tickets"][0])
 
     def test_a_lawful_executor_still_passes(self):
