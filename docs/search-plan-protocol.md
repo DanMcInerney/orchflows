@@ -1,6 +1,6 @@
 # Search-plan protocol
 
-The sole command reads one closed UTF-8 JSON request
+`search_plan.py advance` reads one closed UTF-8 JSON request
 `{policy, projection, settled, remaining_bound}` and emits one canonical
 `search-advance/v1` object plus LF. JSON keys sort lexically; arrays retain the
 orders below; integers are JSON integers; dimension values and resolutions are
