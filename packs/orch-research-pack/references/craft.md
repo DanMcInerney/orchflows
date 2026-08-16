@@ -1,6 +1,8 @@
 # Research craft
 
 The research domain's terms and shape, per the signature's craft cell.
+The shape principles every domain shares are
+[rules/token-economy.md](../../../rules/token-economy.md) §10's.
 
 ## Vocabulary
 
@@ -23,8 +25,6 @@ The research domain's terms and shape, per the signature's craft cell.
 
 ## Shape
 
-- Decompose the question into falsifiable sub-claims before searching.
 - Date every claim; undated evidence ages silently.
 - Separate observation from inference in every finding.
-- Weight convergence by independence, never by count.
 - State what evidence would flip each load-bearing claim.

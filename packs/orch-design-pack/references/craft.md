@@ -1,12 +1,9 @@
 # Design craft
 
-The design domain's terms and shape, per the signature's craft cell.
+The design domain's terms, per the signature's craft cell.
 Framework-free the way content craft is genre-free: each term binds a
 marketing page, a dashboard, and a component library equally; framework
-specifics live with the workspace's standards owner. Read
-[rules/token-economy.md](../../../rules/token-economy.md) §10 for the
-shape principles every domain shares; the bullets under Shape are the
-rendered domain's own.
+specifics live with the workspace's standards owner.
 
 ## Vocabulary
 
@@ -39,12 +36,3 @@ rendered domain's own.
 - **accessibility bar** — the spec field of this name: the floor —
   contrast, focus visibility, semantics — and the exact check command
   that decides it.
-
-## Shape
-
-- Token before value: every visual decision is made once, at a token,
-  and referenced everywhere; a per-element exception is a defect
-  unless the standards owner grants it.
-- The unit is a view: all its states co-located with it.
-- Empty, loading, and error are states of the view, not afterthoughts;
-  a state the spec enumerates and no capture shows is unfinished work.
