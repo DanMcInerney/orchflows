@@ -20,7 +20,9 @@ model.
 Instantiate with `canary_set`, the frozen fixture directory. There is no
 scheduler: a profiles.md change or an announced model update is a person
 naming this template, which is why its entry is `named`. Each canary
-item is already a ticket, so `00-run` instantiates nothing — it drains
-the set it is handed. Each stub is a ticket per
+item is already a ticket, so `00-run` instantiates nothing — it issues
+the set it is handed into the run's own ticket directory and drains it
+there. The run's bound is the sum of the two stubs' own bounds, each
+fixed in its own frontmatter. Each stub is a ticket per
 [contracts/work-item.md](../../contracts/work-item.md) missing only what
 instantiation adds.
