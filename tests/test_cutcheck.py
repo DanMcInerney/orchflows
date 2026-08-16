@@ -749,8 +749,69 @@ class AbsentMapTest(unittest.TestCase):
         self.assertNotIn(cutcheck.ORPHAN_ITEM, self.result.stdout)
 
 
+class ThreeRootCoverageTest(unittest.TestCase):
+    """A template instantiates several top-level cuts into one run, and
+    family 5 was written for one.
+
+    One map per run meant each root's criteria were read against every other
+    root's items — so every top-level stub of a template was ORPHAN_ITEM
+    against whichever map happened to be there, and three decomposers writing
+    `coverage.md` overwrote one another. The map is now the root's, named for
+    it, and a root's issued set is `<root>.NN` and nothing else.
+    """
+
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-f5-template")
+        self.lines = reported(self.result, cutcheck.FAMILY_5)
+
+    def test_a_top_level_stub_of_the_template_is_never_an_orphan_item(self):
+        self.assertNotIn(cutcheck.ORPHAN_ITEM, self.result.stdout)
+        for stub in ("01-design", "02-materialize"):
+            self.assertNotIn(f"{stub}: family 5: {cutcheck.ORPHAN_ITEM}",
+                             self.result.stdout)
+
+    def test_the_root_with_a_map_is_answered_by_its_own_subtree(self):
+        self.assertNotIn(cutcheck.ORPHAN_CRITERION, self.result.stdout)
+        self.assertEqual(1, len(self.lines), self.result.stdout)
+
+    def test_the_absent_map_is_reported_against_the_root_that_owes_it(self):
+        self.assertIn(cutcheck.COVERAGE_MAP_ABSENT, self.lines[0])
+        self.assertTrue(self.lines[0].startswith("02-materialize:"), self.lines[0])
+        self.assertIn("02-materialize.coverage.md", self.lines[0])
+        self.assertEqual(0, self.result.returncode, self.result.stdout)
+
+    def test_each_roots_issued_set_is_its_own_subtree(self):
+        siblings = {
+            "00-acquire": {"executor": "orch-decompose"},
+            "00-acquire.01": {"executor": "orch-tdd"},
+            "00-acquire.gate.verify": {"executor": "orch-verify"},
+            "01-design": {"executor": "orch-tdd"},
+            "02-materialize": {"executor": "orch-decompose"},
+        }
+        self.assertEqual(["00-acquire.01"],
+                         cutcheck._issued_under(siblings, "00-acquire"))
+        self.assertEqual([], cutcheck._issued_under(siblings, "02-materialize"))
+
+
 class CoverageHomeTest(unittest.TestCase):
     """The map is found beside the ticket root cutcheck resolved, not at a path."""
+
+    def test_a_single_root_still_reads_the_legacy_map(self):
+        """`runs/<run>/coverage.md` is the one-root spelling and every run in
+        the sink already carries one. It keeps meaning what it said."""
+
+        fixture = ROOT / "tests" / "fixtures" / "cutcheck" / "cutcheck-root-gate"
+        self.assertEqual(
+            fixture / "coverage.md",
+            cutcheck._map_for_root(fixture, "00-root", True),
+        )
+
+    def test_several_roots_never_fall_back_to_one_shared_map(self):
+        fixture = ROOT / "tests" / "fixtures" / "cutcheck" / "cutcheck-root-gate"
+        self.assertEqual(
+            fixture / "00-root.coverage.md",
+            cutcheck._map_for_root(fixture, "00-root", False),
+        )
 
     def test_a_fixture_set_carries_its_map_beside_its_tickets(self):
         fixture = ROOT / "tests" / "fixtures" / "cutcheck" / "cutcheck-f5-coverage"

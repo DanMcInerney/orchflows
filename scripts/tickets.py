@@ -2976,26 +2976,47 @@ def _executor_of(item: dict) -> str:
     return str(item.get("executor") or "").strip().strip("`").strip()
 
 
-def _root_ticket(items: list) -> dict:
-    """The run's root ticket, by SPEC-ticket-set.md §2's three rules.
+def _run_goal(items: list) -> tuple:
+    """``(ticket, kind)`` — the ticket this run's goal is read from.
 
-    The decomposer first, since that is what a root ticket *is*; then the
-    ticket no other depends on, which is the terminal of an instantiated
-    template; then the first id, so a directory of unrelated ad-hoc
-    tickets still renders a view rather than refusing one.
+    One decomposer and a subtree under it is a cut: the root ticket is the
+    goal, because the acceptance the run is graded on is the one it wrote.
+    A template is not that shape. Its stubs are top-level ids with edges
+    between them and several of them may be decomposers, and SPEC-ticket-
+    set.md §2 makes the *terminal* stub's completion test the template's
+    done check — so reading the alphabetically-first decomposer rendered
+    the goal of a stub in the middle of the graph and called it the run's.
+
+    Which shape a run is, from the run: a stub graph is edges among
+    top-level ids, or more than one decomposer. Then the terminal, which is
+    the one ticket nothing depends on. A directory of unrelated ad-hoc
+    tickets falls through to the first id, so it renders a view rather than
+    refusing one.
     """
 
     ordered = sorted(items, key=lambda item: item["id"])
-    roots = [item for item in ordered if _executor_of(item) == ROOT_EXECUTOR]
-    if roots:
-        return roots[0]
+    ids = {item["id"] for item in ordered}
     depended = {
         dependency
         for item in ordered
         for dependency in (item.get("depends_on") or [])
     }
     free = [item for item in ordered if item["id"] not in depended]
-    return free[0] if len(free) == 1 else ordered[0]
+    roots = [item for item in ordered if _executor_of(item) == ROOT_EXECUTOR]
+    top_level = [item for item in ordered if "." not in item["id"]]
+    graph = len(roots) > 1 or any(
+        dependency in ids
+        for item in top_level
+        for dependency in (item.get("depends_on") or [])
+        if "." not in str(dependency)
+    )
+    if graph and len(free) == 1:
+        return free[0], "terminal"
+    if roots:
+        return roots[0], "root"
+    if len(free) == 1:
+        return free[0], "terminal"
+    return ordered[0], "root"
 
 
 def _quoted(body: str) -> list:
@@ -3026,7 +3047,7 @@ def _claim_order(items: list) -> list:
     )
 
 
-def _render_worklog(run: str, items: list, root: dict) -> str:
+def _render_worklog(run: str, items: list, root: dict, kind: str = "root") -> str:
     """The run view: contracts/worklog.md's fields, answered from tickets."""
 
     sections = root.get("sections") or {}
@@ -3041,7 +3062,8 @@ def _render_worklog(run: str, items: list, root: dict) -> str:
         "",
         "## goal",
         "",
-        f"Root ticket `{root['id']}` — executor `{_executor_of(root) or 'none'}`.",
+        f"{kind.capitalize()} ticket `{root['id']}` — executor "
+        f"`{_executor_of(root) or 'none'}`.",
         "",
         "Objective:",
         "",
@@ -3109,8 +3131,8 @@ def _render_worklog(run: str, items: list, root: dict) -> str:
     lines.extend(["", "## terminal", ""])
     if status in TERMINAL_STATES:
         lines.extend([
-            f"`{status}` — the root ticket `{root['id']}`'s status. A run "
-            "exits when its root ticket does.",
+            f"`{status}` — the {kind} ticket `{root['id']}`'s status. A run "
+            f"exits when its {kind} ticket does.",
             "",
         ])
     return "\n".join(lines)
@@ -3176,8 +3198,8 @@ def _cmd_worklog(rest):
     items, error = _run_tickets(run)
     if error is not None:
         return error
-    root = _root_ticket(items)
-    markdown = _render_worklog(run, items, root)
+    root, kind = _run_goal(items)
+    markdown = _render_worklog(run, items, root, kind)
     path = None
     if write:
         path, error = _write_rendered_worklog(run, markdown)
@@ -3187,6 +3209,7 @@ def _cmd_worklog(rest):
         "worklog": {
             "run": run,
             "root": root["id"],
+            "goal_kind": kind,
             "tickets": len(items),
             "path": str(path) if path is not None else None,
             "markdown": markdown,
