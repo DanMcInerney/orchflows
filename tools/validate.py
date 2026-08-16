@@ -1054,6 +1054,14 @@ def cross_tier_documents(packages):
         directory = ROOT / tier
         if directory.is_dir():
             for path in sorted(directory.glob("*.md")):
+                # docs/vocabulary.md is the definitional owner of every
+                # term: an entry is one line naming the term's meaning and
+                # its owner, so a contract or skill using the term in its
+                # defined sense reads as its near-duplicate by construction.
+                # That pair is the relation the vocabulary exists to create,
+                # not a second owner; the file stays out of this corpus.
+                if tier == "docs" and path.name == "vocabulary.md":
+                    continue
                 documents.append((tier, rel(path), _read_source(path)))
     # Every template stub and every reference beside them. This is where a
     # composition's own criteria live, and each of the seven templates was

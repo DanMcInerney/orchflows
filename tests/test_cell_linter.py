@@ -416,12 +416,17 @@ WARNING_CEILING = 4
 
 # The cross-tier linter's own ratchet (validate.py's
 # validate_cross_tier_duplication). Every one of these is a clause two
-# tiers carry -- a fact with two owners -- and P3 deletes them: this
-# number ratchets to 0, at which point validate.py's
-# CROSS_TIER_DUPLICATE_LEVEL flips to "ERROR" and a new copy is refused
-# outright rather than counted (SPEC-ticket-set.md P2-P3,
-# REVIEW-2026-08-15 T2). No headroom, for the same reason as above.
-CROSS_TIER_WARNING_CEILING = 12
+# tiers carry -- a fact with two owners -- and the number ratchets to 0,
+# at which point validate.py's CROSS_TIER_DUPLICATE_LEVEL flips to
+# "ERROR" and a new copy is refused outright rather than counted
+# (SPEC-ticket-set.md P2-P3, REVIEW-2026-08-15 T2). No headroom, for the
+# same reason as above. Raised once, at the P4 gate join (2026-08-16),
+# from 12 to the count the widened corpus reports: the check now reads
+# docs/ (vocabulary.md excepted -- the definitional owner) and
+# compositions/ and compares skills against skills, and what it found
+# there had two owners all along; the deletions are the next ticket's,
+# and the number only falls from here.
+CROSS_TIER_WARNING_CEILING = 50
 
 # A clone is the whole tree minus version control, runtime state and
 # caches -- never an extract of the directories the check happens to read
