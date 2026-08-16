@@ -1317,8 +1317,13 @@ def _cmd_packet(rest):
     completion = sections.get("Completion test", "")
     if not completion:
         missing.append("completion test (## Completion test)")
-    elif "oracle_class" not in completion.lower():
-        missing.append("oracle_class on every completion-test criterion")
+    else:
+        # Through the shape owner, criterion by criterion. The substring test
+        # this replaces read the section once and reported on "every
+        # criterion", so a ticket whose first criterion named a class and
+        # whose second named none was dispatched under a message that said
+        # otherwise.
+        missing.extend(criterion_defects(completion))
     if missing:
         return {"error": "packet incomplete: " + "; ".join(missing)}
 

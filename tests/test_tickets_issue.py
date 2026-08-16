@@ -297,5 +297,59 @@ class TicketDefectsTest(unittest.TestCase):
         self.assertTrue(any("nearly" in defect for defect in defects), defects)
 
 
+def place(sink: Path, run: str, ticket_id: str, text: str) -> Path:
+    """Put one ticket in the sink at the path every workspace agrees on."""
+
+    run_dir = sink / "tickets" / run
+    run_dir.mkdir(parents=True, exist_ok=True)
+    path = run_dir / f"{ticket_id}.md"
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+class PacketGradesEveryCriterionTest(unittest.TestCase):
+    """`packet`'s completion-test check is `criterion_defects`, so the
+    refusal says which criterion and what it lacks. The whole-section
+    substring test it replaces claimed to check every criterion and checked
+    the section once."""
+
+    def two_criteria(self, second: str) -> str:
+        return GOOD_TICKET.replace(
+            f"- {GOOD_CRITERION}", f"- {GOOD_CRITERION}\n- {second}"
+        )
+
+    def test_a_second_criterion_naming_no_class_is_refused_by_number(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            place(sink, "testrun", "T1", self.two_criteria("the doc reads well | oracle: the lens"))
+            payload = run_cmd("packet", "testrun", "T1", "--reply-to", "main")
+            self.assertIn("error", payload)
+            self.assertIn("criterion 2", payload["error"])
+            self.assertIn("oracle_class", payload["error"])
+
+    def test_the_section_naming_a_class_once_no_longer_carries_the_rest(self):
+        """The case the old check passed: `oracle_class` appears in the
+        section, so the substring was found, and the second criterion named
+        neither an oracle nor a class."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            place(sink, "testrun", "T1", self.two_criteria("it looks right"))
+            payload = run_cmd("packet", "testrun", "T1", "--reply-to", "main")
+            self.assertIn("error", payload)
+            self.assertIn("criterion 2", payload["error"])
+
+    def test_every_criterion_naming_both_is_dispatched(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            place(
+                sink, "testrun", "T1",
+                self.two_criteria("the lens finds no defect | oracle: the lens | oracle_class: judged"),
+            )
+            payload = run_cmd("packet", "testrun", "T1", "--reply-to", "main")
+            self.assertNotIn("error", payload)
+            self.assertEqual("T1", payload["packet"]["id"])
+
+
 if __name__ == "__main__":
     unittest.main()
