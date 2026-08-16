@@ -412,7 +412,7 @@ class TestAllowlist(unittest.TestCase):
 # those are fixed. Raising it is a decision, and it belongs in the commit
 # message that raises it.
 BASELINE_WARNINGS = 47
-WARNING_CEILING = 25
+WARNING_CEILING = 4
 
 # The cross-tier linter's own ratchet (validate.py's
 # validate_cross_tier_duplication). Every one of these is a clause two
@@ -421,7 +421,7 @@ WARNING_CEILING = 25
 # CROSS_TIER_DUPLICATE_LEVEL flips to "ERROR" and a new copy is refused
 # outright rather than counted (SPEC-ticket-set.md P2-P3,
 # REVIEW-2026-08-15 T2). No headroom, for the same reason as above.
-CROSS_TIER_WARNING_CEILING = 32
+CROSS_TIER_WARNING_CEILING = 15
 
 # A clone is the whole tree minus version control, runtime state and
 # caches -- never an extract of the directories the check happens to read
