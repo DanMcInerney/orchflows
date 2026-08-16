@@ -463,7 +463,13 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
         errors.append("tournament-internal-call")
     if "writer=orch-build" not in normalized(tournament):
         errors.append("tournament-writer-binding")
-    if "promotion" in normalized(tournament):
+    # The campaign's promotion judgment is evolve's, and the tournament may
+    # not restate it. Since 2026-08-16 (thread T27) the tournament does name
+    # the frozen `promotion rule` it freezes in `policy` and hands down as
+    # part of the evaluation -- evolve reads a margin no producer wrote
+    # otherwise -- so that phrase is licensed and every other use of the word
+    # is the judgment restated here.
+    if re.search(r"promotion(?! rule)", normalized(tournament)):
         errors.append("tournament-promotion")
 
     # The leaf is `scripts/search_plan.py` itself. A script is the ladder's
@@ -540,6 +546,12 @@ class TestArchitecture(unittest.TestCase):
         self.assertIn(
             "judge-owner",
             architecture_errors(evolve, readmitted_panel, tournament, leaf),
+        )
+
+        judged_here = tournament + "\nThe promotion decision is taken here.\n"
+        self.assertIn(
+            "tournament-promotion",
+            architecture_errors(evolve, generation, judged_here, leaf),
         )
 
         unresolved = evolve.replace("executor: orch-verify", "executor: orch-critique", 1)

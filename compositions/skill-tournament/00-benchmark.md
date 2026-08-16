@@ -8,7 +8,7 @@ bound: <= 200 tool calls
 excluded_actions:
   - mutating {{skill}} — the benchmark is built for it, never by changing it
   - generating, scoring or comparing a candidate; this stub builds and qualifies, and nothing else
-  - restate or call evolve's verification, panel, search, or selection internals
+  - restate or call evolve's verification, search, or selection internals
   - letting a benchmaker run targeting benchmaker call evolve
 independence: checker
 isolation: required
@@ -26,13 +26,9 @@ revision its manifest names, that the campaign behind it never changes.
   this ticket's own `run` field plus `.00-benchmark`, never the outer
   run — naming every placeholder that manifest declares:
   target={{skill}}, outcome={{skill}}'s declared observable outcome,
-  sources={{sources}}, rigor={{rigor}},
-  bound=this stub's own bound below, pack={{pack}},
+  sources={{sources}}, rigor={{rigor}}, pack={{pack}},
   package=the benchmark write scope this stub holds. Drain that ticket
   set here.
-- This stub's bound is the benchmark's own allocation, partitioned
-  before the work and never drawn from the campaign's, which is why the
-  nested run's caller bound is this one and not {{bound}}.
 - The qualified result is recorded in the package's manifest, whose
   field set and component resolution the manifest reference owns; the
   benchmark's version is the git revision it sits at.

@@ -28,9 +28,8 @@ judgment.
    dispatch — and freeze what it returns as the result/evidence. Submit that
    fixed evidence to the eligibility verifier.
 4. Score the incumbent and the eligible candidates as one fixed set under the
-   frozen evaluation, then apply the frozen promotion rule and margin.
-   Map planner `no_fit` to Loop
-   `limited`; a `pending` response launches nothing.
+   frozen evaluation, then apply the frozen promotion rule and margin;
+   a `pending` response launches nothing.
 
 The projection carries complete candidate records, archive identities, and the
 zero/one/two-parent DAG. It never carries transcript prose, evaluation mode, or

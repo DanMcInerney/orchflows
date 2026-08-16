@@ -25,12 +25,11 @@ each at a preserved identity.
 
 - 01-design's `## Result`, in full: whatever orch-eval-design's Return
   filed there.
-- {{pack}} — the run's stamp. This cut stamps a unit's own pack where
-  that case's kind differs, chaining single-pack units through frozen
-  evidence identities when cases span domains; exactly one pack per
-  unit.
+- {{pack}} — the run's stamp.
 - {{package}} — the target repository: where the materialized case set
   is written. Builders' write scopes are disjoint.
+- [the manifest](../references/benchmaker-manifest.md) — the field set
+  this stage writes with the pending `qualification` marker.
 - The standards owner, by pointer: the workspace's own owner file —
   AGENTS.md or its equivalent.
 - Acceptance as runnable checks: the workspace's required checks as
