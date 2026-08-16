@@ -1725,7 +1725,11 @@ class TestHostBlockRendering(unittest.TestCase):
             "/lib/by-name/<orch-name>/SKILL.md",
             rendered,
         )
-        for sibling in ("packs/<orch-name>/SKILL.md", "contracts/", "rules/", "compositions/"):
+        # by-name resolves every skill and pack, so the block no longer lists
+        # the directories beside it (2026-08-16, the 400-word cut); what it
+        # still resolves under {{ORCH_LIB}} and {{ORCH_DOCS}} it resolves at
+        # the call sites that need them, and those are what is checked here.
+        for sibling in ("contracts/", "rules/", "compositions/"):
             self.assertIn(f"/lib/{sibling}", rendered)
         self.assertIn("/lib/docs/", rendered)
 
