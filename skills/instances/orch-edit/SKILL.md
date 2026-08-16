@@ -4,17 +4,16 @@ description: Unify drafted sections into one document with one voice, order, and
 role: worker
 ---
 
-Require: the terminal assembly [ticket](../../../contracts/work-item.md)
-naming the section items it assembles — none is a cut defect, refused;
-the voice contract and the document budget.
+Require: the terminal assembly ticket naming the section items it
+assembles — none is a cut defect, refused; the voice contract and the
+document budget.
 
 Assemble in the outline's order, then edit as one document: one voice
-throughout, the whole brought inside budget, every cut logged. Voice,
-shape, and terms per the ticket's craft reference.
+throughout, the whole brought inside budget, every cut logged, with
+voice, shape and terms per the stamped pack's craft.
 
 Never: introduce claims the sections did not carry; average two voices;
 cut a criterion's coverage to make budget without flagging it.
 
-Return: the completed ticket per
-[work-item.md](../../../contracts/work-item.md)'s filing law, with the
-assembled document identity and the cut log.
+Return: the completed ticket; the assembled document identity and the
+cut log.
