@@ -181,26 +181,18 @@ COMPOSITION_BODY_FIELD_RES = {
 # template, a stub without an executor or a completion test, or a
 # template with no single terminal stub is rejected here. The .md
 # composition form beside them stays until P4.
+#
+# What a stub *is* -- its required keys, its list fields, its sections and
+# their order, its criteria, its legal executors -- is not stated here.
+# `scripts/tickets.py` owns it, grades every issued ticket and every
+# instantiated stub against it, and reports it in its own words
+# (`template_defects`); validate_templates reads that and adds only what
+# needs the tree. A second statement of the same law is how a template the
+# compiler admits fails at instantiation, which is what the P1 gate found
+# across eight inputs and the executor enum.
 TEMPLATE_MANIFEST = "template.md"
 TEMPLATE_ENTRY_VALUES = {"routed", "named"}
-TEMPLATE_STUB_SECTIONS = (
-    "Objective",
-    "Fixed inputs",
-    "Completion test",
-    "Return fields",
-    "Result",
-    "Verification",
-    "Feedback",
-    "Risks",
-)
-STUB_REQUIRED_KEYS = ("id", "executor", "depends_on", "write_scope", "bound")
-STUB_LIST_KEYS = ("depends_on", "write_scope")
-ORACLE_CLASS_VALUES = {"deterministic", "judged", "evidence"}
 PLACEHOLDER_RE = re.compile(r"\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}")
-SECTION_HEADING_RE = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
-CRITERION_BULLET_RE = re.compile(r"^[-*]\s+(\S.*)$", re.MULTILINE)
-ORACLE_FIELD_RE = re.compile(r"\boracle:\s*\S")
-ORACLE_CLASS_FIELD_RE = re.compile(r"\boracle_class:\s*([A-Za-z-]+)")
 SCRIPT_EXECUTOR_PREFIX = "script:"
 
 # --- Carriage (rules/composition.md rule 10) -------------------------
@@ -1445,79 +1437,20 @@ def discover_templates():
     )
 
 
-def _inline_list(value):
-    """The items of a frontmatter list -- an inline `[a, b]` value, or the
-    list _parse_stub_frontmatter already built from a block list; None
-    when the value is not list-shaped."""
-    if isinstance(value, list):
-        return value
-    text = value.strip()
-    if not (text.startswith("[") and text.endswith("]")):
-        return None
-    return [item.strip() for item in text[1:-1].split(",") if item.strip()]
+def _ticket_law():
+    """`scripts/tickets.py`, the one owner of ticket-shape and
+    template-graph law.
 
-
-def _parse_stub_frontmatter(text: str, file_label: str, diag: Diagnostics):
-    """Parse a stub's frontmatter the way scripts/tickets.py reads a
-    ticket: scalars, inline `[a, b]` lists, and block lists (a bare
-    `key:` followed by `  - item` lines) -- contracts/work-item.md's
-    shape, which SKILL.md frontmatter never carries. Block-list items are
-    returned as a Python list; everything else stays raw text.
-    # P2: delegate to scripts.tickets._parse_frontmatter
+    Imported here rather than at module scope: `--pin` and every isolated
+    fixture that carries no `scripts/` still has to run, and this is the
+    only check that needs the owner. ROOT goes first on the path so a tree
+    grades against its own copy.
     """
-    lines = text.split("\n")
-    if not lines or lines[0].strip() != "---":
-        diag.error(file_label, "missing opening frontmatter fence '---'")
-        return None, None
-    end_idx = None
-    for i in range(1, len(lines)):
-        if lines[i].strip() == "---":
-            end_idx = i
-            break
-    if end_idx is None:
-        diag.error(file_label, "missing closing frontmatter fence '---'")
-        return None, None
-    fm = {}
-    i = 1
-    while i < end_idx:
-        ln = lines[i]
-        stripped = ln.strip()
-        if not stripped:
-            i += 1
-            continue
-        if ":" not in ln:
-            diag.error(file_label, f"malformed frontmatter line: {ln!r}")
-            i += 1
-            continue
-        key, _, value = ln.partition(":")
-        key = key.strip()
-        value = value.strip()
-        if value == "":
-            items = []
-            j = i + 1
-            while j < end_idx and lines[j].strip().startswith("- "):
-                items.append(lines[j].strip()[2:].strip())
-                j += 1
-            if items:
-                fm[key] = items
-                i = j
-                continue
-        fm[key] = value
-        i += 1
-    body = "\n".join(lines[end_idx + 1:])
-    return fm, body
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from scripts import tickets
 
-
-def _tree_skill_names() -> set:
-    """Every skill package name across the five tiers -- the set a stub's
-    executor resolves against."""
-    names = set()
-    for tier in SKILL_TIERS:
-        tier_dir = ROOT / "skills" / tier
-        if not tier_dir.is_dir():
-            continue
-        names |= {d.name for d in tier_dir.iterdir() if (d / "SKILL.md").is_file()}
-    return names
+    return tickets
 
 
 def _validate_template_manifest(path: Path, diag: Diagnostics):
@@ -1558,61 +1491,27 @@ def _validate_template_manifest(path: Path, diag: Diagnostics):
     if "placeholders" not in fm:
         diag.error(file_label, "template frontmatter missing required key 'placeholders'")
         return None
-    declared = _inline_list(fm["placeholders"])
-    if declared is None:
+    declared = fm["placeholders"].strip()
+    if not (declared.startswith("[") and declared.endswith("]")):
         diag.error(
             file_label,
             "'placeholders' is not a list; write [] when the template declares none",
         )
         return None
-    return set(declared)
-
-
-def _section_span(body: str, section: str) -> str:
-    """The body text under `## <section>`, up to the next `## ` heading."""
-    headings = list(SECTION_HEADING_RE.finditer(body))
-    for idx, match in enumerate(headings):
-        if match.group(1) != section:
-            continue
-        end = headings[idx + 1].start() if idx + 1 < len(headings) else len(body)
-        return body[match.end():end]
-    return ""
-
-
-def _validate_stub_criteria(body: str, file_label: str, diag: Diagnostics) -> None:
-    """Every completion-test criterion bullet names its oracle and an
-    oracle_class per contracts/verdict.md."""
-    # P2: delegate to scripts.tickets.criterion_defects
-    criteria = CRITERION_BULLET_RE.findall(_section_span(body, "Completion test"))
-    if not criteria:
-        diag.error(file_label, "stub '## Completion test' names no criterion bullet")
-        return
-    for criterion in criteria:
-        if not ORACLE_FIELD_RE.search(criterion):
-            diag.error(
-                file_label,
-                f"completion-test criterion names no 'oracle:': {criterion}",
-            )
-        match = ORACLE_CLASS_FIELD_RE.search(criterion)
-        if match is None:
-            diag.error(
-                file_label,
-                f"completion-test criterion names no 'oracle_class:': {criterion}",
-            )
-        elif match.group(1) not in ORACLE_CLASS_VALUES:
-            diag.error(
-                file_label,
-                f"oracle_class '{match.group(1)}' is not one of "
-                f"{sorted(ORACLE_CLASS_VALUES)} per contracts/verdict.md",
-            )
+    return {item.strip() for item in declared[1:-1].split(",") if item.strip()}
 
 
 def _validate_stub_executor(
     executor: str, file_label: str, skill_names: set, diag: Diagnostics
 ) -> None:
-    """The executor names a skill in the tree or a script that exists.
-    A placeholder is left to instantiation, which refuses an unfilled
-    one and so checks the filled value."""
+    """The executor names a skill in the tree or a script that exists --
+    the half of executor law that needs the tree, and so cannot live with
+    the rest of it in scripts/tickets.py. Which executors are legal at all
+    is that script's (`ENGINE_EXECUTORS`), and it reports them itself.
+
+    A placeholder is left to instantiation, which refuses an unfilled one
+    and so checks the filled value.
+    """
     if PLACEHOLDER_RE.search(executor):
         return
     if executor.startswith(SCRIPT_EXECUTOR_PREFIX):
@@ -1631,114 +1530,53 @@ def _validate_stub_executor(
         )
 
 
-def _validate_template_stub(path: Path, skill_names: set, diag: Diagnostics):
-    """Check one stub against contracts/work-item.md; return the ids its
-    depends_on names and the placeholder names it uses."""
-    file_label = rel(path)
-    text = _read_source(path)
-    used = set(PLACEHOLDER_RE.findall(text))
-    fm, body = _parse_stub_frontmatter(text, file_label, diag)
-    if fm is None or body is None:
-        return [], used
-    for key in STUB_REQUIRED_KEYS:
-        if not fm.get(key):
-            diag.error(
-                file_label,
-                f"stub frontmatter missing required key '{key}' per contracts/work-item.md",
-            )
-    if fm.get("executor"):
-        _validate_stub_executor(fm["executor"], file_label, skill_names, diag)
-    stub_id = fm.get("id")
-    if stub_id and stub_id != path.stem:
-        diag.error(
-            file_label,
-            f"stub id '{stub_id}' does not match file stem '{path.stem}'",
-        )
-    depends = []
-    for key in STUB_LIST_KEYS:
-        if not fm.get(key):
+def _tree_skill_names() -> set:
+    """Every skill package name across the five tiers -- the set a stub's
+    executor resolves against."""
+    names = set()
+    for tier in SKILL_TIERS:
+        tier_dir = ROOT / "skills" / tier
+        if not tier_dir.is_dir():
             continue
-        items = _inline_list(fm[key])
-        if items is None:
-            diag.error(
-                file_label,
-                f"'{key}' is not a list; write [] when the stub names none",
-            )
-        elif key == "depends_on":
-            depends = items
-
-    headings = SECTION_HEADING_RE.findall(body)
-    missing = [s for s in TEMPLATE_STUB_SECTIONS if s not in headings]
-    if missing:
-        diag.error(
-            file_label,
-            "stub body missing section(s) "
-            + ", ".join(f"## {s}" for s in missing)
-            + " per contracts/work-item.md",
-        )
-    else:
-        present = [h for h in headings if h in TEMPLATE_STUB_SECTIONS]
-        if present != list(TEMPLATE_STUB_SECTIONS):
-            diag.error(
-                file_label,
-                "stub body sections are out of contract order; expected "
-                + ", ".join(TEMPLATE_STUB_SECTIONS),
-            )
-    if "Completion test" in headings:
-        _validate_stub_criteria(body, file_label, diag)
-    return depends, used
-
-
-def _validate_template_graph(directory: Path, edges: dict, diag: Diagnostics) -> None:
-    """The depends_on graph is acyclic and exactly one stub is terminal.
-    A cycle leaves the terminal rule undefined -- every stub in a cycle
-    is depended on -- so the cycle is the only defect reported."""
-    file_label = rel(directory / TEMPLATE_MANIFEST)
-    graph = {stem: {d for d in deps if d in edges} for stem, deps in edges.items()}
-    cycle = find_cycle(graph)
-    if cycle:
-        diag.error(file_label, f"template depends_on cycle: {' -> '.join(cycle)}")
-        return
-    depended_on = {dep for deps in graph.values() for dep in deps}
-    terminals = sorted(stem for stem in graph if stem not in depended_on)
-    if len(terminals) == 1:
-        return
-    found = (
-        "no terminal stub" if not terminals
-        else f"{len(terminals)} terminal stubs ({', '.join(terminals)})"
-    )
-    diag.error(
-        file_label,
-        f"template has {found}; exactly one stub must be depended on by no other",
-    )
+        names |= {d.name for d in tier_dir.iterdir() if (d / "SKILL.md").is_file()}
+    return names
 
 
 def validate_templates(diag: Diagnostics) -> None:
-    """SPEC-ticket-set.md s2-s3: every `compositions/<name>/` template is
-    a manifest plus ticket stubs whose graph is acyclic and terminates in
-    exactly one stub."""
+    """SPEC-ticket-set.md s2-s3: every `compositions/<name>/` template is a
+    manifest plus ticket stubs a run can be instantiated from.
+
+    Ticket shape and the depends_on graph are read from
+    `scripts/tickets.py`, which grades every issued ticket and every
+    instantiated stub: the validator admits into the tree exactly what that
+    script will accept, in that script's own words. What stays here is what
+    needs the tree the script has no access to -- the manifest, the
+    placeholder balance between manifest and stubs, and whether an executor
+    names a skill or a script that exists.
+    """
+    directories = discover_templates()
+    if not directories:
+        return  # no template to grade, so no owner to load
+    tickets = _ticket_law()
     skill_names = _tree_skill_names()
-    for directory in discover_templates():
+    for directory in directories:
         manifest_label = rel(directory / TEMPLATE_MANIFEST)
         declared = _validate_template_manifest(directory / TEMPLATE_MANIFEST, diag)
-        stubs = [
-            path for path in sorted(directory.glob("*.md"))
-            if path.name != TEMPLATE_MANIFEST
-        ]
-        stems = {path.stem for path in stubs}
-        edges = {}
+        for path, message in tickets.template_defects(directory):
+            diag.error(rel(Path(path)), message)
+
         used = set()
-        for path in stubs:
-            depends, stub_used = _validate_template_stub(path, skill_names, diag)
-            for dep in depends:
-                if dep not in stems:
-                    diag.error(
-                        rel(path),
-                        f"depends_on names '{dep}', which is not a stub in "
-                        f"template '{directory.name}'",
-                    )
-            edges[path.stem] = depends
+        for path in sorted(directory.glob("*.md")):
+            if path.name == TEMPLATE_MANIFEST:
+                continue
+            text = _read_source(path)
+            stub_used = set(PLACEHOLDER_RE.findall(text))
             used |= stub_used
+            executor = tickets._parse_frontmatter(text).get("executor")
+            if isinstance(executor, str) and executor.strip():
+                _validate_stub_executor(
+                    executor.strip(), rel(path), skill_names, diag
+                )
             if declared is not None:
                 for name in sorted(stub_used - declared):
                     diag.error(
@@ -1752,7 +1590,6 @@ def validate_templates(diag: Diagnostics) -> None:
                     manifest_label,
                     f"declared placeholder '{{{{{name}}}}}' is used by no stub",
                 )
-        _validate_template_graph(directory, edges, diag)
 
 
 # LOOP_TRIGGER_RE fires only on the imperative/procedural verb forms that
