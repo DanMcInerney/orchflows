@@ -3683,7 +3683,9 @@ class TestRunIdentity(unittest.TestCase):
         # graded before the constant is named, so a revision that has no
         # `UTC_STAMP` reads as the wrong shape rather than a missing attribute
         self.assertEqual(1, source.count('"%Y-%m-%dT%H:%M:%SZ"'), "shape restated")
-        self.assertEqual(2, source.count("strftime(UTC_STAMP)"), "stamped elsewhere")
+        # a census of the sites that stamp, not a bound on them: `claim`,
+        # `grant` and the run identity, each through the one constant
+        self.assertEqual(3, source.count("strftime(UTC_STAMP)"), "stamped elsewhere")
         self.assertEqual("%Y-%m-%dT%H:%M:%SZ", tickets_mod.UTC_STAMP)
 
     def test_an_existing_run_directory_without_an_identity_gains_one(self):
@@ -4674,6 +4676,347 @@ class HelpTest(unittest.TestCase):
             sorted(dispatch_subcommands()),
             sorted(tickets_mod.SUBCOMMAND_USAGE),
         )
+
+
+CLAIMED_TICKET = FULL_TICKET.replace("status: ready", "status: claimed").replace(
+    "bound: 30m", "bound: 30m\nclaimed_by: agent-a\nclaimed_at: 2026-08-16T00:00:00Z"
+)
+
+
+def filing_lines(prompt: str) -> list:
+    """Every emitted `result --section` line, found by its own tokens."""
+
+    return [
+        line
+        for line in prompt.splitlines()
+        if len(line.split()) > 2
+        and Path(line.split()[1]).name == "tickets.py"
+        and line.split()[2] == "result"
+    ]
+
+
+class TestPacketNamesTheFilingCommand(unittest.TestCase):
+    """Friction 2026-08-16T12:00: the prompt told the child to write its
+    result into the ticket's own sections and named only the run-state
+    commands, so the child derived the filing law from `--help`. The channel
+    a packet demands is a channel the packet states."""
+
+    def packet_for(self, tmp: Path, body: str = CLAIMED_TICKET):
+        make_packet_repo(tmp, body)
+        return run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")["packet"]
+
+    def test_a_packet_names_both_filing_forms(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            packet = self.packet_for(Path(tmp))
+            lines = filing_lines(packet["prompt"])
+            self.assertEqual(2, len(lines), packet["prompt"])
+            file_line, text_line = lines
+            self.assertEqual(["--section", "SECTION", "--file", "PATH"], file_line.split()[5:])
+            self.assertEqual(["--section", "SECTION", "--text", "TEXT"], text_line.split()[5:])
+            # the placeholder is answerable from the prompt alone
+            for section in tickets_mod.EXECUTOR_SECTIONS:
+                self.assertIn(section, packet["prompt"])
+
+    def test_the_packet_filing_line_is_absolute_one_token_per_argument_and_shell_free(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            packet = self.packet_for(Path(tmp))
+            for line in filing_lines(packet["prompt"]):
+                for forbidden in ("|", ">", "<", "&&", "$(", '"', "'"):
+                    self.assertNotIn(forbidden, line, line)
+                tokens = line.split()
+                self.assertEqual(sys.executable, tokens[0])
+                self.assertEqual(str(TICKETS_PY.resolve()), tokens[1])
+                self.assertTrue(Path(tokens[1]).is_absolute(), tokens[1])
+                # run and id interpolated from the ticket, not left placeholders
+                self.assertEqual(["result", "testrun", "T1"], tokens[2:5])
+
+    def test_a_packet_for_a_read_only_lane_still_names_it(self):
+        """A lane with no workspace authority at all still files its result:
+        the ticket's own sections sit outside `write_scope`."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            packet = self.packet_for(
+                Path(tmp), CLAIMED_TICKET.replace("write_scope: scratch/t1.txt", "write_scope: []")
+            )
+            self.assertEqual(2, len(filing_lines(packet["prompt"])))
+
+
+class TestPacketNamesTheChildsOwnName(unittest.TestCase):
+    """Friction 2026-08-16T09:40: an engine lane was given `reply_to: main`
+    for its own return but never its own name, which is the `reply_to` of
+    every packet it in turn emits; it recovered the name by reading the
+    host's subagent files. contracts/work-item.md#dispatch: a child never
+    infers `reply_to`, so a child that will itself dispatch is told the one
+    identifier its own children must address — the name it was claimed
+    under."""
+
+    def packet_for(self, tmp: Path, body: str):
+        make_packet_repo(tmp, body)
+        return run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")["packet"]
+
+    def test_a_packet_for_a_dispatching_executor_states_the_name_it_was_claimed_under(self):
+        # The set is read from the tree, never from the constant under test:
+        # iterating `DISPATCHING_EXECUTORS` passed with no assertion at all
+        # once the constant was emptied (rules/verification.md §8). The
+        # executors that dispatch are the engines (rules/composition.md §3),
+        # and the engines directory is the pin `TestEngineExecutorIsRejected`
+        # already holds — so an engine added there without being added to
+        # the constant fails here, by name.
+        engines = sorted(
+            path.name
+            for path in (ROOT / "skills" / "engines").iterdir()
+            if path.is_dir()
+        )
+        self.assertEqual(engines, sorted(tickets_mod.DISPATCHING_EXECUTORS))
+        self.assertIn("orch-frontier", engines)  # the friction's own lane
+        for executor in engines:
+            with self.subTest(executor), tempfile.TemporaryDirectory() as tmp:
+                packet = self.packet_for(
+                    Path(tmp), CLAIMED_TICKET.replace("executor: orch-tdd", f"executor: {executor}")
+                )
+                self.assertEqual("agent-a", packet["assigned_name"])
+                # backticked, because the fixture's own paths carry the name
+                # as a substring: an assertion on the bare word passes on a
+                # host whose worktree happens to be called agent-anything
+                self.assertIn("assigned name is `agent-a`", packet["prompt"])
+                # and the two identifiers are distinguishable in the prompt:
+                # one is what this child answers to, one is who it answers
+                self.assertIn("reply_to: main", packet["prompt"])
+
+    def test_a_packet_for_an_executor_that_dispatches_nothing_states_no_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            packet = self.packet_for(Path(tmp), CLAIMED_TICKET)
+            self.assertIsNone(packet["assigned_name"])
+            self.assertNotIn("assigned name", packet["prompt"])
+
+    def test_an_unclaimed_packet_carries_no_name_and_is_still_complete(self):
+        """Nothing is invented: the name is the claim's, so a packet rendered
+        before one carries `null` rather than a guess, and the dispatcher
+        reads that as the claim it has not made yet."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_packet_repo(
+                tmp, FULL_TICKET.replace("executor: orch-tdd", "executor: orch-frontier")
+            )
+            payload = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")
+            self.assertNotIn("error", payload)
+            self.assertIsNone(payload["packet"]["assigned_name"])
+
+
+class TestPacketOmitsTheWorkspaceStepForATicketThatWritesOnlyTickets(unittest.TestCase):
+    """Friction 2026-08-16T09:40: a packet told a read-only lane to run
+    `workspace.py start` as its first act, so a worktree was created that
+    nothing writes to. An item whose scope is empty writes only its own
+    ticket sections, which live in the sink — no workspace holds them."""
+
+    def packet_for(self, tmp: Path, body: str):
+        make_packet_repo(tmp, body)
+        return run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")["packet"]
+
+    def test_an_empty_scope_omits_the_packet_establishment_step_entirely(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            packet = self.packet_for(
+                Path(tmp), ISOLATED_TICKET.replace("write_scope: scratch/t1.txt", "write_scope: []")
+            )
+            self.assertEqual([], establishment_lines(packet["prompt"]))
+            self.assertNotIn("workspace.py", packet["prompt"])
+            # the declaration itself is not rewritten: what the cut said
+            # stands, and `workspace.py check` grades the same field
+            self.assertEqual("required", packet["isolation"])
+
+    def test_isolation_none_omits_the_packet_establishment_step(self):
+        """The other half of the same condition, pinned under this oracle:
+        an item that declares no workspace of its own is never told to
+        establish one. `test_a_scope_a_grant_widened...` below is what shows
+        the check can fail — same class, same call, one line emitted."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            packet = self.packet_for(Path(tmp), UNISOLATED_TICKET)
+            self.assertEqual([], establishment_lines(packet["prompt"]))
+            self.assertNotIn("workspace.py", packet["prompt"])
+
+    def test_a_scope_a_grant_widened_earns_the_packet_establishment_step_back(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            packet = self.packet_for(
+                Path(tmp),
+                ISOLATED_TICKET.replace(
+                    "write_scope: scratch/t1.txt",
+                    "write_scope: []\ngranted_scope: [scripts/a.py]",
+                ),
+            )
+            self.assertEqual(1, len(establishment_lines(packet["prompt"])))
+
+
+class TestGrant(unittest.TestCase):
+    """`grant` is the caller-side scope widening, recorded on the ticket.
+
+    Friction 2026-08-16T05:29: a lane found two files pinning a literal its
+    objective moved, neither in `write_scope`; `amend` repairs body sections
+    only and refuses a claimed ticket, so the widening was a direct sink edit
+    plus a message — authority nothing at the join could read. A grant is
+    bookkeeping of the `claimed_*` class (contracts/work-item.md): the caller
+    who widened, when, and what — in frontmatter, never in a body section,
+    and never by the ticket about itself.
+    """
+
+    def make(self, tmp: Path, body: str = CLAIMED_TICKET) -> Path:
+        (tmp / ".git").mkdir()
+        run_dir = use_sink(tmp) / "tickets" / "testrun"
+        run_dir.mkdir(parents=True)
+        path = run_dir / "T1.md"
+        path.write_text(body, encoding="utf-8")
+        return path
+
+    def grant(self, tmp: Path, *args):
+        return run_cmd(tmp, "grant", "testrun", "T1", *args)
+
+    def test_a_grant_on_a_claimed_ticket_lands_in_frontmatter_bookkeeping(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.make(tmp)
+            before = path.read_text(encoding="utf-8")
+            payload = self.grant(
+                tmp, "--write-scope", "scripts/a.py,tests/test_a.py", "--by", "main"
+            )
+            self.assertNotIn("error", payload)
+            recorded = payload["grant"]
+            self.assertEqual(["scripts/a.py", "tests/test_a.py"], recorded["granted_scope"])
+            self.assertEqual("main", recorded["granted_by"])
+            after = path.read_text(encoding="utf-8")
+            front = tickets_mod._parse_frontmatter(after)
+            self.assertEqual(["scripts/a.py", "tests/test_a.py"], front["granted_scope"])
+            self.assertEqual("main", front["granted_by"])
+            self.assertRegex(front["granted_at"], STAMP_RE)
+            self.assertEqual(recorded["granted_at"], front["granted_at"])
+            # bookkeeping, never a body section: nothing below the frontmatter
+            # moved, and the cut's own `write_scope` line is untouched.
+            self.assertEqual(tickets_mod._sections(before), tickets_mod._sections(after))
+            self.assertIn("write_scope: scratch/t1.txt", after)
+
+    def test_the_join_reads_the_scope_a_grant_widened(self):
+        """The one reader: every consumer of a ticket's authority — this
+        script's `packet`, and `workspace.py check` at the join, which reads
+        the frontmatter through `_load_ticket` — sees cut scope plus grant."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.make(tmp)
+            self.assertEqual(
+                ["scratch/t1.txt"],
+                tickets_mod.effective_write_scope(
+                    tickets_mod._parse_frontmatter(path.read_text(encoding="utf-8"))
+                ),
+            )
+            self.grant(tmp, "--write-scope", "scripts/a.py", "--by", "main")
+            self.assertEqual(
+                ["scratch/t1.txt", "scripts/a.py"],
+                tickets_mod._load_ticket(path)["write_scope"],
+            )
+
+    def test_a_second_grant_appends_and_never_drops_the_first(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.make(tmp)
+            self.grant(tmp, "--write-scope", "scripts/a.py", "--by", "main")
+            payload = self.grant(
+                tmp, "--write-scope", "scripts/a.py,docs/b.md", "--by", "other"
+            )
+            self.assertEqual(
+                ["scripts/a.py", "docs/b.md"], payload["grant"]["granted_scope"]
+            )
+            front = tickets_mod._parse_frontmatter(path.read_text(encoding="utf-8"))
+            # the path granted twice is carried once, and the second granter
+            # is the one on record for the widening that just landed
+            self.assertEqual(["scripts/a.py", "docs/b.md"], front["granted_scope"])
+            self.assertEqual("other", front["granted_by"])
+
+    def test_a_grant_on_an_unclaimed_ticket_is_refused_and_the_file_is_untouched(self):
+        for status in ("ready", "pending", "complete"):
+            with self.subTest(status), tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                path = self.make(
+                    Path(tmp), CLAIMED_TICKET.replace("status: claimed", f"status: {status}")
+                )
+                before = path.read_text(encoding="utf-8")
+                payload = self.grant(tmp, "--write-scope", "scripts/a.py", "--by", "main")
+                self.assertIn("error", payload)
+                self.assertIn(status, payload["error"])
+                self.assertEqual(before, path.read_text(encoding="utf-8"))
+
+    def test_a_suspended_ticket_is_still_claimed_and_grantable(self):
+        """contracts/work-item.md: a suspended ticket stays claimed, resumable
+        from its `## Handoff` — and a handoff that names missing scope is the
+        case a grant answers."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, CLAIMED_TICKET.replace("status: claimed", "status: suspended"))
+            payload = self.grant(tmp, "--write-scope", "scripts/a.py", "--by", "main")
+            self.assertNotIn("error", payload)
+
+    def test_the_granting_caller_and_the_scope_are_both_required(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.make(tmp)
+            missing_by = self.grant(tmp, "--write-scope", "scripts/a.py")
+            self.assertIn("--by", missing_by["error"])
+            missing_scope = self.grant(tmp, "--by", "main")
+            self.assertIn("--write-scope", missing_scope["error"])
+            self.assertNotIn("granted_scope", path.read_text(encoding="utf-8"))
+
+    def test_a_grant_on_an_unknown_ticket_is_an_error_not_a_crash(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            payload = self.grant(
+                Path(tmp), "--write-scope", "scripts/a.py", "--by", "main"
+            )
+            self.assertNotIn("error", payload)
+            missing = run_cmd(
+                tmp, "grant", "testrun", "T9", "--write-scope", "a.py", "--by", "main"
+            )
+            self.assertIn("ticket not found", missing["error"])
+
+    def test_grant_is_on_every_surface_a_reader_meets(self):
+        self.assertIn("grant <run> <id>", tickets_mod.__doc__ or "")
+        self.assertIn("grant", tickets_mod.SUBCOMMAND_USAGE)
+        self.assertIn("grant", tickets_mod.SUBCOMMAND_SUMMARY)
+        self.assertIn("grant", tickets_mod._dispatch([])["error"])
+
+
+@unittest.skipUnless(git_available(), "git is not on PATH")
+class TestGrantedScopeAtTheJoin(unittest.TestCase):
+    """The grant is not read, it is graded: `workspace.py check` is what the
+    join runs before a merge, and a path only the grant covers must pass it."""
+
+    def test_check_passes_a_path_the_grant_covers_and_nothing_else(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            main, worktree, ticket, base = make_isolated_fixture(Path(tmp))
+            self.assertIn("claimed", run_json(worktree, "claim", "testrun", "T1", "--by", "agent-a"))
+            started = run_argv(
+                [sys.executable, str(WORKSPACE_PY), "start", "testrun", "T1"], worktree
+            )
+            self.assertEqual(0, started.returncode, started.stderr)
+            check_argv = [
+                sys.executable, str(WORKSPACE_PY), "check", "testrun", "T1",
+                "--base", base,
+            ]
+            (worktree / "granted.txt").write_text("out of scope\n", encoding="utf-8")
+            git_run(worktree, "add", "granted.txt")
+            git_run(worktree, "commit", "--quiet", "-m", "not yet granted")
+            breached = run_argv(check_argv, main)
+            self.assertEqual(4, breached.returncode, breached.stdout + breached.stderr)
+            self.assertEqual(["granted.txt"], json.loads(breached.stdout)["breaches"])
+
+            granted = run_json(
+                worktree, "grant", "testrun", "T1", "--write-scope", "granted.txt",
+                "--by", "main",
+            )
+            self.assertNotIn("error", granted)
+            passed = run_argv(check_argv, main)
+            self.assertEqual(0, passed.returncode, passed.stdout + passed.stderr)
+            self.assertEqual("pass", json.loads(passed.stdout)["check"]["verdict"])
 
 
 if __name__ == "__main__":
