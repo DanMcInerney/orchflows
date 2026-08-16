@@ -2549,6 +2549,76 @@ class TestDayZeroBootstrap(unittest.TestCase):
         for dest in self.documents(plan):
             self.assertIn(str(dest), output)
 
+    def bootstrap(self) -> dict:
+        with patch.object(install.Path, "home", return_value=self.home):
+            return install.apply_plan(install.build_plan("project", self.project))
+
+    def recorded(self, receipt) -> dict:
+        return {
+            entry["path"]: entry
+            for entry in receipt["files"]
+            if entry.get("kind") == "day-zero"
+        }
+
+    def test_a_bootstrap_run_writes_both_documents_and_records_them(self):
+        entries = self.recorded(self.bootstrap())
+
+        self.assertEqual(
+            {
+                str(self.project / "docs" / "vocabulary.md"),
+                str(self.project / "ARCHITECTURE.md"),
+            },
+            set(entries),
+        )
+        for path, entry in entries.items():
+            self.assertTrue(Path(path).is_file(), path)
+            self.assertEqual("created", entry["install_action"])
+            self.assertEqual(digest(Path(path)), entry["sha256"])
+
+    def test_a_bootstrap_leaves_a_document_the_project_already_holds_byte_identical(self):
+        ours = self.project / "ARCHITECTURE.md"
+        ours.write_bytes(b"# Ours\r\n\r\nnot the skeleton\n")
+        before = ours.read_bytes()
+
+        entry = self.recorded(self.bootstrap())[str(ours)]
+
+        self.assertEqual(before, ours.read_bytes())
+        self.assertEqual("kept", entry["install_action"])
+        self.assertEqual(digest(ours), entry["sha256"])
+        # Can-fail: the absent document beside it was written on the same
+        # run, so the equality above is a refusal, not an installer that
+        # wrote nothing at all.
+        self.assertTrue((self.project / "docs" / "vocabulary.md").is_file())
+
+    def test_a_second_bootstrap_never_reverts_what_day_one_wrote(self):
+        self.bootstrap()
+        vocabulary = self.project / "docs" / "vocabulary.md"
+        grown = "# Vocabulary\n\n## Structure\n\n- **widget** — ours.\n"
+        vocabulary.write_text(grown, encoding="utf-8")
+
+        entry = self.recorded(self.bootstrap())[str(vocabulary)]
+
+        self.assertEqual(grown, vocabulary.read_text(encoding="utf-8"))
+        # Still "created": the installer wrote this one on day one, and a
+        # receipt that forgot that would tell uninstall the wrong story.
+        self.assertEqual("created", entry["install_action"])
+        self.assertEqual(digest(vocabulary), entry["sha256"])
+
+    def test_uninstall_removes_no_day_zero_document_and_says_which_it_wrote(self):
+        ours = self.project / "ARCHITECTURE.md"
+        ours.write_text("# Ours\n", encoding="utf-8")
+        self.bootstrap()
+
+        with patch.object(install.Path, "home", return_value=self.home):
+            report = install.run_uninstall("project", self.project, dry_run=True)
+
+        actions = {entry["path"]: entry["action"] for entry in report["manual_actions"]}
+        self.assertIn("delete", actions[str(self.project / "docs" / "vocabulary.md")])
+        self.assertIn("never wrote it", actions[str(ours)])
+        self.assertEqual(
+            [], [entry for entry in report["skill_actions"] if "ARCHITECTURE" in entry["path"]]
+        )
+
     def test_a_user_install_bootstraps_no_day_zero_document(self):
         """The library is not a project day zero: a user install writes
         neither document, and its planned-entry count does not move."""

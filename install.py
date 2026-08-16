@@ -1535,6 +1535,22 @@ def apply_plan(plan: Plan, keep_role_agents: bool | None = None) -> dict:
             }
         )
 
+    # Day-zero documents. Day zero happens once: a document the project
+    # already holds is left byte-identical and only recorded, because the
+    # installer owns the skeleton, never the project's own thinking.
+    for document in plan.day_zero:
+        existed = document.dest.is_file()
+        if not existed:
+            document.dest.parent.mkdir(parents=True, exist_ok=True)
+            document.dest.write_text(document.content, encoding="utf-8")
+        # The first recorded action wins, as it does for every other kind:
+        # a document this installer created on day one stays "created" on
+        # every reinstall that finds it, and only one it never wrote is
+        # "kept". Uninstall reads this to know which is which.
+        old_entry = old_entries.get((str(document.dest), document.kind), {})
+        action = old_entry.get("install_action") or ("kept" if existed else "created")
+        written_files.append(_installed_file(document.dest, document.kind, action))
+
     written_imports = []
     if plan.claude_import is not None:
         imp = plan.claude_import
@@ -1678,7 +1694,9 @@ def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
                 if details
                 else ""
             )
-            if install_action == "created":
+            if install_action == "kept":
+                action = f"leave {kind} file as it is; the installer never wrote it{detail_suffix}"
+            elif install_action == "created":
                 action = f"delete installer-created {kind} file manually{detail_suffix}"
             elif install_action == "replaced":
                 action = (
