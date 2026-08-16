@@ -182,5 +182,111 @@ class TestTemplateManifest(_TemplateTree):
         self.assertEqual(0, result.returncode, result.stdout)
 
 
+class TestStubShape(_TemplateTree):
+    """contracts/work-item.md's frontmatter and body law, on a stub."""
+
+    def _with(self, stub_id, text):
+        stubs = dict(GOOD_STUBS)
+        stubs[stub_id] = text
+        return stubs
+
+    def test_a_stub_without_an_executor_is_one_error(self):
+        self.write_template(
+            "demo",
+            stubs=self._with("repair", stub_md("repair", depends="[diagnose]", drop=("executor",))),
+        )
+        error = self.assert_one_error("compositions/demo/repair.md")
+        self.assertIn("'executor'", error)
+
+    def test_a_stub_id_not_matching_its_file_stem_is_one_error(self):
+        self.write_template(
+            "demo",
+            stubs=self._with("repair", stub_md("repare", depends="[diagnose]")),
+        )
+        error = self.assert_one_error("compositions/demo/repair.md")
+        self.assertIn("'repare'", error)
+
+    def test_depends_on_that_is_not_a_list_is_an_error(self):
+        self.write_template(
+            "demo", stubs=self._with("repair", stub_md("repair", depends="diagnose"))
+        )
+        _, errors = self.diagnostics()
+        self.assertIn("'depends_on' is not a list", errors[0])
+
+    def test_a_stub_missing_a_body_section_is_one_error(self):
+        sections = tuple(s for s in STUB_SECTIONS if s != "Completion test")
+        self.write_template(
+            "demo",
+            stubs=self._with("repair", stub_md("repair", depends="[diagnose]", sections=sections)),
+        )
+        error = self.assert_one_error("compositions/demo/repair.md")
+        self.assertIn("## Completion test", error)
+
+    def test_a_stub_with_sections_out_of_order_is_one_error(self):
+        swapped = list(STUB_SECTIONS)
+        swapped[0], swapped[1] = swapped[1], swapped[0]
+        self.write_template(
+            "demo",
+            stubs=self._with(
+                "repair", stub_md("repair", depends="[diagnose]", sections=tuple(swapped))
+            ),
+        )
+        error = self.assert_one_error("compositions/demo/repair.md")
+        self.assertIn("order", error)
+
+    def test_a_criterion_without_an_oracle_class_is_one_error(self):
+        self.write_template(
+            "demo",
+            stubs=self._with(
+                "repair",
+                stub_md(
+                    "repair",
+                    depends="[diagnose]",
+                    criteria=("the tree passes its suite | oracle: the suite",),
+                ),
+            ),
+        )
+        error = self.assert_one_error("compositions/demo/repair.md")
+        self.assertIn("oracle_class", error)
+
+    def test_a_criterion_without_an_oracle_is_one_error(self):
+        self.write_template(
+            "demo",
+            stubs=self._with(
+                "repair",
+                stub_md(
+                    "repair",
+                    depends="[diagnose]",
+                    criteria=("the tree passes | oracle_class: deterministic",),
+                ),
+            ),
+        )
+        error = self.assert_one_error("compositions/demo/repair.md")
+        self.assertIn("oracle:", error)
+
+    def test_an_oracle_class_outside_the_closed_set_is_one_error(self):
+        self.write_template(
+            "demo",
+            stubs=self._with(
+                "repair",
+                stub_md(
+                    "repair",
+                    depends="[diagnose]",
+                    criteria=("the tree passes | oracle: the suite | oracle_class: vibes",),
+                ),
+            ),
+        )
+        error = self.assert_one_error("compositions/demo/repair.md")
+        self.assertIn("'vibes'", error)
+
+    def test_a_completion_test_with_no_criterion_is_one_error(self):
+        self.write_template(
+            "demo",
+            stubs=self._with("repair", stub_md("repair", depends="[diagnose]", criteria=())),
+        )
+        error = self.assert_one_error("compositions/demo/repair.md")
+        self.assertIn("no criterion", error)
+
+
 if __name__ == "__main__":
     unittest.main()

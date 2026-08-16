@@ -1560,12 +1560,109 @@ def _validate_template_manifest(path: Path, diag: Diagnostics) -> set:
     return set(declared)
 
 
+def _section_span(body: str, section: str) -> str:
+    """The body text under `## <section>`, up to the next `## ` heading."""
+    headings = list(SECTION_HEADING_RE.finditer(body))
+    for idx, match in enumerate(headings):
+        if match.group(1) != section:
+            continue
+        end = headings[idx + 1].start() if idx + 1 < len(headings) else len(body)
+        return body[match.end():end]
+    return ""
+
+
+def _validate_stub_criteria(body: str, file_label: str, diag: Diagnostics) -> None:
+    """Every completion-test criterion bullet names its oracle and an
+    oracle_class per contracts/verdict.md."""
+    # P2: delegate to scripts.tickets.criterion_defects
+    criteria = CRITERION_BULLET_RE.findall(_section_span(body, "Completion test"))
+    if not criteria:
+        diag.error(file_label, "stub '## Completion test' names no criterion bullet")
+        return
+    for criterion in criteria:
+        if not ORACLE_FIELD_RE.search(criterion):
+            diag.error(
+                file_label,
+                f"completion-test criterion names no 'oracle:': {criterion}",
+            )
+        match = ORACLE_CLASS_FIELD_RE.search(criterion)
+        if match is None:
+            diag.error(
+                file_label,
+                f"completion-test criterion names no 'oracle_class:': {criterion}",
+            )
+        elif match.group(1) not in ORACLE_CLASS_VALUES:
+            diag.error(
+                file_label,
+                f"oracle_class '{match.group(1)}' is not one of "
+                f"{sorted(ORACLE_CLASS_VALUES)} per contracts/verdict.md",
+            )
+
+
+def _validate_template_stub(path: Path, diag: Diagnostics) -> list:
+    """Check one stub against contracts/work-item.md; return the ids its
+    depends_on names."""
+    file_label = rel(path)
+    fm, body = parse_frontmatter(_read_source(path), file_label, diag)
+    if fm is None or body is None:
+        return []
+    for key in STUB_REQUIRED_KEYS:
+        if not fm.get(key):
+            diag.error(
+                file_label,
+                f"stub frontmatter missing required key '{key}' per contracts/work-item.md",
+            )
+    stub_id = fm.get("id")
+    if stub_id and stub_id != path.stem:
+        diag.error(
+            file_label,
+            f"stub id '{stub_id}' does not match file stem '{path.stem}'",
+        )
+    depends = []
+    for key in STUB_LIST_KEYS:
+        if not fm.get(key):
+            continue
+        items = _inline_list(fm[key])
+        if items is None:
+            diag.error(
+                file_label,
+                f"'{key}' is not a list; write [] when the stub names none",
+            )
+        elif key == "depends_on":
+            depends = items
+
+    headings = SECTION_HEADING_RE.findall(body)
+    missing = [s for s in TEMPLATE_STUB_SECTIONS if s not in headings]
+    if missing:
+        diag.error(
+            file_label,
+            "stub body missing section(s) "
+            + ", ".join(f"## {s}" for s in missing)
+            + " per contracts/work-item.md",
+        )
+    else:
+        present = [h for h in headings if h in TEMPLATE_STUB_SECTIONS]
+        if present != list(TEMPLATE_STUB_SECTIONS):
+            diag.error(
+                file_label,
+                "stub body sections are out of contract order; expected "
+                + ", ".join(TEMPLATE_STUB_SECTIONS),
+            )
+    if "Completion test" in headings:
+        _validate_stub_criteria(body, file_label, diag)
+    return depends
+
+
 def validate_templates(diag: Diagnostics) -> None:
     """SPEC-ticket-set.md s2-s3: every `compositions/<name>/` template is
     a manifest plus ticket stubs whose graph is acyclic and terminates in
     exactly one stub."""
     for directory in discover_templates():
         _validate_template_manifest(directory / TEMPLATE_MANIFEST, diag)
+        for path in sorted(directory.glob("*.md")):
+            if path.name == TEMPLATE_MANIFEST:
+                continue
+            _validate_template_stub(path, diag)
 
 
 # LOOP_TRIGGER_RE fires only on the imperative/procedural verb forms that
