@@ -67,7 +67,10 @@ dependencies point. Terms: `docs/vocabulary.md`.
   POSIX, no network at run time — one owner each:
   `scripts/cutcheck.py` owns cut-defect detection over an issued ticket
   set, run by `orch-decompose` and read by its cut lens;
-  `scripts/friction.py` owns
+  `scripts/doclint.py` owns grading any repository's markdown — every
+  relative link resolves, every paragraph has one home — and with it the
+  one near-duplicate method, which `tools/validate.py` calls rather than
+  keeps a second copy of; `scripts/friction.py` owns
   friction logging; `scripts/isolate.py` owns exporting one revision
   into a tree beside the repository, where a check reads one lane's
   result alone; `scripts/migrate_state.py` owns copying a pre-existing
