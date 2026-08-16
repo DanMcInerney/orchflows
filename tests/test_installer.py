@@ -1702,6 +1702,43 @@ class TestUnreadableReceipt(unittest.TestCase):
                 install.run_uninstall("project", project, dry_run=False)
 
 
+class TestRoleAgentInstructions(unittest.TestCase):
+    """The instruction every child of every role loads before it has read its
+    own ticket. It used to open by sending that child to read rules/roles.md
+    (149 words) 'before acting' -- and the two clauses a child acts on are in
+    the rendered text itself, while folding roles.md's own clauses in instead
+    would be 105 words against an 80-word body. So the sentence is cut, and
+    pinned cut: nothing else in the tree counts these words (D-2)."""
+
+    ROLES = install.REPO_ROOT / "rules" / "roles.md"
+    BODY_CEILING = 80
+
+    def test_role_instructions_send_no_child_to_read_the_role_contract(self):
+        self.assertNotIn("roles.md", install.ROLE_INSTRUCTIONS)
+        self.assertNotIn("before acting", install.ROLE_INSTRUCTIONS)
+        self.assertIn("delegated scope", install.ROLE_INSTRUCTIONS)
+
+    def test_claude_agent_body_names_no_contract_read_and_stays_under_the_ceiling(self):
+        profile = install.load_role_profiles()["orch-worker"]
+
+        rendered = install.render_claude_agent("orch-worker", profile, self.ROLES)
+
+        _frontmatter, body = install.split_frontmatter(rendered)
+        self.assertNotIn("roles.md", body)
+        self.assertLessEqual(validate.body_words(body), self.BODY_CEILING)
+
+    def test_codex_developer_instructions_name_no_contract_read(self):
+        profile = install.load_role_profiles()["orch-worker"]
+
+        rendered = install.render_codex_agent("orch-worker", profile, self.ROLES)
+
+        line = next(
+            line for line in rendered.splitlines() if line.startswith("developer_instructions")
+        )
+        self.assertNotIn("roles.md", line)
+        self.assertLessEqual(validate.body_words(line), self.BODY_CEILING)
+
+
 class TestBootstrapWrappers(unittest.TestCase):
     """Criterion 7: install.sh / install.cmd resolve uv -> python3 -> python
     and forward every argument to install.py; never a bare hardcoded

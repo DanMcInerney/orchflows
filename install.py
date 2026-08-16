@@ -479,8 +479,13 @@ def _role_description(name: str, roles_path: Path) -> str:
     return f"Orchflows child role {name}; follow the role contract at {roles_path}."
 
 
-def _role_instructions(name: str, roles_path: Path) -> str:
-    return f"Read and follow the {name} contract in {roles_path} before acting. Stay within the delegated scope."
+# What a rendered role agent instructs, and all it instructs. It opened by
+# sending every child of every role to read rules/roles.md before acting --
+# 149 words loaded before the child had read its own ticket, whose own text
+# already carries the clauses a child acts on (stay in scope; write the
+# return into the durable artifact; deliver it by SendMessage). The contract
+# stays named in the agent's description for whoever dispatches it.
+ROLE_INSTRUCTIONS = "Stay within the delegated scope."
 
 
 def render_codex_agent(name: str, profile: dict, roles_path: Path) -> str:
@@ -488,7 +493,7 @@ def render_codex_agent(name: str, profile: dict, roles_path: Path) -> str:
     lines = [
         f"name = {json.dumps(binding['agent_type'])}",
         f"description = {json.dumps(_role_description(name, roles_path))}",
-        f"developer_instructions = {json.dumps(_role_instructions(name, roles_path))}",
+        f"developer_instructions = {json.dumps(ROLE_INSTRUCTIONS)}",
         f"model = {json.dumps(binding['model'])}",
         f"model_reasoning_effort = {json.dumps(binding['model_reasoning_effort'])}",
     ]
@@ -512,7 +517,7 @@ def render_claude_agent(name: str, profile: dict, roles_path: Path) -> str:
         "deliver it or a pointer to it via SendMessage to your spawner as your final "
         "action - plain final text is not delivered to your caller."
     )
-    lines.extend(["---", "", _role_instructions(name, roles_path) + claude_transport])
+    lines.extend(["---", "", ROLE_INSTRUCTIONS + claude_transport])
     return "\n".join(lines) + "\n"
 
 
