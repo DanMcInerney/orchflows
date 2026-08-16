@@ -516,6 +516,67 @@ class CanarySetTest(unittest.TestCase):
         self.assertIn("extra.txt", lines[0])
 
 
+class RootGateLayoutTest(unittest.TestCase):
+    """The layout every honest root cut has, graded as the contract writes it.
+
+    A root ticket sits in the run directory beside its own `<root>.NN` units
+    and its `<root>.gate.*` stubs. Read as issued items they convict every
+    honest cut: the root is named by no criterion of the map it is the source
+    of, each gate stub is named by the keyword `gate` and never by its id, and
+    the root and the repair both hold the run's scope with no edge between
+    them. `rules/verification.md` §11 makes the cut's verdict this tool re-run
+    to exit 0, and the skill orders the gate step next, so a verdict that
+    cannot survive the gate is a verdict read once and never again.
+    """
+
+    def setUp(self):
+        self.result = run_cutcheck("cutcheck-root-gate")
+
+    def test_the_whole_layout_exits_zero(self):
+        self.assertEqual(self.result.returncode, 0, self.result.stdout)
+
+    def test_no_finding_stands_outside_the_advisory_set(self):
+        violations, _, affirmed = report(self.result)
+        self.assertEqual(violations, [], self.result.stdout)
+        self.assertTrue(affirmed, self.result.stdout)
+
+    def test_neither_the_root_nor_a_gate_stub_is_an_orphan_item(self):
+        for line in self.result.stdout.splitlines():
+            self.assertNotIn(cutcheck.ORPHAN_ITEM, line, self.result.stdout)
+
+    def test_the_root_and_the_repair_sharing_the_run_scope_is_no_collision(self):
+        self.assertNotIn(cutcheck.SCOPE_COLLISION, self.result.stdout)
+        self.assertNotIn(cutcheck.STAGED_INVALIDATION, self.result.stdout)
+
+    def test_the_structural_executors_are_legal_under_the_stamped_pack(self):
+        """The pack's executor cell names `orch-tdd` and nothing else.
+
+        Graded against that cell, the decomposer and the gate's three
+        executors are all illegal, which would fail the cut for carrying the
+        shape the contract requires of it. They are the library's own nodes,
+        so they are graded against the library's own names.
+        """
+
+        self.assertNotIn(cutcheck.ILLEGAL_EXECUTOR, self.result.stdout)
+
+    def test_a_unit_ticket_is_still_graded_against_the_packs_cell(self):
+        self.assertIn(
+            cutcheck.ILLEGAL_EXECUTOR, run_cutcheck("cutcheck-f6-executor").stdout
+        )
+
+    def test_a_gate_stub_naming_an_executor_the_gate_never_writes_is_reported(self):
+        siblings = {
+            "00-root": {"id": "00-root", "executor": cutcheck.ROOT_EXECUTOR},
+            "00-root.gate.repair": {
+                "id": "00-root.gate.repair", "executor": "orch-tdd"
+            },
+        }
+        findings = cutcheck._executor_legality(siblings, ROOT)
+        self.assertEqual(1, len(findings), findings)
+        self.assertEqual("00-root.gate.repair", findings[0][0])
+        self.assertEqual(cutcheck.ILLEGAL_EXECUTOR, findings[0][2])
+
+
 class ExecutorLegalityTest(unittest.TestCase):
     def setUp(self):
         self.result = run_cutcheck("cutcheck-f6-executor")

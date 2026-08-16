@@ -215,6 +215,16 @@
    "cutcheck-quote-precision: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-quote-precision/coverage.md"
   ]
  },
+ "cutcheck-root-gate": {
+  "exit": 0,
+  "lines": [
+   "cutcheck: advisory -- reported, and never setting the exit status:",
+   "00-root.gate.critique.code: family 1: extraction-gap: criterion 1: every finding names the artifact identity it was found at and the evidence that shows it | oracle: t | oracle_class: judged",
+   "00-root.gate.critique.code: family 1: extraction-gap: criterion 2: every `## Result` named in the fixed inputs was read | oracle: this ticket's `## Result` against tha | oracle_class: deterministic",
+   "00-root.gate.repair: family 1: extraction-gap: criterion 1: every accepted finding is repaired or declined with a stated reason | oracle: the critique tickets'  | oracle_class: deterministic",
+   "cutcheck: no finding outside the advisory set"
+  ]
+ },
  "cutcheck-shellhead": {
   "exit": 0,
   "lines": [

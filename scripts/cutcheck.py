@@ -221,6 +221,11 @@ COVERAGE_OWNERS = ("gate", "remainder")
 TICKETS_DIR = "tickets"
 CANARY_DIR = "canary"
 RUNS_DIR = "runs"
+# The three executors `tickets.py gate` writes into a root's gate stubs. They
+# are the library's own nodes, so no pack cell names them and none has to.
+GATE_STUB_EXECUTORS = frozenset(GATE_EXECUTORS.values())
+# What makes an id a gate stub of a root that is in this set.
+GATE_INFIX = ".gate."
 # A pack's executor and assembly cells are the only executors it binds.
 PACKS_DIR = "packs"
 PACK_CELL_RE = re.compile(r"^\|\s*(?:executor|assembly)\s*\|([^|]*)\|", re.M)
@@ -1265,6 +1270,48 @@ def _first_overlap(paths, scopes):
     return None
 
 
+def _root_ids(siblings):
+    """Every id in this set whose executor makes it a root ticket."""
+
+    return sorted(
+        item_id
+        for item_id, frontmatter in siblings.items()
+        if str(frontmatter.get("executor") or "").strip() == ROOT_EXECUTOR
+    )
+
+
+def _gate_stub_of(ticket_id, roots):
+    """The root this id is a gate stub of, or None.
+
+    Anchored to a root the set actually holds, never to the infix alone: a
+    unit ticket may be named anything, and the gate stubs are the ones one of
+    these roots owns.
+    """
+
+    for root in roots:
+        if ticket_id.startswith(root + GATE_INFIX):
+            return root
+    return None
+
+
+def _issued_items(siblings, roots):
+    """The ids that are work items of this cut, root and gate stubs excepted.
+
+    A root is the acceptance's source, so no criterion of the map it wrote
+    names it; the gate stubs are named by the keyword ``gate``, never by id.
+    Neither is a parallel work item either: a root does not run beside its own
+    subtree, and a gate runs behind all of it, so the pairs family 4 asks
+    about are the pairs among these ids. Grading either as an issued item
+    fails every honest cut in the layout the work-item contract requires.
+    """
+
+    return [
+        item_id
+        for item_id in sorted(siblings)
+        if item_id not in roots and _gate_stub_of(item_id, roots) is None
+    ]
+
+
 def _pairwise(siblings, reads):
     """Family 4: the pairs the DAG leaves free to run at the same time.
 
@@ -1276,7 +1323,7 @@ def _pairwise(siblings, reads):
     """
 
     findings = []
-    ids = sorted(siblings)
+    ids = _issued_items(siblings, _root_ids(siblings))
     ancestors = {item: _ancestors(item, siblings) for item in ids}
     for index, left in enumerate(ids):
         for right in ids[index + 1:]:
@@ -1399,16 +1446,24 @@ def _pack_cells(pack, worktree_root):
     return names
 
 
-def _executor_legality(siblings, worktree_root):
+def _executor_legality(siblings, lib_root):
     """Family 6: an executor its pack's cells name, and never an engine.
 
     An engine dispatches a ticket's executor, so naming one as the executor is
     a call cycle. An item naming no pack has no cell to resolve against, and
     only the prohibition applies to it.
+
+    A root ticket and a gate stub are graded against the library instead of
+    against the pack. Their executors are structural -- the decomposer is what
+    makes a root a root, and the gate's three are what ``tickets.py gate``
+    writes -- so no pack's executor cell names them and none should have to.
+    Graded against the cell they were all illegal, which failed a cut for
+    carrying the shape the contract requires of it.
     """
 
     findings = []
     cells = {}
+    roots = _root_ids(siblings)
     for ticket_id in sorted(siblings):
         frontmatter = siblings[ticket_id]
         executor = str(frontmatter.get("executor") or "").strip()
@@ -1419,11 +1474,26 @@ def _executor_legality(siblings, worktree_root):
                 (ticket_id, 0, ILLEGAL_EXECUTOR, "{} is an engine".format(executor))
             )
             continue
+        if ticket_id in roots:
+            continue
+        if _gate_stub_of(ticket_id, roots) is not None:
+            if executor not in GATE_STUB_EXECUTORS:
+                findings.append(
+                    (
+                        ticket_id,
+                        0,
+                        ILLEGAL_EXECUTOR,
+                        "{} is none of the gate's executors {}".format(
+                            executor, sorted(GATE_STUB_EXECUTORS)
+                        ),
+                    )
+                )
+            continue
         pack = str(frontmatter.get("pack") or "").strip()
         if not pack:
             continue
         if pack not in cells:
-            cells[pack] = _pack_cells(pack, worktree_root)
+            cells[pack] = _pack_cells(pack, lib_root)
         if cells[pack] and executor not in cells[pack]:
             findings.append(
                 (
@@ -1599,7 +1669,14 @@ def main(argv=None):
         # line naming it absolutely would be machine-specific again.
         roots = (state_root.state_root(), worktree_root,
                  state_root.find_repo_root(Path.cwd()))
-        findings.extend(_coverage(args.run, run_dir, sorted(siblings), roots))
+        findings.extend(
+            _coverage(
+                args.run,
+                run_dir,
+                _issued_items(siblings, _root_ids(siblings)),
+                roots,
+            )
+        )
         findings.extend(_executor_legality(siblings, worktree_root))
         findings.extend(_symlink_findings(args.run, (baseline_tree, head_tree)))
     finally:
