@@ -5019,5 +5019,65 @@ class TestGrantedScopeAtTheJoin(unittest.TestCase):
             self.assertEqual("pass", json.loads(passed.stdout)["check"]["verdict"])
 
 
+class TestCheckedByVerb(unittest.TestCase):
+    """`check` is the producer for contracts/work-item.md's `checked_by`.
+
+    rules/verification.md §10's checker pass was read by three consumers --
+    the contract's field, orch-critique's body and orch-integrate's name
+    check -- and written by nothing, so the join could not tell a real
+    checker pass from an executor's claim of one.
+    """
+
+    def make(self, tmp: Path, status: str = "claimed") -> Path:
+        (tmp / ".git").mkdir()
+        run_dir = use_sink(tmp) / "tickets" / "testrun"
+        run_dir.mkdir(parents=True)
+        path = run_dir / "T1.md"
+        body = FULL_TICKET.replace("status: ready", f"status: {status}")
+        if status in ("claimed", "suspended"):
+            body = body.replace(
+                f"status: {status}\n", f"status: {status}\nclaimed_by: agent-a\n"
+            )
+        path.write_text(body, encoding="utf-8")
+        return path
+
+    def test_check_writes_checked_by_on_a_claimed_ticket(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.make(tmp)
+            payload = run_cmd(tmp, "check", "testrun", "T1", "--by", "checker-a")
+            self.assertNotIn("error", payload)
+            self.assertEqual("checker-a", payload["check"]["checked_by"])
+            self.assertEqual("T1", payload["check"]["id"])
+            self.assertIn("checked_by: checker-a", path.read_text(encoding="utf-8"))
+
+    def test_check_is_refused_on_a_ticket_that_is_not_claimed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.make(tmp, status="ready")
+            payload = run_cmd(tmp, "check", "testrun", "T1", "--by", "checker-a")
+            self.assertIn("not claimed", payload["error"])
+            self.assertNotIn("checked_by", path.read_text(encoding="utf-8"))
+
+    def test_check_requires_a_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            payload = run_cmd(tmp, "check", "testrun", "T1")
+            self.assertIn("--by", payload["error"])
+
+    def test_check_refuses_a_ticket_that_is_not_there(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            payload = run_cmd(tmp, "check", "testrun", "T9", "--by", "checker-a")
+            self.assertIn("ticket not found", payload["error"])
+
+    def test_check_is_reachable_and_documented_like_every_other_verb(self):
+        self.assertIn("check", tickets_mod.SUBCOMMAND_USAGE)
+        self.assertIn("check", tickets_mod.SUBCOMMAND_SUMMARY)
+        self.assertIn("check", tickets_mod._dispatch([])["error"])
+
+
 if __name__ == "__main__":
     unittest.main()

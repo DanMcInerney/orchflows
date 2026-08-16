@@ -302,6 +302,17 @@ GRANTED_AT_KEY = "granted_at"
 # editor of it; after a terminal status the verdict has already been read
 # against the authority the work was done under.
 GRANTABLE_STATUSES = frozenset({"claimed", "suspended"})
+CHECK_USAGE = "check <run> <id> --by <name>"
+# contracts/work-item.md's `checked_by`, written where every other lifecycle
+# field is: rules/verification.md §10 gives the checker's pass to the join as
+# an acceptance source, and a source the join cannot distinguish from the
+# executor's own word is not independence (rules/verification.md §10).
+CHECKED_BY_KEY = "checked_by"
+# The statuses a checker pass is open in — the same window a grant has, and
+# for the same reason: the ticket is claimed and being worked (`suspended`
+# stays claimed, contracts/work-item.md). Before a claim there is no result
+# to check, and terminal status is the join's, read after the check.
+CHECKABLE_STATUSES = GRANTABLE_STATUSES
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
 WORKLOG_USAGE = "worklog <run> [--write]"
 GATE_USAGE = (
@@ -349,6 +360,7 @@ SUBCOMMAND_USAGE = {
     "ready": "ready [--run R]",
     "claim": "claim <run> <id> --by <name>",
     "grant": GRANT_USAGE,
+    "check": CHECK_USAGE,
     "set-status": "set-status <run> <id> <status>",
     "packet": "packet <run> <id> --reply-to <name> [--workspace <path>]",
     "result": RESULT_USAGE,
@@ -382,6 +394,10 @@ SUBCOMMAND_SUMMARY = {
     "bookkeeping every reader of the item's authority then honours. Refused "
     f"on a ticket that is not {sorted(GRANTABLE_STATUSES)}: before a claim "
     "the cut owns the scope.",
+    "check": "Record the rules/verification.md §10 checker's pass on one "
+    "claimed item — `checked_by`, the name the join reads that item's "
+    "`authored-here` acceptance from. Refused on a ticket that is not "
+    f"{sorted(CHECKABLE_STATUSES)}.",
     "set-status": f"Set one ticket's status; terminal status is the join's "
     f"alone. One of {sorted(VALID_STATUSES)}.",
     "packet": "The by-reference dispatch packet for one ticket: path, parts, "
@@ -3002,6 +3018,68 @@ def _cmd_grant(rest):
     }
 
 
+def _cmd_check(rest):
+    """Record the §10 checker's pass on one claimed item.
+
+    The gap this closes: contracts/work-item.md:44 gave `checked_by` to "the
+    §10 checker on its pass", orch-critique's body told the checker to set
+    it, and orch-integrate refused a `checker`-independence return without
+    it — while no script wrote it and :72-74 makes frontmatter script-written
+    bookkeeping the executor may not touch. So the field was either absent,
+    failing the join, or hand-edited, which the join cannot tell from an
+    executor writing its own acceptance (rules/verification.md §10 exists to
+    make exactly that distinguishable). Written as `claimed_*`-class
+    bookkeeping, never a body section: those stay the executor's, and the
+    checker's own findings go to `## Result` through `result --append`.
+    """
+
+    args = list(rest)
+    checked_by = _extract_flag(args, "--by")
+    if len(args) != 2:
+        return {"error": f"usage: {CHECK_USAGE}"}
+    if not (checked_by or "").strip():
+        return {
+            "error": "check requires --by <name>: the pass is a named further "
+            "context's, and an unattributed one is the executor's own word "
+            f"again. usage: {CHECK_USAGE}"
+        }
+    run, ticket_id = args
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {"error": NO_SINK_ERROR}
+    ticket_path = tickets_root / run / f"{ticket_id}.md"
+    if not ticket_path.is_file():
+        return {"error": f"ticket not found: {run}/{ticket_id}"}
+    text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return failure
+    data = _parse_frontmatter(text)
+    status = str(data.get("status") or "").strip().strip("`").strip()
+    if status not in CHECKABLE_STATUSES:
+        return {
+            "error": f"ticket is not claimed (status '{status}'): the §10 "
+            "checker passes over a result an executor has produced under a "
+            "claim. Before a claim there is nothing to check, and after a "
+            "terminal status the join has already read the acceptance this "
+            f"field feeds. ticket: {ticket_path}"
+        }
+    try:
+        updated = _set_frontmatter_field(text, CHECKED_BY_KEY, checked_by.strip())
+    except ValueError as error:
+        return {"error": str(error)}
+    try:
+        ticket_path.write_text(updated, encoding="utf-8")
+    except OSError as error:
+        return {"error": f"unwritable ticket: {error}"}
+    return {
+        "check": {
+            "run": data.get("run") or run,
+            "id": data.get("id") or ticket_id,
+            "checked_by": checked_by.strip(),
+        }
+    }
+
+
 def _cmd_set_status(rest):
     args = list(rest)
     if len(args) != 3:
@@ -4039,8 +4117,8 @@ def _dispatch(argv):
     if not argv:
         return {
             "error": "missing subcommand: new | amend | instantiate | gate | "
-            "list | ready | claim | grant | set-status | packet | result | "
-            "worklog | run-state | improvement"
+            "list | ready | claim | grant | check | set-status | packet | "
+            "result | worklog | run-state | improvement"
         }
     command, rest = argv[0], argv[1:]
     if command in HELP_COMMANDS:
@@ -4063,6 +4141,8 @@ def _dispatch(argv):
         return _cmd_claim(rest)
     if command == "grant":
         return _cmd_grant(rest)
+    if command == "check":
+        return _cmd_check(rest)
     if command == "set-status":
         return _cmd_set_status(rest)
     if command == "packet":
