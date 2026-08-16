@@ -24,12 +24,15 @@ an exclusion-stop is adjudicated on its contracted return per
 re-dispatches with a ticket when resume matters.
 
 Check always: the returning child's name matches the ticket's
-`claimed_by` — a mismatch is rejected(child), a lapsed claim returning
-outside its bound, never a caller under-supply; `changed_artifacts` lie
-inside the write scope, else rejection regardless of verdicts; nothing
-a verification entry covers has changed since it was produced; a
-non-empty write scope's return must name its changed artifacts, any
-unattributed change is rejected(child).
+`claimed_by`, its `checked_by`, or the re-verifier your own
+`tickets.py packet --executor` named — a mismatch is rejected(child), a
+lapsed claim returning outside its bound, never a caller under-supply;
+`changed_artifacts` per
+[work-item.md](../../../contracts/work-item.md#dispatch); nothing a
+verification entry covers has changed since it was produced. For
+`isolation: required`, run `workspace.py check <run> <id> --base <rev>`
+from the integrating checkout before accepting; exit 6 is a caller
+vantage error, not a verdict.
 
 Classify by blame per the
 [work-item contract](../../../contracts/work-item.md#dispatch) and
@@ -37,7 +40,7 @@ record the class through `tickets.py run-state --note`. The join alone
 writes terminal status (`tickets.py set-status`).
 
 Never: trust out-of-scope output; re-run a covered oracle; repair the
-result yourself; reach needs-verify on a packet-graded return.
+result yourself.
 
 Return: disposition — accepted, rejected(blame), suspended (route to
 resume), or ticket-grade-only needs-verify with the exact uncovered
