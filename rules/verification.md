@@ -39,13 +39,13 @@
 10. Independence enters every unit before its acceptance is final,
     from at least one source outside the executing context: a
     completion test whose oracles all carry `pre-existing` oracle
-    provenance ([contracts/work-item.md](../contracts/work-item.md))
-    and each can fail on the objective (§8);
-    one fresh checker (`orch-check` — never a second executor)
-    reviewing the result and its authored checks and correcting per
-    §9, the completion test then re-verified by a further context
-    that rendered no part of the result; a judged verdict per §6; or
-    the downstream gate the ticket's `independence` field names.
+    provenance ([contracts/work-item.md](../contracts/work-item.md)) and
+    each can fail on the objective (§8); one fresh checker
+    (`orch-critique` under the ticket's own write scope — never a second
+    executor) reviewing the result and its authored checks and
+    correcting per §9, the completion test then re-verified by a further
+    context that rendered no part of the result; a judged verdict per
+    §6; or the downstream gate the ticket's `independence` field names.
     Acceptance resting only on checks the executing context authored
     is UNVERIFIED.
 11. A repair by the context that found the defect is accepted only on a

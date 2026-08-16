@@ -3,7 +3,7 @@
 1. The starting agent is the orchestrator. It owns user questions, scope
    decisions, and undelegated irreversible effects; it never delegates
    accountability.
-2. Children take one of two roles — capability tiers, never personas:
+2. Children take one of two roles — capability classes, never personas:
    - `orch-planner` — judgment: planning, critique, adjudication,
      architecture, review, synthesis.
    - `orch-worker` — execution: implementation, repair, investigation,

@@ -2,7 +2,7 @@
 
 1. Every run composes from these operators and no others: freeze the
    contract; dispatch and accept through the delegation boundary; execute
-   through one of {single item, independent lanes, rolling dependency
+   through one of {single item, lanes, rolling dependency
    frontier, bounded loop}; join by {check, reduction, adjudication}; challenge
    adversarially only under stakes; correct at most once; escalate at
    most once.
