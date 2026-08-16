@@ -120,7 +120,7 @@ SENTINEL = "SUPER_RESEARCH_T10_SENTINEL"
 # this double's — it answers every read of a route with the one canned page it
 # was seeded with, so a core that spends a cursor would be asking for a page
 # nothing here can serve. No page two of any of these routes has ever been
-# measured (findings.md §1 measured page one), so this dispatch seeds what it
+# measured (the 2026-08-10 probes recorded page one), so this dispatch seeds what it
 # can honestly stand for: a search whose one page is its last. The claim is what
 # moves; every count below is one page's, unchanged.
 NEXT_PAGE_CLAIMS = (

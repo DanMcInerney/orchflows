@@ -16,9 +16,10 @@ profile: orch-worker
 
 ## Objective
 
-The two questions qualification does not ask, answered in a context
-disjoint from every builder and from the qualifier: is each case's
-stated expectation right, and is its probe passable without the work.
+The triage measurement pass, then the two questions qualification does
+not ask, answered in a context disjoint from every builder and from the
+qualifier: is each case's stated expectation right, and is its probe
+passable without the work.
 Each finding repaired within the remaining allocation or declared as a
 gap naming the case and its class.
 
@@ -35,7 +36,7 @@ gap naming the case and its class.
 
 ## Completion test
 
-- every case §Reference audit sends to the solve-it-yourself pass was audited that way, and the re-read sample over the rest is declared | oracle: the reference audit record | oracle_class: deterministic | provenance: authored-here
+- every case §Reference audit sends to the solve-it-yourself pass was audited that way, and the re-read sample over the rest is declared | oracle: the triage measurement record and the reference audit record | oracle_class: deterministic | provenance: authored-here
 - the audit's output carries the shape §Reference audit requires of it | oracle: the reference audit record | oracle_class: deterministic | provenance: pre-existing
 - every attack outcome is one of §Attack pass's three, taken from the candidate's own scope for that case, and every unrepaired hole is declared | oracle: the attack pass record | oracle_class: deterministic | provenance: authored-here
 

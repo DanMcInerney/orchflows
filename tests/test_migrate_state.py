@@ -621,6 +621,65 @@ class TestMigrationLayout(MigrationCase):
         self.assertIn("is not a directory", report["errors"][0])
 
 
+class TestUnreadableDestination(MigrationCase):
+    """A destination that cannot be read is refused, never read as empty.
+
+    Reading it as empty is not a near miss. Every line the source holds is
+    new against an empty set, so the run queues the whole stream, appends a
+    second copy of records the destination already carries, and reports
+    ``duplicates: 0`` -- the one duplicating outcome a copy-only tool can
+    produce, from the docstring's own idempotence claim. A directory
+    standing where a line stream belongs is the portable way to make a path
+    that exists and cannot be read: POSIX raises ``IsADirectoryError`` and
+    Windows ``PermissionError``, and both are ``OSError``.
+    """
+
+    def source_with_friction(self):
+        root = self.source_root("alpha")
+        write(root / "friction" / "2026-01.jsonl",
+              legacy_entry(root.parent, "one") + "\n")
+        return root
+
+    def test_an_unreadable_destination_is_named_and_nothing_is_queued_for_it(self):
+        root = self.source_with_friction()
+        blocked = self.sink / "friction" / "2026-01.jsonl"
+        blocked.mkdir(parents=True)
+
+        report = self.migrate(root)
+
+        self.assertEqual(
+            [action for action in report["plan"] if action["dest"] == str(blocked)],
+            [],
+            report["plan"],
+        )
+        self.assertTrue(
+            [error for error in report["errors"] if str(blocked) in error],
+            report["errors"],
+        )
+
+    def test_an_absent_destination_is_still_the_ordinary_first_copy(self):
+        """The refusal is over unreadability alone: a destination that is not
+        there yet holds nothing, which is a reading and not a failure."""
+
+        root = self.source_with_friction()
+
+        report = self.migrate(root)
+
+        self.assertEqual(report["errors"], [])
+        self.assertEqual(len(lines_of(self.sink / "friction" / "2026-01.jsonl")), 1)
+
+    def test_the_unterminated_line_question_refuses_rather_than_answers_no(self):
+        """``_needs_newline`` decides whether a record would be glued onto an
+        unterminated last line. A measurement it could not make is not the
+        answer "no separator needed": that answer glues. It raises, and the
+        executor's own reporting arm names the action that could not run."""
+
+        blocked = self.sink / "friction" / "2026-01.jsonl"
+        blocked.mkdir(parents=True)
+        with self.assertRaises(OSError):
+            migrate_state._needs_newline(blocked)
+
+
 class TestUsage(MigrationCase):
     """One JSON document, always; a refusal is a payload, never a traceback."""
 

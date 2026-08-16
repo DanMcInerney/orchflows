@@ -6,8 +6,6 @@ depends_on: [02-materialize]
 write_scope: [{{package}}]
 bound: <= 80 tool calls
 excluded_actions:
-  - let builders qualify their own work
-  - accept a builder's own cases or authored oracles as sufficient evidence
   - return a self-qualified verdict set where the builder-disjoint context is unreachable
 independence: gate
 isolation: required

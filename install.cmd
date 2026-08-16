@@ -2,9 +2,9 @@
 setlocal
 rem Bootstrap wrapper for install.py: resolves an interpreter
 rem (uv -> python3 -> python) and delegates, forwarding all arguments.
-rem Never hardcodes a bare python3/python without a PATH check first — see
-rem anthropics/claude-code#16131 for the Windows trap this avoids (bare
-rem `python` can be a Windows Store stub).
+rem uv is tried first because a bare python3/python can be the Windows Store
+rem stub, which `where` finds and cannot tell apart from an interpreter
+rem -- see anthropics/claude-code#16131 for the trap the order avoids.
 set "dir=%~dp0"
 set "target=%dir%install.py"
 

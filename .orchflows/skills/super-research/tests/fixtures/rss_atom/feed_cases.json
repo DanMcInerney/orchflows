@@ -1,6 +1,6 @@
 {
   "_note": [
-    "findings.md §1 measures exactly one row here: `feeds/videos.xml?channel_id=` answered",
+    "The 2026-08-10 probes recorded exactly one row here: `feeds/videos.xml?channel_id=` answered",
     "200 with 39 KB in 0.35 s. That is the Atom case, and it is the only route this adapter",
     "declares.",
     "",

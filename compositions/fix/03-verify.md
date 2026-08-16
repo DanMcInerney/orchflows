@@ -10,7 +10,6 @@ excluded_actions:
   - accept a guard that passes at the pre-repair revision
 independence: checker
 isolation: none
-profile: orch-worker
 ---
 
 ## Objective

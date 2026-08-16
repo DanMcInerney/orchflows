@@ -41,7 +41,8 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
   [rules/verification.md](../rules/verification.md) §10 source this
   item's `authored-here` acceptance rides; `gate` is set at cut time only
   when a downstream gate re-verifies this item; absent reads `checker`.
-- `checked_by` — optional, lifecycle: set by the §10 checker on its pass.
+- `checked_by` — optional, lifecycle: set by the §10 checker on its pass,
+  through `tickets.py check`.
 - `depends_on` — graph position: list of item ids; empty list when none.
 - `write_scope` — packet `authority`: exactly what this item may change,
   in the workspace semantics of the ticket's `pack`; a strict subset of
@@ -147,8 +148,7 @@ says what is true.
 - `reply_to` — the literal identifier the child's closing message must
   address, computed once from the dispatcher's own identity: its own
   assigned name where the dispatcher is itself a named child, `main`
-  where it is the top-level orchestrator; why a child cannot infer it is
-  the profiles reference of orch-frontier.
+  where it is the top-level orchestrator.
 
 Blame rule, recorded at every join and routing the finding to its causal
 owner: work the child had to do because a packet field was missing or
@@ -190,6 +190,7 @@ sections, its `id` and `depends_on` edges, the single terminal stub, the
 acyclic graph, every `{{placeholder}}` instantiation must fill, and every
 refusal it raises — is `scripts/tickets.py`'s `template_defects`, which
 grades each stub in its own words; the manifest is `tools/validate.py`'s.
+A template run's bound is the sum of its stubs' `bound`s.
 
 ## Executor form
 

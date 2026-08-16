@@ -30,8 +30,7 @@ that needs a different meaning needs a different word.
   validator-linted bounds, no domain judgment.
 - **workflow** — an assembled skill calling engines, primitives, or
   other workflows; always domain-blind. A T3 composition is a **named
-  workflow**; an improvement proposal's third scope is **workflow
-  scope** (`rules/improvement.md`).
+  workflow**.
 - **instance** — a concrete domain executor or lens: the one binding a
   pack cell names for a capability. A composition instantiated into a
   run is a **composition instance**.

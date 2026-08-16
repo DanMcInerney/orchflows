@@ -115,14 +115,14 @@ TERMINAL_STUB = "05-measure"
 # no other. Distributed rather than repeated: a Never clause on all six stubs
 # is a clause no stub is accountable for.
 STUB_INVARIANTS = {
-    "00-acquire": ("multiply the caller bound",),
+    "00-acquire": ("let unsupported semantics become invented target truth",),
     "01-design": (
         "move the declared coverage floor with the target's execution cost",
         "buy speed from the coverage floor, the oracle, or the horizon the "
         "outcome needs",
     ),
     "02-materialize": ("mutate the target", "generate a candidate"),
-    "03-qualify": ("let builders qualify their own work",),
+    "03-qualify": ("return a self-qualified verdict set",),
     "04-audit": ("enter an attack artifact into the case set",),
     "05-measure": (
         "rank candidates",
@@ -144,7 +144,6 @@ DONE_CHECK = (
 # deletion list, because a phrase deleted from the protocol and from the tree
 # at once is a lost law, not a trim -- and the two halves fail separately.
 MOVED_OUT_OF_PROTOCOL = (
-    ("partition one caller bound", TEMPLATE / "00-acquire.md", "an allocation from it"),
     ("Internal call carriage", ROOT / "contracts" / "work-item.md", "## Dispatch"),
     ("coverage floor never moves", EVAL_DESIGN, "coverage floor is not tradable"),
     (
@@ -155,13 +154,27 @@ MOVED_OUT_OF_PROTOCOL = (
     (
         "Builders never qualify",
         TEMPLATE / "03-qualify.md",
-        "let builders qualify their own work",
+        "return a self-qualified verdict set where the builder-disjoint context "
+        "is unreachable",
     ),
     (
         "Record the qualified result in the package's",
         TEMPLATE / "05-measure.md",
-        "recording the qualified result in the package's manifest",
+        "The manifest recorded",
     ),
+)
+# What the 2026-08-16 review retired rather than moved (thread T29): the
+# caller-bound partition, which no script ever performed -- every stage bound
+# is a frontmatter literal and `{{bound}}` reached no stub's work. A retired
+# law has no owner, so a MOVED_OUT_OF_PROTOCOL row would assert one that does
+# not exist; it must instead be absent from the protocol and from the template
+# both, or it has come back in the second place after leaving the first.
+RETIRED_FROM_PROTOCOL = (
+    ("partition one caller bound", "an allocation from it"),
+    # The §Audit-and-measurement copy of the same mechanism, which the first
+    # row could not see: it survived the 2026-08-16 repair and was caught by
+    # the R6a check. Absent from the protocol and from the template both.
+    ("the caller bound's partition", "the caller bound"),
 )
 PROTOCOL_LINE_CEILING = 160
 # Package-relative, so the deletion check and the by-path grep below both
@@ -502,7 +515,7 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         self.assertLessEqual(len(self.fields["description"]), 140)
         declared = self.fields["placeholders"]
         self.assertEqual(
-            "[target, outcome, sources, rigor, bound, pack, package]", declared
+            "[target, outcome, sources, rigor, pack, package]", declared
         )
         # Every declared placeholder reaches a stub. `validate.py` warns here;
         # a warning is not what a caller who filled a dead `--set` needs.
@@ -565,10 +578,11 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         for stub in ("00-acquire", "01-design"):
             with self.subTest(stub=stub):
                 self.assertIn("partial evidence", squashed(self.stubs[stub]))
-        self.assertIn(
-            "partial evidence",
-            squashed(markdown_section(self.stubs[TERMINAL_STUB], "Return fields")),
-        )
+        # The terminal stub said the same thing in its own Return fields until
+        # 2026-08-16 (thread T34): every failure path returning partial results
+        # is `rules/composition.md` §8's, and a stub that cannot stop early
+        # bought nothing by restating it. The two stages above keep their
+        # clauses because each says what partial means for that stage.
 
     def test_protocol_is_domain_blind_and_keeps_only_unowned_craft(self):
         """What survives is benchmark craft for a domain with no pack. The
@@ -594,6 +608,16 @@ class TestCanonicalBenchmaker(unittest.TestCase):
                 self.assertIn(
                     owner_phrase, squashed(owner.read_text(encoding="utf-8"))
                 )
+        template = squashed(
+            "".join(
+                path.read_text(encoding="utf-8")
+                for path in sorted(TEMPLATE.glob("*.md"))
+            )
+        )
+        for phrase, stub_phrase in RETIRED_FROM_PROTOCOL:
+            with self.subTest(retired=phrase):
+                self.assertNotIn(phrase, squashed(self.protocol))
+                self.assertNotIn(stub_phrase, template)
         self.assertIn(
             "licensed oracle material", squashed(self.protocol)
         )
@@ -675,7 +699,11 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         self.assertIn("distinct failure signatures", stages)
         for status in ("`both-pass`", "`split`", "`both-fail`", "`inversion`"):
             self.assertIn(status, stages)
-        self.assertIn("max(measured rerun spread, one case)", stages)
+        # The instrument's resolution is the manifest's `resolution` field and
+        # was stated twice until 2026-08-16 (thread T35);
+        # `test_manifest_owner_carries_every_post_qualification_field` is where
+        # the surviving statement is checked.
+        self.assertNotIn("max(measured rerun spread, one case)", stages)
         self.assertIn("outside the package", stages)
         # The revision-durability rule that replaces the seal's guarantee: a
         # revision only resolves while it is reachable, and a squash merge
@@ -685,15 +713,42 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         self.assertIn("squash", stages)
 
     def test_protocol_scoring_reports_distributions_not_points(self):
+        """What §Scoring still owns, and where the rest of it went at the
+        2026-08-16 review (thread T35). The reporting rules moved into
+        §Measurement pass -- the stage that records is their only reader, and
+        no stub links `#scoring`. Two laws left the protocol for owners it was
+        restating: the per-angle vector is `orch-eval-design`'s, and the
+        identity boundary a score does not cross is the manifest's
+        `incomparability`. Absence here plus presence there is the pair: a
+        law deleted from both places is lost, not trimmed."""
         scoring = squashed(markdown_section(self.protocol, "Scoring"))
-        self.assertIn("per-angle vector is the artifact", scoring)
-        self.assertIn("never headline a scalar", scoring)
-        self.assertIn("`(score, cost)` pairs", scoring)
-        self.assertIn("`pass^k` beside `pass@1`", scoring)
-        self.assertIn("deterministic oracle versus by judged oracle", scoring)
-        self.assertIn("target × model × harness × benchmark", scoring)
         self.assertIn("Never subtract a harness offset", scoring)
         self.assertIn("count of sign flips", scoring)
+
+        stages = squashed(markdown_section(self.protocol, "Audit and measurement"))
+        self.assertIn("`(score, cost)` pairs", stages)
+        self.assertIn("`pass^k` beside `pass@1`", stages)
+        self.assertIn("deterministic oracle versus by judged oracle", stages)
+
+        self.assertNotIn("per-angle vector is the artifact", scoring)
+        # The pinned phrase was "per-angle vector primary and any scalar
+        # derived" until R4 (6b5cafa) trimmed the trailing half out of the
+        # body while this guard was being retargeted at it (R6a, 4e7031a):
+        # each green alone, red merged. What this half of the pair protects
+        # is that the vector is what scoring reports -- a body that drops
+        # the vector drops these three words -- so the pin follows the
+        # surviving statement rather than asking for the trim back.
+        self.assertIn(
+            "per-angle vector primary",
+            squashed(EVAL_DESIGN.read_text(encoding="utf-8")),
+        )
+        self.assertNotIn("target × model × harness × benchmark", scoring)
+        boundary = contract_bullet(
+            squashed(self.manifest_contract).partition(NOT_RE_DERIVABLE)[2],
+            "incomparability",
+        )
+        for axis in ("model id", "effort level", "host binding", "scaffold"):
+            self.assertIn(axis, boundary)
 
     def test_manifest_owner_lists_every_field_and_rule(self):
         manifest = squashed(self.manifest_contract)

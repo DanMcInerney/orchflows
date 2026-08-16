@@ -1,7 +1,7 @@
 """Transport suite: a local network block is never a platform response.
 
 Every test here runs offline. The distinction this module defends is
-findings.md §0's: this host sits behind an appliance that answers some
+the captive-portal caveat's: this host sits behind an appliance that answers some
 domains with a failure status and a captive-portal body, and a route blocked
 that way is UNVERIFIED, never rejected. Confusing that with a platform
 response would record a local block as a platform gap.
@@ -180,7 +180,7 @@ def assert_channel_verdicts(case, verdicts):
 
     ``verdicts`` maps a case name to the verdict some classifier produced.
     Each assertion names the confusion it caught, so a failure says which half
-    of findings.md §0 was broken.
+    of the captive-portal caveat was broken.
     """
 
     for row in interception_cases():
@@ -200,7 +200,7 @@ def assert_channel_verdicts(case, verdicts):
 
 
 class ChannelVerdictTest(unittest.TestCase):
-    """Completion criteria 1 and 2: the detector types both halves of §0."""
+    """Completion criteria 1 and 2: the detector types both halves of the caveat."""
 
     def test_a_portal_marked_failure_is_a_network_interception(self):
         verdict = transport.channel_verdict(503, read_fixture("captive_portal.html"))
@@ -326,7 +326,7 @@ def assert_interception_reaches_the_page(case, adapter_id, pages):
 
     ``pages`` maps a measured case name to the ``NativePage`` some adapter
     produced for it. A local block must arrive as `network_intercepted` and
-    never as an http status — findings.md §0's rule is about what gets
+    never as an http status — the captive-portal caveat's rule is about what gets
     recorded, not only about what transport can tell — and an origin's own
     response must never be blamed on the network. Each assertion names the
     confusion it caught.
@@ -537,7 +537,7 @@ class PublicClientCredentialTest(unittest.TestCase):
     def test_the_instagram_app_id_is_the_value_the_evidence_records(self):
         credential = self._credential(transport.INSTAGRAM_WEB_APP_ID)
 
-        # findings.md §1 records this one in full.
+        # The 2026-08-10 probes record this one in full.
         self.assertEqual(credential.name, "x-ig-app-id")
         self.assertEqual(credential.value, "936619743392459")
         self.assertEqual(credential.placement, "header")
@@ -545,7 +545,7 @@ class PublicClientCredentialTest(unittest.TestCase):
     def test_the_innertube_web_key_matches_the_shape_the_evidence_records(self):
         credential = self._credential(transport.YOUTUBE_INNERTUBE_WEB_KEY)
 
-        # findings.md §1 records this one elided, as `AIzaSy...11qcW8`. The
+        # The 2026-08-10 probes record this one elided, as `AIzaSy...11qcW8`. The
         # middle is not in the evidence, so this pins exactly what is.
         self.assertTrue(credential.value.startswith("AIzaSy"), credential.value)
         self.assertTrue(credential.value.endswith("11qcW8"), credential.value)
@@ -1040,7 +1040,7 @@ class GuestActivationRouteTest(unittest.TestCase):
     def test_the_activation_route_carries_the_shape_the_evidence_measured(self):
         route = transport.route_constant(transport.X_GUEST_ACTIVATE_ROUTE)
 
-        # findings.md §1 (X): POST api.twitter.com/1.1/guest/activate.json
+        # The 2026-08-10 probes (X): POST api.twitter.com/1.1/guest/activate.json
         # returned 200 with a guest token, keylessly.
         self.assertEqual(route.access_class, "K1")
         self.assertEqual(route.method, "POST")

@@ -447,10 +447,19 @@ class TheSuiteReachesNoNetworkTest(unittest.TestCase):
                     cli.observe(probe, carrier, clock=clock.monotonic, now=clock.stamp)
 
     def test_an_unseeded_route_fails_loudly_rather_than_egressing(self):
+        # The opener still refuses an unseeded route rather than reaching for a
+        # socket; what changed is where the refusal is read. `run_step` types it
+        # now, so the loud failure is a `failed` step carrying `unreachable` and
+        # no records — a quiet one would be an empty page with outcome `ok`,
+        # which is the shape this row exists to make impossible.
         probe = cli.probe_for("hacker_news")
 
-        with self.assertRaises(transport.TransportError):
-            observe_offline(probe, seeds={})
+        observation, _ = observe_offline(probe, seeds={})
+
+        self.assertEqual(observation.outcome, "failed")
+        self.assertIn(transport.UNREACHABLE, observation.loss)
+        self.assertEqual(observation.records_kept, 0)
+        self.assertEqual(observation.channel, cli.ANSWERED_BY_LOCAL_NETWORK)
 
 
 def load_beside_the_tree(name):
@@ -483,7 +492,7 @@ def intercepted(adapter_id="github_rest"):
     """What this host's own appliance answering looks like by the time it lands.
 
     `failed`, with no rows, and the loss code as the only thing saying the
-    origin was never reached. findings.md §0 measured it: 503 with a login
+    origin was never reached. The captive-portal caveat measured it: 503 with a login
     portal in the body, for domains this network intercepts.
     """
 
@@ -875,7 +884,8 @@ class AReadThatHappenedIsNotNeverSmokedTest(unittest.TestCase):
         # nowhere else.
         self.assertEqual(cli.unmet_after(held, observation(ADAPTER), NOW), held)
         # This host's own appliance answering is not the platform being read at
-        # all, so it leaves no trace of one — the same line findings.md §0 draws
+        # all, so it leaves no trace of one — the same line the captive-portal
+        # caveat draws
         # for the success ledger, drawn once more here.
         self.assertEqual(cli.unmet_after(held, intercepted(ADAPTER), NOW), held)
 
@@ -1181,7 +1191,7 @@ class SmokeSubcommandTest(LedgerHoldingCase):
         # `TransportError` out of the opener. `main` was try/finally with no
         # except, so it left as a traceback and exit `1` — the code
         # protocol.md's own table assigns to "the origin answered and the row
-        # was not carried". That is findings.md section 0's error arriving by
+        # was not carried". That is the captive-portal caveat's error arriving by
         # a different door: a local condition recorded as a platform gap.
         held = {ADAPTER: stamp_at(-3600)}
         cli.write_ledger(self.path, held)
@@ -1409,7 +1419,7 @@ class StatusSaysWhatWasReadTest(LedgerHoldingCase):
         self.assertEqual(code, cli.EXIT_LOCAL_NETWORK)
         # Neither record moves. The origin was never reached, so there is no
         # read to report and `never_smoked` is still the true word — the same
-        # line findings.md section 0 draws, drawn at the second record too.
+        # line the captive-portal caveat draws, drawn at the second record too.
         self.assertFalse(self.path.exists())
         self.assertFalse(self.unmet_path().exists())
         self.assertEqual(

@@ -5,32 +5,9 @@ writes, the record it gets back, the ladder every route is classed on, the codes
 a partial answer carries, and the orders a set may be put in. Names here are the
 package's own — a term in `code` is a name the source spells exactly that way.
 
-## What the evidence says, and what it does not
-
-The routes below were measured on 2026-08-10 from one macOS host,
-unauthenticated: status, latency, and the field names each payload actually
-carried. [evidence.md](evidence.md) §"Route measurements of 2026-08-10" holds
-what this file cites of that record. It predates this package, so every ceiling,
-field list, and route constant here traces to that one host at that one moment.
-
-**The parsers have since read live origins.** Two sweeps on 2026-08-12 put every
-live adapter against its real route; which of them reached an origin and which
-carried a whole roster row is in [evidence.md](evidence.md) §"The two liveness
-sweeps of 2026-08-12". What the offline suite proves is narrower and unchanged:
-it runs the parsers against the payloads the 2026-08-10 probes recorded, which is
-a statement about those fixtures and not about any origin today.
-
-Two consequences a caller must carry:
-
-- `python3 -m super_research.cli status` reports every adapter `unverified` on a
-  fresh checkout, because the smoke ledger starts empty. That is the ledger's own
-  state and not a fault to route around: a sweep's standing lives in a tempdir
-  and never travels with a checkout.
-- `evidence.md` §"The captive-portal caveat" records that the measuring host sits
-  behind an appliance that answers some domains with HTTP 503 and a
-  `<base href="/login/">` body. A read that comes back `network_intercepted` is a
-  statement about the asking network. It never degrades an adapter and never
-  becomes a platform gap.
+What every ceiling, field list and route constant below traces to is in
+[evidence.md](evidence.md), which is also where the liveness sweeps and the
+captive-portal caveat are.
 
 ## Manifest grammar
 
@@ -43,18 +20,11 @@ Manifest keys are exactly `schema_version`, `manifest_id`, `mode`, `as_of`,
 
 - `schema_version` must equal `2`. There is no other manifest schema.
 - `manifest_id` and `as_of` are nonempty strings.
-- `mode` is `staged` or `fused`. Steps execute in declared order either way, so
-  the artifact is the same artifact; the mode reaches only the schedule the
-  ledger records. **Nothing in this package runs concurrently** — there is no
-  thread, task, coroutine, or process anywhere in it — so `fused` overlaps
-  nothing at execution time. What it collapses is the round-trip: discovery and
-  bounded hydration happen in **one invocation**, where `staged` puts a caller
-  between one step's output and the next step's input. That is real and it is
-  the whole of the difference a caller feels. In the ledger the two are placed
-  under different models — `fused` on per-step lanes bounded by each route's
-  budget, `staged` on one serial line — and `fake_makespan_us` is the span of
-  that placement: a modeled counterfactual, never wall clock. Either way it
-  collapses latency, never lineage.
+- `mode` is `staged` or `fused`. Steps run in declared order either way and the
+  artifact is the same; `fused` runs discovery and its hydration in one
+  invocation, `staged` returns after each step so the caller selects hits
+  between them. Nothing runs concurrently; the ledger's placement model is
+  `ledger.schedule_of`'s.
 - `steps` is a nonempty sequence of steps with unique `step_id`s; a
   `prior_step_id` must name a step in the same manifest.
 
@@ -74,17 +44,9 @@ Step keys are exactly `step_id`, `kind`, `adapter_id`, `query`, `prior_step_id`,
 - `max_items` is a hard positive integer cap. It is required — there is no
   default and no unbounded step. The core owns stop: no further call is made once
   the cap is met, and a step that truncated emits `recall_window_partial`.
-  **The core pages.** `runner.planned_calls` is still the only place a manifest
-  becomes an `AdapterRequest` and still sets no `cursor`; `run_step` builds the
-  continuation from the page it has just read, so a discovery step reads the page
-  its `cursor_out` names and `max_items` bounds the step across its pages rather
-  than inside one of them. Four stops, and two of them are the step finishing:
-  the origin names no cursor, or the caller's `max_items` is met. The other two
-  end it early and emit `recall_window_partial` — a cursor this step already
-  spent, and `runner.MAX_PAGES_PER_STEP` pages read while the origin goes on
-  offering. The page cap is the core's own and the only stop the origin does not
-  control, because a cursor that never ends would otherwise spend a budget
-  nobody set.
+  **The core pages.** A discovery step reads the page its `cursor_out` names, to
+  `runner.MAX_PAGES_PER_STEP` (5); a step that stopped while the origin still
+  offered emits `recall_window_partial`.
 
 `as_of` must be spelled `YYYY-MM-DDTHH:MM:SSZ` and `parse_manifest` refuses any
 other spelling, because `ordering.instant_seconds` returns nothing for one and an
@@ -117,11 +79,6 @@ The retained families, with the fields this delivery actually carries on
 | access/provenance | `route_id`, `access_class`, `operator_identity`, `discovery_locator` |
 | outcome/loss | `outcome`, `loss` |
 | audit | the artifact's `steps` and, from `runner.run_scheduled`, its `WorkLedgerEvent` tuple |
-
-The superseded spec's retention family is absent by design: this package owns no
-store, writes no artifact, and has no delete primitive, so there is nothing for a
-retention deadline to govern. The one file anything here writes is the smoke
-ledger, outside every working tree.
 
 Closed enums, all in `schema.py`: `ACQUISITION_MODES`, `STEP_KINDS`, `OUTCOMES`
 (`ok`, `empty`, `partial`, `failed`, `refused`, ordered by severity for
@@ -182,33 +139,13 @@ but `K5` is uncredentialed.
 
 1. No first-release capability may depend on `K5`. Absence of a credential yields
    full capability at lower throughput, never a refusal.
-2. A `K1` public client credential is a route constant `routes.py` declares and
-   `transport.py` re-exports. It is attached at send time, never enters a
-   manifest or an artifact, and is stripped back off the answering address
-   before that address leaves the transport seam.
-3. A `K3` route is labelled with its operator identity and carries
-   `third_party_archive` on **every record**. The label has to be on the row:
-   `normalize.normalize_page` builds a record's loss from that native record's
-   own and never from the page's, so an archive that labelled only the page
-   would leave an artifact whose rows all read as the platform speaking.
-4. A `K4` discovery hit and its hydrated target are linked, never merged.
+2. A `K3` route is labelled with its operator identity and carries
+   `third_party_archive` on **every record**, never on the page alone.
+3. A `K4` discovery hit and its hydrated target are linked, never merged.
 
-`AdapterDescriptor.__post_init__` refuses any `access_class` not in
-`schema.ACCESS_CLASSES` at construction, because three separate rules read it —
-the router admits on it, `time_confidence_for` decides on it, and the artifact
-publishes it — and none can tell an unnamed class from a wrong one.
-
-**No route in this package is `K5`, and there is no lawful shape for one.** A
-credentialed surface beside a keyless one on the same adapter breaks one class per
-adapter; a wholly credentialed adapter breaks rule 1, because the core substitutes
-nothing and a caller naming that adapter is simply refused. The ladder's two named
-`K5` members, Reddit OAuth and the YouTube Data API, are deferred for that reason
-rather than by coincidence.
-
-`transport.route_admissions()` is the only route knowledge the router ever sees:
-one boolean per route, true exactly when the route's class is not `K5`. The router
-sees no host, path, or credential, and answers `no_route` or `auth_required`
-before any I/O.
+How each class is enforced — the credential's placement, the class check at
+construction, and why no lawful `K5` shape exists — is in
+[internals.md](internals.md) §"How the ladder is enforced".
 
 ## Adapter roster
 
@@ -224,7 +161,7 @@ Read back off `runner.surface_descriptors`.
 | `reddit_archive` | `K3` | `arctic_shift_posts_ids` | Arctic Shift hydration by submission id: title, author, subreddit, permalink, created time, `score`, `num_comments` |
 | `reddit_feed` | `K0` | `reddit_feed` | subreddit RSS freshness probe: title, locator, author, updated. No engagement |
 | `x_syndication` | `K2` | `x_syndication_timeline` | one handle's timeline from the page's own `__NEXT_DATA__`, with the platform's four counts |
-| `x_guest` | `K1` | `x_guest_activate`, `x_guest_graphql` | a guest-token activation, then `TweetResultByRestId`, `UserByScreenName`, `UserTweets` on the token it minted. One read costs two calls, and both are budgeted |
+| `x_guest` | `K1` | `x_guest_activate`, `x_guest_graphql` | a guest-token activation, then `TweetResultByRestId`, `UserByScreenName`, `UserTweets` on the token it minted. One read costs two origin calls; both are paced, and the ledger bills the read alone — the activation is in the governor's log |
 | `linkedin_public` | `K2` | `linkedin_public_profile` | `/in/<slug>` `ld+json` Person: name, description, `jobTitle`, `addressLocality`, `worksFor`, `alumniOf` |
 | `linkedin_jobs` | `K0` | `linkedin_jobs_guest_search` | `jobs-guest` search: URN id, title, company, posted date |
 | `youtube_innertube` | `K1` | `youtube_innertube` | `search`, `next` comment threads, `player` metadata. No captions |
@@ -247,121 +184,6 @@ answered 503 with a login portal and `evidence.md` §"The captive-portal caveat"
 forbids reading that as platform behaviour; `reddit_oauth` and
 `youtube_data_api` as `K5` throughput upgrades.
 
-## Five capabilities that ship smaller than their roster row
-
-Stated here because a reader comparing the shipped package to the frozen spec's
-roster would otherwise find the gap by being wrong about it. This list asserts
-completeness — five, not "some" — and it is the third enumeration in this file
-that does, so `test_dependency_boundary` counts its entries against the number
-in the heading. An earlier revision said two and had five.
-
-1. **`linkedin_public` reads `/in/<slug>` only.** The spec's row reads
-   "profile/company". `evidence.md` §"Route measurements of 2026-08-10" records
-   `linkedin.com/company/<slug>` answering 200 with a marker name and **no field
-   set**, so a company parser would be inferred rather than measured. It is a
-   different path and would be a different route constant.
-2. **`reddit_archive`'s smoke omits `upvote_ratio` and `selftext`.** The spec's
-   row names both, and they fail its assertion for different reasons.
-   `upvote_ratio` is a float where `EngagementSnapshot.value` admits only exact
-   integers, so it is carried nowhere on the record. `selftext` *is* carried — it
-   is the record's `body` — but a link submission has none, so asserting it would
-   fail a healthy read. The gate may yet close the first through `attributes`;
-   until it does, the smoke asserts the seven fields the inventory in
-   [operating.md](operating.md) lists, and the roster row names more than the
-   shipped adapter carries.
-3. **`web_search` ships DuckDuckGo and no second provider.** The spec's row
-   commits "Brave/Bing as declared secondary providers with per-provider
-   parsers". Neither ships: `routes.py` declares one web-index route and
-   `web_search.py` holds one parser. `evidence.md` §"Route measurements of
-   2026-08-10" records both answering 200 and resisting extraction — Brave with
-   obfuscated class names, Bing with markup no clean triple came out of — so a
-   parser for either would be written against markup nobody has extracted from
-   rather than against a measurement.
-   Reopen when one of them yields a title/locator/snippet triple on a probe.
-4. **`reddit_archive` ships one Arctic Shift route of the four the spec names.**
-   The row names `posts/search`, `comments/search`, `posts/ids` and `comments`
-   by `link_id`. Only `posts/ids` is delivered, which is hydration by exact id,
-   so **all Reddit discovery through the archive is absent** — `reddit_feed`'s
-   one-per-30 s RSS and `K4` are the discovery this package has for Reddit. This
-   is also why `scope_required` and `archive_lag` are named in the loss
-   vocabulary and emitted nowhere: the routes where a scope grammar and a lag
-   window would be observable are the three that are not here.
-5. **`rss_atom` is a generic parser bound to one route.** The row reads
-   "Generic RSS/Atom", and the parser is: it reads RSS 2.0 and Atom, identity,
-   dates, enclosures and transcript links. What it cannot do is point anywhere
-   — a feed is a route constant `routes.py` owns, and one is declared,
-   `youtube_channel_feed`. The adapter names no host, so a second feed is a
-   second constant and not a caller-supplied address. That is the non-goal about
-   generic HTTP primitives holding, and it is still less than the row implies.
-
-## Rate budgets, cache, and the work ledger
-
-**Per-route budgets replace a uniform cap.** Each descriptor declares
-`min_interval_ms`, `burst` and `cooldown_ms` as measured constants, enforced per
-route by `pacing.RateGovernor`. A ceiling belongs to the origin, so two adapters
-reading one route declare the same three numbers. An undeclared route takes
-`DEFAULT_MIN_INTERVAL_MS=1000`, `DEFAULT_BURST=1`, `DEFAULT_COOLDOWN_MS=60000`: a
-limit nobody has measured is not one to spend. The measured extremes are
-`reddit_feed`, at one read per 30 000 ms, and `github_rest`, whose anonymous hour
-is sixty reads in each of two separately counted buckets — which is why its two
-surfaces are two routes rather than one.
-
-**The composition is the default, not an option a caller assembles.**
-`runner.run_acquisition(manifest)` and `run_scheduled` name no carrier and get
-`pacing.paced_carrier`: a `RateGovernor` over a `RunCache` over a real
-`transport.Transport`, all three on the run's own clock. It is the only place in
-the package that builds a carrier, which is checkable from outside — a second
-one is a second unpaced door. Handing in a carrier is how a caller takes pacing
-over deliberately; there is no way to reach an origin unpaced by omission.
-
-That choice is one choice and not three. A caller who hands in a bare
-`transport.Transport` gets no pacing, no cache, and **no mint**: the guest-token
-activation a `K1` route needs is minted inside `RateGovernor`, because an
-activation is a read like any other and belongs in a budget of its own. A bare
-carrier's `x_guest` read therefore goes out unauthorized, and the origin's own
-401 or 403 is what the run records — never an invented token and never a retry.
-
-An HTTP 429 is typed `rate_limited` on the page, sets that route's cooldown, and
-ends the call. It never triggers a second read, another route, or a changed
-identity: `transport.USER_AGENT` is one static string, and a rate limit is a
-constraint this package respects rather than evades.
-
-**The cooldown is the origin's own interval whenever it states one.**
-`Retry-After` in both RFC 7231 spellings and `X-RateLimit-Reset` are read off the
-headers `TransportResponse` carries, matched without regard to case and resolved
-against that answer's own `observed_at`; `RateGovernor` then holds the route for
-the longer of that and the declared `cooldown_ms`. Longer only — a stated
-interval that shortened a wait would be evasion wearing the shape of obedience —
-so an elapsed deadline, an unreadable value and an absent header alike leave the
-declared constant governing, and none of them raises. `transport.rate_refused`
-opens a cooldown for one status besides 429: a 403 whose body says the refusal is
-about rate, which is how GitHub spells its secondary limit. A 403 about who is
-asking opens none, and neither changes how the page is typed.
-
-**The run-local cache is a correctness requirement**, not an optimization: at one
-to two reads per thirty seconds, a run that re-reads a Reddit feed starves.
-`cache.RunCache` is keyed by `(route_id, canonical_request)`, holds at most
-`MAX_ENTRIES=32` bodies of at most `MAX_ENTRY_BYTES=1 MiB`, runs on a monotonic
-clock, and dies with the run — `close()` makes a later run's reach for it an error
-rather than a quiet hit. Their product, 32 MiB, is what a run's cache can cost
-however long the run goes on. Per-route TTLs are declared in `ROUTE_TTL_SECONDS`;
-`public_page_control` declares `0.0`, because a channel control answered from
-memory would report the network healthy on the strength of a read made before the
-appliance woke. A served entry carries `cache_hit` on the page and on every
-record, and keeps the transport's own `observed_at` — a cached record states when
-the origin was read, never when memory answered.
-
-**The work ledger** is additive per-operation deltas in one causal order, keyed
-`(dispatch_ordinal, operation_ordinal, operation_kind_ordinal, metric_ordinal,
-operation_id)`. This core schedules one operation kind, `native_page`, and emits
-`calls`, `pages`, `items` and `fake_duration`, plus one zero-delta `stop` marker
-per dispatch naming why the run ended. `pages` is emitted exactly once per
-operation, because one native page per adapter call is the law. `fake_makespan_us`
-is derived over the schedule and is deliberately not a metric: two operations the
-model places overlapping count once between them, which is the only quantity that
-tells `fused` from `staged`. It is a counterfactual over a placement, not a
-measurement of a run — nothing in this package executes two operations at once.
-
 ## Failure and loss vocabulary
 
 Loss is typed and additive: a code says what is missing or how the answer was
@@ -370,25 +192,12 @@ record carrying a loss code is not a failed read — `youtube_innertube` returns
 `ok` with `attestation_required` when a player withholds caption tracks and still
 carries the metadata it did get.
 
-**Both tables below are read back off the source, never transcribed into it.**
-`test_dependency_boundary.LossVocabularyIsReadOffTheSourceTest` parses these two
-tables out of this file and compares each row against what the package's own
-syntax says, so a cell that stops being true is a red test rather than a sentence
-nobody re-read. The threat table gets the same treatment: it lives in
-[internals.md](internals.md) §"What the package refuses", and
-`test_transport.ThreatTableIsReadOffTheDocumentTest` parses both of its columns
-out of that file and compares each against `THREAT_REMAP`. Same reason in both
-places: an earlier hand-kept count said three emitters where there were thirteen.
+**named by** is every module whose executable code spells that code, to attach
+it or to read it. Every table below is read back off this file by
+`test_dependency_boundary.LossVocabularyIsReadOffTheSourceTest`, so a cell that
+stops being true is a red test rather than a sentence nobody re-read.
 
-The **named by** column is every module whose executable code spells that code,
-to attach it or to read it. Spelling is the property worth pinning, because the
-defect it prevents is a name with two spellings: a module-level constant in one
-file and a bare literal in another means one search finds neither half. Three
-entries are readers rather than emitters and are named as such below the tables.
-A module that only declares a constant and never loads it is not named — that
-absence is itself a claim, and it is checked too.
-
-The seven codes this delivery adds to the retained vocabulary:
+The eight codes this delivery adds to the retained vocabulary:
 
 | code | means | named by |
 | --- | --- | --- |
@@ -396,15 +205,10 @@ The seven codes this delivery adds to the retained vocabulary:
 | `stale_identifier` | a vendor identifier rotated; the read was refused, not empty | `x_guest` (404), `youtube_innertube` (400) |
 | `attestation_required` | the origin withheld a payload behind an attestation this package does not perform | `youtube_innertube`, for the two playability statuses evidence.md §"Route measurements of 2026-08-10" records and for a withheld caption list; `cli`, which reads it |
 | `network_intercepted` | the local network answered, not the origin | `transport`, `adapters`, `smoke` |
+| `unreachable` | the read raised instead of answering: nothing took it — not the origin, and not an appliance in front of it — or the transport itself declined to send it (an address that is not https, a write-capable method, a route or credential it does not declare). The exception's own text rides as the step's warning and says which; the ledger bills no call for it | `runner`, which ends the step on it; `smoke` and `cli`, which read it |
 | `cache_hit` | this run's own memory answered | `adapters`, `runner` |
 | `archive_lag` | an archive's coverage trails the platform | nothing: **absent from the source entirely** |
 | `scope_required` | an archive query needs a scope it was not given | nothing: **absent from the source entirely** |
-
-`third_party_archive` is on the row and not on the page.
-`normalize.normalize_page` builds a record's loss from that native record's own
-and never from the page's, so an archive labelling only the page would leave an
-artifact whose rows all read as the platform speaking — which is why rule 3 of the
-access ladder says every record.
 
 `archive_lag` and `scope_required` are named in this table and nowhere else in the
 delivery: not emitted, and not declared either. The one Arctic Shift route
@@ -415,7 +219,7 @@ window would be observable — are not shipped. The two codes are named here so 
 later route adds a code the vocabulary already has, and so nobody reads their
 absence from the source as the vocabulary being smaller than the spec says.
 
-Added after those seven, and the only code here derived across the record set
+Added after those eight, and the only code here derived across the record set
 rather than read off a page:
 
 | code | means | named by |
@@ -442,47 +246,30 @@ states the same relation in the other direction — a hit nobody hydrated. The
 pair is deliberate. Neither is evidence about the platform: they describe what
 one artifact does and does not hold.
 
-The retained codes, and every module that spells one:
+The retained codes, what each one means, and every module that spells one:
 
-| code | named by |
-| --- | --- |
-| `auth_required` | `router`, `x_guest`, `linkedin_public`, `instagram_public`, `youtube_innertube`, `cli` — the router for a K5 route, the four adapters for an origin's own refusal, `cli` reading it |
-| `no_route` | `router`, `runner`, for an adapter or route the core does not declare |
-| `rate_limited` | `adapters`, on HTTP 429 |
-| `schema_drift` | `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `reddit_archive`, `reddit_feed`, `rss_atom`, `web_search`, `x_guest`, `x_syndication`, `youtube_innertube` |
-| `field_omitted` | `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `reddit_archive`, `reddit_feed`, `rss_atom`, `web_search`, `x_syndication`, `youtube_innertube` |
-| `malformed_json` | `fake`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_public`, `reddit_archive`, `x_guest`, `x_syndication`, `youtube_innertube` |
-| `http_status` | `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `public_page`, `reddit_archive`, `reddit_feed`, `rss_atom`, `web_search`, `x_guest`, `x_syndication`, `youtube_innertube` — thirteen, which is every adapter that reads an origin |
-| `withheld` | `youtube_innertube`, for a playability refusal the evidence did not record |
-| `engagement_unavailable` | `reddit_feed`, `web_search` |
-| `date_precision_only` | `linkedin_jobs`, `youtube_innertube` |
-| `unselected_target` | `public_page`, for a selection this route does not serve |
-| `native_identity_unknown` | `web_search`, standing on every index hit |
-| `unknown_publication_time` | `web_search`, standing on every index hit |
-| `target_not_hydrated` | `web_search`, standing on every index hit |
-| `recall_window_partial` | `runner`, when a cap truncated |
+| code | means | named by |
+| --- | --- | --- |
+| `auth_required` | the origin refused over who is asking, or the route needs a credential this package does not supply | `router`, `x_guest`, `linkedin_public`, `instagram_public`, `youtube_innertube`, `cli` — the router for a K5 route, the four adapters for an origin's own refusal, `cli` reading it |
+| `no_route` | the core declares no such adapter or route | `router`, `runner`, for an adapter or route the core does not declare |
+| `rate_limited` | the origin asked for fewer requests | `adapters`, on HTTP 429 |
+| `schema_drift` | the payload arrived in a shape this parser does not know, so an empty result would have been a lie | `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `reddit_archive`, `reddit_feed`, `rss_atom`, `web_search`, `x_guest`, `x_syndication`, `youtube_innertube` |
+| `field_omitted` | the answer carried, and one declared field of the roster row was not in it | `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `reddit_archive`, `reddit_feed`, `rss_atom`, `web_search`, `x_syndication`, `youtube_innertube` |
+| `malformed_json` | the body did not parse as the JSON the route declares | `fake`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_public`, `reddit_archive`, `x_guest`, `x_syndication`, `youtube_innertube` |
+| `http_status` | the origin answered with a status the route does not read as an answer | `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `public_page`, `reddit_archive`, `reddit_feed`, `rss_atom`, `web_search`, `x_guest`, `x_syndication`, `youtube_innertube` — thirteen, which is every adapter that reads an origin |
+| `withheld` | the origin declined the payload and said nothing this package can class further | `youtube_innertube`, for a playability refusal the evidence did not record |
+| `engagement_unavailable` | this surface publishes no counts at all, so a zero would be a number nobody reported | `reddit_feed`, `web_search` |
+| `date_precision_only` | the origin gave a date and no time, so the instant is the date's | `linkedin_jobs`, `youtube_innertube` |
+| `unselected_target` | this route does not serve the selection it was asked for | `public_page`, for a selection this route does not serve |
+| `native_identity_unknown` | the row carries no platform-native id, so it can never group by strong identity | `web_search`, standing on every index hit |
+| `unknown_publication_time` | the row carries no publication time, so it sorts as missing | `web_search`, standing on every index hit |
+| `target_not_hydrated` | this hit was discovered and nothing in this artifact hydrated it | `web_search`, standing on every index hit |
+| `recall_window_partial` | the step stopped while the origin was still offering, so the set is a window and not the whole | `runner`, when a cap truncated |
 
-Three of the names above are readers rather than emitters, and the distinction is
-worth keeping: `runner.reached_origin` reads `cache_hit` to decide whether a page
-cost an origin a read, `smoke.channel_of` reads `network_intercepted` to
-decide which exit code an operator gets, and `cli.target_may_be_the_problem`
-reads `auth_required` and `attestation_required` to decide whether advice to
-replace a probe target could possibly help. Everywhere else, naming the code is
-attaching it. Two modules declare a code as a constant and never load it, which
-is the same shape the four keyless adapters have for `auth_required`:
-`transport` owns `rate_limited` for `adapters.fetch_one_page` to attach, and
-`cache` owns `cache_hit` for `adapters._served_from_cache` to attach.
-
-A cell holds module names in backticks and nothing else in backticks, because
-the test reads it that way: a term of art or a count belongs in the prose beside
-the names.
-
-`reddit_feed`, `rss_atom`, `public_page` and `github_rest` each declare
-`AUTH_REQUIRED` and load it nowhere. That is the statement, not an oversight: no
-status those documented-keyless routes can answer with is a report that a
-credential was needed, and a name with zero loads makes it checkable from outside
-the module — which the same test checks, in that direction too. `hacker_news`
-does not declare it at all.
+Four of the names above are readers rather than emitters: `runner.reached_origin`
+reads `cache_hit`, `smoke.channel_of` reads `network_intercepted` and
+`unreachable`, and `cli.target_may_be_the_problem` reads `auth_required` and
+`attestation_required`. Everywhere else, naming a code is attaching it.
 
 A route that fails does not fall back. `schema_drift` and `stale_identifier` exist
 so that a changed payload is a typed failure rather than an empty success, which
@@ -494,9 +281,9 @@ Five named views, in `ordering.ORDERING_CONTRACT`: `newest`,
 `cross_source_chronology`, `native_top`, `most_commented`, `most_replied`. Ask for
 anything else and `order_records` raises `OrderingError`.
 
-Four of the five — every one but chronology — rank inside a single
+Four of the five — every one but chronology — order inside a single
 `(platform, canonical_content_kind)` family and **refuse a mixed set** rather than
-ranking a Reddit post against a web hit. Chronology crosses source roles on
+ordering a Reddit post against a web hit. Chronology crosses source roles on
 purpose.
 
 No wall clock participates. Every string is compared as unsigned UTF-8 bytes over

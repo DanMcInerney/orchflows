@@ -2208,9 +2208,9 @@ class GitNoHistoryDispositionTest(unittest.TestCase):
         self.assertNotIn("git-no-history", source)
 
     def test_the_advisory_set_lost_that_one_member_and_no_other(self):
-        # `symlink-in-tree` joined later and is an addition, not a survival:
-        # the claim this pins is still that GIT_NO_HISTORY left and that no
-        # member standing beside it left with it.
+        # `symlink-in-tree` and `unread-half` joined later and are additions,
+        # not survivals: the claim this pins is still that GIT_NO_HISTORY left
+        # and that no member standing beside it left with it.
         self.assertEqual(
             cutcheck.ADVISORY,
             frozenset(
@@ -2220,6 +2220,7 @@ class GitNoHistoryDispositionTest(unittest.TestCase):
                     cutcheck.VERDICT_IN_OUTPUT,
                     cutcheck.SYMLINK_IN_TREE,
                     cutcheck.BYTECODE_WRITTEN,
+                    cutcheck.UNREAD_HALF,
                 }
             ),
         )
@@ -2495,6 +2496,174 @@ class HeadHalfNonReadingTest(unittest.TestCase):
                     cutcheck._discrimination("pytest tests", Path("/b"), Path("/h")),
                     cutcheck.UNRUNNABLE_ORACLE,
                 )
+
+
+def _graded_with(test, argv, failing_clone=None):
+    """One `main` run in this process, against the shared copies.
+
+    The seam `tests/baseline_pin.py` uses, opened here because these cases
+    hand `main` an argv that helper does not build -- a `--lib`, or a clone
+    that fails for one revision and not the other.
+    """
+
+    root = shared_root()
+    real = cutcheck._scratch_tree
+
+    def clone(rev, worktree_root, scratch_root):
+        if rev == failing_clone:
+            return None
+        return real(rev, worktree_root, scratch_root)
+
+    out, err = io.StringIO(), io.StringIO()
+    here = Path.cwd()
+    os.chdir(str(ROOT))
+    try:
+        with mock.patch.object(cutcheck, "_scratch_root", lambda _tree: root):
+            with mock.patch.object(cutcheck, "_remove_scratch_root", lambda _root: None):
+                with mock.patch.object(cutcheck, "_scratch_tree", clone):
+                    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                        code = cutcheck.main(argv)
+    finally:
+        os.chdir(str(here))
+    return code, out.getvalue()
+
+
+class HeadCloneRefusalTest(unittest.TestCase):
+    """A HEAD half nothing could clone exits like a baseline half nothing could.
+
+    The baseline failure prints its reason and returns `NO_TICKET_SET`. The
+    HEAD failure returned `None` into `_discrimination`, where `None` is
+    also "cut time, there is no HEAD half to ask" -- so every oracle graded
+    clean, the report affirmed, and the run exited 0. Friction 04:21:49Z is
+    that clone failing for `MAX_PATH` on the baseline half, where it is
+    loud; the HEAD half takes the same route and said nothing.
+    """
+
+    def test_the_head_half_refuses_the_way_the_baseline_half_does(self):
+        argv = ["cutcheck-clean", "--baseline", BASELINE]
+        head_code, head_out = _graded_with(self, argv, failing_clone="HEAD")
+        base_code, base_out = _graded_with(self, argv, failing_clone=BASELINE)
+        self.assertEqual(base_code, cutcheck.NO_TICKET_SET, base_out)
+        self.assertEqual(head_code, base_code, head_out)
+        self.assertIn("cannot clone HEAD", head_out)
+        self.assertIn("cannot clone baseline", base_out)
+        self.assertNotIn(cutcheck.NO_FINDING_OUTSIDE, head_out)
+
+
+class UnreadHalfTest(unittest.TestCase):
+    """"Could not grade" and "discriminates" stop sharing one value.
+
+    `None` said both: an oracle that fails at the baseline and passes once
+    the work has landed, and a half nothing could read. Every unread
+    reading now names itself on one advisory line, so a grading that did
+    not happen reads as a grading that did not happen rather than as a
+    clean one.
+    """
+
+    def setUp(self):
+        cutcheck._UNREAD.clear()
+        self.addCleanup(cutcheck._UNREAD.clear)
+
+    def test_the_class_carries_a_family_and_decides_no_exit_status(self):
+        # An unread reading is a fact about this run on this host, like a
+        # coverage map that is not there -- reported, never a cut defect.
+        self.assertIn(cutcheck.UNREAD_HALF, cutcheck.FAMILY_OF)
+        self.assertIn(cutcheck.UNREAD_HALF, cutcheck.ADVISORY)
+
+    def test_a_baseline_reading_that_decided_nothing_says_so(self):
+        with mock.patch.object(cutcheck, "_exit_code", return_value=None):
+            klass = cutcheck._discrimination("pytest tests", Path("/b"), Path("/h"))
+        self.assertIsNone(klass)
+        self.assertEqual(len(cutcheck._UNREAD), 1, cutcheck._UNREAD)
+        self.assertIn("pytest tests", cutcheck._UNREAD[0])
+
+    def test_a_head_reading_that_decided_nothing_says_so_too(self):
+        baseline, head = Path("/b"), Path("/h")
+
+        def exit_code(command, tree):
+            return 1 if tree == baseline else None
+
+        with mock.patch.object(cutcheck, "_exit_code", side_effect=exit_code):
+            klass = cutcheck._discrimination("pytest tests", baseline, head)
+        self.assertIsNone(klass)
+        self.assertEqual(len(cutcheck._UNREAD), 1, cutcheck._UNREAD)
+        self.assertIn("HEAD", cutcheck._UNREAD[0])
+
+    def test_cut_time_is_a_stated_ladder_and_not_an_unread_half(self):
+        """At cut time nothing has landed, so there is no HEAD half to ask and
+        a baseline failure is what a discriminating oracle looks like. The
+        module docstring states that; an advisory line would deny it."""
+
+        with mock.patch.object(cutcheck, "_exit_code", return_value=1):
+            self.assertIsNone(cutcheck._discrimination("pytest tests", Path("/b"), None))
+        self.assertEqual(cutcheck._UNREAD, [])
+
+    def test_a_confinement_reading_that_failed_is_not_nothing_written(self):
+        """`_mutations` is the confinement instrument. Its empty list means
+        "this span wrote nothing"; a `git status` that failed means "nobody
+        looked", and the two were one answer."""
+
+        self.assertEqual(cutcheck._mutations(Path(ROOT) / "no-such-tree"), [])
+        self.assertTrue(cutcheck._UNREAD, "the failed status said nothing")
+
+    def test_a_symlink_reading_that_failed_is_not_no_symlinks(self):
+        self.assertEqual(cutcheck._symlink_entries(Path(ROOT) / "no-such-tree"), [])
+        self.assertTrue(cutcheck._UNREAD, "the failed ls-tree said nothing")
+        cutcheck._UNREAD.clear()
+        # A tree it can read answers, and says nothing besides.
+        self.assertEqual(cutcheck._symlink_entries(ROOT), [])
+        self.assertEqual(cutcheck._UNREAD, [])
+
+    def test_a_file_too_large_to_index_cannot_be_pinned_and_says_so(self):
+        """Family 3's other direction reads every file under `PIN_ROOTS` for the
+        literals an objective takes away. A file it skipped holds no pin as far
+        as the report is concerned, which is a claim about the file rather than
+        about the reading."""
+
+        self.addCleanup(cutcheck._PIN_INDEX.clear)
+        tree = Path(tempfile.mkdtemp(prefix="cutcheck-pins-"))
+        self.addCleanup(remove_repo_tree, tree)
+        (tree / "docs").mkdir()
+        (tree / "docs" / "small.md").write_text("a pin\n", encoding="utf-8")
+        (tree / "docs" / "big.bin").write_bytes(b"x" * (cutcheck.PIN_SIZE_LIMIT + 1))
+
+        indexed = [rel for rel, _ in cutcheck._pin_index(tree)]
+
+        self.assertEqual(indexed, ["docs/small.md"])
+        self.assertEqual(len(cutcheck._UNREAD), 1, cutcheck._UNREAD)
+        self.assertIn("docs/big.bin", cutcheck._UNREAD[0])
+
+    def test_a_library_with_no_packs_grades_family_6_against_nothing_and_says_so(self):
+        empty = Path(tempfile.mkdtemp(prefix="cutcheck-nolib-"))
+        self.addCleanup(remove_repo_tree, empty)
+
+        self.assertEqual(cutcheck._lib_root(str(empty)), empty)
+        self.assertTrue(cutcheck._UNREAD, "a declared library holding no packs")
+        cutcheck._UNREAD.clear()
+
+        with mock.patch.object(cutcheck, "PACKS_DIR", "no-such-directory"):
+            self.assertIsNone(cutcheck._lib_root(None))
+        self.assertTrue(cutcheck._UNREAD, "no library resolved at all")
+
+    def test_this_librarys_own_checkout_reads_clean(self):
+        self.assertEqual(cutcheck._lib_root(None), ROOT)
+        self.assertEqual(cutcheck._UNREAD, [])
+
+    def test_the_report_carries_the_advisory_line_and_still_exits_zero(self):
+        """End to end: an unread reading reaches stdout under the advisory
+        heading, selectable by class like every other finding, and decides no
+        exit status."""
+
+        empty = Path(tempfile.mkdtemp(prefix="cutcheck-nolib-"))
+        self.addCleanup(remove_repo_tree, empty)
+        code, out = _graded_with(
+            self, ["cutcheck-clean", "--baseline", BASELINE, "--lib", str(empty)]
+        )
+        advisories = report(subprocess.CompletedProcess([], code, stdout=out))[1]
+        lines = [line for line in advisories if cutcheck.UNREAD_HALF in line]
+        self.assertEqual(len(lines), 1, out)
+        self.assertIn(str(empty), lines[0])
+        self.assertEqual(code, cutcheck.CLEAN, out)
 
 
 class ScopeContainmentTest(unittest.TestCase):

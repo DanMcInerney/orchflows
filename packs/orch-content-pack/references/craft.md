@@ -1,6 +1,5 @@
 # Content craft
 
-The content domain's terms and shape, per the signature's craft cell.
 The shape principles every domain shares are
 [rules/token-economy.md](../../../rules/token-economy.md) §10's.
 
@@ -32,8 +31,6 @@ The shape principles every domain shares are
   cut log.
 
 ## Lens
-
-For `orch-critique`.
 
 - Voice: does every section hold the spec's voice contract on every
   dimension it names, including the signposts the edit added?

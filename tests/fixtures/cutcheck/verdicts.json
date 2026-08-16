@@ -244,7 +244,8 @@
    "cutcheck: advisory -- reported, and never setting the exit status:",
    "01-open: family 1: extraction-gap: criterion 1: **Nothing in the tree still spells the two names.** A reviewer reads the tree and finds each name go | oracle_class: judged",
    "02-carried: family 1: extraction-gap: criterion 1: **Nothing in the tree still spells the two names.** A reviewer reads the tree and finds each name go | oracle_class: judged",
-   "cutcheck-scope-open: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-scope-open/coverage.md"
+   "cutcheck-scope-open: family 5: coverage-map-absent: tests/fixtures/cutcheck/cutcheck-scope-open/coverage.md",
+   "cutcheck-scope-open: reading: unread-half: docs/banner.png: past PIN_SIZE_LIMIT, not read for pins"
   ]
  },
  "cutcheck-shellhead": {

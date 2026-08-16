@@ -1,6 +1,5 @@
 # Research craft
 
-The research domain's terms and shape, per the signature's craft cell.
 The shape principles every domain shares are
 [rules/token-economy.md](../../../rules/token-economy.md) §10's.
 
@@ -25,8 +24,6 @@ The shape principles every domain shares are
 - Date every claim; undated evidence ages silently.
 
 ## Lens
-
-For `orch-critique`.
 
 - Support: does each load-bearing claim rest on a primary source that
   says it?

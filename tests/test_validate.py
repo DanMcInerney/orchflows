@@ -260,7 +260,7 @@ SELF_IMPROVE = "skills/workflows/orch-self-improve/SKILL.md"
 # the miner writes proposals, the template's deliver stub writes the
 # covered line — each named where it is written and nowhere else.
 IMPROVEMENT_WRITER = {
-    SELF_IMPROVE: "scripts/tickets.py improvement --proposal",
+    SELF_IMPROVE: "tickets.py improvement --proposal",
     "compositions/self-improve/01-deliver.md": "tickets.py improvement --covered",
 }
 
@@ -809,14 +809,17 @@ class FrictionLocationSyncTest(unittest.TestCase):
 
     # --- the two wrong-result readings (rules/verification.md §8) ------
 
-    # Version control, runtime state, caches -- and the two data corpora
-    # that hold 1275 of the tree's 1492 files while validate.py grades
-    # neither: the copy reports the identical exit code and warning count
-    # without them, and `test_the_copy_grades_what_the_tree_grades` is what
-    # says so on every run.
+    # Version control, runtime state, caches -- and `tests/fixtures`, the
+    # corpus validate.py does not grade. `benchmarks` used to be skipped
+    # beside it on the same reasoning, and that reasoning was wrong: it is
+    # one of `LINKED_MD_ROOTS`, so a copy without it made
+    # `validate_markdown_links` skip link resolution over the whole copy --
+    # silently, until the check learned to say so. The copy carries it now,
+    # and `test_the_copy_grades_what_the_tree_grades` is what says on every
+    # run that the copy is still the tree's stand-in.
     COPY_SKIPS = shutil.ignore_patterns(
         ".git", ".claude", ".orch", "__pycache__", "*.pyc", ".venv", ".mypy_cache",
-        "benchmarks", "fixtures",
+        "fixtures",
     )
     _copy = None
     _revisions = None
@@ -885,9 +888,9 @@ class FrictionLocationSyncTest(unittest.TestCase):
         )
 
     def test_the_copy_grades_what_the_tree_grades(self):
-        """The copy leaves out benchmarks/ and tests/fixtures/. If validate.py
-        ever grades either, the copy stops being a stand-in for the tree and
-        every seeded reading above it is taken against something else."""
+        """The copy leaves out tests/fixtures/ alone. If validate.py ever
+        grades it, the copy stops being a stand-in for the tree and every
+        seeded reading above it is taken against something else."""
 
         self._assert_clean_first()
         tree = validate_the_real_tree()

@@ -6,8 +6,12 @@ mechanically:
     and fails on non-zero exit or any skip line whose reason is empty.
 (b) snapshot guard — hashes ``.orch/friction/*.jsonl`` and lists
     ``.orch/``, the resolved state sink, ``~/.claude``, ``~/.codex``
-    and ``~/.orchflows`` before and after the run, failing on any
-    difference (the harness itself writes only to stdout). The sink is
+    and ``~/.orchflows`` before and after the run, failing on any entry a
+    run adds to a listed tree and on any friction hash that moves. Trees
+    are graded on additions alone because a live host grows its own
+    existing files mid-run -- the running session's transcript -- while
+    the friction streams stay byte-exact (the harness itself writes only
+    to stdout). The sink is
     resolved in *this* process, so a suite that redirects
     ``ORCHFLOWS_STATE_HOME`` for its own children is still graded
     against the root it was supposed to leave alone.

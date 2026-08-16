@@ -1,7 +1,6 @@
 # Design craft
 
-The design domain's terms, per the signature's craft cell. Framework
-specifics live with the workspace's standards owner.
+Framework specifics live with the workspace's standards owner.
 
 ## Vocabulary
 
@@ -20,8 +19,7 @@ specifics live with the workspace's standards owner.
   one view identity; the visual analog of a pinned hash.
 - **token** — a design token: the single named carrier of one visual
   decision (a color, a space, a size, a duration); one name per
-  decision, so exact search finds every use of it; a hard-coded value
-  where a token exists is synonym drift.
+  decision; a hard-coded value where a token exists is synonym drift.
 - **scale** — the closed, ordered set of steps a token kind draws from
   (type scale, spacing scale); values land on steps, never between.
 - **design language** — the dimensions a judge scores: palette, type,
@@ -34,8 +32,6 @@ specifics live with the workspace's standards owner.
   interaction; kept when the behavior behind it matches the promise.
 
 ## Lens
-
-For `orch-critique`.
 
 - Design language: every view holds the spec's design language on
   each scored dimension, at every breakpoint.

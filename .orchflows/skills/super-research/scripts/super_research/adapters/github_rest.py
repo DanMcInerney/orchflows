@@ -1,6 +1,6 @@
 """K0 GitHub reads, anonymous, under the tightest hourly ceiling in the roster.
 
-Measured 2026-08-10 (findings.md §1, "Carry-over routes"): `api.github.com`
+Measured 2026-08-10 (Carry-over routes): `api.github.com`
 answered anonymously, `api.github.com/search/repositories` answered 200 with no
 credential, and `api.github.com/rate_limit` reported the anonymous ceiling as
 **60/hr for core and 60/hr for code_search** — two buckets, measured apart. Two
@@ -59,7 +59,7 @@ DESCRIPTOR = AdapterDescriptor(
     native_identity_namespace="github",
     representation_kind="native",
     operator_identity="github",
-    # findings.md §1: `rate_limit` reported 60/hr anonymous. GitHub spends an
+    # The 2026-08-10 probes: `rate_limit` reported 60/hr anonymous. GitHub spends an
     # hour as one bucket, so sixty reads may leave at once and one refills per
     # minute; a refusal costs the window the bucket resets in. T04 seeded these
     # three numbers as a replay constant before this route existed.

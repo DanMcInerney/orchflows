@@ -2,7 +2,7 @@
 
 The second way the 404 can be misread. This adapter types it `auth_required`,
 which is the reading that says a keyless route needs a credential it never
-needed — the exact claim findings.md §1 measured to be false, since the three
+needed — the exact claim the 2026-08-10 probes recorded to be false, since the three
 operations whose ids were current answered 200 with the same guest token.
 
 Every other status is delegated to the shipped adapter on purpose: being wrong

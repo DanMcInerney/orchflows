@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Verify the visual fences embedded in a Markdown page.
 
-```mermaid fences: the primary path renders each diagram with the pinned
-Mermaid CLI and locates syntax errors from its diagnostics. When the CLI
-is unavailable (npx not found) or fails to run for reasons other than a
-diagram syntax error, this degrades gracefully to a built-in structural
-parse that catches unbalanced brackets, an unknown diagram type, duplicate
-node redefinition with conflicting labels, and dangling edge references.
-Results produced by the fallback are marked "structural-only" in the JSON.
+```mermaid fences are rendered by the pinned Mermaid CLI, which locates
+syntax errors from its diagnostics. That CLI is the only judge of a
+diagram: when npx is not found, or when the CLI runs and cannot judge
+(timeout, spawn failure, no SVG written, a parse error it will not
+locate), this exits 2 naming the cause in "message" or "tool_errors".
+No diagram is ever reported as passing that a Mermaid parser did not
+read.
 
 ```vega-lite fences are checked for valid JSON; ```viz-html fences for
 balanced tags and absence of scripts.
@@ -15,9 +15,10 @@ balanced tags and absence of scripts.
 --lint additionally enforces the legibility contract: a type gate on
 every diagram (no `-beta`, mindmap, journey, zenuml), then flowchart
 rules — node budget, fan-out, subgraph depth, `direction` in
-externally-linked subgraphs, labeled decision branches — and, when the
-CLI rendered an SVG, node-overlap and viewBox-containment geometry
-checks. On a staged page (two or more flow diagrams) the first flow
+externally-linked subgraphs, labeled decision branches — and
+node-overlap and viewBox-containment geometry checks over the rendered
+SVG, whose failure to run is a `lint.warnings` entry, never a silent
+skip. On a staged page (two or more flow diagrams) the first flow
 diagram is advised against the overview budget. A page with prose but
 no visual fence passes as prose-only; an empty page is an error.
 """
@@ -66,33 +67,12 @@ MERMAID_SYNTAX_ERROR = re.compile(
     r"(?:Parse|Lexical|Lexer|Syntax) error", re.IGNORECASE
 )
 
-KNOWN_DIAGRAM_TYPES = {
-    "flowchart", "graph", "sequenceDiagram", "classDiagram", "classDiagram-v2",
-    "stateDiagram", "stateDiagram-v2", "erDiagram", "journey", "gantt", "pie",
-    "quadrantChart", "requirementDiagram", "gitGraph", "mindmap", "timeline",
-    "sankey-beta", "sankey", "block-beta", "block", "C4Context", "C4Container",
-    "C4Component", "C4Dynamic", "C4Deployment", "xychart-beta", "xychart",
-    "packet-beta", "packet", "kanban", "architecture-beta", "zenuml",
-    "radar-beta", "radar", "treemap-beta", "treemap", "venn-beta",
-    "ishikawa-beta", "cynefin-beta", "railroad-beta", "wardley", "swimlane",
-    "info",
-}
-
 NODE_DEF_RE = re.compile(
     r"(?<![A-Za-z0-9_-])(?P<id>[A-Za-z][A-Za-z0-9_-]*)"
     r"(?:\[(?P<l1>[^\]\n]*)\]|\((?P<l2>[^)\n]*)\)|\{(?P<l3>[^}\n]*)\}|>(?P<l4>[^\]\n]*)\])"
 )
 ARROW_RE = re.compile(r"<?(?:-\.+-*|--+|==+)[ox>]?")
-CLICK_RE = re.compile(r"^\s*click\s+(?P<id>[A-Za-z][A-Za-z0-9_-]*)\b")
-STYLE_RE = re.compile(r"^\s*style\s+(?P<id>[A-Za-z][A-Za-z0-9_-]*)\b")
-CLASS_ASSIGN_RE = re.compile(
-    r"^\s*class\s+(?P<ids>[A-Za-z0-9_,\-\s]+?)\s+[A-Za-z][A-Za-z0-9_-]*\s*;?\s*$"
-)
 SUBGRAPH_RE = re.compile(r"^\s*subgraph\s+(?P<id>[A-Za-z0-9_-]+)")
-
-BRACKET_PAIRS = {")": "(", "]": "[", "}": "{"}
-BRACKET_OPENS = set(BRACKET_PAIRS.values())
-BRACKET_CLOSES = set(BRACKET_PAIRS.keys())
 
 
 @dataclass(frozen=True)
@@ -206,173 +186,6 @@ def make_failure(
     if rule is not None:
         failure["rule"] = rule
     return failure
-
-
-# --- Structural fallback checks -------------------------------------------------
-
-
-def check_diagram_type(diagram: Diagram) -> dict[str, object] | None:
-    token, line_index = _diagram_type(diagram)
-    if line_index < 0:
-        return make_failure(diagram, 0, "diagram is empty on line 1", rule="empty_diagram")
-    if token not in KNOWN_DIAGRAM_TYPES:
-        first = _source_lines(diagram)[line_index].strip()
-        return make_failure(
-            diagram,
-            line_index,
-            f"unknown diagram type '{token or first[:20]}' on line {line_index + 1}",
-            rule="unknown_diagram_type",
-        )
-    return None
-
-
-def check_bracket_balance(diagram: Diagram) -> list[dict[str, object]]:
-    lines = _source_lines(diagram)
-    masked = [_mask_line(line) for line in lines]
-    stack: list[tuple[str, int]] = []
-    for line_index, line in enumerate(masked):
-        for char in line:
-            if char in BRACKET_OPENS:
-                stack.append((char, line_index))
-            elif char in BRACKET_CLOSES:
-                if not stack or stack[-1][0] != BRACKET_PAIRS[char]:
-                    return [
-                        make_failure(
-                            diagram,
-                            line_index,
-                            f"unbalanced brackets: unexpected '{char}'",
-                            rule="unbalanced_brackets",
-                        )
-                    ]
-                stack.pop()
-    if stack:
-        char, line_index = stack[-1]
-        return [
-            make_failure(
-                diagram,
-                line_index,
-                f"unbalanced brackets: unclosed '{char}'",
-                rule="unbalanced_brackets",
-            )
-        ]
-    return []
-
-
-def check_node_and_edges(diagram: Diagram) -> list[dict[str, object]]:
-    lines = _source_lines(diagram)
-    masked = [_mask_line(line) for line in lines]
-    node_labels: dict[str, tuple[str, int]] = {}
-    known_ids: set[str] = set()
-    failures: list[dict[str, object]] = []
-
-    for line_index, line in enumerate(masked):
-        for match in NODE_DEF_RE.finditer(line):
-            node_id = match.group("id")
-            label = next(
-                (
-                    group
-                    for group in (
-                        match.group("l1"),
-                        match.group("l2"),
-                        match.group("l3"),
-                        match.group("l4"),
-                    )
-                    if group is not None
-                ),
-                "",
-            ).strip()
-            known_ids.add(node_id)
-            if not label:
-                continue
-            if node_id in node_labels:
-                prior_label, prior_line = node_labels[node_id]
-                if prior_label and prior_label != label:
-                    failures.append(
-                        make_failure(
-                            diagram,
-                            line_index,
-                            f"node '{node_id}' redefined with conflicting label: "
-                            f"'{prior_label}' (line "
-                            f"{diagram.source_start_line + prior_line}) vs '{label}'",
-                            rule="duplicate_node_label",
-                        )
-                    )
-            else:
-                node_labels[node_id] = (label, line_index)
-
-        subgraph_match = SUBGRAPH_RE.match(line)
-        if subgraph_match:
-            known_ids.add(subgraph_match.group("id"))
-
-        segments = ARROW_RE.split(line)
-        if len(segments) > 1:
-            for segment_index in range(len(segments) - 1):
-                left, right = segments[segment_index], segments[segment_index + 1]
-                right_clean = re.sub(r"^\s*\|[^|\n]*\|", "", right)
-                src_match = re.search(
-                    r"([A-Za-z0-9_-]+)\s*(?:\[[^\]\n]*\]|\([^)\n]*\)|\{[^}\n]*\})?\s*$",
-                    left,
-                )
-                dst_match = re.match(r"\s*([A-Za-z0-9_-]+)", right_clean)
-                if src_match:
-                    known_ids.add(src_match.group(1))
-                if dst_match:
-                    known_ids.add(dst_match.group(1))
-
-    for line_index, line in enumerate(masked):
-        click_match = CLICK_RE.match(line)
-        if click_match:
-            node_id = click_match.group("id")
-            if node_id not in known_ids:
-                failures.append(
-                    make_failure(
-                        diagram,
-                        line_index,
-                        f"dangling reference: '{node_id}' used in 'click' but "
-                        "never defined as a node",
-                        rule="dangling_reference",
-                    )
-                )
-            continue
-        style_match = STYLE_RE.match(line)
-        if style_match:
-            node_id = style_match.group("id")
-            if node_id not in known_ids:
-                failures.append(
-                    make_failure(
-                        diagram,
-                        line_index,
-                        f"dangling reference: '{node_id}' used in 'style' but "
-                        "never defined as a node",
-                        rule="dangling_reference",
-                    )
-                )
-            continue
-        class_match = CLASS_ASSIGN_RE.match(line)
-        if class_match:
-            for node_id in (part.strip() for part in class_match.group("ids").split(",")):
-                if node_id and node_id not in known_ids:
-                    failures.append(
-                        make_failure(
-                            diagram,
-                            line_index,
-                            f"dangling reference: '{node_id}' used in 'class' but "
-                            "never defined as a node",
-                            rule="dangling_reference",
-                        )
-                    )
-
-    return failures
-
-
-def structural_check(diagram: Diagram) -> list[dict[str, object]]:
-    failures: list[dict[str, object]] = []
-    type_failure = check_diagram_type(diagram)
-    if type_failure is not None:
-        failures.append(type_failure)
-    failures.extend(check_bracket_balance(diagram))
-    failures.extend(check_node_and_edges(diagram))
-    return failures
 
 
 # --- Legibility lint (--lint) ----------------------------------------------------
@@ -626,12 +439,15 @@ TRANSLATE_RE = re.compile(r"translate\(\s*(-?[\d.]+)[,\s]\s*(-?[\d.]+)\s*\)")
 
 
 def geometry_failures(
-    diagram: Diagram, svg_bytes: bytes
-) -> list[dict[str, object]] | None:
+    diagram: Diagram, svg_bytes: bytes, source_nodes: int = 0
+) -> tuple[list[dict[str, object]], str | None]:
     """Node-overlap and viewBox-containment checks over a CLI-rendered SVG.
 
-    Returns None when the SVG lacks the expected structure — geometry is
-    then reported skipped, never guessed."""
+    Returns (failures, unchecked_reason). The reason names why the SVG
+    could not be read — or, for a diagram whose source declares
+    `source_nodes` nodes, why none of them was found positioned in it —
+    so a page whose layout was never measured cannot be reported as one
+    whose layout is clean."""
 
     try:
         import xml.etree.ElementTree as ElementTree
@@ -653,8 +469,11 @@ def geometry_failures(
                     float(rect.get("height", "0")),
                 )
             )
-        if len(boxes) < 2:
-            return None
+        if source_nodes and not boxes:
+            return [], (
+                f"the SVG positions none of the {source_nodes} node(s) the "
+                "source declares as g.node/rect boxes"
+            )
         failures: list[dict[str, object]] = []
         overlaps = 0
         for i in range(len(boxes)):
@@ -695,9 +514,9 @@ def geometry_failures(
                         rule="lint_geometry_overflow",
                     )
                 )
-        return failures
-    except Exception:
-        return None
+        return failures, None
+    except Exception as error:
+        return [], f"{type(error).__name__}: {error}"
 
 
 # --- Non-mermaid fences -----------------------------------------------------------
@@ -855,8 +674,8 @@ def _compact_message(output: str, location_index: int | None) -> str:
 def _diagnose_cli_syntax_error(diagram: Diagram, output: str) -> dict[str, object] | None:
     """Normalize Mermaid's parser error into an exact, source-oriented record.
 
-    Returns None when an exact source location cannot be recovered, signaling
-    the caller to fall back to a tool_error (and, ultimately, structural check).
+    Returns None when an exact source location cannot be recovered; the
+    caller then reports a tool_error carrying the CLI's own text.
     """
 
     clean = _normalize_newlines(ANSI_ESCAPE.sub("", output))
@@ -937,9 +756,13 @@ def _find_npx() -> str | None:
 
 def verify_diagram_cli(
     diagram: Diagram, npx: str, temporary_directory: Path
-) -> tuple[str, list[dict[str, object]], bytes | None]:
-    """Returns (status, failures, rendered_svg) with status in
-    {"ok", "syntax_error", "tool_error"}; rendered_svg only on "ok"."""
+) -> tuple[str, list, bytes | None]:
+    """Returns (status, detail, rendered_svg) with status in
+    {"ok", "syntax_error", "tool_error"}; rendered_svg only on "ok".
+
+    `detail` is the failure list on "syntax_error" and, on "tool_error",
+    one string carrying the CLI's own text — the cause the caller reports
+    rather than a verdict it cannot reach."""
 
     output_path = temporary_directory / f"diagram-{diagram.index}.svg"
     command = [npx, "--yes", MERMAID_PACKAGE, "-i", "-", "-o", str(output_path)]
@@ -957,26 +780,41 @@ def verify_diagram_cli(
             timeout=TIMEOUT_SECONDS,
             check=False,
         )
-    except (OSError, subprocess.SubprocessError, UnicodeError):
-        return "tool_error", [], None
+    except (OSError, subprocess.SubprocessError, UnicodeError) as error:
+        return "tool_error", [f"{MERMAID_PACKAGE} did not run: {error}"], None
 
     combined_output = "\n".join(
         part for part in (result.stderr, result.stdout) if part
     )
+    clean_output = _normalize_newlines(ANSI_ESCAPE.sub("", combined_output))
     if result.returncode != 0:
         if MERMAID_SYNTAX_ERROR.search(combined_output):
             failure = _diagnose_cli_syntax_error(diagram, combined_output)
             if failure is None:
-                return "tool_error", [], None
+                return (
+                    "tool_error",
+                    [
+                        "the CLI reported a syntax error this verifier could "
+                        f"not locate: {_compact_message(clean_output, None)}"
+                    ],
+                    None,
+                )
             return "syntax_error", [failure], None
-        return "tool_error", [], None
+        return (
+            "tool_error",
+            [
+                f"{MERMAID_PACKAGE} exited {result.returncode}: "
+                f"{_compact_message(clean_output, None)}"
+            ],
+            None,
+        )
 
     try:
         rendered = output_path.read_bytes()
-    except OSError:
-        return "tool_error", [], None
+    except OSError as error:
+        return "tool_error", [f"the rendered SVG was unreadable: {error}"], None
     if b"<svg" not in rendered:
-        return "tool_error", [], None
+        return "tool_error", ["the CLI wrote no SVG element"], None
     return "ok", [], rendered
 
 
@@ -1055,8 +893,23 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     npx = _find_npx()
+    if diagrams and npx is None:
+        payload = {
+            "status": "error",
+            "graphs": len(diagrams),
+            "failures": [],
+            "file": str(path),
+            "message": "The Mermaid CLI is unavailable: npx was not found on "
+            f"PATH, so {MERMAID_PACKAGE} cannot read the "
+            f"{len(diagrams)} diagram(s) on this page. Install Node.js and "
+            "rerun; this verifier judges no diagram it did not render.",
+        }
+        _emit(payload)
+        _write(sys.stderr, f"error: {payload['message']}\n")
+        return 2
+
     failures: list[dict[str, object]] = []
-    modes_used: set[str] = set()
+    tool_errors: list[dict[str, object]] = []
     lint_warnings: list[str] = []
     geometry_checked = 0
     flow_node_counts: list[tuple[int, int]] = []
@@ -1064,40 +917,37 @@ def main(argv: list[str] | None = None) -> int:
     with tempfile.TemporaryDirectory(prefix="orch-mermaid-") as temporary:
         temporary_directory = Path(temporary)
         for diagram in diagrams:
-            used_cli = False
-            rendered_svg: bytes | None = None
-            if npx is not None:
-                status, diagram_failures, rendered_svg = verify_diagram_cli(
-                    diagram, npx, temporary_directory
+            status, detail, rendered_svg = verify_diagram_cli(
+                diagram, npx, temporary_directory
+            )
+            if status == "syntax_error":
+                failures.extend(detail)
+            elif status == "tool_error":
+                tool_errors.append(
+                    {"graph": diagram.index, "text": detail[0] if detail else ""}
                 )
-                if status == "ok":
-                    modes_used.add("cli")
-                    used_cli = True
-                elif status == "syntax_error":
-                    modes_used.add("cli")
-                    failures.extend(diagram_failures)
-                    used_cli = True
-                # status == "tool_error" falls through to the structural fallback
-            if not used_cli:
-                modes_used.add("structural")
-                structural_failures = structural_check(diagram)
-                for failure in structural_failures:
-                    failure["structural_only"] = True
-                failures.extend(structural_failures)
             if arguments.lint:
                 lint_fails, lint_warns = lint_diagram(diagram)
                 failures.extend(lint_fails)
                 lint_warnings.extend(lint_warns)
                 token, _line = _diagram_type(diagram)
+                source_nodes = 0
                 if token in FLOW_TYPES:
-                    flow_node_counts.append(
-                        (diagram.index, len(_extract_flow_graph(diagram).nodes))
-                    )
+                    source_nodes = len(_extract_flow_graph(diagram).nodes)
+                    flow_node_counts.append((diagram.index, source_nodes))
                 if rendered_svg is not None:
-                    geometry = geometry_failures(diagram, rendered_svg)
-                    if geometry is not None:
+                    geometry, unchecked = geometry_failures(
+                        diagram, rendered_svg, source_nodes
+                    )
+                    if unchecked is None:
                         geometry_checked += 1
                         failures.extend(geometry)
+                    else:
+                        lint_warnings.append(
+                            f"graph {diagram.index}: geometry checks could not "
+                            f"read the rendered SVG ({unchecked}); its layout "
+                            "is unmeasured"
+                        )
 
     # On a staged page the first flow diagram is the overview; advisory
     # because a multi-relationship page legitimately has no overview.
@@ -1116,38 +966,44 @@ def main(argv: list[str] | None = None) -> int:
     for block in components:
         failures.extend(check_viz_html_fence(block))
 
-    if not diagrams:
-        mode = "static-only"
-    elif modes_used == {"cli"}:
-        mode = "cli"
-    elif modes_used == {"structural"}:
-        mode = "structural-only"
+    if tool_errors:
+        status = "error"
+    elif failures:
+        status = "fail"
     else:
-        mode = "mixed"
-
-    status = "pass" if not failures else "fail"
+        status = "pass"
     payload: dict[str, object] = {
         "status": status,
         "graphs": len(diagrams),
         "charts": len(charts),
         "components": len(components),
-        "mode": mode,
+        "mode": "cli" if diagrams else "static-only",
         "failures": failures,
         "file": str(path),
     }
+    if tool_errors:
+        payload["tool_errors"] = tool_errors
     if arguments.lint:
         payload["lint"] = {
             "warnings": lint_warnings,
             "geometry_checked": geometry_checked,
         }
-    if "cli" in modes_used:
+    if diagrams:
         payload["mermaid_version"] = MERMAID_VERSION
     for failure in failures:
         _write(
             sys.stderr,
             f"{path}:{failure['source_line']}: {failure['message']}\n",
         )
+    for tool_error in tool_errors:
+        _write(
+            sys.stderr,
+            f"{path}: graph {tool_error['graph']} was not judged: "
+            f"{tool_error['text']}\n",
+        )
     _emit(payload)
+    if status == "error":
+        return 2
     return 0 if status == "pass" else 1
 
 

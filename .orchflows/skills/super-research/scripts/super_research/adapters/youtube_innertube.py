@@ -1,6 +1,6 @@
 """K1 YouTube reads through InnerTube, under the web key the site publishes.
 
-Measured 2026-08-10 (findings.md §1, "YouTube"): ``youtubei/v1/search``
+Measured 2026-08-10 (YouTube): ``youtubei/v1/search``
 answered 200 with 2.27 MB in 1.4 s, ``youtubei/v1/next`` 200 with 1.12 MB in
 2.2 s carrying comment threads, and ``youtubei/v1/player`` 200 with 21 KB in
 0.3 s carrying ``title``, ``viewCount`` and ``publishDate``. The key is
@@ -47,9 +47,10 @@ from . import (
     fetch_one_page,
 )
 
-# The client this package presents. `WEB` is the client whose key findings.md
-# §1 records, and the version rotates with each YouTube web release: it is the
-# one thing in an InnerTube request that goes stale on the vendor's schedule.
+# The client this package presents. `WEB` is the client whose key the
+# 2026-08-10 probes record, and the version rotates with each YouTube web
+# release: it is the one thing in an InnerTube request that goes stale on
+# the vendor's schedule.
 CLIENT_NAME = "WEB"
 CLIENT_VERSION = "2.20260808.00.00"
 
@@ -73,7 +74,7 @@ DESCRIPTOR = AdapterDescriptor(
     native_identity_namespace="youtube",
     representation_kind="native",
     operator_identity="youtube",
-    # findings.md §1: 1.4 s for search, which is the roster row's declared
+    # The 2026-08-10 probes: 1.4 s for search, which is the roster row's declared
     # ceiling. `next` at 2.2 s and `player` at 0.3 s are those operations'
     # latencies and not second ceilings — one route, one budget. Nothing here
     # was measured refusing, so burst and cooldown keep the defaults.
@@ -139,7 +140,7 @@ MICROFORMAT_PATH = ("microformat", "playerMicroformatRenderer")
 PUBLISH_DATE_KEY = "publishDate"
 EMBED_URL_PATH = ("embed", "iframeUrl")
 
-# The statuses findings.md §1 measured a degraded player answering with, and
+# The statuses the 2026-08-10 probes recorded a degraded player answering with, and
 # the cause it names for them. Both words mean the same thing here: this client
 # was not served, and it was not served because it cannot attest.
 ATTESTED_PLAYABILITY = ("UNPLAYABLE", "ERROR")
@@ -292,7 +293,7 @@ def route_date_to_utc_iso(published: Any) -> Tuple[str, bool]:
 def captions_withheld(payload: Mapping[str, Any]) -> bool:
     """Whether this answer listed no caption track at all.
 
-    findings.md §1 measured exactly that on five clients and three videos, and
+    The 2026-08-10 probes recorded exactly that on five clients and three videos, and
     names the cause: PoToken/BotGuard attestation. So an empty list is a
     statement about this client and not about the video, and the one thing a
     caller must never read off it is that the video has no captions.
@@ -600,7 +601,7 @@ def _playability_loss(status: str) -> str:
     """Which refusal a non-`OK` playability is, off the two declared lists.
 
     Three answers, because they are three different pieces of news. A status
-    findings.md §1 measured is attestation. A status naming the origin's own
+    The 2026-08-10 probes recorded is attestation. A status naming the origin's own
     refusal is `auth_required`, which is what protocol.md reserves for it. A
     status on neither list is `withheld`: the origin declined and this package
     knows only that, and typing it as attestation would report a video that is
@@ -633,7 +634,7 @@ def _playability_warning(playability: Mapping[str, Any]) -> str:
         # status is also how the origin answers for a video it no longer has,
         # which the reason above is the only thing that distinguishes.
         return said + (
-            " findings.md §1 measured this status across five clients and three"
+            " The 2026-08-10 probes recorded this status across five clients and three"
             " videos and names the cause as PoToken/BotGuard attestation;"
             " caption retrieval and attestation are deferred by the spec. The"
             " origin's own reason is quoted above: this status is also what it"
@@ -646,7 +647,7 @@ def _playability_warning(playability: Mapping[str, Any]) -> str:
             " keyless route credentialed, and none is supplied."
         )
     return said + (
-        " findings.md §1 did not record this status, so nothing here names a"
+        " The 2026-08-10 probes did not record this status, so nothing here names a"
         " cause: the origin declined to serve the payload and the reason it"
         " gave is quoted above."
     )
@@ -678,7 +679,7 @@ def _player_page(response: transport.TransportResponse, payload: Any) -> NativeP
         (_player_record(payload, withheld),),
         "ok",
         warnings=(
-            "{0} answered 200 listing no caption track at {1}. findings.md §1"
+            "{0} answered 200 listing no caption track at {1}. The 2026-08-10 probes"
             " measured that on every client and every video probed and names"
             " the cause as PoToken/BotGuard attestation: the tracks are"
             " withheld from a client that cannot attest, and this is not a"

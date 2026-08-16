@@ -1,6 +1,6 @@
 """K4 web discovery over DuckDuckGo's keyless HTML endpoint.
 
-Measured 2026-08-10 (findings.md §1, "Web discovery"): of nine keyless
+Measured 2026-08-10 (Web discovery): of nine keyless
 engines probed, ``html.duckduckgo.com/html/`` was the only one returning
 clean title/URL/snippet triples — ten per page, no throttle at probe
 volume. Brave and Bing returned content but resisted extraction and are
@@ -98,7 +98,8 @@ class _DuckDuckGoResultParser(HTMLParser):
         elif tag == "input" and attributes.get("name") == NEXT_OFFSET_FIELD:
             # Last one wins, and a paginated page carries two of these: one in
             # the "< Previous" nav form and one in "Next". Which is which is not
-            # in the evidence — findings.md §1 measured page one, where there is
+            # in the evidence — the 2026-08-10 probes recorded page one,
+            # where there is
             # only the forward form — so a rule preferring one would be markup
             # this package invented rather than markup it read, and reading the
             # last is at least a rule rather than a coincidence.
@@ -166,7 +167,7 @@ def _drifted(response: transport.TransportResponse, detail: str) -> NativePage:
 
     Never `empty`: an index that matched nothing and an index whose markup this
     adapter no longer reads arrive at the same door, and only the first is a
-    statement about the query. findings.md §1 recorded three of the nine engines
+    statement about the query. The 2026-08-10 probes recorded three of the nine engines
     probed answering 200 with a challenge or a wall, so a 200 that is not a
     result page is a shape this route can genuinely produce.
     """

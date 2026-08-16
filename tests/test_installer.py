@@ -127,6 +127,21 @@ def removed_unchanged(report: dict) -> set:
     }
 
 
+def dangling_path_warnings(plan) -> list:
+    """The hooks preflight's own warnings, selected by kind.
+
+    A plan carries every true warning the run found, and which ones exist
+    depends on the interpreter -- below 3.11 a codex plan also warns that
+    the config merge went unparsed. Counting ``plan.warnings`` therefore
+    pinned the interpreter, not the preflight; these tests mean "the hooks
+    warning is here, once", so they select it and count that."""
+    return [
+        warning
+        for warning in plan.warnings
+        if "references a missing orchflows path" in warning
+    ]
+
+
 requires_tomllib = unittest.skipIf(
     install.tomllib is None,
     "reading back generated TOML requires tomllib (Python 3.11+); "
@@ -1522,6 +1537,65 @@ class TestSourceCommit(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             self.assertIsNone(install.resolve_source_commit(Path(tmp)))
 
+    @staticmethod
+    def _worktree(root: Path, gitdir_line: str = None) -> Path:
+        """A git worktree layout: ``<root>/wt/.git`` is a *file* pointing at
+        ``<root>/main/.git/worktrees/wt``, which holds this worktree's HEAD
+        and a ``commondir`` pointer to the shared ``.git`` where refs live.
+        Every agent worktree in this repository has exactly this shape."""
+
+        main_git = root / "main" / ".git"
+        (main_git / "refs" / "heads").mkdir(parents=True)
+        worktree_git = main_git / "worktrees" / "wt"
+        worktree_git.mkdir(parents=True)
+        (worktree_git / "HEAD").write_text("ref: refs/heads/work\n", encoding="utf-8")
+        (worktree_git / "commondir").write_text("../..\n", encoding="utf-8")
+        repo = root / "wt"
+        repo.mkdir()
+        pointer = gitdir_line if gitdir_line is not None else f"gitdir: {worktree_git}"
+        (repo / ".git").write_text(pointer + "\n", encoding="utf-8")
+        return repo
+
+    def test_resolve_source_commit_follows_a_worktree_gitdir_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = self._worktree(root)
+            (root / "main" / ".git" / "refs" / "heads" / "work").write_text(
+                "beadfeed\n", encoding="utf-8"
+            )
+
+            self.assertEqual("beadfeed", install.resolve_source_commit(repo))
+
+    def test_resolve_source_commit_reads_a_worktree_ref_from_packed_refs(self):
+        # The worktree's own gitdir holds no refs/ at all: HEAD names a branch
+        # whose only record is the shared checkout's packed-refs, reachable
+        # only through commondir.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = self._worktree(root)
+            (root / "main" / ".git" / "packed-refs").write_text(
+                "# pack-refs with: peeled fully-peeled sorted\nfeedface refs/heads/work\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual("feedface", install.resolve_source_commit(repo))
+
+    def test_resolve_source_commit_is_none_on_an_unparseable_gitdir_pointer(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self._worktree(Path(tmp), gitdir_line="not a gitdir pointer")
+
+            self.assertIsNone(install.resolve_source_commit(repo))
+
+    def test_an_empty_gitdir_pointer_does_not_read_the_working_tree(self):
+        # "gitdir:" with nothing after it names no git dir. Resolving it to
+        # the worktree root would read any file called HEAD sitting there as
+        # the source commit -- a commit from outside any .git.
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self._worktree(Path(tmp), gitdir_line="gitdir:")
+            (repo / "HEAD").write_text("cafebabe\n", encoding="utf-8")
+
+            self.assertIsNone(install.resolve_source_commit(repo))
+
     def test_source_commit_drift_message_only_on_actual_change(self):
         self.assertIsNone(install.source_commit_drift_message(None, "abc"))
         self.assertIsNone(install.source_commit_drift_message({"source_commit": None}, "abc"))
@@ -1549,6 +1623,42 @@ class TestSourceCommit(unittest.TestCase):
 
             self.assertEqual("cafe", receipt["source_commit"])
 
+    def test_source_commit_warning_says_why_the_commit_is_null(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+
+            # Nothing to read at all.
+            no_git = install.source_commit_warning(None, repo)
+            self.assertIsNotNone(no_git)
+            self.assertIn(str(repo), no_git)
+            self.assertIn("drift", no_git)
+
+            # A checkout that reads, whose HEAD resolves to nothing.
+            (repo / ".git").mkdir()
+            (repo / ".git" / "HEAD").write_text("ref: refs/heads/gone\n", encoding="utf-8")
+            unresolved = install.source_commit_warning(None, repo)
+            self.assertIsNotNone(unresolved)
+            self.assertIn("HEAD", unresolved)
+            self.assertNotEqual(no_git, unresolved)
+
+    def test_source_commit_warning_is_silent_when_a_commit_was_resolved(self):
+        self.assertIsNone(install.source_commit_warning("cafe"))
+
+    def test_main_warns_when_the_installed_receipt_names_no_source_commit(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".claude").mkdir(parents=True)
+
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "claude"
+            ), patch.object(install, "resolve_source_commit", return_value=None):
+                err = io.StringIO()
+                with redirect_stdout(io.StringIO()), redirect_stderr(err):
+                    code = install.main(["--user", "--yes"])
+
+            self.assertEqual(0, code)
+            self.assertIn("source commit unresolved", err.getvalue())
+
     def test_main_prints_drift_on_second_install_with_moved_head(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
@@ -1568,6 +1678,101 @@ class TestSourceCommit(unittest.TestCase):
             self.assertEqual(0, code2)
             self.assertNotIn("source commit drift", first.getvalue())
             self.assertIn("source commit drift: sha1 -> sha2", second.getvalue())
+
+
+class TestUnreadableReceipt(unittest.TestCase):
+    """An absent receipt and an unreadable one are different facts: the first
+    is a first install, the second is a file whose record of what was written
+    cannot be consulted. Reading both as ``None`` let an install overwrite the
+    corrupt receipt, skip every stale removal it records, and report the role
+    agents it lists as 'not written by this installer' (F F3)."""
+
+    def test_load_json_returns_none_only_for_an_absent_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "receipt.json"
+
+            self.assertIsNone(install._load_json(path))
+
+            path.write_text("{not json", encoding="utf-8")
+            with self.assertRaises(ValueError) as raised:
+                install._load_json(path)
+
+            self.assertIn(str(path), str(raised.exception))
+
+    def test_install_refuses_rather_than_overwriting_a_corrupt_receipt(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".claude").mkdir(parents=True)
+            receipt = home / ".orchflows" / "receipt.json"
+            receipt.parent.mkdir(parents=True)
+            receipt.write_text("{truncated", encoding="utf-8")
+
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis("claude"):
+                err = io.StringIO()
+                with redirect_stdout(io.StringIO()), redirect_stderr(err):
+                    code = install.main(["--user", "--yes"])
+
+            self.assertEqual(1, code)
+            self.assertIn("unreadable", err.getvalue())
+            self.assertEqual("{truncated", receipt.read_text(encoding="utf-8"))
+
+    def test_uninstall_refuses_a_corrupt_receipt_rather_than_finding_none(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            receipt = project / ".orchflows" / "receipt.json"
+            receipt.parent.mkdir(parents=True)
+            receipt.write_text("{truncated", encoding="utf-8")
+
+            with self.assertRaises(ValueError):
+                install.run_uninstall("project", project, dry_run=False)
+
+
+class TestRoleAgentInstructions(unittest.TestCase):
+    """The instruction every child of every role loads before it has read its
+    own ticket. It used to open by sending that child to read rules/roles.md
+    (149 words) 'before acting' -- and the two clauses a child acts on are in
+    the rendered text itself, while folding roles.md's own clauses in instead
+    would be 105 words against an 80-word body. So the sentence is cut, and
+    pinned cut: nothing else in the tree counts these words (D-2).
+
+    The pin covers the whole rendered file, not only its instruction: the
+    ``description`` is listed to every context holding the Agent tool --
+    the dispatcher and every child alike -- on every turn, so a contract
+    pointer left there is still a roles.md read the file names."""
+
+    BODY_CEILING = 80
+
+    def test_role_instructions_send_no_child_to_read_the_role_contract(self):
+        self.assertNotIn("roles.md", install.ROLE_INSTRUCTIONS)
+        self.assertNotIn("before acting", install.ROLE_INSTRUCTIONS)
+        self.assertIn("delegated scope", install.ROLE_INSTRUCTIONS)
+
+    def test_claude_agent_file_names_no_contract_read_and_stays_under_the_ceiling(self):
+        profile = install.load_role_profiles()["orch-worker"]
+
+        rendered = install.render_claude_agent("orch-worker", profile)
+
+        self.assertNotIn("roles.md", rendered)
+        _frontmatter, body = install.split_frontmatter(rendered)
+        self.assertLessEqual(validate.body_words(body), self.BODY_CEILING)
+
+    def test_codex_agent_file_names_no_contract_read(self):
+        profile = install.load_role_profiles()["orch-worker"]
+
+        rendered = install.render_codex_agent("orch-worker", profile)
+
+        self.assertNotIn("roles.md", rendered)
+        line = next(
+            line for line in rendered.splitlines() if line.startswith("developer_instructions")
+        )
+        self.assertLessEqual(validate.body_words(line), self.BODY_CEILING)
+
+    def test_role_description_is_the_role_name_and_nothing_to_follow(self):
+        # The name is the routing fact. "follow the role contract at <path>"
+        # was an imperative with no addressee in a field every context reads,
+        # and the dispatcher's law already lives in rules/roles.md section 4
+        # by way of contracts/work-item.md and orch-frontier.
+        self.assertEqual("Orchflows child role orch-worker.", install._role_description("orch-worker"))
 
 
 class TestBootstrapWrappers(unittest.TestCase):
@@ -1614,6 +1819,21 @@ class TestBootstrapWrappers(unittest.TestCase):
             text,
             r'where python[^\n]*\n(?:.*\n)*?\s*python "%target%" %\*',
         )
+
+    def test_wrapper_comments_credit_the_uv_first_order_not_a_path_check(self):
+        # A PATH check does not avoid the Store stub: on Windows `where
+        # python3` resolves the stub itself. What avoids it is trying uv
+        # first, which is what both wrappers do -- so that is what they say
+        # (F Q7).
+        for name in ("install.sh", "install.cmd"):
+            text = (install.REPO_ROOT / name).read_text(encoding="utf-8")
+            comments = "\n".join(
+                line for line in text.splitlines() if line.startswith(("#", "rem "))
+            )
+            with self.subTest(wrapper=name):
+                self.assertNotIn("PATH check", comments)
+                self.assertIn("uv", comments)
+                self.assertIn("stub", comments)
 
 
 class TestDeclaredPythonFloor(unittest.TestCase):
@@ -1708,9 +1928,14 @@ class TestHostBlockRendering(unittest.TestCase):
         self.assertNotIn("{{PYTHON}}", rendered)
         self.assertNotIn("{{ORCH_LIB}}", rendered)
 
-    def test_resolved_python_interpreter_falls_back_when_unset(self):
+    def test_resolved_python_interpreter_refuses_a_bare_name(self):
+        # The rendered host block hands every agent this command. A bare
+        # "python" is a Windows Store stub on this host and several like it,
+        # so a plan built without a real interpreter path is worth refusing
+        # rather than shipping (F F9).
         with patch.object(install.sys, "executable", ""):
-            self.assertEqual("python", install.resolved_python_interpreter())
+            with self.assertRaises(ValueError):
+                install.resolved_python_interpreter()
         with patch.object(install.sys, "executable", "/usr/bin/python3"):
             self.assertEqual("/usr/bin/python3", install.resolved_python_interpreter())
 
@@ -2175,14 +2400,23 @@ class TestCodexHooksPreflight(unittest.TestCase):
 
             self.assertEqual([], install._codex_hooks_warnings(codex_home))
 
-    def test_no_warning_when_hooks_file_absent_or_invalid(self):
+    def test_no_warning_when_hooks_file_absent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual([], install._codex_hooks_warnings(Path(tmp)))
+
+    def test_an_unreadable_hooks_file_says_it_was_not_checked(self):
+        # "No dangling paths" and "I could not look" are different answers;
+        # returning [] for both let a broken hooks.json read as a clean
+        # preflight (F F9).
         with tempfile.TemporaryDirectory() as tmp:
             codex_home = Path(tmp)
-
-            self.assertEqual([], install._codex_hooks_warnings(codex_home))
-
             (codex_home / "hooks.json").write_text("not json", encoding="utf-8")
-            self.assertEqual([], install._codex_hooks_warnings(codex_home))
+
+            warnings = install._codex_hooks_warnings(codex_home)
+
+            self.assertEqual(1, len(warnings))
+            self.assertIn(str(codex_home / "hooks.json"), warnings[0])
+            self.assertIn("not checked", warnings[0])
 
     def test_never_deletes_or_edits_hooks_json(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -2208,8 +2442,44 @@ class TestCodexHooksPreflight(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), mock_host_clis("codex"):
                 plan = install.build_plan("user", None)
 
-            self.assertEqual(1, len(plan.warnings))
-            self.assertIn("orch-missing", plan.warnings[0])
+            dangling = dangling_path_warnings(plan)
+            self.assertEqual(1, len(dangling), plan.warnings)
+            self.assertIn("orch-missing", dangling[0])
+
+    def test_user_plan_says_when_the_codex_config_could_not_be_toml_checked(self):
+        # Below 3.11 there is no tomllib, so the merged config.toml is written
+        # unparsed. Silently is how a malformed merge reaches a user's Codex.
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".codex").mkdir(parents=True)
+
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "codex"
+            ), patch.object(install, "tomllib", None):
+                plan = install.build_plan("user", None)
+
+            self.assertTrue(
+                any("tomllib" in warning for warning in plan.warnings),
+                plan.warnings,
+            )
+
+    @requires_tomllib
+    def test_no_toml_check_warning_when_this_interpreter_has_tomllib(self):
+        # The other half of the pin above, and the coverage the hooks tests
+        # gave up when they stopped counting every warning: where tomllib
+        # exists the merge is parse-checked, so the warning must not fire --
+        # and a clean codex user plan then has no true warning left, so the
+        # whole list is asserted empty, which is what catches any spurious
+        # warning on this path. Nothing to assert below 3.11, where the
+        # TOML-merge warning is the truth.
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".codex").mkdir(parents=True)
+
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis("codex"):
+                plan = install.build_plan("user", None)
+
+            self.assertEqual([], plan.warnings)
 
 
 class TestClaudeConfigDir(unittest.TestCase):
@@ -2296,8 +2566,10 @@ class TestCodexHome(unittest.TestCase):
             ), mock_host_clis("codex"):
                 plan = install.build_plan("user", None)
 
-            self.assertEqual(1, len(plan.warnings))
-            self.assertIn("orch-missing", plan.warnings[0])
+            dangling = dangling_path_warnings(plan)
+            self.assertEqual(1, len(dangling), plan.warnings)
+            self.assertIn(str(codex_home / "hooks.json"), dangling[0])
+            self.assertIn("orch-missing", dangling[0])
 
     def test_blank_codex_home_falls_back_to_home(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -1,6 +1,6 @@
 """K0 LinkedIn job postings from the guest search surface.
 
-Measured 2026-08-10 (findings.md §1, "LinkedIn"): the jobs-guest search route
+Measured 2026-08-10 (LinkedIn): the jobs-guest search route
 answered 200 in 0.7 s with 27 KB carrying ten postings, each with a
 ``jobPosting`` URN id, a title, a company and a ``datetime``, and ``start=``
 paginating. No account, no token, and no vendor-published credential — the
@@ -51,7 +51,7 @@ DESCRIPTOR = AdapterDescriptor(
     # True of every card this route will ever return rather than of some of
     # them, which is what makes it standing rather than per-record.
     standing_loss=("date_precision_only",),
-    # findings.md §1: 0.7 s per request. Nothing on this route was measured
+    # The 2026-08-10 probes: 0.7 s per request. Nothing on this route was measured
     # refusing, so `burst` and `cooldown_ms` keep the protocol's conservative
     # defaults rather than a ceiling nobody observed.
     min_interval_ms=700,
@@ -92,7 +92,7 @@ LISTDATE_ATTRIBUTE = "datetime"
 CARD_TEXT_CLASSES = (("title", TITLE_CLASS), ("company", COMPANY_CLASS))
 CARD_KEYS = ("urn_id", "title", "company", "posted_at", "locator")
 
-# Every field findings.md §1 records this route returning per card. A record
+# Every field the 2026-08-10 probes record this route returning per card. A record
 # missing one says so, because a caller comparing postings needs to know which
 # rows were incomplete rather than which were undated.
 ROSTER_FIELDS = ("urn_id", "title", "company", "posted_date")
@@ -173,7 +173,7 @@ def untracked_locator(href: str) -> str:
 
 
 def roster_row_of(card: Dict[str, str]) -> Dict[str, str]:
-    """One card's roster row, named as findings.md §1 names it."""
+    """One card's roster row, named as the 2026-08-10 probes name it."""
 
     return {
         "urn_id": card["urn_id"].strip(),

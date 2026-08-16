@@ -15,18 +15,16 @@ never a new item.
 Apply [rules/composition.md](../../../rules/composition.md) §6 and
 [rules/token-economy.md](../../../rules/token-economy.md) §6 before
 writing; a custom workflow starts per
-[references/scopes.md](references/scopes.md). Write to the anatomy and
-budget; a pack satisfies every
-[signature](../../../contracts/pack-signature.md) cell and its sharing
-constraints; a template's admission is `tools/validate.py` and
-`tickets.py instantiate`; a contract shape change is breaking.
+[references/scopes.md](references/scopes.md). Admission is
+`tools/validate.py` and the tests, and for a template also
+`tickets.py instantiate`.
 
 Gate the result's artifact identity through `orch-critique` with
 [references/library-lens.md](references/library-lens.md), in a context
 independent of this one; verify with the validator and tests as
 oracles where the scope provides them.
 
-Never: exceed the tier's budget to avoid splitting a reference; touch a
+Never: touch a
 T0 contract outside a supersession change; land at canonical scope what
 the request placed at user or project scope; give a custom item the
 `orch-` prefix, which is reserved for canonical skills.

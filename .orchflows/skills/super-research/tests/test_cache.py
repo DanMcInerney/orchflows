@@ -41,7 +41,7 @@ from super_research import cache, runner, schema, transport
 
 PACKAGE_DIR = Path(__file__).resolve().parent.parent / "scripts" / "super_research"
 CACHE_SOURCE = PACKAGE_DIR / "cache.py"
-PROTOCOL_SOURCE = Path(__file__).resolve().parent.parent / "references" / "protocol.md"
+INTERNALS_SOURCE = Path(__file__).resolve().parent.parent / "references" / "internals.md"
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "cache"
 # T01's tracer fixtures, read rather than copied: the strongest repeat-read
 # claim is over the run's own end-to-end path, on the run's own data.
@@ -251,7 +251,7 @@ def called_names(path):
 # A byte count as this package's own prose writes one, and what it means. The
 # package spells a measured body in KB and MB and the cap in KiB, and means
 # binary multiples throughout — `MEASURED_INSTAGRAM_BYTES` in `test_adapters`
-# is `455 * 1024` for the "455 KB" findings.md records.
+# is `455 * 1024` for the "455 KB" the 2026-08-10 probes record.
 SIZE_UNIT_BYTES = {"KB": 1024, "KiB": 1024, "MB": 1024 * 1024, "MiB": 1024 * 1024}
 STATED_SIZE = re.compile(r"(\d+(?:\.\d+)?)\s*(KB|KiB|MB|MiB)\b")
 STATED_HEADROOM = re.compile(r"(\d+(?:\.\d+)?)\s*(KB|KiB|MB|MiB) of headroom")
@@ -321,10 +321,10 @@ def footprint_comment():
     return " ".join(comment_blocks(lines[start:end]))
 
 
-def protocol_footprint_paragraphs():
-    """Every paragraph in ``protocol.md`` that states the footprint law."""
+def document_footprint_paragraphs():
+    """Every paragraph in ``internals.md`` that states the footprint law."""
 
-    text = PROTOCOL_SOURCE.read_text(encoding="utf-8")
+    text = INTERNALS_SOURCE.read_text(encoding="utf-8")
     return [
         " ".join(block.split())
         for block in text.split("\n\n")
@@ -649,7 +649,7 @@ class CacheabilityTest(unittest.TestCase):
         self.assertEqual((first.cache_hit, second.cache_hit, reads), (False, False, 2))
 
     def test_a_local_network_block_is_never_remembered(self):
-        # findings.md §0: an appliance answering for the origin says nothing
+        # the captive-portal caveat: an appliance answering for the origin says nothing
         # about the origin. Holding one for a TTL would freeze a transient
         # local block and re-serve it as though the origin had spoken.
         intercepted = (503, "<html>" + transport.CAPTIVE_PORTAL_MARKERS[0] + "</html>", "text/html")
@@ -976,7 +976,7 @@ class RouteTtlTableTest(unittest.TestCase):
                 self.assertGreater(cache.ttl_seconds(route_id), 0.0)
 
 
-# What findings.md §1 actually measured, in the sizes it recorded them. The
+# What the 2026-08-10 probes actually recorded, in the sizes it recorded them. The
 # first two are the largest answers in the roster; the third is the smallest
 # measurement above the cap, so it is the one that fixes the cap's ceiling.
 MEASURED_LINKEDIN_BYTES = 577 * 1024
@@ -1015,13 +1015,13 @@ class MeasuredBodyTest(unittest.TestCase):
         return run_cache.serve(request, carrier.fetch).cache_hit
 
     def test_the_largest_answer_the_evidence_measured_is_held(self):
-        # findings.md §1: LinkedIn's public profile, 577 KB in 1.3 s — the
+        # The 2026-08-10 probes: LinkedIn's public profile, 577 KB in 1.3 s — the
         # roster's most expensive read and its longest declared window. A cap
         # below this meant that window had never once bound on a real page.
         self.assertTrue(self.held(MEASURED_LINKEDIN_BYTES))
 
     def test_the_second_largest_answer_the_evidence_measured_is_held(self):
-        # findings.md §1: Instagram's web profile, 455 KB in 2.9 s.
+        # The 2026-08-10 probes: Instagram's web profile, 455 KB in 2.9 s.
         self.assertTrue(self.held(MEASURED_INSTAGRAM_BYTES))
 
     def test_a_body_past_the_cap_is_still_served_through(self):
@@ -1046,16 +1046,16 @@ class FootprintLawTest(unittest.TestCase):
     """Criterion 4: the declared footprint law says what the constants do.
 
     The law is stated twice — once beside the constants in `cache.py`, once in
-    `protocol.md` for a reader who never opens the source — and a run's whole
+    `internals.md` for a reader who never opens the source — and a run's whole
     memory ceiling is the product of two numbers. Either sentence drifting from
     the constants turns a bound a caller relies on into a wrong number that
     nothing reddens to report, so both are parsed here rather than restated.
     """
 
-    def protocol_sentence(self):
-        stated = protocol_footprint_paragraphs()
+    def document_sentence(self):
+        stated = document_footprint_paragraphs()
 
-        self.assertEqual(len(stated), 1, "the footprint law is stated once in protocol.md")
+        self.assertEqual(len(stated), 1, "the footprint law is stated once in internals.md")
         return stated[0]
 
     def test_the_source_sentence_names_both_halves_of_the_bound(self):
@@ -1064,8 +1064,8 @@ class FootprintLawTest(unittest.TestCase):
         self.assertIn("MAX_ENTRY_BYTES", stated)
         self.assertIn("MAX_ENTRIES", stated)
 
-    def test_the_protocol_sentence_states_the_constants_the_package_holds(self):
-        stated = self.protocol_sentence()
+    def test_the_document_sentence_states_the_constants_the_package_holds(self):
+        stated = self.document_sentence()
         entries = STATED_ENTRIES.findall(stated)
         entry_bytes = STATED_ENTRY_BYTES.findall(stated)
 
@@ -1079,7 +1079,7 @@ class FootprintLawTest(unittest.TestCase):
         # correctly and still state the ceiling wrong.
         for where, stated in (
             ("cache.py", footprint_comment()),
-            ("protocol.md", self.protocol_sentence()),
+            ("internals.md", self.document_sentence()),
         ):
             with self.subTest(sentence=where):
                 product = STATED_PRODUCT.findall(stated)

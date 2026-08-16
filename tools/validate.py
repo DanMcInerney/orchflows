@@ -11,8 +11,12 @@ rules/composition.md, contracts/result.md,
 contracts/work-item.md, and contracts/pack-signature.md. Stdlib only, no
 network.
 
-Exit 0 clean. Exit 1 with one line per violation:
+Exit 0 clean or WARN-only. Exit 1 on any ERROR; one line per finding:
     ERROR|WARN <file>: <message>
+
+A check whose owner is not in the tree -- an isolated fixture, a partial
+checkout -- is skipped rather than failed, and says so as a WARN. Finding
+nothing to check is not the same answer as finding nothing wrong.
 """
 from __future__ import annotations
 
@@ -25,6 +29,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+# What a check says when the tree it grades is not here. One wording, so a
+# reader can grep the report for every check that did not run.
+SKIPPED = "absent; check skipped"
 
 SKILL_TIERS = ("kernel", "engines", "workflows", "instances", "utilities")
 # Words, not lines: a line count is met by widening lines, and was.
@@ -513,7 +521,8 @@ def _friction_owner_tree(diag: Diagnostics):
 def _friction_validate_term(tree: str, diag: Diagnostics) -> None:
     path = ROOT / "docs" / "vocabulary.md"
     if not path.is_file():
-        return  # term owner absent (isolated fixtures) -- not this check's tree
+        diag.warn(rel(path), SKIPPED)  # not this check's tree (isolated fixtures)
+        return
     match = FRICTION_TERM_RE.search(_read_source(path))
     if match is None:
         diag.error(rel(path), "could not locate the **friction log** term entry to check against scripts/state_root.py")
@@ -559,7 +568,8 @@ def validate_friction_locations(diag: Diagnostics) -> None:
     """Every copy of the friction log's location against their owner,
     scripts/state_root.py."""
     if not FRICTION_OWNER.is_file():
-        return  # owner absent (isolated fixtures) -- not this check's tree
+        diag.warn(rel(FRICTION_OWNER), SKIPPED)  # not this check's tree
+        return
     tree = _friction_owner_tree(diag)
     if tree is None:
         return
@@ -767,7 +777,8 @@ def validate_surface_budgets(diag: Diagnostics) -> None:
     for name, limit in SURFACE_BUDGET.items():
         path = ROOT / name
         if not path.is_file():
-            continue  # a partial tree (isolated fixtures) carries no router
+            diag.warn(name, SKIPPED)  # a partial tree carries no router
+            continue
         n = body_words(_read_source(path))
         if n > limit:
             diag.error(name, f"surface has {n} words, exceeds the every-turn budget of {limit}")
@@ -1071,11 +1082,6 @@ SAME_TIER_COMPARED = frozenset({"skills"})
 # provenance. The signature mandates that table, and a pack cannot state
 # an oracle policy without naming the criterion it decides.
 #
-# orch-edit and orch-render both defer craft to "the ticket's craft
-# reference". That phrase is the signature's craft cell reaching the
-# instances, not one instance copying the other: a pack's craft is
-# per-domain and the pointer is how a generic body stays domain-blind.
-#
 # orch-edit and orch-synthesize both forbid an assembly step inventing a
 # claim its inputs did not carry -- sections for one, evidence packets
 # for the other. It is one law with two subjects and no owner: rules/
@@ -1097,11 +1103,6 @@ LICENSED_COPIES = (
         "contracts/verdict.md",
         "packs/orch-research-pack/references/oracles.md",
         "citation",
-    ),
-    (
-        "skills/instances/orch-render/SKILL.md",
-        "skills/instances/orch-edit/SKILL.md",
-        "per the ticket's craft reference",
     ),
     (
         "skills/instances/orch-synthesize/SKILL.md",
@@ -1232,6 +1233,7 @@ def validate_cross_tier_duplication(packages, diag: Diagnostics) -> None:
 def validate_craft_budget(pkg: dict, diag: Diagnostics) -> None:
     craft = pkg["path"] / "references" / "craft.md"
     if not craft.is_file():
+        diag.warn(rel(craft), SKIPPED)
         return
     n = sum(1 for ln in _read_source(craft).split("\n") if ln.strip())
     if n > CRAFT_BUDGET:
@@ -1494,11 +1496,13 @@ def validate_templates(diag: Diagnostics) -> None:
     names a skill or a script that exists.
     """
     if not (ROOT / "compositions").is_dir():
-        return  # no composition tree, so no template and no owner to load
+        diag.warn("compositions", SKIPPED)  # no tree, so no template
+        return
     tickets = _ticket_law()
     manifest_name = tickets.TEMPLATE_FILE
     directories = discover_templates(manifest_name)
     if not directories:
+        diag.warn("compositions", "holds no {0}; check skipped".format(manifest_name))
         return
     skill_names = _tree_skill_names()
     for directory in directories:
@@ -1626,8 +1630,15 @@ def _linked_markdown_files():
 
 
 def validate_markdown_links(diag: Diagnostics) -> None:
-    if not all((ROOT / root).is_dir() for root in LINKED_MD_ROOTS):
-        return  # a partial tree (the isolated test fixtures) is not graded
+    absent = [root for root in LINKED_MD_ROOTS if not (ROOT / root).is_dir()]
+    if absent:
+        # A partial tree (the isolated test fixtures) is not graded -- and
+        # this skip is the whole check, not one file's: one absent root
+        # silences link resolution over every other root, so each is named
+        # and the operator restores them in one pass rather than eight.
+        for root in absent:
+            diag.warn(root, SKIPPED)
+        return
     dangling_links = _doclint().dangling_links
     for source in _linked_markdown_files():
         for target in dangling_links(source, _read_source(source)):
@@ -1702,7 +1713,11 @@ def validate_names(packages, diag: Diagnostics) -> None:
     ARCHITECTURE.md to mark it as the tree whose tiers a name resolves in.
     """
 
-    if not packages or not NAME_CHECK_MARKER.is_file():
+    if not NAME_CHECK_MARKER.is_file():
+        diag.warn(rel(NAME_CHECK_MARKER), SKIPPED)
+        return
+    if not packages:
+        diag.warn("skills", SKIPPED)
         return
     known = {pkg["path"].name for pkg in packages} | set(ROLE_PROFILES)
     paths = []

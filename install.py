@@ -56,7 +56,9 @@ the project it arose in as a field rather than by its location. Of
 copies scripts — installed scripts are not state.
 
 The receipt records ``source_commit`` (the installed-from repo's git HEAD,
-null when unavailable); a rerun whose HEAD has moved prints the drift.
+read from a clone or a worktree checkout); a rerun whose HEAD has moved
+prints the drift, and a null commit says on stderr which read came up empty.
+A receipt that will not read is refused, never overwritten as if absent.
 
 ``--dry-run`` builds and prints the exact same plan an install would apply,
 without writing anything. ``--uninstall`` removes only unchanged generated
@@ -304,8 +306,9 @@ def _codex_hooks_warnings(codex_home: Path) -> list[str]:
         return []
     try:
         data = json.loads(hooks_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return []
+    except (OSError, json.JSONDecodeError) as error:
+        # Not [] -- that is this preflight's word for "no dangling paths".
+        return [f"warning: {hooks_path} could not be read ({error}); its orchflows paths were not checked"]
     warnings = []
     seen = set()
     for value in _iter_json_strings(data):
@@ -472,20 +475,30 @@ def load_role_profiles(profiles_md_path: Path = PROFILES_MD):
     return profiles
 
 
-def _role_description(name: str, roles_path: Path) -> str:
-    return f"Orchflows child role {name}; follow the role contract at {roles_path}."
+def _role_description(name: str) -> str:
+    """The routing fact and nothing else. It used to add "follow the role
+    contract at <roles.md>": an imperative with no addressee, listed on
+    every turn to every context holding the Agent tool -- children
+    included -- while the dispatcher's law is already reached through
+    rules/roles.md section 4 (contracts/work-item.md, orch-frontier)."""
+
+    return f"Orchflows child role {name}."
 
 
-def _role_instructions(name: str, roles_path: Path) -> str:
-    return f"Read and follow the {name} contract in {roles_path} before acting. Stay within the delegated scope."
+# What a rendered role agent instructs, and all it instructs. It opened by
+# sending every child of every role to read rules/roles.md before acting --
+# 149 words loaded before the child had read its own ticket, whose own text
+# already carries the clauses a child acts on (stay in scope; write the
+# return into the durable artifact; deliver it by SendMessage). No rendered
+# role agent file names roles.md anywhere (D-2).
+ROLE_INSTRUCTIONS = "Stay within the delegated scope."
 
-
-def render_codex_agent(name: str, profile: dict, roles_path: Path) -> str:
+def render_codex_agent(name: str, profile: dict) -> str:
     binding = profile["codex"]
     lines = [
         f"name = {json.dumps(binding['agent_type'])}",
-        f"description = {json.dumps(_role_description(name, roles_path))}",
-        f"developer_instructions = {json.dumps(_role_instructions(name, roles_path))}",
+        f"description = {json.dumps(_role_description(name))}",
+        f"developer_instructions = {json.dumps(ROLE_INSTRUCTIONS)}",
         f"model = {json.dumps(binding['model'])}",
         f"model_reasoning_effort = {json.dumps(binding['model_reasoning_effort'])}",
     ]
@@ -494,12 +507,12 @@ def render_codex_agent(name: str, profile: dict, roles_path: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
-def render_claude_agent(name: str, profile: dict, roles_path: Path) -> str:
+def render_claude_agent(name: str, profile: dict) -> str:
     binding = profile["claude"]
     lines = [
         "---",
         f"name: {name}",
-        f"description: {json.dumps(_role_description(name, roles_path))}",
+        f"description: {json.dumps(_role_description(name))}",
         f"model: {binding['model']}",
     ]
     if binding.get("effort"):
@@ -509,7 +522,7 @@ def render_claude_agent(name: str, profile: dict, roles_path: Path) -> str:
         "deliver it or a pointer to it via SendMessage to your spawner as your final "
         "action - plain final text is not delivered to your caller."
     )
-    lines.extend(["---", "", _role_instructions(name, roles_path) + claude_transport])
+    lines.extend(["---", "", ROLE_INSTRUCTIONS + claude_transport])
     return "\n".join(lines) + "\n"
 
 
@@ -524,20 +537,73 @@ def template_markers(template_text: str):
 
 
 def resolved_python_interpreter() -> str:
-    """The interpreter install.py verified itself running under (``sys.executable``);
-    falls back to the bare command only when the platform cannot report one."""
+    """The interpreter install.py verified itself running under
+    (``sys.executable``). Refuses when the platform reports none rather than
+    rendering a bare ``python`` into every command the host block hands an
+    agent: on Windows that name is commonly the Store stub, so the fallback
+    shipped a command that fails on first use."""
 
-    return sys.executable or "python"
+    if not sys.executable:
+        raise ValueError(
+            "this platform reports no sys.executable, so no interpreter path "
+            "can be rendered into the host block; rerun install.py with an "
+            "interpreter that reports one"
+        )
+    return sys.executable
+
+
+def _git_dirs(repo_root: Path) -> tuple[Path, Path] | None:
+    """``(git_dir, common_dir)`` for a checkout, or ``None`` when neither can
+    be read. In an ordinary clone both are ``<root>/.git``. In a git worktree
+    (``.git`` is a *file* holding ``gitdir: <path>``) HEAD lives in that
+    gitdir while ``refs/`` and ``packed-refs`` live in the shared checkout the
+    gitdir's ``commondir`` names — so the two differ, and reading HEAD's ref
+    from the wrong one is why a worktree install used to record no commit."""
+
+    marker = repo_root / ".git"
+    if marker.is_dir():
+        return marker, marker
+    if not marker.is_file():
+        return None
+    try:
+        pointer = marker.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    named = ""
+    for line in pointer.splitlines():
+        if line.startswith("gitdir:"):
+            named = line.partition(":")[2].strip()
+            break
+    if not named:
+        return None
+    git_dir = Path(named)
+    if not git_dir.is_absolute():
+        git_dir = repo_root / git_dir
+    common_file = git_dir / "commondir"
+    common_dir = git_dir
+    if common_file.is_file():
+        try:
+            common = Path(common_file.read_text(encoding="utf-8").strip())
+        except OSError:
+            return None
+        if common.parts:
+            common_dir = common if common.is_absolute() else git_dir / common
+    return git_dir, common_dir
 
 
 def resolve_source_commit(repo_root: Path = REPO_ROOT) -> str | None:
     """The git HEAD commit of the repo this installer runs from, read directly
     from ``.git`` (no subprocess, no dependency on ``git`` being on PATH).
-    Returns ``None`` whenever no ordinary ``.git`` checkout can be read —
-    absent ``.git``, a worktree gitdir-file, a detached ref that resolves to
-    nothing, or any I/O error."""
+    Handles both a clone and a worktree checkout (``_git_dirs``). Returns
+    ``None`` whenever no checkout can be read — absent ``.git``, a gitdir
+    pointer that does not parse, a ref that resolves to nothing, or any I/O
+    error."""
 
-    head_file = repo_root / ".git" / "HEAD"
+    dirs = _git_dirs(repo_root)
+    if dirs is None:
+        return None
+    git_dir, common_dir = dirs
+    head_file = git_dir / "HEAD"
     if not head_file.is_file():
         return None
     try:
@@ -549,14 +615,15 @@ def resolve_source_commit(repo_root: Path = REPO_ROOT) -> str | None:
     if not content.startswith("ref:"):
         return content
     ref = content.split(":", 1)[1].strip()
-    ref_path = repo_root / ".git" / ref
-    if ref_path.is_file():
-        try:
-            sha = ref_path.read_text(encoding="utf-8").strip()
-        except OSError:
-            return None
-        return sha or None
-    packed_refs = repo_root / ".git" / "packed-refs"
+    for root in (git_dir, common_dir):
+        ref_path = root / ref
+        if ref_path.is_file():
+            try:
+                sha = ref_path.read_text(encoding="utf-8").strip()
+            except OSError:
+                return None
+            return sha or None
+    packed_refs = common_dir / "packed-refs"
     if not packed_refs.is_file():
         return None
     try:
@@ -570,6 +637,21 @@ def resolve_source_commit(repo_root: Path = REPO_ROOT) -> str | None:
         if len(parts) == 2 and parts[1] == ref:
             return parts[0]
     return None
+
+
+def source_commit_warning(commit: str | None, repo_root: Path = REPO_ROOT) -> str | None:
+    """One line, when the receipt's ``source_commit`` is null, naming which
+    read came up empty — otherwise a null reads as 'this installer has no such
+    field' and the missing drift report looks like agreement."""
+
+    if commit:
+        return None
+    dirs = _git_dirs(repo_root)
+    if dirs is None:
+        reason = f"no readable .git in {repo_root}"
+    else:
+        reason = f"HEAD in {dirs[0]} resolves to no commit"
+    return f"warning: source commit unresolved ({reason}); the next install cannot report drift"
 
 
 def source_commit_drift_message(old_receipt: dict | None, new_commit: str | None) -> str | None:
@@ -738,6 +820,10 @@ def render_codex_agent_limits(text: str) -> tuple[str, dict]:
             "agents.max_depth": CODEX_MAX_DEPTH,
         },
         "previous": previous,
+        # False below 3.11: the merge above ran, but nothing parsed the file
+        # before or after it. The caller warns rather than letting an
+        # unchecked merge read like a checked one.
+        "toml_checked": tomllib is not None,
     }
     return updated, details
 
@@ -1071,7 +1157,6 @@ def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
                     (codex_user_home / "skills" / name / "SKILL.md", pointer)
                 )
 
-    roles_path = (lib_home / "rules" / "roles.md").resolve()
     profiles = load_role_profiles()
     claude_agents = []
     codex_agents = []
@@ -1079,18 +1164,19 @@ def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
         profile = profiles[name]
         if claude_enabled:
             claude_agents.append(
-                (_claude_agents_dir("user", None) / f"{name}.md", render_claude_agent(name, profile, roles_path))
+                (_claude_agents_dir("user", None) / f"{name}.md", render_claude_agent(name, profile))
             )
         if codex_enabled:
             codex_agent_type = profile["codex"]["agent_type"]
             codex_agents.append(
                 (
                     _codex_agents_dir("user", None) / f"{codex_agent_type}.toml",
-                    render_codex_agent(name, profile, roles_path),
+                    render_codex_agent(name, profile),
                 )
             )
 
     configs = []
+    warnings = _codex_hooks_warnings(codex_user_home) if codex_enabled else []
     if claude_enabled:
         claude_settings_path = _claude_settings_path("user", None)
         claude_settings_text = (
@@ -1110,6 +1196,11 @@ def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
         codex_config_path = _codex_config_path("user", None)
         codex_config_text = codex_config_path.read_text(encoding="utf-8") if codex_config_path.is_file() else ""
         codex_config, codex_details = render_codex_agent_limits(codex_config_text)
+        if not codex_details["toml_checked"]:
+            warnings.append(
+                "warning: this interpreter has no tomllib (Python < 3.11), so "
+                f"{codex_config_path} was merged without a TOML parse check."
+            )
         configs.append(
             ConfigPlan(
                 codex_config_path,
@@ -1165,7 +1256,7 @@ def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
         host_block=host_block_plan,
         claude_import=claude_import_plan,
         receipt_path=scope_home / "receipt.json",
-        warnings=_codex_hooks_warnings(codex_user_home) if codex_enabled else [],
+        warnings=warnings,
         claude_enabled=claude_enabled,
         codex_enabled=codex_enabled,
     )
@@ -1280,12 +1371,17 @@ def print_plan(plan: Plan) -> None:
 
 
 def _load_json(path: Path):
+    """``None`` only when there is no file. A file that will not read or will
+    not parse raises: read as ``None`` it would pass for a first install, and
+    the receipt it could not read is the only record of what to remove and
+    what this installer wrote."""
+
     if not path.is_file():
         return None
     try:
         return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"{path} is unreadable ({error}); move it aside and rerun") from error
 
 
 def _sha256_file(path: Path) -> str:
@@ -1928,7 +2024,11 @@ def main(argv=None) -> int:
     if scope == "user" and not plan.claude_enabled and not plan.codex_enabled:
         return 0
 
-    old_receipt = _load_json(plan.receipt_path)
+    try:
+        old_receipt = _load_json(plan.receipt_path)
+    except ValueError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
     try:
         receipt = apply_plan(plan, keep_role_agents=True if args.yes else None)
     except Exception as error:
@@ -1938,6 +2038,9 @@ def main(argv=None) -> int:
     drift = source_commit_drift_message(old_receipt, receipt.get("source_commit"))
     if drift:
         print(drift)
+    unresolved = source_commit_warning(receipt.get("source_commit"))
+    if unresolved:
+        print(unresolved, file=sys.stderr)
 
     print_summary(plan)
     return 0
