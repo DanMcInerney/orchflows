@@ -5,7 +5,9 @@ The standing prompt for a full review of this library. Run it through
 lane per question below. Findings feed `orch-repair` or tickets. The
 prompt shrinks under its own law: a question that has produced nothing
 for two passes is folded or deleted; it grows only when a constitution
-principle changes owner.
+principle changes owner. A project reuses everything below its
+constitution with its own constitution in that slot — the review
+factory of [documentation.md](documentation.md) §7.
 
 ## Constitution
 

@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import argparse
 import ast
-import difflib
 import hashlib
 import json
 import re
@@ -28,14 +27,26 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 SKILL_TIERS = ("kernel", "engines", "workflows", "instances", "utilities")
+# Words, not lines: a line count is met by widening lines, and was.
+# Markdown link targets are stripped first so a citation costs its label,
+# not its path.
 BODY_BUDGET = {
-    "kernel": 25,
-    "instances": 25,
-    "utilities": 25,
-    "engines": 40,
-    "workflows": 40,
-    "pack": 20,
+    "kernel": 300,
+    "instances": 300,
+    "utilities": 300,
+    "engines": 450,
+    "workflows": 450,
+    "pack": 150,
 }
+LINK_TARGET_RE = re.compile(r"\]\([^)]*\)")
+# rules/token-economy.md §11: every-turn surfaces tightest, every-dispatch
+# units next, every-run units widest. Ceilings only fall.
+SURFACE_BUDGET = {"templates/host-block.md": 400, "AGENTS.md": 300}
+STUB_INSTRUCTION_BUDGET = 300   # objective + completion test + excluded actions + return fields
+MANIFEST_BUDGET = 250
+STUB_INSTRUCTION_SECTIONS = ("Objective", "Completion test", "Return fields")
+STUB_SECTION_SPLIT_RE = re.compile(r"^## (.+)$", re.MULTILINE)
+EXCLUDED_ACTIONS_RE = re.compile(r"^excluded_actions:\n((?:[ \t]+- .*\n)*)", re.MULTILINE)
 DESCRIPTION_BUDGET = 140
 ALLOWED_FRONTMATTER_KEYS = {"name", "description", "disable-model-invocation", "role"}
 ROLE_PROFILES = {"orch-planner", "orch-worker"}
@@ -60,12 +71,10 @@ PACK_SIGNATURE_CELLS = (
 # so sits under CELL_CLAUSE_MIN_WORDS.
 CRAFT_CELLS_BY_POINTER = ("slicing", "oracle_policy", "craft")
 CRAFT_BUDGET = 60
-# Cross-pack cell linter. Both figures are normative: with autojunk off
-# at the ratio call below, the reported pair set is a function of them
-# alone, so moving either changes what the check means, not only what it
-# finds. SequenceMatcher's default autojunk would break that — it drops
-# characters common in any sequence over 200 characters, suppressing the
-# ratio on exactly the longest clauses.
+# Cross-pack cell linter. Both figures are normative: with `doclint`'s
+# ratio under them the reported pair set is a function of these two and of
+# `doclint.DISTINCTIVE_MAX`, so moving any of them changes what the check
+# means, not only what it finds.
 CELL_SIMILARITY_THRESHOLD = 0.55
 CELL_CLAUSE_MIN_WORDS = 5
 
@@ -731,13 +740,46 @@ def validate_anatomy(body: str, pkg: dict, diag: Diagnostics) -> None:
         diag.error(file_label, "skill body missing a sentence starting 'Return'")
 
 
+def body_words(body: str) -> int:
+    """The body's word count with markdown link targets stripped."""
+    return len(LINK_TARGET_RE.sub("]", body).split())
+
+
+def _split_frontmatter(text: str):
+    parts = text.split("---", 2)
+    return (parts[1], parts[2]) if len(parts) > 2 else ("", text)
+
+
+def stub_instruction_words(text: str) -> int:
+    """A stub's instruction: its excluded actions plus the Objective,
+    Completion test and Return fields sections — never its Fixed inputs,
+    which are identities (rules/token-economy.md §11)."""
+    front, body = _split_frontmatter(text)
+    excluded = EXCLUDED_ACTIONS_RE.search(front)
+    total = body_words(excluded.group(1)) if excluded else 0
+    parts = STUB_SECTION_SPLIT_RE.split(body)
+    sections = {parts[i].strip(): parts[i + 1] for i in range(1, len(parts) - 1, 2)}
+    return total + sum(body_words(sections.get(name, "")) for name in STUB_INSTRUCTION_SECTIONS)
+
+
+def validate_surface_budgets(diag: Diagnostics) -> None:
+    """The every-turn surfaces against rules/token-economy.md §11."""
+    for name, limit in SURFACE_BUDGET.items():
+        path = ROOT / name
+        if not path.is_file():
+            continue  # a partial tree (isolated fixtures) carries no router
+        n = body_words(_read_source(path))
+        if n > limit:
+            diag.error(name, f"surface has {n} words, exceeds the every-turn budget of {limit}")
+
+
 def validate_budget(body: str, pkg: dict, diag: Diagnostics) -> None:
     file_label = rel(pkg["skill_md"])
-    n = sum(1 for ln in body.split("\n") if ln.strip())
+    n = body_words(body)
     tier = "pack" if pkg["is_pack"] else pkg["kind"]
     limit = BODY_BUDGET[tier]
     if n > limit:
-        diag.error(file_label, f"body has {n} non-empty lines, exceeds the {tier} budget of {limit}")
+        diag.error(file_label, f"body has {n} words, exceeds the {tier} budget of {limit}")
 
 
 def validate_pack_signature(body: str, pkg: dict, diag: Diagnostics) -> None:
@@ -948,9 +990,7 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
                         right_free = free_content(right)
                         if len(right_free.split()) < CELL_CLAUSE_MIN_WORDS:
                             continue
-                        ratio = difflib.SequenceMatcher(
-                            None, left_free, right_free, autojunk=False
-                        ).ratio()
+                        ratio = _doclint().similarity(left_free, right_free)
                         if ratio >= CELL_SIMILARITY_THRESHOLD:
                             diag.warn(
                                 left_label,
@@ -973,17 +1013,12 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
 # the inventory P3 works from. At P3's close this flips to "ERROR" and
 # tests/test_cell_linter.py's CROSS_TIER_WARNING_CEILING reaches 0.
 CROSS_TIER_DUPLICATE_LEVEL = "WARN"
-# A copy is found where its words are: two clauses are compared when they
-# share a word carried by no more than this many clauses tree-wide. Above
-# it a word is idiom -- "ticket", "the result" -- and pairing on it means
-# comparing every clause with every other, which at this corpus size is
-# 470,000 SequenceMatcher ratios and 45 seconds of a compiler that must be
-# cheap enough to run on every save. Measured at the value below: every
-# pair the exhaustive comparison reports above 0.66 survives the index, and
-# what it drops sits in the noise band just over the threshold. Normative
-# with the threshold: the two together decide the reported set.
-CROSS_TIER_DISTINCTIVE_MAX = 20
-CROSS_TIER_WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]{3,}")
+# The pairing index is `doclint.DISTINCTIVE_MAX`'s, and this corpus is
+# where its value was measured: every pair an exhaustive comparison
+# reports above 0.66 survives the index, and what it drops sits in the
+# noise band just over the threshold. Exhaustive here is 470,000 ratios
+# and 45 seconds of a compiler that must be cheap enough to run on every
+# save.
 # A citation and a name are not content. Every tier cites the same
 # contracts and names the same skills, so a clause that is nothing but
 # links and backticked names is the library's shared vocabulary, and
@@ -1125,9 +1160,9 @@ def cross_tier_documents(packages):
 
 
 def _cross_tier_clauses(packages):
-    """Every comparable clause, as (tier, label, clause, free_content,
-    words). Same splitter and same mandated-form stripping as the pack
-    linter, plus the citation exemption above."""
+    """Every comparable clause, as (tier, label, clause, free_content).
+    Same splitter and same mandated-form stripping as the pack linter, plus
+    the citation exemption above."""
     entries = []
     for tier, label, text in cross_tier_documents(packages):
         for clause in cell_clauses(text):
@@ -1136,78 +1171,62 @@ def _cross_tier_clauses(packages):
                 continue
             if len(_cross_tier_prose(free).split()) < CROSS_TIER_PROSE_MIN_WORDS:
                 continue
-            words = frozenset(w.lower() for w in CROSS_TIER_WORD_RE.findall(free))
-            entries.append((tier, label, clause, free, words))
+            entries.append((tier, label, clause, free))
     return entries
 
 
-def _cross_tier_candidates(entries) -> set:
-    """The (i, j) pairs to compare: two tiers, and a distinctive word in
-    common. Built from an inverted index over the distinctive words, so the
-    cost is the number of candidates rather than the square of the corpus."""
-    frequency = {}
-    for _, _, _, _, words in entries:
-        for word in words:
-            frequency[word] = frequency.get(word, 0) + 1
-    postings = {}
-    for position, (_, _, _, _, words) in enumerate(entries):
-        for word in words:
-            if frequency[word] <= CROSS_TIER_DISTINCTIVE_MAX:
-                postings.setdefault(word, []).append(position)
-    candidates = set()
-    for ids in postings.values():
-        for a in range(len(ids)):
-            for b in range(a + 1, len(ids)):
-                left, right = ids[a], ids[b]
-                tiers = (entries[left][0], entries[right][0])
-                if tiers[0] != tiers[1]:
-                    candidates.add((left, right))
-                elif tiers[0] in SAME_TIER_COMPARED and entries[left][1] != entries[right][1]:
-                    # Two skills, never one skill against its own clauses:
-                    # a body's Require, its steps and its Return restate one
-                    # fact by design, and that is the pack linter's question.
-                    candidates.add((left, right))
-    return candidates
+def _cross_tier_accept(entries):
+    """Which of doclint's candidate pairs this library compares: two
+    tiers, or two files of one tier the pack linter cannot see, and never
+    a copy the library licensed."""
+
+    def accept(left: int, right: int) -> bool:
+        left_tier, left_label, left_clause, _ = entries[left]
+        right_tier, right_label, right_clause, _ = entries[right]
+        if left_tier == right_tier:
+            # Two skills, never one skill against its own clauses: a body's
+            # Require, its steps and its Return restate one fact by design,
+            # and that is the pack linter's question.
+            if left_tier not in SAME_TIER_COMPARED or left_label == right_label:
+                return False
+        return not _licensed(left_label, left_clause, right_label, right_clause)
+
+    return accept
 
 
 def validate_cross_tier_duplication(packages, diag: Diagnostics) -> None:
     """Every clause of every skill body, rule, contract, pack reference and
-    the host-block template against every clause of another tier: a pair
-    matching at CELL_SIMILARITY_THRESHOLD or above is reported at
+    the host-block template against every clause of another tier, through
+    `doclint.near_duplicate_pairs`: a pair matching at
+    CELL_SIMILARITY_THRESHOLD or above is reported at
     CROSS_TIER_DUPLICATE_LEVEL, naming both sites."""
     entries = _cross_tier_clauses(packages)
-    by_left = {}
-    for left, right in _cross_tier_candidates(entries):
-        by_left.setdefault(left, []).append(right)
+    tiers = {tier for tier, _, _, _ in entries}
+    if len(tiers) < 2 and not tiers & SAME_TIER_COMPARED:
+        # One tier, and not one compared with itself: nothing to compare
+        # across. That is a partial tree -- the isolated fixtures carry
+        # `contracts/` and `tools/` alone -- which carries no `scripts/`
+        # for `_doclint` to find either.
+        return
     emit = diag.warn if CROSS_TIER_DUPLICATE_LEVEL == "WARN" else diag.error
-    matcher = difflib.SequenceMatcher(None, autojunk=False)
-    for left in sorted(by_left):
-        left_tier, left_label, left_clause, left_free, _ = entries[left]
-        matcher.set_seq2(left_free)
-        for right in sorted(by_left[left]):
-            right_tier, right_label, right_clause, right_free, _ = entries[right]
-            if _licensed(left_label, left_clause, right_label, right_clause):
-                continue
-            matcher.set_seq1(right_free)
-            # The cheap bounds first, both of them upper bounds on the
-            # ratio: difflib computes them without matching anything, and
-            # they answer for four candidates in ten.
-            if matcher.real_quick_ratio() < CELL_SIMILARITY_THRESHOLD:
-                continue
-            if matcher.quick_ratio() < CELL_SIMILARITY_THRESHOLD:
-                continue
-            ratio = matcher.ratio()
-            if ratio >= CELL_SIMILARITY_THRESHOLD:
-                # one finding, one wording: the ratchet in
-                # tests/test_cell_linter.py counts this check by its own
-                # words, and a same-tier pair is the same finding — a clause
-                # with two owners — reached from inside one tier
-                where = "" if left_tier != right_tier else f" (within {left_tier})"
-                emit(
-                    left_label,
-                    f"cross-tier near-duplicate{where} at {ratio:.2f} with "
-                    f"{right_label}: {left_clause!r} ~ {right_clause!r}",
-                )
+    pairs = _doclint().near_duplicate_pairs(
+        [free for _, _, _, free in entries],
+        CELL_SIMILARITY_THRESHOLD,
+        accept=_cross_tier_accept(entries),
+    )
+    for left, right, ratio in pairs:
+        left_tier, left_label, left_clause, _ = entries[left]
+        right_tier, right_label, right_clause, _ = entries[right]
+        # one finding, one wording: the ratchet in
+        # tests/test_cell_linter.py counts this check by its own words,
+        # and a same-tier pair is the same finding — a clause with two
+        # owners — reached from inside one tier
+        where = "" if left_tier != right_tier else f" (within {left_tier})"
+        emit(
+            left_label,
+            f"cross-tier near-duplicate{where} at {ratio:.2f} with "
+            f"{right_label}: {left_clause!r} ~ {right_clause!r}",
+        )
 
 
 def validate_craft_budget(pkg: dict, diag: Diagnostics) -> None:
@@ -1219,23 +1238,13 @@ def validate_craft_budget(pkg: dict, diag: Diagnostics) -> None:
         diag.error(rel(craft), f"craft reference has {n} non-empty lines, exceeds the craft budget of {CRAFT_BUDGET}")
 
 
-def _resolve_link(source_file: Path, target: str):
-    target = target.split(" ", 1)[0].split("#", 1)[0].strip()
-    if not target or target.startswith(("http://", "https://", "mailto:")):
-        return None
-    try:
-        return (source_file.parent / target).resolve()
-    except OSError:
-        return None
-
-
 def validate_reference_links(body: str, pkg: dict, diag: Diagnostics) -> None:
     file_label = rel(pkg["skill_md"])
     for match in MD_LINK_RE.finditer(body):
         target = match.group(1)
         if "references/" not in target:
             continue
-        resolved = _resolve_link(pkg["skill_md"], target)
+        resolved = _doclint().resolve_link(pkg["skill_md"], target)
         if resolved is None:
             continue
         if not resolved.is_file():
@@ -1347,6 +1356,24 @@ def discover_templates(manifest_name: str):
         d for d in comps_dir.iterdir()
         if d.is_dir() and (d / manifest_name).is_file()
     )
+
+
+def _doclint():
+    """`scripts/doclint.py`, the one owner of markdown link resolution and
+    of the near-duplicate method (ARCHITECTURE.md). This compiler is one of
+    its two callers; a project running the script is the other.
+
+    Imported on first use for `_ticket_law`'s reason, one line below:
+    `--pin` and every isolated fixture that carries no `scripts/` still has
+    to run, and only the checks that ask these two questions need the
+    owner. ROOT goes first on the path so a tree grades against its own
+    copy.
+    """
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from scripts import doclint
+
+    return doclint
 
 
 def _ticket_law():
@@ -1480,11 +1507,18 @@ def validate_templates(diag: Diagnostics) -> None:
         for path, message in tickets.template_defects(directory):
             diag.error(rel(Path(path)), message)
 
+        manifest_text = _read_source(directory / manifest_name)
+        n = body_words(_split_frontmatter(manifest_text)[1])
+        if n > MANIFEST_BUDGET:
+            diag.error(manifest_label, f"manifest has {n} words, exceeds the budget of {MANIFEST_BUDGET}")
         used = set()
         for path in sorted(directory.glob("*.md")):
             if path.name == manifest_name:
                 continue
             text = _read_source(path)
+            n = stub_instruction_words(text)
+            if n > STUB_INSTRUCTION_BUDGET:
+                diag.error(rel(path), f"stub instruction has {n} words, exceeds the budget of {STUB_INSTRUCTION_BUDGET}")
             stub_used = set(tickets.PLACEHOLDER_RE.findall(text))
             used |= stub_used
             executor = tickets._parse_frontmatter(text).get("executor")
@@ -1535,7 +1569,7 @@ def validate_cross_package_links(packages, diag: Diagnostics) -> None:
         for source_file in sorted(pkg["path"].rglob("*.md")):
             text = _read_source(source_file)
             for match in MD_LINK_RE.finditer(text):
-                resolved = _resolve_link(source_file, match.group(1))
+                resolved = _doclint().resolve_link(source_file, match.group(1))
                 if resolved is None or "references" not in resolved.parts:
                     continue
                 owner_pkg = None
@@ -1568,8 +1602,36 @@ def compute_pins() -> dict:
 def write_pins() -> dict:
     pins = compute_pins()
     PINS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    PINS_FILE.write_text(json.dumps(pins, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    # Bytes with LF: a text-mode write on Windows would land CRLF and
+    # differ from every other host's pin file.
+    PINS_FILE.write_bytes((json.dumps(pins, indent=2, sort_keys=True) + "\n").encode("utf-8"))
     return pins
+
+
+# --- Markdown links resolve (docs/documentation.md law 5) ---------------
+#
+# Every relative markdown link in every .md the library ships resolves to
+# a file in the tree. Anchors are not resolved here (validate_lens_anchor
+# owns the one anchor class a consumer depends on); external URLs and
+# templated paths are skipped. REVIEW-*.md are dated evidence and exempt.
+LINKED_MD_ROOTS = ("rules", "contracts", "docs", "skills", "packs", "compositions", "templates", "benchmarks")
+
+
+def _linked_markdown_files():
+    for name in sorted(ROOT.glob("*.md")):
+        if not name.name.startswith("REVIEW-"):
+            yield name
+    for root in LINKED_MD_ROOTS:
+        yield from sorted((ROOT / root).rglob("*.md"))
+
+
+def validate_markdown_links(diag: Diagnostics) -> None:
+    if not all((ROOT / root).is_dir() for root in LINKED_MD_ROOTS):
+        return  # a partial tree (the isolated test fixtures) is not graded
+    dangling_links = _doclint().dangling_links
+    for source in _linked_markdown_files():
+        for target in dangling_links(source, _read_source(source)):
+            diag.error(rel(source), f"markdown link does not resolve: {target}")
 
 
 def validate_pins(diag: Diagnostics) -> None:
@@ -1749,6 +1811,8 @@ def run_validation() -> Diagnostics:
     validate_cross_package_links(packages, diag)
     validate_names(packages, diag)
     validate_lens_anchor(packages, diag)
+    validate_markdown_links(diag)
+    validate_surface_budgets(diag)
     validate_pins(diag)
     validate_friction_locations(diag)
     return diag

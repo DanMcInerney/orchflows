@@ -31,7 +31,7 @@ returning unobserved.
 ## Completion test
 
 - every original oracle PASSes at the repaired revision | oracle: the workspace's own check commands, rerun at that revision | oracle_class: deterministic | provenance: pre-existing
-- 02-repair's regression check FAILs at the pre-repair revision (in a clone) and PASSes at the repaired revision; a fix reaching here without such a check exits on docs/vocabulary.md's `limited` clause | oracle: the regression check named in 02-repair's Result, run at both revisions | oracle_class: deterministic | provenance: pre-existing
+- 02-repair's regression check FAILs at the pre-repair revision (in a clone) and PASSes at the repaired revision | oracle: the regression check named in 02-repair's Result, run at both revisions | oracle_class: deterministic | provenance: pre-existing
 
 ## Return fields
 

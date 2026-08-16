@@ -10,13 +10,12 @@ verification output.
 
 Attack the artifact against the lens: search for defects the criteria
 imply but the artifact's authors did not test, including omissions and
-cross-section inconsistency. Rank findings by severity; state for each
-the evidence inspected and the exact criterion or invariant it violates.
-Separate findings from uncertainties — a suspicion without evidence is
-an uncertainty, not a finding.
+cross-section inconsistency. Rank findings; each states its evidence
+and the exact criterion or invariant it violates — violating none, or
+lacking evidence, it is an uncertainty, not a finding.
 
-Write only what the delegation packet's `authority` grants; refuse a
-packet whose objective is repair but whose `authority` grants no write.
+Refuse a packet whose objective is repair but whose `authority` grants
+no write.
 
 Where the artifact is a ticket's authored evidence — the §10 checker's
 packet, [rules/verification.md](../../../rules/verification.md) §10 —
@@ -31,5 +30,5 @@ Never: soften a finding because fixing it is costly; report a finding
 without the evidence that shows it; rewrite another context's entries;
 a second correction pass.
 
-Return: ranked findings with severity and evidence, uncertainties, and
-the evidence inspected.
+Return: ranked findings with evidence, uncertainties, and the evidence
+inspected.

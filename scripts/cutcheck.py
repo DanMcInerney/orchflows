@@ -46,7 +46,14 @@ Scope closure: the write scope covers every path the item says it
 writes, evidence sinks included, and no excluded action names a path the
 scope grants. A path the item only reads is no defect: observing is not
 naming, and neither is mentioning -- a placeholder, a denied write, the
-grant's own name.
+grant's own name. The same grant is read the other way round as well: a
+literal the objective deletes, moves or renames -- a path, a skill name, an
+enum member, a set member -- is searched for through the tree's checks,
+scripts, prose and compositions, and every file outside the grant that pins
+it is reported once, named with the literal. The item cannot land without
+breaking that file and is not licensed to repair it, so either the cut
+carries the pin or the item is re-cut. A denied removal takes nothing away,
+and a file sitting inside what is removed is no pin left behind by it.
 
 Pairwise safety: for every pair the DAG leaves unordered -- ordering is
 reachability through ``depends_on``, not adjacency -- write scopes are
@@ -113,9 +120,16 @@ and a bare name decides nothing about the item it is stated under. So is a
 span a criterion quotes rather than states -- one standing behind a denial, a
 refusal or an example -- because a command named as what not to do, as what
 the guard refuses, or as what CI runs is no oracle of the item naming it.
+
+A search span -- ``grep``, ``rg`` -- is the one head not spawned: it is
+decided against the scratch copy by this tool's own matcher, so its verdict
+reads the same on a host whose PATH carries no grep. The matcher reads a
+closed option set (``SEARCH_FLAGS``), and a span carrying an option outside it
+is the same extraction gap rather than a status guessed at.
 """
 
 import argparse
+import os
 import re
 import shlex
 import shutil
@@ -168,6 +182,7 @@ UNRESOLVED_CITATION = "unresolved-citation"
 QUOTE_NOT_AT_CITATION = "quote-not-at-citation"
 UNSCOPED_WRITE = "unscoped-write"
 SCOPE_CONTRADICTION = "scope-contradiction"
+SCOPE_OPEN = "scope-open"
 SCOPE_COLLISION = "scope-collision"
 STAGED_INVALIDATION = "staged-invalidation"
 ORPHAN_CRITERION = "orphan-criterion"
@@ -200,6 +215,7 @@ FAMILY_OF = {
     QUOTE_NOT_AT_CITATION: FAMILY_2,
     UNSCOPED_WRITE: FAMILY_3,
     SCOPE_CONTRADICTION: FAMILY_3,
+    SCOPE_OPEN: FAMILY_3,
     SCOPE_COLLISION: FAMILY_4,
     STAGED_INVALIDATION: FAMILY_4,
     ORPHAN_CRITERION: FAMILY_5,
@@ -281,6 +297,37 @@ COMMAND_HEADS = (
     "rg",
 )
 SEARCH_HEADS = ("grep", "rg")
+# The options this tool's own matcher reads, by the letter a long spelling maps
+# onto. A search span is decided in this interpreter rather than by a program on
+# PATH -- `_search_exit` says why -- so the set is what this implements and not
+# what grep ships. A span carrying anything outside it is extracted by nobody
+# and surfaces as the gap it is: guessing at an option's meaning would decide a
+# cut from a reading nothing checked.
+SEARCH_FLAGS = frozenset("cEFhHilnoqrRsvwx")
+# `-e PATTERN` names the pattern rather than an operand, attached or separate.
+SEARCH_PATTERN_FLAG = "e"
+SEARCH_LONG_FLAGS = {
+    "count": "c",
+    "extended-regexp": "E",
+    "files-with-matches": "l",
+    "fixed-strings": "F",
+    "ignore-case": "i",
+    "invert-match": "v",
+    "line-number": "n",
+    "line-regexp": "x",
+    "no-filename": "h",
+    "no-messages": "s",
+    "only-matching": "o",
+    "quiet": "q",
+    "recursive": "r",
+    "regexp": SEARCH_PATTERN_FLAG,
+    "silent": "q",
+    "with-filename": "H",
+    "word-regexp": "w",
+}
+# The status a search head exits with when it could not read what it was
+# pointed at, which is neither a match nor the absence of one.
+SEARCH_ERROR = 2
 GIT_HEAD = "git"
 # The tree mode git records for a symlink, whatever the checkout made of it.
 SYMLINK_MODE = "120000"
@@ -364,6 +411,35 @@ WRITE_RE = re.compile(
     r"|append|appends|record|records)\b",
     re.IGNORECASE,
 )
+# The other half of family 3: not what the item adds, what it takes away. An
+# objective that deletes, moves or renames a literal has to carry every file
+# that pins it, or the pin breaks where nobody is licensed to repair it.
+REMOVAL_RE = re.compile(
+    r"\b(?:delete|deletes|deleting|deleted|remove|removes|removing|removed"
+    r"|rename|renames|renaming|renamed|move|moves|moving|moved"
+    r"|drop|drops|dropping|dropped)\b",
+    re.IGNORECASE,
+)
+REMOVAL_WINDOW = 80
+# A literal is a token specific enough for a pin to be about it: it carries a
+# separator -- a path's slash, a skill name's dash, a constant's underscore, an
+# extension's dot. Every file in a tree holds ordinary words, so a bare one
+# would name the whole tree and say nothing about this cut.
+LITERAL_RE = re.compile(r"^[A-Za-z0-9][\w./-]{2,}$")
+LITERAL_MARKS = ("-", "_", "/", ".")
+# Where a literal gets pinned: the checks that assert it, the scripts that hold
+# it as a constant, the prose that names it, the compositions that call it. A
+# root the repository under test does not carry costs nothing to look for, and
+# a tree of source the removal does not touch is not searched at all.
+PIN_ROOTS = ("compositions", "docs", "scripts", "tests")
+# Bytes past which a file is not prose anybody pins a name in. A cap and not a
+# filter on suffix: what a repository keeps under these roots is its own
+# business, and the reading is a substring search that decodes anything.
+PIN_SIZE_LIMIT = 512 * 1024
+# Per tree, every file under PIN_ROOTS with its text, read once per invocation
+# and only where some objective takes a literal away. A cut that removes
+# nothing never opens a file here.
+_PIN_INDEX = {}
 DOTTED_RE = re.compile(r"\.[A-Za-z0-9]{1,5}$")
 GLOB_RE = re.compile(r"[*?\[\]]")
 # `<run>` stands for whichever run it is: a shape, not a path anything writes.
@@ -728,6 +804,8 @@ def _commands(criterion):
         argv = candidate.split()
         if len(argv) < 2 or argv[0] not in COMMAND_HEADS or _evaluates_code(argv):
             continue
+        if _unreadable_search(candidate):
+            continue
         frame = criterion[max(0, match.start() - DENIAL_WINDOW):match.start()]
         if DENIAL_RE.search(frame) or MENTION_RE.search(frame):
             continue
@@ -864,6 +942,10 @@ def _run_once(command, tree):
         return None
     if not argv:
         return None
+    if argv[0] in SEARCH_HEADS:
+        # Answered here and never spawned, so it writes nothing and there is
+        # nothing for `_mutations` to report.
+        return _search_exit(argv, tree)
     try:
         proc = subprocess.run(
             argv,
@@ -886,6 +968,227 @@ def _run_once(command, tree):
         return UNRUNNABLE
     _MUTATED.extend(_mutations(tree))
     return code
+
+
+def _search_span(argv):
+    """A search span as ``(letters, pattern, operands)``, or None where a token
+    outside the closed option set stands in it.
+
+    Short options cluster, a long one may carry its value after ``=``, ``--``
+    ends the options, and the pattern is ``-e``'s value where one is given and
+    the first operand otherwise. Two patterns are two searches ORed together in
+    a syntax the pattern itself may not be written in, so a span naming more
+    than one is a span this declines to read rather than one it guesses at.
+    """
+
+    letters = set()
+    patterns = []
+    words = []
+    rest = list(argv[1:])
+    ended = False
+    while rest:
+        token = rest.pop(0)
+        if ended or not token.startswith("-") or token == "-":
+            words.append(token)
+            continue
+        if token == "--":
+            ended = True
+            continue
+        if token.startswith("--"):
+            name, sep, value = token[2:].partition("=")
+            letter = SEARCH_LONG_FLAGS.get(name)
+            if letter is None:
+                return None
+            if letter == SEARCH_PATTERN_FLAG:
+                if not sep:
+                    if not rest:
+                        return None
+                    value = rest.pop(0)
+                patterns.append(value)
+            elif sep:
+                return None
+            else:
+                letters.add(letter)
+            continue
+        cluster = token[1:]
+        while cluster:
+            letter, cluster = cluster[0], cluster[1:]
+            if letter == SEARCH_PATTERN_FLAG:
+                if not cluster:
+                    if not rest:
+                        return None
+                    cluster = rest.pop(0)
+                patterns.append(cluster)
+                cluster = ""
+            elif letter in SEARCH_FLAGS:
+                letters.add(letter)
+            else:
+                return None
+    if len(patterns) > 1:
+        return None
+    if patterns:
+        return letters, patterns[0], words
+    if not words:
+        return None
+    return letters, words[0], words[1:]
+
+
+def _search_matcher(letters, pattern):
+    """The compiled matcher for one search span, or None where the pattern is
+    one nothing here compiles -- which is a status the search heads have too.
+
+    Bytes, because a search reads whatever the tree holds and a tree holds
+    files no encoding decodes. ``-F`` reads the pattern literally and every
+    other spelling reads it as a regular expression, which agrees with the
+    extended syntax ``-E`` names on every pattern this repository's ticket
+    corpus states.
+    """
+
+    body = re.escape(pattern) if "F" in letters else pattern
+    if "w" in letters:
+        # grep's ``-w`` asks that no word constituent stand on either side of
+        # the match, which is not ``\b``: ``\b`` also demands one *inside*, so
+        # a pattern whose own edge is not a word character -- ``-w -- -x`` --
+        # would never match here and does under grep.
+        body = r"(?<!\w)(?:{})(?!\w)".format(body)
+    if "x" in letters:
+        body = r"\A(?:{})\Z".format(body)
+    try:
+        return re.compile(
+            body.encode("utf-8", "surrogateescape"),
+            re.IGNORECASE if "i" in letters else 0,
+        )
+    except re.error:
+        return None
+
+
+def _selected(matcher, path, inverted):
+    """Does this file hold a selected line? None where it could not be read."""
+
+    try:
+        data = path.read_bytes()
+    except OSError:
+        return None
+    lines = data.split(b"\n")
+    if lines and not lines[-1]:
+        lines.pop()
+    return any(bool(matcher.search(line)) != inverted for line in lines)
+
+
+def _files_under(directory):
+    """Every regular file the copy holds beneath this directory.
+
+    ``followlinks=False``, and symlinked files are skipped: a link the copy
+    holds is the one route out of it that a path cannot be read for, which
+    ``_names_outside_the_copy`` says at length about the git spans. Answering
+    the search heads here is what makes it closable, so it is closed.
+    """
+
+    for base, dirs, names in os.walk(str(directory), followlinks=False):
+        dirs.sort()
+        for name in sorted(names):
+            path = Path(base) / name
+            if not path.is_symlink():
+                yield path
+
+
+def _inside_the_copy(tree, operand):
+    """The path this operand names inside the tree, or None where it names one
+    outside it."""
+
+    here = Path(tree) / operand
+    try:
+        root = Path(tree).resolve()
+        resolved = here.resolve()
+    except OSError:
+        return None
+    if resolved != root and root not in resolved.parents:
+        return None
+    return here
+
+
+def _search_exit(argv, tree):
+    """The status a search span exits with, decided by this tool's own matcher.
+
+    The convention ``grep`` and ``rg`` share: 0 where a line was selected,
+    ``NO_MATCH`` where none was, and ``SEARCH_ERROR`` where the span named
+    something this could not read. ``_discrimination`` reads that middle status
+    from a search head as ``no-hits-both-revisions``, so the numbers are the
+    tools' and not this matcher's own.
+
+    Read here rather than run, and that is the whole of the repair: ``grep`` is
+    a program a POSIX shell's PATH carries and a Windows shell's does not, so
+    executing it graded the host. The same tree gave this repository's own suite
+    exit 0 from Git Bash and exit 1 from PowerShell, the twenty differences
+    being ``unrunnable-oracle`` standing where each fixture's own finding
+    belonged. Nothing about a cut changes with the shell the check was launched
+    from, so the search heads are answered in the interpreter already running
+    and every host reads one verdict.
+
+    The copy is the whole of what a span reads. An operand rooted outside the
+    tree or climbing out of it is no operand at all, and a directory is read
+    only where the span asks for recursion -- which ``rg`` asks for by default
+    and ``grep`` asks for with ``-r``.
+    """
+
+    span = _search_span(argv)
+    if span is None:
+        return SEARCH_ERROR
+    letters, pattern, operands = span
+    matcher = _search_matcher(letters, pattern)
+    if matcher is None:
+        return SEARCH_ERROR
+    recursive = bool(letters & {"r", "R"}) or argv[0] == "rg"
+    # A recursive search naming no operand reads the working directory --
+    # ``rg`` by default, ``grep -r`` since 2.11 -- and the working directory
+    # is the copy.
+    if not operands and recursive:
+        operands = ["."]
+    inverted = "v" in letters
+    selected = False
+    # A span naming nothing to read decided nothing, which is the error status
+    # and not the absence of a match.
+    failed = not operands
+    for operand in operands:
+        here = _inside_the_copy(tree, operand)
+        if here is None:
+            failed = True
+        elif here.is_dir():
+            if recursive:
+                for path in _files_under(here):
+                    hit = _selected(matcher, path, inverted)
+                    failed = failed or hit is None
+                    selected = selected or hit is True
+            else:
+                failed = True
+        else:
+            hit = _selected(matcher, here, inverted)
+            failed = failed or hit is None
+            selected = selected or hit is True
+    # grep's own exception, stated in its manual: under ``-q`` a selected line
+    # exits 0 even where an error occurred, because the question was only
+    # whether anything matched.
+    if failed and not (selected and "q" in letters):
+        return SEARCH_ERROR
+    return 0 if selected else NO_MATCH
+
+
+def _unreadable_search(command):
+    """Is this a search span whose options this tool's own matcher cannot read?
+
+    Asked at extraction, so such a span is reported the way a shell-headed one
+    is -- as the criterion's extraction gap, which is advisory and settles
+    nothing -- rather than run under a guess at what the option meant.
+    """
+
+    head = command.split()[:1]
+    if not head or head[0] not in SEARCH_HEADS:
+        return False
+    try:
+        argv = shlex.split(command)
+    except ValueError:
+        return True
+    return not argv or _search_span(argv) is None
 
 
 def _verdict_in_output(command):
@@ -1254,6 +1557,136 @@ def _scope_closure(frontmatter, prose):
                 if _overlaps(target, entry):
                     findings.append((SCOPE_CONTRADICTION, "{} | {}".format(action, entry)))
                     break
+    return findings
+
+
+def _is_literal(token):
+    """Is this token specific enough that a file pinning it means something?
+
+    Three characters and a separator. `gate`, `set` and `the` are words every
+    tree is full of; `orch-compose`, `SCRIPT_NAMES` and `scripts/tickets.py`
+    are things one file states and another depends on.
+    """
+
+    return bool(LITERAL_RE.match(token)) and any(m in token for m in LITERAL_MARKS)
+
+
+def _literals(objective):
+    """Every literal this objective says it deletes, moves or renames.
+
+    The window and the denial frame are ``_scope_closure``'s, asked of a verb
+    that takes away rather than one that adds: a write the ticket denies
+    commits it to nothing, and neither does a removal it denies.
+
+    A path is read twice -- whole, and as the name it ends in. The pin is
+    usually on the name: ``scripts/tickets.py`` spells a deleted engine as a
+    set member and nothing outside the library spells the directory it lived
+    in, so reading the path alone finds no pin and reports the cut clean.
+    """
+
+    flat = _flat(objective)
+    found = []
+    for match in REMOVAL_RE.finditer(flat):
+        if DENIAL_RE.search(flat[max(0, match.start() - DENIAL_WINDOW):match.start()]):
+            continue
+        end = match.end() + REMOVAL_WINDOW
+        window = flat[match.end():end]
+        if len(flat) > end and not flat[end].isspace():
+            window = window.rpartition(" ")[0]
+        # A span the objective itself sets in backticks is a literal on the
+        # author's word, separator or none: `limited`, `checker`, `gate` are
+        # enum and set members a cut removes, and the tree's ordinary uses of
+        # the same word are told apart at the pin by ``_pins``' boundaries.
+        spans = [(t, False) for t in _paths_in(window)]
+        spans += [(s.strip(), True) for s in BACKTICK_RE.findall(window)]
+        for token, marked in spans:
+            for candidate in (token, token.rsplit("/", 1)[-1]):
+                literal = _is_literal(candidate) or (
+                    marked and bool(LITERAL_RE.match(candidate))
+                )
+                if literal and candidate not in found:
+                    found.append(candidate)
+    return found
+
+
+def _pins(literal, text):
+    """Does ``text`` state ``literal`` as a name, not as the inside of one?
+
+    Whole-token: `orch-compose` is not pinned by `orch-composer`, `gate` not
+    by `delegate`, `friction.py` not by `friction.pyc`. A path separator, a
+    dot, a quote or a bracket on either side is a boundary; a word character
+    or a dash is not.
+    """
+
+    return re.search(r"(?<![\w-])" + re.escape(literal) + r"(?![\w-])", text) is not None
+
+
+def _pin_index(tree):
+    """Every file under ``PIN_ROOTS`` of this tree, with its text, read once.
+
+    Read from the baseline copy, where every other file-reading family reads:
+    a pin is a fact about the tree the ticket was cut from, which the work then
+    changes. Built lazily and cached per tree, because the only cut that pays
+    for it is one whose objective takes a literal away.
+    """
+
+    key = str(tree)
+    if key in _PIN_INDEX:
+        return _PIN_INDEX[key]
+    entries = []
+    for root in PIN_ROOTS:
+        base = tree / root
+        if not base.is_dir():
+            continue
+        for path in sorted(base.rglob("*")):
+            try:
+                if not path.is_file() or path.stat().st_size > PIN_SIZE_LIMIT:
+                    continue
+                text = path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            entries.append((path.relative_to(tree).as_posix(), text))
+    _PIN_INDEX[key] = entries
+    return entries
+
+
+def _scope_open(frontmatter, objective, tree):
+    """Family 3, the other direction: does the grant close over what is removed?
+
+    ``_scope_closure`` asks whether the grant covers what the item writes. This
+    asks whether it covers what the rest of the tree pins: a path, a skill
+    name, an enum member, a set member the objective deletes, moves or renames,
+    which some file outside the grant states. The item cannot land without
+    breaking that file and cannot repair it, so either the cut carries the
+    pinning file or the cut is wrong -- and nothing about the item's own text
+    says so, which is why eleven such grants were issued in one build and each
+    failed in flight instead of at the cut.
+
+    One finding per pinning file, naming the file and the literal, because the
+    repair is per file: a grant is extended once however many of the item's
+    literals one file happens to hold, so the most specific literal it holds is
+    the one named. A file the grant already covers is no finding, and neither
+    is one sitting inside the literal being removed -- what goes with the
+    deletion is not a pin left behind by it.
+    """
+
+    literals = _literals(objective)
+    if not literals or tree is None:
+        return []
+    scope = _listed(frontmatter, "write_scope")
+    findings = []
+    for rel, text in _pin_index(tree):
+        if _covered(rel, scope):
+            continue
+        pinning = [
+            literal
+            for literal in literals
+            if _pins(literal, text) and not _covered(rel, [literal])
+        ]
+        if pinning:
+            findings.append(
+                (SCOPE_OPEN, "{} pins {}".format(rel, max(pinning, key=len)))
+            )
     return findings
 
 
@@ -1750,6 +2183,12 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
     findings.extend(
         (ticket_id, 0, klass, detail)
         for klass, detail in _scope_closure(frontmatter, _prose(body))
+    )
+    findings.extend(
+        (ticket_id, 0, klass, detail)
+        for klass, detail in _scope_open(
+            frontmatter, _prose(sections.get(OBJECTIVE_SECTION, "")), baseline_tree
+        )
     )
     return findings
 

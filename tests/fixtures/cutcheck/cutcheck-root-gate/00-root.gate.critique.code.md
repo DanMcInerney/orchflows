@@ -11,7 +11,7 @@ write_scope: []
 ## Objective
 
 Every defect in `00-root`'s delivered result that the `code` lens finds is
-reported by identity and severity: an open search over what the subtree
+reported by identity with its evidence: an open search over what the subtree
 produced, not a re-run of the criteria it already states.
 
 ## Fixed inputs

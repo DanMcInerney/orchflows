@@ -5,9 +5,8 @@ depends_on: [04-audit]
 write_scope: [{{package}}]
 bound: <= 40 tool calls
 excluded_actions:
-  - compare candidates
+  - rank candidates
   - promote or activate anything
-  - call evolve
   - close without recording the qualified result in the package's manifest, whose field set and component resolution are its own, at the git revision the benchmark sits at
 independence: checker
 isolation: none
@@ -25,7 +24,9 @@ rungs, on §Measurement pass's terms.
 - 04-audit's `## Result` — the audit and attack records, and the
   repaired assembly.
 - 03-qualify's `## Result` — the verdict set the manifest's
-  `qualification` component names.
+  `qualification` component names, offered for reuse per orch-verify's
+  Require: an entry whose `covers` 04-audit's repairs moved is re-run
+  here at the post-repair identity and supersedes it.
 - [the manifest](../references/benchmaker-manifest.md) — the field set,
   and how a component reference resolves.
 - [the protocol](../references/benchmaker-protocol.md#measurement-pass) —
@@ -35,8 +36,8 @@ rungs, on §Measurement pass's terms.
 
 ## Completion test
 
-- the manifest's qualification verdict set covers every component but its own — covered PASS on every required criterion, gaps explicit (`[]` when none) | oracle: the manifest read against its own field set and the verdict set | oracle_class: deterministic | provenance: pre-existing
-- the measurement record lands outside the package naming a default-branch-reachable revision carrying identical measured bytes, the full candidate identity, the date, the measured scope, and the per-case three-valued status with its distinct failure signature count | oracle: the measurement record | oracle_class: deterministic | provenance: authored-here
+- the manifest's qualification verdict set covers every component but its own — covered PASS on every required criterion, its `covers` naming the post-repair identities, gaps explicit (`[]` when none) | oracle: the manifest read against its own field set and the verdict set | oracle_class: deterministic | provenance: pre-existing
+- the measurement record is filed in this ticket's `## Result` — outside the package by construction — naming a default-branch-reachable revision carrying identical measured bytes, the full candidate identity, the date, the measured scope, and the per-case three-valued status with its distinct failure signature count | oracle: the measurement record | oracle_class: deterministic | provenance: authored-here
 - every criterion the dispatched authority made unreachable is recorded as §Measurement pass requires | oracle: the declared authority beside the gap list | oracle_class: deterministic | provenance: pre-existing
 
 ## Return fields

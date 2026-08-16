@@ -24,11 +24,14 @@ shape principles every domain shares are
   language servers at once.
 - Comments state only what code cannot: invariants, ordering
   constraints, why-not-the-obvious.
+- Checks pin shapes, never sentences: a test asserts a field, a set, a
+  count by kind, or a verdict — not an owner file's prose, and never a
+  whole report where it means one finding kind; a ratchet counts the
+  kind it was written for.
 
 ## Lens
 
-For `orch-critique`. Read every diff inside the surrounding file it
-lands in — a hunk alone hides the context a false positive needs.
+For `orch-critique`.
 
 - Correctness: does the revision satisfy the spec's acceptance,
   including its failure paths, not only the happy path?

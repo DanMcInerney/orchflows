@@ -12,5 +12,3 @@ views.
 - Each view item repeats verbatim its identity list, its render,
   capture and diff commands, its accessibility bar and design
   language, and the standards owner pointer.
-- The decision gap is [rules/topology.md](../../../rules/topology.md)
-  §3's.

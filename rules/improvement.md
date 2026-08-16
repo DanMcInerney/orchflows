@@ -4,7 +4,7 @@
    missing input, tool, or document, surprising output, a contract gap,
    or a workaround — the agent logs and continues, through the installed
    friction logger the host instruction block names, whose fallback that
-   block spells too (this repository's command is in `AGENTS.md`).
+   block spells too.
    Record observations only, never causes. The category is one of the
    closed set the logger enforces, advisory evidence for the clusters §4
    keys on owner and observed-text similarity. Logging is exempt from

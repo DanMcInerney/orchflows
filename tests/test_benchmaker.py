@@ -120,26 +120,24 @@ STUB_INVARIANTS = {
         "move the declared coverage floor with the target's execution cost",
         "buy speed from the coverage floor, the oracle, or the horizon the "
         "outcome needs",
-        "buy difficulty from filtering on a candidate's scores",
     ),
     "02-materialize": ("mutate the target", "generate a candidate"),
     "03-qualify": ("let builders qualify their own work",),
+    "04-audit": ("enter an attack artifact into the case set",),
     "05-measure": (
-        "compare candidates",
+        "rank candidates",
         "promote or activate anything",
-        "call evolve",
     ),
 }
-# The one invariant two stubs are each accountable for. `04-audit`'s attack
-# pass produces candidate-shaped artifacts, so the clause that binds the
-# materializer binds the auditor too, and the rule below reads this instead of
-# demanding a single carrier. Anything not named here still rides one stub.
-SHARED_INVARIANTS = {"generate a candidate": {"02-materialize", "04-audit"}}
+# Every invariant rides exactly one stub: the auditor's attack pass produces
+# candidate-shaped artifacts by design, so its own clause forbids entering one
+# into the case set rather than repeating the materializer's.
+SHARED_INVARIANTS = {}
 # The done check, verbatim, which is the terminal stub's first criterion.
 DONE_CHECK = (
     "the manifest's qualification verdict set covers every component but its "
-    "own — covered PASS on every required criterion, gaps explicit "
-    "(`[]` when none)"
+    "own — covered PASS on every required criterion, its `covers` naming the "
+    "post-repair identities, gaps explicit (`[]` when none)"
 )
 # What the protocol stopped stating at P4: the phrase it dropped, the file the
 # law went to, and what that file says instead. A triple rather than a

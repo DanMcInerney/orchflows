@@ -16,7 +16,7 @@ Cells:
   item, or the bare word none followed by an em-dash gloss naming what
   stands in for the assembly. An empty cell or free prose is malformed.
 - `lens` — the review binding: a named skill, or `orch-critique` with the
-  pack's craft `## Lens`, whose criteria are restated fresh from the spec.
+  pack's craft `## Lens`.
 - `oracle_policy` — the oracle table: for each criterion kind, the exact
   oracle and its oracle_class per [verdict.md](verdict.md); any deviation
   from verdict.md's class policy. The class policy and the overall verdict

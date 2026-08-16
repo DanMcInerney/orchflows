@@ -1,9 +1,11 @@
 # Pack authoring
 
-The order of work when adding a domain pack. The law lives with its
-owners — admission, cells, sharing constraints, and craft budget in
-[contracts/pack-signature.md](../contracts/pack-signature.md); anatomy
-and body budgets in [rules/composition.md](../rules/composition.md)
+The order of work when adding a domain pack — the pack factory of
+[documentation.md](documentation.md) §7, its library instances the four
+under `packs/`, a project's landing per `orch-build`'s scopes. The law
+lives with its owners — admission, cells, sharing constraints, and craft
+budget in [contracts/pack-signature.md](../contracts/pack-signature.md);
+anatomy and body budgets in [rules/composition.md](../rules/composition.md)
 §5; admission in `orch-build`; each existing pack's rationale in
 [DESIGN.md](../DESIGN.md). This file only orders the work and names
 what each step feeds the next.

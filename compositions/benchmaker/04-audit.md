@@ -6,7 +6,7 @@ write_scope: [{{package}}]
 bound: <= 80 tool calls
 excluded_actions:
   - render a pass/fail verdict on the benchmark
-  - generate a candidate
+  - enter an attack artifact into the case set
   - audit only the hard cases
   - leave a hole undeclared
 independence: gate

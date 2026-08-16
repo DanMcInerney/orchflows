@@ -43,6 +43,11 @@ class _IsolatedTree(unittest.TestCase):
         shutil.copytree(CONTRACTS, self.tmp_path / "contracts")
         (self.tmp_path / "tools").mkdir()
         shutil.copy(VALIDATE, self.tmp_path / "tools" / "validate.py")
+        # The compiler is two files (ARCHITECTURE.md): a tree that runs the
+        # copy carries `scripts/doclint.py`, which it asks whether a link
+        # resolves and whether two clauses are one clause.
+        (self.tmp_path / "scripts").mkdir()
+        shutil.copy(ROOT / "scripts" / "doclint.py", self.tmp_path / "scripts" / "doclint.py")
         # Matching pins, so only the synthetic packages can fail. The
         # committed pins.json already matches these very contract bytes --
         # test_validator.py's test_pin_matches_committed_pins_json is what

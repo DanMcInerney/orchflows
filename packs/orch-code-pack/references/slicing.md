@@ -10,5 +10,3 @@ frontier carries the riskiest seam's tracer.
   is another's input.
 - Also verbatim in each item: the runnable check commands; the
   standards owner pointer.
-- The decision gap is [rules/topology.md](../../../rules/topology.md)
-  §3's.

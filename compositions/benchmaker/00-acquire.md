@@ -33,7 +33,8 @@ charter names.
 - {{bound}} — the one caller bound. Every stage's own bound is an
   allocation from it: nonnegative, totalling no more than it, unused
   allocation carrying forward from a completed stage. A caller bound
-  smaller than the stage bounds below is repartitioned before dispatch.
+  smaller than the stage literals (500) is repartitioned by the
+  instantiating caller before instantiation.
 - [the research charter](../references/benchmaker-research.md) — the
   lane cut, the synthesis artifacts, and the exhibited/protected rule
   this delivery is cut under.
@@ -42,13 +43,12 @@ charter names.
 
 - the terminal synthesis fixes construct definition, claim register, failure atlas, prior-art register, disagreement register, gaps and sourcing mode at one result identity | oracle: the charter's artifact list against the frozen synthesis | oracle_class: deterministic | provenance: pre-existing
 - every claim maps to a case specification or a recorded gap | oracle: the claim register | oracle_class: deterministic | provenance: pre-existing
-- a non-complete delivery, decision gap, unresolved source or uncovered remainder is returned as partial evidence rather than closed over | oracle: the delivery's own verdicts and gap list | oracle_class: deterministic | provenance: pre-existing
 
 ## Return fields
 
 status; result — the frozen synthesis identity and its source
-identities; verification; feedback; risks — gaps explicit, and
-otherwise filed as contracts/work-item.md requires
+identities; verification; feedback; risks — gaps explicit; a
+non-complete delivery returns partial evidence, never a closed-over gap
 
 ## Result
 

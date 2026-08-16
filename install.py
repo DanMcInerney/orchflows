@@ -43,7 +43,10 @@ the installer warns and exits successfully without writing anything.
 Project scope (``--project PATH``) is a thin stub: it writes only the two
 managed instruction blocks (project ``CLAUDE.md``, project ``AGENTS.md``),
 rendered against the *user* library paths since a project carries no
-library of its own, plus a minimal receipt for those blocks. Both stay
+library of its own, the day-zero documents ``docs/documentation.md`` §6
+names (``docs/vocabulary.md``, ``ARCHITECTURE.md``) where the project holds
+none — a document already there is left byte-identical, and the receipt says
+which of the two the installer wrote — plus a minimal receipt. Both blocks stay
 inline marker blocks (never an import) since a project is committable and
 must stay self-contained for teammates without the same ``~/.orchflows``.
 Durable state is user-scope in either scope: an install seeds the one sink
@@ -107,6 +110,10 @@ CANONICAL_DIRS = (
 )
 SCRIPT_NAMES = (
     "cutcheck.py",
+    # The documentation factory's oracle. Bodies invoke it by bare filename,
+    # so it resolves from the installed bin dir or not at all -- and it lived
+    # in scripts/ shipping to nothing until this line named it.
+    "doclint.py",
     "friction.py",
     "migrate_state.py",
     # Named by bare filename from the evolve template's campaign stub. It
@@ -757,6 +764,17 @@ class ConfigPlan:
 
 
 @dataclass
+class DayZeroPlan:
+    """One day-zero document (``docs/documentation.md`` §6): written only
+    where the project holds none, never replaced."""
+
+    dest: Path
+    content: str
+    kind: str
+    label: str
+
+
+@dataclass
 class ImportPlan:
     dest: Path
     import_target: Path
@@ -784,6 +802,7 @@ class Plan:
     codex_agents: list = field(default_factory=list)     # (dest, content)
     configs: list = field(default_factory=list)          # ConfigPlan
     blocks: list = field(default_factory=list)           # BlockPlan — inline marker blocks
+    day_zero: list = field(default_factory=list)         # DayZeroPlan — written only when absent
     host_block: ConfigPlan | None = None                 # ~/.orchflows/host-block.md, user scope only
     claude_import: ImportPlan | None = None              # CLAUDE.md import line, user scope only
     warnings: list = field(default_factory=list)         # preflight, informational only
@@ -819,6 +838,66 @@ def _host_block_content() -> tuple[str, str, str]:
     return content, start_marker, end_marker
 
 
+_DAY_ZERO_VOCABULARY = """# Vocabulary
+
+This project's nouns. Each term is defined once, here, and used with
+exactly this meaning everywhere — code, documents, tickets, logs. A
+document that needs a different meaning needs a different word.
+
+Sections group by the reader's question; an entry is earned when two
+contexts used one word differently. Factory:
+{{FACTORY}}.
+
+## Structure
+
+## Work
+
+## Verification
+"""
+
+_DAY_ZERO_OWNERSHIP_MAP = """# Architecture
+
+Codemap: where the thing that does X lives, who owns it, and which way
+dependencies point. Terms: docs/vocabulary.md. Factory, and the design
+law for every document here: {{FACTORY}} (§6 day zero, §7 factories).
+
+## Tiers and ownership
+
+| tier | owner |
+|---|---|
+| (a directory) | (what it owns, and the tiers it may depend on) |
+
+One row per tier, added when a directory earns an owner, never in advance.
+"""
+
+
+def _day_zero_documents(project_root: Path) -> list:
+    """The documents ``docs/documentation.md`` §6 says a project creates on
+    day zero, minus the two the instruction blocks already carry (the router)
+    and the user install already owns (the state sink).
+
+    Each carries the path of the factory that produced it, rendered against
+    the *user* library for ``_host_block_content``'s reason: a project carries
+    no library of its own to point at.
+    """
+
+    docs_dir = _lib_home("user", None) / "docs"
+    return [
+        DayZeroPlan(
+            project_root / "docs" / "vocabulary.md",
+            _DAY_ZERO_VOCABULARY.replace("{{FACTORY}}", str(docs_dir / "vocabulary-authoring.md")),
+            "day-zero",
+            "vocabulary skeleton",
+        ),
+        DayZeroPlan(
+            project_root / "ARCHITECTURE.md",
+            _DAY_ZERO_OWNERSHIP_MAP.replace("{{FACTORY}}", str(docs_dir / "documentation.md")),
+            "day-zero",
+            "ownership map skeleton",
+        ),
+    ]
+
+
 def _build_project_plan(project_root: Path) -> Plan:
     """Thin stub: only the two managed instruction blocks plus a minimal
     receipt. No lib copy, no runtime dirs, no ``.claude``/``.codex`` writes —
@@ -849,6 +928,7 @@ def _build_project_plan(project_root: Path) -> Plan:
         scope_home=scope_home,
         bin_dir=_bin_dir("project", project_root),
         blocks=blocks,
+        day_zero=_day_zero_documents(project_root),
         receipt_path=scope_home / "receipt.json",
         manage_host_surfaces=False,
     )
@@ -1119,6 +1199,7 @@ def plan_entry_count(plan: Plan) -> int:
         + len(plan.codex_agents)
         + len(plan.configs)
         + len(plan.blocks)
+        + len(plan.day_zero)
         + (1 if plan.host_block is not None else 0)
         + (1 if plan.claude_import is not None else 0)
     )
@@ -1181,6 +1262,10 @@ def print_plan(plan: Plan) -> None:
     print(f"managed blocks ({len(plan.blocks)}):")
     for block in plan.blocks:
         print(f"  {block.label}: {block.dest}")
+    print()
+    print(f"day-zero documents ({len(plan.day_zero)}):")
+    for document in plan.day_zero:
+        print(f"  write if absent: {document.dest} ({document.label})")
     print()
     if plan.claude_import is not None:
         print("managed imports (1):")
@@ -1456,6 +1541,23 @@ def apply_plan(plan: Plan, keep_role_agents: bool | None = None) -> dict:
             }
         )
 
+    # Day-zero documents. Day zero happens once: a document the project
+    # already holds is left byte-identical and only recorded, because the
+    # installer owns the skeleton, never the project's own thinking.
+    for document in plan.day_zero:
+        existed = document.dest.is_file()
+        if not existed:
+            document.dest.parent.mkdir(parents=True, exist_ok=True)
+            document.dest.write_text(document.content, encoding="utf-8")
+        # "created" once this installer has ever written the document — on
+        # this run, or on an earlier one whose receipt says so — and "kept"
+        # only while it never has. Uninstall reads this to know which is
+        # which, so a kept document the project later removed and this run
+        # rewrote turns "created" rather than inheriting "kept".
+        old_entry = old_entries.get((str(document.dest), document.kind), {})
+        action = "created" if not existed else (old_entry.get("install_action") or "kept")
+        written_files.append(_installed_file(document.dest, document.kind, action))
+
     written_imports = []
     if plan.claude_import is not None:
         imp = plan.claude_import
@@ -1599,7 +1701,9 @@ def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
                 if details
                 else ""
             )
-            if install_action == "created":
+            if install_action == "kept":
+                action = f"leave {kind} file as it is; the installer never wrote it{detail_suffix}"
+            elif install_action == "created":
                 action = f"delete installer-created {kind} file manually{detail_suffix}"
             elif install_action == "replaced":
                 action = (

@@ -714,5 +714,71 @@ class TestLensAnchor(_IsolatedTree):
         self.assertNotIn("craft.md#lens", result.stdout)
 
 
+class TestWordBudgetAndLinks(_IsolatedTree):
+    """rules/composition.md §5 counts words with link targets stripped, and
+    docs/documentation.md law 5's oracle resolves every markdown link."""
+
+    def _write_skill(self, name, body, tier="instances"):
+        skill_dir = self.tmp_path / "skills" / tier / name
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text(
+            f"---\nname: {name}\ndescription: a synthetic body\nrole: worker\n---\n"
+            f"Require: one thing.\n\n{body}\n\nNever: another thing.\n\nReturn: a result.\n",
+            encoding="utf-8",
+        )
+
+    def test_a_wide_body_over_the_word_budget_is_refused(self):
+        wide = " ".join(["word"] * 320)  # one line, 320 words
+        self._write_skill("orch-wide", wide)
+        result = self._run()
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("words, exceeds the instances budget of 300", result.stdout)
+
+    def test_link_targets_do_not_count_and_a_narrow_body_under_budget_passes(self):
+        links = "\n".join(
+            f"- see [contract](../../../contracts/work-item.md#a-long-anchor-{i})"
+            for i in range(60)
+        )
+        self._write_skill("orch-linky", links)
+        result = self._run()
+        self.assertNotIn("exceeds the instances budget", result.stdout)
+
+    def test_a_dangling_markdown_link_in_docs_is_an_error(self):
+        for root in validate.LINKED_MD_ROOTS:
+            (self.tmp_path / root).mkdir(exist_ok=True)
+        docs = self.tmp_path / "docs"
+        (docs / "x.md").write_text("see [gone](gone.md) and [ok](../contracts/verdict.md)\n", encoding="utf-8")
+        result = self._run()
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("markdown link does not resolve: gone.md", result.stdout)
+        # A resolving link raises no diagnostic — asserted on the target
+        # the diagnostic names, not on membership of a bare name in a list
+        # of lines no line can equal. (The copied contracts' own links to
+        # ../docs and ../rules dangle in this synthetic tree by design.)
+        self.assertNotIn("does not resolve: ../contracts/verdict.md", result.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestSurfaceBudgets(_IsolatedTree):
+    """rules/token-economy.md §11: the every-turn surfaces carry the tightest
+    ceilings, and the check reads them from the tree it runs in."""
+
+    def test_a_host_block_over_its_budget_is_refused(self):
+        (self.tmp_path / "templates").mkdir()
+        (self.tmp_path / "templates" / "host-block.md").write_text(
+            " ".join(["word"] * (validate.SURFACE_BUDGET["templates/host-block.md"] + 10)),
+            encoding="utf-8",
+        )
+        result = self._run()
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("templates/host-block.md", result.stdout)
+        self.assertIn("exceeds the every-turn budget", result.stdout)
+
+    def test_the_real_surfaces_sit_under_their_ceilings(self):
+        for name, limit in validate.SURFACE_BUDGET.items():
+            with self.subTest(surface=name):
+                text = (ROOT / name).read_text(encoding="utf-8")
+                self.assertLessEqual(validate.body_words(text), limit)

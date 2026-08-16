@@ -15,19 +15,17 @@
    ([work-item.md](../contracts/work-item.md), Executor form).
 5. What a return carries over the channel is
    [delegation.md](delegation.md) §10's.
-6. Placement is the second question, and what §1 deletes is never
-   placed. What survives goes by kind — universal procedure, and the
-   exact contract an executor must reproduce for its result to be
-   accepted, in `SKILL.md`; expandable method and domain data behind the
-   link, in the owning package's `references/` or pack cell. Which
-   clauses carry that contract is [composition.md](composition.md)
-   §11's. Method is expandable when the body states the obligation in
-   one clause and the expansion can be consulted separately without the
-   obligation losing force; where the detail is the obligation's own
-   operand, the two stay together. The cells
-   [contracts/pack-signature.md](../contracts/pack-signature.md)
-   mandates are the standing exception: the contract requires them to
-   state their content.
+6. Placement follows §1: what §1 deletes is never placed. A `SKILL.md`
+   body holds `Require:`, `Never:`, `Return:` and only the procedure an
+   executor must reproduce for its result to be accepted
+   ([composition.md](composition.md) §11); everything else that survives
+   §1 — method, checklists, host mechanics, worked detail, domain data —
+   sits behind one link in the owning package's `references/` or the
+   stamped pack's cell, placed at the call site where it is first needed
+   (§7). Test per passage: would an executor that never followed the
+   link still meet every Require, Never and Return? Yes → reference.
+   The cells [contracts/pack-signature.md](../contracts/pack-signature.md)
+   mandates are the standing exception.
 7. A link states at its call site when to follow it. Copy or cite is
    [visibility.md](visibility.md) §3's call.
 8. Models route by descriptions, so a description states when to
@@ -42,3 +40,32 @@
     pack's craft Shape. A metered, search-navigating reader pays the
     same cost in every domain; a copy per pack only adds a place to
     drift.
+11. Budgets bound what is loaded whether or not it is needed, and only
+    that: a router block, an agent file, a `SKILL.md` body, a stub's
+    instruction, a pack's cells. What a link makes available on demand
+    is unbudgeted — it answers to §1 sentence by sentence and to any
+    contract mandating its content. Ceilings order by load frequency,
+    because a file loaded by every child on every turn costs its length
+    times the children forever, whatever the model: every-turn surfaces
+    tightest — the host block 400 words and at most eight standing
+    demands, a project's routing block 400, this repository's
+    `AGENTS.md` 300, a role agent file 80; every-dispatch units next —
+    kernel, instance and utility bodies 300, pack `SKILL.md` 150, a
+    stub's instruction (objective, completion test, excluded actions,
+    return fields; never its fixed inputs) 300, a pack's craft as
+    [contracts/pack-signature.md](../contracts/pack-signature.md)
+    mandates; every-run units widest — engine and workflow bodies 450,
+    a template manifest 250. Counted by `tools/validate.py` in words
+    with link targets stripped. What degrades adherence is the count of
+    standing demands and tension between them, not length at a fixed
+    count — so a surface earns each demand by §1 and carries no two in
+    tension, and complexity buys structure, never width: more stubs and
+    edges, each one packet, each re-paying the every-turn floor, which
+    is why that floor is the tightest ceiling. A ceiling only falls, and
+    falls on evidence — a tournament in which the shorter candidate
+    holds its benchmark within margin, or a review whose deletions land
+    — never on taste, and never rises for a new model: a stronger model
+    needs less how, not more. On 2026-08-16 the host block's ceiling fell
+    460 → 400 with the deletions that landed, the demand cap staying
+    eight, on the evidence that adherence answers to the count of
+    standing demands and their conflict, not to length at a fixed count.

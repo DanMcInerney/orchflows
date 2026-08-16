@@ -13,5 +13,5 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | lens | `orch-critique` with [references/craft.md#lens](references/craft.md#lens) |
 | oracle_policy | [references/oracles.md](references/oracles.md) |
 | workspace | document tree: identities are document revisions, isolation is a run-scoped directory, write scopes are outline slots |
-| required_spec_fields | audience; voice contract — the dimensions a judge scores: register, person, stance (the writer's relation to the claim), cadence (sentence rhythm); length budget; citation policy |
+| required_spec_fields | target directory; audience; voice contract; length budget; citation policy |
 | craft | [references/craft.md](references/craft.md) |

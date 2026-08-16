@@ -123,7 +123,8 @@ bounded generations planned deterministically from settled public outcomes,
 blind judges, and promotion only when a frozen rule and margin are beaten.
 Together they turn "make this
 better" into a measured campaign instead of vibes. The dataflow is in
-[docs/benchmaker.md](docs/benchmaker.md); `skill-tournament` applies
+[compositions/benchmaker/template.md](compositions/benchmaker/template.md);
+`skill-tournament` applies
 the same loop to the library's own skills.
 
 ### Visualize anything

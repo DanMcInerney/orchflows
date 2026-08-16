@@ -28,6 +28,7 @@ Subcommands:
     list [--run R]
     ready [--run R]
     claim <run> <id> --by <name>
+    grant <run> <id> --write-scope <path>[,<path>] --by <name>
     set-status <run> <id> <status>
     packet <run> <id> --reply-to <name> [--workspace <path>]
     result <run> <id> --section <name> (--file <path> | --text <string>)
@@ -98,6 +99,12 @@ VALID_STATUSES = {
 # ticket's executor, so naming one is the call cycle
 # rules/composition.md §3 forbids — an engine would spawn itself.
 LOOP_EXECUTOR = "orch-loop"
+# The executors that dispatch children of their own: the two engines, whose
+# whole job is dispatching a ticket's executor (rules/composition.md §3).
+# contracts/work-item.md#dispatch makes `reply_to` the dispatcher's own
+# identity, which a child never infers — so a child that will itself
+# dispatch is the one that must be told the name it answers to.
+DISPATCHING_EXECUTORS = ("orch-frontier", LOOP_EXECUTOR)
 # contracts/work-item.md, Executor form: `executor: script:<path>` names a tested script.
 # It is an executor like any other -- claimable, dispatchable, graded the
 # same -- and differs only in what `packet` tells the child to do with it.
@@ -281,6 +288,20 @@ ISOLATION_VALUES = (REQUIRED_ISOLATION, "none")
 AMEND_USAGE = (
     "amend <run> <id> --section <name> (--file <path> | --text <string>)"
 )
+GRANT_USAGE = "grant <run> <id> --write-scope <path>[,<path>] --by <name>"
+# The caller-side widening of a claimed item's authority, written as
+# frontmatter bookkeeping of contracts/work-item.md's `claimed_*` class:
+# what was granted, by whom, and when. `write_scope` stays the cut's own
+# line, untouched, so the two are never confused for one.
+GRANTED_SCOPE_KEY = "granted_scope"
+GRANTED_BY_KEY = "granted_by"
+GRANTED_AT_KEY = "granted_at"
+# The statuses a grant is open in: the ticket is claimed and an executor is
+# working against it (`suspended` stays claimed, contracts/work-item.md).
+# Before a claim the cut owns the scope and a grant would be a second
+# editor of it; after a terminal status the verdict has already been read
+# against the authority the work was done under.
+GRANTABLE_STATUSES = frozenset({"claimed", "suspended"})
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
 WORKLOG_USAGE = "worklog <run> [--write]"
 GATE_USAGE = (
@@ -327,6 +348,7 @@ SUBCOMMAND_USAGE = {
     "list": "list [--run R]",
     "ready": "ready [--run R]",
     "claim": "claim <run> <id> --by <name>",
+    "grant": GRANT_USAGE,
     "set-status": "set-status <run> <id> <status>",
     "packet": "packet <run> <id> --reply-to <name> [--workspace <path>]",
     "result": RESULT_USAGE,
@@ -355,6 +377,11 @@ SUBCOMMAND_SUMMARY = {
     "free or stale; promotes an eligible `pending` to `ready`.",
     "claim": "Take one ready or stale ticket, losing the race rather than "
     "overwriting a live claim.",
+    "grant": "Record one caller-side widening of a claimed item's write "
+    "scope — the paths, the granting caller and the time — as frontmatter "
+    "bookkeeping every reader of the item's authority then honours. Refused "
+    f"on a ticket that is not {sorted(GRANTABLE_STATUSES)}: before a claim "
+    "the cut owns the scope.",
     "set-status": f"Set one ticket's status; terminal status is the join's "
     f"alone. One of {sorted(VALID_STATUSES)}.",
     "packet": "The by-reference dispatch packet for one ticket: path, parts, "
@@ -1126,6 +1153,15 @@ def _load_ticket(path: Path) -> dict:
     result = dict(data)
     result["id"] = ticket_id
     result["path"] = str(path)
+    if "write_scope" in data:
+        # The authority as it now stands — the cut's scope plus every
+        # recorded grant. Every consumer of a ticket's authority loads it
+        # through here (`packet`, the lease's motion, and `workspace.py
+        # check` at the join), so a grant recorded on the ticket is a grant
+        # the join reads. An absent key stays absent: a ticket with no
+        # declared scope is missing a packet part, and inventing an empty
+        # one here would dispatch it as complete.
+        result["write_scope"] = effective_write_scope(data)
     result["summary"] = {
         "run": data.get("run") or path.parent.name,
         "id": ticket_id,
@@ -1137,6 +1173,42 @@ def _load_ticket(path: Path) -> dict:
     if "error" in result:
         result["summary"]["error"] = result["error"]
     return result
+
+
+def _scope_entries(declared) -> list:
+    """One scope field as its entries, whichever shape it was written in.
+
+    A bare scalar is the one-entry list it means — the shape half the
+    tickets in the sink carry — and iterating the string instead yields its
+    characters, a scope of letters that matches nothing and grades nothing.
+    """
+
+    if isinstance(declared, str):
+        entry = declared.strip()
+        return [entry] if entry else []
+    return [
+        str(entry).strip() for entry in (declared or []) if str(entry).strip()
+    ]
+
+
+def effective_write_scope(data: dict) -> list:
+    """The paths this item may change: its cut ``write_scope``, then every
+    caller-side grant, in the order the grants landed.
+
+    One reader for both halves, because they are two writers of one fact.
+    ``write_scope`` is the cut's and is frozen with the cut
+    (contracts/work-item.md: a ticket never widens its own scope);
+    ``granted_scope`` is the caller widening an already-claimed item's
+    authority mid-flight, recorded by ``grant``. Read separately, a result
+    that used a granted path is a scope breach at the join and the grant is
+    a message nobody kept.
+    """
+
+    scope = _scope_entries(data.get("write_scope"))
+    for entry in _scope_entries(data.get(GRANTED_SCOPE_KEY)):
+        if entry not in scope:
+            scope.append(entry)
+    return scope
 
 
 # --- ticket shape -----------------------------------------------------------
@@ -1389,6 +1461,185 @@ def _spec_field_defect(text: str, directory):
     )
 
 
+# --- producer/consumer closure ---------------------------------------------
+#
+# A stub reads what a stub before it wrote: "01-eligibility's `## Result`" in
+# a `## Fixed inputs` bullet, "the promotion rule from 00-eval's Result" in an
+# oracle. That identity exists only if the named stub's `## Return fields`
+# names the thing being read. A thread with a producer at one end and nothing
+# at the other dispatches a child whose fixed input was never written, and it
+# instantiates exactly as cleanly as a closed one -- eleven of the eighteen
+# composition threads read in the 2026-08-16 review broke there.
+#
+# The grading is coarse on purpose, in the manner of `_spec_field_defect`
+# above: a reader names its items in the reader's words and a producer names
+# them in the producer's, so an item is produced when it shares one content
+# word, folded to its first four letters, with the producer's `## Return
+# fields`. Words that collide under the fold cost a defect that goes
+# unreported; words that do not collide never invent one. What stays refused
+# is the case the review found -- a named field the producer's return names
+# nowhere at all.
+RESULT_READ_RE = re.compile(r"([A-Za-z0-9][A-Za-z0-9._-]*)'s\s+`?(?:##\s*)?Result`?")
+NUMBERED_ID_RE = re.compile(r"^[0-9]")
+CLAIM_DASH_RE = re.compile(r"\s+(?:—|–|--)\s+")
+# The claim ends where the reader stops describing what it takes and starts
+# saying what it will do with it — the next criterion field, the next input,
+# the colon before its own elaboration, the end of the sentence — and its
+# items are the list the reader wrote, its commas. Splitting finer, on every
+# `and`, manufactures items out of trailing constraints ("it is read, never
+# rebuilt") and spends the check's credibility on them.
+CLAIM_END_RE = re.compile(r";|\||:|\.(?:\s|$)")
+CLAIM_CLAUSE_RE = re.compile(r"[|;:,()]")
+CLAIM_CARRIER_RE = re.compile(r"\s+(?:from|in|of|at|by|against|per)\s*$")
+CLAIM_SPLIT = ","
+CLAIM_WORD_RE = re.compile(r"[a-z]{4,}")
+CLAIM_STEM = 4
+# Function words a sentence carries whatever it is about: counted, they would
+# close a thread on "the" and "under" rather than on the field being read.
+CLAIM_STOPWORDS = frozenset({
+    "also", "against", "another", "before", "being", "both", "does", "each",
+    "else", "every", "from", "have", "here", "into", "itself", "just", "like",
+    "more", "much", "name", "named", "names", "naming", "only", "other",
+    "over", "read", "reads", "same", "some", "such", "taken", "takes", "than",
+    "that", "their", "them", "then", "there", "these", "they", "this",
+    "those", "under", "upon", "very", "were", "what", "when", "where",
+    "which", "while", "with", "within", "without", "would",
+})
+
+
+def _claim_words(text: str) -> set:
+    """One phrase's content words, folded to their first four letters."""
+
+    return {
+        word[:CLAIM_STEM]
+        for word in CLAIM_WORD_RE.findall(text.lower())
+        if word not in CLAIM_STOPWORDS
+    }
+
+
+def _bullets(section: str) -> list:
+    """One section's bullets, each rejoined from its continuation lines."""
+
+    bullets: list = []
+    for line in section.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("- ") or not bullets:
+            bullets.append(stripped[2:] if stripped.startswith("- ") else stripped)
+        else:
+            bullets[-1] += " " + stripped
+    return bullets
+
+
+def _result_reads(bullet: str) -> list:
+    """``(producer_id, claim)`` for every upstream Result one bullet reads.
+
+    The claim is the reader's own words for what it is taking, on whichever
+    side of the reference it put them: after the dash in a fixed input
+    (``<id>'s `## Result` -- the verdicts``), before the reference in an
+    oracle (``the verdicts from <id>'s Result``).
+    """
+
+    reads = []
+    for match in RESULT_READ_RE.finditer(bullet):
+        after = bullet[match.end():]
+        dash = CLAIM_DASH_RE.search(after)
+        if dash is not None and RESULT_READ_RE.search(after[: dash.start()]) is None:
+            claim = CLAIM_END_RE.split(after[dash.end():])[0]
+            following = RESULT_READ_RE.search(claim)
+            if following is not None:
+                claim = claim[: following.start()]
+        else:
+            before = CLAIM_CLAUSE_RE.split(bullet[: match.start()])[-1]
+            claim = CLAIM_CARRIER_RE.sub(" ", before)
+        reads.append((match.group(1), claim))
+    return reads
+
+
+def _upstream(stubs: dict) -> dict:
+    """Each stub id to every stub the graph orders before it."""
+
+    upstream = {stub_id: set(deps) for stub_id, (_, deps) in stubs.items()}
+    growing = True
+    while growing:
+        growing = False
+        for stub_id, deps in upstream.items():
+            grown = set(deps)
+            for dependency in deps:
+                grown |= upstream.get(dependency, set())
+            grown.discard(stub_id)
+            if grown != deps:
+                upstream[stub_id] = grown
+                growing = True
+    return upstream
+
+
+def _closure_defects(stubs: dict) -> list:
+    """``(reader_id, message)`` per producer a stub reads and does not get.
+
+    Three refusals, one per way a read misses: a stub that is not here, a
+    stub nothing orders first, and a field the producer's `## Return fields`
+    does not name. Aggregated per reader-producer pair, so one broken thread
+    is one defect naming both ends of it.
+    """
+
+    returns = {
+        stub_id: _claim_words(_section_body(text, "Return fields"))
+        for stub_id, (text, _) in stubs.items()
+    }
+    upstream = _upstream(stubs)
+    defects = []
+    for stub_id in sorted(stubs):
+        text, _ = stubs[stub_id]
+        unknown: list = []
+        unordered: list = []
+        missing: dict = {}
+        for heading in ("Fixed inputs", "Completion test"):
+            for bullet in _bullets(_section_body(text, heading)):
+                for producer, claim in _result_reads(bullet):
+                    if producer == stub_id:
+                        continue
+                    if producer not in stubs:
+                        # `this ticket's Result`, `the campaign's Result`: an
+                        # ordinary possessive, not a stub this template holds.
+                        if NUMBERED_ID_RE.match(producer) and producer not in unknown:
+                            unknown.append(producer)
+                        continue
+                    if producer not in upstream[stub_id]:
+                        if producer not in unordered:
+                            unordered.append(producer)
+                        continue
+                    for item in claim.split(CLAIM_SPLIT):
+                        item = item.strip(" `.\"'")
+                        # a `{{placeholder}}` is produced by instantiation, so
+                        # it is not graded -- the words beside it still are
+                        words = _claim_words(PLACEHOLDER_RE.sub(" ", item))
+                        if not words or words & returns[producer]:
+                            continue
+                        named = missing.setdefault(producer, [])
+                        if item not in named:
+                            named.append(item)
+        for producer in unknown:
+            defects.append((stub_id, (
+                f"stub {stub_id} reads {producer}'s `## Result`, and "
+                f"{producer} is not a stub in this template"
+            )))
+        for producer in unordered:
+            defects.append((stub_id, (
+                f"stub {stub_id} reads {producer}'s `## Result` without "
+                f"depending on {producer}: nothing orders {producer} first, "
+                f"so {stub_id} is dispatched against a Result not yet written"
+            )))
+        for producer, named in missing.items():
+            defects.append((stub_id, (
+                f"stub {stub_id} reads {producer}'s `## Result` for "
+                + "; ".join(f"'{item}'" for item in named)
+                + f", which {producer}'s `## Return fields` does not name"
+            )))
+    return defects
+
+
 def template_defects(directory) -> list:
     """Every way the template at ``directory`` is off contract, as
     ``(path, message)`` pairs.
@@ -1397,10 +1648,12 @@ def template_defects(directory) -> list:
     tree's uninstantiated templates can be graded where they sit: each stub
     against ``ticket_defects(text, stub=True)``, its id against its file
     stem, its list fields against being lists, its sections against the
-    contract's order, its executor against the engines that cannot be one,
-    and then the graph — edges, cycle, single terminal — through
-    ``_template_order``. A ``{{placeholder}}`` is left alone: it is a defect
-    only once instantiation has refused to fill it.
+    contract's order, then the graph — edges, cycle, single terminal — through
+    ``_template_order``, and along those edges the producer/consumer closure
+    through ``_closure_defects``. A ``{{placeholder}}`` is left alone: it is
+    a defect only once instantiation has refused to fill it, and whether the
+    manifest declares one is ``tools/validate.py``'s, which owns the
+    manifest and reports it there in one spelling.
 
     Exposed for ``tools/validate.py``, which admits templates into the tree
     and must admit exactly what this script will instantiate. Two spellings
@@ -1424,6 +1677,7 @@ def template_defects(directory) -> list:
 
     defects = []
     stubs = {}
+    stub_paths = {}
     for path in paths:
         text, failure = _read_utf8(path, f"stub {path.name}", encoding="utf-8-sig")
         if failure is not None:
@@ -1458,10 +1712,15 @@ def template_defects(directory) -> list:
             defects.append((path, spec_defect))
         dependencies = data.get("depends_on")
         stubs[path.stem] = (text, dependencies if isinstance(dependencies, list) else [])
+        stub_paths[path.stem] = path
 
     _, error = _template_order(stubs)
     if error is not None:
         defects.append((manifest, error["error"]))
+    else:
+        # after the graph is sound, since closure is read along its edges
+        for stub_id, message in _closure_defects(stubs):
+            defects.append((stub_paths.get(stub_id, manifest), message))
     return defects
 
 
@@ -2177,6 +2436,19 @@ def _cmd_instantiate(rest):
     ordered, error = _template_order(stubs)
     if error is not None:
         return error
+    # closure is read on the stubs as written, not as substituted: a filled
+    # placeholder is an identity instantiation produced, and its value's
+    # words are not a claim on any producer -- so this refuses exactly what
+    # `template_defects` refuses on the same directory
+    unsubstituted = {}
+    for stub_id, (_, dependencies) in stubs.items():
+        text, failure = _read_utf8(directory / f"{stub_id}.md", f"stub {stub_id}.md")
+        if failure is not None:
+            return failure
+        unsubstituted[stub_id] = (text, dependencies)
+    closure = _closure_defects(unsubstituted)
+    if closure:
+        return {"error": "; ".join(message for _, message in closure)}
 
     tickets_root = _tickets_root()
     if tickets_root is None:
@@ -2299,7 +2571,7 @@ def _gate_body(kind: str, root_id: str, lens: str, scope: list,
     if kind == "critique":
         return [
             ("Objective", f"Every defect in `{root_id}`'s delivered result that "
-             f"the `{lens}` lens finds is reported by identity and severity: an "
+             f"the `{lens}` lens finds is reported by identity with its evidence: an "
              "open search over what the subtree produced, not a re-run of the "
              "criteria it already states."),
             ("Fixed inputs", "\n".join(
@@ -2321,7 +2593,7 @@ def _gate_body(kind: str, root_id: str, lens: str, scope: list,
                 "deterministic | provenance: pre-existing",
             ])),
             ("Return fields", "status; result — ranked findings, each with its "
-             "artifact identity, severity and evidence; verification; feedback; "
+             "artifact identity and evidence; verification; feedback; "
              "risks"),
         ]
     if kind == "repair":
@@ -2651,6 +2923,85 @@ def _cmd_claim(rest):
     return {"claimed": claimed}
 
 
+def _cmd_grant(rest):
+    """Record one caller-side widening of a claimed item's write scope.
+
+    The gap this closes: a lane finds a file it must change that the cut did
+    not name, the caller agrees, and nothing on the ticket says so —
+    ``amend`` writes cut-time sections and refuses a claimed ticket, and the
+    item may not widen itself. So the widening was a direct sink edit plus a
+    message, and the result that used it read as a scope breach at the join
+    (friction 2026-08-16T05:29). Written as frontmatter bookkeeping of the
+    ``claimed_*`` class, never a body section: those stay the executor's.
+    """
+
+    args = list(rest)
+    scope = _extract_flag(args, "--write-scope")
+    granted_by = _extract_flag(args, "--by")
+    if len(args) != 2:
+        return {"error": f"usage: {GRANT_USAGE}"}
+    run, ticket_id = args
+    entries = _split_commas(scope)
+    if not entries:
+        return {
+            "error": "grant requires --write-scope <path>[,<path>], the paths "
+            f"this widening adds. usage: {GRANT_USAGE}"
+        }
+    if not (granted_by or "").strip():
+        return {
+            "error": "grant requires --by <name>: the widening is the granting "
+            "caller's, and an unattributed one is the unrecorded edit this "
+            f"subcommand exists to replace. usage: {GRANT_USAGE}"
+        }
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {"error": NO_SINK_ERROR}
+    ticket_path = tickets_root / run / f"{ticket_id}.md"
+    if not ticket_path.is_file():
+        return {"error": f"ticket not found: {run}/{ticket_id}"}
+    text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return failure
+    data = _parse_frontmatter(text)
+    status = str(data.get("status") or "").strip().strip("`").strip()
+    if status not in GRANTABLE_STATUSES:
+        return {
+            "error": f"ticket is not claimed (status '{status}'): a grant widens "
+            "the authority of an item already being worked. Before a claim the "
+            "cut owns the scope — re-place the ticket through `new --file` — and "
+            "after a terminal status the verdict was already read against the "
+            f"authority the work was done under. ticket: {ticket_path}"
+        }
+    granted = _scope_entries(data.get(GRANTED_SCOPE_KEY))
+    for entry in entries:
+        if entry not in granted:
+            granted.append(entry)
+    timestamp = datetime.now(timezone.utc).strftime(UTC_STAMP)
+    # The inline list form, which is what `_frontmatter_list` writes for
+    # entries carrying no separator -- and `_split_commas` has already made
+    # a comma impossible inside one.
+    updated = _set_frontmatter_field(
+        text, GRANTED_SCOPE_KEY, f"[{', '.join(granted)}]"
+    )
+    updated = _set_frontmatter_field(updated, GRANTED_BY_KEY, granted_by.strip())
+    updated = _set_frontmatter_field(updated, GRANTED_AT_KEY, timestamp)
+    try:
+        ticket_path.write_text(updated, encoding="utf-8")
+    except OSError as error:
+        return {"error": f"unwritable ticket: {error}"}
+    return {
+        "grant": {
+            "run": data.get("run") or run,
+            "id": data.get("id") or ticket_id,
+            "granted_scope": granted,
+            "granted_by": granted_by.strip(),
+            "granted_at": timestamp,
+            # what every reader of this item's authority now sees
+            "write_scope": effective_write_scope(_parse_frontmatter(updated)),
+        }
+    }
+
+
 def _cmd_set_status(rest):
     args = list(rest)
     if len(args) != 3:
@@ -2784,8 +3135,18 @@ def _cmd_packet(rest):
     # something this command can establish. The sibling resolves from this
     # file's own location, so it points at whichever copy is running.
     isolation = normalized_isolation(loaded.get("isolation"))
-    if isolation == REQUIRED_ISOLATION and establishes_a_git_workspace(
-        loaded.get("pack")
+    # An empty scope is the third condition, and it is about what the item
+    # writes rather than what it declares: an item authorized to change
+    # nothing writes only its own ticket sections, and those live in the
+    # sink, which no workspace holds. A read-only lane sent to establish one
+    # gets a worktree nothing ever writes to (friction 2026-08-16T09:40).
+    # Read through `effective_write_scope`, so a lane a grant has since
+    # given paths to is told to establish the workspace it now needs.
+    writes_workspace_content = bool(loaded.get("write_scope"))
+    if (
+        isolation == REQUIRED_ISOLATION
+        and writes_workspace_content
+        and establishes_a_git_workspace(loaded.get("pack"))
     ):
         prompt.append(
             "Workspace establishment (isolation: required), your first act, "
@@ -2807,6 +3168,47 @@ def _cmd_packet(rest):
     )
     prompt.append(f"{sys.executable} {script} run-state {run_id} --note TEXT")
     prompt.append(f"{sys.executable} {script} run-state {run_id} --artifact NAME --text TEXT")
+    # The filing channel, beside the run-state one. The prompt above tells the
+    # child to write its result into the ticket's own sections; naming only
+    # the run-state commands left it to derive the filing law from `--help`
+    # (friction 2026-08-16T12:00). Same shape, same reason: absolute, one
+    # token per argument, no shell metacharacter.
+    prompt.append(
+        "Filing channel (contracts/work-item.md's filing law), from your own "
+        f"workspace, with SECTION one of {list(EXECUTOR_SECTIONS)}, PATH a "
+        "file in your own workspace and TEXT one line; add --append to write "
+        "after content already there:"
+    )
+    prompt.append(
+        f"{sys.executable} {script} result {run_id} {loaded['id']} "
+        "--section SECTION --file PATH"
+    )
+    prompt.append(
+        f"{sys.executable} {script} result {run_id} {loaded['id']} "
+        "--section SECTION --text TEXT"
+    )
+    # contracts/work-item.md#dispatch: `reply_to` is computed once from the
+    # dispatcher's own identity and never inferred by the child -- so a child
+    # that will itself dispatch cannot compute its children's `reply_to`
+    # unless this packet states the name it was claimed under. Recovering it
+    # from the host's own files is what one engine lane had to do
+    # (friction 2026-08-16T09:40). Never invented: absent a claim there is no
+    # name, and the payload says so rather than guessing one. Carried only
+    # where it is a packet part, so the payload says exactly what the prompt
+    # says -- an executor that dispatches nothing needs no identity of its
+    # own, and the claim it was taken under is on the ticket for anyone who
+    # wants the raw fact.
+    assigned_name = (
+        str(loaded.get("claimed_by") or "").strip() or None
+        if executor in DISPATCHING_EXECUTORS
+        else None
+    )
+    if assigned_name is not None:
+        prompt.append(
+            f"Your own assigned name is `{assigned_name}` (the ticket's "
+            "`claimed_by`): every packet you dispatch carries it as that "
+            "child's `reply_to`."
+        )
     prompt.append(f"reply_to: {reply_to} — address your closing message to `{reply_to}`.")
 
     return {
@@ -2820,6 +3222,7 @@ def _cmd_packet(rest):
             "profile": loaded.get("profile"),
             "independence": loaded.get("independence") or "checker",
             "isolation": isolation,
+            "assigned_name": assigned_name,
             "reply_to": reply_to,
             "workspace": workspace,
             "prompt": "\n".join(prompt),
@@ -2882,6 +3285,15 @@ def _cmd_result(rest):
             return failure
     else:
         body = text_arg
+    if any(line.startswith("## ") for line in body.splitlines()):
+        # `_sections` reads every `## ` line as a ticket section, so a body
+        # carrying one would split itself into sections the contract does
+        # not name; a sub-heading inside a section is `###` or deeper.
+        return {
+            "error": f"a '## {canonical}' body may not contain a level-2 heading "
+            "('## ...'): it would be read as a sibling ticket section. Use "
+            "'###' or deeper for sub-headings inside a section"
+        }
     tickets_root = _tickets_root()
     if tickets_root is None:
         return {"error": NO_SINK_ERROR}
@@ -2903,6 +3315,10 @@ def _cmd_result(rest):
     except TicketFormatError as error:
         return {"error": f"{error}. ticket: {ticket_path}"}
     prior = _section_body(text, canonical)
+    if prior.strip() == "[]":
+        # The empty-collection stub a ticket is cut with (Feedback, Risks):
+        # nothing to protect, so the executor's first real write is free.
+        prior = ""
     if prior and not append and not replace:
         # contracts/worklog.md's closing law, read across to the ticket the
         # same executor writes: a write over content already there is refused
@@ -3623,8 +4039,8 @@ def _dispatch(argv):
     if not argv:
         return {
             "error": "missing subcommand: new | amend | instantiate | gate | "
-            "list | ready | claim | set-status | packet | result | worklog | "
-            "run-state | improvement"
+            "list | ready | claim | grant | set-status | packet | result | "
+            "worklog | run-state | improvement"
         }
     command, rest = argv[0], argv[1:]
     if command in HELP_COMMANDS:
@@ -3645,6 +4061,8 @@ def _dispatch(argv):
         return _cmd_ready(rest)
     if command == "claim":
         return _cmd_claim(rest)
+    if command == "grant":
+        return _cmd_grant(rest)
     if command == "set-status":
         return _cmd_set_status(rest)
     if command == "packet":

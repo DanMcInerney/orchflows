@@ -19,13 +19,9 @@ dependencies point. Terms: `docs/vocabulary.md`.
   `contracts/pack-signature.md`, never control flow. One pack per
   domain (code, content, research, design); specificity thickens only in
   `craft` (budgeted).
-- `compositions/` — T3, named workflows, invocable and admitted through
-  `orch-build`. One form: `compositions/<name>/` — a directory of ticket
-  stubs plus its `template.md` manifest (entry routed | named), which
-  `tickets.py instantiate` writes into one run's ticket directory for
-  `orch-frontier` to run. Shape per
-  [contracts/work-item.md](contracts/work-item.md)'s Template and stub
-  section.
+- `compositions/` — T3, named workflows: ticket-stub templates per
+  [contracts/work-item.md](contracts/work-item.md)'s Template and stub,
+  admitted through `orch-build`.
 - `rules/` — cross-cutting law (composition, delegation, verification,
   loops, roles, token-economy, topology, visibility, improvement);
   using one is `rules/visibility.md` §3's.
@@ -67,10 +63,14 @@ dependencies point. Terms: `docs/vocabulary.md`.
   blocks (project `CLAUDE.md`, `AGENTS.md`) as inline marker blocks —
   self-contained for teammates — plus a minimal receipt; no project lib
   copy, no project `.claude`/`.codex` writes.
-- `scripts/` — repository-root scripts, one owner each:
+- `scripts/` — repository-root scripts — stdlib Python 3, Windows and
+  POSIX, no network at run time — one owner each:
   `scripts/cutcheck.py` owns cut-defect detection over an issued ticket
   set, run by `orch-decompose` and read by its cut lens;
-  `scripts/friction.py` owns
+  `scripts/doclint.py` owns grading any repository's markdown — every
+  relative link resolves, every paragraph has one home — and with it the
+  one near-duplicate method, which `tools/validate.py` calls rather than
+  keeps a second copy of; `scripts/friction.py` owns
   friction logging; `scripts/isolate.py` owns exporting one revision
   into a tree beside the repository, where a check reads one lane's
   result alone; `scripts/migrate_state.py` owns copying a pre-existing
@@ -87,15 +87,15 @@ dependencies point. Terms: `docs/vocabulary.md`.
   executor's own sections, the rendered worklog view, and the run-state
   and improvement records under the sink; its `tickets.py
   help` is operator-only: usage a reader asks for, never a step a skill
-  runs; `scripts/trace.py` owns trace extraction, consumed by
+  runs; its `tickets.py grant` is operator-only: widening a claimed
+  item's authority is the dispatching caller's decision, never a step the
+  item's own executor runs; `scripts/trace.py` owns trace extraction, consumed by
   `orch-self-improve`; `scripts/ui.py` owns the read-only local view of
   run state; `scripts/workspace.py` owns the workspace lifecycle stamps
   and the isolation grade at the join.
-- state sink — every run's durable state and both improvement evidence
-  streams, one per user and outside every repository, never an
-  instruction source; the root and its law are
-  [rules/visibility.md](rules/visibility.md) §6 and its resolver is
-  `scripts/state_root.py`: `tickets/<run>/` (the local tracker, ticket
+- state sink — root, law and resolver:
+  [rules/visibility.md](rules/visibility.md) §6; layout: `tickets/<run>/`
+  (the local tracker, ticket
   `## Handoff` sections included), `runs/<run>/` (worklog, `run.json`,
   composition instances), `research/` (research-lane outputs),
   `handoffs/` (cross-session handoff documents), `friction/` (JSONL
@@ -112,17 +112,5 @@ dependencies point. Terms: `docs/vocabulary.md`.
 Packs depend on contracts and name instance skills; generic skills
 never name a pack or a domain. A lower layer links the law and
 contracts that bind it; a rule may name a canonical owner file but
-never depends on package internals for its meaning. A cross-package
-reference link is a file dependency, not a call edge. Compositions
-call skills and other compositions (one level of nesting); no skill
-depends on a composition.
-
-## Invariants
-
-- One owner per fact; the validator and hash pins enforce the
-  mechanical half, review under the library lens (owned by
-  `orch-build`, applied through `orch-critique`) owns the rest.
-- The call graph is acyclic; generic bodies are domain-blind; pack
-  bodies are control-flow-free.
-- Every canonical change lands through a PR passing the required checks
-  in `AGENTS.md`.
+never depends on package internals for its meaning. A template's stubs
+bind skills or scripts as executors; no skill depends on a template.

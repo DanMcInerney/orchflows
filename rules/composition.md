@@ -19,17 +19,15 @@
 5. Anatomy: frontmatter (`name` = folder name, `description` ≤140
    chars, `role` ∈ {planner, worker, none} — pack SKILL.md carries no
    `role`), then `Require:`, procedure, `Never:`, `Return:`. Body
-   budgets, counted by `tools/validate.py` in non-empty lines: kernel,
-   instances, and utilities 25; engines and workflows 40; pack
-   SKILL.md 20. What the body holds is
-   [token-economy.md](token-economy.md) §6's.
+   budgets and their counting are [token-economy.md](token-economy.md)
+   §11's; what the body holds is its §6's.
 6. Admission: a new skill's contract must be expressible from existing
    skill contracts; otherwise it is a kernel candidate and must show
    that omitting it forces another skill to inline its judgment. Two
    skills whose contracts match the same task is a defect — one owner
    per judgment.
-7. Parallel branches share no output field and no write scope; what a
-   branch's reads cost in parallel is [topology.md](topology.md) §3's.
+7. Parallel branches share no write scope; what a branch's reads cost
+   in parallel is [topology.md](topology.md) §3's.
 8. Every failure path returns partial results plus the evidence
    gathered; work is never silently discarded.
 9. Generic skills (kernel, engines, workflows, utilities) never name a

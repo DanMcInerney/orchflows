@@ -93,6 +93,10 @@ def setUpModule():
     shutil.copytree(CONTRACTS, _TEMPLATE / "contracts")
     (_TEMPLATE / "tools").mkdir()
     shutil.copy(VALIDATE, _TEMPLATE / "tools" / "validate.py")
+    # The compiler asks `scripts/doclint.py` whether two clauses are one
+    # clause (ARCHITECTURE.md), so a tree that runs the copy carries it.
+    (_TEMPLATE / "scripts").mkdir()
+    shutil.copy(ROOT / "scripts" / "doclint.py", _TEMPLATE / "scripts" / "doclint.py")
     pinned = subprocess.run(  # matching pins so only synthetic packages can fail
         [sys.executable, str(_TEMPLATE / "tools" / "validate.py"), "--pin"],
         capture_output=True,

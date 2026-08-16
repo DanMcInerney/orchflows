@@ -1,26 +1,24 @@
 # Content craft
 
 The content domain's terms and shape, per the signature's craft cell.
-The terms are genre-free: each names a decision every document makes,
-binding a tweet, a README, and a chapter equally. The shape principles
-every domain shares are
+The shape principles every domain shares are
 [rules/token-economy.md](../../../rules/token-economy.md) §10's.
 
 ## Vocabulary
 
 - **hook** — the opening's specific promise that makes reading the
-  next sentence rational; a reference page's hook is what its reader
-  can do afterward.
+  next sentence rational.
 - **throughline** — the one claim or question every section serves;
   what one document means mechanically.
-- **register** — the formality and energy band of the prose.
+- **voice contract** — the dimensions a judge scores: register (the
+  formality and energy band of the prose), person, stance (the writer's
+  relation to the claim), cadence (sentence rhythm).
 - **arc** — the sequence in which understanding is built; every genre
   has one (problem → stakes → turn → resolution; task → steps → proof).
 - **section job** — the one thing a slot does for the throughline;
   two sections doing it is a slicing defect.
 - **skim layer** — headings plus first sentences, read alone, carry
-  the whole argument; a tweet is all skim layer, documentation is
-  navigated by it.
+  the whole argument.
 - **signpost** — a transition that carries the argument between
   sections, not mere adjacency.
 - **landing** — the ending pays exactly what the hook promised.
@@ -35,8 +33,7 @@ every domain shares are
 
 ## Lens
 
-For `orch-critique`; never inherit the drafts' or edit's own
-verification language.
+For `orch-critique`.
 
 - Voice: does every section hold the spec's voice contract on every
   dimension it names, including the signposts the edit added?

@@ -25,13 +25,9 @@ repository itself and needs no install.
   in full anatomy — and one routing line naming the item in the
   scope's AGENTS.md, which is the Codex surface.
 - The scope's named oracle (library lens) is the only oracle for a
-  custom item. Host skill tooling (e.g. skill-creator validators) does
-  not apply to orchflows items and is never consulted.
+  custom item.
 - Custom workflows instantiate from compositions: pick the nearest
   composition in `compositions/`, pin its open decisions (benchmark,
   bounds, defaults, schedule), and land the result at scope. A proven
   custom workflow may be proposed back as a composition — a
   canonical-scope build.
-- Non-normative, dated observation (Codex docs, 2026-07): hosts are
-  converging on `.agents/skills` as a shared skill root; adopt it only
-  once an installed host demonstrably resolves it.

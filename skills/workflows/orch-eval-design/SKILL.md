@@ -5,17 +5,16 @@ role: none
 ---
 
 Require: one complete
-[delegation packet](../../../contracts/work-item.md#dispatch). Its `objective`
-carries the target identity and intended observable outcome;
-`inputs` carry fixed evidence, source identities, source policy, and
-applicable pack craft, lens, and oracle references plus judgment
-permission; `authority` restricts artifact write scope and exclusions;
-`bounds` cap design effort and expected execution cost; `return_contract`
-names the evaluation-design identity, assumptions, gaps, and changed
-artifacts; `reply_to` names the closing recipient.
+[delegation packet](../../../contracts/work-item.md#dispatch) whose
+`objective` carries the target identity and intended observable
+outcome; whose `inputs` carry fixed evidence, source identities, source
+policy, and applicable pack craft, lens, and oracle references plus
+judgment permission; whose `bounds` cap design effort and expected
+execution cost; and whose `return_contract` names the evaluation-design
+identity, assumptions, gaps, and changed artifacts.
 
-Remain candidate-comparison-blind: inspect no candidate, variant, score,
-or winner identity. Work only from `inputs`.
+Remain candidate-blind: inspect no candidate, variant, score, or winner
+identity.
 
 Fix the target boundary and observable outcome. Unsupported semantics or
 an unavailable observable oracle become explicit gaps, never invented
@@ -36,12 +35,14 @@ reference outside the package its expected outcome is anchored to or
 `oracle_class`, required status, and judged anchors per
 [contracts/verdict.md](../../../contracts/verdict.md); scoring and
 aggregation, the per-angle vector primary and any scalar derived;
-intended coverage; source identities and provenance; and expected
-execution cost. Freeze the result at one package-owned
+intended coverage; source identities and provenance; expected
+execution cost; and, where a campaign will consume the evaluation, the
+promotion rule, margin and search policy (`none` or a search-policy/v1
+object). For judged evaluation, also one candidate-blind Judge
+brief: target, intended outcome, criteria, scale, anchors, exclusions,
+and aggregation. Freeze the result at one package-owned
 evaluation-design identity before benchmark construction or candidate
 scoring.
-
-For judged evaluation, it also freezes one candidate-blind Judge brief: target, intended outcome, criteria, scale, anchors, exclusions, and aggregation.
 
 Never: gather research; materialize or execute cases; inspect or compare
 candidates; generate or promote variants; revise the design from scores;
@@ -49,5 +50,4 @@ select, retain or remove a case by a candidate's success or failure;
 prescribe a generation procedure where outcome semantics suffice.
 
 Return: one frozen package-owned evaluation-design identity, stated
-assumptions, explicit gaps, and changed artifacts; the closing result
-addresses `reply_to`.
+assumptions, explicit gaps, and changed artifacts.

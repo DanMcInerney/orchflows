@@ -7,7 +7,6 @@ bound: <= 60 tool calls
 excluded_actions:
   - move the declared coverage floor with the target's execution cost
   - buy speed from the coverage floor, the oracle, or the horizon the outcome needs
-  - buy difficulty from filtering on a candidate's scores
 independence: checker
 isolation: none
 profile: orch-worker
@@ -26,6 +25,8 @@ intended coverage, and expected execution cost.
   source identities; the design works from these and gathers nothing.
 - {{target}} and {{outcome}} — this run's values for the two things
   orch-eval-design's Require reads off an `objective`, still opaque.
+- {{sources}} — the source policy and judgment permission
+  orch-eval-design's Require reads off `inputs`.
 - [the protocol](../references/benchmaker-protocol.md#licensed-oracle-material) —
   what the frozen evidence licenses as oracle material, and what is not
   a reason to decline casing it.
@@ -38,8 +39,11 @@ intended coverage, and expected execution cost.
 
 ## Return fields
 
-status; result — everything orch-eval-design's Return names;
-verification; feedback; risks
+status; result — everything orch-eval-design's Return names: the frozen
+design identity, the case specifications with their tiers and anchors,
+the required criteria with their oracles and `oracle_class`, scoring and
+aggregation, intended coverage, expected execution cost, and the gaps
+carried forward; verification; feedback; risks
 
 ## Result
 

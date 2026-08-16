@@ -19,11 +19,9 @@ field on [verdict.md](../../../contracts/verdict.md)'s terms.
 
 Where the criteria carry a score scale, score each separately before
 any overall number, anchored to the evidence its oracle produced; a
-score is never interpolated across criteria. Blindness is a
-property of `inputs`, never of this skill: a packet whose inputs carry
-one candidate, its evidence, and the criteria is already a blind lane —
-so never reach past them for a sibling candidate, a sibling's score, or
-the candidate's provenance.
+score is never interpolated across criteria. Never reach past the
+packet's inputs for a sibling candidate, a sibling's score, or the
+candidate's provenance.
 
 Never: edit the target; skip a criterion silently; upgrade UNVERIFIED to
 PASS by inference; reuse an entry whose `covers` has changed; let one

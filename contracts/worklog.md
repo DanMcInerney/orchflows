@@ -9,8 +9,8 @@ through `tickets.py run-state --note` land in `runs/<run>/notes.md`
 beside the view and are not the view.
 
 - `goal` — the root ticket's `## Objective` and `## Completion test`
-  verbatim; for a loop run, the loop ticket's, whose `## Completion
-  test` is the loop's done-check.
+  verbatim; for a loop run the loop ticket's, and for a template run its
+  terminal ticket's, whose `## Completion test` is the run's done-check.
 - `iterations` — every ticket in `claimed_at` order, each with its
   `## Verification` entries.
 - `failed_approaches` — the `## Result` and `## Feedback` of every
@@ -21,7 +21,8 @@ beside the view and are not the view.
   discovered work, queued behind the frozen goal and never merged into
   it.
 - `terminal` — empty until the run exits, then the root ticket's
-  `status` — for a loop run the loop ticket's — read in the terminal set
+  `status` — for a loop or template run the loop or terminal ticket's —
+  read in the terminal set
   [work-item.md](work-item.md) owns: `complete` | `blocked` | `stalled` |
   `limited` | `failed`. A parked-only pause is not an exit: no
   ticket is claimed, the pause names the external action awaited and

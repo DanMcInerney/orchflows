@@ -6,7 +6,8 @@ The ticket is the work item of ``contracts/work-item.md``: ``start``,
 run from inside a workspace, records the lifecycle stamps
 ``workspace_branch`` and ``workspace_baseline`` into the main-root
 ticket's frontmatter; ``check`` grades the item's ``isolation``
-declaration at the join from the caller's own git. A script observes and
+declaration at the join from the integrating checkout's git -- the
+caller's own, or the one ``--repo`` names. A script observes and
 grades — it never creates, enters or removes a workspace, and ``start``
 never claims.
 
@@ -18,16 +19,36 @@ failure mode, and every ``tickets.py`` call it makes is graded by parsing
 the returned payload, never by exit status.
 
 Exit codes:
-    0  success, including ``isolation: none`` or absent
+    0  success, including ``isolation: none`` or absent, and an item whose
+       effective write scope is empty -- authority over no path in any
+       workspace, which is the lane ``tickets.py packet`` emits no
+       establishment step for -- so long as no recorded branch carries
+       commits the caller's HEAD lacks; one that does is graded in full,
+       and every path it changed is a breach (4)
     1  usage or internal error
     2  isolation-missing
     3  wrong-branch-point
     4  scope-breach
     5  no-record
+    6  wrong-vantage: the caller stood in the workspace it asked about, so
+       nothing about the item was graded. Distinct from 2 on purpose -- 2
+       says the item failed, 6 says the question was asked from the wrong
+       place, and an integrator that reads one as the other rejects intact
+       work.
 
 Subcommands:
     start <run> <id>
-    check <run> <id> --base <rev>
+    check <run> <id> --base <rev> [--repo <path>]
+
+``check`` grades from the integrating checkout, and refuses at code 6 when
+run from inside the workspace it was asked about. ``--repo <path>`` aims it
+at another checkout instead: every git call and the repository root both
+come from there, so the caller need not stand where the answer lives.
+
+``--help``, on the script or on either subcommand, prints usage on stdout
+and exits 0. It is the one call whose stdout is not a JSON payload: the
+caller asking what the arguments are is a reader, and answering a reader
+with an error payload is how this script used to answer.
 """
 
 from __future__ import annotations
@@ -77,6 +98,7 @@ EXIT_ISOLATION_MISSING = 2
 EXIT_WRONG_BRANCH_POINT = 3
 EXIT_SCOPE_BREACH = 4
 EXIT_NO_RECORD = 5
+EXIT_WRONG_VANTAGE = 6
 VERDICTS = {
     EXIT_OK: "pass",
     EXIT_ERROR: "error",
@@ -84,6 +106,7 @@ VERDICTS = {
     EXIT_WRONG_BRANCH_POINT: "wrong-branch-point",
     EXIT_SCOPE_BREACH: "scope-breach",
     EXIT_NO_RECORD: "no-record",
+    EXIT_WRONG_VANTAGE: "wrong-vantage",
 }
 # A frontmatter scalar carries the dirty set as one comma-joined line, so a
 # path holding either character cannot be written unambiguously.
@@ -99,10 +122,18 @@ UNGRADABLE_IN_SCOPE = (" ", "\t", "(", ")")
 # therefore decides by resolving the entry rather than by the character.
 SPACING = (" ", "\t")
 CONTRACT = "contracts/work-item.md"
-USAGE = (
-    "usage: workspace.py start <run> <id>\n"
-    "       workspace.py check <run> <id> --base <rev>"
-)
+# One spelling of each subcommand's arguments, joined into ``USAGE`` for the
+# refusals and printed alone for ``<sub> --help``. Two spellings would drift.
+COMMAND_USAGE = {
+    "start": "workspace.py start <run> <id>",
+    "check": "workspace.py check <run> <id> --base <rev> [--repo <path>]",
+}
+COMMAND_HELP = {
+    "start": "from inside the workspace: record its branch and baseline into the ticket",
+    "check": "from the integrating checkout: grade the item's isolation and write scope",
+}
+USAGE = "usage: " + "\n       ".join(COMMAND_USAGE.values())
+HELP_FLAGS = ("--help", "-h")
 
 
 class Refused(Exception):
@@ -116,14 +147,21 @@ class Refused(Exception):
         self.detail = detail
 
 
-# --- git, always the caller's own -------------------------------------------
+# --- git, in the tree under grade -------------------------------------------
+
+
+# The checkout every ``_git`` call runs in. ``None`` -- the caller's own tree,
+# and subprocess's own default, so an unaimed call is what it always was. Set
+# once by ``check --repo`` before its first git call and never after: a grade
+# whose facts came from two checkouts is not a grade.
+_GIT_CWD = None
 
 
 def _git(*args: str):
-    """Run git in the caller's own tree: never ``-C``, never a redirect."""
+    """Run git in the tree under grade: the caller's own, or ``--repo``'s."""
 
     completed = subprocess.run(
-        ["git", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        ["git", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=_GIT_CWD
     )
     return (
         completed.returncode,
@@ -174,18 +212,23 @@ def _graded(payload, what: str) -> dict:
     return payload
 
 
-def _locate(run: str, ticket_id: str):
+def _locate(run: str, ticket_id: str, where=None):
     """This workspace's repository root, and the ticket's one path in the sink.
 
     Two questions with two answers. The root says *which project this
     workspace is*, which is what grades isolation and write scope. The
     ticket lives in the user-scope sink ``scripts/state_root.py`` resolves,
     identical from every workspace in every repository.
+
+    ``where`` is the checkout to answer the first question about, defaulting
+    to the caller's own. ``check --repo`` passes the checkout it was aimed
+    at, so the root and the git calls come from the same tree.
     """
 
-    root = state_root.find_repo_root(Path.cwd())
+    start = Path(where) if where is not None else Path.cwd()
+    root = state_root.find_repo_root(start)
     if root is None:
-        raise Refused("not inside a git repository")
+        raise Refused(f"not inside a git repository: {start}")
     path = state_root.tickets_root() / run / f"{ticket_id}.md"
     if not path.is_file():
         raise Refused(f"ticket not found: {run}/{ticket_id}")
@@ -395,17 +438,33 @@ def _is_ancestor(ancestor: str, descendant: str) -> bool:
 
 
 def _cmd_check(rest):
-    """Grade the item at the join, every fact re-derived from the caller's
-    own git. Nothing a child wrote in prose is read, and the branch facts —
-    not the presence of a linked tree the host may already have removed —
-    are the verdict."""
+    """Grade the item at the join, every fact re-derived from the integrating
+    checkout's git -- the caller's own, or ``--repo``'s. Nothing a child wrote
+    in prose is read, and the branch facts — not the presence of a linked tree
+    the host may already have removed — are the verdict."""
 
+    global _GIT_CWD
     args = list(rest)
+    # read off the untouched argv: ``_extract_flag`` drops a valueless flag
+    # and returns the same ``None`` an absent one does, and the two must not
+    # read alike here -- an ignored ``--repo`` grades the caller's own
+    # checkout and reports pass for a checkout nobody named
+    aimed = "--repo" in rest
     base = _extract_flag(args, "--base")
+    repo = _extract_flag(args, "--repo")
     run, ticket_id = _positional(args, 2, "check")
     if base is None:
         raise Refused(f"check requires --base <rev>. {USAGE}")
-    root, path = _locate(run, ticket_id)
+    if aimed and repo is None:
+        raise Refused(f"--repo takes <path>. {USAGE}")
+    if repo is not None:
+        named = Path(repo).expanduser()
+        if not named.is_dir():
+            raise Refused(f"--repo '{repo}' is not a directory")
+        # before the first git call, and before ``_locate``, so every fact
+        # below is the named checkout's
+        _GIT_CWD = str(named.resolve())
+    root, path = _locate(run, ticket_id, _GIT_CWD)
     data = _graded(tickets._load_ticket(path), f"read {run}/{ticket_id}")
     reported = {"run": run, "id": ticket_id, "ticket": str(path)}
 
@@ -416,8 +475,38 @@ def _cmd_check(rest):
         return {"check": reported}, EXIT_OK
     reported[ISOLATION_KEY] = isolation
 
+    # The other condition `tickets.py packet` puts the establishment step
+    # behind, read here as the same fact about the same item: an effective
+    # write scope of nothing is authority over no path in any workspace --
+    # such an item writes its own ticket sections, and those live in the
+    # sink, which no workspace holds -- so packet emits no `start` line for
+    # it. Such a lane is owed no stamp, and each refusal below that stands
+    # for a missing or empty stamp -- no-record, an unresolvable branch, a
+    # tip HEAD already holds -- refuses it for obeying its own packet, so
+    # each is `not required` instead. What an empty scope does not license
+    # is a change: it is authority over nothing, and a recorded branch that
+    # carries commits HEAD lacks is graded in full below, where every path
+    # it changed is a breach (contracts/work-item.md: a result whose
+    # changed artifacts exceed the granted scope is rejected at the join).
+    #
+    # Effective, never declared: the value `tickets._load_ticket` answers
+    # with is the cut's scope plus every recorded grant, so a lane a grant
+    # has since given paths to is graded in full again.
+    #
+    # Present and empty, never absent: the loader leaves an absent key
+    # absent, and packet refuses that ticket as an incomplete packet rather
+    # than dispatching it. Read alike here, an item that never declared
+    # what it may change would pass its join whatever it changed.
+    effective = data.get(WRITE_SCOPE_KEY)
+    empty = effective is not None and not tickets._scope_entries(effective)
+    if empty:
+        reported[WRITE_SCOPE_KEY] = []
+
     branch = str(data.get(BRANCH_KEY) or "").strip()
     if not branch:
+        if empty:
+            reported["verdict"] = "not required"
+            return {"check": reported}, EXIT_OK
         raise Refused(
             f"{ticket_id} declares {ISOLATION_KEY}: {REQUIRED} and carries no {BRANCH_KEY}: nothing recorded what it "
             "was executed in",
@@ -427,6 +516,9 @@ def _cmd_check(rest):
 
     code, tip, _ = _git("rev-parse", "--verify", "--quiet", f"{branch}^{{commit}}")
     if code != 0:
+        if empty:
+            reported.update({BRANCH_KEY: branch, "verdict": "not required"})
+            return {"check": reported}, EXIT_OK
         raise Refused(
             f"branch {branch!r} does not resolve in this repository",
             EXIT_ISOLATION_MISSING,
@@ -434,12 +526,33 @@ def _cmd_check(rest):
     tip = tip.strip()
     own = _git_out("rev-parse", "--abbrev-ref", "HEAD")
     if branch == own:
-        raise Refused(
-            f"branch {branch!r} is the caller's own branch: no distinct branch "
-            "carries the work",
-            EXIT_ISOLATION_MISSING,
-        )
+        # Git checks a branch out in at most one tree, so standing on this
+        # item's branch inside a linked worktree is standing inside the item's
+        # own workspace: a fact about the caller's position, not about the
+        # item. In the main checkout the same equality means the item was
+        # executed on the caller's own branch, which is the isolation breach
+        # it has always been. The two are told apart the way ``start`` tells
+        # them apart -- this checkout's top against the main root.
+        top = Path(_git_out("rev-parse", "--show-toplevel")).resolve()
+        if top != root:
+            raise Refused(
+                f"this checkout is the workspace under check: a linked worktree of "
+                f"{root} holding branch {branch!r}, which cannot grade itself. Run "
+                "check from the integrating checkout, or name that checkout with "
+                "--repo <path>",
+                EXIT_WRONG_VANTAGE,
+            )
+        if not empty:
+            raise Refused(
+                f"branch {branch!r} is the caller's own branch: no distinct branch "
+                "carries the work",
+                EXIT_ISOLATION_MISSING,
+            )
     if _is_ancestor(tip, "HEAD"):
+        # the caller's own branch lands here too: HEAD is its own ancestor
+        if empty:
+            reported.update({BRANCH_KEY: branch, "tip": tip, "verdict": "not required"})
+            return {"check": reported}, EXIT_OK
         raise Refused(
             f"branch {branch!r} is already an ancestor of the caller's HEAD: no "
             "distinct branch carries the work",
@@ -493,6 +606,23 @@ def _cmd_check(rest):
     return {"check": reported}, EXIT_OK
 
 
+def _help_text(command=None) -> str:
+    """Usage for the whole script, or for one subcommand.
+
+    The exit codes are part of the answer, not decoration: this script's
+    codes are its verdicts, and a caller who reads only the usage line
+    would still have to read the source to learn what a 4 meant.
+    """
+
+    if command is not None:
+        return f"usage: {COMMAND_USAGE[command]}\n\n  {COMMAND_HELP[command]}"
+    lines = [USAGE, ""]
+    lines += [f"  {name}  {COMMAND_HELP[name]}" for name in COMMAND_USAGE]
+    lines += ["", "exit codes:"]
+    lines += [f"  {code}  {verdict}" for code, verdict in sorted(VERDICTS.items())]
+    return "\n".join(lines)
+
+
 def main(argv=None) -> int:
     # A refusal quotes a path and a ticket's own words, either of which can
     # carry a character a cp1252 console cannot encode; a script that crashes
@@ -503,15 +633,28 @@ def main(argv=None) -> int:
             stream.reconfigure(errors="replace")
         except (AttributeError, ValueError):  # pragma: no cover - not a TextIOWrapper
             pass
+    # this process's git aim, held only for the call below: ``main`` is called
+    # more than once in one process by the tests, and an aim left set would
+    # grade the next call's item against the last call's checkout
+    global _GIT_CWD
+    _GIT_CWD = None
     arguments = list(sys.argv[1:] if argv is None else argv)
     handlers = {"start": _cmd_start, "check": _cmd_check}
     command = arguments[0] if arguments else None
+    if command in HELP_FLAGS:
+        print(_help_text())
+        return EXIT_OK
     handler = handlers.get(command)
     if handler is None:
         detail = "missing subcommand" if command is None else f"unknown subcommand: {command}"
         print(json.dumps({"error": detail, "code": EXIT_ERROR}, ensure_ascii=False))
         print(f"workspace: {detail}\n{USAGE}", file=sys.stderr)
         return EXIT_ERROR
+    # after the subcommand is known, so `<sub> --help` answers about that
+    # subcommand, and before the handler, which would read the flag as a stray
+    if any(argument in HELP_FLAGS for argument in arguments[1:]):
+        print(_help_text(command))
+        return EXIT_OK
     try:
         payload, code = handler(arguments[1:])
     except Refused as refusal:

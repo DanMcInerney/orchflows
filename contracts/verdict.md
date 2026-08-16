@@ -26,7 +26,6 @@ Class policy, wired into every loop and gate:
 - `deterministic` — an executable check. May loop until green within
   bounds; green is green.
 - `judged` — model judgment against a lens. Budget-bounded; a run never
-  ends on its own claimed green; the final gate re-judges fresh from the
-  spec, never from prior claims.
+  ends on its own claimed green.
 - `evidence` — source-backed. Every citation must resolve, and each
   resolved source must support the claim it is cited for.
