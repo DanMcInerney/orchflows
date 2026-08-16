@@ -13,9 +13,6 @@ every domain shares are
   can do afterward.
 - **throughline** — the one claim or question every section serves;
   what one document means mechanically.
-- **voice contract** — the spec field of this name: the dimensions a
-  judge scores — register, person, stance (the writer's relation to
-  the claim), cadence (sentence rhythm).
 - **register** — the formality and energy band of the prose.
 - **arc** — the sequence in which understanding is built; every genre
   has one (problem → stakes → turn → resolution; task → steps → proof).

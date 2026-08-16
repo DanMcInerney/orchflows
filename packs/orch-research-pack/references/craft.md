@@ -19,9 +19,6 @@ The shape principles every domain shares are
 - **gaps register** — where thin or missing coverage is declared.
 - **lane packet** — one lane's returned evidence with its provenance;
   the research workspace's identity unit.
-- **rigor bar** — the spec field of this name: the confidence each
-  load-bearing claim must reach, stated as the evidence that must
-  exist for it.
 
 ## Shape
 

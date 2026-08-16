@@ -26,16 +26,11 @@ specifics live with the workspace's standards owner.
   where a token exists is synonym drift.
 - **scale** — the closed, ordered set of steps a token kind draws from
   (type scale, spacing scale); values land on steps, never between.
-- **design language** — the spec field of this name: the dimensions a
-  judge scores — palette, type, spacing rhythm, density, motion.
 - **hierarchy** — the order attention lands on a view; stated in the
   spec, judged from captures, carried by size, weight, contrast, and
   position, never by source order alone.
 - **affordance** — what an element's appearance promises about
   interaction; kept when the behavior behind it matches the promise.
-- **accessibility bar** — the spec field of this name: the floor —
-  contrast, focus visibility, semantics — and the exact check command
-  that decides it.
 
 ## Lens
 
