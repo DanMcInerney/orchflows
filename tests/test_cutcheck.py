@@ -3301,7 +3301,15 @@ class ScratchRootPlacementTest(unittest.TestCase):
         self.addCleanup(remove_repo_tree, deep)
         long_tree = deep / ("d" * 60) / ("e" * 60) / ("f" * 40)
         long_tree.mkdir(parents=True)
-        near, far = self._root(self.main), cutcheck._scratch_root(long_tree)
+        # Both sides raw: the claim is that the target's path length does not
+        # reach the scratch path, so both spellings must come from the same
+        # mkdtemp. Resolving one side compares two spellings of the temp root
+        # instead -- an 8.3 TEMP component on Windows runners and macOS's
+        # /var -> /private/var symlink each made only the resolved side longer.
+        near = cutcheck._scratch_root(self.main)
+        self.assertIsNotNone(near, "the near tree got no scratch root")
+        self.addCleanup(remove_repo_tree, near)
+        far = cutcheck._scratch_root(long_tree)
         self.assertIsNotNone(far, "a deep tree got no scratch root")
         self.addCleanup(remove_repo_tree, far)
         self.assertEqual(len(str(near)), len(str(far)))
