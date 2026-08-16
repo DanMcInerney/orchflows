@@ -10,6 +10,16 @@ scripts, #48; churn = "state or a dispatch invented for a signal that
 had not yet occurred"). Delete this file when the last phase lands;
 `DESIGN.md` then owns the rationale.
 
+**Status (2026-08-16, branch `claude/ticket-set-redesign`).** P0–P4
+landed and gated (runs `20260816T0{13000,20500,60000,80000}Z-ticket-set-p*`
+in the state sink hold every ticket, critique, repair and verify). P5:
+sink checks done; `fix` instantiates and installs; `evolve` ran open on a
+fixture (run `20260816T100000Z-evolve-fixture`); the routing benchmark
+harness exists but its live run — the oracle for §7.2 and ticket P4-4 —
+waits on a logged-in CLI; the ablations of REVIEW §5 are recorded per
+row in the P4 run's notes, not re-run. Open: §7.2 (P4-4), the cross-tier
+ceiling's descent (P5-2), `P3-4.remainder`.
+
 ## 1. End state
 
 **One artifact.** The ticket ([contracts/work-item.md](contracts/work-item.md))
