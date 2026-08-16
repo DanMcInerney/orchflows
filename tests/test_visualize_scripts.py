@@ -1,6 +1,6 @@
 """The two orch-visualize scripts: the Mermaid verifier's fence rules,
 exit codes and boundary inputs, and the HTML renderer's self-containment,
-cdn fallback and id salting.
+refusals and id salting.
 
 Both subjects sit in skills/utilities/orch-visualize/scripts/. Neither
 has a fallback tier: the verifier judges a diagram only when the pinned
@@ -10,8 +10,10 @@ the CLI is stubbed at the one boundary either script crosses --
 diagnostic text and the SVG left behind; the scripts' own reading of
 that output stays under test. Cases that want no CLI at all pass
 `cli=None` and run with `PATH` emptied, which is a PATH `shutil.which`
-resolves nothing on whatever the host really has installed. Nothing here
-ever spawns npx or a Mermaid CLI process.
+resolves nothing on whatever the host really has installed; the case
+that wants no vl-convert makes its import fail through `sys.modules`,
+so the renderer's real import branch is what refuses. Nothing here ever
+spawns npx or a Mermaid CLI process.
 
 Each case calls the script's own `main` in-process under a redirected
 stdout, the pattern tests/test_cutcheck.py:2534-2562 sets: a subprocess
@@ -72,9 +74,8 @@ FAKE_SVG = (
 
 # An empty PATH is a PATH shutil.which can resolve nothing on, whatever
 # the host really has installed, so the no-CLI cases refuse by decision
-# rather than by accident of what is on the machine. The vl-convert knob
-# is the renderer's equivalent switch for the vega path.
-NO_NPX = {"PATH": "", "ORCH_VIZ_NO_VLCONVERT": "1"}
+# rather than by accident of what is on the machine.
+NO_NPX = {"PATH": ""}
 
 Result = namedtuple("Result", "returncode stdout stderr")
 
@@ -281,6 +282,22 @@ class TestVerifierRequiresTheMermaidCli(_ScriptCase):
         self.assertEqual(0, payload["lint"]["geometry_checked"])
         self.assertTrue(
             any("geometry" in warning for warning in payload["lint"]["warnings"]),
+            payload["lint"]["warnings"],
+        )
+
+    def test_geometry_that_positions_no_declared_node_is_warned_not_counted(self):
+        # A well-formed SVG carrying none of the source's nodes as
+        # positioned boxes measured nothing; that is not a clean layout.
+        result = self.run_verifier(
+            self.DIAGRAM,
+            "--lint",
+            cli=_StubCli(svg=b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 9"/>'),
+        )
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(0, payload["lint"]["geometry_checked"])
+        self.assertTrue(
+            any("positions none" in warning for warning in payload["lint"]["warnings"]),
             payload["lint"]["warnings"],
         )
 
@@ -570,7 +587,7 @@ class TestRendererHasNoCdnMode(_ScriptCase):
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         payload = json.loads(result.stdout)
         self.assertEqual("rendered", payload["status"])
-        self.assertEqual("svg", payload["mode"])
+        self.assertNotIn("mode", payload)  # one way to render leaves no mode to report
         self.assertEqual(1, payload["graphs"])
         page = Path(payload["page"]).read_text(encoding="utf-8")
         self.assertIn("<svg", page)
@@ -598,7 +615,11 @@ class TestRendererHasNoCdnMode(_ScriptCase):
             ),
         )
         for label, markdown, cli, named in cases:
-            with self.subTest(case=label):
+            # `vl_convert` mapped to None makes its import raise on any
+            # host, so the renderer's own import branch is what refuses.
+            with self.subTest(case=label), mock.patch.dict(
+                sys.modules, {"vl_convert": None}
+            ):
                 result = self.run_renderer(markdown, cli=cli)
                 self.assertEqual(2, result.returncode, result.stdout + result.stderr)
                 payload = json.loads(result.stdout)
@@ -618,7 +639,6 @@ class TestRendererHasNoCdnMode(_ScriptCase):
         payload = json.loads(result.stdout)
         self.assertEqual("rendered", payload["status"])
         self.assertEqual(1, payload["graphs"])
-        self.assertEqual("svg", payload["mode"])
 
 
 class TestRenderHtml(_ScriptCase):

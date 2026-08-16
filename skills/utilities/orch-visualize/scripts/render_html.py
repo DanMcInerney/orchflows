@@ -3,8 +3,8 @@
 
 Three fence kinds are rendered:
   ```mermaid    -> inline SVG via the pinned Mermaid CLI.
-  ```vega-lite  -> inline SVG via vl-convert.
-                   ORCH_VIZ_NO_VLCONVERT=1 makes that path fail (tests).
+  ```vega-lite  -> inline SVG via vl-convert (the vl-convert-python
+                   package), which is imported only when a chart is met.
   ```viz-html   -> passed through inside ``<section class="viz">``; the kit
                    classes (viz-steps, viz-timeline, viz-compare, viz-boxes,
                    viz-callout) are styled by the page stylesheet.
@@ -27,7 +27,6 @@ from __future__ import annotations
 import argparse
 import html
 import json
-import os
 import re
 import subprocess
 import sys
@@ -67,7 +66,6 @@ PAGE_CSS = """
                    border: 1px solid var(--line); border-radius: 4px;
                    overflow-x: auto; }
   figure.diagram svg { max-width: none; }
-  figure.diagram pre { color: #1d2229; }
   section.viz { margin: 16px 0; padding: 16px; background: var(--panel);
                 border: 1px solid var(--line); border-radius: 4px;
                 overflow-x: auto; color: #1d2229; }
@@ -127,12 +125,13 @@ def render_svg(source: str, npx: str, temporary_directory: Path, index: int):
 def render_vega_svg(spec_source: str):
     """Vega-Lite spec -> SVG via vl-convert; (svg, error) as above."""
 
-    if os.environ.get("ORCH_VIZ_NO_VLCONVERT"):
-        return None, "vl-convert was disabled by ORCH_VIZ_NO_VLCONVERT"
     try:
         import vl_convert
     except Exception as error:
-        return None, f"vl-convert is not importable: {error}"
+        return None, (
+            f"vl-convert is not importable ({error}); install the "
+            "vl-convert-python package and rerun"
+        )
     try:
         svg = vl_convert.vegalite_to_svg(vl_spec=json.loads(spec_source))
     except Exception as error:
@@ -305,7 +304,7 @@ def main(argv=None) -> int:
         print(json.dumps({"status": "error", "message": f"cannot write output: {error}"},
                          ensure_ascii=True))
         return 2
-    print(json.dumps({"status": "rendered", "page": str(out), "mode": "svg",
+    print(json.dumps({"status": "rendered", "page": str(out),
                       "graphs": graphs, "charts": charts,
                       "components": components}, ensure_ascii=True))
     return 0

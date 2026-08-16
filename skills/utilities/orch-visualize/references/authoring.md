@@ -40,7 +40,7 @@ lead the fence with ELK frontmatter:
 
 Labels verb-object; color marks structure, meaning never rides color
 alone; one direction per diagram. Label, depth, classDef and branch
-budgets are `verify_mermaid.py --lint`'s; it names each on rejection.
+budgets are `verify_mermaid.py --lint`'s; its output names each breach.
 
 ## Staging
 

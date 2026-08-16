@@ -23,6 +23,6 @@ Never: decorate beyond the subject's own vocabulary; assert what the
 subject does not state or leave an inferred connection unlabeled;
 describe an unverified page as verified.
 
-Return: status, the rendered page path with mode — the deliverable;
+Return: status, the rendered page path — the deliverable;
 then the markdown source path, graph, chart, and component counts,
 verifier evidence, and per-visual explanations.

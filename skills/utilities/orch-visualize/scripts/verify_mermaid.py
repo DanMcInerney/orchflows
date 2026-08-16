@@ -439,13 +439,15 @@ TRANSLATE_RE = re.compile(r"translate\(\s*(-?[\d.]+)[,\s]\s*(-?[\d.]+)\s*\)")
 
 
 def geometry_failures(
-    diagram: Diagram, svg_bytes: bytes
+    diagram: Diagram, svg_bytes: bytes, source_nodes: int = 0
 ) -> tuple[list[dict[str, object]], str | None]:
     """Node-overlap and viewBox-containment checks over a CLI-rendered SVG.
 
     Returns (failures, unchecked_reason). The reason names why the SVG
-    could not be read, so a page whose layout was never measured cannot
-    be reported as one whose layout is clean."""
+    could not be read — or, for a diagram whose source declares
+    `source_nodes` nodes, why none of them was found positioned in it —
+    so a page whose layout was never measured cannot be reported as one
+    whose layout is clean."""
 
     try:
         import xml.etree.ElementTree as ElementTree
@@ -466,6 +468,11 @@ def geometry_failures(
                     float(rect.get("width", "0")),
                     float(rect.get("height", "0")),
                 )
+            )
+        if source_nodes and not boxes:
+            return [], (
+                f"the SVG positions none of the {source_nodes} node(s) the "
+                "source declares as g.node/rect boxes"
             )
         failures: list[dict[str, object]] = []
         overlaps = 0
@@ -924,12 +931,14 @@ def main(argv: list[str] | None = None) -> int:
                 failures.extend(lint_fails)
                 lint_warnings.extend(lint_warns)
                 token, _line = _diagram_type(diagram)
+                source_nodes = 0
                 if token in FLOW_TYPES:
-                    flow_node_counts.append(
-                        (diagram.index, len(_extract_flow_graph(diagram).nodes))
-                    )
+                    source_nodes = len(_extract_flow_graph(diagram).nodes)
+                    flow_node_counts.append((diagram.index, source_nodes))
                 if rendered_svg is not None:
-                    geometry, unchecked = geometry_failures(diagram, rendered_svg)
+                    geometry, unchecked = geometry_failures(
+                        diagram, rendered_svg, source_nodes
+                    )
                     if unchecked is None:
                         geometry_checked += 1
                         failures.extend(geometry)
