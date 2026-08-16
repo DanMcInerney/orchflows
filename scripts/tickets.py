@@ -3500,6 +3500,14 @@ def _cmd_packet(rest):
         )
     prompt.append(f"reply_to: {reply_to} — address your closing message to `{reply_to}`.")
 
+    # The ticket's `profile` is its executor's role override
+    # (contracts/work-item.md `profile`), and rules/roles.md §5 binds an
+    # override to the dispatch naming it. A further §10 child is another
+    # dispatch whose role is its own skill's declared one, so its packet names
+    # none: carrying the executor's would spawn a planner skill as a worker
+    # on an override the cut never named for it.
+    profile = None if further is not None else loaded.get("profile")
+
     return {
         "packet": {
             "run": loaded.get("run") or run,
@@ -3508,7 +3516,7 @@ def _cmd_packet(rest):
             "executor": executor,
             "script": executor_script,
             "pack": loaded.get("pack"),
-            "profile": loaded.get("profile"),
+            "profile": profile,
             "independence": loaded.get("independence") or "checker",
             "isolation": isolation,
             "assigned_name": assigned_name,
@@ -3973,20 +3981,29 @@ def _append_one_line(path: Path, block: str) -> None:
 
 
 def _notes_terminal(path: Path):
-    """The state a run's notes closed with, or ``None`` while open.
+    """``(state, error)``: the state a run's notes closed with, ``None``
+    while open, and the read failure when that could not be told.
 
     A read, never a read-modify-write: the note that follows is still one
     append in one call, so a line another workspace added in between
-    survives untouched.
+    survives untouched. Missing is open -- the first note creates the file.
+    Refused is not: ``_append_one_line``'s byte-zero lock is mandatory, so a
+    concurrent appender refuses this read on Windows, and reading that
+    refusal as "open" was how a note landed past a terminal section (F F4).
+    The refusal is waited out like ``_read_identity``'s and, if it stays,
+    returned as the error it is.
     """
 
-    text, failure = _read_utf8(path)
-    if failure is not None:
-        return None
+    try:
+        text = _waiting_out_windows(lambda: path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, NotADirectoryError):
+        return None, None
+    except (OSError, UnicodeDecodeError) as error:
+        return None, {"error": f"unreadable run notes: {error}"}
     for line in text.splitlines():
         if _is_terminal_heading(line):
-            return line.strip()[len(TERMINAL_HEADING) :].strip(" :")
-    return None
+            return line.strip()[len(TERMINAL_HEADING) :].strip(" :"), None
+    return None, None
 
 
 def _cmd_run_state(rest):
@@ -4115,7 +4132,11 @@ def _cmd_run_state(rest):
         # once: a second close would leave two answers to "how did this run
         # exit", and a note after one would be state recorded where no
         # reader looks.
-        closed = _notes_terminal(run_dir / RUN_NOTES_NAME)
+        closed, failure = _notes_terminal(run_dir / RUN_NOTES_NAME)
+        if failure is not None:
+            # Not knowing whether the log is closed is not knowing that it is
+            # open; the write waits for a read that can tell.
+            return {"error": f"{failure['error']}; notes: {run_dir / RUN_NOTES_NAME}"}
         if closed is not None:
             attempt = "a note" if note is not None else f"a '{terminal}' close"
             return {

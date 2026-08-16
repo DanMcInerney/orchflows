@@ -947,12 +947,15 @@ class OSErrorHandlerTest(unittest.TestCase):
             self.assertEqual(1, result.returncode, result.stdout)
             self.assertIn("unwritable ticket", json.loads(result.stdout)["error"])
 
-    def test_a_worklog_whose_close_cannot_be_read_still_takes_the_note(self):
-        """`_worklog_terminal` is the one OSError here that is swallowed
-        rather than reported: an unreadable worklog reads as an open one, so
-        the note lands past a close nobody could see. Recorded as it
-        behaves -- reporting the read failure instead would refuse a note the
-        contract otherwise allows."""
+    def test_a_worklog_whose_close_cannot_be_read_refuses_the_note(self):
+        """`_notes_terminal` was the one OSError here that was swallowed
+        rather than reported: an unreadable worklog read as an open one, so
+        the note landed past a close nobody could see. That was pinned as
+        "recorded as it behaves"; F F4 read it as the defect it is -- a
+        refused read is a concurrent appender's mandatory byte-zero lock on
+        Windows, waited out and then reported, never taken as the log being
+        open. `PermissionError` is that lock's shape, so this run also proves
+        the wait ends in the error rather than the note."""
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
@@ -965,8 +968,8 @@ class OSErrorHandlerTest(unittest.TestCase):
             self.assertIn("complete", log.read_text(encoding="utf-8"))
             with refusing_to_read(log, PermissionError):
                 payload = run_cmd(worktree, "run-state", "testrun", "--note", "past the close")
-            self.assertEqual("note", payload["run_state"]["mode"])
-            self.assertIn("past the close", log.read_text(encoding="utf-8"))
+            self.assertIn("unreadable run notes", payload["error"])
+            self.assertNotIn("past the close", log.read_text(encoding="utf-8"))
 
     def test_an_unreadable_run_state_body_file_is_an_error_not_a_traceback(self):
         """`_cmd_run_state`'s body read: the `_cmd_result` handler's twin, on
@@ -5171,6 +5174,25 @@ class TestCheckerPathPacket(unittest.TestCase):
             self.assertIn("not claimed", payload["error"])
             self.assertNotIn("packet", payload)
 
+    def test_the_tickets_profile_override_stays_with_the_executors_dispatch(self):
+        """contracts/work-item.md `profile` is the executor's role override;
+        rules/roles.md §5 binds an override to the dispatch naming it. A
+        further §10 child is another dispatch, its role its own skill's
+        (orch-critique declares planner), so its packet carries no profile
+        even when the ticket names one for its executor."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(
+                tmp,
+                CLAIMED_ISOLATED_TICKET.replace(
+                    "status: claimed", "status: claimed\nprofile: orch-worker"
+                ),
+            )
+            self.assertEqual("orch-worker", self.packet(tmp)["packet"]["profile"])
+            for executor in ("orch-critique", "orch-verify"):
+                packet = self.packet(tmp, "--executor", executor)["packet"]
+                self.assertIsNone(packet["profile"], packet)
+
 
 class TestPacketCarriesTheCloseLaw(unittest.TestCase):
     """The packet already carried contracts/work-item.md's filing law; the
@@ -5338,6 +5360,25 @@ class TestAppendLockDocstringIsTrue(unittest.TestCase):
         doc = " ".join((tickets_mod._append_one_line.__doc__ or "").split())
         self.assertNotIn("blocks only another append", doc)
         self.assertIn("reader", doc)
+
+    def test_the_terminal_reader_refuses_when_it_cannot_read_rather_than_calling_the_run_open(self):
+        """The docstring now says a refused reader retries and has not found
+        the file unreadable; `_notes_terminal` was the reader F F4 named, and
+        it answered every failure with "open" -- so a note landed on a closed
+        run whenever the read was refused. A missing notes.md is still open
+        (the first note creates it); an unreadable one is an error, and the
+        note is not written."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            self.assertIn(
+                "run_state", run_cmd(worktree, "run-state", "testrun", "--note", "one")
+            )
+            with refusing_to_read(notes_of(), OSError):
+                payload = run_cmd(worktree, "run-state", "testrun", "--note", "two")
+            self.assertIn("error", payload)
+            self.assertIn("unreadable", payload["error"])
+            self.assertEqual(["one"], notes_of().read_text(encoding="utf-8").splitlines())
 
 
 if __name__ == "__main__":
