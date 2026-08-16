@@ -120,7 +120,8 @@ def export(repo: Path, rev: str, dest: Path) -> None:
                 # is the unfiltered one and the report says which it was.
                 print(
                     "isolate: this interpreter has no tarfile filter= "
-                    "(3.11.4+); extracting unfiltered",
+                    "(3.12, or the 3.8.17/3.9.17/3.10.12/3.11.4 backports); "
+                    "extracting unfiltered",
                     file=sys.stderr,
                 )
                 tar.extractall(str(dest))

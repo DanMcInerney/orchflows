@@ -237,8 +237,9 @@ class IsolateTest(IsolateFixture):
         self.assertEqual(0, self.run_isolate("--force"))
 
     def test_an_interpreter_without_the_tar_filter_names_the_downgrade(self):
-        """`filter="tar"` arrived in 3.11.4; below it the extraction runs
-        unfiltered. The docstring says nothing here is skipped, and this is
+        """`filter="tar"` arrived in 3.12 and the 3.8.17/3.9.17/3.10.12/3.11.4
+        backports; before them the extraction runs unfiltered. The docstring
+        says nothing here is skipped, and this is
         a check weakened on hosts the floor still admits -- so the export
         still happens and says on stderr that it happened unfiltered."""
 
