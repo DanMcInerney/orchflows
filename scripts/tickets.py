@@ -302,6 +302,25 @@ GRANTED_AT_KEY = "granted_at"
 # editor of it; after a terminal status the verdict has already been read
 # against the authority the work was done under.
 GRANTABLE_STATUSES = frozenset({"claimed", "suspended"})
+CHECK_USAGE = "check <run> <id> --by <name>"
+# contracts/work-item.md's `checked_by`, written where every other lifecycle
+# field is: rules/verification.md §10 gives the checker's pass to the join as
+# an acceptance source, and a source the join cannot distinguish from the
+# executor's own word is not independence (rules/verification.md §10).
+CHECKED_BY_KEY = "checked_by"
+# The statuses a checker pass is open in — the same window a grant has, and
+# for the same reason: the ticket is claimed and being worked (`suspended`
+# stays claimed, contracts/work-item.md). Before a claim there is no result
+# to check, and terminal status is the join's, read after the check.
+CHECKABLE_STATUSES = GRANTABLE_STATUSES
+# rules/verification.md §10's two further-context children on one already
+# claimed item: the checker, and the re-verifier that reads its correction.
+# `packet --executor` is theirs alone and is not a general override — a
+# second executor for one item is what rules/delegation.md §11 forbids, and
+# the ticket's own `executor` is the graph position the cut froze.
+CHECKER_EXECUTOR = "orch-critique"
+REVERIFIER_EXECUTOR = "orch-verify"
+CHECKER_PATH_EXECUTORS = (CHECKER_EXECUTOR, REVERIFIER_EXECUTOR)
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
 WORKLOG_USAGE = "worklog <run> [--write]"
 GATE_USAGE = (
@@ -349,8 +368,12 @@ SUBCOMMAND_USAGE = {
     "ready": "ready [--run R]",
     "claim": "claim <run> <id> --by <name>",
     "grant": GRANT_USAGE,
+    "check": CHECK_USAGE,
     "set-status": "set-status <run> <id> <status>",
-    "packet": "packet <run> <id> --reply-to <name> [--workspace <path>]",
+    "packet": (
+        "packet <run> <id> --reply-to <name> [--workspace <path>] "
+        f"[--executor {' | '.join(CHECKER_PATH_EXECUTORS)}]"
+    ),
     "result": RESULT_USAGE,
     "worklog": WORKLOG_USAGE,
     "run-state": RUN_STATE_USAGE,
@@ -382,10 +405,18 @@ SUBCOMMAND_SUMMARY = {
     "bookkeeping every reader of the item's authority then honours. Refused "
     f"on a ticket that is not {sorted(GRANTABLE_STATUSES)}: before a claim "
     "the cut owns the scope.",
+    "check": "Record the rules/verification.md §10 checker's pass on one "
+    "claimed item — `checked_by`, the name the join reads that item's "
+    "`authored-here` acceptance from. Refused on a ticket that is not "
+    f"{sorted(CHECKABLE_STATUSES)}.",
     "set-status": f"Set one ticket's status; terminal status is the join's "
     f"alone. One of {sorted(VALID_STATUSES)}.",
     "packet": "The by-reference dispatch packet for one ticket: path, parts, "
-    "and the commands the child runs from its own workspace.",
+    "and the commands the child runs from its own workspace. --executor "
+    f"({' | '.join(CHECKER_PATH_EXECUTORS)}) emits it for one further "
+    "rules/verification.md §10 child on the same claimed item instead — the "
+    "checker, which corrects inside the ticket's write scope and records its "
+    "pass through `check`, or the re-verifier, which is granted no write.",
     "result": f"Write one of the executor's own sections {list(EXECUTOR_SECTIONS)}; "
     "a section already carrying content is refused without --append or --replace.",
     "worklog": "Render this run's worklog view from its tickets — goal, "
@@ -1752,8 +1783,9 @@ def _parse_iso(value):
         return None
 
 
-def _cited_paths(section_text: str, write_scope=()) -> list:
-    """Every existing file one section cites, absolutely, inside ``write_scope``.
+def _cited_paths(section_text: str, write_scope=()):
+    """Every existing file one section cites, absolutely, inside
+    ``write_scope``, as ``(paths, unreadable)``.
 
     A ``## Result`` names what changed by identity, and a file's identity is
     its path, so the candidates are the section's tokens: split on
@@ -1775,9 +1807,10 @@ def _cited_paths(section_text: str, write_scope=()) -> list:
     stream, a sibling's output -- cannot keep a dead lane unreclaimable.
     """
 
-    scope = [_scope_segments(entry) for entry in (write_scope or [])]
+    scope = [_scope_segments(entry) for entry in _scope_entries(write_scope)]
     scope = [entry for entry in scope if entry]
     found = []
+    unreadable = []
     for token in RESULT_TOKEN_SPLIT_RE.split(section_text or ""):
         candidate = token.strip(RESULT_TOKEN_STRIP)
         if not candidate:
@@ -1791,11 +1824,14 @@ def _cited_paths(section_text: str, write_scope=()) -> list:
             if scope and not any(_inside_scope(path, entry) for entry in scope):
                 continue
             found.append(path)
-        except (OSError, ValueError):
-            # an unstattable name is not this reader's error to report: it is
-            # simply not evidence that anything moved
-            continue
-    return found
+        except (OSError, ValueError) as error:
+            # A name this reader could not look at is not evidence that
+            # nothing moved -- it is evidence of nothing at all, and reading
+            # it as stillness is what shortens a live lane's lease toward the
+            # second executor `_is_stale` exists to prevent. Returned, so the
+            # caller says so rather than the lease absorbing it.
+            unreadable.append(f"could not look at the cited {candidate}: {error}")
+    return found, unreadable
 
 
 def _scope_segments(entry) -> list:
@@ -1825,18 +1861,25 @@ def _inside_scope(path: Path, segments: list) -> bool:
 
 def _last_motion(ticket_path: Path, result_text: str, write_scope=()):
     """The most recent write to the ticket or to what its ``## Result``
-    names inside ``write_scope``, or ``None`` when nothing is readable."""
+    names inside ``write_scope``, as ``(moment, unreadable)``.
+
+    ``moment`` is ``None`` when nothing is readable; ``unreadable`` names
+    every place motion could not be looked for, so the caller reports the
+    blind spot instead of the lease treating it as stillness.
+    """
 
     latest = None
-    for path in [ticket_path, *_cited_paths(result_text, write_scope)]:
+    cited, unreadable = _cited_paths(result_text, write_scope)
+    for path in [ticket_path, *cited]:
         try:
             stamp = path.stat().st_mtime
-        except OSError:
+        except OSError as error:
+            unreadable.append(f"could not stat {path}: {error}")
             continue
         moment = datetime.fromtimestamp(stamp, timezone.utc)
         if latest is None or moment > latest:
             latest = moment
-    return latest
+    return latest, unreadable
 
 
 def _is_stale(claimed_at, bound_minutes: int, now: datetime, last_motion=None) -> bool:
@@ -1862,24 +1905,36 @@ def _is_stale(claimed_at, bound_minutes: int, now: datetime, last_motion=None) -
     return (now - parsed) > timedelta(minutes=bound_minutes)
 
 
-def _claim_is_stale(ticket_path, text: str, data: dict, now: datetime) -> bool:
-    """``_is_stale`` for one ticket on disk, motion and all.
+def _claim_is_stale(ticket_path, text: str, data: dict, now: datetime):
+    """``_is_stale`` for one ticket on disk, motion and all, as
+    ``(stale, unreadable)``.
 
     The one place ``ready`` and ``claim`` both ask from, so the two cannot
     answer differently about one claim -- a listing that offers a ticket the
-    claim path then refuses is a frontier that dispatches nothing.
+    claim path then refuses is a frontier that dispatches nothing. Both must
+    hand it the same ``data``: ``ready``'s came through ``_load_ticket``,
+    normalised and grant-merged, while ``claim``'s was raw frontmatter, so a
+    ``write_scope`` written as a bare scalar was iterated by character on one
+    path only and every cited artifact fell outside a scope of letters. Both
+    now load it the same way.
+
+    ``unreadable`` is every place motion could not be looked for. The verdict
+    is unchanged by it -- a blind spot is not motion -- but the caller can
+    say which answer rests on a full look.
     """
 
-    return _is_stale(
+    motion, unreadable = _last_motion(
+        Path(ticket_path),
+        _sections(text).get("Result", ""),
+        data.get("write_scope") or (),
+    )
+    stale = _is_stale(
         data.get("claimed_at"),
         _parse_bound_minutes(data.get("bound")),
         now,
-        _last_motion(
-            Path(ticket_path),
-            _sections(text).get("Result", ""),
-            data.get("write_scope") or (),
-        ),
+        motion,
     )
+    return stale, unreadable
 
 
 # --- argument helpers --------------------------------------------------------
@@ -2819,6 +2874,11 @@ def _cmd_ready(rest):
         return {"error": NO_SINK_ERROR}
     now = datetime.now(timezone.utc)
     ready_items = []
+    # Every ticket this command could not read or grade, with why. An empty
+    # `ready` used to mean either "nothing is ready" or "nothing could be
+    # looked at", and a frontier reading the first when the second was true
+    # parks a whole run on silence (F F4).
+    skipped = []
     for run_dir in _iter_run_dirs(tickets_root, run_filter):
         tickets = {}
         for ticket_path in sorted(run_dir.glob("*.md")):
@@ -2826,14 +2886,37 @@ def _cmd_ready(rest):
             tickets[loaded["id"]] = loaded
         for data in tickets.values():
             if "error" in data:
+                skipped.append({"id": data["id"], "reason": data["error"]})
                 continue
             depends_on = data.get("depends_on") or []
+            # An edge naming no ticket in the run never completes, so the
+            # dependent waits forever inside the listing's silence -- and a
+            # `depends_on` written as a bare scalar is iterated by character
+            # into exactly that shape.
+            dangling = [dep for dep in depends_on if dep not in tickets]
+            if dangling:
+                skipped.append({
+                    "id": data["id"],
+                    "reason": "depends_on names no ticket in this run: "
+                    + ", ".join(str(dep) for dep in dangling),
+                })
+                continue
+            status = data.get("status")
+            # A file in a run's ticket directory whose status is none of the
+            # contract's is not a ticket this command declined to offer -- it
+            # is one it could not grade, and the two were the same silence.
+            if status not in VALID_STATUSES:
+                skipped.append({
+                    "id": data["id"],
+                    "reason": f"status '{status}' is none of "
+                    f"{sorted(VALID_STATUSES)}, so readiness cannot be graded",
+                })
+                continue
             deps_complete = all(
                 tickets.get(dep, {}).get("status") == "complete" for dep in depends_on
             )
             if not deps_complete:
                 continue
-            status = data.get("status")
             eligible = False
             if status == "ready":
                 eligible = True
@@ -2848,20 +2931,38 @@ def _cmd_ready(rest):
                         _set_frontmatter_field(text, "status", "ready"),
                         encoding="utf-8",
                     )
-                except (OSError, ValueError):
+                except (OSError, ValueError) as error:
+                    skipped.append({
+                        "id": data["id"],
+                        "reason": "eligible to promote to ready, and the "
+                        f"write failed: {error}",
+                    })
                     continue
                 data["summary"]["status"] = "ready"
                 eligible = True
             elif status == "claimed":
                 text, failure = _read_utf8(data["path"])
                 if failure is not None:
-                    # unreadable now, though it parsed a moment ago: the
-                    # holder is doing something to it, which is motion
+                    # It parsed a moment ago and does not now. That was read
+                    # as the holder moving, which is a lease fact invented
+                    # out of a read failure: the same silence covers a lane
+                    # that died mid-write.
+                    skipped.append({
+                        "id": data["id"],
+                        "reason": "claimed, and unreadable at the moment its "
+                        f"claim was graded: {failure['error']}",
+                    })
                     continue
-                eligible = _claim_is_stale(data["path"], text, data, now)
+                eligible, unreadable = _claim_is_stale(data["path"], text, data, now)
+                if unreadable:
+                    skipped.append({
+                        "id": data["id"],
+                        "reason": "claim graded without a full look at its "
+                        "motion: " + "; ".join(unreadable),
+                    })
             if eligible:
                 ready_items.append(data["summary"])
-    return {"ready": ready_items}
+    return {"ready": ready_items, "skipped": skipped}
 
 
 def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime) -> dict:
@@ -2879,11 +2980,25 @@ def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime
         return failure
     if current_text != prior_text:
         return {"error": "ticket changed since read; lost the claim race, retry"}
-    data = _parse_frontmatter(prior_text)
+    # Through `_load_ticket`, which is what `ready` grades from: the same
+    # ticket read two ways is two answers about one claim, and the shape that
+    # diverged is the common one -- a bare-scalar `write_scope`, normalised
+    # on one path and iterated by character on the other (F F4).
+    data = _load_ticket(ticket_path)
+    if "error" in data:
+        return {"error": data["error"]}
     status = data.get("status")
+    skipped = []
     if status == "claimed":
-        if not _claim_is_stale(ticket_path, prior_text, data, now):
+        stale, unreadable = _claim_is_stale(ticket_path, prior_text, data, now)
+        if not stale:
             return {"error": f"ticket already claimed and not stale: {ticket_path.stem}"}
+        if unreadable:
+            skipped.append({
+                "id": data["id"],
+                "reason": "claim taken as stale without a full look at its "
+                "motion: " + "; ".join(unreadable),
+            })
     elif status != "ready":
         return {"error": f"ticket is not claimable in status '{status}': {ticket_path.stem}"}
     timestamp = now.strftime(UTC_STAMP)
@@ -2891,7 +3006,10 @@ def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime
     updated = _set_frontmatter_field(updated, "claimed_by", claimed_by)
     updated = _set_frontmatter_field(updated, "claimed_at", timestamp)
     ticket_path.write_text(updated, encoding="utf-8")
-    return {"claimed": {"id": ticket_path.stem, "claimed_by": claimed_by, "claimed_at": timestamp}}
+    claimed = {
+        "id": ticket_path.stem, "claimed_by": claimed_by, "claimed_at": timestamp
+    }
+    return {"claimed": claimed, "skipped": skipped} if skipped else {"claimed": claimed}
 
 
 def _cmd_claim(rest):
@@ -2920,7 +3038,10 @@ def _cmd_claim(rest):
         return result
     claimed = dict(result["claimed"])
     claimed["run"] = run
-    return {"claimed": claimed}
+    payload = {"claimed": claimed}
+    if result.get("skipped"):
+        payload["skipped"] = result["skipped"]
+    return payload
 
 
 def _cmd_grant(rest):
@@ -3002,6 +3123,68 @@ def _cmd_grant(rest):
     }
 
 
+def _cmd_check(rest):
+    """Record the §10 checker's pass on one claimed item.
+
+    The gap this closes: contracts/work-item.md:44 gave `checked_by` to "the
+    §10 checker on its pass", orch-critique's body told the checker to set
+    it, and orch-integrate refused a `checker`-independence return without
+    it — while no script wrote it and :72-74 makes frontmatter script-written
+    bookkeeping the executor may not touch. So the field was either absent,
+    failing the join, or hand-edited, which the join cannot tell from an
+    executor writing its own acceptance (rules/verification.md §10 exists to
+    make exactly that distinguishable). Written as `claimed_*`-class
+    bookkeeping, never a body section: those stay the executor's, and the
+    checker's own findings go to `## Result` through `result --append`.
+    """
+
+    args = list(rest)
+    checked_by = _extract_flag(args, "--by")
+    if len(args) != 2:
+        return {"error": f"usage: {CHECK_USAGE}"}
+    if not (checked_by or "").strip():
+        return {
+            "error": "check requires --by <name>: the pass is a named further "
+            "context's, and an unattributed one is the executor's own word "
+            f"again. usage: {CHECK_USAGE}"
+        }
+    run, ticket_id = args
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {"error": NO_SINK_ERROR}
+    ticket_path = tickets_root / run / f"{ticket_id}.md"
+    if not ticket_path.is_file():
+        return {"error": f"ticket not found: {run}/{ticket_id}"}
+    text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return failure
+    data = _parse_frontmatter(text)
+    status = str(data.get("status") or "").strip().strip("`").strip()
+    if status not in CHECKABLE_STATUSES:
+        return {
+            "error": f"ticket is not claimed (status '{status}'): the §10 "
+            "checker passes over a result an executor has produced under a "
+            "claim. Before a claim there is nothing to check, and after a "
+            "terminal status the join has already read the acceptance this "
+            f"field feeds. ticket: {ticket_path}"
+        }
+    try:
+        updated = _set_frontmatter_field(text, CHECKED_BY_KEY, checked_by.strip())
+    except ValueError as error:
+        return {"error": str(error)}
+    try:
+        ticket_path.write_text(updated, encoding="utf-8")
+    except OSError as error:
+        return {"error": f"unwritable ticket: {error}"}
+    return {
+        "check": {
+            "run": data.get("run") or run,
+            "id": data.get("id") or ticket_id,
+            "checked_by": checked_by.strip(),
+        }
+    }
+
+
 def _cmd_set_status(rest):
     args = list(rest)
     if len(args) != 3:
@@ -3023,6 +3206,62 @@ def _cmd_set_status(rest):
     return {"set_status": {"run": run, "id": ticket_id, "status": status}}
 
 
+def _further_child_prompt(executor, loaded: dict, ticket_path: Path, run_id, script):
+    """The head of a packet for one further rules/verification.md §10 child.
+
+    Two shapes, because the two children have opposite authority. The
+    checker is handed the item's own write scope and the verb that records
+    its pass; the re-verifier is handed neither, and told which identity to
+    verify at. Everything after this -- the filing and run-state channels,
+    ``reply_to`` -- is what the executor got, unchanged: hand-writing these
+    packets beside the frontier is what left them without it (S1 F1).
+    """
+
+    head = [
+        f"Apply skill {executor} to ticket {ticket_path}.",
+        "Read the ticket; it is your complete delegation packet — objective, "
+        "fixed inputs, bounds, return fields. Gather nothing outside its "
+        "fixed inputs.",
+    ]
+    claimed_by = str(loaded.get("claimed_by") or "").strip() or "another context"
+    branch = str(loaded.get("workspace_branch") or "").strip()
+    at_identity = (
+        f"the workspace the ticket's `workspace_branch` names ({branch})"
+        if branch
+        else "the identity the ticket's `## Result` records"
+    )
+    if executor == CHECKER_EXECUTOR:
+        scope = effective_write_scope(loaded)
+        head.append(
+            "This is the rules/verification.md §10 checker's pass on a result "
+            f"{claimed_by} produced under its claim, never a re-execution of "
+            "the item: the lens is the ticket's own `## Completion test`, at "
+            f"{at_identity}."
+        )
+        head.append(
+            f"Your authority is the ticket's own write scope, {scope} — correct "
+            "inside it, and append your findings, changes and the verification "
+            "entries they invalidate to `## Result`. Record the pass, after "
+            "correcting, with:"
+        )
+        head.append(
+            f"{sys.executable} {script} check {run_id} {loaded['id']} --by NAME"
+        )
+    else:
+        head.append(
+            "This is the rules/verification.md §10 re-verification of a checked "
+            f"result, never a re-execution of the item: run the ticket's "
+            f"`## Completion test` at {at_identity}, reusing prior "
+            "`## Verification` entries whose `covers` are unchanged there."
+        )
+        head.append(
+            "Your authority grants no write: the item's workspace and its "
+            "`## Result` are another context's, and `## Verification` is the "
+            "one section you file."
+        )
+    return head
+
+
 def _cmd_packet(rest):
     """Emit the by-reference dispatch packet for one ticket.
 
@@ -3039,8 +3278,20 @@ def _cmd_packet(rest):
     args = list(rest)
     reply_to = _extract_flag(args, "--reply-to")
     workspace = _extract_flag(args, "--workspace")
+    further = _extract_flag(args, "--executor")
     if len(args) != 2:
         return {"error": f"usage: {SUBCOMMAND_USAGE['packet']}"}
+    if further is not None:
+        further = further.strip().strip("`").strip()
+        if further not in CHECKER_PATH_EXECUTORS:
+            return {
+                "error": f"--executor takes {' or '.join(CHECKER_PATH_EXECUTORS)}, "
+                f"not '{further}': it emits the packet for one further "
+                "rules/verification.md §10 child on an item another executor "
+                "already holds, never a second executor for the item "
+                "(rules/delegation.md §11). The ticket's own `executor` is the "
+                "cut's, and `amend` is what changes it."
+            }
     run, ticket_id = args
     tickets_root = _tickets_root()
     if tickets_root is None:
@@ -3085,8 +3336,29 @@ def _cmd_packet(rest):
     if missing:
         return {"error": "packet incomplete: " + "; ".join(missing)}
 
+    if further is not None:
+        status = str(loaded.get("status") or "").strip().strip("`").strip()
+        if status not in CHECKABLE_STATUSES:
+            return {
+                "error": f"ticket is not claimed (status '{status}'): a further "
+                "§10 child reads a result an executor produced under a claim. "
+                "Dispatch the item's own executor first — this packet without "
+                f"--executor. ticket: {ticket_path}"
+            }
+
+    run_id = loaded.get("run") or run
+    script = Path(__file__).resolve()
     executor_script = _executor_script(executor)
-    if executor_script is not None:
+    if further is not None:
+        # The item keeps its own executor and its own claim; this child is the
+        # further context rules/verification.md §10 requires. Only the head of
+        # the prompt differs -- every channel below is the one the executor
+        # was given, which is the whole reason the packet is emitted here
+        # rather than hand-written beside the frontier (S1 F1).
+        executor_script = None
+        executor = further
+        prompt = _further_child_prompt(further, loaded, ticket_path, run_id, script)
+    elif executor_script is not None:
         # contracts/work-item.md, Executor form: the ladder's floor as a node. No skill is
         # named and no judgment is asked for -- the script decides, and its
         # stdout is the whole result. Written as a run-this instruction
@@ -3125,8 +3397,19 @@ def _cmd_packet(rest):
         "Write your result into the ticket's own sections as you produce it, "
         "never in one write at the end; the join alone sets terminal status."
     )
-    run_id = loaded.get("run") or run
-    script = Path(__file__).resolve()
+    if executor_script is None and further is None:
+        # The close law, beside the filing law it belongs to. These are
+        # contracts/work-item.md:95-97, :107-108 and :109-118 — the three
+        # sentences of a 1,690-word file an executor could reach only by
+        # following its body's link there, which is what the link was
+        # followed for (S3 F1). Carried for the item's own skill executor
+        # alone: a script node runs no completion test and files no
+        # Feedback, and each further §10 child's own head states its close.
+        prompt.append(
+            "Close by running `## Completion test` through `orch-verify` at "
+            "the result identity; `[]` fills an empty Feedback or Risks; an "
+            "excluded action suspends through `## Handoff`."
+        )
     # contracts/work-item.md's `isolation`: absent reads `none`, and only
     # `required` is told to establish anything, so a lane that must not stamp
     # itself is never handed the command. The pack is the second condition:
@@ -3143,8 +3426,14 @@ def _cmd_packet(rest):
     # Read through `effective_write_scope`, so a lane a grant has since
     # given paths to is told to establish the workspace it now needs.
     writes_workspace_content = bool(loaded.get("write_scope"))
+    # A further §10 child is the fourth condition, and it is a refusal rather
+    # than an omission: `workspace.py start` records the branch its caller is
+    # standing in over the executor's own, and that record is the `--base` the
+    # join grades the merge against. The checker works in the workspace the
+    # executor's record names; the re-verifier reads it.
     if (
-        isolation == REQUIRED_ISOLATION
+        further is None
+        and isolation == REQUIRED_ISOLATION
         and writes_workspace_content
         and establishes_a_git_workspace(loaded.get("pack"))
     ):
@@ -3211,6 +3500,14 @@ def _cmd_packet(rest):
         )
     prompt.append(f"reply_to: {reply_to} — address your closing message to `{reply_to}`.")
 
+    # The ticket's `profile` is its executor's role override
+    # (contracts/work-item.md `profile`), and rules/roles.md §5 binds an
+    # override to the dispatch naming it. A further §10 child is another
+    # dispatch whose role is its own skill's declared one, so its packet names
+    # none: carrying the executor's would spawn a planner skill as a worker
+    # on an override the cut never named for it.
+    profile = None if further is not None else loaded.get("profile")
+
     return {
         "packet": {
             "run": loaded.get("run") or run,
@@ -3219,7 +3516,7 @@ def _cmd_packet(rest):
             "executor": executor,
             "script": executor_script,
             "pack": loaded.get("pack"),
-            "profile": loaded.get("profile"),
+            "profile": profile,
             "independence": loaded.get("independence") or "checker",
             "isolation": isolation,
             "assigned_name": assigned_name,
@@ -3661,8 +3958,11 @@ def _append_one_line(path: Path, block: str) -> None:
     never ran.
 
     So Windows locks and POSIX does not, and byte zero is the mutex: every
-    appender contends on the same byte and no reader takes it, so an append
-    blocks only another append. Nothing here read-modify-writes. The lock
+    appender contends on the same byte. ``LK_LOCK`` is a mandatory range
+    lock, not an advisory one, so an append blocks another append and also
+    any reader that touches byte zero -- which on this file is every reader,
+    since they all read from the start. A reader refused here retries; it has
+    not found the file unreadable. Nothing here read-modify-writes. The lock
     serialises the seek the platform hides inside ``write``.
     """
 
@@ -3681,20 +3981,29 @@ def _append_one_line(path: Path, block: str) -> None:
 
 
 def _notes_terminal(path: Path):
-    """The state a run's notes closed with, or ``None`` while open.
+    """``(state, error)``: the state a run's notes closed with, ``None``
+    while open, and the read failure when that could not be told.
 
     A read, never a read-modify-write: the note that follows is still one
     append in one call, so a line another workspace added in between
-    survives untouched.
+    survives untouched. Missing is open -- the first note creates the file.
+    Refused is not: ``_append_one_line``'s byte-zero lock is mandatory, so a
+    concurrent appender refuses this read on Windows, and reading that
+    refusal as "open" was how a note landed past a terminal section (F F4).
+    The refusal is waited out like ``_read_identity``'s and, if it stays,
+    returned as the error it is.
     """
 
-    text, failure = _read_utf8(path)
-    if failure is not None:
-        return None
+    try:
+        text = _waiting_out_windows(lambda: path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, NotADirectoryError):
+        return None, None
+    except (OSError, UnicodeDecodeError) as error:
+        return None, {"error": f"unreadable run notes: {error}"}
     for line in text.splitlines():
         if _is_terminal_heading(line):
-            return line.strip()[len(TERMINAL_HEADING) :].strip(" :")
-    return None
+            return line.strip()[len(TERMINAL_HEADING) :].strip(" :"), None
+    return None, None
 
 
 def _cmd_run_state(rest):
@@ -3823,7 +4132,11 @@ def _cmd_run_state(rest):
         # once: a second close would leave two answers to "how did this run
         # exit", and a note after one would be state recorded where no
         # reader looks.
-        closed = _notes_terminal(run_dir / RUN_NOTES_NAME)
+        closed, failure = _notes_terminal(run_dir / RUN_NOTES_NAME)
+        if failure is not None:
+            # Not knowing whether the log is closed is not knowing that it is
+            # open; the write waits for a read that can tell.
+            return {"error": f"{failure['error']}; notes: {run_dir / RUN_NOTES_NAME}"}
         if closed is not None:
             attempt = "a note" if note is not None else f"a '{terminal}' close"
             return {
@@ -4039,8 +4352,8 @@ def _dispatch(argv):
     if not argv:
         return {
             "error": "missing subcommand: new | amend | instantiate | gate | "
-            "list | ready | claim | grant | set-status | packet | result | "
-            "worklog | run-state | improvement"
+            "list | ready | claim | grant | check | set-status | packet | "
+            "result | worklog | run-state | improvement"
         }
     command, rest = argv[0], argv[1:]
     if command in HELP_COMMANDS:
@@ -4063,6 +4376,8 @@ def _dispatch(argv):
         return _cmd_claim(rest)
     if command == "grant":
         return _cmd_grant(rest)
+    if command == "check":
+        return _cmd_check(rest)
     if command == "set-status":
         return _cmd_set_status(rest)
     if command == "packet":

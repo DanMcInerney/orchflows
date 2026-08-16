@@ -947,12 +947,15 @@ class OSErrorHandlerTest(unittest.TestCase):
             self.assertEqual(1, result.returncode, result.stdout)
             self.assertIn("unwritable ticket", json.loads(result.stdout)["error"])
 
-    def test_a_worklog_whose_close_cannot_be_read_still_takes_the_note(self):
-        """`_worklog_terminal` is the one OSError here that is swallowed
-        rather than reported: an unreadable worklog reads as an open one, so
-        the note lands past a close nobody could see. Recorded as it
-        behaves -- reporting the read failure instead would refuse a note the
-        contract otherwise allows."""
+    def test_a_worklog_whose_close_cannot_be_read_refuses_the_note(self):
+        """`_notes_terminal` was the one OSError here that was swallowed
+        rather than reported: an unreadable worklog read as an open one, so
+        the note landed past a close nobody could see. That was pinned as
+        "recorded as it behaves"; F F4 read it as the defect it is -- a
+        refused read is a concurrent appender's mandatory byte-zero lock on
+        Windows, waited out and then reported, never taken as the log being
+        open. `PermissionError` is that lock's shape, so this run also proves
+        the wait ends in the error rather than the note."""
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
@@ -965,8 +968,8 @@ class OSErrorHandlerTest(unittest.TestCase):
             self.assertIn("complete", log.read_text(encoding="utf-8"))
             with refusing_to_read(log, PermissionError):
                 payload = run_cmd(worktree, "run-state", "testrun", "--note", "past the close")
-            self.assertEqual("note", payload["run_state"]["mode"])
-            self.assertIn("past the close", log.read_text(encoding="utf-8"))
+            self.assertIn("unreadable run notes", payload["error"])
+            self.assertNotIn("past the close", log.read_text(encoding="utf-8"))
 
     def test_an_unreadable_run_state_body_file_is_an_error_not_a_traceback(self):
         """`_cmd_run_state`'s body read: the `_cmd_result` handler's twin, on
@@ -5017,6 +5020,365 @@ class TestGrantedScopeAtTheJoin(unittest.TestCase):
             passed = run_argv(check_argv, main)
             self.assertEqual(0, passed.returncode, passed.stdout + passed.stderr)
             self.assertEqual("pass", json.loads(passed.stdout)["check"]["verdict"])
+
+
+class TestCheckedByVerb(unittest.TestCase):
+    """`check` is the producer for contracts/work-item.md's `checked_by`.
+
+    rules/verification.md §10's checker pass was read by three consumers --
+    the contract's field, orch-critique's body and orch-integrate's name
+    check -- and written by nothing, so the join could not tell a real
+    checker pass from an executor's claim of one.
+    """
+
+    def make(self, tmp: Path, status: str = "claimed") -> Path:
+        (tmp / ".git").mkdir()
+        run_dir = use_sink(tmp) / "tickets" / "testrun"
+        run_dir.mkdir(parents=True)
+        path = run_dir / "T1.md"
+        body = FULL_TICKET.replace("status: ready", f"status: {status}")
+        if status in ("claimed", "suspended"):
+            body = body.replace(
+                f"status: {status}\n", f"status: {status}\nclaimed_by: agent-a\n"
+            )
+        path.write_text(body, encoding="utf-8")
+        return path
+
+    def test_check_writes_checked_by_on_a_claimed_ticket(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.make(tmp)
+            payload = run_cmd(tmp, "check", "testrun", "T1", "--by", "checker-a")
+            self.assertNotIn("error", payload)
+            self.assertEqual("checker-a", payload["check"]["checked_by"])
+            self.assertEqual("T1", payload["check"]["id"])
+            self.assertIn("checked_by: checker-a", path.read_text(encoding="utf-8"))
+
+    def test_check_is_refused_on_a_ticket_that_is_not_claimed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.make(tmp, status="ready")
+            payload = run_cmd(tmp, "check", "testrun", "T1", "--by", "checker-a")
+            self.assertIn("not claimed", payload["error"])
+            self.assertNotIn("checked_by", path.read_text(encoding="utf-8"))
+
+    def test_check_requires_a_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            payload = run_cmd(tmp, "check", "testrun", "T1")
+            self.assertIn("--by", payload["error"])
+
+    def test_check_refuses_a_ticket_that_is_not_there(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            payload = run_cmd(tmp, "check", "testrun", "T9", "--by", "checker-a")
+            self.assertIn("ticket not found", payload["error"])
+
+    def test_check_is_reachable_and_documented_like_every_other_verb(self):
+        self.assertIn("check", tickets_mod.SUBCOMMAND_USAGE)
+        self.assertIn("check", tickets_mod.SUBCOMMAND_SUMMARY)
+        self.assertIn("check", tickets_mod._dispatch([])["error"])
+
+
+CLAIMED_ISOLATED_TICKET = ISOLATED_TICKET.replace(
+    "status: ready", "status: claimed\nclaimed_by: agent-a"
+)
+
+
+class TestCheckerPathPacket(unittest.TestCase):
+    """`packet --executor` is rules/verification.md §10's two further-context
+    children on one claimed item: the checker and the re-verifier.
+
+    Without it the frontier hand-wrote both packets, so neither carried the
+    filing channel, the authority or the run-state channel this script owns
+    (S1 F1). It is not a general executor override: a second executor for
+    one item is what rules/delegation.md §11 forbids.
+    """
+
+    def make(self, tmp: Path, body: str = CLAIMED_ISOLATED_TICKET) -> Path:
+        return make_packet_repo(tmp, body)
+
+    def packet(self, tmp: Path, *extra):
+        return run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main", *extra)
+
+    def test_without_the_flag_the_packet_is_the_ticket_executors(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            packet = self.packet(tmp)["packet"]
+            self.assertEqual("orch-tdd", packet["executor"])
+            self.assertIn("Apply skill orch-tdd", packet["prompt"])
+            self.assertNotIn("tickets.py check", packet["prompt"])
+
+    def test_a_critique_packet_names_the_skill_the_scope_and_the_check_verb(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            packet = self.packet(tmp, "--executor", "orch-critique")["packet"]
+            prompt = packet["prompt"]
+            self.assertEqual("orch-critique", packet["executor"])
+            self.assertIn("Apply skill orch-critique", prompt)
+            # the ticket's own write scope is the checker's authority
+            self.assertIn("scratch/t1.txt", prompt)
+            # and the verb it runs after correcting, one token per argument
+            check_lines = [
+                line for line in prompt.splitlines()
+                if line.split()[2:4] == ["check", "testrun"]
+            ]
+            self.assertEqual(1, len(check_lines), prompt)
+            self.assertIn("--by", check_lines[0])
+            self.assertEqual(Path(check_lines[0].split()[1]).name, "tickets.py")
+
+    def test_a_verify_packet_names_the_skill_the_identity_and_no_write(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            packet = self.packet(tmp, "--executor", "orch-verify")["packet"]
+            prompt = packet["prompt"]
+            self.assertEqual("orch-verify", packet["executor"])
+            self.assertIn("Apply skill orch-verify", prompt)
+            self.assertIn("## Completion test", prompt)
+            self.assertIn("no write", prompt)
+            # a re-verifier corrects nothing, so it is never sent the verb
+            self.assertNotIn("tickets.py check", prompt)
+
+    def test_neither_further_child_re_establishes_the_workspace(self):
+        """`workspace.py start` records the branch the caller stands in over
+        the executor's own — and that record is the `--base` the join grades
+        the merge against. A further child on the same item never runs it."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            self.assertEqual(1, len(establishment_lines(self.packet(tmp)["packet"]["prompt"])))
+            for executor in ("orch-critique", "orch-verify"):
+                prompt = self.packet(tmp, "--executor", executor)["packet"]["prompt"]
+                self.assertEqual([], establishment_lines(prompt), prompt)
+                self.assertNotIn("workspace.py", prompt)
+
+    def test_an_executor_outside_the_checker_path_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            payload = self.packet(tmp, "--executor", "orch-repair")
+            self.assertIn("orch-repair", payload["error"])
+            self.assertIn("orch-critique", payload["error"])
+            self.assertNotIn("packet", payload)
+
+    def test_a_further_child_on_an_unclaimed_ticket_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, ISOLATED_TICKET)
+            payload = self.packet(tmp, "--executor", "orch-critique")
+            self.assertIn("not claimed", payload["error"])
+            self.assertNotIn("packet", payload)
+
+    def test_the_tickets_profile_override_stays_with_the_executors_dispatch(self):
+        """contracts/work-item.md `profile` is the executor's role override;
+        rules/roles.md §5 binds an override to the dispatch naming it. A
+        further §10 child is another dispatch, its role its own skill's
+        (orch-critique declares planner), so its packet carries no profile
+        even when the ticket names one for its executor."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(
+                tmp,
+                CLAIMED_ISOLATED_TICKET.replace(
+                    "status: claimed", "status: claimed\nprofile: orch-worker"
+                ),
+            )
+            self.assertEqual("orch-worker", self.packet(tmp)["packet"]["profile"])
+            for executor in ("orch-critique", "orch-verify"):
+                packet = self.packet(tmp, "--executor", executor)["packet"]
+                self.assertIsNone(packet["profile"], packet)
+
+
+class TestPacketCarriesTheCloseLaw(unittest.TestCase):
+    """The packet already carried contracts/work-item.md's filing law; the
+    close was the half only the body's link to that 1,690-word file reached
+    (S3 F1) — the completion test run through `orch-verify` at the result
+    identity, `[]` for an empty section, and suspension through `## Handoff`."""
+
+    CLOSE = (
+        "Close by running `## Completion test` through `orch-verify` at the "
+        "result identity; `[]` fills an empty Feedback or Risks; an excluded "
+        "action suspends through `## Handoff`."
+    )
+
+    def prompt_for(self, tmp: Path, body: str = FULL_TICKET, *extra):
+        make_packet_repo(tmp, body)
+        return run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main", *extra)[
+            "packet"
+        ]["prompt"]
+
+    def test_a_skill_executors_packet_carries_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertIn(self.CLOSE, " ".join(self.prompt_for(Path(tmp)).split()))
+
+    def test_a_script_executors_packet_does_not(self):
+        """A script node runs no completion test and files no Feedback: its
+        stdout is the whole result (contracts/work-item.md, Executor form)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            prompt = self.prompt_for(
+                Path(tmp),
+                FULL_TICKET.replace("executor: orch-tdd", "executor: script:tools/m.py"),
+            )
+            self.assertNotIn("orch-verify", prompt)
+
+    def test_neither_further_child_is_told_to_close_the_item(self):
+        """rules/verification.md §10: the re-verifier *is* the close, and the
+        checker's close is its correction plus `check`."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_packet_repo(tmp, CLAIMED_ISOLATED_TICKET)
+            for executor in ("orch-critique", "orch-verify"):
+                prompt = run_cmd(
+                    tmp, "packet", "testrun", "T1", "--reply-to", "main",
+                    "--executor", executor,
+                )["packet"]["prompt"]
+                self.assertNotIn("Close by running", prompt)
+
+
+class TestReadyReportsWhatItCouldNotGrade(unittest.TestCase):
+    """`ready` used to answer a read failure with silence: an unloadable
+    ticket was dropped, a failed promotion write was `continue`, and a
+    claimed ticket that had stopped being readable was counted as the
+    holder still moving. A frontier reading an empty list cannot tell "no
+    ticket is ready" from "four could not be looked at" (F F4), so every
+    ticket this command could not read or grade comes back under `skipped`.
+    """
+
+    def ready(self, tmp: Path):
+        return run_cmd(tmp, "ready", "--run", "testrun")
+
+    def test_a_readable_run_reports_an_empty_skipped_list(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_repo(tmp, {"T1": ("ready", "[]")})
+            payload = self.ready(tmp)
+            self.assertEqual(["T1"], [item["id"] for item in payload["ready"]])
+            self.assertEqual([], payload["skipped"])
+
+    def test_an_unreadable_ticket_is_named_with_its_reason(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            run_dir = make_repo(tmp, {"T1": ("ready", "[]")})
+            (run_dir / "T2.md").write_text("no frontmatter here\n", encoding="utf-8")
+            payload = self.ready(tmp)
+            self.assertEqual(["T1"], [item["id"] for item in payload["ready"]])
+            self.assertEqual(["T2"], [item["id"] for item in payload["skipped"]])
+            self.assertTrue(payload["skipped"][0]["reason"])
+
+    def test_a_dependency_naming_no_ticket_in_the_run_is_named(self):
+        """A dangling edge never completes, so the dependent sat in the
+        listing's silence forever -- and a `depends_on` written as a bare
+        scalar is iterated by character into the same silence."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_repo(tmp, {"T1": ("pending", "[T0]"), "T2": ("pending", "T0")})
+            payload = self.ready(tmp)
+            self.assertEqual([], payload["ready"])
+            self.assertEqual(
+                {"T1", "T2"}, {item["id"] for item in payload["skipped"]}
+            )
+            for item in payload["skipped"]:
+                self.assertIn("depends_on", item["reason"])
+
+    def test_a_promotion_that_could_not_be_written_is_named(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            run_dir = make_repo(tmp, {"T1": ("pending", "[]")})
+            with refusing_to_write(run_dir / "T1.md"):
+                payload = self.ready(tmp)
+            self.assertEqual([], payload["ready"])
+            self.assertEqual(["T1"], [item["id"] for item in payload["skipped"]])
+            self.assertIn("promote", payload["skipped"][0]["reason"])
+
+    def test_a_claim_that_stopped_being_readable_is_named_not_read_as_motion(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            run_dir = make_repo(tmp, {"T1": ("claimed", "[]")})
+            with refusing_to_read(run_dir / "T1.md", OSError, after=1):
+                payload = self.ready(tmp)
+            self.assertEqual([], payload["ready"])
+            self.assertEqual(["T1"], [item["id"] for item in payload["skipped"]])
+            self.assertIn("claimed", payload["skipped"][0]["reason"])
+
+
+class TestClaimGradesStalenessAsReadyDoes(unittest.TestCase):
+    """`_claim_is_stale`'s docstring says the two paths "cannot answer
+    differently about one claim". They could: `ready` graded the
+    grant-merged, list-normalised ticket while `claim` graded raw
+    frontmatter, so a `write_scope` written as a bare scalar -- the shape
+    half the sink carries -- was iterated by character on the claim path,
+    every cited artifact fell outside the scope of letters, and a lane
+    still writing was handed to a second executor (F F4)."""
+
+    def fixture(self, tmp: Path):
+        (tmp / ".git").mkdir()
+        run_dir = use_sink(tmp) / "tickets" / "testrun"
+        run_dir.mkdir(parents=True)
+        scratch = tmp / "scratch"
+        scratch.mkdir()
+        artifact = scratch / "t1.txt"
+        artifact.write_text("live\n", encoding="utf-8")
+        long_ago = (datetime.now(timezone.utc) - timedelta(hours=4)).strftime(
+            tickets_mod.UTC_STAMP
+        )
+        path = run_dir / "T1.md"
+        path.write_text(
+            "---\nid: T1\nrun: testrun\nstatus: claimed\nexecutor: orch-tdd\n"
+            f"depends_on: []\nwrite_scope: {scratch.name}/t1.txt\nbound: 30m\n"
+            f"claimed_by: agent-a\nclaimed_at: {long_ago}\n---\n\n"
+            f"## Objective\n\nWork.\n\n## Result\n\nWrote {artifact}\n",
+            encoding="utf-8",
+        )
+        # the ticket itself is old; only the cited artifact is moving
+        old = (datetime.now(timezone.utc) - timedelta(hours=4)).timestamp()
+        os.utime(path, (old, old))
+        return path
+
+    def test_a_bare_scalar_scope_holds_the_claim_on_both_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.fixture(tmp)
+            self.assertEqual([], run_cmd(tmp, "ready", "--run", "testrun")["ready"])
+            payload = run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-b")
+            self.assertIn("error", payload)
+            self.assertIn("not stale", payload["error"])
+
+
+class TestAppendLockDocstringIsTrue(unittest.TestCase):
+    """`_append_one_line` takes a mandatory range lock on byte zero, which
+    on Windows fails a concurrent *reader* of that byte too -- so the
+    docstring's "an append blocks only another append" told a reader it was
+    safe when `_notes_terminal` and every other reader can be refused
+    (F F4)."""
+
+    def test_the_docstring_does_not_promise_readers_are_unaffected(self):
+        doc = " ".join((tickets_mod._append_one_line.__doc__ or "").split())
+        self.assertNotIn("blocks only another append", doc)
+        self.assertIn("reader", doc)
+
+    def test_the_terminal_reader_refuses_when_it_cannot_read_rather_than_calling_the_run_open(self):
+        """The docstring now says a refused reader retries and has not found
+        the file unreadable; `_notes_terminal` was the reader F F4 named, and
+        it answered every failure with "open" -- so a note landed on a closed
+        run whenever the read was refused. A missing notes.md is still open
+        (the first note creates it); an unreadable one is an error, and the
+        note is not written."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            self.assertIn(
+                "run_state", run_cmd(worktree, "run-state", "testrun", "--note", "one")
+            )
+            with refusing_to_read(notes_of(), OSError):
+                payload = run_cmd(worktree, "run-state", "testrun", "--note", "two")
+            self.assertIn("error", payload)
+            self.assertIn("unreadable", payload["error"])
+            self.assertEqual(["one"], notes_of().read_text(encoding="utf-8").splitlines())
 
 
 if __name__ == "__main__":
