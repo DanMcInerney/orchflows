@@ -36,7 +36,8 @@ target, or the finding that nothing qualified.
 ## Return fields
 
 status; result — everything orch-self-improve's Return names, and the
-top-ranked proposal by path; verification; feedback; risks
+top-ranked proposal by path with the evidence entries it cites;
+verification; feedback; risks
 
 ## Result
 

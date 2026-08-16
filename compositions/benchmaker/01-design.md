@@ -39,8 +39,11 @@ intended coverage, and expected execution cost.
 
 ## Return fields
 
-status; result — everything orch-eval-design's Return names;
-verification; feedback; risks
+status; result — everything orch-eval-design's Return names: the frozen
+design identity, the case specifications with their tiers and anchors,
+the required criteria with their oracles and `oracle_class`, scoring and
+aggregation, intended coverage, expected execution cost, and the gaps
+carried forward; verification; feedback; risks
 
 ## Result
 
