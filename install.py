@@ -564,13 +564,14 @@ def _git_dirs(repo_root: Path) -> tuple[Path, Path] | None:
         pointer = marker.read_text(encoding="utf-8")
     except OSError:
         return None
-    git_dir = None
+    named = ""
     for line in pointer.splitlines():
         if line.startswith("gitdir:"):
-            git_dir = Path(line.partition(":")[2].strip())
+            named = line.partition(":")[2].strip()
             break
-    if git_dir is None or not str(git_dir):
+    if not named:
         return None
+    git_dir = Path(named)
     if not git_dir.is_absolute():
         git_dir = repo_root / git_dir
     common_file = git_dir / "commondir"

@@ -1571,6 +1571,16 @@ class TestSourceCommit(unittest.TestCase):
 
             self.assertIsNone(install.resolve_source_commit(repo))
 
+    def test_an_empty_gitdir_pointer_does_not_read_the_working_tree(self):
+        # "gitdir:" with nothing after it names no git dir. Resolving it to
+        # the worktree root would read any file called HEAD sitting there as
+        # the source commit -- a commit from outside any .git.
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self._worktree(Path(tmp), gitdir_line="gitdir:")
+            (repo / "HEAD").write_text("cafebabe\n", encoding="utf-8")
+
+            self.assertIsNone(install.resolve_source_commit(repo))
+
     def test_source_commit_drift_message_only_on_actual_change(self):
         self.assertIsNone(install.source_commit_drift_message(None, "abc"))
         self.assertIsNone(install.source_commit_drift_message({"source_commit": None}, "abc"))
