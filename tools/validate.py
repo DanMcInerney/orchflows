@@ -133,7 +133,6 @@ TERMINAL_TERM_RE = re.compile(r"stalled|limited|exit|terminal", re.IGNORECASE)
 ENVELOPE_UNITS = (
     "orch-investigate",
     "orch-loop",
-    "orch-compose",
     "orch-frontier",
 )
 ENVELOPE_VOCAB_RES = (

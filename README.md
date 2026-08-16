@@ -54,7 +54,7 @@ the way, `orch-off` stands it down for the session.
 Name the bricks yourself when you want a specific shape:
 
     > orch-loop the build until `pytest -q` exits 0
-    > orch-panel these three cache designs — blind judges, pick one
+    > orch-critique this cache design — rank what it gets wrong
     > evolve this blog post — no benchmark, derive a blind judge panel
     > evolve the summarizer prompt against the frozen benchmark
 

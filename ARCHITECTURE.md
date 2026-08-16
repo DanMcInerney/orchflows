@@ -75,6 +75,10 @@ dependencies point. Terms: `docs/vocabulary.md`.
   into a tree beside the repository, where a check reads one lane's
   result alone; `scripts/migrate_state.py` owns copying a pre-existing
   state tree into the sink, never deleting from the source;
+  `scripts/search_plan.py` owns the canonical bounded candidate-search
+  advance, named by bare filename from the evolve template's campaign
+  stub, its request and response shapes stated beside it in
+  `scripts/search_plan_protocol.md`;
   `scripts/state_root.py` owns resolving the state sink,
   the one channel every other script reaches it through;
   `scripts/tickets.py` owns the ticket directory: issuing, instantiating
