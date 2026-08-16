@@ -33,9 +33,9 @@ anything else is reported by name and left alone rather than copied
 blind.
 
 Prints exactly one JSON document to stdout and exits 0, like the sibling
-writers: a refusal — a collision, an unwritable destination, an
-unreadable source — is reported in the payload, never as a non-zero exit
-or a traceback. The caller reads the payload.
+writers: a refusal — a collision, a destination that cannot be read or
+written, an unreadable source — is reported in the payload, never as a
+non-zero exit or a traceback. The caller reads the payload.
 """
 
 from __future__ import annotations
@@ -155,12 +155,20 @@ def _backfilled_project(cwd):
 
 
 def _existing_lines(path: Path):
-    """Every line the destination already holds, for identity deduplication."""
+    """Every line the destination already holds, for identity deduplication.
 
-    try:
-        return path.read_text(encoding="utf-8", errors="replace").splitlines()
-    except OSError:
+    A destination that is not there yet holds nothing, which is a reading.
+    One that is there and cannot be read is not: read as empty, every line
+    the source holds is new, so the whole stream is queued and appended a
+    second time under a payload reporting ``duplicates: 0``. The failure
+    raises here and the planner names it, because the only two answers this
+    tool may give about a destination are what it holds and that it could
+    not be read.
+    """
+
+    if not path.exists():
         return []
+    return path.read_text(encoding="utf-8", errors="replace").splitlines()
 
 
 def _migrated_friction_line(line: str, source_root: Path):
@@ -225,6 +233,7 @@ class _Plan:
         self.actions = []
         self.seen = {}  # destination -> the lines it will hold
         self.claimed = {}  # destination -> the source already copying there
+        self.refusals = []  # what could not be planned, and why
 
     def copy(self, stream, source: Path, dest: Path):
         self.claimed[str(dest)] = source
@@ -324,7 +333,13 @@ def _plan_runs(plan, root, stream, collided, report):
 def _plan_line_file(plan, stream, source_file, dest_file, migrate, counts):
     """Plan one jsonl merge: read, migrate each line, drop exact duplicates."""
 
-    seen = plan.lines_at(dest_file)
+    try:
+        seen = plan.lines_at(dest_file)
+    except OSError as error:
+        # Refused rather than planned: appending against a destination whose
+        # contents are unknown is how the same records land twice.
+        plan.refusals.append(f"unreadable destination {dest_file}: {error}")
+        return
     queued = []
     try:
         raw = source_file.read_text(encoding="utf-8", errors="replace")
@@ -541,7 +556,7 @@ def plan_migration(values, sink: Path, dry_run: bool):
         "sources": sources,
         "collisions": [{"run": run, "claims": claims}
                        for run, claims in sorted(collided.items())],
-        "errors": errors,
+        "errors": errors + plan.refusals,
         "plan": plan.public(),
     }
     return plan, document
@@ -551,17 +566,19 @@ def plan_migration(values, sink: Path, dry_run: bool):
 
 
 def _needs_newline(path: Path) -> bool:
-    """Whether an existing file's last byte leaves a line unterminated."""
+    """Whether an existing file's last byte leaves a line unterminated.
 
-    try:
-        with open(path, "rb") as handle:
-            handle.seek(0, os.SEEK_END)
-            if handle.tell() == 0:
-                return False
-            handle.seek(-1, os.SEEK_END)
-            return handle.read(1) != b"\n"
-    except OSError:
-        return False
+    A file it cannot open raises, because False is the answer "no separator
+    needed" and that answer glues the first record onto the unterminated
+    line. ``apply_plan`` names the action instead, and appends nothing.
+    """
+
+    with open(path, "rb") as handle:
+        handle.seek(0, os.SEEK_END)
+        if handle.tell() == 0:
+            return False
+        handle.seek(-1, os.SEEK_END)
+        return handle.read(1) != b"\n"
 
 
 def apply_plan(plan: _Plan, document):
