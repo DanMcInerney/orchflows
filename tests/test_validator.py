@@ -205,6 +205,88 @@ class TestFrontmatterBoundaryInputs(unittest.TestCase):
         self.assertFalse(diag.has_errors)
 
 
+class TestASkippedCheckSaysSo(_IsolatedTree):
+    """A check that finds nothing to check has not passed.
+
+    The isolated tree is contracts/, tools/ and tests/ -- so the checks
+    keyed to skills/, packs/, compositions/, docs/, templates/ and
+    scripts/ find no owner and return. Returning is right: a fixture tree
+    is not the library. Returning *silently* is the fallback -- the report
+    then reads exactly like a run that graded all of it, and the one
+    reader of that report is a run deciding whether the tree is admissible.
+    """
+
+    SKIP_NOTE = "absent; check skipped"
+
+    def _skipped(self, stdout):
+        return [line for line in stdout.splitlines() if self.SKIP_NOTE in line]
+
+    def test_each_absent_owner_is_named_rather_than_passed_over(self):
+        result = self._run()
+        named = " ".join(self._skipped(result.stdout))
+
+        for owner in (
+            "scripts/state_root.py",      # the friction-location copies
+            "AGENTS.md",                  # a surface budget
+            "templates/host-block.md",    # the other surface budget
+            "compositions",               # the template contract
+            "ARCHITECTURE.md",            # the backticked-name check
+            "docs",                       # markdown link resolution
+            "benchmarks",                 # ditto: one absent root silences it
+        ):
+            with self.subTest(owner=owner):
+                self.assertIn(owner, named)
+
+    def test_the_link_check_names_every_root_that_bought_its_silence(self):
+        # This skip is not one file's but the whole check's:
+        # `validate_markdown_links` grades nothing at all unless every root
+        # is there, so a report naming only the first would leave the
+        # operator restoring roots one run at a time. `contracts/` is the
+        # control -- the isolated tree has it, and a check that named it
+        # would be naming roots it did not miss.
+        result = self._run()
+        named = self._skipped(result.stdout)
+
+        for root in validate.LINKED_MD_ROOTS:
+            with self.subTest(root=root):
+                present = (self.tmp_path / root).is_dir()
+                self.assertEqual(
+                    not present, any(line.startswith("WARN " + root + ":") for line in named)
+                )
+        self.assertTrue((self.tmp_path / "contracts").is_dir())
+
+    def test_a_check_that_starts_and_finds_half_its_tree_says_that_too(self):
+        # With the friction owner present the check runs and then finds no
+        # term owner to compare against -- the half that was silent.
+        (self.tmp_path / "scripts").mkdir()
+        shutil.copy(
+            ROOT / "scripts" / "state_root.py", self.tmp_path / "scripts" / "state_root.py"
+        )
+
+        result = self._run()
+
+        self.assertIn("docs/vocabulary.md", " ".join(self._skipped(result.stdout)))
+
+    def test_a_skipped_check_is_a_warning_and_not_an_error(self):
+        # Fixture trees are graded by these tests all day; the note may not
+        # turn them red, and `has_errors` is what the exit code reads.
+        result = self._run()
+
+        self.assertTrue(self._skipped(result.stdout))
+        for line in self._skipped(result.stdout):
+            self.assertTrue(line.startswith("WARN "), line)
+        self.assertEqual(0, result.returncode, result.stdout)
+
+    def test_the_library_itself_skips_nothing(self):
+        # The same note over the real tree would mean a check silently
+        # stopped running here, which is the finding this closes.
+        result = subprocess.run(
+            [sys.executable, str(VALIDATE)], capture_output=True, text=True
+        )
+
+        self.assertEqual([], self._skipped(result.stdout))
+
+
 class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
     """Full runs against a synthetic skills/ tree, so the ERROR/exit-code
     contract is checked at the actual ROOT-relative seam, not just

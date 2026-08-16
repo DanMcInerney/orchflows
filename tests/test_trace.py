@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -420,6 +421,36 @@ class TestClaudeBoundaryInputs(unittest.TestCase):
             ev = result["events"][0]
             self.assertEqual(trace.TEXT_CLIP, len(ev["text"]))
             self.assertTrue(ev["truncated"])
+
+    def test_a_transcript_that_cannot_be_read_is_not_full_confidence(self):
+        # `_finalize` divides clean by total and reads a zero total as 1.0.
+        # A file present and unreadable produces exactly that zero, with a
+        # `cannot read file` parse error beside it -- and 1.0 there claims
+        # full trust in data nothing was read from, the same false
+        # confidence `extract_claude` already refuses for a missing file.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            (tmp / "main.jsonl").write_text("{}\n", encoding="utf-8")
+
+            with mock.patch.object(Path, "read_text", side_effect=OSError("gone")):
+                result = trace.extract_claude(tmp)
+
+            self.assertEqual(0.0, result["schema_confidence"])
+            self.assertEqual(1, len(result["parse_errors"]))
+            self.assertIn("cannot read file", result["parse_errors"][0]["error"])
+
+    def test_an_empty_transcript_is_still_full_confidence(self):
+        # The other zero total: nothing to read is not the same as nothing
+        # read, and the file that is there and empty has nothing to distrust.
+        # (`TestClaudeBoundaryInputs` asserts the same from the page's side;
+        # this pins the two zeros apart at the seam that divides them.)
+        self.assertEqual(1.0, trace._finalize("h", "s", [], 0, 0, [])["schema_confidence"])
+        self.assertEqual(
+            0.0,
+            trace._finalize("h", "s", [], 0, 0, [{"line": None, "error": "cannot read file: x"}])[
+                "schema_confidence"
+            ],
+        )
 
     def test_oversized_malformed_line_is_a_parse_error_not_a_crash(self):
         with tempfile.TemporaryDirectory() as tmp:

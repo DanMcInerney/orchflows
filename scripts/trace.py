@@ -155,7 +155,12 @@ def _finalize(host, session_id, events, clean, total, parse_errors):
     events.sort(key=lambda ev: ev.get("ts") or "")
     for ev in events:
         ev.pop("_start_ts", None)
-    confidence = round(clean / total, 4) if total else 1.0
+    # Two zero totals, two answers: a transcript that is there and empty has
+    # nothing to distrust, while a total of zero standing next to a parse
+    # error is a file nothing was read from -- and 1.0 there would claim
+    # full trust in no data, which `extract_claude` already refuses for a
+    # file that is not there at all.
+    confidence = round(clean / total, 4) if total else (0.0 if parse_errors else 1.0)
     return {
         "host": host,
         "session_id": session_id,

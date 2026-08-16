@@ -295,12 +295,37 @@ class TestFindRepoRootNamesTheProject(unittest.TestCase):
         (mod / ".git").write_text("gitdir: ../.git/modules/mod\n", encoding="utf-8")
         self.assertEqual(super_repo, state_root.find_repo_root(mod))
 
-    def test_unparseable_git_file_falls_back_to_the_walk_up_result(self):
+    def test_a_pointer_that_does_not_parse_names_the_worktree(self):
+        # Not a fallback the caller has to guess at: the docstring states
+        # this outcome, and the identity it yields is a real directory the
+        # record can be read back against.
         main = self.make_main()
         vendored = main / "vendored"
         vendored.mkdir()
         (vendored / ".git").write_text("not a gitdir pointer\n", encoding="utf-8")
         self.assertEqual(vendored, state_root.find_repo_root(vendored))
+
+    def test_a_pointer_that_cannot_be_read_names_the_worktree_too(self):
+        # The other arm of one `except`: unreadable, not unparseable. The
+        # answer is the same one and the module states it -- what a reader
+        # may not do is take the returned root as "this worktree's main
+        # checkout was resolved".
+        main = self.make_main()
+        (main / ".git" / "worktrees" / "wt").mkdir(parents=True)
+        wt = self.tmp / "wt"
+        wt.mkdir()
+        (wt / ".git").write_text(
+            f"gitdir: {main / '.git' / 'worktrees' / 'wt'}\n", encoding="utf-8"
+        )
+        with mock.patch.object(Path, "read_text", side_effect=OSError("refused")):
+            self.assertEqual(wt, state_root.find_repo_root(wt))
+
+    def test_the_module_states_both_outcomes_rather_than_promising_one(self):
+        # The docstring claimed every worktree of a repository reports one
+        # project identity; the two cases above are when it does not.
+        text = state_root.__doc__
+        self.assertIn("dereferenced when the pointer parses", text)
+        self.assertIn("names the worktree", text)
 
     def test_no_repository_returns_none(self):
         bare = self.tmp / "bare"
@@ -458,12 +483,16 @@ class TestThereIsNoFallback(_SinkFixture):
         self.assertNotIn("run_state", payload)
         self.assertEqual(before, listing(self.repo))
 
-    def test_the_logger_stays_silent_exits_zero_and_writes_nothing_under_cwd(self):
+    def test_the_logger_names_the_loss_exits_zero_and_writes_nothing_under_cwd(self):
         before = listing(self.repo)
         done = run_script(FRICTION_PY, "o", "e", cwd=self.repo, sink=self.blocked)
         self.assertEqual(0, done.returncode)
         self.assertEqual("", done.stdout)
-        self.assertEqual("", done.stderr)
+        # Exit 0 is friction.py's bar; silence is not. A lost entry says so
+        # in one line, because the host block's hand-append remedy triggers
+        # on knowing the logger could not run.
+        self.assertIn("not logged", done.stderr)
+        self.assertNotIn("Traceback", done.stderr)
         self.assertEqual(before, listing(self.repo))
 
     def test_the_logger_survives_a_missing_resolver_beside_it(self):
@@ -479,6 +508,8 @@ class TestThereIsNoFallback(_SinkFixture):
         done = run_script(flat / "friction.py", "o", "e", cwd=self.repo, sink=self.sink)
         self.assertEqual(0, done.returncode)
         self.assertEqual("", done.stdout)
+        self.assertNotIn("Traceback", done.stderr)
+        self.assertIn("not logged", done.stderr)
         self.assertFalse((self.sink / "friction").exists())
 
     def test_the_flat_installed_layout_resolves_when_the_resolver_is_beside_it(self):

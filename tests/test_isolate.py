@@ -235,6 +235,31 @@ class IsolateTest(IsolateFixture):
         self.assertEqual(1, self.run_isolate())
         self.assertEqual(0, self.run_isolate("--force"))
 
+    def test_an_interpreter_without_the_tar_filter_names_the_downgrade(self):
+        """`filter="tar"` arrived in 3.11.4; below it the extraction runs
+        unfiltered. The docstring says nothing here is skipped, and this is
+        a check weakened on hosts the floor still admits -- so the export
+        still happens and says on stderr that it happened unfiltered."""
+
+        real = isolate.tarfile.TarFile.extractall
+
+        def without_filter(self, path=None, members=None, **kwargs):
+            if "filter" in kwargs:
+                raise TypeError("extractall() got an unexpected keyword argument 'filter'")
+            return real(self, path, members)
+
+        with mock.patch.object(isolate.tarfile.TarFile, "extractall", without_filter):
+            code = self.run_isolate()
+
+        self.assertEqual(0, code)
+        self.assertEqual("committed\n", (self.dest / "kept.md").read_text())
+        self.assertIn("filter", self.err.getvalue())
+        self.assertIn("isolate:", self.err.getvalue())
+
+    def test_an_interpreter_with_the_filter_says_nothing(self):
+        self.assertEqual(0, self.run_isolate())
+        self.assertEqual("", self.err.getvalue())
+
 
 class TestIsolateCopiesFromSink(IsolateFixture):
     """Item 05 criterion 3. The run state a check reads in the isolated tree

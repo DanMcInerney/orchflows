@@ -11,8 +11,10 @@ already loaded.
 A record carries the project it arose in as a field. ``find_repo_root``
 is here for that reason and no other: it answers *which project*, never
 *where the record goes*. A linked worktree's ``.git`` pointer file is
-dereferenced to the main checkout, so every worktree of a repository
-reports one project identity.
+dereferenced when the pointer parses and can be read, so every worktree
+of a repository reports one project identity; an unparseable or
+unreadable pointer names the worktree, and the record then carries that
+directory as the project rather than the checkout above it.
 
 This module is the single owner of both facts. ``tickets.py``,
 ``friction.py`` and ``workspace.py`` call it; none of them reimplements
@@ -55,7 +57,10 @@ def improvement_root() -> Path:
 
 
 def main_checkout_root(git_file: Path):
-    """Resolve a .git pointer file (worktree/submodule) to its main root."""
+    """Resolve a .git pointer file (worktree/submodule) to its main root,
+    or ``None`` -- which ``find_repo_root`` reads as "name the worktree",
+    the outcome the module docstring states, for a pointer that will not
+    parse and for one that will not read alike."""
 
     try:
         for line in git_file.read_text(encoding="utf-8", errors="replace").splitlines():

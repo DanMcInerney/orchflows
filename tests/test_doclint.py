@@ -14,6 +14,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -108,6 +109,37 @@ class FixtureRootTest(unittest.TestCase):
             if f["kind"] == "dangling-link"
         ]
         self.assertEqual([("docs/shapes.md", "/gone.md"), ("index.md", "missing.md")], findings)
+
+    def test_a_target_the_path_layer_refuses_is_reported_missing_not_skipped(self):
+        """`resolve_link` returns None for a link that is not the
+        repository's to resolve -- an external URL, a bare anchor. A name
+        the path layer itself will not answer for is a different thing: the
+        reader cannot follow it either, so it is a dangling link and not a
+        link the check has no business grading. Sharing one None sent it
+        through documentation.md law 5 unread -- and an embedded null, which
+        the path layer refuses with a ValueError rather than an OSError,
+        did not reach that None at all: it came out of the check as a
+        traceback."""
+
+        source = self.root / "index.md"
+        refused = "bad\x00name.md"
+
+        self.assertIsNotNone(doclint.resolve_link(source, refused))
+        self.assertEqual([refused], doclint.dangling_links(source, "[x]({0})".format(refused)))
+
+        with mock.patch.object(Path, "resolve", side_effect=OSError("refused")):
+            self.assertEqual(
+                ["missing.md"], doclint.dangling_links(source, "[m](missing.md)")
+            )
+
+    def test_a_link_that_is_not_ours_to_resolve_is_still_skipped(self):
+        # The other half of the same None, unchanged: an external URL, a
+        # bare anchor and a templated path are graded by nobody here.
+        source = self.root / "index.md"
+
+        self.assertEqual(
+            [], doclint.dangling_links(source, "[a](https://x/y) [b](#anchor) [c]({{root}}/x.md)")
+        )
 
     def test_a_root_with_neither_reports_nothing(self):
         (self.root / "index.md").unlink()
