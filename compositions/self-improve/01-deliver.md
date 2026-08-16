@@ -29,8 +29,12 @@ revision.
 - 00-mine's `## Result` — the top-ranked proposal by path; the proposal
   file is the run's frozen statement: its causal owner, scope, exact
   change, evidence entries and blame class, by identity.
-- {{workspace}} — the repository holding the owner, at its current
-  revision; its required checks as its own standards owner names them.
+- {{workspace}} — the target repository: the tree holding the owner, at
+  its current revision.
+- The standards owner, by pointer: {{workspace}}'s own owner file —
+  AGENTS.md or its equivalent.
+- Acceptance as runnable checks: {{workspace}}'s required checks as that
+  owner names them.
 - rules/improvement.md §5–§6 — replay before acceptance; coverage as the
   last act.
 

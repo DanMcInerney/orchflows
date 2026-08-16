@@ -6,8 +6,9 @@ write_scope: [{{package}}]
 bound: <= 80 tool calls
 excluded_actions:
   - render a pass/fail verdict on the benchmark
-  - audit only the hard cases — the re-read sample is declared, so difficulty filtering cannot enter by the back door
-  - leave a hole undeclared, which is the failure a declared one is not
+  - generate a candidate
+  - audit only the hard cases
+  - leave a hole undeclared
 independence: gate
 isolation: required
 profile: orch-worker
@@ -25,18 +26,18 @@ gap naming the case and its class.
 
 - 03-qualify's `## Result` — the qualified assembly at its fixed
   identity, and its verdict set.
-- [the protocol](../references/benchmaker-protocol.md)'s audit and
-  measurement stages — the stage order, the reference audit's three
-  defect classes, the attack pass's three outcomes, and the triage
-  measurement pass that precedes the audit it targets.
+- [the protocol](../references/benchmaker-protocol.md#audit-and-measurement) —
+  the stage order, §Reference audit's defect classes, §Attack pass's
+  outcomes, and the triage measurement pass that precedes the audit it
+  targets.
 - The dated attack checklist this package carries, appended to with its
   date where this pass adds a class.
 
 ## Completion test
 
-- every case recorded `inversion` or `both-fail` by the triage pass was audited by solving it from the prompt and licensed evidence alone, and the re-read sample over the rest is declared | oracle: the reference audit record | oracle_class: deterministic | provenance: authored-here
-- the audit reports a defect count and each defect's class, never a rate | oracle: the reference audit record | oracle_class: deterministic | provenance: pre-existing
-- every attack outcome is `SUCCEEDED`, `FAILED` or `BLOCKED` from the candidate's own scope for that case, and every unrepaired hole is declared with the attack that works | oracle: the attack pass record | oracle_class: deterministic | provenance: authored-here
+- every case §Reference audit sends to the solve-it-yourself pass was audited that way, and the re-read sample over the rest is declared | oracle: the reference audit record | oracle_class: deterministic | provenance: authored-here
+- the audit's output carries the shape §Reference audit requires of it | oracle: the reference audit record | oracle_class: deterministic | provenance: pre-existing
+- every attack outcome is one of §Attack pass's three, taken from the candidate's own scope for that case, and every unrepaired hole is declared | oracle: the attack pass record | oracle_class: deterministic | provenance: authored-here
 
 ## Return fields
 

@@ -21,10 +21,15 @@ charter names.
 
 ## Fixed inputs
 
+- The question, stated as one: what must be true of {{target}} and its
+  class for a benchmark of {{outcome}} to be built from evidence rather
+  than from belief?
 - {{target}} — the target identity, opaque: carried, never defined.
 - {{outcome}} — the intended observable outcome, carried the same way.
 - {{sources}} — the source policy, including judgment permission and
   any bar on a lane's sources.
+- {{rigor}} — the rigor bar: the confidence each load-bearing claim
+  must reach, stated as the evidence that must exist for it.
 - {{bound}} — the one caller bound. Every stage's own bound is an
   allocation from it: nonnegative, totalling no more than it, unused
   allocation carrying forward from a completed stage. A caller bound

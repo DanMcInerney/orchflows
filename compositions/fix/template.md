@@ -13,11 +13,14 @@ verified behind a regression guard that fails on the old behaviour.
 Four stubs, one chain: `00-reproduce` → `01-cause` → `02-repair` →
 `03-verify`. `03-verify` is terminal, so its completion test is this
 template's done check — every original oracle PASSing plus one new
-regression check. A fix that reaches it without that guard is
-`limited`, never `complete`.
+regression check. A fix that reaches it without that guard exits on
+[the `limited` clause](../../docs/vocabulary.md#iteration) that owns
+this case.
 
 Instantiate with both placeholders: `failure`, the observed failure as
 reported, and `workspace`, the repository or tree it lives in —
-`02-repair`'s write scope; every other stub is read-only. Each stub is a ticket per
+`02-repair`'s write scope; every other stub is read-only. The run's
+bound is the sum of the four stubs' own bounds, each fixed in its own
+frontmatter. Each stub is a ticket per
 [contracts/work-item.md](../../contracts/work-item.md) missing only
 what instantiation adds.

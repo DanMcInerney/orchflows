@@ -4,10 +4,11 @@ executor: orch-decompose
 pack: {{pack}}
 depends_on: [01-triage]
 write_scope: [{{workspace}}]
-bound: {{brief_bound}}
+bound: {{brief_bound}} per ready-for-agent brief
 excluded_actions:
   - deliver a brief 01-triage did not disposition ready-for-agent
   - answer a ready-for-human brief on the maintainer's behalf
+  - start a brief without its bound already fixed
 independence: gate
 isolation: required
 profile: orch-worker
@@ -27,7 +28,12 @@ whole delivery.
 - 01-triage's `## Result` — the dispositions and compacted briefs by
   identity.
 - {{pack}} — this run's stamp, and the default every cut unit inherits.
-- {{workspace}} — the tree the delivered changes land in.
+- {{workspace}} — the target repository: the tree the delivered changes
+  land in.
+- The standards owner, by pointer: the workspace's own owner file —
+  AGENTS.md or its equivalent.
+- Acceptance as runnable checks: the workspace's required checks as
+  that owner names them.
 - {{brief_bound}} — each brief's budget, fixed before that brief starts.
 
 ## Completion test

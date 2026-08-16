@@ -5,8 +5,9 @@ role: none
 ---
 
 Require: a frozen goal; the body — what each iteration dispatches, one
-named skill, a composition by name, or a caller-owned composite of
-named skills, bound as plain text and never backticked, a binding
+named skill, an orch-frontier ticket over a template, or a
+caller-owned composite of named skills, bound as plain text and never
+backticked, a binding
 rather than a call edge; a
 done-check naming its oracle and oracle_class per
 [contracts/verdict.md](../../../contracts/verdict.md) — the iteration

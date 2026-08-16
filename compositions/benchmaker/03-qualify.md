@@ -27,18 +27,20 @@ cost each checked independently, with a verdict per required criterion.
   fixed identity qualification runs against.
 - 01-design's `## Result` — the required criteria, their oracles and
   `oracle_class`, and the gaps carried forward.
-- [the protocol](../references/benchmaker-protocol.md)'s qualification
-  mechanics — what each check means, what the seeded variants are, and
-  what leaves a check UNVERIFIED.
-- The known-good and known-bad seeds this qualifying context supplies;
-  where no known-bad variant can exist, discrimination is UNVERIFIED
-  with an explicit gap.
+- [the protocol](../references/benchmaker-protocol.md#qualification) —
+  what each check means, what the seeded variants are, what the
+  qualifying context supplies, and what leaves a check UNVERIFIED.
+- {{package}} — the target repository the qualified assembly sits in.
+- The standards owner, by pointer: the workspace's own owner file —
+  AGENTS.md or its equivalent.
+- Acceptance as runnable checks: the workspace's required checks as
+  that owner names them, beside this stub's own completion test.
 
 ## Completion test
 
-- every required check is recomputed from the resolved component bytes and captured outputs, never from a self-declared verdict | oracle: the qualification record against the package's locators | oracle_class: deterministic | provenance: pre-existing
-- the benchmark passes every good seed and fails every bad one, at the declared trial count where the outcome is nondeterministic | oracle: the seeded runs | oracle_class: deterministic | provenance: authored-here
-- a required deterministic failure blocks qualification, and a judged criterion neither compensates for one nor is recorded without its rerun variance | oracle: the verdict set read against contracts/verdict.md | oracle_class: deterministic | provenance: pre-existing
+- every required check is recomputed on the protocol's §Qualification terms, never from a self-declared verdict | oracle: the qualification record against the package's locators | oracle_class: deterministic | provenance: pre-existing
+- the seeded discrimination check holds as §Qualification states it | oracle: the seeded runs | oracle_class: deterministic | provenance: authored-here
+- the verdict set honours §Qualification on required deterministic failure and on judged criteria | oracle: the verdict set read against contracts/verdict.md and §Qualification | oracle_class: deterministic | provenance: pre-existing
 
 ## Return fields
 

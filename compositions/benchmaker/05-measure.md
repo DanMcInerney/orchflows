@@ -7,7 +7,7 @@ bound: <= 40 tool calls
 excluded_actions:
   - compare candidates
   - promote or activate anything
-  - call Evolve
+  - call evolve
   - close without recording the qualified result in the package's manifest, whose field set and component resolution are its own, at the git revision the benchmark sits at
 independence: checker
 isolation: none
@@ -18,7 +18,7 @@ profile: orch-worker
 
 The manifest recorded, and the measurement pass beside it: what the
 candidates scored over the candidate-accessible scope at the declared
-rungs, as a recording that cannot fail and so forces no revision loop.
+rungs, on §Measurement pass's terms.
 
 ## Fixed inputs
 
@@ -28,15 +28,16 @@ rungs, as a recording that cannot fail and so forces no revision loop.
   `qualification` component names.
 - [the manifest](../references/benchmaker-manifest.md) — the field set,
   and how a component reference resolves.
-- [the protocol](../references/benchmaker-protocol.md)'s measurement
-  pass — what is declared before running, the three-valued per-case
-  status, and the record that lands outside the package.
+- [the protocol](../references/benchmaker-protocol.md#measurement-pass) —
+  what is declared before running, what this stage may and may not
+  decide, the three-valued per-case status, and the record that lands
+  outside the package.
 
 ## Completion test
 
 - the manifest's qualification verdict set covers every component but its own — covered PASS on every required criterion, gaps explicit (`[]` when none) | oracle: the manifest read against its own field set and the verdict set | oracle_class: deterministic | provenance: pre-existing
 - the measurement record lands outside the package naming a default-branch-reachable revision carrying identical measured bytes, the full candidate identity, the date, the measured scope, and the per-case three-valued status with its distinct failure signature count | oracle: the measurement record | oracle_class: deterministic | provenance: authored-here
-- every protocol-required criterion the dispatched authority made unreachable is recorded as an intake gap before scoring, never as a candidate failure | oracle: the declared authority beside the gap list | oracle_class: deterministic | provenance: pre-existing
+- every criterion the dispatched authority made unreachable is recorded as §Measurement pass requires | oracle: the declared authority beside the gap list | oracle_class: deterministic | provenance: pre-existing
 
 ## Return fields
 

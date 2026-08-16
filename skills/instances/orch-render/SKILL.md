@@ -20,8 +20,8 @@ completion test through `orch-verify`, capturing every covered
 identity.
 
 Never: claim a visual result without a capture; hard-code a value a
-token already names; leave an enumerated state uncaptured; touch paths
-outside the ticket's write scope.
+token already names; write where the ticket's `write_scope` per
+[work-item.md](../../../contracts/work-item.md) does not reach.
 
 Return: the completed ticket per
 [work-item.md](../../../contracts/work-item.md)'s filing law, its

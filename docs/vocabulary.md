@@ -218,7 +218,10 @@ composition).
   loop is complete (any oracle class per `contracts/verdict.md`; an
   iteration count is a deterministic one), and the resource cap —
   iterations, tool calls, tokens, time — whose exhaustion exits
-  `limited`; success-condition law owned by `rules/loops.md` §1.
+  `limited`; success-condition law owned by `rules/loops.md` §1. A
+  delivery whose terminal criteria hold except a guard the template
+  requires — a missing regression check — is `limited`, never
+  `complete`.
 - **iteration** — one fresh-context pass of a loop from the frozen goal
   plus worklog; two consecutive iterations without progress are a
   **stall**, which `rules/loops.md` exits `stalled`.

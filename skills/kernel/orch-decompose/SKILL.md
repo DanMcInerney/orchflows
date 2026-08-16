@@ -25,7 +25,7 @@ repair write the gate stubs — `tickets.py gate <run> <root> --lens <a label pe
 default> --write-scope <the run's scope>` — behind the assembly item where the pack named one, so the gate depends on it.
 
 Map every acceptance criterion to an item, to the gate when the pack's lens owns it, or to uncovered remainder; that
-map's durable home is `<state-root>/runs/<run>/coverage.md`. A criterion no slicing covers returns a decision gap naming
+map's durable home is `<state-root>/runs/<run>/<root>.coverage.md`, one per root. A criterion no slicing covers returns a decision gap naming
 them; the rest is still cut, never a forced slicing (§3). When the caller asked for a plan, the cut ends in the root
 ticket's `## Handoff` as a `plan_gate` suspension, resumed on approval.
 

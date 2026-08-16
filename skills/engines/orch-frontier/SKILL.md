@@ -18,7 +18,7 @@ merge. Establishment rides the complete delegation packet `tickets.py packet` em
 and is the cut's defect, never read the body to repair it yourself. Spawn exactly one fresh child on that packet, dispatched per
 [rules/delegation.md](../../../rules/delegation.md) §1-§2 with its role resolved per [rules/roles.md](../../../rules/roles.md) §4,
 the ticket's executor as the applied skill — an `executor: script:<path>` runs the named script and spawns nothing — or execute
-inline under that same §2's independence condition. Where a criterion's oracle
+inline under that same §2's independence condition, which an executor that must itself dispatch takes. Where a criterion's oracle
 carries `authored-here` provenance and the ticket's `independence` reads `checker`, dispatch `orch-critique` as one further fresh
 child on that same claimed ticket — the ticket's own write scope as that packet's `authority`, which is what makes the critic the
 corrector — whose result and authored checks await the coverage, then re-run the completion test through
