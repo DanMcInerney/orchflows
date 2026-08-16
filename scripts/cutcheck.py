@@ -168,6 +168,7 @@ ORPHAN_ITEM = "orphan-item"
 COVERAGE_MAP_ABSENT = "coverage-map-absent"
 ILLEGAL_EXECUTOR = "illegal-executor"
 SYMLINK_IN_TREE = "symlink-in-tree"
+BYTECODE_WRITTEN = "bytecode-written"
 FAMILY_OF = {
     ALREADY_PASSES: FAMILY,
     NO_HITS_BOTH_REVISIONS: FAMILY,
@@ -179,6 +180,10 @@ FAMILY_OF = {
     # the tree instead of the token: whether anything the copy holds reaches
     # out of it. `_names_outside_the_copy` says they are one problem twice.
     SYMLINK_IN_TREE: FAMILY,
+    # Family 1 for the same reason and one step milder: it is what the copy
+    # was written into with, read as a spelling of the oracle rather than as a
+    # reach out of the copy.
+    BYTECODE_WRITTEN: FAMILY,
     EXTRACTION_GAP: FAMILY,
     VERDICT_IN_OUTPUT: FAMILY,
     UNRUNNABLE_ORACLE: FAMILY,
@@ -200,8 +205,20 @@ FAMILY_OF = {
 # symlink is a fact about the repository, and confinement does not rest on
 # reporting it -- the clone flag holds whether or not anyone reads this line.
 ADVISORY = frozenset(
-    {EXTRACTION_GAP, COVERAGE_MAP_ABSENT, VERDICT_IN_OUTPUT, SYMLINK_IN_TREE}
+    {
+        EXTRACTION_GAP,
+        COVERAGE_MAP_ABSENT,
+        VERDICT_IN_OUTPUT,
+        SYMLINK_IN_TREE,
+        BYTECODE_WRITTEN,
+    }
 )
+# The one thing a python oracle writes into the copy by importing anything,
+# and the flag that stops it. Reported in words because the repair is a
+# spelling of the oracle and is stated nowhere else -- not in the pack's
+# oracle policy, not in the decomposer's skill, not in this report until now.
+BYTECODE_RE = re.compile(r"(?:^|/)__pycache__/|\.py[co]$")
+BYTECODE_REPAIR = "the interpreter's own cache; spell this oracle with `-B`"
 # The report's two summary lines. A reader selects finding lines by filtering
 # stdout on a family, a class name, a criterion number or a ticket id, so
 # neither summary line may carry any of those, nor the path of a script: a
@@ -209,10 +226,10 @@ ADVISORY = frozenset(
 ADVISORY_HEADING = "cutcheck: advisory -- reported, and never setting the exit status:"
 NO_FINDING_OUTSIDE = "cutcheck: no finding outside the advisory set"
 SCRATCH_NOT_REMOVED = "cutcheck: scratch root not removed"
-NO_SCRATCH_ROOT = "cutcheck: no scratch root under the git common dir of"
-# One directory under the git common dir holds every copy every cut makes, so
-# a root outliving its run is findable rather than scattered.
-SCRATCH_DIR = "cutcheck-scratch"
+NO_SCRATCH_ROOT = "cutcheck: no scratch root could be placed for"
+# Every copy any cut makes is one directory under the host's temp root, named
+# so a root outliving its run is findable rather than anonymous.
+SCRATCH_PREFIX = "cutcheck-"
 
 # The acceptance-coverage map: one row per spec criterion, naming the item,
 # the gate, or declared remainder that answers for it.
@@ -424,36 +441,27 @@ def _run_dir(run, worktree_root):
 def _scratch_root(worktree_root):
     """One invocation's private directory for the copies it grades in.
 
-    Placed under the git common dir, which is the one directory that is the
-    tool's to write in, answers the same from every worktree, and sits with the
-    object store a local clone hardlinks from -- whatever volume the worktree
-    itself is on. Enumerable too: every copy any cut ever leaves is under one
-    ``cutcheck-scratch``, so a stale one can be found without a search.
+    The host's temp root, so the length of a scratch path is a fact about the
+    host and never about the tree being graded. Placing it inside the target's
+    own git storage put it beside the object store a local clone hardlinks
+    from, which is faster and which made the tool unusable on Windows: a
+    copy's paths are then the target's path plus a scratch directory plus a
+    revision directory plus the deepest path in the revision, and a
+    183-character worktree root took ``git clone`` past ``MAX_PATH`` on its own
+    template copy -- which ``core.longpaths=true`` does not cover, so every
+    invocation from that tree exited before grading anything. Speed gives way
+    to running at all; the copy is still a clone, so it still carries history.
 
-    ``--git-common-dir``, and not the three neighbours it is easily confused
-    with. ``worktree_root.parent`` is the repository's *parent* from a main
-    checkout, which is how 24M landed outside every ignore file the repository
-    has; a literal ``.git`` is an 85-byte file in a linked worktree; and
-    ``--git-dir`` resolves to ``.git/worktrees/<name>``, so two worktrees
-    grading one run would not share a place. The answer comes back relative
-    -- a bare ``.git`` -- from a main checkout and absolute from a linked
-    worktree, so it is joined to the tree it was asked about before use.
+    ``worktree_root`` no longer decides where the copies land -- that is the
+    whole of the change -- and stays as the argument the caller and the test
+    harness both hold this seam by.
 
-    ``None`` where there is no common dir to place it under, which is any
-    directory outside a repository; the caller has a ticket set it cannot
-    grade and says so.
+    ``None`` where the temp root will not take a directory; the caller has a
+    ticket set it cannot grade and says so.
     """
 
-    proc = _git(["rev-parse", "--git-common-dir"], worktree_root)
-    if proc is None or proc.returncode != 0:
-        return None
-    common = Path(proc.stdout.strip())
-    if not common.is_absolute():
-        common = worktree_root / common
     try:
-        parent = common.resolve() / SCRATCH_DIR
-        parent.mkdir(parents=True, exist_ok=True)
-        return Path(tempfile.mkdtemp(prefix=".cutcheck-", dir=str(parent)))
+        return Path(tempfile.mkdtemp(prefix=SCRATCH_PREFIX))
     except OSError:
         return None
 
@@ -1573,10 +1581,24 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
             # Named once per path however many graded copies the span wrote
             # into: two revisions of one repository are one span's worth of
             # defect, not two.
+            wrote = sorted(set(_MUTATED))
+            bytecode = [path for path in wrote if BYTECODE_RE.search(path)]
             findings.extend(
-                (ticket_id, number, UNCONFINED_ORACLE, "{}: {}".format(wrote, command))
-                for wrote in sorted(set(_MUTATED))
+                (ticket_id, number, UNCONFINED_ORACLE, "{}: {}".format(path, command))
+                for path in wrote
+                if path not in bytecode
             )
+            if bytecode:
+                findings.append(
+                    (
+                        ticket_id,
+                        number,
+                        BYTECODE_WRITTEN,
+                        "{}: {}: {}".format(
+                            ", ".join(bytecode), BYTECODE_REPAIR, command
+                        ),
+                    )
+                )
             if klass is not None:
                 findings.append((ticket_id, number, klass, command))
     header = "\n".join(
