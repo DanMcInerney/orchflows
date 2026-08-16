@@ -7,6 +7,7 @@ can-fail direction -- it is built beside the tree, never by mutating it
 already-green direction.
 """
 
+import ast
 import json
 import subprocess
 import sys
@@ -19,8 +20,10 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import scripts.doclint as doclint  # noqa: E402
+from tools import validate  # noqa: E402  (needs the sys.path insert above)
 
 DOCLINT_PY = ROOT / "scripts" / "doclint.py"
+VALIDATE_PY = ROOT / "tools" / "validate.py"
 
 # One paragraph, two files. Long enough to clear the script's minimum: a
 # short block -- a heading, a one-line note -- repeats across documents by
@@ -166,6 +169,107 @@ class LibraryTreeTest(unittest.TestCase):
                 if f["kind"] == "dangling-link"
             ]
         self.assertEqual([], dangling)
+
+
+def imported_modules(path: Path) -> set:
+    """Every module `path` imports and every name it imports from one, at
+    any nesting depth -- a lazy import inside a function counts."""
+
+    names = set()
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.Import):
+            names.update(alias.name.split(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            names.add((node.module or "").split(".")[0])
+            names.update(alias.name for alias in node.names)
+    return names
+
+
+def function_names(path: Path) -> set:
+    return {
+        node.name
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+
+
+class OneImplementationTest(unittest.TestCase):
+    """`tools/validate.py` asks doclint the two questions instead of
+    carrying its own answers. Two copies of a near-duplicate method are two
+    definitions of what a copy is."""
+
+    def test_validate_reaches_difflib_only_through_doclint(self):
+        modules = imported_modules(VALIDATE_PY)
+        self.assertIn("doclint", modules)
+        self.assertNotIn("difflib", modules)
+
+    def test_validate_keeps_no_link_resolver_or_pair_index_of_its_own(self):
+        self.assertEqual(
+            set(),
+            function_names(VALIDATE_PY) & {"_resolve_link", "_cross_tier_candidates"},
+        )
+
+    def test_the_near_duplicate_ratio_validate_reports_is_doclints(self):
+        """The verdict, not the wiring: the pair the cross-tier check
+        reports on the real tree is a pair doclint's own method finds at
+        the same ratio."""
+
+        left, right = "the join adjudicates one returned child result", "the join adjudicates one returned result"
+        pairs = list(doclint.near_duplicate_pairs([left, right], validate.CELL_SIMILARITY_THRESHOLD))
+        self.assertEqual([(0, 1)], [(i, j) for i, j, _ in pairs])
+        self.assertAlmostEqual(doclint.similarity(right, left), pairs[0][2])
+
+
+class ValidateLinkCheckTest(unittest.TestCase):
+    """The library tree carries no dangling link, so the can-fail direction
+    is a tree built beside it (rules/verification.md Section 8): the same
+    check, the same call, one broken link."""
+
+    def graded(self, link: str) -> list:
+        """What the compiler's link check says about a tree whose one
+        document carries `link`."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for tier in validate.LINKED_MD_ROOTS:
+                (root / tier).mkdir()
+            write(root / "docs" / "guide.md", "See [a link](%s).\n" % link)
+            write(root / "docs" / "here.md", "# Here\n")
+            original = validate.ROOT
+            validate.ROOT = root
+            self.addCleanup(setattr, validate, "ROOT", original)
+            diag = validate.Diagnostics()
+            validate.validate_markdown_links(diag)
+            return diag.items
+
+    def test_a_dangling_link_in_a_graded_tier_is_an_error(self):
+        self.assertEqual(
+            [("ERROR", "docs/guide.md", "markdown link does not resolve: missing.md")],
+            self.graded("missing.md"),
+        )
+
+    def test_a_link_that_resolves_is_not(self):
+        self.assertEqual([], self.graded("here.md"))
+
+    def test_an_external_url_is_not_the_repositorys_to_resolve(self):
+        self.assertEqual([], self.graded("https://example.invalid/page"))
+
+
+class FactoryTableTest(unittest.TestCase):
+    """docs/documentation.md Section 7 names the oracle that grades each
+    factory's output. A project gets no `tools/validate.py`, so the
+    documentation row names what it does get."""
+
+    def test_the_documentation_row_names_this_script_as_its_oracle(self):
+        rows = [
+            line
+            for line in (ROOT / "docs" / "documentation.md")
+            .read_text(encoding="utf-8")
+            .split("\n")
+            if line.startswith("| documentation |")
+        ]
+        self.assertEqual(1, len(rows), rows)
+        self.assertIn("doclint.py", rows[0].rsplit("|", 2)[1])
 
 
 if __name__ == "__main__":
