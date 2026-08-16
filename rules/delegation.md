@@ -60,7 +60,7 @@
     redispatching before that revocation crosses is two live lanes on
     one task, forbidden. A child dispatching a permitted helper lane
     (glue, rule 2 — primary work stays forbidden by rule 4) records it
-    in the run's worklog (`contracts/worklog.md`, `orch-worklog`) at
+    in the run's notes (`tickets.py run-state --note`) at
     dispatch time, so depth-2 work is visible to the caller through run
     state, never only through transport. A lane is watched by its
     caller, not by its transport: at dispatch the caller arms its own
@@ -70,7 +70,7 @@
     judges each reading by this rule. A dispatch that launches an
     external process whose outcome its return depends on either holds
     its turn until that outcome lands in durable state, or records the
-    process and its expected artifact in the run's worklog at launch,
+    process and its expected artifact in the run's notes at launch,
     as helper lanes are recorded, so the caller's re-check covers it;
     a turn ending with such a process recorded nowhere is child
     under-delivered at the join.
