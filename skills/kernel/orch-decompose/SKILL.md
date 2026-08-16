@@ -4,7 +4,7 @@ description: Cut a stamped spec into work-item tickets under the pack's slicing.
 role: planner
 ---
 
-Require: a frozen [spec](../../../contracts/spec.md) whose routing stamp
+Require: a frozen [spec](../../../contracts/work-item.md#root-ticket) whose routing stamp
 names a pack, carrying every field the pack's `required_spec_fields`
 cell demands — reject otherwise, naming what's missing — and the pack's
 slicing reference and oracle_policy.

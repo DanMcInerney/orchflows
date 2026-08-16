@@ -4,7 +4,7 @@ description: Dispatch one task to the cheapest capable rung of the ladder with a
 role: none
 ---
 
-Require: a complete [delegation packet](../../../contracts/delegation.md) —
+Require: a complete [delegation packet](../../../contracts/work-item.md#dispatch) —
 objective, inputs, authority (a subset of your own), bounds, return
 contract, reply_to — supplied directly, or by reference to a ticket
 path. Refuse a dispatch missing any part; name the missing part.

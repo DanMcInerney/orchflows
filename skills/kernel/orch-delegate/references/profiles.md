@@ -40,7 +40,7 @@ On Claude Code, a named child's return travels only by explicit
 SendMessage to the spawner; plain final text is undelivered. The
 spawner's own name — or `main` when the spawner is the top-level
 orchestrator — travels down as the packet's `reply_to`
-([contracts/delegation.md](../../../../contracts/delegation.md)),
+([contracts/work-item.md](../../../../contracts/work-item.md#dispatch)),
 fixed once at dispatch; a child never infers it, since nothing in a
 child's own context names who dispatched it. The durable artifact
 remains the return per

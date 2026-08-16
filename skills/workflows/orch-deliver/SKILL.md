@@ -4,7 +4,7 @@ description: Take one stamped spec to a verified deliverable through plan, rolli
 role: none
 ---
 
-Require: a frozen, routing-stamped [spec](../../../contracts/spec.md).
+Require: a frozen, routing-stamped [spec](../../../contracts/work-item.md#root-ticket).
 
 Open the run: `orch-worklog`, then `orch-workspace` for the run's target per
 the pack's workspace cell. Decompose through `orch-decompose`; a returned

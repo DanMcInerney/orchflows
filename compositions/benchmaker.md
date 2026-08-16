@@ -5,7 +5,7 @@ entry: named
 ---
 
 Require: one complete
-[delegation packet](../contracts/delegation.md). Its `objective` names
+[delegation packet](../contracts/work-item.md#dispatch). Its `objective` names
 the target identity and intended observable outcome; `inputs` name
 fixed evidence identities, source identities, source policy, judgment
 permission, and applicable pack craft, lens, and oracle references;

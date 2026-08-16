@@ -369,7 +369,7 @@ widens the run's scope or branches on domain.
   the library already partitions visibility in four places — `orch-judge`'s
   blindness, `orch-eval-design`'s candidate-blindness, research lanes,
   `orch-fixture`'s withheld anchors — and enforces every one at the
-  dispatch layer that [contracts/delegation.md](contracts/delegation.md)
+  dispatch layer that [contracts/work-item.md](contracts/work-item.md#dispatch)
   owns, through `inputs` and `authority`, never in a `workspace` cell.
   Protected evidence is that construct with the held-back files named. The
   paired executor was refused with it: its claimed ground — that an

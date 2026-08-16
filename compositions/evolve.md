@@ -4,9 +4,9 @@ description: Evolve one target through bounded candidate generations against one
 entry: named
 ---
 
-Require: one complete [delegation packet](../contracts/delegation.md)
+Require: one complete [delegation packet](../contracts/work-item.md#dispatch)
 whose `inputs` carry one frozen evolve spec governed by the
-[spec contract](../contracts/spec.md). Its `evidence` identifies the incumbent
+[root-ticket contract](../contracts/work-item.md#root-ticket). Its `evidence` identifies the incumbent
 identity and fixed result/evidence identity for the artifact; a supplied frozen evaluation adds
 the frozen evaluation identity, mode, scoring contract, and covered incumbent
 verdict and score card.

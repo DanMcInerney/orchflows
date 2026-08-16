@@ -50,6 +50,42 @@ def read_bullet_flat(name, marker):
     return flat.split(marker, 1)[1].split(" - `", 1)[0]
 
 
+class TestContractRegister(unittest.TestCase):
+    """The T0 register itself is shape: `spec.md` and `delegation.md` are
+    absorbed into `work-item.md`, so neither the directory nor any prose
+    in the tree may still name them. `scripts/`, `tools/` and their tests
+    are repointed by the join, not here."""
+
+    ABSORBED = ("contracts/spec.md", "contracts/delegation.md")
+
+    def test_the_register_is_the_surviving_t0_files(self):
+        names = sorted(p.name for p in CONTRACTS.glob("*.md"))
+        self.assertEqual(
+            names,
+            [
+                "composition.md", "pack-signature.md", "result.md",
+                "verdict.md", "work-item.md", "worklog.md",
+            ],
+            "contracts/ is not the T0 register after the supersession",
+        )
+
+    def test_no_prose_in_the_tree_still_links_the_absorbed_contracts(self):
+        offenders = []
+        for path in sorted(ROOT.rglob("*.md")):
+            relative = path.relative_to(ROOT)
+            if any(part.startswith(".") for part in relative.parts):
+                continue
+            if relative.parts[0] == "benchmarks" or relative.name.startswith("REVIEW-"):
+                continue
+            text = path.read_text(encoding="utf-8")
+            if any(dead in text for dead in self.ABSORBED):
+                offenders.append(relative.as_posix())
+        self.assertEqual(
+            offenders, [],
+            "these files still link a contract work-item.md absorbed",
+        )
+
+
 class TestVerdictContract(unittest.TestCase):
     def test_contains_the_verdict_grammar(self):
         text = read("verdict.md")
@@ -240,70 +276,6 @@ class TestCompositionContract(unittest.TestCase):
         self.assertIn(
             "rejects a composition missing `invariants` or `done_check`", text,
             "composition.md is missing the admission-rejection sentence",
-        )
-
-
-class TestSpecContract(unittest.TestCase):
-    def test_single_editor_and_partial_gap(self):
-        text = read_flat("spec.md")
-        self.assertIn(
-            "`orch-spec` is the spec's only editor", text,
-            "spec.md does not name orch-spec as the spec's only editor",
-        )
-        self.assertNotIn(
-            "orch-decompose` repairs it in place", text,
-            "spec.md still names orch-decompose as a spec editor",
-        )
-        self.assertIn(
-            "a decision gap naming exactly those criteria", text,
-            "spec.md does not state that a defect or uncoverable criterion "
-            "returns a decision gap naming exactly those criteria",
-        )
-        self.assertIn(
-            "the covered remainder is still cut and still executed", text,
-            "spec.md does not state that the covered remainder is still cut and executed",
-        )
-
-
-class TestDelegationContract(unittest.TestCase):
-    def test_ticket_path_supplies_the_six_parts_by_reference(self):
-        text = read_flat("delegation.md")
-        self.assertIn(
-            "may supply the six parts by reference to the ticket path", text,
-            "delegation.md is missing the ticket-path-by-reference sentence",
-        )
-
-    def test_non_empty_write_scope_contracts_for_changed_artifacts(self):
-        text = read_flat("delegation.md")
-        self.assertIn(
-            "a dispatch granting a non-empty write scope contracts for `changed_artifacts` among them",
-            text, "delegation.md is missing the changed_artifacts contract clause",
-        )
-        self.assertIn(
-            "rejected at the join regardless of its verdicts", text,
-            "delegation.md is missing the exceeds-scope rejection clause",
-        )
-
-    def test_packet_only_exclusion_fallback(self):
-        text = read_flat("delegation.md")
-        self.assertIn(
-            "a packet-only child stops and returns partial results plus the exclusion hit",
-            text, "delegation.md is missing the packet-only exclusion fallback",
-        )
-        self.assertIn(
-            "rules/composition.md rule 8", text,
-            "delegation.md packet-only fallback does not cite composition rule 8",
-        )
-        self.assertIn(
-            "re-dispatches with a ticket when resume matters", text,
-            "delegation.md is missing the caller's ticket re-dispatch clause",
-        )
-
-    def test_work_item_suspension_routes_through_the_ticket_handoff(self):
-        text = read_flat("delegation.md")
-        self.assertIn(
-            "a work-item dispatch suspends through the ticket's `## Handoff`",
-            text, "delegation.md does not route work-item suspension through the ticket's ## Handoff",
         )
 
 
