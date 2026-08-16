@@ -32,35 +32,26 @@ labels the child. A spawn surface that omits `agent_type` cannot apply a
 profile and stops the dispatch. Codex V2 profile selection uses a
 non-full-history fork (`fork_turns="none"` or a positive turn count).
 
-Child naming: normalize base name, model, and effort — lowercase ASCII,
-each maximal run outside `[a-z0-9]` becomes `_` on Codex or `-` on
-Claude, trim separators, `default` for omitted effort — and join the
-three tokens with the host separator. On collision, append the host
-separator plus the first available positive integer. A resumed child
-keeps its name.
+Child names are unique within a run; a resumed child keeps its name.
 
 ## Watching a lane (Claude Code)
 
 Wake and completion notifications are lossy here
 (anthropics/claude-code#39632), so a caller arms its own re-check of a
-lane's durable run state at dispatch — through the host's scheduler, or
-a bounded wait loop where it has none — and states that cadence when
-arming, never coarser than the lane's bound read as a duration. Each
+lane's durable run state at dispatch — through the host's scheduler
+where it has one, else the caller's own re-check on each notification
+and at its next turn, never a wait loop, which the host block bars in a
+worktree-isolated session — and states that cadence when arming, never
+coarser than the lane's bound read as a duration. Each
 reading is judged by
 [rules/delegation.md](../../../../rules/delegation.md) §11: an idle
-notification or an unanswered nudge decides nothing. A dispatch that
-launches an external process whose outcome its return depends on either
-holds its turn until that outcome lands in durable state, or records the
-process and its expected artifact in the run's notes
-(`tickets.py run-state --note`) at launch, as helper lanes are recorded,
-so the re-check covers it.
+notification or an unanswered nudge decides nothing. A launched
+external process is that §11's: hold the turn until its outcome lands
+in durable state, or record it at launch.
 
 On Claude Code, a named child's return travels only by explicit
-SendMessage to the spawner; plain final text is undelivered. The
-spawner's own name — or `main` when the spawner is the top-level
-orchestrator — travels down as the packet's `reply_to`
-([contracts/work-item.md](../../../../contracts/work-item.md#dispatch)),
-fixed once at dispatch; a child never infers it, and a child that will
-itself dispatch is told its own assigned name the same way, since that
-name is its children's `reply_to`. The durable artifact remains the
-return per [rules/delegation.md](../../../../rules/delegation.md) §10.
+SendMessage to the spawner; plain final text is undelivered. `reply_to`
+per
+[contracts/work-item.md](../../../../contracts/work-item.md#dispatch);
+a child that will itself dispatch is told its own assigned name, since
+that name is its children's `reply_to`.
