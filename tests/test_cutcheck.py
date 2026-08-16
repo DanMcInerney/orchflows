@@ -516,6 +516,53 @@ class CanarySetTest(unittest.TestCase):
         self.assertIn("extra.txt", lines[0])
 
 
+class PackCellHomeTest(unittest.TestCase):
+    """Family 6 reads the library's packs, never the target repository's.
+
+    A pack cell is a fact about orchflows, and the tree under test is whatever
+    repository the run's work lands in. Resolving the cells against the
+    invoking worktree meant that from any target carrying no `packs/` --
+    which is every target but this one -- `_pack_cells` returned the empty set
+    and family 6 silently fell back to the engine prohibition alone. The check
+    passed by finding nothing to check.
+    """
+
+    def setUp(self):
+        self.empty = Path(tempfile.mkdtemp(prefix="cutcheck-nopacks-"))
+        self.addCleanup(remove_repo_tree, self.empty)
+
+    def test_the_library_is_the_tree_this_tool_runs_from(self):
+        self.assertEqual(cutcheck._lib_root(None), ROOT)
+
+    def test_an_explicit_lib_decides_it(self):
+        self.assertEqual(cutcheck._lib_root(str(self.empty)), self.empty)
+
+    def test_the_packs_of_that_library_are_what_the_cells_come_from(self):
+        self.assertIn(
+            "orch-tdd", cutcheck._pack_cells("orch-code-pack", cutcheck._lib_root(None))
+        )
+        self.assertEqual(set(), cutcheck._pack_cells("orch-code-pack", self.empty))
+
+    def test_a_library_carrying_no_packs_leaves_only_the_engine_prohibition(self):
+        siblings = {
+            "01-engine": {"id": "01-engine", "executor": "orch-panel",
+                          "pack": "orch-code-pack"},
+            "02-alien": {"id": "02-alien", "executor": "orch-render",
+                         "pack": "orch-code-pack"},
+        }
+        reported = cutcheck._executor_legality(siblings, self.empty)
+        self.assertEqual(["01-engine"], [item for item, _, _, _ in reported])
+        self.assertEqual(
+            ["01-engine", "02-alien"],
+            [item for item, _, _, _ in cutcheck._executor_legality(siblings, ROOT)],
+        )
+
+    def test_the_flag_that_names_the_library_is_documented(self):
+        spawned = run_cutcheck_subprocess(["--help"])
+        self.assertEqual(spawned.returncode, 0, spawned.stderr)
+        self.assertIn("--lib", " ".join(spawned.stdout.split()))
+
+
 class RootGateLayoutTest(unittest.TestCase):
     """The layout every honest root cut has, graded as the contract writes it.
 

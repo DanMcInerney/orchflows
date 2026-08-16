@@ -57,12 +57,19 @@ Coverage: the run's acceptance-coverage map, read beside whichever
 ticket root resolved, is checked both ways against the issued set. Every
 criterion reaches an item, the gate, or declared remainder, and every
 item is named by some criterion. A root with no map has nothing to read
-against, so the absence is all that is reported.
+against, so the absence is all that is reported. The issued set is the
+work items: a root ticket is the acceptance's source rather than an item
+of it, and its ``<root>.gate.*`` stubs are named by the keyword rather
+than by id, so neither is read as an item here or paired in family 4.
 
 Executor legality: an item's executor is one its stamped pack's executor
 or assembly cell names, and is never an engine -- an engine dispatches
-an executor rather than being one. An item naming no pack has no cell to
-resolve against, so only the prohibition applies.
+an executor rather than being one. The cells are read from the orchflows
+library rather than from the repository under test, which carries no
+packs of its own. An item naming no pack has no cell to resolve against,
+so only the prohibition applies; and a root ticket and its gate stubs
+are graded against the library's own structural executors, which no
+pack's cell names.
 
 Shape: the command text itself carries three defects. A pipeline through
 ``tail`` or ``head`` reports that pipe's exit status, not the check's. A
@@ -1436,22 +1443,52 @@ def _coverage(run, run_dir, issued, roots):
     return findings
 
 
-def _pack_cells(pack, worktree_root):
+def _pack_cells(pack, lib_root):
     """The skills a pack's ``executor`` and ``assembly`` cells name.
 
-    A pack this tree does not carry, or one whose cells name no skill, binds
+    Read from the orchflows library, never from the repository under test. A
+    pack that library does not carry, or one whose cells name no skill, binds
     nothing here -- an assembly cell reading "none" is such a cell.
     """
 
-    if worktree_root is None or not PACK_NAME_RE.match(pack):
+    if lib_root is None or not PACK_NAME_RE.match(pack):
         return set()
-    path = worktree_root / PACKS_DIR / pack / "SKILL.md"
+    path = Path(lib_root) / PACKS_DIR / pack / "SKILL.md"
     if not path.is_file():
         return set()
     names = set()
     for row in PACK_CELL_RE.findall(path.read_text(encoding="utf-8", errors="replace")):
         names.update(SKILL_NAME_RE.findall(row))
     return names
+
+
+def _lib_root(declared):
+    """The orchflows library whose pack cells family 6 reads, or None.
+
+    Never the target repository. A pack cell is a fact about orchflows and the
+    tree under test is whatever repository the run's work lands in, so
+    resolving cells against the invoking worktree meant that from any target
+    carrying no ``packs/`` -- which is every target but the library's own
+    checkout -- the cell set came back empty and family 6 fell back to the
+    engine prohibition alone. The check passed by finding nothing to check.
+
+    ``--lib`` decides it when the caller names one. Otherwise the tree this
+    script runs from, which is the library itself in a checkout of it, and
+    failing that the install beside the resolved state sink, which is where
+    ``install.py`` puts the packs on this host.
+    """
+
+    if declared:
+        return Path(declared)
+    candidates = [Path(__file__).resolve().parent.parent]
+    try:
+        candidates.append(state_root.state_root().parent / "lib")
+    except OSError:  # pragma: no cover - a home directory that will not resolve
+        pass
+    for candidate in candidates:
+        if (candidate / PACKS_DIR).is_dir():
+            return candidate
+    return None
 
 
 def _executor_legality(siblings, lib_root):
@@ -1654,6 +1691,13 @@ def main(argv=None):
         required=True,
         help="revision the ticket set was cut from",
     )
+    parser.add_argument(
+        "--lib",
+        default=None,
+        help="orchflows library whose pack cells an executor is read against; "
+        "defaults to the library this script runs from, then to the install "
+        "beside the state sink. Never the repository under test",
+    )
     args = parser.parse_args(argv)
 
     worktree_root = _worktree_root()
@@ -1699,7 +1743,7 @@ def main(argv=None):
                 roots,
             )
         )
-        findings.extend(_executor_legality(siblings, worktree_root))
+        findings.extend(_executor_legality(siblings, _lib_root(args.lib)))
         findings.extend(_symlink_findings(args.run, (baseline_tree, head_tree)))
     finally:
         _remove_scratch_root(scratch_root)
