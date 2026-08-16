@@ -16,9 +16,7 @@ absolutely; an `excluded_actions` that forbids a directory always carves
 out the run's own directory in the sink, since the executor is required to
 write its Result there.
 
-## Frontmatter
-
-Mapped to packet parts, lifecycle, and graph position:
+Frontmatter, mapped to packet parts, lifecycle, and graph position:
 
 - `id` — lifecycle: unique within the run; stable once issued.
 - `run` — lifecycle: the owning run id.
@@ -86,9 +84,8 @@ Mapped to packet parts, lifecycle, and graph position:
   rules/roles.md §4; absent, role resolves from the executor's declared
   role.
 
-## Body sections
-
-In order — completion test plus the packet's remaining parts:
+Body sections, in order — completion test plus the packet's remaining
+parts:
 
 - `## Objective` — packet `objective`: one observable end state, never
   activities.

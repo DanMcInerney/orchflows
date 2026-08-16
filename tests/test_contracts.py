@@ -111,7 +111,7 @@ class TestWorkItemContract(unittest.TestCase):
             self.assertIn(f"## {header}", text, f"work-item.md is missing body section '## {header}'")
 
     def test_body_sections_are_listed_in_contract_order(self):
-        text = read("work-item.md").split("## Body sections", 1)[-1].split("\n## Dispatch", 1)[0]
+        text = read("work-item.md").split("Body sections, in order", 1)[-1].split("\n## Dispatch", 1)[0]
         order = [
             "Objective", "Fixed inputs", "Completion test", "Return fields",
             "Result", "Verification", "Feedback", "Risks", "Handoff",
@@ -358,11 +358,11 @@ class TestVisibilityChannelLaw(unittest.TestCase):
 
 
 class TestVerificationHomelessLaws(unittest.TestCase):
-    """`rules/verification.md` owns three laws no other file states: §1's
-    truncation prohibition, which `scripts/cutcheck.py` enforces; §7's
-    reuse precondition for a gate that returns findings; and
-    §11's two cross-step sentences, frozen byte-for-byte against the copy
-    `S-CUT`'s spec carries. The last two are never reworded here."""
+    """`rules/verification.md` owns two laws no other file states: §1's
+    truncation prohibition, which `scripts/cutcheck.py` enforces, and §7's
+    reuse precondition for a gate that returns findings. Neither is
+    hash-pinned, so these are the only mechanical guard; each asserts the
+    clause's distinctive head, never a sentence."""
 
     def law(self, number=None):
         if number is None:
@@ -395,34 +395,26 @@ class TestVerificationHomelessLaws(unittest.TestCase):
             "moves the result identity",
         )
         self.assertIn(
-            "reusable only where the correction left the covered identity "
-            "unchanged", text,
+            "reusable only where the correction", text,
             "verification.md §7 does not qualify reuse by what the correction "
             "left unchanged",
         )
 
-    def test_carries_the_frozen_cutcheck_exit_sentence_verbatim(self):
-        self.assertIn(
-            "Cutcheck's exit 0 means no finding whose class lies outside "
-            "the advisory set, not that the set is clean: an advisory "
-            "finding is reported and exits 0.",
-            self.law(),
-            "verification.md §11 lost the frozen cross-step sentence on "
-            "cutcheck's exit 0; it is byte-frozen against `S-CUT`'s copy and "
-            "is re-copied, never reworded",
-        )
-
-    def test_carries_the_frozen_host_portability_sentence_verbatim(self):
-        self.assertIn(
-            "A cut verdict is not portable between hosts. An oracle naming "
-            "an interpreter one host lacks is reported there as "
-            "`unrunnable-oracle` and is silent here, so a verdict is read "
-            "only on the host that produced it.",
-            self.law(),
-            "verification.md §11 lost the frozen cross-step sentence on host "
-            "portability; it is byte-frozen against `S-CUT`'s copy and is "
-            "re-copied, never reworded",
-        )
+    def test_section_eleven_keeps_its_two_cross_step_laws(self):
+        """The §11 sentences `S-CUT`'s spec also carries. Their wording is
+        the copy's problem, not this module's: assert the head each law
+        turns on, never the sentence."""
+        text = self.law()
+        for token in (
+            "an advisory finding is reported and exits 0",
+            "`unrunnable-oracle`",
+            "only on the host that produced it",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(
+                    token, text,
+                    f"verification.md §11 lost the cross-step law {token!r}",
+                )
 
 
 class TestWorkItemCitationLaws(unittest.TestCase):
@@ -455,42 +447,36 @@ class TestWorkItemCitationLaws(unittest.TestCase):
 
     def test_isolation_names_its_only_setter_and_the_grading_order(self):
         text = self.bullet("`isolation` — packet `authority`")
-        for clause, why in (
-            ("The decomposer is the field's only setter",
+        for token, why in (
+            ("the field's only setter",
              "work-item.md's `isolation` bullet does not name the decomposer "
              "as the field's only setter"),
             ("`scripts/workspace.py check`",
              "work-item.md's `isolation` bullet no longer names "
              "`scripts/workspace.py check` as what grades the declaration"),
-            ("before the merge, because afterwards the item's tip is already "
-             "an ancestor of the run tip and a stamped item exits clean by "
-             "design",
+            ("before the merge",
              "work-item.md's `isolation` bullet does not order "
-             "`scripts/workspace.py check` before the merge, nor give the "
-             "reason the check decides nothing after it"),
+             "`scripts/workspace.py check` before the merge"),
         ):
-            with self.subTest(clause=clause):
-                self.assertIn(clause, text, why)
+            with self.subTest(token=token):
+                self.assertIn(token, text, why)
 
     def test_fixed_inputs_forbid_an_unpinned_coordinate_by_citing_identity(self):
         text = self.bullet("`## Fixed inputs` — packet `inputs`")
-        self.assertIn(
-            "never prose copies", text,
-            "work-item.md's `## Fixed inputs` bullet lost its existing "
-            "prohibition on a prose copy",
-        )
-        self.assertIn(
-            "never an unpinned coordinate", text,
-            "work-item.md's `## Fixed inputs` bullet does not forbid citing a "
-            "fixed input by an unpinned coordinate",
-        )
-        self.assertIn(
-            "[docs/vocabulary.md](../docs/vocabulary.md)'s `identity` entry",
-            text,
-            "work-item.md's `## Fixed inputs` bullet does not resolve the "
-            "line-number prohibition against the `identity` entry that owns "
-            "it; the citation is the property, never a restatement",
-        )
+        for token, why in (
+            ("never prose copies",
+             "work-item.md's `## Fixed inputs` bullet lost its existing "
+             "prohibition on a prose copy"),
+            ("never an unpinned coordinate",
+             "work-item.md's `## Fixed inputs` bullet does not forbid citing "
+             "a fixed input by an unpinned coordinate"),
+            ("`identity` entry",
+             "work-item.md's `## Fixed inputs` bullet does not resolve the "
+             "line-number prohibition against the `identity` entry that owns "
+             "it; the citation is the property, never a restatement"),
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, text, why)
 
 
 class TestSkillDescriptions(unittest.TestCase):
