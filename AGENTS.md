@@ -7,12 +7,6 @@ term of art and a pack's craft cell owns its domain's; use terms with
 exactly their defined meanings. `rules/` owns cross-cutting law, and
 `rules/visibility.md` §3 governs what every other file may do with it.
 
-Every word and sentence must be load-bearing: retain only text that
-changes model behavior, preserves a necessary contract, or names its
-canonical owner. Delete repetition, framing, praise, and non-contract
-examples. Generic skills never name a domain; domain data lives in pack
-cells; integration detail lives in scripts.
-
 T0 files in `contracts/` are hash-pinned; any shape change is breaking
 and lands only through a supersession PR. Tickets are local markdown
 under the state sink's `tickets/` — no external tracker; the sink's root
@@ -74,13 +68,5 @@ The law is `rules/improvement.md` §1; this repository's command:
 Optional flags: `--category` (repeated-attempts | missing-input |
 missing-tool | missing-doc | contract-gap | tool-failure |
 surprising-output | workaround | misrouting), `--skill`, `--ticket`,
-`--run`. Whenever the logger cannot run — no interpreter, or the shell
-itself refused the call — append the entry as one JSON line to the state
-sink's `friction/<yyyy-mm>.jsonl`, its root given by
-`rules/visibility.md` §6 and outside every worktree, with any tool that
-writes a file (ts, observed, expected, category, host); never skip the
-log. The blocked shell is not a reason to lose the entry: it is the
-entry.
-Logging friction is part of completing
-the task — a session that hit friction and logged nothing failed
-silently.
+`--run`. What to do when the logger itself cannot run is the host
+block's, in `templates/host-block.md`.

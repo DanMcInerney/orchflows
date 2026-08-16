@@ -9,12 +9,12 @@ dependencies point. Terms: `docs/vocabulary.md`.
   work-item, worklog, pack-signature, result, composition).
   Hash-pinned by `tests/`; a shape change is breaking
   even when prose meaning is unchanged.
-- `skills/` — T1, everything callable, in four sublayers: `kernel/`
-  (primitives, call no skill, frozen), `engines/` (control flow),
-  `workflows/` (assembled, domain-blind), `instances/` (concrete domain
-  executors and lenses bound by pack cells). `utilities/` holds leaf
-  generic skills outside the waist. Each package owns one `SKILL.md`
-  plus its `references/` and `scripts/`.
+- `skills/` — T1, everything callable, one directory per sublayer:
+  `kernel/` (primitives, call no skill, frozen), `engines/` (control
+  flow), `workflows/` (assembled, domain-blind), `instances/` (concrete
+  domain executors and lenses bound by pack cells), `utilities/` (leaf
+  generic skills). Each package owns one `SKILL.md` plus its
+  `references/` and `scripts/`.
 - `packs/` — T2, functor arguments: data satisfying
   `contracts/pack-signature.md`, never control flow. One pack per
   domain (code, content, research, design); specificity thickens only in
@@ -30,19 +30,20 @@ dependencies point. Terms: `docs/vocabulary.md`.
 - `rules/` — cross-cutting law (composition, delegation, verification,
   loops, roles, token-economy, topology, visibility, improvement);
   using one is `rules/visibility.md` §3's.
-- `docs/` — `vocabulary.md` (every library term of art, one owner),
-  `pack-authoring.md` (the order of work when adding a pack),
-  `library-review.md` (the standing full-review prompt), and this
-  file.
+- `docs/` — `vocabulary.md` owns every library term of art; the rest of
+  the directory is reference material, one owner each, and `ls` is its
+  list.
 - `DESIGN.md` — root-level rationale: why each structure is shaped as
   it is; non-normative.
 - `templates/` — host-block source; installer-owned; rendered to
   `~/.orchflows/host-block.md` by `install.py`.
-- `tools/validate.py` — the compiler: every mechanical check the
-  library enforces lives there, read the script for the current list.
-  Everything it does not check — the Return law's field substance
-  included — is owned by review under the library lens. `tests/`
-  freeze canonical bytes; nothing depends on tests.
+- `tools/validate.py` — the compiler: the mechanical checks over the
+  library's own text, read the script for the current list.
+  `tools/validate_measures.py`, `scripts/cutcheck.py` and `tests/` own
+  the rest of the mechanical half; everything none of them checks — the
+  Return law's field substance included — is owned by review under the
+  library lens. `tests/` also freeze canonical bytes, and
+  `tests/pins.json` is where `validate.py` reads them from.
 - `install.sh` / `install.cmd` + `install.py` — setup and teardown.
   The root wrappers resolve an
   interpreter (uv → python3 → python, never hardcoded) and pass
@@ -76,7 +77,10 @@ dependencies point. Terms: `docs/vocabulary.md`.
   state tree into the sink, never deleting from the source;
   `scripts/state_root.py` owns resolving the state sink,
   the one channel every other script reaches it through;
-  `scripts/tickets.py` owns mechanical ticket queries; its `tickets.py
+  `scripts/tickets.py` owns the ticket directory: issuing, instantiating
+  a template, the gate stubs, claims and statuses, dispatch packets, the
+  executor's own sections, the rendered worklog view, and the run-state
+  and improvement records under the sink; its `tickets.py
   help` is operator-only: usage a reader asks for, never a step a skill
   runs; `scripts/trace.py` owns trace extraction, consumed by
   `orch-self-improve`; `scripts/ui.py` owns the read-only local view of
