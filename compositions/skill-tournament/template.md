@@ -9,12 +9,13 @@ One skill improves against one benchmark that was built and qualified
 for it before the first candidate existed, and that no candidate and no
 generation may touch afterwards.
 
-Two stubs, one edge: `00-benchmark` → `01-campaign`. Each runs a nested
-template through `orch-frontier` — the benchmaker template builds and
-qualifies the benchmark, the evolve template spends the campaign against
-it with `writer=orch-build`. `01-campaign` is terminal, so its
-completion test is this template's done check: the final score card
-covers the one benchmark revision every candidate was scored against.
+Two stubs, one edge: `00-benchmark` → `01-campaign`. Each drains a
+nested ticket set — the benchmaker template builds and qualifies the
+benchmark, the evolve template spends the campaign against it with
+`writer=orch-build` — so this template binds those two and names none of
+their internals. `01-campaign` is terminal, so its completion test is
+this template's done check: the final score card covers the one
+benchmark revision every candidate was scored against.
 
 Instantiate with all four placeholders: `skill`, the fixed skill
 identity being evolved; `surface`, its declared mutable surface, which

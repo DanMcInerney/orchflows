@@ -31,9 +31,19 @@ OVERLAP_RULE = "a write scope overlapping only siblings it is dependency-ordered
 COMPOSITIONS = ROOT / "compositions"
 EVAL_DESIGN = ROOT / "skills" / "workflows" / "orch-eval-design" / "SKILL.md"
 PANEL = ROOT / "skills" / "engines" / "orch-panel" / "SKILL.md"
-EVOLVE = COMPOSITIONS / "evolve.md"
+TEMPLATE_FILE = "template.md"
+EVOLVE = COMPOSITIONS / "evolve"
 EVOLVE_GENERATION = COMPOSITIONS / "references" / "evolve-generation.md"
-TOURNAMENT = COMPOSITIONS / "skill-tournament.md"
+TOURNAMENT = COMPOSITIONS / "skill-tournament"
+# The two campaign bodies deleted when they became templates. A template
+# beside its own `<name>.md` is the second grammar SPEC-ticket-set.md P4
+# exists to remove: two spellings of one composition, and no rule saying
+# which one a run executes.
+SUPERSEDED_BODIES = (
+    COMPOSITIONS / "evolve.md",
+    COMPOSITIONS / "skill-tournament.md",
+    COMPOSITIONS / "references" / "evolve-evaluation.md",
+)
 
 CALL_EDGE_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
@@ -110,20 +120,47 @@ def read_flat(path: Path) -> str:
 
 def split_document(path: Path):
     """(frontmatter fields, body). A references file carries no frontmatter
-    and is all body."""
+    and is all body.
+
+    Only unindented `key: value` lines are fields: a ticket stub writes
+    `excluded_actions:` as a block of `  - ...` items, which belong to the
+    key above them and carry no colon of their own.
+    """
     text = path.read_text(encoding="utf-8")
     match = FRONTMATTER_RE.fullmatch(text)
     if match is None:
         return {}, text
     fields = {}
     for line in match.group(1).splitlines():
+        if not line[:1].strip() or ":" not in line:
+            continue
         key, value = line.split(":", 1)
-        fields[key] = value.strip()
+        fields[key.strip()] = value.strip()
     return fields, match.group(2)
 
 
 def bodies(*paths: Path) -> str:
     return "".join(split_document(path)[1] for path in paths)
+
+
+def template_files(directory: Path):
+    """One template's files in the order a reader meets them: `00-...`
+    through the terminal stub, then the manifest."""
+    stubs = sorted(p for p in directory.glob("*.md") if p.name != TEMPLATE_FILE)
+    return tuple(stubs) + (directory / TEMPLATE_FILE,)
+
+
+def stub_graph(directory: Path):
+    """{stub id: (executor, depends_on)} for one template."""
+    graph = {}
+    for path in template_files(directory)[:-1]:
+        fields = split_document(path)[0]
+        depends = fields.get("depends_on", "[]").strip("[] ")
+        graph[path.stem] = (
+            fields.get("executor"),
+            [item.strip() for item in depends.split(",") if item.strip()],
+        )
+    return graph
 
 
 class TestFrozenRoleTable(unittest.TestCase):
@@ -392,7 +429,8 @@ class TestBenchmarkArchitecture(unittest.TestCase):
         (
             # The tournament binds the evolve campaign and its writer, never
             # evolve's internals.
-            "skill-tournament", (TOURNAMENT,), frozenset(), frozenset(), frozenset(),
+            "skill-tournament", template_files(TOURNAMENT),
+            frozenset(), frozenset(), frozenset(),
         ),
         (
             "orch-panel", (PANEL,),
@@ -400,21 +438,40 @@ class TestBenchmarkArchitecture(unittest.TestCase):
             frozenset(), frozenset(),
         ),
         (
-            "evolve", (EVOLVE, EVOLVE_GENERATION), None,
-            frozenset({
-                "orch-eval-design", "orch-loop", "orch-integrate",
-                "orch-verify", "orch-panel", "orch-search-plan",
-            }),
-            # The demoted skills stay demoted: a reappearing edge would route
-            # a campaign into a skill that no longer exists. `orch-judge` and
-            # `orch-delegate` join them at P3: scoring is `orch-verify` with a
-            # scale, dispatch is rules/delegation.md, and the worklog is a
-            # `tickets.py` view.
-            frozenset({
-                "orch-bench", "orch-benchmaker", "orch-judge", "orch-delegate",
-                "orch-worklog",
-            }),
+            # Since P4 a campaign is a template, and a template names its
+            # executors in stub frontmatter -- `executor: orch-loop` -- never
+            # as a backticked call edge in prose. orch-loop's Require says the
+            # same of the body it dispatches: "bound as plain text and never
+            # backticked, a binding rather than a call edge". So the whole
+            # template, manifest and loop-body reference included, carries no
+            # call edge at all; who runs what is
+            # test_the_evolve_template_names_its_executors_in_frontmatter.
+            "evolve", template_files(EVOLVE) + (EVOLVE_GENERATION,),
+            frozenset(), frozenset(), frozenset(),
         ),
+    )
+
+    # The executor per stub, and the chain they hang on. `orch-verify` twice:
+    # eligibility opens the campaign, the final score card closes it.
+    EVOLVE_GRAPH = {
+        "00-eval": ("orch-eval-design", []),
+        "01-eligibility": ("orch-verify", ["00-eval"]),
+        "02-campaign": ("orch-loop", ["01-eligibility"]),
+        "03-result": ("orch-verify", ["02-campaign"]),
+    }
+    TOURNAMENT_GRAPH = {
+        "00-benchmark": ("orch-frontier", []),
+        "01-campaign": ("orch-frontier", ["00-benchmark"]),
+    }
+    # The demoted owners stay demoted: a reappearing name would route a
+    # campaign into a skill that no longer runs it. `orch-judge` and
+    # `orch-delegate` joined them at P3 -- scoring is `orch-verify` with a
+    # scale, dispatch is rules/delegation.md, the worklog is a `tickets.py`
+    # view -- and `orch-panel` at P4, where judging became N blind verify
+    # lanes plus the loop body's reduce.
+    DEMOTED = (
+        "orch-bench", "orch-benchmaker", "orch-judge", "orch-delegate",
+        "orch-worklog", "orch-panel",
     )
 
     def test_each_body_calls_exactly_the_edges_its_architecture_declares(self):
@@ -426,24 +483,57 @@ class TestBenchmarkArchitecture(unittest.TestCase):
                 self.assertLessEqual(set(at_least), calls)
                 self.assertEqual(set(), calls & set(never))
 
-    def test_evolve_verifies_before_it_ranks_and_panels_before_it_judges(self):
-        """Required eligibility is checked before survivors are ranked, and the
-        panel's score cards exist before the scoring done-check reads them.
+    def test_the_evolve_template_names_its_executors_in_frontmatter(self):
+        """Who runs each step, and what each step waits on. Read off the
+        stubs because that is what `tickets.py instantiate` writes into a
+        run: a stub's `executor` is the dispatch, and its `depends_on` is
+        the edge the frontier drains."""
+        self.assertEqual(self.EVOLVE_GRAPH, stub_graph(EVOLVE))
+        self.assertEqual(self.TOURNAMENT_GRAPH, stub_graph(TOURNAMENT))
+
+    def test_evolve_verifies_before_it_ranks_and_before_it_closes(self):
+        """Required eligibility is checked before any candidate is written,
+        and the campaign's scores exist before the done-check reads them.
         Either inversion is a campaign that ranks ineligible candidates or
-        judges nothing. Both ends are `orch-verify` since P3 — eligibility at
-        the first occurrence, the done-check at the last — so the order is read
-        off the two ends of the same name."""
-        combined = bodies(EVOLVE, EVOLVE_GENERATION)
-        self.assertLess(combined.index("`orch-verify`"), combined.index("`orch-panel`"))
-        self.assertLess(combined.index("`orch-panel`"), combined.rindex("`orch-verify`"))
+        closes on nothing. Both ends are `orch-verify` since P3; since P4 the
+        order between them is the dependency chain, not the order two
+        sentences happen to sit in."""
+        graph = stub_graph(EVOLVE)
+        self.assertEqual("orch-verify", graph["01-eligibility"][0])
+        self.assertEqual(["01-eligibility"], graph["02-campaign"][1])
+        self.assertEqual("orch-verify", graph["03-result"][0])
+        self.assertEqual(["02-campaign"], graph["03-result"][1])
+        terminal = [
+            stub for stub in graph
+            if not any(stub in depends for _, depends in graph.values())
+        ]
+        self.assertEqual(["03-result"], terminal)
+
+    def test_no_demoted_owner_reappears_in_either_campaign(self):
+        for directory in (EVOLVE, TOURNAMENT):
+            text = "".join(
+                path.read_text(encoding="utf-8")
+                for path in template_files(directory)
+            )
+            for name in self.DEMOTED:
+                with self.subTest(template=directory.name, demoted=name):
+                    self.assertNotIn(name, text)
+
+    def test_the_superseded_campaign_bodies_stay_deleted(self):
+        """A template beside its own `<name>.md` is two grammars for one
+        composition, with no rule saying which a run executes."""
+        for path in SUPERSEDED_BODIES:
+            with self.subTest(body=path.name):
+                self.assertFalse(path.exists(), f"{path} is the template's twin")
 
     def test_the_campaigns_stay_manual_only_entries(self):
         """`entry: named` is what keeps a campaign off the router. validate.py
-        checks the value is one of routed | named | scheduled; which one each
-        campaign carries is the decision."""
-        for path in (EVOLVE, TOURNAMENT):
-            with self.subTest(composition=path.name):
-                self.assertEqual("named", split_document(path)[0].get("entry"))
+        checks the value is one of routed | named; which one each campaign
+        carries is the decision."""
+        for directory in (EVOLVE, TOURNAMENT):
+            with self.subTest(template=directory.name):
+                manifest = directory / TEMPLATE_FILE
+                self.assertEqual("named", split_document(manifest)[0].get("entry"))
 
 
 if __name__ == "__main__":

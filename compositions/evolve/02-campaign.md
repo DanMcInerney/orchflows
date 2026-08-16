@@ -54,7 +54,9 @@ incumbent's score card or {{bound}} is spent.
 
 status; result — the final incumbent identity, generation count, and the
 promotion/kill log; verification — the score cards and the plan and
-projection identities they were taken under; feedback; risks
+projection identities they were taken under; then bounds spent and
+cumulative changed artifacts, including accepted descendant changes and
+the worklog path; feedback; risks
 
 ## Result
 
