@@ -6,7 +6,8 @@ The ticket is the work item of ``contracts/work-item.md``: ``start``,
 run from inside a workspace, records the lifecycle stamps
 ``workspace_branch`` and ``workspace_baseline`` into the main-root
 ticket's frontmatter; ``check`` grades the item's ``isolation``
-declaration at the join from the caller's own git. A script observes and
+declaration at the join from the integrating checkout's git -- the
+caller's own, or the one ``--repo`` names. A script observes and
 grades — it never creates, enters or removes a workspace, and ``start``
 never claims.
 
@@ -141,7 +142,7 @@ class Refused(Exception):
         self.detail = detail
 
 
-# --- git, always the caller's own -------------------------------------------
+# --- git, in the tree under grade -------------------------------------------
 
 
 # The checkout every ``_git`` call runs in. ``None`` -- the caller's own tree,
@@ -432,10 +433,10 @@ def _is_ancestor(ancestor: str, descendant: str) -> bool:
 
 
 def _cmd_check(rest):
-    """Grade the item at the join, every fact re-derived from the caller's
-    own git. Nothing a child wrote in prose is read, and the branch facts —
-    not the presence of a linked tree the host may already have removed —
-    are the verdict."""
+    """Grade the item at the join, every fact re-derived from the integrating
+    checkout's git -- the caller's own, or ``--repo``'s. Nothing a child wrote
+    in prose is read, and the branch facts — not the presence of a linked tree
+    the host may already have removed — are the verdict."""
 
     global _GIT_CWD
     args = list(rest)
