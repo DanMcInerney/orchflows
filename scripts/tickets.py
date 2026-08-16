@@ -1806,9 +1806,10 @@ def _cited_paths(section_text: str, write_scope=()) -> list:
     stream, a sibling's output -- cannot keep a dead lane unreclaimable.
     """
 
-    scope = [_scope_segments(entry) for entry in (write_scope or [])]
+    scope = [_scope_segments(entry) for entry in _scope_entries(write_scope)]
     scope = [entry for entry in scope if entry]
     found = []
+    unreadable = []
     for token in RESULT_TOKEN_SPLIT_RE.split(section_text or ""):
         candidate = token.strip(RESULT_TOKEN_STRIP)
         if not candidate:
@@ -1822,11 +1823,14 @@ def _cited_paths(section_text: str, write_scope=()) -> list:
             if scope and not any(_inside_scope(path, entry) for entry in scope):
                 continue
             found.append(path)
-        except (OSError, ValueError):
-            # an unstattable name is not this reader's error to report: it is
-            # simply not evidence that anything moved
-            continue
-    return found
+        except (OSError, ValueError) as error:
+            # A name this reader could not look at is not evidence that
+            # nothing moved -- it is evidence of nothing at all, and reading
+            # it as stillness is what shortens a live lane's lease toward the
+            # second executor `_is_stale` exists to prevent. Returned, so the
+            # caller says so rather than the lease absorbing it.
+            unreadable.append(f"could not look at the cited {candidate}: {error}")
+    return found, unreadable
 
 
 def _scope_segments(entry) -> list:
@@ -1856,18 +1860,25 @@ def _inside_scope(path: Path, segments: list) -> bool:
 
 def _last_motion(ticket_path: Path, result_text: str, write_scope=()):
     """The most recent write to the ticket or to what its ``## Result``
-    names inside ``write_scope``, or ``None`` when nothing is readable."""
+    names inside ``write_scope``, as ``(moment, unreadable)``.
+
+    ``moment`` is ``None`` when nothing is readable; ``unreadable`` names
+    every place motion could not be looked for, so the caller reports the
+    blind spot instead of the lease treating it as stillness.
+    """
 
     latest = None
-    for path in [ticket_path, *_cited_paths(result_text, write_scope)]:
+    cited, unreadable = _cited_paths(result_text, write_scope)
+    for path in [ticket_path, *cited]:
         try:
             stamp = path.stat().st_mtime
-        except OSError:
+        except OSError as error:
+            unreadable.append(f"could not stat {path}: {error}")
             continue
         moment = datetime.fromtimestamp(stamp, timezone.utc)
         if latest is None or moment > latest:
             latest = moment
-    return latest
+    return latest, unreadable
 
 
 def _is_stale(claimed_at, bound_minutes: int, now: datetime, last_motion=None) -> bool:
@@ -1893,24 +1904,36 @@ def _is_stale(claimed_at, bound_minutes: int, now: datetime, last_motion=None) -
     return (now - parsed) > timedelta(minutes=bound_minutes)
 
 
-def _claim_is_stale(ticket_path, text: str, data: dict, now: datetime) -> bool:
-    """``_is_stale`` for one ticket on disk, motion and all.
+def _claim_is_stale(ticket_path, text: str, data: dict, now: datetime):
+    """``_is_stale`` for one ticket on disk, motion and all, as
+    ``(stale, unreadable)``.
 
     The one place ``ready`` and ``claim`` both ask from, so the two cannot
     answer differently about one claim -- a listing that offers a ticket the
-    claim path then refuses is a frontier that dispatches nothing.
+    claim path then refuses is a frontier that dispatches nothing. Both must
+    hand it the same ``data``: ``ready``'s came through ``_load_ticket``,
+    normalised and grant-merged, while ``claim``'s was raw frontmatter, so a
+    ``write_scope`` written as a bare scalar was iterated by character on one
+    path only and every cited artifact fell outside a scope of letters. Both
+    now load it the same way.
+
+    ``unreadable`` is every place motion could not be looked for. The verdict
+    is unchanged by it -- a blind spot is not motion -- but the caller can
+    say which answer rests on a full look.
     """
 
-    return _is_stale(
+    motion, unreadable = _last_motion(
+        Path(ticket_path),
+        _sections(text).get("Result", ""),
+        data.get("write_scope") or (),
+    )
+    stale = _is_stale(
         data.get("claimed_at"),
         _parse_bound_minutes(data.get("bound")),
         now,
-        _last_motion(
-            Path(ticket_path),
-            _sections(text).get("Result", ""),
-            data.get("write_scope") or (),
-        ),
+        motion,
     )
+    return stale, unreadable
 
 
 # --- argument helpers --------------------------------------------------------
@@ -2850,6 +2873,11 @@ def _cmd_ready(rest):
         return {"error": NO_SINK_ERROR}
     now = datetime.now(timezone.utc)
     ready_items = []
+    # Every ticket this command could not read or grade, with why. An empty
+    # `ready` used to mean either "nothing is ready" or "nothing could be
+    # looked at", and a frontier reading the first when the second was true
+    # parks a whole run on silence (F F4).
+    skipped = []
     for run_dir in _iter_run_dirs(tickets_root, run_filter):
         tickets = {}
         for ticket_path in sorted(run_dir.glob("*.md")):
@@ -2857,14 +2885,37 @@ def _cmd_ready(rest):
             tickets[loaded["id"]] = loaded
         for data in tickets.values():
             if "error" in data:
+                skipped.append({"id": data["id"], "reason": data["error"]})
                 continue
             depends_on = data.get("depends_on") or []
+            # An edge naming no ticket in the run never completes, so the
+            # dependent waits forever inside the listing's silence -- and a
+            # `depends_on` written as a bare scalar is iterated by character
+            # into exactly that shape.
+            dangling = [dep for dep in depends_on if dep not in tickets]
+            if dangling:
+                skipped.append({
+                    "id": data["id"],
+                    "reason": "depends_on names no ticket in this run: "
+                    + ", ".join(str(dep) for dep in dangling),
+                })
+                continue
+            status = data.get("status")
+            # A file in a run's ticket directory whose status is none of the
+            # contract's is not a ticket this command declined to offer -- it
+            # is one it could not grade, and the two were the same silence.
+            if status not in VALID_STATUSES:
+                skipped.append({
+                    "id": data["id"],
+                    "reason": f"status '{status}' is none of "
+                    f"{sorted(VALID_STATUSES)}, so readiness cannot be graded",
+                })
+                continue
             deps_complete = all(
                 tickets.get(dep, {}).get("status") == "complete" for dep in depends_on
             )
             if not deps_complete:
                 continue
-            status = data.get("status")
             eligible = False
             if status == "ready":
                 eligible = True
@@ -2879,20 +2930,38 @@ def _cmd_ready(rest):
                         _set_frontmatter_field(text, "status", "ready"),
                         encoding="utf-8",
                     )
-                except (OSError, ValueError):
+                except (OSError, ValueError) as error:
+                    skipped.append({
+                        "id": data["id"],
+                        "reason": f"eligible to promote to ready, and the "
+                        f"write failed: {error}",
+                    })
                     continue
                 data["summary"]["status"] = "ready"
                 eligible = True
             elif status == "claimed":
                 text, failure = _read_utf8(data["path"])
                 if failure is not None:
-                    # unreadable now, though it parsed a moment ago: the
-                    # holder is doing something to it, which is motion
+                    # It parsed a moment ago and does not now. That was read
+                    # as the holder moving, which is a lease fact invented
+                    # out of a read failure: the same silence covers a lane
+                    # that died mid-write.
+                    skipped.append({
+                        "id": data["id"],
+                        "reason": f"claimed, and unreadable at the moment its "
+                        f"claim was graded: {failure['error']}",
+                    })
                     continue
-                eligible = _claim_is_stale(data["path"], text, data, now)
+                eligible, unreadable = _claim_is_stale(data["path"], text, data, now)
+                if unreadable:
+                    skipped.append({
+                        "id": data["id"],
+                        "reason": "claim graded without a full look at its "
+                        "motion: " + "; ".join(unreadable),
+                    })
             if eligible:
                 ready_items.append(data["summary"])
-    return {"ready": ready_items}
+    return {"ready": ready_items, "skipped": skipped}
 
 
 def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime) -> dict:
@@ -2910,11 +2979,25 @@ def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime
         return failure
     if current_text != prior_text:
         return {"error": "ticket changed since read; lost the claim race, retry"}
-    data = _parse_frontmatter(prior_text)
+    # Through `_load_ticket`, which is what `ready` grades from: the same
+    # ticket read two ways is two answers about one claim, and the shape that
+    # diverged is the common one -- a bare-scalar `write_scope`, normalised
+    # on one path and iterated by character on the other (F F4).
+    data = _load_ticket(ticket_path)
+    if "error" in data:
+        return {"error": data["error"]}
     status = data.get("status")
+    skipped = []
     if status == "claimed":
-        if not _claim_is_stale(ticket_path, prior_text, data, now):
+        stale, unreadable = _claim_is_stale(ticket_path, prior_text, data, now)
+        if not stale:
             return {"error": f"ticket already claimed and not stale: {ticket_path.stem}"}
+        if unreadable:
+            skipped.append({
+                "id": data["id"],
+                "reason": "claim taken as stale without a full look at its "
+                "motion: " + "; ".join(unreadable),
+            })
     elif status != "ready":
         return {"error": f"ticket is not claimable in status '{status}': {ticket_path.stem}"}
     timestamp = now.strftime(UTC_STAMP)
@@ -2922,7 +3005,10 @@ def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime
     updated = _set_frontmatter_field(updated, "claimed_by", claimed_by)
     updated = _set_frontmatter_field(updated, "claimed_at", timestamp)
     ticket_path.write_text(updated, encoding="utf-8")
-    return {"claimed": {"id": ticket_path.stem, "claimed_by": claimed_by, "claimed_at": timestamp}}
+    claimed = {
+        "id": ticket_path.stem, "claimed_by": claimed_by, "claimed_at": timestamp
+    }
+    return {"claimed": claimed, "skipped": skipped} if skipped else {"claimed": claimed}
 
 
 def _cmd_claim(rest):
@@ -2951,7 +3037,10 @@ def _cmd_claim(rest):
         return result
     claimed = dict(result["claimed"])
     claimed["run"] = run
-    return {"claimed": claimed}
+    payload = {"claimed": claimed}
+    if result.get("skipped"):
+        payload["skipped"] = result["skipped"]
+    return payload
 
 
 def _cmd_grant(rest):
@@ -3860,8 +3949,11 @@ def _append_one_line(path: Path, block: str) -> None:
     never ran.
 
     So Windows locks and POSIX does not, and byte zero is the mutex: every
-    appender contends on the same byte and no reader takes it, so an append
-    blocks only another append. Nothing here read-modify-writes. The lock
+    appender contends on the same byte. ``LK_LOCK`` is a mandatory range
+    lock, not an advisory one, so an append blocks another append and also
+    any reader that touches byte zero -- which on this file is every reader,
+    since they all read from the start. A reader refused here retries; it has
+    not found the file unreadable. Nothing here read-modify-writes. The lock
     serialises the seek the platform hides inside ``write``.
     """
 
