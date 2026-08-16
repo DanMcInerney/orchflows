@@ -113,6 +113,12 @@ and a bare name decides nothing about the item it is stated under. So is a
 span a criterion quotes rather than states -- one standing behind a denial, a
 refusal or an example -- because a command named as what not to do, as what
 the guard refuses, or as what CI runs is no oracle of the item naming it.
+
+A search span -- ``grep``, ``rg`` -- is the one head not spawned: it is
+decided against the scratch copy by this tool's own matcher, so its verdict
+reads the same on a host whose PATH carries no grep. The matcher reads a
+closed option set (``SEARCH_FLAGS``), and a span carrying an option outside it
+is the same extraction gap rather than a status guessed at.
 """
 
 import argparse
@@ -1002,7 +1008,11 @@ def _search_matcher(letters, pattern):
 
     body = re.escape(pattern) if "F" in letters else pattern
     if "w" in letters:
-        body = r"\b(?:{})\b".format(body)
+        # grep's ``-w`` asks that no word constituent stand on either side of
+        # the match, which is not ``\b``: ``\b`` also demands one *inside*, so
+        # a pattern whose own edge is not a word character -- ``-w -- -x`` --
+        # would never match here and does under grep.
+        body = r"(?<!\w)(?:{})(?!\w)".format(body)
     if "x" in letters:
         body = r"\A(?:{})\Z".format(body)
     try:
@@ -1091,7 +1101,10 @@ def _search_exit(argv, tree):
     if matcher is None:
         return SEARCH_ERROR
     recursive = bool(letters & {"r", "R"}) or argv[0] == "rg"
-    if not operands and argv[0] == "rg":
+    # A recursive search naming no operand reads the working directory --
+    # ``rg`` by default, ``grep -r`` since 2.11 -- and the working directory
+    # is the copy.
+    if not operands and recursive:
         operands = ["."]
     inverted = "v" in letters
     selected = False
@@ -1114,7 +1127,10 @@ def _search_exit(argv, tree):
             hit = _selected(matcher, here, inverted)
             failed = failed or hit is None
             selected = selected or hit is True
-    if failed:
+    # grep's own exception, stated in its manual: under ``-q`` a selected line
+    # exits 0 even where an error occurred, because the question was only
+    # whether anything matched.
+    if failed and not (selected and "q" in letters):
         return SEARCH_ERROR
     return 0 if selected else NO_MATCH
 

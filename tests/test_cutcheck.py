@@ -2893,7 +2893,11 @@ SPAN_EXECUTORS = ("_wrote", "_run_once", "_exit_code")
 # with whichever host it is asked on and is silent exactly where the defect
 # lives. `sys.stdlib_module_names` is 3.10 and later while this repository's
 # floor is 3.9, so reading that would split the verdict by leg instead.
-SPAN_PROGRAMS = frozenset({"git", "python3"})
+# The search heads are admitted because they are the one head `_run_once`
+# never spawns: a `grep` span is decided by cutcheck's own matcher, so it
+# needs no program CI would have to install -- which is the fact
+# `SearchSpanMatcherTest` grades, and the reason its spans may stand here.
+SPAN_PROGRAMS = frozenset({"git", "python3"} | set(cutcheck.SEARCH_HEADS))
 SPAN_MODULES = frozenset({"unittest"})
 
 
@@ -3531,16 +3535,69 @@ class SearchSpanMatcherTest(unittest.TestCase):
         self.assertEqual(self.ran('grep -rn "unrunnable-oracle" scripts/'), 0)
         self.assertEqual(self.ran('grep -n "unrunnable-oracle" scripts/'), 2)
 
+    def _two_trees(self):
+        """A copy, and a file standing beside it that the copy does not hold.
+
+        Built rather than pointed at, because the claim is about containment
+        and a path that merely does not exist proves nothing about it: the
+        first spelling of this node named `../install.py` and `/etc/hosts`,
+        neither of which resolves on a Windows host, so a matcher reading
+        anything it was pointed at still returned 2 for both -- the node could
+        not fail on the very claim it stood for. Here the outside file exists
+        and holds the token, so a matcher that reads it answers 0.
+        """
+
+        base = Path(tempfile.mkdtemp(prefix=".cutcheck-search-copy-"))
+        self.addCleanup(shutil.rmtree, str(base))
+        copy = base / "copy"
+        copy.mkdir()
+        (copy / "inside.txt").write_bytes(b"one SCRIPT_NAMES line\n")
+        (base / "outside.txt").write_bytes(b"one SCRIPT_NAMES line\n")
+        return copy, base / "outside.txt"
+
     def test_an_operand_outside_the_copy_is_no_operand_at_all(self):
         """The copy is the whole of what a span reads, rooted or climbing.
 
         Shelling out left this to the tool: a span naming `/etc/hosts` read
         `/etc/hosts`. Deciding it here is where the containment can be held, so
-        it is held.
+        it is held -- and graded against a file that exists, holds the token,
+        and stands one step outside the copy, so the only way to 2 is refusal.
         """
 
-        self.assertEqual(self.ran('grep -n "SCRIPT_NAMES" ../install.py'), 2)
-        self.assertEqual(self.ran('grep -n "root" /etc/hosts'), 2)
+        copy, outside = self._two_trees()
+        self.assertEqual(cutcheck._run_once('grep -n "SCRIPT_NAMES" inside.txt', copy), 0)
+        self.assertEqual(cutcheck._run_once('grep -n "SCRIPT_NAMES" ../outside.txt', copy), 2)
+        self.assertEqual(
+            cutcheck._run_once('grep -n "SCRIPT_NAMES" {}'.format(shlex.quote(str(outside))), copy),
+            2,
+        )
+
+    def test_the_status_agrees_with_grep_where_the_option_set_reaches(self):
+        """The numbers are grep's own, on the spans the closed set admits.
+
+        Three readings a first matcher got wrong, each measured against GNU
+        grep 3.0 before it was fixed: `grep -r PATTERN` with no operand
+        searches the working directory (2 here, 0 or 1 there); `-q` with a
+        selected line exits 0 even where an operand was unreadable, which
+        grep's manual states as the one exception to its status convention
+        (2 here, 0 there); and `-w` asks for no word constituent on either
+        side of the match rather than a `\\b`, which for a pattern whose own
+        edge is not a word character -- `-w -- -x` -- never matched here and
+        matches there.
+        """
+
+        copy, _ = self._two_trees()
+        (copy / "edge.txt").write_bytes(b" a -x b\n")
+        self.assertEqual(cutcheck._run_once('grep -rn "SCRIPT_NAMES"', copy), 0)
+        self.assertEqual(cutcheck._run_once('grep -rn "zzqq-never-written"', copy), cutcheck.NO_MATCH)
+        self.assertEqual(cutcheck._run_once('grep -n "SCRIPT_NAMES"', copy), 2)
+        self.assertEqual(cutcheck._run_once('grep -q "SCRIPT_NAMES" no-such.txt inside.txt', copy), 0)
+        self.assertEqual(cutcheck._run_once('grep -n "SCRIPT_NAMES" no-such.txt inside.txt', copy), 2)
+        self.assertEqual(cutcheck._run_once('grep -wn -- "-x" edge.txt', copy), 0)
+        # The underscore is a word constituent, so `SCRIPT` inside
+        # `SCRIPT_NAMES` is not a word and `line` is.
+        self.assertEqual(cutcheck._run_once('grep -wn "SCRIPT" inside.txt', copy), cutcheck.NO_MATCH)
+        self.assertEqual(cutcheck._run_once('grep -wn "line" inside.txt', copy), 0)
 
     def test_an_option_the_matcher_cannot_read_is_extracted_by_nobody(self):
         """A guessed option would decide a cut from a reading nothing checked.
