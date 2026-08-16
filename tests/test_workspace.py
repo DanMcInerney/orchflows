@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import scripts.tickets as tickets  # noqa: E402  the grant key's one owner
 import scripts.workspace as workspace  # noqa: E402
 from tests.tree_removal import remove_repo_tree  # noqa: E402  the removal's one owner
 
@@ -1131,6 +1132,96 @@ class TestHelpAndVantage(unittest.TestCase):
                          ()):
                 with self.subTest(args=args):
                     self.assertEqual(1, run_workspace(main, *args).returncode)
+
+
+@unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
+class TestAnEmptyScopeIsGradedNotRequired(unittest.TestCase):
+    """The two graders of one declaration agree about the lane that writes
+    nothing. An item whose effective write scope is empty is authorized to
+    change no path in any workspace -- it writes its own ticket sections,
+    and those live in the sink -- so ``tickets.py packet`` emits no
+    establishment step for it. A grader that still demanded the stamp
+    refused such a lane at no-record for obeying the packet it was given.
+
+    Effective, never declared: the scope ``tickets._load_ticket`` answers
+    with is the cut's plus every recorded grant, so a lane a grant has
+    since given paths to is graded in full again.
+    """
+
+    def test_empty_scope_with_no_stamp_is_not_required_at_exit_zero(self):
+        graded = graded_item("T-noscope", scope=(), recorded=False)
+        # a base no git command could resolve: reaching git at all fails,
+        # so this also proves the verdict is reached before any git call
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-noscope", "--base", "no-such-rev"
+        )
+        self.assertEqual(0, done.returncode, done.stdout)
+        self.assertEqual("not required", payload_of(done)["check"]["verdict"])
+
+    def test_empty_scope_payload_names_the_declaration_and_the_scope(self):
+        """Why the grade was skipped, in the payload -- an integrator reading
+        `not required` under `isolation: required` must be able to see that
+        the empty authority, not a missed declaration, is the reason."""
+
+        graded = graded_item("T-noscope-why", scope=(), recorded=False)
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-noscope-why", "--base", "no-such-rev"
+        )
+        body = payload_of(done)["check"]
+        self.assertEqual(workspace.REQUIRED, body[workspace.ISOLATION_KEY])
+        self.assertEqual([], body[workspace.WRITE_SCOPE_KEY])
+
+    def test_empty_scope_is_not_required_even_where_a_branch_was_stamped(self):
+        """The verdict is the authority's, not the stamp's: a lane given no
+        establishment step may still have been told to run `start` by its
+        caller, and grading that stamp would refuse it at isolation-missing
+        or scope-breach for a scope that authorizes nothing. The cost is
+        recorded in this item's risks: a branch that changed paths under an
+        empty scope is no longer reported as a breach."""
+
+        graded = graded_item("T-noscope-stamped", scope=())
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-noscope-stamped",
+            "--base", graded["base"],
+        )
+        self.assertEqual(0, done.returncode, done.stdout)
+        self.assertEqual("not required", payload_of(done)["check"]["verdict"])
+
+    def test_empty_scope_widened_by_a_grant_is_graded_in_full(self):
+        """One granted path is an authority over workspace content, so the
+        lane needs the workspace it was granted the paths for, and every
+        existing grade returns -- here, no-record for the missing stamp."""
+
+        graded = graded_item(
+            "T-granted", scope=(), recorded=False,
+            extra=((tickets.GRANTED_SCOPE_KEY, "[scratch]"),),
+        )
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-granted", "--base", graded["base"]
+        )
+        self.assertEqual(5, done.returncode, done.stdout)
+        self.assertEqual("no-record", payload_of(done)["verdict"])
+
+    def test_empty_scope_is_not_what_an_absent_write_scope_key_means(self):
+        """An empty scope is a declared authority over nothing; an absent key
+        is no declaration at all, which `tickets.py packet` refuses as an
+        incomplete packet. Read alike, an item that never declared what it
+        may change would pass its join whatever it changed."""
+
+        graded = graded_repository()
+        path = make_ticket(
+            graded["run_dir"], "T-nokey", scope=(),
+            extra=((workspace.ISOLATION_KEY, workspace.REQUIRED),),
+        )
+        text = path.read_text(encoding="utf-8")
+        self.assertIn("write_scope:\n", text)
+        path.write_text(text.replace("write_scope:\n", "", 1), encoding="utf-8")
+
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-nokey", "--base", graded["base"]
+        )
+        self.assertEqual(5, done.returncode, done.stdout)
+        self.assertEqual("no-record", payload_of(done)["verdict"])
 
 
 if __name__ == "__main__":
