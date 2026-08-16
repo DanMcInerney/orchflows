@@ -1082,11 +1082,6 @@ SAME_TIER_COMPARED = frozenset({"skills"})
 # provenance. The signature mandates that table, and a pack cannot state
 # an oracle policy without naming the criterion it decides.
 #
-# orch-edit and orch-render both defer craft to "the ticket's craft
-# reference". That phrase is the signature's craft cell reaching the
-# instances, not one instance copying the other: a pack's craft is
-# per-domain and the pointer is how a generic body stays domain-blind.
-#
 # orch-edit and orch-synthesize both forbid an assembly step inventing a
 # claim its inputs did not carry -- sections for one, evidence packets
 # for the other. It is one law with two subjects and no owner: rules/
@@ -1108,11 +1103,6 @@ LICENSED_COPIES = (
         "contracts/verdict.md",
         "packs/orch-research-pack/references/oracles.md",
         "citation",
-    ),
-    (
-        "skills/instances/orch-render/SKILL.md",
-        "skills/instances/orch-edit/SKILL.md",
-        "per the ticket's craft reference",
     ),
     (
         "skills/instances/orch-synthesize/SKILL.md",
