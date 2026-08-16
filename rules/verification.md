@@ -50,7 +50,8 @@
     is UNVERIFIED.
 11. A repair by the context that found the defect is accepted only on a
     check that did no part of the repair: repairing makes that context an
-    executor from that moment (§4), claiming no verdict of its own. What
-    that check is for a cut, and why a verdict is read only on the host
-    that produced it, are
-    [cut-lens.md](../skills/kernel/orch-decompose/references/cut-lens.md)'s.
+    executor from that moment (§4), claiming no verdict of its own. For a
+    cut that check is `scripts/cutcheck.py` re-run against the revision
+    the set was cut from; what its exit status means, and why a verdict is
+    read only on the host that produced it, are
+    `scripts/cutcheck.py --help`'s.
