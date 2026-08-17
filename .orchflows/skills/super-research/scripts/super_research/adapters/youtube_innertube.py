@@ -216,6 +216,44 @@ VIDEO_RENDERER_KEY = "videoRenderer"
 COMMENT_THREAD_KEY = "commentThreadRenderer"
 COMMENT_PATH = ("comment", "commentRenderer")
 
+# The second shape a thread arrives in, and the store its fields moved to.
+# Measured 2026-08-17 on `next:4jZjM0Zs_LY`, page two: 13 threads, **zero** of
+# them carrying `comment.commentRenderer`, so the path above read nothing and a
+# video with 1,292 comments came back empty. The thread now carries a view model
+# — nested under its own name twice, which is the platform's spelling and not a
+# typo here — holding keys and no fields; `commentKey` addresses that thread's
+# own `commentEntityPayload` among the answer's entity mutations, and the fields
+# are on it. Both shapes are read, because both are served.
+COMMENT_VIEW_MODEL_PATH = ("commentViewModel", "commentViewModel")
+COMMENT_KEY_FIELD = "commentKey"
+ENTITY_MUTATIONS_PATH = ("frameworkUpdates", "entityBatchUpdate", "mutations")
+ENTITY_KEY_FIELD = "entityKey"
+ENTITY_PAYLOAD_KEY = "payload"
+COMMENT_ENTITY_KEY = "commentEntityPayload"
+# The one payload kind that carries a comment's fields. The same batch carried
+# five other kinds on 13 threads — surface, tri-state button, toolbar surface,
+# toolbar state, shared — and the kind is what selects, never the position: the
+# toolbar-state mutations arrive interleaved with the comment ones.
+ENTITY_AUTHOR_KEY = "author"
+ENTITY_AUTHOR_NAME_KEY = "displayName"
+ENTITY_PROPERTIES_KEY = "properties"
+ENTITY_CONTENT_KEY = "content"
+# The body, and the reason it is not read through `route_text`: this one is a
+# plain string under a key of its own name, not a `runs`/`simpleText` holder,
+# and the label reader returns "" on it.
+ENTITY_CONTENT_PATH = (ENTITY_CONTENT_KEY, ENTITY_CONTENT_KEY)
+ENTITY_TOOLBAR_KEY = "toolbar"
+PUBLISHED_TIME_KEY = "publishedTime"
+# The like count a signed-out reader is shown. Beside it the same toolbar
+# carries `likeCountLiked`, which is this count *if you liked it* — measured at
+# exactly one more on all thirteen rows, 28/29, 6/7, 1/2 — so reading that one
+# would inflate every count in the artifact by one and give a comment nobody
+# liked a like. It is a string either way and rides in `attributes` verbatim:
+# a comment with no likes reads `" "`, one space, which is a label and not a
+# zero, and the count the origin published for it is no count at all.
+LIKE_COUNT_NOTLIKED_KEY = "likeCountNotliked"
+COMMENT_ENTITY_TEXT_FACTS = (LIKE_COUNT_NOTLIKED_KEY, PUBLISHED_TIME_KEY)
+
 # Where a player answer keeps the three fields the roster row names, and what
 # it says about whether it is answering at all.
 PLAYABILITY_KEY = "playabilityStatus"
@@ -299,6 +337,10 @@ COMMENT_TEXT_FACTS = (VOTE_COUNT_TEXT_KEY, PUBLISHED_TIME_TEXT_KEY)
 SEARCH_ROW_KEYS = (TITLE_KEY, OWNER_TEXT_KEY)
 PLAYER_ROW_KEYS = (TITLE_KEY, VIEW_COUNT_METRIC, PUBLISH_DATE_KEY)
 COMMENT_ROW_KEYS = (COMMENT_ID_KEY, CONTENT_TEXT_KEY, AUTHOR_TEXT_KEY)
+# The same three fields under the entity store's own names, which is what a
+# thread in the second shape promises. A thread whose key resolves to no entity
+# is short of all three at once, and says so rather than disappearing.
+COMMENT_ENTITY_ROW_KEYS = (COMMENT_ID_KEY, ENTITY_CONTENT_KEY, ENTITY_AUTHOR_NAME_KEY)
 
 ROUTE_DATE_FORMAT = "%Y-%m-%d"
 ROUTE_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
@@ -590,6 +632,96 @@ def comment_items(payload: Any) -> Optional[Sequence[Any]]:
     return None
 
 
+def comment_entities(payload: Any) -> Optional[Dict[str, Mapping[str, Any]]]:
+    """Every comment entity this answer carried, under the key that addresses it.
+
+    None means the mutation list itself is not there, which is the payload
+    having moved and not an answer whose threads happen to resolve to nothing:
+    an answer serving view models states a store, and one that states none has
+    put the fields somewhere this module has not been told about. An empty
+    mapping is a store that arrived carrying no comment, which is a different
+    piece of news and stays distinct from it.
+    """
+
+    mutations = dig(payload, ENTITY_MUTATIONS_PATH)
+    if not isinstance(mutations, list):
+        return None
+    found = {}
+    for mutation in mutations:
+        if not isinstance(mutation, Mapping):
+            continue
+        key = _text(mutation.get(ENTITY_KEY_FIELD))
+        entity = dig(mutation, (ENTITY_PAYLOAD_KEY, COMMENT_ENTITY_KEY))
+        if key and isinstance(entity, Mapping):
+            found[key] = entity
+    return found
+
+
+def _entity_facts(
+    properties: Mapping[str, Any], toolbar: Mapping[str, Any]
+) -> Tuple[Tuple[str, str], ...]:
+    """The two non-integer facts this entity states, verbatim, under its names.
+
+    Neither is a number and neither is made into one. The like count is a
+    string the origin writes as `" "` where nobody has liked the comment, and
+    the published time is an interval from a moment this package did not
+    observe — the same reason the older shape's record states no instant.
+    """
+
+    carried = []
+    for source, key in ((toolbar, LIKE_COUNT_NOTLIKED_KEY), (properties, PUBLISHED_TIME_KEY)):
+        value = source.get(key)
+        if isinstance(value, str) and value:
+            carried.append((key, value))
+    return tuple(carried)
+
+
+def _view_model_record(
+    position: int,
+    entity: Optional[Mapping[str, Any]],
+    video_id: str,
+) -> NativeRecord:
+    """One thread as the entity its key named reported it.
+
+    ``entity`` is None for a key that addressed nothing in the store this
+    answer carried. That is still a record: the platform listed the thread, and
+    dropping it would report fewer comments than the video has. It carries
+    `field_omitted` because the fields did not arrive — which is absence, and
+    never a comment with no author and no body.
+    """
+
+    entity = entity if isinstance(entity, Mapping) else {}
+    author = entity.get(ENTITY_AUTHOR_KEY)
+    author = author if isinstance(author, Mapping) else {}
+    properties = entity.get(ENTITY_PROPERTIES_KEY)
+    properties = properties if isinstance(properties, Mapping) else {}
+    toolbar = entity.get(ENTITY_TOOLBAR_KEY)
+    toolbar = toolbar if isinstance(toolbar, Mapping) else {}
+    row = {
+        COMMENT_ID_KEY: _text(properties.get(COMMENT_ID_KEY)),
+        # A plain string at this path, read as one. The label reader beside it
+        # is for `runs`/`simpleText` holders and returns "" on this.
+        ENTITY_CONTENT_KEY: _text(dig(properties, ENTITY_CONTENT_PATH)),
+        ENTITY_AUTHOR_NAME_KEY: _text(author.get(ENTITY_AUTHOR_NAME_KEY)),
+    }
+    # Digits or nothing. This route writes `""` for a thread with no replies and
+    # states the zero only in a sentence beside it, and a sentence is not a
+    # count: reading zero off `""` would publish a number nobody sent.
+    replies = exact_count(toolbar.get(REPLY_COUNT_METRIC))
+    return NativeRecord(
+        canonical_content_kind=COMMENT_KIND,
+        canonical_locator="",
+        native_item_id=row[COMMENT_ID_KEY],
+        native_parent_id=video_id,
+        body=row[ENTITY_CONTENT_KEY],
+        author=row[ENTITY_AUTHOR_NAME_KEY],
+        engagement=() if replies is None else ((REPLY_COUNT_METRIC, replies),),
+        attributes=_entity_facts(properties, toolbar),
+        native_position=position,
+        loss=("field_omitted",) if _missing(row, COMMENT_ENTITY_ROW_KEYS) else (),
+    )
+
+
 def _search_record(position: int, renderer: Mapping[str, Any]) -> NativeRecord:
     """One search result as the section listed it."""
 
@@ -754,11 +886,35 @@ def _comments_page(
         )
     records = []
     cursor = ""
+    # Read once for the whole answer: the store is the answer's, not a thread's.
+    entities = comment_entities(payload)
     for entry in items:
         thread = entry.get(COMMENT_THREAD_KEY) if isinstance(entry, Mapping) else None
         comment = dig(thread, COMMENT_PATH) if isinstance(thread, Mapping) else None
         if isinstance(comment, Mapping):
             records.append(_comment_record(len(records), comment, video_id))
+            continue
+        view_model = dig(thread, COMMENT_VIEW_MODEL_PATH) if isinstance(thread, Mapping) else None
+        if isinstance(view_model, Mapping):
+            if entities is None:
+                # Threads arrived and the store they address did not. Reading
+                # them as empty would report a video with comments as having
+                # none, which is the one thing the typed vocabulary exists to
+                # keep apart from the platform going quiet.
+                return _drifted(
+                    response,
+                    NEXT_OPERATION,
+                    "carried a {0} and no {1}".format(
+                        COMMENT_VIEW_MODEL_PATH[-1], ".".join(ENTITY_MUTATIONS_PATH)
+                    ),
+                )
+            records.append(
+                _view_model_record(
+                    len(records),
+                    entities.get(_text(view_model.get(COMMENT_KEY_FIELD))),
+                    video_id,
+                )
+            )
             continue
         cursor = cursor or continuation_in(entry)
     if records:
