@@ -4,6 +4,11 @@ Judge the cut, never the deliverable, from the frozen root ticket and
 the issued items alone. Every defect family falls on one side of this
 division.
 
+The reader is also the corrector: findings land as `tickets.py amend` on
+the unclaimed items, `tickets.py new` for one the cut is missing, and
+`cutcheck.py` re-run to exit 0 is what accepts them
+([rules/verification.md](../../../../rules/verification.md) §11).
+
 ## Delegated
 
 - `scripts/cutcheck.py` decides family 1, family 2, family 3, family 4,

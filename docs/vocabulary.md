@@ -99,8 +99,9 @@ that needs a different meaning needs a different word.
   `contracts/work-item.md`; on disk, a markdown ticket the executor writes
   to. The two words name the same thing; ticket is the on-disk view.
 - **root ticket** — a ticket whose executor is `orch-decompose`; its
-  subtree is `<id>.NN` unit tickets plus `<id>.gate.*`; it completes
-  when `<id>.gate.verify` completes; a successor depends on the root id
+  subtree is `<id>.NN` unit tickets plus `<id>.gate.*`, checked by one
+  fresh reader before its first unit is promoted; it completes when
+  `<id>.gate.verify` completes; a successor depends on the root id
   alone.
 - **template** — a directory of ticket stubs plus its `template.md`
   manifest, instantiated into a run's ticket directory by `tickets.py
