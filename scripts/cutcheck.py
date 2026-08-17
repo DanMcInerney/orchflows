@@ -106,6 +106,18 @@ criteria in prose, and a gap that failed the run would turn every clean
 set red. Gaps are for the decomposer to read, not for the exit code to
 decide.
 
+Below both blocks stands a third, and it holds no finding of any kind. It
+is a reading of the cut's shape -- how long the longest ``depends_on``
+chain through the issued items is, and how many items stand on each level
+of them -- printed for every set this tool resolves, clean or not. A cut
+is not defective for being deep or for being narrow, and this tool grades
+defects, so the shape is reported and nothing more: it is what the
+decomposer minimizes and what the frontier's queue is shaped by, and both
+of them were reading it off the tickets by hand. Its two classes carry a
+marker of their own, sit outside the advisory set because they are not
+advisory findings but not findings, and are built apart from the finding
+list so that no path exists by which they could move the exit status.
+
 The copy is checked as well as the spans run in it. A tree entry carrying
 git's ``120000`` mode is the one route out that argv cannot see, so the copy
 is cloned with ``core.symlinks=false`` -- which makes such an entry a file
@@ -178,6 +190,7 @@ FAMILY_4 = "family 4"
 FAMILY_5 = "family 5"
 FAMILY_6 = "family 6"
 READING = "reading"
+GRAPH = "graph"
 ALREADY_PASSES = "already-passes"
 NO_HITS_BOTH_REVISIONS = "no-hits-both-revisions"
 FAILS_BOTH_REVISIONS = "fails-both-revisions"
@@ -203,6 +216,8 @@ ILLEGAL_EXECUTOR = "illegal-executor"
 SYMLINK_IN_TREE = "symlink-in-tree"
 BYTECODE_WRITTEN = "bytecode-written"
 UNREAD_HALF = "unread-half"
+CRITICAL_PATH = "critical-path"
+LEVEL_WIDTH = "level-width"
 FAMILY_OF = {
     ALREADY_PASSES: FAMILY,
     NO_HITS_BOTH_REVISIONS: FAMILY,
@@ -239,6 +254,12 @@ FAMILY_OF = {
     # marker of its own so a reader filters it the way every other line is
     # filtered, and so no family's line count silently gains a member.
     UNREAD_HALF: READING,
+    # No family either, and for the nearer half of the same reason: the shape
+    # of a cut is not a defect of one. A family here would put two lines that
+    # grade nothing into a family's count, and the marker keeps them selectable
+    # by the one filter every other line answers to.
+    CRITICAL_PATH: GRAPH,
+    LEVEL_WIDTH: GRAPH,
 }
 # Advisory classes are printed and never set the exit status. A map that is
 # not there is a fact about the run, not a defect of the cut; a committed
@@ -254,17 +275,31 @@ ADVISORY = frozenset(
         UNREAD_HALF,
     }
 )
+# The shape reading's classes, which are in neither set. An advisory is a
+# finding the exit status forgives; these are not findings, so they are held
+# out of the finding list altogether rather than forgiven inside it. Naming
+# them here is what lets a reader ask the question directly instead of
+# inferring the answer from two absences.
+GRAPH_CLASSES = frozenset({CRITICAL_PATH, LEVEL_WIDTH})
 # The one thing a python oracle writes into the copy by importing anything,
 # and the flag that stops it. Reported in words because the repair is a
 # spelling of the oracle and is stated nowhere else -- not in the pack's
 # oracle policy, not in the decomposer's skill, not in this report until now.
 BYTECODE_RE = re.compile(r"(?:^|/)__pycache__/|\.py[co]$")
 BYTECODE_REPAIR = "the interpreter's own cache; spell this oracle with `-B`"
-# The report's two summary lines. A reader selects finding lines by filtering
-# stdout on a family, a class name, a criterion number or a ticket id, so
-# neither summary line may carry any of those, nor the path of a script: a
-# summary a filter selects is a finding line to everything downstream.
+# The report's three summary lines. A reader selects finding lines by filtering
+# stdout on a family, a class name, a criterion number or a ticket id, so no
+# summary line may carry any of those, nor the path of a script: a summary a
+# filter selects is a finding line to everything downstream. That is why the
+# shape's heading names neither of the two readings standing under it.
+#
+# The shape's heading also has to read nothing like the advisory's. What sends
+# a fresh cut checker at a set is an agent reading "cutcheck reported an
+# advisory" off this report, and a heading that echoed the advisory's wording
+# would fire that checker on every set ever graded. So it says outright what it
+# is, and borrows none of the advisory's phrasing to say it.
 ADVISORY_HEADING = "cutcheck: advisory -- reported, and never setting the exit status:"
+GRAPH_HEADING = "cutcheck: the shape of this cut -- how long and how wide it is, and no finding of any kind:"
 NO_FINDING_OUTSIDE = "cutcheck: no finding outside the advisory set"
 SCRATCH_NOT_REMOVED = "cutcheck: scratch root not removed"
 NO_SCRATCH_ROOT = "cutcheck: no scratch root could be placed for"
@@ -1904,6 +1939,93 @@ def _pairwise(siblings, reads):
     return findings
 
 
+def _levels(siblings, ids):
+    """Each issued item's level, and the ids no level resolves for.
+
+    Level 1 is an item depending on nothing inside the set; every other item's
+    level is one past the greatest level among its ``depends_on`` here. Only
+    edges inside the set count, because an id naming something this cut does
+    not hold orders nothing in it.
+
+    An item whose dependencies never all resolve is inside a ``depends_on``
+    cycle or behind one. It is returned unresolved and named in the reading
+    rather than raised: a cut this tool cannot order is a fact about the cut,
+    and a reader who asked for a shape gets the shape and the reason the rest
+    of it is missing. Raising would take the whole report -- findings included
+    -- down with the one set that most needs reading.
+    """
+
+    deps = {item: [d for d in _listed(siblings[item], "depends_on") if d in ids]
+            for item in ids}
+    level = {}
+    pending = list(ids)
+    while pending:
+        ready = [item for item in pending if all(d in level for d in deps[item])]
+        if not ready:
+            break
+        for item in ready:
+            level[item] = 1 + max([level[d] for d in deps[item]] or [0])
+        pending = [item for item in pending if item not in level]
+    return level, deps, sorted(pending)
+
+
+def _critical_path(level, deps):
+    """The longest ``depends_on`` chain, read back from its deepest item.
+
+    Every dependency of a levelled item is levelled, and an item's level is one
+    past the greatest of theirs, so stepping to the deepest dependency at each
+    hop walks a chain as long as the level says it is. Ties are broken on the
+    id so that one cut reads the same twice: the chain is a reading a decomposer
+    compares between revisions, and an arbitrary tie would make it move on its
+    own.
+    """
+
+    if not level:
+        return []
+    node = max(sorted(level), key=lambda item: level[item])
+    chain = [node]
+    while deps[node]:
+        node = max(sorted(deps[node]), key=lambda item: level[item])
+        chain.append(node)
+    chain.reverse()
+    return chain
+
+
+def _graph_reading(run, siblings):
+    """The cut's shape: how deep it is, and how wide at each level.
+
+    Against the run rather than any ticket, because neither reading is a
+    property of one item -- the chain is the run's length in dispatches and the
+    widths are what each frontier asks of the host at once. Over the issued
+    items alone, for the reason `_issued_items` gives: a root does not run
+    beside its own subtree and a gate runs behind all of it, so counting either
+    would report a shape no frontier ever executes.
+
+    A set with no issued item is read as nothing at all rather than as a shape
+    of zero: there is no cut there to have one.
+    """
+
+    ids = _issued_items(siblings, _root_ids(siblings))
+    if not ids:
+        return []
+    level, deps, cycled = _levels(siblings, ids)
+    chain = _critical_path(level, deps)
+    detail = "{}: {}".format(len(chain), " > ".join(chain)) if chain else "0"
+    if cycled:
+        detail += "; cycle: {}".format(", ".join(cycled))
+    deepest = max(level.values()) if level else 0
+    widths = [
+        sum(1 for item in level if level[item] == depth)
+        for depth in range(1, deepest + 1)
+    ]
+    return [
+        (run, 0, CRITICAL_PATH, detail),
+        # `0` where nothing resolved: every item is in a cycle or behind one,
+        # and the chain's line names which.
+        (run, 0, LEVEL_WIDTH, " ".join(str(width) for width in widths) or "0"),
+    ]
+
+
 def _coverage_path(run_dir, name=COVERAGE_FILE):
     """Where the acceptance-coverage map lives for a resolved ticket root.
 
@@ -2394,6 +2516,16 @@ def main(argv=None):
         print(ADVISORY_HEADING)
         for finding in advisory:
             print(_finding_line(*finding))
+    # Read from the same `siblings` the findings were, and printed whatever
+    # they said. It stands after the advisory block so that everything the exit
+    # status answers for is above it and read first, and it is built outside
+    # `findings` rather than added to them and excused: a class in that list is
+    # a class the status has an opinion about, and this one must not be.
+    shape = _graph_reading(args.run, siblings)
+    if shape:
+        print(GRAPH_HEADING)
+        for reading in shape:
+            print(_finding_line(*reading))
     if outside:
         return REPORTED
     # Zero bytes reads the same as a run that never happened. A set whose only
