@@ -94,6 +94,13 @@ class AdapterDescriptor:
     volatile_identifiers: Tuple[VolatileIdentifier, ...] = ()
     comment_count_metric: str = ""
     reply_count_metric: str = ""
+    # How many rows one answer from this surface holds when the origin has
+    # that many, as measured; zero when the surface answers a single item or
+    # nobody measured. Declared so a caller can see that a cap below it buys
+    # nothing on a surface that pages by one call: the read costs the same
+    # and the rows past the cap are dropped. `runner.run_step` says so as a
+    # step warning; the number decides nothing else.
+    page_size: int = 0
 
     def __post_init__(self) -> None:
         if self.access_class not in schema.ACCESS_CLASSES:
@@ -113,12 +120,22 @@ class AdapterDescriptor:
 
 @dataclass(frozen=True)
 class AdapterRequest:
-    """One bounded call's inputs, already frozen by the caller."""
+    """One bounded call's inputs, already frozen by the caller.
+
+    ``window_start`` and ``window_end`` are the step's own bounds, in the
+    manifest's instant spelling, either or both empty. An adapter whose origin
+    takes a date bound sends it in the origin's own terms; one whose origin
+    does not sends nothing and the core's filter still holds. No adapter drops
+    a row on them — dropping is the core's, so the drop is counted once and in
+    one place.
+    """
 
     step_id: str
     query: str = ""
     target_ids: Tuple[str, ...] = ()
     cursor: str = ""
+    window_start: str = ""
+    window_end: str = ""
 
 
 @dataclass(frozen=True)

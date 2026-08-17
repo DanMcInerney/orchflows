@@ -38,7 +38,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
-from super_research import adapters, cache, normalize, runner, schema, transport
+from super_research import adapters, cache, normalize, probes, runner, schema, transport
 from super_research.adapters import fake, reddit_archive, web_search
 from tests import helpers
 
@@ -131,6 +131,17 @@ EMPTY_PAGE_BODY = (200, '{"data": [], "records": []}', "application/json")
 PROBE_REQUEST = adapters.AdapterRequest(
     step_id="s-probe", query="probe", target_ids=("1abc234",)
 )
+
+
+def probe_request_for(adapter_id):
+    """One bounded call's inputs, in the grammar that adapter's own smoke uses."""
+
+    probe = probes.probe_for(adapter_id)
+    if probe is None:
+        return PROBE_REQUEST
+    if probe.kind == "discovery":
+        return adapters.AdapterRequest(step_id="s-probe", query=probe.target)
+    return adapters.AdapterRequest(step_id="s-probe", target_ids=(probe.target,))
 
 # T01's tracer fixtures, read rather than copied: the strongest fused-versus-
 # staged claim is over the run's own end-to-end path on the run's own data, and
@@ -394,17 +405,28 @@ def assert_rate_budget_respected(case, governor, budgets):
 
 CONCURRENCY_MODULES = ("asyncio", "concurrent", "multiprocessing", "threading", "_thread")
 
+# The three modules that may hold a concurrency primitive, and which one each
+# holds. `runner` holds the one pool, which is where lanes overlap; `pacing`
+# holds the locks that keep an origin to one read at a time whatever the
+# lanes do; `cache` holds the lock over one run's shared memory. Nothing else
+# in the package may take one — an adapter that spawned a thread would be
+# deciding how far a step goes, which is the core's to bound.
+CONCURRENCY_OWNERS = {
+    "runner.py": ("concurrent.futures", "concurrent.futures.ThreadPoolExecutor"),
+    "pacing.py": ("threading",),
+    "cache.py": ("threading",),
+}
 
-class NothingOverlapsAndTheCoreOwnsPagingTest(unittest.TestCase):
+
+class LanesOverlapAndTheCoreOwnsPagingTest(unittest.TestCase):
     """Two mechanisms the documents called core-owned, pinned to what ships.
 
-    `protocol.md` said `fused` lets two steps overlap and `adapters/__init__.py`
-    said the core owns pagination and concurrency. One of the two is now a
-    behaviour: `run_step` spends a cursor a page offers, and `PagingIsTheCoresTest`
-    below is what holds it to its bounds. The other is still only a name — the
-    package imports no concurrency primitive at all, what `fused` really
-    collapses is the round-trip, and `fake_makespan_us` is the span of a modeled
-    placement rather than a wall clock.
+    `protocol.md` says `fused` lets steps overlap and `adapters/__init__.py`
+    says the core owns pagination and concurrency, and both are behaviours:
+    `run_step` spends a cursor a page offers and `PagingIsTheCoresTest` holds
+    it to its bounds; `run_steps` overlaps a fused run's lanes on a pool that
+    lives in the runner and nowhere else, and `FusedLanesOverlapTest` below
+    holds *that* to its bounds — an origin still sees one read at a time.
 
     What survives here of the pagination half is the part that was never about
     whether the core pages: a step's own authorized calls carry no cursor, so
@@ -412,7 +434,7 @@ class NothingOverlapsAndTheCoreOwnsPagingTest(unittest.TestCase):
     from nowhere else.
     """
 
-    def test_the_package_imports_no_concurrency_primitive(self):
+    def test_only_the_declared_owners_import_a_concurrency_primitive(self):
         # By import rather than by spelling: this file's own prose says the
         # word, and a scan that could not tell an import from a sentence would
         # make writing the truth down impossible.
@@ -423,7 +445,14 @@ class NothingOverlapsAndTheCoreOwnsPagingTest(unittest.TestCase):
             if name.split(".")[0] in CONCURRENCY_MODULES
         )
 
-        self.assertEqual(taken, [])
+        self.assertEqual(
+            taken,
+            sorted(
+                (owner, name)
+                for owner, names in CONCURRENCY_OWNERS.items()
+                for name in names
+            ),
+        )
 
     def test_no_call_a_manifest_authorizes_carries_a_cursor(self):
         for payload in (DISCOVERY_MANIFEST, TWO_STEP_MANIFEST, FUSED_MANIFEST):
@@ -975,7 +1004,13 @@ def cached_run(make_governor, clock=None):
 
 
 def run_on(clock, governor, payload, dispatch_ordinal=0, start_tick_us=0):
-    """One dispatch of one manifest, on the clock its governor is paced by."""
+    """One dispatch of one manifest, on the clock its governor is paced by.
+
+    On one lane. These suites prove accounting — calls, pages, placement — on
+    a fake clock, and a fake clock advanced by two lanes at once measures the
+    interleaving rather than the work; `FusedLanesOverlapTest` is where the
+    overlap itself is proven, on a real clock.
+    """
 
     return runner.run_scheduled(
         schema.parse_manifest(payload),
@@ -983,6 +1018,7 @@ def run_on(clock, governor, payload, dispatch_ordinal=0, start_tick_us=0):
         clock=clock.monotonic,
         dispatch_ordinal=dispatch_ordinal,
         start_tick_us=start_tick_us,
+        lanes=1,
     )
 
 
@@ -1635,19 +1671,19 @@ class OrderingContractTest(unittest.TestCase):
 
     def test_a_metric_name_is_never_inferred_from_the_snapshot_that_carries_it(self):
         # With nothing declared, every row's comment count is missing — even
-        # the row whose snapshot is literally called `comment_count`. The order
-        # collapses to the time-and-id tail, which is the whole tell.
-        undeclared = cases_of(
+        # the row whose snapshot is literally called `comment_count`. Nothing
+        # counts, so the counted view is refused rather than quietly answered
+        # with the time-and-id tail; the key itself still says MISSING for
+        # every row, which is the whole tell.
+        for record in self.native:
+            self.assertEqual(
+                runner.ordering_key(record, "most_commented", self.as_of, DECLARING_DESCRIPTORS)[0],
+                runner.MISSING,
+            )
+        with self.assertRaisesRegex(runner.OrderingError, "no eligible metric"):
             runner.order_records(
                 self.native, "most_commented", self.as_of, descriptors=DECLARING_DESCRIPTORS
             )
-        )
-
-        self.assertEqual(
-            undeclared,
-            ["future", "changing", "missing", "wrong_name", "stale", "equal_time", "untimed"],
-        )
-        self.assertEqual(undeclared, self.ordered("newest"))
 
     def test_a_family_scoped_order_refuses_to_compare_across_families(self):
         for order in ("newest", "native_top", "most_commented", "most_replied"):
@@ -1822,7 +1858,7 @@ class BurstAndCooldownTest(unittest.TestCase):
         identities = {
             value
             for route_id in transport.ROUTE_CONSTANTS
-            for name, value in transport.build_transport_request(route_id).headers
+            for name, value in transport.build_transport_request(route_id, helpers.probe_params(route_id)).headers
             if name.lower() == "user-agent"
         }
         self.assertEqual(identities, {transport.USER_AGENT})
@@ -2192,12 +2228,26 @@ class AdapterBranchTest(unittest.TestCase):
                 self.assertEqual(descriptor.adapter_id, adapter_id)
 
                 clock = helpers.FakeClock()
+                # Every surface, not only the primary: a probe names the one
+                # its own smoke reads, which for a multi-surface adapter is
+                # not always the descriptor a bare id resolves to.
                 carrier, opener = helpers.offline_transport(
-                    clock, {descriptor.route_id: EMPTY_PAGE_BODY}
+                    clock,
+                    {
+                        surface.route_id: EMPTY_PAGE_BODY
+                        for surface in runner.surface_descriptors(adapter_id)
+                    },
                 )
-                page = runner.call_adapter(adapter_id, carrier, PROBE_REQUEST)
+                # Each adapter is asked what its own smoke asks it: two of them
+                # take an address and refuse anything else before making a
+                # call, so one universal argument would prove those two refuse
+                # rather than that every id resolves to a call.
+                page = runner.call_adapter(adapter_id, carrier, probe_request_for(adapter_id))
 
-                self.assertEqual(page.route_id, descriptor.route_id)
+                self.assertIn(
+                    page.route_id,
+                    {surface.route_id for surface in runner.surface_descriptors(adapter_id)},
+                )
                 self.assertEqual(len(opener.opened), 1)
 
     def test_an_adapter_the_core_does_not_list_is_refused_rather_than_guessed(self):

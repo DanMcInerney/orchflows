@@ -1,0 +1,201 @@
+{
+  "symbol": {
+    "id": 282365,
+    "symbol": "SPCX",
+    "symbol_mic": "SPCX.XNAS",
+    "symbol_display": "SPCX",
+    "exchange": "NASDAQ",
+    "region": "US",
+    "logo_url": "https://logos.stocktwits-cdn.com/SPCX.png",
+    "title": "SpaceX",
+    "aliases": [],
+    "deeplink": "symbol/SPCX",
+    "external_id": null,
+    "is_following": false,
+    "watchlist_count": 102752,
+    "has_pricing": true,
+    "instrument_class": "Stock",
+    "live_event": false
+  },
+  "cursor": {
+    "more": false,
+    "since": null,
+    "max": null
+  },
+  "messages": [
+    {
+      "id": 662063610,
+      "body": "$SPCX lets kill some bears",
+      "tokenized_body": [
+        {
+          "type": "cashTag",
+          "data": {
+            "text": "$SPCX",
+            "symbol": "SPCX",
+            "symbol_display": "SPCX",
+            "logo_url": "https://logos.stocktwits-cdn.com/SPCX.png",
+            "deeplink": "symbol/SPCX"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " lets kill some bears"
+          }
+        }
+      ],
+      "created_at": "yesterday",
+      "discussion": false,
+      "source": {
+        "id": 2095,
+        "title": "StockTwits For Android ",
+        "url": "http://www.stocktwits.com/mobile"
+      },
+      "prices": [
+        {
+          "id": 282365,
+          "symbol": "SPCX",
+          "symbol_mic": "SPCX.XNAS",
+          "price": "148.83"
+        }
+      ],
+      "mentioned_users": [],
+      "entities": {
+        "media": [],
+        "sentiment": null,
+        "discussable": null
+      },
+      "user": {
+        "id": 2266428
+      },
+      "likes": {
+        "total": 1,
+        "user_ids": [
+          8730652
+        ]
+      },
+      "symbols": [
+        {
+          "id": 282365,
+          "symbol": "SPCX",
+          "symbol_mic": "SPCX.XNAS",
+          "symbol_display": "SPCX",
+          "exchange": "NASDAQ",
+          "region": "US",
+          "logo_url": "https://logos.stocktwits-cdn.com/SPCX.png",
+          "title": "SpaceX",
+          "aliases": [],
+          "deeplink": "symbol/SPCX",
+          "external_id": null,
+          "is_following": false,
+          "watchlist_count": 102752,
+          "has_pricing": true,
+          "instrument_class": "Stock",
+          "live_event": false,
+          "sentiment_change": 1.8,
+          "volume_change": -4.71
+        }
+      ]
+    },
+    {
+      "id": 662063561,
+      "body": "$SPCX Bears &amp; TDS both crying in a corner right now 🚀🚀🚀",
+      "tokenized_body": [
+        {
+          "type": "cashTag",
+          "data": {
+            "text": "$SPCX",
+            "symbol": "SPCX",
+            "symbol_display": "SPCX",
+            "logo_url": "https://logos.stocktwits-cdn.com/SPCX.png",
+            "deeplink": "symbol/SPCX"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " Bears & TDS both crying in a corner right now 🚀🚀🚀"
+          }
+        }
+      ],
+      "created_at": "2026-08-17T14:35:18Z",
+      "discussion": false,
+      "source": {
+        "id": 1149,
+        "title": "StockTwits for iOS",
+        "url": "http://www.stocktwits.com/mobile"
+      },
+      "prices": [
+        {
+          "id": 282365,
+          "symbol": "SPCX",
+          "symbol_mic": "SPCX.XNAS",
+          "price": "148.40"
+        }
+      ],
+      "mentioned_users": [],
+      "entities": {
+        "media": [],
+        "sentiment": {
+          "basic": "Bullish"
+        },
+        "discussable": null
+      },
+      "user": {
+        "id": 5056084,
+        "username": "kjz67",
+        "name": "KZ",
+        "avatar_url": "https://avatars.stocktwits.com/production/5056084/thumb-1644643885.png",
+        "avatar_url_ssl": "https://avatars.stocktwits.com/production/5056084/thumb-1644643885.png",
+        "join_date": "2021-02-17",
+        "official": false,
+        "identity": "User",
+        "classification": [],
+        "badges": [],
+        "home_country": "US",
+        "search_regions": [],
+        "followers": 12,
+        "following": 12,
+        "ideas": 612,
+        "watchlist_stocks_count": 276,
+        "like_count": 5239,
+        "plus_tier": "",
+        "premium_room": "",
+        "trade_app": false,
+        "trade_status": "PENDING_MFA"
+      },
+      "likes": {
+        "total": 2,
+        "user_ids": [
+          10125962,
+          5779507
+        ]
+      },
+      "symbols": [
+        {
+          "id": 282365,
+          "symbol": "SPCX",
+          "symbol_mic": "SPCX.XNAS",
+          "symbol_display": "SPCX",
+          "exchange": "NASDAQ",
+          "region": "US",
+          "logo_url": "https://logos.stocktwits-cdn.com/SPCX.png",
+          "title": "SpaceX",
+          "aliases": [],
+          "deeplink": "symbol/SPCX",
+          "external_id": null,
+          "is_following": false,
+          "watchlist_count": 102752,
+          "has_pricing": true,
+          "instrument_class": "Stock",
+          "live_event": false,
+          "sentiment_change": 1.8,
+          "volume_change": -4.71
+        }
+      ]
+    }
+  ],
+  "response": {
+    "status": 200
+  }
+}

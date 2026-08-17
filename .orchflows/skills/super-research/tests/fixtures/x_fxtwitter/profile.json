@@ -1,0 +1,35 @@
+{
+  "code": 200,
+  "message": "OK",
+  "user": {
+    "screen_name": "SpaceX",
+    "url": "https://x.com/SpaceX",
+    "id": "34743251",
+    "followers": 41906741,
+    "following": 127,
+    "likes": 528,
+    "media_count": 4593,
+    "statuses": 11649,
+    "name": "SpaceX",
+    "description": "SpaceX designs, manufactures and launches the world’s most advanced rockets and spacecraft",
+    "raw_description": {
+      "text": "SpaceX designs, manufactures and launches the world’s most advanced rockets and spacecraft",
+      "facets": []
+    },
+    "location": "Earth",
+    "banner_url": "https://pbs.twimg.com/profile_banners/34743251/1681251194",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1697749409851985920/HbrI04tM_normal.jpg",
+    "joined": "Thu Apr 23 21:53:30 +0000 2009",
+    "protected": false,
+    "website": {
+      "url": "http://spacex.com",
+      "display_url": "spacex.com"
+    },
+    "verification": {
+      "verified": true,
+      "verified_at": null,
+      "type": "organization"
+    },
+    "type": "profile"
+  }
+}

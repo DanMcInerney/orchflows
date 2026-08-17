@@ -2676,23 +2676,22 @@ class LinkedInArtifactSeamTest(unittest.TestCase):
         self.assertEqual(len({record.record_id for record in northwind}), 3)
         self.assertEqual(len({record.canonical_locator for record in northwind}), 3)
 
-    def test_a_route_reporting_no_count_ranks_on_nothing_it_did_not_report(self):
+    def test_a_route_reporting_no_count_refuses_the_counted_view_out_loud(self):
         # Neither descriptor declares a comment or reply metric, so the two
-        # metric orders have no eligible snapshot to rank on and fall through
-        # to time. That is the point of an unset metric name: the view still
-        # answers, and it answers with what the route actually reported.
-        by_metric = runner.order_records(
-            self.jobs, "most_commented", self.artifact.as_of
-        )
-        by_time = runner.order_records(self.jobs, "newest", self.artifact.as_of)
-
+        # metric orders have no eligible snapshot to rank on. Until 2026-08-17
+        # they fell through to time while still answering to the counted
+        # name — the silent degradation the bakeoff review measured; a counted
+        # view over a set in which nothing counts is refused, and the refusal
+        # says why. `newest` is the view that answers here.
         for record in self.jobs:
             self.assertIsNone(
                 runner.eligible_snapshot(record, "comment_count", self.artifact.as_of)
             )
+        with self.assertRaisesRegex(runner.OrderingError, "no eligible metric"):
+            runner.order_records(self.jobs, "most_commented", self.artifact.as_of)
         self.assertEqual(
-            [record.native_item_id for record in by_metric],
-            [record.native_item_id for record in by_time],
+            len(runner.order_records(self.jobs, "newest", self.artifact.as_of)),
+            len(self.jobs),
         )
 
     def test_newest_orders_day_precision_postings_by_the_day_the_origin_reported(self):
@@ -2901,7 +2900,11 @@ class YoutubeInstagramRouteConstantTest(unittest.TestCase):
                 continue
             with self.subTest(route=route_id):
                 request = transport.build_transport_request(
-                    route_id, {"query": "x", "video_id": "y", "context": "z"}
+                    route_id,
+                    dict(
+                        helpers.probe_params(route_id),
+                        **{"query": "x", "video_id": "y", "context": "z"}
+                    ),
                 )
 
                 self.assertEqual(request.body, "")
@@ -3764,21 +3767,40 @@ class InnerTubeDescriptorTest(unittest.TestCase):
     def test_the_client_version_is_declared_rotating_with_a_way_back_to_a_current_one(self):
         declared = youtube_innertube.DESCRIPTOR.volatile_identifiers
 
-        self.assertEqual(len(declared), 1)
+        # Two clients rotate on this route since 2026-08-17: the web one every
+        # operation but `player` presents, and the Android one `player` and the
+        # transcript operation present because it is the one served caption
+        # tracks. Each is a separate identifier with a separate procedure —
+        # they rotate on separate schedules and are recovered from separate
+        # places.
+        self.assertEqual(len(declared), 2)
         self.assertIn(youtube_innertube.CLIENT_VERSION, declared[0].name)
         self.assertIn(youtube_innertube.CLIENT_NAME, declared[0].name)
+        self.assertIn(youtube_innertube.PLAYER_CLIENT_VERSION, declared[1].name)
+        self.assertIn(youtube_innertube.PLAYER_CLIENT_NAME, declared[1].name)
         # The procedure travels with the identifier rather than living
         # somewhere a reader would have to already know to look.
         recovery = declared[0].recovery
         self.assertIn("ytcfg", recovery)
         self.assertIn("INNERTUBE_CLIENT_VERSION", recovery)
+        self.assertIn("_INNERTUBE_CLIENTS", declared[1].recovery)
 
     def test_the_client_version_goes_out_in_the_body_the_route_shapes(self):
-        _, opener = youtube_page("player_metadata.json")
-        client = json.loads(opener.opened[0].body)["context"]["client"]
+        # `player` presents the Android client, which is the one served caption
+        # tracks; `search` presents the web client whose key the route carries.
+        # Both go out in the body the route shapes, and neither is anywhere a
+        # caller could set.
+        _, player_opener = youtube_page("player_metadata.json")
+        played = json.loads(player_opener.opened[0].body)["context"]["client"]
+        _, search_opener = youtube_page(
+            "search_results.json", target_id=YOUTUBE_SEARCH_TARGET
+        )
+        searched = json.loads(search_opener.opened[0].body)["context"]["client"]
 
-        self.assertEqual(client["clientName"], youtube_innertube.CLIENT_NAME)
-        self.assertEqual(client["clientVersion"], youtube_innertube.CLIENT_VERSION)
+        self.assertEqual(played["clientName"], youtube_innertube.PLAYER_CLIENT_NAME)
+        self.assertEqual(played["clientVersion"], youtube_innertube.PLAYER_CLIENT_VERSION)
+        self.assertEqual(searched["clientName"], youtube_innertube.CLIENT_NAME)
+        self.assertEqual(searched["clientVersion"], youtube_innertube.CLIENT_VERSION)
 
     def test_it_declares_the_reply_metric_it_reports_and_no_comment_metric(self):
         # A comment carries a count of its replies; nothing in these three
@@ -4029,15 +4051,18 @@ class AttestationIsNotAnAbsenceTest(unittest.TestCase):
         self.assertEqual(page.loss, ("schema_drift",))
         self.assertIn(".".join(youtube_innertube.SEARCH_RESULTS_PATH), warning)
 
-    def test_the_shipped_adapter_never_reads_the_field_a_caption_fetcher_needs(self):
-        # Caption retrieval is deferred by the spec with a named reopen
-        # condition. The module declares the field a fetcher would need so a
-        # reader knows it has seen it, and reads it nowhere: a count of zero is
-        # the statement, and `test_the_caption_scan_can_fail` is what makes the
-        # count worth anything.
+    def test_the_field_a_caption_fetcher_needs_is_read_once_where_it_is_spent(self):
+        # Caption retrieval was deferred by the spec, and the deferral's whole
+        # enforcement was that this field was read nowhere. The reopen
+        # condition it named has been met: the `ANDROID` client answered `OK`
+        # with a populated track list on 2026-08-17 where every client measured
+        # on 2026-08-10 answered with an empty one. So the count is one rather
+        # than zero, and one is the statement now — the field is spent building
+        # the continuation and nowhere else, so no second site can reach a
+        # caption address.
         source = ADAPTER_DIR / "youtube_innertube.py"
 
-        self.assertEqual(names_read(source, "CAPTION_FETCH_FIELD"), 0)
+        self.assertEqual(names_read(source, "CAPTION_FETCH_FIELD"), 1)
         self.assertIn("baseUrl", source.read_text(encoding="utf-8"))
 
     def test_no_youtube_route_returns_auth_required_with_an_empty_credential_store(self):
@@ -4647,15 +4672,18 @@ class YoutubeInstagramArtifactSeamTest(unittest.TestCase):
         )
 
     def test_a_search_hit_is_the_platform_speaking_and_not_an_index_entry(self):
-        # Which is why the pair above groups instead of linking: an edge joins
-        # an index hit to the target it discovered, and every operation on this
-        # route is YouTube reporting its own items. The `K4` index-mediated
-        # pattern is `web_search`'s, and it is not what happened here.
+        # Every operation on this route is YouTube reporting its own items, so
+        # nothing here is an index representation. The search hit is still the
+        # discovery the player read was selected from, so the two are linked —
+        # linked, and grouped apart, because a link is not a merge.
         self.assertEqual(
             sorted({record.representation_kind for record in self.artifact.records}),
             ["native"],
         )
-        self.assertEqual(self.artifact.edges, ())
+        self.assertEqual(
+            [(edge.from_record_id, edge.to_record_id) for edge in self.artifact.edges],
+            [("s1-search#0.0", "s2-video#0.0")],
+        )
 
     def test_a_named_fact_the_route_wrote_for_a_reader_survives_normalization(self):
         first = [
@@ -5048,10 +5076,13 @@ class HackerNewsSearchTest(unittest.TestCase):
         asked = urllib.parse.urlsplit(opener.opened[0].url)
 
         # The 2026-08-10 probes: `.../search?tags=comment` answered 200 for comments.
+        # `typoTolerance=false` rides on every search since 2026-08-17: the index
+        # reaches `space` from `SpaceX` otherwise, and answered 849,432 hits to
+        # that query where the exact one answers 67,207.
         self.assertEqual(asked.path, "/api/v1/search")
         self.assertEqual(
             sorted(urllib.parse.parse_qsl(asked.query)),
-            [("query", "kv cache"), ("tags", "comment")],
+            [("query", "kv cache"), ("tags", "comment"), ("typoTolerance", "false")],
         )
 
     def test_the_index_rows_arrive_in_the_order_the_index_listed_them(self):
@@ -5413,7 +5444,11 @@ class HackerNewsDescriptorTest(unittest.TestCase):
     def test_each_surface_declares_the_route_it_reads_under_one_adapter_id(self):
         self.assertEqual(
             [descriptor.route_id for descriptor in hacker_news.SURFACE_DESCRIPTORS],
-            [transport.HN_FIREBASE_ITEM_ROUTE, transport.HN_ALGOLIA_SEARCH_ROUTE],
+            [
+                transport.HN_FIREBASE_ITEM_ROUTE,
+                transport.HN_ALGOLIA_SEARCH_ROUTE,
+                transport.HN_ALGOLIA_ITEM_ROUTE,
+            ],
         )
         for descriptor in hacker_news.SURFACE_DESCRIPTORS:
             with self.subTest(route=descriptor.route_id):
@@ -6877,15 +6912,33 @@ class HackerNewsGithubArtifactSeamTest(unittest.TestCase):
         )
 
     def test_every_row_is_the_platform_speaking_for_itself(self):
-        # Neither of these is an archive and neither is an index-mediated hit:
-        # HN's own search of HN and GitHub's own search of GitHub are both the
-        # platform reporting its own items, so nothing carries
-        # `third_party_archive` and no discovery edge is drawn.
+        # Neither of these is an archive: HN's own search of HN and GitHub's
+        # own search of GitHub are both the platform reporting its own items,
+        # so nothing carries `third_party_archive`. Each search hit is still a
+        # discovery, and the item it led to is linked to it and never merged
+        # into it — one edge per selected hit, and no false alarm about the
+        # run's own lineage.
         self.assertEqual(
             sorted({record.representation_kind for record in self.artifact.records}),
             ["native"],
         )
-        self.assertEqual(self.artifact.edges, ())
+        self.assertEqual(
+            sorted((edge.from_record_id, edge.to_record_id) for edge in self.artifact.edges),
+            [("s1-search#0.0", "s2-story#0.0"), ("s6-search#0.0", "s4-repository#0.0")],
+        )
+        # The two hydrations no search here led to — a kid the search did
+        # not list, and an issues collection nothing indexes — are the two
+        # that say so, and only those two.
+        self.assertEqual(
+            sorted(
+                {
+                    record.step_id
+                    for record in self.artifact.records
+                    if "discovery_not_recorded" in record.loss
+                }
+            ),
+            ["s3-kid", "s5-issues"],
+        )
         for record in self.artifact.records:
             with self.subTest(record=record.record_id):
                 self.assertNotIn("third_party_archive", record.loss)
@@ -7014,12 +7067,30 @@ class FeedPageRouteConstantTest(unittest.TestCase):
             if urllib.parse.urlsplit(route.origin).netloc.endswith(".reddit.com")
         }
 
-        self.assertEqual(sorted(reddit_routes), [transport.REDDIT_FEED_ROUTE])
+        # Five routes on Reddit's own host since 2026-08-17: the RSS feed, and
+        # the four `/svc/shreddit/` HTML partials Reddit's own web client loads
+        # — measured 200 to the package identity that day, on a bucket of two
+        # hundred reads per window. Not one of them names `.json`. The
+        # `more-comments` continuation is a sixth partial and is deliberately
+        # not declared: it asks for a POST, which this package admits on two
+        # named routes and nowhere else.
+        self.assertEqual(
+            sorted(reddit_routes),
+            sorted([
+                transport.REDDIT_FEED_ROUTE,
+                transport.REDDIT_SHREDDIT_COMMENTS_ROUTE,
+                transport.REDDIT_SHREDDIT_LISTING_ROUTE,
+                transport.REDDIT_SHREDDIT_SEARCH_ROUTE,
+                transport.REDDIT_SHREDDIT_SUBREDDIT_SEARCH_ROUTE,
+            ]),
+        )
+        self.assertEqual(reddit_routes[transport.REDDIT_FEED_ROUTE].path_suffix, ".rss")
         for route_id, route in sorted(reddit_routes.items()):
             with self.subTest(route=route_id):
-                self.assertEqual(route.path_suffix, ".rss")
                 self.assertNotIn(".json", route.path)
                 self.assertNotIn(".json", route.path_suffix)
+                if route_id != transport.REDDIT_FEED_ROUTE:
+                    self.assertTrue(route.path.startswith("/svc/shreddit/"), route.path)
 
     def test_the_channel_feed_route_asks_by_the_id_the_evidence_measured(self):
         request = transport.build_transport_request(
@@ -8893,23 +8964,29 @@ class FeedPageRouteTtlTest(unittest.TestCase):
 TRACER_FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "tracer"
 ARCHIVED_POST_ID = "1abc234"
 
-# The whole roster, at the revision that completes it: thirteen live adapters
+# The whole roster, at the revision that completes it: nineteen live adapters
 # plus the offline fixture, each with the class the measured ladder gives it.
 # T10 binds its access-class law to this set, so it is spelled here in full
 # rather than derived — a list compared only against itself would admit a
-# fourteenth member silently.
+# eighteenth member silently.
 ROSTER = {
+    "bluesky": "K0",
     "fake": "offline",
     "github_rest": "K0",
     "hacker_news": "K0",
     "instagram_public": "K1",
     "linkedin_jobs": "K0",
     "linkedin_public": "K2",
+    "prediction_markets": "K0",
     "public_page": "K0",
     "reddit_archive": "K3",
     "reddit_feed": "K0",
+    "reddit_shreddit": "K2",
     "rss_atom": "K0",
+    "stocktwits": "K0",
+    "open_page": "K0",
     "web_search": "K4",
+    "x_fxtwitter": "K3",
     "x_guest": "K1",
     "x_syndication": "K2",
     "youtube_innertube": "K1",
@@ -9140,18 +9217,30 @@ class FeedPageArtifactSeamTest(unittest.TestCase):
             ],
         )
 
-    def test_no_provenance_edge_is_drawn_because_no_step_here_discovered_an_index(self):
-        # `link_discovery_hydration` sources an edge from an `index` record and
-        # from nothing else, and none of these three produces one: a feed entry
-        # is a `feed` and a document read is a `page`. So the probe-to-archive
-        # pair is held as two records rather than as a linked pair — which is
-        # correct and is also a real gap in the linking rule, recorded in this
-        # ticket's `## Feedback` rather than papered over by mislabelling a
-        # representation.
-        self.assertEqual(self.artifact.edges, ())
+    def test_the_feed_probe_and_the_archive_read_are_linked_and_never_merged(self):
+        # `link_discovery_hydration` sources an edge from any discovery record
+        # whose locator a hydration froze — since 2026-08-17 a feed entry as
+        # much as an index hit, which closed the gap this test used to record.
+        # The pair is still two records: linked, and never merged, which the
+        # representation partition guarantees.
+        self.assertEqual(
+            [(edge.edge_kind, edge.from_record_id, edge.to_record_id) for edge in self.artifact.edges],
+            [("discovery_hydration", "s1-feed#0.0", "s2-archive#0.0")],
+        )
         self.assertEqual(
             sorted({record.representation_kind for record in self.artifact.records}),
             ["feed", "native", "page"],
+        )
+        # The article read is the one hydration nothing here discovered — its
+        # locator was frozen from outside this artifact — and it is the one
+        # record that says so.
+        self.assertEqual(
+            sorted(
+                record.step_id
+                for record in self.artifact.records
+                if "discovery_not_recorded" in record.loss
+            ),
+            ["s4-article"],
         )
 
     def test_the_syndication_entries_keep_their_own_addresses_and_moments(self):
@@ -9289,7 +9378,7 @@ class UnrecognizedContainerIsNeverAnEmptySuccessTest(unittest.TestCase):
 
 
 class RosterIsCompleteTest(unittest.TestCase):
-    """Thirteen live adapters plus `fake`, and every one reachable four ways.
+    """Nineteen live adapters plus `fake`, and every one reachable four ways.
 
     This is the revision the roster closes at. An adapter is only really in it
     when the core can name it, describe it, call it, see every surface it can
@@ -9300,14 +9389,14 @@ class RosterIsCompleteTest(unittest.TestCase):
 
     def test_the_core_lists_exactly_the_roster_the_spec_names(self):
         self.assertEqual(sorted(runner.ADAPTER_IDS), sorted(ROSTER))
-        self.assertEqual(len(runner.ADAPTER_IDS), 14)
-        # Thirteen live, and the fourteenth is the offline fixture.
+        self.assertEqual(len(runner.ADAPTER_IDS), 20)
+        # Nineteen live, and the twentieth is the offline fixture.
         live = [
             adapter_id
             for adapter_id, access_class in ROSTER.items()
             if access_class != "offline"
         ]
-        self.assertEqual(len(live), 13)
+        self.assertEqual(len(live), 19)
 
     def test_every_adapter_declares_the_class_the_measured_ladder_gives_it(self):
         for adapter_id, access_class in sorted(ROSTER.items()):
@@ -9367,24 +9456,44 @@ class RosterIsCompleteTest(unittest.TestCase):
         )
 
     def test_every_listed_adapter_resolves_to_a_descriptor_and_to_a_call(self):
+        # Each adapter is asked what its own smoke asks it, because two of them
+        # take an address and nothing else: `open_page` refuses anything that is
+        # not an https locator on an undeclared host, and `reddit_shreddit`
+        # refuses a target its grammar does not name. A universal nonsense
+        # string would prove those two refuse, which is not what this row is
+        # about — it is about every listed adapter resolving to a descriptor and
+        # spending exactly one call.
         for adapter_id in sorted(ROSTER):
             with self.subTest(adapter=adapter_id):
                 descriptor = runner.descriptor_for(adapter_id)
+                probe = probes.probe_for(adapter_id)
                 clock = helpers.FakeClock()
                 carrier, opener = helpers.offline_transport(
-                    clock, {descriptor.route_id: (200, "{}", "application/json")}
+                    clock,
+                    {
+                        surface.route_id: (200, "{}", "application/json")
+                        for surface in runner.surface_descriptors(adapter_id)
+                    },
+                )
+                asked = (
+                    adapters.AdapterRequest(
+                        step_id="s-roster",
+                        query=probe.target if probe.kind == "discovery" else "",
+                        target_ids=() if probe.kind == "discovery" else (probe.target,),
+                    )
+                    if probe is not None
+                    else adapters.AdapterRequest(
+                        step_id="s-roster", query="probe", target_ids=("1abc234",)
+                    )
                 )
 
-                page = runner.call_adapter(
-                    adapter_id,
-                    carrier,
-                    adapters.AdapterRequest(
-                        step_id="s-roster", query="probe", target_ids=("1abc234",)
-                    ),
-                )
+                page = runner.call_adapter(adapter_id, carrier, asked)
 
                 self.assertEqual(page.adapter_id, adapter_id)
-                self.assertEqual(page.route_id, descriptor.route_id)
+                self.assertIn(
+                    page.route_id,
+                    {surface.route_id for surface in runner.surface_descriptors(adapter_id)},
+                )
                 self.assertEqual(len(opener.opened), 1)
 
 
@@ -9397,7 +9506,7 @@ def fake_page(records, **declaration):
 
 
 class FakeReplaysNamedAttributesTest(unittest.TestCase):
-    """The fourteenth member replays a route's own vocabulary, or stands in for less.
+    """The offline member replays a route's own vocabulary, or stands in for less.
 
     `attributes` is a family of `(name, value)` pairs — the shape `engagement`
     has, not the shape a flat field has — so the fixture adapter replays it the

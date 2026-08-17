@@ -15,7 +15,7 @@ refused for the duration so no credential file on disk can be read, and the
 package is scanned for any name that could reach a credential store at all —
 it imports `os` nowhere, so there is nothing to reach one with.
 
-Then the roster runs: seventeen steps, fourteen adapters, every route the core
+Then the roster runs: thirty-four steps, twenty adapters, every route the core
 can reach, one artifact. Every step keeps rows, no step is refused, and the
 string `auth_required` — which seven adapters and the router all know how to
 say — appears in nothing the run produced.
@@ -85,13 +85,38 @@ ROSTER_PAYLOADS = {
     "x_guest_graphql": ("x/guest_tweet_result.json", "application/json"),
     "linkedin_jobs_guest_search": ("linkedin/jobs_search_page.html", "text/html"),
     "linkedin_public_profile": ("linkedin/profile_person.html", "text/html"),
-    "youtube_innertube": ("youtube/search_results.json", "application/json"),
+    # The transcript step below reads both YouTube routes in one go: the
+    # player answer names the caption track, and the core spends the
+    # continuation it publishes on the timed-text route.
+    "youtube_innertube": ("youtube/player_android_captions.json", "application/json"),
+    "youtube_timedtext": ("youtube/timedtext_json3.json", "application/json"),
     "instagram_web_profile": ("instagram/web_profile_info.json", "application/json"),
     "hn_algolia_search": ("hacker_news/algolia_search_by_date.json", "application/json"),
     "hn_firebase_item": ("hacker_news/firebase_story.json", "application/json"),
     "github_rest": ("github/repo.json", "application/json"),
     "github_search": ("github/search_repositories.json", "application/json"),
     "fake_offline": ("tracer/fake_x_native_page.json", "application/json"),
+    # The routes added 2026-08-17, each against the bytes its adapter was
+    # built on.
+    "bing_rss": ("web_search/bing_rss.xml", "text/xml"),
+    "bing_news_rss": ("web_search/bing_news_rss.xml", "application/xml"),
+    "google_news_rss": ("web_search/google_news_rss.xml", "application/xml"),
+    "web_page_open": ("open_page/article.html", "text/html"),
+    "hn_algolia_item": ("hacker_news/algolia_item_tree.json", "application/json"),
+    "reddit_shreddit_listing": ("reddit_shreddit/listing.html", "text/html"),
+    "reddit_shreddit_search": ("reddit_shreddit/search.html", "text/html"),
+    "reddit_shreddit_subreddit_search": ("reddit_shreddit/search.html", "text/html"),
+    "reddit_shreddit_comments": ("reddit_shreddit/comments.html", "text/html"),
+    "polymarket_gamma": (
+        "prediction_markets/polymarket_public_search.json", "application/json",
+    ),
+    "kalshi_markets": ("prediction_markets/kalshi_markets.json", "application/json"),
+    "manifold_markets": ("prediction_markets/manifold_search.json", "application/json"),
+    "stocktwits_symbol_stream": ("stocktwits/stream.json", "application/json"),
+    "stocktwits_symbol_search": ("stocktwits/symbols.json", "application/json"),
+    "bluesky_search_posts": ("bluesky/search_posts.json", "application/json"),
+    "bluesky_author_feed": ("bluesky/author_feed.json", "application/json"),
+    "fxtwitter_api": ("x_fxtwitter/search.json", "application/json"),
 }
 
 ARCHIVED_POST_ID = "1abc234"
@@ -106,6 +131,7 @@ ARTICLE_TITLE = "Rate_limiting"
 PROFILE_SLUG = "avery-lindqvist-8a41b207"
 INSTAGRAM_USERNAME = "harbourlight.optics"
 HN_STORY_ID = "44831234"
+YOUTUBE_VIDEO_ID = "ggdyD2Un5zo"
 GITHUB_TARGET = "harbourlight/gpu-bench"
 X_POST_ID = "1799990000000000001"
 
@@ -128,6 +154,28 @@ NEXT_PAGE_CLAIMS = (
     ('"nbPages": 50', '"nbPages": 1'),
     ('"continuationCommand": {"token": "EpcDEgxsb2NhbCBtb2RlbHMaggNTQlNDQVE"}',
      '"continuationCommand": {}'),
+    # The claims the 2026-08-17 captures make, each in the origin's own words:
+    # Polymarket and Stocktwits say so in a field, Reddit's partials say so by
+    # naming the parameter their next page is asked with, and Kalshi hands back
+    # a cursor. Every one is turned off rather than deleted, so the fixture is
+    # still the shape the origin sent.
+    ('"hasMore": true', '"hasMore": false'),
+    ('"more": true', '"more": false'),
+    ("&after=", "&spent="),
+    ("&amp;after=", "&amp;spent="),
+    ("&cursor=", "&spent="),
+    # Kalshi's is a field naming the next page; emptied, it names none. The
+    # value is this capture's own, so it is matched by its two ends rather
+    # than transcribed: a base64 cursor is not a thing to copy by hand.
+    ('"cursor": "CgwIzvmF1AYQoNyW2wISFktYQlRDLTI2QVVHMTcxMS1CNzIyNTA"', '"cursor": ""'),
+    # Bluesky states its next page as a bare `cursor`, and FxTwitter as a
+    # `bottom` inside one. Emptied, each names none. The AT Protocol's cursor
+    # is an offset on search and a timestamp on a feed, so both spellings are
+    # turned off rather than one.
+    ('"cursor": "25"', '"cursor": ""'),
+    ('"cursor": "2026-06-08T21:10:01.53Z"', '"cursor": ""'),
+    ('"bottom":', '"spent":'),
+    ("&amp;cursor=", "&amp;spent="),
 )
 
 
@@ -178,8 +226,8 @@ def hydration(step_id, adapter_id, locator, target_id, max_items=200):
 def roster_manifest():
     """One dispatch over every adapter in the roster and every route it reaches.
 
-    Seventeen steps rather than fourteen: three adapters read two surfaces
-    each, and a keyless claim about an adapter that leaves one of its routes
+    Thirty-four steps rather than twenty: seven adapters read more than one
+    surface, and a keyless claim about an adapter that leaves one of its routes
     unread is a keyless claim about half of it.
     """
 
@@ -215,7 +263,11 @@ def roster_manifest():
                 "https://www.linkedin.com/in/" + PROFILE_SLUG,
                 PROFILE_SLUG,
             ),
-            discovery("s11-youtube", "youtube_innertube", "local models"),
+            # A transcript rather than a search: it is the one step that reads
+            # both of this adapter's routes, and a keyless claim about an
+            # adapter that leaves one of its routes unread is a claim about
+            # half of it. The search operation is proven in `test_adapters`.
+            discovery("s11-youtube", "youtube_innertube", "transcript:" + YOUTUBE_VIDEO_ID),
             hydration(
                 "s12-instagram",
                 "instagram_public",
@@ -237,6 +289,37 @@ def roster_manifest():
             ),
             discovery("s16-repo-search", "github_rest", "gpu benchmark"),
             hydration("s17-fixture", "fake", "https://x.com/simonw", X_POST_ID),
+            # The 2026-08-17 additions, one step per route they added.
+            discovery("s18-bing", "web_search", "bing:local models"),
+            discovery("s19-bing-news", "web_search", "bingnews:local models"),
+            discovery("s20-google-news", "web_search", "gnews:local models"),
+            hydration(
+                "s21-open-page",
+                "open_page",
+                "https://www.iana.org/help/example-domains",
+                "https://www.iana.org/help/example-domains",
+            ),
+            discovery("s22-hn-tree", "hacker_news", "tree:" + HN_STORY_ID),
+            discovery("s23-shreddit-listing", "reddit_shreddit", "listing:" + REDDIT_SUBREDDIT),
+            discovery("s24-shreddit-search", "reddit_shreddit", "search:local models"),
+            discovery(
+                "s25-shreddit-sub-search",
+                "reddit_shreddit",
+                "search:r/" + REDDIT_SUBREDDIT + ":local models",
+            ),
+            discovery(
+                "s26-shreddit-comments",
+                "reddit_shreddit",
+                "comments:" + REDDIT_SUBREDDIT + "/" + ARCHIVED_POST_ID,
+            ),
+            discovery("s27-polymarket", "prediction_markets", "polymarket:local models"),
+            discovery("s28-kalshi", "prediction_markets", "kalshi"),
+            discovery("s29-manifold", "prediction_markets", "manifold:local models"),
+            discovery("s30-stocktwits", "stocktwits", "stream:AAPL"),
+            discovery("s31-stocktwits-symbols", "stocktwits", "symbols:apple"),
+            discovery("s32-bluesky-search", "bluesky", "search:local models"),
+            discovery("s33-bluesky-author", "bluesky", "author:bsky.app"),
+            discovery("s34-fxtwitter", "x_fxtwitter", "search:local models"),
         ),
     )
 
@@ -454,9 +537,9 @@ class EnvironmentIsEmptyTest(unittest.TestCase):
 
 
 class KeylessRosterTest(unittest.TestCase):
-    """Criterion 1: thirteen live adapters, one dispatch, no credential anywhere.
+    """Criterion 1: every live adapter, one dispatch, no credential anywhere.
 
-    One artifact rather than fourteen page-level checks, because "reaches its
+    One artifact rather than a page-level check each, because "reaches its
     declared capability" is a claim about what a caller keeps, and because a
     refusal on any step would otherwise be somebody else's test's problem.
     """
@@ -469,12 +552,12 @@ class KeylessRosterTest(unittest.TestCase):
         for record in self.artifact.records:
             self.by_adapter.setdefault(record.adapter_id, []).append(record)
 
-    def test_thirteen_live_adapters_are_what_the_run_is_about(self):
-        self.assertEqual(len(self.LIVE), 13)
-        self.assertEqual(len(runner.ADAPTER_IDS), 14)
+    def test_the_live_adapters_are_what_the_run_is_about(self):
+        self.assertEqual(len(self.LIVE), 19)
+        self.assertEqual(len(runner.ADAPTER_IDS), 20)
 
     def test_the_dispatch_read_every_route_the_roster_can_reach(self):
-        # Seventeen steps, seventeen reads, seventeen distinct routes: the
+        # One step, one read and one distinct route per readable surface: the
         # oracle below cannot pass by leaving a surface out of the run.
         #
         # Reachable is not readable. A step reads a surface an adapter names as
@@ -489,29 +572,30 @@ class KeylessRosterTest(unittest.TestCase):
             if surface.route_id not in transport.TOKEN_ACTIVATION_ROUTES
         )
 
-        self.assertEqual(len(roster_manifest().steps), 17)
+        self.assertEqual(len(roster_manifest().steps), 34)
         self.assertEqual(sorted(request.route_id for request in self.opener.opened), readable)
         self.assertEqual(sorted(ROSTER_PAYLOADS), readable)
         self.assertEqual(transport.GUEST_TOKENS._tokens, {})
 
-    def test_the_artifact_holds_every_row_all_seventeen_steps_returned(self):
+    def test_the_artifact_holds_every_row_every_step_returned(self):
         # Written out rather than summed, so a step that quietly stopped
         # answering is a red test and not a smaller number nobody reads.
         self.assertEqual(
             [step.records_kept for step in self.artifact.steps],
-            [6, 1, 3, 2, 1, 1, 100, 1, 10, 1, 5, 13, 4, 1, 1, 2, 2],
+            [6, 1, 3, 2, 1, 1, 100, 1, 10, 1, 2, 13, 4, 1, 1, 2, 2,
+             3, 3, 3, 1, 5, 3, 2, 2, 3, 6, 2, 2, 3, 8, 2, 3, 2],
         )
-        self.assertEqual(len(self.artifact.records), 154)
+        self.assertEqual(len(self.artifact.records), 204)
         self.assertEqual(self.artifact.outcome, "ok")
         self.assertEqual(self.artifact.loss, ())
 
     def test_every_adapter_reached_its_capability_and_none_wanted_a_credential(self):
         assert_nothing_wanted_a_credential(self, self.artifact, self.LIVE)
 
-    def test_the_offline_fixture_adapter_answered_beside_the_thirteen(self):
-        # The fourteenth is not a live capability and is checked apart from
-        # them, so "thirteen live adapters answered" stays a statement about
-        # thirteen live adapters.
+    def test_the_offline_fixture_adapter_answered_beside_the_live_ones(self):
+        # The fixture adapter is not a live capability and is checked apart
+        # from them, so "every live adapter answered" stays a statement about
+        # the live ones.
         assert_nothing_wanted_a_credential(self, self.artifact, ("fake",))
 
     def test_the_router_admitted_every_adapter_on_its_own_route(self):

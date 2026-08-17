@@ -33,33 +33,52 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 
 from .routes import (
+    ARCTIC_SHIFT_ORIGIN,
     ARCTIC_SHIFT_POSTS_ROUTE,
+    BING_NEWS_RSS_ROUTE,
+    BING_RSS_ROUTE,
+    BLUESKY_AUTHOR_FEED_ROUTE,
+    BLUESKY_SEARCH_POSTS_ROUTE,
     CREDENTIAL_PLACEMENTS,
     DDG_HTML_ROUTE,
     FAKE_OFFLINE_ROUTE,
+    FXTWITTER_API_ROUTE,
     GITHUB_REST_ROUTE,
     GITHUB_SEARCH_ROUTE,
+    GOOGLE_NEWS_RSS_ROUTE,
     HEADER_PLACEMENT,
+    HN_ALGOLIA_ITEM_ROUTE,
     HN_ALGOLIA_SEARCH_ROUTE,
     HN_FIREBASE_ITEM_ROUTE,
     INSTAGRAM_WEB_APP_ID,
     INSTAGRAM_WEB_PROFILE_ROUTE,
     JSON_CONTENT_TYPE,
+    KALSHI_MARKETS_ROUTE,
     LINKEDIN_JOBS_GUEST_SEARCH_ROUTE,
     LINKEDIN_PUBLIC_PROFILE_ROUTE,
+    MANIFOLD_MARKETS_ROUTE,
+    OPEN_ORIGIN,
+    POLYMARKET_GAMMA_ROUTE,
     PUBLIC_CLIENT_CREDENTIALS,
     PUBLIC_PAGE_ARTICLE_ROUTE,
     PUBLIC_PAGE_CONTROL_ROUTE,
     QUERY_PLACEMENT,
     REDDIT_FEED_ROUTE,
+    REDDIT_SHREDDIT_COMMENTS_ROUTE,
+    REDDIT_SHREDDIT_LISTING_ROUTE,
+    REDDIT_SHREDDIT_SEARCH_ROUTE,
+    REDDIT_SHREDDIT_SUBREDDIT_SEARCH_ROUTE,
     REDDIT_SITE_ORIGIN,
     ROUTE_CONSTANTS,
+    STOCKTWITS_STREAM_ROUTE,
+    STOCKTWITS_SYMBOL_SEARCH_ROUTE,
     PublicClientCredential,
     RouteConstant,
+    WEB_PAGE_OPEN_ROUTE,
     X_GUEST_ACTIVATE_ROUTE,
     X_GUEST_GRAPHQL_ROUTE,
     X_GUEST_PUBLIC_BEARER,
@@ -67,6 +86,7 @@ from .routes import (
     YOUTUBE_CHANNEL_FEED_ROUTE,
     YOUTUBE_INNERTUBE_ROUTE,
     YOUTUBE_INNERTUBE_WEB_KEY,
+    YOUTUBE_TIMEDTEXT_ROUTE,
 )
 
 # One static identity. Never rotated: a rate limit is an observed constraint
@@ -305,14 +325,39 @@ def http_date_moment(stated: str) -> Optional[datetime]:
     return moment if moment.tzinfo is not None else moment.replace(tzinfo=timezone.utc)
 
 
-def epoch_moment(stated: str) -> Optional[datetime]:
-    """One UTC epoch second — how `X-RateLimit-Reset` states a window's end."""
+# Below this many seconds an `X-RateLimit-Reset` value is a countdown and not
+# a moment. GitHub states the header as a UTC epoch second (about 1.7 billion
+# in 2026); Reddit states the same header as seconds remaining in the window
+# (`x-ratelimit-reset: 47`, measured 2026-08-17 beside `x-ratelimit-remaining:
+# 0.0`). Read as an epoch, Reddit's countdown is a moment in 1970 and states no
+# wait at all — the one direction this module must never err in. No origin
+# states an epoch under this bound and no origin states a countdown over it,
+# and the two are held apart here rather than by the origin's name.
+RATE_LIMIT_RESET_COUNTDOWN_CEILING_SECONDS = 100000000
+
+
+def epoch_moment(stated: str, read_at: Optional[datetime] = None) -> Optional[datetime]:
+    """When an `X-RateLimit-Reset` says the window ends, in either spelling.
+
+    A UTC epoch second is read as the moment it names. A small integer is a
+    countdown from the moment the answer was read, and it needs that moment
+    to become a deadline: without one it states nothing usable, which is the
+    same as an unreadable header and errs the same safe way.
+    """
 
     held = stated.strip()
     if not held:
         return None
     try:
-        return datetime.fromtimestamp(int(held), timezone.utc)
+        seconds = int(held)
+    except ValueError:
+        return None
+    if seconds < RATE_LIMIT_RESET_COUNTDOWN_CEILING_SECONDS:
+        if read_at is None or seconds < 0:
+            return None
+        return read_at + timedelta(seconds=seconds)
+    try:
+        return datetime.fromtimestamp(seconds, timezone.utc)
     except (ValueError, OverflowError, OSError):
         return None
 
@@ -365,7 +410,8 @@ def stated_cooldown_seconds(response: TransportResponse) -> float:
     return max(
         retry_after_seconds(header_value(response.headers, RETRY_AFTER_HEADER), read_at),
         remaining_seconds(
-            epoch_moment(header_value(response.headers, RATE_LIMIT_RESET_HEADER)), read_at
+            epoch_moment(header_value(response.headers, RATE_LIMIT_RESET_HEADER), read_at),
+            read_at,
         ),
     )
 
@@ -375,6 +421,33 @@ def route_constant(route_id: str) -> RouteConstant:
     if route is None:
         raise TransportError("unknown route " + route_id)
     return route
+
+
+def origin_key(request: TransportRequest) -> str:
+    """The host one request reads, lowercased — what the governor serializes on.
+
+    Read off the address rather than the route, so an open read on a caller's
+    host and two declared routes on one host both key by the host they reach.
+    A request naming no host keys by its route, which is what the offline
+    fixture route means.
+    """
+
+    host = urllib.parse.urlsplit(request.url).hostname
+    return host.lower() if host else request.route_id
+
+
+def budget_key(request: TransportRequest) -> str:
+    """What one request's read is charged against: its route, or on the open route its route and host.
+
+    Every declared route has one origin, so its budget is the route's. The open
+    route reads many hosts under one declared ceiling, and charging them all to
+    one key would make a read of one publisher wait on a read of another; each
+    host gets the route's ceiling for itself.
+    """
+
+    if is_open_route(route_constant(request.route_id)):
+        return request.route_id + "@" + origin_key(request)
+    return request.route_id
 
 
 def route_admissions() -> Dict[str, bool]:
@@ -605,11 +678,74 @@ def tokened_headers(
     return tuple(headers) + ((GUEST_TOKEN_HEADER, token),)
 
 
+# The one parameter an open route reads: the address itself. Named here because
+# the transport is the only module that may turn a caller's string into a host,
+# and it does so under the policy `open_read_refusal` states.
+OPEN_URL_PARAM = "url"
+
+
+def is_open_route(route: RouteConstant) -> bool:
+    """Whether this route reads the caller's address rather than a declared one."""
+
+    return route.origin == OPEN_ORIGIN
+
+
+def declared_origin_hosts() -> Tuple[str, ...]:
+    """Every host a declared route reads, lowercased — the set an open read may not touch.
+
+    An open read that landed on `www.reddit.com` would spend that origin outside
+    the budget its own routes declare, and one that landed on `api.github.com`
+    would do the same to a measured hourly ceiling. Refusing the whole declared
+    set is what keeps every measured budget the only way to that origin.
+    """
+
+    hosts = set()
+    for route in ROUTE_CONSTANTS.values():
+        if is_open_route(route):
+            continue
+        host = urllib.parse.urlsplit(route.origin).hostname
+        if host:
+            hosts.add(host.lower())
+    return tuple(sorted(hosts))
+
+
+def open_read_refusal(url: str) -> str:
+    """Why an open read of this address is refused, or nothing when it is admitted.
+
+    Three refusals, each a sentence: not https, no host, or a host a declared
+    route already reads. Nothing here rewrites the address — an open read goes
+    out exactly as the caller spelled it, minus the fragment `urllib` drops.
+    """
+
+    parts = urllib.parse.urlsplit(url)
+    if parts.scheme != "https":
+        return "an open read takes an https address, not " + repr(url)
+    host = (parts.hostname or "").lower()
+    if not host:
+        return "an open read takes an address naming a host, not " + repr(url)
+    if host in declared_origin_hosts():
+        return (
+            "an open read never lands on a host a declared route reads: {0}; ask that"
+            " route".format(host)
+        )
+    return ""
+
+
 def build_transport_request(
     route_id: str, params: Optional[Mapping[str, str]] = None
 ) -> TransportRequest:
     route = route_constant(route_id)
     supplied = dict(params or {})
+    if is_open_route(route):
+        # The open route reads the address the caller named, under the policy
+        # above and under nothing else: no path segment, no query the route
+        # composes, no body, and no credential — the route declares none.
+        url = supplied.pop(OPEN_URL_PARAM, "")
+        refusal = open_read_refusal(url)
+        if refusal:
+            raise TransportError(refusal)
+        headers = (("User-Agent", USER_AGENT), ("Accept", route.accept))
+        return TransportRequest(route_id=route_id, method=route.method, url=url, headers=headers)
     path = route.path + path_segments(route, supplied)
     body = json_body(route, supplied)
     pairs = [(key, value) for key, value in sorted(supplied.items()) if value != ""]
@@ -707,6 +843,13 @@ def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str, Answere
                 request.method, request.route_id
             )
         )
+    if is_open_route(route_constant(request.route_id)):
+        # Checked again at the socket, not only where the request was built:
+        # a request is a plain value anyone can construct, and the policy is
+        # the opener's to hold.
+        refusal = open_read_refusal(request.url)
+        if refusal:
+            raise TransportError(refusal)
 
     credential = route_credential(request.route_id)
     outbound = urllib.request.Request(

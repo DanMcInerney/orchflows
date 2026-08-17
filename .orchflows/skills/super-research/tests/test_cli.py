@@ -1,4 +1,4 @@
-"""CLI suite: the thirteen liveness smokes, proven without reaching an origin.
+"""CLI suite: the nineteen liveness smokes, proven without reaching an origin.
 
 The smoke subcommand is the one operation in this package that talks to a real
 platform, and this suite is the reason it can be trusted before it ever does.
@@ -79,6 +79,14 @@ PROBE_PAYLOADS = {
     "hn_algolia_search": ("hacker_news/algolia_search_by_date.json", "application/json"),
     "github_rest": ("github/repo.json", "application/json; charset=utf-8"),
     "public_page_article": ("public_page/article.html", "text/html; charset=UTF-8"),
+    "reddit_shreddit_listing": ("reddit_shreddit/listing.html", "text/html; charset=utf-8"),
+    "web_page_open": ("open_page/article.html", "text/html; charset=utf-8"),
+    "polymarket_gamma": (
+        "prediction_markets/polymarket_public_search.json", "application/json",
+    ),
+    "stocktwits_symbol_stream": ("stocktwits/stream.json", "application/json; charset=utf-8"),
+    "bluesky_author_feed": ("bluesky/author_feed.json", "application/json; charset=utf-8"),
+    "fxtwitter_api": ("x_fxtwitter/search.json", "application/json"),
 }
 
 # The one route whose adapter reads the answering address. It answers from
@@ -93,7 +101,7 @@ def payload(name):
 
 
 def probe_seeds():
-    """One canned origin answer per route the thirteen smokes read."""
+    """One canned origin answer per route the nineteen smokes read."""
 
     seeds = {}
     for route_id, (name, content_type) in PROBE_PAYLOADS.items():
@@ -140,7 +148,7 @@ def observe_offline(probe, seeds=None, clock=None):
 
 
 class SmokeProbeTableTest(unittest.TestCase):
-    """The enumeration itself: thirteen probes, each naming things that exist."""
+    """The enumeration itself: nineteen probes, each naming things that exist."""
 
     def test_the_probes_are_exactly_the_live_roster(self):
         # Derived against the core's own roster rather than transcribed beside
@@ -149,7 +157,7 @@ class SmokeProbeTableTest(unittest.TestCase):
         probed = sorted(probe.adapter_id for probe in cli.SMOKE_PROBES)
 
         self.assertEqual(probed, sorted(set(runner.ADAPTER_IDS) - {cli.OFFLINE_ADAPTER}))
-        self.assertEqual(len(cli.SMOKE_PROBES), 13)
+        self.assertEqual(len(cli.SMOKE_PROBES), 19)
 
     def test_the_offline_adapter_has_no_smoke(self):
         # `fake` reads a fixture. A smoke for it would report the suite's own
@@ -242,7 +250,7 @@ def ddg_pages_each_offering_a_new_one():
 
 
 class SmokeAssertsTheRosterFieldSetTest(unittest.TestCase):
-    """Row 1: thirteen smokes, each bounded, against measured bytes."""
+    """Row 1: nineteen smokes, each bounded, against measured bytes."""
 
     def test_every_smoke_asserts_its_roster_field_set_on_the_reads_it_spends(self):
         for probe in cli.SMOKE_PROBES:
@@ -1031,7 +1039,7 @@ class TheOperationSetIsClosedTest(LedgerHoldingCase):
                 )
                 reachable += len(operation.choices)
 
-        self.assertEqual(reachable, 15)
+        self.assertEqual(reachable, 21)
 
     def test_every_declared_operation_runs(self):
         for operation in cli.OPERATIONS:
@@ -1087,7 +1095,7 @@ class TheOperationSetIsClosedTest(LedgerHoldingCase):
 
 
 class SmokeSubcommandTest(LedgerHoldingCase):
-    """What one `smoke --adapter <id>` does, offline, for each of the thirteen."""
+    """What one `smoke --adapter <id>` does, offline, for each of the nineteen."""
 
     def test_a_satisfied_smoke_reports_verified_and_records_its_stamp(self):
         code, printed, opener = run_cli(self, ["smoke", "--adapter", ADAPTER])
@@ -1099,7 +1107,7 @@ class SmokeSubcommandTest(LedgerHoldingCase):
         self.assertEqual([request.route_id for request in opener.opened], ["github_rest"])
         self.assertEqual(sorted(cli.read_ledger(self.path)), [ADAPTER])
 
-    def test_every_one_of_the_thirteen_smokes_runs_and_is_recorded(self):
+    def test_every_one_of_the_smokes_runs_and_is_recorded(self):
         for probe in cli.SMOKE_PROBES:
             with self.subTest(adapter=probe.adapter_id):
                 code, printed, _ = run_cli(self, ["smoke", "--adapter", probe.adapter_id])
@@ -1310,7 +1318,7 @@ class StatusSubcommandTest(LedgerHoldingCase):
     def test_an_adapter_never_smoked_is_unverified_and_not_rejected(self):
         code, printed, _ = run_cli(self, ["status"])
 
-        self.assertEqual(printed.count(cli.UNVERIFIED), 13)
+        self.assertEqual(printed.count(cli.UNVERIFIED), 19)
         self.assertIn(cli.NEVER_SMOKED, printed)
         self.assertNotIn(REJECTED, printed)
 
@@ -1634,9 +1642,16 @@ class TheRecordedLivenessReplaysTest(unittest.TestCase):
         carried = sorted(adapter for adapter, code in self.reads if code == CARRIED_THE_ROW)
 
         self.assertEqual(len(self.reads), 13)
-        self.assertEqual(
-            sorted(adapter for adapter, _ in self.reads),
-            sorted(probe.adapter_id for probe in cli.SMOKE_PROBES),
+        # Every adapter that night is still one this package smokes, and the
+        # roster has grown since: four adapters were added on 2026-08-17 and
+        # were no part of that run. A record of a past night is not a claim
+        # about today's roster, so this is containment rather than equality —
+        # the equality it used to assert would have to be broken by every
+        # adapter ever added, which is a record rewriting itself.
+        recorded = sorted(adapter for adapter, _ in self.reads)
+        self.assertEqual(recorded, sorted(set(recorded)))
+        self.assertTrue(
+            set(recorded) <= {probe.adapter_id for probe in cli.SMOKE_PROBES}
         )
         # Nine exit `0` in one block, nine stamps in the other, and the same
         # nine adapters. Either block mistranscribed reddens here.

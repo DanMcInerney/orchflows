@@ -660,7 +660,7 @@ class CredentialStaysInsideTransportTest(unittest.TestCase):
     def test_no_built_request_carries_a_credential_value(self):
         for route_id in sorted(transport.ROUTE_CONSTANTS):
             with self.subTest(route=route_id):
-                request = transport.build_transport_request(route_id, {"q": "probe"})
+                request = transport.build_transport_request(route_id, helpers.probe_params(route_id))
 
                 for value in self._credential_values():
                     self.assertNotIn(value, repr(request))
@@ -670,7 +670,7 @@ class CredentialStaysInsideTransportTest(unittest.TestCase):
             with self.subTest(route=route_id):
                 carrier, _ = offline_transport({route_id: (200, read_fixture("origin_page.html"), "text/html")})
 
-                response = carrier.fetch(transport.build_transport_request(route_id))
+                response = carrier.fetch(transport.build_transport_request(route_id, helpers.probe_params(route_id)))
 
                 for value in self._credential_values():
                     self.assertNotIn(value, repr(response))
@@ -706,6 +706,9 @@ def owned_route_literals():
 
     literals = set()
     for route in transport.ROUTE_CONSTANTS.values():
+        # An open route declares no origin, and an empty literal names nothing.
+        if not route.origin:
+            continue
         literals.add(route.origin)
         literals.add(route.origin + route.path)
     for credential in transport.PUBLIC_CLIENT_CREDENTIALS.values():
@@ -1594,7 +1597,9 @@ def sent_and_answered(route_id, params=None):
     """
 
     recorder = RecordingUrlopen(200, "{}", "application/json")
-    request = transport.build_transport_request(route_id, params or {})
+    request = transport.build_transport_request(
+        route_id, dict(helpers.probe_params(route_id), **(params or {}))
+    )
     with mock.patch.object(urllib.request, "urlopen", recorder):
         answered = transport.urlopen_read(request)
     return answered, recorder.requests[0]
@@ -1840,10 +1845,10 @@ class CredentialThreatTest(unittest.TestCase):
         # process, which is why its class is `offline` and not one of these.
         for route_id in routes_at(EVERY_CLASS):
             with self.subTest(route=route_id):
-                answered, _ = sent_and_answered(route_id, {"q": "probe"})
+                answered, _ = sent_and_answered(route_id, helpers.probe_params(route_id))
                 response = transport.Transport(
                     opener=lambda request, held=answered: held, now=lambda: FROZEN_OBSERVED_AT
-                ).fetch(transport.build_transport_request(route_id, {"q": "probe"}))
+                ).fetch(transport.build_transport_request(route_id, helpers.probe_params(route_id)))
 
                 for name, secret in credential_strings():
                     self.assertNotIn(secret, answered[3], name)
@@ -1948,7 +1953,11 @@ class NoWriteIsReachableTest(unittest.TestCase):
                 continue
             with self.subTest(route=route_id):
                 request = transport.build_transport_request(
-                    route_id, {"q": "probe", "body": "anything", "data": "anything"}
+                    route_id,
+                    dict(
+                        helpers.probe_params(route_id),
+                        **{"body": "anything", "data": "anything"}
+                    ),
                 )
 
                 self.assertEqual(request.body, "")
@@ -2543,7 +2552,7 @@ class RefusalThreatTest(unittest.TestCase):
     def test_t11_every_route_is_read_under_the_one_static_identity(self):
         for route_id in sorted(transport.ROUTE_CONSTANTS):
             with self.subTest(route=route_id):
-                request = transport.build_transport_request(route_id, {"q": "probe"})
+                request = transport.build_transport_request(route_id, helpers.probe_params(route_id))
 
                 self.assertEqual(dict(request.headers)["User-Agent"], transport.USER_AGENT)
 
@@ -2580,8 +2589,15 @@ class RefusalThreatTest(unittest.TestCase):
             if surface.representation_kind == "index"
         )
 
-        self.assertEqual(indexes, ["web_search"])
-        self.assertEqual(runner.descriptor_for("web_search").access_class, "K4")
+        # One adapter, four index surfaces since 2026-08-17: DuckDuckGo answers
+        # 202 to every identity, so Bing's two RSS forms and Google News's join
+        # it as parallel planned routes rather than as fallbacks. They are one
+        # adapter because an index hit is one kind of record whoever indexed it.
+        self.assertEqual(sorted(set(indexes)), ["web_search"])
+        self.assertEqual(len(indexes), 4)
+        for surface in runner.surface_descriptors("web_search"):
+            with self.subTest(route=surface.route_id):
+                self.assertEqual(surface.access_class, "K4")
 
     def test_t13_every_row_a_k4_read_produces_is_marked_an_index(self):
         _, artifact, _, _ = injected_run()

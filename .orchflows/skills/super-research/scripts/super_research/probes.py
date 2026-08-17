@@ -317,6 +317,157 @@ SMOKE_PROBES = (
             ),
         ),
     ),
+    SmokeProbe(
+        adapter_id="reddit_shreddit",
+        kind="discovery",
+        # A listing rather than a search: it is the surface that names both
+        # counts as its own attributes, so the row this asserts is the widest
+        # one this adapter can carry.
+        target="listing:programming",
+        route_id=transport.REDDIT_SHREDDIT_LISTING_ROUTE,
+        field_sets=(
+            (
+                "post",
+                (
+                    "native_item_id",
+                    "title",
+                    "author",
+                    "community",
+                    "canonical_locator",
+                    "published_at",
+                    ENGAGEMENT_PREFIX + "score",
+                    ENGAGEMENT_PREFIX + "comment-count",
+                ),
+            ),
+        ),
+        target_recovery=(
+            "Any subreddit name. The grammar is listing:<subreddit>[:<sort>[:<window>]]"
+            " and adapters/reddit_shreddit.py names the sorts and windows the route"
+            " serves."
+        ),
+    ),
+    SmokeProbe(
+        adapter_id="open_page",
+        kind="hydration",
+        # A document on a host no other route declares — an open read that
+        # landed on a declared host is refused, which is the policy rather than
+        # a liveness answer — and one whose content is stable enough that a
+        # smoke is about the route rather than about today's news.
+        target="https://www.iana.org/help/example-domains",
+        route_id=transport.WEB_PAGE_OPEN_ROUTE,
+        field_sets=(
+            (
+                "web_page",
+                (
+                    "title",
+                    "body",
+                    "exact_content_hash",
+                    "observed_at",
+                    ATTRIBUTE_PREFIX + "content_type",
+                    ATTRIBUTE_PREFIX + "requested_url",
+                    ATTRIBUTE_PREFIX + "final_url",
+                    ATTRIBUTE_PREFIX + "link",
+                ),
+            ),
+        ),
+        target_recovery=(
+            "Any https document on a host routes.py does not declare; the transport's"
+            " own open_read_refusal names the three rules an address must meet."
+        ),
+    ),
+    SmokeProbe(
+        adapter_id="bluesky",
+        kind="discovery",
+        # The author feed rather than the search this adapter's primary
+        # descriptor names. Measured 2026-08-17: the public AppView's
+        # `searchPosts` answered 403 from the CDN in front of it on this host
+        # while its sibling methods answered 200, so a smoke on the search
+        # surface would report a working adapter dead. A probe names the
+        # surface it takes, and this one takes the surface that answers.
+        target="author:bsky.app",
+        route_id=transport.BLUESKY_AUTHOR_FEED_ROUTE,
+        field_sets=(
+            (
+                "post",
+                (
+                    "body",
+                    "author",
+                    "canonical_locator",
+                    "published_at",
+                    ENGAGEMENT_PREFIX + "likeCount",
+                    ENGAGEMENT_PREFIX + "replyCount",
+                    ATTRIBUTE_PREFIX + "did",
+                    ATTRIBUTE_PREFIX + "cid",
+                ),
+            ),
+        ),
+        target_recovery="Any current Bluesky handle or DID; the AppView resolves both.",
+    ),
+    SmokeProbe(
+        adapter_id="x_fxtwitter",
+        kind="discovery",
+        target="search:spacex",
+        route_id=transport.FXTWITTER_API_ROUTE,
+        field_sets=(
+            (
+                "post",
+                (
+                    "body",
+                    "author",
+                    "canonical_locator",
+                    "published_at",
+                    ENGAGEMENT_PREFIX + "likes",
+                    ENGAGEMENT_PREFIX + "reposts",
+                    ENGAGEMENT_PREFIX + "replies",
+                    ATTRIBUTE_PREFIX + "lang",
+                    ATTRIBUTE_PREFIX + "created_at",
+                ),
+            ),
+        ),
+        target_recovery=(
+            "Any subject with posts. This operator answers 404 to a read it"
+            " answers 200 to seconds later, reproduced 2026-08-17; nothing here"
+            " retries, so a 404 is typed http_status and a second smoke decides."
+        ),
+    ),
+    SmokeProbe(
+        adapter_id="prediction_markets",
+        kind="discovery",
+        target="polymarket:SpaceX",
+        route_id=transport.POLYMARKET_GAMMA_ROUTE,
+        field_sets=(
+            (
+                "market",
+                (
+                    "native_item_id",
+                    "title",
+                    "canonical_locator",
+                    ATTRIBUTE_PREFIX + "outcomes",
+                    ATTRIBUTE_PREFIX + "outcomePrices",
+                ),
+            ),
+        ),
+        target_recovery=(
+            "Any subject with an open market. A query matching nothing is an empty"
+            " answer rather than a dead route, so a subject nobody is trading on"
+            " would report this route unmet."
+        ),
+    ),
+    SmokeProbe(
+        adapter_id="stocktwits",
+        kind="discovery",
+        # A symbol with a stream that never goes quiet: an empty stream is an
+        # honest answer and a useless liveness check.
+        target="stream:AAPL",
+        route_id=transport.STOCKTWITS_STREAM_ROUTE,
+        field_sets=(
+            (
+                "post",
+                ("native_item_id", "body", "author", "canonical_locator", "published_at"),
+            ),
+        ),
+        target_recovery="Any listed ticker; symbols:<name> resolves one.",
+    ),
 )
 
 

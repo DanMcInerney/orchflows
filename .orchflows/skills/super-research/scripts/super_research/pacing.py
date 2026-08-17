@@ -5,12 +5,24 @@ around: there is no proxy pool, no address rotation, no second identity, and
 no substituted route anywhere in it. The one lever :class:`RateGovernor` has
 is time.
 
+**Serialized per origin, concurrent across origins.** A ``fused`` run hands
+this governor reads from several lanes at once (see :func:`runner.run_scheduled`),
+and the governor is what keeps that safe: every read takes its origin's lock
+before it waits, sends, or charges, so no origin ever sees two of this
+package's reads in flight, and two origins never wait on each other. The lock
+is the host's, not the route's, because an origin's ceiling is per host —
+Reddit's shreddit partials and its RSS feed share one bucket. The pacing
+itself stays per route (per host, on the open route), which is where the
+measured numbers live. This is the one module that holds a lock; the pool that
+hands it concurrent reads is the runner's.
+
 Reliability bar: nothing here reaches the network or the filesystem. The
 carrier is injected, the clock is injected, and both have offline stand-ins.
 """
 
 from __future__ import annotations
 
+import threading
 import time
 from dataclasses import dataclass, replace
 from typing import Callable, Dict, Iterable, List, Optional
@@ -122,14 +134,22 @@ class RateGovernor:
         self._clock = clock
         self._sleep = sleep
         self._origin_us = tick_us(clock)
-        # Per route: the arrival time the declared interval implies, and the
-        # moment a refusal's cooldown ends. They are separate because a burst
-        # allowance may be spent against the first and never against the
-        # second — an origin that asked for fewer requests is not owed fewer.
+        # Per budget key — the route, or the route and host on the open route:
+        # the arrival time the declared interval implies, and the moment a
+        # refusal's cooldown ends. They are separate because a burst allowance
+        # may be spent against the first and never against the second — an
+        # origin that asked for fewer requests is not owed fewer.
         self._route_arrival_us: Dict[str, int] = {}
         self._route_blocked_until_us: Dict[str, int] = {}
         self.log: List[OriginRead] = []
         self.serves: List[cache.CacheServe] = []
+        # One lock per origin host, taken for the whole of a read — the wait,
+        # the send, and the charge — so an origin sees this package's reads
+        # one at a time whatever the runner overlaps. And one lock over this
+        # governor's own tables, held only while a table is touched and never
+        # while anything waits or sends.
+        self._origin_locks: Dict[str, threading.Lock] = {}
+        self._tables_lock = threading.Lock()
 
     @property
     def calls(self) -> List[transport.TransportRequest]:
@@ -137,39 +157,63 @@ class RateGovernor:
 
         return self._carrier.calls
 
-    def fetch(self, request: transport.TransportRequest) -> transport.TransportResponse:
-        """Answer one request, reaching the origin only when memory and budget say so."""
+    def _origin_lock(self, request: transport.TransportRequest) -> threading.Lock:
+        with self._tables_lock:
+            key = transport.origin_key(request)
+            lock = self._origin_locks.get(key)
+            if lock is None:
+                lock = threading.Lock()
+                self._origin_locks[key] = lock
+            return lock
 
-        if self._cache is None:
-            return self._paced_fetch(request)
-        serve = self._cache.serve(request, self._paced_fetch)
-        self.serves.append(serve)
-        # Copied with the flag raised, never rebuilt: ``observed_at`` stays the
-        # moment the origin was really read, which is the whole point of
-        # holding the response verbatim in the first place.
-        return replace(serve.response, cache_hit=serve.cache_hit)
+    def fetch(self, request: transport.TransportRequest) -> transport.TransportResponse:
+        """Answer one request, reaching the origin only when memory and budget say so.
+
+        The origin's lock is taken here, around the whole read and around the
+        cache lookup that may spare it: two lanes asking one origin the same
+        question then cost that origin one read, because the second finds the
+        first's answer in memory once the lock is its turn.
+        """
+
+        with self._origin_lock(request):
+            if self._cache is None:
+                return self._paced_fetch(request)
+            serve = self._cache.serve(request, self._paced_fetch)
+            with self._tables_lock:
+                self.serves.append(serve)
+            # Copied with the flag raised, never rebuilt: ``observed_at`` stays
+            # the moment the origin was really read, which is the whole point
+            # of holding the response verbatim in the first place.
+            return replace(serve.response, cache_hit=serve.cache_hit)
 
     def _paced_fetch(
         self, request: transport.TransportRequest
     ) -> transport.TransportResponse:
-        """Reached only on a cache miss, which is what makes a hit free."""
+        """Reached only on a cache miss, which is what makes a hit free.
+
+        Entered with the origin's lock already held by :meth:`fetch` — or by
+        the read that is minting a token, which enters here directly for the
+        activation and never re-takes the lock it holds.
+        """
 
         self._mint_for(request.route_id)
         budget = self._budget_for(request.route_id)
-        waited_us = self._wait_until(self._ready_at(request.route_id, budget))
+        key = transport.budget_key(request)
+        waited_us = self._wait_until(self._ready_at(key, budget))
         began_us = self._elapsed_us()
         response = self._carrier.fetch(request)
         stopped_us = self._elapsed_us()
-        self._charge(request.route_id, budget, began_us, stopped_us, response)
-        self.log.append(
-            OriginRead(
-                route_id=request.route_id,
-                at_us=began_us,
-                duration_us=stopped_us - began_us,
-                waited_us=waited_us,
-                status=response.status,
+        self._charge(key, budget, began_us, stopped_us, response)
+        with self._tables_lock:
+            self.log.append(
+                OriginRead(
+                    route_id=request.route_id,
+                    at_us=began_us,
+                    duration_us=stopped_us - began_us,
+                    waited_us=waited_us,
+                    status=response.status,
+                )
             )
-        )
         return response
 
     def _mint_for(self, route_id: str) -> None:
@@ -195,7 +239,13 @@ class RateGovernor:
         """
 
         token_route_id = transport.route_constant(route_id).token_route_id
-        if not token_route_id or not transport.GUEST_TOKENS.claim(token_route_id):
+        if not token_route_id:
+            return
+        # The claim is one test-and-set under this governor's own lock, so two
+        # lanes needing one token mint it once between them.
+        with self._tables_lock:
+            claimed = transport.GUEST_TOKENS.claim(token_route_id)
+        if not claimed:
             return
         transport.GUEST_TOKENS.remember(
             token_route_id,
@@ -208,8 +258,8 @@ class RateGovernor:
             raise runner.RunnerError("route {0} declares no rate budget".format(route_id))
         return budget
 
-    def _ready_at(self, route_id: str, budget: RouteBudget) -> int:
-        """The earliest moment this route's declared budget admits another read.
+    def _ready_at(self, key: str, budget: RouteBudget) -> int:
+        """The earliest moment this budget admits another read.
 
         Spacing is a theoretical arrival time the burst allowance may run
         behind: a route declaring sixty per hour as one bucket spends sixty
@@ -218,21 +268,22 @@ class RateGovernor:
         """
 
         interval_us = budget.min_interval_ms * US_PER_MS
-        ready_us = self._route_blocked_until_us.get(route_id, 0)
-        arrival_us = self._route_arrival_us.get(route_id)
+        with self._tables_lock:
+            ready_us = self._route_blocked_until_us.get(key, 0)
+            arrival_us = self._route_arrival_us.get(key)
         if arrival_us is not None:
             ready_us = max(ready_us, arrival_us - (budget.burst - 1) * interval_us)
         return ready_us
 
     def _charge(
         self,
-        route_id: str,
+        key: str,
         budget: RouteBudget,
         began_us: int,
         stopped_us: int,
         response: transport.TransportResponse,
     ) -> None:
-        """Spend one read against this route, and open a cooldown if it was refused.
+        """Spend one read against this budget, and open a cooldown if it was refused.
 
         The cooldown is the longer of the two intervals on offer: the ceiling
         this package measured, and the one the origin stated in its own answer.
@@ -241,16 +292,19 @@ class RateGovernor:
         how one talks itself into a shorter one.
         """
 
-        arrival_us = self._route_arrival_us.get(route_id, began_us)
-        self._route_arrival_us[route_id] = (
-            max(arrival_us, began_us) + budget.min_interval_ms * US_PER_MS
-        )
-        if not transport.rate_refused(response.status, response.body):
-            return
-        stated_us = int(round(transport.stated_cooldown_seconds(response) * US_PER_SECOND))
-        self._route_blocked_until_us[route_id] = stopped_us + max(
-            budget.cooldown_ms * US_PER_MS, stated_us
-        )
+        with self._tables_lock:
+            arrival_us = self._route_arrival_us.get(key, began_us)
+            self._route_arrival_us[key] = (
+                max(arrival_us, began_us) + budget.min_interval_ms * US_PER_MS
+            )
+            if not transport.rate_refused(response.status, response.body):
+                return
+            stated_us = int(
+                round(transport.stated_cooldown_seconds(response) * US_PER_SECOND)
+            )
+            self._route_blocked_until_us[key] = stopped_us + max(
+                budget.cooldown_ms * US_PER_MS, stated_us
+            )
 
     def _elapsed_us(self) -> int:
         return tick_us(self._clock) - self._origin_us

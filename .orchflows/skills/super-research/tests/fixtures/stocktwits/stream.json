@@ -1,0 +1,888 @@
+{
+  "symbol": {
+    "id": 282365,
+    "symbol": "SPCX",
+    "symbol_mic": "SPCX.XNAS",
+    "symbol_display": "SPCX",
+    "exchange": "NASDAQ",
+    "region": "US",
+    "logo_url": "https://logos.stocktwits-cdn.com/SPCX.png",
+    "title": "SpaceX",
+    "aliases": [],
+    "deeplink": "symbol/SPCX",
+    "external_id": null,
+    "is_following": false,
+    "watchlist_count": 102752,
+    "has_pricing": true,
+    "instrument_class": "Stock",
+    "live_event": false
+  },
+  "cursor": {
+    "more": true,
+    "since": 662063692,
+    "max": 662063550
+  },
+  "regions": [],
+  "filters": [],
+  "messages": [
+    {
+      "id": 662063692,
+      "body": "@itsphd @Jeremymartin007 @Idiamondw @judgeyoung2 @jenbunn @ZY786 @Tradermikes40 @TraderRapp @tonyctl @zuby34 \n\nin 1.48, put 1.60, +$240 \n\nat least zy post $CBRS big mover,  and mike $SPCX \n\ncuvie have the post the rest smh $RDDT $MSFT $AMAT meta",
+      "tokenized_body": [
+        {
+          "type": "mention",
+          "data": {
+            "text": "@itsphd",
+            "user_id": 5823136,
+            "username": "itsphd",
+            "deeplink": "/itsphd"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " "
+          }
+        },
+        {
+          "type": "mention",
+          "data": {
+            "text": "@Jeremymartin007",
+            "user_id": 8778033,
+            "username": "Jeremymartin007",
+            "deeplink": "/Jeremymartin007"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " "
+          }
+        },
+        {
+          "type": "mention",
+          "data": {
+            "text": "@Idiamondw",
+            "user_id": 5056209,
+            "username": "Idiamondw",
+            "deeplink": "/Idiamondw"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " "
+          }
+        },
+        {
+          "type": "mention",
+          "data": {
+            "text": "@judgeyoung2",
+            "user_id": 9392128,
+            "username": "judgeyoung2",
+            "deeplink": "/judgeyoung2"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " "
+          }
+        },
+        {
+          "type": "mention",
+          "data": {
+            "text": "@jenbunn",
+            "user_id": 768204,
+            "username": "jenbunn",
+            "deeplink": "/jenbunn"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " "
+          }
+        },
+        {
+          "type": "mention",
+          "data": {
+            "text": "@ZY786",
+            "user_id": 3257136,
+            "username": "ZY786",
+            "deeplink": "/ZY786"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " "
+          }
+        },
+        {
+          "type": "mention",
+          "data": {
+            "text": "@Tradermikes40",
+            "user_id": 9043771,
+            "username": "Tradermikes40",
+            "deeplink": "/Tradermikes40"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " "
+          }
+        },
+        {
+          "type": "mention",
+          "data": {
+            "text": "@TraderRapp",
+            "user_id": 6101291,
+            "username": "TraderRapp",
+            "deeplink": "/TraderRapp"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " "
+          }
+        },
+        {
+          "type": "mention",
+          "data": {
+            "text": "@tonyctl",
+            "user_id": 651170,
+            "username": "tonyctl",
+            "deeplink": "/tonyctl"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " "
+          }
+        },
+        {
+          "type": "mention",
+          "data": {
+            "text": "@zuby34",
+            "user_id": 1367630,
+            "username": "zuby34",
+            "deeplink": "/zuby34"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " \n\nin 1.48, put 1.60, +$240 \n\nat least zy post "
+          }
+        },
+        {
+          "type": "cashTag",
+          "data": {
+            "text": "$CBRS",
+            "symbol": "CBRS",
+            "symbol_display": "CBRS",
+            "logo_url": "https://logos.stocktwits-cdn.com/CBRS.webp",
+            "deeplink": "symbol/CBRS"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " big mover,  and mike "
+          }
+        },
+        {
+          "type": "cashTag",
+          "data": {
+            "text": "$SPCX",
+            "symbol": "SPCX",
+            "symbol_display": "SPCX",
+            "logo_url": "https://logos.stocktwits-cdn.com/SPCX.png",
+            "deeplink": "symbol/SPCX"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " \n\ncuvie have the post the rest smh "
+          }
+        },
+        {
+          "type": "cashTag",
+          "data": {
+            "text": "$RDDT",
+            "symbol": "RDDT",
+            "symbol_display": "RDDT",
+            "logo_url": "https://logos.stocktwits-cdn.com/RDDT.png",
+            "deeplink": "symbol/RDDT"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " "
+          }
+        },
+        {
+          "type": "cashTag",
+          "data": {
+            "text": "$MSFT",
+            "symbol": "MSFT",
+            "symbol_display": "MSFT",
+            "logo_url": "https://logos.stocktwits-cdn.com/MSFT.png",
+            "deeplink": "symbol/MSFT"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " "
+          }
+        },
+        {
+          "type": "cashTag",
+          "data": {
+            "text": "$AMAT",
+            "symbol": "AMAT",
+            "symbol_display": "AMAT",
+            "logo_url": "https://logos.stocktwits-cdn.com/AMAT.png",
+            "deeplink": "symbol/AMAT"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " meta"
+          }
+        }
+      ],
+      "created_at": "2026-08-17T14:36:09Z",
+      "discussion": false,
+      "source": {
+        "id": 2095,
+        "title": "StockTwits For Android ",
+        "url": "http://www.stocktwits.com/mobile"
+      },
+      "prices": [
+        {
+          "id": 35705,
+          "symbol": "CBRS",
+          "symbol_mic": "CBRS.XNAS",
+          "price": "253.16"
+        },
+        {
+          "id": 282365,
+          "symbol": "SPCX",
+          "symbol_mic": "SPCX.XNAS",
+          "price": "148.43"
+        },
+        {
+          "id": 15123,
+          "symbol": "RDDT",
+          "symbol_mic": "RDDT.XNYS",
+          "price": "173.91"
+        },
+        {
+          "id": 2735,
+          "symbol": "MSFT",
+          "symbol_mic": "MSFT.XNAS",
+          "price": "482.71"
+        },
+        {
+          "id": 827,
+          "symbol": "AMAT",
+          "symbol_mic": "AMAT.XNAS",
+          "price": "527.08"
+        }
+      ],
+      "conversation": {
+        "parent_message_id": 658940483,
+        "in_reply_to_message_id": 662063383,
+        "parent": false,
+        "replies": 0
+      },
+      "mentioned_users": [
+        "@itsphd",
+        "@Jeremymartin007",
+        "@Idiamondw",
+        "@judgeyoung2",
+        "@jenbunn",
+        "@ZY786",
+        "@Tradermikes40",
+        "@TraderRapp",
+        "@tonyctl",
+        "@zuby34"
+      ],
+      "entities": {
+        "media": [
+          {
+            "id": 14124112,
+            "type": "gif",
+            "thumb": null,
+            "medium": null,
+            "large": null,
+            "original": null,
+            "url": null,
+            "height": 492,
+            "width": 874,
+            "ratio": 1.77642,
+            "provider": "giphy",
+            "provider_id": "GVzDhKdpiPUIZJlh7M"
+          }
+        ],
+        "giphy": {
+          "id": "GVzDhKdpiPUIZJlh7M"
+        },
+        "sentiment": null,
+        "discussable": null
+      },
+      "user": {
+        "id": 494832,
+        "username": "cubie",
+        "name": "Chau N.",
+        "avatar_url": "https://avatars.stocktwits.com/production/494832/thumb-1672856663.png",
+        "avatar_url_ssl": "https://avatars.stocktwits.com/production/494832/thumb-1672856663.png",
+        "join_date": "2015-04-01",
+        "official": false,
+        "identity": "User",
+        "classification": [
+          "premium"
+        ],
+        "badges": [],
+        "home_country": "US",
+        "search_regions": [],
+        "followers": 10942,
+        "following": 107,
+        "ideas": 158099,
+        "watchlist_stocks_count": 299,
+        "like_count": 10875,
+        "plus_tier": "",
+        "premium_room": "",
+        "trade_app": false,
+        "trade_status": "PENDING_MFA"
+      },
+      "symbols": [
+        {
+          "id": 35705,
+          "symbol": "CBRS",
+          "symbol_mic": "CBRS.XNAS",
+          "symbol_display": "CBRS",
+          "exchange": "NASDAQ",
+          "region": "US",
+          "logo_url": "https://logos.stocktwits-cdn.com/CBRS.webp",
+          "title": "Cerebras Systems Inc",
+          "aliases": [],
+          "deeplink": "symbol/CBRS",
+          "external_id": null,
+          "is_following": false,
+          "watchlist_count": 12392,
+          "has_pricing": true,
+          "instrument_class": "Stock",
+          "live_event": false,
+          "sentiment_change": 1.8,
+          "volume_change": 3.82
+        },
+        {
+          "id": 282365,
+          "symbol": "SPCX",
+          "symbol_mic": "SPCX.XNAS",
+          "symbol_display": "SPCX",
+          "exchange": "NASDAQ",
+          "region": "US",
+          "logo_url": "https://logos.stocktwits-cdn.com/SPCX.png",
+          "title": "SpaceX",
+          "aliases": [],
+          "deeplink": "symbol/SPCX",
+          "external_id": null,
+          "is_following": false,
+          "watchlist_count": 102752,
+          "has_pricing": true,
+          "instrument_class": "Stock",
+          "live_event": false,
+          "sentiment_change": 1.8,
+          "volume_change": -4.71
+        },
+        {
+          "id": 15123,
+          "symbol": "RDDT",
+          "symbol_mic": "RDDT.XNYS",
+          "symbol_display": "RDDT",
+          "exchange": "NYSE",
+          "region": "US",
+          "logo_url": "https://logos.stocktwits-cdn.com/RDDT.png",
+          "title": "Reddit Inc",
+          "aliases": [],
+          "deeplink": "symbol/RDDT",
+          "external_id": null,
+          "is_following": false,
+          "watchlist_count": 36314,
+          "has_pricing": true,
+          "instrument_class": "Stock",
+          "live_event": false,
+          "trade_status": "ENABLED",
+          "sentiment_change": 0.37,
+          "volume_change": 4.11
+        },
+        {
+          "id": 2735,
+          "symbol": "MSFT",
+          "symbol_mic": "MSFT.XNAS",
+          "symbol_display": "MSFT",
+          "exchange": "NASDAQ",
+          "region": "US",
+          "logo_url": "https://logos.stocktwits-cdn.com/MSFT.png",
+          "title": "Microsoft Corp",
+          "aliases": [],
+          "deeplink": "symbol/MSFT",
+          "external_id": null,
+          "is_following": false,
+          "watchlist_count": 545595,
+          "has_pricing": true,
+          "instrument_class": "Stock",
+          "live_event": false,
+          "earnings_cta": "res_earn_tab",
+          "earnings_id": "434a5ef6-3f8f-4ee2-bfdc-9b760d2adc0a",
+          "trade_status": "FRACTIONAL",
+          "sentiment_change": -2.09,
+          "volume_change": -3.74
+        },
+        {
+          "id": 827,
+          "symbol": "AMAT",
+          "symbol_mic": "AMAT.XNAS",
+          "symbol_display": "AMAT",
+          "exchange": "NASDAQ",
+          "region": "US",
+          "logo_url": "https://logos.stocktwits-cdn.com/AMAT.png",
+          "title": "Applied Materials Inc.",
+          "aliases": [],
+          "deeplink": "symbol/AMAT",
+          "external_id": null,
+          "is_following": false,
+          "watchlist_count": 35377,
+          "has_pricing": true,
+          "instrument_class": "Stock",
+          "live_event": false,
+          "trade_status": "FRACTIONAL",
+          "sentiment_change": 0.23,
+          "volume_change": 1.31
+        }
+      ]
+    },
+    {
+      "id": 662063610,
+      "body": "$SPCX lets kill some bears",
+      "tokenized_body": [
+        {
+          "type": "cashTag",
+          "data": {
+            "text": "$SPCX",
+            "symbol": "SPCX",
+            "symbol_display": "SPCX",
+            "logo_url": "https://logos.stocktwits-cdn.com/SPCX.png",
+            "deeplink": "symbol/SPCX"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " lets kill some bears"
+          }
+        }
+      ],
+      "created_at": "2026-08-17T14:35:35Z",
+      "discussion": false,
+      "source": {
+        "id": 2095,
+        "title": "StockTwits For Android ",
+        "url": "http://www.stocktwits.com/mobile"
+      },
+      "prices": [
+        {
+          "id": 282365,
+          "symbol": "SPCX",
+          "symbol_mic": "SPCX.XNAS",
+          "price": "148.83"
+        }
+      ],
+      "mentioned_users": [],
+      "entities": {
+        "media": [],
+        "sentiment": null,
+        "discussable": null
+      },
+      "user": {
+        "id": 2266428,
+        "username": "Mushroomhead",
+        "name": "Bruno Tacquenier",
+        "avatar_url": "https://avatars.stocktwits.com/production/2266428/thumb-1637142007.png",
+        "avatar_url_ssl": "https://avatars.stocktwits.com/production/2266428/thumb-1637142007.png",
+        "join_date": "2019-08-20",
+        "official": false,
+        "identity": "User",
+        "classification": [],
+        "badges": [],
+        "home_country": "BE",
+        "search_regions": [],
+        "followers": 11,
+        "following": 1,
+        "ideas": 3729,
+        "watchlist_stocks_count": 132,
+        "like_count": 5850,
+        "plus_tier": "",
+        "premium_room": "",
+        "trade_app": false,
+        "trade_status": "PENDING_MFA"
+      },
+      "likes": {
+        "total": 1,
+        "user_ids": [
+          8730652
+        ]
+      },
+      "symbols": [
+        {
+          "id": 282365,
+          "symbol": "SPCX",
+          "symbol_mic": "SPCX.XNAS",
+          "symbol_display": "SPCX",
+          "exchange": "NASDAQ",
+          "region": "US",
+          "logo_url": "https://logos.stocktwits-cdn.com/SPCX.png",
+          "title": "SpaceX",
+          "aliases": [],
+          "deeplink": "symbol/SPCX",
+          "external_id": null,
+          "is_following": false,
+          "watchlist_count": 102752,
+          "has_pricing": true,
+          "instrument_class": "Stock",
+          "live_event": false,
+          "sentiment_change": 1.8,
+          "volume_change": -4.71
+        }
+      ]
+    },
+    {
+      "id": 662063561,
+      "body": "$SPCX Bears &amp; TDS both crying in a corner right now 🚀🚀🚀",
+      "tokenized_body": [
+        {
+          "type": "cashTag",
+          "data": {
+            "text": "$SPCX",
+            "symbol": "SPCX",
+            "symbol_display": "SPCX",
+            "logo_url": "https://logos.stocktwits-cdn.com/SPCX.png",
+            "deeplink": "symbol/SPCX"
+          }
+        },
+        {
+          "type": "text",
+          "data": {
+            "text": " Bears & TDS both crying in a corner right now 🚀🚀🚀"
+          }
+        }
+      ],
+      "created_at": "2026-08-17T14:35:18Z",
+      "discussion": false,
+      "source": {
+        "id": 1149,
+        "title": "StockTwits for iOS",
+        "url": "http://www.stocktwits.com/mobile"
+      },
+      "prices": [
+        {
+          "id": 282365,
+          "symbol": "SPCX",
+          "symbol_mic": "SPCX.XNAS",
+          "price": "148.40"
+        }
+      ],
+      "mentioned_users": [],
+      "entities": {
+        "media": [],
+        "sentiment": {
+          "basic": "Bullish"
+        },
+        "discussable": null
+      },
+      "user": {
+        "id": 5056084,
+        "username": "kjz67",
+        "name": "KZ",
+        "avatar_url": "https://avatars.stocktwits.com/production/5056084/thumb-1644643885.png",
+        "avatar_url_ssl": "https://avatars.stocktwits.com/production/5056084/thumb-1644643885.png",
+        "join_date": "2021-02-17",
+        "official": false,
+        "identity": "User",
+        "classification": [],
+        "badges": [],
+        "home_country": "US",
+        "search_regions": [],
+        "followers": 12,
+        "following": 12,
+        "ideas": 612,
+        "watchlist_stocks_count": 276,
+        "like_count": 5239,
+        "plus_tier": "",
+        "premium_room": "",
+        "trade_app": false,
+        "trade_status": "PENDING_MFA"
+      },
+      "likes": {
+        "total": 2,
+        "user_ids": [
+          10125962,
+          5779507
+        ]
+      },
+      "symbols": [
+        {
+          "id": 282365,
+          "symbol": "SPCX",
+          "symbol_mic": "SPCX.XNAS",
+          "symbol_display": "SPCX",
+          "exchange": "NASDAQ",
+          "region": "US",
+          "logo_url": "https://logos.stocktwits-cdn.com/SPCX.png",
+          "title": "SpaceX",
+          "aliases": [],
+          "deeplink": "symbol/SPCX",
+          "external_id": null,
+          "is_following": false,
+          "watchlist_count": 102752,
+          "has_pricing": true,
+          "instrument_class": "Stock",
+          "live_event": false,
+          "sentiment_change": 1.8,
+          "volume_change": -4.71
+        }
+      ]
+    }
+  ],
+  "announcement": {
+    "id": 662028418,
+    "body": "$SPCX \n\nThe SpaceX ownership disclosures are staggering:\n\n1. Alphabet: 551.2 million shares\n2. Fidelity Investments: 302.6 million shares\n3. Gigafund: 171.8 million shares\n4. Saudi Arabia’s Public Investment Fund: 154.1 million shares\n5. Nvidia: 122.8 million shares\n6. Baillie Gifford: 51.4 million shares\n7. BlackRock: 51.0 million shares\n8. Tesla: Approximately 19.0 million shares\n9. Harvard Management Company: 12.9 million shares\n10. Temasek: 9.8 million shares\n11. Norway’s Sovereign Wealth Fund: Approximately 7.1 million shares\n12. AMD: Approximately 3.3 million shares\n13. Ontario Teachers’ Pension Plan: Disclosed a major position\n14. Tiger Global: Disclosed a new Q2 position\n\nCompanies. Sovereign wealth funds. Pension funds. The world’s largest asset managers. Harvard’s endowment.  To the 🌕 literally.",
+    "tokenized_body": [
+      {
+        "type": "cashTag",
+        "data": {
+          "text": "$SPCX",
+          "symbol": "SPCX",
+          "symbol_display": "SPCX",
+          "logo_url": "https://logos.stocktwits-cdn.com/SPCX.png",
+          "deeplink": "symbol/SPCX"
+        }
+      },
+      {
+        "type": "text",
+        "data": {
+          "text": " \n\nThe SpaceX ownership disclosures are staggering:\n\n1. Alphabet: 551.2 million shares\n2. Fidelity Investments: 302.6 million shares\n3. Gigafund: 171.8 million shares\n4. Saudi Arabia’s Public Investment Fund: 154.1 million shares\n5. Nvidia: 122.8 million shares\n6. Baillie Gifford: 51.4 million shares\n7. BlackRock: 51.0 million shares\n8. Tesla: Approximately 19.0 million shares\n9. Harvard Management Company: 12.9 million shares\n10. Temasek: 9.8 million shares\n11. Norway’s Sovereign Wealth Fund: Approximately 7.1 million shares\n12. AMD: Approximately 3.3 million shares\n13. Ontario Teachers’ Pension Plan: Disclosed a major position\n14. Tiger Global: Disclosed a new Q2 position\n\nCompanies. Sovereign wealth funds. Pension funds. The world’s largest asset managers. Harvard’s endowment.  To the 🌕 literally."
+        }
+      }
+    ],
+    "created_at": "2026-08-17T01:36:51Z",
+    "discussion": true,
+    "discussion_id": 662028418,
+    "discussion_type": "message",
+    "source": {
+      "id": 1149,
+      "title": "StockTwits for iOS",
+      "url": "http://www.stocktwits.com/mobile"
+    },
+    "prices": [
+      {
+        "id": 282365,
+        "symbol": "SPCX",
+        "symbol_mic": "SPCX.XNAS",
+        "price": "140.57"
+      }
+    ],
+    "conversation": {
+      "parent_message_id": 662028418,
+      "in_reply_to_message_id": null,
+      "parent": true,
+      "replies": 9
+    },
+    "mentioned_users": [],
+    "entities": {
+      "media": [],
+      "sentiment": {
+        "basic": "Bullish"
+      },
+      "discussable": {
+        "type": "Message",
+        "message": {
+          "discussion": {
+            "id": 18375,
+            "slug": "spacex-ownership-disclosures-662028418",
+            "title": "SpaceX ownership disclosures",
+            "description": "The SpaceX ownership disclosures are staggering. Companies. Sovereign wealth funds. Pension funds. The world’s largest asset managers. And even Harvard’s endowment.",
+            "indexed": true,
+            "created_at": "2026-08-17T11:51:12Z",
+            "comments_count": 9
+          }
+        }
+      }
+    },
+    "user": {
+      "id": 3514400,
+      "username": "_The_Architect",
+      "name": "The_Architect",
+      "avatar_url": "https://avatars.stocktwits.com/production/3514400/thumb-1764051281.png",
+      "avatar_url_ssl": "https://avatars.stocktwits.com/production/3514400/thumb-1764051281.png",
+      "join_date": "2020-05-28",
+      "official": false,
+      "identity": "User",
+      "classification": [],
+      "badges": [],
+      "search_regions": [],
+      "followers": 298,
+      "following": 73,
+      "ideas": 4095,
+      "watchlist_stocks_count": 128,
+      "like_count": 4523,
+      "plus_tier": "",
+      "premium_room": "",
+      "trade_app": false,
+      "trade_status": "PENDING_MFA"
+    },
+    "likes": {
+      "total": 88,
+      "user_ids": [
+        3377949,
+        901735,
+        5287875,
+        8768467,
+        10335151,
+        9106195,
+        9820900,
+        10168481,
+        3492167,
+        1722007,
+        5756941,
+        8500826,
+        3872468,
+        4424924,
+        3255096,
+        170,
+        9689352,
+        715161,
+        312972,
+        884704,
+        1421403,
+        4364864,
+        5027408,
+        9531025,
+        4365147,
+        5795252,
+        1101725,
+        961025,
+        815869,
+        5909619,
+        11083955,
+        2838709,
+        8921044,
+        616915,
+        187279,
+        6185451,
+        3524686,
+        11068660,
+        7802644,
+        3754465,
+        10644377,
+        6817915,
+        1429601,
+        5776282,
+        9575229,
+        6050643,
+        11084172,
+        3879445,
+        10427684,
+        8846105,
+        333957,
+        9543680,
+        9080305,
+        3124235,
+        7051097,
+        4400644,
+        6697140,
+        6000595,
+        4392039,
+        3024054,
+        8093506,
+        6701806,
+        926818,
+        1203450,
+        3658275,
+        10125962,
+        8822389,
+        467880,
+        4825073,
+        3426277,
+        2223910,
+        10994761,
+        8754249,
+        2021418,
+        6973106,
+        6163673,
+        10919591,
+        5230578,
+        5413318,
+        813731,
+        9679461,
+        3067393,
+        6375028,
+        5655738,
+        830476,
+        4506710,
+        6811838,
+        3144473
+      ]
+    },
+    "reshares": {
+      "reshared_count": 6,
+      "user_ids": [
+        3026652,
+        170,
+        613122,
+        5761273,
+        7249389,
+        4314037
+      ]
+    },
+    "symbols": [
+      {
+        "id": 282365,
+        "symbol": "SPCX",
+        "symbol_mic": "SPCX.XNAS",
+        "symbol_display": "SPCX",
+        "exchange": "NASDAQ",
+        "region": "US",
+        "logo_url": "https://logos.stocktwits-cdn.com/SPCX.png",
+        "title": "SpaceX",
+        "aliases": [],
+        "deeplink": "symbol/SPCX",
+        "external_id": null,
+        "is_following": false,
+        "watchlist_count": 102752,
+        "has_pricing": true,
+        "instrument_class": "Stock",
+        "live_event": false,
+        "sentiment_change": 1.8,
+        "volume_change": -4.71
+      }
+    ],
+    "announcement_id": 17701,
+    "announcement_display_text": "Featured",
+    "announcement_display_hex": "#1c73e4"
+  },
+  "response": {
+    "status": 200
+  }
+}

@@ -16,11 +16,12 @@ miss, so pacing, retry, and route policy stay with whoever owns them.
 
 from __future__ import annotations
 
+import threading
 import time
 import urllib.parse
 from collections import OrderedDict
 from dataclasses import dataclass
-from typing import Callable, Dict, Tuple
+from typing import Callable, Dict, Optional, Tuple
 
 from . import transport
 
@@ -138,6 +139,29 @@ ROUTE_TTL_SECONDS: Dict[str, float] = {
     # to the default for exactly that reason — the default is a bound on
     # staleness, and this route wants none.
     transport.PUBLIC_PAGE_CONTROL_ROUTE: 0.0,
+    # The routes added 2026-08-17. Each takes the window of the route it most
+    # resembles above, for the reason given there: an index answer holds five
+    # minutes, an archive lookup fifteen, a counter-bearing social read five, a
+    # document fifteen, and a market quote two — the shortest window in the
+    # table after the control's, because a price moves while nobody edits it.
+    transport.BING_RSS_ROUTE: 300.0,
+    transport.BING_NEWS_RSS_ROUTE: 300.0,
+    transport.GOOGLE_NEWS_RSS_ROUTE: 300.0,
+    transport.WEB_PAGE_OPEN_ROUTE: 900.0,
+    transport.REDDIT_SHREDDIT_LISTING_ROUTE: 300.0,
+    transport.REDDIT_SHREDDIT_SEARCH_ROUTE: 300.0,
+    transport.REDDIT_SHREDDIT_SUBREDDIT_SEARCH_ROUTE: 300.0,
+    transport.REDDIT_SHREDDIT_COMMENTS_ROUTE: 300.0,
+    transport.YOUTUBE_TIMEDTEXT_ROUTE: 900.0,
+    transport.HN_ALGOLIA_ITEM_ROUTE: 120.0,
+    transport.POLYMARKET_GAMMA_ROUTE: 120.0,
+    transport.KALSHI_MARKETS_ROUTE: 120.0,
+    transport.MANIFOLD_MARKETS_ROUTE: 120.0,
+    transport.STOCKTWITS_STREAM_ROUTE: 300.0,
+    transport.STOCKTWITS_SYMBOL_SEARCH_ROUTE: 900.0,
+    transport.BLUESKY_SEARCH_POSTS_ROUTE: 300.0,
+    transport.BLUESKY_AUTHOR_FEED_ROUTE: 300.0,
+    transport.FXTWITTER_API_ROUTE: 300.0,
     # `transport.YOUTUBE_INNERTUBE_ROUTE` declares no window on purpose, and it
     # is the one route here where that is structural rather than a judgment:
     # it asks its question in a POST body, and `cacheable` holds only what came
@@ -270,11 +294,54 @@ class RunCache:
         # Ordered least-recently-served first, which is eviction order.
         self._entries: OrderedDict[CacheKey, CacheEntry] = OrderedDict()
         self._closed = False
+        # Held while the table is read or written, and never while a fetch is
+        # out: a run's lanes share one memory, and the fetch is the part that
+        # must be free to overlap across origins.
+        self._lock = threading.Lock()
 
     def __len__(self) -> int:
         """How many answers are held right now — the bound, observable."""
 
-        return len(self._entries)
+        with self._lock:
+            return len(self._entries)
+
+    def lookup(self, request: transport.TransportRequest) -> Optional[transport.TransportResponse]:
+        """The answer this run already holds for one request, or None.
+
+        A stale entry is dropped on the way past, so a lookup that returns
+        None has also made room for the read that follows it.
+        """
+
+        key = cache_key(request)
+        with self._lock:
+            if self._closed:
+                raise CacheError("this run's cache ended; a later run makes its own")
+            entry = self._entries.get(key)
+            if entry is None:
+                return None
+            stored_at, response = entry
+            # The window runs from the read that produced the entry, never from
+            # the last serve: a hot entry must still expire.
+            if self._clock() - stored_at < ttl_seconds(request.route_id):
+                self._entries.move_to_end(key)
+                return response
+            del self._entries[key]
+            return None
+
+    def remember(
+        self, request: transport.TransportRequest, response: transport.TransportResponse
+    ) -> None:
+        """Hold one answer against its request, when the answer may stand in for a later read."""
+
+        if not cacheable(request, response):
+            return
+        key = cache_key(request)
+        with self._lock:
+            self._entries[key] = (self._clock(), response)
+            # Assignment to an existing key keeps its old position, so say it.
+            self._entries.move_to_end(key)
+            while len(self._entries) > MAX_ENTRIES:
+                self._entries.popitem(last=False)
 
     def serve(
         self,
@@ -288,25 +355,11 @@ class RunCache:
         hit, and no caller can forget to remember what it just read.
         """
 
-        if self._closed:
-            raise CacheError("this run's cache ended; a later run makes its own")
-        key = cache_key(request)
-        entry = self._entries.get(key)
-        if entry is not None:
-            stored_at, response = entry
-            # The window runs from the read that produced the entry, never from
-            # the last serve: a hot entry must still expire.
-            if self._clock() - stored_at < ttl_seconds(request.route_id):
-                self._entries.move_to_end(key)
-                return CacheServe(response=response, cache_hit=True)
-            del self._entries[key]
+        held = self.lookup(request)
+        if held is not None:
+            return CacheServe(response=held, cache_hit=True)
         response = fetch(request)
-        if cacheable(request, response):
-            self._entries[key] = (self._clock(), response)
-            # Assignment to an existing key keeps its old position, so say it.
-            self._entries.move_to_end(key)
-            while len(self._entries) > MAX_ENTRIES:
-                self._entries.popitem(last=False)
+        self.remember(request, response)
         return CacheServe(response=response, cache_hit=False)
 
     def close(self) -> None:
@@ -318,5 +371,6 @@ class RunCache:
         run's reads.
         """
 
-        self._entries = OrderedDict()
-        self._closed = True
+        with self._lock:
+            self._entries = OrderedDict()
+            self._closed = True

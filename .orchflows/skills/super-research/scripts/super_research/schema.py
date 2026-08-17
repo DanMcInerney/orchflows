@@ -55,6 +55,8 @@ STEP_KEYS = (
     "prior_step_id",
     "selected_hits",
     "max_items",
+    "window_start",
+    "window_end",
 )
 SELECTED_HIT_KEYS = ("discovery_locator", "target_id")
 
@@ -97,6 +99,15 @@ class AcquisitionStep:
     # that declares a bound is this package's own smoke, in process, where one
     # read is the whole of what a liveness check is authorized to cost.
     max_pages: int = 0
+    # The window this step's records must fall in, as two instants in
+    # `INSTANT_FORMAT`, either or both empty. A dated record outside it is
+    # dropped by the core before the cap counts it, so the cap is spent on
+    # the window rather than on an origin's all-time-top ordering; a record
+    # with no publication time is kept, because dropping it would decide the
+    # unknown. Adapters whose origin takes a date bound push it server-side
+    # and say so in their own terms; the core's filter holds either way.
+    window_start: str = ""
+    window_end: str = ""
 
 
 @dataclass(frozen=True)
@@ -294,6 +305,23 @@ def _parse_step(payload: Any, position: int) -> AcquisitionStep:
     if not isinstance(max_items, int) or isinstance(max_items, bool) or max_items < 1:
         raise ManifestError("{0} requires a hard positive max_items cap".format(label))
 
+    window = []
+    for key in ("window_start", "window_end"):
+        value = mapping.get(key, "")
+        if value == "" or value is None:
+            window.append("")
+            continue
+        if not isinstance(value, str) or not _is_instant(value):
+            raise ManifestError(
+                "{0} {1} must be spelled YYYY-MM-DDTHH:MM:SSZ or left empty, got"
+                " {2!r}: a bound the core cannot read bounds nothing".format(label, key, value)
+            )
+        window.append(value)
+    if window[0] and window[1] and window[0] > window[1]:
+        raise ManifestError(
+            "{0} window_start {1} is after window_end {2}".format(label, window[0], window[1])
+        )
+
     return AcquisitionStep(
         step_id=step_id,
         kind=kind,
@@ -302,7 +330,17 @@ def _parse_step(payload: Any, position: int) -> AcquisitionStep:
         prior_step_id=mapping.get("prior_step_id", ""),
         selected_hits=hits,
         max_items=max_items,
+        window_start=window[0],
+        window_end=window[1],
     )
+
+
+def _is_instant(value: str) -> bool:
+    try:
+        datetime.strptime(value, INSTANT_FORMAT)
+    except ValueError:
+        return False
+    return True
 
 
 def parse_manifest(payload: Any) -> AcquisitionManifest:

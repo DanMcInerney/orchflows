@@ -63,10 +63,16 @@ X_TWEET_TARGET = "tweet:1799990000000000001"
 # table disagree loudly the moment either is edited alone, which is the point
 # of not deriving it.
 ROSTER = {
+    "bluesky": "K0",
     "web_search": "K4",
+    "x_fxtwitter": "K3",
     "public_page": "K0",
+    "prediction_markets": "K0",
     "reddit_archive": "K3",
     "reddit_feed": "K0",
+    "reddit_shreddit": "K2",
+    "stocktwits": "K0",
+    "open_page": "K0",
     "x_syndication": "K2",
     "x_guest": "K1",
     "linkedin_public": "K2",
@@ -481,11 +487,11 @@ class KeylessCapabilityTest(unittest.TestCase):
 
     def test_the_roster_the_law_reads_is_every_surface_the_core_can_reach(self):
         # The law is only as wide as its input, so the input is pinned: the
-        # fourteen adapters' eighteen distinct routes, which is now every route
-        # in the table. The eighteenth is the guest-token activation, which
+        # twenty adapters' thirty-six distinct routes, which is now every route
+        # in the table. One of them is the guest-token activation, which
         # used to sit outside the roster on the reasoning that the opener
         # minted for itself — and sat outside every budget with it.
-        self.assertEqual(len(self.roster), 18)
+        self.assertEqual(len(self.roster), 36)
         self.assertEqual(
             sorted({surface.route_id for surface in self.roster}),
             sorted(transport.ROUTE_CONSTANTS),
@@ -640,6 +646,14 @@ class ThirdPartyArchiveTest(unittest.TestCase):
         self.archived = [
             record for record in self.artifact.records if record.access_class == ARCHIVE_CLASS
         ]
+        # The feed entry about the archived post: the one discovery record whose
+        # locator the archive step froze, and so the source of the one edge.
+        self.feed_entry = [
+            record
+            for record in self.artifact.records
+            if record.access_class != ARCHIVE_CLASS
+            and record.normalized_locator == self.archived[0].discovery_locator
+        ][0]
 
     def test_the_run_read_both_reddit_surfaces_and_kept_rows_from_each(self):
         # The oracle below is only worth its verdict if it read something: one
@@ -661,20 +675,19 @@ class ThirdPartyArchiveTest(unittest.TestCase):
             with self.subTest(record=record.record_id):
                 self.assertEqual(record.operator_identity, "arctic-shift")
                 self.assertEqual(record.platform, "reddit")
-                self.assertEqual(
-                    record.loss, (THIRD_PARTY_ARCHIVE, DISCOVERY_NOT_RECORDED)
-                )
+                self.assertEqual(record.loss, (THIRD_PARTY_ARCHIVE,))
                 self.assertEqual(record.time_confidence, "reported")
 
-    def test_the_archive_row_says_this_runs_feed_did_not_discover_it(self):
-        # The second code is this manifest's own shape, not an archive property.
-        # One dispatch reads Reddit's feed and hydrates from the archive, and
-        # `link_discovery_hydration` sources an edge from an `index` record and
-        # from nothing else — a feed entry is a `feed`. So the pair is held as
-        # two unlinked records, which is a real gap in the linking rule and is
-        # deferred to its own spec. Deferred, now, with the gap said out loud
-        # rather than legible only to a caller who counts edges.
-        self.assertEqual(self.artifact.edges, ())
+    def test_the_archive_row_is_linked_to_the_feed_entry_that_discovered_it(self):
+        # One dispatch reads Reddit's feed and hydrates from the archive.
+        # `link_discovery_hydration` sources an edge from any discovery record
+        # whose locator the hydration froze — a feed entry since 2026-08-17,
+        # not only an index hit — so the pair is a linked pair, and the archive
+        # row carries no `discovery_not_recorded`: this run did discover it.
+        self.assertEqual(
+            [(edge.from_record_id, edge.to_record_id) for edge in self.artifact.edges],
+            [(self.feed_entry.record_id, record.record_id) for record in self.archived],
+        )
         self.assertEqual(
             sorted({record.representation_kind for record in self.artifact.records}),
             ["feed", "native"],
@@ -685,7 +698,7 @@ class ThirdPartyArchiveTest(unittest.TestCase):
                 for record in self.artifact.records
                 if DISCOVERY_NOT_RECORDED in record.loss
             ],
-            [record.record_id for record in self.archived],
+            [],
         )
 
     def test_reddits_own_feed_about_the_same_post_is_not_wearing_the_label(self):
@@ -707,7 +720,14 @@ class ThirdPartyArchiveTest(unittest.TestCase):
             surface for surface in shipped_roster() if surface.access_class == ARCHIVE_CLASS
         ]
 
-        self.assertEqual([surface.route_id for surface in archives], ["arctic_shift_posts_ids"])
+        # Two archives since 2026-08-17: the Reddit one, and FxTwitter, which
+        # is an independent operator reading X on this package's behalf. Both
+        # carry the label on every record, which is the half of the law that
+        # matters; being the only one was never the claim.
+        self.assertEqual(
+            [surface.route_id for surface in archives],
+            ["arctic_shift_posts_ids", "fxtwitter_api"],
+        )
         self.assertEqual(archives[0].standing_loss, (THIRD_PARTY_ARCHIVE,))
         self.assertEqual(archives[0].operator_identity, "arctic-shift")
 
@@ -839,7 +859,7 @@ class PublicClientCredentialTest(unittest.TestCase):
         for route_id in CREDENTIALED_ROUTES:
             with self.subTest(route=route_id):
                 credential = transport.route_credential(route_id)
-                request = transport.build_transport_request(route_id)
+                request = transport.build_transport_request(route_id, helpers.probe_params(route_id))
 
                 self.assertIsNotNone(credential)
                 self.assertTrue(credential.value)
@@ -1074,7 +1094,7 @@ class OracleCanFailTest(unittest.TestCase):
         # an adapter-by-adapter law passes and this one must not.
         with self.assertRaisesRegex(
             AssertionError,
-            "capability youtube/youtube/transcript is reachable only with a credential",
+            "capability youtube/youtube/feed is reachable only with a credential",
         ):
             assert_no_capability_needs_a_credential(
                 self, self.wrong.CREDENTIAL_ONLY_CAPABILITY
@@ -1099,7 +1119,7 @@ class OracleCanFailTest(unittest.TestCase):
     def test_a_twin_at_another_representation_is_not_the_same_capability(self):
         with self.assertRaisesRegex(
             AssertionError,
-            "capability youtube/youtube/transcript is reachable only with a credential",
+            "capability youtube/youtube/feed is reachable only with a credential",
         ):
             assert_no_capability_needs_a_credential(
                 self, self.wrong.CREDENTIALED_TWIN_IN_ANOTHER_REPRESENTATION

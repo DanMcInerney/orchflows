@@ -33,6 +33,25 @@ FROZEN_START = "2026-08-10T09:00:00Z"
 STAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 US_PER_SECOND = 1000000
 
+# The one address an offline probe of the open route names. It is on no
+# declared origin, so the open policy admits it, and nothing here can reach it:
+# every carrier in this suite is offline.
+OPEN_PROBE_URL = "https://example.net/probe"
+
+
+def probe_params(route_id):
+    """The params one bounded probe of any route takes.
+
+    A declared route takes a query; the open route takes the address it reads,
+    because it composes none of its own. Suites that walk every route call
+    this rather than spelling one shape for all of them.
+    """
+
+    if route_id == transport.WEB_PAGE_OPEN_ROUTE:
+        return {"url": OPEN_PROBE_URL}
+    return {"q": "probe"}
+
+
 # What one origin read costs when a route declares nothing better. Small enough
 # that it never dominates a pacing proof, nonzero so every operation has a
 # duration and every schedule has a makespan.
