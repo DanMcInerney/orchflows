@@ -29,6 +29,10 @@ DESIGN_SLICING = ROOT / "packs" / "orch-design-pack" / "references" / "slicing.m
 # The rule by its anchors, never by its sentence: the field the rule scopes,
 # as the owner's prose spells it, and the ordering term that scopes it.
 OVERLAP_ANCHORS = ("write scope", "dependency-ordered")
+# What a cut optimizes, by the three terms orch-decompose spells: the quantity
+# the Goal minimizes, the per-item constraint it minimizes under, and the
+# cutcheck block whose numbers the Return reports it against.
+CUT_GOAL_ANCHORS = ("critical path", "atom", "graph")
 
 COMPOSITIONS = ROOT / "compositions"
 EVAL_DESIGN = ROOT / "skills" / "workflows" / "orch-eval-design" / "SKILL.md"
@@ -335,6 +339,39 @@ class TestDependencyOrderedOverlap(unittest.TestCase):
                 anchor, text,
                 f"code pack slicing does not name {anchor!r}, so it does not "
                 "put the riskiest seam's tracer in the first frontier",
+            )
+
+
+class TestCutGoalAnchors(unittest.TestCase):
+    """Three facts about what a cut is for, each landed in a prose owner and
+    each read here by that owner's own anchors rather than by the sentence
+    carrying them: the decomposer states what a cut optimizes, the join
+    completes an empty repair instead of dispatching a no-op, and both slicing
+    cells open the first frontier with what the acceptance already proves.
+
+    Nothing else in the tree reads these clauses, so before this class any of
+    the three could be reworded away silently. The pin is an anchor and not a
+    sentence for the reason craft.md (Shape) gives, which is load-bearing
+    here: the two kernel bodies sit two and seven words inside the 300-word
+    ceiling and get recompressed to pay for the next clause, and the
+    cross-pack cell linter forbids the two slicing cells from stating their
+    shared fact in one shared sentence -- so the slicing pin is the two words
+    literal in both, asserted per cell.
+
+    Each anchor is also load-bearing rather than incidental: deleting the
+    clause that carries it from a copy of its owner reds this class. An
+    anchor that survived that deletion would only prove the grep.
+    """
+
+    def test_the_decomposer_states_the_goal_by_anchor(self):
+        text = read_flat(DECOMPOSE)
+        for anchor in CUT_GOAL_ANCHORS:
+            self.assertIn(
+                anchor, text,
+                f"orch-decompose does not name {anchor!r}, so the cut is no "
+                "longer told to minimize the critical path subject to every "
+                "item an atom, or no longer returns the graph block whose "
+                "numbers that goal is measured by",
             )
 
 
