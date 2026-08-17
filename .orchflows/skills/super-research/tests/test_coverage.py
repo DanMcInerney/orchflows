@@ -9,8 +9,10 @@ went wrong, and stays quiet where the manifest was right.
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
-from super_research import coverage, schema
+from super_research import adapters, coverage, runner, schema
+from super_research.adapters import youtube_innertube
 
 
 def record(
@@ -20,6 +22,7 @@ def record(
     locator="https://example.invalid/a",
     discovery_locator="",
     representation_kind="index",
+    native_parent_id="",
 ):
     """One discovery record, with every field the schema requires supplied."""
 
@@ -39,7 +42,7 @@ def record(
         representation_kind=representation_kind,
         canonical_content_kind="post",
         native_item_id=native_item_id,
-        native_parent_id="",
+        native_parent_id=native_parent_id,
         canonical_locator=locator,
         normalized_locator=locator,
         exact_content_hash="h",
@@ -73,6 +76,21 @@ def manifest(*steps):
     )
 
 
+def artifact(steps=(), records=()):
+    return schema.AcquisitionArtifact(
+        artifact_id="a",
+        manifest_id="m",
+        mode="fused",
+        as_of="2026-08-17T19:00:00Z",
+        records=tuple(records),
+        steps=tuple(steps),
+        edges=(),
+        groups=(),
+        outcome="ok",
+        loss=(),
+    )
+
+
 def codes(advisories):
     return sorted({found.code for found in advisories})
 
@@ -81,7 +99,78 @@ def subjects(advisories, code):
     return sorted(found.subject for found in advisories if found.code == code)
 
 
-class PlanHydrationTest(unittest.TestCase):
+class DepthPlanTest(unittest.TestCase):
+    def test_a_paging_operation_gives_discovery_steps(self):
+        """`next` is a step per video, addressed in the query and not in a hit.
+
+        A discovery step forbids `selected_hits`, so the target rides in the
+        query under the operation's own name — which is where
+        `youtube_innertube.operation_for` reads it from on a step that names no
+        target — and one video per step is what keeps each step's cap its own.
+        """
+
+        rows = [
+            record("y1", "youtube_innertube", native_item_id="a", locator="https://x.invalid/a"),
+            record("y2", "youtube_innertube", native_item_id="b", locator="https://x.invalid/b"),
+        ]
+
+        plan = coverage.plan_depth(rows, "youtube_innertube", "next", "nx", max_items=50)
+
+        self.assertEqual([held.query for held in plan.steps], ["next:a", "next:b"])
+        self.assertEqual([held.selected_hits for held in plan.steps], [(), ()])
+        self.assertEqual(len({held.step_id for held in plan.steps}), 2)
+        self.assertEqual(plan.skipped, ())
+
+    def test_a_single_call_operation_gives_a_hydration_step(self):
+        """`player` answers in one call, so the older shape is still the right one."""
+
+        rows = [
+            record("y1", "youtube_innertube", native_item_id="a", locator="https://x.invalid/a"),
+            record("y2", "youtube_innertube", native_item_id="b", locator="https://x.invalid/b"),
+        ]
+
+        plan = coverage.plan_depth(rows, "youtube_innertube", "player", "pl", max_items=5)
+
+        self.assertEqual(len(plan.steps), 1)
+        self.assertEqual(
+            [hit.target_id for hit in plan.steps[0].selected_hits], ["player:a", "player:b"]
+        )
+
+    def test_the_kind_is_the_one_the_core_pages(self):
+        """The criterion is the core's own predicate, not the string it returns.
+
+        `runner._offers_another_page` is what decides whether a continuation is
+        ever spent, so a step planned for a paging operation is one that
+        function answers `True` for. Asserting `kind == "discovery"` here would
+        pin this module's spelling against itself and prove nothing about
+        whether page two is reached.
+        """
+
+        rows = [record("y1", "youtube_innertube", native_item_id="a")]
+        paging = coverage.plan_depth(rows, "youtube_innertube", "next", "nx", 50).steps[0]
+        single = coverage.plan_depth(rows, "youtube_innertube", "player", "pl", 50).steps[0]
+        offering = adapters.build_native_page(
+            youtube_innertube.DESCRIPTOR, (), cursor_out="A_CONTINUATION_TOKEN"
+        )
+
+        self.assertTrue(runner._offers_another_page(paging, offering, 1, 1))
+        self.assertFalse(runner._offers_another_page(single, offering, 1, 1))
+
+    def test_a_transcript_cap_under_two_is_refused(self):
+        """Page one is the video's own record; the cues are on page two.
+
+        `kept < max_items` is the clause that buys the second page, so a
+        transcript step capped at one reaches no cue and reports success.
+        """
+
+        rows = [record("y1", "youtube_innertube", native_item_id="a")]
+
+        with self.assertRaises(coverage.CoverageError) as raised:
+            coverage.plan_depth(rows, "youtube_innertube", "transcript", "tx", 1)
+
+        self.assertIn("page two", str(raised.exception))
+        self.assertEqual(len(coverage.plan_depth(rows, "youtube_innertube", "transcript", "tx", 2).steps), 1)
+
     def test_a_reddit_permalink_is_the_target_and_is_not_taken_apart(self):
         """Reddit's comments grammar takes the permalink a row carried.
 
@@ -91,7 +180,7 @@ class PlanHydrationTest(unittest.TestCase):
         """
 
         permalink = "https://www.reddit.com/r/Bitcoin/comments/1vos2t2/just_sold_it_all"
-        plan = coverage.plan_hydration(
+        plan = coverage.plan_depth(
             [record("r1", "reddit_shreddit", locator=permalink)],
             "reddit_shreddit",
             "comments",
@@ -99,17 +188,17 @@ class PlanHydrationTest(unittest.TestCase):
             max_items=40,
         )
 
-        self.assertEqual(plan.step.kind, "hydration")
-        self.assertEqual(plan.step.adapter_id, "reddit_shreddit")
-        self.assertEqual(len(plan.step.selected_hits), 1)
-        self.assertEqual(plan.step.selected_hits[0].target_id, "comments:" + permalink)
+        self.assertEqual(plan.steps[0].kind, "hydration")
+        self.assertEqual(plan.steps[0].adapter_id, "reddit_shreddit")
+        self.assertEqual(len(plan.steps[0].selected_hits), 1)
+        self.assertEqual(plan.steps[0].selected_hits[0].target_id, "comments:" + permalink)
         # The locator is what ties the hydration back to its discovery, so it
         # rides verbatim and is never recomposed.
-        self.assertEqual(plan.step.selected_hits[0].discovery_locator, permalink)
+        self.assertEqual(plan.steps[0].selected_hits[0].discovery_locator, permalink)
         self.assertEqual(plan.skipped, ())
 
     def test_youtube_targets_the_native_id_under_the_named_operation(self):
-        plan = coverage.plan_hydration(
+        plan = coverage.plan_depth(
             [record("y1", "youtube_innertube", native_item_id="4jZjM0Zs_LY")],
             "youtube_innertube",
             "transcript",
@@ -117,7 +206,7 @@ class PlanHydrationTest(unittest.TestCase):
             max_items=400,
         )
 
-        self.assertEqual(plan.step.selected_hits[0].target_id, "transcript:4jZjM0Zs_LY")
+        self.assertEqual(plan.steps[0].query, "transcript:4jZjM0Zs_LY")
 
     def test_records_off_the_adapter_are_listed_and_never_silently_dropped(self):
         """The leftovers are returned, for `relevance.partition`'s reason.
@@ -126,7 +215,7 @@ class PlanHydrationTest(unittest.TestCase):
         a plan's clothes.
         """
 
-        plan = coverage.plan_hydration(
+        plan = coverage.plan_depth(
             [record("a", "reddit_shreddit"), record("b", "hacker_news")],
             "reddit_shreddit",
             "comments",
@@ -134,21 +223,21 @@ class PlanHydrationTest(unittest.TestCase):
             max_items=40,
         )
 
-        self.assertEqual(len(plan.step.selected_hits), 1)
+        self.assertEqual(len(plan.steps[0].selected_hits), 1)
         self.assertEqual([held.record_id for held in plan.skipped], ["b"])
         self.assertIn("off adapter hacker_news", plan.skipped[0].reason)
 
     def test_the_callers_own_limit_is_reported_as_the_reason_it_stopped(self):
         rows = [record("r%d" % index, "reddit_shreddit", locator="u%d" % index) for index in range(5)]
 
-        plan = coverage.plan_hydration(rows, "reddit_shreddit", "comments", "cm", 40, limit=2)
+        plan = coverage.plan_depth(rows, "reddit_shreddit", "comments", "cm", 40, limit=2)
 
-        self.assertEqual(len(plan.step.selected_hits), 2)
+        self.assertEqual(len(plan.steps[0].selected_hits), 2)
         self.assertEqual(len(plan.skipped), 3)
         self.assertTrue(all("limit" in held.reason for held in plan.skipped))
 
     def test_a_record_already_hydrated_is_not_hydrated_again(self):
-        plan = coverage.plan_hydration(
+        plan = coverage.plan_depth(
             [
                 record(
                     "h1",
@@ -163,7 +252,7 @@ class PlanHydrationTest(unittest.TestCase):
             max_items=40,
         )
 
-        self.assertEqual(plan.step.selected_hits, ())
+        self.assertEqual(plan.steps[0].selected_hits, ())
         self.assertEqual(plan.skipped[0].reason, "already hydrated")
 
     def test_an_unaddressable_record_is_skipped_rather_than_addressed_by_the_other_id(self):
@@ -173,7 +262,7 @@ class PlanHydrationTest(unittest.TestCase):
         item and still looks authorized.
         """
 
-        plan = coverage.plan_hydration(
+        plan = coverage.plan_depth(
             [record("y1", "youtube_innertube", native_item_id="")],
             "youtube_innertube",
             "player",
@@ -181,18 +270,18 @@ class PlanHydrationTest(unittest.TestCase):
             max_items=5,
         )
 
-        self.assertEqual(plan.step.selected_hits, ())
+        self.assertEqual(plan.steps[0].selected_hits, ())
         self.assertIn("native item id", plan.skipped[0].reason)
 
     def test_an_undeclared_adapter_or_operation_is_refused(self):
         with self.assertRaises(coverage.CoverageError):
-            coverage.plan_hydration([], "stocktwits", "comments", "s", 10)
+            coverage.plan_depth([], "stocktwits", "comments", "s", 10)
         with self.assertRaises(coverage.CoverageError):
-            coverage.plan_hydration([], "youtube_innertube", "captions", "s", 10)
+            coverage.plan_depth([], "youtube_innertube", "captions", "s", 10)
 
     def test_a_cap_that_is_not_a_positive_integer_is_refused(self):
         with self.assertRaises(coverage.CoverageError):
-            coverage.plan_hydration([], "youtube_innertube", "player", "s", 0)
+            coverage.plan_depth([], "youtube_innertube", "player", "s", 0)
 
 
 class ReviewManifestTest(unittest.TestCase):
@@ -289,18 +378,7 @@ class ReviewManifestTest(unittest.TestCase):
 
 class ReviewArtifactTest(unittest.TestCase):
     def artifact(self, steps=(), records=()):
-        return schema.AcquisitionArtifact(
-            artifact_id="a",
-            manifest_id="m",
-            mode="fused",
-            as_of="2026-08-17T19:00:00Z",
-            records=tuple(records),
-            steps=tuple(steps),
-            edges=(),
-            groups=(),
-            outcome="ok",
-            loss=(),
-        )
+        return artifact(steps=steps, records=records)
 
     def result(self, step_id, outcome="ok", loss=()):
         return schema.StepResult(
@@ -355,6 +433,108 @@ class ReviewArtifactTest(unittest.TestCase):
         )
 
         self.assertEqual(found, ())
+
+
+class DepthReviewTest(unittest.TestCase):
+    """Depth planned the paging way is depth, and neither review may deny it.
+
+    Both advisories were written when every depth operation was a hydration
+    step. A `next` or `transcript` step is a discovery step now, so a review
+    that still counts hydration steps and hydration records would call the
+    deepest manifest this module can build "no depth planned" — and a warning
+    that fires on the fix is worse than one that never fired.
+    """
+
+    def test_a_manifest_planning_paging_depth_draws_none(self):
+        planned = coverage.plan_depth(
+            [record("y1", "youtube_innertube", native_item_id="vid")],
+            "youtube_innertube",
+            "next",
+            "nx",
+            max_items=200,
+        )
+
+        found = coverage.review_manifest(
+            manifest(
+                step("yt", "discovery", "youtube_innertube", query="search:btc"),
+                *planned.steps
+            )
+        )
+
+        self.assertNotIn(coverage.DEPTH_NOT_PLANNED, codes(found))
+
+    def test_an_artifact_holding_it_draws_none(self):
+        """The comments a `next` step returned name the video they are under.
+
+        They can carry no `discovery_locator` — the core sets one only on a
+        hydration step's own calls — so what says they are depth is that this
+        artifact holds the item they name.
+        """
+
+        found = coverage.review_artifact(
+            artifact(
+                records=[
+                    record("y1", "youtube_innertube", native_item_id="vid"),
+                    record(
+                        "c1",
+                        "youtube_innertube",
+                        native_item_id="UgyyGmQ",
+                        native_parent_id="vid",
+                        locator="https://example.invalid/c1",
+                    ),
+                ]
+            )
+        )
+
+        self.assertNotIn(coverage.NOTHING_HYDRATED, codes(found))
+
+    def test_an_artifact_holding_a_transcript_of_what_it_found_draws_none(self):
+        """A transcript names no parent: it is the video, at another representation."""
+
+        found = coverage.review_artifact(
+            artifact(
+                records=[
+                    record("y1", "youtube_innertube", native_item_id="vid"),
+                    record(
+                        "t1",
+                        "youtube_innertube",
+                        native_item_id="vid",
+                        representation_kind="transcript",
+                    ),
+                ]
+            )
+        )
+
+        self.assertNotIn(coverage.NOTHING_HYDRATED, codes(found))
+
+    def test_an_artifact_that_only_searched_still_says_nothing_deepened_it(self):
+        """Silence has to be earned, or the two above prove only that it is easy."""
+
+        found = coverage.review_artifact(
+            artifact(
+                records=[
+                    record("y1", "youtube_innertube", native_item_id="vid"),
+                    record("y2", "youtube_innertube", native_item_id="vid2"),
+                ]
+            )
+        )
+
+        self.assertEqual(subjects(found, coverage.NOTHING_HYDRATED), ["youtube_innertube"])
+
+
+class SkillDocTest(unittest.TestCase):
+    def test_the_owner_names_the_call_a_caller_would_make(self):
+        """The seam a caller reaches is the one `SKILL.md` names, or neither is.
+
+        Read as a backticked name and not as a sentence: the fact this fails
+        against is that the owner sends a caller to a function this module no
+        longer has, which is the one way a rename ships half-done.
+        """
+
+        body = (Path(__file__).resolve().parent.parent / "SKILL.md").read_text(encoding="utf-8")
+
+        self.assertIn("`coverage.plan_depth(", body)
+        self.assertNotIn("plan_hydration", body)
 
 
 class NoIOTest(unittest.TestCase):
