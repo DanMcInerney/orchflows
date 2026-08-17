@@ -3,10 +3,10 @@
 Separate from ``tests/test_contracts.py``, which freezes the T0 contracts'
 shape and the description budget every skill respects: nothing moved out of
 that module. This one holds only the sink invariants — the path each
-contract states, the work-item Location invariant's four conjuncts, and
-``run.json``'s field list at its writer. Its second half holds the prose
-invariants: the amended two-channel law, the one prose owner of the sink
-path, and which ``.orch`` mentions may survive.
+contract states, the work-item Location invariant's one path and the
+resolver it names, and ``run.json``'s field list at its writer. Its second half holds the prose
+invariants: the root the amended sink law points at, the one prose owner of
+that path, and which ``.orch`` mentions may survive.
 
 Its third half is ``tools/validate.py``'s two remaining owned-literal
 checks and the cross-tier duplication check that replaced ``validate_sync``
@@ -57,16 +57,6 @@ SINK_PATHS = {
 # Enumerated, not counted: after the supersession no contract composes a
 # run-state path from the repository, so the allow-list is empty.
 ALLOWED_ORCH_REFERENCES = ()
-
-# The work-item Location invariant, conjunct by conjunct. The fourth is what
-# the supersession buys: before it, the invariant held only while the
-# repository existed, because the path was inside it.
-LOCATION_CONJUNCTS = (
-    "identical from the orchestrator",
-    "from every executor workspace",
-    "after any workspace is removed",
-    "after the repository is removed",
-)
 
 # Every field `run.json` carries, from the writer's own recorded shape
 # (`scripts/tickets.py`). Its docstring may name these and no others, so
@@ -131,13 +121,6 @@ class TestWorkItemLocationInvariant(unittest.TestCase):
         self.clause = paragraph("work-item.md", "Location:")
         self.assertTrue(self.clause, "work-item.md carries no Location paragraph")
 
-    def test_the_clause_carries_all_four_conjuncts(self):
-        for conjunct in LOCATION_CONJUNCTS:
-            self.assertIn(
-                conjunct, self.clause,
-                "the work-item Location invariant does not state {0!r}".format(conjunct),
-            )
-
     def test_the_clause_states_exactly_one_path(self):
         paths = [t for t in TOKEN.findall(self.clause) if t.endswith(".md")]
         self.assertEqual(
@@ -145,14 +128,21 @@ class TestWorkItemLocationInvariant(unittest.TestCase):
             "the Location clause must state exactly one ticket path",
         )
 
-    def test_the_one_path_survives_the_repository_it_was_cut_in(self):
-        """The fourth conjunct holds only of a root outside every clone.
+    def test_the_clause_names_the_resolver_rather_than_restating_the_root(self):
+        """Where the root sits is `rules/visibility.md` §6's fact and no
+        contract's -- `TestOneProseOwnerForThePath` is what holds that to
+        one owner. This contract's own fact is the sub-path above and the
+        resolver it hangs off, and both are backticked identifiers, so the
+        paragraph around them stays the contract's to reword.
 
-        So the clause has to say that, and has to name the owner that
-        resolves it rather than restating the rule.
+        The clause's vantage list -- the same path from the orchestrator,
+        from every executor workspace, after either is removed -- is that
+        one fact in prose. It is proved where it is enforced instead, in
+        tests/test_state_root.py: all three writers resolve to the one
+        sink, two workspaces of one project write one sink, and outside
+        any repository the sink still resolves.
         """
 
-        self.assertIn("outside every repository", self.clause)
         self.assertIn("`scripts/state_root.py`", self.clause)
 
 
@@ -205,20 +195,15 @@ PATH_OWNER = "rules/visibility.md"
 # What "states the path literally" means: either spelling of the root.
 LITERAL_ROOT_TOKENS = ("~/.orchflows/state", "ORCHFLOWS_STATE_HOME")
 
-# §6's load-bearing clauses, amended in place (spec binding constraint 1):
-# only the root they point at changed. The spec paraphrases the last as "a
-# write that cannot reach that root fails loudly"; §6's own words are pinned
-# instead, because asserting the paraphrase would mean rewriting the very
-# sentence the constraint preserves.
-TWO_CHANNEL_CLAUSES = (
-    "content is written with file tools inside the workspace",
-    "run state is written only through the installed scripts",
-    "There is no fallback",
-    "a run-state write that cannot reach that root",
-)
-
 # What §6 must now say about the root, so the law names the sink and not a
-# path inside some repository.
+# path inside some repository. This is the whole of §6 that is read here:
+# the two-channel law belongs to `TestVisibilityChannelLaw` in
+# tests/test_contracts.py, which pins both channels by their writers, and
+# §6's no-fallback rule is an enforcement claim proved by the enforcement
+# -- tests/test_state_root.py's
+# `test_run_state_reports_the_failure_and_writes_nothing_under_cwd`.
+# Restating either here gave one fact two owners and made every reword of
+# §6 a two-file change.
 SINK_ROOT_CLAUSES = ("user-scope state sink",) + LITERAL_ROOT_TOKENS
 
 # The two subdirectories a repository keeps, and nothing else (spec A15).
@@ -231,19 +216,18 @@ SINK_TERMS = ("tracker", "friction log", "run state")
 
 # The files outside this item's `write_scope` that name `.orch`
 # legitimately — the canary is a git-tracked golden fixture and `bin/` is an
-# installed script directory, neither of them state. Their `.orch` lines are
-# pinned as the bytes they carried at this item's `run_revision`. The third
-# was `skills/kernel/orch-mechanize/SKILL.md`, deleted at P3: the run-local
-# `.orch/bin/` landing zone is rules/token-economy.md §4's to state, and a
-# skill body no longer restates it.
-CANARY_AND_BIN_LINES = {
-    "compositions/drift-canary/00-run.md": (
-        "- {{canary_set}} — the frozen golden work items under `.orch/canary/`,",
-    ),
-    "skills/workflows/orch-fixture/SKILL.md": (
-        "line in the canary set's README. Freeze it into that set, `.orch/canary/`:",
-    ),
+# installed script directory, neither of them state. What is pinned is how
+# many times each names it and which path each names, never the sentence
+# doing the naming: a second mention appearing in either file is the
+# regression, and the sentence around the path is its file's to reword. The
+# third file was `skills/kernel/orch-mechanize/SKILL.md`, deleted at P3: the
+# run-local `.orch/bin/` landing zone is rules/token-economy.md §4's to
+# state, and a skill body no longer restates it.
+CANARY_AND_BIN_MENTIONS = {
+    "compositions/drift-canary/00-run.md": 1,
+    "skills/workflows/orch-fixture/SKILL.md": 1,
 }
+CANARY_PATH = "`.orch/canary/`"
 
 # The one file carrying the friction-law fallback: the instruction a blocked
 # agent follows when the logger cannot run. Stale, it loses evidence in
@@ -355,20 +339,15 @@ def numbered_section(relpath, number):
     return flat(tail if following is None else tail[: following.start() + 1]).strip()
 
 
-class TestTwoChannelLawAmended(unittest.TestCase):
-    """Spec binding constraint 1: §6 is amended in place, never replaced."""
+class TestTheLawNamesTheSinkRoot(unittest.TestCase):
+    """Spec binding constraint 1: §6 is amended in place, never replaced --
+    and the amendment is the root it points at, which is this module's
+    half of §6. The law's other halves have their own owners, named at
+    `SINK_ROOT_CLAUSES`."""
 
     def setUp(self):
         self.section = numbered_section(PATH_OWNER, 6)
         self.assertTrue(self.section, "rules/visibility.md states no §6")
-
-    def test_both_channels_and_the_no_fallback_clause_survive(self):
-        for clause in TWO_CHANNEL_CLAUSES:
-            with self.subTest(clause=clause):
-                self.assertIn(
-                    clause, self.section,
-                    "§6 no longer carries {0!r}".format(clause),
-                )
 
     def test_the_root_the_law_names_is_the_sink(self):
         for clause in SINK_ROOT_CLAUSES:
@@ -456,10 +435,16 @@ class TestSelfImproveSelectsByScopeAndProject(unittest.TestCase):
         self.assertIn("untrusted", block)
 
     def test_selection_is_by_project_field_and_cluster_scope(self):
+        """`project` is a record field, so the skill names it as one. That
+        it is a field rather than a location is the whole fact, and the
+        backticked name carries it: the sentence saying so as well -- that
+        selection is never by the repository the session stands in -- is
+        rules/visibility.md §6's clause restated, and pinning it here made
+        one fact answer to two files."""
+
         collapsed = flat(self.text)
         self.assertIn("`project` field", collapsed)
         self.assertIn("scope", collapsed)
-        self.assertIn("never by the repository the session stands in", collapsed)
 
     def test_both_records_are_written_through_the_installed_writer(self):
         for relpath, invocation in IMPROVEMENT_WRITER.items():
@@ -488,14 +473,16 @@ class TestFrictionFallbackNamesTheSink(unittest.TestCase):
 class TestOnlyCanaryAndBinMentionsSurvive(unittest.TestCase):
     """What may still say `.orch`: a golden fixture and an install target."""
 
-    def test_the_out_of_scope_files_carry_their_run_revision_lines(self):
-        for relpath, expected in CANARY_AND_BIN_LINES.items():
+    def test_the_out_of_scope_files_name_the_canary_path_and_nothing_else(self):
+        for relpath, expected in CANARY_AND_BIN_MENTIONS.items():
             with self.subTest(document=relpath):
-                found = tuple(
+                found = [
                     line for line in doc(relpath).splitlines()
                     if ORCH_MENTION.search(line)
-                )
-                self.assertEqual(expected, found)
+                ]
+                self.assertEqual(expected, len(found), found)
+                for line in found:
+                    self.assertIn(CANARY_PATH, line)
 
     def test_every_surviving_mention_names_canary_or_bin(self):
         stray = []
