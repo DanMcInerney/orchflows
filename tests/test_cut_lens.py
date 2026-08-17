@@ -68,6 +68,68 @@ def correspondence(lens, source):
     ]
 
 
+# The judgments the kept half owes beyond the correspondence above. `graph` is
+# the checker block a false edge is read from -- a block name, not a family
+# label, so naming it here cannot widen the correspondence.
+FALSE_EDGE = "false edge"
+COMPOUND_ITEM = "compound item"
+GRAPH_BLOCK = "graph"
+KEPT_JUDGMENTS = (FALSE_EDGE, COMPOUND_ITEM)
+ABSENT = "the kept half names no {} judgment"
+UNREAD = "the {} judgment names no `{}` block to read it from"
+
+
+def kept_judgments(kept):
+    """Each judgment the kept half states, by name, with its body joined.
+
+    A bullet runs to the first line that is neither its own nor a continuation
+    of it, so the copy recipe standing under its own heading below is never
+    read as one.
+    """
+
+    judgments = {}
+    name = None
+    for line in kept.splitlines():
+        if line.startswith("- "):
+            name, _, body = line[2:].partition(":")
+            name = name.strip()
+            judgments[name] = body.strip()
+        elif name and line.startswith("  ") and line.strip():
+            judgments[name] = "{} {}".format(judgments[name], line.strip())
+        else:
+            name = None
+    return judgments
+
+
+def missing_judgments(lens):
+    """Every judgment the kept half owes and does not state."""
+
+    division = lens_division(lens)
+    if division is None:
+        return [NO_DIVISION]
+    judgments = kept_judgments(division[1])
+    missing = [
+        ABSENT.format(name) for name in KEPT_JUDGMENTS if name not in judgments
+    ]
+    edge = judgments.get(FALSE_EDGE)
+    if edge is not None and "`{}`".format(GRAPH_BLOCK) not in edge:
+        missing.append(UNREAD.format(FALSE_EDGE, GRAPH_BLOCK))
+    return missing
+
+
+def without_judgment(lens, name):
+    """The lens with one kept judgment dropped -- bullet and continuations.
+
+    The wrong result each pin fails against drops the judgment, never only the
+    name it is anchored on: a lens still stating the judgment under a renamed
+    anchor would prove the search, not the fact.
+    """
+
+    return re.sub(
+        r"^- {}:.*\n(?:  \S.*\n)*".format(re.escape(name)), "", lens, flags=re.M
+    )
+
+
 class FamilyCorrespondenceTest(unittest.TestCase):
     def setUp(self):
         self.lens = LENS.read_text(encoding="utf-8")
@@ -128,6 +190,38 @@ class DelegationStatedTest(unittest.TestCase):
         source = CHECKER.read_text(encoding="utf-8")
         self.assertEqual(
             [NO_DIVISION], correspondence(self.lens.replace(DELEGATED, ""), source)
+        )
+
+
+class GraphJudgmentsTest(unittest.TestCase):
+    """The kept half names the judgments no checker report reaches.
+
+    The checker decides its families over fields each item states about
+    itself. An edge nothing justifies is not one of them -- it is read across
+    the set, from the checker's own `graph` block beside each item's oracles
+    and fixed inputs -- and neither is an item that is two atoms, which every
+    field it states is consistent with.
+    """
+
+    def setUp(self):
+        self.lens = LENS.read_text(encoding="utf-8")
+
+    def test_the_kept_half_names_the_false_edge_and_the_compound_item(self):
+        self.assertEqual([], missing_judgments(self.lens))
+
+    def test_a_judgment_the_lens_drops_is_reported(self):
+        for name in KEPT_JUDGMENTS:
+            with self.subTest(judgment=name):
+                dropped = without_judgment(self.lens, name)
+                self.assertNotEqual(self.lens, dropped, "nothing was dropped")
+                self.assertEqual([ABSENT.format(name)], missing_judgments(dropped))
+
+    def test_a_false_edge_with_no_block_behind_it_is_reported(self):
+        unread = without_judgment(self.lens, FALSE_EDGE).replace(
+            KEPT, "{}\n\n- {}: an edge nothing justifies.".format(KEPT, FALSE_EDGE)
+        )
+        self.assertEqual(
+            [UNREAD.format(FALSE_EDGE, GRAPH_BLOCK)], missing_judgments(unread)
         )
 
 

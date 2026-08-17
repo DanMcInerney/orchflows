@@ -496,6 +496,28 @@ class TestTemplateBudgets(_TemplateTree):
     every-dispatch and every-run units with word ceilings; a stub's fixed
     inputs are identities and never count."""
 
+    EXCLUDED_ACTIONS = (
+        "excluded_actions:\n  - adding a third-party dependency\n"
+        "  - editing a T0 contract\n"
+    )
+
+    def stub_at(self, words):
+        """One stub carrying excluded actions, its objective padded until
+        `tickets.instruction_words` reads exactly `words`.
+
+        Measured against the owner rather than recomputed here: what the
+        caller pins is that the compiler reaches the same number, which it
+        can only do by asking the owner.
+        """
+
+        def render(objective):
+            text = stub_md("repair", depends="[diagnose]")
+            text = text.replace("bound:", self.EXCLUDED_ACTIONS + "bound:")
+            return text.replace("one repaired tree at {{target}}.", objective)
+
+        spent = tickets.instruction_words(render("word")) - 1
+        return render(" ".join(["word"] * (words - spent)))
+
     def test_a_stub_whose_instruction_exceeds_the_budget_is_one_error(self):
         fat = "- " + " ".join(["criterion"] * 320) + " | oracle: x | oracle_class: deterministic\n"
         stubs = dict(GOOD_STUBS)
@@ -503,7 +525,21 @@ class TestTemplateBudgets(_TemplateTree):
         self.write_template("demo", stubs=stubs)
         error = self.assert_one_error("repair.md")
         self.assertIn("stub instruction has", error)
-        self.assertIn(f"budget of {validate.STUB_INSTRUCTION_BUDGET}", error)
+        self.assertIn(f"budget of {tickets.INSTRUCTION_BUDGET}", error)
+
+    def test_the_compiler_puts_the_boundary_where_the_ticket_owner_puts_it(self):
+        """A stub is a ticket before it is issued, and rules/token-economy.md
+        §11 is one ceiling: the compiler grading the template and the script
+        refusing the issued ticket have to put the boundary in the same
+        place. This compiler kept a counter of its own, and that one charged
+        an excluded action a word for its list marker -- so a stub the sink
+        accepts at the ceiling was two words over here."""
+
+        stubs = dict(GOOD_STUBS)
+        stubs["repair"] = self.stub_at(tickets.INSTRUCTION_BUDGET)
+        self.write_template("demo", stubs=stubs)
+        result, errors = self.diagnostics()
+        self.assertEqual([], errors, result.stdout)
 
     def test_fixed_inputs_do_not_count_toward_the_stub_budget(self):
         stubs = dict(GOOD_STUBS)

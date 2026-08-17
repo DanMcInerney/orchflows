@@ -37,7 +37,11 @@ vantage error, not a verdict.
 Classify by blame per the
 [work-item contract](../../../contracts/work-item.md#dispatch) and
 record the class through `tickets.py run-state --note`. The join alone
-writes terminal status (`tickets.py set-status`).
+writes terminal status (`tickets.py set-status`). At a critique join,
+an accepted defect set of `[]` across every critique the
+`<root>.gate.repair` depends on completes that repair here — empty
+disposition filed through `tickets.py result`, then
+`set-status complete` — with no dispatch.
 
 Never: trust out-of-scope output; re-run a covered oracle; repair the
 result yourself.

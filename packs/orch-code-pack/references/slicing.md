@@ -1,8 +1,9 @@
-# Code slicing: tracer-bullet tickets
+# Code slicing: acceptance-first tickets
 
-Cut the spec into tracer tickets: each crosses the system end to end
-at one thin point, proving the seams early, then widens; the first
-frontier carries the riskiest seam's tracer.
+Every seam the spec's acceptance already checks is its own item on the
+first frontier. Cut a tracer — one thin end-to-end crossing, taken
+first and widened after — only for the riskiest seam the spec leaves
+unproven.
 
 - Each ticket: one observable behavior, provable by runnable checks from
   the spec's acceptance; dependency edges only where one ticket's seam

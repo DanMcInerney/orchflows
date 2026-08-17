@@ -37,20 +37,55 @@ def reported(result, family=cutcheck.FAMILY):
 
 
 def report(result):
-    """The report split where its own two summary lines split it.
+    """The report split where its own summary lines split it.
 
     Findings outside the advisory set first, then the advisory findings under
-    the heading, then whether the affirmative line closed the report.
+    the heading, then whether the affirmative line closed the report. The shape
+    reading is split off and returned by none of the three: it is a reading of
+    the cut and not a finding of it, so a caller counting findings must never
+    have to subtract it.
     """
 
     lines = result.stdout.splitlines()
     affirmed = bool(lines) and lines[-1] == cutcheck.NO_FINDING_OUTSIDE
     if affirmed:
         lines = lines[:-1]
+    if cutcheck.GRAPH_HEADING in lines:
+        lines = lines[:lines.index(cutcheck.GRAPH_HEADING)]
     if cutcheck.ADVISORY_HEADING in lines:
         cut = lines.index(cutcheck.ADVISORY_HEADING)
         return lines[:cut], lines[cut + 1:], affirmed
     return lines, [], affirmed
+
+
+def graph_block(result):
+    """The shape reading's own lines, under its own heading.
+
+    The half `report` drops. Nothing but the affirmative line follows the
+    block, so the block is what stands between its heading and that line.
+    """
+
+    lines = result.stdout.splitlines()
+    if cutcheck.GRAPH_HEADING not in lines:
+        return []
+    block = lines[lines.index(cutcheck.GRAPH_HEADING) + 1:]
+    if block and block[-1] == cutcheck.NO_FINDING_OUTSIDE:
+        block = block[:-1]
+    return block
+
+
+def finding_lines(result):
+    """Every finding line the report holds, and nothing else.
+
+    Both blocks, neither summary line, and never the shape reading. A caller
+    asking what was found about an item is asking about findings, and the
+    chain the shape names carries ticket ids -- a reading of those items, not
+    a finding against them, and a filter that took it for one would convict a
+    clean set of whatever its longest chain happened to run through.
+    """
+
+    violations, advisories, _ = report(result)
+    return violations + advisories
 
 
 def fixture_criteria(run, name):
@@ -81,8 +116,12 @@ class AffirmativeSummaryTest(unittest.TestCase):
         self.assertEqual(
             self.spawned.returncode, 0, self.spawned.stdout + self.spawned.stderr
         )
+        # Nothing found, and the line saying so is the report's last: the
+        # shape reading stands above it and is a reading of this set, never a
+        # finding against it.
+        self.assertEqual(finding_lines(self.spawned), [], self.spawned.stdout)
         self.assertEqual(
-            self.spawned.stdout.splitlines(), [cutcheck.NO_FINDING_OUTSIDE]
+            self.spawned.stdout.splitlines()[-1], cutcheck.NO_FINDING_OUTSIDE
         )
 
     def test_the_in_process_grading_reads_the_same_as_the_spawned_one(self):
@@ -133,7 +172,11 @@ class AdvisoryMarkingTest(unittest.TestCase):
     def test_neither_summary_line_can_be_read_as_a_finding(self):
         markers = sorted(cutcheck.FAMILY_OF) + sorted(set(cutcheck.FAMILY_OF.values()))
         markers += ["criterion ", "scripts/cutcheck.py"]
-        for line in (cutcheck.ADVISORY_HEADING, cutcheck.NO_FINDING_OUTSIDE):
+        for line in (
+            cutcheck.ADVISORY_HEADING,
+            cutcheck.GRAPH_HEADING,
+            cutcheck.NO_FINDING_OUTSIDE,
+        ):
             for marker in markers:
                 self.assertNotIn(marker, line)
 
@@ -148,6 +191,89 @@ class AdvisoryExitZeroTest(unittest.TestCase):
         self.assertEqual(violations, [], result.stdout)
         self.assertTrue(advisories, result.stdout)
         self.assertTrue(affirmed, result.stdout)
+
+
+class GraphReadingTest(unittest.TestCase):
+    """The cut's shape is read from the issued set, and it decides nothing.
+
+    The fixture is five items in the one arrangement that separates the two
+    readings from each other: three items depending on nothing, one behind one
+    of those, and one behind that one and a second first-level item. Depth and
+    breadth disagree there -- the chain is three long where the widest level
+    holds three -- so a reading that counted levels as a chain, or took the
+    longest chain to be the item count, is wrong by a different number in each
+    line rather than right by coincidence.
+
+    The set is otherwise clean, which is what makes the second node an
+    assertion rather than a hope: the graph classes lie outside the advisory
+    set, so were they findings at all they would be findings outside it, and
+    this set would exit 1 with two violations instead of 0 with none.
+    """
+
+    RUN = "cutcheck-graph"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.result = run_cutcheck(cls.RUN)
+
+    def _detail(self, klass):
+        prefix = "{}: {}: {}: ".format(self.RUN, cutcheck.GRAPH, klass)
+        found = [
+            line[len(prefix):]
+            for line in graph_block(self.result)
+            if line.startswith(prefix)
+        ]
+        self.assertEqual(len(found), 1, self.result.stdout)
+        return found[0]
+
+    def test_the_critical_path_and_level_widths_are_reported(self):
+        self.assertEqual(
+            self._detail(cutcheck.CRITICAL_PATH),
+            "3: 01-alpha > 04-delta > 05-epsilon",
+            self.result.stdout,
+        )
+        self.assertEqual(
+            self._detail(cutcheck.LEVEL_WIDTH), "3 1 1", self.result.stdout
+        )
+
+    def test_the_graph_block_stands_outside_the_advisory_set_and_the_exit_status(self):
+        violations, advisories, affirmed = report(self.result)
+        self.assertTrue(graph_block(self.result), self.result.stdout)
+        self.assertEqual(self.result.returncode, cutcheck.CLEAN, self.result.stdout)
+        self.assertEqual(violations, [], self.result.stdout)
+        self.assertEqual(advisories, [], self.result.stdout)
+        self.assertTrue(affirmed, self.result.stdout)
+        for klass in sorted(cutcheck.GRAPH_CLASSES):
+            self.assertEqual(cutcheck.FAMILY_OF[klass], cutcheck.GRAPH)
+            self.assertNotIn(klass, cutcheck.ADVISORY)
+
+    def _details(self, run, siblings):
+        return {
+            klass: detail
+            for _, _, klass, detail in cutcheck._graph_reading(run, siblings)
+        }
+
+    def test_a_cycle_is_named_in_the_reading_rather_than_raised(self):
+        """A set no ordering exists for is still read, and says which part is not.
+
+        Asked of the reading directly rather than through a fixture: a cyclic
+        set is one `tickets.py` never issues, so pinning one as a fixture would
+        pin a corpus the tool cannot meet, and re-record its verdict beside the
+        real ones. What has to hold is that the levelling terminates on a graph
+        with no order, reports the part that does have one, and names the rest
+        -- three claims about this function and none about the report's shape.
+        """
+
+        details = self._details("cycled", {
+            "01-a": {"id": "01-a", "depends_on": []},
+            "02-b": {"id": "02-b", "depends_on": ["03-c"]},
+            "03-c": {"id": "03-c", "depends_on": ["02-b"]},
+        })
+        self.assertEqual(details[cutcheck.CRITICAL_PATH], "1: 01-a; cycle: 02-b, 03-c")
+        self.assertEqual(details[cutcheck.LEVEL_WIDTH], "1")
+
+    def test_a_set_with_no_issued_item_has_no_shape_to_read(self):
+        self.assertEqual(cutcheck._graph_reading("empty", {}), [])
 
 
 EXIT_ENTRY_RE = re.compile(r"^ {2}(\d+) {2}(\S.*)$")
@@ -392,7 +518,7 @@ class PathRealityTest(unittest.TestCase):
             self.assertIn(cutcheck.FAMILY_2, line)
 
     def test_exactly_three_violations_one_per_case(self):
-        self.assertEqual(len(self.result.stdout.splitlines()), 3, self.result.stdout)
+        self.assertEqual(len(finding_lines(self.result)), 3, self.result.stdout)
         self.assertEqual(len(self.lines), 3, self.result.stdout)
 
     def test_each_path_class_is_reported_once(self):
@@ -418,18 +544,21 @@ class CarveOutTest(unittest.TestCase):
 
     def test_the_set_is_reported_clean(self):
         self.assertEqual(self.result.returncode, 0, self.result.stdout + self.result.stderr)
-        # The whole report, not a line of it: nothing was found here but the
-        # affirmative line that says so.
-        self.assertEqual(self.result.stdout.splitlines(), [cutcheck.NO_FINDING_OUTSIDE])
+        # Every finding line, not a line of it: nothing was found here, and
+        # the affirmative line closes the report the shape reading precedes.
+        self.assertEqual(finding_lines(self.result), [], self.result.stdout)
+        self.assertEqual(
+            self.result.stdout.splitlines()[-1], cutcheck.NO_FINDING_OUTSIDE
+        )
 
     def test_a_path_the_item_only_reads_is_no_scope_defect(self):
-        self.assertNotIn("01-reads-only", self.result.stdout)
+        self.assertNotIn("01-reads-only", "\n".join(finding_lines(self.result)))
 
     def test_a_path_a_depends_on_ancestor_makes_is_present(self):
-        self.assertNotIn("02-depends", self.result.stdout)
+        self.assertNotIn("02-depends", "\n".join(finding_lines(self.result)))
 
     def test_a_quote_resolves_at_the_baseline_not_the_workspace(self):
-        self.assertNotIn("03-baseline-quote", self.result.stdout)
+        self.assertNotIn("03-baseline-quote", "\n".join(finding_lines(self.result)))
 
 
 class ScopeClosureTest(unittest.TestCase):
@@ -705,7 +834,7 @@ class ExecutorLegalityTest(unittest.TestCase):
         self.assertIn("orch-code-pack", lines[0])
 
     def test_the_packs_own_executor_cell_is_not_reported(self):
-        self.assertNotIn("02-legal", self.result.stdout)
+        self.assertNotIn("02-legal", "\n".join(finding_lines(self.result)))
 
     def test_the_surviving_engines_are_lawful_executors(self):
         """P4-3 deleted the engine prohibition with the two engines it named.
@@ -996,7 +1125,7 @@ class ShellHeadTest(unittest.TestCase):
             self.assertFalse(mark.exists(), "{}\n{}".format(mark, findings))
 
     def test_the_span_is_reported_rather_than_run(self):
-        lines = [line for line in self.result.stdout.splitlines() if "01-shellhead" in line]
+        lines = [line for line in finding_lines(self.result) if "01-shellhead" in line]
         self.assertEqual(len(lines), 1, self.result.stdout)
         self.assertIn(cutcheck.EXTRACTION_GAP, lines[0])
 
@@ -1017,7 +1146,7 @@ class EvalHeadTest(unittest.TestCase):
             self.assertFalse(mark.exists(), "{}\n{}".format(mark, findings))
 
     def test_the_span_is_reported_rather_than_run(self):
-        lines = [line for line in self.result.stdout.splitlines() if "01-evalhead" in line]
+        lines = [line for line in finding_lines(self.result) if "01-evalhead" in line]
         self.assertEqual(len(lines), 1, self.result.stdout)
         self.assertIn(cutcheck.EXTRACTION_GAP, lines[0])
 
@@ -1119,7 +1248,7 @@ class GitEscapeTest(unittest.TestCase):
 
     def test_the_span_is_reported_rather_than_run(self):
         lines = [
-            line for line in self.result.stdout.splitlines() if "01-gitescape" in line
+            line for line in finding_lines(self.result) if "01-gitescape" in line
         ]
         self.assertEqual(len(lines), 2, self.result.stdout)
         for line in lines:
@@ -1952,7 +2081,7 @@ class VerdictInOutputTest(unittest.TestCase):
     def setUp(self):
         self.result = run_cutcheck("cutcheck-verdict-in-output")
         self.lines = [
-            line for line in self.result.stdout.splitlines() if "01-verdict" in line
+            line for line in finding_lines(self.result) if "01-verdict" in line
         ]
 
     def test_the_text_count_is_reported_for_what_it_prints(self):

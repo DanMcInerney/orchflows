@@ -386,6 +386,206 @@ class AmendTest(unittest.TestCase):
             self.assertIn("T9", payload["error"])
 
 
+# A ticket whose instruction is padded to an exact word count. Every part
+# the counter reads is a slot here, so this module can spend the budget with
+# `str.split` -- its own arithmetic, not the owner's -- and the two have to
+# agree on the number the refusal states.
+CEILING_EXCLUDED = ("adding a third-party dependency", "editing a T0 contract")
+CEILING_RETURNS = "status; result; verification."
+CEILING_TICKET = """---
+id: {ticket_id}
+run: testrun
+status: ready
+executor: {executor}
+depends_on: []
+write_scope: [scratch/t1.txt]
+excluded_actions:
+  - {excluded_one}
+  - {excluded_two}
+bound: 30m
+claimed_by:
+claimed_at:
+---
+
+## Objective
+
+{objective}
+
+## Fixed inputs
+
+{inputs}
+
+## Completion test
+
+- {criterion}
+
+## Return fields
+
+{returns}
+
+## Result
+
+## Verification
+
+## Feedback
+
+[]
+
+## Risks
+
+[]
+"""
+
+
+def ceiling_ticket(total, inputs="None.", executor="orch-tdd", ticket_id="T1"):
+    """One ticket whose instruction is exactly ``total`` words.
+
+    The objective takes whatever the excluded actions, the criterion and the
+    return fields have not already spent; `## Fixed inputs` is free of the
+    count by law, so a caller pads it to prove exactly that.
+    """
+
+    spent = sum(
+        len(part.split())
+        for part in (*CEILING_EXCLUDED, "- " + GOOD_CRITERION, CEILING_RETURNS)
+    )
+    return CEILING_TICKET.format(
+        ticket_id=ticket_id,
+        executor=executor,
+        excluded_one=CEILING_EXCLUDED[0],
+        excluded_two=CEILING_EXCLUDED[1],
+        objective=" ".join(["word"] * (total - spent)),
+        inputs=inputs,
+        criterion=GOOD_CRITERION,
+        returns=CEILING_RETURNS,
+    )
+
+
+class InstructionCeilingTest(unittest.TestCase):
+    """rules/token-economy.md §11: a unit ticket's instruction -- its
+    objective, completion test, excluded actions and return fields, never
+    its fixed inputs -- is 300 words, and the two subcommands that write
+    cut-time content refuse one over it before it lands.
+
+    The ceiling was enforced only on `compositions/*/` stubs, where no
+    dispatched ticket ever comes from: every wide ad-hoc set in the sink ran
+    at a median instruction of 500-800 words, objectives enumerating (1)...(5)
+    -- two atoms issued as one. The refusal is where the cutter still holds
+    the flag that was wrong.
+    """
+
+    def place(self, tmp: Path, text: str, ticket_id: str = "T1"):
+        """`new --file` for one already-written ticket; the sink is the
+        test's own."""
+
+        sink = use_sink(tmp)
+        source = tmp / f"{ticket_id}.md"
+        source.write_text(text, encoding="utf-8")
+        payload = run_cmd("new", "testrun", "--file", str(source))
+        return payload, sink / "tickets" / "testrun" / f"{ticket_id}.md"
+
+    def assert_names_the_ceiling(self, error, count):
+        for expected in (str(count), str(tickets_mod.INSTRUCTION_BUDGET),
+                         "rules/token-economy.md", "two items"):
+            with self.subTest(expected):
+                self.assertIn(expected, error)
+
+    def test_new_refuses_an_instruction_over_the_ceiling(self):
+        over = tickets_mod.INSTRUCTION_BUDGET + 1
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            payload, path = self.place(tmp, ceiling_ticket(over))
+            self.assertIn("error", payload)
+            self.assert_names_the_ceiling(payload["error"], over)
+            self.assertFalse(path.exists(), "a refused cut wrote")
+            # The flag form renders its own text and lands in the same
+            # grade, so a cutter cannot spell its way past the ceiling.
+            flagged = run_cmd(
+                "new", "testrun", "T2", "--executor", "orch-tdd",
+                "--objective", " ".join(["word"] * (over + 20)),
+                "--criterion", GOOD_CRITERION,
+            )
+            self.assertIn("error", flagged)
+            self.assert_names_the_ceiling(
+                flagged["error"], tickets_mod.INSTRUCTION_BUDGET
+            )
+            self.assertFalse(
+                (path.parent / "T2.md").exists(), "a refused cut wrote"
+            )
+
+    def test_new_issues_an_instruction_at_the_ceiling(self):
+        at = tickets_mod.INSTRUCTION_BUDGET
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            # The fixed inputs are identities, not instruction: four hundred
+            # words of them do not move the count.
+            payload, path = self.place(
+                tmp,
+                ceiling_ticket(at, inputs="- " + " ".join(["identity"] * 400)),
+            )
+            self.assertNotIn("error", payload)
+            self.assertTrue(path.is_file())
+            self.assertEqual(
+                at, tickets_mod.instruction_words(path.read_text(encoding="utf-8"))
+            )
+
+    def test_amend_refuses_an_instruction_over_the_ceiling(self):
+        """`amend` is the one write path around the refusals `new` applies
+        to the same bytes; a cutter could otherwise widen a ticket past the
+        ceiling one section at a time."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            payload, path = self.place(
+                tmp, ceiling_ticket(tickets_mod.INSTRUCTION_BUDGET)
+            )
+            self.assertNotIn("error", payload)
+            before = path.read_text(encoding="utf-8")
+            refused = run_cmd(
+                "amend", "testrun", "T1", "--section", "Objective",
+                "--text", " ".join(["word"] * tickets_mod.INSTRUCTION_BUDGET),
+            )
+            self.assertIn("error", refused)
+            self.assert_names_the_ceiling(
+                refused["error"], tickets_mod.INSTRUCTION_BUDGET
+            )
+            self.assertEqual(before, path.read_text(encoding="utf-8"))
+            # The section that is never instruction stays amendable at any
+            # length, and a repair that brings the ticket down lands.
+            for section, body in (
+                ("Fixed inputs", "- " + " ".join(["identity"] * 400)),
+                ("Objective", "cut the run"),
+            ):
+                with self.subTest(section):
+                    self.assertNotIn("error", run_cmd(
+                        "amend", "testrun", "T1", "--section", section,
+                        "--text", body,
+                    ))
+
+    def test_a_root_ticket_is_exempt(self):
+        """A root states a whole run, and the `.gate.` stubs `gate` renders
+        carry that root's `## Completion test` verbatim. Neither is a unit
+        packet, and holding them to the unit ceiling would refuse what this
+        script itself writes."""
+
+        over = tickets_mod.INSTRUCTION_BUDGET + 100
+        exempt = (
+            ("00-root", tickets_mod.ROOT_EXECUTOR),
+            ("00-root.gate.critique.code", "orch-critique"),
+            ("00-root.gate.verify", "orch-verify"),
+        )
+        for ticket_id, executor in exempt:
+            with self.subTest(ticket_id), tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                payload, path = self.place(
+                    tmp,
+                    ceiling_ticket(over, executor=executor, ticket_id=ticket_id),
+                    ticket_id=ticket_id,
+                )
+                self.assertNotIn("error", payload)
+                self.assertTrue(path.is_file())
+
+
 class CriterionNestingTest(unittest.TestCase):
     """Indentation, in the one owner of criterion parsing.
 
@@ -1345,7 +1545,13 @@ class RefusalTextTest(unittest.TestCase):
                 ),
             )
             directory = make_template(tmp, three_stubs())
+            fat = tmp / "F1.md"
+            fat.write_text(
+                ceiling_ticket(tickets_mod.INSTRUCTION_BUDGET + 1, ticket_id="F1"),
+                encoding="utf-8",
+            )
             return [
+                run_cmd("new", "testrun", "--file", str(fat)),
                 run_cmd("new", "testrun", "T1", "--executor", "orch-verify",
                         "--objective", "o", "--criterion", "x"),
                 run_cmd("new", "testrun", "T1", "--executor", "orch-verify",

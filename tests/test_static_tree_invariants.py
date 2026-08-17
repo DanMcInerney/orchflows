@@ -29,6 +29,22 @@ DESIGN_SLICING = ROOT / "packs" / "orch-design-pack" / "references" / "slicing.m
 # The rule by its anchors, never by its sentence: the field the rule scopes,
 # as the owner's prose spells it, and the ordering term that scopes it.
 OVERLAP_ANCHORS = ("write scope", "dependency-ordered")
+# What a cut optimizes, by the three terms orch-decompose spells: the quantity
+# the Goal minimizes, the per-item constraint it minimizes under, and the
+# cutcheck block whose numbers the Return reports it against.
+# The constraint anchor carries the two words before the term because the body
+# names the atom twice -- in the Goal and in the pointer to its test -- so the
+# bare term survives deleting the constraint clause and pins nothing.
+CUT_GOAL_ANCHORS = ("critical path", "item an atom", "graph")
+INTEGRATE = ROOT / "skills" / "kernel" / "orch-integrate" / "SKILL.md"
+# The empty-set skip by its anchors: the gate item the join completes itself,
+# spelled as the owner spells it, and the set whose emptiness is the trigger.
+EMPTY_SET_SKIP_ANCHORS = ("gate.repair", "accepted defect set")
+# The one fact both cells state, by the only two words literal in both: the
+# frontier the proven work opens, and the state that earns the exception.
+# tools/validate.py's cross-pack cell linter forbids the shared sentence, so
+# the cells word the rest apart on purpose and there is nothing else to pin.
+PROVEN_SEAM_ANCHORS = ("first frontier", "unproven")
 
 COMPOSITIONS = ROOT / "compositions"
 EVAL_DESIGN = ROOT / "skills" / "workflows" / "orch-eval-design" / "SKILL.md"
@@ -328,14 +344,76 @@ class TestDependencyOrderedOverlap(unittest.TestCase):
                 "different frontiers can be concurrently in flight and collide",
             )
 
-    def test_the_code_cut_puts_the_riskiest_seam_first(self):
+    def test_the_code_cut_reserves_the_tracer_for_the_unproven_seam(self):
         text = read_flat(CODE_SLICING)
         for anchor in ("first frontier", "riskiest", "tracer"):
             self.assertIn(
                 anchor, text,
-                f"code pack slicing does not name {anchor!r}, so it does not "
-                "put the riskiest seam's tracer in the first frontier",
+                f"code pack slicing does not name {anchor!r}, so it no longer "
+                "opens the first frontier with the seams the acceptance "
+                "already checks and reserves the tracer for the riskiest "
+                "seam the spec leaves unproven",
             )
+
+
+class TestCutGoalAnchors(unittest.TestCase):
+    """Three facts about what a cut is for, each landed in a prose owner and
+    each read here by that owner's own anchors rather than by the sentence
+    carrying them: the decomposer states what a cut optimizes, the join
+    completes an empty repair instead of dispatching a no-op, and both slicing
+    cells open the first frontier with what the acceptance already proves.
+
+    Nothing else in the tree reads these clauses, so before this class any of
+    the three could be reworded away silently. The pin is an anchor and not a
+    sentence for the reason craft.md (Shape) gives, which is load-bearing
+    here: the two kernel bodies sit two and seven words inside the 300-word
+    ceiling and get recompressed to pay for the next clause, and the
+    cross-pack cell linter forbids the two slicing cells from stating their
+    shared fact in one shared sentence -- so the slicing pin is the two words
+    literal in both, asserted per cell.
+
+    Each anchor is also load-bearing rather than incidental: deleting the
+    clause that carries it from a copy of its owner reds this class. An
+    anchor that survived that deletion would only prove the grep.
+    """
+
+    def test_the_decomposer_states_the_goal_by_anchor(self):
+        text = read_flat(DECOMPOSE)
+        for anchor in CUT_GOAL_ANCHORS:
+            self.assertIn(
+                anchor, text,
+                f"orch-decompose does not name {anchor!r}, so the cut is no "
+                "longer told to minimize the critical path subject to every "
+                "item an atom, or no longer returns the graph block whose "
+                "numbers that goal is measured by",
+            )
+
+    def test_the_join_skips_the_repair_on_an_empty_accepted_set(self):
+        text = read_flat(INTEGRATE)
+        for anchor in EMPTY_SET_SKIP_ANCHORS:
+            self.assertIn(
+                anchor, text,
+                f"orch-integrate does not name {anchor!r}, so the join no "
+                "longer completes the gate's repair itself on an empty "
+                "accepted defect set and every clean run pays for a no-op "
+                "dispatch on its critical path",
+            )
+
+    def test_the_slicing_cells_put_proven_seams_on_the_first_frontier(self):
+        for label, path in (
+            ("code pack slicing", CODE_SLICING),
+            ("design pack slicing", DESIGN_SLICING),
+        ):
+            text = read_flat(path)
+            for anchor in PROVEN_SEAM_ANCHORS:
+                with self.subTest(cell=label, anchor=anchor):
+                    self.assertIn(
+                        anchor, text,
+                        f"{label} does not name {anchor!r}, so it no longer "
+                        "opens the first frontier with the work the "
+                        "acceptance already proves and reserves the tracer "
+                        "for what the spec leaves unproven",
+                    )
 
 
 class TestCompositionLinks(unittest.TestCase):
