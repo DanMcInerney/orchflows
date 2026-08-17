@@ -182,10 +182,11 @@ Completion and succession are that vocabulary's `root ticket` entry, and
 discovered scope is a ticket that `depends_on` the run's gate.
 
 A root's cut is checked (rules/verification.md §10) before its first
-unit is promoted: one fresh reader over the issued subtree, correcting
-it through `tickets.py amend` and `new` rather than in the run's
-workspace, which the units write; `checked_by` on a root records that
-cut checker.
+unit is promoted: `scripts/cutcheck.py` over the issued subtree always,
+and one fresh reader as well where that subtree holds three or more
+`<id>.NN` or that run reported an advisory — correcting it through
+`tickets.py amend` and `new` rather than in the run's workspace, which
+the units write; `checked_by` on a root records that cut checker.
 
 ## Template and stub
 

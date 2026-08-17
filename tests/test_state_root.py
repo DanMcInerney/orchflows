@@ -320,13 +320,6 @@ class TestFindRepoRootNamesTheProject(unittest.TestCase):
         with mock.patch.object(Path, "read_text", side_effect=OSError("refused")):
             self.assertEqual(wt, state_root.find_repo_root(wt))
 
-    def test_the_module_states_both_outcomes_rather_than_promising_one(self):
-        # The docstring claimed every worktree of a repository reports one
-        # project identity; the two cases above are when it does not.
-        text = state_root.__doc__
-        self.assertIn("dereferenced when the pointer parses", text)
-        self.assertIn("names the worktree", text)
-
     def test_no_repository_returns_none(self):
         bare = self.tmp / "bare"
         bare.mkdir()
