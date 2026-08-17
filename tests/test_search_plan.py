@@ -366,22 +366,22 @@ def normalized(text: str) -> str:
     return " ".join(text.lower().split())
 
 
+# The two restart controls no script can observe, each pinned by the term the
+# contract carries it under rather than by the sentence spelling it
+# (`packs/orch-code-pack/references/craft.md`): `in_flight` is the field a
+# restart reconciles, `redispatch` the verb it forbids. The other two controls
+# the contract states are module behaviour and are pinned there instead --
+# the archive survives in the emitted projection, and a `pending` response
+# carries no plan.
+RESTART_ANCHORS = (
+    ("in-flight-order", "`in_flight`"),
+    ("duplicate-restart-dispatch", "redispatch"),
+)
+
+
 def worklog_restart_errors(generation: str):
     contract = normalized(generation)
-    errors = []
-    if (
-        "latest worklog entry persists the accepted response's complete projection, "
-        "including every archive member"
-        not in contract
-    ):
-        errors.append("archive-persistence")
-    if "`in_flight` in the same worklog entry before delegation" not in contract:
-        errors.append("in-flight-order")
-    if "a `pending` response launches nothing" not in contract:
-        errors.append("pending-replan")
-    if "never redispatch a live slot" not in contract:
-        errors.append("duplicate-restart-dispatch")
-    return errors
+    return [name for name, anchor in RESTART_ANCHORS if anchor not in contract]
 
 
 def plan_shape(response):
@@ -395,25 +395,40 @@ def plan_shape(response):
     ]
 
 
+def excluded_actions(text: str):
+    """Every `excluded_actions` entry of every stub in one template text,
+    lowercased. A clause's owner is the field it sits in, so what a check
+    asserts is membership of that field."""
+    return [
+        line.strip()[2:].strip().lower()
+        for block in re.findall(
+            r"^excluded_actions:\n((?:  - .*\n)+)", text, re.MULTILINE
+        )
+        for line in block.splitlines()
+    ]
+
+
+# The two authority controls, by the terms the generation contract carries
+# them under: a revision outside `mutation authority`, a self-target candidate
+# that stays `non-control`. Activation is a clause of each campaign template's
+# `excluded_actions` field, so the check reads the field.
+RECURSION_ANCHORS = (
+    ("active-revision-authority", "mutation authority"),
+    ("self-target-control", "non-control"),
+)
+ACTIVATION_ANCHOR = "activat"
+
+
 def recursive_target_errors(evolve: str, generation: str, tournament: str):
-    evolve_contract = normalized(evolve)
     generation_contract = normalized(generation)
-    tournament_contract = normalized(tournament)
-    errors = []
-    if (
-        "active controller and planner revisions remain outside candidate mutation authority"
-        not in generation_contract
-    ):
-        errors.append("active-revision-authority")
-    if (
-        "a self-target candidate remains non-control and cannot become the active campaign "
-        "controller or planner"
-        not in generation_contract
-    ):
-        errors.append("self-target-control")
-    if (
-        "activate a selected candidate" not in evolve_contract
-        or "separate authorized integration before activation" not in tournament_contract
+    errors = [
+        name for name, anchor in RECURSION_ANCHORS if anchor not in generation_contract
+    ]
+    # Each template excludes it on its own; one carrying the clause never
+    # excuses the other.
+    if not all(
+        any(ACTIVATION_ANCHOR in action for action in excluded_actions(text))
+        for text in (evolve, tournament)
     ):
         errors.append("activation")
     return errors
@@ -736,12 +751,21 @@ class TestCanonicalAdvance(unittest.TestCase):
         self.assertLessEqual(len(result.stderr), 512)
 
     def test_public_request_identity_and_decimal_caps_are_exact(self):
-        protocol = read(SEARCH_PROTOCOL)
-        self.assertIn("1,000,000 UTF-8 bytes", protocol)
-        self.assertIn("256 Unicode code points", protocol)
-        self.assertIn("128 characters", protocol)
-
         module = load_search_module()
+        # The protocol states the three caps the module enforces, and the
+        # numbers are read off the module rather than repeated here: a cap
+        # changed in one place and not the other is what this half catches.
+        protocol = normalized(read(SEARCH_PROTOCOL))
+        for cap in (
+            module.MAX_INPUT_BYTES,
+            module.MAX_IDENTITY_CHARS,
+            module.MAX_DECIMAL_CHARS,
+        ):
+            self.assertIn(f"at most {cap:,}", protocol)
+            # The number is the claim: a protocol stating a neighbouring cap
+            # would satisfy a check that only looked for a digit run.
+            self.assertNotIn(f"at most {cap + 1:,}", protocol)
+
         at_request_cap = b"0" + b" " * (module.MAX_INPUT_BYTES - 1)
         self.assertEqual(0, module._load_request(at_request_cap))
         with self.assertRaises(module.ProtocolError):
@@ -1310,30 +1334,20 @@ class TestBoundedResume(unittest.TestCase):
         self.assertEqual([0], produced_slots)
 
     def test_worklog_launch_and_restart_contract_has_failure_controls(self):
+        """The restart controls a script can observe are pinned as behaviour:
+        `test_partial_settlement_keeps_projection_and_complete_archive` is
+        archive-persistence, and the `plan is None` it asserts beside the
+        `pending` status is what "launches nothing" means to a caller. The
+        two left here are the controller's own -- no script sees a live slot
+        -- so each is pinned by the term the contract carries it under."""
         generation = read(EVOLVE_GENERATION)
         self.assertEqual([], worklog_restart_errors(generation))
 
-        controls = {
-            "archive-persistence": generation.replace(
-                "complete projection, including every archive member",
-                "projection without the full archive",
-            ),
-            "in-flight-order": generation.replace(
-                "same Worklog entry before delegation",
-                "same Worklog entry after delegation",
-            ),
-            "pending-replan": generation.replace(
-                "a `pending` response launches nothing",
-                "a `pending` response launches a replacement",
-            ),
-            "duplicate-restart-dispatch": generation.replace(
-                "never redispatch a live slot",
-                "redispatch a live slot",
-            ),
-        }
-        for expected, wrong in controls.items():
-            with self.subTest(control=expected):
-                self.assertIn(expected, worklog_restart_errors(wrong))
+        for control, anchor in RESTART_ANCHORS:
+            with self.subTest(control=control):
+                self.assertIn(
+                    control, worklog_restart_errors(generation.replace(anchor, ""))
+                )
 
 
 class TestVisibilityAndSelfTarget(unittest.TestCase):
@@ -1403,29 +1417,23 @@ class TestVisibilityAndSelfTarget(unittest.TestCase):
         tournament = template_text(TOURNAMENT)
         self.assertEqual([], recursive_target_errors(evolve, generation, tournament))
 
-        controls = {
-            "active-revision-authority": generation.replace(
-                "remain outside candidate mutation authority",
-                "enter candidate mutation authority",
-            ),
-            "self-target-control": generation.replace(
-                "remains non-control and cannot become the active campaign controller or planner",
-                "becomes the active campaign controller",
-            ),
-            "activation": tournament.replace(
-                "separate authorized integration before activation",
-                "activation inside the campaign",
-            ),
-        }
-        for expected, wrong in controls.items():
-            with self.subTest(control=expected):
-                candidate_generation = wrong if expected != "activation" else generation
-                candidate_tournament = wrong if expected == "activation" else tournament
+        for control, anchor in RECURSION_ANCHORS:
+            with self.subTest(control=control):
                 self.assertIn(
-                    expected,
+                    control,
                     recursive_target_errors(
-                        evolve, candidate_generation, candidate_tournament
+                        evolve, generation.replace(anchor, ""), tournament
                     ),
+                )
+        # Each template's own clause, dropped one at a time.
+        for name, evolve_text, tournament_text in (
+            ("evolve", evolve.replace(ACTIVATION_ANCHOR, ""), tournament),
+            ("tournament", evolve, tournament.replace(ACTIVATION_ANCHOR, "")),
+        ):
+            with self.subTest(control="activation", template=name):
+                self.assertIn(
+                    "activation",
+                    recursive_target_errors(evolve_text, generation, tournament_text),
                 )
 
 
