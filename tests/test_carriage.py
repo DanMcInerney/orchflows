@@ -563,6 +563,125 @@ class CopyFaithfulnessClauseTest(unittest.TestCase):
             )
 
 
+FRONTIER = ROOT / "skills" / "engines" / "orch-frontier" / "SKILL.md"
+WORK_ITEM = CONTRACTS / "work-item.md"
+
+# The cut is reviewed by an independent reader before any unit of it is
+# dispatched, and `scripts/tickets.py` emits that reader's packet off a root
+# ticket. A packet nothing dispatches is dead code: the engine that runs the
+# graph has to hold the units back until the pass lands, and the contract has
+# to say a root's cut is checked at all. Each owner is read for what only it
+# can state -- the engine for what the units wait in, the contract for what
+# the checker's authority is and is not.
+_FRONTIER_CUT_CHECK = {
+    "the units wait rather than promote": ("stay `pending`",),
+    "the field whose absence holds them": ("`checked_by`",),
+    "the check the cut's correction is accepted on": ("cutcheck",),
+    # rules/verification.md §10 wants the checker's correction re-verified by
+    # a further context; the cut check is deterministic, so the engine runs
+    # it itself and dispatches no re-verifier for a root.
+    "the context whose cut-check re-run is the re-verification": (
+        "engine's own `cutcheck.py` re-run", "re-verification",
+    ),
+}
+
+_CONTRACT_CUT_CHECK = {
+    "a root's cut is checked before its first unit": ("cut is checked", "first unit"),
+    "the field that records the cut checker": ("`checked_by`", "cut checker"),
+    "what the cut checker corrects, and what it does not": (
+        "`tickets.py amend`", "run's workspace",
+    ),
+}
+
+# The clauses as written, so the can-fail copies below read as their files did
+# before them.
+_FRONTIER_CLAUSE_RE = re.compile(r"A root ticket takes that checker.*?exit 0\.\s*", re.S)
+_CONTRACT_CLAUSE_RE = re.compile(r"A root's cut is checked.*?cut checker\.\s*", re.S)
+
+
+def _clause_gaps(text, clause):
+    """Which parts of `clause` `text` never states, read with its whitespace
+    collapsed so a wrapped sentence matches."""
+    flat = re.sub(r"\s+", " ", text)
+    return sorted(
+        name for name, phrases in clause.items()
+        if not all(phrase in flat for phrase in phrases)
+    )
+
+
+def _section(text, heading):
+    """One `## `-delimited section of a markdown file, so a phrase landing in
+    a neighbouring section cannot satisfy an assertion scoped to this one."""
+    match = re.search(
+        rf"(?ms)^## {re.escape(heading)}\s*$(.*?)(?=^## |\Z)", text
+    )
+    if match is None:
+        raise AssertionError(f"no section '{heading}'")
+    return match.group(1)
+
+
+class CutCheckOrderingTest(unittest.TestCase):
+    """One fresh reader reviews and corrects a cut before the cut is run --
+    the call the old system made in one shot, placed where
+    rules/verification.md §10 already puts one. `packet --executor
+    orch-critique` emits its packet off a root ticket; these are the two
+    clauses that make it reachable and bounded: the engine holding every
+    `<id>.NN` at `pending` until the root's pass lands, and the contract
+    stating that a root's cut is checked and over what."""
+
+    def test_the_engine_holds_the_units_until_the_cut_is_checked(self):
+        gaps = _clause_gaps(FRONTIER.read_text(encoding="utf-8"), _FRONTIER_CUT_CHECK)
+        self.assertEqual(
+            [],
+            gaps,
+            "orch-frontier's body states no cut-checker clause covering: "
+            f"{', '.join(gaps)}",
+        )
+
+    def test_the_contract_gives_a_root_ticket_its_cut_checker(self):
+        gaps = _clause_gaps(
+            _section(WORK_ITEM.read_text(encoding="utf-8"), "Root ticket"),
+            _CONTRACT_CUT_CHECK,
+        )
+        self.assertEqual(
+            [],
+            gaps,
+            "contracts/work-item.md's Root ticket section states no "
+            f"cut-checker clause covering: {', '.join(gaps)}",
+        )
+
+    def test_an_engine_and_a_contract_without_the_clause_fail_the_check(self):
+        """The can-fail direction, built beside the tree and never by
+        mutating it (rules/verification.md §8): copies of both owners with
+        the clause excised, which is how each read before it."""
+        for path, clause, pattern, reader in (
+            (FRONTIER, _FRONTIER_CUT_CHECK, _FRONTIER_CLAUSE_RE, lambda t: t),
+            (WORK_ITEM, _CONTRACT_CUT_CHECK, _CONTRACT_CLAUSE_RE,
+             lambda t: _section(t, "Root ticket")),
+        ):
+            real = path.read_text(encoding="utf-8")
+            with tempfile.TemporaryDirectory() as tmp:
+                beside = Path(tmp) / path.name
+                beside.write_text(real, encoding="utf-8")
+                self.assertEqual(
+                    [],
+                    _clause_gaps(reader(beside.read_text(encoding="utf-8")), clause),
+                    f"the {path.name} copy must start with the clause intact, "
+                    "or the excision below is not what the check reacted to",
+                )
+                excised = re.sub(pattern, "", real, count=1)
+                self.assertNotEqual(
+                    real, excised,
+                    f"the {path.name} excision matched nothing, so the "
+                    "assertion below would prove nothing",
+                )
+                beside.write_text(excised, encoding="utf-8")
+                self.assertEqual(
+                    sorted(clause),
+                    _clause_gaps(reader(beside.read_text(encoding="utf-8")), clause),
+                )
+
+
 IMPROVEMENT = ROOT / "rules" / "improvement.md"
 HOST_BLOCK = ROOT / "templates" / "host-block.md"
 

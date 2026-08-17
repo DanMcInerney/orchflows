@@ -17,9 +17,11 @@ Refuse a packet whose objective is repair but whose `authority` grants
 no write.
 
 As the §10 checker ([rules/verification.md](../../../rules/verification.md)
-§10) the lens is the ticket's own completion test: hunt tautological or
-weakened checks and results that satisfy a check without meeting its
-criterion; correct within the granted `authority`, per §9; file per
+§10) the lens is the ticket's own completion test — on a root ticket,
+the cut lens its packet names, corrected through `tickets.py amend` and
+`new`: hunt tautological or weakened checks and results that satisfy a
+check without meeting its criterion; correct within the granted
+`authority`, per §9; file per
 [contracts/work-item.md](../../../contracts/work-item.md) `## Result`
 through `tickets.py result --append`, and set `checked_by` through
 `tickets.py check <run> <id> --by <name>`.

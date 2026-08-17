@@ -5194,6 +5194,184 @@ class TestCheckerPathPacket(unittest.TestCase):
                 self.assertIsNone(packet["profile"], packet)
 
 
+ROOT_TICKET = (
+    FULL_TICKET.replace("id: T1", "id: R1")
+    .replace("executor: orch-tdd", "executor: orch-decompose")
+    .replace("status: ready", "status: claimed\nclaimed_by: cutter-a")
+)
+
+
+def command_lines(prompt: str, script_name: str, *leading) -> list:
+    """Every emitted command line running ``script_name`` with ``leading`` as
+    its first arguments, found the way a child finds it: by the tokens, never
+    by position and never by a literal path."""
+
+    found = []
+    for line in prompt.splitlines():
+        tokens = line.split()
+        if len(tokens) <= len(leading) + 1:
+            continue
+        if Path(tokens[1]).name != script_name:
+            continue
+        if list(leading) == tokens[2:2 + len(leading)]:
+            found.append(line)
+    return found
+
+
+class TestRootTicketCutCheckerPacket(unittest.TestCase):
+    """On a root ticket the §10 checker's object is the cut itself.
+
+    The old system reviewed and fixed a decomposition in one call before
+    kicking it off; here that reader is the root ticket's own §10 checker
+    (rules/verification.md §10), so it needs a different lens, a different
+    object and a different authority from the unit checker's: the cut lens,
+    the issued subtree read as data, and `amend`/`new` over that subtree —
+    never the run's workspace, which is the units' to write. Its repair is
+    accepted on `cutcheck.py` re-run (§11), so the packet names that too.
+    """
+
+    def make(self, tmp: Path, subtree: dict = None, body: str = ROOT_TICKET) -> Path:
+        path = make_packet_repo(tmp, body, tid="R1")
+        if subtree is None:
+            subtree = {"R1.01": ("pending", "[]")}
+        make_tickets(path.parent, subtree)
+        return path
+
+    def packet(self, tmp: Path, *extra):
+        return run_cmd(tmp, "packet", "testrun", "R1", "--reply-to", "main", *extra)
+
+    def prompt(self, tmp: Path, *extra) -> str:
+        return self.packet(tmp, *extra)["packet"]["prompt"]
+
+    def test_the_checker_packet_names_the_cut_lens_by_installed_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            prompt = self.prompt(tmp, "--executor", "orch-critique")
+            lens = ROOT / "skills" / "kernel" / "orch-decompose" / "references" / "cut-lens.md"
+            self.assertIn(str(lens), prompt)
+
+    def test_the_checker_packet_names_the_subtree_as_its_object(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            prompt = self.prompt(tmp, "--executor", "orch-critique")
+            self.assertIn("R1.NN", prompt)
+            self.assertIn("gate stubs", prompt)
+
+    def test_the_checker_packet_grants_amend_and_new_and_no_workspace(self):
+        """The root's `write_scope` is the run's workspace, which the units
+        write; the cut checker's authority is the unclaimed subtree's
+        cut-time sections."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            prompt = self.prompt(tmp, "--executor", "orch-critique")
+            self.assertNotIn("scratch/t1.txt", prompt)
+            amend = command_lines(prompt, "tickets.py", "amend", "testrun")
+            self.assertEqual(1, len(amend), prompt)
+            self.assertIn("--section", amend[0])
+            self.assertEqual(1, len(command_lines(prompt, "tickets.py", "new", "testrun")), prompt)
+
+    def test_the_checker_packet_names_the_cut_check_and_the_check_verb(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            prompt = self.prompt(tmp, "--executor", "orch-critique")
+            cut = command_lines(prompt, "cutcheck.py")
+            self.assertEqual(1, len(cut), prompt)
+            self.assertIn("--baseline", cut[0])
+            self.assertEqual("testrun", cut[0].split()[-1])
+            check = command_lines(prompt, "tickets.py", "check", "testrun", "R1")
+            self.assertEqual(1, len(check), prompt)
+            self.assertIn("--by", check[0])
+
+    def test_a_recorded_baseline_fills_the_revision_the_set_was_cut_from(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            unresolved = command_lines(
+                self.prompt(tmp, "--executor", "orch-critique"), "cutcheck.py"
+            )[0]
+            self.assertIn("REV", unresolved)
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(
+                tmp,
+                body=ROOT_TICKET.replace(
+                    "claimed_by: cutter-a",
+                    "claimed_by: cutter-a\nworkspace_baseline: abc1234 clean",
+                ),
+            )
+            resolved = command_lines(
+                self.prompt(tmp, "--executor", "orch-critique"), "cutcheck.py"
+            )[0]
+            self.assertIn("abc1234", resolved)
+            self.assertNotIn("clean", resolved)
+
+    def test_a_non_root_checker_packet_is_unchanged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_packet_repo(tmp, CLAIMED_ISOLATED_TICKET)
+            prompt = run_cmd(
+                tmp, "packet", "testrun", "T1", "--reply-to", "main",
+                "--executor", "orch-critique",
+            )["packet"]["prompt"]
+            self.assertNotIn("cut-lens.md", prompt)
+            self.assertEqual([], command_lines(prompt, "cutcheck.py"))
+            self.assertEqual([], command_lines(prompt, "tickets.py", "amend", "testrun"))
+            self.assertIn("scratch/t1.txt", prompt)
+
+    def test_the_checker_packet_is_refused_once_a_unit_is_claimed(self):
+        """`amend` is refused outside the amendable statuses, so a subtree
+        with work against it has nothing this child could correct — and the
+        frontier dispatching it there ran the cut checker too late."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, {"R1.01": ("claimed", "[]"), "R1.02": ("pending", "[]")})
+            payload = self.packet(tmp, "--executor", "orch-critique")
+            self.assertNotIn("packet", payload)
+            self.assertIn("R1.01", payload["error"])
+            self.assertNotIn("R1.02", payload["error"])
+
+    def test_the_checker_packet_is_refused_on_a_root_with_no_subtree(self):
+        """A root no `<root>.` unit has been issued under has no cut to read
+        (`cutcheck.py` on the root alone exits 0), and issuing the whole set
+        is the decomposition itself, which this child never repeats — the
+        refusal `tickets.py gate` makes for the same reason. Gate stubs alone
+        are no more a cut than none: the check reads units."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, {})
+            payload = self.packet(tmp, "--executor", "orch-critique")
+            self.assertNotIn("packet", payload)
+            self.assertIn("no `R1.` subtree", payload["error"])
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, {"R1.gate.critique.x": ("pending", "[]")})
+            self.assertNotIn(
+                "packet", self.packet(tmp, "--executor", "orch-critique")
+            )
+
+    def test_the_reverifier_packet_names_the_cut_check_at_the_checked_set(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            prompt = self.prompt(tmp, "--executor", "orch-verify")
+            cut = command_lines(prompt, "cutcheck.py")
+            self.assertEqual(1, len(cut), prompt)
+            self.assertEqual("testrun", cut[0].split()[-1])
+            self.assertIn("no write", prompt)
+            self.assertEqual([], command_lines(prompt, "tickets.py", "check", "testrun"))
+
+    def test_the_reverifier_is_not_refused_by_a_claimed_unit(self):
+        """It corrects nothing, so the window `amend` closes is not its."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, {"R1.01": ("claimed", "[]")})
+            self.assertIn("packet", self.packet(tmp, "--executor", "orch-verify"))
+
+
 class TestPacketCarriesTheCloseLaw(unittest.TestCase):
     """The packet already carried contracts/work-item.md's filing law; the
     close was the half only the body's link to that 1,690-word file reached
