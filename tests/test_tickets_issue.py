@@ -529,6 +529,29 @@ class InstructionCeilingTest(unittest.TestCase):
                 at, tickets_mod.instruction_words(path.read_text(encoding="utf-8"))
             )
 
+    def test_a_root_ticket_is_exempt(self):
+        """A root states a whole run, and the `.gate.` stubs `gate` renders
+        carry that root's `## Completion test` verbatim. Neither is a unit
+        packet, and holding them to the unit ceiling would refuse what this
+        script itself writes."""
+
+        over = tickets_mod.INSTRUCTION_BUDGET + 100
+        exempt = (
+            ("00-root", tickets_mod.ROOT_EXECUTOR),
+            ("00-root.gate.critique.code", "orch-critique"),
+            ("00-root.gate.verify", "orch-verify"),
+        )
+        for ticket_id, executor in exempt:
+            with self.subTest(ticket_id), tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                payload, path = self.place(
+                    tmp,
+                    ceiling_ticket(over, executor=executor, ticket_id=ticket_id),
+                    ticket_id=ticket_id,
+                )
+                self.assertNotIn("error", payload)
+                self.assertTrue(path.is_file())
+
 
 class CriterionNestingTest(unittest.TestCase):
     """Indentation, in the one owner of criterion parsing.

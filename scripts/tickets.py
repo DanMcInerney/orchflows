@@ -263,6 +263,10 @@ ITERATION_ID_RE = re.compile(r"^.+\.iter\.\d+$")
 # The gate's last stub. A ticket depending on it is scope queued behind the
 # whole root subtree rather than work inside it.
 GATE_VERIFY_SUFFIX = ".gate.verify"
+# What every gate stub's id carries, `<root>.gate.<lane>`. `gate` renders
+# them from the root's own acceptance, so they are the root's carriage, not
+# unit packets a cutter wrote.
+GATE_ID_MARKER = ".gate."
 # The heading that closes a run's notes. Written only by `--terminal`, so
 # the file carries no terminal placeholder until it closes and the marker
 # means what it says: while it is absent the run is open.
@@ -2328,8 +2332,17 @@ def _ceiling_error(subject: str, ticket_id: str, text: str):
     Applied where the cutter still holds the flag that was wrong. An
     objective enumerating (1)...(5) cannot fit inside the ceiling, which is
     the point: the ticket that does not fit is two tickets.
+
+    The ceiling is a unit's. A root ticket states a whole run, and each
+    `.gate.` stub carries the root's `## Completion test` verbatim -- `gate`
+    renders them from it -- so grading either against the unit ceiling would
+    refuse what this script itself writes.
     """
 
+    if GATE_ID_MARKER in str(ticket_id or ""):
+        return None
+    if _executor_of(_parse_frontmatter(text)) == ROOT_EXECUTOR:
+        return None
     count = instruction_words(text)
     if count <= INSTRUCTION_BUDGET:
         return None
