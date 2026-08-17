@@ -36,11 +36,19 @@ module reads.
 **Nothing here plans, selects, ranks, or judges.** :func:`plan_depth`
 builds steps and never runs one; the caller passes the records it chose, and
 the selection is frozen in the manifest exactly as before — this is the
-ceremony removed, not the authorization model changed. The reviews warn and
-return: an advisory is a sentence, never an edit. A module that added the
-missing step would be the internal planner this package deliberately does not
-have, and the frozen inputs it would give up are the whole reason a fused
-manifest can run its lanes at once.
+ceremony removed. The reviews warn and return: an advisory is a sentence, never
+an edit. A module that added the missing step would be the internal planner this
+package deliberately does not have, and the frozen inputs it would give up are
+the whole reason a fused manifest can run its lanes at once.
+
+What a cap *buys* did change, for the rows :data:`DEPTH_TARGETS` declares as
+paging and only those. A hydration step spends exactly one origin call per hit
+the caller named, and never a continuation. A discovery step is paged by the core
+while ``kept < max_items``, up to :data:`runner.MAX_PAGES_PER_STEP` — five — so
+one selected record can cost five calls on `next` or `transcript` where
+hydrating it cost one. Naming a cap therefore authorizes pages and not only
+records: a sentence this shape owes a caller, rather than one a rename can
+absorb.
 """
 
 from __future__ import annotations
@@ -192,13 +200,17 @@ def plan_depth(
     reported in ``skipped`` rather than dropped, so a caller can see that its
     own bound, not the data, ended the selection.
 
-    What ``max_items`` bounds follows the kind the row declares. On a hydration
-    step it bounds each authorized call: every selected hit was named by the
-    caller and every one is called, so a first hit that answers richly cannot
-    starve the rest. On a discovery step it bounds the whole step, and it is
-    also the budget the core's paging spends — which is why a row declaring a
-    ``min_items`` floor refuses a cap under it rather than planning a step that
-    stops one page short of its own evidence and reports success.
+    What ``max_items`` bounds follows the kind the row declares, and so does
+    what it costs. On a hydration step it bounds each authorized call: every
+    selected hit was named by the caller and every one is called exactly once,
+    so a first hit that answers richly cannot starve the rest and no
+    continuation is ever spent. On a discovery step it bounds the whole step and
+    is also the budget the core's paging spends, so this one record's step can
+    cost up to :data:`runner.MAX_PAGES_PER_STEP` origin calls — five — against
+    the single call the same record cost as a hydration. That is what a paging
+    row buys with a cap, and it is why a row declaring a ``min_items`` floor
+    refuses a cap under it rather than planning a step that stops one page short
+    of its own evidence and reports success.
     """
 
     row = DEPTH_TARGETS.get(adapter_id)
@@ -343,6 +355,7 @@ SERVER_SIDE_WINDOW = ("bluesky", "hacker_news", "web_search")
 DEPTH_NOT_PLANNED = "depth_not_planned"
 WINDOW_ABSENT = "window_absent"
 CAP_BELOW_PAGE_SIZE = "cap_below_page_size"
+CAP_BELOW_DEPTH_FLOOR = "cap_below_depth_floor"
 STEP_CARRIED_LOSS = "step_carried_loss"
 RECALL_WAS_A_WINDOW = "recall_was_a_window"
 NOTHING_HYDRATED = "nothing_hydrated"
@@ -370,6 +383,20 @@ def _depth_operation(step: schema.AcquisitionStep) -> str:
     return operation if operation and operation in row else ""
 
 
+def _discovery_representation(adapter_id: str) -> str:
+    """The representation kind this adapter's discovery answers on, or "".
+
+    Read off :func:`runner.descriptor_for`, which answers what an adapter
+    reads: a record that arrived at any *other* kind this adapter declares is
+    that item at a second representation, and a second representation is a
+    second read. Empty for an adapter the core does not declare, which is the
+    one case where nothing can be concluded from the kind.
+    """
+
+    descriptor = runner.descriptor_for(adapter_id)
+    return descriptor.representation_kind if descriptor is not None else ""
+
+
 def _page_size(adapter_id: str) -> int:
     """The largest page any of this adapter's surfaces declares, or zero."""
 
@@ -384,7 +411,7 @@ def _page_size(adapter_id: str) -> int:
 def review_manifest(manifest: schema.AcquisitionManifest) -> Tuple[Advisory, ...]:
     """What this manifest is about to miss, read before it runs.
 
-    Three checks, each one a measured failure rather than a style opinion.
+    Four checks, each one a measured failure rather than a style opinion.
     Ordered by step so a caller reads them against the file it just wrote.
     """
 
@@ -446,6 +473,27 @@ def review_manifest(manifest: schema.AcquisitionManifest) -> Tuple[Advisory, ...
     for step in manifest.steps:
         if step.kind != "discovery":
             continue
+        # The floor `plan_depth` refuses a cap under, read at review time too.
+        # A manifest hand-written or amended after planning never passed through
+        # the plan, and this is the failure `evidence.md` §2 measured: a
+        # `transcript:` step at max_items 1 is valid, runs, reaches no cue, and
+        # reports success. The row is already in hand here.
+        operation = _depth_operation(step)
+        target = DEPTH_TARGETS[step.adapter_id][operation] if operation else None
+        if target is not None and target.kind == "discovery" and step.max_items < target.min_items:
+            found.append(
+                Advisory(
+                    CAP_BELOW_DEPTH_FLOOR,
+                    step.step_id,
+                    "max_items {0} is under the floor of {1} this {2} {3!r} step needs: page one"
+                    " is the record it starts from and `kept < max_items` is the clause"
+                    " that buys the page its evidence is on, so this step reaches none"
+                    " of it and reports success. `coverage.plan_depth` refuses this"
+                    " cap.".format(
+                        step.max_items, target.min_items, step.adapter_id, operation
+                    ),
+                )
+            )
         page = _page_size(step.adapter_id)
         if page and step.max_items < page:
             found.append(
@@ -509,27 +557,29 @@ def review_artifact(artifact: schema.AcquisitionArtifact) -> Tuple[Advisory, ...
     # the core sets a `discovery_locator` only on a hydration step's own calls,
     # so a `next` step's comments and a `transcript` step's cues carry none.
     # For the adapters whose table row declares a paging operation, two more
-    # shapes count, and both say the same thing — this record is about an item
-    # this artifact already holds, rather than one more item beside it. It
-    # names that item as its parent, or it *is* that item at a second
-    # representation. Neither is read for an adapter whose depth all hydrates,
-    # where a parent id is ordinary discovery furniture: a Hacker News search
-    # hit names its story and deepened nothing.
-    representations: Dict[Tuple[str, str], set] = {}
-    for record in artifact.records:
-        if record.native_item_id:
-            representations.setdefault(
-                (record.adapter_id, record.native_item_id), set()
-            ).add(record.representation_kind)
-
+    # shapes count, and each is read off the record alone rather than against
+    # the rest of this artifact. Paging depth *is* a second artifact:
+    # :func:`plan_depth` takes the records a discovery run returned and its
+    # steps run as their own dispatch, so the video a comment names and the
+    # video a transcript is a representation of are both in artifact one.
+    # Asking this artifact to hold that item as well is what told a caller who
+    # had just acquired 57 comment records that nothing deepened anything —
+    # measured 2026-08-17, on the artifact the comments arrived in.
+    #
+    # So what counts is what the record says about itself: it names a parent
+    # item, or it arrived at a representation this adapter's discovery does not
+    # answer on. Neither is read for an adapter whose depth all hydrates, where
+    # a parent id is ordinary discovery furniture: a Hacker News search hit
+    # names its story and deepened nothing.
     deepened = set()
     discovery_adapters = set()
     for record in artifact.records:
         paging = _pages_for_depth(record.adapter_id)
+        discovered_as = _discovery_representation(record.adapter_id)
         if (
             record.discovery_locator
-            or (paging and (record.adapter_id, record.native_parent_id) in representations)
-            or (paging and len(representations.get((record.adapter_id, record.native_item_id), ())) > 1)
+            or (paging and record.native_parent_id)
+            or (paging and discovered_as and record.representation_kind != discovered_as)
         ):
             deepened.add(record.adapter_id)
         else:

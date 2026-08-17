@@ -784,6 +784,12 @@ NUMBER_WORDS = (
     "Eighteen", "Nineteen", "Twenty",
 )
 
+# The tens, for the one count above twenty this delivery states: the roster's
+# route-surface total, which is thirty-six. A tens name means its own position
+# in tens, which is the whole of the arithmetic here, and a compound is its two
+# names read the same way — `thirty-six` is `thirty` and `six`.
+TENS_WORDS = ("Ten", "Twenty", "Thirty", "Forty", "Fifty")
+
 
 ITEM_DIR = Path(__file__).resolve().parent.parent
 OWNER_SKILL = ITEM_DIR / "SKILL.md"
@@ -992,6 +998,13 @@ OPERATING_PATH = Path(__file__).resolve().parent.parent / "references" / "operat
 # rewrite it is supposed to permit.
 MULTI_SURFACE_ANCHOR = re.compile(r"\b([A-Za-z]+) adapters rea(?:d|ch) more than one\b")
 
+# The other two counts that one roster sentence states. Anchored the same way and
+# for the same reason: "seven" went stale for three adapters while a reader was
+# the only thing checking it, and these two were still that reader's. Each phrase
+# is the part of the sentence the count cannot leave, not the sentence.
+ROSTER_SIZE_ANCHOR = re.compile(r"\b([A-Za-z]+) adapters, ([A-Za-z]+) live plus `fake`")
+SURFACE_TOTAL_ANCHOR = re.compile(r"\b([A-Za-z]+(?:-[A-Za-z]+)?) route surfaces\b")
+
 # The one roster row read cell by cell here. Its adapter id comes off the
 # module that owns the route rather than off this file, so a rename reaches
 # the assertions.
@@ -1051,13 +1064,24 @@ def roster_table_rows():
 def counted_as(word):
     """The number one spelled number word names, or ``None`` if it names none.
 
-    Spelling, not arithmetic: `NUMBER_WORDS` is a list of names and no count
-    is written down here. The count comes off the descriptors.
+    Spelling, not arithmetic: `NUMBER_WORDS` and `TENS_WORDS` are lists of names
+    and no count is written down here. The counts come off the descriptors. A
+    hyphenated compound is its two names looked up the same way, because the
+    surface total is thirty-six and a table running to twenty cannot spell it.
     """
 
     spelled = [name.lower() for name in NUMBER_WORDS]
-    lowered = word.lower()
-    return spelled.index(lowered) + 1 if lowered in spelled else None
+    tens = [name.lower() for name in TENS_WORDS]
+    head, _, tail = word.lower().partition("-")
+    if not tail and head in spelled:
+        return spelled.index(head) + 1
+    if head in tens:
+        counted = (tens.index(head) + 1) * 10
+        if not tail:
+            return counted
+        if tail in spelled[:9]:
+            return counted + spelled.index(tail) + 1
+    return None
 
 
 def multi_surface_adapters():
@@ -1068,6 +1092,28 @@ def multi_surface_adapters():
         for adapter_id in runner.ADAPTER_IDS
         if len(runner.surface_descriptors(adapter_id)) > 1
     }
+
+
+def live_adapters():
+    """Every declared adapter that reads an origin rather than a fixture.
+
+    Read off the class the descriptor declares rather than off the one id a
+    reader knows: the roster counts `fake` apart because it is `offline`, and
+    that is where the fact lives.
+    """
+
+    found = set()
+    for adapter_id in runner.ADAPTER_IDS:
+        descriptor = runner.descriptor_for(adapter_id)
+        if descriptor is not None and descriptor.access_class != "offline":
+            found.add(adapter_id)
+    return found
+
+
+def surface_total():
+    """Every route surface the source declares, across the whole roster."""
+
+    return sum(len(runner.surface_descriptors(adapter_id)) for adapter_id in runner.ADAPTER_IDS)
 
 
 def multi_surface_counts_stated(path):
@@ -1127,6 +1173,57 @@ class RosterIsReadOffTheSourceTest(unittest.TestCase):
                         path.name, stated[0], len(self.multi), sorted(self.multi)
                     ),
                 )
+
+    def test_the_roster_size_it_states_is_the_declared_ids_own(self):
+        """"Twenty adapters, nineteen live plus `fake`" — both halves, off the source.
+
+        The same sentence that said seven says these, and they were the two
+        counts in it still resting on a reader.
+        """
+
+        stated = ROSTER_SIZE_ANCHOR.findall(PROTOCOL_PATH.read_text(encoding="utf-8"))
+
+        self.assertEqual(len(stated), 1, "protocol.md states the roster size {0} times".format(len(stated)))
+        counted, live = stated[0]
+        self.assertEqual(
+            counted_as(counted),
+            len(runner.ADAPTER_IDS),
+            "protocol.md says {0} adapters; the core declares {1}".format(
+                counted, len(runner.ADAPTER_IDS)
+            ),
+        )
+        self.assertEqual(
+            counted_as(live),
+            len(live_adapters()),
+            "protocol.md says {0} live; the descriptors say {1}".format(
+                live, sorted(live_adapters())
+            ),
+        )
+
+    def test_the_surface_total_it_states_is_the_descriptors_own(self):
+        """"thirty-six route surfaces", counted across the roster.
+
+        Distinct from the adapter count above and from the multi-surface count
+        below it — a surface total that merely equalled the roster size would be
+        a count of adapters wearing another name, which the first assertion here
+        rules out.
+        """
+
+        stated = SURFACE_TOTAL_ANCHOR.findall(PROTOCOL_PATH.read_text(encoding="utf-8"))
+
+        self.assertGreater(surface_total(), len(runner.ADAPTER_IDS))
+        self.assertEqual(len(stated), 1, "protocol.md states the surface total {0} times".format(len(stated)))
+        self.assertEqual(
+            counted_as(stated[0]),
+            surface_total(),
+            "protocol.md says {0} route surfaces; the descriptors say {1}".format(
+                stated[0], surface_total()
+            ),
+        )
+        # The compound reader can fail rather than shrug: a name it cannot spell
+        # answers None, which no count equals, so an unreadable number is a
+        # failure here and never a pass.
+        self.assertIsNone(counted_as("thirty-eleven"))
 
     def test_the_youtube_row_names_every_surface_it_reads(self):
         # The row said one surface while the adapter reads two, which is how a

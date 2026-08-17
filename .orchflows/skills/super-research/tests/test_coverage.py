@@ -91,6 +91,14 @@ def artifact(steps=(), records=()):
     )
 
 
+# The representation kinds this adapter's own descriptors declare, read off the
+# source rather than spelled here. They are what the review reads a second read
+# by: a record that did not arrive at the kind discovery answers on is that item
+# again, at another representation. A literal here would let the two drift.
+YOUTUBE_DISCOVERED_AS = youtube_innertube.DESCRIPTOR.representation_kind
+YOUTUBE_TRANSCRIPT_AS = youtube_innertube.TRANSCRIPT_DESCRIPTOR.representation_kind
+
+
 def codes(advisories):
     return sorted({found.code for found in advisories})
 
@@ -356,6 +364,51 @@ class ReviewManifestTest(unittest.TestCase):
 
         self.assertIn(coverage.CAP_BELOW_PAGE_SIZE, codes(found))
 
+    def test_a_depth_cap_under_the_floor_is_named_at_review_time_as_well(self):
+        """The plan refuses this cap, and a hand-written manifest never met the plan.
+
+        `evidence.md` §2, exactly: a `transcript:` step at max_items 1 is valid,
+        passes review, runs, reaches no cue and reports success. `plan_depth`
+        refuses it — but a manifest written by hand, or amended after planning,
+        arrives at the review having never been through the plan, and the review
+        already reads the row that carries the floor.
+        """
+
+        floor = coverage.DEPTH_TARGETS["youtube_innertube"]["transcript"].min_items
+        under = coverage.review_manifest(
+            manifest(
+                step(
+                    "tx", "discovery", "youtube_innertube",
+                    query="transcript:vid", max_items=floor - 1,
+                )
+            )
+        )
+
+        self.assertEqual(codes(under), [coverage.CAP_BELOW_DEPTH_FLOOR])
+        self.assertEqual(subjects(under, coverage.CAP_BELOW_DEPTH_FLOOR), ["tx"])
+        # And silence at the floor itself, or the check would fire on every
+        # lawful depth step the planner builds.
+        self.assertEqual(
+            coverage.review_manifest(
+                manifest(
+                    step(
+                        "tx", "discovery", "youtube_innertube",
+                        query="transcript:vid", max_items=floor,
+                    )
+                )
+            ),
+            (),
+        )
+
+    def test_an_ordinary_discovery_step_is_not_measured_against_a_depth_floor(self):
+        """`search:` names no depth operation, so no row and no floor apply."""
+
+        found = coverage.review_manifest(
+            manifest(step("yt", "discovery", "youtube_innertube", query="search:btc", max_items=1))
+        )
+
+        self.assertNotIn(coverage.CAP_BELOW_DEPTH_FLOOR, codes(found))
+
     def test_a_clean_manifest_draws_nothing(self):
         """The check that keeps the others honest: silence is reachable."""
 
@@ -463,24 +516,37 @@ class DepthReviewTest(unittest.TestCase):
 
         self.assertNotIn(coverage.DEPTH_NOT_PLANNED, codes(found))
 
-    def test_an_artifact_holding_it_draws_none(self):
-        """The comments a `next` step returned name the video they are under.
+    def test_the_artifact_a_paging_depth_run_returns_draws_none(self):
+        """The shape `plan_depth`'s own steps produce, and the only one they do.
 
-        They can carry no `discovery_locator` — the core sets one only on a
-        hydration step's own calls — so what says they are depth is that this
-        artifact holds the item they name.
+        A `next` step is its own dispatch over the records a discovery run
+        already returned, so the artifact it comes back in holds comments and
+        **not** the videos they name — those are in artifact one. The comments
+        can carry no `discovery_locator` either, because the core sets one only
+        on a hydration step's own calls. Asking this artifact to hold the parent
+        as well is what told a caller holding 57 comment records that nothing
+        deepened anything, measured 2026-08-17, so the case is built the way the
+        planner emits it: no video record here at all.
         """
 
         found = coverage.review_artifact(
             artifact(
                 records=[
-                    record("y1", "youtube_innertube", native_item_id="vid"),
                     record(
                         "c1",
                         "youtube_innertube",
                         native_item_id="UgyyGmQ",
                         native_parent_id="vid",
+                        representation_kind=YOUTUBE_DISCOVERED_AS,
                         locator="https://example.invalid/c1",
+                    ),
+                    record(
+                        "c2",
+                        "youtube_innertube",
+                        native_item_id="UgyralckD",
+                        native_parent_id="vid",
+                        representation_kind=YOUTUBE_DISCOVERED_AS,
+                        locator="https://example.invalid/c2",
                     ),
                 ]
             )
@@ -488,18 +554,60 @@ class DepthReviewTest(unittest.TestCase):
 
         self.assertNotIn(coverage.NOTHING_HYDRATED, codes(found))
 
-    def test_an_artifact_holding_a_transcript_of_what_it_found_draws_none(self):
-        """A transcript names no parent: it is the video, at another representation."""
+    def test_the_artifact_a_transcript_step_returns_draws_none(self):
+        """The other paging operation, in the shape its own dispatch returns.
+
+        A transcript names no parent — it *is* the video, at another
+        representation — and the video it is a representation of is in the
+        artifact the discovery run returned. So the kind it arrived at is the
+        whole of what says it is a second read, and it is read off the
+        descriptors rather than off this artifact.
+        """
 
         found = coverage.review_artifact(
             artifact(
                 records=[
-                    record("y1", "youtube_innertube", native_item_id="vid"),
                     record(
                         "t1",
                         "youtube_innertube",
                         native_item_id="vid",
-                        representation_kind="transcript",
+                        representation_kind=YOUTUBE_TRANSCRIPT_AS,
+                    )
+                ]
+            )
+        )
+
+        self.assertNotIn(coverage.NOTHING_HYDRATED, codes(found))
+
+    def test_an_artifact_fusing_the_discovery_and_the_depth_draws_none(self):
+        """A caller may also fuse both dispatches into one artifact.
+
+        The parent is present here and it changes nothing, which is the point:
+        the two above must not have bought their silence from the boundary.
+        """
+
+        found = coverage.review_artifact(
+            artifact(
+                records=[
+                    record(
+                        "y1",
+                        "youtube_innertube",
+                        native_item_id="vid",
+                        representation_kind=YOUTUBE_DISCOVERED_AS,
+                    ),
+                    record(
+                        "c1",
+                        "youtube_innertube",
+                        native_item_id="UgyyGmQ",
+                        native_parent_id="vid",
+                        representation_kind=YOUTUBE_DISCOVERED_AS,
+                        locator="https://example.invalid/c1",
+                    ),
+                    record(
+                        "t1",
+                        "youtube_innertube",
+                        native_item_id="vid",
+                        representation_kind=YOUTUBE_TRANSCRIPT_AS,
                     ),
                 ]
             )
@@ -508,13 +616,27 @@ class DepthReviewTest(unittest.TestCase):
         self.assertNotIn(coverage.NOTHING_HYDRATED, codes(found))
 
     def test_an_artifact_that_only_searched_still_says_nothing_deepened_it(self):
-        """Silence has to be earned, or the two above prove only that it is easy."""
+        """Silence has to be earned, or the three above prove only that it is easy.
+
+        Search records at the kind the adapter's discovery answers on, naming no
+        parent: this is what a `search:` step returns and it deepened nothing.
+        """
 
         found = coverage.review_artifact(
             artifact(
                 records=[
-                    record("y1", "youtube_innertube", native_item_id="vid"),
-                    record("y2", "youtube_innertube", native_item_id="vid2"),
+                    record(
+                        "y1",
+                        "youtube_innertube",
+                        native_item_id="vid",
+                        representation_kind=YOUTUBE_DISCOVERED_AS,
+                    ),
+                    record(
+                        "y2",
+                        "youtube_innertube",
+                        native_item_id="vid2",
+                        representation_kind=YOUTUBE_DISCOVERED_AS,
+                    ),
                 ]
             )
         )
