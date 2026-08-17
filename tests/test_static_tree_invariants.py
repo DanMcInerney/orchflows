@@ -32,7 +32,10 @@ OVERLAP_ANCHORS = ("write scope", "dependency-ordered")
 # What a cut optimizes, by the three terms orch-decompose spells: the quantity
 # the Goal minimizes, the per-item constraint it minimizes under, and the
 # cutcheck block whose numbers the Return reports it against.
-CUT_GOAL_ANCHORS = ("critical path", "atom", "graph")
+# The constraint anchor carries the two words before the term because the body
+# names the atom twice -- in the Goal and in the pointer to its test -- so the
+# bare term survives deleting the constraint clause and pins nothing.
+CUT_GOAL_ANCHORS = ("critical path", "item an atom", "graph")
 INTEGRATE = ROOT / "skills" / "kernel" / "orch-integrate" / "SKILL.md"
 # The empty-set skip by its anchors: the gate item the join completes itself,
 # spelled as the owner spells it, and the set whose emptiness is the trigger.
@@ -341,13 +344,15 @@ class TestDependencyOrderedOverlap(unittest.TestCase):
                 "different frontiers can be concurrently in flight and collide",
             )
 
-    def test_the_code_cut_puts_the_riskiest_seam_first(self):
+    def test_the_code_cut_reserves_the_tracer_for_the_unproven_seam(self):
         text = read_flat(CODE_SLICING)
         for anchor in ("first frontier", "riskiest", "tracer"):
             self.assertIn(
                 anchor, text,
-                f"code pack slicing does not name {anchor!r}, so it does not "
-                "put the riskiest seam's tracer in the first frontier",
+                f"code pack slicing does not name {anchor!r}, so it no longer "
+                "opens the first frontier with the seams the acceptance "
+                "already checks and reserves the tracer for the riskiest "
+                "seam the spec leaves unproven",
             )
 
 
