@@ -33,6 +33,10 @@ OVERLAP_ANCHORS = ("write scope", "dependency-ordered")
 # the Goal minimizes, the per-item constraint it minimizes under, and the
 # cutcheck block whose numbers the Return reports it against.
 CUT_GOAL_ANCHORS = ("critical path", "atom", "graph")
+INTEGRATE = ROOT / "skills" / "kernel" / "orch-integrate" / "SKILL.md"
+# The empty-set skip by its anchors: the gate item the join completes itself,
+# spelled as the owner spells it, and the set whose emptiness is the trigger.
+EMPTY_SET_SKIP_ANCHORS = ("gate.repair", "accepted defect set")
 
 COMPOSITIONS = ROOT / "compositions"
 EVAL_DESIGN = ROOT / "skills" / "workflows" / "orch-eval-design" / "SKILL.md"
@@ -372,6 +376,17 @@ class TestCutGoalAnchors(unittest.TestCase):
                 "longer told to minimize the critical path subject to every "
                 "item an atom, or no longer returns the graph block whose "
                 "numbers that goal is measured by",
+            )
+
+    def test_the_join_skips_the_repair_on_an_empty_accepted_set(self):
+        text = read_flat(INTEGRATE)
+        for anchor in EMPTY_SET_SKIP_ANCHORS:
+            self.assertIn(
+                anchor, text,
+                f"orch-integrate does not name {anchor!r}, so the join no "
+                "longer completes the gate's repair itself on an empty "
+                "accepted defect set and every clean run pays for a no-op "
+                "dispatch on its critical path",
             )
 
 
