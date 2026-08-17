@@ -45,7 +45,9 @@ dependencies point. Terms: `docs/vocabulary.md`.
 - `scripts/` — repository-root scripts — stdlib Python 3, Windows and
   POSIX, no network at run time — one owner each:
   `scripts/cutcheck.py` owns cut-defect detection over an issued ticket
-  set, run by `orch-decompose` and read by its cut lens;
+  set, run by `orch-decompose` and read by its cut lens, and beside the
+  defects it reads that set's graph — the critical path and each level's
+  width — as a reading and never as a finding;
   `scripts/doclint.py` owns grading any repository's markdown — every
   relative link resolves, every paragraph has one home — and with it the
   one near-duplicate method, which `tools/validate.py` calls rather than
