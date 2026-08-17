@@ -992,6 +992,43 @@ OPERATING_PATH = Path(__file__).resolve().parent.parent / "references" / "operat
 # rewrite it is supposed to permit.
 MULTI_SURFACE_ANCHOR = re.compile(r"\b([A-Za-z]+) adapters rea(?:d|ch) more than one\b")
 
+# The one roster row read cell by cell here. Its adapter id comes off the
+# module that owns the route rather than off this file, so a rename reaches
+# the assertions.
+YOUTUBE = youtube_innertube.DESCRIPTOR.adapter_id
+
+# The adapter roster in `protocol.md`, named by its header row the way the loss
+# tables above are named by theirs.
+ROSTER_TABLE_HEADER = "| adapter | class | route surfaces | what ships |"
+
+
+def roster_table_rows():
+    """The adapter roster, keyed by adapter id, each row column name -> cell.
+
+    Parsed rather than transcribed, for the reason the loss tables are: the
+    row a reader reads is the row the assertions run against.
+    """
+
+    rows = {}
+    columns = None
+    for line in PROTOCOL_PATH.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped == ROSTER_TABLE_HEADER:
+            columns = [cell.strip() for cell in stripped.strip("|").split("|")]
+            continue
+        if columns is None:
+            continue
+        if not stripped.startswith("|"):
+            break
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if set(cells[0]) <= set("- "):
+            continue
+        named = backticked(cells[0])
+        if len(named) == 1:
+            rows[named[0]] = dict(zip(columns, cells))
+    return rows
+
+
 def counted_as(word):
     """The number one spelled number word names, or ``None`` if it names none.
 
@@ -1041,6 +1078,13 @@ class RosterIsReadOffTheSourceTest(unittest.TestCase):
 
     def setUp(self):
         self.multi = multi_surface_adapters()
+        self.rows = roster_table_rows()
+
+    def youtube_row(self, column):
+        # If the parse silently found nothing, a cell assertion would pass
+        # against no table at all.
+        self.assertEqual(set(self.rows), set(runner.ADAPTER_IDS))
+        return self.rows[YOUTUBE][column]
 
     def test_the_multi_surface_count_is_the_descriptors_own(self):
         # If the source ever gave every adapter one surface the claim would be
@@ -1064,6 +1108,19 @@ class RosterIsReadOffTheSourceTest(unittest.TestCase):
                         path.name, stated[0], len(self.multi), sorted(self.multi)
                     ),
                 )
+
+    def test_the_youtube_row_names_every_surface_it_reads(self):
+        # The row said one surface while the adapter reads two, which is how a
+        # transcript operation came to be described by a row that denied it.
+        self.assertIn(YOUTUBE, self.multi)
+
+        self.assertEqual(
+            set(backticked(self.youtube_row("route surfaces"))),
+            {
+                descriptor.route_id
+                for descriptor in runner.surface_descriptors(YOUTUBE)
+            },
+        )
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner

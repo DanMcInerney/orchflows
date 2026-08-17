@@ -204,7 +204,7 @@ never a record. Read back off `runner.surface_descriptors`.
 | `x_guest` | `K1` | `x_guest_activate`, `x_guest_graphql` | a guest-token activation, then `TweetResultByRestId`, `UserByScreenName`, `UserTweets` on the token it minted. One read costs two origin calls; both are paced, and the ledger bills the read alone — the activation is in the governor's log |
 | `linkedin_public` | `K2` | `linkedin_public_profile` | `/in/<slug>` `ld+json` Person: name, description, `jobTitle`, `addressLocality`, `worksFor`, `alumniOf` |
 | `linkedin_jobs` | `K0` | `linkedin_jobs_guest_search` | `jobs-guest` search: URN id, title, company, posted date |
-| `youtube_innertube` | `K1` | `youtube_innertube` | `search`, `next` comment threads, `player` metadata. No captions |
+| `youtube_innertube` | `K1` | `youtube_innertube`, `youtube_timedtext` | `search`, `next` comment threads, `player` metadata. No captions |
 | `instagram_public` | `K1` | `instagram_web_profile` | `web_profile_info`: biography, follower count, recent posts with like and comment counts |
 | `hacker_news` | `K0` | `hn_algolia_search`, `hn_firebase_item`, `hn_algolia_item` | Algolia search for stories and comments, Firebase v0 item and `kids` traversal, and one Algolia call that returns a story's whole comment tree — 259 nodes in one read, measured 2026-08-17. Search asks `typoTolerance=false`, because the index reaches `space` from `SpaceX` otherwise |
 | `github_rest` | `K0` | `github_rest`, `github_search` | anonymous repositories, issues, releases, search |
