@@ -321,6 +321,11 @@ CHECKABLE_STATUSES = GRANTABLE_STATUSES
 CHECKER_EXECUTOR = "orch-critique"
 REVERIFIER_EXECUTOR = "orch-verify"
 CHECKER_PATH_EXECUTORS = (CHECKER_EXECUTOR, REVERIFIER_EXECUTOR)
+# The lens the §10 checker of a *cut* reads, in the library's own layout.
+# A unit's checker reads the ticket's `## Completion test`; a root's reads
+# the cut lens, because its object is the issued set rather than a
+# deliverable.
+CUT_LENS_PARTS = ("skills", "kernel", "orch-decompose", "references", "cut-lens.md")
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
 WORKLOG_USAGE = "worklog <run> [--write]"
 GATE_USAGE = (
@@ -3206,6 +3211,57 @@ def _cmd_set_status(rest):
     return {"set_status": {"run": run, "id": ticket_id, "status": status}}
 
 
+def _worked_subtree(run: str, root_id: str) -> list:
+    """Every `<root>.` ticket that has left the window `amend` is open in.
+
+    The cut checker's whole authority is `amend` and `new` over the issued
+    subtree, and both are refused outside `AMENDABLE_STATUSES` — a criterion
+    that moves under a working executor is the moving target
+    rules/verification.md §3 forbids. So one claimed unit is not a smaller
+    correction but no correction at all, and the packet is refused rather
+    than emitted against an authority that is already gone. Each item is
+    named with the status that closed it, since the run that got here
+    dispatched the cut checker after the units rather than before them.
+    """
+
+    items, error = _run_tickets(run)
+    if error is not None:
+        return []
+    worked = []
+    for item in items:
+        item_id = str(item.get("id") or "")
+        if not item_id.startswith(f"{root_id}."):
+            continue
+        status = str(item.get("status") or "").strip().strip("`").strip()
+        if status not in AMENDABLE_STATUSES:
+            worked.append(f"{item_id} is '{status or 'unstated'}'")
+    return sorted(worked)
+
+
+def _cut_lens_path():
+    """The cut lens as this host holds it, or its repo-relative name.
+
+    The two candidates ``scripts/cutcheck.py``'s ``_lib_root`` reads, and for
+    its reason: this script runs either from a checkout of the library, where
+    the lens is a sibling tree, or from the installed ``bin/`` beside the
+    state sink, where the library is ``lib/`` and no ``skills/`` sits beside
+    the scripts at all. A packet naming a path that is not there sends the
+    checker hunting, so where neither resolves the repo-relative name is
+    emitted: what to find rather than where it is not.
+    """
+
+    candidates = [Path(__file__).resolve().parent.parent]
+    try:
+        candidates.append(state_root.state_root().parent / "lib")
+    except OSError:  # pragma: no cover - a home directory that will not resolve
+        pass
+    for candidate in candidates:
+        lens = candidate.joinpath(*CUT_LENS_PARTS)
+        if lens.is_file():
+            return str(lens)
+    return "/".join(CUT_LENS_PARTS)
+
+
 def _further_child_prompt(executor, loaded: dict, ticket_path: Path, run_id, script):
     """The head of a packet for one further rules/verification.md §10 child.
 
@@ -3215,6 +3271,15 @@ def _further_child_prompt(executor, loaded: dict, ticket_path: Path, run_id, scr
     verify at. Everything after this -- the filing and run-state channels,
     ``reply_to`` -- is what the executor got, unchanged: hand-writing these
     packets beside the frontier is what left them without it (S1 F1).
+
+    On a root ticket each shape has a cut-shaped twin, because there the
+    result under review is the decomposition and not a deliverable: the lens
+    is the cut lens, the object is the issued subtree read as data, the
+    authority is that subtree's cut-time sections rather than the run's
+    workspace -- which is the units' to write -- and the check that accepts
+    the correction is ``cutcheck.py`` re-run (rules/verification.md §11).
+    This is the review-and-fix call the old system made over a decomposition
+    before kicking it off, placed where §10 already puts one fresh reader.
     """
 
     head = [
@@ -3230,7 +3295,68 @@ def _further_child_prompt(executor, loaded: dict, ticket_path: Path, run_id, scr
         if branch
         else "the identity the ticket's `## Result` records"
     )
-    if executor == CHECKER_EXECUTOR:
+    is_root = _executor_of(loaded) == ROOT_EXECUTOR
+    # What `cutcheck.py --baseline` grades against: the revision the set was
+    # cut from, which is the workspace record the decomposer's own dispatch
+    # wrote (`workspace.py start` appends the tree's cleanliness to it, so
+    # the first token is the revision). Absent, the packet says REV and names
+    # what fills it rather than inventing a revision.
+    recorded = str(loaded.get("workspace_baseline") or "").strip().split()
+    baseline = recorded[0] if recorded else "REV"
+    cut_check = (
+        f"{sys.executable} {script.with_name('cutcheck.py')} "
+        f"--baseline {baseline} {run_id}"
+    )
+    unresolved = "" if recorded else ", REV being the revision the set was cut from"
+    if is_root and executor == CHECKER_EXECUTOR:
+        head.append(
+            f"This is the rules/verification.md §10 checker's pass on the cut "
+            f"{claimed_by} produced under its claim, never a second "
+            f"decomposition: the lens is {_cut_lens_path()}, and its object "
+            f"is the issued subtree — the `{loaded['id']}.NN` items and the "
+            "gate stubs — read as data."
+        )
+        head.append(
+            "Your authority is not the root's `write_scope`, which is the "
+            "run's workspace and the units' to write. It is the unclaimed "
+            "subtree's cut-time sections, corrected in place with:"
+        )
+        head.append(
+            f"{sys.executable} {script} amend {run_id} ID --section SECTION "
+            "--file PATH"
+        )
+        head.append("and, for an item the cut is missing:")
+        head.append(f"{sys.executable} {script} new {run_id} ID --file PATH")
+        head.append(
+            "Both are refused once a unit is claimed, and so is this packet: "
+            "the cut is corrected before any unit of it is dispatched."
+        )
+        head.append(
+            "Your repair is accepted on the cut check re-run to exit 0 "
+            f"(rules/verification.md §11){unresolved}:"
+        )
+        head.append(cut_check)
+        head.append(
+            "Append your findings and the changes you made to the root's "
+            "`## Result`, and record the pass with:"
+        )
+        head.append(
+            f"{sys.executable} {script} check {run_id} {loaded['id']} --by NAME"
+        )
+    elif is_root:
+        head.append(
+            "This is the rules/verification.md §10 re-verification of a "
+            "checked cut, never a second decomposition: the completion test "
+            "at the checked set is the cut check, read on the host that "
+            f"produced it{unresolved}:"
+        )
+        head.append(cut_check)
+        head.append(
+            "Your authority grants no write: the subtree and the root's "
+            "`## Result` are another context's, and `## Verification` is the "
+            "one section you file."
+        )
+    elif executor == CHECKER_EXECUTOR:
         scope = effective_write_scope(loaded)
         head.append(
             "This is the rules/verification.md §10 checker's pass on a result "
@@ -3345,6 +3471,17 @@ def _cmd_packet(rest):
                 "Dispatch the item's own executor first — this packet without "
                 f"--executor. ticket: {ticket_path}"
             }
+        if further == CHECKER_EXECUTOR and _executor_of(loaded) == ROOT_EXECUTOR:
+            worked = _worked_subtree(loaded.get("run") or run, loaded["id"])
+            if worked:
+                return {
+                    "error": "the cut checker corrects through `amend` and "
+                    f"`new`, and {'; '.join(worked)} has left "
+                    f"{sorted(AMENDABLE_STATUSES)}, where both are refused "
+                    "(rules/verification.md §3). A cut is checked before its "
+                    "first unit is dispatched, so there is nothing this child "
+                    f"could still correct. ticket: {ticket_path}"
+                }
 
     run_id = loaded.get("run") or run
     script = Path(__file__).resolve()
