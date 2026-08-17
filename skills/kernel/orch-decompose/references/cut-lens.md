@@ -25,6 +25,10 @@ the unclaimed items, `tickets.py new` for one the cut is missing, and
 - Slicing fidelity: the cut is the shape the stamped pack's `slicing`
   cell prescribes, terminal assembly item included
   ([contracts/pack-signature.md](../../../../contracts/pack-signature.md)).
+- false edge: an edge no oracle-read or cited result identity
+  justifies; without it a level widens at no cost. Read it from
+  `cutcheck.py`'s `graph` block — `critical-path` and `level-width` —
+  beside each item's oracles and `## Fixed inputs`.
 
 ## Proving a copy
 
