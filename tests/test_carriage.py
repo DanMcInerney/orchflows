@@ -583,6 +583,10 @@ _FRONTIER_CUT_CHECK = {
     "the context whose cut-check re-run is the re-verification": (
         "engine's own `cutcheck.py` re-run", "re-verification",
     ),
+    # A fresh reader over a two-unit cut with a clean cutcheck run reviews
+    # what the script already graded; the size and the advisories are what
+    # make a cut worth a context of its own.
+    "the threshold that buys a cut a fresh reader": ("three or more", "advisory"),
 }
 
 _CONTRACT_CUT_CHECK = {
@@ -591,11 +595,12 @@ _CONTRACT_CUT_CHECK = {
     "what the cut checker corrects, and what it does not": (
         "`tickets.py amend`", "run's workspace",
     ),
+    "the threshold that buys a cut a fresh reader": ("three or more", "advisory"),
 }
 
 # The clauses as written, so the can-fail copies below read as their files did
 # before them.
-_FRONTIER_CLAUSE_RE = re.compile(r"A root ticket takes that checker.*?exit 0\.\s*", re.S)
+_FRONTIER_CLAUSE_RE = re.compile(r"A\s+root's\s+cut\s+takes.*?cut\s+alone\.\s*", re.S)
 _CONTRACT_CLAUSE_RE = re.compile(r"A root's cut is checked.*?cut checker\.\s*", re.S)
 
 
