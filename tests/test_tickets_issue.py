@@ -529,6 +529,39 @@ class InstructionCeilingTest(unittest.TestCase):
                 at, tickets_mod.instruction_words(path.read_text(encoding="utf-8"))
             )
 
+    def test_amend_refuses_an_instruction_over_the_ceiling(self):
+        """`amend` is the one write path around the refusals `new` applies
+        to the same bytes; a cutter could otherwise widen a ticket past the
+        ceiling one section at a time."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            payload, path = self.place(
+                tmp, ceiling_ticket(tickets_mod.INSTRUCTION_BUDGET)
+            )
+            self.assertNotIn("error", payload)
+            before = path.read_text(encoding="utf-8")
+            refused = run_cmd(
+                "amend", "testrun", "T1", "--section", "Objective",
+                "--text", " ".join(["word"] * tickets_mod.INSTRUCTION_BUDGET),
+            )
+            self.assertIn("error", refused)
+            self.assert_names_the_ceiling(
+                refused["error"], tickets_mod.INSTRUCTION_BUDGET
+            )
+            self.assertEqual(before, path.read_text(encoding="utf-8"))
+            # The section that is never instruction stays amendable at any
+            # length, and a repair that brings the ticket down lands.
+            for section, body in (
+                ("Fixed inputs", "- " + " ".join(["identity"] * 400)),
+                ("Objective", "cut the run"),
+            ):
+                with self.subTest(section):
+                    self.assertNotIn("error", run_cmd(
+                        "amend", "testrun", "T1", "--section", section,
+                        "--text", body,
+                    ))
+
     def test_a_root_ticket_is_exempt(self):
         """A root states a whole run, and the `.gate.` stubs `gate` renders
         carry that root's `## Completion test` verbatim. Neither is a unit

@@ -2312,6 +2312,11 @@ def _cmd_amend(rest):
             "error": f"the amended ticket {run}/{ticket_id} would be off contract "
             f"(contracts/work-item.md): " + "; ".join(defects)
         }
+    over = _ceiling_error(
+        f"the amended ticket {run}/{ticket_id}", ticket_id, rendered
+    )
+    if over is not None:
+        return over
     try:
         ticket_path.write_text(rendered, encoding="utf-8")
     except OSError as error:
