@@ -713,7 +713,70 @@ _FRONTIER_REVERIFICATION = {
 _SPLIT_CLAUSE_RE = re.compile(
     r"—\s+where\s+every\s+invalidated.*?fresh\s+child", re.S
 )
-_FRONTIER_SPLIT_RE = re.compile(r";\s+then,\s+where\s+the\s+checker's.*?§10\)\.", re.S)
+_FRONTIER_SPLIT_RE = re.compile(r";\s+then,\s+where\s+its\s+pass.*?§10\)\.", re.S)
+
+
+# Sixteen repair tickets in the same run each ran the whole required-check
+# set 4-6 times, twelve lanes deep on one host, and the tip they merged to
+# was red anyway on a seam no lane's copy could see. Per-lane suite runs buy
+# nothing the integrated tip does not decide, so the engine runs that set
+# once per merge batch and a lane runs only what its own ticket names.
+_FRONTIER_TIP_CHECK = {
+    "what one lane is dispatched to run": (
+        "its ticket's own oracles", "nothing wider",
+    ),
+    "whose checks run at the tip, and how often": (
+        "standards owner", "each merge batch",
+    ),
+    "the revision they run on": ("integrated tip",),
+    "where that revision is recorded": ("tip's revision", "run's notes"),
+    "what a red tip costs, and what a lane's green is worth before it": (
+        "red tip", "next dispatch", "provisional",
+    ),
+}
+
+_TIP_CLAUSE_RE = re.compile(r"After\s+each\s+merge\s+batch.*?next\s+dispatch\.", re.S)
+
+
+class TipCheckTest(unittest.TestCase):
+    """A lane grades its own ticket; only the merged tip carries the seam
+    between lanes. The engine owns the tip, so the engine owns the check on
+    it -- and owning it is what lets a lane stop paying for it."""
+
+    def test_the_engine_runs_the_required_checks_once_on_the_tip(self):
+        gaps = _clause_gaps(FRONTIER.read_text(encoding="utf-8"), _FRONTIER_TIP_CHECK)
+        self.assertEqual(
+            [],
+            gaps,
+            "orch-frontier's body states no tip-check clause covering: "
+            f"{', '.join(gaps)}",
+        )
+
+    def test_an_engine_without_the_clause_fails_the_check(self):
+        """The can-fail direction, built beside the tree and never by
+        mutating it (rules/verification.md §8): a copy of the engine with
+        the tip clause excised, which is how it read before."""
+        real = FRONTIER.read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            beside = Path(tmp) / FRONTIER.name
+            beside.write_text(real, encoding="utf-8")
+            self.assertEqual(
+                [],
+                _clause_gaps(beside.read_text(encoding="utf-8"), _FRONTIER_TIP_CHECK),
+                "the copy must start with the clause intact, or the excision "
+                "below is not what the check reacted to",
+            )
+            excised = re.sub(_TIP_CLAUSE_RE, "", real, count=1)
+            self.assertNotEqual(
+                real, excised,
+                "the excision matched nothing, so the assertion below would "
+                "prove nothing",
+            )
+            beside.write_text(excised, encoding="utf-8")
+            self.assertEqual(
+                sorted(_FRONTIER_TIP_CHECK),
+                _clause_gaps(beside.read_text(encoding="utf-8"), _FRONTIER_TIP_CHECK),
+            )
 
 
 class ReverificationSplitTest(unittest.TestCase):

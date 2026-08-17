@@ -54,3 +54,12 @@ per
 [contracts/work-item.md](../../../../contracts/work-item.md#dispatch);
 a child that will itself dispatch is told its own assigned name, since
 that name is its children's `reply_to`.
+
+## Running a merge batch's tip check (Claude Code)
+
+The standards owner's required checks run in the engine's own context —
+no lane, no child — one command per call, the turn held until each exit
+status lands, by the §11 reading above: a launched process whose outcome
+never reaches durable state graded the tip not at all. A host whose
+`git` tip is a worktree branch runs them where the batch merged, and the
+revision recorded beside the verdict is that tree's `HEAD`.
