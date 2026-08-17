@@ -577,6 +577,12 @@ _FRONTIER_CUT_CHECK = {
     "the units wait rather than promote": ("stay `pending`",),
     "the field whose absence holds them": ("`checked_by`",),
     "the check the cut's correction is accepted on": ("cutcheck",),
+    # rules/verification.md §10 wants the checker's correction re-verified by
+    # a further context; the cut check is deterministic, so the engine runs
+    # it itself and dispatches no re-verifier for a root.
+    "the context whose cut-check re-run is the re-verification": (
+        "engine's own `cutcheck.py` re-run", "re-verification",
+    ),
 }
 
 _CONTRACT_CUT_CHECK = {

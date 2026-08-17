@@ -3211,31 +3211,33 @@ def _cmd_set_status(rest):
     return {"set_status": {"run": run, "id": ticket_id, "status": status}}
 
 
-def _worked_subtree(run: str, root_id: str) -> list:
-    """Every `<root>.` ticket that has left the window `amend` is open in.
+def _cut_subtree(run: str, root_id: str) -> list:
+    """``(id, status)`` for every `<root>.` ticket the run holds, sorted.
 
-    The cut checker's whole authority is `amend` and `new` over the issued
-    subtree, and both are refused outside `AMENDABLE_STATUSES` — a criterion
-    that moves under a working executor is the moving target
+    What the cut checker's packet is refused over, in both directions. The
+    checker's whole authority is `amend` and `new` over the issued subtree,
+    and both are refused outside `AMENDABLE_STATUSES` — a criterion that
+    moves under a working executor is the moving target
     rules/verification.md §3 forbids. So one claimed unit is not a smaller
     correction but no correction at all, and the packet is refused rather
-    than emitted against an authority that is already gone. Each item is
-    named with the status that closed it, since the run that got here
-    dispatched the cut checker after the units rather than before them.
+    than emitted against an authority that is already gone; each such item
+    is named with the status that closed it, since the run that got here
+    dispatched the cut checker after the units rather than before them. And
+    a root with no `<root>.` unit at all has no cut to read: `cutcheck.py`
+    on the root alone exits 0, and issuing the set is the decomposition,
+    which the checker never repeats — `gate` refuses the same case.
     """
 
     items, error = _run_tickets(run)
     if error is not None:
         return []
-    worked = []
+    subtree = []
     for item in items:
         item_id = str(item.get("id") or "")
-        if not item_id.startswith(f"{root_id}."):
-            continue
-        status = str(item.get("status") or "").strip().strip("`").strip()
-        if status not in AMENDABLE_STATUSES:
-            worked.append(f"{item_id} is '{status or 'unstated'}'")
-    return sorted(worked)
+        if item_id.startswith(f"{root_id}."):
+            status = str(item.get("status") or "").strip().strip("`").strip()
+            subtree.append((item_id, status))
+    return sorted(subtree)
 
 
 def _cut_lens_path():
@@ -3472,7 +3474,21 @@ def _cmd_packet(rest):
                 f"--executor. ticket: {ticket_path}"
             }
         if further == CHECKER_EXECUTOR and _executor_of(loaded) == ROOT_EXECUTOR:
-            worked = _worked_subtree(loaded.get("run") or run, loaded["id"])
+            root_id = loaded["id"]
+            subtree = _cut_subtree(loaded.get("run") or run, root_id)
+            gate_prefix = f"{root_id}.gate."
+            if not any(not item_id.startswith(gate_prefix) for item_id, _ in subtree):
+                return {
+                    "error": f"root ticket '{root_id}' has no `{root_id}.` subtree "
+                    "ticket yet: the cut checker reads an issued set, and "
+                    "issuing one is the decomposer's, never a checker's "
+                    f"second decomposition. ticket: {ticket_path}"
+                }
+            worked = [
+                f"{item_id} is '{status or 'unstated'}'"
+                for item_id, status in subtree
+                if status not in AMENDABLE_STATUSES
+            ]
             if worked:
                 return {
                     "error": "the cut checker corrects through `amend` and "

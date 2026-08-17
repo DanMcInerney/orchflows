@@ -5232,7 +5232,9 @@ class TestRootTicketCutCheckerPacket(unittest.TestCase):
 
     def make(self, tmp: Path, subtree: dict = None, body: str = ROOT_TICKET) -> Path:
         path = make_packet_repo(tmp, body, tid="R1")
-        make_tickets(path.parent, subtree or {"R1.01": ("pending", "[]")})
+        if subtree is None:
+            subtree = {"R1.01": ("pending", "[]")}
+        make_tickets(path.parent, subtree)
         return path
 
     def packet(self, tmp: Path, *extra):
@@ -5331,6 +5333,25 @@ class TestRootTicketCutCheckerPacket(unittest.TestCase):
             self.assertNotIn("packet", payload)
             self.assertIn("R1.01", payload["error"])
             self.assertNotIn("R1.02", payload["error"])
+
+    def test_the_checker_packet_is_refused_on_a_root_with_no_subtree(self):
+        """A root no `<root>.` unit has been issued under has no cut to read
+        (`cutcheck.py` on the root alone exits 0), and issuing the whole set
+        is the decomposition itself, which this child never repeats — the
+        refusal `tickets.py gate` makes for the same reason. Gate stubs alone
+        are no more a cut than none: the check reads units."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, {})
+            payload = self.packet(tmp, "--executor", "orch-critique")
+            self.assertNotIn("packet", payload)
+            self.assertIn("no `R1.` subtree", payload["error"])
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp, {"R1.gate.critique.x": ("pending", "[]")})
+            self.assertNotIn(
+                "packet", self.packet(tmp, "--executor", "orch-critique")
+            )
 
     def test_the_reverifier_packet_names_the_cut_check_at_the_checked_set(self):
         with tempfile.TemporaryDirectory() as tmp:
