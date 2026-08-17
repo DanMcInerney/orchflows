@@ -54,8 +54,10 @@ POST_QUALIFICATION_FIELDS = (
 )
 # The done check reaches every component and stops there, so which block a
 # field sits in is the rule, not presentation. The three stage records are
-# components; each keeps the substance it carried as a value.
-NOT_RE_DERIVABLE = "None of the following is re-derivable afterwards"
+# components; each keeps the substance it carried as a value. The divider is
+# the one word the contract splits on -- the sentence carrying it is the
+# contract's to reword.
+NOT_RE_DERIVABLE = "re-derivable"
 STAGE_RECORD_SUBSTANCE = {
     "reference_audit": (
         "auditing context identity",
@@ -63,11 +65,11 @@ STAGE_RECORD_SUBSTANCE = {
         "defect **count**",
         "Never a rate",
     ),
-    "attack_audit": ("dated checklist identity", "the attack that works"),
+    "attack_audit": ("dated checklist identity", "unrepaired"),
     "measurement": (
         "candidate identities",
         "per-case status",
-        "count of distinct failure signatures",
+        "failure signatures",
         "margin",
     ),
 }
@@ -113,49 +115,53 @@ STUB_CHAIN = (
 TERMINAL_STUB = "05-measure"
 # Every invariant the composition stated as prose, on the stub it binds and on
 # no other. Distributed rather than repeated: a Never clause on all six stubs
-# is a clause no stub is accountable for.
+# is a clause no stub is accountable for. Each is named by the anchor that
+# distinguishes its clause inside the `excluded_actions` field, never by the
+# clause's sentence: the field is the owner, and rewording a clause is the
+# owner's to do.
 STUB_INVARIANTS = {
-    "00-acquire": ("let unsupported semantics become invented target truth",),
-    "01-design": (
-        "move the declared coverage floor with the target's execution cost",
-        "buy speed from the coverage floor, the oracle, or the horizon the "
-        "outcome needs",
-    ),
+    "00-acquire": ("invented target truth",),
+    "01-design": ("execution cost", "buy speed"),
     "02-materialize": ("mutate the target", "generate a candidate"),
-    "03-qualify": ("return a self-qualified verdict set",),
-    "04-audit": ("enter an attack artifact into the case set",),
+    "03-qualify": ("self-qualified verdict",),
+    "04-audit": ("attack artifact",),
     "05-measure": (
         "rank candidates",
-        "promote or activate anything",
+        "promote or activate",
     ),
 }
 # Every invariant rides exactly one stub: the auditor's attack pass produces
 # candidate-shaped artifacts by design, so its own clause forbids entering one
 # into the case set rather than repeating the materializer's.
 SHARED_INVARIANTS = {}
-# The done check, verbatim, which is the terminal stub's first criterion.
-DONE_CHECK = (
-    "the manifest's qualification verdict set covers every component but its "
-    "own — covered PASS on every required criterion, its `covers` naming the "
-    "post-repair identities, gaps explicit (`[]` when none)"
-)
+# The composition's done check is the terminal stub's first criterion, and
+# what makes the template's promise checkable is that the criterion reads the
+# manifest's own fields: the verdict set, what each entry covers, and the gap
+# list. Those fields are what is pinned -- a criterion that stopped reading
+# one of them is red, and the sentence reading them is the stub's to reword.
+# `covers` is backticked here on purpose: the criterion's own verb is
+# "covers", so the bare word survives deleting the field it names.
+DONE_CHECK_FIELDS = ("qualification", "`covers`", "gaps", "PASS")
 # What the protocol stopped stating at P4: the phrase it dropped, the file the
 # law went to, and what that file says instead. A triple rather than a
 # deletion list, because a phrase deleted from the protocol and from the tree
 # at once is a lost law, not a trim -- and the two halves fail separately.
+# The owner half is an anchor, not the owner's sentence: the phrase the
+# protocol dropped is history and cannot be reworded, but the owner it went to
+# rewords freely, and a pin on that owner's wording would make every such
+# reword a two-file change.
 MOVED_OUT_OF_PROTOCOL = (
     ("Internal call carriage", ROOT / "contracts" / "work-item.md", "## Dispatch"),
-    ("coverage floor never moves", EVAL_DESIGN, "coverage floor is not tradable"),
+    ("coverage floor never moves", EVAL_DESIGN, "not tradable"),
     (
         "Materialize the selected case specifications",
         TEMPLATE / "02-materialize.md",
-        "select, add, remove, rank, rewrite or substitute a case",
+        "substitute a case",
     ),
     (
         "Builders never qualify",
         TEMPLATE / "03-qualify.md",
-        "return a self-qualified verdict set where the builder-disjoint context "
-        "is unreachable",
+        "builder-disjoint context",
     ),
     (
         "Record the qualified result in the package's",
@@ -448,6 +454,19 @@ def markdown_section(text: str, heading: str) -> str:
     return text[start:] if end == -1 else text[start:end]
 
 
+def markdown_subsection(text: str, heading: str) -> str:
+    """One `###` subsection: its heading to the next heading of any level.
+    `markdown_section` above cannot cut one -- `## <heading>` matches inside
+    `### <heading>` and runs on to the next `##`."""
+    start = text.index(f"### {heading}")
+    following = [
+        offset
+        for offset in (text.find("\n### ", start + 1), text.find("\n## ", start + 1))
+        if offset != -1
+    ]
+    return text[start : min(following)] if following else text[start:]
+
+
 def squashed(text: str) -> str:
     return " ".join(text.split())
 
@@ -514,15 +533,16 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         self.assertEqual("named", self.fields["entry"])
         self.assertLessEqual(len(self.fields["description"]), 140)
         declared = self.fields["placeholders"]
+        # The set a caller must fill, not the line rendering it: the field is
+        # a list, and its spelling is `template.md`'s.
+        names = {item.strip() for item in declared[1:-1].split(",")}
         self.assertEqual(
-            "[target, outcome, sources, rigor, pack, package]", declared
+            {"target", "outcome", "sources", "rigor", "pack", "package"}, names
         )
         # Every declared placeholder reaches a stub. `validate.py` warns here;
         # a warning is not what a caller who filled a dead `--set` needs.
         used = set(re.findall(r"\{\{([a-z_]+)\}\}", "".join(self.stubs.values())))
-        self.assertEqual(
-            {item.strip() for item in declared[1:-1].split(",")}, used
-        )
+        self.assertEqual(names, used)
 
     def test_every_stub_is_a_ticket_this_template_can_instantiate(self):
         """The shape law is `scripts/tickets.py`'s, and it is the same law
@@ -548,12 +568,14 @@ class TestCanonicalBenchmaker(unittest.TestCase):
             for edge in fields["depends_on"]
         }
         self.assertEqual({TERMINAL_STUB}, set(self.stub_fields) - depended)
-        # The terminal stub's completion test is the composition's done check,
-        # verbatim: that is what makes the template's promise checkable at all.
-        self.assertIn(
-            DONE_CHECK,
-            squashed(markdown_section(self.stubs[TERMINAL_STUB], "Completion test")),
-        )
+        # The terminal stub's completion test is the composition's done check:
+        # that is what makes the template's promise checkable at all, and what
+        # it must read is the manifest's own fields.
+        done_check = squashed(
+            markdown_section(self.stubs[TERMINAL_STUB], "Completion test")
+        ).partition("|")[0]
+        for field in DONE_CHECK_FIELDS:
+            self.assertIn(field, done_check, field)
 
     def test_each_invariant_rides_the_stub_it_binds_and_no_other(self):
         for stub, clauses in STUB_INVARIANTS.items():
@@ -644,11 +666,11 @@ class TestCanonicalBenchmaker(unittest.TestCase):
             self.assertIn(check, qualification)
         for policy in (
             "known-bad",
-            "required deterministic failure blocks qualification",
+            "blocks qualification",
             "anchors",
             "secondary",
             "cannot compensate",
-            "visibility and release policy",
+            "release policy",
             "candidate-inaccessible check",
             "UNVERIFIED",
         ):
@@ -660,12 +682,9 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         template's design step to it. Three owners was the finding; two
         statements of one law would be the same finding again."""
         owner = squashed(EVAL_DESIGN.read_text(encoding="utf-8"))
-        self.assertIn("The coverage floor is not tradable", owner)
-        self.assertIn(
-            "Buy difficulty from horizon length, outcome specificity, and a "
-            "stricter oracle that stays correct",
-            owner,
-        )
+        for anchor in ("coverage floor", "not tradable", "Buy difficulty"):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, owner)
         for phrase in ("coverage floor", "Difficulty is built", "execution tier"):
             with self.subTest(phrase=phrase):
                 self.assertNotIn(phrase, self.protocol)
@@ -680,37 +699,46 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         ):
             self.assertIn(ordered, stages)
         self.assertLess(stages.index("reference audit"), stages.index("attack pass"))
-        # The audit's third context, and its count-not-rate output.
-        self.assertIn(
-            "disjoint from every builder **and** from the qualifying context", stages
-        )
-        self.assertIn("binary fatal-flaw call, never a graded scale", stages)
-        self.assertIn("defect count", stages)
-        self.assertIn("never a rate", stages)
+        # The audit's third context, and its count-not-rate output. Each fact
+        # is named by its own term, in the subsection that owns it: the
+        # `###` headings are the protocol's anchors, and a fact that moved
+        # between them is a different law.
+        reference = squashed(markdown_subsection(self.protocol, "Reference audit"))
+        for anchor in (
+            "disjoint",
+            "qualifying context",
+            "fatal-flaw",
+            "defect count",
+            "never a rate",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, reference)
         # The attack pass's three outcomes and its declared-hole failure path.
+        attack = squashed(markdown_subsection(self.protocol, "Attack pass"))
         for outcome in ("`SUCCEEDED`", "`FAILED`", "`BLOCKED`"):
-            self.assertIn(outcome, stages)
-        self.assertIn("**dated** checklist", stages)
-        self.assertIn("An undeclared hole is the failure", stages)
+            self.assertIn(outcome, attack)
+        self.assertIn("**dated** checklist", attack)
+        self.assertIn("undeclared hole", attack)
         # The measurement pass records; it never renders a verdict.
-        self.assertIn("Recording only", stages)
-        self.assertIn("cannot fail", stages)
-        self.assertIn("dispatch made unreachable is an intake gap", stages)
-        self.assertIn("distinct failure signatures", stages)
+        measurement = squashed(markdown_subsection(self.protocol, "Measurement pass"))
+        self.assertIn("Recording only", measurement)
+        self.assertIn("cannot fail", measurement)
+        self.assertIn("intake gap", measurement)
+        self.assertIn("failure signatures", measurement)
         for status in ("`both-pass`", "`split`", "`both-fail`", "`inversion`"):
             self.assertIn(status, stages)
         # The instrument's resolution is the manifest's `resolution` field and
         # was stated twice until 2026-08-16 (thread T35);
         # `test_manifest_owner_carries_every_post_qualification_field` is where
         # the surviving statement is checked.
-        self.assertNotIn("max(measured rerun spread, one case)", stages)
+        self.assertNotIn("rerun spread", stages)
         self.assertIn("outside the package", stages)
         # The revision-durability rule that replaces the seal's guarantee: a
         # revision only resolves while it is reachable, and a squash merge
         # strands every branch commit.
-        self.assertIn("reachable from the default branch", stages)
-        self.assertIn("identical measured bytes", stages)
-        self.assertIn("squash", stages)
+        for anchor in ("default branch", "ancestor", "identical measured bytes", "squash"):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, stages)
 
     def test_protocol_scoring_reports_distributions_not_points(self):
         """What §Scoring still owns, and where the rest of it went at the
@@ -722,13 +750,15 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         `incomparability`. Absence here plus presence there is the pair: a
         law deleted from both places is lost, not trimmed."""
         scoring = squashed(markdown_section(self.protocol, "Scoring"))
-        self.assertIn("Never subtract a harness offset", scoring)
-        self.assertIn("count of sign flips", scoring)
+        self.assertIn("harness offset", scoring)
+        self.assertIn("sign flips", scoring)
 
         stages = squashed(markdown_section(self.protocol, "Audit and measurement"))
         self.assertIn("`(score, cost)` pairs", stages)
         self.assertIn("`pass^k` beside `pass@1`", stages)
-        self.assertIn("deterministic oracle versus by judged oracle", stages)
+        for oracle_kind in ("deterministic oracle", "judged oracle"):
+            with self.subTest(oracle_kind=oracle_kind):
+                self.assertIn(oracle_kind, stages)
 
         self.assertNotIn("per-angle vector is the artifact", scoring)
         # The pinned phrase was "per-angle vector primary and any scalar
@@ -779,9 +809,19 @@ class TestCanonicalBenchmaker(unittest.TestCase):
             bullet = contract_bullet(values, field)
             for axis in CONTEXT_AXES:
                 self.assertIn(axis, bullet, field)
-        self.assertIn("A declared `none` is legal; silence is not", values)
-        self.assertIn("`max(measured rerun spread, one case)`", values)
-        self.assertIn("the declaration only. Its firing is recorded", values)
+        # Three rules that ride a field rather than the contract at large,
+        # each read out of the bullet that owns it: an undeclared anchor is
+        # not a `none`, the instrument's resolution is the rerun spread, and
+        # a fired trigger is recorded outside the package.
+        for field, anchors in (
+            ("anchors", ("`none`", "silence")),
+            ("resolution", ("rerun spread",)),
+            ("retirement_trigger", ("declaration only", "outside the package")),
+        ):
+            bullet = contract_bullet(values, field)
+            for anchor in anchors:
+                with self.subTest(field=field, anchor=anchor):
+                    self.assertIn(anchor, bullet)
 
     def test_benchmark_identity_is_retired_from_law_manifest_and_tooling(self):
         """A benchmark's version is its git revision; no field digests it."""
@@ -928,11 +968,9 @@ class TestCanonicalBenchmaker(unittest.TestCase):
                 self.assertNotIn(retired, manifest)
             # Candidate isolation is not sealing: a builder may now edit a
             # manifest, and a candidate still may not.
-            self.assertIn(
-                "Candidate execution emits a separate result identity and cannot "
-                "change a manifest field",
-                manifest,
-            )
+            for anchor in ("separate result identity", "manifest field"):
+                with self.subTest(anchor=anchor):
+                    self.assertIn(anchor, manifest)
         with self.subTest("each target-vocabulary exclusion excuses exactly its own line"):
             for name, (licensed, _) in sorted(TARGET_VOCABULARY.items()):
                 self.assertEqual(
@@ -970,12 +1008,15 @@ class TestCanonicalBenchmaker(unittest.TestCase):
             ["04-audit"], self.stub_fields[TERMINAL_STUB]["depends_on"]
         )
         # 04-audit repairs or declares and renders no verdict; 05-measure
-        # records the manifest. Neither one does the other's job.
-        self.assertIn(
-            "render a pass/fail verdict on the benchmark",
-            self.stub_fields["04-audit"]["excluded_actions"],
-        )
-        self.assertIn("declared as a gap", audit)
+        # records the manifest. Neither one does the other's job. Both halves
+        # ride 04-audit's `excluded_actions`, which is where the stub is
+        # accountable for them.
+        excluded = self.stub_fields["04-audit"]["excluded_actions"]
+        for anchor in ("pass/fail verdict", "undeclared"):
+            with self.subTest(anchor=anchor):
+                self.assertTrue(
+                    any(anchor in action for action in excluded), excluded
+                )
         # What recording-only means is the protocol's one statement of it; the
         # stub carries the link, not a fifth copy of the rationale.
         self.assertIn("benchmaker-protocol.md#measurement-pass", measure)
