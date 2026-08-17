@@ -185,26 +185,31 @@ RECEIVED_ENDPOINTS_KEY = "onResponseReceivedEndpoints"
 # the first answer's container and only ever the first answer's: a call
 # spending a search token comes back with no `twoColumnSearchResultsRenderer`
 # at all, and its sections ride here instead. Declared separately from
-# `RECEIVED_ENDPOINTS_KEY` because the two endpoints are spelled differently by
-# the two routes — `search` says Commands, `next` says Endpoints — and reading
-# one for the other is how a live route reports drift it did not have.
-# Measured 2026-08-17: page two of `search:bitcoin price prediction` carried
+# `RECEIVED_ENDPOINTS_KEY` because the two routes name the container
+# differently — `search` says Commands, `next` says Endpoints — and reading one
+# container for the other is how a live route reports drift it did not have.
+RECEIVED_COMMANDS_KEY = "onResponseReceivedCommands"
+# And the names either container keeps its rows under. One tuple for both
+# routes, because the suffix is not a per-route fact: each spells its append
+# `appendContinuationItemsAction` and its reload
+# `reloadContinuationItemsCommand`. The container above is what differs.
+#
+# Measured 2026-08-17, twice, and the second reading is why this is one tuple.
+# Page two of `search:bitcoin price prediction` carried
 # `onResponseReceivedCommands[0].appendContinuationItemsAction.continuationItems`
 # holding 20 more `videoRenderer` rows, while the adapter read only the
-# first-page path and typed the whole page `schema_drift`.
-RECEIVED_COMMANDS_KEY = "onResponseReceivedCommands"
-# And the names it keeps them under. YouTube spells this route's append
-# `...Action` where the `next` route below spells its own `...Command`; the
-# asymmetry is the platform's and is declared rather than normalised, because a
-# parser that accepted either suffix everywhere would match a shape no route
-# actually sends. Measured 2026-08-17: the live key was
-# `appendContinuationItemsAction`, and reading the `next` route's tuple here
-# returned nothing and typed a working page `schema_drift`.
-SEARCH_CONTINUATION_ACTIONS = (
+# first-page path and typed the whole page `schema_drift`. Page three of
+# `next:__tEElLKowI` answered 200 carrying
+# `onResponseReceivedEndpoints[0].appendContinuationItemsAction` and nothing
+# else — the third page of a video whose second had already returned 20
+# threads — while `comment_items` scanned for `appendContinuationItemsCommand`,
+# a spelling no route was ever measured sending, found no list, and typed that
+# working page `schema_drift` too. A per-route tuple is the shape that let one
+# route's correction leave the other broken, so there is one.
+CONTINUATION_ACTIONS = (
     "appendContinuationItemsAction",
     "reloadContinuationItemsCommand",
 )
-CONTINUATION_COMMANDS = ("reloadContinuationItemsCommand", "appendContinuationItemsCommand")
 CONTINUATION_ITEMS_KEY = "continuationItems"
 CONTINUATION_ITEM_KEY = "continuationItemRenderer"
 CONTINUATION_TOKEN_PATH = ("continuationEndpoint", "continuationCommand", "token")
@@ -229,11 +234,11 @@ COMMENT_KEY_FIELD = "commentKey"
 ENTITY_MUTATIONS_PATH = ("frameworkUpdates", "entityBatchUpdate", "mutations")
 ENTITY_KEY_FIELD = "entityKey"
 ENTITY_PAYLOAD_KEY = "payload"
-COMMENT_ENTITY_KEY = "commentEntityPayload"
 # The one payload kind that carries a comment's fields. The same batch carried
 # five other kinds on 13 threads — surface, tri-state button, toolbar surface,
 # toolbar state, shared — and the kind is what selects, never the position: the
 # toolbar-state mutations arrive interleaved with the comment ones.
+COMMENT_ENTITY_KEY = "commentEntityPayload"
 ENTITY_AUTHOR_KEY = "author"
 ENTITY_AUTHOR_NAME_KEY = "displayName"
 ENTITY_PROPERTIES_KEY = "properties"
@@ -547,7 +552,7 @@ def search_sections(payload: Any) -> Optional[list]:
     for command in commands if isinstance(commands, list) else ():
         if not isinstance(command, Mapping):
             continue
-        for name in SEARCH_CONTINUATION_ACTIONS:
+        for name in CONTINUATION_ACTIONS:
             held = command.get(name)
             items = held.get(CONTINUATION_ITEMS_KEY) if isinstance(held, Mapping) else None
             if isinstance(items, list):
@@ -612,7 +617,7 @@ def comment_items(payload: Any) -> Optional[Sequence[Any]]:
     for endpoint in endpoints if isinstance(endpoints, list) else ():
         if not isinstance(endpoint, Mapping):
             continue
-        for command in CONTINUATION_COMMANDS:
+        for command in CONTINUATION_ACTIONS:
             held = endpoint.get(command)
             items = held.get(CONTINUATION_ITEMS_KEY) if isinstance(held, Mapping) else None
             if isinstance(items, list):

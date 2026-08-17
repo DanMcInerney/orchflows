@@ -3562,6 +3562,59 @@ class InnerTubeCommentThreadTest(unittest.TestCase):
         # that row arrived under.
         self.assertEqual(page.cursor_out, "COMMENTS_PAGE_TWO")
 
+    def test_a_page_past_the_second_arrives_under_the_append_action(self):
+        """The third page's own container name, which paging stopped at.
+
+        Page two arrives under `reloadContinuationItemsCommand`; the page after
+        it arrives under `appendContinuationItemsAction`, the same spelling the
+        `search` route uses. Measured 2026-08-17 on `next:__tEElLKowI`: page
+        three answered 200 carrying
+        `onResponseReceivedEndpoints[0].appendContinuationItemsAction` and
+        nothing else, while this module scanned for
+        `appendContinuationItemsCommand` — a spelling no route was measured
+        sending — so a page holding real threads came back as no list at all and
+        `_comments_page` typed it `schema_drift`. Depth ran to page two and then
+        reported a platform failure that had not happened.
+        """
+
+        page, _ = youtube_page(
+            "next_append_action_page.json",
+            target_id="next:" + YOUTUBE_VIDEO_ID,
+            cursor=YOUTUBE_COMMENT_CURSOR,
+        )
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(page.loss, ())
+        self.assertEqual(
+            [record.body for record in page.records],
+            ["third page, still reading", "and the page after this one is still offered"],
+        )
+        # The token off the row this page carried, so page four is reachable the
+        # same way page three was.
+        self.assertEqual(page.cursor_out, "COMMENTS_PAGE_FOUR")
+
+    def test_an_undeclared_container_name_is_still_drift_and_not_a_guess(self):
+        """The scan admits the names measured and not whatever looks like a list.
+
+        Built beside the tree rather than by editing the fixture: the same
+        payload, its container renamed to a spelling no route sends. A parser
+        that matched any key holding `continuationItems` would read this one and
+        report a page the platform never served in that shape, which is the
+        failure the per-route tuples were guarding against and the reason the
+        one tuple lists measured names only.
+        """
+
+        payload = json.loads(read_youtube("next_append_action_page.json"))
+        endpoint = payload[youtube_innertube.RECEIVED_ENDPOINTS_KEY][0]
+        endpoint["appendContinuationItemsCommand"] = endpoint.pop(
+            "appendContinuationItemsAction"
+        )
+
+        self.assertNotIn(
+            "appendContinuationItemsCommand", youtube_innertube.CONTINUATION_ACTIONS
+        )
+        self.assertIsNone(youtube_innertube.comment_items(payload))
+
     def test_a_call_spending_the_token_carries_the_threads_it_returned(self):
         page, opener = youtube_page(
             "next_comment_threads.json",
