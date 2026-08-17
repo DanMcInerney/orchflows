@@ -37,20 +37,41 @@ def reported(result, family=cutcheck.FAMILY):
 
 
 def report(result):
-    """The report split where its own two summary lines split it.
+    """The report split where its own summary lines split it.
 
     Findings outside the advisory set first, then the advisory findings under
-    the heading, then whether the affirmative line closed the report.
+    the heading, then whether the affirmative line closed the report. The shape
+    reading is split off and returned by none of the three: it is a reading of
+    the cut and not a finding of it, so a caller counting findings must never
+    have to subtract it.
     """
 
     lines = result.stdout.splitlines()
     affirmed = bool(lines) and lines[-1] == cutcheck.NO_FINDING_OUTSIDE
     if affirmed:
         lines = lines[:-1]
+    if cutcheck.GRAPH_HEADING in lines:
+        lines = lines[:lines.index(cutcheck.GRAPH_HEADING)]
     if cutcheck.ADVISORY_HEADING in lines:
         cut = lines.index(cutcheck.ADVISORY_HEADING)
         return lines[:cut], lines[cut + 1:], affirmed
     return lines, [], affirmed
+
+
+def graph_block(result):
+    """The shape reading's own lines, under its own heading.
+
+    The half `report` drops. Nothing but the affirmative line follows the
+    block, so the block is what stands between its heading and that line.
+    """
+
+    lines = result.stdout.splitlines()
+    if cutcheck.GRAPH_HEADING not in lines:
+        return []
+    block = lines[lines.index(cutcheck.GRAPH_HEADING) + 1:]
+    if block and block[-1] == cutcheck.NO_FINDING_OUTSIDE:
+        block = block[:-1]
+    return block
 
 
 def fixture_criteria(run, name):
@@ -133,7 +154,11 @@ class AdvisoryMarkingTest(unittest.TestCase):
     def test_neither_summary_line_can_be_read_as_a_finding(self):
         markers = sorted(cutcheck.FAMILY_OF) + sorted(set(cutcheck.FAMILY_OF.values()))
         markers += ["criterion ", "scripts/cutcheck.py"]
-        for line in (cutcheck.ADVISORY_HEADING, cutcheck.NO_FINDING_OUTSIDE):
+        for line in (
+            cutcheck.ADVISORY_HEADING,
+            cutcheck.GRAPH_HEADING,
+            cutcheck.NO_FINDING_OUTSIDE,
+        ):
             for marker in markers:
                 self.assertNotIn(marker, line)
 
@@ -148,6 +173,61 @@ class AdvisoryExitZeroTest(unittest.TestCase):
         self.assertEqual(violations, [], result.stdout)
         self.assertTrue(advisories, result.stdout)
         self.assertTrue(affirmed, result.stdout)
+
+
+class GraphReadingTest(unittest.TestCase):
+    """The cut's shape is read from the issued set, and it decides nothing.
+
+    The fixture is five items in the one arrangement that separates the two
+    readings from each other: three items depending on nothing, one behind one
+    of those, and one behind that one and a second first-level item. Depth and
+    breadth disagree there -- the chain is three long where the widest level
+    holds three -- so a reading that counted levels as a chain, or took the
+    longest chain to be the item count, is wrong by a different number in each
+    line rather than right by coincidence.
+
+    The set is otherwise clean, which is what makes the second node an
+    assertion rather than a hope: the graph classes lie outside the advisory
+    set, so were they findings at all they would be findings outside it, and
+    this set would exit 1 with two violations instead of 0 with none.
+    """
+
+    RUN = "cutcheck-graph"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.result = run_cutcheck(cls.RUN)
+
+    def _detail(self, klass):
+        prefix = "{}: {}: {}: ".format(self.RUN, cutcheck.GRAPH, klass)
+        found = [
+            line[len(prefix):]
+            for line in graph_block(self.result)
+            if line.startswith(prefix)
+        ]
+        self.assertEqual(len(found), 1, self.result.stdout)
+        return found[0]
+
+    def test_the_critical_path_and_level_widths_are_reported(self):
+        self.assertEqual(
+            self._detail(cutcheck.CRITICAL_PATH),
+            "3: 01-alpha > 04-delta > 05-epsilon",
+            self.result.stdout,
+        )
+        self.assertEqual(
+            self._detail(cutcheck.LEVEL_WIDTH), "3 1 1", self.result.stdout
+        )
+
+    def test_the_graph_block_stands_outside_the_advisory_set_and_the_exit_status(self):
+        violations, advisories, affirmed = report(self.result)
+        self.assertTrue(graph_block(self.result), self.result.stdout)
+        self.assertEqual(self.result.returncode, cutcheck.CLEAN, self.result.stdout)
+        self.assertEqual(violations, [], self.result.stdout)
+        self.assertEqual(advisories, [], self.result.stdout)
+        self.assertTrue(affirmed, self.result.stdout)
+        for klass in sorted(cutcheck.GRAPH_CLASSES):
+            self.assertEqual(cutcheck.FAMILY_OF[klass], cutcheck.GRAPH)
+            self.assertNotIn(klass, cutcheck.ADVISORY)
 
 
 EXIT_ENTRY_RE = re.compile(r"^ {2}(\d+) {2}(\S.*)$")
