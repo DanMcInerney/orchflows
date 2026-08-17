@@ -26,7 +26,10 @@ The shape principles every domain shares are
 - Checks pin shapes, never sentences: a test asserts a field, a set, a
   count by kind, or a verdict — not an owner file's prose, and never a
   whole report where it means one finding kind; a ratchet counts the
-  kind it was written for.
+  kind it was written for. Where a check must read an owner file, it
+  reads a stable anchor — a heading, a backticked name, a field, a
+  fenced command — never a sentence; the wrong result it fails against
+  drops the fact, not the anchor, which would only prove the grep.
 
 ## Lens
 
