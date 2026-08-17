@@ -4,6 +4,7 @@ Every wrong result is built in an isolated tree beside the real one
 (rules/verification.md §8): the real packs/ are never mutated to prove a
 branch.
 """
+import re
 import shutil
 import subprocess
 import sys
@@ -45,13 +46,29 @@ def validate_the_real_tree():
         )
     return _REAL_TREE_RUN
 
-# packs/orch-*-pack/SKILL.md:12 verbatim -- the four rows the form must admit.
-REAL_ASSEMBLY_ROWS = {
-    "orch-code-pack": "none — the repository is the assembly",
-    "orch-design-pack": "none — the merged revision's rendered views are the assembly",
-    "orch-content-pack": "`orch-edit`",
-    "orch-research-pack": "`orch-synthesize`",
-}
+# The four packs whose `assembly` cell the form has to admit. Named as
+# directories, and read out of their own signature tables below: a copy of
+# the cells here would be a second owner of every gloss, and would stop
+# grading the tree the moment a pack reworded one.
+REAL_PACKS = frozenset({
+    "orch-code-pack",
+    "orch-content-pack",
+    "orch-design-pack",
+    "orch-research-pack",
+})
+
+# The signature table's `assembly` row. The row label is the anchor; what
+# stands to the right of it is the pack's own to write.
+ASSEMBLY_ROW = re.compile(r"^\| assembly \| (.+?) \|\s*$", re.M)
+
+
+def real_assembly_cells():
+    """Every pack's `assembly` cell, keyed by pack directory."""
+
+    return {
+        skill.parent.name: ASSEMBLY_ROW.findall(skill.read_text(encoding="utf-8"))
+        for skill in sorted((ROOT / "packs").glob("*/SKILL.md"))
+    }
 
 PACK_TEMPLATE = """---
 name: {name}
@@ -182,10 +199,13 @@ class TestAssemblyForm(_IsolatedTree):
         self._write_pack("skillpack", assembly="`orch-edit`")
         self.assertNotIn("assembly cell", self._run().stdout)
 
-    def test_all_four_real_pack_rows_are_accepted(self):
-        for pack, row in sorted(REAL_ASSEMBLY_ROWS.items()):
+    def test_every_real_pack_row_is_accepted(self):
+        cells = real_assembly_cells()
+        self.assertEqual(REAL_PACKS, set(cells))
+        for pack, rows in sorted(cells.items()):
             with self.subTest(pack=pack):
-                self.assertTrue(validate.assembly_form_ok(row), row)
+                self.assertEqual(1, len(rows), rows)
+                self.assertTrue(validate.assembly_form_ok(rows[0]), rows[0])
 
     def test_the_real_tree_reports_no_assembly_form_error(self):
         result = validate_the_real_tree()
@@ -198,8 +218,8 @@ class TestAssemblyForm(_IsolatedTree):
 class TestCellClauseSplitter(unittest.TestCase):
     def test_a_semicolon_cuts_one_bullet_into_two_clauses(self):
         self.assertEqual(
-            ["write scopes are path sets", "conflict binding is named here"],
-            validate.cell_clauses("write scopes are path sets; conflict binding is named here"),
+            ["one clause states a fact", "the next clause states another"],
+            validate.cell_clauses("one clause states a fact; the next clause states another"),
         )
 
     def test_a_comma_does_not_cut(self):
@@ -249,9 +269,14 @@ class TestCellClauseSplitter(unittest.TestCase):
 
 
 class TestCellDuplication(_IsolatedTree):
+    # Synthetic, and deliberately so: the linter's subject is any clause two
+    # packs both carry, so the case needs a clause of that shape and length
+    # and no shipped sentence in particular. A real cell copied in here
+    # would read as a claim about the tree, and would go stale the day its
+    # pack reworded it.
     SHARED = (
-        "each frontier item gets its own worktree branched from the run's "
-        "current revision at dispatch"
+        "each widget batch gets its own bench cleared from the bay's "
+        "current stock at handoff"
     )
 
     def test_a_verbatim_clause_in_two_packs_is_an_error(self):
@@ -266,8 +291,8 @@ class TestCellDuplication(_IsolatedTree):
     def test_a_verbatim_clause_wrapped_differently_is_still_an_error(self):
         body = "# Slicing\n\n- Item extensions beyond the core:\n  %s.\n"
         wrapped = (
-            "each frontier item gets its own worktree branched\n  from the run's "
-            "current revision at dispatch"
+            "each widget batch gets its own bench cleared\n  from the bay's "
+            "current stock at handoff"
         )
         self._write_pack("wrapapack", files={"references/slicing.md": body % self.SHARED})
         self._write_pack("wrapbpack", files={"references/slicing.md": body % wrapped})
@@ -331,18 +356,25 @@ class TestMandatedEchoExemption(_IsolatedTree):
     tree's own pair with the domain nouns swapped for synthetic ones, so
     the synthetic clauses have the real ones' shape and length."""
 
-    # packs/orch-code-pack/SKILL.md:12 and packs/orch-design-pack/SKILL.md:12.
+    # The assembly form contracts/pack-signature.md mandates: the bare word,
+    # the em-dash, and a gloss naming what stands in. Only the noun phrase
+    # between them is a pack's own, so a synthetic noun phrase of the same
+    # two shapes -- a short one and a long possessive one -- exercises the
+    # exemption exactly as the shipped pair does, and claims nothing about
+    # what any pack currently says. That the shipped cells are admitted is
+    # `TestAssemblyForm.test_every_real_pack_row_is_accepted`, which reads
+    # them rather than restating them.
     ASSEMBLY = (
-        "none — the repository is the assembly",
-        "none — the merged revision's rendered views are the assembly",
+        "none — the bench is the assembly",
+        "none — the merged batch's finished panels are the assembly",
     )
-    # packs/orch-code-pack/references/oracles.md and the design pack's:
-    # both rows end in verdict.md's oracle_class and work-item.md's
-    # provenance, and there are three of the first and two of the second.
+    # Both rows end in verdict.md's oracle_class enum and work-item.md's
+    # provenance enum -- the mandated pair -- and nothing to the left of it
+    # is mandated, so the criterion and oracle columns are synthetic too.
     ORACLE_ROWS = (
         "| behavior | the ticket's named test commands | deterministic | pre-existing |",
-        "| accessibility floor | the accessibility bar's check command at every "
-        "covered identity | deterministic | pre-existing |",
+        "| finish floor | the finish bar's check command at every "
+        "covered station | deterministic | pre-existing |",
     )
     ORACLE_TABLE = (
         "# Oracles\n\n"
