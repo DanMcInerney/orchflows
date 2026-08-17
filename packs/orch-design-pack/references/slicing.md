@@ -1,8 +1,9 @@
 # Design slicing: token-first view tickets
 
-Cut the spec into view tickets: the token set plus one core view
-first — proving the design language end to end and exempt from the
-one-view rule below — then widen to the remaining views.
+The token set is the first item. Views the acceptance already
+enumerates by breakpoint and state each open the first frontier
+alongside it; pair the tokens with one core view, exempt from the
+one-view rule below, only while the design language stays unproven.
 
 - Each ticket is one view with its full identity set (the spec's
   breakpoints × its enumerated states), provable by capture and the
