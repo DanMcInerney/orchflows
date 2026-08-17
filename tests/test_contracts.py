@@ -1,10 +1,16 @@
 """Freezes the load-bearing shape of the T0 contracts and the
 description budget every skill must respect."""
 import re
+import sys
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+import scripts.cutcheck as cutcheck  # noqa: E402  topology §3 cites its families
+
 CONTRACTS = ROOT / "contracts"
 SKILLS = ROOT / "skills"
 
@@ -570,6 +576,44 @@ class TopologyAtomTest(unittest.TestCase):
         ):
             with self.subTest(token=token):
                 self.assertIn(token, text, f"topology.md §3 {why}")
+
+    def test_section_3_family_cites_answer_to_the_checker(self):
+        """§3 states three of `scripts/cutcheck.py`'s family numbers as law.
+        The test above asserts only that the literals appear in the clause, so
+        a renumbering in `FAMILY_OF` would leave the rule false with every
+        check in the tree green. This reads the checker's own table instead:
+        for each conjunct of the atom, the classes that decide it must sit in
+        the family §3 sends a reader to. `tests/test_cut_lens.py`
+        `FamilyCorrespondenceTest` holds the cut lens to the same constants;
+        this is the rule's half of it."""
+        text = self.section()
+        for family, classes, conjunct in (
+            (cutcheck.FAMILY,
+             (cutcheck.ALREADY_PASSES, cutcheck.NO_HITS_BOTH_REVISIONS,
+              cutcheck.FAILS_BOTH_REVISIONS, cutcheck.UNCONFINED_ORACLE,
+              cutcheck.WHOLE_SUITE_ORACLE, cutcheck.UNRUNNABLE_ORACLE),
+             "a completion test discriminating the item alone"),
+            (cutcheck.FAMILY_3,
+             (cutcheck.UNSCOPED_WRITE, cutcheck.SCOPE_CONTRADICTION,
+              cutcheck.SCOPE_OPEN),
+             "a closed write scope"),
+            (cutcheck.FAMILY_4,
+             (cutcheck.SCOPE_COLLISION, cutcheck.STAGED_INVALIDATION),
+             "oracles reading nothing a sibling writes"),
+        ):
+            with self.subTest(family=family):
+                self.assertIn(
+                    family, text,
+                    f"topology.md §3 no longer cites {family!r}, the checker "
+                    f"family that reports {conjunct}",
+                )
+                for name in classes:
+                    self.assertEqual(
+                        cutcheck.FAMILY_OF[name], family,
+                        f"cutcheck grades {name!r} under "
+                        f"{cutcheck.FAMILY_OF[name]!r}, while topology.md §3 "
+                        f"sends a reader of {conjunct} to {family!r}",
+                    )
 
     def test_section_3_bounds_the_cut_below_and_binds_an_ad_hoc_set(self):
         text = self.section()

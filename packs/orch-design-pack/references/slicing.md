@@ -1,9 +1,12 @@
 # Design slicing: token-first view tickets
 
-The token set is the first item. Views the acceptance already
-enumerates by breakpoint and state each open the first frontier
-alongside it; pair the tokens with one core view, exempt from the
-one-view rule below, only while the design language stays unproven.
+The token set alone opens the first frontier. Every view's capture
+samples rendered values against the tokens, so each view the
+acceptance enumerates by breakpoint and state depends on that item
+under [rules/topology.md](../../../rules/topology.md) §3's edge rule
+and takes the frontier behind it. Pair the tokens with one core view,
+exempt from the one-view rule below, only while the design language
+stays unproven.
 
 - Each ticket is one view with its full identity set (the spec's
   breakpoints × its enumerated states), provable by capture and the

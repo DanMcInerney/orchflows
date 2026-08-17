@@ -40,6 +40,6 @@ remainder at `<state-root>/runs/<run>/<root>.coverage.md`.
 Never: edit the root ticket's frozen statement.
 
 Return: status; result — the ticket directory; verification — the
-cutcheck result; then item ids with edges, the critical-path length and
-per-level width from cutcheck's `graph` block, uncovered remainder (`[]` when
-none), and decision_gap (`[]` when coverable).
+cutcheck result; then item ids with edges, the critical-path length
+and per-level width from cutcheck's `graph` block, uncovered
+remainder (`[]` when none), and decision_gap (`[]` when coverable).
