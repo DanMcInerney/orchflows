@@ -292,8 +292,14 @@ BYTECODE_REPAIR = "the interpreter's own cache; spell this oracle with `-B`"
 # summary line may carry any of those, nor the path of a script: a summary a
 # filter selects is a finding line to everything downstream. That is why the
 # shape's heading names neither of the two readings standing under it.
+#
+# The shape's heading also has to read nothing like the advisory's. What sends
+# a fresh cut checker at a set is an agent reading "cutcheck reported an
+# advisory" off this report, and a heading that echoed the advisory's wording
+# would fire that checker on every set ever graded. So it says outright what it
+# is, and borrows none of the advisory's phrasing to say it.
 ADVISORY_HEADING = "cutcheck: advisory -- reported, and never setting the exit status:"
-GRAPH_HEADING = "cutcheck: the shape of this cut -- read, and never setting the exit status:"
+GRAPH_HEADING = "cutcheck: the shape of this cut -- how long and how wide it is, and no finding of any kind:"
 NO_FINDING_OUTSIDE = "cutcheck: no finding outside the advisory set"
 SCRATCH_NOT_REMOVED = "cutcheck: scratch root not removed"
 NO_SCRATCH_ROOT = "cutcheck: no scratch root could be placed for"
