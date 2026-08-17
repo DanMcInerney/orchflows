@@ -348,6 +348,28 @@ RECALL_WAS_A_WINDOW = "recall_was_a_window"
 NOTHING_HYDRATED = "nothing_hydrated"
 
 
+def _pages_for_depth(adapter_id: str) -> bool:
+    """Whether any of this adapter's depth operations is one only paging reaches."""
+
+    return any(
+        target.kind == "discovery" for target in DEPTH_TARGETS.get(adapter_id, {}).values()
+    )
+
+
+def _depth_operation(step: schema.AcquisitionStep) -> str:
+    """The depth operation this step names, or "" if it names none.
+
+    Read off the query's own `<name>:<argument>` prefix, which is where an
+    adapter serving several operations reads it from on a step naming no
+    target. A query whose prefix is not a declared depth operation — `search:`,
+    or a plain phrase — names none, so an ordinary discovery step is unchanged.
+    """
+
+    operation = step.query.partition(":")[0]
+    row = DEPTH_TARGETS.get(step.adapter_id, {})
+    return operation if operation and operation in row else ""
+
+
 def _page_size(adapter_id: str) -> int:
     """The largest page any of this adapter's surfaces declares, or zero."""
 
@@ -367,19 +389,26 @@ def review_manifest(manifest: schema.AcquisitionManifest) -> Tuple[Advisory, ...
     """
 
     found = []
-    discovery_by_adapter = {}
-    hydration_adapters = set()
+    discovery_adapters = set()
+    deepened = set()
     for step in manifest.steps:
-        if step.kind == "discovery":
-            discovery_by_adapter.setdefault(step.adapter_id, []).append(step)
+        # Depth is what the step is for, not which kind it wears. A hydration
+        # step is always depth; a discovery step is depth when its query names
+        # one of this adapter's paging depth operations, which is the only
+        # shape those can lawfully take.
+        operation = _depth_operation(step)
+        if step.kind != "discovery":
+            deepened.add(step.adapter_id)
+        elif operation and DEPTH_TARGETS[step.adapter_id][operation].kind == "discovery":
+            deepened.add(step.adapter_id)
         else:
-            hydration_adapters.add(step.adapter_id)
+            discovery_adapters.add(step.adapter_id)
 
     windowed = [step for step in manifest.steps if step.window_start or step.window_end]
     unwindowed = [step for step in manifest.steps if not (step.window_start or step.window_end)]
 
-    for adapter_id in sorted(discovery_by_adapter):
-        if adapter_id in DEPTH_TARGETS and adapter_id not in hydration_adapters:
+    for adapter_id in sorted(discovery_adapters):
+        if adapter_id in DEPTH_TARGETS and adapter_id not in deepened:
             found.append(
                 Advisory(
                     DEPTH_NOT_PLANNED,
@@ -470,20 +499,44 @@ def review_artifact(artifact: schema.AcquisitionArtifact) -> Tuple[Advisory, ...
             )
 
     # Read off the records rather than the step list, for the reason
-    # `normalize` reads `discovery_not_recorded` off records: a record with no
-    # `discovery_locator` is a discovery record, because the schema requires a
-    # nonempty one on every selected hit. A step list cannot tell a
-    # hydration-only dispatch from a run that discovered and never deepened.
-    hydration_adapters = set()
+    # `normalize` reads `discovery_not_recorded` off records: a record with a
+    # `discovery_locator` was hydrated, because the schema requires a nonempty
+    # one on every selected hit. A step list cannot tell a hydration-only
+    # dispatch from a run that discovered and never deepened, and a
+    # `StepResult` carries no query to say which operation a step ran.
+    #
+    # That test is exact for depth that hydrates and blind to depth that pages:
+    # the core sets a `discovery_locator` only on a hydration step's own calls,
+    # so a `next` step's comments and a `transcript` step's cues carry none.
+    # For the adapters whose table row declares a paging operation, two more
+    # shapes count, and both say the same thing — this record is about an item
+    # this artifact already holds, rather than one more item beside it. It
+    # names that item as its parent, or it *is* that item at a second
+    # representation. Neither is read for an adapter whose depth all hydrates,
+    # where a parent id is ordinary discovery furniture: a Hacker News search
+    # hit names its story and deepened nothing.
+    representations: Dict[Tuple[str, str], set] = {}
+    for record in artifact.records:
+        if record.native_item_id:
+            representations.setdefault(
+                (record.adapter_id, record.native_item_id), set()
+            ).add(record.representation_kind)
+
+    deepened = set()
     discovery_adapters = set()
     for record in artifact.records:
-        if record.discovery_locator:
-            hydration_adapters.add(record.adapter_id)
+        paging = _pages_for_depth(record.adapter_id)
+        if (
+            record.discovery_locator
+            or (paging and (record.adapter_id, record.native_parent_id) in representations)
+            or (paging and len(representations.get((record.adapter_id, record.native_item_id), ())) > 1)
+        ):
+            deepened.add(record.adapter_id)
         else:
             discovery_adapters.add(record.adapter_id)
 
     for adapter_id in sorted(discovery_adapters):
-        if adapter_id in DEPTH_TARGETS and adapter_id not in hydration_adapters:
+        if adapter_id in DEPTH_TARGETS and adapter_id not in deepened:
             found.append(
                 Advisory(
                     NOTHING_HYDRATED,

@@ -21,6 +21,7 @@ def record(
     locator="https://example.invalid/a",
     discovery_locator="",
     representation_kind="index",
+    native_parent_id="",
 ):
     """One discovery record, with every field the schema requires supplied."""
 
@@ -40,7 +41,7 @@ def record(
         representation_kind=representation_kind,
         canonical_content_kind="post",
         native_item_id=native_item_id,
-        native_parent_id="",
+        native_parent_id=native_parent_id,
         canonical_locator=locator,
         normalized_locator=locator,
         exact_content_hash="h",
@@ -71,6 +72,21 @@ def step(step_id, kind, adapter_id, **kw):
 def manifest(*steps):
     return schema.AcquisitionManifest(
         manifest_id="m", mode="fused", as_of="2026-08-17T19:00:00Z", steps=tuple(steps)
+    )
+
+
+def artifact(steps=(), records=()):
+    return schema.AcquisitionArtifact(
+        artifact_id="a",
+        manifest_id="m",
+        mode="fused",
+        as_of="2026-08-17T19:00:00Z",
+        records=tuple(records),
+        steps=tuple(steps),
+        edges=(),
+        groups=(),
+        outcome="ok",
+        loss=(),
     )
 
 
@@ -361,18 +377,7 @@ class ReviewManifestTest(unittest.TestCase):
 
 class ReviewArtifactTest(unittest.TestCase):
     def artifact(self, steps=(), records=()):
-        return schema.AcquisitionArtifact(
-            artifact_id="a",
-            manifest_id="m",
-            mode="fused",
-            as_of="2026-08-17T19:00:00Z",
-            records=tuple(records),
-            steps=tuple(steps),
-            edges=(),
-            groups=(),
-            outcome="ok",
-            loss=(),
-        )
+        return artifact(steps=steps, records=records)
 
     def result(self, step_id, outcome="ok", loss=()):
         return schema.StepResult(
@@ -427,6 +432,93 @@ class ReviewArtifactTest(unittest.TestCase):
         )
 
         self.assertEqual(found, ())
+
+
+class DepthReviewTest(unittest.TestCase):
+    """Depth planned the paging way is depth, and neither review may deny it.
+
+    Both advisories were written when every depth operation was a hydration
+    step. A `next` or `transcript` step is a discovery step now, so a review
+    that still counts hydration steps and hydration records would call the
+    deepest manifest this module can build "no depth planned" — and a warning
+    that fires on the fix is worse than one that never fired.
+    """
+
+    def test_a_manifest_planning_paging_depth_draws_none(self):
+        planned = coverage.plan_depth(
+            [record("y1", "youtube_innertube", native_item_id="vid")],
+            "youtube_innertube",
+            "next",
+            "nx",
+            max_items=200,
+        )
+
+        found = coverage.review_manifest(
+            manifest(
+                step("yt", "discovery", "youtube_innertube", query="search:btc"),
+                *planned.steps
+            )
+        )
+
+        self.assertNotIn(coverage.DEPTH_NOT_PLANNED, codes(found))
+
+    def test_an_artifact_holding_it_draws_none(self):
+        """The comments a `next` step returned name the video they are under.
+
+        They can carry no `discovery_locator` — the core sets one only on a
+        hydration step's own calls — so what says they are depth is that this
+        artifact holds the item they name.
+        """
+
+        found = coverage.review_artifact(
+            artifact(
+                records=[
+                    record("y1", "youtube_innertube", native_item_id="vid"),
+                    record(
+                        "c1",
+                        "youtube_innertube",
+                        native_item_id="UgyyGmQ",
+                        native_parent_id="vid",
+                        locator="https://example.invalid/c1",
+                    ),
+                ]
+            )
+        )
+
+        self.assertNotIn(coverage.NOTHING_HYDRATED, codes(found))
+
+    def test_an_artifact_holding_a_transcript_of_what_it_found_draws_none(self):
+        """A transcript names no parent: it is the video, at another representation."""
+
+        found = coverage.review_artifact(
+            artifact(
+                records=[
+                    record("y1", "youtube_innertube", native_item_id="vid"),
+                    record(
+                        "t1",
+                        "youtube_innertube",
+                        native_item_id="vid",
+                        representation_kind="transcript",
+                    ),
+                ]
+            )
+        )
+
+        self.assertNotIn(coverage.NOTHING_HYDRATED, codes(found))
+
+    def test_an_artifact_that_only_searched_still_says_nothing_deepened_it(self):
+        """Silence has to be earned, or the two above prove only that it is easy."""
+
+        found = coverage.review_artifact(
+            artifact(
+                records=[
+                    record("y1", "youtube_innertube", native_item_id="vid"),
+                    record("y2", "youtube_innertube", native_item_id="vid2"),
+                ]
+            )
+        )
+
+        self.assertEqual(subjects(found, coverage.NOTHING_HYDRATED), ["youtube_innertube"])
 
 
 class NoIOTest(unittest.TestCase):
