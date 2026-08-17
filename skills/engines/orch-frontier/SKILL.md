@@ -8,7 +8,7 @@ Require: a run's ticket directory — tickets issued through `tickets.py`
 — forming a finite acyclic dependency graph, and the run's bound, from
 the root ticket or the caller.
 
-Open by dispatching the whole ready frontier — every ticket whose
+Open by dispatching the ready frontier — every ticket whose
 `depends_on` are all `complete` — one lane each. Per lane: claim
 through `tickets.py claim`; take the packet `tickets.py packet` emits — a refusal is the
 cut's defect; spawn one fresh child on it per
@@ -36,7 +36,7 @@ conflict routes to its conflict binding. After each merge batch run the
 standards owner's required checks on the integrated tip, the run's notes
 carrying the tip's revision: a lane runs its ticket's own oracles,
 nothing wider, its green provisional until the tip's, and a red
-tip blocks the next dispatch.
+tip blocks the next dispatch but its repair's.
 
 Watch each lane per [references/profiles.md](references/profiles.md).
 Recompute on every event — a result landing, a new ticket file, a
@@ -56,4 +56,4 @@ subtree in a summary of successes; re-order the graph to dodge a
 failure.
 
 Return: status; per-ticket results by identity; the graph's terminal
-state as verification; and the open remainder with what blocks it.
+state as verification; the open remainder with what blocks it.

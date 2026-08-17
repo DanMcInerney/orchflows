@@ -740,7 +740,7 @@ _FRONTIER_TIP_CHECK = {
     ),
 }
 
-_TIP_CLAUSE_RE = re.compile(r"After\s+each\s+merge\s+batch.*?next\s+dispatch\.", re.S)
+_TIP_CLAUSE_RE = re.compile(r"After\s+each\s+merge\s+batch.*?its\s+repair's\.", re.S)
 
 
 class TipCheckTest(unittest.TestCase):
