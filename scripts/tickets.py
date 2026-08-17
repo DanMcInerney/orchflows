@@ -173,6 +173,16 @@ EXECUTOR_SECTIONS_BY_KEY = {name.lower(): name for name in EXECUTOR_SECTIONS}
 # executor is the moving target rules/verification.md §3 forbids.
 CUT_SECTIONS = ("Objective", "Fixed inputs", "Completion test", "Return fields")
 CUT_SECTIONS_BY_KEY = {name.lower(): name for name in CUT_SECTIONS}
+# rules/token-economy.md §11: a stub's instruction is an every-dispatch unit
+# of 300 words -- the sections below plus the frontmatter `excluded_actions`,
+# never `## Fixed inputs`, which are identities. Words, not lines: a line
+# count is met by widening lines. Markdown link targets are stripped first so
+# a citation costs its label, not its path. `tools/validate.py` graded the
+# template stubs by a counter of its own; the ceiling belongs beside the rest
+# of ticket shape, and the compiler reads it from here.
+INSTRUCTION_BUDGET = 300
+INSTRUCTION_SECTIONS = ("Objective", "Completion test", "Return fields")
+LINK_TARGET_RE = re.compile(r"\]\([^)]*\)")
 # contracts/work-item.md states the sections in this order; a created section
 # takes its place in it, never the end of the file.
 SECTION_ORDER = (
@@ -253,6 +263,10 @@ ITERATION_ID_RE = re.compile(r"^.+\.iter\.\d+$")
 # The gate's last stub. A ticket depending on it is scope queued behind the
 # whole root subtree rather than work inside it.
 GATE_VERIFY_SUFFIX = ".gate.verify"
+# What every gate stub's id carries, `<root>.gate.<lane>`. `gate` renders
+# them from the root's own acceptance, so they are the root's carriage, not
+# unit packets a cutter wrote.
+GATE_ID_MARKER = ".gate."
 # The heading that closes a run's notes. Written only by `--terminal`, so
 # the file carries no terminal placeholder until it closes and the marker
 # means what it says: while it is absent the run is open.
@@ -1047,6 +1061,21 @@ def _sections(text: str) -> dict:
     if heading is not None:
         sections[heading] = "\n".join(body).strip()
     return sections
+
+
+def instruction_words(text: str) -> int:
+    """One ticket's instruction in words, markdown link targets stripped.
+
+    The objective, the completion test, the return fields and the
+    frontmatter `excluded_actions` -- what a child loads on every dispatch.
+    Never `## Fixed inputs`: those are identities, and counting them would
+    charge a cutter for supplying evidence (rules/token-economy.md §11).
+    """
+
+    sections = _sections(text)
+    parts = [str(item) for item in _parse_frontmatter(text).get("excluded_actions") or []]
+    parts += [sections.get(name, "") for name in INSTRUCTION_SECTIONS]
+    return sum(len(LINK_TARGET_RE.sub("]", part).split()) for part in parts)
 
 
 def _frontmatter_end(lines) -> int:
@@ -2283,6 +2312,11 @@ def _cmd_amend(rest):
             "error": f"the amended ticket {run}/{ticket_id} would be off contract "
             f"(contracts/work-item.md): " + "; ".join(defects)
         }
+    over = _ceiling_error(
+        f"the amended ticket {run}/{ticket_id}", ticket_id, rendered
+    )
+    if over is not None:
+        return over
     try:
         ticket_path.write_text(rendered, encoding="utf-8")
     except OSError as error:
@@ -2294,6 +2328,36 @@ def _cmd_amend(rest):
             "section": canonical,
             "path": str(ticket_path),
         }
+    }
+
+
+def _ceiling_error(subject: str, ticket_id: str, text: str):
+    """The refusal a ticket over the instruction ceiling gets, or ``None``.
+
+    Applied where the cutter still holds the flag that was wrong. An
+    objective enumerating (1)...(5) cannot fit inside the ceiling, which is
+    the point: the ticket that does not fit is two tickets.
+
+    The ceiling is a unit's. A root ticket states a whole run, and each
+    `.gate.` stub carries the root's `## Completion test` verbatim -- `gate`
+    renders them from it -- so grading either against the unit ceiling would
+    refuse what this script itself writes.
+    """
+
+    if GATE_ID_MARKER in str(ticket_id or ""):
+        return None
+    if _executor_of(_parse_frontmatter(text)) == ROOT_EXECUTOR:
+        return None
+    count = instruction_words(text)
+    if count <= INSTRUCTION_BUDGET:
+        return None
+    return {
+        "error": f"{subject} has a {count}-word instruction, over the "
+        f"{INSTRUCTION_BUDGET}-word ceiling (rules/token-economy.md, section "
+        "11): the "
+        "objective, completion test, excluded actions and return fields a "
+        "child loads every dispatch, never its fixed inputs. A compound "
+        "objective is two items, not one longer ticket"
     }
 
 
@@ -2310,6 +2374,9 @@ def _issue_ticket(run: str, ticket_id: str, text: str):
             "error": f"ticket {run}/{ticket_id} is off contract "
             f"(contracts/work-item.md): " + "; ".join(defects)
         }
+    over = _ceiling_error(f"ticket {run}/{ticket_id}", ticket_id, text)
+    if over is not None:
+        return over
     tickets_root = _tickets_root()
     if tickets_root is None:
         return {"error": NO_SINK_ERROR}

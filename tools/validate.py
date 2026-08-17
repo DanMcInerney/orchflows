@@ -50,11 +50,13 @@ LINK_TARGET_RE = re.compile(r"\]\([^)]*\)")
 # rules/token-economy.md §11: every-turn surfaces tightest, every-dispatch
 # units next, every-run units widest. Ceilings only fall.
 SURFACE_BUDGET = {"templates/host-block.md": 400, "AGENTS.md": 300}
-STUB_INSTRUCTION_BUDGET = 300   # objective + completion test + excluded actions + return fields
 MANIFEST_BUDGET = 250
-STUB_INSTRUCTION_SECTIONS = ("Objective", "Completion test", "Return fields")
-STUB_SECTION_SPLIT_RE = re.compile(r"^## (.+)$", re.MULTILINE)
-EXCLUDED_ACTIONS_RE = re.compile(r"^excluded_actions:\n((?:[ \t]+- .*\n)*)", re.MULTILINE)
+# A stub's instruction ceiling is not here: a stub is a ticket before it is
+# issued, and `scripts/tickets.py` refuses an issued one over the same
+# number. `_ticket_law()` reads `INSTRUCTION_BUDGET` and `instruction_words`
+# from there, so the compiler and the sink cannot put the boundary in two
+# places -- this file's own counter charged an excluded action a word for
+# its list marker, and did.
 DESCRIPTION_BUDGET = 140
 ALLOWED_FRONTMATTER_KEYS = {"name", "description", "disable-model-invocation", "role"}
 ROLE_PROFILES = {"orch-planner", "orch-worker"}
@@ -758,18 +760,6 @@ def body_words(body: str) -> int:
 def _split_frontmatter(text: str):
     parts = text.split("---", 2)
     return (parts[1], parts[2]) if len(parts) > 2 else ("", text)
-
-
-def stub_instruction_words(text: str) -> int:
-    """A stub's instruction: its excluded actions plus the Objective,
-    Completion test and Return fields sections — never its Fixed inputs,
-    which are identities (rules/token-economy.md §11)."""
-    front, body = _split_frontmatter(text)
-    excluded = EXCLUDED_ACTIONS_RE.search(front)
-    total = body_words(excluded.group(1)) if excluded else 0
-    parts = STUB_SECTION_SPLIT_RE.split(body)
-    sections = {parts[i].strip(): parts[i + 1] for i in range(1, len(parts) - 1, 2)}
-    return total + sum(body_words(sections.get(name, "")) for name in STUB_INSTRUCTION_SECTIONS)
 
 
 def validate_surface_budgets(diag: Diagnostics) -> None:
@@ -1520,9 +1510,9 @@ def validate_templates(diag: Diagnostics) -> None:
             if path.name == manifest_name:
                 continue
             text = _read_source(path)
-            n = stub_instruction_words(text)
-            if n > STUB_INSTRUCTION_BUDGET:
-                diag.error(rel(path), f"stub instruction has {n} words, exceeds the budget of {STUB_INSTRUCTION_BUDGET}")
+            n = tickets.instruction_words(text)
+            if n > tickets.INSTRUCTION_BUDGET:
+                diag.error(rel(path), f"stub instruction has {n} words, exceeds the budget of {tickets.INSTRUCTION_BUDGET}")
             stub_used = set(tickets.PLACEHOLDER_RE.findall(text))
             used |= stub_used
             executor = tickets._parse_frontmatter(text).get("executor")
