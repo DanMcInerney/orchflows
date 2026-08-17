@@ -46,12 +46,14 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import re
 import sys
 import sysconfig
 import unittest
 from pathlib import Path
 
 from super_research import runner
+from super_research.adapters import youtube_innertube
 from tests import helpers
 from tests.test_adapters import (
     EXECUTION_MODULES,
@@ -770,12 +772,16 @@ def loss_code_spelling(codes):
     return (spelling, declaring)
 
 
-# Number words a heading or a docstring in this delivery may count in. Two
-# checks read it: the shortfall heading in `protocol.md`, and this file's own
-# module count.
+# Number words a heading or a docstring in this delivery may count in. Three
+# checks read it: the shortfall heading in `protocol.md`, this file's own
+# module count, and the multi-surface count both reference documents state.
+# It runs to twenty because that third one counts adapters, and the roster is
+# twenty adapters wide — a table that stopped short would read a lawful count
+# as an unspellable one.
 NUMBER_WORDS = (
     "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
     "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen",
+    "Eighteen", "Nineteen", "Twenty",
 )
 
 
@@ -975,6 +981,89 @@ class LossVocabularyIsReadOffTheSourceTest(unittest.TestCase):
         self.assertEqual(names_a_loss_code(declared, {"auth_required"}, constants)[0], set())
         self.assertIn("schema_drift", names_a_loss_code(emitting, {"schema_drift"}, constants)[0])
         self.assertEqual(names_a_loss_code(emitting, {"schema_drift"}, constants)[1], set())
+
+
+OPERATING_PATH = Path(__file__).resolve().parent.parent / "references" / "operating.md"
+
+# The phrase both documents count the multi-surface adapters with, and the
+# whole of what this reads them by. An anchor rather than either sentence: the
+# two paragraphs are written in different voices and are meant to stay that
+# way, so a pin that matched the prose around the number would forbid the
+# rewrite it is supposed to permit.
+MULTI_SURFACE_ANCHOR = re.compile(r"\b([A-Za-z]+) adapters rea(?:d|ch) more than one\b")
+
+def counted_as(word):
+    """The number one spelled number word names, or ``None`` if it names none.
+
+    Spelling, not arithmetic: `NUMBER_WORDS` is a list of names and no count
+    is written down here. The count comes off the descriptors.
+    """
+
+    spelled = [name.lower() for name in NUMBER_WORDS]
+    lowered = word.lower()
+    return spelled.index(lowered) + 1 if lowered in spelled else None
+
+
+def multi_surface_adapters():
+    """Every adapter the source gives more than one route surface."""
+
+    return {
+        adapter_id
+        for adapter_id in runner.ADAPTER_IDS
+        if len(runner.surface_descriptors(adapter_id)) > 1
+    }
+
+
+def multi_surface_counts_stated(path):
+    """Every multi-surface count one document states, in document order."""
+
+    text = path.read_text(encoding="utf-8")
+    return tuple(
+        counted_as(match.group(1)) for match in MULTI_SURFACE_ANCHOR.finditer(text)
+    )
+
+
+class RosterIsReadOffTheSourceTest(unittest.TestCase):
+    """The roster's counted and enumerated claims, against `runner`'s own answer.
+
+    `protocol.md` and `operating.md` both count the adapters reaching more
+    than one route surface, and both said seven while the source said ten:
+    `bluesky`, `x_guest` and `youtube_innertube` joined the roster with a
+    second surface each and no one re-counted. This is the same lesson
+    `LossVocabularyIsReadOffTheSourceTest` records one class up, so it gets
+    the same treatment — the number stays in the prose, where a reader meets
+    it, and the assertion runs against the prose.
+
+    The count is anchored on the phrase both paragraphs share rather than on
+    either sentence, because the two are written in different voices and a
+    sentence match would pin the voice along with the number.
+    """
+
+    def setUp(self):
+        self.multi = multi_surface_adapters()
+
+    def test_the_multi_surface_count_is_the_descriptors_own(self):
+        # If the source ever gave every adapter one surface the claim would be
+        # vacuous rather than wrong, so the reading is shown to be a reading.
+        self.assertGreater(len(self.multi), 1)
+
+        for path in (PROTOCOL_PATH, OPERATING_PATH):
+            with self.subTest(document=path.name):
+                stated = multi_surface_counts_stated(path)
+                self.assertEqual(
+                    len(stated),
+                    1,
+                    "{0} states the multi-surface count {1} times".format(
+                        path.name, len(stated)
+                    ),
+                )
+                self.assertEqual(
+                    stated[0],
+                    len(self.multi),
+                    "{0} says {1}; the descriptors say {2}: {3}".format(
+                        path.name, stated[0], len(self.multi), sorted(self.multi)
+                    ),
+                )
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner

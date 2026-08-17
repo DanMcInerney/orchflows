@@ -184,7 +184,9 @@ construction, and why no lawful `K5` shape exists — is in
 ## Adapter roster
 
 Twenty adapters, nineteen live plus `fake`; thirty-six route surfaces, because
-seven adapters reach more than one. Thirty-five of the thirty-six are read;
+ten adapters reach more than one — `bluesky`, `x_guest` and `youtube_innertube`
+among them, each pairing a second endpoint to its first. Thirty-five of the
+thirty-six are read;
 `x_guest`'s activation is spent rather than read, so it carries a budget and
 never a record. Read back off `runner.surface_descriptors`.
 
