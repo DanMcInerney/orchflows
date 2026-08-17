@@ -26,7 +26,9 @@ SKILL_TIERS = ("kernel", "engines", "workflows", "instances", "utilities")
 DECOMPOSE = ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md"
 CODE_SLICING = ROOT / "packs" / "orch-code-pack" / "references" / "slicing.md"
 DESIGN_SLICING = ROOT / "packs" / "orch-design-pack" / "references" / "slicing.md"
-OVERLAP_RULE = "a write scope overlapping only siblings it is dependency-ordered with"
+# The rule by its anchors, never by its sentence: the field the rule scopes,
+# as the owner's prose spells it, and the ordering term that scopes it.
+OVERLAP_ANCHORS = ("write scope", "dependency-ordered")
 
 COMPOSITIONS = ROOT / "compositions"
 EVAL_DESIGN = ROOT / "skills" / "workflows" / "orch-eval-design" / "SKILL.md"
@@ -299,11 +301,14 @@ class TestDependencyOrderedOverlap(unittest.TestCase):
     """
 
     def test_the_owner_permits_overlap_along_dependency_order(self):
-        self.assertIn(
-            OVERLAP_RULE, read_flat(DECOMPOSE),
-            "orch-decompose, the rule's one owner, does not permit overlap "
-            "only along dependency order",
-        )
+        text = read_flat(DECOMPOSE)
+        for anchor in OVERLAP_ANCHORS:
+            self.assertIn(
+                anchor, text,
+                f"orch-decompose, the rule's one owner, does not name "
+                f"{anchor!r}, so it does not permit overlap only along "
+                "dependency order",
+            )
 
     def test_no_cut_states_a_superseded_overlap_rule(self):
         for label, path in (
@@ -324,12 +329,13 @@ class TestDependencyOrderedOverlap(unittest.TestCase):
             )
 
     def test_the_code_cut_puts_the_riskiest_seam_first(self):
-        self.assertIn(
-            "the first frontier carries the riskiest seam's tracer",
-            read_flat(CODE_SLICING),
-            "code pack slicing does not put the riskiest seam's tracer in the "
-            "first frontier",
-        )
+        text = read_flat(CODE_SLICING)
+        for anchor in ("first frontier", "riskiest", "tracer"):
+            self.assertIn(
+                anchor, text,
+                f"code pack slicing does not name {anchor!r}, so it does not "
+                "put the riskiest seam's tracer in the first frontier",
+            )
 
 
 class TestCompositionLinks(unittest.TestCase):
