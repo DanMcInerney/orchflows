@@ -29,6 +29,10 @@ the unclaimed items, `tickets.py new` for one the cut is missing, and
   justifies; without it a level widens at no cost. Read it from
   `cutcheck.py`'s `graph` block — `critical-path` and `level-width` —
   beside each item's oracles and `## Fixed inputs`.
+- compound item: an item whose criteria partition into subsets with
+  disjoint write scopes, each subset still discriminating — two atoms
+  issued as one. The instruction ceiling `tickets.py new` enforces is
+  this judgment's mechanical half, never the whole of it.
 
 ## Proving a copy
 

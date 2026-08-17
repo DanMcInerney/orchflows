@@ -72,8 +72,9 @@ def correspondence(lens, source):
 # the checker block a false edge is read from -- a block name, not a family
 # label, so naming it here cannot widen the correspondence.
 FALSE_EDGE = "false edge"
+COMPOUND_ITEM = "compound item"
 GRAPH_BLOCK = "graph"
-KEPT_JUDGMENTS = (FALSE_EDGE,)
+KEPT_JUDGMENTS = (FALSE_EDGE, COMPOUND_ITEM)
 ABSENT = "the kept half names no {} judgment"
 UNREAD = "the {} judgment names no `{}` block to read it from"
 
