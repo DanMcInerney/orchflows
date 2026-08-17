@@ -43,10 +43,13 @@
     each can fail on the objective (§8); one fresh checker
     (`orch-critique` under the ticket's own write scope — never a second
     executor) reviewing the result and its authored checks and
-    correcting per §9, the completion test then re-verified by a further
-    context that rendered no part of the result — over the entries the
-    checker invalidated, the rest covered per §7; a judged verdict per
-    §6; or the downstream gate the ticket's `independence` field names.
+    correcting per §9, the completion test then re-verified, over the
+    entries the checker invalidated, by a context that rendered no part
+    of the result, the rest covered per §7 — where every invalidated
+    oracle is deterministic that context is the join, which re-runs
+    them, and where any is judged one fresh child re-verifies them all;
+    a judged verdict per §6; or the downstream gate the ticket's
+    `independence` field names.
     Acceptance resting only on checks the executing context authored
     is UNVERIFIED.
 11. A repair by the context that found the defect is accepted only on a

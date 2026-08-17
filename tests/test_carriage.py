@@ -583,6 +583,10 @@ _FRONTIER_CUT_CHECK = {
     "the context whose cut-check re-run is the re-verification": (
         "engine's own `cutcheck.py` re-run", "re-verification",
     ),
+    # A fresh reader over a two-unit cut with a clean cutcheck run reviews
+    # what the script already graded; the size and the advisories are what
+    # make a cut worth a context of its own.
+    "the threshold that buys a cut a fresh reader": ("three or more", "advisory"),
 }
 
 _CONTRACT_CUT_CHECK = {
@@ -591,11 +595,12 @@ _CONTRACT_CUT_CHECK = {
     "what the cut checker corrects, and what it does not": (
         "`tickets.py amend`", "run's workspace",
     ),
+    "the threshold that buys a cut a fresh reader": ("three or more", "advisory"),
 }
 
 # The clauses as written, so the can-fail copies below read as their files did
 # before them.
-_FRONTIER_CLAUSE_RE = re.compile(r"A root ticket takes that checker.*?exit 0\.\s*", re.S)
+_FRONTIER_CLAUSE_RE = re.compile(r"A\s+root's\s+cut\s+takes.*?cut\s+alone\.\s*", re.S)
 _CONTRACT_CLAUSE_RE = re.compile(r"A root's cut is checked.*?cut checker\.\s*", re.S)
 
 
@@ -667,6 +672,164 @@ class CutCheckOrderingTest(unittest.TestCase):
                     [],
                     _clause_gaps(reader(beside.read_text(encoding="utf-8")), clause),
                     f"the {path.name} copy must start with the clause intact, "
+                    "or the excision below is not what the check reacted to",
+                )
+                excised = re.sub(pattern, "", real, count=1)
+                self.assertNotEqual(
+                    real, excised,
+                    f"the {path.name} excision matched nothing, so the "
+                    "assertion below would prove nothing",
+                )
+                beside.write_text(excised, encoding="utf-8")
+                self.assertEqual(
+                    sorted(clause),
+                    _clause_gaps(reader(beside.read_text(encoding="utf-8")), clause),
+                )
+
+
+# §10 sends the entries a checker invalidated to a further context. Run
+# 20260816T191118Z-adhoc-skills-review spent one spawned child per ticket on
+# that -- ~76k tokens and ~12 minutes each -- to re-run oracles that were
+# deterministic to the last one and failed none of 13. A fresh context buys
+# independence only where a verdict is rendered, and re-running a
+# deterministic oracle renders none. So the rule has to name which context
+# re-runs which oracle, and the engine has to dispatch on that split rather
+# than on every checker pass.
+_REVERIFICATION_SPLIT = {
+    "the context that re-runs a deterministic invalidation": (
+        "invalidated oracle is deterministic", "the join",
+    ),
+    "the one invalidation that still takes a fresh child": (
+        "fresh child", "judged",
+    ),
+}
+
+_FRONTIER_REVERIFICATION = {
+    "the packet form kept for a judged oracle": (
+        "`--executor orch-verify`", "judged",
+    ),
+    "what the engine re-runs itself, and at which identity": (
+        "deterministic", "checked identity",
+    ),
+}
+
+# The clauses as written, so the can-fail copies read as their files did
+# before them.
+_SPLIT_CLAUSE_RE = re.compile(
+    r"—\s+where\s+every\s+invalidated.*?fresh\s+child", re.S
+)
+_FRONTIER_SPLIT_RE = re.compile(r";\s+then,\s+where\s+its\s+pass.*?§10\)\.", re.S)
+
+
+# Sixteen repair tickets in the same run each ran the whole required-check
+# set 4-6 times, twelve lanes deep on one host, and the tip they merged to
+# was red anyway on a seam no lane's copy could see. Per-lane suite runs buy
+# nothing the integrated tip does not decide, so the engine runs that set
+# once per merge batch and a lane runs only what its own ticket names.
+_FRONTIER_TIP_CHECK = {
+    "what one lane is dispatched to run": (
+        "its ticket's own oracles", "nothing wider",
+    ),
+    "whose checks run at the tip, and how often": (
+        "standards owner", "each merge batch",
+    ),
+    "the revision they run on": ("integrated tip",),
+    "where that revision is recorded": ("tip's revision", "run's notes"),
+    "what a red tip costs, and what a lane's green is worth before it": (
+        "red tip", "next dispatch", "provisional",
+    ),
+}
+
+_TIP_CLAUSE_RE = re.compile(r"After\s+each\s+merge\s+batch.*?its\s+repair's\.", re.S)
+
+
+class TipCheckTest(unittest.TestCase):
+    """A lane grades its own ticket; only the merged tip carries the seam
+    between lanes. The engine owns the tip, so the engine owns the check on
+    it -- and owning it is what lets a lane stop paying for it."""
+
+    def test_the_engine_runs_the_required_checks_once_on_the_tip(self):
+        gaps = _clause_gaps(FRONTIER.read_text(encoding="utf-8"), _FRONTIER_TIP_CHECK)
+        self.assertEqual(
+            [],
+            gaps,
+            "orch-frontier's body states no tip-check clause covering: "
+            f"{', '.join(gaps)}",
+        )
+
+    def test_an_engine_without_the_clause_fails_the_check(self):
+        """The can-fail direction, built beside the tree and never by
+        mutating it (rules/verification.md §8): a copy of the engine with
+        the tip clause excised, which is how it read before."""
+        real = FRONTIER.read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            beside = Path(tmp) / FRONTIER.name
+            beside.write_text(real, encoding="utf-8")
+            self.assertEqual(
+                [],
+                _clause_gaps(beside.read_text(encoding="utf-8"), _FRONTIER_TIP_CHECK),
+                "the copy must start with the clause intact, or the excision "
+                "below is not what the check reacted to",
+            )
+            excised = re.sub(_TIP_CLAUSE_RE, "", real, count=1)
+            self.assertNotEqual(
+                real, excised,
+                "the excision matched nothing, so the assertion below would "
+                "prove nothing",
+            )
+            beside.write_text(excised, encoding="utf-8")
+            self.assertEqual(
+                sorted(_FRONTIER_TIP_CHECK),
+                _clause_gaps(beside.read_text(encoding="utf-8"), _FRONTIER_TIP_CHECK),
+            )
+
+
+class ReverificationSplitTest(unittest.TestCase):
+    """Independence is a property of the context that renders a verdict, not
+    a headcount. §10 owns which context re-verifies an invalidated entry;
+    orch-frontier owns the dispatch that follows from it. Both are read,
+    because a rule no engine acts on costs a child per ticket anyway."""
+
+    def test_the_rule_names_a_context_per_oracle_class(self):
+        gaps = _clause_gaps(
+            _clause(VERIFICATION.read_text(encoding="utf-8"), 10),
+            _REVERIFICATION_SPLIT,
+        )
+        self.assertEqual(
+            [],
+            gaps,
+            "rules/verification.md §10 states no re-verification split "
+            f"covering: {', '.join(gaps)}",
+        )
+
+    def test_the_engine_dispatches_a_child_only_for_a_judged_oracle(self):
+        gaps = _clause_gaps(
+            FRONTIER.read_text(encoding="utf-8"), _FRONTIER_REVERIFICATION
+        )
+        self.assertEqual(
+            [],
+            gaps,
+            "orch-frontier's checker path states no re-verification split "
+            f"covering: {', '.join(gaps)}",
+        )
+
+    def test_a_rule_and_an_engine_without_the_split_fail_the_check(self):
+        """The can-fail direction, built beside the tree and never by
+        mutating it (rules/verification.md §8): copies of both owners with
+        the split excised, which is how each read before it."""
+        for path, clause, pattern, reader in (
+            (VERIFICATION, _REVERIFICATION_SPLIT, _SPLIT_CLAUSE_RE,
+             lambda t: _clause(t, 10)),
+            (FRONTIER, _FRONTIER_REVERIFICATION, _FRONTIER_SPLIT_RE, lambda t: t),
+        ):
+            real = path.read_text(encoding="utf-8")
+            with tempfile.TemporaryDirectory() as tmp:
+                beside = Path(tmp) / path.name
+                beside.write_text(real, encoding="utf-8")
+                self.assertEqual(
+                    [],
+                    _clause_gaps(reader(beside.read_text(encoding="utf-8")), clause),
+                    f"the {path.name} copy must start with the split intact, "
                     "or the excision below is not what the check reacted to",
                 )
                 excised = re.sub(pattern, "", real, count=1)
