@@ -9,6 +9,7 @@ went wrong, and stays quiet where the manifest was right.
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 from super_research import adapters, coverage, runner, schema
 from super_research.adapters import youtube_innertube
@@ -519,6 +520,21 @@ class DepthReviewTest(unittest.TestCase):
         )
 
         self.assertEqual(subjects(found, coverage.NOTHING_HYDRATED), ["youtube_innertube"])
+
+
+class SkillDocTest(unittest.TestCase):
+    def test_the_owner_names_the_call_a_caller_would_make(self):
+        """The seam a caller reaches is the one `SKILL.md` names, or neither is.
+
+        Read as a backticked name and not as a sentence: the fact this fails
+        against is that the owner sends a caller to a function this module no
+        longer has, which is the one way a rename ships half-done.
+        """
+
+        body = (Path(__file__).resolve().parent.parent / "SKILL.md").read_text(encoding="utf-8")
+
+        self.assertIn("`coverage.plan_depth(", body)
+        self.assertNotIn("plan_hydration", body)
 
 
 class NoIOTest(unittest.TestCase):
