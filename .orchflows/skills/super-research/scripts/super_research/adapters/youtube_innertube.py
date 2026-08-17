@@ -181,6 +181,29 @@ SEARCH_RESULTS_PATH = (
 )
 WATCH_NEXT_PATH = ("contents", "twoColumnWatchNextResults", "results", "results", "contents")
 RECEIVED_ENDPOINTS_KEY = "onResponseReceivedEndpoints"
+# Where a *search* continuation keeps its rows. `SEARCH_RESULTS_PATH` above is
+# the first answer's container and only ever the first answer's: a call
+# spending a search token comes back with no `twoColumnSearchResultsRenderer`
+# at all, and its sections ride here instead. Declared separately from
+# `RECEIVED_ENDPOINTS_KEY` because the two endpoints are spelled differently by
+# the two routes — `search` says Commands, `next` says Endpoints — and reading
+# one for the other is how a live route reports drift it did not have.
+# Measured 2026-08-17: page two of `search:bitcoin price prediction` carried
+# `onResponseReceivedCommands[0].appendContinuationItemsAction.continuationItems`
+# holding 20 more `videoRenderer` rows, while the adapter read only the
+# first-page path and typed the whole page `schema_drift`.
+RECEIVED_COMMANDS_KEY = "onResponseReceivedCommands"
+# And the names it keeps them under. YouTube spells this route's append
+# `...Action` where the `next` route below spells its own `...Command`; the
+# asymmetry is the platform's and is declared rather than normalised, because a
+# parser that accepted either suffix everywhere would match a shape no route
+# actually sends. Measured 2026-08-17: the live key was
+# `appendContinuationItemsAction`, and reading the `next` route's tuple here
+# returned nothing and typed a working page `schema_drift`.
+SEARCH_CONTINUATION_ACTIONS = (
+    "appendContinuationItemsAction",
+    "reloadContinuationItemsCommand",
+)
 CONTINUATION_COMMANDS = ("reloadContinuationItemsCommand", "appendContinuationItemsCommand")
 CONTINUATION_ITEMS_KEY = "continuationItems"
 CONTINUATION_ITEM_KEY = "continuationItemRenderer"
@@ -459,6 +482,37 @@ def continuation_in(entry: Any) -> str:
     return _text(dig(holder, CONTINUATION_TOKEN_PATH))
 
 
+def search_sections(payload: Any) -> Optional[list]:
+    """The section list a search answer carries, in whichever of its two shapes.
+
+    A first call comes back with the results container. A call spending a token
+    comes back with no container at all and its sections under an append or
+    reload command instead. Both are declared, and the rows inside them are the
+    same shape either way — `itemSectionRenderer` holding `videoRenderer`s,
+    beside a `continuationItemRenderer` carrying the next token — so the walk in
+    :func:`search_rows` reads either without knowing which it got.
+
+    None means neither shape is there, which is the payload having moved.
+    Returning the first-page container even when empty keeps "matched nothing"
+    distinct from "the container is gone", which is the distinction the whole
+    typed-drift vocabulary exists to preserve.
+    """
+
+    sections = dig(payload, SEARCH_RESULTS_PATH)
+    if isinstance(sections, list):
+        return sections
+    commands = payload.get(RECEIVED_COMMANDS_KEY) if isinstance(payload, Mapping) else None
+    for command in commands if isinstance(commands, list) else ():
+        if not isinstance(command, Mapping):
+            continue
+        for name in SEARCH_CONTINUATION_ACTIONS:
+            held = command.get(name)
+            items = held.get(CONTINUATION_ITEMS_KEY) if isinstance(held, Mapping) else None
+            if isinstance(items, list):
+                return items
+    return None
+
+
 def search_rows(payload: Any) -> Optional[Tuple[Tuple[Mapping[str, Any], ...], str]]:
     """Every video the results section listed, in order, and its continuation.
 
@@ -467,8 +521,8 @@ def search_rows(payload: Any) -> Optional[Tuple[Tuple[Mapping[str, Any], ...], s
     container.
     """
 
-    sections = dig(payload, SEARCH_RESULTS_PATH)
-    if not isinstance(sections, list):
+    sections = search_sections(payload)
+    if sections is None:
         return None
     found = []
     cursor = ""
@@ -498,8 +552,20 @@ def comment_items(payload: Any) -> Optional[Sequence[Any]]:
     naming a video comes back with the watch page, whose comment section holds
     the token and no thread yet. Both are declared; None means neither is
     there, which is the payload having moved.
+
+    **Every command's rows, not the first command's.** One answer carries the
+    comment section in more than one piece, and the pieces are not ranked: the
+    header — the comment count and the sort control — is its own
+    `reloadContinuationItemsCommand` and it arrives *before* the one holding
+    the threads. Returning the first list found therefore returned a
+    one-row header and typed a video with comments as having none. Measured
+    2026-08-17 on `next:4jZjM0Zs_LY`: entry 0 held one `commentsHeaderRenderer`
+    and entry 1 held fourteen `commentThreadRenderer`s. Concatenating is safe
+    because the caller reads each row for a thread and skips what is not one,
+    so a header row costs a loop iteration and never a record.
     """
 
+    found = []
     endpoints = payload.get(RECEIVED_ENDPOINTS_KEY) if isinstance(payload, Mapping) else None
     for endpoint in endpoints if isinstance(endpoints, list) else ():
         if not isinstance(endpoint, Mapping):
@@ -508,7 +574,9 @@ def comment_items(payload: Any) -> Optional[Sequence[Any]]:
             held = endpoint.get(command)
             items = held.get(CONTINUATION_ITEMS_KEY) if isinstance(held, Mapping) else None
             if isinstance(items, list):
-                return items
+                found.extend(items)
+    if found:
+        return found
     sections = dig(payload, WATCH_NEXT_PATH)
     for section in sections if isinstance(sections, list) else ():
         item = section.get(ITEM_SECTION_KEY) if isinstance(section, Mapping) else None

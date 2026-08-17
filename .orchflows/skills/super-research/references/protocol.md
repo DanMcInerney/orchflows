@@ -314,12 +314,14 @@ The retained codes, what each one means, and every module that spells one:
 | `native_identity_unknown` | the row carries no platform-native id, so it can never group by strong identity | `web_search`, standing on every index hit |
 | `unknown_publication_time` | the row carries no publication time, so it sorts as missing | `web_search`, standing on every index hit |
 | `target_not_hydrated` | this hit was discovered and nothing in this artifact hydrated it | `web_search`, standing on every index hit |
-| `recall_window_partial` | the step stopped while the origin was still offering, so the set is a window and not the whole | `runner`, when a cap truncated |
+| `recall_window_partial` | the step stopped while the origin was still offering, so the set is a window and not the whole | `runner`, when a cap truncated; `coverage`, which reads it |
 
-Four of the names above are readers rather than emitters: `runner.reached_origin`
+Five of the names above are readers rather than emitters: `runner.reached_origin`
 reads `cache_hit`, `smoke.channel_of` reads `network_intercepted` and
-`unreachable`, and `cli.target_may_be_the_problem` reads `auth_required` and
-`attestation_required`. Everywhere else, naming a code is attaching it.
+`unreachable`, `cli.target_may_be_the_problem` reads `auth_required` and
+`attestation_required`, and `coverage.review_artifact` reads
+`recall_window_partial` to tell a caller its own set is a window rather than
+the whole. Everywhere else, naming a code is attaching it.
 
 A route that fails does not fall back. `schema_drift` and `stale_identifier` exist
 so that a changed payload is a typed failure rather than an empty success, which

@@ -8,7 +8,7 @@ enumeration is shown to reject a module beside the tree that breaks it.
 
 Four things are enumerated, and only the first is transcribed by hand:
 
-*The module set.* The core's sixteen modules are spelled out, so a new sibling
+*The module set.* The core's seventeen modules are spelled out, so a new sibling
 joins by editing this file or not at all. The count is in the sentence and in
 `CORE_MODULES`, and a test below compares them: this docstring said eleven for
 three modules longer than it was true. The adapter modules are not spelled
@@ -79,6 +79,7 @@ CORE_MODULES = (
     "__init__",
     "cache",
     "cli",
+    "coverage",
     "ledger",
     "normalize",
     "ordering",
@@ -103,6 +104,7 @@ CORE_IMPORT_EDGES = {
     "__init__": (),
     "cache": ("transport",),
     "cli": ("probes", "runner", "smoke", "transport"),
+    "coverage": ("runner", "schema"),
     "ledger": ("schema",),
     "normalize": ("adapters", "schema"),
     "ordering": ("adapters", "runner", "schema"),

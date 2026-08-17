@@ -3535,6 +3535,33 @@ class InnerTubeCommentThreadTest(unittest.TestCase):
     make one adapter call two reads.
     """
 
+    def test_the_threads_are_read_when_the_header_arrives_as_its_own_command(self):
+        """One answer carries the comment section in more than one piece.
+
+        The header — the comment count and the sort control — is its own
+        `reloadContinuationItemsCommand` and arrives *before* the one holding
+        the threads. Reading only the first command found returned a one-row
+        header and typed a video with 1,292 comments as having none. Measured
+        2026-08-17 on `next:4jZjM0Zs_LY`: entry 0 held one
+        `commentsHeaderRenderer`, entry 1 held fourteen threads.
+        """
+
+        page, _ = youtube_page(
+            "next_header_then_threads.json",
+            target_id="next:" + YOUTUBE_VIDEO_ID,
+            cursor=YOUTUBE_COMMENT_CURSOR,
+        )
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(len(page.records), 2)
+        self.assertEqual(
+            [record.body for record in page.records],
+            ["bottom signal", "charting is astrology for men"],
+        )
+        # The token still comes off the row that carries it, whichever command
+        # that row arrived under.
+        self.assertEqual(page.cursor_out, "COMMENTS_PAGE_TWO")
+
     def test_a_call_spending_the_token_carries_the_threads_it_returned(self):
         page, opener = youtube_page(
             "next_comment_threads.json",
@@ -4050,6 +4077,53 @@ class AttestationIsNotAnAbsenceTest(unittest.TestCase):
         self.assertEqual(page.outcome, "failed")
         self.assertEqual(page.loss, ("schema_drift",))
         self.assertIn(".".join(youtube_innertube.SEARCH_RESULTS_PATH), warning)
+
+    def test_a_search_continuation_page_is_read_and_not_typed_as_drift(self):
+        """Page two of a search carries no first-page container, and is not drift.
+
+        Measured 2026-08-17: `search:bitcoin price prediction` answered page one
+        with 19 rows and a cursor, and every page after it was typed
+        `schema_drift` because the adapter read only
+        `SEARCH_RESULTS_PATH` — a container a continuation answer never sends.
+        A search could therefore never return more than one page. With the
+        continuation shape declared, the same query read 92 rows over five
+        pages, all `ok`.
+        """
+
+        page, _ = youtube_page(
+            "search_continuation.json", target_id=YOUTUBE_SEARCH_TARGET, cursor="PAGE_TWO_TOKEN"
+        )
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(page.loss, ())
+        self.assertEqual(
+            tuple(record.native_item_id for record in page.records),
+            ("J-uXheGywLA", "K8vQrTmXp2A"),
+        )
+        # The rows carry the route's own view text, exactly as page one does:
+        # a continuation is the same shape arriving under a different key, so
+        # nothing about the record may differ because of where it was read.
+        self.assertEqual(
+            list(attributes_of(page.records[0])["viewCountText"]), ["12,345 views"]
+        )
+        # And the next token is spent from the same place, so paging continues
+        # past page two rather than stopping one short of the cap.
+        self.assertEqual(page.cursor_out, "PAGE_THREE_TOKEN")
+
+    def test_neither_search_shape_present_is_still_drift(self):
+        """The fix widens what counts as an answer; it must not swallow drift.
+
+        `search_reshaped.json` carries neither container, and stays `failed`.
+        Read beside the continuation test above: one asserts the new shape is
+        accepted, this one asserts the old refusal survived it.
+        """
+
+        page, _ = youtube_page("search_reshaped.json", target_id=YOUTUBE_SEARCH_TARGET)
+
+        self.assertIsNone(youtube_innertube.search_sections(json.loads(
+            read_youtube("search_reshaped.json")
+        )))
+        self.assertEqual(page.loss, ("schema_drift",))
 
     def test_the_field_a_caption_fetcher_needs_is_read_once_where_it_is_spent(self):
         # Caption retrieval was deferred by the spec, and the deferral's whole
