@@ -30,10 +30,10 @@
    Count is unbounded above; width past the host profile is the
    frontier's queue, not the cut's. A decomposition that
    cannot cover most acceptance criteria under the stamped slicing
-   returns a decision gap, never a forced slicing. An edge exists only
-   where the dependent's oracle reads what the predecessor writes or
-   its `## Fixed inputs` cite the predecessor's result identity — never
-   for ordering preference. A cut's write scope
+   returns a decision gap, never a forced slicing. An edge exists
+   only where the dependent's oracle reads what the predecessor
+   writes or its `## Fixed inputs` cite the predecessor's result
+   identity — never for ordering preference. A cut's write scope
    covers every artifact its own objective and completion test name,
    resolved against the workspace before issue; a cut that cannot cover
    them is widened or re-cut, never issued. An artifact more than one
