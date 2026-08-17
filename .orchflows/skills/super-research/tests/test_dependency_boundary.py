@@ -997,6 +997,25 @@ MULTI_SURFACE_ANCHOR = re.compile(r"\b([A-Za-z]+) adapters rea(?:d|ch) more than
 # the assertions.
 YOUTUBE = youtube_innertube.DESCRIPTOR.adapter_id
 
+# What a cell can deny a subject with, and the subject this row was caught
+# denying: it ended "No captions" while the transcript operation beside it was
+# reading a caption track. A denial is checked per clause rather than per
+# cell, because a row is allowed to say that some other surface has none.
+DENIALS = ("no", "not", "never", "without", "none")
+CAPTION_WORDS = ("caption", "captions", "transcript", "transcripts")
+
+
+def denied_in(cell, subjects):
+    """Every clause of one cell that names a subject and denies it in one breath."""
+
+    found = []
+    for clause in re.split(r"[.;,]", cell):
+        words = [word.strip("`*_()[]'\"").lower() for word in clause.split()]
+        if any(subject in words for subject in subjects):
+            if any(denial in words for denial in DENIALS):
+                found.append(clause.strip())
+    return found
+
 # The adapter roster in `protocol.md`, named by its header row the way the loss
 # tables above are named by theirs.
 ROSTER_TABLE_HEADER = "| adapter | class | route surfaces | what ships |"
@@ -1121,6 +1140,28 @@ class RosterIsReadOffTheSourceTest(unittest.TestCase):
                 for descriptor in runner.surface_descriptors(YOUTUBE)
             },
         )
+
+    def test_the_youtube_row_names_every_operation(self):
+        cell = self.youtube_row("what ships")
+        named = set(backticked(cell))
+
+        for operation in youtube_innertube.INNERTUBE_OPERATIONS:
+            with self.subTest(operation=operation):
+                self.assertIn(
+                    operation,
+                    named,
+                    "the youtube row ships {0} and names {1}".format(
+                        operation, sorted(named)
+                    ),
+                )
+
+        # The scan can fail, and on the clause this row actually carried: the
+        # operation was shipping while the cell beside it said otherwise.
+        self.assertEqual(
+            denied_in("`player` metadata. No captions", CAPTION_WORDS),
+            ["No captions"],
+        )
+        self.assertEqual(denied_in(cell, CAPTION_WORDS), [])
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner
