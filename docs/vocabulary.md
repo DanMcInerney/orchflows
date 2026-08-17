@@ -98,6 +98,11 @@ that needs a different meaning needs a different word.
   ⊕ completion test ⊕ lifecycle ⊕ graph position, per
   `contracts/work-item.md`; on disk, a markdown ticket the executor writes
   to. The two words name the same thing; ticket is the on-disk view.
+- **atom** — a work item at the finest lawful cut: one observable end
+  state, a completion test discriminating it alone, a closed write
+  scope, oracles reading nothing a sibling writes, an instruction
+  inside the stub ceiling. Law, and what lies either side of it, in
+  `rules/topology.md` §3.
 - **root ticket** — a ticket whose executor is `orch-decompose`; its
   subtree is `<id>.NN` unit tickets plus `<id>.gate.*`, checked before
   its first unit is promoted; it completes when
@@ -222,6 +227,11 @@ composition).
 - **frontier** — the set of work items dispatchable now — every dependency
   `complete` — recomputed by `orch-frontier` on every event and dispatched
   as it forms, never batched.
+- **critical path** — the longest `depends_on` chain over a run's issued
+  items, gate stubs excluded; what decomposition minimizes subject to
+  every item an atom. Read with each level's width from
+  `scripts/cutcheck.py`'s `graph` block (classes `critical-path`,
+  `level-width`).
 - **lane** — any independent parallel branch whose write scope and
   whose workspace are both disjoint from every other's (sharing =
   writing the same artifact or slot, not returning same-named fields).
