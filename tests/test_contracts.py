@@ -357,9 +357,13 @@ class TestVocabularyDefinesShapeChange(unittest.TestCase):
                 token, entry,
                 f"the shape change entry does not name {token!r} as what moves",
             )
+        # `T0 contract` is the definition's own term; the converse says
+        # `T0 edit`, so a bare `T0` is satisfied by an entry reduced to its
+        # converse, which defines nothing.
         self.assertIn(
-            "T0", entry,
-            "the shape change entry does not scope the term to T0",
+            "T0 contract", entry,
+            "the shape change entry does not define the term as a change to "
+            "a T0 contract",
         )
 
     def test_states_the_converse_a_prose_only_edit_needs(self):
