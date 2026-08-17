@@ -3661,6 +3661,203 @@ class InnerTubeCommentThreadTest(unittest.TestCase):
         self.assertEqual(len(opener.opened), 1)
 
 
+VIEW_MODEL_FIXTURE = "next_comment_view_models.json"
+
+
+def assert_the_old_shape_reads(case, page):
+    """The preservation oracle's own body, so a wrong adapter can meet it too.
+
+    Held apart from the test that runs it because a criterion which passes
+    before the change it guards has to be shown rejecting something, and the
+    only honest way to show that is to run these same assertions over a result
+    built beside the tree.
+    """
+
+    case.assertEqual(page.outcome, "ok")
+    case.assertEqual(
+        [record.body for record in page.records],
+        ["bottom signal", "charting is astrology for men"],
+    )
+    case.assertEqual(
+        [dict(record.engagement) for record in page.records],
+        [
+            {youtube_innertube.REPLY_COUNT_METRIC: 4},
+            {youtube_innertube.REPLY_COUNT_METRIC: 0},
+        ],
+    )
+    case.assertEqual(
+        attributes_of(page.records[0])[youtube_innertube.VOTE_COUNT_TEXT_KEY], ["272"]
+    )
+
+
+def view_model_page(fixture=VIEW_MODEL_FIXTURE):
+    """One `next` answer in the shape the platform now serves, read as comments."""
+
+    return youtube_page(
+        fixture, target_id="next:" + YOUTUBE_VIDEO_ID, cursor=YOUTUBE_COMMENT_CURSOR
+    )[0]
+
+
+class YoutubeCommentViewModelTest(unittest.TestCase):
+    """The second shape a `next` answer serves its threads in.
+
+    Measured 2026-08-17 on `next:4jZjM0Zs_LY`, page two: 13
+    `commentThreadRenderer`s and **zero** carrying `comment.commentRenderer`,
+    the path the old reader walks. The thread now carries a view model whose
+    `commentKey` addresses that thread's `commentEntityPayload` among the 66
+    entity-store mutations beside it, and the fields — author, body, id, counts
+    — live on that entity. `next_comment_view_models.json` is that answer
+    trimmed to three of those threads: the `28`/`29` row, the `6`/`7` row whose
+    `replyCount` states `"3"`, and the `" "`/`1` row of a comment nobody liked.
+    """
+
+    def test_one_record_per_thread(self):
+        # Four rows, three of them threads: the filter-context row the platform
+        # ships beside them costs a loop iteration and never a record.
+        page = view_model_page()
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(len(page.records), 3)
+        self.assertEqual([record.native_position for record in page.records], [0, 1, 2])
+        self.assertEqual(
+            [record.canonical_content_kind for record in page.records], ["comment"] * 3
+        )
+        self.assertEqual(
+            [record.native_parent_id for record in page.records], [YOUTUBE_VIDEO_ID] * 3
+        )
+
+    def test_fields_come_from_the_named_entity(self):
+        # The view model states a key and nothing else worth carrying; every
+        # field is read off the entity that key addresses, in the order the
+        # threads arrived rather than the order the mutations did.
+        page = view_model_page()
+
+        self.assertEqual(
+            [record.author for record in page.records],
+            ["@DeltaLumineux", "@ErikTheGrateful", "@BertoClipper"],
+        )
+        # `properties.content.content` is a plain string, not a runs holder:
+        # a reader that went through `route_text` would carry every body empty.
+        self.assertEqual(page.records[0].body, "Nicd")
+        self.assertEqual(page.records[1].body, "Crypto channel is back?")
+        self.assertEqual(
+            [record.native_item_id for record in page.records],
+            [
+                "UgyyGmQFMmFbbTn5MfN4AaABAg",
+                "UgyralckDuyMxNLY-7h4AaABAg",
+                "UgyUiK-OZOBU_EFG0cp4AaABAg",
+            ],
+        )
+        self.assertEqual(page.loss, ())
+        self.assertEqual([record.loss for record in page.records], [()] * 3)
+        # A reply count only where the field states digits. `""` is what this
+        # route writes for a thread with no replies, and zero-filling it would
+        # publish a count the origin never stated.
+        self.assertEqual(
+            [dict(record.engagement) for record in page.records],
+            [{}, {youtube_innertube.REPLY_COUNT_METRIC: 3}, {}],
+        )
+        self.assertEqual(
+            [
+                attributes_of(record)[youtube_innertube.PUBLISHED_TIME_KEY]
+                for record in page.records
+            ],
+            [["1 day ago"], ["3 days ago"], ["2 days ago"]],
+        )
+
+    def test_the_count_is_never_the_liked_one(self):
+        # `likeCountLiked` is the count *if you liked it* — every row's
+        # `likeCountNotliked` plus one. Reading it inflates all thirteen
+        # measured rows by exactly one, and turns a comment nobody liked into
+        # one with a like. The signed-out count rides verbatim, `" "` included:
+        # it is what the origin wrote for zero, and it is not parsed into one.
+        page = view_model_page()
+        carried = [
+            attributes_of(record)[youtube_innertube.LIKE_COUNT_NOTLIKED_KEY]
+            for record in page.records
+        ]
+
+        self.assertEqual(carried, [[" "], ["6"], ["28"]])
+        for record in page.records:
+            with self.subTest(item=record.native_item_id):
+                named = attributes_of(record)
+                self.assertNotIn("likeCountLiked", named)
+                self.assertNotIn("likeCountA11y", named)
+                self.assertNotIn(
+                    youtube_innertube.LIKE_COUNT_NOTLIKED_KEY, dict(record.engagement)
+                )
+
+    def test_an_unresolved_thread_is_marked(self):
+        # A key addressing nothing in the store this answer carried is a thread
+        # whose fields did not arrive, not a thread that is not there. Dropping
+        # it would report fewer comments than the platform listed, so it stays
+        # a record and says what it is short of.
+        page = view_model_page("next_view_model_without_entity.json")
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(len(page.records), 2)
+        self.assertEqual(page.records[0].loss, ())
+        self.assertEqual(page.records[1].loss, ("field_omitted",))
+        self.assertEqual(page.records[1].body, "")
+        self.assertEqual(page.records[1].engagement, ())
+        self.assertEqual(page.records[1].attributes, ())
+
+    def test_an_answer_with_no_mutation_list_is_drift(self):
+        # The threads arrived and the store they point into did not: that is
+        # the payload having moved, and typing it as an empty page would report
+        # a video with comments as having none.
+        page = view_model_page("next_view_models_no_entity_store.json")
+
+        self.assertEqual(page.outcome, "failed")
+        self.assertEqual(page.loss, ("schema_drift",))
+        self.assertEqual(page.records, ())
+
+    def test_the_old_shape_still_reads(self):
+        # `comment.commentRenderer` is still what the header-then-threads
+        # capture carries, and this change is additive: the old walk is
+        # unchanged and its fixture is untouched.
+        assert_the_old_shape_reads(self, view_model_page("next_header_then_threads.json"))
+
+    def test_the_old_shape_oracle_rejects_an_adapter_that_dropped_it(self):
+        """And the reading above is worth something, which needs showing.
+
+        This is the one criterion here that passed before the change it guards
+        — a preservation oracle that failed at the baseline would be guarding
+        nothing — so its discrimination comes from a wrong adapter kept beside
+        the tree rather than from the executor's own red. `old_shape_dropped`
+        believes a comment's fields live in the entity store only; the same
+        assertions run over its page, and reject it.
+        """
+
+        wrong = load_adapter_fixture("old_shape_dropped_adapter", YOUTUBE_FIXTURE_DIR)
+        page, _ = adapter_page(
+            wrong,
+            200,
+            read_youtube("next_header_then_threads.json"),
+            content_type="application/json",
+            request=youtube_request(
+                "next:" + YOUTUBE_VIDEO_ID, cursor=YOUTUBE_COMMENT_CURSOR
+            ),
+        )
+
+        self.assertEqual(page.records, ())
+        with self.assertRaises(AssertionError):
+            assert_the_old_shape_reads(self, page)
+        # And the same adapter leaves the shape this item added alone, so the
+        # rejection above is the older shape's loss and nothing else.
+        page, _ = adapter_page(
+            wrong,
+            200,
+            read_youtube(VIEW_MODEL_FIXTURE),
+            content_type="application/json",
+            request=youtube_request(
+                "next:" + YOUTUBE_VIDEO_ID, cursor=YOUTUBE_COMMENT_CURSOR
+            ),
+        )
+
+        self.assertEqual(len(page.records), 3)
+
+
 class InnerTubePlayerTest(unittest.TestCase):
     """Criterion 1, player: the three fields the evidence measured, and no fourth."""
 
@@ -3868,6 +4065,7 @@ WRONG_YOUTUBE_ADAPTERS = (
     "empty_captions_as_absence_adapter",
     "stale_version_as_empty_adapter",
     "every_player_as_attested_adapter",
+    "old_shape_dropped_adapter",
 )
 
 
