@@ -37,6 +37,11 @@ INTEGRATE = ROOT / "skills" / "kernel" / "orch-integrate" / "SKILL.md"
 # The empty-set skip by its anchors: the gate item the join completes itself,
 # spelled as the owner spells it, and the set whose emptiness is the trigger.
 EMPTY_SET_SKIP_ANCHORS = ("gate.repair", "accepted defect set")
+# The one fact both cells state, by the only two words literal in both: the
+# frontier the proven work opens, and the state that earns the exception.
+# tools/validate.py's cross-pack cell linter forbids the shared sentence, so
+# the cells word the rest apart on purpose and there is nothing else to pin.
+PROVEN_SEAM_ANCHORS = ("first frontier", "unproven")
 
 COMPOSITIONS = ROOT / "compositions"
 EVAL_DESIGN = ROOT / "skills" / "workflows" / "orch-eval-design" / "SKILL.md"
@@ -388,6 +393,22 @@ class TestCutGoalAnchors(unittest.TestCase):
                 "accepted defect set and every clean run pays for a no-op "
                 "dispatch on its critical path",
             )
+
+    def test_the_slicing_cells_put_proven_seams_on_the_first_frontier(self):
+        for label, path in (
+            ("code pack slicing", CODE_SLICING),
+            ("design pack slicing", DESIGN_SLICING),
+        ):
+            text = read_flat(path)
+            for anchor in PROVEN_SEAM_ANCHORS:
+                with self.subTest(cell=label, anchor=anchor):
+                    self.assertIn(
+                        anchor, text,
+                        f"{label} does not name {anchor!r}, so it no longer "
+                        "opens the first frontier with the work the "
+                        "acceptance already proves and reserves the tracer "
+                        "for what the spec leaves unproven",
+                    )
 
 
 class TestCompositionLinks(unittest.TestCase):
