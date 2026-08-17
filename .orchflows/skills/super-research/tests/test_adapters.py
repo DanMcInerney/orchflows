@@ -3664,6 +3664,32 @@ class InnerTubeCommentThreadTest(unittest.TestCase):
 VIEW_MODEL_FIXTURE = "next_comment_view_models.json"
 
 
+def assert_the_old_shape_reads(case, page):
+    """The preservation oracle's own body, so a wrong adapter can meet it too.
+
+    Held apart from the test that runs it because a criterion which passes
+    before the change it guards has to be shown rejecting something, and the
+    only honest way to show that is to run these same assertions over a result
+    built beside the tree.
+    """
+
+    case.assertEqual(page.outcome, "ok")
+    case.assertEqual(
+        [record.body for record in page.records],
+        ["bottom signal", "charting is astrology for men"],
+    )
+    case.assertEqual(
+        [dict(record.engagement) for record in page.records],
+        [
+            {youtube_innertube.REPLY_COUNT_METRIC: 4},
+            {youtube_innertube.REPLY_COUNT_METRIC: 0},
+        ],
+    )
+    case.assertEqual(
+        attributes_of(page.records[0])[youtube_innertube.VOTE_COUNT_TEXT_KEY], ["272"]
+    )
+
+
 def view_model_page(fixture=VIEW_MODEL_FIXTURE):
     """One `next` answer in the shape the platform now serves, read as comments."""
 
@@ -3790,23 +3816,46 @@ class YoutubeCommentViewModelTest(unittest.TestCase):
         # `comment.commentRenderer` is still what the header-then-threads
         # capture carries, and this change is additive: the old walk is
         # unchanged and its fixture is untouched.
-        page = view_model_page("next_header_then_threads.json")
+        assert_the_old_shape_reads(self, view_model_page("next_header_then_threads.json"))
 
-        self.assertEqual(page.outcome, "ok")
-        self.assertEqual(
-            [record.body for record in page.records],
-            ["bottom signal", "charting is astrology for men"],
+    def test_the_old_shape_oracle_rejects_an_adapter_that_dropped_it(self):
+        """And the reading above is worth something, which needs showing.
+
+        This is the one criterion here that passed before the change it guards
+        — a preservation oracle that failed at the baseline would be guarding
+        nothing — so its discrimination comes from a wrong adapter kept beside
+        the tree rather than from the executor's own red. `old_shape_dropped`
+        believes a comment's fields live in the entity store only; the same
+        assertions run over its page, and reject it.
+        """
+
+        wrong = load_adapter_fixture("old_shape_dropped_adapter", YOUTUBE_FIXTURE_DIR)
+        page, _ = adapter_page(
+            wrong,
+            200,
+            read_youtube("next_header_then_threads.json"),
+            content_type="application/json",
+            request=youtube_request(
+                "next:" + YOUTUBE_VIDEO_ID, cursor=YOUTUBE_COMMENT_CURSOR
+            ),
         )
-        self.assertEqual(
-            [dict(record.engagement) for record in page.records],
-            [
-                {youtube_innertube.REPLY_COUNT_METRIC: 4},
-                {youtube_innertube.REPLY_COUNT_METRIC: 0},
-            ],
+
+        self.assertEqual(page.records, ())
+        with self.assertRaises(AssertionError):
+            assert_the_old_shape_reads(self, page)
+        # And the same adapter leaves the shape this item added alone, so the
+        # rejection above is the older shape's loss and nothing else.
+        page, _ = adapter_page(
+            wrong,
+            200,
+            read_youtube(VIEW_MODEL_FIXTURE),
+            content_type="application/json",
+            request=youtube_request(
+                "next:" + YOUTUBE_VIDEO_ID, cursor=YOUTUBE_COMMENT_CURSOR
+            ),
         )
-        self.assertEqual(
-            attributes_of(page.records[0])[youtube_innertube.VOTE_COUNT_TEXT_KEY], ["272"]
-        )
+
+        self.assertEqual(len(page.records), 3)
 
 
 class InnerTubePlayerTest(unittest.TestCase):
@@ -4016,6 +4065,7 @@ WRONG_YOUTUBE_ADAPTERS = (
     "empty_captions_as_absence_adapter",
     "stale_version_as_empty_adapter",
     "every_player_as_attested_adapter",
+    "old_shape_dropped_adapter",
 )
 
 
