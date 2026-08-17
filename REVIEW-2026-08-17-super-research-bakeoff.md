@@ -4,6 +4,7 @@ Part 3 of 3, and the entry point. Read this first.
 
 - Part 1 - run 1 data: [REVIEW-2026-08-17-bakeoff-run1-last30days.md](REVIEW-2026-08-17-bakeoff-run1-last30days.md)
 - Part 2 - run 2 data: [REVIEW-2026-08-17-bakeoff-run2-super-research.md](REVIEW-2026-08-17-bakeoff-run2-super-research.md)
+- Part 4 - run 3, after this roadmap was executed: [REVIEW-2026-08-17-run3-superset.md](REVIEW-2026-08-17-run3-superset.md)
 
 Date: 2026-08-17. Both runs asked the same question ("SpaceX sentiment - do people think it will go
 up or down?") over the same window (2026-07-18 to 2026-08-17) on the same host, with Opus 5 on the
