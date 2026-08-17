@@ -17,14 +17,31 @@
    and engines. One-off routing stays inside rule 1's operators and the
    delegation boundary.
 3. Decomposition emits [work items](../contracts/work-item.md); domains
-   extend the item, never replace it. One item is a lawful cut: a cut
-   is forced only by parallelism, disjoint write scopes, isolation, or
-   resumption — never made to look thorough. A decomposition that
+   extend the item, never replace it. The lawful set is the finest cut
+   in which every item is an atom: one observable end state; a
+   completion test discriminating it alone (`scripts/cutcheck.py`
+   family 1); a closed write scope (family 3); oracles reading nothing
+   a sibling writes (family 4); an instruction inside the stub ceiling
+   ([token-economy.md](token-economy.md) §11). A coarser item is a
+   compound item
+   ([cut-lens.md](../skills/kernel/orch-decompose/references/cut-lens.md)),
+   never a safe default; below the atom is padding — an item no oracle
+   discriminates from a sibling — which is where cutting finer stops.
+   Count is unbounded above; width past the host profile is the
+   frontier's queue, not the cut's. A decomposition that
    cannot cover most acceptance criteria under the stamped slicing
-   returns a decision gap, never a forced slicing. A cut's write scope
+   returns a decision gap, never a forced slicing. An edge exists only
+   where the dependent's oracle reads what the predecessor writes or
+   its `## Fixed inputs` cite the predecessor's result identity — never
+   for ordering preference. A cut's write scope
    covers every artifact its own objective and completion test name,
    resolved against the workspace before issue; a cut that cannot cover
-   them is widened or re-cut, never issued. Observing is not naming: an
+   them is widened or re-cut, never issued. An artifact more than one
+   item would write is given to exactly one item — one on the first
+   frontier the rest depend on, or a closing item depending on them —
+   never shared; the recurring ones are `ARCHITECTURE.md`, a `SKILL.md`
+   roster, a fixture copying a source, `tests/pins.json`, and a test
+   module pinning several owners. Observing is not naming: an
    artifact a test only observes — asserting that it is unchanged
    included — stays outside the write scope, which covers only what the
    item changes. Reads are scope all the same: an item whose completion
@@ -33,7 +50,9 @@
    move the verdict it observes, in the workspace where it observes it —
    isolation keeping a sibling's in-flight change out of that workspace
    qualifies as squarely as disjointness does. A sibling's write counts
-   as material until shown immaterial.
+   as material until shown immaterial. An ad-hoc set is a cut like any
+   other: every clause here binds it, and `scripts/cutcheck.py` reads
+   it before its first dispatch.
 4. At most one terminal assembly item per run, depending on every unit
    item. Assembly rewrites its inputs, so unit verification upstream of
    it is invalidated at the join; the final gate re-verifies the

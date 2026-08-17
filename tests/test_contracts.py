@@ -515,6 +515,145 @@ class TestWorkItemCitationLaws(unittest.TestCase):
                 self.assertIn(token, text, why)
 
 
+class TopologyAtomTest(unittest.TestCase):
+    """`rules/topology.md` §3 owns the cut law the decomposer and every
+    ad-hoc cut read: what an atom is, when an edge exists, and who owns an
+    artifact more than one item would write. Read from clause 3 alone, so
+    a sentence landing in a neighbouring clause cannot satisfy it, and
+    pinned by anchor — a term, a backticked name, a checker family —
+    never by a sentence, which a lawful reword would break."""
+
+    def section(self):
+        return read_clause_flat("rules/topology.md", 3)
+
+    def test_section_3_states_the_atom_the_edge_rule_and_the_shared_surface_rule(self):
+        text = self.section()
+        self.assertRegex(
+            text, r"\batom\b",
+            "topology.md §3 does not name the atom, the unit the lawful set "
+            "is cut into",
+        )
+        for token, why in (
+            ("finest",
+             "does not make the lawful set the finest cut, so it states no "
+             "polarity and a coarser cut stays a safe default"),
+            ("family 1",
+             "does not tie the discriminating completion test to the checker "
+             "family that reports its absence"),
+            ("family 3",
+             "does not tie the closed write scope to its checker family"),
+            ("family 4",
+             "does not tie the sibling-read prohibition to its checker family"),
+            ("`scripts/cutcheck.py`",
+             "names checker families without naming the checker that owns "
+             "them"),
+            ("compound item",
+             "does not name what an item coarser than an atom is"),
+            ("`## Fixed inputs`",
+             "'s edge rule does not name the cited-identity half, so an edge "
+             "carrying no oracle read has no other justification"),
+            ("result identity",
+             "'s edge rule does not say what a fixed input cites to earn an "
+             "edge"),
+            ("ordering preference",
+             "does not refuse the edge drawn for ordering preference"),
+            ("exactly one item",
+             "does not give an artifact more than one item would write to "
+             "exactly one item"),
+            ("`ARCHITECTURE.md`",
+             "'s shared-surface rule names no recurring surface, so a cutter "
+             "rediscovers them"),
+            ("`SKILL.md`",
+             "'s shared-surface rule does not name the roster case"),
+            ("`tests/pins.json`",
+             "'s shared-surface rule does not name the pin-file case"),
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, text, f"topology.md §3 {why}")
+
+    def test_section_3_bounds_the_cut_below_and_binds_an_ad_hoc_set(self):
+        text = self.section()
+        for token, why in (
+            ("padding",
+             "does not name what lies below the atom, so the finest-cut "
+             "polarity has no floor"),
+            ("unbounded",
+             "does not leave the item count unbounded above"),
+            ("frontier's queue",
+             "does not send width past the host profile to the frontier's "
+             "queue instead of back into the cut"),
+            ("ad-hoc set",
+             "does not bind the ad-hoc set, the form every wide cut in the "
+             "sink was made in"),
+            ("first dispatch",
+             "does not order the cut check before an ad-hoc set's first "
+             "dispatch"),
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, text, f"topology.md §3 {why}")
+        self.assertNotIn(
+            "look thorough", text,
+            "topology.md §3 still forces a cut only under parallelism, "
+            "disjoint scopes, isolation or resumption — the clause the atom "
+            "bound replaces",
+        )
+
+
+class VocabularyCutTermsTest(unittest.TestCase):
+    """`docs/vocabulary.md` owns the two terms topology §3 and the
+    decomposer's goal are stated in. Each is asserted as an entry —
+    defined once, under the section a reader of its neighbours reaches it
+    from — never as a corpus count of the word."""
+
+    def entry(self, term):
+        flat = read_at_flat("docs/vocabulary.md")
+        self.assertEqual(
+            flat.count(term), 1,
+            f"docs/vocabulary.md must carry the {term} entry exactly once",
+        )
+        return flat.split(term, 1)[1].split(" - **", 1)[0]
+
+    def under(self, heading, next_heading):
+        flat = read_at_flat("docs/vocabulary.md")
+        return flat.split(heading, 1)[1].split(next_heading, 1)[0]
+
+    def test_atom_and_critical_path_are_defined_once(self):
+        atom = self.entry("**atom**")
+        for token, why in (
+            ("end state", "does not name the one observable end state"),
+            ("completion test", "does not name the discriminating completion test"),
+            ("write scope", "does not name the closed write scope"),
+            ("sibling", "does not name the sibling-read bound"),
+            ("ceiling", "does not name the instruction ceiling, the atom's "
+                        "mechanical bound"),
+            ("`rules/topology.md`", "does not name the owner of the law it "
+                                    "summarises"),
+        ):
+            with self.subTest(term="atom", token=token):
+                self.assertIn(token, atom, f"the atom entry {why}")
+        path = self.entry("**critical path**")
+        for token, why in (
+            ("`depends_on`", "does not name the edge the chain runs over"),
+            ("gate", "does not exclude the gate stubs from the chain"),
+            ("`scripts/cutcheck.py`", "does not name what reports it"),
+            ("`critical-path`", "does not name the class carrying the length"),
+            ("`level-width`", "does not name the class carrying each level's "
+                              "width"),
+        ):
+            with self.subTest(term="critical path", token=token):
+                self.assertIn(token, path, f"the critical path entry {why}")
+        self.assertIn(
+            "**atom**", self.under("## Work", "## Verification"),
+            "the atom entry must sit under ## Work, beside the work item it "
+            "is a property of",
+        )
+        self.assertIn(
+            "**critical path**", self.under("## Iteration", "## Improvement"),
+            "the critical path entry must sit under ## Iteration, beside the "
+            "frontier it is measured over",
+        )
+
+
 class TestSkillDescriptions(unittest.TestCase):
     def test_every_skill_description_is_at_most_140_chars(self):
         skill_files = sorted(SKILLS.glob("*/*/SKILL.md"))
