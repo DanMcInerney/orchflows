@@ -46,12 +46,14 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import re
 import sys
 import sysconfig
 import unittest
 from pathlib import Path
 
 from super_research import runner
+from super_research.adapters import youtube_innertube
 from tests import helpers
 from tests.test_adapters import (
     EXECUTION_MODULES,
@@ -770,12 +772,16 @@ def loss_code_spelling(codes):
     return (spelling, declaring)
 
 
-# Number words a heading or a docstring in this delivery may count in. Two
-# checks read it: the shortfall heading in `protocol.md`, and this file's own
-# module count.
+# Number words a heading or a docstring in this delivery may count in. Three
+# checks read it: the shortfall heading in `protocol.md`, this file's own
+# module count, and the multi-surface count both reference documents state.
+# It runs to twenty because that third one counts adapters, and the roster is
+# twenty adapters wide — a table that stopped short would read a lawful count
+# as an unspellable one.
 NUMBER_WORDS = (
     "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
     "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen",
+    "Eighteen", "Nineteen", "Twenty",
 )
 
 
@@ -975,6 +981,187 @@ class LossVocabularyIsReadOffTheSourceTest(unittest.TestCase):
         self.assertEqual(names_a_loss_code(declared, {"auth_required"}, constants)[0], set())
         self.assertIn("schema_drift", names_a_loss_code(emitting, {"schema_drift"}, constants)[0])
         self.assertEqual(names_a_loss_code(emitting, {"schema_drift"}, constants)[1], set())
+
+
+OPERATING_PATH = Path(__file__).resolve().parent.parent / "references" / "operating.md"
+
+# The phrase both documents count the multi-surface adapters with, and the
+# whole of what this reads them by. An anchor rather than either sentence: the
+# two paragraphs are written in different voices and are meant to stay that
+# way, so a pin that matched the prose around the number would forbid the
+# rewrite it is supposed to permit.
+MULTI_SURFACE_ANCHOR = re.compile(r"\b([A-Za-z]+) adapters rea(?:d|ch) more than one\b")
+
+# The one roster row read cell by cell here. Its adapter id comes off the
+# module that owns the route rather than off this file, so a rename reaches
+# the assertions.
+YOUTUBE = youtube_innertube.DESCRIPTOR.adapter_id
+
+# What a cell can deny a subject with, and the subject this row was caught
+# denying: it ended "No captions" while the transcript operation beside it was
+# reading a caption track. A denial is checked per clause rather than per
+# cell, because a row is allowed to say that some other surface has none.
+DENIALS = ("no", "not", "never", "without", "none")
+CAPTION_WORDS = ("caption", "captions", "transcript", "transcripts")
+
+
+def denied_in(cell, subjects):
+    """Every clause of one cell that names a subject and denies it in one breath."""
+
+    found = []
+    for clause in re.split(r"[.;,]", cell):
+        words = [word.strip("`*_()[]'\"").lower() for word in clause.split()]
+        if any(subject in words for subject in subjects):
+            if any(denial in words for denial in DENIALS):
+                found.append(clause.strip())
+    return found
+
+# The adapter roster in `protocol.md`, named by its header row the way the loss
+# tables above are named by theirs.
+ROSTER_TABLE_HEADER = "| adapter | class | route surfaces | what ships |"
+
+
+def roster_table_rows():
+    """The adapter roster, keyed by adapter id, each row column name -> cell.
+
+    Parsed rather than transcribed, for the reason the loss tables are: the
+    row a reader reads is the row the assertions run against.
+    """
+
+    rows = {}
+    columns = None
+    for line in PROTOCOL_PATH.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped == ROSTER_TABLE_HEADER:
+            columns = [cell.strip() for cell in stripped.strip("|").split("|")]
+            continue
+        if columns is None:
+            continue
+        if not stripped.startswith("|"):
+            break
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if set(cells[0]) <= set("- "):
+            continue
+        named = backticked(cells[0])
+        if len(named) == 1:
+            rows[named[0]] = dict(zip(columns, cells))
+    return rows
+
+
+def counted_as(word):
+    """The number one spelled number word names, or ``None`` if it names none.
+
+    Spelling, not arithmetic: `NUMBER_WORDS` is a list of names and no count
+    is written down here. The count comes off the descriptors.
+    """
+
+    spelled = [name.lower() for name in NUMBER_WORDS]
+    lowered = word.lower()
+    return spelled.index(lowered) + 1 if lowered in spelled else None
+
+
+def multi_surface_adapters():
+    """Every adapter the source gives more than one route surface."""
+
+    return {
+        adapter_id
+        for adapter_id in runner.ADAPTER_IDS
+        if len(runner.surface_descriptors(adapter_id)) > 1
+    }
+
+
+def multi_surface_counts_stated(path):
+    """Every multi-surface count one document states, in document order."""
+
+    text = path.read_text(encoding="utf-8")
+    return tuple(
+        counted_as(match.group(1)) for match in MULTI_SURFACE_ANCHOR.finditer(text)
+    )
+
+
+class RosterIsReadOffTheSourceTest(unittest.TestCase):
+    """The roster's counted and enumerated claims, against `runner`'s own answer.
+
+    `protocol.md` and `operating.md` both count the adapters reaching more
+    than one route surface, and both said seven while the source said ten:
+    `bluesky`, `x_guest` and `youtube_innertube` joined the roster with a
+    second surface each and no one re-counted. This is the same lesson
+    `LossVocabularyIsReadOffTheSourceTest` records one class up, so it gets
+    the same treatment — the number stays in the prose, where a reader meets
+    it, and the assertion runs against the prose.
+
+    The count is anchored on the phrase both paragraphs share rather than on
+    either sentence, because the two are written in different voices and a
+    sentence match would pin the voice along with the number.
+    """
+
+    def setUp(self):
+        self.multi = multi_surface_adapters()
+        self.rows = roster_table_rows()
+
+    def youtube_row(self, column):
+        # If the parse silently found nothing, a cell assertion would pass
+        # against no table at all.
+        self.assertEqual(set(self.rows), set(runner.ADAPTER_IDS))
+        return self.rows[YOUTUBE][column]
+
+    def test_the_multi_surface_count_is_the_descriptors_own(self):
+        # If the source ever gave every adapter one surface the claim would be
+        # vacuous rather than wrong, so the reading is shown to be a reading.
+        self.assertGreater(len(self.multi), 1)
+
+        for path in (PROTOCOL_PATH, OPERATING_PATH):
+            with self.subTest(document=path.name):
+                stated = multi_surface_counts_stated(path)
+                self.assertEqual(
+                    len(stated),
+                    1,
+                    "{0} states the multi-surface count {1} times".format(
+                        path.name, len(stated)
+                    ),
+                )
+                self.assertEqual(
+                    stated[0],
+                    len(self.multi),
+                    "{0} says {1}; the descriptors say {2}: {3}".format(
+                        path.name, stated[0], len(self.multi), sorted(self.multi)
+                    ),
+                )
+
+    def test_the_youtube_row_names_every_surface_it_reads(self):
+        # The row said one surface while the adapter reads two, which is how a
+        # transcript operation came to be described by a row that denied it.
+        self.assertIn(YOUTUBE, self.multi)
+
+        self.assertEqual(
+            set(backticked(self.youtube_row("route surfaces"))),
+            {
+                descriptor.route_id
+                for descriptor in runner.surface_descriptors(YOUTUBE)
+            },
+        )
+
+    def test_the_youtube_row_names_every_operation(self):
+        cell = self.youtube_row("what ships")
+        named = set(backticked(cell))
+
+        for operation in youtube_innertube.INNERTUBE_OPERATIONS:
+            with self.subTest(operation=operation):
+                self.assertIn(
+                    operation,
+                    named,
+                    "the youtube row ships {0} and names {1}".format(
+                        operation, sorted(named)
+                    ),
+                )
+
+        # The scan can fail, and on the clause this row actually carried: the
+        # operation was shipping while the cell beside it said otherwise.
+        self.assertEqual(
+            denied_in("`player` metadata. No captions", CAPTION_WORDS),
+            ["No captions"],
+        )
+        self.assertEqual(denied_in(cell, CAPTION_WORDS), [])
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner
