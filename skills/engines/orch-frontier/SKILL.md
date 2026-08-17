@@ -21,10 +21,10 @@ the applied skill; host depth per
 `authored-here`, dispatch `orch-critique` as one further fresh child on
 the same claimed ticket, on the packet `tickets.py packet <run> <id>
 --reply-to <name> --executor orch-critique` emits; then, where the
-checker's pass names an invalidated entry, re-run the completion test
-at the checked identity through `orch-verify` on that packet's
-`--executor orch-verify` form, else the join reads the entries as
-covered ([rules/verification.md](../../../rules/verification.md) §10).
+checker's pass invalidates an entry whose oracle is judged, dispatch
+that packet's `--executor orch-verify` form; else re-run the
+invalidated deterministic oracles at the checked identity here, the
+rest covered ([rules/verification.md](../../../rules/verification.md) §10).
 A root ticket takes that checker over its cut, this engine's own
 `cutcheck.py` re-run being its re-verification: the `<id>.NN` stay
 `pending` until the root's `checked_by` is set and that re-run reads

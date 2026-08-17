@@ -682,6 +682,101 @@ class CutCheckOrderingTest(unittest.TestCase):
                 )
 
 
+# §10 sends the entries a checker invalidated to a further context. Run
+# 20260816T191118Z-adhoc-skills-review spent one spawned child per ticket on
+# that -- ~76k tokens and ~12 minutes each -- to re-run oracles that were
+# deterministic to the last one and failed none of 13. A fresh context buys
+# independence only where a verdict is rendered, and re-running a
+# deterministic oracle renders none. So the rule has to name which context
+# re-runs which oracle, and the engine has to dispatch on that split rather
+# than on every checker pass.
+_REVERIFICATION_SPLIT = {
+    "the context that re-runs a deterministic invalidation": (
+        "invalidated oracle is deterministic", "the join",
+    ),
+    "the one invalidation that still takes a fresh child": (
+        "fresh child", "judged",
+    ),
+}
+
+_FRONTIER_REVERIFICATION = {
+    "the packet form kept for a judged oracle": (
+        "`--executor orch-verify`", "judged",
+    ),
+    "what the engine re-runs itself, and at which identity": (
+        "deterministic", "checked identity",
+    ),
+}
+
+# The clauses as written, so the can-fail copies read as their files did
+# before them.
+_SPLIT_CLAUSE_RE = re.compile(
+    r"—\s+where\s+every\s+invalidated.*?fresh\s+child", re.S
+)
+_FRONTIER_SPLIT_RE = re.compile(r";\s+then,\s+where\s+the\s+checker's.*?§10\)\.", re.S)
+
+
+class ReverificationSplitTest(unittest.TestCase):
+    """Independence is a property of the context that renders a verdict, not
+    a headcount. §10 owns which context re-verifies an invalidated entry;
+    orch-frontier owns the dispatch that follows from it. Both are read,
+    because a rule no engine acts on costs a child per ticket anyway."""
+
+    def test_the_rule_names_a_context_per_oracle_class(self):
+        gaps = _clause_gaps(
+            _clause(VERIFICATION.read_text(encoding="utf-8"), 10),
+            _REVERIFICATION_SPLIT,
+        )
+        self.assertEqual(
+            [],
+            gaps,
+            "rules/verification.md §10 states no re-verification split "
+            f"covering: {', '.join(gaps)}",
+        )
+
+    def test_the_engine_dispatches_a_child_only_for_a_judged_oracle(self):
+        gaps = _clause_gaps(
+            FRONTIER.read_text(encoding="utf-8"), _FRONTIER_REVERIFICATION
+        )
+        self.assertEqual(
+            [],
+            gaps,
+            "orch-frontier's checker path states no re-verification split "
+            f"covering: {', '.join(gaps)}",
+        )
+
+    def test_a_rule_and_an_engine_without_the_split_fail_the_check(self):
+        """The can-fail direction, built beside the tree and never by
+        mutating it (rules/verification.md §8): copies of both owners with
+        the split excised, which is how each read before it."""
+        for path, clause, pattern, reader in (
+            (VERIFICATION, _REVERIFICATION_SPLIT, _SPLIT_CLAUSE_RE,
+             lambda t: _clause(t, 10)),
+            (FRONTIER, _FRONTIER_REVERIFICATION, _FRONTIER_SPLIT_RE, lambda t: t),
+        ):
+            real = path.read_text(encoding="utf-8")
+            with tempfile.TemporaryDirectory() as tmp:
+                beside = Path(tmp) / path.name
+                beside.write_text(real, encoding="utf-8")
+                self.assertEqual(
+                    [],
+                    _clause_gaps(reader(beside.read_text(encoding="utf-8")), clause),
+                    f"the {path.name} copy must start with the split intact, "
+                    "or the excision below is not what the check reacted to",
+                )
+                excised = re.sub(pattern, "", real, count=1)
+                self.assertNotEqual(
+                    real, excised,
+                    f"the {path.name} excision matched nothing, so the "
+                    "assertion below would prove nothing",
+                )
+                beside.write_text(excised, encoding="utf-8")
+                self.assertEqual(
+                    sorted(clause),
+                    _clause_gaps(reader(beside.read_text(encoding="utf-8")), clause),
+                )
+
+
 IMPROVEMENT = ROOT / "rules" / "improvement.md"
 HOST_BLOCK = ROOT / "templates" / "host-block.md"
 
