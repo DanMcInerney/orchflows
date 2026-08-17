@@ -366,16 +366,20 @@ def normalized(text: str) -> str:
     return " ".join(text.lower().split())
 
 
-# The two restart controls no script can observe, each pinned by the term the
-# contract carries it under rather than by the sentence spelling it
-# (`packs/orch-code-pack/references/craft.md`): `in_flight` is the field a
-# restart reconciles, `redispatch` the verb it forbids. The other two controls
-# the contract states are module behaviour and are pinned there instead --
-# the archive survives in the emitted projection, and a `pending` response
-# carries no plan.
+# The restart controls no script can observe -- the controller's, not the
+# module's -- each pinned by the term that distinguishes its clause rather than
+# by the sentence spelling it (`packs/orch-code-pack/references/craft.md`):
+# `before delegation` is the ordering the `in_flight` record must keep (the
+# field name itself recurs in the restart clause, so it cannot tell the two
+# apart), `redispatch` the verb a restart forbids, `every archive member` what
+# the Worklog entry must persist. That the module's own projection carries the
+# archive, and that a `pending` response carries no plan, are module behaviour
+# and are pinned there instead (`test_partial_settlement_keeps_projection_
+# and_complete_archive`, `test_settlement_is_exact_and_atomic`).
 RESTART_ANCHORS = (
-    ("in-flight-order", "`in_flight`"),
+    ("in-flight-order", "before delegation"),
     ("duplicate-restart-dispatch", "redispatch"),
+    ("archive-persistence", "every archive member"),
 )
 
 
@@ -1335,11 +1339,12 @@ class TestBoundedResume(unittest.TestCase):
 
     def test_worklog_launch_and_restart_contract_has_failure_controls(self):
         """The restart controls a script can observe are pinned as behaviour:
-        `test_partial_settlement_keeps_projection_and_complete_archive` is
-        archive-persistence, and the `plan is None` it asserts beside the
-        `pending` status is what "launches nothing" means to a caller. The
-        two left here are the controller's own -- no script sees a live slot
-        -- so each is pinned by the term the contract carries it under."""
+        `test_partial_settlement_keeps_projection_and_complete_archive` shows
+        the emitted projection carries the whole archive, and the `plan is
+        None` it asserts beside the `pending` status is what "launches
+        nothing" means to a caller. The three left here are the controller's
+        own -- no script sees a live slot or a Worklog entry -- so each is
+        pinned by the term that distinguishes its clause (RESTART_ANCHORS)."""
         generation = read(EVOLVE_GENERATION)
         self.assertEqual([], worklog_restart_errors(generation))
 

@@ -689,9 +689,11 @@ class TestCanonicalBenchmaker(unittest.TestCase):
         for anchor in ("coverage floor", "not tradable", "Buy difficulty"):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, owner)
+        # Squashed, like every other absence pin on the protocol: a phrase
+        # that survives only across a line wrap is still present.
         for phrase in ("coverage floor", "Difficulty is built", "execution tier"):
             with self.subTest(phrase=phrase):
-                self.assertNotIn(phrase, self.protocol)
+                self.assertNotIn(phrase, squashed(self.protocol))
 
     def test_protocol_orders_and_bounds_the_three_audit_stages(self):
         stages = squashed(markdown_section(self.protocol, "Audit and measurement"))
