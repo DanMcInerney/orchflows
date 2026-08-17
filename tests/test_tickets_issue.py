@@ -1512,7 +1512,13 @@ class RefusalTextTest(unittest.TestCase):
                 ),
             )
             directory = make_template(tmp, three_stubs())
+            fat = tmp / "F1.md"
+            fat.write_text(
+                ceiling_ticket(tickets_mod.INSTRUCTION_BUDGET + 1, ticket_id="F1"),
+                encoding="utf-8",
+            )
             return [
+                run_cmd("new", "testrun", "--file", str(fat)),
                 run_cmd("new", "testrun", "T1", "--executor", "orch-verify",
                         "--objective", "o", "--criterion", "x"),
                 run_cmd("new", "testrun", "T1", "--executor", "orch-verify",

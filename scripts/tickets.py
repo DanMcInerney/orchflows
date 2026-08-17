@@ -2348,7 +2348,8 @@ def _ceiling_error(subject: str, ticket_id: str, text: str):
         return None
     return {
         "error": f"{subject} has a {count}-word instruction, over the "
-        f"{INSTRUCTION_BUDGET}-word ceiling (rules/token-economy.md §11): the "
+        f"{INSTRUCTION_BUDGET}-word ceiling (rules/token-economy.md, section "
+        "11): the "
         "objective, completion test, excluded actions and return fields a "
         "child loads every dispatch, never its fixed inputs. A compound "
         "objective is two items, not one longer ticket"
