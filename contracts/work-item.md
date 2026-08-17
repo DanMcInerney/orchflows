@@ -51,7 +51,8 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
   `write_scope`: the executor writes only `## Result`, `## Verification`,
   `## Feedback`, `## Risks`, and — when suspending — `## Handoff`. A §10
   checker corrects inside this same `write_scope`, per
-  [rules/verification.md](../rules/verification.md) §9 and §10.
+  [rules/verification.md](../rules/verification.md) §9 and §10 — on a
+  root ticket, the cut instead (Root ticket).
 - `excluded_actions` — packet `authority`, optional: named actions this
   item's executor may not take without suspending through the ticket's
   `## Handoff`. Never a path in this item's own `write_scope`: that
@@ -179,6 +180,12 @@ every critique) and `<id>.gate.verify` (behind repair, carrying the
 root's acceptance); a loop ticket's iterations are `<id>.iter.NN`.
 Completion and succession are that vocabulary's `root ticket` entry, and
 discovered scope is a ticket that `depends_on` the run's gate.
+
+A root's cut is checked (rules/verification.md §10) before its first
+unit is promoted: one fresh reader over the issued subtree, correcting
+it through `tickets.py amend` and `new` rather than in the run's
+workspace, which the units write; `checked_by` on a root records that
+cut checker.
 
 ## Template and stub
 

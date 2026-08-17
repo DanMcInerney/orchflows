@@ -25,6 +25,9 @@ checker's pass names an invalidated entry, re-run the completion test
 at the checked identity through `orch-verify` on that packet's
 `--executor orch-verify` form, else the join reads the entries as
 covered ([rules/verification.md](../../../rules/verification.md) §10).
+A root ticket takes that checker over its cut before any unit is
+dispatched: the `<id>.NN` stay `pending` until the root's `checked_by`
+is set and `cutcheck.py` reads exit 0.
 Accept every return once through `orch-integrate` under this engine's
 write scope: `suspended` parks the item, claim kept, for the next claim
 to resume from; any other disposition grades the declared isolation and
