@@ -3,8 +3,8 @@
 Separate from ``tests/test_contracts.py``, which freezes the T0 contracts'
 shape and the description budget every skill respects: nothing moved out of
 that module. This one holds only the sink invariants — the path each
-contract states, the work-item Location invariant's four conjuncts, and
-``run.json``'s field list at its writer. Its second half holds the prose
+contract states, the work-item Location invariant's one path and the
+resolver it names, and ``run.json``'s field list at its writer. Its second half holds the prose
 invariants: the root the amended sink law points at, the one prose owner of
 that path, and which ``.orch`` mentions may survive.
 
