@@ -5,8 +5,8 @@ shape and the description budget every skill respects: nothing moved out of
 that module. This one holds only the sink invariants — the path each
 contract states, the work-item Location invariant's four conjuncts, and
 ``run.json``'s field list at its writer. Its second half holds the prose
-invariants: the amended two-channel law, the one prose owner of the sink
-path, and which ``.orch`` mentions may survive.
+invariants: the root the amended sink law points at, the one prose owner of
+that path, and which ``.orch`` mentions may survive.
 
 Its third half is ``tools/validate.py``'s two remaining owned-literal
 checks and the cross-tier duplication check that replaced ``validate_sync``
@@ -195,20 +195,15 @@ PATH_OWNER = "rules/visibility.md"
 # What "states the path literally" means: either spelling of the root.
 LITERAL_ROOT_TOKENS = ("~/.orchflows/state", "ORCHFLOWS_STATE_HOME")
 
-# The two channels §6 separates, each named by the writer it is a channel
-# of. The terms are the anchor, not the sentences carrying them: §6 states
-# the separation in prose that is §6's to reword, and a channel that stops
-# being a channel loses its writer's name, not a turn of phrase.
-#
-# What §6 says about a write that cannot reach the root is an enforcement
-# claim, and the enforcement is what proves it: tests/test_state_root.py's
-# `test_run_state_reports_the_failure_and_writes_nothing_under_cwd` is the
-# no-fallback rule executed. Pinning the sentence here as well gave the
-# fact two owners and made every reword of §6 a two-file change.
-CHANNEL_WRITERS = ("file tools", "installed scripts")
-
 # What §6 must now say about the root, so the law names the sink and not a
-# path inside some repository.
+# path inside some repository. This is the whole of §6 that is read here:
+# the two-channel law belongs to `TestVisibilityChannelLaw` in
+# tests/test_contracts.py, which pins both channels by their writers, and
+# §6's no-fallback rule is an enforcement claim proved by the enforcement
+# -- tests/test_state_root.py's
+# `test_run_state_reports_the_failure_and_writes_nothing_under_cwd`.
+# Restating either here gave one fact two owners and made every reword of
+# §6 a two-file change.
 SINK_ROOT_CLAUSES = ("user-scope state sink",) + LITERAL_ROOT_TOKENS
 
 # The two subdirectories a repository keeps, and nothing else (spec A15).
@@ -344,20 +339,15 @@ def numbered_section(relpath, number):
     return flat(tail if following is None else tail[: following.start() + 1]).strip()
 
 
-class TestTwoChannelLawAmended(unittest.TestCase):
-    """Spec binding constraint 1: §6 is amended in place, never replaced."""
+class TestTheLawNamesTheSinkRoot(unittest.TestCase):
+    """Spec binding constraint 1: §6 is amended in place, never replaced --
+    and the amendment is the root it points at, which is this module's
+    half of §6. The law's other halves have their own owners, named at
+    `SINK_ROOT_CLAUSES`."""
 
     def setUp(self):
         self.section = numbered_section(PATH_OWNER, 6)
         self.assertTrue(self.section, "rules/visibility.md states no §6")
-
-    def test_both_channels_are_still_named_by_their_writers(self):
-        for writer in CHANNEL_WRITERS:
-            with self.subTest(writer=writer):
-                self.assertIn(
-                    writer, self.section,
-                    "§6 no longer names the {0!r} channel".format(writer),
-                )
 
     def test_the_root_the_law_names_is_the_sink(self):
         for clause in SINK_ROOT_CLAUSES:
