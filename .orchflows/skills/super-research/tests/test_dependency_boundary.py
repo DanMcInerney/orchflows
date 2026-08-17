@@ -1175,7 +1175,7 @@ class RosterIsReadOffTheSourceTest(unittest.TestCase):
                 )
 
     def test_the_roster_size_it_states_is_the_declared_ids_own(self):
-        """"Twenty adapters, nineteen live plus `fake`" — both halves, off the source.
+        """Both halves of "Twenty adapters, nineteen live plus `fake`", off the source.
 
         The same sentence that said seven says these, and they were the two
         counts in it still resting on a reader.
@@ -1201,7 +1201,7 @@ class RosterIsReadOffTheSourceTest(unittest.TestCase):
         )
 
     def test_the_surface_total_it_states_is_the_descriptors_own(self):
-        """"thirty-six route surfaces", counted across the roster.
+        """The "thirty-six route surfaces" of that same sentence, counted off the source.
 
         Distinct from the adapter count above and from the multi-surface count
         below it — a surface total that merely equalled the roster size would be
