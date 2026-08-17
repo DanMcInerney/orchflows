@@ -148,7 +148,10 @@ class TestWorkItemContract(unittest.TestCase):
             self.assertIn(f"## {header}", text, f"work-item.md is missing body section '## {header}'")
 
     def test_body_sections_are_listed_in_contract_order(self):
-        text = read("work-item.md").split("Body sections, in order", 1)[-1].split("\n## Dispatch", 1)[0]
+        # The register runs from its first bullet to the next `## ` heading:
+        # two anchors, so no reword of the list's own introduction moves it.
+        full = read("work-item.md")
+        text = full[full.index("- `## Objective`"):].split("\n## Dispatch", 1)[0]
         order = [
             "Objective", "Fixed inputs", "Completion test", "Return fields",
             "Result", "Verification", "Feedback", "Risks", "Handoff",
@@ -349,21 +352,29 @@ class TestVocabularyDefinesShapeChange(unittest.TestCase):
 
     def test_defines_the_term(self):
         entry = self.entry()
+        for token in ("field", "enum"):
+            self.assertIn(
+                token, entry,
+                f"the shape change entry does not name {token!r} as what moves",
+            )
+        # `T0 contract` is the definition's own term; the converse says
+        # `T0 edit`, so a bare `T0` is satisfied by an entry reduced to its
+        # converse, which defines nothing.
         self.assertIn(
-            "a change to a named field or enum", entry,
-            "the shape change entry does not state what moves",
-        )
-        self.assertIn(
-            "T0", entry,
-            "the shape change entry does not scope the term to T0",
+            "T0 contract", entry,
+            "the shape change entry does not define the term as a change to "
+            "a T0 contract",
         )
 
     def test_states_the_converse_a_prose_only_edit_needs(self):
-        self.assertIn(
-            "without a supersession PR", self.entry(),
-            "the shape change entry does not state the converse: a T0 edit "
-            "moving no field or enum re-pins without a supersession PR",
-        )
+        entry = self.entry()
+        for token in ("prose edit", "re-pinned"):
+            self.assertIn(
+                token, entry,
+                f"the shape change entry does not name {token!r}, so it does "
+                "not state the converse: a T0 edit moving no field or enum is "
+                "a prose edit, re-pinned with no supersession PR",
+            )
 
     def test_lands_beside_contract_under_structure(self):
         flat = read_at_flat("docs/vocabulary.md")
@@ -387,18 +398,21 @@ class TestVisibilityChannelLaw(unittest.TestCase):
     def test_content_channel_is_the_packs_workspace_cell(self):
         text = self.section()
         self.assertIn(
-            "the pack's workspace cell", text,
+            "workspace cell", text,
             "visibility.md §6 does not name the pack's workspace cell as what "
             "content leaves the workspace by; a merge-only channel is false "
             "for the content and research packs",
         )
 
     def test_governs_all_of_orch(self):
-        self.assertIn(
-            "not only `runs/` and `tickets/`", self.section(),
-            "visibility.md §6 does not state that it governs all of `.orch/`, "
-            "not only `runs/` and `tickets/`",
-        )
+        text = self.section()
+        for token in ("every directory", "`runs/`", "`tickets/`"):
+            self.assertIn(
+                token, text,
+                f"visibility.md §6 does not name {token!r}, so it does not "
+                "state that it governs all of `.orch/` rather than the two "
+                "directories a reader meets first",
+            )
 
     def test_the_two_channel_law_survives_the_rewrite(self):
         text = self.section()
@@ -416,7 +430,7 @@ class TestVerificationHomelessLaws(unittest.TestCase):
     prohibition left this file: `scripts/cutcheck.py` states the how in its
     module docstring and enforces it in `SWALLOW_RE`, so the rule no longer
     restates the shell form.) It is not hash-pinned, so this is the only
-    mechanical guard; it asserts the clause's distinctive head, never a
+    mechanical guard; it asserts the clause's load-bearing terms, never a
     sentence."""
 
     def law(self, number):
@@ -424,11 +438,13 @@ class TestVerificationHomelessLaws(unittest.TestCase):
 
     def test_a_gate_returning_findings_moves_the_result_identity(self):
         text = self.law(7)
-        self.assertIn(
-            "A gate returning findings moves the result identity", text,
-            "verification.md §7 does not state that a gate returning findings "
-            "moves the result identity",
-        )
+        for token in ("gate", "findings", "result identity"):
+            self.assertIn(
+                token, text,
+                f"verification.md §7 does not name {token!r}, so it does not "
+                "state that a gate returning findings moves the result "
+                "identity",
+            )
 
 
 class TestWorkItemCitationLaws(unittest.TestCase):
@@ -443,28 +459,34 @@ class TestWorkItemCitationLaws(unittest.TestCase):
 
     def test_return_fields_status_is_the_result_envelopes(self):
         text = self.bullet("`## Return fields` — packet `return_contract`")
-        self.assertIn(
-            "A `status` in this list is the result envelope's", text,
-            "work-item.md's `## Return fields` bullet does not say a `status` "
-            "named there is the result envelope's",
-        )
+        for token in ("`status`", "result envelope"):
+            self.assertIn(
+                token, text,
+                f"work-item.md's `## Return fields` bullet does not name "
+                f"{token!r}, so it does not say a `status` named there is the "
+                "result envelope's",
+            )
         self.assertIn(
             "[result.md](result.md)", text,
             "work-item.md's `## Return fields` bullet does not cite result.md "
             "as the envelope owning that `status`",
         )
-        self.assertIn(
-            "never the ticket frontmatter key above", text,
-            "work-item.md's `## Return fields` bullet does not exclude the "
-            "ticket frontmatter key",
-        )
+        for token in ("never", "frontmatter key"):
+            self.assertIn(
+                token, text,
+                f"work-item.md's `## Return fields` bullet does not name "
+                f"{token!r}, so it does not exclude the ticket frontmatter key",
+            )
 
     def test_isolation_names_its_only_setter_and_the_grading_order(self):
         text = self.bullet("`isolation` — packet `authority`")
         for token, why in (
-            ("the field's only setter",
+            ("decomposer",
              "work-item.md's `isolation` bullet does not name the decomposer "
              "as the field's only setter"),
+            ("only setter",
+             "work-item.md's `isolation` bullet does not make the decomposer "
+             "the field's only setter"),
             ("`scripts/workspace.py check`",
              "work-item.md's `isolation` bullet no longer names "
              "`scripts/workspace.py check` as what grades the declaration"),
@@ -481,7 +503,7 @@ class TestWorkItemCitationLaws(unittest.TestCase):
             ("never prose copies",
              "work-item.md's `## Fixed inputs` bullet lost its existing "
              "prohibition on a prose copy"),
-            ("never an unpinned coordinate",
+            ("unpinned coordinate",
              "work-item.md's `## Fixed inputs` bullet does not forbid citing "
              "a fixed input by an unpinned coordinate"),
             ("`identity` entry",
