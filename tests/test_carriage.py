@@ -477,7 +477,7 @@ LENS = ROOT / "skills" / "kernel" / "orch-decompose" / "references" / "cut-lens.
 # the lens, so both halves are read below -- the recipe from the lens, the
 # one hop to it from §8.
 _FAITHFULNESS_CLAUSE = {
-    "what a faithful copy preserves": ("faithful", "everything the oracles read"),
+    "what a faithful copy preserves": ("faithful", "oracle", "unchanged"),
     "clone, never extract": ("clone", "extract", "`.git`"),
     "the one direction runtime indicts in": ("shorter", "longer"),
     "the fingerprint that settles which revision was read": (
@@ -581,7 +581,7 @@ _FRONTIER_CUT_CHECK = {
     # a further context; the cut check is deterministic, so the engine runs
     # it itself and dispatches no re-verifier for a root.
     "the context whose cut-check re-run is the re-verification": (
-        "engine's own `cutcheck.py` re-run", "re-verification",
+        "`cutcheck.py`", "re-verification",
     ),
     # A fresh reader over a two-unit cut with a clean cutcheck run reviews
     # what the script already graded; the size and the advisories are what
@@ -697,7 +697,7 @@ class CutCheckOrderingTest(unittest.TestCase):
 # than on every checker pass.
 _REVERIFICATION_SPLIT = {
     "the context that re-runs a deterministic invalidation": (
-        "invalidated oracle is deterministic", "the join",
+        "invalidated", "deterministic", "the join",
     ),
     "the one invalidation that still takes a fresh child": (
         "fresh child", "judged",
@@ -728,7 +728,7 @@ _FRONTIER_SPLIT_RE = re.compile(r";\s+then,\s+where\s+its\s+pass.*?§10\)\.", re
 # once per merge batch and a lane runs only what its own ticket names.
 _FRONTIER_TIP_CHECK = {
     "what one lane is dispatched to run": (
-        "its ticket's own oracles", "nothing wider",
+        "oracles", "nothing wider",
     ),
     "whose checks run at the tip, and how often": (
         "standards owner", "each merge batch",
@@ -856,15 +856,21 @@ HOST_BLOCK = ROOT / "templates" / "host-block.md"
 # block owns the fallback (rules/improvement.md §1 points at it), so the
 # block is where the destination is read.
 _FALLBACK_DESTINATION = {
-    "the refusal the fallback has to survive": ("writing inside a git worktree",),
-    "a destination reachable under it": ("outside every worktree", "the dispatch permits"),
-    "how the entry gets back": ("the return names that path",),
+    "the refusal the fallback has to survive": ("refusal", "git worktree"),
+    "a destination reachable under it": ("outside every worktree", "dispatch permits"),
+    "how the entry gets back": ("the return", "collect"),
 }
 
 # §1 names the route once and delegates its spelling to the host block. A
 # fix that answers a missing destination with a new tool shows up either as
 # a second mechanism named here, or as a command or path spelled here.
-_PRIMARY_ROUTE = re.compile(r"through the installed ([a-z]+ logger)")
+#
+# The route is read by name, never by the sentence carrying it: every
+# `<word> logger` in the clause, less the determiners that are not names.
+_LOGGER_NAME = re.compile(r"\b([a-z]+) logger\b")
+_DETERMINERS = frozenset(
+    {"the", "a", "an", "its", "this", "that", "one", "same", "installed"}
+)
 _SECOND_ROUTE = re.compile(
     r"\b(?:second|third|another|alternative|additional|backup|fallback)\s+"
     r"(?:friction\s+)?(?:logger|tool|script|command)\b"
@@ -897,6 +903,19 @@ def _fallback_destination_gaps(host_block_text):
     )
 
 
+def _logger_names(improvement_text):
+    """Every logger clause 1 names, by name: `friction` for the one installed
+    logger, and any second name a fix spliced in beside it."""
+    clause = _clause(improvement_text, 1)
+    return sorted(
+        {
+            name
+            for name in _LOGGER_NAME.findall(clause)
+            if name not in _DETERMINERS
+        }
+    )
+
+
 def _routes_beyond_the_one(improvement_text):
     """Everything in clause 1 that names a logging route other than the one
     installed logger: a second mechanism by name, or a command or path
@@ -923,10 +942,9 @@ class FrictionDestinationTest(unittest.TestCase):
         )
 
     def test_section_one_still_names_exactly_one_primary_route(self):
-        clause = _clause(IMPROVEMENT.read_text(encoding="utf-8"), 1)
         self.assertEqual(
-            ["friction logger"],
-            _PRIMARY_ROUTE.findall(clause),
+            ["friction"],
+            _logger_names(IMPROVEMENT.read_text(encoding="utf-8")),
             "§1 names one primary route, the installed friction logger; the "
             "destination gap is not answered by a second one",
         )
@@ -980,14 +998,15 @@ class FrictionDestinationTest(unittest.TestCase):
                 "the copy must start with one route, or the splice below is "
                 "not what the check reacted to",
             )
-            beside.write_text(
-                real.replace(
-                    "Logging friction is part of completing",
-                    _SECOND_ROUTE_SPLICE + "Logging friction is part of completing",
-                    1,
-                ),
-                encoding="utf-8",
+            # Spliced at the clause marker, never at a sentence of §1: the
+            # marker is what `_clause` reads, so no reword of §1 moves it.
+            spliced = real.replace("\n1. ", "\n1. " + _SECOND_ROUTE_SPLICE, 1)
+            self.assertNotEqual(
+                real, spliced,
+                "the splice matched nothing, so the assertion below would "
+                "prove nothing",
             )
+            beside.write_text(spliced, encoding="utf-8")
             self.assertEqual(
                 ["`scripts/friction_fallback.py`", "second logger"],
                 _routes_beyond_the_one(beside.read_text(encoding="utf-8")),
