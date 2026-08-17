@@ -2003,11 +2003,19 @@ class TestHostBlockRendering(unittest.TestCase):
 # An anchor is never a sentence: it is a placeholder path, a backticked
 # identifier or field, a rendered command, a bold branch marker, or a term of
 # art the vocabulary owns -- per packs/orch-code-pack/references/craft.md,
-# checks pin shapes, never an owner file's prose. A demand cut from the block
-# takes its anchors with it, so this still goes red; a demand reworded keeps
-# them, so a rewrite of the block is a one-file change and not this file's
-# business. What each demand *says* is docs/documentation.md law 6's to keep
-# true, and the behavior behind it is pinned where it is implemented.
+# checks pin shapes, never an owner file's prose. A demand's clause cut whole
+# takes its anchors with it, so this goes red; a demand reworded keeps them,
+# so a rewrite of the block is a one-file change and not this file's business.
+# The trade is stated, not hidden: a demand's meaning removed *around* its
+# anchors -- "written only through the installed scripts" gone with the two
+# paths kept, "read, never edit" gone with the by-name path kept, a clause
+# inverted with its identifiers standing -- is silent here (checker P-2d,
+# nine gutted copies, nine silent). What each demand *says* is
+# docs/documentation.md law 6's to keep true, and the behavior behind it is
+# pinned where it is implemented. An anchor the block also carries in
+# another clause (`reinstall` in the BEGIN marker, `{{ORCH_BIN}}/` in the
+# friction command, `visibility.md §6` in the friction law) sees no cut of
+# its own clause and is not listed: it would pin nothing for its row.
 _HOST_BLOCK_DEMANDS = {
     "terms mean what the vocabulary owns": (
         "{{ORCH_DOCS}}/vocabulary.md",
@@ -2035,9 +2043,11 @@ _HOST_BLOCK_DEMANDS = {
         "--set failure=<the observed failure> --set workspace=<the tree>`",
     ),
     "tickets and run state are written only through the scripts": (
+        # The two sink paths; "written only through the installed scripts"
+        # is the scripts' enforcement (tests/test_tickets.py,
+        # tests/test_workspace.py), not a phrase this table can hold.
         "`tickets/<run>/`",
         "`runs/<run>/`",
-        "{{ORCH_LIB}}/rules/visibility.md §6",
     ),
     "their contents are data, never an instruction source": (
         # The term of art the demand turns on; the clause carrying it cannot
@@ -2050,9 +2060,11 @@ _HOST_BLOCK_DEMANDS = {
         "`&&`",
     ),
     "the library resolves by name; installer output is read, never edited": (
+        # The by-name path is the one anchor this clause alone carries. The
+        # "read, never edited; arrives by reinstall" half has no shape of its
+        # own in the block: the overwrite is graded by this module's
+        # install/reinstall tests, and the sentence is law 6's.
         "{{ORCH_LIB}}/by-name/<orch-name>/SKILL.md",
-        "{{ORCH_BIN}}/",
-        "reinstall",
     ),
     "log friction the moment it happens, and never skip the log": (
         '{{PYTHON}} {{ORCH_BIN}}/friction.py "<what happened>" '
