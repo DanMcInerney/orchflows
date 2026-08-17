@@ -79,10 +79,15 @@ CREDENTIAL_ONLY_ADAPTER = roster_with(
 #    adapter-by-adapter reading alone would miss: the adapter answers, a caller
 #    can name it, and the one thing it can say about a transcript it can only
 #    say with a credential.
+#    The capability is `youtube/youtube/feed`: a keyless surface of this
+#    roster says plenty about a YouTube video — `native` from InnerTube,
+#    `transcript` from the timed-text route since 2026-08-17 — and none of them
+#    says this one, which is what makes it the case an adapter-by-adapter law
+#    would wave through.
 CREDENTIAL_ONLY_CAPABILITY = roster_with(
     surface("youtube_captions", "K0", "youtube_captions_list", "youtube", "youtube", "index"),
     surface(
-        "youtube_captions", CREDENTIALED, "youtube_data_api", "youtube", "youtube", "transcript"
+        "youtube_captions", CREDENTIALED, "youtube_data_api", "youtube", "youtube", "feed"
     ),
 )
 
@@ -106,13 +111,16 @@ CREDENTIALED_TWIN_IN_ANOTHER_NAMESPACE = roster_with(
     ),
 )
 
-# 5. A twin differing only in representation. The measured captions case
-#    exactly: YouTube metadata is `K1` and reachable, and a transcript is a
-#    different thing to be able to say about the same video.
+# 5. A twin differing only in representation. This was the measured captions
+#    case until 2026-08-17, when the timed-text route made `transcript` keyless
+#    and the shipped roster started serving it — so the pair is stated at
+#    `feed`, which nothing keyless here says about a YouTube video. The point
+#    is unchanged: video metadata is reachable, and another thing to be able to
+#    say about the same video is a different capability.
 CREDENTIALED_TWIN_IN_ANOTHER_REPRESENTATION = roster_with(
     surface("youtube_captions", "K0", "youtube_captions_list", "youtube", "youtube", "native"),
     surface(
-        "youtube_captions", CREDENTIALED, "youtube_data_api", "youtube", "youtube", "transcript"
+        "youtube_captions", CREDENTIALED, "youtube_data_api", "youtube", "youtube", "feed"
     ),
 )
 

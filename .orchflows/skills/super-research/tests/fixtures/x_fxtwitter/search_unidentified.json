@@ -1,0 +1,16 @@
+{
+  "code": 200,
+  "results": [
+    {
+      "type": "status",
+      "text": "no id"
+    },
+    {
+      "type": "tombstone"
+    }
+  ],
+  "cursor": {
+    "top": null,
+    "bottom": null
+  }
+}

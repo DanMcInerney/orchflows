@@ -1,6 +1,6 @@
 ---
 name: super-research
-description: Use when acquiring public records from Reddit, X, LinkedIn, YouTube, Instagram, Hacker News, GitHub, or the open web — keyless, read-only.
+description: Use for keyless read-only acquisition of public records: Reddit, X, Bluesky, YouTube, HN, GitHub, LinkedIn, Stocktwits, markets, open web.
 ---
 @../../../.orchflows/skills/super-research/SKILL.md
 

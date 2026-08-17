@@ -8,7 +8,7 @@ enumeration is shown to reject a module beside the tree that breaks it.
 
 Four things are enumerated, and only the first is transcribed by hand:
 
-*The module set.* The core's fifteen modules are spelled out, so a new sibling
+*The module set.* The core's sixteen modules are spelled out, so a new sibling
 joins by editing this file or not at all. The count is in the sentence and in
 `CORE_MODULES`, and a test below compares them: this docstring said eleven for
 three modules longer than it was true. The adapter modules are not spelled
@@ -65,6 +65,12 @@ PACKAGE_DIR = Path(__file__).resolve().parent.parent / "scripts" / "super_resear
 ADAPTER_DIR = PACKAGE_DIR / "adapters"
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "threats"
 STDLIB_DIR = Path(sysconfig.get_paths()["stdlib"]).resolve()
+# Where this interpreter answers a standard-library import from. `Lib/` on
+# every platform, and on Windows also `DLLs/` beside it, which is where the
+# CPython installer puts the compiled modules (`unicodedata.pyd` among them):
+# a name answered from there is as much the stdlib's as one answered from
+# `Lib/`, and it was reported as outside on every Windows host until 2026-08-17.
+STDLIB_ROOTS = (STDLIB_DIR, (Path(sys.base_prefix) / "DLLs").resolve())
 
 # The core this package is, after the runner split. Spelled out because that is
 # the point: a module added here joins the package by being added to this
@@ -79,6 +85,7 @@ CORE_MODULES = (
     "pacing",
     "probes",
     "project",
+    "relevance",
     "router",
     "routes",
     "runner",
@@ -102,6 +109,7 @@ CORE_IMPORT_EDGES = {
     "pacing": ("adapters", "cache", "runner", "transport"),
     "probes": ("transport",),
     "project": ("schema",),
+    "relevance": ("schema",),
     "router": ("adapters", "schema"),
     "routes": (),
     "runner": (
@@ -120,13 +128,16 @@ CORE_IMPORT_EDGES = {
     "transport": ("routes",),
 }
 
-# Everything the package takes from outside itself. Fifteen names, and the
+# Everything the package takes from outside itself. Seventeen names, and the
 # check below resolves each one to where this interpreter actually answers it
-# from.
+# from. `concurrent` and `threading` joined on 2026-08-17 with the fused
+# lanes; `test_pipeline.CONCURRENCY_OWNERS` names the three modules that may
+# import them.
 STANDARD_LIBRARY_IMPORTS = (
     "__future__",
     "argparse",
     "collections",
+    "concurrent",
     "dataclasses",
     "datetime",
     "email",
@@ -135,6 +146,7 @@ STANDARD_LIBRARY_IMPORTS = (
     "json",
     "pathlib",
     "tempfile",
+    "threading",
     "time",
     "typing",
     "unicodedata",
@@ -290,11 +302,19 @@ def outside_the_standard_library(names):
         origin = found.origin or ""
         if origin in ("built-in", "frozen"):
             continue
-        try:
-            Path(origin).resolve().relative_to(STDLIB_DIR)
-        except ValueError:
-            outside.append((name, origin))
+        resolved = Path(origin).resolve()
+        if any(_inside(resolved, root) for root in STDLIB_ROOTS):
+            continue
+        outside.append((name, origin))
     return outside
+
+
+def _inside(path, root):
+    try:
+        path.relative_to(root)
+    except ValueError:
+        return False
+    return True
 
 
 def imports_naming(paths, modules):
@@ -388,18 +408,18 @@ class ModuleSetTest(unittest.TestCase):
         on_disk = {path.stem for path in ADAPTER_DIR.glob("*.py")} - {"__init__"}
 
         self.assertEqual(sorted(on_disk), sorted(runner.ADAPTER_IDS))
-        self.assertEqual(len(runner.ADAPTER_IDS), 14)
+        self.assertEqual(len(runner.ADAPTER_IDS), 20)
 
 
 class RunnerDispatchTest(unittest.TestCase):
-    """Criterion 2, dispatch half: fourteen literal branches and no other way in."""
+    """Criterion 2, dispatch half: twenty literal branches and no other way in."""
 
-    def test_the_core_imports_fake_and_exactly_the_thirteen_live_modules(self):
+    def test_the_core_imports_fake_and_exactly_the_live_modules(self):
         imported = adapter_modules_imported(PACKAGE_DIR / "runner.py")
 
         self.assertEqual(sorted(imported), sorted(runner.ADAPTER_IDS))
         self.assertIn("fake", imported)
-        self.assertEqual(len(imported - {"fake"}), 13)
+        self.assertEqual(len(imported - {"fake"}), 19)
 
     def test_no_other_core_module_imports_an_adapter_module_at_all(self):
         # One module can call an adapter, so there is one module to read to
@@ -422,7 +442,7 @@ class RunnerDispatchTest(unittest.TestCase):
                 )
 
     def test_every_branch_reaches_the_module_its_own_id_names(self):
-        # The failure a count cannot see: fourteen branches, one of them
+        # The failure a count cannot see: twenty branches, one of them
         # returning another adapter's descriptor.
         for function_name, member in (
             ("descriptor_for", "DESCRIPTOR"),

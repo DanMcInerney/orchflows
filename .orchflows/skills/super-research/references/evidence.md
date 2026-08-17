@@ -68,3 +68,96 @@ gap, so this sweep neither re-proves nor disproves it. None was intercepted.
 `github_search`, `public_page_control`, or the `search` and `next` operations of
 `youtube_innertube`, so the sweeps say nothing about them. Every row is one
 host, one network, two moments.
+
+## The route sweep of 2026-08-17
+
+One Windows 11 host, unauthenticated, the package identity unless a row says
+otherwise, one bounded read per surface, made after the bakeoff review of that
+date recorded the roster reading competitively and hydrating almost nothing.
+Every row was a real HTTP response. Three of them reverse a claim above.
+
+- **DuckDuckGo answers 202 to a browser identity as well as to this one**, on
+  `html.duckduckgo.com/html/` and `lite.duckduckgo.com/lite/` alike: the
+  challenge is not about the identity, so a second identity would buy nothing
+  and none is tried. **Bing's RSS forms answer 200** — `www.bing.com/search?q=&format=rss`
+  with ten clean title/link/description/pubDate items and `first=` paging, and
+  `www.bing.com/news/search?q=&format=rss` with items whose links are wrapped
+  in `news/apiclick.aspx?…&url=` — and so does **Google News RSS**,
+  `news.google.com/rss/search?q=<q>+when:30d&hl=en-US&gl=US&ceid=US:en`, 131 KB
+  of press items whose links redirect to the publisher when read. Three index
+  routes ship as parallel planned routes; Brave answered 429, Mojeek a
+  challenge.
+- **Reddit's `/svc/shreddit/` HTML partials answer 200 with native counts, on
+  a bucket of two hundred reads per window** (`x-ratelimit-remaining: 199.0`
+  after the first read, `x-ratelimit-reset` a countdown in seconds), where the
+  `.rss` surface answers one read per minute (`remaining 0.0`, `reset 47`) and
+  every `.json` form still answers 403 to every identity. `community-more-posts/
+  <sort>/?name=<sub>&t=month` carried 24 `<shreddit-post>` elements stating
+  `score`, `comment-count`, `post-title`, `author`, `created-timestamp` and
+  `permalink`; `search?q=&type=posts&sort=&t=` and `r/<sub>/search?…` carried
+  seven posts per page with a `faceplate-number` pair and a continuation
+  token; `comments/r/<sub>/t3_<id>?sort=top` carried 25 `<shreddit-comment>`
+  elements with `score`, `depth`, `author`, `created`, `permalink`, the body
+  under `id="<thingid>-post-rtjson-content"`, `total-comments="93"`, and a
+  `more-comments` continuation. This is the platform's own client surface and
+  it is `K2`, and it is what makes Reddit search and Reddit comments reachable
+  at all. **Arctic Shift** answered 200 to `posts/search?subreddit=&after=&limit=&sort=`,
+  `comments/search?link_id=` and `comments/tree?link_id=` with scored bodies,
+  and 422 `"Timeout. Maybe slow down a bit"` twice to a full-text `title=` on
+  one subreddit — measured and left undeclared, because the shreddit partials
+  answer the same questions from the platform itself and a route no adapter
+  reads is a route nobody paced. **PullPush** answered 429 with the sentence that it does not
+  serve agents; it is not declared, out of respect for the operator's stated
+  wish rather than for want of a route.
+- **YouTube's InnerTube `player` answers `OK` with caption tracks to the
+  `ANDROID` client** (`clientName ANDROID`, `clientVersion 20.10.38`, no other
+  context field, no extra header), carrying `videoDetails.viewCount` as an exact
+  digit string, `lengthSeconds`, `channelId`, `author`, and
+  `captions.playerCaptionsTracklistRenderer.captionTracks[]` with a signed
+  `baseUrl` on `www.youtube.com/api/timedtext`; that address, rebuilt through
+  the transport's own sorted `urlencode`, answered 200 with 109 KB of `srv3`
+  XML, and `fmt=json3` and `tlang=` answered too. `IOS 20.10.4` also answered
+  `OK`; `WEB` still answers `UNPLAYABLE`. This reverses the 2026-08-10 row
+  above for the `ANDROID` client, and the caption capability the roster
+  deferred is shipped on it. `ANDROID` carries no `microformat`, so
+  `publishDate` is absent from that read.
+- **Hacker News**: `hn.algolia.com/api/v1/items/<id>` answered 200 with a
+  story and its whole comment tree, 259 nodes in one 135 KB call, comment
+  `points` null throughout; `search_by_date?…&numericFilters=created_at_i>…`
+  answered 200.
+- **Prediction markets**: `gamma-api.polymarket.com/public-search?q=`,
+  `/events` and `/markets` (200; volumes and prices are decimals and JSON
+  strings; `commentCount` an integer), `api.elections.kalshi.com/trade-api/v2/
+  markets` and `/events` (200; dollar and fixed-point fields as strings; no
+  search endpoint), `api.manifold.markets/v0/search-markets?term=` (200;
+  `uniqueBettorCount` an integer).
+- **Stocktwits** `api.stocktwits.com/api/2/streams/symbol/<SYM>.json` answered
+  200 with 30 messages, `likes.total`, `created_at`,
+  `entities.sentiment.basic` (`Bullish`/`Bearish`) and a `cursor.max` for the
+  next page; `search/symbols.json?q=` answered 200. Keyless.
+- **FxTwitter** `api.fxtwitter.com/2/search?q=&feed=latest`, `/2/profile/
+  <handle>/statuses`, `/2/profile/<handle>` and `/2/conversation/<id>` answered
+  200 with the platform's own counts — a third-party operator reading X on
+  this package's behalf, `K3`, and the one keyless path to an X search.
+  `syndication.twitter.com/srv/timeline-profile` answered 429 from this host
+  that day; the guest GraphQL `UserByScreenName` answered 401.
+- **Bluesky** `public.api.bsky.app/xrpc/app.bsky.feed.searchPosts` answered 403
+  from the CDN in front of it ("Request forbidden by administrative rules") to
+  every identity, while `getProfile` and `getAuthorFeed` answered 200 — the
+  feed at a hundred rows with a cursor. A per-host administrative block on the
+  search method, which is why the smoke names the feed.
+- **FxTwitter's v2 API answered 200 to the package identity on every surface**
+  — `/2/search?feed=latest` and `?feed=top` at twenty records, `/2/profile/
+  <handle>/statuses` at nineteen, `/2/profile/<handle>`, and `/2/conversation/
+  <id>` at thirty-six. No browser identity was used anywhere, and the earlier
+  finding that the v1 path refuses this identity does not hold for v2. One
+  caveat, reproduced deterministically: this origin answers 404 to a read it
+  answers 200 to seconds later, so a 404 here is typed `http_status` and
+  nothing retries.
+- **A press page** (`www.cnbc.com`) answered 200 with 2 MB of HTML to the
+  package identity, which is what the open document route reads.
+
+What this sweep does not cover: no read touched TikTok or Instagram search
+(TikTok's `oembed` answered 400; Instagram's hashtag pages are login-walled),
+Mastodon's status search (empty without a credential), or Lemmy, and none of
+those ships. Every row is one host, one network, one moment.

@@ -21,7 +21,25 @@ from dataclasses import dataclass
 from typing import Dict, Tuple
 
 DDG_HTML_ROUTE = "ddg_html"
+BING_RSS_ROUTE = "bing_rss"
+BING_NEWS_RSS_ROUTE = "bing_news_rss"
+GOOGLE_NEWS_RSS_ROUTE = "google_news_rss"
+WEB_PAGE_OPEN_ROUTE = "web_page_open"
 ARCTIC_SHIFT_POSTS_ROUTE = "arctic_shift_posts_ids"
+REDDIT_SHREDDIT_LISTING_ROUTE = "reddit_shreddit_listing"
+REDDIT_SHREDDIT_SEARCH_ROUTE = "reddit_shreddit_search"
+REDDIT_SHREDDIT_SUBREDDIT_SEARCH_ROUTE = "reddit_shreddit_subreddit_search"
+REDDIT_SHREDDIT_COMMENTS_ROUTE = "reddit_shreddit_comments"
+YOUTUBE_TIMEDTEXT_ROUTE = "youtube_timedtext"
+HN_ALGOLIA_ITEM_ROUTE = "hn_algolia_item"
+POLYMARKET_GAMMA_ROUTE = "polymarket_gamma"
+KALSHI_MARKETS_ROUTE = "kalshi_markets"
+MANIFOLD_MARKETS_ROUTE = "manifold_markets"
+STOCKTWITS_STREAM_ROUTE = "stocktwits_symbol_stream"
+STOCKTWITS_SYMBOL_SEARCH_ROUTE = "stocktwits_symbol_search"
+BLUESKY_SEARCH_POSTS_ROUTE = "bluesky_search_posts"
+BLUESKY_AUTHOR_FEED_ROUTE = "bluesky_author_feed"
+FXTWITTER_API_ROUTE = "fxtwitter_api"
 X_GUEST_ACTIVATE_ROUTE = "x_guest_activate"
 X_SYNDICATION_TIMELINE_ROUTE = "x_syndication_timeline"
 X_GUEST_GRAPHQL_ROUTE = "x_guest_graphql"
@@ -46,6 +64,17 @@ FAKE_OFFLINE_ROUTE = "fake_offline"
 # against the route that answered. A host any route uses is this module's to
 # spell, so the constant is exported rather than repeated.
 REDDIT_SITE_ORIGIN = "https://www.reddit.com"
+
+# The Arctic Shift archive's origin, named once for the one route it serves.
+ARCTIC_SHIFT_ORIGIN = "https://arctic-shift.photon-reddit.com"
+
+# The one route whose origin is not spelled here: `web_page_open` reads the
+# address a discovery step returned, so its host is the caller's and not this
+# table's. `transport.open_route_hosts_refused` is what keeps it from reaching a
+# host another route already declares — an open read is never a way around a
+# declared route's budget — and `transport.urlopen_read` still refuses anything
+# that is not https. The empty origin is the marker the transport reads.
+OPEN_ORIGIN = ""
 
 YOUTUBE_INNERTUBE_WEB_KEY = "youtube_innertube_web_key"
 INSTAGRAM_WEB_APP_ID = "instagram_web_app_id"
@@ -170,14 +199,260 @@ ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         accept="text/html",
         operator_identity="duckduckgo",
     ),
+    # Measured 2026-08-17 (web discovery, second sweep): `html.duckduckgo.com`
+    # answered 202 with a bot challenge to the package identity and to a
+    # browser identity alike, so a second and third index are declared as
+    # parallel planned routes rather than fallbacks. Bing publishes an RSS form
+    # of its web results — `?format=rss` answered 200 with ten items per page
+    # and `first=` paging — and of its news results, whose links are wrapped in
+    # `news/apiclick.aspx?...&url=<encoded>` and unwrapped by the adapter.
+    BING_RSS_ROUTE: RouteConstant(
+        route_id=BING_RSS_ROUTE,
+        access_class="K4",
+        method="GET",
+        origin="https://www.bing.com",
+        path="/search",
+        accept="application/rss+xml",
+        operator_identity="bing",
+    ),
+    BING_NEWS_RSS_ROUTE: RouteConstant(
+        route_id=BING_NEWS_RSS_ROUTE,
+        access_class="K4",
+        method="GET",
+        origin="https://www.bing.com",
+        path="/news/search",
+        accept="application/rss+xml",
+        operator_identity="bing",
+    ),
+    # Measured 2026-08-17: `news.google.com/rss/search?q=<q>+when:30d&hl=en-US
+    # &gl=US&ceid=US:en` answered 200 with 131 KB of press items. Each item's
+    # link is a redirect on this origin that resolves to the publisher when
+    # read; the publisher's own host rides in the item's `<source url=>`.
+    GOOGLE_NEWS_RSS_ROUTE: RouteConstant(
+        route_id=GOOGLE_NEWS_RSS_ROUTE,
+        access_class="K4",
+        method="GET",
+        origin="https://news.google.com",
+        path="/rss/search",
+        accept="application/rss+xml",
+        operator_identity="google",
+    ),
+    # The open document read: the one route whose host is the caller's, taken
+    # from a locator a discovery step returned. Its policy is the transport's —
+    # https only, GET only, no credential, no body, and never a host another
+    # route declares. It is what makes a discovered press page hydratable at
+    # all; before it, `public_page` served exactly two documents.
+    WEB_PAGE_OPEN_ROUTE: RouteConstant(
+        route_id=WEB_PAGE_OPEN_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin=OPEN_ORIGIN,
+        path="",
+        accept="text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        operator_identity="open_web",
+    ),
     ARCTIC_SHIFT_POSTS_ROUTE: RouteConstant(
         route_id=ARCTIC_SHIFT_POSTS_ROUTE,
         access_class="K3",
         method="GET",
-        origin="https://arctic-shift.photon-reddit.com",
+        origin=ARCTIC_SHIFT_ORIGIN,
         path="/api/posts/ids",
         accept="application/json",
         operator_identity="arctic-shift",
+    ),
+    # Measured 2026-08-17 (Reddit, shreddit partials): the `/svc/shreddit/`
+    # HTML partials Reddit's own web client loads answered 200 to the package
+    # identity, on a bucket of 200 reads per window (`x-ratelimit-remaining:
+    # 199.0` after the first read) — a different bucket from the `.rss`
+    # surface's one-per-minute. `community-more-posts/{sort}/?name=<sub>&t=`
+    # carried 24 `<shreddit-post>` elements each stating `score`,
+    # `comment-count`, `post-title`, `author`, `created-timestamp` and
+    # `permalink`; `search?q=&sort=&t=&type=posts` and `r/<sub>/search?...`
+    # carried seven posts per page with a continuation token and a
+    # `faceplate-number` pair per post; `comments/r/<sub>/t3_<id>?sort=`
+    # carried 25 `<shreddit-comment>` elements with `score`, `depth`,
+    # `author`, `created`, `permalink` and the body under
+    # `id="<thingid>-post-rtjson-content"`. The `more-comments` continuation
+    # that partial names is **not** declared: it states `method="post"`, and a
+    # GET of it answered 200 carrying no comment at all (measured the same
+    # day), so the deeper replies are reachable only by a verb this package
+    # does not admit. This is structured data embedded in a public HTML page,
+    # which is `K2`; the
+    # `.json` forms answer 403 on this host to every identity, as the 2026-08-10
+    # measurement recorded, and stay undeclared.
+    REDDIT_SHREDDIT_LISTING_ROUTE: RouteConstant(
+        route_id=REDDIT_SHREDDIT_LISTING_ROUTE,
+        access_class="K2",
+        method="GET",
+        origin=REDDIT_SITE_ORIGIN,
+        path="/svc/shreddit/community-more-posts",
+        accept="text/html",
+        operator_identity="reddit",
+        path_params=("sort",),
+        path_suffix="/",
+    ),
+    REDDIT_SHREDDIT_SEARCH_ROUTE: RouteConstant(
+        route_id=REDDIT_SHREDDIT_SEARCH_ROUTE,
+        access_class="K2",
+        method="GET",
+        origin=REDDIT_SITE_ORIGIN,
+        path="/svc/shreddit/search",
+        accept="text/html",
+        operator_identity="reddit",
+    ),
+    REDDIT_SHREDDIT_SUBREDDIT_SEARCH_ROUTE: RouteConstant(
+        route_id=REDDIT_SHREDDIT_SUBREDDIT_SEARCH_ROUTE,
+        access_class="K2",
+        method="GET",
+        origin=REDDIT_SITE_ORIGIN,
+        path="/svc/shreddit/r",
+        accept="text/html",
+        operator_identity="reddit",
+        path_params=("subreddit",),
+        path_suffix="/search",
+    ),
+    REDDIT_SHREDDIT_COMMENTS_ROUTE: RouteConstant(
+        route_id=REDDIT_SHREDDIT_COMMENTS_ROUTE,
+        access_class="K2",
+        method="GET",
+        origin=REDDIT_SITE_ORIGIN,
+        path="/svc/shreddit/comments/r",
+        accept="text/html",
+        operator_identity="reddit",
+        path_params=("subreddit", "post_fullname"),
+    ),
+    # Measured 2026-08-17 (YouTube): a caption track's `baseUrl` from an
+    # `ANDROID` player answer names this endpoint on this origin, carrying its
+    # own signed query (`signature`, `sparams`, `expire`, `v`, `lang`, `kind`,
+    # `fmt`), and rebuilding that query through the transport's own sorted
+    # `urlencode` still answered 200 with 109 KB of `srv3` XML; `fmt=json3` and
+    # `tlang=` also answered. Same origin as InnerTube and a different endpoint,
+    # so a different route with its own budget, the way the channel feed is.
+    YOUTUBE_TIMEDTEXT_ROUTE: RouteConstant(
+        route_id=YOUTUBE_TIMEDTEXT_ROUTE,
+        access_class="K1",
+        method="GET",
+        origin="https://www.youtube.com",
+        path="/api/timedtext",
+        accept="text/xml",
+        operator_identity="youtube",
+    ),
+    # Measured 2026-08-17: `hn.algolia.com/api/v1/items/<id>` answered 200 with
+    # a story and its whole comment tree — 259 nodes in 135 KB, one call —
+    # where Firebase serves one node per call. Same origin as the search route
+    # and a different endpoint shape, so a route of its own.
+    HN_ALGOLIA_ITEM_ROUTE: RouteConstant(
+        route_id=HN_ALGOLIA_ITEM_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://hn.algolia.com",
+        path="/api/v1/items",
+        accept="application/json",
+        operator_identity="algolia",
+        path_params=("item_id",),
+    ),
+    # Measured 2026-08-17 (prediction markets): all three answered 200 keyless.
+    # Polymarket's Gamma API serves `public-search?q=`, `events` and `markets`
+    # under one origin, so the endpoint is a path segment; Kalshi's public
+    # trade API serves `markets` and `events` with a `cursor`; Manifold serves
+    # `search-markets?term=`. None takes a credential.
+    POLYMARKET_GAMMA_ROUTE: RouteConstant(
+        route_id=POLYMARKET_GAMMA_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://gamma-api.polymarket.com",
+        path="",
+        accept="application/json",
+        operator_identity="polymarket",
+        path_params=("endpoint",),
+    ),
+    KALSHI_MARKETS_ROUTE: RouteConstant(
+        route_id=KALSHI_MARKETS_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://api.elections.kalshi.com",
+        path="/trade-api/v2",
+        accept="application/json",
+        operator_identity="kalshi",
+        path_params=("endpoint",),
+    ),
+    MANIFOLD_MARKETS_ROUTE: RouteConstant(
+        route_id=MANIFOLD_MARKETS_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://api.manifold.markets",
+        path="/v0/search-markets",
+        accept="application/json",
+        operator_identity="manifold",
+    ),
+    # Measured 2026-08-17 (Stocktwits): `api/2/streams/symbol/<SYM>.json`
+    # answered 200 with 30 messages, each carrying `likes.total`, `created_at`
+    # and `entities.sentiment.basic`, and a `cursor.max` for the next page;
+    # `search/symbols.json?q=` answered 200. Keyless, and the one finance-native
+    # surface in the roster. Stocktwits names the representation with a path
+    # suffix, the way Reddit and Firebase do.
+    STOCKTWITS_STREAM_ROUTE: RouteConstant(
+        route_id=STOCKTWITS_STREAM_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://api.stocktwits.com",
+        path="/api/2/streams/symbol",
+        accept="application/json",
+        operator_identity="stocktwits",
+        path_params=("symbol",),
+        path_suffix=".json",
+    ),
+    STOCKTWITS_SYMBOL_SEARCH_ROUTE: RouteConstant(
+        route_id=STOCKTWITS_SYMBOL_SEARCH_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://api.stocktwits.com",
+        path="/api/2/search/symbols.json",
+        accept="application/json",
+        operator_identity="stocktwits",
+    ),
+    # Bluesky's public AppView, documented keyless. Measured 2026-08-17 on this
+    # host: `searchPosts` answered 403 from the CDN in front of it ("Request
+    # forbidden by administrative rules") while `getProfile` answered 200 —
+    # the route is declared on the documentation and the smoke decides
+    # liveness per host, which is what a smoke is for.
+    BLUESKY_SEARCH_POSTS_ROUTE: RouteConstant(
+        route_id=BLUESKY_SEARCH_POSTS_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://public.api.bsky.app",
+        path="/xrpc/app.bsky.feed.searchPosts",
+        accept="application/json",
+        operator_identity="bluesky",
+    ),
+    BLUESKY_AUTHOR_FEED_ROUTE: RouteConstant(
+        route_id=BLUESKY_AUTHOR_FEED_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://public.api.bsky.app",
+        path="/xrpc/app.bsky.feed.getAuthorFeed",
+        accept="application/json",
+        operator_identity="bluesky",
+    ),
+    # Measured 2026-08-17 (X, third party): FxTwitter's public API answered 200
+    # keyless to `/2/search?q=&feed=latest|top&count=` (paged by a token),
+    # `/2/profile/<handle>/statuses`, `/2/profile/<handle>` and
+    # `/2/conversation/<id>`, each carrying the platform's own counts. It is
+    # an independent operator reading X on this package's behalf, so every
+    # record it produces is `K3` and carries `third_party_archive` — the same
+    # law Arctic Shift lives under — and it is the one keyless path to an X
+    # *search* at all: the guest GraphQL search is refused (`x_guest`), and
+    # the syndication timeline is one handle's voice. Three segments, spent in
+    # order, so the endpoint's shape stays owned here.
+    FXTWITTER_API_ROUTE: RouteConstant(
+        route_id=FXTWITTER_API_ROUTE,
+        access_class="K3",
+        method="GET",
+        origin="https://api.fxtwitter.com",
+        path="/2",
+        accept="application/json",
+        operator_identity="fxtwitter",
+        path_params=("endpoint", "subject", "collection"),
     ),
     X_GUEST_ACTIVATE_ROUTE: RouteConstant(
         route_id=X_GUEST_ACTIVATE_ROUTE,

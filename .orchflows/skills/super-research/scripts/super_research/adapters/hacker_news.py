@@ -1,4 +1,4 @@
-"""K0 Hacker News over two surfaces: Algolia for search, Firebase for the tree.
+"""K0 Hacker News over three surfaces: Algolia for search and for a whole tree, Firebase for one item.
 
 Measured 2026-08-10 (Carry-over routes):
 ``hn.algolia.com/api/v1/search_by_date`` answered 200 with full-text HN search,
@@ -8,12 +8,34 @@ and ``hacker-news.firebaseio.com/v0/item/<id>`` answered 200 with ``by``,
 makes HN searchable at all: the prior spec's Firebase-only adapter could list
 and hydrate and never search, and the evidence records the upgrade as strict.
 
-**Two origins, two routes, two calls.** A search is one call to Algolia and an
-item is one call to Firebase, and no call here is ever both — this module holds
-one descriptor per surface and spends exactly one of them per call. Walking a
-``kids`` tree is therefore one call per item with the core choosing the next
-one, because an adapter that walked it would turn one bounded call into a crawl
-whose size nobody declared.
+Measured 2026-08-17: ``hn.algolia.com/api/v1/items/<id>`` answered 200 in
+0.94 s with 135 KB — one story and its whole comment tree, 259 nodes, each a
+``{id, created_at, created_at_i, type, author, title, url, text, points,
+parent_id, story_id, children, options}`` object nesting its own children.
+``points`` was an integer on the story and ``null`` on every comment; a
+comment id answered 200 with the subtree under that comment; an id the index
+holds nothing under answered 404 with ``{"error":"Not Found","status":404}``.
+The same day ``search_by_date?query=spacex`` answered 20 hits with
+``hitsPerPage: 20`` and no size asked for, and adding
+``numericFilters=created_at_i>=<epoch>,created_at_i<=<epoch>&hitsPerPage=20``
+answered 200 with hits inside the bounds — which is how a caller's window
+travels to this index in the index's own terms.
+
+**Two origins, three routes, and still one call each.** A search is one call to
+Algolia's search endpoint, an item is one call to Firebase, and a tree is one
+call to Algolia's items endpoint; no call here is ever two of them — this
+module holds one descriptor per surface and spends exactly one of them per
+call. Walking a Firebase ``kids`` list is one call per item with the core
+choosing the next one, because an adapter that walked it would turn one bounded
+call into a crawl whose size nobody declared. The tree surface is the same
+bound met differently: the origin itself answers the whole tree in one payload,
+so flattening what one call returned is reading, not crawling, and this module
+still makes no second call to fill anything in.
+
+**A comment never carries the story's points.** The tree states ``points`` on
+every node and states ``null`` on every comment, and that null is left absent:
+a comment record carries no engagement rather than its root's, which is the one
+way a per-comment ranking could be quietly wrong on every row.
 
 **An absence is not a shape change, in either direction.** Firebase answers a
 request for an item it does not have with 200 and the body ``null``, and
@@ -87,6 +109,12 @@ DESCRIPTOR = AdapterDescriptor(
     comment_count_metric="descendants",
 )
 
+# How many hits one search answer holds when the index has that many. Measured
+# 2026-08-17: `search_by_date?query=spacex` answered 20 hits and stated
+# `hitsPerPage: 20` with no size asked for, so this is the index's own default
+# and the number a cap below it buys nothing against.
+SEARCH_PAGE_SIZE = 20
+
 # The Algolia search surface: the same adapter, a different origin, and its own
 # route budget because a ceiling belongs to the origin that sets it.
 SEARCH_DESCRIPTOR = AdapterDescriptor(
@@ -103,25 +131,47 @@ SEARCH_DESCRIPTOR = AdapterDescriptor(
     # mirror speaking for the platform.
     operator_identity="algolia",
     comment_count_metric="num_comments",
+    page_size=SEARCH_PAGE_SIZE,
+)
+
+# The Algolia items surface: the same origin as the search, a different
+# endpoint shape, and so a route of its own with its own budget. It answers a
+# story and its whole comment tree in one call where Firebase answers one node
+# per call, and it is what makes hydrating an HN thread one read rather than
+# a traversal the core has to schedule node by node. Nothing on it was measured
+# refusing, so all three ceiling numbers stay the protocol's conservative
+# defaults, as the other two surfaces' do; and no node it returns states a
+# comment count, so neither ranking metric is declared.
+ITEM_TREE_DESCRIPTOR = AdapterDescriptor(
+    adapter_id="hacker_news",
+    adapter_version="1",
+    access_class="K0",
+    route_id=transport.HN_ALGOLIA_ITEM_ROUTE,
+    platform="hackernews",
+    native_identity_namespace="hackernews",
+    representation_kind="native",
+    operator_identity="algolia",
 )
 
 # Every route this adapter can reach, one descriptor each. The core collects
 # route budgets from here, because a route nothing declares a budget for is a
 # route the scheduler refuses to pace.
-SURFACE_DESCRIPTORS = (DESCRIPTOR, SEARCH_DESCRIPTOR)
+SURFACE_DESCRIPTORS = (DESCRIPTOR, SEARCH_DESCRIPTOR, ITEM_TREE_DESCRIPTOR)
 
-# The four operations, spelled once each. A caller names one with a prefix,
-# because two surfaces answer different questions; absent a prefix the step's
+# The five operations, spelled once each. A caller names one with a prefix,
+# because three surfaces answer different questions; absent a prefix the step's
 # own shape decides, and never the characters in the argument.
 ITEM_OPERATION = "item"
 SEARCH_OPERATION = "search"
 SEARCH_BY_DATE_OPERATION = "search_by_date"
 COMMENT_SEARCH_OPERATION = "comments"
+TREE_OPERATION = "tree"
 HN_OPERATIONS = (
     ITEM_OPERATION,
     SEARCH_OPERATION,
     SEARCH_BY_DATE_OPERATION,
     COMMENT_SEARCH_OPERATION,
+    TREE_OPERATION,
 )
 
 # Which endpoint each search operation asks, and under which tag. `search`
@@ -141,6 +191,7 @@ NATIVE_ORDERS = {
     SEARCH_BY_DATE_OPERATION: "hn_algolia_recency_order",
     COMMENT_SEARCH_OPERATION: "hn_algolia_relevance_order",
     ITEM_OPERATION: "hn_firebase_item_order",
+    TREE_OPERATION: "hn_algolia_tree_depth_first_order",
 }
 
 # Where each surface keeps what it returned, and what one row of it is.
@@ -151,6 +202,41 @@ PAGE_KEY = "page"
 PAGE_COUNT_KEY = "nbPages"
 TAGS_KEY = "_tags"
 OBJECT_ID_KEY = "objectID"
+
+# How a caller's window travels to the search index, in the index's own
+# syntax: a comma-joined list of bounds on the epoch-second field every hit
+# carries, and the page size beside it. Measured 2026-08-17 answering 200. The
+# size is sent only beside a window: an unbounded search stays the request the
+# 2026-08-10 measurement made, byte for byte, and a bounded one states its page
+# explicitly rather than leaning on the index's default.
+NUMERIC_FILTERS_PARAM = "numericFilters"
+HITS_PER_PAGE_PARAM = "hitsPerPage"
+
+# Algolia guesses at spellings unless told not to, and on this index the guess
+# is not a near miss: measured 2026-08-17, `query=SpaceX` answered **849,432**
+# hits whose top rows were about Go release notes and "Apple's space", because
+# typo tolerance reaches `space` from `SpaceX`. The same query with this
+# parameter off answered 67,207, and its top rows are about SpaceX. A row count
+# on an entity query is only a measure of topic volume if the index matched the
+# entity, so this package asks the index not to guess — on every search, not as
+# an option — and a caller who wants a phrase quotes it, which Algolia's own
+# advanced syntax reads. It is the same law `engagement` follows: what a route
+# reported, never what it might have meant.
+TYPO_TOLERANCE_PARAM = "typoTolerance"
+TYPO_TOLERANCE_OFF = "false"
+CREATED_AT_I_KEY = "created_at_i"
+WINDOW_START_FILTER = CREATED_AT_I_KEY + ">="
+WINDOW_END_FILTER = CREATED_AT_I_KEY + "<="
+FILTER_SEPARATOR = ","
+
+# The tree surface's own keys, beside the ones it shares with the search hits
+# (`id`, `type`, `author`, `title`, `url`, `text`, `created_at`, `parent_id`,
+# `story_id`, `points`). `children` is where a node keeps the nodes under it,
+# and `depth` is not the payload's at all: it is how far from the root this
+# module found a node while flattening, and it travels as an attribute under
+# that name because no record field means it.
+CHILDREN_KEY = "children"
+DEPTH_ATTRIBUTE = "depth"
 
 # Every other key these two payloads publish that this module reads, under
 # their own names.
@@ -188,6 +274,14 @@ ITEM_ROW_KEYS = {
     "pollopt": (ITEM_ID_KEY, ITEM_TYPE_KEY, BY_KEY, TIME_KEY, TEXT_KEY),
 }
 DEFAULT_ITEM_ROW_KEYS = (ITEM_ID_KEY, ITEM_TYPE_KEY, BY_KEY, TIME_KEY, TITLE_KEY)
+# A tree node names its author `author` and its time `created_at`, the way a
+# search hit does, and its type and text the way a Firebase item does. Its
+# roster is this adapter's own declaration, as the hit rosters are.
+TREE_ROW_KEYS = {
+    COMMENT_TYPE: (ITEM_ID_KEY, ITEM_TYPE_KEY, AUTHOR_KEY, CREATED_AT_KEY, TEXT_KEY),
+    "pollopt": (ITEM_ID_KEY, ITEM_TYPE_KEY, AUTHOR_KEY, CREATED_AT_KEY, TEXT_KEY),
+}
+DEFAULT_TREE_ROW_KEYS = (ITEM_ID_KEY, ITEM_TYPE_KEY, AUTHOR_KEY, CREATED_AT_KEY, TITLE_KEY)
 
 # The stamps these routes emit, and the one an artifact record holds. Algolia
 # writes an ISO instant with milliseconds; Firebase writes epoch seconds.
@@ -275,6 +369,43 @@ def epoch_to_utc_iso(seconds: Any) -> str:
     except (OverflowError, OSError, ValueError):
         return ""
     return moment.strftime(RECORD_INSTANT_FORMAT)
+
+
+def instant_to_epoch_text(instant: str) -> str:
+    """One manifest instant as the epoch seconds the search index filters on, or nothing.
+
+    The other direction of :func:`epoch_to_utc_iso`, for the one place this
+    module sends a time rather than reads one. A bound this function cannot
+    read is a bound not sent — the core's own window filter still holds on
+    every row that comes back — rather than a bound sent wrong, which would
+    narrow the index's answer to a range nobody asked for.
+    """
+
+    if not isinstance(instant, str) or not instant.strip():
+        return ""
+    try:
+        moment = datetime.strptime(instant.strip(), RECORD_INSTANT_FORMAT)
+    except ValueError:
+        return ""
+    return str(int(moment.replace(tzinfo=timezone.utc).timestamp()))
+
+
+def window_filters(window_start: str, window_end: str) -> str:
+    """A caller's window in Algolia's own `numericFilters` syntax, or nothing.
+
+    Either bound alone is a filter; both together are two, comma-joined, on the
+    same field. Rows are never dropped here on either: the index applies what
+    it is sent and the core counts what falls outside.
+    """
+
+    bounds = []
+    start = instant_to_epoch_text(window_start)
+    if start:
+        bounds.append(WINDOW_START_FILTER + start)
+    end = instant_to_epoch_text(window_end)
+    if end:
+        bounds.append(WINDOW_END_FILTER + end)
+    return FILTER_SEPARATOR.join(bounds)
 
 
 def _missing(row: Mapping[str, Any], keys: Sequence[str]) -> Tuple[str, ...]:
@@ -406,6 +537,86 @@ def _item_record(item: Mapping[str, Any], kind: str) -> NativeRecord:
         if _missing(row, ITEM_ROW_KEYS.get(kind, DEFAULT_ITEM_ROW_KEYS))
         else (),
     )
+
+
+def _tree_record(
+    position: int, node: Mapping[str, Any], kind: str, depth: int
+) -> NativeRecord:
+    """One node of the tree as Algolia listed it, and how deep it sat."""
+
+    item_id = id_text(node.get(ITEM_ID_KEY))
+    row = {
+        ITEM_ID_KEY: item_id,
+        ITEM_TYPE_KEY: kind,
+        AUTHOR_KEY: _text(node.get(AUTHOR_KEY)),
+        CREATED_AT_KEY: route_instant_to_utc_iso(node.get(CREATED_AT_KEY)),
+        TITLE_KEY: _text(node.get(TITLE_KEY)),
+        TEXT_KEY: _text(node.get(TEXT_KEY)),
+    }
+    named: List[Tuple[str, str]] = []
+    link = _text(node.get(URL_KEY))
+    if link:
+        named.append((URL_KEY, link))
+    story_id = id_text(node.get(STORY_ID_KEY))
+    if story_id:
+        # The root this node sits under, which `native_parent_id` does not
+        # mean: a reply's parent is the comment it answers.
+        named.append((STORY_ID_KEY, story_id))
+    named.append((DEPTH_ATTRIBUTE, str(depth)))
+    return NativeRecord(
+        canonical_content_kind=kind,
+        canonical_locator=item_locator(item_id),
+        native_item_id=item_id,
+        native_parent_id=id_text(node.get(PARENT_ID_KEY)),
+        title=row[TITLE_KEY],
+        body=row[TEXT_KEY],
+        author=row[AUTHOR_KEY],
+        published_at=row[CREATED_AT_KEY],
+        # This node's own points and only its own: the tree states `null` on
+        # every comment, and an absent count is left absent rather than filled
+        # from the story above it.
+        engagement=_engagement(((POINTS_METRIC, node.get(POINTS_METRIC)),)),
+        attributes=tuple(named),
+        native_position=position,
+        loss=("field_omitted",)
+        if _missing(row, TREE_ROW_KEYS.get(kind, DEFAULT_TREE_ROW_KEYS))
+        else (),
+    )
+
+
+def _flatten_tree(
+    root: Mapping[str, Any]
+) -> Tuple[Tuple[NativeRecord, ...], int]:
+    """Every node of one tree, depth first, root first, children in listed order.
+
+    Also how many nodes were passed over: a node stating no type this adapter
+    knows, or no id, is not a row — it can be neither typed nor addressed —
+    and it is counted so the page can say the tree held more than it read.
+    Its children are still walked, because a hole in a thread is not the end
+    of it. Iterative rather than recursive on purpose: a thread is as deep as
+    HN let it get, and a payload must never turn into a recursion error.
+    """
+
+    records: List[NativeRecord] = []
+    untyped = 0
+    pending: List[Tuple[Any, int]] = [(root, 0)]
+    while pending:
+        node, depth = pending.pop()
+        if not isinstance(node, Mapping):
+            untyped += 1
+            continue
+        kind = _text(node.get(ITEM_TYPE_KEY))
+        if kind in ITEM_TYPES and id_text(node.get(ITEM_ID_KEY)):
+            records.append(_tree_record(len(records), node, kind, depth))
+        else:
+            untyped += 1
+        children = node.get(CHILDREN_KEY)
+        if isinstance(children, list):
+            # Pushed in reverse so the first-listed child is the next popped:
+            # the order HN listed them is the order the records hold.
+            for child in reversed(children):
+                pending.append((child, depth + 1))
+    return (tuple(records), untyped)
 
 
 def _answered(
@@ -590,15 +801,56 @@ def _item_page(
     )
 
 
+def _tree_page(
+    response: transport.TransportResponse, payload: Any, item_id: str
+) -> NativePage:
+    """One whole tree as the index answered it, flattened, or the typed reason not."""
+
+    native_order = NATIVE_ORDERS[TREE_OPERATION]
+    kind = _text(payload.get(ITEM_TYPE_KEY)) if isinstance(payload, Mapping) else ""
+    if kind not in ITEM_TYPES or not id_text(payload.get(ITEM_ID_KEY)):
+        # The root is where the tree keeps itself. A body that is not a node
+        # this adapter knows is the payload having moved, and never a tree with
+        # nothing in it: an id the index holds nothing under answers 404, which
+        # `_payload_of` has already recorded as the status it is.
+        return _failed(
+            ITEM_TREE_DESCRIPTOR,
+            response,
+            native_order,
+            SCHEMA_DRIFT,
+            "{0} answered 200 with a root stating no {1} this adapter knows and no"
+            " {2}: the payload this adapter reads has changed shape".format(
+                TREE_OPERATION, ITEM_TYPE_KEY, ITEM_ID_KEY
+            ),
+        )
+    records, untyped = _flatten_tree(payload)
+    warnings: List[str] = []
+    if untyped:
+        warnings.append(
+            "{0} answered 200 for item {1} with {2} node(s) carrying no item type in"
+            " {3} or no {4}: they are not rows this adapter can identify".format(
+                TREE_OPERATION, item_id, untyped, ITEM_TYPE_KEY, ITEM_ID_KEY
+            )
+        )
+    return _answered(
+        ITEM_TREE_DESCRIPTOR,
+        response,
+        native_order,
+        records=records,
+        warnings=tuple(warnings),
+    )
+
+
 def operation_for(request: AdapterRequest) -> Tuple[str, str]:
     """The operation this call performs, and the argument it performs it on.
 
-    A caller names the operation, because two surfaces answer two different
+    A caller names the operation, because three surfaces answer different
     questions. Absent a name, the step's own shape decides: a step naming a
     target hydrates that item, and a step naming only a query searches by date,
     which is the surface the evidence records as making HN searchable. Neither
     is inferred from the characters in the argument, so a query that happens to
-    look like an id stays a query.
+    look like an id stays a query. `tree:` is answered from either shape, since
+    one whole thread is as much a thing to discover as to hydrate.
     """
 
     named = request.target_ids[0] if request.target_ids else request.query
@@ -622,7 +874,11 @@ def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> 
     operation, argument = operation_for(request)
     if operation == ITEM_OPERATION:
         return _fetch_item(carrier, argument)
-    return _fetch_search(carrier, operation, argument, request.cursor)
+    if operation == TREE_OPERATION:
+        return _fetch_tree(carrier, argument)
+    return _fetch_search(
+        carrier, operation, argument, request.cursor, request.window_start, request.window_end
+    )
 
 
 def _fetch_item(carrier: transport.Transport, item_id: str) -> NativePage:
@@ -641,18 +897,51 @@ def _fetch_item(carrier: transport.Transport, item_id: str) -> NativePage:
     )
 
 
+def _fetch_tree(carrier: transport.Transport, item_id: str) -> NativePage:
+    native_order = NATIVE_ORDERS[TREE_OPERATION]
+
+    def parse(response: transport.TransportResponse) -> NativePage:
+        payload, refused = _payload_of(
+            ITEM_TREE_DESCRIPTOR, response, native_order, TREE_OPERATION
+        )
+        return refused if refused is not None else _tree_page(response, payload, item_id)
+
+    return fetch_one_page(
+        ITEM_TREE_DESCRIPTOR,
+        carrier,
+        params={"item_id": item_id},
+        parse=parse,
+        native_order=native_order,
+    )
+
+
 def _fetch_search(
-    carrier: transport.Transport, operation: str, query: str, cursor: str
+    carrier: transport.Transport,
+    operation: str,
+    query: str,
+    cursor: str,
+    window_start: str = "",
+    window_end: str = "",
 ) -> NativePage:
     endpoint, tag = SEARCH_ENDPOINTS[operation]
     native_order = NATIVE_ORDERS[operation]
-    params: Dict[str, str] = {"endpoint": endpoint, "query": query}
+    params: Dict[str, str] = {
+        "endpoint": endpoint,
+        "query": query,
+        TYPO_TOLERANCE_PARAM: TYPO_TOLERANCE_OFF,
+    }
     if tag:
         params["tags"] = tag
     if cursor:
         # The page the core froze, spent as the index's own page number. No
         # next offset is derived here: the index states how many pages it has.
         params[PAGE_KEY] = cursor
+    filters = window_filters(window_start, window_end)
+    if filters:
+        # The caller's window, in the index's own terms, and the page size
+        # stated beside it. Nothing is dropped here on either bound.
+        params[NUMERIC_FILTERS_PARAM] = filters
+        params[HITS_PER_PAGE_PARAM] = str(SEARCH_PAGE_SIZE)
 
     def parse(response: transport.TransportResponse) -> NativePage:
         payload, refused = _payload_of(SEARCH_DESCRIPTOR, response, native_order, operation)

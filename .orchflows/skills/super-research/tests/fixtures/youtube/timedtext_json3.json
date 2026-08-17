@@ -1,0 +1,120 @@
+{
+ "wireMagic": "pb3",
+ "events": [
+  {
+   "tStartMs": 0,
+   "dDurationMs": 1155720,
+   "id": 1,
+   "wpWinPosId": 1,
+   "wsWinStyleId": 1
+  },
+  {
+   "tStartMs": 0,
+   "dDurationMs": 5200,
+   "wWinId": 1,
+   "segs": [
+    {
+     "utf8": "SpaceX"
+    },
+    {
+     "utf8": " is",
+     "tOffsetMs": 800
+    },
+    {
+     "utf8": " falling,",
+     "tOffsetMs": 1040
+    },
+    {
+     "utf8": " following",
+     "tOffsetMs": 1760
+    },
+    {
+     "utf8": " their",
+     "tOffsetMs": 2520
+    }
+   ]
+  },
+  {
+   "tStartMs": 2710,
+   "dDurationMs": 2490,
+   "wWinId": 1,
+   "aAppend": 1,
+   "segs": [
+    {
+     "utf8": "\n"
+    }
+   ]
+  },
+  {
+   "tStartMs": 2720,
+   "dDurationMs": 5640,
+   "wWinId": 1,
+   "segs": [
+    {
+     "utf8": "second"
+    },
+    {
+     "utf8": " quarter",
+     "tOffsetMs": 360
+    },
+    {
+     "utf8": " 2026",
+     "tOffsetMs": 680
+    },
+    {
+     "utf8": " earnings",
+     "tOffsetMs": 1600
+    },
+    {
+     "utf8": " update.",
+     "tOffsetMs": 2040
+    }
+   ]
+  },
+  {
+   "tStartMs": 5190,
+   "dDurationMs": 3170,
+   "wWinId": 1,
+   "aAppend": 1,
+   "segs": [
+    {
+     "utf8": "\n"
+    }
+   ]
+  },
+  {
+   "tStartMs": 5200,
+   "dDurationMs": 6840,
+   "wWinId": 1,
+   "segs": [
+    {
+     "utf8": "This"
+    },
+    {
+     "utf8": " is",
+     "tOffsetMs": 160
+    },
+    {
+     "utf8": " SPC-X",
+     "tOffsetMs": 360
+    },
+    {
+     "utf8": " stock.",
+     "tOffsetMs": 1680
+    },
+    {
+     "utf8": " Since",
+     "tOffsetMs": 2200
+    },
+    {
+     "utf8": " its",
+     "tOffsetMs": 2480
+    },
+    {
+     "utf8": " recent",
+     "tOffsetMs": 2720
+    }
+   ]
+  }
+ ]
+}

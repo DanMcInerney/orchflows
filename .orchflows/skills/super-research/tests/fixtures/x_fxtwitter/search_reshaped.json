@@ -1,0 +1,175 @@
+{
+  "code": 200,
+  "tweets": [
+    {
+      "type": "status",
+      "url": "https://x.com/Pre_Consensus/status/2089361198391214168",
+      "id": "2089361198391214168",
+      "text": "My guy. You are down hundreds of thousands of your parents money on illogical shorts. Your SpaceX short when it already sold off from 220 dollars is down significantly lol. You advertise meme stocks. Why would anyone listen to you. You never respond to me when I talk about your family gifting you money, and it’s obvious why. You can talk because you haven’t done it yourself.",
+      "raw_text": {
+        "text": "My guy. You are down hundreds of thousands of your parents money on illogical shorts. Your SpaceX short when it already sold off from 220 dollars is down significantly lol. You advertise meme stocks. Why would anyone listen to you. You never respond to me when I talk about your family gifting you money, and it’s obvious why. You can talk because you haven’t done it yourself.",
+        "display_text_range": [
+          0,
+          377
+        ],
+        "facets": []
+      },
+      "author": {
+        "screen_name": "Pre_Consensus",
+        "url": "https://x.com/Pre_Consensus",
+        "id": "2073814671727968256",
+        "followers": 231,
+        "following": 332,
+        "likes": 900,
+        "media_count": 198,
+        "statuses": 1057,
+        "name": "Pre-Consensus",
+        "description": "I’m studying finance to get into S&T.\nNo internship yet. \nI’ve been investing since I was 15. \n$NBIS Enthusiast - initial buy at 49$.",
+        "raw_description": {
+          "text": "I’m studying finance to get into S&T.\nNo internship yet. \nI’ve been investing since I was 15. \n$NBIS Enthusiast - initial buy at 49$.",
+          "facets": []
+        },
+        "location": "",
+        "banner_url": "https://pbs.twimg.com/profile_banners/2073814671727968256/1783994462",
+        "avatar_url": "https://pbs.twimg.com/profile_images/2076849319873806336/wFOQ9afu_200x200.jpg",
+        "joined": "Sun Jul 05 17:03:46 +0000 2026",
+        "protected": false,
+        "website": null,
+        "verification": {
+          "verified": true,
+          "verified_at": null,
+          "type": "individual"
+        },
+        "type": "profile"
+      },
+      "replies": 0,
+      "reposts": 0,
+      "likes": 0,
+      "bookmarks": 0,
+      "quotes": 0,
+      "embed_card": "tweet",
+      "created_at": "Mon Aug 17 14:38:22 +0000 2026",
+      "created_timestamp": 1786977502,
+      "views": null,
+      "is_note_tweet": true,
+      "community_note": null,
+      "lang": "en",
+      "replying_to": {
+        "screen_name": "capybaraReborn",
+        "status": "2089083612171739470",
+        "url": "https://x.com/capybaraReborn/status/2089083612171739470",
+        "profile_url": "https://x.com/capybaraReborn"
+      },
+      "media": {},
+      "source": "Twitter for iPhone",
+      "provider": "twitter",
+      "reposted_by": null
+    },
+    {
+      "type": "status",
+      "url": "https://x.com/ClaudiaGadelha_/status/2089361176186491316",
+      "id": "2089361176186491316",
+      "text": "$SPCX is up more than 6% today and closing in on $150 after setting a new launch cadence record.\n\nSpaceX launched two Falcon 9 rockets just 38.5 minutes apart, reinforcing how quickly its launch infrastructure continues to scale.",
+      "raw_text": {
+        "text": "$SPCX is up more than 6% today and closing in on $150 after setting a new launch cadence record.\n\nSpaceX launched two Falcon 9 rockets just 38.5 minutes apart, reinforcing how quickly its launch infrastructure continues to scale. https://t.co/z7KhQQjVje",
+        "display_text_range": [
+          0,
+          229
+        ],
+        "facets": [
+          {
+            "type": "symbol",
+            "indices": [
+              0,
+              5
+            ],
+            "original": "SPCX"
+          },
+          {
+            "type": "media",
+            "indices": [
+              230,
+              253
+            ],
+            "id": "2089361169790148608",
+            "display": "pic.x.com/z7KhQQjVje",
+            "original": "https://t.co/z7KhQQjVje",
+            "replacement": "https://x.com/ClaudiaGadelha_/status/2089361176186491316/photo/1"
+          }
+        ]
+      },
+      "author": {
+        "screen_name": "ClaudiaGadelha_",
+        "url": "https://x.com/ClaudiaGadelha_",
+        "id": "79217284",
+        "followers": 147426,
+        "following": 458,
+        "likes": 7486,
+        "media_count": 2024,
+        "statuses": 16955,
+        "name": "Claudia Gadelha | Capital & Markets",
+        "description": "📈CEO of MMC | Author | Mentor\n📊Accredited Investor+Options Trader\n🥋Retired UFC Athlete\n👩🏻‍💼Sports Business Executive\n🎓Law Grad|Financial Education",
+        "raw_description": {
+          "text": "📈CEO of MMC | Author | Mentor\n📊Accredited Investor+Options Trader\n🥋Retired UFC Athlete\n👩🏻‍💼Sports Business Executive\n🎓Law Grad|Financial Education",
+          "facets": []
+        },
+        "location": "Las Vegas, NV",
+        "banner_url": "https://pbs.twimg.com/profile_banners/79217284/1750312091",
+        "avatar_url": "https://pbs.twimg.com/profile_images/2000179219364495370/hzWESAmx_200x200.jpg",
+        "joined": "Fri Oct 02 16:06:09 +0000 2009",
+        "protected": false,
+        "website": {
+          "url": "http://cgadelha.com",
+          "display_url": "cgadelha.com"
+        },
+        "verification": {
+          "verified": true,
+          "verified_at": null,
+          "type": "individual"
+        },
+        "type": "profile"
+      },
+      "replies": 0,
+      "reposts": 0,
+      "likes": 0,
+      "bookmarks": 0,
+      "quotes": 0,
+      "embed_card": "summary_large_image",
+      "created_at": "Mon Aug 17 14:38:17 +0000 2026",
+      "created_timestamp": 1786977497,
+      "possibly_sensitive": false,
+      "views": 20,
+      "is_note_tweet": false,
+      "community_note": null,
+      "lang": "en",
+      "replying_to": null,
+      "media": {
+        "all": [
+          {
+            "type": "photo",
+            "id": "2089361169790148608",
+            "url": "https://pbs.twimg.com/media/HP7m6fzWIAANn4a.jpg?name=orig",
+            "width": 1150,
+            "height": 1420
+          }
+        ],
+        "photos": [
+          {
+            "type": "photo",
+            "id": "2089361169790148608",
+            "url": "https://pbs.twimg.com/media/HP7m6fzWIAANn4a.jpg?name=orig",
+            "width": 1150,
+            "height": 1420
+          }
+        ]
+      },
+      "source": "Twitter for iPhone",
+      "provider": "twitter",
+      "reposted_by": null
+    }
+  ],
+  "cursor": {
+    "top": "DAADDAABCgABHP7m8KWXwFgKAAIc_ua8EReAlAAIAAIAAAABCAADAAAAAAgABAAAAAAKAAUc_ub63MAnEAoABhz-5vrcv9jwCwAHAAAAUEVtUEM2d0FBQWZRL2dHSk4wdkdwL0FBQUFBVWMvdWJyZWhhUnRCeis1dkNsbDhCWUhQN212QkVYZ0pRYy91YS9UWnNBM3h6KzV0Q0VXbUZyAAA",
+    "bottom": "DAADDAABCgABHP7m8KWXwFgKAAIc_ua8EReAlAAIAAIAAAACCAADAAAAAAgABAAAAAAKAAUc_ub63MAnEAoABhz-5vrcv9jwCwAHAAAAUEVtUEM2d0FBQWZRL2dHSk4wdkdwL0FBQUFBVWMvdWJyZWhhUnRCeis1dkNsbDhCWUhQN212QkVYZ0pRYy91YS9UWnNBM3h6KzV0Q0VXbUZyAAA"
+  }
+}

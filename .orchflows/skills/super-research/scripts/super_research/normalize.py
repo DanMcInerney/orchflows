@@ -188,11 +188,20 @@ def link_discovery_hydration(
     against a discovery record's normalized locator. Nothing is inferred by
     similarity, and a selection matching no hit yields no edge rather than a
     guess.
+
+    A discovery record is any record no hydration produced — one carrying no
+    ``discovery_locator`` — whatever surface it came from: an index hit, a
+    feed entry, a native search row. Until 2026-08-17 only an ``index`` record
+    could be an edge's source, so a fused manifest that discovered on a feed or
+    a native search and hydrated what it found formed no edge and then typed
+    every hydration `discovery_not_recorded` — a false alarm about the run's own
+    work that forced every discovery→hydration pair to be staged as two
+    dispatches. The rule is now the one the code comment always stated.
     """
 
     first_hit_at: Dict[str, str] = {}
     for record in records:
-        if record.representation_kind == "index" and record.normalized_locator:
+        if not record.discovery_locator and record.normalized_locator:
             first_hit_at.setdefault(record.normalized_locator, record.record_id)
 
     edges = []

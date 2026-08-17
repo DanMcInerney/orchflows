@@ -33,8 +33,9 @@ with the way back to a current one; a request the origin refuses is typed
 from __future__ import annotations
 
 import json
+import urllib.parse
 from datetime import datetime, timezone
-from typing import Any, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
 from .. import transport
 from . import (
@@ -53,6 +54,29 @@ from . import (
 # the vendor's schedule.
 CLIENT_NAME = "WEB"
 CLIENT_VERSION = "2.20260808.00.00"
+
+# The client the `player` operation presents, and the reason it is not the one
+# above. Measured 2026-08-17: `WEB` still answers `UNPLAYABLE` — the 2026-08-10
+# attestation, unchanged — while `ANDROID` at this version answered
+# `playabilityStatus.status: "OK"` with `videoDetails` and a populated
+# `captions.playerCaptionsTracklistRenderer.captionTracks`, keyless, with no
+# header beyond the ones the transport already sends. That is what makes a
+# transcript reachable at all, and it is why this module no longer says
+# captions cannot be had. It rotates on the vendor's schedule like the web
+# version beside it, and is declared as this adapter's second volatile
+# identifier for the same reason.
+PLAYER_CLIENT_NAME = "ANDROID"
+PLAYER_CLIENT_VERSION = "20.10.38"
+PLAYER_CLIENT_VERSION_RECOVERY = (
+    "Rotates with the Android app's own releases. Recover a current one by"
+    " hand from a published client table — yt-dlp's `_INNERTUBE_CLIENTS` and"
+    " youtube-transcript-api both pin this client and this field — and replace"
+    " PLAYER_CLIENT_VERSION here. This package fetches neither: recovery is a"
+    " deliberate manual step, because a self-updating identifier would make a"
+    " run's own provenance depend on an unrecorded read. A version the origin"
+    " refuses answers 400, which is typed stale_identifier, and a version it"
+    " serves without captions answers 200 with an empty track list."
+)
 
 CLIENT_VERSION_RECOVERY = (
     "Rotates with each YouTube web release. Recover a current one by hand:"
@@ -84,6 +108,12 @@ DESCRIPTOR = AdapterDescriptor(
             name="InnerTube {0} client version {1}".format(CLIENT_NAME, CLIENT_VERSION),
             recovery=CLIENT_VERSION_RECOVERY,
         ),
+        VolatileIdentifier(
+            name="InnerTube {0} client version {1}".format(
+                PLAYER_CLIENT_NAME, PLAYER_CLIENT_VERSION
+            ),
+            recovery=PLAYER_CLIENT_VERSION_RECOVERY,
+        ),
     ),
     # A comment carries a count of its own replies. Nothing in these three
     # operations reports an exact count of comments on a video, so no comment
@@ -92,7 +122,30 @@ DESCRIPTOR = AdapterDescriptor(
     reply_count_metric="replyCount",
 )
 
+# The second surface: the timed-text endpoint a caption track's own address
+# names. It is a different route on the same origin — a different budget and a
+# different window — the way the channel feed is, and its records are the one
+# `transcript` representation this package produces.
+TRANSCRIPT_DESCRIPTOR = AdapterDescriptor(
+    adapter_id="youtube_innertube",
+    adapter_version="1",
+    access_class="K1",
+    route_id=transport.YOUTUBE_TIMEDTEXT_ROUTE,
+    platform="youtube",
+    native_identity_namespace="youtube",
+    representation_kind="transcript",
+    operator_identity="youtube",
+    # Measured 2026-08-17: 109 KB of `srv3` in well under a second, and the
+    # same track as `json3`. No throttle was met, so this is the interval the
+    # route beside it declares rather than a second measurement.
+    min_interval_ms=1400,
+    page_size=1,
+)
+
+SURFACE_DESCRIPTORS = (DESCRIPTOR, TRANSCRIPT_DESCRIPTOR)
+
 NATIVE_ORDER = "youtube_innertube_route_order"
+TRANSCRIPT_NATIVE_ORDER = "youtube_timedtext_cue_order"
 VIDEO_KIND = "video"
 COMMENT_KIND = "comment"
 
@@ -102,7 +155,18 @@ COMMENT_KIND = "comment"
 SEARCH_OPERATION = "search"
 NEXT_OPERATION = "next"
 PLAYER_OPERATION = "player"
-INNERTUBE_OPERATIONS = (SEARCH_OPERATION, NEXT_OPERATION, PLAYER_OPERATION)
+# The fourth, and the only one that spans two routes: page one asks the player
+# for the caption track list, page two reads the track off the timed-text
+# endpoint the player itself named. It is a discovery step because it pages —
+# the core spends the continuation page one publishes — and a hydration step
+# authorizes one call per hit and no continuation at all.
+TRANSCRIPT_OPERATION = "transcript"
+INNERTUBE_OPERATIONS = (
+    SEARCH_OPERATION,
+    NEXT_OPERATION,
+    PLAYER_OPERATION,
+    TRANSCRIPT_OPERATION,
+)
 
 # Where each answer keeps what it returned. Declared, never searched for: a
 # parser that hunts for a familiar-looking list is inferring by similarity, and
@@ -153,14 +217,31 @@ ATTESTED_PLAYABILITY = ("UNPLAYABLE", "ERROR")
 # a capability that is merely deferred.
 CREDENTIAL_PLAYABILITY = ("LOGIN_REQUIRED", "AGE_VERIFICATION_REQUIRED")
 
-# Where the caption tracks would be listed, and the field a caption fetcher
-# would need. The path is read to learn whether the list is empty and for
-# nothing else; the field below is named here so a reader knows this module has
-# seen it, and is read nowhere in this file — no branch, no record, no warning.
-# Retrieval is deferred by the spec with a named reopen condition, and a count
-# of zero reads of this name is how that stays checkable from outside.
+# Where the caption tracks are listed, and the field the transcript operation
+# spends. Both are read now: the 2026-08-10 deferral held because every client
+# then measured answered with an empty list, and the `ANDROID` client above
+# answers with a populated one.
 CAPTION_TRACKS_PATH = ("captions", "playerCaptionsTracklistRenderer", "captionTracks")
 CAPTION_FETCH_FIELD = "baseUrl"
+CAPTION_LANGUAGE_FIELD = "languageCode"
+CAPTION_KIND_FIELD = "kind"
+# What the origin calls a track it generated itself. A caller asking for a
+# language gets that language whichever kind it is; a caller asking for none
+# gets a human-written track over a generated one, because the first is what
+# the publisher meant to say.
+CAPTION_ASR_KIND = "asr"
+
+# The timed-text format this package asks for, and the shape it answers in.
+# `json3` rather than the `srv3` the track's own address names: both answered
+# 200 on 2026-08-17 and only one of them is JSON, which is a payload this
+# package can read without a parser it does not have.
+TIMEDTEXT_FORMAT_PARAM = "fmt"
+TIMEDTEXT_FORMAT = "json3"
+TIMEDTEXT_EVENTS_KEY = "events"
+TIMEDTEXT_SEGMENTS_KEY = "segs"
+TIMEDTEXT_TEXT_KEY = "utf8"
+TIMEDTEXT_START_KEY = "tStartMs"
+TIMEDTEXT_DURATION_KEY = "dDurationMs"
 
 # Every other key this module reads, under the payload's own names.
 VIDEO_ID_KEY = "videoId"
@@ -290,6 +371,15 @@ def route_date_to_utc_iso(published: Any) -> Tuple[str, bool]:
     return (moment.astimezone(timezone.utc).strftime(RECORD_INSTANT_FORMAT), False)
 
 
+def caption_tracks(payload: Mapping[str, Any]) -> Tuple[Mapping[str, Any], ...]:
+    """Every caption track this answer listed, in the order it listed them."""
+
+    tracks = dig(payload, CAPTION_TRACKS_PATH)
+    if not isinstance(tracks, list):
+        return ()
+    return tuple(track for track in tracks if isinstance(track, Mapping))
+
+
 def captions_withheld(payload: Mapping[str, Any]) -> bool:
     """Whether this answer listed no caption track at all.
 
@@ -297,10 +387,37 @@ def captions_withheld(payload: Mapping[str, Any]) -> bool:
     names the cause: PoToken/BotGuard attestation. So an empty list is a
     statement about this client and not about the video, and the one thing a
     caller must never read off it is that the video has no captions.
+
+    That reading still holds for a client that cannot attest. It does not hold
+    for the `ANDROID` client this module now asks `player` with, which answered
+    with a populated list on 2026-08-17 — so an empty list from *that* client is
+    reported as an empty list rather than as a withholding, and the transcript
+    operation says the video lists no track.
     """
 
-    tracks = dig(payload, CAPTION_TRACKS_PATH)
-    return not (isinstance(tracks, list) and tracks)
+    return not caption_tracks(payload)
+
+
+def chosen_track(
+    tracks: Tuple[Mapping[str, Any], ...], language: str
+) -> Optional[Mapping[str, Any]]:
+    """The one track a transcript read spends, under a stated rule.
+
+    A named language wins, exactly, whichever kind it is. Absent one: a track
+    the publisher wrote beats one the platform generated, and among equals the
+    order the origin listed them in decides. Nothing here prefers English —
+    a video's own language is the one thing the origin did state.
+    """
+
+    if language:
+        for track in tracks:
+            if _text(track.get(CAPTION_LANGUAGE_FIELD)) == language:
+                return track
+        return None
+    for track in tracks:
+        if _text(track.get(CAPTION_KIND_FIELD)) != CAPTION_ASR_KIND:
+            return track
+    return tracks[0] if tracks else None
 
 
 def _text(value: Any) -> str:
@@ -744,6 +861,83 @@ def _page_from(
     return _player_page(response, payload)
 
 
+TRANSCRIPT_KIND = "transcript"
+
+# What a transcript's first page hands its second. It is the track's own signed
+# query, exactly as the origin wrote it, with the format this package reads
+# asked for — a continuation is the origin's own statement of where the next
+# read is, and this one is that statement verbatim.
+CURSOR_VIDEO_FIELD = "sr_video"
+CURSOR_LANGUAGE_FIELD = "sr_lang"
+CURSOR_KIND_FIELD = "sr_kind"
+
+
+def transcript_cursor(video_id: str, track: Mapping[str, Any]) -> str:
+    """One caption track's own address, as the continuation page two spends.
+
+    The track's `baseUrl` carries a signature and an expiry this package
+    neither makes nor reads; it is carried whole. The three fields added
+    alongside it are what the record needs and the address does not always
+    say: which video it belongs to, and which track was chosen.
+    """
+
+    address = _text(track.get(CAPTION_FETCH_FIELD))
+    if not address:
+        return ""
+    query = urllib.parse.urlsplit(address).query
+    pairs = [
+        (name, value)
+        for name, value in urllib.parse.parse_qsl(query, keep_blank_values=True)
+        if name != TIMEDTEXT_FORMAT_PARAM
+    ]
+    pairs.append((TIMEDTEXT_FORMAT_PARAM, TIMEDTEXT_FORMAT))
+    pairs.append((CURSOR_VIDEO_FIELD, video_id))
+    pairs.append((CURSOR_LANGUAGE_FIELD, _text(track.get(CAPTION_LANGUAGE_FIELD))))
+    pairs.append((CURSOR_KIND_FIELD, _text(track.get(CAPTION_KIND_FIELD))))
+    return urllib.parse.urlencode(pairs)
+
+
+def transcript_params(cursor: str) -> Dict[str, str]:
+    """The continuation, back as the parameters the timed-text route is asked with."""
+
+    return dict(urllib.parse.parse_qsl(cursor, keep_blank_values=True))
+
+
+def transcript_text(payload: Any) -> Tuple[str, int, int]:
+    """One `json3` track as its own text, its cue count, and where it ends.
+
+    Cues are joined in the order the origin listed them, one line each.
+    A cue the origin sent as whitespace alone is dropped, because `json3`
+    spaces its cues that way and a line of nothing is not a line the speaker
+    said.
+    """
+
+    events = payload.get(TIMEDTEXT_EVENTS_KEY) if isinstance(payload, Mapping) else None
+    if not isinstance(events, list):
+        return ("", -1, 0)
+    lines = []
+    end_ms = 0
+    for event in events:
+        if not isinstance(event, Mapping):
+            continue
+        start = exact_count(event.get(TIMEDTEXT_START_KEY))
+        duration = exact_count(event.get(TIMEDTEXT_DURATION_KEY))
+        if start is not None:
+            end_ms = max(end_ms, start + (duration or 0))
+        segments = event.get(TIMEDTEXT_SEGMENTS_KEY)
+        if not isinstance(segments, list):
+            continue
+        said = "".join(
+            _text(segment.get(TIMEDTEXT_TEXT_KEY))
+            for segment in segments
+            if isinstance(segment, Mapping)
+        )
+        held = " ".join(said.split())
+        if held:
+            lines.append(held)
+    return (chr(10).join(lines), len(lines), end_ms)
+
+
 def operation_for(request: AdapterRequest) -> Tuple[str, str]:
     """The operation this call performs, and the argument it performs it on.
 
@@ -768,14 +962,227 @@ def operation_for(request: AdapterRequest) -> Tuple[str, str]:
     return (PLAYER_OPERATION if request.target_ids else SEARCH_OPERATION, named)
 
 
+def _transcript_record(
+    video_id, language, kind, text, cues, end_ms
+):
+    named = [
+        (CAPTION_LANGUAGE_FIELD, language),
+        (CAPTION_KIND_FIELD, kind or "published"),
+        ("cue_count", str(cues)),
+        ("duration_ms", str(end_ms)),
+    ]
+    return NativeRecord(
+        canonical_content_kind=TRANSCRIPT_KIND,
+        canonical_locator=transport.origin_locator(
+            transport.YOUTUBE_INNERTUBE_ROUTE, "/watch?v=" + video_id
+        ),
+        # The video's own id: a transcript is a representation of that video,
+        # which is what makes the two group by strong identity and never merge
+        # — `representation_kind` partitions the key ahead of it.
+        native_item_id=video_id,
+        body=text,
+        attributes=tuple(pair for pair in named if pair[1]),
+        native_position=0,
+    )
+
+
+def _transcript_page(response, cursor):
+    """Page two: one caption track, read at the address page one published."""
+
+    asked = transcript_params(cursor)
+    video_id = asked.get(CURSOR_VIDEO_FIELD, "")
+    if response.status != 200:
+        return build_native_page(
+            TRANSCRIPT_DESCRIPTOR,
+            (),
+            observed_at=response.observed_at,
+            native_order=TRANSCRIPT_NATIVE_ORDER,
+            warnings=(
+                "http status {0} from {1}".format(
+                    response.status, TRANSCRIPT_DESCRIPTOR.route_id
+                ),
+            ),
+            outcome="failed",
+            loss=(HTTP_STATUS,),
+        )
+    try:
+        payload = json.loads(response.body)
+    except ValueError:
+        return build_native_page(
+            TRANSCRIPT_DESCRIPTOR,
+            (),
+            observed_at=response.observed_at,
+            native_order=TRANSCRIPT_NATIVE_ORDER,
+            warnings=(
+                "{0} answered 200 with no json body: a signed caption address"
+                " that has expired answers this way".format(TRANSCRIPT_OPERATION),
+            ),
+            outcome="failed",
+            loss=(MALFORMED_JSON,),
+        )
+    text, cues, end_ms = transcript_text(payload)
+    if cues < 0:
+        return build_native_page(
+            TRANSCRIPT_DESCRIPTOR,
+            (),
+            observed_at=response.observed_at,
+            native_order=TRANSCRIPT_NATIVE_ORDER,
+            warnings=(
+                "{0} answered 200 with no {1} list: the timed-text payload this"
+                " adapter reads has changed shape".format(
+                    TRANSCRIPT_OPERATION, TIMEDTEXT_EVENTS_KEY
+                ),
+            ),
+            outcome="failed",
+            loss=(SCHEMA_DRIFT,),
+        )
+    if not text:
+        return build_native_page(
+            TRANSCRIPT_DESCRIPTOR,
+            (),
+            observed_at=response.observed_at,
+            native_order=TRANSCRIPT_NATIVE_ORDER,
+            warnings=(
+                "{0} answered 200 with {1} cue(s) and no text in any of"
+                " them".format(TRANSCRIPT_OPERATION, cues),
+            ),
+            outcome="empty",
+        )
+    return build_native_page(
+        TRANSCRIPT_DESCRIPTOR,
+        (
+            _transcript_record(
+                video_id,
+                asked.get(CURSOR_LANGUAGE_FIELD, ""),
+                asked.get(CURSOR_KIND_FIELD, ""),
+                text,
+                cues,
+                end_ms,
+            ),
+        ),
+        observed_at=response.observed_at,
+        native_order=TRANSCRIPT_NATIVE_ORDER,
+    )
+
+
+def _with_continuation(page, response, cursor_out, extra_warning=""):
+    """One player page carried forward, with what the next read needs."""
+
+    return build_native_page(
+        DESCRIPTOR,
+        page.records,
+        observed_at=response.observed_at,
+        cursor_out=cursor_out,
+        native_order=NATIVE_ORDER,
+        warnings=page.warnings + ((extra_warning,) if extra_warning else ()),
+        outcome=page.outcome,
+        loss=page.loss,
+    )
+
+
+def _transcript_first_page(response, video_id, language):
+    """Page one: the player answer, and the track the second page will read.
+
+    The video's own record is what this page carries — a transcript read that
+    stopped here still learned the title, the view count and which tracks
+    exist — and the continuation is the chosen track's own address.
+    """
+
+    page = _page_from(response, PLAYER_OPERATION, video_id)
+    if page.outcome != "ok":
+        return page
+    try:
+        payload = json.loads(response.body)
+    except ValueError:
+        return page
+    tracks = caption_tracks(payload if isinstance(payload, Mapping) else {})
+    if not tracks:
+        return _with_continuation(
+            page,
+            response,
+            "",
+            "{0} answered 200 listing no caption track for {1}: this client is"
+            " served tracks where a video has them, so this is the video"
+            " listing none rather than a payload withheld".format(
+                PLAYER_OPERATION, video_id
+            ),
+        )
+    track = chosen_track(tracks, language)
+    if track is None:
+        return _with_continuation(
+            page,
+            response,
+            "",
+            "{0} lists {1} caption track(s) for {2} and none in {3!r}; it"
+            " lists {4}".format(
+                PLAYER_OPERATION,
+                len(tracks),
+                video_id,
+                language,
+                ", ".join(_text(one.get(CAPTION_LANGUAGE_FIELD)) for one in tracks),
+            ),
+        )
+    return _with_continuation(page, response, transcript_cursor(video_id, track))
+
+
+def transcript_target(argument):
+    """``<video id>[:<language>]`` — the id, and the track a caller asked for."""
+
+    video_id, _, language = argument.partition(":")
+    return (video_id.strip(), language.strip())
+
+
 def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> NativePage:
-    """Read one InnerTube operation and return exactly one NativePage."""
+    """Read one InnerTube operation and return exactly one NativePage.
+
+    Four operations over two routes. The transcript operation is the one that
+    spans both: its first page asks `player` on the InnerTube route and its
+    second reads the timed-text route at the address that answer named. That
+    is why it is a discovery step — the core spends the continuation a page
+    published, and a hydration step authorizes none.
+    """
 
     operation, argument = operation_for(request)
+    if operation == TRANSCRIPT_OPERATION:
+        video_id, language = transcript_target(argument)
+        if request.cursor:
+
+            def read_track(response: transport.TransportResponse) -> NativePage:
+                return _transcript_page(response, request.cursor)
+
+            return fetch_one_page(
+                TRANSCRIPT_DESCRIPTOR,
+                carrier,
+                params=transcript_params(request.cursor),
+                parse=read_track,
+                native_order=TRANSCRIPT_NATIVE_ORDER,
+            )
+
+        def read_player(response: transport.TransportResponse) -> NativePage:
+            return _transcript_first_page(response, video_id, language)
+
+        return fetch_one_page(
+            DESCRIPTOR,
+            carrier,
+            params={
+                "endpoint": PLAYER_OPERATION,
+                "client_name": PLAYER_CLIENT_NAME,
+                "client_version": PLAYER_CLIENT_VERSION,
+                "video_id": video_id,
+            },
+            parse=read_player,
+            native_order=NATIVE_ORDER,
+        )
+
     params = {
         "endpoint": operation,
-        "client_name": CLIENT_NAME,
-        "client_version": CLIENT_VERSION,
+        # The player operation presents the client that is served caption
+        # tracks; search and comments keep the web client whose key the route
+        # carries and whose answers this module's parsers were built on.
+        "client_name": PLAYER_CLIENT_NAME if operation == PLAYER_OPERATION else CLIENT_NAME,
+        "client_version": (
+            PLAYER_CLIENT_VERSION if operation == PLAYER_OPERATION else CLIENT_VERSION
+        ),
     }
     if request.cursor:
         # A continuation replaces the argument in the body, which is the shape

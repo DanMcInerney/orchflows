@@ -7,14 +7,25 @@ is no registry, no dynamic import, and no ``getattr`` dispatch, so exact
 search over an adapter's name finds every place the core can call it.
 
 *The run.* One validated manifest becomes one immutable artifact and the
-ledger of how: steps in declared order whatever the mode, one native page per
-adapter call, and the core alone owning the caps and the stop. Nothing here
-runs concurrently. Paging is here and nowhere else: :func:`planned_calls` is
-the only place a manifest becomes an ``AdapterRequest`` and never sets a
+ledger of how: one native page per adapter call, and the core alone owning
+the caps and the stop. Paging is here and nowhere else: :func:`planned_calls`
+is the only place a manifest becomes an ``AdapterRequest`` and never sets a
 cursor, so the continuation :func:`run_step` builds from the page it just read
 is the single site one enters a request at, bounded by the step's ``max_items``,
 by its own ``max_pages`` where it declares one, and by
 :data:`MAX_PAGES_PER_STEP` where it does not.
+
+*Concurrency, and where it stops.* A ``staged`` run executes its steps one at
+a time in declared order. A ``fused`` run executes them as **lanes** — one lane
+per adapter, each lane serial in declared order, lanes overlapping — which is
+exactly the placement :func:`ledger.schedule_of` has always modelled for that
+mode; the model is now what runs. What makes overlap safe is not here: the
+governor takes an origin's lock around every read (:mod:`.pacing`), so an origin
+sees one read at a time whatever the lanes do, and a step's inputs are frozen
+in the manifest, so no lane reads what another produced. The artifact is the
+same either way — records are assembled in declared step order after every lane
+returns — and the one thing the mode moves is wall clock. This is the one
+module that holds a pool.
 
 Three concerns this module used to own were moved to one-read-size siblings
 and are re-exported below under the names they have always had —
@@ -30,16 +41,20 @@ carrier is injected, the clock is injected, and both have offline stand-ins.
 from __future__ import annotations
 
 import time
+from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from typing import Callable, Dict, List, Optional, Tuple
 
 from . import cache, normalize, router, schema, transport
 from .adapters import AdapterDescriptor, AdapterRequest, NativePage, build_native_page
-from .adapters import fake, github_rest, hacker_news, instagram_public
-from .adapters import linkedin_jobs, linkedin_public, public_page, reddit_archive
-from .adapters import reddit_feed
-from .adapters import rss_atom, web_search
-from .adapters import x_guest, x_syndication, youtube_innertube
+from .adapters import bluesky, fake, github_rest, hacker_news, instagram_public
+from .adapters import linkedin_jobs, linkedin_public, open_page, prediction_markets
+from .adapters import public_page
+from .adapters import reddit_archive
+from .adapters import reddit_feed, reddit_shreddit
+from .adapters import rss_atom, stocktwits, web_search
+from .adapters import x_fxtwitter, x_guest, x_syndication, youtube_innertube
 from .ledger import (
     ADDITIVE_METRICS,
     METRIC_ORDINALS,
@@ -87,17 +102,23 @@ from .pacing import (
 # registry: exact search over an id still finds the two branches below, and a
 # later adapter listed here without both of them fails loudly.
 ADAPTER_IDS = (
+    "bluesky",
     "fake",
     "github_rest",
     "hacker_news",
     "instagram_public",
     "linkedin_jobs",
     "linkedin_public",
+    "open_page",
+    "prediction_markets",
     "public_page",
     "reddit_archive",
     "reddit_feed",
+    "reddit_shreddit",
     "rss_atom",
+    "stocktwits",
     "web_search",
+    "x_fxtwitter",
     "x_guest",
     "x_syndication",
     "youtube_innertube",
@@ -125,6 +146,8 @@ class RunnerError(RuntimeError):
 def descriptor_for(adapter_id: str) -> Optional[AdapterDescriptor]:
     """Literal branches only. An unknown adapter is refused, never guessed."""
 
+    if adapter_id == "bluesky":
+        return bluesky.DESCRIPTOR
     if adapter_id == "fake":
         return fake.DESCRIPTOR
     if adapter_id == "github_rest":
@@ -137,16 +160,26 @@ def descriptor_for(adapter_id: str) -> Optional[AdapterDescriptor]:
         return linkedin_jobs.DESCRIPTOR
     if adapter_id == "linkedin_public":
         return linkedin_public.DESCRIPTOR
+    if adapter_id == "open_page":
+        return open_page.DESCRIPTOR
+    if adapter_id == "prediction_markets":
+        return prediction_markets.DESCRIPTOR
     if adapter_id == "public_page":
         return public_page.DESCRIPTOR
     if adapter_id == "reddit_archive":
         return reddit_archive.DESCRIPTOR
     if adapter_id == "reddit_feed":
         return reddit_feed.DESCRIPTOR
+    if adapter_id == "reddit_shreddit":
+        return reddit_shreddit.DESCRIPTOR
     if adapter_id == "rss_atom":
         return rss_atom.DESCRIPTOR
+    if adapter_id == "stocktwits":
+        return stocktwits.DESCRIPTOR
     if adapter_id == "web_search":
         return web_search.DESCRIPTOR
+    if adapter_id == "x_fxtwitter":
+        return x_fxtwitter.DESCRIPTOR
     if adapter_id == "x_guest":
         return x_guest.DESCRIPTOR
     if adapter_id == "x_syndication":
@@ -161,6 +194,8 @@ def call_adapter(
 ) -> NativePage:
     """One bounded adapter call returning exactly one NativePage."""
 
+    if adapter_id == "bluesky":
+        return bluesky.fetch_native_page(carrier, request)
     if adapter_id == "fake":
         return fake.fetch_native_page(carrier, request)
     if adapter_id == "github_rest":
@@ -173,16 +208,26 @@ def call_adapter(
         return linkedin_jobs.fetch_native_page(carrier, request)
     if adapter_id == "linkedin_public":
         return linkedin_public.fetch_native_page(carrier, request)
+    if adapter_id == "open_page":
+        return open_page.fetch_native_page(carrier, request)
+    if adapter_id == "prediction_markets":
+        return prediction_markets.fetch_native_page(carrier, request)
     if adapter_id == "public_page":
         return public_page.fetch_native_page(carrier, request)
     if adapter_id == "reddit_archive":
         return reddit_archive.fetch_native_page(carrier, request)
     if adapter_id == "reddit_feed":
         return reddit_feed.fetch_native_page(carrier, request)
+    if adapter_id == "reddit_shreddit":
+        return reddit_shreddit.fetch_native_page(carrier, request)
     if adapter_id == "rss_atom":
         return rss_atom.fetch_native_page(carrier, request)
+    if adapter_id == "stocktwits":
+        return stocktwits.fetch_native_page(carrier, request)
     if adapter_id == "web_search":
         return web_search.fetch_native_page(carrier, request)
+    if adapter_id == "x_fxtwitter":
+        return x_fxtwitter.fetch_native_page(carrier, request)
     if adapter_id == "x_guest":
         return x_guest.fetch_native_page(carrier, request)
     if adapter_id == "x_syndication":
@@ -210,14 +255,26 @@ def surface_descriptors(adapter_id: str) -> Tuple[AdapterDescriptor, ...]:
     adapter reads.
     """
 
+    if adapter_id == "bluesky":
+        return bluesky.SURFACE_DESCRIPTORS
     if adapter_id == "github_rest":
         return github_rest.SURFACE_DESCRIPTORS
     if adapter_id == "hacker_news":
         return hacker_news.SURFACE_DESCRIPTORS
+    if adapter_id == "prediction_markets":
+        return prediction_markets.SURFACE_DESCRIPTORS
     if adapter_id == "public_page":
         return public_page.SURFACE_DESCRIPTORS
+    if adapter_id == "reddit_shreddit":
+        return reddit_shreddit.SURFACE_DESCRIPTORS
+    if adapter_id == "stocktwits":
+        return stocktwits.SURFACE_DESCRIPTORS
+    if adapter_id == "web_search":
+        return web_search.SURFACE_DESCRIPTORS
     if adapter_id == "x_guest":
         return x_guest.SURFACE_DESCRIPTORS
+    if adapter_id == "youtube_innertube":
+        return youtube_innertube.SURFACE_DESCRIPTORS
     descriptor = descriptor_for(adapter_id)
     return () if descriptor is None else (descriptor,)
 
@@ -242,14 +299,53 @@ def planned_calls(step: schema.AcquisitionStep) -> Tuple[Tuple[AdapterRequest, s
     """
 
     if step.kind == "discovery":
-        return ((AdapterRequest(step_id=step.step_id, query=step.query), ""),)
+        return (
+            (
+                AdapterRequest(
+                    step_id=step.step_id,
+                    query=step.query,
+                    window_start=step.window_start,
+                    window_end=step.window_end,
+                ),
+                "",
+            ),
+        )
     return tuple(
         (
-            AdapterRequest(step_id=step.step_id, target_ids=(hit.target_id,)),
+            AdapterRequest(
+                step_id=step.step_id,
+                target_ids=(hit.target_id,),
+                window_start=step.window_start,
+                window_end=step.window_end,
+            ),
             normalize.normalized_locator(hit.discovery_locator),
         )
         for hit in step.selected_hits
     )
+
+
+def in_window(step: schema.AcquisitionStep, published_at: str) -> bool:
+    """Whether one record's own time falls inside the step's window.
+
+    A record stating no time is inside every window: the filter drops what the
+    origin dated outside the bounds and never decides the unknown. A bound the
+    step left empty binds nothing. Instants compare as the ordering compares
+    them — parsed, never as strings — so a stamp in another spelling sorts as
+    missing and is kept.
+    """
+
+    if not step.window_start and not step.window_end:
+        return True
+    moment = instant_seconds(published_at)
+    if moment is None:
+        return True
+    start = instant_seconds(step.window_start) if step.window_start else None
+    end = instant_seconds(step.window_end) if step.window_end else None
+    if start is not None and moment < start:
+        return False
+    if end is not None and moment > end:
+        return False
+    return True
 
 
 def artifact_id_for(manifest_id: str) -> str:
@@ -347,6 +443,7 @@ def run_step(
     received = 0
     pages = 0
     truncated = False
+    outside_window = 0
 
     # Every call this step will make. A discovery step's continuations are
     # appended as they are earned, one per page that offers a cursor worth
@@ -355,10 +452,29 @@ def run_step(
     spent_cursors = {""}
     page_index = 0
 
+    if (
+        step.kind == "discovery"
+        and descriptor.page_size
+        and step.max_items < descriptor.page_size
+    ):
+        # Said before the read, because it is a fact about the cap and not
+        # about the answer: on a surface that answers a page per call, a cap
+        # under the page buys no saving and drops the rest of the page.
+        warnings.append(
+            "max_items {0} is below this surface's page size {1}: one read returns"
+            " up to {1} rows and the rows past the cap are dropped at no saving".format(
+                step.max_items, descriptor.page_size
+            )
+        )
+
     while page_index < len(calls):
         request, discovery_locator = calls[page_index]
-        if len(records) >= step.max_items:
+        if step.kind == "discovery" and len(records) >= step.max_items:
             # The core owns stop: no further call is made once the cap is met.
+            # A hydration step is not stopped here — every one of its calls was
+            # authorized by name, and its cap bounds each answer rather than
+            # the sum, so a first hit that answers richly cannot starve the
+            # ones the caller also selected.
             truncated = True
             break
         began_us = tick_us(clock)
@@ -406,12 +522,22 @@ def run_step(
                 records_received=len(page.records),
             )
         )
-        room = step.max_items - len(records)
-        if len(page.records) > room:
+        # The window first, then the cap: a row the origin dated outside the
+        # step's bounds is dropped before it can spend the cap, so the cap is
+        # spent in-window. Nothing undated is dropped here.
+        windowed = tuple(
+            native for native in page.records if in_window(step, native.published_at)
+        )
+        outside_window += len(page.records) - len(windowed)
+        # A discovery step's cap bounds the whole step; a hydration step's cap
+        # bounds each authorized call, which is what "one call per hit" makes
+        # the honest unit.
+        room = step.max_items if step.kind == "hydration" else step.max_items - len(records)
+        if len(windowed) > room:
             truncated = True
         records.extend(
             normalize.normalize_page(
-                replace(page, records=page.records[:room]),
+                replace(page, records=windowed[:room]),
                 step,
                 artifact_id,
                 manifest_id,
@@ -434,6 +560,13 @@ def run_step(
         # A raw cap counts every received record and may drop unseen uniques,
         # and so does a step that stopped while the origin was still offering.
         loss.append("recall_window_partial")
+    if outside_window:
+        # Counted and said, never typed: the bound is the caller's own, so a
+        # row outside it is the step finishing rather than a recall cut short.
+        warnings.append(
+            "{0} record(s) the origin dated outside the step's window were dropped"
+            " before the cap counted them".format(outside_window)
+        )
     outcome = "partial" if truncated else schema.reduce_outcomes(tuple(page_outcomes))
     # The route this step actually read, when its pages agree on one. They
     # always do for an adapter with one surface, and they do for a two-surface
@@ -458,18 +591,102 @@ def run_step(
     )
 
 
+# The most lanes a fused run overlaps. Lanes are per adapter, so this bounds
+# how many origins this package has a read in flight at, and it is well under
+# the roster's adapter count on purpose: a run naming every adapter still puts
+# at most this many reads on the wire at once, and the governor's origin locks
+# hold each origin to one whatever this number is.
+MAX_CONCURRENT_LANES = 8
+
+StepOutcome = Tuple[
+    schema.StepResult, Tuple[schema.AcquisitionRecord, ...], Tuple[PlannedOperation, ...]
+]
+
+
+def lanes_of(
+    steps: Tuple[schema.AcquisitionStep, ...],
+) -> "OrderedDict[str, List[schema.AcquisitionStep]]":
+    """The steps grouped by adapter, each group in declared order.
+
+    A lane is one adapter's steps in the order the manifest declared them.
+    Grouping by adapter rather than by origin is the honest cut from here:
+    which route a step reads is the adapter's decision at read time, and every
+    route one adapter reads is paced and locked by the governor whatever lane
+    it runs in. Two adapters on one origin (Reddit's feed and its shreddit
+    partials, YouTube's InnerTube and its channel feed) still take turns —
+    at the origin's lock rather than here.
+    """
+
+    lanes: "OrderedDict[str, List[schema.AcquisitionStep]]" = OrderedDict()
+    for step in steps:
+        lanes.setdefault(step.adapter_id, []).append(step)
+    return lanes
+
+
+def _run_lane(
+    steps: List[schema.AcquisitionStep],
+    carrier: transport.Transport,
+    artifact_id: str,
+    manifest_id: str,
+    clock: Callable[[], float],
+) -> List[StepOutcome]:
+    return [run_step(step, carrier, artifact_id, manifest_id, clock=clock) for step in steps]
+
+
+def run_steps(
+    manifest: schema.AcquisitionManifest,
+    carrier: transport.Transport,
+    artifact_id: str,
+    clock: Callable[[], float] = time.monotonic,
+    lanes: int = MAX_CONCURRENT_LANES,
+) -> Tuple[StepOutcome, ...]:
+    """Every step's outcome, in declared order, however the mode ran them.
+
+    ``staged`` runs the steps one at a time in declared order — a caller
+    stands between one step's output and the next step's input, and a serial
+    line is what that models. ``fused`` runs each adapter's steps as one lane
+    and overlaps up to ``lanes`` of them on a pool, which is the placement
+    :func:`ledger.schedule_of` models for it; a manifest with one lane, or a
+    caller asking for one, runs exactly as ``staged`` does. Outcomes come back
+    in declared step order either way, so the artifact built from them is the
+    same artifact.
+
+    ``lanes`` is a ceiling on overlap and never a floor: one is serial, and a
+    number past :data:`MAX_CONCURRENT_LANES` is that constant. A caller whose
+    clock is a fake — every accounting suite in this package — asks for one,
+    because a fake clock advanced by two threads at once measures the
+    interleaving rather than the work.
+    """
+
+    grouped = lanes_of(manifest.steps)
+    workers = max(1, min(lanes, MAX_CONCURRENT_LANES, len(grouped)))
+    if manifest.mode != "fused" or workers < 2:
+        return tuple(_run_lane(list(manifest.steps), carrier, artifact_id, manifest.manifest_id, clock))
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = [
+            pool.submit(_run_lane, steps, carrier, artifact_id, manifest.manifest_id, clock)
+            for steps in grouped.values()
+        ]
+        by_step_id: Dict[str, StepOutcome] = {}
+        for future in futures:
+            for outcome in future.result():
+                by_step_id[outcome[0].step_id] = outcome
+    return tuple(by_step_id[step.step_id] for step in manifest.steps)
+
+
 def run_scheduled(
     manifest: schema.AcquisitionManifest,
     carrier: Optional[transport.Transport] = None,
     clock: Callable[[], float] = time.monotonic,
     dispatch_ordinal: int = 0,
     start_tick_us: int = 0,
+    lanes: int = MAX_CONCURRENT_LANES,
 ) -> ScheduledRun:
     """Run one validated manifest to one immutable artifact and its work ledger.
 
-    Steps are executed in declared order whatever the mode, so an artifact is
-    the same artifact either way; the mode reaches only the schedule the ledger
-    records.
+    Outcomes are assembled in declared order whatever the mode, so an artifact
+    is the same artifact either way; the mode reaches the wall clock the run
+    spends and the schedule the ledger records, and nothing a step produces.
 
     Naming no carrier is the documented call, and it gets the composed one:
     :func:`pacing.paced_carrier`, a rate governor over a run-local cache. A
@@ -484,10 +701,9 @@ def run_scheduled(
     steps: List[schema.StepResult] = []
     records: List[schema.AcquisitionRecord] = []
     operations: List[PlannedOperation] = []
-    for step in manifest.steps:
-        result, step_records, step_operations = run_step(
-            step, reached, artifact_id, manifest.manifest_id, clock=clock
-        )
+    for result, step_records, step_operations in run_steps(
+        manifest, reached, artifact_id, clock=clock, lanes=lanes
+    ):
         steps.append(result)
         records.extend(step_records)
         operations.extend(step_operations)
@@ -528,6 +744,7 @@ def run_acquisition(
     manifest: schema.AcquisitionManifest,
     carrier: Optional[transport.Transport] = None,
     clock: Callable[[], float] = time.monotonic,
+    lanes: int = MAX_CONCURRENT_LANES,
 ) -> schema.AcquisitionArtifact:
     """Run one validated manifest to one immutable artifact.
 
@@ -535,4 +752,4 @@ def run_acquisition(
     :func:`run_scheduled`.
     """
 
-    return run_scheduled(manifest, carrier, clock=clock).artifact
+    return run_scheduled(manifest, carrier, clock=clock, lanes=lanes).artifact

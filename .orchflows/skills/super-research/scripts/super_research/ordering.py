@@ -32,6 +32,11 @@ ORDERING_CONTRACT = (
     "most_replied",
 )
 FAMILY_SCOPED_ORDERS = ("newest", "native_top", "most_commented", "most_replied")
+# The two views that rank by an engagement snapshot, and so the two that can
+# find nothing to rank by: `order_records` refuses them over a set in which no
+# record has an eligible snapshot rather than answering with chronology under
+# a counted name.
+COUNTED_ORDERS = ("most_commented", "most_replied")
 
 # A missing value sorts after every present one, and every string is compared
 # as unsigned UTF-8 bytes over its NFC form, so ordering never depends on a
@@ -229,9 +234,55 @@ def order_records(
                 "{0} ranks within one platform/content family; got {1}".format(order, families)
             )
     declared = runner.declared_descriptors() if descriptors is None else descriptors
+    if order in COUNTED_ORDERS and ordered:
+        # A counted view over a set in which nothing counts is not that view:
+        # every metric key would be MISSING and the sort would fall through
+        # to chronology while still answering to the counted name. Measured
+        # 2026-08-17: a frozen `as_of` set at noon over records observed at
+        # half past silently returned `newest` under `most_commented`. Two
+        # causes, one sentence each, and the horizon that would admit them.
+        eligible = [
+            record
+            for record in ordered
+            if eligible_snapshot(record, _declared_metric(record, declared, order), as_of)
+            is not None
+        ]
+        if not eligible:
+            horizon = observation_horizon(ordered)
+            metrics = sorted({_declared_metric(record, declared, order) for record in ordered})
+            if metrics == [""]:
+                raise OrderingError(
+                    "{0} has no eligible metric: no surface these records came from"
+                    " declares one, so this set has no counted order".format(order)
+                )
+            raise OrderingError(
+                "{0} found no eligible {1} snapshot at or before as_of {2}: the"
+                " records were observed at {3} at the latest, so a frozen horizon"
+                " before that admits nothing — order at or after the observation"
+                " horizon, and label the second horizon".format(
+                    order, "/".join(name for name in metrics if name), as_of, horizon
+                )
+            )
     return tuple(
         sorted(ordered, key=lambda record: ordering_key(record, order, as_of, declared))
     )
+
+
+def observation_horizon(records: Iterable[schema.AcquisitionRecord]) -> str:
+    """The latest moment any engagement in this set was observed, or nothing.
+
+    The smallest ``as_of`` under which every snapshot in the set is eligible.
+    A caller that froze its horizon before its own reads applies this one as a
+    second, labelled ordering horizon — post hoc, with zero re-acquisition —
+    which is the honest repair for a replay whose horizon predates its data.
+    """
+
+    latest = ""
+    for record in records:
+        for snapshot in record.engagement:
+            if instant_seconds(snapshot.observed_at) is not None and snapshot.observed_at > latest:
+                latest = snapshot.observed_at
+    return latest
 
 
 # Imported last, and as a module rather than by name. This module reads the
