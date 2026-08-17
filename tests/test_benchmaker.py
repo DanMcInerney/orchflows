@@ -152,7 +152,11 @@ DONE_CHECK_FIELDS = ("qualification", "`covers`", "gaps", "PASS")
 # reword a two-file change.
 MOVED_OUT_OF_PROTOCOL = (
     ("Internal call carriage", ROOT / "contracts" / "work-item.md", "## Dispatch"),
-    ("coverage floor never moves", EVAL_DESIGN, "not tradable"),
+    # The coverage floor's row is not here:
+    # `test_the_coverage_floor_law_has_one_owner_and_one_carrier` below is
+    # that fact's owner and asserts both halves already -- the owner's three
+    # anchors, and `coverage floor` absent from the protocol, which is
+    # stronger than this row's absence half. One fact, one test.
     (
         "Materialize the selected case specifications",
         TEMPLATE / "02-materialize.md",
