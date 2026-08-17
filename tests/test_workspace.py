@@ -547,15 +547,19 @@ class TestScriptShape(unittest.TestCase):
     def collapsed(text: str) -> str:
         return " ".join(text.split())
 
-    def test_the_module_docstring_documents_the_exit_code_deviation(self):
+    def test_the_module_docstring_names_what_the_deviation_is_read_against(self):
+        """The names, never the sentences. That the deviation is real -- a
+        `tickets.py` payload reporting failure at exit 0, graded by
+        `workspace.py` into a non-zero exit -- is
+        `TestTicketsPayloadIsGradedNotItsExitStatus`'s to decide, and it does.
+        What a docstring check can still hold is that a reader of the
+        deviation is routed at the two files it is read against
+        (docs/documentation.md law 5); how that is worded is law 6's, and a
+        pin on the wording went red for every rewrite of it."""
+
         docstring = ast.get_docstring(ast.parse(WORKSPACE_PY.read_text(encoding="utf-8")))
         collapsed = self.collapsed(docstring or "")
-        self.assertIn(
-            "this script does not inherit that script's exit-0 convention",
-            collapsed,
-        )
         self.assertIn("scripts/tickets.py", collapsed)
-        self.assertIn("graded by parsing the returned payload", collapsed)
         self.assertIn("contracts/work-item.md", collapsed)
 
     def test_the_resolvers_are_imported_never_copied(self):

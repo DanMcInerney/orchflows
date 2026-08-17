@@ -295,15 +295,18 @@ class TestBuildStrippedPath(unittest.TestCase):
             self.assertEqual(entries, [str(exe_dir.resolve())])
 
 
-class TestSnapshotDocstring(unittest.TestCase):
-    """The docstring promises what ``diff_full_snapshot`` delivers.
+class TestSnapshotDirection(unittest.TestCase):
+    """``diff_full_snapshot`` fails on what a run adds, never on what it
+    changes.
 
-    The two disagreed: the docstring said the guard fails "on any
-    difference" while every watched tree is diffed ``added_only``, so a
-    changed or removed entry is no failure and the sentence over-promised
-    a guard nobody had. The tests above pin the code's direction —
-    additions in the trees, byte-identity in the friction streams — and
-    a claim a test contradicts is the half that moves.
+    The docstring once said the guard fails "on any difference" while every
+    watched tree is diffed ``added_only``, so the sentence over-promised a
+    guard nobody had. What settled that is this direction being pinned
+    here and in the tests above -- additions in the trees, byte-identity in
+    the friction streams. The docstring's wording is
+    docs/documentation.md law 6's to keep true against them, not a string
+    for a check to hold: a pin on the sentence went red for every rewrite
+    and caught no behavior these do not.
     """
 
     def test_a_changed_entry_in_a_watched_tree_is_no_failure(self):
@@ -313,10 +316,12 @@ class TestSnapshotDocstring(unittest.TestCase):
         )
         self.assertEqual(problems, [])
 
-    def test_the_docstring_claims_additions_and_never_any_difference(self):
-        clause = " ".join(suite_check.__doc__.split())
-        self.assertNotIn("failing on any difference", clause)
-        self.assertIn("failing on any entry a run adds", clause)
+    def test_an_added_entry_in_a_watched_tree_is_a_failure(self):
+        problems = suite_check.diff_full_snapshot(
+            {"friction_hashes": {}, "trees": {"orch": {"a": "file:1"}}},
+            {"friction_hashes": {}, "trees": {"orch": {"a": "file:1", "b": "file:1"}}},
+        )
+        self.assertTrue(problems)
 
 
 class TestPreflightMatrix(unittest.TestCase):

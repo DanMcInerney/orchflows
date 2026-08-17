@@ -150,53 +150,64 @@ class AdvisoryExitZeroTest(unittest.TestCase):
         self.assertTrue(affirmed, result.stdout)
 
 
+EXIT_ENTRY_RE = re.compile(r"^ {2}(\d+) {2}(\S.*)$")
+
+
+def epilog_exit_entries(help_text):
+    """The statuses the `exit status:` section documents, each to its own
+    opening line. A status with no entry is the defect; what the entry says
+    is the epilog's to word."""
+
+    entries, inside = {}, False
+    for line in help_text.splitlines():
+        if line.rstrip() == "exit status:":
+            inside = True
+            continue
+        if not inside:
+            continue
+        if line.strip() and not line.startswith(" "):
+            break
+        match = EXIT_ENTRY_RE.match(line)
+        if match:
+            entries[int(match.group(1))] = match.group(2)
+    return entries
+
+
 class ExitCodeEpilogTest(unittest.TestCase):
-    """`--help` names each exit status, and says a verdict stays on its host.
+    """`--help` documents each exit status the tool returns, and names the
+    class that makes a verdict unportable.
+
+    Statuses and names, never the epilog's sentences: what each status *means*
+    is graded next door -- `AdvisoryExitZeroTest` for 0, `DiscriminationTest`
+    for 1, `HeadCloneRefusalTest` for 2 -- so a check here that read the wording
+    would only pin prose (packs/orch-code-pack/references/craft.md). What is
+    mechanized here is that the section exists, that it holds one entry per
+    status, and that the names it routes a reader by are the module's own
+    (docs/documentation.md law 5).
 
     Spawned, and spawned once. The epilog is what argparse prints for an argv
     this process never assembles and a status the operating system reports, so
-    a real process is the only thing that can be asked; five assertions read
-    that one output, so `setUpClass` and not `setUp`, which is four spawns of
-    the same reading.
+    a real process is the only thing that can be asked; the assertions read
+    that one output, so `setUpClass` and not `setUp`.
     """
 
     @classmethod
     def setUpClass(cls):
         cls.result = run_cutcheck_subprocess(["--help"])
         cls.help = " ".join(cls.result.stdout.split())
+        cls.entries = epilog_exit_entries(cls.result.stdout)
 
     def setUp(self):
         self.assertEqual(self.result.returncode, 0, self.result.stderr)
 
-    def test_zero_is_no_finding_outside_the_advisory_set_and_not_a_clean_set(self):
-        self.assertIn(
-            "0 Cutcheck's exit 0 means no finding whose class lies outside the "
-            "advisory set, not that the set is clean: an advisory finding is "
-            "reported and exits 0.",
-            self.help,
-        )
+    def test_every_status_the_tool_returns_has_its_own_entry(self):
+        self.assertEqual({0, 1, 2}, set(self.entries), self.result.stdout)
+        self.assertIn(cutcheck.NO_TICKET_SET, self.entries)
+        for status, text in sorted(self.entries.items()):
+            self.assertTrue(text.strip(), status)
 
-    def test_one_is_a_finding_outside_the_advisory_set(self):
-        self.assertIn(
-            "1 At least one finding whose class lies outside the advisory set.",
-            self.help,
-        )
-
-    def test_two_is_no_ticket_set_and_argparses_own_usage_error(self):
-        self.assertIn(
-            "2 No ticket set resolved for the run; argparse's own usage error "
-            "exits 2 as well.",
-            self.help,
-        )
-
-    def test_a_verdict_is_read_only_on_the_host_that_produced_it(self):
-        self.assertIn(
-            "A cut verdict is not portable between hosts. An oracle naming an "
-            "interpreter one host lacks is reported there as unrunnable-oracle "
-            "and is silent here, so a verdict is read only on the host that "
-            "produced it.",
-            self.help,
-        )
+    def test_the_portability_note_names_the_class_that_makes_it_unportable(self):
+        self.assertIn(cutcheck.UNRUNNABLE_ORACLE, self.help)
 
     def test_the_epilog_leaves_the_families_to_the_module_docstring(self):
         for family in sorted(set(cutcheck.FAMILY_OF.values())):
