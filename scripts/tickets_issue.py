@@ -1,0 +1,301 @@
+"""Ticket issue support."""
+
+from __future__ import annotations
+from datetime import datetime, timezone
+if __package__:
+    from .tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, INSTRUCTION_BUDGET, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _split_commas, _write_section, instruction_words, ticket_defects
+else:
+    from tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, INSTRUCTION_BUDGET, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _split_commas, _write_section, instruction_words, ticket_defects
+if __package__:
+    from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity
+else:
+    from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity
+
+AMENDABLE_STATUSES = frozenset({'pending', 'ready'})
+GATE_ID_MARKER = '.gate.'
+NEW_USAGE = 'new <run> <id> --executor E --objective TEXT --criterion C [--criterion C ...] [--depends-on a,b] [--write-scope p[,p]] [--bound B] [--pack P] [--input I ...] [--excluded X ...] [--profile P] [--independence gate|checker] [--isolation required|none] [--return-fields TEXT] | new <run> [<id>] --file <path>'
+NEW_DEFAULT_BOUND = f'{DEFAULT_BOUND_MINUTES}m'
+NEW_DEFAULT_INPUTS = 'None.'
+NEW_DEFAULT_RETURN_FIELDS = 'status; result (what changed, by identity); verification; feedback; risks'
+INDEPENDENCE_VALUES = ('gate', 'checker')
+ISOLATION_VALUES = (REQUIRED_ISOLATION, 'none')
+AMEND_USAGE = 'amend <run> <id> --section <name> (--file <path> | --text <string>)'
+def _distinct_gate_lenses(lenses: list) -> list:
+    """Return ``lenses`` or refuse a repeated review identity.
+
+    A second adversarial review is represented by another named lens. Two
+    critique stubs with one label are one review identity written twice, not
+    additional independence.
+    """
+    seen = set()
+    repeated = []
+    for lens in lenses:
+        identity = lens.casefold()
+        if identity in seen and lens not in repeated:
+            repeated.append(lens)
+        seen.add(identity)
+    if repeated:
+        raise ValueError('gate review lenses must be distinct; repeated: ' + ', '.join(repeated))
+    return lenses
+def _frontmatter_list(key: str, values) -> list:
+    """One frontmatter list, as the lines that carry it.
+
+    The inline form ``[a, b]`` splits on the comma and on nothing else —
+    a semicolon inside an entry is part of that entry
+    (``_parse_frontmatter``). So an entry carrying a comma, or a semicolon
+    a reader might take for a separator, is written in the block form
+    instead, one ``- entry`` per line: an excluded action is prose, and
+    prose has commas in it. No second inline separator is offered, because
+    one written shape read two ways is how a scope that was granted and a
+    scope that was refused come to be the same line. Both shapes read back
+    as the same list.
+    """
+    items = list(values)
+    if any((',' in item or ';' in item for item in items)):
+        return [f'{key}:'] + [f'- {item}' for item in items]
+    return [f"{key}: [{', '.join(items)}]"]
+def _render_ticket(fields: dict, sections: list) -> str:
+    """One ticket's markdown: frontmatter in the contract's key order, then
+    its body sections in the contract's section order.
+
+    ``fields`` values are already strings or lists; ``None`` omits an
+    optional key entirely, so nothing is written that the reader would have
+    to interpret as absent.
+    """
+    lines = ['---']
+    for key, value in fields.items():
+        if value is None:
+            continue
+        if isinstance(value, list):
+            lines.extend(_frontmatter_list(key, value))
+        else:
+            lines.append(f'{key}: {value}' if value != '' else f'{key}:')
+    lines.append('---')
+    body = []
+    for heading, content in sections:
+        body.append(f'\n## {heading}\n')
+        if content:
+            body.append(f'\n{content}\n')
+    return '\n'.join(lines) + '\n' + ''.join(body)
+def _cmd_new(rest):
+    """Issue one ticket into the run, or place one already written.
+
+    The cut's own refusal: everything ``ticket_defects`` reports is refused
+    here, before any directory is created, so a ticket that reaches the sink
+    is one every later subcommand accepts. An off-contract cut that lands
+    and is refused at dispatch costs the dispatch; refusing it here costs
+    the flag that was wrong.
+
+    ``--file`` places a ticket its author already wrote, through the same
+    validation and the same refusal to overwrite an id that exists. The run
+    argument and the file's own ``run`` must agree: the argument decides
+    where it lands, and a ticket landing in a run it does not name is a
+    ticket no reader can trace back.
+    """
+    args = list(rest)
+    file_arg = _extract_flag(args, '--file')
+    executor = _extract_flag(args, '--executor')
+    objective = _extract_flag(args, '--objective')
+    criteria = _extract_all(args, '--criterion')
+    depends_on = _extract_flag(args, '--depends-on')
+    write_scope = _extract_flag(args, '--write-scope')
+    bound = _extract_flag(args, '--bound')
+    pack = _extract_flag(args, '--pack')
+    inputs = _extract_all(args, '--input')
+    excluded = _extract_all(args, '--excluded')
+    profile = _extract_flag(args, '--profile')
+    independence = _extract_flag(args, '--independence')
+    isolation = _extract_flag(args, '--isolation')
+    return_fields = _extract_flag(args, '--return-fields')
+    stray = next((arg for arg in args if arg.startswith('-')), None)
+    if stray is not None:
+        return {'error': f'new does not accept {stray}. usage: {NEW_USAGE}'}
+    if file_arg is not None:
+        supplied = [name for name, value in (('--executor', executor), ('--objective', objective), ('--criterion', criteria or None), ('--depends-on', depends_on), ('--write-scope', write_scope), ('--bound', bound), ('--pack', pack), ('--input', inputs or None), ('--excluded', excluded or None), ('--profile', profile), ('--independence', independence), ('--isolation', isolation), ('--return-fields', return_fields)) if value is not None]
+        if supplied:
+            return {'error': f'--file places a ticket already written; it takes none of {supplied}. usage: {NEW_USAGE}'}
+        if not 1 <= len(args) <= 2:
+            return {'error': f'usage: {NEW_USAGE}'}
+        return _place_ticket(args[0], file_arg, args[1] if len(args) == 2 else None)
+    if len(args) != 2:
+        return {'error': f'usage: {NEW_USAGE}'}
+    run, ticket_id = args
+    for kind, value in (('run id', run), ('ticket id', ticket_id)):
+        invalid = _segment_error(kind, value)
+        if invalid is not None:
+            return invalid
+    missing = [name for name, value in (('--executor', executor), ('--objective', objective), ('--criterion', criteria or None)) if value is None]
+    if missing:
+        return {'error': f"new requires {', '.join(missing)}. usage: {NEW_USAGE}"}
+    for flag, value, allowed in (('--independence', independence, INDEPENDENCE_VALUES), ('--isolation', isolation, ISOLATION_VALUES)):
+        if value is not None and value.strip() not in allowed:
+            return {'error': f"{flag} '{value}' is not one of {list(allowed)} (contracts/work-item.md)"}
+    dependencies = _split_commas(depends_on)
+    fields = {'id': ticket_id, 'run': run, 'status': 'pending' if dependencies else 'ready', 'executor': executor, 'pack': pack, 'independence': independence, 'depends_on': dependencies, 'write_scope': _split_commas(write_scope), 'excluded_actions': excluded or None, 'isolation': isolation, 'bound': bound or NEW_DEFAULT_BOUND, 'claimed_by': '', 'claimed_at': '', 'profile': profile}
+    sections = [('Objective', objective), ('Fixed inputs', '\n'.join((f'- {item}' for item in inputs)) or NEW_DEFAULT_INPUTS), ('Completion test', '\n'.join((f'- {item}' for item in criteria))), ('Return fields', return_fields or NEW_DEFAULT_RETURN_FIELDS), ('Result', ''), ('Verification', ''), ('Feedback', '[]'), ('Risks', '[]')]
+    return _issue_ticket(run, ticket_id, _render_ticket(fields, sections))
+def _place_ticket(run: str, source: str, declared_id=None):
+    """``new --file``: one already-written ticket, validated and placed.
+
+    ``declared_id`` is the id the caller stated on the line. The file's own
+    ``id`` is what decides, exactly as its ``run`` field does not: both are
+    checked against the arguments so a ticket landing under a name it does
+    not carry is refused rather than written.
+    """
+    invalid = _segment_error('run id', run)
+    if invalid is not None:
+        return invalid
+    text, failure = _read_utf8(source, 'ticket file')
+    if failure is not None:
+        return failure
+    data = _parse_frontmatter(text)
+    ticket_id = data.get('id') if isinstance(data.get('id'), str) else None
+    if not ticket_id:
+        return {'error': f"ticket file {source} names no 'id' in its frontmatter"}
+    invalid = _segment_error('ticket id', ticket_id)
+    if invalid is not None:
+        return invalid
+    if declared_id is not None and declared_id.strip() != ticket_id.strip():
+        return {'error': f"placed as '{declared_id}', but ticket file {source} names id '{ticket_id}': an id is the file's, and one ticket has one id"}
+    declared = data.get('run')
+    if isinstance(declared, str) and declared.strip() and (declared.strip() != run):
+        return {'error': f"ticket file {source} names run '{declared.strip()}', placed into run '{run}': one ticket belongs to one run"}
+    return _issue_ticket(run, ticket_id, text)
+def _cmd_amend(rest):
+    """Repair one cut-time section of an issued, unclaimed ticket.
+
+    `cutcheck.py` reports cut defects and never edits; the decomposer
+    repairs. Without this the repair had to be a hand edit of the file in the
+    sink, which is the one write path around every refusal `new` applies to
+    the same bytes -- so the amended ticket is graded here exactly as an
+    issued one, and refused whole rather than written half.
+
+    The claim is the closing condition. A cut-time section is the packet the
+    child was dispatched with; moving one under a working executor is the
+    moving target rules/verification.md §3 forbids, and what an executor
+    writes is `result`'s in either direction.
+    """
+    args = list(rest)
+    section = _extract_flag(args, '--section')
+    file_arg = _extract_flag(args, '--file')
+    text_arg = _extract_flag(args, '--text')
+    stray = next((arg for arg in args if arg.startswith('-')), None)
+    if stray is not None:
+        return {'error': f'amend does not accept {stray}. usage: {AMEND_USAGE}'}
+    if len(args) != 2:
+        return {'error': f'usage: {AMEND_USAGE}'}
+    run, ticket_id = args
+    if section is None:
+        return {'error': f'amend requires --section <name>, one of {list(CUT_SECTIONS)}. usage: {AMEND_USAGE}'}
+    canonical = CUT_SECTIONS_BY_KEY.get(section.strip().strip('#').strip().lower())
+    if canonical is None:
+        return {'error': f"section '{section}' is not one of the cut-time sections {list(CUT_SECTIONS)}; the sections an executor writes are written with `result`"}
+    if (file_arg is None) == (text_arg is None):
+        return {'error': f'amend takes one of --file <path> or --text <string>. usage: {AMEND_USAGE}'}
+    if file_arg is not None:
+        body, failure = _read_utf8(file_arg, 'body file')
+        if failure is not None:
+            return failure
+    else:
+        body = text_arg
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {'error': NO_SINK_ERROR}
+    ticket_path = tickets_root / run / f'{ticket_id}.md'
+    if not ticket_path.is_file():
+        return {'error': f'ticket not found: {run}/{ticket_id}'}
+    text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return failure
+    frontmatter = _parse_frontmatter(text)
+    claimed_by = str(frontmatter.get('claimed_by') or '').strip()
+    if claimed_by:
+        return {'error': f"ticket {run}/{ticket_id} is claimed by '{claimed_by}': its cut-time sections are frozen once an executor is working against them (rules/verification.md §3). Queue the change as its own scope, or take the claim back first"}
+    status = str(frontmatter.get('status') or '').strip()
+    if status not in AMENDABLE_STATUSES:
+        return {'error': f"ticket {run}/{ticket_id} is '{status}': its cut-time sections are frozen outside {sorted(AMENDABLE_STATUSES)} (rules/verification.md §3). Queue the change as its own scope"}
+    try:
+        rendered = _write_section(text, canonical, body)
+    except TicketFormatError as error:
+        return {'error': f'{error}. ticket: {ticket_path}'}
+    defects = ticket_defects(rendered)
+    if defects:
+        return {'error': f'the amended ticket {run}/{ticket_id} would be off contract (contracts/work-item.md): ' + '; '.join(defects)}
+    over = _ceiling_error(f'the amended ticket {run}/{ticket_id}', ticket_id, rendered)
+    if over is not None:
+        return over
+    try:
+        ticket_path.write_text(rendered, encoding='utf-8')
+    except OSError as error:
+        return {'error': f'unwritable ticket: {error}'}
+    return {'amend': {'run': run, 'id': ticket_id, 'section': canonical, 'path': str(ticket_path)}}
+def _ceiling_error(subject: str, ticket_id: str, text: str):
+    """The refusal a ticket over the instruction ceiling gets, or ``None``.
+
+    Applied where the cutter still holds the flag that was wrong. An
+    objective enumerating (1)...(5) cannot fit inside the ceiling, which is
+    the point: the ticket that does not fit is two tickets.
+
+    The ceiling is a unit's. A root ticket states a whole run, and each
+    `.gate.` stub carries the root's `## Completion test` verbatim -- `gate`
+    renders them from it -- so grading either against the unit ceiling would
+    refuse what this script itself writes.
+    """
+    if GATE_ID_MARKER in str(ticket_id or ''):
+        return None
+    if _executor_of(_parse_frontmatter(text)) == ROOT_EXECUTOR:
+        return None
+    count = instruction_words(text)
+    if count <= INSTRUCTION_BUDGET:
+        return None
+    return {'error': f'{subject} has a {count}-word instruction, over the {INSTRUCTION_BUDGET}-word ceiling (rules/token-economy.md, section 11): the objective, completion test, excluded actions and return fields a child loads every dispatch, never its fixed inputs. A compound objective is two items, not one longer ticket'}
+def _issue_ticket(run: str, ticket_id: str, text: str):
+    """Grade one rendered ticket, then write it — in that order.
+
+    Nothing is created before the grade: a refused cut leaves the run
+    directory exactly as it found it, including not existing.
+    """
+    defects = ticket_defects(text)
+    if defects:
+        return {'error': f'ticket {run}/{ticket_id} is off contract (contracts/work-item.md): ' + '; '.join(defects)}
+    over = _ceiling_error(f'ticket {run}/{ticket_id}', ticket_id, text)
+    if over is not None:
+        return over
+    if GATE_ID_MARKER in ticket_id:
+        return {'error': f"ticket id '{ticket_id}' is reserved for `tickets.py gate`; new and new --file cannot assemble a partial or alternate gate family"}
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {'error': NO_SINK_ERROR}
+    ticket_path = tickets_root / run / f'{ticket_id}.md'
+    try:
+        with _run_lock(run):
+            if ticket_path.exists():
+                return {'error': f"ticket id '{ticket_id}' is already issued in run '{run}': {ticket_path}. An id is stable once issued (contracts/work-item.md)"}
+            data = _parse_frontmatter(text)
+            if _executor_of(data) == ROOT_EXECUTOR:
+                existing_roots = []
+                run_dir = ticket_path.parent
+                for path in sorted(run_dir.glob('*.md')) if run_dir.is_dir() else []:
+                    loaded = _load_ticket(path)
+                    if 'error' not in loaded and _executor_of(loaded) == ROOT_EXECUTOR:
+                        existing_roots.append(str(loaded.get('id') or path.stem))
+                if existing_roots:
+                    return {'error': f"run '{run}' already has root ticket '{existing_roots[0]}': one physical run has one root and one composite gate. Open a successor run for another deliverable kind. Nothing was written"}
+            identity_dir, identity, refusal = _identity_update(run, datetime.now(timezone.utc))
+            if refusal is not None:
+                return refusal
+            ticket_path.parent.mkdir(parents=True, exist_ok=True)
+            _create_text_exclusively(ticket_path, text)
+            try:
+                if identity is not None:
+                    identity_dir.mkdir(parents=True, exist_ok=True)
+                    _write_identity(identity_dir, identity)
+            except OSError:
+                ticket_path.unlink(missing_ok=True)
+                raise
+    except FileExistsError:
+        return {'error': f"ticket id '{ticket_id}' is already issued in run '{run}': {ticket_path}. An id is stable once issued (contracts/work-item.md)"}
+    except OSError as error:
+        ticket_path.unlink(missing_ok=True)
+        return {'error': f'unwritable ticket: {error}'}
+    return {'new': {'run': run, 'id': ticket_id, 'path': str(ticket_path), 'status': _parse_frontmatter(text).get('status')}}

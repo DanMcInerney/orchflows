@@ -421,6 +421,17 @@ def main(argv=None) -> int:
     import_root, prefix, discovered = discover(tests_dir)
     if not discovered:
         raise SystemExit("run_tests: no test_*.py under " + str(tests_dir))
+    if tests_dir == DEFAULT_TESTS_DIR.resolve() and not args.modules:
+        size_check = subprocess.run(
+            [sys.executable, str(ROOT / "tools" / "check_source_sizes.py")],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            env=child_env(),
+        )
+        if size_check.returncode:
+            emit(size_check.stdout.decode("utf-8", "replace"))
+            print("FAILED: tracked source-size admission")
+            return 1
     selected = (
         [resolve(name, discovered, prefix) for name in args.modules] if args.modules else discovered
     )

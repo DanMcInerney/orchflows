@@ -1,0 +1,258 @@
+"""Shared constants and imports for the orchflows validator."""
+
+from __future__ import annotations
+
+import argparse
+import ast
+import hashlib
+import json
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+
+# What a check says when the tree it grades is not here. One wording, so a
+# reader can grep the report for every check that did not run.
+SKIPPED = "absent; check skipped"
+
+SKILL_TIERS = ("kernel", "engines", "workflows", "instances", "utilities")
+# Words, not lines: a line count is met by widening lines, and was.
+# Markdown link targets are stripped first so a citation costs its label,
+# not its path.
+BODY_BUDGET = {
+    "kernel": 300,
+    "instances": 300,
+    "utilities": 300,
+    "engines": 450,
+    "workflows": 450,
+    "pack": 150,
+}
+LINK_TARGET_RE = re.compile(r"\]\([^)]*\)")
+# rules/token-economy.md §11: every-turn surfaces tightest, every-dispatch
+# units next, every-run units widest. Ceilings only fall.
+SURFACE_BUDGET = {"templates/host-block.md": 400, "AGENTS.md": 300}
+MANIFEST_BUDGET = 250
+# A stub's instruction ceiling is not here: a stub is a ticket before it is
+# issued, and `scripts/tickets.py` refuses an issued one over the same
+# number. `_ticket_law()` reads `INSTRUCTION_BUDGET` and `instruction_words`
+# from there, so the compiler and the sink cannot put the boundary in two
+# places -- this file's own counter charged an excluded action a word for
+# its list marker, and did.
+DESCRIPTION_BUDGET = 140
+ALLOWED_FRONTMATTER_KEYS = {"name", "description", "disable-model-invocation", "role"}
+ROLE_PROFILES = {"orch-planner", "orch-worker"}
+ROLE_VALUES = {"planner", "worker", "none"}
+ROLE_NONE_TIERS = ("engines", "workflows")
+PACK_SIGNATURE_CELLS = (
+    "slicing",
+    "executor",
+    "assembly",
+    "lens",
+    "oracle_policy",
+    "workspace",
+    "required_spec_fields",
+    "craft",
+)
+# The cells whose content is a whole reference file, so the duplication
+# linter compares what they point at rather than the pointer row. `lens`
+# is not among them: it binds a section of `craft`, not a file of its
+# own, and resolving it to craft.md would compare craft's content twice,
+# once under each cell name (REVIEW-2026-08-15
+# T7). Its row is compared as the text it is, which is three words and
+# so sits under CELL_CLAUSE_MIN_WORDS.
+CRAFT_CELLS_BY_POINTER = ("slicing", "oracle_policy", "craft")
+CRAFT_BUDGET = 60
+# Cross-pack cell linter. Both figures are normative: with `doclint`'s
+# ratio under them the reported pair set is a function of these two and of
+# `doclint.DISTINCTIVE_MAX`, so moving any of them changes what the check
+# means, not only what it finds.
+CELL_SIMILARITY_THRESHOLD = 0.55
+CELL_CLAUSE_MIN_WORDS = 5
+
+CALL_TOKEN_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
+REQUIRE_RE = re.compile(r"^Require:", re.MULTILINE)
+NEVER_RE = re.compile(r"^Never:", re.MULTILINE)
+RETURN_RE = re.compile(r"^Return[ :]", re.MULTILINE)
+PACK_TABLE_CELL_RE = re.compile(r"^\|\s*([a-zA-Z_]+)\s*\|", re.MULTILINE)
+PACK_CELL_ROW_RE = re.compile(r"^\|\s*([a-zA-Z_]+)\s*\|\s*(.*?)\s*\|\s*$", re.MULTILINE)
+CRAFT_ROW_RE = re.compile(r"^\|\s*craft\s*\|\s*(.+?)\s*\|", re.MULTILINE)
+ASSEMBLY_SKILL_FORM_RE = re.compile(r"^`[a-z][a-z0-9-]*`$")
+ASSEMBLY_NONE_FORM_RE = re.compile(r"^none\s+—\s+\S.*$")
+CELL_REFERENCE_LINK_RE = re.compile(r"\]\((references/[^)]+)\)")
+TABLE_DELIM_ROW_RE = re.compile(r"^\|(?:\s*:?-{2,}:?\s*\|)+\s*$")
+LIST_MARKER_RE = re.compile(r"^(?:[-*+]|\d+[.)])\s+")
+SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s+")
+OUTSIDE_PACK_CITATION = "](../"
+# The same citation written as prose instead of a link: the reference file
+# behind a pointer cell opens by naming the cell it satisfies, and the cell
+# is contracts/pack-signature.md's, not the pack's. Dropped for
+# OUTSIDE_PACK_CITATION's reason -- convicting it would drive a reference
+# to stop saying which cell owns it.
+SIGNATURE_CELL_POINTER_RE = re.compile(r"per the signature's [a-z_]+ cell")
+# Spans an owner outside the pack mandates, so two packs carrying one carry
+# it by obligation and not by duplication. Stripped before the
+# near-duplicate ratio and nowhere else: the verbatim tier stays over the
+# whole clause, because free content that is identical under a mandated
+# skeleton is a real duplication and still an error.
+MANDATED_FORM_RES = (
+    # contracts/pack-signature.md: `assembly` is a backticked skill name or
+    # the bare word none, an em-dash, and a gloss naming what stands in for
+    # the assembly. validate_pack_signature errors on any third form, so
+    # both the opener and the naming are obligatory, and only the noun
+    # phrase between them is the pack's own.
+    re.compile(r"^none\s+—\s+"),
+    re.compile(r"\b(?:is|are) the assembly$"),
+    # contracts/verdict.md's oracle_class enum -- three tokens -- and
+    # contracts/work-item.md's provenance enum -- two. Both closed, both
+    # T0-pinned, so every oracle row ends in one of six pairs.
+    re.compile(
+        r"\b(?:deterministic|judged|evidence)\s+(?:pre-existing|authored-here)$"
+    ),
+)
+MD_LINK_RE = re.compile(r"\]\(([^)]+)\)")
+LOOP_TRIGGER_RE = re.compile(r"\biterat(?:e|es|ing)\b|\brepeat until\b", re.IGNORECASE)
+BOUND_TERM_RE = re.compile(r"bound|budget", re.IGNORECASE)
+TERMINAL_TERM_RE = re.compile(r"stalled|limited|exit|terminal", re.IGNORECASE)
+
+# --- Result envelope (contracts/result.md) ---------------------------
+#
+# The bound dispatchable units lead their Return: with the envelope --
+# status, result identity, verification. ENVELOPE_UNITS names the units
+# contracts/result.md's Binding paragraph binds. Nothing holds the two
+# equal any more: the check that did is deleted in P2, because a second
+# spelling kept equal to its owner is still a second spelling
+# (REVIEW-2026-08-15 T2). The residual risk is one-directional and small
+# -- a unit dropped from this list stops being checked rather than
+# silently passing a check it fails -- and the contract is hash-pinned, so
+# the paragraph cannot move without a supersession PR.
+# Mechanized as a first-clause vocabulary lint, tolerant
+# of prose ordering within that clause; a Return whose first clause
+# instead names the work-item carrier (the ticket) passes, because the
+# ticket's T0 shape carries all three fields -- rule 10's envelope-on-a-
+# named-T0-carrier form.
+ENVELOPE_UNITS = (
+    "orch-investigate",
+    "orch-loop",
+    "orch-frontier",
+)
+ENVELOPE_VOCAB_RES = (
+    ("status", re.compile(
+        r"\bstatus\b|\bcomplete[ds]?\b|\bblocked\b|\bstalled\b|\blimited\b|\bfailed\b",
+        re.IGNORECASE,
+    )),
+    ("result identity", re.compile(
+        r"\bresults?\b|\bidentit(?:y|ies)\b|\bdeliverables?\b", re.IGNORECASE
+    )),
+    ("verification", re.compile(
+        r"\bverification\b|\bverdicts?\b|\bverified\b", re.IGNORECASE
+    )),
+)
+
+# --- Ticket templates (contracts/work-item.md, Template and stub) ----
+#
+# A template is a directory `compositions/<name>/` holding `template.md`
+# plus one ticket stub per other `*.md` file; a stub is a ticket per
+# contracts/work-item.md missing only `run`, `status` and `claimed_*`,
+# with `{{placeholder}}` where instantiation fills a value. These checks
+# are the admission the spec's enforcement clause names: a cyclic
+# template, a stub without an executor or a completion test, or a
+# template with no single terminal stub is rejected here. Since P4-3
+# this is the whole of composition admission: the `.md` step form and
+# its contract are deleted, so there is no second set of checks to keep
+# in step with these.
+#
+# What a stub *is* -- its required keys, its list fields, its sections and
+# their order, its criteria, its legal executors -- is not stated here.
+# `scripts/tickets.py` owns it, grades every issued ticket and every
+# instantiated stub against it, and reports it in its own words
+# (`template_defects`); validate_templates reads that and adds only what
+# needs the tree. A second statement of the same law is how a template the
+# compiler admits fails at instantiation, which is what the P1 gate found
+# across eight inputs and the executor enum.
+#
+# The manifest's name, the placeholder syntax and the `script:` prefix are
+# that script's too, imported from it below rather than spelled again here:
+# a second spelling of the placeholder syntax admitted `{{lens name}}` into
+# the tree and hid it from the manifest-balance check, because instantiation
+# refuses an unfilled one by a wider pattern than this file matched.
+TEMPLATE_ENTRY_VALUES = {"routed", "named"}
+
+# --- Carriage (rules/composition.md rule 10) -------------------------
+#
+# "Every Require item rides a named T0 carrier ... the caller supplies
+# each callee's Require item by that name." Mechanized as a lexical
+# head-noun presence check — a heuristic licensed by this checker's own
+# acceptance criterion (see _carriage_candidates below), so the parsing
+# favors zero false ERRORs on the real tree over linguistic precision
+# (see docs/vocabulary.md "carriage").
+CARRIAGE_REQUIRE_BLOCK_RE = re.compile(r"^Require:(.*?)(?:\n[ \t]*\n|\Z)", re.MULTILINE | re.DOTALL)
+CARRIAGE_SENTENCE_SPLIT_RE = re.compile(r"\.\s+(?=[A-Z])", re.DOTALL)
+CARRIAGE_MD_LINK_RE = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+CARRIAGE_PAREN_RE = re.compile(r"\([^)]*\)")
+CARRIAGE_CODE_RE = re.compile(r"`([^`]*)`")
+CARRIAGE_WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]*")
+CARRIAGE_DASH_SPLIT_RE = re.compile(r"[–—]")  # en dash, em dash
+# Rule 10(c) / pack-signature.md's sharing constraint: "the executor's and
+# assembly's Return files per work-item.md's filing law -- the ticket, or
+# the store the packet names."
+# That law's two filing destinations -- "the ticket -- or the store the
+# packet names" -- are this check's two pass conditions: the bound skill's
+# own body names the ticket/work-item filing, or the pack's workspace cell
+# names a store (kernel-tier primitives like orch-investigate/orch-synthesize
+# stay domain-blind per the redteam critique's Move 7 and rely on the
+# second, rather than hardcoding pack-specific filing language).
+TICKET_FILING_RE = re.compile(r"\bticket\b|\bwork[- ]item\b", re.IGNORECASE)
+# The Return paragraph only -- "ticket" is common enough as an ordinary
+# noun elsewhere in a body (e.g. a Require clause) that searching the
+# whole body would false-pass on an unrelated mention.
+RETURN_TEXT_RE = re.compile(r"^Return[ :](.*?)(?:\n[ \t]*\n|\Z)", re.MULTILINE | re.DOTALL)
+PACK_WORKSPACE_RE = re.compile(r"^\|\s*workspace\s*\|\s*(.+?)\s*\|\s*$", re.MULTILINE)
+PACK_STORE_RE = re.compile(r"\bstore\b", re.IGNORECASE)
+PACK_EXECUTOR_RE = re.compile(r"^\|\s*executor\s*\|\s*`([a-z0-9-]+)`", re.MULTILINE)
+PACK_ASSEMBLY_RE = re.compile(r"^\|\s*assembly\s*\|\s*`([a-z0-9-]+)`", re.MULTILINE)
+PACK_SLICING_RE = re.compile(r"^\|\s*slicing\s*\|\s*\[.*?\]\(([^)]+)\)", re.MULTILINE)
+
+# Closed-class words stripped from the head of a Require item and
+# treated as a phrase boundary once real content has started -- never
+# an open-class (adjective/noun) word, so the list stays principled
+# rather than tuned per example.
+CARRIAGE_QUALIFIERS = {
+    "a", "an", "the", "one", "two", "three", "some", "any", "each", "every", "no",
+    "another", "other", "its", "this", "that", "these", "those", "our", "your",
+    "their", "my",
+    "and", "or", "but", "nor", "more", "least", "several", "few",
+    "of", "to", "in", "on", "at", "per", "for", "with", "without", "by", "as", "from",
+    "which", "who", "whose", "when", "where", "if", "so", "than", "then",
+    "never", "always", "only", "also", "while", "during", "among", "between", "across",
+    "before", "after", "through", "via", "into", "onto", "under", "over", "beyond",
+    "outside", "inside", "unless", "instead", "because", "naming", "carrying",
+    "depending",
+}
+
+# Carriage gaps deferred pending a caller-prose fix. Keyed by ("edge",
+# caller, callee, head_noun) or ("pack", pack_name, role, head_noun);
+# the head_noun is the last-candidate extracted below. Emptied once
+# every deferred site's caller carries its callee's head noun (ticket
+# 02-carriage-nouns closed the run's last nine); a re-opened gap is a
+# regression to fix at its caller, never a re-deferral (spec risk).
+CARRIAGE_DEFERRED = {}
+
+__all__ = (
+    'annotations', 'argparse', 'ast', 'hashlib',
+    'json', 're', 'sys', 'Path',
+    'ROOT', 'SKIPPED', 'SKILL_TIERS', 'BODY_BUDGET',
+    'LINK_TARGET_RE', 'SURFACE_BUDGET', 'MANIFEST_BUDGET', 'DESCRIPTION_BUDGET',
+    'ALLOWED_FRONTMATTER_KEYS', 'ROLE_PROFILES', 'ROLE_VALUES', 'ROLE_NONE_TIERS',
+    'PACK_SIGNATURE_CELLS', 'CRAFT_CELLS_BY_POINTER', 'CRAFT_BUDGET', 'CELL_SIMILARITY_THRESHOLD',
+    'CELL_CLAUSE_MIN_WORDS', 'CALL_TOKEN_RE', 'REQUIRE_RE', 'NEVER_RE',
+    'RETURN_RE', 'PACK_TABLE_CELL_RE', 'PACK_CELL_ROW_RE', 'CRAFT_ROW_RE',
+    'ASSEMBLY_SKILL_FORM_RE', 'ASSEMBLY_NONE_FORM_RE', 'CELL_REFERENCE_LINK_RE', 'TABLE_DELIM_ROW_RE',
+    'LIST_MARKER_RE', 'SENTENCE_END_RE', 'OUTSIDE_PACK_CITATION', 'SIGNATURE_CELL_POINTER_RE',
+    'MANDATED_FORM_RES', 'MD_LINK_RE', 'LOOP_TRIGGER_RE', 'BOUND_TERM_RE',
+    'TERMINAL_TERM_RE', 'ENVELOPE_UNITS', 'ENVELOPE_VOCAB_RES', 'TEMPLATE_ENTRY_VALUES',
+    'CARRIAGE_REQUIRE_BLOCK_RE', 'CARRIAGE_SENTENCE_SPLIT_RE', 'CARRIAGE_MD_LINK_RE', 'CARRIAGE_PAREN_RE',
+    'CARRIAGE_CODE_RE', 'CARRIAGE_WORD_RE', 'CARRIAGE_DASH_SPLIT_RE', 'TICKET_FILING_RE',
+    'RETURN_TEXT_RE', 'PACK_WORKSPACE_RE', 'PACK_STORE_RE', 'PACK_EXECUTOR_RE',
+    'PACK_ASSEMBLY_RE', 'PACK_SLICING_RE', 'CARRIAGE_QUALIFIERS', 'CARRIAGE_DEFERRED',
+)

@@ -54,7 +54,6 @@ with an error payload is how this script used to answer.
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 from pathlib import Path
 
@@ -70,6 +69,11 @@ if _SIBLING_DIR not in sys.path:
 
 import state_root  # noqa: E402  the sink resolver, imported and never copied
 import tickets  # noqa: E402  frontmatter and isolation, imported and never copied
+
+# Literal sibling imports work in the source tree and in the flat installed
+# ``bin`` layout after the directory above has joined ``sys.path``.
+workspace_git = __import__("workspace_git")
+workspace_scope = __import__("workspace_scope")
 
 ISOLATION_KEY = "isolation"
 BRANCH_KEY = "workspace_branch"
@@ -117,11 +121,11 @@ AMBIGUOUS = (",", '"', "'")
 # "docs/ (tests only)"), which matches no path, so either every change reads
 # as a breach or the grant covers nothing and none does. Refused at ``start``,
 # where the cut can still fix it, rather than graded at the join.
-UNGRADABLE_IN_SCOPE = (" ", "\t", "(", ")")
+UNGRADABLE_IN_SCOPE = workspace_scope.UNGRADABLE_IN_SCOPE
 # The two of them a real path can carry, which ``_refuse_ungradable_scope``
 # therefore decides by resolving the entry rather than by the character.
-SPACING = (" ", "\t")
-CONTRACT = "contracts/work-item.md"
+SPACING = workspace_scope.SPACING
+CONTRACT = workspace_scope.CONTRACT
 # One spelling of each subcommand's arguments, joined into ``USAGE`` for the
 # refusals and printed alone for ``<sub> --help``. Two spellings would drift.
 COMMAND_USAGE = {
@@ -136,15 +140,7 @@ USAGE = "usage: " + "\n       ".join(COMMAND_USAGE.values())
 HELP_FLAGS = ("--help", "-h")
 
 
-class Refused(Exception):
-    """What the script will not do, carrying the exit code that names why."""
-
-    def __init__(self, message: str, code: int = EXIT_ERROR, **detail):
-        super().__init__(message)
-        self.code = code
-        # what the caller needs to act on the refusal, carried in the payload
-        # beside the exit code that names it
-        self.detail = detail
+Refused = workspace_git.Refused
 
 
 # --- git, in the tree under grade -------------------------------------------
@@ -160,14 +156,7 @@ _GIT_CWD = None
 def _git(*args: str):
     """Run git in the tree under grade: the caller's own, or ``--repo``'s."""
 
-    completed = subprocess.run(
-        ["git", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=_GIT_CWD
-    )
-    return (
-        completed.returncode,
-        completed.stdout.decode("utf-8", "replace"),
-        completed.stderr.decode("utf-8", "replace"),
-    )
+    return workspace_git._git(_GIT_CWD, *args)
 
 
 def _git_out(*args: str) -> str:
@@ -179,84 +168,20 @@ def _git_out(*args: str) -> str:
 
 def _dirty_paths() -> list:
     """Every path ``git status`` reports, both ends of a rename included."""
-
-    code, out, err = _git("status", "--porcelain", "-z")
-    if code != 0:
-        raise Refused(f"git status: {err.strip()}")
-    fields = out.split("\0")
-    found, index = [], 0
-    while index < len(fields):
-        entry = fields[index]
-        index += 1
-        if not entry:
-            continue
-        status, path = entry[:2], entry[3:]
-        found.append(path)
-        if "R" in status or "C" in status:
-            if index < len(fields):
-                found.append(fields[index])
-                index += 1
-    return found
-
+    return workspace_git._dirty_paths(
+        _GIT_CWD, lambda cwd, *args: _git(*args)
+    )
 
 # --- the ticket, always at the main repository root -------------------------
 
 
-def _graded(payload, what: str) -> dict:
-    """Grade a ``tickets.py`` result by its payload, never by exit status."""
-
-    if not isinstance(payload, dict):
-        raise Refused(f"{what}: tickets.py returned no payload")
-    if "error" in payload:
-        raise Refused(f"{what}: {payload['error']}")
-    return payload
+_graded = workspace_git._graded
 
 
-def _locate(run: str, ticket_id: str, where=None):
-    """This workspace's repository root, and the ticket's one path in the sink.
-
-    Two questions with two answers. The root says *which project this
-    workspace is*, which is what grades isolation and write scope. The
-    ticket lives in the user-scope sink ``scripts/state_root.py`` resolves,
-    identical from every workspace in every repository.
-
-    ``where`` is the checkout to answer the first question about, defaulting
-    to the caller's own. ``check --repo`` passes the checkout it was aimed
-    at, so the root and the git calls come from the same tree.
-    """
-
-    start = Path(where) if where is not None else Path.cwd()
-    root = state_root.find_repo_root(start)
-    if root is None:
-        raise Refused(f"not inside a git repository: {start}")
-    path = state_root.tickets_root() / run / f"{ticket_id}.md"
-    if not path.is_file():
-        raise Refused(f"ticket not found: {run}/{ticket_id}")
-    return root, path
+_locate = workspace_git._locate
 
 
-def _record(ticket_path: Path, prior_text: str, branch: str, baseline: str) -> dict:
-    """Write both stamps against the snapshot the caller read.
-
-    Re-reads and compares before writing, the guard ``tickets.py``'s
-    ``_do_claim`` uses: a concurrent ``set-status`` has no guard of its own,
-    and ``_set_frontmatter_field`` is a read-modify-write, so an unguarded
-    stamp would silently clobber whatever landed in between.
-    """
-
-    try:
-        current_text = ticket_path.read_text(encoding="utf-8")
-    except OSError as error:
-        return {"error": f"unreadable ticket: {error}"}
-    if current_text != prior_text:
-        return {"error": "ticket changed since read; lost the frontmatter write race, retry"}
-    try:
-        updated = tickets._set_frontmatter_field(prior_text, BRANCH_KEY, branch)
-        updated = tickets._set_frontmatter_field(updated, BASELINE_KEY, baseline)
-        ticket_path.write_text(updated, encoding="utf-8")
-    except (OSError, ValueError) as error:
-        return {"error": f"unwritable ticket: {error}"}
-    return {"recorded": {BRANCH_KEY: branch, BASELINE_KEY: baseline}}
+_record = workspace_git._record
 
 
 # --- subcommands ------------------------------------------------------------
@@ -270,56 +195,8 @@ def _positional(rest, count: int, command: str) -> list:
     return args
 
 
-def _exists_as_path(entry: str, root) -> bool:
-    """Whether ``entry`` names something that is actually there.
-
-    Absolute as it stands, or relative to the workspace root -- the same two
-    readings ``check`` gives a scope entry when it splits a diff against it.
-    """
-
-    try:
-        candidate = Path(entry)
-        if candidate.is_absolute():
-            return candidate.exists()
-        return root is not None and (Path(root) / entry).exists()
-    except OSError:  # pragma: no cover - a name the filesystem rejects
-        return False
-
-
-def _refuse_ungradable_scope(declared, root=None) -> None:
-    """Refuse a ``write_scope`` entry no path comparison can read.
-
-    The grant is what ``check`` grades a branch's diff against, so an entry
-    that is prose rather than a path grades nothing and says so nowhere: the
-    scope silently covers no path the branch touched, and the breach it was
-    written to prevent passes. Raised at ``start`` -- the first thing an
-    isolated item runs -- so the answer arrives while the cut can still be
-    repaired, rather than at the join with the work already done.
-
-    A space is evidence of prose, never proof of it: a home directory with a
-    space in its name makes an ordinary path carry one, and refusing that
-    refuses the host rather than the cut. So a spaced entry that resolves to
-    something on disk is a path and is kept; one that resolves to nothing is
-    the phrase this guard was written for. A parenthesis needs no such test
-    -- it is the annotation shape itself ("docs/ (tests only)"), and a path
-    carrying one still reads as one entry only by accident.
-    """
-
-    entries = [declared] if isinstance(declared, str) else list(declared or [])
-    for raw in entries:
-        entry = str(raw).strip().strip("`").strip()
-        for character in UNGRADABLE_IN_SCOPE:
-            if character not in entry:
-                continue
-            if character in SPACING and _exists_as_path(entry, root):
-                break
-            raise Refused(
-                f"{WRITE_SCOPE_KEY} entry '{entry}' contains {character!r} and "
-                f"names no path here: per {CONTRACT} an entry is exactly a "
-                "path this item may change, and a phrase matches none, so "
-                "nothing here can grade it. Cut the scope as one bare path "
-                "per entry"
-            )
+_exists_as_path = workspace_scope._exists_as_path
+_refuse_ungradable_scope = workspace_scope._refuse_ungradable_scope
 
 
 def _cmd_start(rest):
@@ -383,58 +260,12 @@ def _extract_flag(args: list, flag: str):
     return None
 
 
-def _normalized_scope(declared, root: Path) -> tuple:
-    """``write_scope`` as repository-relative POSIX paths.
-
-    An absolute entry inside the main repository root is normalized to
-    relative; one outside it is refused by name, because a scope naming
-    something this repository cannot contain grades nothing.
-    """
-
-    if isinstance(declared, str):
-        declared = [declared]
-    entries = []
-    for raw in declared or []:
-        entry = raw.strip().strip("`").strip()
-        if not entry:
-            continue
-        candidate = Path(entry)
-        if candidate.is_absolute() or (len(entry) > 1 and entry[1] == ":"):
-            try:
-                entry = candidate.resolve().relative_to(root).as_posix()
-            except ValueError:
-                raise Refused(
-                    # quoted plainly, never {!r}: a Windows entry carries
-                    # backslashes, and repr doubles every one of them, so the
-                    # refusal named a path the caller never wrote and could
-                    # not grep its own ticket for
-                    f"{WRITE_SCOPE_KEY} entry '{entry}' is an absolute path outside the main "
-                    f"repository root {root}: nothing in this repository can match "
-                    "it"
-                )
-        parts = [part for part in entry.replace("\\", "/").split("/") if part not in ("", ".")]
-        if ".." in parts:
-            raise Refused(
-                f"{WRITE_SCOPE_KEY} entry '{entry}' escapes the repository"
-            )
-        if parts:
-            entries.append("/".join(parts))
-    return tuple(entries)
-
-
-def _in_scope(name: str, scope) -> bool:
-    """A path prefix compared on whole segments: `docs` never takes `docsmith`."""
-
-    return any(name == prefix or name.startswith(prefix + "/") for prefix in scope)
+_normalized_scope = workspace_scope._normalized_scope
+_in_scope = workspace_scope._in_scope
 
 
 def _is_ancestor(ancestor: str, descendant: str) -> bool:
-    code, _, err = _git("merge-base", "--is-ancestor", ancestor, descendant)
-    if code in (0, 1):
-        return code == 0
-    raise Refused(
-        f"git merge-base --is-ancestor {ancestor} {descendant}: {err.strip()}"
-    )
+    return workspace_git._is_ancestor(_git, ancestor, descendant)
 
 
 def _cmd_check(rest):

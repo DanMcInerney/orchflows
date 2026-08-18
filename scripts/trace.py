@@ -53,595 +53,121 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-HOST_CLAUDE = "claude-code"
-HOST_CODEX = "codex"
-
-EXIT_CODE_RE = re.compile(r"[Ee]xit code:?\s*(-?\d+)")
-SHELL_COMMAND_RE = re.compile(r'command["\']?\s*:\s*"((?:[^"\\]|\\.)*)"')
-# Both roots a run-state path can carry. The sink is where every writer
-# lands now (``scripts/state_root.py``); the repository shape stays matched
-# because a trace may cover a session that predates the migration, and
-# because item 08 copies rather than moves, so both exist on disk at once.
-# ``\.orch`` cannot swallow ``.orchflows``: the separator after it is
-# required, and ``.orchflows`` has an ``f`` there.
-STATE_ROOT_RE = r"(?:\.orch|\.orchflows[/\\]state)"
-RUN_ID_RE = re.compile(
-    STATE_ROOT_RE + r"[/\\](?:runs|tickets)[/\\]([A-Za-z0-9][A-Za-z0-9._-]*)"
-)
-TEXT_CLIP = 2000  # chars kept of request/narration text; one owner
-HARNESS_TEXT_MARKERS = ("<system-reminder>", "<command-name>", "<local-command-stdout>")
-
-CODEX_BOILERPLATE_MARKERS = (
-    "<recommended_plugins>",
-    "<environment_context>",
-    "AGENTS.md instructions",
-    "<apps_instructions>",
-    "<plugins_instructions>",
-    "<permissions instructions>",
-    "<multi_agent_mode>",
-    "<skills_instructions>",
-)
-
-
-# --------------------------------------------------------------------------
-# shared helpers
-# --------------------------------------------------------------------------
-
-def _parse_ts(value):
-    if not isinstance(value, str) or not value:
-        return None
-    text = value.replace("Z", "+00:00")
-    try:
-        return datetime.fromisoformat(text)
-    except ValueError:
-        return None
-
-
-def _duration_ms(start, end):
-    start_dt = _parse_ts(start)
-    end_dt = _parse_ts(end)
-    if start_dt is None or end_dt is None:
-        return None
-    delta = (end_dt - start_dt).total_seconds() * 1000
-    return int(delta) if delta >= 0 else None
-
-
-def _tag_file_errors(errors, path):
-    tagged = []
-    for err in errors:
-        entry = dict(err)
-        entry["file"] = str(path)
-        tagged.append(entry)
-    return tagged
-
-
-def _empty_trace(host, session_id, error):
-    return {
-        "host": host,
-        "session_id": session_id,
-        "schema_confidence": 0.0,
-        "events": [],
-        "parse_errors": [{"line": None, "file": None, "error": error}],
-    }
-
-
-def _clip(text: str):
-    """Return (clipped_text, truncated_flag) under the TEXT_CLIP cap."""
-    text = str(text)
-    if len(text) > TEXT_CLIP:
-        return text[:TEXT_CLIP], True
-    return text, False
-
-
-def _text_fields(ev: dict, text: str) -> dict:
-    clipped, truncated = _clip(text)
-    ev["text"] = clipped
-    if truncated:
-        ev["truncated"] = True
-    return ev
-
-
-def _runs_touched(events):
-    runs = set()
-    for ev in events:
-        if ev.get("type") != "tool_call":
-            continue
-        for match in RUN_ID_RE.finditer(str(ev.get("command", ""))):
-            runs.add(match.group(1))
-    return sorted(runs)
-
-
-def _finalize(host, session_id, events, clean, total, parse_errors):
-    events.sort(key=lambda ev: ev.get("ts") or "")
-    for ev in events:
-        ev.pop("_start_ts", None)
-    # Two zero totals, two answers: a transcript that is there and empty has
-    # nothing to distrust, while a total of zero standing next to a parse
-    # error is a file nothing was read from -- and 1.0 there would claim
-    # full trust in no data, which `extract_claude` already refuses for a
-    # file that is not there at all.
-    confidence = round(clean / total, 4) if total else (0.0 if parse_errors else 1.0)
-    return {
-        "host": host,
-        "session_id": session_id,
-        "schema_confidence": confidence,
-        "runs_touched": _runs_touched(events),
-        "events": events,
-        "parse_errors": parse_errors,
-    }
-
-
-def _read_lines(path: Path):
-    """Yield (lineno, raw_text) for each non-blank line, or raise OSError."""
-    # utf-8-sig: BOM-prefixed files (PowerShell Out-File default) read clean.
-    text = path.read_text(encoding="utf-8-sig", errors="replace")
-    for lineno, raw in enumerate(text.splitlines(), start=1):
-        raw = raw.strip()
-        if raw:
-            yield lineno, raw
-
-
-# --------------------------------------------------------------------------
-# Claude Code adapter
-# --------------------------------------------------------------------------
-
-def _claude_tool_command(name, tool_input):
-    if isinstance(tool_input, dict):
-        command = tool_input.get("command")
-        if isinstance(command, str) and command:
-            return command
-        file_path = tool_input.get("file_path")
-        if isinstance(file_path, str) and file_path:
-            return f"{name}:{file_path}"
-        pattern = tool_input.get("pattern")
-        if isinstance(pattern, str) and pattern and name in ("Glob", "Grep"):
-            return f"{name}:{pattern}"
-    return name
-
-
-def _resolve_claude_exit(block, tool_use_result):
-    if block.get("is_error"):
-        content = block.get("content")
-        text = content if isinstance(content, str) else ""
-        if isinstance(tool_use_result, str):
-            text = tool_use_result + "\n" + text
-        match = EXIT_CODE_RE.search(text)
-        if match:
-            return int(match.group(1))
-        # An error result without exit-code text is still a failure; only
-        # Bash prints codes, and "unknown" here would hide every other
-        # tool's errors from the miner's isinstance(int) filters.
-        return 1
-    return 0
-
-
-def _handle_claude_user_line(obj, ts, events, pending):
-    message = obj.get("message")
-    if not isinstance(message, dict):
-        return False
-    content = message.get("content")
-    if isinstance(content, str):
-        if not any(marker in content for marker in HARNESS_TEXT_MARKERS):
-            events.append(_text_fields({"type": "request", "ts": ts}, content))
-        return True
-    if isinstance(content, list):
-        # A turn carrying tool_result blocks is a result turn; its sibling
-        # text blocks are harness-injected (reminders), never user input.
-        has_tool_result = any(
-            isinstance(b, dict) and b.get("type") == "tool_result" for b in content
-        )
-        if not has_tool_result:
-            texts = [
-                b.get("text", "")
-                for b in content
-                if isinstance(b, dict) and b.get("type") == "text"
-            ]
-            texts = [
-                t for t in texts
-                if t and not any(marker in t for marker in HARNESS_TEXT_MARKERS)
-            ]
-            joined = "\n".join(texts)
-            if joined:
-                events.append(_text_fields({"type": "request", "ts": ts}, joined))
-        for block in content:
-            if not isinstance(block, dict):
-                continue
-            if block.get("type") != "tool_result":
-                continue
-            tool_use_id = block.get("tool_use_id")
-            ev = pending.pop(tool_use_id, None) if tool_use_id else None
-            if ev is None:
-                continue
-            ev["exit"] = _resolve_claude_exit(block, obj.get("toolUseResult"))
-            start_ts = ev.pop("_start_ts", None)
-            if start_ts and ts:
-                dur = _duration_ms(start_ts, ts)
-                if dur is not None:
-                    ev["duration_ms"] = dur
-        return True
-    return False
-
-
-def _handle_claude_assistant_line(obj, ts, events, pending):
-    message = obj.get("message")
-    if not isinstance(message, dict):
-        return False
-    content = message.get("content")
-    if not isinstance(content, list):
-        return False
-    usage = message.get("usage")
-    tokens = None
-    if isinstance(usage, dict):
-        in_tok, out_tok = usage.get("input_tokens"), usage.get("output_tokens")
-        if isinstance(in_tok, int) and isinstance(out_tok, int):
-            tokens = in_tok + out_tok
-    narration = [
-        b.get("text", "")
-        for b in content
-        if isinstance(b, dict) and b.get("type") == "text"
-    ]
-    joined = "\n".join(t for t in narration if t)
-    if joined:
-        ev = _text_fields({"type": "narration", "ts": ts}, joined)
-        if tokens is not None:
-            ev["tokens"] = tokens
-        events.append(ev)
-    for block in content:
-        if not isinstance(block, dict) or block.get("type") != "tool_use":
-            continue
-        name = block.get("name") or "unknown"
-        tool_input = block.get("input") if isinstance(block.get("input"), dict) else {}
-        tool_id = block.get("id")
-        if name == "Skill":
-            ev = {"type": "skill_invocation", "name": tool_input.get("skill") or "unknown", "ts": ts}
-        elif name == "Agent":
-            ev = {
-                "type": "subagent",
-                "agent_type": tool_input.get("name") or tool_input.get("description") or "unknown",
-                "model": tool_input.get("model") or "unknown",
-                "effort": "unknown",
-                "ts": ts,
-            }
-        else:
-            ev = {"type": "tool_call", "command": _claude_tool_command(name, tool_input), "exit": "unknown", "ts": ts}
-            if ts:
-                ev["_start_ts"] = ts
-            if tool_id:
-                pending[tool_id] = ev
-        if tokens is not None:
-            ev["tokens"] = tokens
-        events.append(ev)
-    return True
-
-
-def _process_claude_file(path: Path, skip_sidechain: bool):
-    events, parse_errors = [], []
-    clean = total = 0
-    session_id = None
-    pending = {}
-    try:
-        lines = list(_read_lines(path))
-    except OSError as exc:
-        return events, 0, 0, [{"line": None, "error": f"cannot read file: {exc}"}], None
-    for lineno, raw in lines:
-        total += 1
-        try:
-            obj = json.loads(raw)
-        except json.JSONDecodeError as exc:
-            parse_errors.append({"line": lineno, "error": f"invalid JSON: {exc}"})
-            continue
-        if not isinstance(obj, dict):
-            parse_errors.append({"line": lineno, "error": "line is not a JSON object"})
-            continue
-        if session_id is None:
-            sid = obj.get("sessionId")
-            if isinstance(sid, str) and sid:
-                session_id = sid
-        line_type = obj.get("type")
-        if line_type is None:
-            parse_errors.append({"line": lineno, "error": "missing 'type' key"})
-            continue
-        ts = obj.get("timestamp")
-        if skip_sidechain and obj.get("isSidechain") is True:
-            # In the MAIN transcript only: inline sidechain echoes duplicate
-            # content that the dedicated subagents/*.jsonl file (processed
-            # separately, with skip_sidechain=False) carries authoritatively.
-            clean += 1
-            continue
-        if line_type == "user":
-            ok = _handle_claude_user_line(obj, ts, events, pending)
-        elif line_type == "assistant":
-            ok = _handle_claude_assistant_line(obj, ts, events, pending)
-        else:
-            ok = True  # recognized-but-unmapped harness bookkeeping record
-        if ok:
-            clean += 1
-        else:
-            parse_errors.append({"line": lineno, "error": f"'{line_type}' line missing expected message shape"})
-    return events, clean, total, parse_errors, session_id
-
-
-def extract_claude(path: Path) -> dict:
-    path = Path(path)
-    if path.is_dir():
-        main_path = path / "main.jsonl"
-        subagents_dir = path / "subagents"
-    else:
-        main_path = path
-        subagents_dir = path.parent / path.stem / "subagents"
-
-    session_id_default = path.name if path.is_dir() else path.stem
-    agent_files = sorted(subagents_dir.rglob("agent-*.jsonl")) if subagents_dir.is_dir() else []
-    if not main_path.is_file() and not agent_files:
-        # Nothing readable at all: honest zero-confidence, matching
-        # extract_codex's "no rollout file(s) found" fallback -- a bare
-        # schema_confidence of 1.0 here would claim full trust in zero data.
-        return _empty_trace(HOST_CLAUDE, session_id_default, f"no transcript file(s) found at {main_path}")
-
-    all_events, parse_errors = [], []
-    clean_total = line_total = 0
-    session_id = None
-
-    if main_path.is_file():
-        events, clean, total, errs, sid = _process_claude_file(main_path, skip_sidechain=True)
-        all_events.extend(events)
-        clean_total += clean
-        line_total += total
-        parse_errors.extend(_tag_file_errors(errs, main_path))
-        session_id = session_id or sid
-    else:
-        parse_errors.append({"line": None, "file": str(main_path), "error": "main transcript not found"})
-
-    if subagents_dir.is_dir():
-        for agent_file in agent_files:
-            events, clean, total, errs, sid = _process_claude_file(agent_file, skip_sidechain=False)
-            all_events.extend(events)
-            clean_total += clean
-            line_total += total
-            parse_errors.extend(_tag_file_errors(errs, agent_file))
-            session_id = session_id or sid
-
-    if session_id is None:
-        session_id = path.name if path.is_dir() else path.stem
-
-    return _finalize(HOST_CLAUDE, session_id, all_events, clean_total, line_total, parse_errors)
-
-
-# --------------------------------------------------------------------------
-# Codex adapter
-# --------------------------------------------------------------------------
-
-def _is_codex_boilerplate(text: str) -> bool:
-    return any(marker in text for marker in CODEX_BOILERPLATE_MARKERS)
-
-
-def _extract_codex_command(payload):
-    name = payload.get("name") or "unknown"
-    arguments = payload.get("arguments")
-    if isinstance(arguments, str):
-        try:
-            parsed = json.loads(arguments)
-        except (json.JSONDecodeError, TypeError):
-            parsed = None
-        if isinstance(parsed, dict):
-            command = parsed.get("command")
-            if isinstance(command, list):
-                return " ".join(str(part) for part in command)
-            if isinstance(command, str) and command:
-                return command
-    tool_input = payload.get("input")
-    if isinstance(tool_input, str):
-        match = SHELL_COMMAND_RE.search(tool_input)
-        if match:
-            return match.group(1)
-    return name
-
-
-def _extract_codex_exit(payload):
-    output = payload.get("output")
-    parts = []
-    if isinstance(output, str):
-        parts.append(output)
-    elif isinstance(output, list):
-        for item in output:
-            if isinstance(item, dict) and isinstance(item.get("text"), str):
-                parts.append(item["text"])
-    match = EXIT_CODE_RE.search("\n".join(parts))
-    if match:
-        return int(match.group(1))
-    return "unknown"
-
-
-def _handle_codex_response_item(payload, ts, events, pending):
-    ptype = payload.get("type")
-    if ptype == "message":
-        content = payload.get("content")
-        if not isinstance(content, list):
-            return False
-        if payload.get("role") == "user":
-            texts = [b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "input_text"]
-            joined = "\n".join(t for t in texts if t)
-            if joined and not _is_codex_boilerplate(joined):
-                events.append(_text_fields({"type": "request", "ts": ts}, joined))
-        elif payload.get("role") == "assistant":
-            texts = [b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "output_text"]
-            joined = "\n".join(t for t in texts if t)
-            if joined:
-                events.append(_text_fields({"type": "narration", "ts": ts}, joined))
-        return True
-    if ptype in ("custom_tool_call", "function_call"):
-        call_id = payload.get("call_id")
-        ev = {"type": "tool_call", "command": _extract_codex_command(payload), "exit": "unknown", "ts": ts}
-        if ts:
-            ev["_start_ts"] = ts
-        events.append(ev)
-        if call_id:
-            pending[call_id] = ev
-        return True
-    if ptype in ("custom_tool_call_output", "function_call_output"):
-        call_id = payload.get("call_id")
-        ev = pending.pop(call_id, None) if call_id else None
-        if ev is not None:
-            ev["exit"] = _extract_codex_exit(payload)
-            start_ts = ev.pop("_start_ts", None)
-            if start_ts and ts:
-                dur = _duration_ms(start_ts, ts)
-                if dur is not None:
-                    ev["duration_ms"] = dur
-        return True
-    return True  # reasoning, agent_message, and future kinds: recognized, unmapped
-
-
-def _process_codex_file(path: Path):
-    events, parse_errors = [], []
-    clean = total = 0
-    thread_meta = None
-    spawn_event = None
-    pending = {}
-    try:
-        lines = list(_read_lines(path))
-    except OSError as exc:
-        return events, 0, 0, [{"line": None, "error": f"cannot read file: {exc}"}], None
-    for lineno, raw in lines:
-        total += 1
-        try:
-            obj = json.loads(raw)
-        except json.JSONDecodeError as exc:
-            parse_errors.append({"line": lineno, "error": f"invalid JSON: {exc}"})
-            continue
-        if not isinstance(obj, dict):
-            parse_errors.append({"line": lineno, "error": "line is not a JSON object"})
-            continue
-        rtype = obj.get("type")
-        if rtype is None:
-            parse_errors.append({"line": lineno, "error": "missing 'type' key"})
-            continue
-        ts = obj.get("timestamp")
-        payload = obj.get("payload")
-
-        if rtype == "session_meta" and isinstance(payload, dict):
-            thread_id = payload.get("id") or payload.get("session_id")
-            source = payload.get("source")
-            subagent_info = source.get("subagent") if isinstance(source, dict) else None
-            thread_spawn = subagent_info.get("thread_spawn") if isinstance(subagent_info, dict) else None
-            is_subagent = isinstance(thread_spawn, dict)
-            thread_meta = {"thread_id": thread_id, "is_subagent": is_subagent}
-            if is_subagent:
-                depth = thread_spawn.get("depth")
-                spawn_event = {
-                    "type": "subagent",
-                    "agent_type": thread_spawn.get("agent_nickname") or thread_spawn.get("agent_path") or "unknown",
-                    "model": "unknown",
-                    "effort": "unknown",
-                    "parent": thread_spawn.get("parent_thread_id") or "unknown",
-                    "depth": depth if isinstance(depth, int) else "unknown",
-                    "ts": ts,
-                }
-                events.append(spawn_event)
-            clean += 1
-        elif rtype == "turn_context" and isinstance(payload, dict):
-            model = payload.get("model")
-            effort = payload.get("effort")
-            if spawn_event is not None:
-                if isinstance(model, str) and model and spawn_event["model"] == "unknown":
-                    spawn_event["model"] = model
-                if isinstance(effort, str) and effort and spawn_event["effort"] == "unknown":
-                    spawn_event["effort"] = effort
-            clean += 1
-        elif rtype == "event_msg":
-            clean += 1  # token_count / task_started / agent_reasoning: not mapped
-        elif rtype == "response_item":
-            if not isinstance(payload, dict):
-                parse_errors.append({"line": lineno, "error": "response_item missing payload"})
-                continue
-            if _handle_codex_response_item(payload, ts, events, pending):
-                clean += 1
-            else:
-                parse_errors.append({"line": lineno, "error": "response_item message with non-list content"})
-        else:
-            clean += 1  # world_state / compacted / future kinds: recognized, unmapped
-    return events, clean, total, parse_errors, thread_meta
-
-
-def extract_codex(path: Path) -> dict:
-    path = Path(path)
-    if path.is_file():
-        files = [path]
-    elif path.is_dir():
-        files = sorted(path.rglob("*.jsonl"))
-    else:
-        files = []
-    if not files:
-        return _empty_trace(HOST_CODEX, path.stem, f"no rollout file(s) found at {path}")
-
-    all_events, parse_errors = [], []
-    clean_total = line_total = 0
-    root_ids = []
-    fallback_id = None
-    for f in files:
-        events, clean, total, errs, meta = _process_codex_file(f)
-        all_events.extend(events)
-        clean_total += clean
-        line_total += total
-        parse_errors.extend(_tag_file_errors(errs, f))
-        if meta:
-            if fallback_id is None:
-                fallback_id = meta["thread_id"]
-            if not meta["is_subagent"] and meta["thread_id"]:
-                root_ids.append(meta["thread_id"])
-
-    session_id = root_ids[0] if root_ids else (fallback_id or files[0].stem)
-    return _finalize(HOST_CODEX, session_id, all_events, clean_total, line_total, parse_errors)
-
-
-# --------------------------------------------------------------------------
-# Mermaid rendering (criterion 5)
-# --------------------------------------------------------------------------
-
-_MERMAID_UNSAFE_RE = re.compile(r'["\[\]{}()\n\r]')
-
-
-def _mermaid_sanitize(text: str, limit: int = 80) -> str:
-    text = _MERMAID_UNSAFE_RE.sub(" ", str(text))
-    text = " ".join(text.split())
-    return text[:limit]
-
-
-def _mermaid_label(ev: dict) -> str:
-    etype = ev.get("type", "unknown")
-    if etype == "request":
-        text = ev.get("text")
-        return f"request: {_mermaid_sanitize(text)}" if text else "request"
-    if etype == "narration":
-        return f"narration: {_mermaid_sanitize(ev.get('text', ''))}"
-    if etype == "skill_invocation":
-        return f"skill: {_mermaid_sanitize(ev.get('name', 'unknown'))}"
-    if etype == "subagent":
-        return f"subagent: {_mermaid_sanitize(ev.get('agent_type', 'unknown'))} model={_mermaid_sanitize(ev.get('model', 'unknown'))}"
-    if etype == "tool_call":
-        return f"tool: {_mermaid_sanitize(ev.get('command', 'unknown'))} exit={ev.get('exit', 'unknown')}"
-    return _mermaid_sanitize(etype)
-
-
-def render_mermaid(trace: dict) -> str:
-    lines = ["flowchart TD"]
-    events = trace.get("events") or []
-    if not events:
-        lines.append('    n0["(no events)"]')
-        return "\n".join(lines) + "\n"
-    previous = None
-    for idx, ev in enumerate(events):
-        node = f"n{idx}"
-        lines.append(f'    {node}["{_mermaid_label(ev)}"]')
-        if previous is not None:
-            lines.append(f"    {previous} --> {node}")
-        previous = node
-    return "\n".join(lines) + "\n"
-
+_SIBLING_DIR = str(Path(__file__).resolve().parent)
+if _SIBLING_DIR not in sys.path:
+    sys.path.append(_SIBLING_DIR)
+
+if __package__:  # in-repo package imports
+    from scripts import trace_render as _trace_render_module
+    from scripts.trace_render import (
+        CODEX_BOILERPLATE_MARKERS,
+        EXIT_CODE_RE,
+        HARNESS_TEXT_MARKERS,
+        HOST_CLAUDE,
+        HOST_CODEX,
+        RUN_ID_RE,
+        SHELL_COMMAND_RE,
+        STATE_ROOT_RE,
+        TEXT_CLIP,
+        _MERMAID_UNSAFE_RE,
+        _clip,
+        _duration_ms,
+        _empty_trace,
+        _finalize,
+        _mermaid_label,
+        _mermaid_sanitize,
+        _parse_ts,
+        _read_lines,
+        _runs_touched,
+        _tag_file_errors,
+        _text_fields,
+        render_mermaid,
+    )
+    from scripts.trace_claude import (
+        _claude_tool_command,
+        _handle_claude_assistant_line,
+        _handle_claude_user_line,
+        _process_claude_file,
+        _resolve_claude_exit,
+        extract_claude,
+    )
+    from scripts.trace_codex import (
+        _extract_codex_command,
+        _extract_codex_exit,
+        _handle_codex_response_item,
+        _is_codex_boilerplate,
+        _process_codex_file,
+        extract_codex,
+    )
+else:  # installed flat beside trace.py
+    import trace_render as _trace_render_module
+    from trace_render import (
+        CODEX_BOILERPLATE_MARKERS,
+        EXIT_CODE_RE,
+        HARNESS_TEXT_MARKERS,
+        HOST_CLAUDE,
+        HOST_CODEX,
+        RUN_ID_RE,
+        SHELL_COMMAND_RE,
+        STATE_ROOT_RE,
+        TEXT_CLIP,
+        _MERMAID_UNSAFE_RE,
+        _clip,
+        _duration_ms,
+        _empty_trace,
+        _finalize,
+        _mermaid_label,
+        _mermaid_sanitize,
+        _parse_ts,
+        _read_lines,
+        _runs_touched,
+        _tag_file_errors,
+        _text_fields,
+        render_mermaid,
+    )
+    from trace_claude import (
+        _claude_tool_command,
+        _handle_claude_assistant_line,
+        _handle_claude_user_line,
+        _process_claude_file,
+        _resolve_claude_exit,
+        extract_claude,
+    )
+    from trace_codex import (
+        _extract_codex_command,
+        _extract_codex_exit,
+        _handle_codex_response_item,
+        _is_codex_boilerplate,
+        _process_codex_file,
+        extract_codex,
+    )
 
 # --------------------------------------------------------------------------
 # CLI
 # --------------------------------------------------------------------------
+
+_clip_impl = _clip
+_extract_claude_impl = extract_claude
+_extract_codex_impl = extract_codex
+
+
+def _sync_render_seams() -> None:
+    _trace_render_module.TEXT_CLIP = TEXT_CLIP
+
+
+def _clip(text):
+    _sync_render_seams()
+    return _clip_impl(text)
+
+
+def extract_claude(path):
+    _sync_render_seams()
+    return _extract_claude_impl(path)
+
+
+def extract_codex(path):
+    _sync_render_seams()
+    return _extract_codex_impl(path)
 
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -652,6 +178,7 @@ def build_parser():
 
 
 def main(argv=None) -> int:
+    _trace_render_module.TEXT_CLIP = TEXT_CLIP
     argv = sys.argv[1:] if argv is None else argv
     # Windows consoles default stdout to a legacy codepage (e.g. cp1252) that
     # cannot encode arbitrary transcript content (emoji, non-Latin text).

@@ -1,0 +1,349 @@
+"""Evaluate search spans and whole-suite command shape."""
+
+try:  # repository checkout
+    from scripts import cutcheck_contract as _contract
+except ImportError:  # installed flat script directory
+    import cutcheck_contract as _contract
+COUNT_FLAG_RE = _contract.COUNT_FLAG_RE
+DISCOVER = _contract.DISCOVER
+FILTER_MATCHES_ALL = _contract.FILTER_MATCHES_ALL
+GIT_COUNT_FLAG = _contract.GIT_COUNT_FLAG
+GIT_HEAD = _contract.GIT_HEAD
+NODE_FILTER = _contract.NODE_FILTER
+NODE_SEP = _contract.NODE_SEP
+NO_MATCH = _contract.NO_MATCH
+Path = _contract.Path
+SEARCH_ERROR = _contract.SEARCH_ERROR
+SEARCH_FLAGS = _contract.SEARCH_FLAGS
+SEARCH_HEADS = _contract.SEARCH_HEADS
+SEARCH_LONG_FLAGS = _contract.SEARCH_LONG_FLAGS
+SEARCH_PATTERN_FLAG = _contract.SEARCH_PATTERN_FLAG
+TEST_RUNNERS = _contract.TEST_RUNNERS
+os = _contract.os
+re = _contract.re
+shlex = _contract.shlex
+
+def _search_span(argv):
+    """A search span as ``(letters, pattern, operands)``, or None where a token
+    outside the closed option set stands in it.
+
+    Short options cluster, a long one may carry its value after ``=``, ``--``
+    ends the options, and the pattern is ``-e``'s value where one is given and
+    the first operand otherwise. Two patterns are two searches ORed together in
+    a syntax the pattern itself may not be written in, so a span naming more
+    than one is a span this declines to read rather than one it guesses at.
+    """
+
+    letters = set()
+    patterns = []
+    words = []
+    rest = list(argv[1:])
+    ended = False
+    while rest:
+        token = rest.pop(0)
+        if ended or not token.startswith("-") or token == "-":
+            words.append(token)
+            continue
+        if token == "--":
+            ended = True
+            continue
+        if token.startswith("--"):
+            name, sep, value = token[2:].partition("=")
+            letter = SEARCH_LONG_FLAGS.get(name)
+            if letter is None:
+                return None
+            if letter == SEARCH_PATTERN_FLAG:
+                if not sep:
+                    if not rest:
+                        return None
+                    value = rest.pop(0)
+                patterns.append(value)
+            elif sep:
+                return None
+            else:
+                letters.add(letter)
+            continue
+        cluster = token[1:]
+        while cluster:
+            letter, cluster = cluster[0], cluster[1:]
+            if letter == SEARCH_PATTERN_FLAG:
+                if not cluster:
+                    if not rest:
+                        return None
+                    cluster = rest.pop(0)
+                patterns.append(cluster)
+                cluster = ""
+            elif letter in SEARCH_FLAGS:
+                letters.add(letter)
+            else:
+                return None
+    if len(patterns) > 1:
+        return None
+    if patterns:
+        return letters, patterns[0], words
+    if not words:
+        return None
+    return letters, words[0], words[1:]
+
+
+def _search_matcher(letters, pattern):
+    """The compiled matcher for one search span, or None where the pattern is
+    one nothing here compiles -- which is a status the search heads have too.
+
+    Bytes, because a search reads whatever the tree holds and a tree holds
+    files no encoding decodes. ``-F`` reads the pattern literally and every
+    other spelling reads it as a regular expression, which agrees with the
+    extended syntax ``-E`` names on every pattern this repository's ticket
+    corpus states.
+    """
+
+    body = re.escape(pattern) if "F" in letters else pattern
+    if "w" in letters:
+        # grep's ``-w`` asks that no word constituent stand on either side of
+        # the match, which is not ``\b``: ``\b`` also demands one *inside*, so
+        # a pattern whose own edge is not a word character -- ``-w -- -x`` --
+        # would never match here and does under grep.
+        body = r"(?<!\w)(?:{})(?!\w)".format(body)
+    if "x" in letters:
+        body = r"\A(?:{})\Z".format(body)
+    try:
+        return re.compile(
+            body.encode("utf-8", "surrogateescape"),
+            re.IGNORECASE if "i" in letters else 0,
+        )
+    except re.error:
+        return None
+
+
+def _selected(matcher, path, inverted):
+    """Does this file hold a selected line? None where it could not be read."""
+
+    try:
+        data = path.read_bytes()
+    except OSError:
+        return None
+    lines = data.split(b"\n")
+    if lines and not lines[-1]:
+        lines.pop()
+    return any(bool(matcher.search(line)) != inverted for line in lines)
+
+
+def _files_under(directory):
+    """Every regular file the copy holds beneath this directory.
+
+    ``followlinks=False``, and symlinked files are skipped: a link the copy
+    holds is the one route out of it that a path cannot be read for, which
+    ``_names_outside_the_copy`` says at length about the git spans. Answering
+    the search heads here is what makes it closable, so it is closed.
+    """
+
+    for base, dirs, names in os.walk(str(directory), followlinks=False):
+        dirs.sort()
+        for name in sorted(names):
+            path = Path(base) / name
+            if not path.is_symlink():
+                yield path
+
+
+def _inside_the_copy(tree, operand):
+    """The path this operand names inside the tree, or None where it names one
+    outside it."""
+
+    here = Path(tree) / operand
+    try:
+        root = Path(tree).resolve()
+        resolved = here.resolve()
+    except OSError:
+        return None
+    if resolved != root and root not in resolved.parents:
+        return None
+    return here
+
+
+def _search_exit(argv, tree):
+    """The status a search span exits with, decided by this tool's own matcher.
+
+    The convention ``grep`` and ``rg`` share: 0 where a line was selected,
+    ``NO_MATCH`` where none was, and ``SEARCH_ERROR`` where the span named
+    something this could not read. ``_discrimination`` reads that middle status
+    from a search head as ``no-hits-both-revisions``, so the numbers are the
+    tools' and not this matcher's own.
+
+    Read here rather than run, and that is the whole of the repair: ``grep`` is
+    a program a POSIX shell's PATH carries and a Windows shell's does not, so
+    executing it graded the host. The same tree gave this repository's own suite
+    exit 0 from Git Bash and exit 1 from PowerShell, the twenty differences
+    being ``unrunnable-oracle`` standing where each fixture's own finding
+    belonged. Nothing about a cut changes with the shell the check was launched
+    from, so the search heads are answered in the interpreter already running
+    and every host reads one verdict.
+
+    The copy is the whole of what a span reads. An operand rooted outside the
+    tree or climbing out of it is no operand at all, and a directory is read
+    only where the span asks for recursion -- which ``rg`` asks for by default
+    and ``grep`` asks for with ``-r``.
+    """
+
+    span = _search_span(argv)
+    if span is None:
+        return SEARCH_ERROR
+    letters, pattern, operands = span
+    matcher = _search_matcher(letters, pattern)
+    if matcher is None:
+        return SEARCH_ERROR
+    recursive = bool(letters & {"r", "R"}) or argv[0] == "rg"
+    # A recursive search naming no operand reads the working directory --
+    # ``rg`` by default, ``grep -r`` since 2.11 -- and the working directory
+    # is the copy.
+    if not operands and recursive:
+        operands = ["."]
+    inverted = "v" in letters
+    selected = False
+    # A span naming nothing to read decided nothing, which is the error status
+    # and not the absence of a match.
+    failed = not operands
+    for operand in operands:
+        here = _inside_the_copy(tree, operand)
+        if here is None:
+            failed = True
+        elif here.is_dir():
+            if recursive:
+                for path in _files_under(here):
+                    hit = _selected(matcher, path, inverted)
+                    failed = failed or hit is None
+                    selected = selected or hit is True
+            else:
+                failed = True
+        else:
+            hit = _selected(matcher, here, inverted)
+            failed = failed or hit is None
+            selected = selected or hit is True
+    # grep's own exception, stated in its manual: under ``-q`` a selected line
+    # exits 0 even where an error occurred, because the question was only
+    # whether anything matched.
+    if failed and not (selected and "q" in letters):
+        return SEARCH_ERROR
+    return 0 if selected else NO_MATCH
+
+
+def _unreadable_search(command):
+    """Is this a search span whose options this tool's own matcher cannot read?
+
+    Asked at extraction, so such a span is reported the way a shell-headed one
+    is -- as the criterion's extraction gap, which is advisory and settles
+    nothing -- rather than run under a guess at what the option meant.
+    """
+
+    head = command.split()[:1]
+    if not head or head[0] not in SEARCH_HEADS:
+        return False
+    try:
+        argv = shlex.split(command)
+    except ValueError:
+        return True
+    return not argv or _search_span(argv) is None
+
+
+def _verdict_in_output(command):
+    """Is this a command whose exit status carries no verdict?
+
+    ``grep -c`` prints a count and exits on whether it printed anything. A
+    criterion saying "reports 0" is judged by that text, which no exit status
+    carries, so the honest report is that cutcheck cannot decide it. The git
+    command that reads the same way is owned here now that the scratch copy
+    carries history and its head excuses nothing: ``git rev-list --count``
+    prints the number and exits 0 whatever it counted.
+    """
+
+    argv = command.split()
+    if argv[0] == GIT_HEAD:
+        return GIT_COUNT_FLAG in argv[1:]
+    if argv[0] not in SEARCH_HEADS:
+        return False
+    return any(COUNT_FLAG_RE.match(token) for token in argv[1:])
+
+
+def _whole_target(target, tree):
+    """Does this target name a whole module or directory, not a node inside one?
+
+    Decided against the tree, because only the tree knows where the module
+    stops. ``tests.test_cutcheck`` is a file and
+    ``tests.test_cutcheck.CleanSetTest`` is a class inside that file, and no
+    reading of the two strings tells them apart. A unittest target spells the
+    way down with dots and a pytest target spells it with slashes; both are one
+    question about where the path stops resolving.
+    """
+
+    if NODE_SEP in target:
+        return False
+    here = tree / (target if "/" in target else target.replace(".", "/"))
+    return here.is_dir() or here.with_suffix(".py").is_file()
+
+
+def _filter_narrows(argv):
+    """Does this command's node filter actually exclude any node?
+
+    The token's presence was the whole test once, and that read `-k test` --
+    which matches every method in the suite -- as a narrowed oracle. The
+    pattern is read instead: anything `test_` starts with matches all of them
+    and narrows nothing, and everything else is taken at its word, because
+    which nodes a pattern selects is a question for the runner and not for
+    this.
+    """
+
+    if NODE_FILTER not in argv:
+        return False
+    index = argv.index(NODE_FILTER)
+    pattern = argv[index + 1].strip("\"'") if index + 1 < len(argv) else ""
+    return not FILTER_MATCHES_ALL.startswith(pattern)
+
+
+def _whole_suite(command, tree):
+    """Is this a test invocation naming no node id?
+
+    ``_commands`` refuses a bare head for this reason already: a tool's name
+    with nothing after it decides nothing. A whole-module or whole-suite
+    invocation is that same defect with more typing -- it runs the identical
+    tests under every item it is stated under, so it discriminates none of
+    them, and the honest report of it is the gap.
+
+    Reported rather than run, which is what makes the class worth having: this
+    repository's own mandated ``discover`` outgrows ``COMMAND_TIMEOUT`` in the
+    cleanest store there is, so executing it returned ``unrunnable-oracle`` --
+    a true class reached by reading the clock instead of the cut.
+
+    A target resolving to no module at all is some flag's value rather than a
+    thing to grade, and one such token is enough to withhold the finding: this
+    convicts what it can read whole, and stays quiet over what it cannot.
+
+    A runner carrying flags and no target at all is the widest spelling there
+    is -- ``pytest -q``, or the bare ``python3 -m unittest`` that is documented
+    as equivalent to ``discover``. Naming nothing is not the same as naming
+    something unreadable, so the two are separated here: the finding is
+    withheld over a quoted target, which names a node this cannot parse, and
+    made over an empty one, which names none.
+    """
+
+    argv = command.split()
+    runner = next((i for i, token in enumerate(argv) if token in TEST_RUNNERS), None)
+    if runner is None or _filter_narrows(argv):
+        return False
+    rest = argv[runner + 1:]
+    if DISCOVER in rest:
+        return True
+    if NODE_FILTER in rest:
+        # Reaching here means the pattern matched every node, so it is a flag's
+        # value and not a target. Left in, it resolves to no module and
+        # withholds the finding over the very filter that earned it.
+        at = rest.index(NODE_FILTER)
+        rest = rest[:at] + rest[at + 2:]
+    targets = [token for token in rest if token[:1] not in ("-", '"', "'")]
+    if not targets:
+        return not any(token[:1] in ('"', "'") for token in rest)
+    return all(_whole_target(token, tree) for token in targets)
+
+__all__ = (
+    '_search_span', '_search_matcher', '_selected', '_files_under',
+    '_inside_the_copy', '_search_exit', '_unreadable_search', '_verdict_in_output',
+    '_whole_target', '_filter_narrows', '_whole_suite',
+)
