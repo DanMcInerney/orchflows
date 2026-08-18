@@ -14,10 +14,11 @@ user can make with the user, one question at a time, each answer
 recorded verbatim, without re-interviewing a settled one.
 
 Count the deliverable kinds the end state spans. One kind → one
-pack-stamped root ticket. Two or more → one root ticket per kind, cut
-where the deliverable's kind changes, each successor `depends_on` its
-predecessor and names, among its own `## Fixed inputs`, the
-predecessor's result by that root's id — resolved when it completes.
+pack-stamped root ticket. Two or more → open only the first kind's root
+now. After its predecessor completes and its accepted result identity is
+resolved and cited, open a successor run for the next kind, carrying that
+identity among the successor root's own `## Fixed inputs`. A kind boundary
+never creates a second root in the same run.
 
 Draft each per
 [contracts/work-item.md](../../../contracts/work-item.md#root-ticket),
@@ -34,6 +35,7 @@ stamp> …`.
 Never: stamp two packs in one root ticket; leave an acceptance criterion
 oracle-less; restate standards an exemplar's owner already states.
 
-Return: the accepted root ticket's id and path, plus each further root
-ticket and its edge where the end state spans more than one kind; the
-kind-count decision and its evidence, assumptions, evidence consulted.
+Return: the accepted root ticket's id and path, plus the ordered
+successor-run plan and, after each predecessor resolves, the successor
+root's id, path, and cited predecessor result identity; the kind-count
+decision and its evidence, assumptions, evidence consulted.

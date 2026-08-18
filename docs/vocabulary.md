@@ -77,8 +77,8 @@ that needs a different meaning needs a different word.
   is not one, and neither is a count nor a reading taken from the
   environment.
 - **run** — one physical execution of a workflow against one spec; owns a
-  run id (`<utc-stamp>-<slug>`), a worklog, a ticket directory, one root
-  ticket, and one composite gate. An ad-hoc
+  run id (`<utc-stamp>-<slug>`), a worklog, and a ticket directory. When
+  decomposed it has one root ticket and one composite gate. An ad-hoc
   run executes one ad-hoc ticket — or an ad-hoc set — instead: the
   tickets' objectives and completion tests are its frozen statement,
   the ticket files the whole record — no worklog.
@@ -107,8 +107,9 @@ that needs a different meaning needs a different word.
 - **root ticket** — a ticket whose executor is `orch-decompose`; its
   subtree is `<id>.NN` unit tickets plus `<id>.gate.*`, checked before
   its first unit is promoted; it completes when
-  `<id>.gate.verify` completes; a successor depends on the root id
-  alone.
+  `<id>.gate.verify` completes. A successor root lives in a successor run
+  opened after this root's result identity resolves and cites that identity
+  among its own fixed inputs.
 - **template** — a directory of ticket stubs plus its `template.md`
   manifest, instantiated into a run's ticket directory by `tickets.py
   instantiate` and run by `orch-frontier`; the one form a composition

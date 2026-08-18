@@ -15,15 +15,17 @@ cut's defect; spawn one fresh child on it per
 [rules/delegation.md](../../../rules/delegation.md) §1–§2, role per
 [rules/roles.md](../../../rules/roles.md) §4, the ticket's executor as
 the applied skill; host depth per
-[references/profiles.md](references/profiles.md). Where the ticket's
-`independence` reads `checker` and an oracle is
-`authored-here`, dispatch `orch-critique` as one fresh child on
-the same claimed ticket, on `tickets.py packet`'s `--executor
-orch-critique` form; then, where its pass invalidates an entry whose oracle is judged, dispatch
+[references/profiles.md](references/profiles.md). Each ticket takes one
+outside-independence path. Only where its `independence` reads `checker`,
+an oracle is `authored-here`, and the ticket is not already checked, dispatch
+`orch-critique` as one fresh child on the same claimed ticket, on
+`tickets.py packet`'s `--executor orch-critique` checker packet form.
+For a gate-deferred or pre-existing-only ticket, never
+emit that checker packet. Then, where its pass invalidates an entry whose oracle is judged, dispatch
 that packet's `--executor orch-verify` form; else re-run the
 invalidated deterministic oracles at the checked identity here, the
 rest covered ([rules/verification.md](../../../rules/verification.md) §10).
-A root's cut takes that checker where it has three or more `<id>.NN` or
+A root cut reader is the exception: the root's cut takes that checker where it has three or more `<id>.NN` or
 `cutcheck.py` reported an advisory; the `<id>.NN` stay `pending` until
 `checked_by` is set and this engine's own `cutcheck.py` re-run — the
 re-verification — reads exit 0, which below the threshold accepts the

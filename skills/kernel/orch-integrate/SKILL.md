@@ -12,7 +12,7 @@ caller's own write scope.
 
 Grade by dispatch type: a work item takes the ticket grade —
 verification must cover every frozen criterion at its stated
-identities, with independence per
+identities, through one outside-independence path per
 [rules/verification.md](../../../rules/verification.md) §10
 (`authored-here` coverage rides `independence`: `gate` defers to the
 downstream gate, `checker` requires `checked_by`), needs-verify
@@ -27,6 +27,8 @@ Check always: the returning child's name matches the ticket's
 `claimed_by`, its `checked_by`, or the re-verifier your own
 `tickets.py packet --executor` named — a mismatch is rejected(child), a
 lapsed claim returning outside its bound, never a caller under-supply;
+reject a non-root ticket carrying both `independence: gate` and
+`checked_by` before accepting its result;
 `changed_artifacts` per
 [work-item.md](../../../contracts/work-item.md#dispatch); nothing a
 verification entry covers has changed since it was produced. For

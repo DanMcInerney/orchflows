@@ -565,6 +565,10 @@ class CopyFaithfulnessClauseTest(unittest.TestCase):
 
 FRONTIER = ROOT / "skills" / "engines" / "orch-frontier" / "SKILL.md"
 WORK_ITEM = CONTRACTS / "work-item.md"
+CRITIQUE = ROOT / "skills" / "kernel" / "orch-critique" / "SKILL.md"
+DECOMPOSE = ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md"
+INTEGRATE = ROOT / "skills" / "kernel" / "orch-integrate" / "SKILL.md"
+SPEC = ROOT / "skills" / "workflows" / "orch-spec" / "SKILL.md"
 
 # The cut is reviewed by an independent reader before any unit of it is
 # dispatched, and `scripts/tickets.py` emits that reader's packet off a root
@@ -600,7 +604,9 @@ _CONTRACT_CUT_CHECK = {
 
 # The clauses as written, so the can-fail copies below read as their files did
 # before them.
-_FRONTIER_CLAUSE_RE = re.compile(r"A\s+root's\s+cut\s+takes.*?cut\s+alone\.\s*", re.S)
+_FRONTIER_CLAUSE_RE = re.compile(
+    r"A\s+root\s+cut\s+reader.*?cut\s+alone\.\s*", re.S
+)
 _CONTRACT_CLAUSE_RE = re.compile(r"A root's cut is checked.*?cut checker\.\s*", re.S)
 
 
@@ -718,7 +724,9 @@ _FRONTIER_REVERIFICATION = {
 _SPLIT_CLAUSE_RE = re.compile(
     r"—\s+where\s+every\s+invalidated.*?fresh\s+child", re.S
 )
-_FRONTIER_SPLIT_RE = re.compile(r";\s+then,\s+where\s+its\s+pass.*?§10\)\.", re.S)
+_FRONTIER_SPLIT_RE = re.compile(
+    r"(?:;\s+then,|\.\s+Then,)\s+where\s+its\s+pass.*?§10\)\.", re.S
+)
 
 
 # Sixteen repair tickets in the same run each ran the whole required-check
@@ -811,6 +819,76 @@ class ReverificationSplitTest(unittest.TestCase):
             gaps,
             "orch-frontier's checker path states no re-verification split "
             f"covering: {', '.join(gaps)}",
+        )
+
+    def test_workflows_carry_successor_runs_selected_independence_and_single_gate(self):
+        """Every skill that can select, dispatch, review, or join the path
+        carries the same guardrail; no workflow may silently reconstruct the
+        older checker-plus-gate or second-root topology."""
+
+        clauses = {
+            "orch-spec": (
+                SPEC,
+                {
+                    "successor intake": (
+                        "successor run", "predecessor", "result identity",
+                        "resolved", "cited",
+                    ),
+                    "one physical root": ("never", "second root", "same run"),
+                },
+            ),
+            "orch-decompose": (
+                DECOMPOSE,
+                {
+                    "selected gate independence": (
+                        "`independence: gate`", "all authored-here criteria",
+                        "regardless of oracle class", "`independence: checker`",
+                    ),
+                    "single composite gate": (
+                        "one composite gate", "unique lens", "one repair",
+                        "one verification",
+                    ),
+                },
+            ),
+            "orch-frontier": (
+                FRONTIER,
+                {
+                    "exclusive dispatch": (
+                        "one outside-independence path", "checker packet",
+                        "gate-deferred", "already checked", "never",
+                    ),
+                    "root exception": ("root cut reader", "exception"),
+                },
+            ),
+            "orch-critique": (
+                CRITIQUE,
+                {
+                    "checker refusal": ("Refuse", "non-root", "gate-deferred"),
+                    "single checker": ("single immutable", "`checked_by`"),
+                    "additional review": (
+                        "unique named", "root-gate critique lens",
+                    ),
+                },
+            ),
+            "orch-integrate": (
+                INTEGRATE,
+                {
+                    "contradiction refusal": (
+                        "reject", "non-root", "`independence: gate`",
+                        "`checked_by`",
+                    ),
+                    "one path": ("one outside-independence path",),
+                },
+            ),
+        }
+        gaps = []
+        for owner, (path, required) in clauses.items():
+            for gap in _clause_gaps(path.read_text(encoding="utf-8"), required):
+                gaps.append(f"{owner}: {gap}")
+        self.assertEqual(
+            [], gaps,
+            "workflow owners do not carry the verification split: "
+            + ", ".join(gaps),
         )
 
     def test_a_rule_and_an_engine_without_the_split_fail_the_check(self):

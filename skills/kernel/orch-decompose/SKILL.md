@@ -21,8 +21,10 @@ overlapping only siblings it is dependency-ordered with,
 `isolation: required` when the pack's workspace cell names a mechanism
 covering that scope, a bound, its edges, and a completion test whose
 criteria name oracles from the pack's oracle policy, each with its
-provenance; `independence: gate` when a `judged` criterion there rides
-the final gate. Draw each edge under §3's edge rule and place each
+provenance. Select `independence: gate` when the final gate covers all
+authored-here criteria on that item, regardless of oracle class; select
+`independence: checker` when any authored-here criterion is not covered
+there. Draw each edge under §3's edge rule and place each
 artifact two items would write under its sole-owner rule, at the point
 you decide one.
 Emit the assembly item the pack's cell names, on §4's terms.
@@ -31,8 +33,9 @@ Then run `cutcheck.py` against the revision the set was cut from,
 repair every cut defect it reports through `tickets.py amend` and re-run
 it to exit 0; its advisories and what it cannot decide are
 [references/cut-lens.md](references/cut-lens.md)'s to judge. Only then
-write the gate stubs through `tickets.py gate`, one lens per stamped
-lens over the run's scope.
+write the run's one composite gate through `tickets.py gate`: one critique
+per unique lens name, all feeding one repair and one verification over the
+run's scope.
 
 Map every acceptance criterion to an item, the gate, or uncovered
 remainder at `<state-root>/runs/<run>/<root>.coverage.md`.

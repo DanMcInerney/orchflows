@@ -177,8 +177,8 @@ inherits verbatim; bound → `bound`. The stamped pack's
 criterion no oracle can check is a spec defect, not the decomposer's
 slack.
 
-One physical run has one root ticket and one composite gate. Its subtree
-is `<id>.NN` unit tickets plus the gate stubs
+A decomposed physical run has one root ticket and one composite gate. Its
+subtree is `<id>.NN` unit tickets plus the gate stubs
 `<id>.gate.critique.<lens>` (read-only, one per unique lens name, in
 parallel), `<id>.gate.repair` (the gate's one repair, with write authority
 over the run scope and behind every critique) and `<id>.gate.verify` (the
