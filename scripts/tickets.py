@@ -1,5 +1,75 @@
 #!/usr/bin/env python3
-'Mechanical ticket queries over ``<sink>/tickets/<run>/*.md``.\n\nStdlib-only, cross-platform. Tickets are markdown work items per\n``contracts/work-item.md``; frontmatter is parsed manually (no third-party\nYAML dependency). The root is the one user-scope state sink\n``scripts/state_root.py`` resolves — ``$ORCHFLOWS_STATE_HOME`` or\n``~/.orchflows/state`` — so every workspace in every repository reads and\nwrites one run\'s tickets at one path, and a run outlives the checkout it\nstarted in. Every subcommand prints exactly one JSON document to stdout.\nFailures are reported as ``{"error": "..."}`` in the JSON payload and\nexit 1; success exits 0. No outcome raises a traceback.\n\n``--help``, ``-h`` or ``help`` answers usage at the top level, and\n``<subcommand> --help`` for one subcommand: a request for usage is served,\nnever rendered as an unknown-subcommand error.\n\nSubcommands:\n    new <run> <id> --executor E --objective TEXT --criterion C\n        [--criterion C ...] [--depends-on a,b] [--write-scope p[,p]]\n        [--bound B] [--pack P] [--input I ...] [--excluded X ...]\n        [--profile P] [--independence gate|checker]\n        [--isolation required|none] [--return-fields TEXT]\n    new <run> --file <path>\n    instantiate <template-dir> --run <run> [--set k=v ...]\n    gate <run> <root-id> --lens <name>[,<name>] --write-scope <path>[,<path>]\n        [--acceptance-from <id>]\n    list [--run R]\n    ready [--run R]\n    claim <run> <id> --by <name>\n    grant <run> <id> --write-scope <path>[,<path>] --by <name>\n    set-status <run> <id> <status>\n    packet <run> <id> --reply-to <name> [--workspace <path>]\n    result <run> <id> --section <name> (--file <path> | --text <string>)\n           [--append | --replace]\n    worklog <run> [--write]\n    run-state <run> [--tree <name>] (--note <line> |\n             (--artifact <name> [--replace] | --terminal <state>)\n             (--file <path> | --text <string>))\n    improvement --proposal <name> (--file <path> | --text <string>)\n    improvement --covered <line>\n\n``run.json`` — the run\'s identity document, at ``<sink>/runs/<run>/``\nbeside the worklog, written on the run\'s first state write, appended to\nand never rewritten. This script is its only writer, so its\nspecification is stated here rather than in a contract that owns nothing\nelse about it:\n\n- ``run`` — the run id; equals the name of the directory holding the file.\n- ``sink_convention`` — integer: the sink layout it was written under.\n- ``opened_at`` — when the run\'s first write landed; never rewritten.\n- ``orchflows`` — the installed library identity captured when the run opens.\n  ``orchflows.receipt_version`` — the installer receipt schema version, null\n  when the receipt is missing, corrupt or legacy; ``orchflows.source_commit``\n  — the exact installed-from commit from that receipt, likewise null rather\n  than inferred.\n- ``terminal_at`` — the first instant the rendered worklog\'s terminal becomes\n  non-empty; ``terminal_ticket_id`` and ``terminal_status`` — the ticket and\n  terminal state that caused it; ``elapsed_ms`` — nonnegative milliseconds\n  from ``opened_at``. These four keys are absent while open and on legacy runs\n  whose opening instant was never recorded.\n- ``project`` — which project owns this run id; never rewritten once set.\n  ``project.root`` — absolute path of the **main** checkout, a linked\n  worktree resolved to it and a submodule to its superproject;\n  ``project.origin`` — the origin url, null when the repository has no\n  remote; ``project.name`` — the root\'s base name, a human label, never\n  compared.\n- ``workspaces`` — every workspace that has written to this run, in\n  first-write order. ``workspaces[].path`` — that workspace itself, **not**\n  its main checkout; ``workspaces[].first_seen`` — when its first write\n  landed.\n'
+"""Mechanical ticket queries over ``<sink>/tickets/<run>/*.md``.
+
+Stdlib-only, cross-platform. Tickets are markdown work items per
+``contracts/work-item.md``; frontmatter is parsed manually (no third-party
+YAML dependency). The root is the one user-scope state sink
+``scripts/state_root.py`` resolves — ``$ORCHFLOWS_STATE_HOME`` or
+``~/.orchflows/state`` — so every workspace in every repository reads and
+writes one run's tickets at one path, and a run outlives the checkout it
+started in. Every subcommand prints exactly one JSON document to stdout.
+Failures are reported as ``{"error": "..."}`` in the JSON payload and
+exit 1; success exits 0. No outcome raises a traceback.
+
+``--help``, ``-h`` or ``help`` answers usage at the top level, and
+``<subcommand> --help`` for one subcommand: a request for usage is served,
+never rendered as an unknown-subcommand error.
+
+Subcommands:
+    new <run> <id> --executor E --objective TEXT --criterion C
+        [--criterion C ...] [--depends-on a,b] [--write-scope p[,p]]
+        [--bound B] [--pack P] [--input I ...] [--excluded X ...]
+        [--profile P] [--independence gate|checker]
+        [--isolation required|none] [--return-fields TEXT]
+    new <run> --file <path>
+    instantiate <template-dir> --run <run> [--set k=v ...]
+    gate <run> <root-id> --lens <name>[,<name>] --write-scope <path>[,<path>]
+        [--acceptance-from <id>]
+    list [--run R]
+    ready [--run R]
+    claim <run> <id> --by <name>
+    grant <run> <id> --write-scope <path>[,<path>] --by <name>
+    set-status <run> <id> <status>
+    packet <run> <id> --reply-to <name> [--workspace <path>]
+    result <run> <id> --section <name> (--file <path> | --text <string>)
+           [--append | --replace]
+    worklog <run> [--write]
+    run-state <run> [--tree <name>] (--note <line> |
+             (--artifact <name> [--replace] | --terminal <state>)
+             (--file <path> | --text <string>))
+    improvement --proposal <name> (--file <path> | --text <string>)
+    improvement --covered <line>
+
+``run.json`` — the run's identity document, at ``<sink>/runs/<run>/``
+beside the worklog, written on the run's first state write, appended to
+and never rewritten. This script is its only writer, so its
+specification is stated here rather than in a contract that owns nothing
+else about it:
+
+- ``run`` — the run id; equals the name of the directory holding the file.
+- ``sink_convention`` — integer: the sink layout it was written under.
+- ``opened_at`` — when the run's first write landed; never rewritten.
+- ``orchflows`` — the installed library identity captured when the run opens.
+  ``orchflows.receipt_version`` — the installer receipt schema version, null
+  when the receipt is missing, corrupt or legacy; ``orchflows.source_commit``
+  — the exact installed-from commit from that receipt, likewise null rather
+  than inferred.
+- ``terminal_at`` — the first instant the rendered worklog's terminal becomes
+  non-empty; ``terminal_ticket_id`` and ``terminal_status`` — the ticket and
+  terminal state that caused it; ``elapsed_ms`` — nonnegative milliseconds
+  from ``opened_at``. These four keys are absent while open and on legacy runs
+  whose opening instant was never recorded.
+- ``project`` — which project owns this run id; never rewritten once set.
+  ``project.root`` — absolute path of the **main** checkout, a linked
+  worktree resolved to it and a submodule to its superproject;
+  ``project.origin`` — the origin url, null when the repository has no
+  remote; ``project.name`` — the root's base name, a human label, never
+  compared.
+- ``workspaces`` — every workspace that has written to this run, in
+  first-write order. ``workspaces[].path`` — that workspace itself, **not**
+  its main checkout; ``workspaces[].first_seen`` — when its first write
+  landed.
+"""
 
 from __future__ import annotations
 
@@ -46,7 +116,7 @@ ORACLE_RE = _tickets_format_module.ORACLE_RE
 PACKS_DIR = _tickets_worklog_module.PACKS_DIR
 PACK_NAME_PREFIX = _tickets_format_module.PACK_NAME_PREFIX
 PACK_NAME_SUFFIX = _tickets_format_module.PACK_NAME_SUFFIX
-PACK_WORKSPACE_MECHANISMS = _tickets_format_module.PACK_WORKSPACE_MECHANISMS
+PACK_WORKSPACE_MECHANISMS = {'orch-code-pack': 'git', 'orch-content-pack': 'document tree', 'orch-design-pack': 'git plus render', 'orch-research-pack': 'evidence store'}
 PLACEHOLDER_RE = _tickets_format_module.PLACEHOLDER_RE
 PROVENANCE_RE = _tickets_format_module.PROVENANCE_RE
 REQUIRED_FIELDS_CELL = _tickets_format_module.REQUIRED_FIELDS_CELL
@@ -106,7 +176,9 @@ _find_repo_root = _tickets_store_module._find_repo_root
 _identity_document = _tickets_store_module._identity_document
 _identity_update = _tickets_store_module._identity_update
 _improvement_root = _tickets_store_module._improvement_root
-_installed_orchflows_metadata = _tickets_store_module._installed_orchflows_metadata
+def _installed_orchflows_metadata() -> dict:
+    """Return the installed library identity through its store owner."""
+    return _tickets_store_module._installed_orchflows_metadata()
 _iter_run_dirs = _tickets_store_module._iter_run_dirs
 _load_ticket = _tickets_store_module._load_ticket
 _main_checkout_root = _tickets_store_module._main_checkout_root
@@ -120,7 +192,9 @@ _run_state_root = _tickets_store_module._run_state_root
 _runs_root = _tickets_store_module._runs_root
 _same_project = _tickets_store_module._same_project
 _segment_error = _tickets_store_module._segment_error
-_terminal_identity_update = _tickets_store_module._terminal_identity_update
+def _terminal_identity_update(run: str, ticket_id: str, status: str, now):
+    """Return the terminal identity update through its store owner."""
+    return _tickets_store_module._terminal_identity_update(run, ticket_id, status, now)
 _tickets_root = _tickets_store_module._tickets_root
 _waiting_out_windows = _tickets_store_module._waiting_out_windows
 _workspace_root = _tickets_store_module._workspace_root

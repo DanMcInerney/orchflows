@@ -1,0 +1,347 @@
+"""Discover packages and validate their local structure."""
+
+from __future__ import annotations
+
+from tools.validate_support import common as __dep_common
+ALLOWED_FRONTMATTER_KEYS = __dep_common.ALLOWED_FRONTMATTER_KEYS
+ASSEMBLY_NONE_FORM_RE = __dep_common.ASSEMBLY_NONE_FORM_RE
+ASSEMBLY_SKILL_FORM_RE = __dep_common.ASSEMBLY_SKILL_FORM_RE
+BODY_BUDGET = __dep_common.BODY_BUDGET
+CELL_CLAUSE_MIN_WORDS = __dep_common.CELL_CLAUSE_MIN_WORDS
+CRAFT_ROW_RE = __dep_common.CRAFT_ROW_RE
+DESCRIPTION_BUDGET = __dep_common.DESCRIPTION_BUDGET
+LINK_TARGET_RE = __dep_common.LINK_TARGET_RE
+LIST_MARKER_RE = __dep_common.LIST_MARKER_RE
+NEVER_RE = __dep_common.NEVER_RE
+OUTSIDE_PACK_CITATION = __dep_common.OUTSIDE_PACK_CITATION
+PACK_CELL_ROW_RE = __dep_common.PACK_CELL_ROW_RE
+PACK_SIGNATURE_CELLS = __dep_common.PACK_SIGNATURE_CELLS
+PACK_TABLE_CELL_RE = __dep_common.PACK_TABLE_CELL_RE
+Path = __dep_common.Path
+REQUIRE_RE = __dep_common.REQUIRE_RE
+RETURN_RE = __dep_common.RETURN_RE
+ROLE_NONE_TIERS = __dep_common.ROLE_NONE_TIERS
+ROLE_VALUES = __dep_common.ROLE_VALUES
+ROOT = __dep_common.ROOT
+SENTENCE_END_RE = __dep_common.SENTENCE_END_RE
+SIGNATURE_CELL_POINTER_RE = __dep_common.SIGNATURE_CELL_POINTER_RE
+SKILL_TIERS = __dep_common.SKILL_TIERS
+SKIPPED = __dep_common.SKIPPED
+SURFACE_BUDGET = __dep_common.SURFACE_BUDGET
+TABLE_DELIM_ROW_RE = __dep_common.TABLE_DELIM_ROW_RE
+re = __dep_common.re
+
+CONTRACTS_DIR = ROOT / "contracts"
+PINS_FILE = ROOT / "tests" / "pins.json"
+PIN_MESSAGE = (
+    "T0 contract changed; if intentional, re-pin via: "
+    "python tools/validate.py --pin"
+)
+
+
+def rel(path: Path) -> str:
+    return str(path.relative_to(ROOT)).replace("\\", "/")
+
+
+def _read_source(path: Path) -> str:
+    # utf-8-sig: a BOM-prefixed file (e.g. PowerShell Out-File default) must
+    # still parse as valid frontmatter -- plain utf-8 leaves the BOM glued to
+    # the opening '---' line, which a byte-for-byte compare then rejects.
+    return path.read_text(encoding="utf-8-sig")
+
+
+class Diagnostics:
+    def __init__(self):
+        self.items = []  # list[(level, file, message)]
+
+    def error(self, file_label: str, message: str) -> None:
+        self.items.append(("ERROR", file_label, message))
+
+    def warn(self, file_label: str, message: str) -> None:
+        self.items.append(("WARN", file_label, message))
+
+    @property
+    def has_errors(self) -> bool:
+        return any(level == "ERROR" for level, _, _ in self.items)
+
+    def lines(self):
+        ordered = sorted(self.items, key=lambda item: (item[1], item[0], item[2]))
+        return [f"{level} {file_label}: {message}" for level, file_label, message in ordered]
+
+
+def discover_packages():
+    """Return every skill/pack package as a dict with path, kind, skill_md.
+
+    A tier directory holding only ``references/`` is not a package and is
+    not a defect in itself -- the ``is_file()`` guard below reads it as no
+    package rather than as a package missing its SKILL.md. It is not a
+    home a reference may keep, though: ``rules/visibility.md`` §4 makes a
+    references file public only where its owner's body names the local
+    path, and a directory with no body names nothing. ``profiles.md``
+    therefore lives under ``skills/engines/orch-frontier/``, whose body
+    names it.
+    """
+    packages = []
+    for tier in SKILL_TIERS:
+        tier_dir = ROOT / "skills" / tier
+        if not tier_dir.is_dir():
+            continue
+        for pkg_dir in sorted(tier_dir.iterdir()):
+            if not pkg_dir.is_dir():
+                continue
+            skill_md = pkg_dir / "SKILL.md"
+            if skill_md.is_file():
+                packages.append({
+                    "path": pkg_dir,
+                    "skill_md": skill_md,
+                    "kind": tier,
+                    "is_pack": False,
+                })
+    packs_dir = ROOT / "packs"
+    if packs_dir.is_dir():
+        for pkg_dir in sorted(packs_dir.iterdir()):
+            if not pkg_dir.is_dir():
+                continue
+            skill_md = pkg_dir / "SKILL.md"
+            if skill_md.is_file():
+                packages.append({
+                    "path": pkg_dir,
+                    "skill_md": skill_md,
+                    "kind": "pack",
+                    "is_pack": True,
+                })
+    return packages
+
+
+def parse_frontmatter(text: str, file_label: str, diag: Diagnostics):
+    """Manually parse the '---' fenced frontmatter. Returns (dict, body) or (None, None)."""
+    lines = text.split("\n")
+    if not lines or lines[0].strip() != "---":
+        diag.error(file_label, "missing opening frontmatter fence '---'")
+        return None, None
+    end_idx = None
+    for i in range(1, len(lines)):
+        if lines[i].strip() == "---":
+            end_idx = i
+            break
+    if end_idx is None:
+        diag.error(file_label, "missing closing frontmatter fence '---'")
+        return None, None
+    fm = {}
+    for ln in lines[1:end_idx]:
+        if not ln.strip():
+            continue
+        if ":" not in ln:
+            diag.error(file_label, f"malformed frontmatter line: {ln!r}")
+            continue
+        key, _, value = ln.partition(":")
+        fm[key.strip()] = value.strip()
+    body = "\n".join(lines[end_idx + 1:])
+    return fm, body
+
+
+def validate_frontmatter(fm: dict, pkg: dict, diag: Diagnostics) -> None:
+    file_label = rel(pkg["skill_md"])
+    extra = set(fm) - ALLOWED_FRONTMATTER_KEYS
+    for key in sorted(extra):
+        diag.error(file_label, f"frontmatter key '{key}' is not allowed")
+
+    if "name" not in fm or not fm["name"]:
+        diag.error(file_label, "frontmatter missing required key 'name'")
+    else:
+        expected = pkg["path"].name
+        if fm["name"] != expected:
+            diag.error(
+                file_label,
+                f"frontmatter name '{fm['name']}' does not match folder name '{expected}'",
+            )
+
+    if "description" not in fm or not fm["description"]:
+        diag.error(file_label, "frontmatter missing required key 'description'")
+    elif len(fm["description"]) > DESCRIPTION_BUDGET:
+        diag.error(
+            file_label,
+            f"description is {len(fm['description'])} chars, exceeds {DESCRIPTION_BUDGET}-char budget",
+        )
+
+    if "disable-model-invocation" in fm and fm["disable-model-invocation"] not in ("true", "false"):
+        diag.error(
+            file_label,
+            f"disable-model-invocation must be 'true' or 'false', got {fm['disable-model-invocation']!r}",
+        )
+
+
+def validate_role(fm: dict, pkg: dict, diag: Diagnostics) -> None:
+    file_label = rel(pkg["skill_md"])
+    if pkg["is_pack"]:
+        if "role" in fm:
+            diag.error(file_label, "pack frontmatter must not declare 'role'")
+        return
+    role = fm.get("role")
+    if not role:
+        diag.error(file_label, "frontmatter missing required key 'role'")
+        return
+    if role not in ROLE_VALUES:
+        diag.error(file_label, f"role '{role}' is not one of {sorted(ROLE_VALUES)}")
+        return
+    if pkg["kind"] in ROLE_NONE_TIERS and role != "none":
+        diag.error(file_label, f"{pkg['kind']} skill must declare role: none, got '{role}'")
+
+
+def validate_anatomy(body: str, pkg: dict, diag: Diagnostics) -> None:
+    file_label = rel(pkg["skill_md"])
+    if pkg["is_pack"]:
+        for label in ("Require:", "Never:", "Return:"):
+            if label in body:
+                diag.error(file_label, f"pack body must not contain '{label}' (packs carry no control flow)")
+        return
+    if not REQUIRE_RE.search(body):
+        diag.error(file_label, "skill body missing a line starting 'Require:'")
+    if not NEVER_RE.search(body):
+        diag.error(file_label, "skill body missing a line starting 'Never:'")
+    if not RETURN_RE.search(body):
+        diag.error(file_label, "skill body missing a sentence starting 'Return'")
+
+
+def body_words(body: str) -> int:
+    """The body's word count with markdown link targets stripped."""
+    return len(LINK_TARGET_RE.sub("]", body).split())
+
+
+def _split_frontmatter(text: str):
+    parts = text.split("---", 2)
+    return (parts[1], parts[2]) if len(parts) > 2 else ("", text)
+
+
+def validate_surface_budgets(diag: Diagnostics) -> None:
+    """The every-turn surfaces against rules/token-economy.md §11."""
+    for name, limit in SURFACE_BUDGET.items():
+        path = ROOT / name
+        if not path.is_file():
+            diag.warn(name, SKIPPED)  # a partial tree carries no router
+            continue
+        n = body_words(_read_source(path))
+        if n > limit:
+            diag.error(name, f"surface has {n} words, exceeds the every-turn budget of {limit}")
+
+
+def validate_budget(body: str, pkg: dict, diag: Diagnostics) -> None:
+    file_label = rel(pkg["skill_md"])
+    n = body_words(body)
+    tier = "pack" if pkg["is_pack"] else pkg["kind"]
+    limit = BODY_BUDGET[tier]
+    if n > limit:
+        diag.error(file_label, f"body has {n} words, exceeds the {tier} budget of {limit}")
+
+
+def validate_pack_signature(body: str, pkg: dict, diag: Diagnostics) -> None:
+    file_label = rel(pkg["skill_md"])
+    found = set(PACK_TABLE_CELL_RE.findall(body))
+    missing = [cell for cell in PACK_SIGNATURE_CELLS if cell not in found]
+    if missing:
+        diag.error(file_label, f"pack signature table missing cell(s): {', '.join(missing)}")
+    row = CRAFT_ROW_RE.search(body)
+    if row and "(references/craft.md)" not in row.group(1):
+        diag.error(file_label, "craft cell must bind [references/craft.md](references/craft.md)")
+    cells = dict(PACK_CELL_ROW_RE.findall(body))
+    if "assembly" in cells and not assembly_form_ok(cells["assembly"]):
+        diag.error(
+            file_label,
+            "assembly cell must be a backticked skill name or the bare word "
+            f"'none' plus an em-dash gloss, got: {cells['assembly']!r}",
+        )
+
+
+def assembly_form_ok(binding: str) -> bool:
+    """contracts/pack-signature.md admits exactly two `assembly` forms.
+    `none` is bare: backticking it would read as a skill name, and no
+    skill is called none."""
+    binding = binding.strip()
+    return bool(ASSEMBLY_SKILL_FORM_RE.match(binding) or ASSEMBLY_NONE_FORM_RE.match(binding))
+
+
+def cell_clauses(text: str) -> list:
+    """Split the content behind a cell into clauses -- the normative
+    comparison unit of validate_cell_duplication.
+
+    A clause is one assertion: a markdown table's data row, or a
+    sentence, cut again at every ';' because this library's prose joins
+    independent assertions with the semicolon (a workspace cell is one
+    such list). A ',' is not a cut point: it joins parts of one
+    assertion, and cutting there reports shared connective idiom
+    ('never by count') as duplicated content.
+
+    Structure is not content and never compares: table header and
+    delimiter rows, headings, list markers, and any sentence citing an
+    owner outside the pack. That last one is the pointer or stated
+    deviation rules/visibility.md §3 and rules/token-economy.md §7
+    require every pack to share once content moves to one owner --
+    convicting it would drive packs to stop deferring. It is decided per
+    sentence, before the ';' cut: the deviation half carries no citation
+    of its own, so cutting first strands it outside the exemption.
+
+    Whitespace collapses first, so two packs whose only difference is
+    where a 75-column line wraps still read as one clause. A clause
+    under CELL_CLAUSE_MIN_WORDS words is a label or a term of art, not
+    content: the signature intends packs to name the same terms.
+    """
+    lines = text.split("\n")
+    structural = set()
+    for i, line in enumerate(lines):
+        if TABLE_DELIM_ROW_RE.match(line.strip()):
+            structural.add(i)
+            if i:
+                structural.add(i - 1)  # the header row the delimiter underlines
+    blocks = []
+    paragraph = []
+
+    def flush():
+        if paragraph:
+            blocks.append(" ".join(paragraph))
+            del paragraph[:]
+
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if i in structural or not stripped or stripped.startswith("#"):
+            flush()
+            continue
+        if stripped.startswith("|"):
+            flush()
+            blocks.append(" ".join(c.strip() for c in stripped.strip("|").split("|")))
+            continue
+        if LIST_MARKER_RE.match(stripped):
+            flush()
+        paragraph.append(LIST_MARKER_RE.sub("", stripped, count=1))
+    flush()
+
+    clauses = []
+    for block in blocks:
+        for sentence in SENTENCE_END_RE.split(block):
+            # The exemption is decided on the whole sentence, before the ';'
+            # cut and never after it: the citation and the deviation it
+            # licenses are the two halves of one pointer, and a filter applied
+            # to the halves keeps the deviation while discarding the citation
+            # that exempts it -- convicting the very sentence the exemption
+            # exists to protect.
+            if OUTSIDE_PACK_CITATION in sentence or SIGNATURE_CELL_POINTER_RE.search(
+                sentence
+            ):
+                continue
+            for clause in sentence.split(";"):
+                clause = re.sub(r"\s+", " ", clause).strip().strip(".").strip()
+                if len(clause.split()) >= CELL_CLAUSE_MIN_WORDS:
+                    clauses.append(clause)
+    return clauses
+
+
+# The one duplication this library keeps on purpose. An entry is a
+# decision on the record, not a suppression: it says what the seam is,
+# that the cost is paid consciously, and what reopens it.
+
+__all__ = (
+    'CONTRACTS_DIR', 'PINS_FILE', 'PIN_MESSAGE', 'rel',
+    '_read_source', 'Diagnostics', 'discover_packages', 'parse_frontmatter',
+    'validate_frontmatter', 'validate_role', 'validate_anatomy', 'body_words',
+    '_split_frontmatter', 'validate_surface_budgets', 'validate_budget', 'validate_pack_signature',
+    'assembly_form_ok', 'cell_clauses',
+)
