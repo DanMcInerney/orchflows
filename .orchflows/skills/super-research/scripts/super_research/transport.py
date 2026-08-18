@@ -1,41 +1,69 @@
-"""Transport seam: the outbound request, and the one address for the routes.
+"""Transport facade: wall clock, urllib seam, answering address, and carrier.
 
-The two tables of per-platform data this module used to hold — the route
-constants and the vendor-published public client credentials — were moved to
-one read-size sibling, :mod:`.routes`, and are re-exported below under the
-names they have always had. Each name still has exactly one definition; this
-module stays the one address the suite, the adapters and the CLI reach it at.
-What is left here is mechanism: the opener, the method admission, the byte cap,
-the refusal parsing and the captive-portal detector.
-
-Nothing outside this module and :mod:`.routes` may name a host, a path, or a
-vendor-published public client credential. Callers that need to know whether a
-route is reachable ask :func:`route_admissions`, which answers in booleans only.
-
-This module also owns the captive-portal detector. Every response it returns
-names the party that answered it — the origin, or a local network appliance —
-so a caller can never record this network's block as a platform gap.
-
-Reliability bar: read-only. The default opener refuses any URL that is not
-``https://`` and any method outside :func:`admitted_methods` — reads
-everywhere, plus two closed exceptions named by route id: minting an anonymous
-guest token, and asking a question InnerTube only takes in a JSON body. Both
-are POSTs that create nothing at the origin. PUT, PATCH and DELETE are admitted
-nowhere, no code path here can mutate a remote resource, and the offline
-``fake`` route can never leave the process.
+Route declarations remain in :mod:`.routes`. Protocol policy and credential-free
+request construction are implemented in private support modules and re-exported
+here so every existing caller and monkeypatch still reaches ``transport.*``.
 """
 
 from __future__ import annotations
 
-import email.utils
-import json
 import urllib.error
 import urllib.parse
 import urllib.request
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 
+from ._support import transport_request as _request
+from ._support import transport_protocol as _protocol
+from ._support.transport_protocol import (
+    AnsweredHeaders,
+    CAPTIVE_PORTAL_MARKERS,
+    CHANNEL_VERDICTS,
+    NETWORK_INTERCEPTED,
+    OBSERVED_AT_FORMAT,
+    ORIGIN_CONTENT,
+    ORIGIN_FAILURE,
+    QUERY_BODY_METHODS,
+    QUERY_BODY_ROUTES,
+    RATE_LIMITED,
+    RATE_LIMITED_STATUS,
+    RATE_LIMIT_RESET_COUNTDOWN_CEILING_SECONDS,
+    RATE_LIMIT_RESET_HEADER,
+    READ_METHODS,
+    RETRY_AFTER_HEADER,
+    SECONDARY_RATE_LIMITED_STATUS,
+    SECONDARY_RATE_LIMIT_MARKERS,
+    TOKEN_ACTIVATION_METHODS,
+    TOKEN_ACTIVATION_ROUTES,
+    UNREACHABLE,
+    USER_AGENT,
+    TransportError,
+    TransportRequest,
+    TransportResponse,
+    admitted_methods,
+    channel_verdict,
+    epoch_moment,
+    header_value,
+    http_date_moment,
+    observed_moment,
+    rate_refused,
+    remaining_seconds,
+    retry_after_seconds,
+    stated_cooldown_seconds,
+)
+from ._support.transport_request import (
+    GUEST_TOKEN_FIELD,
+    GUEST_TOKEN_HEADER,
+    GUEST_TOKENS,
+    OPEN_URL_PARAM,
+    GuestTokenStore,
+    credentialed_headers,
+    credentialed_url,
+    is_open_route,
+    json_body,
+    origin_key,
+    path_segments,
+)
 from .routes import (
     ARCTIC_SHIFT_ORIGIN,
     ARCTIC_SHIFT_POSTS_ROUTE,
@@ -89,692 +117,78 @@ from .routes import (
     YOUTUBE_TIMEDTEXT_ROUTE,
 )
 
-# One static identity. Never rotated: a rate limit is an observed constraint
-# this package respects, not one it evades.
-USER_AGENT = "super-research/0.1 (keyless read-only acquisition)"
+
 REQUEST_TIMEOUT_SECONDS = 20
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
-READ_METHODS = ("GET", "HEAD")
-
-# The status an origin answers with when it wants fewer requests, and the typed
-# loss a caller records for it. Named here once each, because the scheduler that
-# waits it out and the record that reports it must be talking about the same
-# thing. A refusal is an outcome, never a reason to become a different client.
-RATE_LIMITED_STATUS = 429
-RATE_LIMITED = "rate_limited"
-
-# Where an origin states how long it wants to be left alone, named here for the
-# same reason the status is. Both are matched without regard to case: HTTP
-# header names are case-insensitive and origins do not agree on the spelling,
-# so a lookup that matched one casing would read a stated interval as an absent
-# one — which is how a limit gets evaded by accident rather than by intent.
-RETRY_AFTER_HEADER = "Retry-After"
-RATE_LIMIT_RESET_HEADER = "X-RateLimit-Reset"
-
-# The other status an origin uses to ask for fewer requests, and how it says
-# so. A 403 is normally about who is asking rather than how often — an authwall
-# and a private repository are both 403 — so the status alone decides nothing:
-# it is a rate refusal only when the answer says the refusal is about rate.
-# GitHub's secondary limit is the roster's measured case, and it says it in the
-# body rather than in a status of its own.
-SECONDARY_RATE_LIMITED_STATUS = 403
-SECONDARY_RATE_LIMIT_MARKERS = ("secondary rate limit",)
-
-# The moment format `observed_at` is written and read in. One name, because an
-# absolute interval an origin states is measured against that field.
-OBSERVED_AT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
-
-# What an origin sent back, in the order it sent it. Named once because three
-# places pass it around: the opener reports it, the response holds it, and
-# :func:`header_value` answers questions about it.
-AnsweredHeaders = Tuple[Tuple[str, str], ...]
-
-# The first closed exception to reads-only, named by route id: minting an
-# anonymous guest token needs a POST, and that POST creates no account,
-# session, or content at the origin.
-TOKEN_ACTIVATION_ROUTES = (X_GUEST_ACTIVATE_ROUTE,)
-TOKEN_ACTIVATION_METHODS = ("POST",)
-
-# The second, and the last. InnerTube takes its query as a JSON body and has
-# no GET form, so this is a read spelled in an awkward verb rather than a write
-# — it asks a question and creates nothing. What keeps that true is not the
-# verb but the body: it is rendered from the route's own `body_params` and from
-# nothing else, so a caller supplies values into a shape this module declares
-# and can never choose the shape. A route absent from both sets above reaches
-# no method outside `READ_METHODS` by any path, and no route anywhere reaches
-# PUT, PATCH or DELETE.
-QUERY_BODY_ROUTES = (YOUTUBE_INNERTUBE_ROUTE,)
-QUERY_BODY_METHODS = ("POST",)
-
-# What an activation route issues, and where the route that needs it carries
-# it. A guest token is not a vendor-published constant: the origin mints a new
-# one on request, it names no user, and it lives in memory for as long as the
-# process reading with it does.
-GUEST_TOKEN_FIELD = "guest_token"
-GUEST_TOKEN_HEADER = "x-guest-token"
-
-# Which party answered a request. `network_intercepted` is also the typed
-# loss code a caller attaches, so an intercepted route is reported as
-# unverified rather than as a platform gap.
-ORIGIN_CONTENT = "origin_content"
-ORIGIN_FAILURE = "origin_failure"
-NETWORK_INTERCEPTED = "network_intercepted"
-CHANNEL_VERDICTS = (ORIGIN_CONTENT, ORIGIN_FAILURE, NETWORK_INTERCEPTED)
-
-# The one measured captive-portal signature (evidence.md's captive-portal
-# caveat, measured 2026-08-10):
-# this host's appliance answered tiktok.com and ecosia.org with HTTP 503 and
-# a body carrying this marker, while example.com and wikipedia.org returned
-# genuine 200 origin content. Widening this set requires a new measurement:
-# a marker an origin also emits would record platform behavior as a local
-# block, which is the mirror of the error that caveat forbids.
-CAPTIVE_PORTAL_MARKERS = ('<base href="/login/">',)
-
-
-class TransportError(RuntimeError):
-    """An outbound request was refused or could not be completed."""
-
-
-# The typed loss a read that raised :class:`TransportError` leaves on its page.
-# It covers everything that class covers — a read nothing took, and a read this
-# module declined to send (a non-https address, a write-capable method, an
-# undeclared route or credential) — so the exception's text travels with it as
-# the warning that says which. It is declared beside the exception and loaded
-# nowhere here, because the modules that spell it are the ones that meet the
-# failure rather than raise it: `runner` attaches it to the step it ends and
-# bills no call for it, `smoke` reads it to decide which party answered.
-UNREACHABLE = "unreachable"
-
-
-@dataclass(frozen=True)
-class TransportRequest:
-    """One read, spelled completely, before any credential is attached.
-
-    ``body`` is the JSON a query-body route asks its question in, rendered from
-    that route's declared ``body_params``. Every other route carries none, and
-    no caller can put anything in one: the shape is the route's and only the
-    values are the caller's.
-    """
-
-    route_id: str
-    method: str
-    url: str
-    headers: Tuple[Tuple[str, str], ...] = ()
-    body: str = ""
-
-
-@dataclass(frozen=True)
-class TransportResponse:
-    """One answer, and everything a caller needs to know about how it got here.
-
-    ``cache_hit`` says a run's own memory answered rather than the origin.
-    Nothing in this module ever sets it: only a caller holding a cache knows,
-    and it says so by copying the response with the flag raised — which is why
-    ``observed_at`` stays the moment the origin was really read.
-
-    ``final_url`` is the address the origin actually answered from, which is
-    one hop's worth of truth and **not** a redirect chain: it says "I asked
-    ``url`` and read the document at ``final_url``", and a caller that needs
-    every intermediate hop needs a redirect handler nobody has asked for. An
-    opener that reports no address answered from the one it was asked, which is
-    what every offline stand-in in the suite does and what a read that never
-    left the process means.
-
-    ``headers`` is what the origin sent back, in the order it sent it. It is
-    the only place an origin can say how long it wants to be left alone, so a
-    scheduler that never saw it could wait no interval but the one this package
-    guessed. An opener that reports none sent none. Names are asked for through
-    :func:`header_value` and never indexed, because origins do not agree on
-    casing.
-    """
-
-    route_id: str
-    url: str
-    status: int
-    body: str
-    content_type: str
-    observed_at: str
-    channel_verdict: str
-    cache_hit: bool = False
-    final_url: str = ""
-    headers: AnsweredHeaders = ()
 
 
 def utc_now_iso() -> str:
+    """Read the facade's wall clock in the artifact timestamp format."""
+
     return datetime.now(timezone.utc).strftime(OBSERVED_AT_FORMAT)
 
 
-def channel_verdict(status: int, body: str) -> str:
-    """Name the party that answered: the origin, or a local network appliance.
-
-    An interception needs both halves of the measured signature — a failure
-    status and a portal marker. A success is never one: this host's control
-    probes show a 2xx is genuine origin content, and an origin's own login
-    page must stay platform behavior. A failure without the marker is the
-    origin's own, so a real platform gap is still recordable as one.
-    """
-
-    if 200 <= status < 300:
-        return ORIGIN_CONTENT
-    lowered = body.lower()
-    for marker in CAPTIVE_PORTAL_MARKERS:
-        if marker in lowered:
-            return NETWORK_INTERCEPTED
-    return ORIGIN_FAILURE
-
-
-def rate_refused(status: int, body: str) -> bool:
-    """Whether this answer is the origin asking for fewer requests.
-
-    A 429 always is. A 403 is one only when the answer says the refusal is
-    about rate: read the way the portal marker is read — the origin's own
-    words, case folded — and only on the refusing status, so a page that
-    quotes the sentence is still content rather than a limit.
-    """
-
-    if status == RATE_LIMITED_STATUS:
-        return True
-    if status != SECONDARY_RATE_LIMITED_STATUS:
-        return False
-    lowered = body.lower()
-    for marker in SECONDARY_RATE_LIMIT_MARKERS:
-        if marker in lowered:
-            return True
-    return False
-
-
-def header_value(headers: AnsweredHeaders, name: str) -> str:
-    """One header off an answer, matched without regard to case.
-
-    The first match wins and a header nobody sent reads as an empty string, so
-    a caller asks a question rather than indexing a mapping whose keys it would
-    have to spell exactly the way this origin happened to.
-    """
-
-    wanted = name.lower()
-    for held, value in headers:
-        if held.lower() == wanted:
-            return value
-    return ""
-
-
-def observed_moment(observed_at: str) -> Optional[datetime]:
-    """The moment an answer says it was read, or None when it says nothing usable."""
-
-    try:
-        return datetime.strptime(observed_at, OBSERVED_AT_FORMAT).replace(
-            tzinfo=timezone.utc
-        )
-    except ValueError:
-        return None
-
-
-def http_date_moment(stated: str) -> Optional[datetime]:
-    """One RFC 7231 HTTP-date, or None for anything this module cannot read.
-
-    A date without a zone is read as UTC, which is the only zone RFC 7231
-    admits and the only one an origin obeying it can mean.
-    """
-
-    try:
-        moment = email.utils.parsedate_to_datetime(stated)
-    except (TypeError, ValueError, OverflowError):
-        return None
-    if moment is None:
-        return None
-    return moment if moment.tzinfo is not None else moment.replace(tzinfo=timezone.utc)
-
-
-# Below this many seconds an `X-RateLimit-Reset` value is a countdown and not
-# a moment. GitHub states the header as a UTC epoch second (about 1.7 billion
-# in 2026); Reddit states the same header as seconds remaining in the window
-# (`x-ratelimit-reset: 47`, measured 2026-08-17 beside `x-ratelimit-remaining:
-# 0.0`). Read as an epoch, Reddit's countdown is a moment in 1970 and states no
-# wait at all — the one direction this module must never err in. No origin
-# states an epoch under this bound and no origin states a countdown over it,
-# and the two are held apart here rather than by the origin's name.
-RATE_LIMIT_RESET_COUNTDOWN_CEILING_SECONDS = 100000000
-
-
-def epoch_moment(stated: str, read_at: Optional[datetime] = None) -> Optional[datetime]:
-    """When an `X-RateLimit-Reset` says the window ends, in either spelling.
-
-    A UTC epoch second is read as the moment it names. A small integer is a
-    countdown from the moment the answer was read, and it needs that moment
-    to become a deadline: without one it states nothing usable, which is the
-    same as an unreadable header and errs the same safe way.
-    """
-
-    held = stated.strip()
-    if not held:
-        return None
-    try:
-        seconds = int(held)
-    except ValueError:
-        return None
-    if seconds < RATE_LIMIT_RESET_COUNTDOWN_CEILING_SECONDS:
-        if read_at is None or seconds < 0:
-            return None
-        return read_at + timedelta(seconds=seconds)
-    try:
-        return datetime.fromtimestamp(seconds, timezone.utc)
-    except (ValueError, OverflowError, OSError):
-        return None
-
-
-def remaining_seconds(deadline: Optional[datetime], read_at: Optional[datetime]) -> float:
-    """Seconds from when an answer was read until an absolute moment it named.
-
-    Zero when either moment is unreadable, and zero when the deadline has
-    already passed: an interval that ran out states no remaining wait, and a
-    negative one would shorten a local budget rather than lengthen it.
-    """
-
-    if deadline is None or read_at is None:
-        return 0.0
-    return max(0.0, (deadline - read_at).total_seconds())
-
-
-def retry_after_seconds(stated: str, read_at: Optional[datetime]) -> float:
-    """`Retry-After` in either spelling RFC 7231 gives it, as seconds remaining."""
-
-    held = stated.strip()
-    if not held:
-        return 0.0
-    # The two spellings are marked by nothing: whole seconds is `1*DIGIT`, and
-    # anything else the origin meant as an absolute date.
-    if held.isascii() and held.isdigit():
-        return float(held)
-    return remaining_seconds(http_date_moment(held), read_at)
-
-
-def stated_cooldown_seconds(response: TransportResponse) -> float:
-    """How long this origin itself asked to be left alone, in seconds.
-
-    Zero when it asked for nothing and never negative. Nothing here raises: a
-    header this module cannot read is a header the origin did not state, and
-    the local budget still governs — which is the only safe direction, because
-    a wait this function shortened would be a limit evaded rather than read.
-
-    Two headers can state an interval and an origin may send both. It gets the
-    longest of what it said: deciding between them by precedence would let this
-    package read the shorter of two stated waits, which is evasion wearing the
-    shape of obedience.
-
-    An absolute moment is measured against ``observed_at``, the moment this
-    very answer was read, and never against a clock read now: the two are
-    different moments, and the difference would come off the wait.
-    """
-
-    read_at = observed_moment(response.observed_at)
-    return max(
-        retry_after_seconds(header_value(response.headers, RETRY_AFTER_HEADER), read_at),
-        remaining_seconds(
-            epoch_moment(header_value(response.headers, RATE_LIMIT_RESET_HEADER), read_at),
-            read_at,
-        ),
-    )
-
-
+# These wrappers deliberately read facade globals at call time. Tests and
+# embedders replace the public tables here; a private module must not bypass
+# that established seam by retaining its own imported binding.
 def route_constant(route_id: str) -> RouteConstant:
-    route = ROUTE_CONSTANTS.get(route_id)
-    if route is None:
-        raise TransportError("unknown route " + route_id)
-    return route
-
-
-def origin_key(request: TransportRequest) -> str:
-    """The host one request reads, lowercased — what the governor serializes on.
-
-    Read off the address rather than the route, so an open read on a caller's
-    host and two declared routes on one host both key by the host they reach.
-    A request naming no host keys by its route, which is what the offline
-    fixture route means.
-    """
-
-    host = urllib.parse.urlsplit(request.url).hostname
-    return host.lower() if host else request.route_id
-
-
-def budget_key(request: TransportRequest) -> str:
-    """What one request's read is charged against: its route, or on the open route its route and host.
-
-    Every declared route has one origin, so its budget is the route's. The open
-    route reads many hosts under one declared ceiling, and charging them all to
-    one key would make a read of one publisher wait on a read of another; each
-    host gets the route's ceiling for itself.
-    """
-
-    if is_open_route(route_constant(request.route_id)):
-        return request.route_id + "@" + origin_key(request)
-    return request.route_id
+    return _protocol.route_constant(route_id, ROUTE_CONSTANTS)
 
 
 def route_admissions() -> Dict[str, bool]:
-    """Per-route booleans — the only route knowledge the router ever sees.
-
-    A route is admitted when it needs no user credential. ``K5`` is the one
-    credentialed class, so it is the one class that can answer False here.
-    """
-
-    return {
-        route_id: route.access_class != "K5"
-        for route_id, route in sorted(ROUTE_CONSTANTS.items())
-    }
+    return _protocol.route_admissions(ROUTE_CONSTANTS)
 
 
-def admitted_methods(route_id: str) -> Tuple[str, ...]:
-    """Every method this route may use: reads, plus the two closed exceptions.
-
-    A route named in neither exception set reads and nothing else, and no
-    route in either one gains a verb that could change anything at an origin:
-    both exceptions are the same POST, on a named route, for an operation that
-    creates nothing.
-    """
-
-    if route_id in TOKEN_ACTIVATION_ROUTES:
-        return READ_METHODS + TOKEN_ACTIVATION_METHODS
-    if route_id in QUERY_BODY_ROUTES:
-        return READ_METHODS + QUERY_BODY_METHODS
-    return READ_METHODS
+def budget_key(request: TransportRequest) -> str:
+    return _request.budget_key(request, ROUTE_CONSTANTS)
 
 
 def origin_locator(route_id: str, published: str) -> str:
-    """One address on a route's own origin, resolved where hosts are spelled.
-
-    Both `K1` platforms in the roster publish an item's address relative to
-    themselves — a ``/watch?v=`` path — or not at all, leaving a caller to
-    address a post by the shortcode the payload carries. An adapter may name no
-    route host, so either the resolution happens here or every record on those
-    routes carries no address. An address that is already absolute is handed
-    back untouched: resolving one somebody else resolved would be this module
-    rewriting what an origin said.
-    """
-
-    if not published:
-        return ""
-    if urllib.parse.urlsplit(published).scheme:
-        return published
-    return urllib.parse.urljoin(route_constant(route_id).origin, published)
+    return _request.origin_locator(route_id, published, ROUTE_CONSTANTS)
 
 
 def route_credential(route_id: str) -> Optional[PublicClientCredential]:
-    """The public client credential this route needs, or None for a keyless one."""
-
-    credential_id = route_constant(route_id).credential_id
-    if not credential_id:
-        return None
-    credential = PUBLIC_CLIENT_CREDENTIALS.get(credential_id)
-    if credential is None:
-        raise TransportError("unknown public client credential " + credential_id)
-    return credential
-
-
-def credentialed_url(url: str, credential: Optional[PublicClientCredential]) -> str:
-    """Apply a query-placed credential. Called at send time, never before."""
-
-    if credential is None or credential.placement != QUERY_PLACEMENT:
-        return url
-    separator = "&" if "?" in url else "?"
-    return url + separator + urllib.parse.urlencode(((credential.name, credential.value),))
-
-
-def credentialed_headers(
-    headers: Tuple[Tuple[str, str], ...], credential: Optional[PublicClientCredential]
-) -> Tuple[Tuple[str, str], ...]:
-    """Apply a header-placed credential. Called at send time, never before."""
-
-    if credential is None or credential.placement != HEADER_PLACEMENT:
-        return tuple(headers)
-    return tuple(headers) + ((credential.name, credential.value),)
-
-
-def path_segments(route: RouteConstant, params: Dict[str, str]) -> str:
-    """Spend this route's declared path params, in order, removing them from ``params``.
-
-    Segments stop at the first one the caller left empty: a later segment
-    appended past a missing earlier one would name a different endpoint, and
-    guessing which is not this module's to do. A declared ``path_suffix``
-    follows the last segment, and only a complete path takes one — for the
-    same reason, and it is the same mistake one character further along.
-    """
-
-    values = [params.pop(name, "") for name in route.path_params]
-    spent = ""
-    for value in values:
-        if not value:
-            return spent
-        spent = spent + "/" + urllib.parse.quote(value, safe="")
-    return spent + route.path_suffix
-
-
-def json_body(route: RouteConstant, params: Dict[str, str]) -> str:
-    """Spend this route's declared body params into the JSON it asks in.
-
-    The keys are the route's, taken from ``body_params`` and from nothing else,
-    so a param the endpoint never declared cannot reach the body — it stays an
-    ordinary query parameter, in the open, on a url the run records. A route
-    that declares none carries no body whatever it is handed, which is what
-    keeps this from being a generic HTTP primitive.
-
-    Serialized with sorted keys and no spaces, so one request is one string and
-    two identical reads are identical bytes.
-    """
-
-    if not route.body_params:
-        return ""
-    body: Dict[str, Any] = {}
-    for name, key_path in route.body_params:
-        value = params.pop(name, "")
-        if not value:
-            continue
-        held = body
-        for key in key_path[:-1]:
-            held = held.setdefault(key, {})
-        held[key_path[-1]] = value
-    return json.dumps(body, separators=(",", ":"), sort_keys=True) if body else ""
-
-
-def mint_guest_token(
-    fetch: Callable[["TransportRequest"], "TransportResponse"], token_route_id: str
-) -> str:
-    """One activation request, returning the token it issued or nothing at all.
-
-    The request goes out through the caller's own ``fetch`` rather than through
-    an opener reached from here, which is what makes an activation a call the
-    run can see: recorded in that carrier's log, answered by whatever opener it
-    holds, and charged against this route's own budget by whoever paces it.
-    Nothing in this module calls this function — a caller holding only a bare
-    :class:`Transport` has chosen a carrier that does not mint, and its reads
-    go out unauthorized.
-
-    A mint that does not produce a token yields an empty string rather than an
-    exception: the read that needed it then goes out unauthorized and the
-    origin answers 401 or 403, which the adapter records as the platform's own
-    refusal. Inventing a token, or turning a failed mint into a retry of the
-    read, are the two wrong answers.
-    """
-
-    try:
-        response = fetch(build_transport_request(token_route_id))
-    except TransportError:
-        return ""
-    if response.status != 200:
-        return ""
-    try:
-        payload = json.loads(response.body)
-    except ValueError:
-        return ""
-    token = payload.get(GUEST_TOKEN_FIELD) if isinstance(payload, dict) else None
-    return token if isinstance(token, str) else ""
-
-
-class GuestTokenStore:
-    """Anonymous guest tokens, held in memory for as long as the process reads.
-
-    One token per activation route, minted once above this store and spent on
-    every later read: a run that minted per read would spend two requests where
-    the origin expects one, and one that persisted a token would carry state
-    across runs. There is no file, no environment variable, and no artifact
-    field here — a token exists only in this object.
-
-    Lookup only. Nothing here reaches an origin, because a store that minted on
-    lookup would mint wherever it was first read from — which is below the seam
-    that records a request and below the one that paces it, and out of sight of
-    both. The mint lives at the governor; this holds what it issued.
-    """
-
-    def __init__(self) -> None:
-        self._tokens: Dict[str, str] = {}
-
-    def token_for(self, token_route_id: str) -> str:
-        """The token this process holds for a route, or nothing. Never a mint."""
-
-        return self._tokens.get(token_route_id, "")
-
-    def claim(self, token_route_id: str) -> bool:
-        """Take this route's one activation, or report that it is already taken.
-
-        Claimed before the activation goes out rather than after it comes back,
-        which is what makes two rules one line. A refused mint is remembered as
-        a refusal, so the read that needed a token goes out unauthorized once
-        instead of paying for an activation the origin already declined; and an
-        activation route that named a token route of its own finds this route
-        claimed when it re-enters, so the mint cannot recurse without end.
-        """
-
-        if token_route_id in self._tokens:
-            return False
-        self._tokens[token_route_id] = ""
-        return True
-
-    def remember(self, token_route_id: str, token: str) -> None:
-        """Hold what one activation issued, empty answer included."""
-
-        self._tokens[token_route_id] = token
-
-    def clear(self) -> None:
-        self._tokens.clear()
-
-
-GUEST_TOKENS = GuestTokenStore()
+    return _request.route_credential(
+        route_id, ROUTE_CONSTANTS, PUBLIC_CLIENT_CREDENTIALS
+    )
 
 
 def tokened_headers(
     headers: Tuple[Tuple[str, str], ...], token_route_id: str
 ) -> Tuple[Tuple[str, str], ...]:
-    """Attach this route's guest token, when the process is holding one.
-
-    An attach, never a mint: a process holding none sends the read
-    unauthorized, which is the outcome :func:`mint_guest_token` already names
-    as the honest one.
-    """
-
-    if not token_route_id:
-        return tuple(headers)
-    token = GUEST_TOKENS.token_for(token_route_id)
-    if not token:
-        return tuple(headers)
-    return tuple(headers) + ((GUEST_TOKEN_HEADER, token),)
-
-
-# The one parameter an open route reads: the address itself. Named here because
-# the transport is the only module that may turn a caller's string into a host,
-# and it does so under the policy `open_read_refusal` states.
-OPEN_URL_PARAM = "url"
-
-
-def is_open_route(route: RouteConstant) -> bool:
-    """Whether this route reads the caller's address rather than a declared one."""
-
-    return route.origin == OPEN_ORIGIN
+    return _request.tokened_headers(headers, token_route_id, GUEST_TOKENS)
 
 
 def declared_origin_hosts() -> Tuple[str, ...]:
-    """Every host a declared route reads, lowercased — the set an open read may not touch.
-
-    An open read that landed on `www.reddit.com` would spend that origin outside
-    the budget its own routes declare, and one that landed on `api.github.com`
-    would do the same to a measured hourly ceiling. Refusing the whole declared
-    set is what keeps every measured budget the only way to that origin.
-    """
-
-    hosts = set()
-    for route in ROUTE_CONSTANTS.values():
-        if is_open_route(route):
-            continue
-        host = urllib.parse.urlsplit(route.origin).hostname
-        if host:
-            hosts.add(host.lower())
-    return tuple(sorted(hosts))
+    return _request.declared_origin_hosts(ROUTE_CONSTANTS)
 
 
 def open_read_refusal(url: str) -> str:
-    """Why an open read of this address is refused, or nothing when it is admitted.
-
-    Three refusals, each a sentence: not https, no host, or a host a declared
-    route already reads. Nothing here rewrites the address — an open read goes
-    out exactly as the caller spelled it, minus the fragment `urllib` drops.
-    """
-
-    parts = urllib.parse.urlsplit(url)
-    if parts.scheme != "https":
-        return "an open read takes an https address, not " + repr(url)
-    host = (parts.hostname or "").lower()
-    if not host:
-        return "an open read takes an address naming a host, not " + repr(url)
-    if host in declared_origin_hosts():
-        return (
-            "an open read never lands on a host a declared route reads: {0}; ask that"
-            " route".format(host)
-        )
-    return ""
+    return _request.open_read_refusal(url, ROUTE_CONSTANTS)
 
 
 def build_transport_request(
     route_id: str, params: Optional[Mapping[str, str]] = None
 ) -> TransportRequest:
-    route = route_constant(route_id)
-    supplied = dict(params or {})
-    if is_open_route(route):
-        # The open route reads the address the caller named, under the policy
-        # above and under nothing else: no path segment, no query the route
-        # composes, no body, and no credential — the route declares none.
-        url = supplied.pop(OPEN_URL_PARAM, "")
-        refusal = open_read_refusal(url)
-        if refusal:
-            raise TransportError(refusal)
-        headers = (("User-Agent", USER_AGENT), ("Accept", route.accept))
-        return TransportRequest(route_id=route_id, method=route.method, url=url, headers=headers)
-    path = route.path + path_segments(route, supplied)
-    body = json_body(route, supplied)
-    pairs = [(key, value) for key, value in sorted(supplied.items()) if value != ""]
-    url = route.origin + path
-    if pairs:
-        url = url + "?" + urllib.parse.urlencode(pairs)
-    headers = (("User-Agent", USER_AGENT), ("Accept", route.accept))
-    if body:
-        headers = headers + (("Content-Type", JSON_CONTENT_TYPE),)
-    return TransportRequest(
-        route_id=route_id, method=route.method, url=url, headers=headers, body=body
-    )
+    return _request.build_transport_request(route_id, params, ROUTE_CONSTANTS)
+
+
+def mint_guest_token(
+    fetch: Callable[[TransportRequest], TransportResponse], token_route_id: str
+) -> str:
+    """One activation request, returning its token or nothing.
+
+    A refused mint yields no invented token and the dependent read goes out
+    unauthorized. The caller's fetch remains the recorded and paced seam.
+    """
+
+    return _request._mint_guest_token(fetch, token_route_id, build_transport_request)
 
 
 def without_query_credential(
     url: str, credential: Optional[PublicClientCredential]
 ) -> str:
-    """Take a query-placed credential back off an address before it leaves here.
-
-    :func:`credentialed_url` puts it on at send time, and an origin answers
-    from the address it was asked at — so the address that comes back is the
-    only string in this module that can carry a ``K1`` key past its own seam.
-    That matters because it does not stop here: ``final_url`` is a field every
-    caller sees and one adapter publishes onto a record.
-
-    Only this route's own credential name is dropped, and only where it is
-    actually present, so an address nobody credentialed is handed back
-    untouched rather than re-encoded.
-    """
+    """Remove this route's query credential from an answering address."""
 
     if credential is None or credential.placement != QUERY_PLACEMENT:
         return url
@@ -789,30 +203,14 @@ def without_query_credential(
 
 
 def answering_address(response: Any, request: TransportRequest) -> str:
-    """Where the read was actually answered from, or the address it was asked at.
-
-    urllib has already followed whatever redirect there was and records the
-    result on the response it hands back; discarding it is what used to make a
-    redirect invisible to every caller above this module. An answer that states
-    no address states it came from the one that was asked for, which is what a
-    read that was not redirected means.
-
-    Whatever it says, it says it without the credential. A route constant is
-    this module's to hold and nobody else's to see, and an address is the one
-    place a query-placed one could ride out.
-    """
+    """Where the read was answered, without a query credential."""
 
     answered = getattr(response, "url", "") or request.url
     return without_query_credential(answered, route_credential(request.route_id))
 
 
 def answered_headers(carried: Any) -> AnsweredHeaders:
-    """What an answer carried, as the ordered pairs a request's headers are in.
-
-    Read out rather than held, because what urllib hands over differs between
-    the branch that returns and the branch that raises, and an error response
-    can carry nothing at all.
-    """
+    """What an answer carried, as ordered string pairs."""
 
     if not carried:
         return ()
@@ -820,20 +218,7 @@ def answered_headers(carried: Any) -> AnsweredHeaders:
 
 
 def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str, AnsweredHeaders]:
-    """Default opener: one bounded HTTPS read on an admitted method, no redirect games.
-
-    Credentials are attached here and nowhere earlier, which is why a
-    ``TransportRequest`` a caller holds can never carry one. A route that
-    declares a ``token_route_id`` gets its guest token attached here too, from
-    whatever the process is already holding — the mint itself happens above, at
-    the governor that records and paces it. A process holding none sends the
-    read unauthorized.
-
-    The fifth value is what the origin sent back. It is reported on both
-    branches: `Retry-After` rides on a 429, urllib raises every non-2xx, so
-    headers read only off the returning branch would be absent from the one
-    status a scheduler exists to answer.
-    """
+    """One bounded HTTPS read through urllib on an admitted method."""
 
     if not request.url.startswith("https://"):
         raise TransportError("refusing a non-https url for route " + request.route_id)
@@ -844,9 +229,6 @@ def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str, Answere
             )
         )
     if is_open_route(route_constant(request.route_id)):
-        # Checked again at the socket, not only where the request was built:
-        # a request is a plain value anyone can construct, and the policy is
-        # the opener's to hold.
         refusal = open_read_refusal(request.url)
         if refusal:
             raise TransportError(refusal)
@@ -873,9 +255,6 @@ def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str, Answere
                 answered_headers(response.headers),
             )
     except urllib.error.HTTPError as error:
-        # A status-bearing error is data, not a tool failure: `channel_verdict`
-        # separates a local block from the origin's own failure, and the
-        # adapter types the result.
         return (
             error.code,
             error.read(MAX_RESPONSE_BYTES).decode("utf-8", errors="replace"),
@@ -888,18 +267,13 @@ def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str, Answere
 
 
 def urlopen_response(request: TransportRequest) -> Tuple[int, str, str]:
-    """The three-value view of :func:`urlopen_read`, for callers that ask nowhere else.
-
-    Most reads do not care which address answered or what else it said, and
-    the two forms exist so that adding a fourth value, and then a fifth,
-    changed no caller that did not want them.
-    """
+    """The compatible three-value view of :func:`urlopen_read`."""
 
     return urlopen_read(request)[:3]
 
 
 class Transport:
-    """One run's outbound channel. Every attempt is recorded, in order."""
+    """One run's outbound channel. Every attempt is recorded in order."""
 
     def __init__(
         self,
@@ -911,19 +285,10 @@ class Transport:
         self.calls: List[TransportRequest] = []
 
     def fetch(self, request: TransportRequest) -> TransportResponse:
-        # Recorded before the opener runs, so a raising opener still leaves the
-        # attempt visible: "an adapter never retries" is checked against this log.
         self.calls.append(request)
         answered = self._opener(request)
         status, body, content_type = answered[:3]
-        # An opener that reports no address answered from the one it was asked
-        # for. That is what an offline stand-in means and what a read that never
-        # left the process means, and it keeps the three-value opener contract
-        # every caller here was written against.
         final_url = answered[3] if len(answered) > 3 else request.url
-        # And an opener that reports no headers received none, which is the
-        # same courtesy the address gets and for the same reason: the four-value
-        # opener contract every stand-in here was written against still holds.
         headers = answered[4] if len(answered) > 4 else ()
         return TransportResponse(
             route_id=request.route_id,
