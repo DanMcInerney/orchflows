@@ -149,13 +149,15 @@ name the two places a route's own vocabulary lands.
 
 Instagram's is the only row describing two content kinds, which is why a field set
 is declared per kind at all: no single record carries both the profile's follower
-count and a post's like count. Seven adapters read more than one surface and a smoke
+count and a post's like count. Ten adapters read more than one surface and a smoke
 makes one call, so each probe names the surface it takes — Algolia search for
 `hacker_news`, the repository surface for `github_rest`, the article surface for
 `public_page`, DuckDuckGo for `web_search`, the subreddit listing for
 `reddit_shreddit` (the one surface that names both counts as its own
-attributes), Polymarket for `prediction_markets`, and the symbol stream for
-`stocktwits`.
+attributes), Polymarket for `prediction_markets`, the symbol stream for
+`stocktwits`, the author feed for `bluesky` (its search method answered 403
+from this host), the GraphQL read for `x_guest`, and the InnerTube route for
+`youtube_innertube`.
 
 Three probes are worth reading twice. `bluesky`'s names the **author feed**
 rather than the search its primary descriptor declares: the search method

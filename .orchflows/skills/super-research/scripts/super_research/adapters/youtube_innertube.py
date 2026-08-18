@@ -181,7 +181,35 @@ SEARCH_RESULTS_PATH = (
 )
 WATCH_NEXT_PATH = ("contents", "twoColumnWatchNextResults", "results", "results", "contents")
 RECEIVED_ENDPOINTS_KEY = "onResponseReceivedEndpoints"
-CONTINUATION_COMMANDS = ("reloadContinuationItemsCommand", "appendContinuationItemsCommand")
+# Where a *search* continuation keeps its rows. `SEARCH_RESULTS_PATH` above is
+# the first answer's container and only ever the first answer's: a call
+# spending a search token comes back with no `twoColumnSearchResultsRenderer`
+# at all, and its sections ride here instead. Declared separately from
+# `RECEIVED_ENDPOINTS_KEY` because the two routes name the container
+# differently — `search` says Commands, `next` says Endpoints — and reading one
+# container for the other is how a live route reports drift it did not have.
+RECEIVED_COMMANDS_KEY = "onResponseReceivedCommands"
+# And the names either container keeps its rows under. One tuple for both
+# routes, because the suffix is not a per-route fact: each spells its append
+# `appendContinuationItemsAction` and its reload
+# `reloadContinuationItemsCommand`. The container above is what differs.
+#
+# Measured 2026-08-17, twice, and the second reading is why this is one tuple.
+# Page two of `search:bitcoin price prediction` carried
+# `onResponseReceivedCommands[0].appendContinuationItemsAction.continuationItems`
+# holding 20 more `videoRenderer` rows, while the adapter read only the
+# first-page path and typed the whole page `schema_drift`. Page three of
+# `next:__tEElLKowI` answered 200 carrying
+# `onResponseReceivedEndpoints[0].appendContinuationItemsAction` and nothing
+# else — the third page of a video whose second had already returned 20
+# threads — while `comment_items` scanned for `appendContinuationItemsCommand`,
+# a spelling no route was ever measured sending, found no list, and typed that
+# working page `schema_drift` too. A per-route tuple is the shape that let one
+# route's correction leave the other broken, so there is one.
+CONTINUATION_ACTIONS = (
+    "appendContinuationItemsAction",
+    "reloadContinuationItemsCommand",
+)
 CONTINUATION_ITEMS_KEY = "continuationItems"
 CONTINUATION_ITEM_KEY = "continuationItemRenderer"
 CONTINUATION_TOKEN_PATH = ("continuationEndpoint", "continuationCommand", "token")
@@ -192,6 +220,44 @@ CONTENTS_KEY = "contents"
 VIDEO_RENDERER_KEY = "videoRenderer"
 COMMENT_THREAD_KEY = "commentThreadRenderer"
 COMMENT_PATH = ("comment", "commentRenderer")
+
+# The second shape a thread arrives in, and the store its fields moved to.
+# Measured 2026-08-17 on `next:4jZjM0Zs_LY`, page two: 13 threads, **zero** of
+# them carrying `comment.commentRenderer`, so the path above read nothing and a
+# video with 1,292 comments came back empty. The thread now carries a view model
+# — nested under its own name twice, which is the platform's spelling and not a
+# typo here — holding keys and no fields; `commentKey` addresses that thread's
+# own `commentEntityPayload` among the answer's entity mutations, and the fields
+# are on it. Both shapes are read, because both are served.
+COMMENT_VIEW_MODEL_PATH = ("commentViewModel", "commentViewModel")
+COMMENT_KEY_FIELD = "commentKey"
+ENTITY_MUTATIONS_PATH = ("frameworkUpdates", "entityBatchUpdate", "mutations")
+ENTITY_KEY_FIELD = "entityKey"
+ENTITY_PAYLOAD_KEY = "payload"
+# The one payload kind that carries a comment's fields. The same batch carried
+# five other kinds on 13 threads — surface, tri-state button, toolbar surface,
+# toolbar state, shared — and the kind is what selects, never the position: the
+# toolbar-state mutations arrive interleaved with the comment ones.
+COMMENT_ENTITY_KEY = "commentEntityPayload"
+ENTITY_AUTHOR_KEY = "author"
+ENTITY_AUTHOR_NAME_KEY = "displayName"
+ENTITY_PROPERTIES_KEY = "properties"
+ENTITY_CONTENT_KEY = "content"
+# The body, and the reason it is not read through `route_text`: this one is a
+# plain string under a key of its own name, not a `runs`/`simpleText` holder,
+# and the label reader returns "" on it.
+ENTITY_CONTENT_PATH = (ENTITY_CONTENT_KEY, ENTITY_CONTENT_KEY)
+ENTITY_TOOLBAR_KEY = "toolbar"
+PUBLISHED_TIME_KEY = "publishedTime"
+# The like count a signed-out reader is shown. Beside it the same toolbar
+# carries `likeCountLiked`, which is this count *if you liked it* — measured at
+# exactly one more on all thirteen rows, 28/29, 6/7, 1/2 — so reading that one
+# would inflate every count in the artifact by one and give a comment nobody
+# liked a like. It is a string either way and rides in `attributes` verbatim:
+# a comment with no likes reads `" "`, one space, which is a label and not a
+# zero, and the count the origin published for it is no count at all.
+LIKE_COUNT_NOTLIKED_KEY = "likeCountNotliked"
+COMMENT_ENTITY_TEXT_FACTS = (LIKE_COUNT_NOTLIKED_KEY, PUBLISHED_TIME_KEY)
 
 # Where a player answer keeps the three fields the roster row names, and what
 # it says about whether it is answering at all.
@@ -276,6 +342,10 @@ COMMENT_TEXT_FACTS = (VOTE_COUNT_TEXT_KEY, PUBLISHED_TIME_TEXT_KEY)
 SEARCH_ROW_KEYS = (TITLE_KEY, OWNER_TEXT_KEY)
 PLAYER_ROW_KEYS = (TITLE_KEY, VIEW_COUNT_METRIC, PUBLISH_DATE_KEY)
 COMMENT_ROW_KEYS = (COMMENT_ID_KEY, CONTENT_TEXT_KEY, AUTHOR_TEXT_KEY)
+# The same three fields under the entity store's own names, which is what a
+# thread in the second shape promises. A thread whose key resolves to no entity
+# is short of all three at once, and says so rather than disappearing.
+COMMENT_ENTITY_ROW_KEYS = (COMMENT_ID_KEY, ENTITY_CONTENT_KEY, ENTITY_AUTHOR_NAME_KEY)
 
 ROUTE_DATE_FORMAT = "%Y-%m-%d"
 ROUTE_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
@@ -292,6 +362,13 @@ AUTH_REQUIRED = "auth_required"
 # serve the payload and this package knows only that. It is the retained
 # vocabulary's word for exactly that much, and it claims no cause.
 WITHHELD = "withheld"
+# The three the timed-text route can fail by, spelled as every sibling adapter
+# spells them. A signed caption address expires and a payload shape is read
+# rather than promised, so all three are ordinary weather on that route — and
+# a code the core cannot recognise would report as little as a raise does.
+HTTP_STATUS = "http_status"
+MALFORMED_JSON = "malformed_json"
+SCHEMA_DRIFT = "schema_drift"
 
 
 def dig(payload: Any, path: Sequence[str]) -> Any:
@@ -459,6 +536,37 @@ def continuation_in(entry: Any) -> str:
     return _text(dig(holder, CONTINUATION_TOKEN_PATH))
 
 
+def search_sections(payload: Any) -> Optional[list]:
+    """The section list a search answer carries, in whichever of its two shapes.
+
+    A first call comes back with the results container. A call spending a token
+    comes back with no container at all and its sections under an append or
+    reload command instead. Both are declared, and the rows inside them are the
+    same shape either way — `itemSectionRenderer` holding `videoRenderer`s,
+    beside a `continuationItemRenderer` carrying the next token — so the walk in
+    :func:`search_rows` reads either without knowing which it got.
+
+    None means neither shape is there, which is the payload having moved.
+    Returning the first-page container even when empty keeps "matched nothing"
+    distinct from "the container is gone", which is the distinction the whole
+    typed-drift vocabulary exists to preserve.
+    """
+
+    sections = dig(payload, SEARCH_RESULTS_PATH)
+    if isinstance(sections, list):
+        return sections
+    commands = payload.get(RECEIVED_COMMANDS_KEY) if isinstance(payload, Mapping) else None
+    for command in commands if isinstance(commands, list) else ():
+        if not isinstance(command, Mapping):
+            continue
+        for name in CONTINUATION_ACTIONS:
+            held = command.get(name)
+            items = held.get(CONTINUATION_ITEMS_KEY) if isinstance(held, Mapping) else None
+            if isinstance(items, list):
+                return items
+    return None
+
+
 def search_rows(payload: Any) -> Optional[Tuple[Tuple[Mapping[str, Any], ...], str]]:
     """Every video the results section listed, in order, and its continuation.
 
@@ -467,8 +575,8 @@ def search_rows(payload: Any) -> Optional[Tuple[Tuple[Mapping[str, Any], ...], s
     container.
     """
 
-    sections = dig(payload, SEARCH_RESULTS_PATH)
-    if not isinstance(sections, list):
+    sections = search_sections(payload)
+    if sections is None:
         return None
     found = []
     cursor = ""
@@ -496,30 +604,149 @@ def comment_items(payload: Any) -> Optional[Sequence[Any]]:
 
     A call spending a token comes back with the threads themselves. A call
     naming a video comes back with the watch page, whose comment section holds
-    the token and no thread yet. Both are declared; None means neither is
-    there, which is the payload having moved.
+    the token and no thread yet. Both are declared.
+
+    **Two absences, and only one of them is a broken read** — the same line
+    `comment_entities` draws below. None means the answer states no rows this
+    module knows how to look in: no continuation items and no watch-next
+    container either, which is the payload having moved. An empty sequence
+    means the container was read and it lists no comment section, which is
+    what a video with comments turned off answers with. Measured 2026-08-17
+    side by side: `next:DPhzzkjiD9s` returned four watch-next renderers whose
+    last was the `comment-item-section` holding the token, `next:yLY0LGmBTt8`
+    returned three and no `itemSectionRenderer` at all, both 200 and both well
+    formed. Typing the second `schema_drift` reported a payload change that
+    had not happened and made its caller repeat it.
+
+    **Every command's rows, not the first command's.** One answer carries the
+    comment section in more than one piece, and the pieces are not ranked: the
+    header — the comment count and the sort control — is its own
+    `reloadContinuationItemsCommand` and it arrives *before* the one holding
+    the threads. Returning the first list found therefore returned a
+    one-row header and typed a video with comments as having none. Measured
+    2026-08-17 on `next:4jZjM0Zs_LY`: entry 0 held one `commentsHeaderRenderer`
+    and entry 1 held fourteen `commentThreadRenderer`s. Concatenating is safe
+    because the caller reads each row for a thread and skips what is not one,
+    so a header row costs a loop iteration and never a record.
     """
 
+    found = []
     endpoints = payload.get(RECEIVED_ENDPOINTS_KEY) if isinstance(payload, Mapping) else None
     for endpoint in endpoints if isinstance(endpoints, list) else ():
         if not isinstance(endpoint, Mapping):
             continue
-        for command in CONTINUATION_COMMANDS:
+        for command in CONTINUATION_ACTIONS:
             held = endpoint.get(command)
             items = held.get(CONTINUATION_ITEMS_KEY) if isinstance(held, Mapping) else None
             if isinstance(items, list):
-                return items
+                found.extend(items)
+    if found:
+        return found
     sections = dig(payload, WATCH_NEXT_PATH)
-    for section in sections if isinstance(sections, list) else ():
+    if not isinstance(sections, list):
+        return None
+    for section in sections:
         item = section.get(ITEM_SECTION_KEY) if isinstance(section, Mapping) else None
         if not isinstance(item, Mapping):
             continue
         if item.get(SECTION_IDENTIFIER_KEY) != COMMENT_SECTION_IDENTIFIER:
             continue
+        # The section is there, so its rows are the answer or the shape moved
+        # under it; falling through here would call a section this module
+        # cannot read a video that lists nothing.
         rows = item.get(CONTENTS_KEY)
-        if isinstance(rows, list):
-            return rows
-    return None
+        return rows if isinstance(rows, list) else None
+    return ()
+
+
+def comment_entities(payload: Any) -> Optional[Dict[str, Mapping[str, Any]]]:
+    """Every comment entity this answer carried, under the key that addresses it.
+
+    None means the mutation list itself is not there, which is the payload
+    having moved and not an answer whose threads happen to resolve to nothing:
+    an answer serving view models states a store, and one that states none has
+    put the fields somewhere this module has not been told about. An empty
+    mapping is a store that arrived carrying no comment, which is a different
+    piece of news and stays distinct from it.
+    """
+
+    mutations = dig(payload, ENTITY_MUTATIONS_PATH)
+    if not isinstance(mutations, list):
+        return None
+    found = {}
+    for mutation in mutations:
+        if not isinstance(mutation, Mapping):
+            continue
+        key = _text(mutation.get(ENTITY_KEY_FIELD))
+        entity = dig(mutation, (ENTITY_PAYLOAD_KEY, COMMENT_ENTITY_KEY))
+        if key and isinstance(entity, Mapping):
+            found[key] = entity
+    return found
+
+
+def _entity_facts(
+    properties: Mapping[str, Any], toolbar: Mapping[str, Any]
+) -> Tuple[Tuple[str, str], ...]:
+    """The two non-integer facts this entity states, verbatim, under its names.
+
+    Neither is a number and neither is made into one. The like count is a
+    string the origin writes as `" "` where nobody has liked the comment, and
+    the published time is an interval from a moment this package did not
+    observe — the same reason the older shape's record states no instant.
+    """
+
+    carried = []
+    for source, key in ((toolbar, LIKE_COUNT_NOTLIKED_KEY), (properties, PUBLISHED_TIME_KEY)):
+        value = source.get(key)
+        if isinstance(value, str) and value:
+            carried.append((key, value))
+    return tuple(carried)
+
+
+def _view_model_record(
+    position: int,
+    entity: Optional[Mapping[str, Any]],
+    video_id: str,
+) -> NativeRecord:
+    """One thread as the entity its key named reported it.
+
+    ``entity`` is None for a key that addressed nothing in the store this
+    answer carried. That is still a record: the platform listed the thread, and
+    dropping it would report fewer comments than the video has. It carries
+    `field_omitted` because the fields did not arrive — which is absence, and
+    never a comment with no author and no body.
+    """
+
+    entity = entity if isinstance(entity, Mapping) else {}
+    author = entity.get(ENTITY_AUTHOR_KEY)
+    author = author if isinstance(author, Mapping) else {}
+    properties = entity.get(ENTITY_PROPERTIES_KEY)
+    properties = properties if isinstance(properties, Mapping) else {}
+    toolbar = entity.get(ENTITY_TOOLBAR_KEY)
+    toolbar = toolbar if isinstance(toolbar, Mapping) else {}
+    row = {
+        COMMENT_ID_KEY: _text(properties.get(COMMENT_ID_KEY)),
+        # A plain string at this path, read as one. The label reader beside it
+        # is for `runs`/`simpleText` holders and returns "" on this.
+        ENTITY_CONTENT_KEY: _text(dig(properties, ENTITY_CONTENT_PATH)),
+        ENTITY_AUTHOR_NAME_KEY: _text(author.get(ENTITY_AUTHOR_NAME_KEY)),
+    }
+    # Digits or nothing. This route writes `""` for a thread with no replies and
+    # states the zero only in a sentence beside it, and a sentence is not a
+    # count: reading zero off `""` would publish a number nobody sent.
+    replies = exact_count(toolbar.get(REPLY_COUNT_METRIC))
+    return NativeRecord(
+        canonical_content_kind=COMMENT_KIND,
+        canonical_locator="",
+        native_item_id=row[COMMENT_ID_KEY],
+        native_parent_id=video_id,
+        body=row[ENTITY_CONTENT_KEY],
+        author=row[ENTITY_AUTHOR_NAME_KEY],
+        engagement=() if replies is None else ((REPLY_COUNT_METRIC, replies),),
+        attributes=_entity_facts(properties, toolbar),
+        native_position=position,
+        loss=("field_omitted",) if _missing(row, COMMENT_ENTITY_ROW_KEYS) else (),
+    )
 
 
 def _search_record(position: int, renderer: Mapping[str, Any]) -> NativeRecord:
@@ -686,32 +913,59 @@ def _comments_page(
         )
     records = []
     cursor = ""
+    # Read once for the whole answer: the store is the answer's, not a thread's.
+    entities = comment_entities(payload)
     for entry in items:
         thread = entry.get(COMMENT_THREAD_KEY) if isinstance(entry, Mapping) else None
         comment = dig(thread, COMMENT_PATH) if isinstance(thread, Mapping) else None
         if isinstance(comment, Mapping):
             records.append(_comment_record(len(records), comment, video_id))
             continue
+        view_model = dig(thread, COMMENT_VIEW_MODEL_PATH) if isinstance(thread, Mapping) else None
+        if isinstance(view_model, Mapping):
+            if entities is None:
+                # Threads arrived and the store they address did not. Reading
+                # them as empty would report a video with comments as having
+                # none, which is the one thing the typed vocabulary exists to
+                # keep apart from the platform going quiet.
+                return _drifted(
+                    response,
+                    NEXT_OPERATION,
+                    "carried a {0} and no {1}".format(
+                        COMMENT_VIEW_MODEL_PATH[-1], ".".join(ENTITY_MUTATIONS_PATH)
+                    ),
+                )
+            records.append(
+                _view_model_record(
+                    len(records),
+                    entities.get(_text(view_model.get(COMMENT_KEY_FIELD))),
+                    video_id,
+                )
+            )
+            continue
         cursor = cursor or continuation_in(entry)
     if records:
         return _answered(response, tuple(records), "ok", cursor_out=cursor)
-    # Two empties this route can honestly answer with, and neither is silent:
-    # the first call carries the token for the threads and no thread yet, and a
-    # video with comments turned off carries neither. The token is surfaced for
-    # the core to spend — following it here would make one call two reads.
-    return _answered(
-        response,
-        (),
-        "empty",
-        cursor_out=cursor,
-        warnings=(
-            "{0} answered 200 with the {1} carrying {2} and no thread".format(
-                NEXT_OPERATION,
-                COMMENT_SECTION_IDENTIFIER,
-                "a continuation token" if cursor else "no continuation token",
-            ),
-        ),
-    )
+    # Two empties this route can honestly answer with, and neither is silent.
+    # The first call on a video carries the token for the threads and no
+    # thread yet; the token is surfaced for the core to spend, because
+    # following it here would make one call two reads. A video with comments
+    # turned off carries no comment section at all — measured 2026-08-17,
+    # `next:yLY0LGmBTt8` answered 200 with three watch-next renderers and no
+    # `itemSectionRenderer` — so it reaches here with nothing to page. The
+    # warning is the only thing telling the two apart, and neither may borrow
+    # the other's: naming the section on a page that carried none would state
+    # a shape the origin did not send.
+    if cursor:
+        warning = (
+            "{0} answered 200 with the {1} carrying a continuation token and no"
+            " thread".format(NEXT_OPERATION, COMMENT_SECTION_IDENTIFIER)
+        )
+    else:
+        warning = "{0} answered 200 and the video lists no comment".format(
+            NEXT_OPERATION
+        )
+    return _answered(response, (), "empty", cursor_out=cursor, warnings=(warning,))
 
 
 def _playability_loss(status: str) -> str:

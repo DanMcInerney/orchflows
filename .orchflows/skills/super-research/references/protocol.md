@@ -184,7 +184,9 @@ construction, and why no lawful `K5` shape exists — is in
 ## Adapter roster
 
 Twenty adapters, nineteen live plus `fake`; thirty-six route surfaces, because
-seven adapters reach more than one. Thirty-five of the thirty-six are read;
+ten adapters reach more than one — `bluesky`, `x_guest` and `youtube_innertube`
+among them, each pairing a second endpoint to its first. Thirty-five of the
+thirty-six are read;
 `x_guest`'s activation is spent rather than read, so it carries a budget and
 never a record. Read back off `runner.surface_descriptors`.
 
@@ -202,7 +204,7 @@ never a record. Read back off `runner.surface_descriptors`.
 | `x_guest` | `K1` | `x_guest_activate`, `x_guest_graphql` | a guest-token activation, then `TweetResultByRestId`, `UserByScreenName`, `UserTweets` on the token it minted. One read costs two origin calls; both are paced, and the ledger bills the read alone — the activation is in the governor's log |
 | `linkedin_public` | `K2` | `linkedin_public_profile` | `/in/<slug>` `ld+json` Person: name, description, `jobTitle`, `addressLocality`, `worksFor`, `alumniOf` |
 | `linkedin_jobs` | `K0` | `linkedin_jobs_guest_search` | `jobs-guest` search: URN id, title, company, posted date |
-| `youtube_innertube` | `K1` | `youtube_innertube` | `search`, `next` comment threads, `player` metadata. No captions |
+| `youtube_innertube` | `K1` | `youtube_innertube`, `youtube_timedtext` | four operations a caller names one of: `search` result pages, `next` comment threads, `player` video metadata, and `transcript` — the caption track the player itself named, read as cues off the timed-text route beside it. Measured 2026-08-17: 449 cues and 16,957 characters from one video. A `next` record's attributes come under the names of whichever thread shape answered, and both shapes are in the wild: the pre-2026-08 `comment.commentRenderer` shape names `voteCount` and `publishedTimeText`, while the `commentViewModel` shape every read today returns names `likeCountNotliked` and `publishedTime`. Read the pair a record actually carries and expect either — nothing renames one into the other, because a name this package made would not be a name an origin reported |
 | `instagram_public` | `K1` | `instagram_web_profile` | `web_profile_info`: biography, follower count, recent posts with like and comment counts |
 | `hacker_news` | `K0` | `hn_algolia_search`, `hn_firebase_item`, `hn_algolia_item` | Algolia search for stories and comments, Firebase v0 item and `kids` traversal, and one Algolia call that returns a story's whole comment tree — 259 nodes in one read, measured 2026-08-17. Search asks `typoTolerance=false`, because the index reaches `space` from `SpaceX` otherwise |
 | `github_rest` | `K0` | `github_rest`, `github_search` | anonymous repositories, issues, releases, search |
@@ -314,12 +316,14 @@ The retained codes, what each one means, and every module that spells one:
 | `native_identity_unknown` | the row carries no platform-native id, so it can never group by strong identity | `web_search`, standing on every index hit |
 | `unknown_publication_time` | the row carries no publication time, so it sorts as missing | `web_search`, standing on every index hit |
 | `target_not_hydrated` | this hit was discovered and nothing in this artifact hydrated it | `web_search`, standing on every index hit |
-| `recall_window_partial` | the step stopped while the origin was still offering, so the set is a window and not the whole | `runner`, when a cap truncated |
+| `recall_window_partial` | the step stopped while the origin was still offering, so the set is a window and not the whole | `runner`, when a cap truncated; `coverage`, which reads it |
 
-Four of the names above are readers rather than emitters: `runner.reached_origin`
+Five of the names above are readers rather than emitters: `runner.reached_origin`
 reads `cache_hit`, `smoke.channel_of` reads `network_intercepted` and
-`unreachable`, and `cli.target_may_be_the_problem` reads `auth_required` and
-`attestation_required`. Everywhere else, naming a code is attaching it.
+`unreachable`, `cli.target_may_be_the_problem` reads `auth_required` and
+`attestation_required`, and `coverage.review_artifact` reads
+`recall_window_partial` to tell a caller its own set is a window rather than
+the whole. Everywhere else, naming a code is attaching it.
 
 A route that fails does not fall back. `schema_drift` and `stale_identifier` exist
 so that a changed payload is a typed failure rather than an empty success, which
