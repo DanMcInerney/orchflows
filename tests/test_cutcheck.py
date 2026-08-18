@@ -94,6 +94,15 @@ def fixture_criteria(run, name):
     return cutcheck._criteria(section[cutcheck.COMPLETION_SECTION])
 
 
+def shared_baseline_tree():
+    """The harness's real baseline clone, shared by read-only tree probes."""
+
+    tree = cutcheck._scratch_tree(BASELINE, ROOT, shared_root())
+    if tree is None:
+        raise RuntimeError("no scratch tree was built for the baseline")
+    return tree
+
+
 class AffirmativeSummaryTest(unittest.TestCase):
     """A set with no finding outside the advisory set says so, rather than nothing.
 
@@ -2466,11 +2475,9 @@ class BinaryOutputOracleTest(unittest.TestCase):
     that runs one in the repository it is testing is the one place that broke.
     """
 
-    def setUp(self):
-        scratch_root = Path(tempfile.mkdtemp(prefix=".cutcheck-binary-"))
-        self.addCleanup(remove_repo_tree, scratch_root)
-        self.tree = cutcheck._scratch_tree(BASELINE, ROOT, scratch_root)
-        self.assertIsNotNone(self.tree, "no scratch tree was built for the baseline")
+    @classmethod
+    def setUpClass(cls):
+        cls.tree = shared_baseline_tree()
 
     def test_a_command_printing_binary_is_graded_on_its_exit_status(self):
         self.assertEqual(cutcheck._run_once("git archive HEAD", self.tree), 0)
@@ -2479,11 +2486,9 @@ class BinaryOutputOracleTest(unittest.TestCase):
 class ScratchTreeHistoryTest(unittest.TestCase):
     """The graded tree is a repository of its own, holding the graded revision."""
 
-    def setUp(self):
-        scratch_root = Path(tempfile.mkdtemp(prefix=".cutcheck-history-"))
-        self.addCleanup(remove_repo_tree, scratch_root)
-        self.tree = cutcheck._scratch_tree(BASELINE, ROOT, scratch_root)
-        self.assertIsNotNone(self.tree, "no scratch tree was built for the baseline")
+    @classmethod
+    def setUpClass(cls):
+        cls.tree = shared_baseline_tree()
 
     def test_the_graded_revision_resolves_inside_the_tree(self):
         # Reading a revision out of the log is the history claim: an extract
