@@ -129,6 +129,15 @@ SCRIPT_NAMES = (
     "ui.py",
     "workspace.py",
 )
+SCRIPT_SUPPORT_PREFIXES = (
+    "tickets",
+    "ui",
+    "cutcheck",
+    "search_plan",
+    "trace",
+    "workspace",
+    "migrate_state",
+)
 CLAUDE_CLI_CANDIDATES = ("claude", "claude.exe", "claude.cmd")
 CODEX_CLI_CANDIDATES = ("codex", "codex.exe", "codex.cmd")
 PROFILES_MD = REPO_ROOT / "skills" / "engines" / "orch-frontier" / "references" / "profiles.md"
@@ -154,6 +163,19 @@ _TOML_TABLE_RE = re.compile(r"^\s*\[\[?[^\]]+\]\]?\s*(?:#.*)?$")
 _AGENTS_TABLE_RE = re.compile(r"^\s*\[agents\]\s*(?:#.*)?$")
 _AGENTS_DOTTED_LIMIT_RE = re.compile(r"^\s*agents\.(?:max_threads|max_depth)\s*=")
 _AGENTS_LIMIT_RE = re.compile(r"^\s*(?:max_threads|max_depth)\s*=")
+
+
+def discover_script_names(scripts_dir: Path) -> tuple[str, ...]:
+    """Return entrypoints plus flat helpers owned by compatibility facades."""
+
+    entrypoints = set(SCRIPT_NAMES)
+    support = sorted(
+        path.name
+        for path in scripts_dir.glob("*.py")
+        if path.name not in entrypoints
+        and any(path.stem.startswith(f"{prefix}_") for prefix in SCRIPT_SUPPORT_PREFIXES)
+    )
+    return SCRIPT_NAMES + tuple(support)
 
 
 # --- scope-derived paths -----------------------------------------------
@@ -1081,7 +1103,10 @@ def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
                 rel = path.relative_to(REPO_ROOT)
                 lib_copies.append((path, lib_home / rel))
 
-    scripts = [(REPO_ROOT / "scripts" / name, bin_dir / name) for name in SCRIPT_NAMES]
+    scripts = [
+        (REPO_ROOT / "scripts" / name, bin_dir / name)
+        for name in discover_script_names(REPO_ROOT / "scripts")
+    ]
 
     claude_scope_home = _claude_scope_home("user", None)
     codex_user_home = _codex_user_home()
