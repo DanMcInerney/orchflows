@@ -1,11 +1,8 @@
 """Tests for tools/run_tests.py — the parallel runner the suite runs through.
 
-Only the reporting seam, and only the part of it that has failed: what a
-child's captured output does to the parent when the two disagree about an
-encoding. Everything else the runner does is graded by the suite it runs,
-which cannot grade this — a runner that dies while printing a failure takes
-the report, the exit code and the name of the failing module with it, and
-what CI shows is the runner's traceback instead of the test's.
+The runner is also the suite's whole-interpreter residue oracle. Each module
+gets a fresh child, but a child still has to reject a module that leaves one
+of the process-global seams the suite is known to replace dirty.
 
 The console encoding is a parameter here, not the platform's. A Windows
 runner's is cp1252; ``PYTHONIOENCODING`` makes any host's the same, so the
@@ -35,6 +32,77 @@ RUN_TESTS_PY = REPO_ROOT / "tools" / "run_tests.py"
 # the report.
 ENCODABLE = "é"  # é
 UNENCODABLE = "★"  # ★
+
+
+def run_fixture(source: str):
+    """Run one synthetic module through the same child boundary as CI."""
+
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / "test_fixture.py").write_text(source, encoding="utf-8")
+        env = dict(os.environ)
+        env["PYTHONPATH"] = str(REPO_ROOT)
+        return subprocess.run(
+            [
+                sys.executable,
+                str(RUN_TESTS_PY),
+                "--tests-dir",
+                tmp,
+                "--no-cache",
+                "-j",
+                "1",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+        )
+
+
+class TestGuardedSeams(unittest.TestCase):
+    CLEAN = textwrap.dedent(
+        '''\
+        import unittest
+
+
+        class Clean(unittest.TestCase):
+            def test_it(self):
+                self.assertTrue(True)
+        '''
+    )
+
+    LEAKS = {
+        "install.Path.home": "import install\ninstall.Path.home = lambda: None",
+        "ui.html.escape": "from scripts import ui\nui.html.escape = lambda value: value",
+        "pathlib.Path.open": "from pathlib import Path\nPath.open = lambda *args, **kwargs: None",
+        "os.chdir": "import os\nfrom pathlib import Path\nos.chdir(str(Path(__file__).parent))",
+        "sys.path": "import sys\nsys.path.append('leaked-by-test')",
+    }
+
+    def leaking_module(self, statement: str) -> str:
+        return textwrap.dedent(
+            '''\
+            import unittest
+
+
+            class Leaking(unittest.TestCase):
+                def test_it(self):
+            '''
+        ) + textwrap.indent(statement + "\n", " " * 8)
+
+    def test_a_clean_module_is_accepted(self):
+        completed = run_fixture(self.CLEAN)
+        report = completed.stdout.decode("utf-8", "replace")
+        self.assertEqual(b"", completed.stderr, completed.stderr)
+        self.assertEqual(0, completed.returncode, report)
+        self.assertIn("OK", report)
+
+    def test_each_whole_interpreter_leak_is_rejected_and_named(self):
+        for seam, statement in self.LEAKS.items():
+            with self.subTest(seam=seam):
+                completed = run_fixture(self.leaking_module(statement))
+                report = completed.stdout.decode("utf-8", "replace")
+                self.assertEqual(b"", completed.stderr, completed.stderr)
+                self.assertEqual(1, completed.returncode, report)
+                self.assertIn("leaked whole-interpreter seam: " + seam, report)
 
 
 class Console:

@@ -20,6 +20,8 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import html
+import inspect
 import json
 import os
 import subprocess
@@ -38,6 +40,46 @@ CACHE_PATH = ROOT / ".orch" / "run_tests_times.json"
 # --- child: run one module in this interpreter ------------------------
 
 
+def guarded_state() -> dict:
+    """Snapshot the process-global seams tests are allowed to borrow only.
+
+    The suite imports ``Path`` through ``install`` and ``html`` through
+    ``ui``; guarding their defining objects catches changes through either
+    alias without importing those large application modules into every child.
+    """
+
+    return {
+        "install.Path.home": inspect.getattr_static(Path, "home"),
+        "ui.html.escape": html.escape,
+        "pathlib.Path.open": inspect.getattr_static(Path, "open"),
+        "os.chdir": (os.chdir, os.getcwd()),
+        "sys.path": (sys.path, tuple(sys.path)),
+    }
+
+
+def leaked_seams(before: dict):
+    """Name every guarded seam whose identity or value escaped a test."""
+
+    leaked = []
+    if inspect.getattr_static(Path, "home") is not before["install.Path.home"]:
+        leaked.append("install.Path.home")
+    if html.escape is not before["ui.html.escape"]:
+        leaked.append("ui.html.escape")
+    if inspect.getattr_static(Path, "open") is not before["pathlib.Path.open"]:
+        leaked.append("pathlib.Path.open")
+    chdir, cwd = before["os.chdir"]
+    try:
+        cwd_leaked = os.getcwd() != cwd
+    except OSError:
+        cwd_leaked = True
+    if os.chdir is not chdir or cwd_leaked:
+        leaked.append("os.chdir")
+    path_object, path_value = before["sys.path"]
+    if sys.path is not path_object or tuple(sys.path) != path_value:
+        leaked.append("sys.path")
+    return leaked
+
+
 def run_child(module: str, import_root: str, result_path: str, verbosity: int) -> int:
     """Run one test module and write its counts to ``result_path``.
 
@@ -52,18 +94,25 @@ def run_child(module: str, import_root: str, result_path: str, verbosity: int) -
     sys.path.insert(0, import_root)
 
     suite = unittest.TestLoader().loadTestsFromName(module)
+    before = guarded_state()
     result = unittest.TextTestRunner(stream=sys.stderr, verbosity=verbosity).run(suite)
+    leaks = leaked_seams(before)
+    for seam in leaks:
+        sys.stderr.write("leaked whole-interpreter seam: " + seam + "\n")
     payload = {
         "module": module,
         "tests": result.testsRun,
         "failures": len(result.failures),
-        "errors": len(result.errors),
+        "errors": len(result.errors) + len(leaks),
         "skipped": len(result.skipped),
         "unexpected": len(result.unexpectedSuccesses),
-        "ok": result.wasSuccessful(),
+        "ok": result.wasSuccessful() and not leaks,
     }
-    Path(result_path).write_text(json.dumps(payload), encoding="utf-8")
-    return 0 if result.wasSuccessful() else 1
+    # A leaked ``Path.open`` must not keep the child from reporting that
+    # exact leak. ``open`` is a separate seam and the result path is absolute.
+    with open(result_path, "w", encoding="utf-8") as stream:
+        stream.write(json.dumps(payload))
+    return 0 if payload["ok"] else 1
 
 
 # --- parent: discovery, scheduling, dispatch --------------------------
