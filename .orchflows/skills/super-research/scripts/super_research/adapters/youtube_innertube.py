@@ -604,8 +604,19 @@ def comment_items(payload: Any) -> Optional[Sequence[Any]]:
 
     A call spending a token comes back with the threads themselves. A call
     naming a video comes back with the watch page, whose comment section holds
-    the token and no thread yet. Both are declared; None means neither is
-    there, which is the payload having moved.
+    the token and no thread yet. Both are declared.
+
+    **Two absences, and only one of them is a broken read** — the same line
+    `comment_entities` draws below. None means the answer states no rows this
+    module knows how to look in: no continuation items and no watch-next
+    container either, which is the payload having moved. An empty sequence
+    means the container was read and it lists no comment section, which is
+    what a video with comments turned off answers with. Measured 2026-08-17
+    side by side: `next:DPhzzkjiD9s` returned four watch-next renderers whose
+    last was the `comment-item-section` holding the token, `next:yLY0LGmBTt8`
+    returned three and no `itemSectionRenderer` at all, both 200 and both well
+    formed. Typing the second `schema_drift` reported a payload change that
+    had not happened and made its caller repeat it.
 
     **Every command's rows, not the first command's.** One answer carries the
     comment section in more than one piece, and the pieces are not ranked: the
@@ -632,16 +643,20 @@ def comment_items(payload: Any) -> Optional[Sequence[Any]]:
     if found:
         return found
     sections = dig(payload, WATCH_NEXT_PATH)
-    for section in sections if isinstance(sections, list) else ():
+    if not isinstance(sections, list):
+        return None
+    for section in sections:
         item = section.get(ITEM_SECTION_KEY) if isinstance(section, Mapping) else None
         if not isinstance(item, Mapping):
             continue
         if item.get(SECTION_IDENTIFIER_KEY) != COMMENT_SECTION_IDENTIFIER:
             continue
+        # The section is there, so its rows are the answer or the shape moved
+        # under it; falling through here would call a section this module
+        # cannot read a video that lists nothing.
         rows = item.get(CONTENTS_KEY)
-        if isinstance(rows, list):
-            return rows
-    return None
+        return rows if isinstance(rows, list) else None
+    return ()
 
 
 def comment_entities(payload: Any) -> Optional[Dict[str, Mapping[str, Any]]]:
@@ -931,23 +946,26 @@ def _comments_page(
         cursor = cursor or continuation_in(entry)
     if records:
         return _answered(response, tuple(records), "ok", cursor_out=cursor)
-    # Two empties this route can honestly answer with, and neither is silent:
-    # the first call carries the token for the threads and no thread yet, and a
-    # video with comments turned off carries neither. The token is surfaced for
-    # the core to spend — following it here would make one call two reads.
-    return _answered(
-        response,
-        (),
-        "empty",
-        cursor_out=cursor,
-        warnings=(
-            "{0} answered 200 with the {1} carrying {2} and no thread".format(
-                NEXT_OPERATION,
-                COMMENT_SECTION_IDENTIFIER,
-                "a continuation token" if cursor else "no continuation token",
-            ),
-        ),
-    )
+    # Two empties this route can honestly answer with, and neither is silent.
+    # The first call on a video carries the token for the threads and no
+    # thread yet; the token is surfaced for the core to spend, because
+    # following it here would make one call two reads. A video with comments
+    # turned off carries no comment section at all — measured 2026-08-17,
+    # `next:yLY0LGmBTt8` answered 200 with three watch-next renderers and no
+    # `itemSectionRenderer` — so it reaches here with nothing to page. The
+    # warning is the only thing telling the two apart, and neither may borrow
+    # the other's: naming the section on a page that carried none would state
+    # a shape the origin did not send.
+    if cursor:
+        warning = (
+            "{0} answered 200 with the {1} carrying a continuation token and no"
+            " thread".format(NEXT_OPERATION, COMMENT_SECTION_IDENTIFIER)
+        )
+    else:
+        warning = "{0} answered 200 and the video lists no comment".format(
+            NEXT_OPERATION
+        )
+    return _answered(response, (), "empty", cursor_out=cursor, warnings=(warning,))
 
 
 def _playability_loss(status: str) -> str:

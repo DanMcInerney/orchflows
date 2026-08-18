@@ -3749,6 +3749,94 @@ class InnerTubeCommentThreadTest(unittest.TestCase):
         self.assertEqual(len(opener.opened), 1)
 
 
+class YoutubeCommentsOffTest(unittest.TestCase):
+    """A video nobody may comment on, which is an answer and not a broken read.
+
+    Measured 2026-08-17, side by side, through this package's own transport.
+    `next:DPhzzkjiD9s` answered 200 with four watch-next renderers whose last
+    is an `itemSectionRenderer` carrying `comment-item-section` and the token.
+    `next:yLY0LGmBTt8` answered 200 with three renderers —
+    `videoPrimaryInfoRenderer`, `videoSecondaryInfoRenderer`,
+    `compositeVideoPrimaryInfoRenderer` — and no `itemSectionRenderer` at all.
+    Both well formed. The second was typed `schema_drift`, so a three-video
+    depth read returned `yt-comments-1 failed loss ('schema_drift',)` and
+    `coverage.review_artifact` reported `step_carried_loss`, obliging the
+    calling lane to state a payload change that had not happened.
+
+    `protocol.md` reserves `schema_drift` for a payload arriving in a shape
+    this parser does not know, so that an empty result would have been a lie.
+    Here the empty is the truth, and the shape this parser does not know is
+    the other absence: the watch-next container itself gone.
+    """
+
+    def test_a_video_with_comments_off_answers_empty(self):
+        page, _ = youtube_page(
+            "next_comments_off.json", target_id="next:" + YOUTUBE_VIDEO_ID
+        )
+
+        self.assertEqual(page.outcome, "empty")
+        self.assertEqual(page.loss, ())
+        self.assertEqual(page.records, ())
+        # No section, so no token: there is no second call to make, and
+        # surfacing one would send the core after a page nobody offered.
+        self.assertEqual(page.cursor_out, "")
+
+    def test_the_warning_states_what_was_absent(self):
+        """An empty carries its own news, and the news is the video's.
+
+        The page below and the first call on a video with comments both answer
+        empty with no loss, so the warning is the only place a reader learns
+        which one this was. Naming the `comment-item-section` here would name
+        a container the answer did not carry, and `_drifted`'s sentence would
+        say the payload moved when it did not.
+        """
+
+        page, _ = youtube_page(
+            "next_comments_off.json", target_id="next:" + YOUTUBE_VIDEO_ID
+        )
+        with_a_token, _ = youtube_page(
+            "next_watch_page.json", target_id="next:" + YOUTUBE_VIDEO_ID
+        )
+        said = " ".join(page.warnings)
+
+        self.assertIn("lists no comment", said)
+        # `_drifted`'s own sentence, which no page answering `empty` may carry.
+        self.assertNotIn("changed shape", said)
+        self.assertNotIn(youtube_innertube.COMMENT_SECTION_IDENTIFIER, said)
+        # The other empty still says what it is, so the two stay tellable
+        # apart by the one thing either of them returns.
+        self.assertIn(
+            youtube_innertube.COMMENT_SECTION_IDENTIFIER, " ".join(with_a_token.warnings)
+        )
+
+    def test_a_missing_container_is_still_drift(self):
+        """The absence that is not the video's, which the branch above widens past.
+
+        Both payloads are built beside the fixture rather than by editing it,
+        because what is asserted is the difference between them and the page
+        that reads whole: the same watch page with the container this module
+        walks removed, and a continuation call answering with an endpoint list
+        and no container either. Neither states anything about comments, so
+        neither can be read as a video that has none — calling either empty
+        would report a comment section nobody looked in as one nobody wrote
+        in, which is the reading `schema_drift` exists to prevent.
+        """
+
+        no_container = json.loads(read_youtube("next_comments_off.json"))
+        del no_container[youtube_innertube.WATCH_NEXT_PATH[0]]
+
+        gone, _ = youtube_comments_page(no_container)
+        neither, _ = youtube_comments_page(
+            {youtube_innertube.RECEIVED_ENDPOINTS_KEY: []}
+        )
+
+        for page in (gone, neither):
+            with self.subTest(warning=page.warnings):
+                self.assertEqual(page.outcome, "failed")
+                self.assertEqual(page.loss, ("schema_drift",))
+                self.assertEqual(page.records, ())
+
+
 VIEW_MODEL_FIXTURE = "next_comment_view_models.json"
 
 
