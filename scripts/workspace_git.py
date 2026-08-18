@@ -34,10 +34,10 @@ def _git(cwd, *args: str):
     )
 
 
-def _dirty_paths(cwd) -> list:
+def _dirty_paths(cwd, git=_git) -> list:
     """Every path ``git status`` reports, both ends of a rename included."""
 
-    code, out, err = _git(cwd, "status", "--porcelain", "-z")
+    code, out, err = git(cwd, "status", "--porcelain", "-z")
     if code != 0:
         raise Refused(f"git status: {err.strip()}")
     fields = out.split("\0")

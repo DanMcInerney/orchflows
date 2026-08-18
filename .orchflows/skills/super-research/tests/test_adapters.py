@@ -171,9 +171,15 @@ def adapter_owner_paths(path):
         parts = (node.module or "").split(".")
         if not parts or parts[0] != "_support":
             continue
-        helper = path.parent.joinpath(*parts).with_suffix(".py")
-        if helper.is_file():
-            helpers.append(helper)
+        if len(parts) > 1:
+            helper = path.parent.joinpath(*parts).with_suffix(".py")
+            if helper.is_file():
+                helpers.append(helper)
+        else:
+            for alias in node.names:
+                helper = path.parent / "_support" / (alias.name + ".py")
+                if helper.is_file():
+                    helpers.append(helper)
     return (path,) + tuple(sorted(set(helpers)))
 
 

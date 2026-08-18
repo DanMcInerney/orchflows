@@ -436,4 +436,3 @@ class GateStubsTest(unittest.TestCase):
             markdown = run_cmd("worklog", "testrun")["worklog"]["markdown"]
             queued = markdown.split("## queued scope")[1].split("## terminal")[0]
             self.assertIn("R.04", queued)
-

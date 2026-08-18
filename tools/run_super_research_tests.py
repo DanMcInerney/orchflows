@@ -30,13 +30,34 @@ def load_suite(selectors):
 
     sys.path[:0] = [str(SKILL_ROOT), str(SCRIPTS_DIR)]
     loader = unittest.defaultTestLoader
-    if selectors:
-        return loader.loadTestsFromNames([test_name(name) for name in selectors])
-    return loader.discover(
+    discovered = loader.discover(
         start_dir=str(TESTS_DIR),
         pattern="test*.py",
         top_level_dir=str(SKILL_ROOT),
     )
+    if not selectors:
+        return discovered
+
+    def cases(suite):
+        for item in suite:
+            if isinstance(item, unittest.TestSuite):
+                yield from cases(item)
+            else:
+                yield item
+
+    selected = unittest.TestSuite()
+    all_cases = tuple(cases(discovered))
+    for raw in selectors:
+        target = test_name(raw)
+        if target.count(".") == 1:
+            selected.addTests(loader.loadTestsFromName(target))
+            continue
+        matched = [test for test in all_cases if test.id() == target or test.id().startswith(target + ".")]
+        if matched:
+            selected.addTests(matched)
+        else:
+            selected.addTests(loader.loadTestsFromName(target))
+    return selected
 
 
 def main(argv=None) -> int:

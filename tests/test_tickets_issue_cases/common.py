@@ -275,5 +275,3 @@ def three_stubs() -> dict:
         "B": stub("B", "[A]"),
         "C": stub("C", "[A, B]"),
     }
-
-

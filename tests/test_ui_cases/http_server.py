@@ -251,5 +251,3 @@ class TestNoNetworkAssets(unittest.TestCase):
                 for route in every_route():
                     _, page = get(server, route)
                     self.assertIsNone(REMOTE_ASSET_RE.search(page), route)
-
-

@@ -140,7 +140,7 @@ def route_admissions() -> Dict[str, bool]:
 
 
 def budget_key(request: TransportRequest) -> str:
-    return _request.budget_key(request, ROUTE_CONSTANTS)
+    return _request.budget_key(request, ROUTE_CONSTANTS, origin_key)
 
 
 def origin_locator(route_id: str, published: str) -> str:
@@ -164,7 +164,14 @@ def declared_origin_hosts() -> Tuple[str, ...]:
 
 
 def open_read_refusal(url: str) -> str:
-    return _request.open_read_refusal(url, ROUTE_CONSTANTS)
+    return _request.open_read_refusal(
+        url, ROUTE_CONSTANTS, lambda routes: declared_origin_hosts()
+    )
+
+
+def channel_verdict(status: int, body: str) -> str:
+    _protocol.CAPTIVE_PORTAL_MARKERS = CAPTIVE_PORTAL_MARKERS
+    return _protocol.channel_verdict(status, body)
 
 
 def build_transport_request(

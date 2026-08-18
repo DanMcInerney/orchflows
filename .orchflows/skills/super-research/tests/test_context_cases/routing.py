@@ -78,5 +78,3 @@ class OutcomeReductionTest(unittest.TestCase):
         self.assertEqual(schema.reduce_outcomes(("failed", "refused")), "failed")
         self.assertEqual(schema.reduce_outcomes(("refused", "refused")), "refused")
         self.assertEqual(schema.reduce_outcomes(()), "empty")
-
-

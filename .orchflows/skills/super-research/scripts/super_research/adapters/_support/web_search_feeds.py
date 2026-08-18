@@ -247,6 +247,7 @@ def feed_page_from(
     operation: str,
     response: transport.TransportResponse,
     cursor: str,
+    record_builder=feed_record,
 ) -> NativePage:
     """Turn one RSS answer the origin sent into exactly one page."""
 
@@ -284,7 +285,7 @@ def feed_page_from(
         )
 
     records = tuple(
-        feed_record(config, operation, position, item)
+        record_builder(config, operation, position, item)
         for position, item in enumerate(parser.items)
         if feed_locator(config, operation, item[LINK_TAG])
     )

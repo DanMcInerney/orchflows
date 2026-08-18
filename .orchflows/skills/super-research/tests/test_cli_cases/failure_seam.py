@@ -318,4 +318,3 @@ class SmokeSubcommandTest(LedgerHoldingCase):
 
         self.assertEqual(second[ADAPTER], first[ADAPTER])
         self.assertNotEqual(second["reddit_feed"], first[ADAPTER])
-

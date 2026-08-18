@@ -385,6 +385,3 @@ class TestCanonicalBenchmaker(BenchmakerRetirementCases, unittest.TestCase):
         # Triage is the measurement stage's own first pass, never a fourth
         # stage, so no stub may name it as one.
         self.assertEqual([], re.findall(r"triage(?! pass| measurement)", audit))
-
-
-

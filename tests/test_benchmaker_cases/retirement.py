@@ -484,5 +484,3 @@ class TestCanonicalSurface(unittest.TestCase):
                 "orch-benchmaker", fields.get("name"),
                 f"demoted orch-benchmaker still owned as a skill: {skill_path}",
             )
-
-

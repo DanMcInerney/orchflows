@@ -171,5 +171,3 @@ class TestPacket(unittest.TestCase):
             # an error payload, carried out to the caller's exit code
             self.assertEqual(1, result.returncode)
             self.assertIn("ticket not found", json.loads(result.stdout)["error"])
-
-

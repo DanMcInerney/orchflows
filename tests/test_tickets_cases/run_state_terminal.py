@@ -437,5 +437,3 @@ class OrchTreesTest(unittest.TestCase):
         self.assertIn(".orch/*", ignore)
         for tree in tickets_mod.RUN_STATE_TREES:
             self.assertNotIn(f"!.orch/{tree}/", ignore, tree)
-
-

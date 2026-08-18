@@ -213,5 +213,3 @@ class HackerNewsGithubRouteConstantTest(unittest.TestCase):
                 resolved = transport.origin_locator(route_id, "/item?id=" + HN_STORY_ID)
 
                 self.assertNotIn("news.ycombinator.com", resolved)
-
-

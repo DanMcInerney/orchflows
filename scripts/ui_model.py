@@ -501,10 +501,9 @@ def _json_object(line: str):
     except ValueError:
         return None
     return entry if isinstance(entry, dict) else None
-
-
-
-
 def _facade_value(name, fallback):
-    facade = sys.modules.get("scripts.ui") or sys.modules.get("ui") or sys.modules.get("__main__")
+    facade = next((module for module_name, module in tuple(sys.modules.items()) if
+        module_name != __name__ and getattr(module, "_facade_value", None) is
+        _facade_value and hasattr(module, "render_route")), None)
+    facade = facade or sys.modules.get("scripts.ui") or sys.modules.get("ui") or sys.modules.get("__main__")
     return getattr(facade, name, fallback)

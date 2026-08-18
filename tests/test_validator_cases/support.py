@@ -71,6 +71,9 @@ class _IsolatedTree(unittest.TestCase):
         shutil.copytree(CONTRACTS, self.tmp_path / "contracts")
         (self.tmp_path / "tools").mkdir()
         shutil.copy(VALIDATE, self.tmp_path / "tools" / "validate.py")
+        shutil.copytree(ROOT / "tools" / "validate_support", self.tmp_path / "tools" / "validate_support")
+        (self.tmp_path / "scripts").mkdir()
+        shutil.copy(ROOT / "scripts" / "doclint.py", self.tmp_path / "scripts" / "doclint.py")
         (self.tmp_path / "tests").mkdir()
         shutil.copy(PINS, self.tmp_path / "tests" / "pins.json")
 
@@ -84,5 +87,3 @@ class _IsolatedTree(unittest.TestCase):
             exec(_VALIDATE_CODE, namespace)  # noqa: S102 -- the file under test
             code = namespace["main"](list(args))
         return _Result(code, out.getvalue(), err.getvalue())
-
-

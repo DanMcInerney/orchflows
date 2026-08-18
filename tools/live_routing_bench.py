@@ -44,6 +44,7 @@ from tools.live_routing_bench_support.execution import (  # noqa: E402
     _run_case,
     run_benchmark,
 )
+from tools.live_routing_bench_support import execution as _execution  # noqa: E402
 from tools.live_routing_bench_support.grading import (  # noqa: E402
     ANSWER_LINE_RE,
     BUILD_SKILL,
@@ -75,6 +76,27 @@ DEFAULT_CASES = REPO_ROOT / "benchmarks" / "routing" / "cases.json"
 ADAPTER_SETS = ("all", "four")
 ADAPTER_CHOICES = ADAPTER_SETS + ("both",)
 CASE_FIELDS = ("id", "prompt", "expected", "note")
+
+_install_command_impl = _install_command
+_run_benchmark_impl = run_benchmark
+
+
+def _sync_execution_seams() -> None:
+    _execution.INSTALLER = INSTALLER
+    _execution._render_install = _render_install
+    _execution._make_repo = _make_repo
+    _execution._run_case = _run_case
+    _execution.grade_transcript = grade_transcript
+
+
+def _install_command(adapter_set: str) -> list:
+    _sync_execution_seams()
+    return _install_command_impl(adapter_set)
+
+
+def run_benchmark(**kwargs) -> list:
+    _sync_execution_seams()
+    return _run_benchmark_impl(**kwargs)
 
 
 def load_cases(path) -> list:

@@ -243,4 +243,3 @@ def graded_item(tid, *, branch="wt-branch", scope=("scratch",), isolation="requi
         extra=declared + stamps + tuple(extra),
     )
     return graded
-

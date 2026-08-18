@@ -279,5 +279,3 @@ class TestCheckedByVerb(unittest.TestCase):
 CLAIMED_ISOLATED_TICKET = ISOLATED_TICKET.replace(
     "status: ready", "status: claimed\nclaimed_by: agent-a"
 )
-
-

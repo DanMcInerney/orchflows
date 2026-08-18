@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from .support import CONTRACTS, PINS, VALIDATE, validate
+from .support import CONTRACTS, PINS, ROOT, VALIDATE, validate
 
 class TestValidatorAgainstRepo(unittest.TestCase):
     def test_repo_passes_clean(self):
@@ -34,6 +34,9 @@ class TestPinFlagRoundTrip(unittest.TestCase):
         shutil.copytree(CONTRACTS, self.tmp_path / "contracts")
         (self.tmp_path / "tools").mkdir()
         shutil.copy(VALIDATE, self.tmp_path / "tools" / "validate.py")
+        shutil.copytree(ROOT / "tools" / "validate_support", self.tmp_path / "tools" / "validate_support")
+        (self.tmp_path / "scripts").mkdir()
+        shutil.copy(ROOT / "scripts" / "doclint.py", self.tmp_path / "scripts" / "doclint.py")
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -125,5 +128,3 @@ class TestFrontmatterBoundaryInputs(unittest.TestCase):
         self.assertEqual({"name": "foo", "description": "bar"}, fm)
         self.assertEqual(huge_line, body.strip())
         self.assertFalse(diag.has_errors)
-
-

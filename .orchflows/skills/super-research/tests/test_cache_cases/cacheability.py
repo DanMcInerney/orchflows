@@ -97,4 +97,3 @@ class CacheabilityTest(unittest.TestCase):
         self.assertFalse(run_cache.serve(request, carrier.fetch).cache_hit)
         self.assertTrue(run_cache.serve(request, carrier.fetch).cache_hit)
         self.assertEqual(len(opener.opened), 2)
-

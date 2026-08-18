@@ -414,4 +414,3 @@ class TestValidatorObservesTheWholePage(unittest.TestCase):
             self.assertNotEqual(first[1].get("ETag"), headers.get("ETag"))
             self.assertIn(ui.EMPTY_NO_RUNS, body)
             self.assertNotIn(ui.EMPTY_NO_SINK, body)
-

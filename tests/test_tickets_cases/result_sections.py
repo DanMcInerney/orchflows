@@ -229,5 +229,3 @@ class ResultOverwriteTest(unittest.TestCase):
 
 
 # --- the run-state channel ---------------------------------------------------
-
-

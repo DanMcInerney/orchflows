@@ -104,4 +104,3 @@ class TestVisibilityAndSelfTarget(unittest.TestCase):
                     "activation",
                     recursive_target_errors(evolve_text, generation, tournament_text),
                 )
-

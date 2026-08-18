@@ -22,13 +22,14 @@
       "oracle": "replay the retained known-bad candidate",
       "oracle_class": "deterministic",
       "evidence": {
-        "identity": "sha256:69b04122f2503ea38461f6442b15438d60d93fb535b3446e6a230ea5519cf1d0",
+        "identity": "sha256:e13d71b8e050beb8e22653878bc946306f60b7de54f665ea539e0727baf822c6",
         "reproduce": "python runner.py --manifest manifest.json --candidate known_bad.py",
         "provenance": [
           "attack-audit.json",
           "cases.json",
           "known_bad.py",
           "runner.py",
+          "runner_core.py",
           "scoring.json"
         ],
         "observation": {
@@ -41,6 +42,7 @@
         "cases.json",
         "known_bad.py",
         "runner.py",
+        "runner_core.py",
         "scoring.json"
       ]
     },
@@ -78,7 +80,7 @@
       "oracle": "replay known-good and known-bad candidates under one component set",
       "oracle_class": "deterministic",
       "evidence": {
-        "identity": "sha256:20016bf8bbd06ad9443c555f0f658643a15b5dcc91671daf8a7ae12f32df44ca",
+        "identity": "sha256:541779f9bf0b335fcd5f1cb2d6e34e21afedb6530187241fb7abbd7c0f471908",
         "reproduce": "python -m unittest tests.test_benchmaker.TestBenchmarkFixture.test_runner_accepts_good_rejects_bad_and_replays_evidence",
         "provenance": [
           "cases.json",
@@ -87,6 +89,7 @@
           "measurement.json",
           "reference-audit.json",
           "runner.py",
+          "runner_core.py",
           "scoring.json"
         ],
         "observation": {
@@ -101,6 +104,7 @@
         "measurement.json",
         "reference-audit.json",
         "runner.py",
+        "runner_core.py",
         "scoring.json"
       ]
     },
@@ -111,12 +115,13 @@
       "oracle": "replay the known-good candidate twice and compare results",
       "oracle_class": "deterministic",
       "evidence": {
-        "identity": "sha256:bc8baae92b7845dc9fc3d81dad05bfa1fd139326a3547875ef543fc73bdbe8af",
+        "identity": "sha256:57585ff836c83ba8ca86e3e8bca5595de08d77a2270fb9c97a15b37ff62f48d8",
         "reproduce": "python -m unittest tests.test_benchmaker.TestBenchmarkFixture.test_runner_accepts_good_rejects_bad_and_replays_evidence",
         "provenance": [
           "cases.json",
           "known_good.py",
           "runner.py",
+          "runner_core.py",
           "scoring.json"
         ],
         "observation": {
@@ -127,6 +132,7 @@
         "cases.json",
         "known_good.py",
         "runner.py",
+        "runner_core.py",
         "scoring.json"
       ]
     },
@@ -198,12 +204,13 @@
       "oracle": "compare qualification replay spend with design and manifest limits",
       "oracle_class": "deterministic",
       "evidence": {
-        "identity": "sha256:c1779d72117108a5e2f32c8fe64c5bad97920ecd201570554bb5b80a1c50ab2d",
+        "identity": "sha256:72a42b5d046b80519a9ed848146d46a324b577ed7b5a552687c56e0c471e06d9",
         "reproduce": "python -m unittest tests.test_benchmaker.TestBenchmarkFixture.test_qualification_recomputes_every_required_check",
         "provenance": [
           "cases.json",
           "evaluation-design.json",
-          "runner.py"
+          "runner.py",
+          "runner_core.py"
         ],
         "observation": {
           "replays": 3,
@@ -214,7 +221,8 @@
       "covers": [
         "cases.json",
         "evaluation-design.json",
-        "runner.py"
+        "runner.py",
+        "runner_core.py"
       ]
     },
     {

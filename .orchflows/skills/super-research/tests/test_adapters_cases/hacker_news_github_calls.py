@@ -338,5 +338,3 @@ class SecondSurfaceIsPacedTest(unittest.TestCase):
 
         self.assertEqual(len(opener.opened), budget.burst + 1)
         self.assertGreater(governor.log[budget.burst].waited_us, 0)
-
-

@@ -13,8 +13,9 @@ class TestScriptNames(unittest.TestCase):
 
     def test_build_plan_installs_every_managed_script_with_matching_content(self):
         plan = relocated_user_install()[0]
-        self.assertEqual(set(install.SCRIPT_NAMES), {path.name for _, path in plan.scripts})
-        for name in install.SCRIPT_NAMES:
+        expected = install.discover_script_names(install.REPO_ROOT / "scripts")
+        self.assertEqual(set(expected), {path.name for _, path in plan.scripts})
+        for name in expected:
             installed = plan.bin_dir / name
             self.assertTrue(installed.is_file(), f"{name} was not installed to {plan.bin_dir}")
             source = install.REPO_ROOT / "scripts" / name

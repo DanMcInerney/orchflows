@@ -106,6 +106,17 @@ SCRIPT_SUPPORT_PREFIXES = (
     "migrate_state",
 )
 
+_LOCAL_ROOT = Path(__file__).resolve().parent
+if str(_LOCAL_ROOT) not in sys.path:
+    sys.path.insert(0, str(_LOCAL_ROOT))
+_loaded_installer = sys.modules.get("installer")
+if _loaded_installer is not None:
+    _loaded_path = Path(getattr(_loaded_installer, "__file__", "")).resolve()
+    if _LOCAL_ROOT / "installer" not in (_loaded_path, *_loaded_path.parents):
+        for _module_name in tuple(sys.modules):
+            if _module_name == "installer" or _module_name.startswith("installer."):
+                del sys.modules[_module_name]
+
 
 def discover_script_names(scripts_dir: Path) -> tuple[str, ...]:
     """Return entrypoints plus flat helpers owned by compatibility facades."""
@@ -224,13 +235,39 @@ from installer.uninstall import (
     _uninstall_boundary,
     run_uninstall,
 )
+from installer import foundation as _foundation
+from installer import managed_text as _managed_text
+from installer import models as _models
+from installer import packages as _packages
+
+_discover_packages_impl = discover_packages
+_detect_hosts_impl = detect_hosts
+
+
+def _sync_installer_seams() -> None:
+    for module in (_foundation, _models, _packages, _planning):
+        if hasattr(module, "REPO_ROOT"):
+            module.REPO_ROOT = REPO_ROOT
+    _managed_text.CODEX_MAX_THREADS = CODEX_MAX_THREADS
+    _planning.detect_hosts = detect_hosts
+
+
+def discover_packages():
+    _sync_installer_seams()
+    return _discover_packages_impl()
+
+
+def detect_hosts(home: Path | None = None) -> tuple[bool, bool]:
+    return _detect_hosts_impl(home)
 
 
 def render_codex_agent_limits(text: str) -> tuple[str, dict]:
+    _sync_installer_seams()
     return _render_codex_agent_limits(text, tomllib)
 
 
 def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
+    _sync_installer_seams()
     return _planning._build_user_plan(
         claude_adapter_set, render_codex_agent_limits, discover_script_names
     )
@@ -239,6 +276,7 @@ def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
 def build_plan(
     scope: str, project_root: Path | None, claude_adapter_set: str = "all"
 ) -> Plan:
+    _sync_installer_seams()
     return _planning.build_plan(
         scope,
         project_root,

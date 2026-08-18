@@ -356,4 +356,3 @@ class TestRowMode(unittest.TestCase):
         code, lines = self.run_row(WORLD.root / "no-such-row.md")
         self.assertEqual(code, 1)
         self.assertTrue(any("no such file" in line for line in lines))
-

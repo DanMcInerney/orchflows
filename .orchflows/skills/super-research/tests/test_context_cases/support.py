@@ -307,4 +307,3 @@ def assert_linked_never_merged(case, artifact, discovery_locator, native_platfor
     case.assertNotEqual(
         hit.access_class, target.access_class, "the pair collapsed onto one access class"
     )
-

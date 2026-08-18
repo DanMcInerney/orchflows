@@ -178,5 +178,3 @@ class ThirdPartyArchiveTest(unittest.TestCase):
         )
         self.assertEqual(archives[0].standing_loss, (THIRD_PARTY_ARCHIVE,))
         self.assertEqual(archives[0].operator_identity, "arctic-shift")
-
-

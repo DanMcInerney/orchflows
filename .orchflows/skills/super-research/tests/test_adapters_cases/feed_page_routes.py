@@ -225,5 +225,3 @@ class FeedPageRouteConstantTest(unittest.TestCase):
                             transport.urlopen_response(request)
 
                     self.assertIn("write-capable method", str(caught.exception))
-
-

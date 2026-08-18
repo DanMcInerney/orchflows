@@ -119,5 +119,3 @@ class KeylessCapabilityTest(unittest.TestCase):
                     assert_the_access_ladder_holds(
                         self, credentialed(self.roster, {surface.route_id})
                     )
-
-

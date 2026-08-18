@@ -312,5 +312,3 @@ class RssAtomCaseTableTest(unittest.TestCase):
         measured = sorted(row["case_name"] for row in rss_atom_cases() if row["measured"])
 
         self.assertEqual(measured, ["an_atom_channel_feed"])
-
-

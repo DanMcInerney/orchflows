@@ -431,4 +431,3 @@ class NoLibraryTreeReadTest(unittest.TestCase):
                 self.assertEqual(
                     expected, len(establishment_lines(prompt)), (pack, prompt)
                 )
-

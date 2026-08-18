@@ -59,14 +59,20 @@ from typing import Dict, Sequence, Tuple, Union
 from . import runner, schema
 # Keep the established ``coverage.*`` depth seam while its implementation
 # lives with the other private support code.
+from ._support import coverage_depth as _coverage_depth
 from ._support.coverage_depth import (
     DEPTH_TARGETS,
     CoverageError,
     DepthPlan,
     DepthTarget,
     SkippedRecord,
-    plan_depth,
+    plan_depth as _plan_depth,
 )
+
+
+def plan_depth(*args, **kwargs):
+    _coverage_depth.DEPTH_TARGETS = DEPTH_TARGETS
+    return _plan_depth(*args, **kwargs)
 
 # What a step is, to the two functions that ask whether one is depth. A manifest
 # holds `AcquisitionStep`s and an artifact holds `StepResult`s, and both carry

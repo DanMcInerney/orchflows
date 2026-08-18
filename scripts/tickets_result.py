@@ -231,7 +231,7 @@ def _run_state_under_run_lock(rest):
     run = args[0]
     chosen = [name for name, value in (('--note', note), ('--artifact', artifact), ('--terminal', terminal)) if value is not None]
     if len(chosen) != 1:
-        return {'error': f'run-state takes exactly one of --note <line>, --artifact <name> or --terminal <state>; got {chosen or 'none'}. usage: {RUN_STATE_USAGE}'}
+        return {'error': f"run-state takes exactly one of --note <line>, --artifact <name> or --terminal <state>; got {chosen or 'none'}. usage: {RUN_STATE_USAGE}"}
     invalid = _segment_error('run id', run)
     if invalid is not None:
         return invalid
@@ -270,7 +270,7 @@ def _run_state_under_run_lock(rest):
     if note is not None or terminal is not None:
         closed, failure = _notes_terminal(run_dir / RUN_NOTES_NAME)
         if failure is not None:
-            return {'error': f'{failure['error']}; notes: {run_dir / RUN_NOTES_NAME}'}
+            return {'error': f"{failure['error']}; notes: {run_dir / RUN_NOTES_NAME}"}
         if closed is not None:
             attempt = 'a note' if note is not None else f"a '{terminal}' close"
             return {'error': f"these notes closed '{closed}': no note is written past a terminal section, and {attempt} would be. notes: {run_dir / RUN_NOTES_NAME}"}

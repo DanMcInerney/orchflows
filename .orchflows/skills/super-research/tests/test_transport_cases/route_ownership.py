@@ -23,7 +23,7 @@ def package_sources():
 def adapter_sources():
     """Every adapter module the package ships, the shared protocol excluded."""
 
-    return sorted(path for path in ADAPTER_DIR.glob("*.py") if path.name != "__init__.py")
+    return sorted(path for path in ADAPTER_DIR.rglob("*.py") if path.name != "__init__.py")
 
 
 def owned_route_literals():

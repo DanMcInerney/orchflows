@@ -206,5 +206,3 @@ class TestVerdictSurvivesCleanupAndScopeIsSegmentExact(unittest.TestCase):
         )
         self.assertEqual(1, done.returncode, done.stdout)
         self.assertIn(outside, payload_of(done)["error"])
-
-

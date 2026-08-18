@@ -232,5 +232,3 @@ class RosterIsCompleteTest(unittest.TestCase):
                     {surface.route_id for surface in runner.surface_descriptors(adapter_id)},
                 )
                 self.assertEqual(len(opener.opened), 1)
-
-

@@ -327,5 +327,3 @@ class TestResultSectionOrder(unittest.TestCase):
                 ["Objective", "Verification", "Risks", "Handoff"],
                 headings_of((run_dir / "T1.md").read_text(encoding="utf-8")),
             )
-
-

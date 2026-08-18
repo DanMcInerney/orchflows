@@ -393,5 +393,3 @@ class LedgerHoldingCase(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.path = Path(self.directory.name) / "smoke-ledger.json"
-
-

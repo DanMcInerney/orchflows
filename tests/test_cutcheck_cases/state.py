@@ -44,7 +44,7 @@ READERS = (
 ALLOWED_STATE_LITERALS = {
     # The canary is a git-tracked golden fixture under the repository, not
     # run state, and the item's `excluded_actions` forbid moving it.
-    "scripts/cutcheck.py": {".orch"},
+    "scripts/cutcheck.py": set(),
     # Where a run snapshot lands inside an isolated tree. A copy of the
     # sink's layout, not a state root: `state_root.py` still owns that.
     "scripts/isolate.py": {".orchflows-state"},
@@ -52,9 +52,7 @@ ALLOWED_STATE_LITERALS = {
     # migration, so the harvester matches the repository shape as well as
     # the sink's. This matches a path in someone else's transcript; it
     # composes no path this host reads.
-    "scripts/trace.py": {
-        r"(?:\.orch|\.orchflows[/\\]state)",
-    },
+    "scripts/trace.py": set(),
     "scripts/ui.py": set(),
     "tools/live_sweep_e2e.py": set(),
 }

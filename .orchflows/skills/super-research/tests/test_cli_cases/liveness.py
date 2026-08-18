@@ -426,5 +426,3 @@ class TheRecordedLivenessReplaysTest(unittest.TestCase):
         for adapter, _ in self.reads:
             with self.subTest(adapter=adapter):
                 self.assertNotEqual(status_row(self, printed, adapter)[3], "-")
-
-

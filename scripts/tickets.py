@@ -73,6 +73,13 @@ else about it:
 
 from __future__ import annotations
 
+import sys as _bootstrap_sys
+from pathlib import Path as _BootstrapPath
+
+_SIBLING_DIR = str(_BootstrapPath(__file__).resolve().parent)
+if _SIBLING_DIR not in _bootstrap_sys.path:
+    _bootstrap_sys.path.append(_SIBLING_DIR)
+
 if __package__:
     from . import tickets_format as _tickets_format_module
     from . import tickets_store as _tickets_store_module
@@ -116,7 +123,14 @@ ORACLE_RE = _tickets_format_module.ORACLE_RE
 PACKS_DIR = _tickets_worklog_module.PACKS_DIR
 PACK_NAME_PREFIX = _tickets_format_module.PACK_NAME_PREFIX
 PACK_NAME_SUFFIX = _tickets_format_module.PACK_NAME_SUFFIX
-PACK_WORKSPACE_MECHANISMS = {'orch-code-pack': 'git', 'orch-content-pack': 'document tree', 'orch-design-pack': 'git plus render', 'orch-research-pack': 'evidence store'}
+PACK_WORKSPACE_MECHANISMS = {
+    "orch-code-pack": "git",
+    "orch-content-pack": "document tree",
+    "orch-design-pack": "git plus render",
+    "orch-research-pack": "evidence store",
+}
+_tickets_format_module.PACK_WORKSPACE_MECHANISMS = PACK_WORKSPACE_MECHANISMS
+_tickets_store_module.PACK_WORKSPACE_MECHANISMS = PACK_WORKSPACE_MECHANISMS
 PLACEHOLDER_RE = _tickets_format_module.PLACEHOLDER_RE
 PROVENANCE_RE = _tickets_format_module.PROVENANCE_RE
 REQUIRED_FIELDS_CELL = _tickets_format_module.REQUIRED_FIELDS_CELL
@@ -201,7 +215,9 @@ _workspace_root = _tickets_store_module._workspace_root
 _write_identity = _tickets_store_module._write_identity
 _write_text_atomically = _tickets_store_module._write_text_atomically
 _writer_identity = _tickets_store_module._writer_identity
-establishes_a_git_workspace = _tickets_store_module.establishes_a_git_workspace
+def establishes_a_git_workspace(name: str) -> bool:
+    _tickets_store_module.PACK_WORKSPACE_MECHANISMS = PACK_WORKSPACE_MECHANISMS
+    return _tickets_store_module.establishes_a_git_workspace(name)
 normalized_isolation = _tickets_store_module.normalized_isolation
 AMENDABLE_STATUSES = _tickets_issue_module.AMENDABLE_STATUSES
 AMEND_USAGE = _tickets_issue_module.AMEND_USAGE
@@ -344,6 +360,10 @@ contextmanager = _tickets_store_module.contextmanager
 Path = _tickets_store_module.Path
 
 def _sync_seams():
+    _tickets_format_module.PACK_WORKSPACE_MECHANISMS = PACK_WORKSPACE_MECHANISMS
+    _tickets_store_module.PACK_WORKSPACE_MECHANISMS = PACK_WORKSPACE_MECHANISMS
+    _tickets_store_module.REPLACE_BUDGET_SECONDS = REPLACE_BUDGET_SECONDS
+    _tickets_store_module.REPLACE_RETRY_SECONDS = REPLACE_RETRY_SECONDS
     _tickets_store_module._cwd = _cwd
     _tickets_store_module.datetime = datetime
     _tickets_lifecycle_module.datetime = datetime
@@ -361,6 +381,17 @@ def _sync_seams():
     _tickets_lifecycle_module._write_text_atomically = _write_text_atomically
     _tickets_result_module._write_text_atomically = _write_text_atomically
     _tickets_result_module._append_one_line = _append_one_line
+    _tickets_dispatch_module._cmd_new = _cmd_new
+    _tickets_dispatch_module._cmd_amend = _cmd_amend
+    _tickets_dispatch_module._cmd_claim = _cmd_claim
+    _tickets_dispatch_module._cmd_ready = _cmd_ready
+    _tickets_dispatch_module._cmd_grant = _cmd_grant
+    _tickets_dispatch_module._cmd_check = _cmd_check
+    _tickets_dispatch_module._cmd_set_status = _cmd_set_status
+    _tickets_dispatch_module._cmd_packet = _cmd_packet
+    _tickets_dispatch_module._cmd_result = _cmd_result
+    _tickets_dispatch_module._cmd_worklog = _cmd_worklog
+    _tickets_dispatch_module._cmd_run_state = _cmd_run_state
 
 if __name__ == "__main__":
     raise SystemExit(main())

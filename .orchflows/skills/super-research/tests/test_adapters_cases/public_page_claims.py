@@ -250,5 +250,3 @@ class PublicPageOracleCanFailTest(unittest.TestCase):
         )
 
         self.assertEqual(named, [])
-
-

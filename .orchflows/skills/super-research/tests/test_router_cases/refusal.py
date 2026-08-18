@@ -311,5 +311,3 @@ class OracleCanFailTest(unittest.TestCase):
             ),
             [],
         )
-
-

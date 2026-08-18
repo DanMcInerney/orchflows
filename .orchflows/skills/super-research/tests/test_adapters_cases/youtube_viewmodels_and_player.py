@@ -398,5 +398,3 @@ class InnerTubeDescriptorTest(unittest.TestCase):
 
         self.assertEqual(len(page.records), 1)
         self.assertEqual(len(opener.opened), 1)
-
-

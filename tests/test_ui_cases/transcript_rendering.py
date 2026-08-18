@@ -174,5 +174,3 @@ class TestTranscriptDegradation(TranscriptCase):
         cell = session_cell(self.sessions(), TITLED_SESSION, "title")
 
         self.assertIn(ui.EMPTY_NO_TITLE, cell)
-
-

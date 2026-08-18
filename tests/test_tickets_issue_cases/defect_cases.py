@@ -158,5 +158,3 @@ class PacketGradesEveryCriterionTest(unittest.TestCase):
             payload = run_cmd("packet", "testrun", "T1", "--reply-to", "main")
             self.assertNotIn("error", payload)
             self.assertEqual("T1", payload["packet"]["id"])
-
-

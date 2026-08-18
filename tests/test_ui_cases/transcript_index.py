@@ -150,5 +150,3 @@ class TestSessionIndex(TranscriptCase):
         page = ui.render_route(self.main, "/")[1]
 
         self.assertIn('href="{0}"'.format(ui.SESSIONS_ROUTE), page)
-
-

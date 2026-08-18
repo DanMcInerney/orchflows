@@ -380,5 +380,3 @@ class TestTicketDetail(unittest.TestCase):
 
                 self.assertEqual(404, status, url)
                 self.assertNotIn("OUTSIDE-THE-TICKETS-TREE", page, url)
-
-

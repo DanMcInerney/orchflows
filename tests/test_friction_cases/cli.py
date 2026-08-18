@@ -262,7 +262,12 @@ class FrictionImportSurfaceTest(unittest.TestCase):
 
     def test_the_resolvers_are_called_at_their_owners_never_copied_here(self):
         here = self._defined_here(FRICTION_PY)
-        owners = self._defined_here(STATE_ROOT_PY) | self._defined_here(TICKETS_PY)
+        tickets_store = TICKETS_PY.with_name("tickets_store.py")
+        owners = (
+            self._defined_here(STATE_ROOT_PY)
+            | self._defined_here(TICKETS_PY)
+            | self._defined_here(tickets_store)
+        )
         for name in self.OWNED_ELSEWHERE:
             self.assertIn(name, owners, f"nothing owns {name} any more")
             self.assertNotIn(
@@ -280,6 +285,6 @@ class FrictionImportSurfaceTest(unittest.TestCase):
         state_root at module scope -- correctly, it has no such bar to meet,
         and it is the exact shape friction.py may not have."""
 
-        found = deferred_siblings(TICKETS_PY, self.SIBLINGS)
+        found = deferred_siblings(TICKETS_PY.with_name("tickets_store.py"), self.SIBLINGS)
         self.assertIn("state_root", found)
         self.assertFalse(found["state_root"])

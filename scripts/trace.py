@@ -53,7 +53,12 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-try:  # in-repo package imports
+_SIBLING_DIR = str(Path(__file__).resolve().parent)
+if _SIBLING_DIR not in sys.path:
+    sys.path.append(_SIBLING_DIR)
+
+if __package__:  # in-repo package imports
+    from scripts import trace_render as _trace_render_module
     from scripts.trace_render import (
         CODEX_BOILERPLATE_MARKERS,
         EXIT_CODE_RE,
@@ -94,7 +99,8 @@ try:  # in-repo package imports
         _process_codex_file,
         extract_codex,
     )
-except ImportError:  # installed flat beside trace.py
+else:  # installed flat beside trace.py
+    import trace_render as _trace_render_module
     from trace_render import (
         CODEX_BOILERPLATE_MARKERS,
         EXIT_CODE_RE,
@@ -140,6 +146,29 @@ except ImportError:  # installed flat beside trace.py
 # CLI
 # --------------------------------------------------------------------------
 
+_clip_impl = _clip
+_extract_claude_impl = extract_claude
+_extract_codex_impl = extract_codex
+
+
+def _sync_render_seams() -> None:
+    _trace_render_module.TEXT_CLIP = TEXT_CLIP
+
+
+def _clip(text):
+    _sync_render_seams()
+    return _clip_impl(text)
+
+
+def extract_claude(path):
+    _sync_render_seams()
+    return _extract_claude_impl(path)
+
+
+def extract_codex(path):
+    _sync_render_seams()
+    return _extract_codex_impl(path)
+
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--claude", metavar="PATH", help="extract a trace from one Claude Code session")
@@ -149,6 +178,7 @@ def build_parser():
 
 
 def main(argv=None) -> int:
+    _trace_render_module.TEXT_CLIP = TEXT_CLIP
     argv = sys.argv[1:] if argv is None else argv
     # Windows consoles default stdout to a legacy codepage (e.g. cp1252) that
     # cannot encode arbitrary transcript content (emoji, non-Latin text).

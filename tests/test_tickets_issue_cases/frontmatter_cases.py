@@ -50,5 +50,3 @@ class InlineListSeparatorTest(unittest.TestCase):
     def test_the_rule_is_stated_where_the_writer_is(self):
         self.assertIn("block", tickets_mod._frontmatter_list.__doc__ or "")
         self.assertIn("semicolon", tickets_mod._frontmatter_list.__doc__ or "")
-
-

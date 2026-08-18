@@ -362,5 +362,3 @@ Test ticket.
 
 Changed `{cited}` on the workspace branch.
 """
-
-

@@ -286,5 +286,3 @@ class LinkedInArtifactSeamTest(unittest.TestCase):
                 "3971120010",
             ],
         )
-
-

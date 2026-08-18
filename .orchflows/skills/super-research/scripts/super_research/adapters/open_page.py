@@ -132,6 +132,7 @@ def media_type(content_type: str) -> str:
 def _document_record(
     response: transport.TransportResponse, requested_url: str
 ) -> Tuple[NativeRecord, Tuple[str, ...]]:
+    open_page_document._DocumentParser = _DocumentParser
     return open_page_document.document_record(response, requested_url, PAGE_KIND)
 
 

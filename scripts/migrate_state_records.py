@@ -137,4 +137,3 @@ def _migrated_covered_line(line: str, source_root: Path, project):
         note = "backfilled" if project is not None else "unattributed"
     migrated[MIGRATED_FROM] = str(source_root)
     return json.dumps(migrated, ensure_ascii=False), note
-

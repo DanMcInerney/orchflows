@@ -265,5 +265,3 @@ class WrongMergeLawTest(unittest.TestCase):
         self.assertEqual(capped.steps[0].records_received, 6)
         self.assertEqual(capped.steps[0].records_kept, 2)
         self.assertIn("recall_window_partial", capped.loss)
-
-

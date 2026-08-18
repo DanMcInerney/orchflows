@@ -81,7 +81,7 @@ def _spec_field_defect(text: str, directory):
         name = FIELD_GLOSS_RE.split(field, 1)[0]
         if mentioned & set(FIELD_WORD_RE.findall(name.lower())):
             return None
-    return f'root stub stamps {pack} and its `## Fixed inputs` name none of the fields that pack requires ({'; '.join(fields)}); orch-decompose refuses a root ticket that lacks them (contracts/work-item.md)'
+    return f"root stub stamps {pack} and its `## Fixed inputs` name none of the fields that pack requires ({'; '.join(fields)}); orch-decompose refuses a root ticket that lacks them (contracts/work-item.md)"
 RESULT_READ_RE = re.compile("([A-Za-z0-9][A-Za-z0-9._-]*)'s\\s+`?(?:##\\s*)?Result`?")
 NUMBERED_ID_RE = re.compile('^[0-9]')
 CLAIM_DASH_RE = re.compile('\\s+(?:—|–|--)\\s+')
@@ -348,10 +348,10 @@ def _claim_order(items: list) -> list:
 def _render_worklog(run: str, items: list, root: dict, kind: str='root') -> str:
     """The run view: contracts/worklog.md's fields, answered from tickets."""
     sections = root.get('sections') or {}
-    lines = [WORKLOG_RENDER_MARKER, '', f'# run {run}', '', f"Rendered from this run's tickets by `tickets.py worklog {run}`. The ticket directory is the state; this file is a view of it, and an edit made here is lost at the next render.", '', '## goal', '', f'{kind.capitalize()} ticket `{root['id']}` — executor `{_executor_of(root) or 'none'}`.', '', 'Objective:', '', *_quoted(sections.get('Objective')), '', 'Completion test:', '', *_quoted(sections.get('Completion test')), '', '## iterations', '']
+    lines = [WORKLOG_RENDER_MARKER, '', f'# run {run}', '', f"Rendered from this run's tickets by `tickets.py worklog {run}`. The ticket directory is the state; this file is a view of it, and an edit made here is lost at the next render.", '', '## goal', '', f'{kind.capitalize()} ticket `{root["id"]}` — executor `{_executor_of(root) or "none"}`.', '', 'Objective:', '', *_quoted(sections.get('Objective')), '', 'Completion test:', '', *_quoted(sections.get('Completion test')), '', '## iterations', '']
     for item in _claim_order(items):
         stamp = str(item.get('claimed_at') or '').strip()
-        lines.append(f'- `{item['id']}` — executor `{_executor_of(item) or 'none'}` — status `{item.get('status') or 'none'}` — ' + (f'claimed {stamp}' if stamp else 'never claimed'))
+        lines.append(f'- `{item["id"]}` — executor `{_executor_of(item) or "none"}` — status `{item.get("status") or "none"}` — ' + (f'claimed {stamp}' if stamp else 'never claimed'))
         verification = (item.get('sections') or {}).get('Verification')
         if str(verification or '').strip():
             lines.extend(['', *_quoted(verification), ''])
@@ -361,13 +361,13 @@ def _render_worklog(run: str, items: list, root: dict, kind: str='root') -> str:
         lines.extend(['None recorded.', ''])
     for item in abandoned:
         body = item.get('sections') or {}
-        lines.extend([f'### `{item['id']}` — status `{item.get('status') or 'none'}`', '', 'Result:', '', *_quoted(body.get('Result')), '', 'Feedback:', '', *_quoted(body.get('Feedback')), ''])
+        lines.extend([f'### `{item["id"]}` — status `{item.get("status") or "none"}`', '', 'Result:', '', *_quoted(body.get('Result')), '', 'Feedback:', '', *_quoted(body.get('Feedback')), ''])
     lines.extend(['## queued scope', ''])
     queued = [(item, dependency) for item in sorted(items, key=lambda item: item['id']) for dependency in item.get('depends_on') or [] if str(dependency).strip().endswith(GATE_VERIFY_SUFFIX)]
     if not queued:
         lines.append('None recorded.')
     for item, dependency in queued:
-        lines.append(f'- `{item['id']}` — status `{item.get('status') or 'none'}` — waits behind `{str(dependency).strip()}`')
+        lines.append(f'- `{item["id"]}` — status `{item.get("status") or "none"}` — waits behind `{str(dependency).strip()}`')
     status = str(root.get('status') or '').strip()
     lines.extend(['', '## terminal', ''])
     if status in TERMINAL_STATES:

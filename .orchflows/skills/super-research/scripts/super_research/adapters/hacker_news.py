@@ -132,6 +132,7 @@ from ._support.hacker_news_config import (
     WINDOW_END_FILTER,
     WINDOW_START_FILTER,
 )
+from ._support import hacker_news_mapping as _mapping
 from ._support.hacker_news_mapping import (
     _engagement,
     _flatten_tree,
@@ -402,6 +403,7 @@ def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> 
     separate budgets, and which one to make next is the core's decision.
     """
 
+    _mapping._tree_record = _tree_record
     operation, argument = operation_for(request)
     if operation == ITEM_OPERATION:
         return _fetch_item(carrier, argument)

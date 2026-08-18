@@ -268,5 +268,3 @@ def fixture_ticket_count() -> int:
     weakens a count that exists to keep a test non-vacuous."""
 
     return sum(len(list((FIXTURES / run).glob("*.md"))) for run in FIXTURE_RUNS)
-
-

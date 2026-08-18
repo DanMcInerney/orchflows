@@ -25,9 +25,11 @@ import sys
 from pathlib import Path
 
 _FACADE_ROOT = Path(__file__).resolve().parent.parent
-for _import_root in (_FACADE_ROOT, Path.cwd()):
+for _import_root in (_FACADE_ROOT, _FACADE_ROOT / "scripts", Path.cwd()):
     if str(_import_root) not in sys.path:
         sys.path.insert(0, str(_import_root))
+
+import doclint
 
 from tools.validate_support import carriage as _carriage_module
 from tools.validate_support import common as _common_module
@@ -51,6 +53,22 @@ _SUPPORT_MODULES = (
     _common_module, _carriage_module, _friction_module, _packages_module,
     _duplication_module, _structure_module, _lint_module, _names_module,
 )
+_ROOT_BINDINGS = (
+    "ROOT", "CONTRACTS_DIR", "PINS_FILE", "FRICTION_OWNER", "NAME_CHECK_MARKER",
+)
+
+
+def _support_state():
+    return [
+        (module, {name: getattr(module, name) for name in _ROOT_BINDINGS if hasattr(module, name)})
+        for module in _SUPPORT_MODULES
+    ]
+
+
+def _restore_support(state) -> None:
+    for module, bindings in state:
+        for name, value in bindings.items():
+            setattr(module, name, value)
 
 
 def _bind_root(root: Path) -> None:
@@ -71,7 +89,33 @@ def _bind_root(root: Path) -> None:
         if hasattr(module, "NAME_CHECK_MARKER"):
             module.NAME_CHECK_MARKER = NAME_CHECK_MARKER
 
-def run_validation() -> Diagnostics:
+
+def validate_cross_tier_duplication(packages, diag: Diagnostics) -> None:
+    """Preserve the facade's patchable clause-provider seam."""
+
+    state = _support_state()
+    provider = _duplication_module._cross_tier_clauses
+    try:
+        _bind_root(ROOT)
+        _duplication_module._cross_tier_clauses = _cross_tier_clauses
+        _duplication_module.validate_cross_tier_duplication(packages, diag)
+    finally:
+        _duplication_module._cross_tier_clauses = provider
+        _restore_support(state)
+
+
+def validate_markdown_links(diag: Diagnostics) -> None:
+    """Grade the root currently exposed by this compatibility facade."""
+
+    state = _support_state()
+    try:
+        _bind_root(ROOT)
+        _lint_module.validate_markdown_links(diag)
+    finally:
+        _restore_support(state)
+
+def _run_validation_impl() -> Diagnostics:
+    _bind_root(ROOT)
     diag = Diagnostics()
     packages = discover_packages()
     validate_unique_names(packages, diag)
@@ -110,8 +154,15 @@ def run_validation() -> Diagnostics:
     return diag
 
 
-def main(argv=None) -> int:
-    _bind_root(ROOT)
+def run_validation() -> Diagnostics:
+    state = _support_state()
+    try:
+        return _run_validation_impl()
+    finally:
+        _restore_support(state)
+
+
+def _main_impl(argv=None) -> int:
     # Diagnostics quote library prose, which carries characters a cp1252
     # console cannot encode; a validator that crashes while printing its
     # own finding reports nothing. Replace, never raise.
@@ -136,6 +187,15 @@ def main(argv=None) -> int:
     for line in diag.lines():
         print(line)
     return 1 if diag.has_errors else 0
+
+
+def main(argv=None) -> int:
+    state = _support_state()
+    try:
+        _bind_root(ROOT)
+        return _main_impl(argv)
+    finally:
+        _restore_support(state)
 
 
 if __name__ == "__main__":

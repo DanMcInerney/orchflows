@@ -78,5 +78,3 @@ class StagedRunTest(unittest.TestCase):
         self.assertEqual(hydrated[1].canonical_content_kind, "reply")
         self.assertEqual(hydrated[1].native_parent_id, "1799990000000000001")
         self.assertEqual(len(carrier.calls), 2)
-
-

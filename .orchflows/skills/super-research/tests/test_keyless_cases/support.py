@@ -438,5 +438,3 @@ def artifact_from(fetch, step=FEED_STEP, request=FEED_REQUEST):
         outcome=page.outcome,
         loss=tuple(page.loss),
     )
-
-

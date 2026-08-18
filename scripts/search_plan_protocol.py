@@ -407,4 +407,3 @@ def _validate_outcome(
         _validate_no_candidate(outcome, units)
     else:
         raise ProtocolError("outcome kind is invalid")
-

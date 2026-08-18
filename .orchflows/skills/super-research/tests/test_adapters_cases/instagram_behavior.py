@@ -223,5 +223,3 @@ def attributes_of(record):
     for name, value in record.attributes:
         named.setdefault(name, []).append(value)
     return named
-
-

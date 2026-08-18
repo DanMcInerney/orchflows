@@ -14,6 +14,7 @@ from typing import Any, Mapping, Tuple
 from .. import transport
 from . import AdapterRequest, NativePage, fetch_one_page
 from ._support.youtube_innertube_contract import *  # noqa: F403
+from ._support import youtube_innertube_pages as _pages
 from ._support.youtube_innertube_pages import (
     _answered,
     _comments_page,
@@ -147,6 +148,8 @@ def fetch_native_page(
 ) -> NativePage:
     """Read one InnerTube operation and return exactly one native page."""
 
+    _pages.DESCRIPTOR = DESCRIPTOR
+    _pages._search_record = _search_record
     operation, argument = operation_for(request)
     if operation == TRANSCRIPT_OPERATION:
         video_id, language = transcript_target(argument)

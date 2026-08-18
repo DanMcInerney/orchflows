@@ -168,9 +168,9 @@ def _git_out(*args: str) -> str:
 
 def _dirty_paths() -> list:
     """Every path ``git status`` reports, both ends of a rename included."""
-
-    return workspace_git._dirty_paths(_GIT_CWD)
-
+    return workspace_git._dirty_paths(
+        _GIT_CWD, lambda cwd, *args: _git(*args)
+    )
 
 # --- the ticket, always at the main repository root -------------------------
 

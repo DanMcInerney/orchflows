@@ -111,5 +111,3 @@ class CriterionDefectsTest(unittest.TestCase):
                 defects = criterion(empty)
                 self.assertEqual(1, len(defects), defects)
                 self.assertIn("criterion", defects[0])
-
-

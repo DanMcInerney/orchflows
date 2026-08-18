@@ -27,6 +27,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
+if __name__ == "test_validate_measures":
+    sys.modules["tests.test_validate_measures"] = sys.modules[__name__]
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))

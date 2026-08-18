@@ -88,5 +88,3 @@ class ManifestSchemaTest(unittest.TestCase):
             schema.parse_manifest(payload)
 
         self.assertIn("s1-discover", str(caught.exception))
-
-

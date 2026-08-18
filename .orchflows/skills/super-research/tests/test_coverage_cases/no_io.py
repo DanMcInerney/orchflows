@@ -20,7 +20,8 @@ class NoIOTest(unittest.TestCase):
         import inspect
 
         called = set()
-        for node in ast.walk(ast.parse(inspect.getsource(coverage))):
+        sources = (inspect.getsource(coverage), inspect.getsource(coverage._coverage_depth))
+        for node in ast.walk(ast.parse("\n".join(sources))):
             if not isinstance(node, ast.Call):
                 continue
             func = node.func

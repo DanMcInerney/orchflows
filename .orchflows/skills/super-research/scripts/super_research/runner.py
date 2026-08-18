@@ -68,8 +68,7 @@ from ._support.runner_plan import artifact_id_for, in_window, planned_calls, rea
 from ._support.runner_plan import refused_step as _refused_step
 from ._support.runner_schedule import MAX_CONCURRENT_LANES, StepOutcome, lanes_of
 from ._support import runner_schedule
-
-
+_RUN_STEPS_IMPL = runner_schedule.run_steps
 # Every adapter this core can reach, spelled once. It is a literal tuple, not a
 # registry: exact search over an id still finds the two branches below, and a
 # later adapter listed here without both of them fails loudly.
@@ -466,8 +465,11 @@ def run_step(
         tuple(records),
         tuple(operations),
     )
-
-
+def _sync_schedule_seams() -> None:
+    runner_schedule.paced_carrier = paced_carrier
+    runner_schedule.artifact_id_for = artifact_id_for
+    runner_schedule.ledger_of = ledger_of
+    runner_schedule.run_steps = _RUN_STEPS_IMPL if run_steps is _FACADE_RUN_STEPS else run_steps
 def run_steps(
     manifest: schema.AcquisitionManifest,
     carrier: transport.Transport,
@@ -476,10 +478,9 @@ def run_steps(
     lanes: int = MAX_CONCURRENT_LANES,
 ) -> Tuple[StepOutcome, ...]:
     """Every step's outcome, in declared order, however the mode ran them."""
-
-    return runner_schedule.run_steps(manifest, carrier, artifact_id, run_step, clock, lanes)
-
-
+    _sync_schedule_seams()
+    return _RUN_STEPS_IMPL(manifest, carrier, artifact_id, run_step, clock, lanes)
+_FACADE_RUN_STEPS = run_steps
 def run_scheduled(
     manifest: schema.AcquisitionManifest,
     carrier: Optional[transport.Transport] = None,
@@ -490,6 +491,7 @@ def run_scheduled(
 ) -> ScheduledRun:
     """Run one validated manifest to one immutable artifact and its work ledger."""
 
+    _sync_schedule_seams()
     return runner_schedule.run_scheduled(
         manifest, run_step, carrier, clock, dispatch_ordinal, start_tick_us, lanes
     )

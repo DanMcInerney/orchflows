@@ -123,4 +123,3 @@ class RouteTtlTableTest(unittest.TestCase):
             with self.subTest(route=route_id):
                 self.assertEqual(cache.ttl_seconds(route_id), cache.DEFAULT_TTL_SECONDS)
                 self.assertGreater(cache.ttl_seconds(route_id), 0.0)
-

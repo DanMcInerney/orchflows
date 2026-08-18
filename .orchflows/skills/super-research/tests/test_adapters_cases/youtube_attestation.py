@@ -374,5 +374,3 @@ class AttestationIsNotAnAbsenceTest(unittest.TestCase):
                 self.assertTrue(
                     transport.route_admissions()[transport.YOUTUBE_INNERTUBE_ROUTE]
                 )
-
-

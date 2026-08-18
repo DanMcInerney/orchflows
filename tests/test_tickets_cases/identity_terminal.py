@@ -441,5 +441,3 @@ class TestNoFallback(unittest.TestCase):
                     self.assertIn("error", json.loads(completed.stdout))
             self.assertEqual(before, self.listing(repo))
             self.assertFalse((repo / ".orch").exists())
-
-

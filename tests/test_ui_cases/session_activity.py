@@ -215,5 +215,3 @@ class TestSessionPolling(SessionCase):
 
         self.assertEqual(404, status)
         self.assertIsNone(headers.get("ETag"))
-
-

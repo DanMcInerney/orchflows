@@ -190,5 +190,3 @@ class TestNameResolution(_IsolatedTree):
         self._write_rule("1. Three shapes were skills (orch-fix, orch-evolve).\n")
         result = self._run()
         self.assertEqual([], self.unresolved(result.stdout))
-
-

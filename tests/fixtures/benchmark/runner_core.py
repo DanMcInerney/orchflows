@@ -356,11 +356,12 @@ def verify_qualification(
     covers = {name: manifest[name]["locator"] for name in COVERED_FIELDS}
     covers["known_good"] = calibration["known_good"]["locator"]
     covers["known_bad"] = calibration["known_bad"]["locator"]
+    runner_covers = [covers["runner"], "runner_core.py"]
     expected = {
         # An oracle a trick walks past cannot meaningfully fail, so the attack
         # record is part of what failability is judged over.
         "oracle_failability": {
-            "covers": [covers["runner"], covers["runnable_cases"], covers["scoring"], covers["known_bad"], covers["attack_audit"]],
+            "covers": [*runner_covers, covers["runnable_cases"], covers["scoring"], covers["known_bad"], covers["attack_audit"]],
             "observation": {
                 "known_bad_verdict": bad["verdict"],
                 "eligible_for_ranking": bad["eligible_for_ranking"],
@@ -377,14 +378,14 @@ def verify_qualification(
         # the rungs actually separate: the audit decides the first, the
         # measurement records the second.
         "discrimination": {
-            "covers": [covers["runner"], covers["runnable_cases"], covers["scoring"], covers["known_good"], covers["known_bad"], covers["reference_audit"], covers["measurement"]],
+            "covers": [*runner_covers, covers["runnable_cases"], covers["scoring"], covers["known_good"], covers["known_bad"], covers["reference_audit"], covers["measurement"]],
             "observation": {
                 "known_good_verdict": good_first["verdict"],
                 "known_bad_verdict": bad["verdict"],
             },
         },
         "reproducibility": {
-            "covers": [covers["runner"], covers["runnable_cases"], covers["scoring"], covers["known_good"]],
+            "covers": [*runner_covers, covers["runnable_cases"], covers["scoring"], covers["known_good"]],
             "observation": {"identical_replays": good_first == good_second},
         },
         "redundancy": {
@@ -396,7 +397,7 @@ def verify_qualification(
             "observation": {"case_sources": provenance["case_sources"]},
         },
         "execution_cost": {
-            "covers": [covers["evaluation_design"], covers["runnable_cases"], covers["runner"]],
+            "covers": [covers["evaluation_design"], covers["runnable_cases"], *runner_covers],
             "observation": {
                 "replays": 3,
                 "candidate_processes": 3 * len(case_set["cases"]),

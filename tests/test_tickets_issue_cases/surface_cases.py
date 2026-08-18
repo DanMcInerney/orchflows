@@ -29,5 +29,3 @@ class SurfaceTest(unittest.TestCase):
                     answer = run_full(tmp, name, "--help")
                     self.assertEqual(0, answer.returncode, answer.stdout)
                     self.assertNotIn("error", json.loads(answer.stdout))
-
-

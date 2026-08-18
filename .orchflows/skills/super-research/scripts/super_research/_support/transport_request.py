@@ -42,12 +42,14 @@ def is_open_route(route: RouteConstant) -> bool:
 
 
 def budget_key(
-    request: TransportRequest, route_constants: Mapping[str, RouteConstant]
+    request: TransportRequest,
+    route_constants: Mapping[str, RouteConstant],
+    origin_key_fn=origin_key,
 ) -> str:
     """The route, or the open route and host, that pays for this read."""
 
     if is_open_route(route_constant(request.route_id, route_constants)):
-        return request.route_id + "@" + origin_key(request)
+        return request.route_id + "@" + origin_key_fn(request)
     return request.route_id
 
 
@@ -183,7 +185,9 @@ def declared_origin_hosts(
 
 
 def open_read_refusal(
-    url: str, route_constants: Mapping[str, RouteConstant]
+    url: str,
+    route_constants: Mapping[str, RouteConstant],
+    declared_origin_hosts_fn=declared_origin_hosts,
 ) -> str:
     """Why an open read is refused, or an empty string when admitted."""
 
@@ -193,7 +197,7 @@ def open_read_refusal(
     host = (parts.hostname or "").lower()
     if not host:
         return "an open read takes an address naming a host, not " + repr(url)
-    if host in declared_origin_hosts(route_constants):
+    if host in declared_origin_hosts_fn(route_constants):
         return (
             "an open read never lands on a host a declared route reads: {0}; ask that"
             " route".format(host)

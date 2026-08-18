@@ -383,5 +383,3 @@ class RedditFeedIsOnlyAFreshnessProbeTest(unittest.TestCase):
         self.assertEqual(
             [call.route_id for call in opener.opened], [transport.REDDIT_FEED_ROUTE]
         )
-
-

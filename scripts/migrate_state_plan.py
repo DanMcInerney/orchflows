@@ -420,4 +420,3 @@ def apply_plan(plan: _Plan, document):
         except OSError as error:
             document["errors"].append(f"{action['action']} {dest}: {error}")
     return document
-

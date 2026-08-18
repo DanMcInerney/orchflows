@@ -134,5 +134,3 @@ class TestContractKeySeam(unittest.TestCase):
         for key, role in workspace.FRONTMATTER_KEYS.items():
             with self.subTest(key=key):
                 self.assertRegex(role, r"start|check")
-
-

@@ -21,12 +21,28 @@ Usage:
 """
 
 from __future__ import annotations
-try:
+
+import sys as _bootstrap_sys
+from pathlib import Path as _BootstrapPath
+
+_SIBLING_DIR = str(_BootstrapPath(__file__).resolve().parent)
+if _SIBLING_DIR not in _bootstrap_sys.path:
+    _bootstrap_sys.path.append(_SIBLING_DIR)
+
+if __package__:
+    from scripts import state_root
     from scripts.ui_model import *
     from scripts.ui_model import _facade_value, _in_tree, _now, _safe_name
-except ImportError:
+else:
+    import state_root
     from ui_model import *
     from ui_model import _facade_value, _in_tree, _now, _safe_name
+
+
+def default_root():
+    """Resolve the sink through its owner while retaining this patch seam."""
+
+    return state_root.state_root()
 
 def _svg_stroke(presentation: StatusPresentation) -> tuple:
     """``(stroke-width, stroke-dasharray)`` for one status's CSS border."""
@@ -307,7 +323,7 @@ def render_route(start, path: str, transcripts=None) -> tuple:
 # digest that could not tell the two apart would answer 304 across the very
 # transition a viewer left open before the first write is waiting for.
 
-try:
+if __package__:
     from scripts import ui_render as _render_impl
     from scripts import ui_server as _server_impl
     from scripts.ui_sessions import *
@@ -318,7 +334,7 @@ try:
     from scripts.ui_render import *
     from scripts.ui_render import _cell, _meter, _page, _stamp
     from scripts.ui_server import *
-except ImportError:
+else:
     import ui_render as _render_impl
     import ui_server as _server_impl
     from ui_sessions import *
@@ -371,7 +387,7 @@ def main(argv=None):
     )
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
     try:
-        root = state_root.state_root() if args.root is None else Path(args.root)
+        root = default_root() if args.root is None else Path(args.root)
         server = create_server(root, args.port, transcript_root(args.transcripts))
     except OSError as error:
         print("cannot bind port {0}: {1}".format(args.port, error), file=sys.stderr)

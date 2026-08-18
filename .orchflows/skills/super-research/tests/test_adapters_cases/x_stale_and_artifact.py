@@ -464,5 +464,3 @@ class ArtifactSeamTest(unittest.TestCase):
         self.assertEqual(
             sorted(groups[0].member_record_ids), sorted(record.record_id for record in seen)
         )
-
-

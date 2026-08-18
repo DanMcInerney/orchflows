@@ -474,4 +474,3 @@ class XFxtwitterFieldOmittedTest(unittest.TestCase):
 
         self.assertEqual(page.records[0].published_at, "")
         self.assertEqual(page.records[0].loss, ("third_party_archive", "field_omitted"))
-

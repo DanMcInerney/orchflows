@@ -101,4 +101,3 @@ class TestFigures(RecordCase):
             "the discriminating set figure is empty and must say so",
             count=1,
         )
-

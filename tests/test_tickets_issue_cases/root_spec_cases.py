@@ -123,5 +123,3 @@ class RootStubSpecFieldsTest(unittest.TestCase):
                 "B": stub("B", "[A]"),
             })
             self.assertEqual([], self.defects(directory))
-
-

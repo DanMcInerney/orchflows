@@ -18,6 +18,10 @@ import argparse
 import sys
 from pathlib import Path
 
+HERE = Path(__file__).resolve().parent
+if str(HERE) not in sys.path:
+    sys.path.append(str(HERE))
+
 from case_coverage import (
     COVERAGE_CLASSES,
     COVERAGE_MARK,
@@ -79,7 +83,6 @@ from case_validation import (
     run_probe_output,
 )
 
-HERE = Path(__file__).resolve().parent
 DEFAULT_CASES_DIR = HERE.parent / "cases"
 
 

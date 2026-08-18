@@ -134,5 +134,3 @@ class TestPacketCarriesWhatTwoLanesSpentBoundLearning(unittest.TestCase):
             prompt = self.prompt_for(Path(tmp), FULL_TICKET)
             self.assertIn("nothing wider", prompt)
             self.assertNotIn("branch is not the revision", prompt)
-
-

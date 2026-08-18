@@ -283,4 +283,3 @@ class TestCost(RecordCase):
             "does not match the case's declared execution bound",
             count=1,
         )
-

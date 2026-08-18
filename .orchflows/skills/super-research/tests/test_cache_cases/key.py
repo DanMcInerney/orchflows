@@ -88,4 +88,3 @@ class CacheKeyTest(unittest.TestCase):
         for difference, variant in distinct_reads.items():
             with self.subTest(differs_by=difference):
                 self.assertNotEqual(cache.cache_key(variant), cache.cache_key(ddg_request()))
-

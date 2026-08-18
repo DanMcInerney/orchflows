@@ -251,5 +251,3 @@ class InstructionCeilingTest(unittest.TestCase):
                 self.assertIsNone(
                     tickets_mod._ceiling_error("gate stub", ticket_id, text)
                 )
-
-

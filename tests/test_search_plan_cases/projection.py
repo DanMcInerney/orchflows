@@ -179,6 +179,3 @@ class TestBoundedResume(unittest.TestCase):
                 self.assertIn(
                     control, worklog_restart_errors(generation.replace(anchor, ""))
                 )
-
-
-

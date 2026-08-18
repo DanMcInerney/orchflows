@@ -499,4 +499,3 @@ def warning_lines(stdout, kind=None):
         line for line in stdout.splitlines()
         if line.startswith("WARN") and (kind is None or kind in line)
     ]
-

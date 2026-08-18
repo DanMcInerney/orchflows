@@ -46,5 +46,3 @@ class RefusalTextTest(unittest.TestCase):
             with self.subTest(message[:48]):
                 self.assertTrue(message, payload)
                 message.encode("ascii")  # raises, and names the character
-
-

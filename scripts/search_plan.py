@@ -15,13 +15,18 @@ import hashlib
 import json
 import re
 import sys
+from pathlib import Path
 
-try:  # in-repo package import; installed scripts sit flat together
+_SIBLING_DIR = str(Path(__file__).resolve().parent)
+if _SIBLING_DIR not in sys.path:
+    sys.path.append(_SIBLING_DIR)
+
+if __package__:  # in-repo package import; installed scripts sit flat together
     from scripts import search_plan_advance as _advance_module
     from scripts import search_plan_archive as _archive
     from scripts import search_plan_projection as _projection
     from scripts import search_plan_protocol as _protocol
-except ImportError:  # pragma: no cover - direct/installed script path
+else:  # pragma: no cover - direct/installed script path
     import search_plan_advance as _advance_module
     import search_plan_archive as _archive
     import search_plan_projection as _projection

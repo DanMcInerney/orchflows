@@ -376,4 +376,3 @@ def notes_of(run: str = "testrun") -> Path:
     """`run-state --note`'s target: the run's free notes, beside the
     rendered view and never it (contracts/worklog.md)."""
     return sink_root() / "runs" / run / tickets_mod.RUN_NOTES_NAME
-

@@ -430,7 +430,13 @@ def next_bing_offset(cursor: str, listed: int) -> str:
 def _feed_page_from(
     operation: str, response: transport.TransportResponse, cursor: str
 ) -> NativePage:
-    return _feeds.feed_page_from(_FEED_CONFIG, operation, response, cursor)
+    return _feeds.feed_page_from(
+        _FEED_CONFIG,
+        operation,
+        response,
+        cursor,
+        lambda config, kind, position, item: _feed_record(kind, position, item),
+    )
 
 
 def _feed_params(operation: str, query: str, request: AdapterRequest):

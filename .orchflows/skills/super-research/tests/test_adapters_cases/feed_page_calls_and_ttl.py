@@ -488,5 +488,3 @@ class FeedPageRouteTtlTest(unittest.TestCase):
         for route_id in sorted(FEED_PAGE_ROUTES):
             with self.subTest(route=route_id):
                 self.assertIn(route_id, cache.ROUTE_TTL_SECONDS)
-
-

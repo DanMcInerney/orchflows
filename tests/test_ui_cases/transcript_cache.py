@@ -253,5 +253,3 @@ class TestAbsentTranscriptRoot(TranscriptCase):
         found = ui.discover_sessions(self.transcripts)
 
         self.assertNotIn(ui.DIAGNOSTIC_UNREADABLE, " ".join(found["diagnostics"]))
-
-

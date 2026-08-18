@@ -389,5 +389,3 @@ class TestTicketsPayloadIsGradedNotItsExitStatus(unittest.TestCase):
             self.assertEqual(1, done.returncode, done.stdout)
             self.assertIn("unreadable ticket", payload_of(done)["error"])
             self.assertEqual(before, ticket.read_bytes())
-
-

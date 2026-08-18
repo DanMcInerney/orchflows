@@ -104,4 +104,3 @@ class OracleCanFailTest(unittest.TestCase):
 
 if __name__ == "__main__":  # pragma: no cover - convenience runner
     unittest.main()
-

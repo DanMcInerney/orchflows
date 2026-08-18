@@ -150,7 +150,15 @@ closed option set (``SEARCH_FLAGS``), and a span carrying an option outside it
 is the same extraction gap rather than a status guessed at.
 """
 
-try:  # repository checkout
+from pathlib import Path as _BootstrapPath
+import sys as _bootstrap_sys
+
+_SIBLING_DIR = str(_BootstrapPath(__file__).resolve().parent)
+if _SIBLING_DIR not in _bootstrap_sys.path:
+    _bootstrap_sys.path.append(_SIBLING_DIR)
+
+if __package__:  # repository checkout
+    from scripts import cutcheck_contract as _cutcheck_contract_module
     from scripts import cutcheck_execute as _execute_module
     from scripts import cutcheck_executor as _executor_module
     from scripts import cutcheck_scratch as _scratch_module
@@ -166,7 +174,8 @@ try:  # repository checkout
     from scripts.cutcheck_coverage import *
     from scripts.cutcheck_executor import *
     from scripts.cutcheck_ticket import *
-except ImportError:  # installed flat script directory
+else:  # installed flat script directory
+    import cutcheck_contract as _cutcheck_contract_module
     import cutcheck_execute as _execute_module
     import cutcheck_executor as _executor_module
     import cutcheck_scratch as _scratch_module
@@ -185,8 +194,19 @@ except ImportError:  # installed flat script directory
 
 # Stable facade literals remain here because existing checks and command
 # oracles read the installed entry point itself, not its implementation files.
-FAMILY = "family 1"
-CANARY_DIR = ".orch"
+# The lens correspondence oracle reads these labels from the installed checker
+# facade, while their judgments remain owned by the implementation modules.
+CHECKER_FAMILIES = (
+    "family 1",
+    "family 2",
+    "family 3",
+    "family 4",
+    "family 5",
+    "family 6",
+)
+FAMILY = CHECKER_FAMILIES[0]
+PACKS_DIR = "packs"
+CANARY_DIR = _cutcheck_contract_module.CANARY_DIR
 
 
 def _scratch_root(worktree_root):

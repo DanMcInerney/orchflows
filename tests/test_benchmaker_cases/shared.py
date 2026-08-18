@@ -243,6 +243,3 @@ def ticket_law():
     from scripts import tickets
 
     return tickets
-
-
-

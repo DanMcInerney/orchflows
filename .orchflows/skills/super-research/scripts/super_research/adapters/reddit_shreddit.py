@@ -114,6 +114,7 @@ from ._support.reddit_shreddit_extract import (
     _tracking_context,
     collapsed,
 )
+from ._support import reddit_shreddit_pages as _pages
 from ._support.reddit_shreddit_pages import (
     _comments_page,
     _drifted,
@@ -237,6 +238,9 @@ def operation_for(request: AdapterRequest) -> Tuple[str, str]:
 def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> NativePage:
     """Read one Shreddit partial once and return exactly one NativePage."""
 
+    _pages.DESCRIPTOR = DESCRIPTOR
+    _pages._listing_record = _listing_record
+    _pages._search_record = _search_record
     operation, argument = operation_for(request)
     try:
         if operation == LISTING_OPERATION:

@@ -148,7 +148,7 @@ def _cmd_list(rest):
     args = list(rest)
     run_filter = _extract_flag(args, '--run')
     if args:
-        return {'error': f'unexpected arguments: {' '.join(args)}'}
+        return {'error': f"unexpected arguments: {' '.join(args)}"}
     tickets_root = _tickets_root()
     if tickets_root is None:
         return {'error': NO_SINK_ERROR}
@@ -162,7 +162,7 @@ def _cmd_ready(rest):
     args = list(rest)
     run_filter = _extract_flag(args, '--run')
     if args:
-        return {'error': f'unexpected arguments: {' '.join(args)}'}
+        return {'error': f"unexpected arguments: {' '.join(args)}"}
     tickets_root = _tickets_root()
     if tickets_root is None:
         return {'error': NO_SINK_ERROR}
@@ -206,7 +206,7 @@ def _cmd_ready(rest):
             elif status == 'claimed':
                 text, failure = _read_utf8(data['path'])
                 if failure is not None:
-                    skipped.append({'id': data['id'], 'reason': f'claimed, and unreadable at the moment its claim was graded: {failure['error']}'})
+                    skipped.append({'id': data['id'], 'reason': f"claimed, and unreadable at the moment its claim was graded: {failure['error']}"})
                     continue
                 eligible, unreadable = _claim_is_stale(data['path'], text, data, now)
                 if unreadable:
@@ -339,7 +339,7 @@ def _grant_under_run_lock(rest):
         if entry not in granted:
             granted.append(entry)
     timestamp = datetime.now(timezone.utc).strftime(UTC_STAMP)
-    updated = _set_frontmatter_field(text, GRANTED_SCOPE_KEY, f'[{', '.join(granted)}]')
+    updated = _set_frontmatter_field(text, GRANTED_SCOPE_KEY, f"[{', '.join(granted)}]")
     updated = _set_frontmatter_field(updated, GRANTED_BY_KEY, granted_by.strip())
     updated = _set_frontmatter_field(updated, GRANTED_AT_KEY, timestamp)
     try:

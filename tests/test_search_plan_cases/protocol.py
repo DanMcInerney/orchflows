@@ -405,6 +405,3 @@ class TestCanonicalAdvance(unittest.TestCase):
         pending = run_advance(replay)
         self.assertEqual(0, pending.returncode, pending.stderr.decode())
         self.assertEqual("pending", json.loads(pending.stdout)["status"])
-
-
-

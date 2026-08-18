@@ -179,4 +179,3 @@ def check_viz_html_fence(block: Diagram) -> list[dict[str, object]]:
             }
         )
     return failures
-

@@ -279,4 +279,3 @@ class TestAnEmptyScopeIsGradedNotRequired(unittest.TestCase):
         )
         self.assertEqual(5, done.returncode, done.stdout)
         self.assertEqual("no-record", payload_of(done)["verdict"])
-

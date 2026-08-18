@@ -22,5 +22,3 @@ class NormalizeTest(unittest.TestCase):
     def test_content_hash_is_empty_when_there_is_no_content(self):
         self.assertEqual(normalize.content_hash(""), "")
         self.assertNotEqual(normalize.content_hash("a snippet"), "")
-
-

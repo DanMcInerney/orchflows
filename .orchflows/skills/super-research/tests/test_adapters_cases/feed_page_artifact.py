@@ -291,5 +291,3 @@ class FeedPageArtifactSeamTest(unittest.TestCase):
         )
         self.assertEqual(entries[0].usable_basis_time, "2026-08-09T15:30:12Z")
         self.assertEqual(entries[0].native_item_id, FEED_VIDEO_ID)
-
-

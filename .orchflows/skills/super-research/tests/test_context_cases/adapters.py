@@ -303,5 +303,3 @@ class AdapterDeclarationTest(unittest.TestCase):
     def test_discovery_and_hydration_declare_different_representations(self):
         self.assertEqual(web_search.DESCRIPTOR.representation_kind, "index")
         self.assertEqual(reddit_archive.DESCRIPTOR.representation_kind, "native")
-
-

@@ -156,5 +156,3 @@ class TestModuleFloor(unittest.TestCase):
             ("__future__", "annotations"),
             first_import("import os\nfrom __future__ import annotations\n"),
         )
-
-

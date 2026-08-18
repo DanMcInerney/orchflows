@@ -103,5 +103,3 @@ class NonUtf8BytesTest(unittest.TestCase):
             payload = json.loads(done.stdout)
             self.assertEqual(0, done.returncode, done.stdout)
             self.assertNotIn("error", payload)
-
-

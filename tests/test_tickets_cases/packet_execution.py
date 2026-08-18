@@ -100,5 +100,3 @@ GIT_CONFIG = (
 ALPHA = "https://example.invalid/acme/alpha.git"
 BETA = "https://example.invalid/other/beta.git"
 STAMP_RE = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$"
-
-

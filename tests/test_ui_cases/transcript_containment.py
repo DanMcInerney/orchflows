@@ -155,5 +155,3 @@ class SessionCase(TranscriptCase):
 
     def subagents(self, session: str) -> Path:
         return self.transcripts / SESSION_PROJECT[session] / session / "subagents"
-
-

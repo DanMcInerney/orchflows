@@ -53,7 +53,7 @@ def _frontmatter_list(key: str, values) -> list:
     items = list(values)
     if any((',' in item or ';' in item for item in items)):
         return [f'{key}:'] + [f'- {item}' for item in items]
-    return [f'{key}: [{', '.join(items)}]']
+    return [f"{key}: [{', '.join(items)}]"]
 def _render_ticket(fields: dict, sections: list) -> str:
     """One ticket's markdown: frontmatter in the contract's key order, then
     its body sections in the contract's section order.
@@ -126,7 +126,7 @@ def _cmd_new(rest):
             return invalid
     missing = [name for name, value in (('--executor', executor), ('--objective', objective), ('--criterion', criteria or None)) if value is None]
     if missing:
-        return {'error': f'new requires {', '.join(missing)}. usage: {NEW_USAGE}'}
+        return {'error': f"new requires {', '.join(missing)}. usage: {NEW_USAGE}"}
     for flag, value, allowed in (('--independence', independence, INDEPENDENCE_VALUES), ('--isolation', isolation, ISOLATION_VALUES)):
         if value is not None and value.strip() not in allowed:
             return {'error': f"{flag} '{value}' is not one of {list(allowed)} (contracts/work-item.md)"}

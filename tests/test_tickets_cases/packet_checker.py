@@ -349,5 +349,3 @@ class TestRootTicketCutCheckerPacket(unittest.TestCase):
             tmp = Path(tmp)
             self.make(tmp, {"R1.01": ("claimed", "[]")})
             self.assertIn("packet", self.packet(tmp, "--executor", "orch-verify"))
-
-

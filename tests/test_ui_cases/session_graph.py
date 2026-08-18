@@ -269,5 +269,3 @@ class TestSubagentEdges(SessionCase):
         self.assertEqual(
             sorted((ui.ORCHESTRATOR_NODE, PARENT_AGENT, CHILD_AGENT)), sorted(nodes)
         )
-
-

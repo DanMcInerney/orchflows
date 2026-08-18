@@ -308,5 +308,3 @@ class HackerNewsItemTest(unittest.TestCase):
             found.records[0].canonical_locator, read.records[0].canonical_locator
         )
         self.assertNotEqual(found.route_id, read.route_id)
-
-

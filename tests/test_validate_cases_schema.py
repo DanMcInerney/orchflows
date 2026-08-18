@@ -19,6 +19,9 @@ import sys
 import unittest
 from pathlib import Path
 
+if __name__ == "test_validate_cases_schema":
+    sys.modules["tests.test_validate_cases_schema"] = sys.modules[__name__]
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TOOL_DIR = REPO_ROOT / "benchmarks" / "benchmaker" / "tools"
 if str(TOOL_DIR) not in sys.path:

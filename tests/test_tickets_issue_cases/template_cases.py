@@ -200,5 +200,3 @@ class InstantiateTest(unittest.TestCase):
             payload = run_cmd("instantiate", str(directory), "--set", "target=x")
             self.assertIn("error", payload)
             self.assertIn("--run", payload["error"])
-
-

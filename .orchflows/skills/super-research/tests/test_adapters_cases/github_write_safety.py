@@ -233,5 +233,3 @@ class GithubWriteVerbOracleCanFailTest(unittest.TestCase):
         )
 
         self.assertEqual(named, [])
-
-

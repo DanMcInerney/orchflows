@@ -422,4 +422,3 @@ class BlueskyFieldOmittedTest(unittest.TestCase):
 
         self.assertEqual(page.records[0].published_at, "")
         self.assertEqual(page.records[0].loss, ("field_omitted",))
-

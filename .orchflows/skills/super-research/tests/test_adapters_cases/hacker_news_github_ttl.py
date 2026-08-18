@@ -224,5 +224,3 @@ def hacker_news_github_manifest():
             ),
         ),
     )
-
-

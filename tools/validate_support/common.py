@@ -10,7 +10,7 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 
 # What a check says when the tree it grades is not here. One wording, so a
 # reader can grep the report for every check that did not run.

@@ -361,5 +361,3 @@ class TestBenchmarkFixture(unittest.TestCase):
         )
         self.assertFalse(optimization["required"])
         self.assertEqual("UNVERIFIED", optimization["verdict"])
-
-

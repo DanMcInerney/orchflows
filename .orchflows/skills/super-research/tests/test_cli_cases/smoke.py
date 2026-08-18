@@ -402,5 +402,3 @@ class TheOperationSetIsClosedTest(LedgerHoldingCase):
     def test_the_usage_code_is_argparses_own_and_nothing_else_takes_it(self):
         self.assertEqual(cli.EXIT_USAGE, 2)
         self.assertNotIn(cli.EXIT_USAGE, (cli.EXIT_OK, cli.EXIT_ROW_UNMET, cli.EXIT_LOCAL_NETWORK))
-
-

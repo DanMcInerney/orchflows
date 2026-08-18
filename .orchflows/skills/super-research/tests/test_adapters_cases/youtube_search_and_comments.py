@@ -402,5 +402,3 @@ class YoutubeCommentsOffTest(unittest.TestCase):
                 self.assertEqual(page.outcome, "failed")
                 self.assertEqual(page.loss, ("schema_drift",))
                 self.assertEqual(page.records, ())
-
-

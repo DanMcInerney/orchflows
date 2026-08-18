@@ -281,15 +281,39 @@ def sibling_imports(path):
     """Every module inside this package one source imports, by name."""
 
     targets = set()
+    support_paths = []
     for node in ast.walk(parsed(path)):
         if not isinstance(node, ast.ImportFrom) or not node.level:
             continue
-        if (node.module or "").split(".")[0] == "_support":
+        if path.parent.name == "_support" and node.level == 1:
+            if node.module:
+                support_paths.append(path.parent.joinpath(*node.module.split(".")).with_suffix(".py"))
+            else:
+                support_paths.extend(path.parent / (alias.name + ".py") for alias in node.names)
+            continue
+        if node.level == 1 and (node.module or "").split(".")[0] == "_support":
+            parts = (node.module or "").split(".")
+            if len(parts) > 1:
+                support_paths.append(PACKAGE_DIR.joinpath(*parts).with_suffix(".py"))
+            else:
+                support_paths.extend(
+                    PACKAGE_DIR / "_support" / (alias.name + ".py")
+                    for alias in node.names
+                )
+            continue
+        if path.parent.name == "_support" and node.level == 2:
+            if node.module:
+                targets.add(node.module.split(".")[0])
+            else:
+                targets.update(alias.name for alias in node.names)
             continue
         if node.module:
             targets.add(node.module.split(".")[0])
         else:
             targets.update(alias.name for alias in node.names)
+    for support_path in support_paths:
+        if support_path.is_file():
+            targets.update(sibling_imports(support_path))
     return targets
 
 

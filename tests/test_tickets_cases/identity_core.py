@@ -353,4 +353,3 @@ class TestRunIdentity(unittest.TestCase):
             self.assertEqual(
                 [str(main.resolve()), str(worktree.resolve())], workspaces_of()
             )
-

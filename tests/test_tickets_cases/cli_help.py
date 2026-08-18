@@ -272,5 +272,3 @@ class TestPacketOmitsTheWorkspaceStepForATicketThatWritesOnlyTickets(unittest.Te
                 ),
             )
             self.assertEqual(1, len(establishment_lines(packet["prompt"])))
-
-

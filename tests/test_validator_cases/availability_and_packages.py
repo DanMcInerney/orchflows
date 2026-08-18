@@ -58,7 +58,7 @@ class TestASkippedCheckSaysSo(_IsolatedTree):
     def test_a_check_that_starts_and_finds_half_its_tree_says_that_too(self):
         # With the friction owner present the check runs and then finds no
         # term owner to compare against -- the half that was silent.
-        (self.tmp_path / "scripts").mkdir()
+        (self.tmp_path / "scripts").mkdir(exist_ok=True)
         shutil.copy(
             ROOT / "scripts" / "state_root.py", self.tmp_path / "scripts" / "state_root.py"
         )
@@ -258,5 +258,3 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
         found = loop_lint_warnings(result.stdout)
         self.assertTrue(found, result.stdout)
         self.assertTrue(all("boundlesspkg" in line for line in found), found)
-
-

@@ -392,5 +392,3 @@ def shipped_descriptor(**overrides):
     """
 
     return dataclasses.replace(runner.descriptor_for("reddit_feed"), **overrides)
-
-

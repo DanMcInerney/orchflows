@@ -492,5 +492,3 @@ class InstagramProfileTest(unittest.TestCase):
                     opener.opened[0].url.endswith("username=harbourlight.optics"),
                     opener.opened[0].url,
                 )
-
-

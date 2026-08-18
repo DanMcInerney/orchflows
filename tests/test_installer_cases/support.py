@@ -176,5 +176,3 @@ def mock_host_clis(*hosts: str):
 # day the script moved, so the bare form is the contract and this is what
 # reads it.
 BARE_SCRIPT_RE = re.compile(r"\b([a-z_]+\.py)\b")
-
-

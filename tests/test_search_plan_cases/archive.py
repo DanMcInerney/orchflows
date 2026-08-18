@@ -327,6 +327,3 @@ class TestMergeLineage(unittest.TestCase):
                 policy, broken, [], "candidate:merged"
             )
             self.assert_rejected(next_request)
-
-
-

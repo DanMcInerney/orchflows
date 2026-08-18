@@ -465,5 +465,3 @@ class TestElapsedMeter(unittest.TestCase):
         self.assertIn(ui.EMPTY_NO_METER, claim)
         self.assertNotIn("<progress", page)
         self.assertNotIn("%", claim)
-
-

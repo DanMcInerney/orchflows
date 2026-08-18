@@ -197,7 +197,7 @@ def package_sources():
 def adapter_sources():
     return sorted(
         path
-        for path in (PACKAGE_DIR / "adapters").glob("*.py")
+        for path in (PACKAGE_DIR / "adapters").rglob("*.py")
         if path.name != "__init__.py"
     )
 

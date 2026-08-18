@@ -196,5 +196,3 @@ class TestUiResolvesSink(unittest.TestCase):
                 (sink / "tickets" / "run-alpha" / "A1.md").resolve(),
                 ui._in_tree(sink / "tickets", "run-alpha", "A1.md"),
             )
-
-

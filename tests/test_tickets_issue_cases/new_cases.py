@@ -370,5 +370,3 @@ class NewTest(unittest.TestCase):
             )
             self.assertEqual(1, bad.returncode, bad.stdout)
             self.assertIn("error", json.loads(bad.stdout))
-
-

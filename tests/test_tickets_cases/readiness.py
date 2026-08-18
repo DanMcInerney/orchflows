@@ -141,5 +141,3 @@ class TestAppendLockDocstringIsTrue(unittest.TestCase):
             self.assertIn("error", payload)
             self.assertIn("unreadable", payload["error"])
             self.assertEqual(["one"], notes_of().read_text(encoding="utf-8").splitlines())
-
-

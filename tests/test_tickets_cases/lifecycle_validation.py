@@ -214,5 +214,3 @@ None.
 
 status, changed_artifacts, verification.
 """
-
-

@@ -189,5 +189,3 @@ class PublicClientCredentialTest(unittest.TestCase):
                     self.assertEqual(
                         transport.route_constant(surface.route_id).credential_id, ""
                     )
-
-

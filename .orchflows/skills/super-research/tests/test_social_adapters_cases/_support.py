@@ -89,4 +89,3 @@ def named(record):
     """One record's attributes as a mapping, for asserting one name at a time."""
 
     return dict(record.attributes)
-

@@ -37,5 +37,3 @@ class NarrowConsoleTest(unittest.TestCase):
             self.assertEqual(0, completed.returncode, completed.stderr)
             self.assertIn(b"worklog", completed.stdout)
             self.assertNotIn(b"UnicodeEncodeError", completed.stderr)
-
-

@@ -188,7 +188,7 @@ GATE_STUB_EXECUTORS = frozenset(GATE_EXECUTORS.values())
 # What makes an id a gate stub of a root that is in this set.
 GATE_INFIX = ".gate."
 # A pack's executor and assembly cells are the only executors it binds.
-PACKS_DIR = "packs"
+PACKS_DIR = None
 PACK_CELL_RE = re.compile(r"^\|\s*(?:executor|assembly)\s*\|([^|]*)\|", re.M)
 SKILL_NAME_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
 # A pack name comes from ticket content, so it names one directory or nothing.

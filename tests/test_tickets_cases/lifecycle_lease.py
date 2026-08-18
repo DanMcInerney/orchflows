@@ -346,5 +346,3 @@ class OSErrorHandlerTest(unittest.TestCase):
             self.assertIn("unwritable run state", error, error)
             self.assertNotIn("identity rollback also failed", error, error)
             self.assertEqual(original, blocker.read_text(encoding="utf-8"))
-
-

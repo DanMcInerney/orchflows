@@ -64,5 +64,3 @@ class TranscriptCase(unittest.TestCase):
         status, page = ui.render_route(self.main, ui.SESSIONS_ROUTE, root)
         self.assertEqual(200, status)
         return page
-
-

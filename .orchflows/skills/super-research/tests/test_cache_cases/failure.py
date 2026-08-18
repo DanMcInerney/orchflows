@@ -188,4 +188,3 @@ class OracleCanFailTest(unittest.TestCase):
         ]
 
         self.assertEqual(named, [])
-

@@ -2,7 +2,7 @@
 
 import copy
 
-try:  # in-repo package import; installed scripts sit flat together
+if __package__:  # in-repo package import; installed scripts sit flat together
     from scripts.search_plan_archive import (
         _pareto_archive,
         _relation,
@@ -25,7 +25,7 @@ try:  # in-repo package import; installed scripts sit flat together
         _validate_ineligible,
         _validate_origin,
     )
-except ImportError:  # pragma: no cover - direct/installed script path
+else:  # pragma: no cover - direct/installed script path
     from search_plan_archive import _pareto_archive, _relation, _stable_key, _vector
     from search_plan_protocol import (
         PLAN_KEYS,

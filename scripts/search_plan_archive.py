@@ -64,4 +64,3 @@ def _pareto_archive(nodes, dimensions):
 def _stable_key(seed, *identities):
     material = "\0".join((seed,) + identities).encode("utf-8")
     return hashlib.sha256(material).hexdigest(), identities
-
