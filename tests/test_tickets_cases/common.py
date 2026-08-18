@@ -25,6 +25,23 @@ if str(ROOT) not in sys.path:
 import scripts.tickets as tickets_mod  # noqa: E402
 
 TICKETS_PY = ROOT / "scripts" / "tickets.py"
+TICKETS_SUPPORT_NAMES = (
+    "tickets_format.py",
+    "tickets_store.py",
+    "tickets_issue.py",
+    "tickets_lifecycle.py",
+    "tickets_packet.py",
+    "tickets_result.py",
+    "tickets_worklog.py",
+    "tickets_dispatch.py",
+)
+TICKETS_MODULES = (TICKETS_PY,) + tuple(
+    TICKETS_PY.with_name(name) for name in TICKETS_SUPPORT_NAMES
+)
+TICKETS_FORMAT_PY = TICKETS_PY.with_name("tickets_format.py")
+TICKETS_STORE_PY = TICKETS_PY.with_name("tickets_store.py")
+TICKETS_WORKLOG_PY = TICKETS_PY.with_name("tickets_worklog.py")
+TICKETS_DISPATCH_PY = TICKETS_PY.with_name("tickets_dispatch.py")
 STATE_ROOT_PY = ROOT / "scripts" / "state_root.py"
 WORKSPACE_PY = ROOT / "scripts" / "workspace.py"
 STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
@@ -359,5 +376,4 @@ def notes_of(run: str = "testrun") -> Path:
     """`run-state --note`'s target: the run's free notes, beside the
     rendered view and never it (contracts/worklog.md)."""
     return sink_root() / "runs" / run / tickets_mod.RUN_NOTES_NAME
-
 

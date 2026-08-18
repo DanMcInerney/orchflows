@@ -13,13 +13,13 @@ def coverage_of() -> Path:
 
 
 def function_def(name: str):
-    """One top-level function of ``scripts/tickets.py``, as its AST."""
+    """One top-level function of the improvement/dispatch owner, as its AST."""
 
-    tree = ast.parse(TICKETS_PY.read_text(encoding="utf-8"))
+    tree = ast.parse(TICKETS_DISPATCH_PY.read_text(encoding="utf-8"))
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef) and node.name == name:
             return node
-    raise AssertionError(f"scripts/tickets.py declares no {name}")
+    raise AssertionError(f"scripts/tickets_dispatch.py declares no {name}")
 
 
 def open_modes(node) -> list:
@@ -179,7 +179,7 @@ class TestImprovementWriter(unittest.TestCase):
         # and that branch is the only place the record's path is composed
         loads = [
             node
-            for node in ast.walk(ast.parse(TICKETS_PY.read_text(encoding="utf-8")))
+            for node in ast.walk(ast.parse(TICKETS_DISPATCH_PY.read_text(encoding="utf-8")))
             if isinstance(node, ast.Name)
             and node.id == "COVERAGE_RECORD_NAME"
             and isinstance(node.ctx, ast.Load)
@@ -384,5 +384,3 @@ class RunIdentitySpecificationTest(unittest.TestCase):
                 ["first_seen", "path"], sorted(identity["workspaces"][0])
             )
             self.assertEqual(tickets_mod.SINK_CONVENTION, identity["sink_convention"])
-
-

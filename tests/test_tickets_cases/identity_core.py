@@ -115,10 +115,10 @@ class TestRunIdentity(unittest.TestCase):
         disagree. The count is what catches one being pasted back in; a
         `UTC_STAMP` that merely exists beside two literals would not."""
 
-        source = TICKETS_PY.read_text(encoding="utf-8")
+        source = "\n".join(path.read_text(encoding="utf-8") for path in TICKETS_MODULES)
         # graded before the constant is named, so a revision that has no
         # `UTC_STAMP` reads as the wrong shape rather than a missing attribute
-        self.assertEqual(1, source.count('"%Y-%m-%dT%H:%M:%SZ"'), "shape restated")
+        self.assertEqual(1, source.count("%Y-%m-%dT%H:%M:%SZ"), "shape restated")
         # a census of the sites that stamp, not a bound on them: `claim`,
         # `grant`, run opening and terminal transition, each through the one
         # constant
@@ -353,5 +353,4 @@ class TestRunIdentity(unittest.TestCase):
             self.assertEqual(
                 [str(main.resolve()), str(worktree.resolve())], workspaces_of()
             )
-
 

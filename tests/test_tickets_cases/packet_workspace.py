@@ -136,7 +136,9 @@ class TestPacketEmitsTheEstablishmentCommand(unittest.TestCase):
             make_packet_repo(tmp, ISOLATED_TICKET)
             elsewhere = tmp / "elsewhere"
             elsewhere.mkdir()
-            for name in ("state_root.py", "tickets.py", "workspace.py"):
+            for name in (
+                "state_root.py", "tickets.py", "workspace.py", *TICKETS_SUPPORT_NAMES
+            ):
                 (elsewhere / name).write_text(
                     (TICKETS_PY.parent / name).read_text(encoding="utf-8"),
                     encoding="utf-8",
@@ -259,7 +261,7 @@ class PackWorkspaceTest(unittest.TestCase):
         table = tickets_mod.PACK_WORKSPACE_MECHANISMS
         self.assertIsInstance(table, dict)
         self.assertTrue(all(isinstance(v, str) and v for v in table.values()), table)
-        lines = TICKETS_PY.read_text(encoding="utf-8").splitlines()
+        lines = TICKETS_FORMAT_PY.read_text(encoding="utf-8").splitlines()
         index = next(
             i for i, line in enumerate(lines)
             if line.startswith("PACK_WORKSPACE_MECHANISMS = ")
@@ -289,7 +291,7 @@ PACKS_SEGMENT = "packs"
 # the test below keeps: a tree read anchored on the caller's argument is
 # allowed here; one anchored on the script's own location is not, and no
 # module resolves a pack-to-mechanism binding by reading anything.
-TREE_READING_SCRIPTS = {"cutcheck.py", "tickets.py"}
+TREE_READING_SCRIPTS = {"cutcheck.py", "tickets_worklog.py"}
 
 
 def code_strings(source: str) -> list:
@@ -356,7 +358,7 @@ class NoLibraryTreeReadTest(unittest.TestCase):
         beside it and an installed copy finds none — which is why the check
         it feeds returns nothing rather than refusing every stub."""
 
-        source = TICKETS_PY.read_text(encoding="utf-8")
+        source = TICKETS_WORKLOG_PY.read_text(encoding="utf-8")
         self.assertIn("def _packs_root", source)
         packs_root = source.split("def _packs_root", 1)[1].split("\ndef ", 1)[0]
         self.assertNotIn("__file__", packs_root)
@@ -404,7 +406,9 @@ class NoLibraryTreeReadTest(unittest.TestCase):
             # state_root.py travels with it: the script imports its sibling
             # resolver, and the installer copies `scripts/` as one unit. What
             # this case removes is the *library* tree, not the sibling.
-            for name in ("tickets.py", "workspace.py", "state_root.py"):
+            for name in (
+                "tickets.py", "workspace.py", "state_root.py", *TICKETS_SUPPORT_NAMES
+            ):
                 (elsewhere / name).write_text(
                     (SCRIPTS / name).read_text(encoding="utf-8"), encoding="utf-8"
                 )
@@ -427,5 +431,4 @@ class NoLibraryTreeReadTest(unittest.TestCase):
                 self.assertEqual(
                     expected, len(establishment_lines(prompt)), (pack, prompt)
                 )
-
 

@@ -32,11 +32,12 @@ class TestRunStateRootResolution(unittest.TestCase):
             # nothing can shell out to git that never imports a way to:
             # the whole script's import set, not a word match on its prose
             imported = set()
-            for node in ast.walk(ast.parse(TICKETS_PY.read_text(encoding="utf-8"))):
-                if isinstance(node, ast.Import):
-                    imported.update(alias.name.split(".")[0] for alias in node.names)
-                elif isinstance(node, ast.ImportFrom) and not node.level:
-                    imported.add((node.module or "").split(".")[0])
+            for path in TICKETS_MODULES:
+                for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+                    if isinstance(node, ast.Import):
+                        imported.update(alias.name.split(".")[0] for alias in node.names)
+                    elif isinstance(node, ast.ImportFrom) and not node.level:
+                        imported.add((node.module or "").split(".")[0])
             self.assertNotIn("subprocess", imported)
             # `tempfile` is here for `run.json`: the identity document is
             # written beside itself and moved over, so a concurrent reader
@@ -49,7 +50,10 @@ class TestRunStateRootResolution(unittest.TestCase):
             self.assertEqual(
                 {"__future__", "contextlib", "datetime", "fcntl", "json",
                  "msvcrt", "pathlib", "re", "scripts", "state_root", "sys",
-                 "tempfile", "time"},
+                 "tempfile", "time", "tickets_format", "tickets_store",
+                 "tickets_issue", "tickets_lifecycle", "tickets_packet",
+                 "tickets_result", "tickets_worklog", "tickets_dispatch",
+                 "tickets"},
                 imported,
             )
 
@@ -155,6 +159,11 @@ class TestPacketCarriesTheRunStateCommand(unittest.TestCase):
             elsewhere.mkdir()
             copy = elsewhere / "tickets.py"
             copy.write_text(TICKETS_PY.read_text(encoding="utf-8"), encoding="utf-8")
+            for name in TICKETS_SUPPORT_NAMES:
+                (elsewhere / name).write_text(
+                    (TICKETS_PY.parent / name).read_text(encoding="utf-8"),
+                    encoding="utf-8",
+                )
             # the installed layout: the resolver sits flat beside it, and the
             # copy reaches it by the second arm of its two-arm import
             (elsewhere / "state_root.py").write_text(
@@ -357,5 +366,3 @@ GIT_ENV = dict(
     GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@example.invalid",
     GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@example.invalid",
 )
-
-
