@@ -181,5 +181,3 @@ def render_codex_agent_limits(text: str, toml_module=tomllib) -> tuple[str, dict
         "toml_checked": toml_module is not None,
     }
     return updated, details
-
-

@@ -74,5 +74,3 @@ def print_plan(plan: Plan, source_commit: str | None) -> None:
     print(f"receipt: {plan.receipt_path}")
     print()
     print(f"planned entries: {plan_entry_count(plan)}")
-
-

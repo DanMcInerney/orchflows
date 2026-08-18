@@ -20,10 +20,20 @@ over 994 files — equal to the Q3-recorded runnable_cases identity.
 
 - runnable_cases (cases/ tree digest, current bytes, 1009 files):
   `sha256:5ae08ffa3514b07da2f4a49d800320f6416768120ef621f0890fed6df4ead704`
-- runner (tools/validate_cases.py file digest, unchanged from Q3):
-  `sha256:a1f071395dd418b81bff9df7c2be1cf2a923d7d6e7c9ff172c6334be0f826234`
+- runner interface (tools/validate_cases.py file digest):
+  `sha256:117d9541f443c9422321c93f05ecbe52a4191f0436ea7a6e4ec186acf13c8cac`
+- runner implementation (the interface delegates to all three files):
+  `tools/case_coverage.py` `sha256:3cddd2dd9ab49f86c72195b6a00b94f2279a5b5e7ad7f4c906e630d5e231e7c`;
+  `tools/case_toml.py` `sha256:2c3bbc08309472d62b3a1341a5b715087fc0ef7159bcacf4d511f1a4864ba65b`;
+  `tools/case_validation.py` `sha256:9af65d9cb504e2c8317e6d1d3bd434b75bd32e908e4d06e8980fd3da1dee098a`
 - scoring (scoring.md file digest, unchanged from Q3):
   `sha256:685bc932ddd837763fabef27a909a7b7b54240aa199115340032b2917a78bd17`
+
+Relocation re-qualification (2026-08-18): the exact QC-1 command below ran
+against these four runner-component files and the current cases tree, exiting
+0 with no output. Every runner-dependent `covers` set below names the facade
+and all three implementation files, so a change to any operative byte
+invalidates the retained verdict.
 
 ## Scope proof (per-file classification vs a9449a3)
 
@@ -62,7 +72,8 @@ evidence: exit 0, zero output lines (validator is silent-when-clean),
   wall 171 s; all 16 matrix rows present (a missing row exits 1 with an
   ERROR line). The 15 extended case.toml evidence lists all resolve: every
   declared evidence path exists and none points into seeds/.
-covers: runnable_cases cases/; runner tools/validate_cases.py
+covers: runnable_cases cases/; runner tools/validate_cases.py,
+  tools/case_coverage.py, tools/case_toml.py, tools/case_validation.py
 required: true
 ```
 
@@ -77,7 +88,8 @@ oracle_class: deterministic
 evidence: full sweep exit 0; per-run record, all identically green (exit 0,
   zero output): cs-judged-fresh 4.69 s / 4.58 s / 4.84 s;
   cs-nondet-fresh 14.55 s / 18.34 s / 22.21 s
-covers: runnable_cases cases/; runner tools/validate_cases.py
+covers: runnable_cases cases/; runner tools/validate_cases.py,
+  tools/case_coverage.py, tools/case_toml.py, tools/case_validation.py
 required: true
 ```
 
@@ -120,7 +132,8 @@ oracle_class: evidence
 evidence: 64/64 bad seeds fail with named checks matching their deviation
   loci (table below); all 16 targets and all 16 good seeds exit 0;
   equivalent variants: 0; uncaught tracebacks: 0 (see traceback ledger)
-covers: runnable_cases cases/; runner tools/validate_cases.py
+covers: runnable_cases cases/; runner tools/validate_cases.py,
+  tools/case_coverage.py, tools/case_toml.py, tools/case_validation.py
 required: true
 ```
 
@@ -265,7 +278,8 @@ evidence: full validator sweep 171 s (~2.9 min) — inside §8's <45 min and
   run-conduct 0.31/300; sparse 3.71/300; stateful 3.45/300;
   workflow 2.92/300. Trial extras: judged 4.58-4.84 s, nondet
   14.55-22.21 s, negative pair 2.53 s — all inside tier.
-covers: runnable_cases cases/; runner tools/validate_cases.py
+covers: runnable_cases cases/; runner tools/validate_cases.py,
+  tools/case_coverage.py, tools/case_toml.py, tools/case_validation.py
 required: true
 ```
 
@@ -313,7 +327,8 @@ evidence: exit 0, zero output, wall 2.53 s — negative-case rules
   (blocked-return in expected_qualification; expected.md states blocked
   return + gap content) plus full probe inversion for both negative cases
   over current bytes
-covers: runnable_cases cases/; runner tools/validate_cases.py
+covers: runnable_cases cases/; runner tools/validate_cases.py,
+  tools/case_coverage.py, tools/case_toml.py, tools/case_validation.py
 required: true
 ```
 

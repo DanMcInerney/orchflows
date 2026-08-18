@@ -384,5 +384,3 @@ def print_summary(plan: Plan) -> None:
             f"settings in {_codex_config_path(plan.scope, plan.project_root)}"
         )
     print(f"  receipt:     {plan.receipt_path}")
-
-

@@ -229,5 +229,3 @@ def _codex_hooks_warnings(codex_home: Path) -> list[str]:
         seen.add(str(path))
         warnings.append(f"warning: {hooks_path} references a missing orchflows path: {value}")
     return warnings
-
-

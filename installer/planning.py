@@ -377,5 +377,3 @@ def plan_entry_count(plan: Plan) -> int:
         + (1 if plan.host_block is not None else 0)
         + (1 if plan.claude_import is not None else 0)
     )
-
-

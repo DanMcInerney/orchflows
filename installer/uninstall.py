@@ -188,5 +188,3 @@ def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
         "manual_actions": manual_actions,
         "receipt": str(receipt_path),
     }
-
-

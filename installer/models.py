@@ -163,5 +163,3 @@ def _day_zero_documents(project_root: Path) -> list:
             "ownership map skeleton",
         ),
     ]
-
-

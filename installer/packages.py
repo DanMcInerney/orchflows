@@ -354,5 +354,3 @@ def source_commit_drift_message(old_receipt: dict | None, new_commit: str | None
     if old_commit and new_commit and old_commit != new_commit:
         return f"source commit drift: {old_commit} -> {new_commit}"
     return None
-
-
