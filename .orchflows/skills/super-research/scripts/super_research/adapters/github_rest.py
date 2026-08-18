@@ -136,6 +136,7 @@ ITEMS_KEY = "items"
 SCHEMA_DRIFT = "schema_drift"
 MALFORMED_JSON = "malformed_json"
 HTTP_STATUS = "http_status"
+FIELD_OMITTED = "field_omitted"
 
 # Declared here and produced nowhere in this module, which is the statement:
 # no answer either of these routes can give is a report that a credential was
@@ -266,7 +267,7 @@ def _page_from(
         # A row with no id is not a row: it can be neither identified nor
         # grouped, and a record naming nothing is worse than one fewer record.
         if isinstance(row, Mapping) and id_text(row.get(ID_KEY)):
-            records.append(build(len(records), row))
+            records.append(build(len(records), row, FIELD_OMITTED))
     if records:
         return _answered(descriptor, response, native_order, records=tuple(records))
     if rows:

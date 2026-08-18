@@ -112,7 +112,9 @@ def _engagement(pairs: Sequence[Tuple[str, Any]]) -> Tuple[Tuple[str, int], ...]
     return tuple(counted)
 
 
-def repository_record(position: int, payload: Mapping[str, Any]) -> NativeRecord:
+def repository_record(
+    position: int, payload: Mapping[str, Any], missing_loss: str
+) -> NativeRecord:
     """One repository as GitHub described it, read or found."""
 
     owner = login_of(payload, OWNER_KEY)
@@ -156,11 +158,13 @@ def repository_record(position: int, payload: Mapping[str, Any]) -> NativeRecord
         ),
         attributes=tuple(named),
         native_position=position,
-        loss=("field_omitted",) if _missing(row, REPOSITORY_ROW_KEYS) else (),
+        loss=(missing_loss,) if _missing(row, REPOSITORY_ROW_KEYS) else (),
     )
 
 
-def issue_record(position: int, payload: Mapping[str, Any]) -> NativeRecord:
+def issue_record(
+    position: int, payload: Mapping[str, Any], missing_loss: str
+) -> NativeRecord:
     """One issue as the repository listed it."""
 
     row = {
@@ -200,11 +204,13 @@ def issue_record(position: int, payload: Mapping[str, Any]) -> NativeRecord:
         engagement=_engagement(((COMMENTS_METRIC, payload.get(COMMENTS_METRIC)),)),
         attributes=tuple(named),
         native_position=position,
-        loss=("field_omitted",) if _missing(row, ISSUE_ROW_KEYS) else (),
+        loss=(missing_loss,) if _missing(row, ISSUE_ROW_KEYS) else (),
     )
 
 
-def release_record(position: int, payload: Mapping[str, Any]) -> NativeRecord:
+def release_record(
+    position: int, payload: Mapping[str, Any], missing_loss: str
+) -> NativeRecord:
     """One release as the repository listed it."""
 
     row = {
@@ -232,5 +238,5 @@ def release_record(position: int, payload: Mapping[str, Any]) -> NativeRecord:
         published_at=row[PUBLISHED_AT_KEY],
         attributes=named,
         native_position=position,
-        loss=("field_omitted",) if _missing(row, RELEASE_ROW_KEYS) else (),
+        loss=(missing_loss,) if _missing(row, RELEASE_ROW_KEYS) else (),
     )
