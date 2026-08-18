@@ -2012,6 +2012,28 @@ def _split_commas(value) -> list:
     return [part.strip() for part in str(value or "").split(",") if part.strip()]
 
 
+def _distinct_gate_lenses(lenses: list) -> list:
+    """Return ``lenses`` or refuse a repeated review identity.
+
+    A second adversarial review is represented by another named lens. Two
+    critique stubs with one label are one review identity written twice, not
+    additional independence.
+    """
+
+    seen = set()
+    repeated = []
+    for lens in lenses:
+        if lens in seen and lens not in repeated:
+            repeated.append(lens)
+        seen.add(lens)
+    if repeated:
+        raise ValueError(
+            "gate review lenses must be distinct; repeated: "
+            + ", ".join(repeated)
+        )
+    return lenses
+
+
 def _frontmatter_list(key: str, values) -> list:
     """One frontmatter list, as the lines that carry it.
 
@@ -3240,6 +3262,21 @@ def _cmd_check(rest):
             "terminal status the join has already read the acceptance this "
             f"field feeds. ticket: {ticket_path}"
         }
+    independence = str(data.get("independence") or "checker").strip().strip("`")
+    if independence == "gate" and _executor_of(data) != ROOT_EXECUTOR:
+        return {
+            "error": f"ticket {run}/{ticket_id} defers independence to its "
+            "downstream gate: a non-root gate-deferred ticket has no checker "
+            "path and cannot carry checked_by"
+        }
+    prior_checker = str(data.get(CHECKED_BY_KEY) or "").strip().strip("`")
+    if prior_checker:
+        return {
+            "error": f"ticket {run}/{ticket_id} is already checked by "
+            f"'{prior_checker}': one ticket has one checker identity. An "
+            "additional adversarial reviewer must be a distinctly named "
+            "root-gate lens"
+        }
     try:
         updated = _set_frontmatter_field(text, CHECKED_BY_KEY, checked_by.strip())
     except ValueError as error:
@@ -3539,6 +3576,23 @@ def _cmd_packet(rest):
                 "§10 child reads a result an executor produced under a claim. "
                 "Dispatch the item's own executor first — this packet without "
                 f"--executor. ticket: {ticket_path}"
+            }
+        is_root = _executor_of(loaded) == ROOT_EXECUTOR
+        independence = str(
+            loaded.get("independence") or "checker"
+        ).strip().strip("`")
+        if independence == "gate" and not is_root:
+            return {
+                "error": f"ticket {run}/{ticket_id} defers independence to its "
+                "downstream gate: a non-root gate-deferred ticket has no "
+                "checker or re-verifier packet"
+            }
+        prior_checker = str(loaded.get(CHECKED_BY_KEY) or "").strip().strip("`")
+        if further == CHECKER_EXECUTOR and prior_checker:
+            return {
+                "error": f"ticket {run}/{ticket_id} is already checked by "
+                f"'{prior_checker}': no second checker packet is emitted. "
+                "Use a distinctly named root-gate lens for another review"
             }
         if further == CHECKER_EXECUTOR and _executor_of(loaded) == ROOT_EXECUTOR:
             root_id = loaded["id"]

@@ -5054,6 +5054,28 @@ class TestCheckedByVerb(unittest.TestCase):
             self.assertEqual("T1", payload["check"]["id"])
             self.assertIn("checked_by: checker-a", path.read_text(encoding="utf-8"))
 
+    def test_one_checker_identity_and_unique_gate_lenses(self):
+        """A ticket has one checker identity; another review belongs to a
+        distinctly named gate lens rather than overwriting that identity."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.make(tmp)
+            first = run_cmd(tmp, "check", "testrun", "T1", "--by", "checker-a")
+            self.assertNotIn("error", first)
+            before = path.read_bytes()
+            repeated = run_cmd(tmp, "check", "testrun", "T1", "--by", "checker-b")
+            self.assertIn("already checked", repeated["error"])
+            self.assertIn("checker-a", repeated["error"])
+            self.assertEqual(before, path.read_bytes())
+
+        self.assertEqual(
+            ["code", "security"],
+            tickets_mod._distinct_gate_lenses(["code", "security"]),
+        )
+        with self.assertRaisesRegex(ValueError, "distinct"):
+            tickets_mod._distinct_gate_lenses(["code", "code"])
+
     def test_check_is_refused_on_a_ticket_that_is_not_claimed(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
@@ -5173,6 +5195,44 @@ class TestCheckerPathPacket(unittest.TestCase):
             payload = self.packet(tmp, "--executor", "orch-critique")
             self.assertIn("not claimed", payload["error"])
             self.assertNotIn("packet", payload)
+
+    def test_gate_deferred_ticket_excludes_checker_and_preserves_checker_paths(self):
+        gate_deferred = CLAIMED_ISOLATED_TICKET.replace(
+            "executor: orch-tdd", "executor: orch-tdd\nindependence: gate"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.make(tmp, gate_deferred)
+            before = path.read_bytes()
+            for executor in ("orch-critique", "orch-verify"):
+                with self.subTest(executor=executor):
+                    payload = self.packet(tmp, "--executor", executor)
+                    self.assertIn("downstream gate", payload["error"])
+                    self.assertNotIn("packet", payload)
+            checked = run_cmd(tmp, "check", "testrun", "T1", "--by", "checker-a")
+            self.assertIn("downstream gate", checked["error"])
+            self.assertEqual(before, path.read_bytes())
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            for executor in ("orch-critique", "orch-verify"):
+                with self.subTest(executor=executor):
+                    self.assertIn("packet", self.packet(tmp, "--executor", executor))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            root = ROOT_TICKET.replace(
+                "executor: orch-decompose",
+                "executor: orch-decompose\nindependence: gate",
+            )
+            path = make_packet_repo(tmp, root, tid="R1")
+            make_tickets(path.parent, {"R1.01": ("pending", "[]")})
+            critique = run_cmd(
+                tmp, "packet", "testrun", "R1", "--reply-to", "main",
+                "--executor", "orch-critique",
+            )
+            self.assertIn("packet", critique)
 
     def test_the_tickets_profile_override_stays_with_the_executors_dispatch(self):
         """contracts/work-item.md `profile` is the executor's role override;
