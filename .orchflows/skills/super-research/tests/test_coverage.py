@@ -8,11 +8,14 @@ went wrong, and stays quiet where the manifest was right.
 
 from __future__ import annotations
 
+import dataclasses
+import json
 import unittest
 from pathlib import Path
 
-from super_research import adapters, coverage, runner, schema
+from super_research import adapters, coverage, runner, schema, transport
 from super_research.adapters import youtube_innertube
+from tests import helpers
 
 
 def record(
@@ -642,6 +645,94 @@ class DepthReviewTest(unittest.TestCase):
         )
 
         self.assertEqual(subjects(found, coverage.NOTHING_HYDRATED), ["youtube_innertube"])
+
+
+class StepIdentityTest(unittest.TestCase):
+    """A `StepResult` states what its step was, so no reader re-derives it.
+
+    The two facts that decide whether a step was depth — its kind and its query
+    — lived only on the manifest, and an artifact does not carry one. Every
+    reader downstream therefore guessed from record shape, which is the defect
+    `DepthReviewTest` below measures. Both construction sites fill them, the
+    refusal included: a step the core would not run is still a step whose kind
+    and query are known, and the artifact that most needs explaining is exactly
+    the one that would otherwise be unable to say what it asked for.
+    """
+
+    def offline(self, step, pages=1):
+        """``step`` run against canned offline answers, and its result alone."""
+
+        payload = json.dumps(
+            {
+                "platform": "fixture",
+                "cursor_out": "",
+                "records": [
+                    {
+                        "canonical_content_kind": "post",
+                        "canonical_locator": "https://fixture.invalid/p/0",
+                        "native_item_id": "0",
+                        "title": "row 0",
+                    }
+                ],
+            }
+        )
+        clock = helpers.FakeClock()
+        carrier, _ = helpers.offline_transport(
+            clock,
+            {transport.FAKE_OFFLINE_ROUTE: [(200, payload, "application/json")] * pages},
+        )
+        return runner.run_step(step, carrier, "artifact:m", "m", clock=clock.monotonic)[0]
+
+    def test_every_step_result_carries_its_kind_and_query(self):
+        discovery = schema.AcquisitionStep(
+            step_id="d", kind="discovery", adapter_id="fake",
+            query="search:btc", max_items=10,
+        )
+        hydration = schema.AcquisitionStep(
+            step_id="h", kind="hydration", adapter_id="fake", query="comments",
+            selected_hits=(schema.SelectedHit("https://fixture.invalid/p/0", "0"),),
+            max_items=10,
+        )
+        # The core declares no such adapter, so `run_step` refuses before it
+        # reaches the carrier — which is why this one is handed none.
+        refused = schema.AcquisitionStep(
+            step_id="x", kind="discovery", adapter_id="no_such_adapter",
+            query="transcript:vid", max_items=10,
+        )
+
+        results = (
+            self.offline(discovery),
+            self.offline(hydration),
+            runner.run_step(refused, None, "artifact:m", "m")[0],
+        )
+
+        self.assertEqual(results[2].outcome, "refused")
+        self.assertEqual(
+            [(held.kind, held.query) for held in results],
+            [
+                ("discovery", "search:btc"),
+                ("hydration", "comments"),
+                ("discovery", "transcript:vid"),
+            ],
+        )
+
+    def test_the_older_shape_still_constructs_and_still_crosses_as_a_mapping(self):
+        """The two fields are additive, which is what lets an artifact travel.
+
+        `dataclasses.asdict` is how an artifact crosses a ticket, so a field
+        that arrived without a default would break every caller that names its
+        fields by keyword — and one that never reached the mapping would leave
+        the reader on the far side back where it started.
+        """
+
+        older = schema.StepResult(
+            step_id="s", adapter_id="fake", route_id="r", pages=1,
+            records_received=1, records_kept=1, outcome="ok",
+        )
+
+        self.assertEqual((older.kind, older.query), ("", ""))
+        self.assertEqual(dataclasses.asdict(older)["kind"], "")
+        self.assertEqual(dataclasses.asdict(older)["query"], "")
 
 
 class SkillDocTest(unittest.TestCase):
