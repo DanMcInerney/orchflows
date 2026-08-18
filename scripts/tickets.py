@@ -3617,6 +3617,37 @@ def _cmd_packet(rest):
         "Write your result into the ticket's own sections as you produce it, "
         "never in one write at the end; the join alone sets terminal status."
     )
+    # contracts/work-item.md's `isolation`: absent reads `none`, and only
+    # `required` is told to establish anything, so a lane that must not stamp
+    # itself is never handed the command. The pack is the second condition:
+    # `required` says the item works alone, its pack's workspace cell says
+    # what working alone is made of, and only a git mechanism is made of
+    # something this command can establish.
+    isolation = normalized_isolation(loaded.get("isolation"))
+    # An empty scope is the third condition, and it is about what the item
+    # writes rather than what it declares: an item authorized to change
+    # nothing writes only its own ticket sections, and those live in the
+    # sink, which no workspace holds. A read-only lane sent to establish one
+    # gets a worktree nothing ever writes to (friction 2026-08-16T09:40).
+    # Read through `effective_write_scope`, so a lane a grant has since
+    # given paths to is told to establish the workspace it now needs.
+    writes_workspace_content = bool(loaded.get("write_scope"))
+    # A further §10 child is the fourth condition, and it is a refusal rather
+    # than an omission: `workspace.py start` records the branch its caller is
+    # standing in over the executor's own, and that record is the `--base` the
+    # join grades the merge against. The checker works in the workspace the
+    # executor's record names; the re-verifier reads it.
+    #
+    # Named once because two prompt lines below read it: the child that
+    # establishes a workspace is exactly the child that has a branch of its
+    # own, and a sentence whose premise is "your branch" is addressed to
+    # nobody else.
+    has_own_workspace = (
+        further is None
+        and isolation == REQUIRED_ISOLATION
+        and writes_workspace_content
+        and establishes_a_git_workspace(loaded.get("pack"))
+    )
     if executor_script is None and further is None:
         # The close law, beside the filing law it belongs to. These are
         # contracts/work-item.md:95-97, :107-108 and :109-118 — the three
@@ -3650,39 +3681,30 @@ def _cmd_packet(rest):
         # gives the full suite to the gate's row and never a unit's, and
         # orch-frontier already gives the tip's checks to the engine.
         prompt.append(
-            "The standards owner's repository-level checks are the engine's, "
-            "run on the integrated tip after each merge batch: run your own "
-            "item's oracles, nothing wider — your branch is not the revision "
-            "those checks decide, and your green is provisional until the "
-            "tip's."
+            "Run the oracles your own `## Completion test` names, nothing "
+            "wider: a repository-level check the standards owner requires and "
+            "your ticket does not name is the engine's, run on the integrated "
+            "tip after each merge batch."
         )
-    # contracts/work-item.md's `isolation`: absent reads `none`, and only
-    # `required` is told to establish anything, so a lane that must not stamp
-    # itself is never handed the command. The pack is the second condition:
-    # `required` says the item works alone, its pack's workspace cell says
-    # what working alone is made of, and only a git mechanism is made of
-    # something this command can establish. The sibling resolves from this
-    # file's own location, so it points at whichever copy is running.
-    isolation = normalized_isolation(loaded.get("isolation"))
-    # An empty scope is the third condition, and it is about what the item
-    # writes rather than what it declares: an item authorized to change
-    # nothing writes only its own ticket sections, and those live in the
-    # sink, which no workspace holds. A read-only lane sent to establish one
-    # gets a worktree nothing ever writes to (friction 2026-08-16T09:40).
-    # Read through `effective_write_scope`, so a lane a grant has since
-    # given paths to is told to establish the workspace it now needs.
-    writes_workspace_content = bool(loaded.get("write_scope"))
-    # A further §10 child is the fourth condition, and it is a refusal rather
-    # than an omission: `workspace.py start` records the branch its caller is
-    # standing in over the executor's own, and that record is the `--base` the
-    # join grades the merge against. The checker works in the workspace the
-    # executor's record names; the re-verifier reads it.
-    if (
-        further is None
-        and isolation == REQUIRED_ISOLATION
-        and writes_workspace_content
-        and establishes_a_git_workspace(loaded.get("pack"))
-    ):
+        # The tail of that lesson, and it is addressed more narrowly than the
+        # head: it speaks about a branch, which a ticket establishing no
+        # workspace does not have. This run's three gate stubs declared no
+        # `isolation` and carried no `workspace_branch` where its two units
+        # carried `claude/sd-01` and `claude/sd-02`, and all three were told
+        # their green was provisional until a tip their work was already on
+        # (00-root.gate.critique.code, A3). The discriminator is the
+        # workspace, never the executor: the same stub sentence reached a
+        # critique, a repair and a re-verify.
+        if has_own_workspace:
+            prompt.append(
+                "Your branch is not the revision those repository-level "
+                "checks decide, and your green is provisional until the tip's."
+            )
+    # The four conditions above, spending the fact they were read for: the
+    # child that has a workspace of its own is the child told to establish
+    # one. The sibling script resolves from this file's own location, so it
+    # points at whichever copy is running.
+    if has_own_workspace:
         prompt.append(
             "Workspace establishment (isolation: required), your first act, "
             "run from inside your own workspace:"

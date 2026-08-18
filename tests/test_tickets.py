@@ -5463,6 +5463,48 @@ class TestPacketCarriesWhatTwoLanesSpentBoundLearning(unittest.TestCase):
             self.assertNotIn("summary line", prompt)
             self.assertNotIn("integrated tip", prompt)
 
+    def test_neither_further_child_is_told_either(self):
+        """The other half of the same audience, and the half nothing held.
+
+        Both sentences ride the close law's condition —
+        `executor_script is None and further is None` — so the script node
+        above pins one term of it and a rules/verification.md §10 child pins
+        the other. Without this case the whole `further` half of that
+        condition can be deleted and the suite stays green, which is what a
+        repair re-conditioning this block would have to be told."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_packet_repo(tmp, CLAIMED_ISOLATED_TICKET)
+            for executor in ("orch-critique", "orch-verify"):
+                prompt = run_cmd(
+                    tmp, "packet", "testrun", "T1", "--reply-to", "main",
+                    "--executor", executor,
+                )["packet"]["prompt"]
+                self.assertNotIn("summary line", prompt)
+                self.assertNotIn("integrated tip", prompt)
+
+    def test_a_ticket_with_a_workspace_of_its_own_is_told_its_branch_is_not_the_revision(self):
+        """The tail's premise is a branch, so its audience is whoever has one.
+
+        `isolation: required` on a git pack with a scope to write is what
+        `packet` itself reads to decide a child establishes a workspace, and
+        it is the same fact the tail speaks about."""
+        with tempfile.TemporaryDirectory() as tmp:
+            prompt = self.prompt_for(Path(tmp), ISOLATED_TICKET)
+            self.assertIn("branch is not the revision", prompt)
+
+    def test_a_ticket_with_no_workspace_of_its_own_is_not(self):
+        """A ticket that establishes no workspace stands in the dispatcher's
+        own, and "your branch" names nothing for it. This run's three gate
+        stubs are that shape: no `isolation`, no `workspace_branch`, and each
+        was told its green was provisional until a tip its work was already
+        on. The head still reaches them — which oracles are theirs is a fact
+        about every executor — and only the tail is withheld."""
+        with tempfile.TemporaryDirectory() as tmp:
+            prompt = self.prompt_for(Path(tmp), FULL_TICKET)
+            self.assertIn("nothing wider", prompt)
+            self.assertNotIn("branch is not the revision", prompt)
+
 
 class TestReadyReportsWhatItCouldNotGrade(unittest.TestCase):
     """`ready` used to answer a read failure with silence: an unloadable
