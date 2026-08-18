@@ -1,5 +1,6 @@
 """Structural discovery facade for the partitioned pipeline behavioral suite."""
 
+from tests.test_pipeline_cases.common import GITHUB_REST_BUDGET, REDDIT_FEED_BUDGET
 from tests.test_pipeline_cases.acquisition import (
     AStepMayDeclareItsOwnPageBoundTest,
     LanesOverlapAndTheCoreOwnsPagingTest,

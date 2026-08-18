@@ -446,8 +446,8 @@ def non_read_verb_findings(paths):
     return sorted(
         {
             (
-                (public_module_name(path) + ".py")
-                if private_support_key(path)
+                path.relative_to(PACKAGE_DIR).as_posix()
+                if PACKAGE_DIR in path.parents
                 else path.name,
                 verb,
             )

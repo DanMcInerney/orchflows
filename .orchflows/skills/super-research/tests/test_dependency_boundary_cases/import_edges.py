@@ -13,7 +13,6 @@ from .support import (
     FIXTURE_DIR,
     NETWORK_SEAM_MODULES,
     PACKAGE_DIR,
-    ROUTE_OWNING_MODULES,
     SHELL_SPELLINGS,
     STANDARD_LIBRARY_IMPORTS,
     THIRD_PARTY_SURFACES,
@@ -85,10 +84,18 @@ class NoRunSomethingSurfaceTest(unittest.TestCase):
         # DELETE are spelled nowhere at all, and POST nowhere but where one of
         # the two closed exceptions to reads-only lives — the seam, which
         # admits the method, and the route owners, which spell it on the two
-        # rows that carry it. Derived from those two declarations, so which
-        # module holds the table is something to declare and never a filename
-        # this assertion has to be told about.
-        spelling_post = sorted(set(ROUTE_OWNING_MODULES) | set(NETWORK_SEAM_MODULES))
+        # rows that carry it. The split leaves two static modules on each side
+        # spelling the admitted method, so all four are named exactly here.
+        # The facade and its K1/K4 catalog both spell the two read operations
+        # whose HTTP method is POST. The network facade and extracted protocol
+        # spell the same admitted method at the outbound seam. Keep all four
+        # static modules explicit so moving a POST remains observable.
+        spelling_post = sorted({
+            "_support/route_catalog_k1_k4",
+            "_support/transport_protocol",
+            "routes",
+            "transport",
+        })
 
         self.assertEqual(
             non_read_verb_findings(package_sources()),

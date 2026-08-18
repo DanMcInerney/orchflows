@@ -453,21 +453,6 @@ def operation_for(request: AdapterRequest) -> Tuple[str, str]:
     return (PRIMARY_OPERATION, request.query)
 
 
-def _feed_params(operation: str, query: str, request: AdapterRequest) -> Dict[str, str]:
-    """The parameters one feed surface takes, in the origin's own names."""
-
-    if operation == BING_OPERATION:
-        return {QUERY_PARAM: query, FORMAT_PARAM: RSS_FORMAT, BING_OFFSET_PARAM: request.cursor}
-    if operation == BING_NEWS_OPERATION:
-        return {QUERY_PARAM: query, FORMAT_PARAM: RSS_FORMAT}
-    days = google_when_days(request.window_start, request.window_end)
-    if days:
-        query = query + " " + GOOGLE_WHEN_OPERATOR + str(days) + GOOGLE_WHEN_UNIT
-    params = {QUERY_PARAM: query}
-    params.update(GOOGLE_LOCALE_PARAMS)
-    return params
-
-
 def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> NativePage:
     """Fetch one index page from one surface and return exactly one NativePage.
 
