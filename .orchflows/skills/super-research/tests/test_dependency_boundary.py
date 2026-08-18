@@ -1005,6 +1005,13 @@ MULTI_SURFACE_ANCHOR = re.compile(r"\b([A-Za-z]+) adapters rea(?:d|ch) more than
 ROSTER_SIZE_ANCHOR = re.compile(r"\b([A-Za-z]+) adapters, ([A-Za-z]+) live plus `fake`")
 SURFACE_TOTAL_ANCHOR = re.compile(r"\b([A-Za-z]+(?:-[A-Za-z]+)?) route surfaces\b")
 
+# The same count where `surface_descriptors` states it about itself. Its own
+# paragraph rather than either document's, so its own anchor: the two words the
+# count cannot leave while the sentence still says that some adapters are the
+# exception. A word this cannot read counts as none and fails, the way the
+# document anchors do.
+RESOLVER_COUNT_ANCHOR = re.compile(r"\b([A-Za-z]+) do not\b")
+
 # The one roster row read cell by cell here. Its adapter id comes off the
 # module that owns the route rather than off this file, so a rename reaches
 # the assertions.
@@ -1094,6 +1101,20 @@ def multi_surface_adapters():
     }
 
 
+def resolver_chain_ids():
+    """Every adapter id the ``surface_descriptors`` chain answers for itself.
+
+    Read off the branches rather than off the descriptors, because the claim
+    the docstring above them makes is a claim about the lines under it: the
+    exceptions it counts are exactly the ids that chain spells.
+    """
+
+    return tuple(
+        adapter_id
+        for adapter_id, _, _ in branch_targets(PACKAGE_DIR / "runner.py", "surface_descriptors")
+    )
+
+
 def live_adapters():
     """Every declared adapter that reads an origin rather than a fixture.
 
@@ -1173,6 +1194,38 @@ class RosterIsReadOffTheSourceTest(unittest.TestCase):
                         path.name, stated[0], len(self.multi), sorted(self.multi)
                     ),
                 )
+
+    def test_the_resolver_docstring_counts_its_own_chain(self):
+        """The exceptions `surface_descriptors` counts, against the branches beneath it.
+
+        The one place this count is stated in the file it is about, and it was
+        the furthest wrong: the docstring named four adapters and the chain
+        immediately under it answered for ten. A count in prose beside a list
+        is the cheapest thing in a repository to leave behind, and this one was
+        beside the list it counts.
+        """
+
+        answered = resolver_chain_ids()
+
+        # The chain is the subject, so it is shown to be the same set the
+        # descriptors call multi-surface: a branch whose module declared one
+        # surface would make the docstring's count true of nothing.
+        self.assertEqual(sorted(answered), sorted(self.multi))
+
+        stated = RESOLVER_COUNT_ANCHOR.findall(runner.surface_descriptors.__doc__)
+
+        self.assertEqual(
+            len(stated),
+            1,
+            "surface_descriptors states its exception count {0} times".format(len(stated)),
+        )
+        self.assertEqual(
+            counted_as(stated[0]),
+            len(answered),
+            "surface_descriptors says {0}; its own chain answers for {1}: {2}".format(
+                stated[0], len(answered), sorted(answered)
+            ),
+        )
 
     def test_the_roster_size_it_states_is_the_declared_ids_own(self):
         """Both halves of "Twenty adapters, nineteen live plus `fake`", off the source.
