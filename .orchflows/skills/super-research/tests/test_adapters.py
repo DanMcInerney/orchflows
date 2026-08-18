@@ -4198,6 +4198,88 @@ def assert_captions_are_never_reported_absent(case, adapter_id, pages):
         )
 
 
+# One caption track as the player names it: a signed address this package
+# neither makes nor reads, and the two facts the record needs alongside it.
+TRANSCRIPT_TRACK = {
+    "baseUrl": (
+        "https://www.youtube.com/api/timedtext?v=" + YOUTUBE_VIDEO_ID
+        + "&lang=en&expire=1786000000&signature=0f1e2d"
+    ),
+    "languageCode": "en",
+    "kind": "asr",
+}
+
+
+def transcript_page_two(status, body):
+    """Read the timed-text route's answer as the transcript's second page.
+
+    Page two is the one the core reaches by spending page one's continuation,
+    so it is reached here the same way: the cursor the first page publishes,
+    and the timed-text route seeded rather than InnerTube's.
+    """
+
+    clock = helpers.FakeClock()
+    carrier, opener = helpers.offline_transport(
+        clock, {transport.YOUTUBE_TIMEDTEXT_ROUTE: (status, body, "application/json")}
+    )
+    page = youtube_innertube.fetch_native_page(
+        carrier,
+        youtube_request(
+            youtube_innertube.TRANSCRIPT_OPERATION + ":" + YOUTUBE_VIDEO_ID,
+            cursor=youtube_innertube.transcript_cursor(YOUTUBE_VIDEO_ID, TRANSCRIPT_TRACK),
+        ),
+    )
+    return (page, opener)
+
+
+class YoutubeTranscriptFailureTest(unittest.TestCase):
+    """The three ways page two can fail, each reported rather than raised.
+
+    A caption address is signed and expires, and the timed-text payload is a
+    shape this package reads rather than one it is promised. So all three of
+    these are ordinary weather on this route, and the loss table in
+    ``protocol.md`` already names this adapter for all three. What a caller
+    must never get is a raise: an adapter that raises costs the core the whole
+    page and reports nothing, which is precisely the report the typed
+    vocabulary exists to make. Each test names the code the branch types, so
+    a branch retyped to a neighbouring code fails here too.
+    """
+
+    def test_a_non_200_returns_a_typed_page(self):
+        page, opener = transcript_page_two(404, "")
+
+        self.assertEqual(page.outcome, "failed")
+        self.assertEqual(page.loss, ("http_status",))
+        self.assertEqual(page.records, ())
+        # The read happened: this is the origin's answer, not a short circuit
+        # ahead of it.
+        self.assertEqual(len(opener.opened), 1)
+        self.assertIn("404", page.warnings[0])
+
+    def test_an_unparseable_body_returns_a_typed_page(self):
+        # What an expired signature answers with: 200, and no json in it.
+        page, _ = transcript_page_two(200, "<!DOCTYPE html><html><body>Sign in</body></html>")
+
+        self.assertEqual(page.outcome, "failed")
+        self.assertEqual(page.loss, ("malformed_json",))
+        self.assertEqual(page.records, ())
+
+    def test_an_answer_with_no_events_returns_a_typed_page(self):
+        # Json, and not the json3 the route declares: the events list is gone.
+        page, _ = transcript_page_two(200, '{"wireMagic": "pb3"}')
+
+        self.assertEqual(page.outcome, "failed")
+        self.assertEqual(page.loss, ("schema_drift",))
+        self.assertEqual(page.records, ())
+
+    def test_the_three_codes_are_the_ones_the_loss_table_names(self):
+        # Spelled as every sibling adapter spells them, because a code the
+        # core cannot recognise reports as little as a raise does.
+        self.assertEqual(youtube_innertube.HTTP_STATUS, "http_status")
+        self.assertEqual(youtube_innertube.MALFORMED_JSON, "malformed_json")
+        self.assertEqual(youtube_innertube.SCHEMA_DRIFT, "schema_drift")
+
+
 class AttestationIsNotAnAbsenceTest(unittest.TestCase):
     """Criteria 2 and 3: this half's spine, and the false capability it prevents.
 

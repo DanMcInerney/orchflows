@@ -362,6 +362,13 @@ AUTH_REQUIRED = "auth_required"
 # serve the payload and this package knows only that. It is the retained
 # vocabulary's word for exactly that much, and it claims no cause.
 WITHHELD = "withheld"
+# The three the timed-text route can fail by, spelled as every sibling adapter
+# spells them. A signed caption address expires and a payload shape is read
+# rather than promised, so all three are ordinary weather on that route — and
+# a code the core cannot recognise would report as little as a raise does.
+HTTP_STATUS = "http_status"
+MALFORMED_JSON = "malformed_json"
+SCHEMA_DRIFT = "schema_drift"
 
 
 def dig(payload: Any, path: Sequence[str]) -> Any:
