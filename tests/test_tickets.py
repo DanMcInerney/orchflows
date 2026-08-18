@@ -3677,6 +3677,48 @@ class TestRunIdentity(unittest.TestCase):
             self.assertEqual(doc["opened_at"], doc["workspaces"][0]["first_seen"])
             self.assertEqual("one\n", notes_of().read_text(encoding="utf-8"))
 
+    def test_receipt_metadata_all_opening_paths_and_legacy_nulls(self):
+        commit = "a" * 40
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = use_sink(tmp)
+            make_clone(tmp / "repo", ALPHA)
+            (sink.parent / "receipt.json").write_text(
+                json.dumps({"version": 4, "source_commit": commit}),
+                encoding="utf-8",
+            )
+            run_cmd(tmp / "repo", "run-state", "from-state", "--note", "opened")
+            self.assertEqual(
+                {"receipt_version": 4, "source_commit": commit},
+                identity_doc("from-state")["orchflows"],
+            )
+            run_cmd(
+                tmp / "repo", "new", "from-new", "T1", "--executor", "orch-tdd",
+                "--objective", "one", "--criterion",
+                "x | oracle: y | oracle_class: deterministic",
+            )
+            self.assertEqual(
+                {"receipt_version": 4, "source_commit": commit},
+                identity_doc("from-new")["orchflows"],
+            )
+
+        for label, receipt in (
+            ("missing", None),
+            ("corrupt", "{not json"),
+            ("legacy", json.dumps({"scope": "user"})),
+        ):
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                sink = use_sink(tmp)
+                repo = make_clone(tmp / "repo", ALPHA)
+                if receipt is not None:
+                    (sink.parent / "receipt.json").write_text(receipt, encoding="utf-8")
+                run_cmd(repo, "run-state", label, "--note", "opened")
+                self.assertEqual(
+                    {"receipt_version": None, "source_commit": None},
+                    identity_doc(label)["orchflows"],
+                )
+
     def test_the_timestamp_shape_has_one_owner_in_this_script(self):
         """A second literal is how `claimed_at` and `opened_at` come to
         disagree. The count is what catches one being pasted back in; a
@@ -4555,7 +4597,8 @@ class RunIdentitySpecificationTest(unittest.TestCase):
         self.assertIn(tickets_mod.RUN_IDENTITY_NAME, docstring)
         for field in ("run", "sink_convention", "opened_at", "project.root",
                       "project.origin", "project.name", "workspaces[].path",
-                      "workspaces[].first_seen"):
+                      "workspaces[].first_seen", "orchflows.receipt_version",
+                      "orchflows.source_commit"):
             with self.subTest(field):
                 self.assertIn(field, docstring)
 
@@ -4569,8 +4612,11 @@ class RunIdentitySpecificationTest(unittest.TestCase):
                 .read_text(encoding="utf-8")
             )
             self.assertEqual(
-                ["opened_at", "project", "run", "sink_convention", "workspaces"],
+                ["opened_at", "orchflows", "project", "run", "sink_convention", "workspaces"],
                 sorted(identity),
+            )
+            self.assertEqual(
+                ["receipt_version", "source_commit"], sorted(identity["orchflows"])
             )
             self.assertEqual(["name", "origin", "root"], sorted(identity["project"]))
             self.assertEqual(

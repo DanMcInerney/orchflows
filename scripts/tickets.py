@@ -49,6 +49,11 @@ else about it:
 - ``run`` — the run id; equals the name of the directory holding the file.
 - ``sink_convention`` — integer: the sink layout it was written under.
 - ``opened_at`` — when the run's first write landed; never rewritten.
+- ``orchflows`` — the installed library identity captured when the run opens.
+  ``orchflows.receipt_version`` — the installer receipt schema version, null
+  when the receipt is missing, corrupt or legacy; ``orchflows.source_commit``
+  — the exact installed-from commit from that receipt, likewise null rather
+  than inferred.
 - ``project`` — which project owns this run id; never rewritten once set.
   ``project.root`` — absolute path of the **main** checkout, a linked
   worktree resolved to it and a submodule to its superproject;
@@ -736,6 +741,32 @@ def _writer_identity():
     )
 
 
+def _installed_orchflows_metadata() -> dict:
+    """The installer receipt fields a new run freezes, explicitly nullable.
+
+    The receipt is user-scope beside the state sink. It is an observation,
+    never a repair target: missing, unreadable, non-object and legacy shapes
+    all say that exact installed identity is unavailable, so no repository
+    revision is guessed in its place.
+    """
+
+    missing = {"receipt_version": None, "source_commit": None}
+    try:
+        receipt_path = state_root.state_root().parent / "receipt.json"
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError):
+        return missing
+    if not isinstance(receipt, dict):
+        return missing
+    version = receipt.get("version")
+    if isinstance(version, bool) or not isinstance(version, int):
+        version = None
+    commit = receipt.get("source_commit")
+    if not isinstance(commit, str) or not commit.strip():
+        commit = None
+    return {"receipt_version": version, "source_commit": commit}
+
+
 # Windows has no unconditional atomic replace, and both sides of one pay
 # for it. ``MoveFileEx`` answers ERROR_ACCESS_DENIED -- WinError 5, which
 # reads like a permission problem and is not one -- for as long as any other
@@ -823,6 +854,7 @@ def _identity_document(run: str, path: Path, project: dict, workspace: str, now)
             "run": run,
             "sink_convention": SINK_CONVENTION,
             "opened_at": stamp,
+            "orchflows": _installed_orchflows_metadata(),
             "project": project,
             "workspaces": [entry],
         }, None
@@ -884,6 +916,20 @@ def _write_identity(run_dir: Path, document: dict) -> None:
     except BaseException:
         temporary.unlink(missing_ok=True)
         raise
+
+
+def _identity_update(run: str, now):
+    """Prepare this writer's one immutable run-identity update."""
+
+    runs_root = _runs_root()
+    if runs_root is None:
+        return None, None, {"error": NO_SINK_ERROR}
+    run_dir = runs_root / run
+    project, workspace = _writer_identity()
+    document, refusal = _identity_document(
+        run, run_dir / RUN_IDENTITY_NAME, project, workspace, now
+    )
+    return run_dir, document, refusal
 
 
 # --- manual frontmatter parsing ---------------------------------------------
@@ -2423,11 +2469,20 @@ def _issue_ticket(run: str, ticket_id: str, text: str):
                 "one composite gate. Open a successor run for another "
                 "deliverable kind. Nothing was written"
             }
+    identity_dir, identity, refusal = _identity_update(
+        run, datetime.now(timezone.utc)
+    )
+    if refusal is not None:
+        return refusal
     try:
         ticket_path.parent.mkdir(parents=True, exist_ok=True)
         with open(ticket_path, "w", encoding="utf-8", newline="\n") as handle:
             handle.write(text)
+        if identity is not None:
+            identity_dir.mkdir(parents=True, exist_ok=True)
+            _write_identity(identity_dir, identity)
     except OSError as error:
+        ticket_path.unlink(missing_ok=True)
         return {"error": f"unwritable ticket: {error}"}
     return {
         "new": {
@@ -2649,6 +2704,11 @@ def _cmd_instantiate(rest):
             f"{existing_roots + incoming_roots}: one physical run has one "
             "root and one composite gate. Nothing was written"
         }
+    identity_dir, identity, refusal = _identity_update(
+        run, datetime.now(timezone.utc)
+    )
+    if refusal is not None:
+        return refusal
     written = []
     try:
         run_dir.mkdir(parents=True, exist_ok=True)
@@ -2656,6 +2716,9 @@ def _cmd_instantiate(rest):
             with open(path, "w", encoding="utf-8", newline="\n") as handle:
                 handle.write(text)
             written.append(path)
+        if identity is not None:
+            identity_dir.mkdir(parents=True, exist_ok=True)
+            _write_identity(identity_dir, identity)
     except OSError as error:
         # All or none: a half-instantiated template is a run with a graph
         # that has no terminal and dependencies that never complete.
@@ -4479,13 +4542,8 @@ def _cmd_run_state(rest):
                 "overwrite it deliberately, or write it under another name"
             }
         replaced = target.exists()
-    project, workspace = _writer_identity()
-    document, refusal = _identity_document(
-        run,
-        identity_dir / RUN_IDENTITY_NAME,
-        project,
-        workspace,
-        datetime.now(timezone.utc),
+    identity_dir, document, refusal = _identity_update(
+        run, datetime.now(timezone.utc)
     )
     # The identity gate runs before the payload and before either directory
     # exists: a refused write leaves the worklog, the artifact and the

@@ -926,6 +926,39 @@ class NewTest(unittest.TestCase):
                 path.name: path.read_bytes() for path in run_dir.glob("*.md")
             })
 
+    def test_new_and_instantiate_share_immutable_run_identity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = use_sink(tmp)
+            commit = "b" * 40
+            (sink.parent / "receipt.json").write_text(
+                json.dumps({"version": 4, "source_commit": commit}),
+                encoding="utf-8",
+            )
+            self.assertNotIn("error", run_cmd(*new_args()))
+            identity_path = sink / "runs" / "testrun" / "run.json"
+            opened = identity_path.read_bytes()
+            directory = make_template(tmp, {"A": stub("A"), "B": stub("B", "[A]")})
+            appended = run_cmd(
+                "instantiate", str(directory), "--run", "testrun",
+                "--set", "target=scratch/x.txt",
+            )
+            self.assertNotIn("error", appended)
+            self.assertEqual(opened, identity_path.read_bytes())
+
+            separate = run_cmd(
+                "instantiate", str(directory), "--run", "template-run",
+                "--set", "target=scratch/x.txt",
+            )
+            self.assertNotIn("error", separate)
+            instantiated = json.loads(
+                (sink / "runs" / "template-run" / "run.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(
+                {"receipt_version": 4, "source_commit": commit},
+                instantiated["orchflows"],
+            )
+
     def test_each_required_part_is_refused_by_name(self):
         with tempfile.TemporaryDirectory() as tmp:
             use_sink(Path(tmp))
