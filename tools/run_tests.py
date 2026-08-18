@@ -79,7 +79,7 @@ def meaningful_sys_path(entries):
     or temporary tree remains residue rather than inheriting this exception.
     """
 
-    temp_root = os.path.normcase(os.path.abspath(tempfile.gettempdir()))
+    temp_root = os.path.normcase(os.path.realpath(tempfile.gettempdir()))
     meaningful = []
     for entry in entries:
         try:
@@ -87,7 +87,7 @@ def meaningful_sys_path(entries):
         except TypeError:
             meaningful.append(entry)
             continue
-        absolute = os.path.normcase(os.path.abspath(raw))
+        absolute = os.path.normcase(os.path.realpath(raw))
         if absolute in IMPORT_BOOTSTRAP_ROOTS:
             continue
         try:

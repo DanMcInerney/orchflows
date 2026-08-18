@@ -19,6 +19,7 @@ import tempfile
 import textwrap
 import unittest
 from pathlib import Path
+from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
@@ -115,6 +116,25 @@ class TestGuardedSeams(unittest.TestCase):
         self.assertEqual(b"", completed.stderr, completed.stderr)
         self.assertEqual(0, completed.returncode, report)
         self.assertIn("OK", report)
+
+    def test_an_expired_scratch_path_matches_a_resolved_temp_alias(self):
+        alias_root = os.path.join(tempfile.gettempdir(), "temp-alias")
+        resolved_root = os.path.join(tempfile.gettempdir(), "temp-target")
+        expired = os.path.join(resolved_root, "expired")
+
+        def resolve_alias(path):
+            if os.path.normcase(os.path.abspath(path)) == os.path.normcase(
+                os.path.abspath(alias_root)
+            ):
+                return resolved_root
+            return path
+
+        with (
+            mock.patch.object(run_tests.tempfile, "gettempdir", return_value=alias_root),
+            mock.patch.object(run_tests.os.path, "realpath", side_effect=resolve_alias),
+            mock.patch.object(run_tests.os.path, "exists", return_value=False),
+        ):
+            self.assertEqual((), run_tests.meaningful_sys_path((expired,)))
 
     def test_each_whole_interpreter_leak_is_rejected_and_named(self):
         for seam, statement in self.LEAKS.items():
