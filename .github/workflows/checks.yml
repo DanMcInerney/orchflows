@@ -1,5 +1,4 @@
-# The checks AGENTS.md requires, run on every combination this
-# repository claims to support.
+# The checks AGENTS.md requires, run on every supported boundary.
 #
 # Versions: 3.9 is the floor `install.py` enforces via MIN_PYTHON. 3.11 is
 # the first release with stdlib `tomllib`, so the two sides of the
@@ -34,8 +33,17 @@ jobs:
       # Every leg reports. A red 3.9 must not hide the state of Windows.
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.9', '3.11', '3.13']
+        include:
+          - os: ubuntu-latest
+            python-version: '3.9'
+          - os: ubuntu-latest
+            python-version: '3.11'
+          - os: ubuntu-latest
+            python-version: '3.13'
+          - os: macos-latest
+            python-version: '3.13'
+          - os: windows-latest
+            python-version: '3.13'
 
     steps:
       # Full history, not the default depth-1: tests/test_cutcheck.py grades

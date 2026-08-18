@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import io
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -195,6 +196,23 @@ class TestGuardedSeams(unittest.TestCase):
 
 
 class TestWorkflowContract(unittest.TestCase):
+    def test_ci_has_exactly_the_five_supported_boundary_legs(self):
+        workflow = CHECKS_YML.read_text(encoding="utf-8")
+        legs = re.findall(
+            r"- os: ([a-z-]+)\s+python-version: ['\"]([0-9.]+)['\"]",
+            workflow,
+        )
+        self.assertEqual(
+            [
+                ("ubuntu-latest", "3.9"),
+                ("ubuntu-latest", "3.11"),
+                ("ubuntu-latest", "3.13"),
+                ("macos-latest", "3.13"),
+                ("windows-latest", "3.13"),
+            ],
+            legs,
+        )
+
     def test_ci_runs_the_regression_suite_once_through_the_parallel_runner(self):
         workflow = CHECKS_YML.read_text(encoding="utf-8")
         self.assertEqual(1, workflow.count("run: python tools/run_tests.py"))
