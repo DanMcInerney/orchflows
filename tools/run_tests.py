@@ -57,6 +57,34 @@ def guarded_state() -> dict:
     }
 
 
+def meaningful_sys_path(entries):
+    """Drop expired scratch roots, which can no longer affect imports.
+
+    Isolated-tree tests execute copied tools whose lazy imports put that
+    temporary tree on ``sys.path``. ``TemporaryDirectory`` removes the tree
+    before the module returns; the dead absolute entry is inert in this
+    single-purpose child and is not live whole-interpreter residue.
+    """
+
+    temp_root = os.path.normcase(os.path.abspath(tempfile.gettempdir()))
+    meaningful = []
+    for entry in entries:
+        try:
+            raw = os.fspath(entry)
+        except TypeError:
+            meaningful.append(entry)
+            continue
+        absolute = os.path.normcase(os.path.abspath(raw))
+        try:
+            in_scratch = os.path.commonpath((temp_root, absolute)) == temp_root
+        except ValueError:
+            in_scratch = False
+        if in_scratch and absolute != temp_root and not os.path.exists(absolute):
+            continue
+        meaningful.append(entry)
+    return tuple(meaningful)
+
+
 def leaked_seams(before: dict):
     """Name every guarded seam whose identity or value escaped a test."""
 
@@ -75,7 +103,10 @@ def leaked_seams(before: dict):
     if os.chdir is not chdir or cwd_leaked:
         leaked.append("os.chdir")
     path_object, path_value = before["sys.path"]
-    if sys.path is not path_object or tuple(sys.path) != path_value:
+    if (
+        sys.path is not path_object
+        or meaningful_sys_path(sys.path) != meaningful_sys_path(path_value)
+    ):
         leaked.append("sys.path")
     return leaked
 

@@ -76,7 +76,10 @@ class TestGuardedSeams(unittest.TestCase):
         "ui.html.escape": "from scripts import ui\nui.html.escape = lambda value: value",
         "pathlib.Path.open": "from pathlib import Path\nPath.open = lambda *args, **kwargs: None",
         "os.chdir": "import os\nfrom pathlib import Path\nos.chdir(str(Path(__file__).parent))",
-        "sys.path": "import sys\nsys.path.append('leaked-by-test')",
+        "sys.path": (
+            "import sys\nfrom pathlib import Path\n"
+            "sys.path.append(str(Path(__file__).parent))"
+        ),
     }
 
     def leaking_module(self, statement: str) -> str:
@@ -92,6 +95,18 @@ class TestGuardedSeams(unittest.TestCase):
 
     def test_a_clean_module_is_accepted(self):
         completed = run_fixture(self.CLEAN)
+        report = completed.stdout.decode("utf-8", "replace")
+        self.assertEqual(b"", completed.stderr, completed.stderr)
+        self.assertEqual(0, completed.returncode, report)
+        self.assertIn("OK", report)
+
+    def test_an_expired_scratch_import_path_is_not_live_residue(self):
+        source = self.leaking_module(
+            "import sys\nimport tempfile\n"
+            "with tempfile.TemporaryDirectory() as tmp:\n"
+            "    sys.path.append(tmp)"
+        )
+        completed = run_fixture(source)
         report = completed.stdout.decode("utf-8", "replace")
         self.assertEqual(b"", completed.stderr, completed.stderr)
         self.assertEqual(0, completed.returncode, report)
