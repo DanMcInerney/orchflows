@@ -57,8 +57,13 @@ from . import (
 from ._support import bluesky_extract as _extract
 
 URI_KEY = _extract.URI_KEY
-_post_record = _extract._post_record
+FIELD_OMITTED = "field_omitted"
+exact_count = _extract.exact_count
 _text = _extract._text
+
+
+def _post_record(position: int, post: Mapping[str, Any]) -> NativeRecord:
+    return _extract._post_record(position, post, FIELD_OMITTED)
 
 # The search surface, and this adapter's primary: a step naming a query and no
 # operation is asking Bluesky to search.

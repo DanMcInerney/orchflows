@@ -51,7 +51,6 @@ POST_ROW_KEYS = (URI_KEY, TEXT_KEY, HANDLE_KEY, CREATED_AT_KEY)
 
 ROUTE_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%S"
 RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
-FIELD_OMITTED = "field_omitted"
 
 
 def record_key(uri: str) -> str:
@@ -151,7 +150,9 @@ def reply_parents_of(post: Mapping[str, Any]) -> Tuple[str, str]:
     return (parent, root)
 
 
-def _post_record(position: int, post: Mapping[str, Any]) -> NativeRecord:
+def _post_record(
+    position: int, post: Mapping[str, Any], field_omitted: str
+) -> NativeRecord:
     """One post as either method's post view described it."""
 
     uri = _text(post.get(URI_KEY))
@@ -183,5 +184,5 @@ def _post_record(position: int, post: Mapping[str, Any]) -> NativeRecord:
         engagement=_engagement(post),
         attributes=tuple(named),
         native_position=position,
-        loss=(FIELD_OMITTED,) if _missing(row, POST_ROW_KEYS) else (),
+        loss=(field_omitted,) if _missing(row, POST_ROW_KEYS) else (),
     )
