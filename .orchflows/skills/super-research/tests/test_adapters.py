@@ -3809,6 +3809,33 @@ class YoutubeCommentsOffTest(unittest.TestCase):
             youtube_innertube.COMMENT_SECTION_IDENTIFIER, " ".join(with_a_token.warnings)
         )
 
+    def test_a_missing_container_is_still_drift(self):
+        """The absence that is not the video's, which the branch above widens past.
+
+        Both payloads are built beside the fixture rather than by editing it,
+        because what is asserted is the difference between them and the page
+        that reads whole: the same watch page with the container this module
+        walks removed, and a continuation call answering with an endpoint list
+        and no container either. Neither states anything about comments, so
+        neither can be read as a video that has none — calling either empty
+        would report a comment section nobody looked in as one nobody wrote
+        in, which is the reading `schema_drift` exists to prevent.
+        """
+
+        no_container = json.loads(read_youtube("next_comments_off.json"))
+        del no_container[youtube_innertube.WATCH_NEXT_PATH[0]]
+
+        gone, _ = youtube_comments_page(no_container)
+        neither, _ = youtube_comments_page(
+            {youtube_innertube.RECEIVED_ENDPOINTS_KEY: []}
+        )
+
+        for page in (gone, neither):
+            with self.subTest(warning=page.warnings):
+                self.assertEqual(page.outcome, "failed")
+                self.assertEqual(page.loss, ("schema_drift",))
+                self.assertEqual(page.records, ())
+
 
 VIEW_MODEL_FIXTURE = "next_comment_view_models.json"
 
