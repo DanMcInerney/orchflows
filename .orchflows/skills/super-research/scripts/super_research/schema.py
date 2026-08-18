@@ -228,10 +228,14 @@ class StepResult:
     # Last and defaulted, for `attributes`' reason above: `dataclasses.asdict`
     # is how an artifact crosses a ticket, so an additive field reaches every
     # reader while a reordered one breaks any caller that constructs positionally.
-    # Empty is the one thing they mean that a step never does — a step names a
-    # kind or `parse_manifest` refuses it — so an empty `kind` says this result
-    # was built by hand and cannot answer what its step was, which is a
-    # different fact from either kind and is read as neither.
+    # Empty is the one thing an emitted `kind` never is — `_parse_step` refuses
+    # a step whose kind is absent or outside `STEP_KINDS` — so an empty `kind`
+    # says this result was built by hand and cannot answer what its step was,
+    # which is a different fact from either kind and is read as neither. It says
+    # that of `kind` alone: an empty `query` is a real step's own, `_parse_step`
+    # requires none, and `coverage.DEPTH_TARGETS["reddit_archive"]` declares its
+    # one operation under the empty key, so a planned and parsed depth step
+    # carries `query=""`.
     kind: str = ""
     query: str = ""
 

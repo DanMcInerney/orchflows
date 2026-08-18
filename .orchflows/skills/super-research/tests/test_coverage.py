@@ -114,12 +114,16 @@ def artifact(steps=(), records=()):
     )
 
 
-# The representation kinds this adapter's own descriptors declare, read off the
-# source rather than spelled here. They are what the review reads a second read
-# by: a record that did not arrive at the kind discovery answers on is that item
-# again, at another representation. A literal here would let the two drift.
 PROTOCOL_PATH = Path(__file__).resolve().parent.parent / "references" / "protocol.md"
 
+# The representation kinds this adapter's own descriptors declare, read off the
+# source rather than spelled here. They are what a *record* carries, and the
+# fixtures below set them so a record looks like what it would look like in the
+# field. The review no longer reads them at all: deciding depth from the kind a
+# record arrived at is the inference this change deleted, and it is what marked
+# plain search rows as deepened. A literal here would let the fixtures drift
+# from the adapter; a sentence saying the review consults them would leave the
+# wrong mental model exactly where the next author opens the file.
 YOUTUBE_DISCOVERED_AS = youtube_innertube.DESCRIPTOR.representation_kind
 YOUTUBE_TRANSCRIPT_AS = youtube_innertube.TRANSCRIPT_DESCRIPTOR.representation_kind
 
@@ -584,6 +588,18 @@ class DepthReviewTest(unittest.TestCase):
         self.assertNotIn(coverage.NOTHING_HYDRATED, codes(under("discovery", "next:vid")))
         self.assertNotIn(coverage.NOTHING_HYDRATED, codes(under("discovery", "transcript:vid")))
         self.assertNotIn(coverage.NOTHING_HYDRATED, codes(under("hydration", "player")))
+        # Naming a depth operation is not enough: `_is_depth` asks
+        # `DEPTH_TARGETS` which *kind* that operation is, and only a
+        # paging one rides a discovery step. `player` answers in one call,
+        # so a discovery step naming it holds a continuation nothing
+        # publishes and deepens nothing — the near miss a hand-written or
+        # hand-amended manifest reaches, and the reason the row's `kind`
+        # column exists. Held here because the clause is now one rule read
+        # from both sides, so a wrong answer is wrong in both reviews.
+        self.assertEqual(
+            subjects(under("discovery", "player:vid"), coverage.NOTHING_HYDRATED),
+            ["youtube_innertube"],
+        )
 
     def test_a_depth_only_artifact_draws_none(self):
         """The 57-comment case, in the shape `plan_depth`'s own steps return it.
@@ -711,27 +727,62 @@ class DepthReviewTest(unittest.TestCase):
         silence-by-proxy. Both readings are asserted, because a record that
         counted as discovery would re-draw the false advisory and one that
         counted as depth would suppress the true one.
+
+        Holding both is what decides the fixture's shape, and an artifact of
+        one adapter and one unreadable record cannot: it comes back `()`
+        whether that record reads as depth or as neither, so the suppression
+        half — the half this replacement inherited from the clause it replaced
+        — would be claimed here and asserted nowhere. So each fixture carries a
+        real search-only step of its own, which puts a true `nothing_hydrated`
+        for `youtube_innertube` on the table where a record read as depth
+        suppresses it; and each unreadable record is doubled, one on that same
+        adapter and one on `reddit_shreddit`, which nothing else in the
+        artifact mentions and which a record read as discovery would draw a
+        second advisory for. One assertion, red in both directions.
         """
 
         # At the kind this adapter's discovery answers on and naming no parent:
         # a search row, which is the shape the old clause read as discovery.
         row = record(
-            "y1", "youtube_innertube", native_item_id="vid",
+            "y1", "youtube_innertube", step_id="yt", native_item_id="vid",
             representation_kind=YOUTUBE_DISCOVERED_AS,
         )
-        orphaned = artifact(records=[replace(row, step_id="gone")])
+        searched = step_result("yt", "youtube_innertube", "discovery", "search:btc")
+        same_adapter = replace(row, record_id="y2", native_item_id="vid2")
+        other_adapter = record("r1", "reddit_shreddit", native_item_id="post")
+        # A `StepResult` built the way a caller builds one by hand: every
+        # required field given, `kind` left to its default.
+        by_hand = dict(route_id="r", pages=1, records_received=1, records_kept=1, outcome="ok")
+
+        orphaned = artifact(
+            steps=[searched],
+            records=[
+                row,
+                replace(same_adapter, step_id="gone"),
+                replace(other_adapter, step_id="gone"),
+            ],
+        )
         kindless = artifact(
             steps=[
-                schema.StepResult(
-                    step_id="s1", adapter_id="youtube_innertube", route_id="r", pages=1,
-                    records_received=1, records_kept=1, outcome="ok",
-                )
+                searched,
+                schema.StepResult(step_id="s1", adapter_id="youtube_innertube", **by_hand),
+                schema.StepResult(step_id="s2", adapter_id="reddit_shreddit", **by_hand),
             ],
-            records=[row],
+            records=[
+                row,
+                replace(same_adapter, step_id="s1"),
+                replace(other_adapter, step_id="s2"),
+            ],
         )
 
-        self.assertEqual(coverage.review_artifact(orphaned), ())
-        self.assertEqual(coverage.review_artifact(kindless), ())
+        self.assertEqual(
+            subjects(coverage.review_artifact(orphaned), coverage.NOTHING_HYDRATED),
+            ["youtube_innertube"],
+        )
+        self.assertEqual(
+            subjects(coverage.review_artifact(kindless), coverage.NOTHING_HYDRATED),
+            ["youtube_innertube"],
+        )
 
 
 class StepIdentityTest(unittest.TestCase):
