@@ -1,48 +1,16 @@
-"""Runner seam: the core owns dispatch, and the run a manifest becomes.
+"""Runner facade: literal adapter dispatch, paging, and ``run_step``.
 
-*Dispatch.* Adapters are reached only through the literal branches in
-:func:`descriptor_for` and :func:`call_adapter` — one ``if`` per adapter
-module, statically imported, both covering exactly :data:`ADAPTER_IDS`. There
-is no registry, no dynamic import, and no ``getattr`` dispatch, so exact
-search over an adapter's name finds every place the core can call it.
-
-*The run.* One validated manifest becomes one immutable artifact and the
-ledger of how: one native page per adapter call, and the core alone owning
-the caps and the stop. Paging is here and nowhere else: :func:`planned_calls`
-is the only place a manifest becomes an ``AdapterRequest`` and never sets a
-cursor, so the continuation :func:`run_step` builds from the page it just read
-is the single site one enters a request at, bounded by the step's ``max_items``,
-by its own ``max_pages`` where it declares one, and by
-:data:`MAX_PAGES_PER_STEP` where it does not.
-
-*Concurrency, and where it stops.* A ``staged`` run executes its steps one at
-a time in declared order. A ``fused`` run executes them as **lanes** — one lane
-per adapter, each lane serial in declared order, lanes overlapping — which is
-exactly the placement :func:`ledger.schedule_of` has always modelled for that
-mode; the model is now what runs. What makes overlap safe is not here: the
-governor takes an origin's lock around every read (:mod:`.pacing`), so an origin
-sees one read at a time whatever the lanes do, and a step's inputs are frozen
-in the manifest, so no lane reads what another produced. The artifact is the
-same either way — records are assembled in declared step order after every lane
-returns — and the one thing the mode moves is wall clock. This is the one
-module that holds a pool.
-
-Three concerns this module used to own were moved to one-read-size siblings
-and are re-exported below under the names they have always had —
-:mod:`.pacing` for the measured ceiling waited out per route, :mod:`.ledger`
-for the work ledger and the schedule a mode admits, and :mod:`.ordering` for
-the five named views. Each name still has exactly one definition; this module
-stays the one address the suite and the CLI reach it at.
-
-Reliability bar: nothing here reaches the network or the filesystem. The
-carrier is injected, the clock is injected, and both have offline stand-ins.
+Every adapter is statically imported and reached through one literal branch in
+both :func:`descriptor_for` and :func:`call_adapter`. The facade alone turns a
+returned cursor into another request and applies the caller and core caps.
+Planning and scheduling live in private support, while their established names
+remain available here for the suite and CLI. The carrier and clock stay
+injected, so this seam reaches neither network nor filesystem on its own.
 """
 
 from __future__ import annotations
 
 import time
-from collections import OrderedDict
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from typing import Callable, Dict, List, Optional, Tuple
 
@@ -96,6 +64,10 @@ from .pacing import (
     route_budgets,
     tick_us,
 )
+from ._support.runner_plan import artifact_id_for, in_window, planned_calls, reached_origin
+from ._support.runner_plan import refused_step as _refused_step
+from ._support.runner_schedule import MAX_CONCURRENT_LANES, StepOutcome, lanes_of
+from ._support import runner_schedule
 
 
 # Every adapter this core can reach, spelled once. It is a literal tuple, not a
@@ -291,111 +263,6 @@ def declared_descriptors() -> Dict[str, AdapterDescriptor]:
         if descriptor is not None:
             found[adapter_id] = descriptor
     return found
-
-
-def planned_calls(step: schema.AcquisitionStep) -> Tuple[Tuple[AdapterRequest, str], ...]:
-    """Every bounded call this step authorizes, paired with its discovery locator.
-
-    A discovery step authorizes one call. A hydration step authorizes one
-    call per caller-frozen selected hit, which is what makes each hydration
-    record's provenance exact rather than inferred.
-    """
-
-    if step.kind == "discovery":
-        return (
-            (
-                AdapterRequest(
-                    step_id=step.step_id,
-                    query=step.query,
-                    window_start=step.window_start,
-                    window_end=step.window_end,
-                ),
-                "",
-            ),
-        )
-    return tuple(
-        (
-            AdapterRequest(
-                step_id=step.step_id,
-                target_ids=(hit.target_id,),
-                window_start=step.window_start,
-                window_end=step.window_end,
-            ),
-            normalize.normalized_locator(hit.discovery_locator),
-        )
-        for hit in step.selected_hits
-    )
-
-
-def in_window(step: schema.AcquisitionStep, published_at: str) -> bool:
-    """Whether one record's own time falls inside the step's window.
-
-    A record stating no time is inside every window: the filter drops what the
-    origin dated outside the bounds and never decides the unknown. A bound the
-    step left empty binds nothing. Instants compare as the ordering compares
-    them — parsed, never as strings — so a stamp in another spelling sorts as
-    missing and is kept.
-    """
-
-    if not step.window_start and not step.window_end:
-        return True
-    moment = instant_seconds(published_at)
-    if moment is None:
-        return True
-    start = instant_seconds(step.window_start) if step.window_start else None
-    end = instant_seconds(step.window_end) if step.window_end else None
-    if start is not None and moment < start:
-        return False
-    if end is not None and moment > end:
-        return False
-    return True
-
-
-def artifact_id_for(manifest_id: str) -> str:
-    return "artifact:" + manifest_id
-
-
-def _refused_step(step: schema.AcquisitionStep, route_id: str, reason: str) -> schema.StepResult:
-    return schema.StepResult(
-        step_id=step.step_id,
-        adapter_id=step.adapter_id,
-        route_id=route_id,
-        pages=0,
-        records_received=0,
-        records_kept=0,
-        outcome="refused",
-        loss=(reason,),
-        # A refusal is a step whose kind and query are known — the step is in
-        # hand — and it is the one result whose records cannot say what it was,
-        # because it has none.
-        kind=step.kind,
-        query=step.query,
-    )
-
-
-def reached_origin(page: NativePage) -> bool:
-    """Whether this page cost the origin a read.
-
-    Three ways it did not, and until an adapter could refuse there was only one.
-    A run's own memory answered, which is what ``cache_hit`` says. Or the
-    adapter refused before making a call at all — a target it does not serve
-    costs a page and no read — and billing that as a call would put work in the
-    ledger that no origin ever saw. Or the read raised instead of answering,
-    which is what ``unreachable`` says: nothing took the request, and the
-    governor — the one place a route's budget is spent — charges no interval
-    and logs no read for a fetch that raised (``pacing.RateGovernor._paced_fetch``
-    charges and logs only after the carrier returns). Billing it here would put
-    a call in the ledger that the governor's own log does not have, and the two
-    are pinned equal. ``refused`` and ``unreachable`` are the two outcomes that
-    mean no origin was asked to spend anything; every other one, failures
-    included, describes an answer this host actually got.
-    """
-
-    return (
-        page.outcome != "refused"
-        and cache.CACHE_HIT not in page.loss
-        and transport.UNREACHABLE not in page.loss
-    )
 
 
 def _offers_another_page(
@@ -601,48 +468,6 @@ def run_step(
     )
 
 
-# The most lanes a fused run overlaps. Lanes are per adapter, so this bounds
-# how many origins this package has a read in flight at, and it is well under
-# the roster's adapter count on purpose: a run naming every adapter still puts
-# at most this many reads on the wire at once, and the governor's origin locks
-# hold each origin to one whatever this number is.
-MAX_CONCURRENT_LANES = 8
-
-StepOutcome = Tuple[
-    schema.StepResult, Tuple[schema.AcquisitionRecord, ...], Tuple[PlannedOperation, ...]
-]
-
-
-def lanes_of(
-    steps: Tuple[schema.AcquisitionStep, ...],
-) -> "OrderedDict[str, List[schema.AcquisitionStep]]":
-    """The steps grouped by adapter, each group in declared order.
-
-    A lane is one adapter's steps in the order the manifest declared them.
-    Grouping by adapter rather than by origin is the honest cut from here:
-    which route a step reads is the adapter's decision at read time, and every
-    route one adapter reads is paced and locked by the governor whatever lane
-    it runs in. Two adapters on one origin (Reddit's feed and its shreddit
-    partials, YouTube's InnerTube and its channel feed) still take turns —
-    at the origin's lock rather than here.
-    """
-
-    lanes: "OrderedDict[str, List[schema.AcquisitionStep]]" = OrderedDict()
-    for step in steps:
-        lanes.setdefault(step.adapter_id, []).append(step)
-    return lanes
-
-
-def _run_lane(
-    steps: List[schema.AcquisitionStep],
-    carrier: transport.Transport,
-    artifact_id: str,
-    manifest_id: str,
-    clock: Callable[[], float],
-) -> List[StepOutcome]:
-    return [run_step(step, carrier, artifact_id, manifest_id, clock=clock) for step in steps]
-
-
 def run_steps(
     manifest: schema.AcquisitionManifest,
     carrier: transport.Transport,
@@ -650,38 +475,9 @@ def run_steps(
     clock: Callable[[], float] = time.monotonic,
     lanes: int = MAX_CONCURRENT_LANES,
 ) -> Tuple[StepOutcome, ...]:
-    """Every step's outcome, in declared order, however the mode ran them.
+    """Every step's outcome, in declared order, however the mode ran them."""
 
-    ``staged`` runs the steps one at a time in declared order — a caller
-    stands between one step's output and the next step's input, and a serial
-    line is what that models. ``fused`` runs each adapter's steps as one lane
-    and overlaps up to ``lanes`` of them on a pool, which is the placement
-    :func:`ledger.schedule_of` models for it; a manifest with one lane, or a
-    caller asking for one, runs exactly as ``staged`` does. Outcomes come back
-    in declared step order either way, so the artifact built from them is the
-    same artifact.
-
-    ``lanes`` is a ceiling on overlap and never a floor: one is serial, and a
-    number past :data:`MAX_CONCURRENT_LANES` is that constant. A caller whose
-    clock is a fake — every accounting suite in this package — asks for one,
-    because a fake clock advanced by two threads at once measures the
-    interleaving rather than the work.
-    """
-
-    grouped = lanes_of(manifest.steps)
-    workers = max(1, min(lanes, MAX_CONCURRENT_LANES, len(grouped)))
-    if manifest.mode != "fused" or workers < 2:
-        return tuple(_run_lane(list(manifest.steps), carrier, artifact_id, manifest.manifest_id, clock))
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = [
-            pool.submit(_run_lane, steps, carrier, artifact_id, manifest.manifest_id, clock)
-            for steps in grouped.values()
-        ]
-        by_step_id: Dict[str, StepOutcome] = {}
-        for future in futures:
-            for outcome in future.result():
-                by_step_id[outcome[0].step_id] = outcome
-    return tuple(by_step_id[step.step_id] for step in manifest.steps)
+    return runner_schedule.run_steps(manifest, carrier, artifact_id, run_step, clock, lanes)
 
 
 def run_scheduled(
@@ -692,61 +488,10 @@ def run_scheduled(
     start_tick_us: int = 0,
     lanes: int = MAX_CONCURRENT_LANES,
 ) -> ScheduledRun:
-    """Run one validated manifest to one immutable artifact and its work ledger.
+    """Run one validated manifest to one immutable artifact and its work ledger."""
 
-    Outcomes are assembled in declared order whatever the mode, so an artifact
-    is the same artifact either way; the mode reaches the wall clock the run
-    spends and the schedule the ledger records, and nothing a step produces.
-
-    Naming no carrier is the documented call, and it gets the composed one:
-    :func:`pacing.paced_carrier`, a rate governor over a run-local cache. A
-    caller reaches an unpaced origin only by constructing a carrier and handing
-    it in, which is an act rather than a default — the measured extreme in the
-    roster is one read per thirty seconds, and a run that spends it twice by
-    omission has evaded a limit nobody chose to evade.
-    """
-
-    reached = paced_carrier(clock=clock) if carrier is None else carrier
-    artifact_id = artifact_id_for(manifest.manifest_id)
-    steps: List[schema.StepResult] = []
-    records: List[schema.AcquisitionRecord] = []
-    operations: List[PlannedOperation] = []
-    for result, step_records, step_operations in run_steps(
-        manifest, reached, artifact_id, clock=clock, lanes=lanes
-    ):
-        steps.append(result)
-        records.extend(step_records)
-        operations.extend(step_operations)
-
-    # The one place the run's records and its links meet, and therefore the one
-    # place a fact about the gap between them can be attached. A record is built
-    # from one page and is frozen when it is built, so it cannot know at
-    # construction whether another step discovered it; `type_discovery_gaps`
-    # answers that across the finished set and types what it finds. Ids do not
-    # change, so the links and groups below are the same either side of it.
-    typed = normalize.type_discovery_gaps(tuple(records))
-    loss = tuple(sorted({code for step in steps for code in step.loss}))
-    artifact = schema.AcquisitionArtifact(
-        artifact_id=artifact_id,
-        manifest_id=manifest.manifest_id,
-        mode=manifest.mode,
-        as_of=manifest.as_of,
-        records=typed,
-        steps=tuple(steps),
-        edges=normalize.link_discovery_hydration(typed),
-        groups=normalize.group_records(typed),
-        outcome=schema.reduce_outcomes(tuple(step.outcome for step in steps)),
-        loss=loss,
-    )
-    return ScheduledRun(
-        artifact=artifact,
-        ledger=ledger_of(
-            tuple(operations),
-            manifest,
-            stop_reason=artifact.outcome,
-            dispatch_ordinal=dispatch_ordinal,
-            start_tick_us=start_tick_us,
-        ),
+    return runner_schedule.run_scheduled(
+        manifest, run_step, carrier, clock, dispatch_ordinal, start_tick_us, lanes
     )
 
 
@@ -756,10 +501,6 @@ def run_acquisition(
     clock: Callable[[], float] = time.monotonic,
     lanes: int = MAX_CONCURRENT_LANES,
 ) -> schema.AcquisitionArtifact:
-    """Run one validated manifest to one immutable artifact.
-
-    Naming no carrier composes the paced, caching one; see
-    :func:`run_scheduled`.
-    """
+    """Run one validated manifest to one immutable artifact."""
 
     return run_scheduled(manifest, carrier, clock=clock, lanes=lanes).artifact
