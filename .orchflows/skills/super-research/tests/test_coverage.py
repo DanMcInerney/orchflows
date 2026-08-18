@@ -8,11 +8,15 @@ went wrong, and stays quiet where the manifest was right.
 
 from __future__ import annotations
 
+import dataclasses
+import json
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
-from super_research import adapters, coverage, runner, schema
+from super_research import adapters, coverage, runner, schema, transport
 from super_research.adapters import youtube_innertube
+from tests import helpers
 
 
 def record(
@@ -23,6 +27,7 @@ def record(
     discovery_locator="",
     representation_kind="index",
     native_parent_id="",
+    step_id="s1",
 ):
     """One discovery record, with every field the schema requires supplied."""
 
@@ -30,7 +35,7 @@ def record(
         record_id=record_id,
         artifact_id="art",
         manifest_id="man",
-        step_id="s1",
+        step_id=step_id,
         adapter_id=adapter_id,
         adapter_version="1",
         route_id="r",
@@ -70,6 +75,24 @@ def step(step_id, kind, adapter_id, **kw):
     )
 
 
+def step_result(step_id, adapter_id, kind="discovery", query="", outcome="ok", loss=()):
+    """One `StepResult`, saying what its step was the way `runner` fills it."""
+
+    return schema.StepResult(
+        step_id=step_id,
+        adapter_id=adapter_id,
+        route_id="r",
+        pages=1,
+        records_received=0,
+        records_kept=0,
+        outcome=outcome,
+        loss=tuple(loss),
+        warnings=(),
+        kind=kind,
+        query=query,
+    )
+
+
 def manifest(*steps):
     return schema.AcquisitionManifest(
         manifest_id="m", mode="fused", as_of="2026-08-17T19:00:00Z", steps=tuple(steps)
@@ -95,6 +118,8 @@ def artifact(steps=(), records=()):
 # source rather than spelled here. They are what the review reads a second read
 # by: a record that did not arrive at the kind discovery answers on is that item
 # again, at another representation. A literal here would let the two drift.
+PROTOCOL_PATH = Path(__file__).resolve().parent.parent / "references" / "protocol.md"
+
 YOUTUBE_DISCOVERED_AS = youtube_innertube.DESCRIPTOR.representation_kind
 YOUTUBE_TRANSCRIPT_AS = youtube_innertube.TRANSCRIPT_DESCRIPTOR.representation_kind
 
@@ -434,17 +459,7 @@ class ReviewArtifactTest(unittest.TestCase):
         return artifact(steps=steps, records=records)
 
     def result(self, step_id, outcome="ok", loss=()):
-        return schema.StepResult(
-            step_id=step_id,
-            adapter_id="bluesky",
-            route_id="r",
-            pages=1,
-            records_received=0,
-            records_kept=0,
-            outcome=outcome,
-            loss=tuple(loss),
-            warnings=(),
-        )
+        return step_result(step_id, "bluesky", "discovery", "search:x", outcome, loss)
 
     def test_a_typed_loss_is_named_as_something_the_report_must_state(self):
         found = coverage.review_artifact(
@@ -465,7 +480,10 @@ class ReviewArtifactTest(unittest.TestCase):
 
     def test_a_run_that_discovered_and_never_deepened_says_so(self):
         found = coverage.review_artifact(
-            self.artifact(records=[record("r1", "reddit_shreddit")])
+            self.artifact(
+                steps=[step_result("s1", "reddit_shreddit", "discovery", "search:btc")],
+                records=[record("r1", "reddit_shreddit")],
+            )
         )
 
         self.assertEqual(subjects(found, coverage.NOTHING_HYDRATED), ["reddit_shreddit"])
@@ -473,15 +491,20 @@ class ReviewArtifactTest(unittest.TestCase):
     def test_a_run_that_hydrated_what_it_discovered_draws_nothing(self):
         found = coverage.review_artifact(
             self.artifact(
+                steps=[
+                    step_result("s1", "reddit_shreddit", "discovery", "search:btc"),
+                    step_result("cm", "reddit_shreddit", "hydration", "comments"),
+                ],
                 records=[
                     record("r1", "reddit_shreddit"),
                     record(
                         "r2",
                         "reddit_shreddit",
+                        step_id="cm",
                         discovery_locator="https://example.invalid/a",
                         representation_kind="native",
                     ),
-                ]
+                ],
             )
         )
 
@@ -496,6 +519,13 @@ class DepthReviewTest(unittest.TestCase):
     that still counts hydration steps and hydration records would call the
     deepest manifest this module can build "no depth planned" — and a warning
     that fires on the fix is worse than one that never fired.
+
+    What each review reads is the step: the manifest one reads its
+    `AcquisitionStep`s and the artifact one reads the `StepResult` each record
+    names. Every earlier attempt read record shape instead, and shape cannot
+    answer this — a paging depth step's records look exactly like a search
+    step's, which is what the first case below asserts by handing the same rows
+    to both and demanding two different answers.
     """
 
     def test_a_manifest_planning_paging_depth_draws_none(self):
@@ -516,132 +546,305 @@ class DepthReviewTest(unittest.TestCase):
 
         self.assertNotIn(coverage.DEPTH_NOT_PLANNED, codes(found))
 
-    def test_the_artifact_a_paging_depth_run_returns_draws_none(self):
-        """The shape `plan_depth`'s own steps produce, and the only one they do.
+    def test_depth_is_read_off_the_step(self):
+        """One set of records, three steps, three answers.
 
-        A `next` step is its own dispatch over the records a discovery run
-        already returned, so the artifact it comes back in holds comments and
-        **not** the videos they name — those are in artifact one. The comments
-        can carry no `discovery_locator` either, because the core sets one only
-        on a hydration step's own calls. Asking this artifact to hold the parent
-        as well is what told a caller holding 57 comment records that nothing
-        deepened anything, measured 2026-08-17, so the case is built the way the
-        planner emits it: no video record here at all.
+        The discriminating case, and the one no record-shape test can be: the
+        rows are byte-identical across all three artifacts — same
+        representation kind, no parent, no `discovery_locator` — so every
+        proxy that could be inspected says the same thing about all of them.
+        The only thing that differs is what the step they came from states it
+        was, and the review has to move with it in both directions.
+        """
+
+        rows = [
+            record(
+                "y1",
+                "youtube_innertube",
+                native_item_id="vid",
+                representation_kind=YOUTUBE_DISCOVERED_AS,
+            )
+        ]
+
+        def under(kind, query):
+            return coverage.review_artifact(
+                artifact(
+                    steps=[step_result("s1", "youtube_innertube", kind, query)], records=rows
+                )
+            )
+
+        # `search:` names no depth operation, so this one discovered.
+        self.assertEqual(
+            subjects(under("discovery", "search:btc"), coverage.NOTHING_HYDRATED),
+            ["youtube_innertube"],
+        )
+        # `next:` and `transcript:` are the rows `DEPTH_TARGETS` declares as
+        # paging depth, and a paging depth step is a discovery step by kind —
+        # which is exactly why the kind alone was never enough to read.
+        self.assertNotIn(coverage.NOTHING_HYDRATED, codes(under("discovery", "next:vid")))
+        self.assertNotIn(coverage.NOTHING_HYDRATED, codes(under("discovery", "transcript:vid")))
+        self.assertNotIn(coverage.NOTHING_HYDRATED, codes(under("hydration", "player")))
+
+    def test_a_depth_only_artifact_draws_none(self):
+        """The 57-comment case, in the shape `plan_depth`'s own steps return it.
+
+        A `next` step is its own dispatch over records a discovery run already
+        returned, so this artifact holds the comments and **not** the videos
+        they name — those are in artifact one. Every proxy the old clause
+        reached for is therefore absent: no `discovery_locator`, because the
+        core sets one only on a hydration step's own calls, and no parent this
+        artifact holds. Asking the records for it is what told a caller who had
+        just acquired 57 comment records that nothing had deepened anything,
+        measured 2026-08-17. The step says `next:vid`, and that is the read.
         """
 
         found = coverage.review_artifact(
             artifact(
+                steps=[step_result("nx-1", "youtube_innertube", "discovery", "next:vid")],
                 records=[
                     record(
                         "c1",
                         "youtube_innertube",
+                        step_id="nx-1",
                         native_item_id="UgyyGmQ",
-                        native_parent_id="vid",
                         representation_kind=YOUTUBE_DISCOVERED_AS,
                         locator="https://example.invalid/c1",
                     ),
                     record(
                         "c2",
                         "youtube_innertube",
+                        step_id="nx-1",
                         native_item_id="UgyralckD",
-                        native_parent_id="vid",
                         representation_kind=YOUTUBE_DISCOVERED_AS,
                         locator="https://example.invalid/c2",
                     ),
-                ]
+                ],
             )
         )
 
-        self.assertNotIn(coverage.NOTHING_HYDRATED, codes(found))
-
-    def test_the_artifact_a_transcript_step_returns_draws_none(self):
-        """The other paging operation, in the shape its own dispatch returns.
-
-        A transcript names no parent — it *is* the video, at another
-        representation — and the video it is a representation of is in the
-        artifact the discovery run returned. So the kind it arrived at is the
-        whole of what says it is a second read, and it is read off the
-        descriptors rather than off this artifact.
-        """
-
-        found = coverage.review_artifact(
-            artifact(
-                records=[
-                    record(
-                        "t1",
-                        "youtube_innertube",
-                        native_item_id="vid",
-                        representation_kind=YOUTUBE_TRANSCRIPT_AS,
-                    )
-                ]
-            )
-        )
-
-        self.assertNotIn(coverage.NOTHING_HYDRATED, codes(found))
+        self.assertEqual(found, ())
 
     def test_an_artifact_fusing_the_discovery_and_the_depth_draws_none(self):
         """A caller may also fuse both dispatches into one artifact.
 
-        The parent is present here and it changes nothing, which is the point:
-        the two above must not have bought their silence from the boundary.
+        Three steps of three shapes in one artifact, each record read against
+        its own: the search rows are not deepened by sitting beside a
+        transcript, and the transcript is not undeepened by sitting beside
+        them. One adapter deepened something, so the advisory stays quiet.
         """
 
         found = coverage.review_artifact(
             artifact(
+                steps=[
+                    step_result("yt", "youtube_innertube", "discovery", "search:btc"),
+                    step_result("nx-1", "youtube_innertube", "discovery", "next:vid"),
+                    step_result("tx-1", "youtube_innertube", "discovery", "transcript:vid"),
+                ],
                 records=[
                     record(
                         "y1",
                         "youtube_innertube",
+                        step_id="yt",
                         native_item_id="vid",
                         representation_kind=YOUTUBE_DISCOVERED_AS,
                     ),
                     record(
                         "c1",
                         "youtube_innertube",
+                        step_id="nx-1",
                         native_item_id="UgyyGmQ",
                         native_parent_id="vid",
-                        representation_kind=YOUTUBE_DISCOVERED_AS,
                         locator="https://example.invalid/c1",
                     ),
                     record(
                         "t1",
                         "youtube_innertube",
+                        step_id="tx-1",
                         native_item_id="vid",
                         representation_kind=YOUTUBE_TRANSCRIPT_AS,
                     ),
-                ]
+                ],
             )
         )
 
         self.assertNotIn(coverage.NOTHING_HYDRATED, codes(found))
 
-    def test_an_artifact_that_only_searched_still_says_nothing_deepened_it(self):
-        """Silence has to be earned, or the three above prove only that it is easy.
+    def test_a_search_only_artifact_still_draws_it(self):
+        """Silence has to be earned, or the cases above prove only that it is easy.
 
-        Search records at the kind the adapter's discovery answers on, naming no
-        parent: this is what a `search:` step returns and it deepened nothing.
+        A run that called `search:` and stopped: this is the advisory's whole
+        reason to exist, and the change above must not have bought its quiet by
+        going quiet everywhere.
         """
 
         found = coverage.review_artifact(
             artifact(
+                steps=[step_result("yt", "youtube_innertube", "discovery", "search:btc")],
                 records=[
                     record(
                         "y1",
                         "youtube_innertube",
+                        step_id="yt",
                         native_item_id="vid",
                         representation_kind=YOUTUBE_DISCOVERED_AS,
                     ),
                     record(
                         "y2",
                         "youtube_innertube",
+                        step_id="yt",
                         native_item_id="vid2",
                         representation_kind=YOUTUBE_DISCOVERED_AS,
                     ),
-                ]
+                ],
             )
         )
 
         self.assertEqual(subjects(found, coverage.NOTHING_HYDRATED), ["youtube_innertube"])
+
+    def test_a_record_whose_step_this_artifact_does_not_hold_is_read_as_neither(self):
+        """When the step cannot answer, the answer is to say nothing.
+
+        The failure this whole change removes was a review that, unable to read
+        the step, reached for the nearest thing a record looked like. So the one
+        case where the join finds nothing — a hand-assembled artifact, or a
+        `StepResult` built without a kind — draws neither the advisory nor its
+        silence-by-proxy. Both readings are asserted, because a record that
+        counted as discovery would re-draw the false advisory and one that
+        counted as depth would suppress the true one.
+        """
+
+        # At the kind this adapter's discovery answers on and naming no parent:
+        # a search row, which is the shape the old clause read as discovery.
+        row = record(
+            "y1", "youtube_innertube", native_item_id="vid",
+            representation_kind=YOUTUBE_DISCOVERED_AS,
+        )
+        orphaned = artifact(records=[replace(row, step_id="gone")])
+        kindless = artifact(
+            steps=[
+                schema.StepResult(
+                    step_id="s1", adapter_id="youtube_innertube", route_id="r", pages=1,
+                    records_received=1, records_kept=1, outcome="ok",
+                )
+            ],
+            records=[row],
+        )
+
+        self.assertEqual(coverage.review_artifact(orphaned), ())
+        self.assertEqual(coverage.review_artifact(kindless), ())
+
+
+class StepIdentityTest(unittest.TestCase):
+    """A `StepResult` states what its step was, so no reader re-derives it.
+
+    The two facts that decide whether a step was depth — its kind and its query
+    — lived only on the manifest, and an artifact does not carry one. Every
+    reader downstream therefore guessed from record shape, which is the defect
+    `DepthReviewTest` below measures. Both construction sites fill them, the
+    refusal included: a step the core would not run is still a step whose kind
+    and query are known, and the artifact that most needs explaining is exactly
+    the one that would otherwise be unable to say what it asked for.
+    """
+
+    def offline(self, step, pages=1):
+        """``step`` run against canned offline answers, and its result alone."""
+
+        payload = json.dumps(
+            {
+                "platform": "fixture",
+                "cursor_out": "",
+                "records": [
+                    {
+                        "canonical_content_kind": "post",
+                        "canonical_locator": "https://fixture.invalid/p/0",
+                        "native_item_id": "0",
+                        "title": "row 0",
+                    }
+                ],
+            }
+        )
+        clock = helpers.FakeClock()
+        carrier, _ = helpers.offline_transport(
+            clock,
+            {transport.FAKE_OFFLINE_ROUTE: [(200, payload, "application/json")] * pages},
+        )
+        return runner.run_step(step, carrier, "artifact:m", "m", clock=clock.monotonic)[0]
+
+    def test_every_step_result_carries_its_kind_and_query(self):
+        discovery = schema.AcquisitionStep(
+            step_id="d", kind="discovery", adapter_id="fake",
+            query="search:btc", max_items=10,
+        )
+        hydration = schema.AcquisitionStep(
+            step_id="h", kind="hydration", adapter_id="fake", query="comments",
+            selected_hits=(schema.SelectedHit("https://fixture.invalid/p/0", "0"),),
+            max_items=10,
+        )
+        # The core declares no such adapter, so `run_step` refuses before it
+        # reaches the carrier — which is why this one is handed none.
+        refused = schema.AcquisitionStep(
+            step_id="x", kind="discovery", adapter_id="no_such_adapter",
+            query="transcript:vid", max_items=10,
+        )
+
+        results = (
+            self.offline(discovery),
+            self.offline(hydration),
+            runner.run_step(refused, None, "artifact:m", "m")[0],
+        )
+
+        self.assertEqual(results[2].outcome, "refused")
+        self.assertEqual(
+            [(held.kind, held.query) for held in results],
+            [
+                ("discovery", "search:btc"),
+                ("hydration", "comments"),
+                ("discovery", "transcript:vid"),
+            ],
+        )
+
+    def test_the_older_shape_still_constructs_and_still_crosses_as_a_mapping(self):
+        """The two fields are additive, which is what lets an artifact travel.
+
+        `dataclasses.asdict` is how an artifact crosses a ticket, so a field
+        that arrived without a default would break every caller that names its
+        fields by keyword — and one that never reached the mapping would leave
+        the reader on the far side back where it started.
+        """
+
+        older = schema.StepResult(
+            step_id="s", adapter_id="fake", route_id="r", pages=1,
+            records_received=1, records_kept=1, outcome="ok",
+        )
+
+        self.assertEqual((older.kind, older.query), ("", ""))
+        self.assertEqual(dataclasses.asdict(older)["kind"], "")
+        self.assertEqual(dataclasses.asdict(older)["query"], "")
+
+
+class ProtocolDocTest(unittest.TestCase):
+    """The step grammar's owner states the two fields this review joins by."""
+
+    def test_the_protocol_states_what_a_step_result_echoes(self):
+        """Read as backticked names in the paragraph that states the shape.
+
+        A caller assembling or reading an artifact by hand has only this file
+        to learn from that a `StepResult` says what its step was, and the
+        review's whole correctness now rests on those two fields being filled.
+        The wrong result this fails against is the owner describing a
+        `StepResult` that carries neither — the state in which every reader
+        downstream went back to guessing. Paragraph-scoped rather than
+        line-scoped so a reflow of the prose cannot fail it.
+        """
+
+        body = PROTOCOL_PATH.read_text(encoding="utf-8")
+        stated = [block for block in body.split("\n\n") if "`StepResult`" in block]
+
+        self.assertTrue(stated, "protocol.md stopped naming `StepResult`")
+        self.assertTrue(
+            any("`kind`" in block and "`query`" in block for block in stated),
+            "protocol.md names `StepResult` and not the `kind` and `query` it carries",
+        )
 
 
 class SkillDocTest(unittest.TestCase):

@@ -93,6 +93,20 @@ was run under. Grouping never rewrites a record: two records describing one thin
 are held side by side by a group's membership or by a provenance edge, and each
 keeps its own body, time, route, and metric snapshots.
 
+A `StepResult` names its `step_id`, `adapter_id` and `route_id`, what the step
+spent and produced — `pages`, `records_received`, `records_kept` — its `outcome`,
+`loss` and `warnings`, and the step's own `kind` and `query`. An artifact carries
+steps and never the manifest they came from, so those last two are the only place
+a reader can learn what a step *was*: `coverage.review_artifact` decides whether a
+read deepened anything by joining each record to its step through `step_id` and
+reading them, and a reader that could not would be back to inferring depth from
+what a record happens to look like. `runner` fills them at both construction
+sites, the refusal included — a step the core would not run is still a step whose
+kind and query are known. Both are defaulted, so an artifact crossing a ticket as
+`dataclasses.asdict` JSON reaches an older reader unchanged; an empty `kind` says
+this result was assembled by hand rather than run, because `parse_manifest`
+refuses a step that names none.
+
 The retained families, with the fields this delivery actually carries on
 `AcquisitionRecord`:
 
