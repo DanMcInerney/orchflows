@@ -7,8 +7,9 @@ performs whole-interpreter mutations (``install.Path.home``,
 thread parallelism unsound. Threads here only wait on subprocesses.
 
 Scheduling is longest-first from a duration cache written at
-``.orch/run_tests_times.json`` (gitignored runtime state), falling back
-to alphabetical when no cache exists. Results stream as modules finish;
+``.orch/run_tests_times.json`` (gitignored runtime state). On a cold
+repository checkout, known slow suite modules start first; custom test
+directories fall back to alphabetical. Results stream as modules finish;
 a failing module's captured output is reproduced verbatim.
 
 Stdlib only, no network, Python 3.9+, POSIX and Windows.
@@ -35,6 +36,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_TESTS_DIR = ROOT / "tests"
 CACHE_PATH = ROOT / ".orch" / "run_tests_times.json"
+DEFAULT_COLD_ORDER = (
+    "tests.test_cutcheck",
+    "tests.test_tickets",
+    "tests.test_canary_host",
+    "tests.test_installer",
+    "tests.test_validate",
+)
 IMPORT_BOOTSTRAP_ROOTS = frozenset(
     os.path.normcase(os.path.abspath(str(path)))
     for path in (
@@ -222,10 +230,19 @@ def save_times(results) -> None:
         pass  # A timing cache is an optimization; never fail a run for it.
 
 
-def schedule(modules, times):
-    """Longest-first. Untimed modules sort first (unknown cost is the
-    risky one to leave for last), which makes an absent cache exactly
-    alphabetical order."""
+def schedule(modules, times, tests_dir=DEFAULT_TESTS_DIR):
+    """Schedule cached runs longest-first and cold repository runs by prior.
+
+    An unknown module alongside cached durations starts first because its
+    cost is risky. A custom suite has no repository timing evidence, so its
+    cold order stays generic and deterministic.
+    """
+
+    if not times:
+        if Path(tests_dir).resolve() == DEFAULT_TESTS_DIR.resolve():
+            rank = {name: index for index, name in enumerate(DEFAULT_COLD_ORDER)}
+            return sorted(modules, key=lambda name: (rank.get(name, len(rank)), name))
+        return sorted(modules)
 
     return sorted(modules, key=lambda name: (-times.get(name, float("inf")), name))
 
@@ -378,7 +395,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--no-cache",
         action="store_true",
-        help="ignore the duration cache: schedule alphabetically, as a cold checkout does",
+        help="ignore the duration cache: use cold-checkout scheduling",
     )
     parser.add_argument(
         "--tests-dir", default=str(DEFAULT_TESTS_DIR), help="directory of test_*.py (default: tests/)"
@@ -409,11 +426,10 @@ def main(argv=None) -> int:
     )
 
     verbosity = 2 if args.verbose else 1
-    # The cache is gitignored, so CI always schedules alphabetically while
-    # any local checkout that has run once schedules longest-first. Those
-    # are different co-schedulings, and a module only races the modules it
-    # runs beside: `--no-cache` is how a local run reproduces CI's.
-    ordered = schedule(selected, {} if args.no_cache else load_times())
+    # The cache is gitignored, so CI uses the repository's cold-start priors
+    # while a local checkout that has run once schedules from measured time.
+    # `--no-cache` is how a local run reproduces CI's co-scheduling.
+    ordered = schedule(selected, {} if args.no_cache else load_times(), tests_dir)
     jobs = min(args.jobs, len(ordered))
     print("running %d modules across %d workers" % (len(ordered), jobs))
     started = time.monotonic()
