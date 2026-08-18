@@ -198,10 +198,27 @@ class TestGuardedSeams(unittest.TestCase):
 class TestWorkflowContract(unittest.TestCase):
     def test_ci_has_exactly_the_five_supported_boundary_legs(self):
         workflow = CHECKS_YML.read_text(encoding="utf-8")
-        legs = re.findall(
-            r"- os: ([a-z-]+)\s+python-version: ['\"]([0-9.]+)['\"]",
-            workflow,
+        matrix = workflow.split("      matrix:\n", 1)[1].split("\n    steps:", 1)[0]
+        os_axis = re.search(r"^        os: \[([^]]+)\]$", matrix, re.MULTILINE)
+        python_axis = re.search(
+            r"^        python-version: \[([^]]+)\]$", matrix, re.MULTILINE
         )
+        self.assertIsNotNone(os_axis)
+        self.assertIsNotNone(python_axis)
+
+        def values(match):
+            return [value.strip(" '\"") for value in match.group(1).split(",")]
+
+        excluded = set(re.findall(
+            r"- os: ([a-z-]+)\s+python-version: ['\"]([0-9.]+)['\"]",
+            matrix,
+        ))
+        legs = [
+            (os_name, python_version)
+            for os_name in values(os_axis)
+            for python_version in values(python_axis)
+            if (os_name, python_version) not in excluded
+        ]
         self.assertEqual(
             [
                 ("ubuntu-latest", "3.9"),
