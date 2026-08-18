@@ -69,19 +69,11 @@ jobs:
       # rather than substituting an interpreter behind its back.
       - uses: astral-sh/setup-uv@v5
 
-      - name: python tools/validate.py
-        run: python tools/validate.py
-
       # The suite, sharded one module per child interpreter. Thread
       # parallelism is unsound here -- the suite performs ~30
       # whole-interpreter mutations -- so the runner spawns a process per
-      # module and rejects any guarded seam a module leaves dirty.
+      # module and rejects any guarded seam a module leaves dirty. Its
+      # TestValidatorAgainstRepo and DryRunOracleTest cases cover the
+      # validator and installer dry run without repeating either command.
       - name: python tools/run_tests.py
         run: python tools/run_tests.py
-
-      # Neither host CLI is on a runner's PATH, so this exits early without
-      # planning anything -- a smoke test of argument handling and import,
-      # not of the installer. The planner itself is covered in full by
-      # tests/test_installer.py, which does run on every leg above.
-      - name: python install.py --dry-run
-        run: python install.py --dry-run

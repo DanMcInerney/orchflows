@@ -218,6 +218,13 @@ class TestWorkflowContract(unittest.TestCase):
         self.assertEqual(1, workflow.count("run: python tools/run_tests.py"))
         self.assertNotIn("run: python -m unittest discover", workflow)
 
+    def test_ci_does_not_repeat_oracles_already_in_the_sharded_suite(self):
+        workflow = CHECKS_YML.read_text(encoding="utf-8")
+        # TestValidatorAgainstRepo and DryRunOracleTest cover these commands
+        # inside the one sharded suite invocation above.
+        self.assertNotIn("run: python tools/validate.py", workflow)
+        self.assertNotIn("run: python install.py --dry-run", workflow)
+
     def test_serial_residue_check_remains_a_documented_local_oracle(self):
         guidance = AGENTS_MD.read_text(encoding="utf-8")
         self.assertIn("python -m unittest discover -s tests -v", guidance)
