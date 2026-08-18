@@ -3749,6 +3749,39 @@ class InnerTubeCommentThreadTest(unittest.TestCase):
         self.assertEqual(len(opener.opened), 1)
 
 
+class YoutubeCommentsOffTest(unittest.TestCase):
+    """A video nobody may comment on, which is an answer and not a broken read.
+
+    Measured 2026-08-17, side by side, through this package's own transport.
+    `next:DPhzzkjiD9s` answered 200 with four watch-next renderers whose last
+    is an `itemSectionRenderer` carrying `comment-item-section` and the token.
+    `next:yLY0LGmBTt8` answered 200 with three renderers —
+    `videoPrimaryInfoRenderer`, `videoSecondaryInfoRenderer`,
+    `compositeVideoPrimaryInfoRenderer` — and no `itemSectionRenderer` at all.
+    Both well formed. The second was typed `schema_drift`, so a three-video
+    depth read returned `yt-comments-1 failed loss ('schema_drift',)` and
+    `coverage.review_artifact` reported `step_carried_loss`, obliging the
+    calling lane to state a payload change that had not happened.
+
+    `protocol.md` reserves `schema_drift` for a payload arriving in a shape
+    this parser does not know, so that an empty result would have been a lie.
+    Here the empty is the truth, and the shape this parser does not know is
+    the other absence: the watch-next container itself gone.
+    """
+
+    def test_a_video_with_comments_off_answers_empty(self):
+        page, _ = youtube_page(
+            "next_comments_off.json", target_id="next:" + YOUTUBE_VIDEO_ID
+        )
+
+        self.assertEqual(page.outcome, "empty")
+        self.assertEqual(page.loss, ())
+        self.assertEqual(page.records, ())
+        # No section, so no token: there is no second call to make, and
+        # surfacing one would send the core after a page nobody offered.
+        self.assertEqual(page.cursor_out, "")
+
+
 VIEW_MODEL_FIXTURE = "next_comment_view_models.json"
 
 
