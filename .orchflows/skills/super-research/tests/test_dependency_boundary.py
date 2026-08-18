@@ -52,9 +52,9 @@ import sysconfig
 import unittest
 from pathlib import Path
 
-from super_research import runner
+from super_research import runner, transport
 from super_research.adapters import youtube_innertube
-from tests import helpers
+from tests import helpers, test_keyless
 from tests.test_adapters import (
     EXECUTION_MODULES,
     EXECUTION_NAMES,
@@ -133,11 +133,13 @@ CORE_IMPORT_EDGES = {
     "transport": ("routes",),
 }
 
-# Everything the package takes from outside itself. Seventeen names, and the
-# check below resolves each one to where this interpreter actually answers it
-# from. `concurrent` and `threading` joined on 2026-08-17 with the fused
-# lanes; `test_pipeline.CONCURRENCY_OWNERS` names the three modules that may
-# import them.
+# Everything the package takes from outside itself, and the check below
+# resolves each one to where this interpreter actually answers it from. The
+# tuple is the count; a number in this line would be a second statement of
+# what is spelled out beneath it, and nothing would read it.
+# `concurrent` and `threading` joined on 2026-08-17 with the fused
+# lanes; `test_pipeline.CONCURRENCY_OWNERS` names the modules that may import
+# them.
 STANDARD_LIBRARY_IMPORTS = (
     "__future__",
     "argparse",
@@ -447,8 +449,8 @@ class RunnerDispatchTest(unittest.TestCase):
                 )
 
     def test_every_branch_reaches_the_module_its_own_id_names(self):
-        # The failure a count cannot see: twenty branches, one of them
-        # returning another adapter's descriptor.
+        # The failure a count cannot see: every branch the roster declares, one
+        # of them returning another adapter's descriptor.
         for function_name, member in (
             ("descriptor_for", "DESCRIPTOR"),
             ("call_adapter", "fetch_native_page"),
@@ -645,7 +647,9 @@ class BoundaryOracleCanFailTest(unittest.TestCase):
 
 PROTOCOL_PATH = Path(__file__).resolve().parent.parent / "references" / "protocol.md"
 
-# The three loss tables in `protocol.md`, named by the header row each carries.
+# The loss tables in `protocol.md`, named by the header row each carries — a
+# count of them here would be one more sentence nothing reads, and the two that
+# stood in this file already disagreed with each other.
 # Only tables with this shape are read; every other table in that file belongs
 # to someone else.
 LOSS_TABLE_HEADERS = ("| code | means | named by |",)
@@ -678,7 +682,7 @@ def module_name(path):
 
 
 def loss_table_rows():
-    """Every row of the two loss tables, as (code, cell) pairs in document order.
+    """Every row of the loss tables, as (code, cell) pairs in document order.
 
     Parsed rather than transcribed: the point of the exercise is that the table
     a reader reads is the one the assertions run against, so a cell nobody
@@ -773,22 +777,23 @@ def loss_code_spelling(codes):
     return (spelling, declaring)
 
 
-# Number words a heading or a docstring in this delivery may count in. Three
-# checks read it: the shortfall heading in `protocol.md`, this file's own
-# module count, and the multi-surface count both reference documents state.
-# It runs to twenty because that third one counts adapters, and the roster is
-# twenty adapters wide — a table that stopped short would read a lawful count
-# as an unspellable one.
+# Number words a heading or a docstring in this delivery may count in. The
+# checks below read it: the shortfall heading in `protocol.md`, this file's own
+# module count, what the reference documents state about the roster, and what
+# `test_keyless` states about `auth_required`. It runs at least as far as the
+# roster is wide, because the widest of those counts adapters — a table that
+# stopped short would read a lawful count as an unspellable one.
 NUMBER_WORDS = (
     "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
     "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen",
     "Eighteen", "Nineteen", "Twenty",
 )
 
-# The tens, for the one count above twenty this delivery states: the roster's
-# route-surface total, which is thirty-six. A tens name means its own position
-# in tens, which is the whole of the arithmetic here, and a compound is its two
-# names read the same way — `thirty-six` is `thirty` and `six`.
+# The tens, for the counts this delivery states past the flat table's end: the
+# roster's route-surface total, and the count of it that is read. A tens name
+# means its own position in tens, and a compound is its two names read the same
+# way — `forty-two` is `forty` and `two`, chosen as the example because nothing
+# in this delivery counts it and so nothing can make this line false.
 TENS_WORDS = ("Ten", "Twenty", "Thirty", "Forty", "Fifty")
 
 
@@ -909,7 +914,7 @@ class TheHostMirrorResolvesFromAnyCheckoutTest(unittest.TestCase):
 
 
 class LossVocabularyIsReadOffTheSourceTest(unittest.TestCase):
-    """`protocol.md`'s three loss tables, checked against the package's own syntax.
+    """`protocol.md`'s loss tables, checked against the package's own syntax.
 
     Every other enumeration in this suite is pinned and these were not, so
     they drifted the way an unpinned table does: `http_status` was documented
@@ -1006,12 +1011,37 @@ MULTI_SURFACE_ANCHOR = re.compile(r"\b([A-Za-z]+) adapters rea(?:d|ch) more than
 ROSTER_SIZE_ANCHOR = re.compile(r"\b([A-Za-z]+) adapters, ([A-Za-z]+) live plus `fake`")
 SURFACE_TOTAL_ANCHOR = re.compile(r"\b([A-Za-z]+(?:-[A-Za-z]+)?) route surfaces\b")
 
+# The same paragraph states that total a second time, two lines down, and
+# derives a count from it: "Thirty-five of the thirty-six are read". The anchor
+# above reaches neither, because the phrase it pins on is `route surfaces` and
+# this sentence does not spell it — so the paragraph stated the total twice and
+# one statement was checked, which is the drift this suite exists to stop
+# living inside the paragraph the pin reads. This is the second statement's own
+# anchor: the phrase its two counts cannot leave, whitespace-tolerant because
+# the document wraps between them.
+READ_SURFACE_ANCHOR = re.compile(
+    r"\b([A-Za-z]+(?:-[A-Za-z]+)?)\s+of\s+the\s+([A-Za-z]+(?:-[A-Za-z]+)?)\s+are\s+read\b"
+)
+
 # The same count where `surface_descriptors` states it about itself. Its own
 # paragraph rather than either document's, so its own anchor: the two words the
 # count cannot leave while the sentence still says that some adapters are the
 # exception. A word this cannot read counts as none and fails, the way the
 # document anchors do.
 RESOLVER_COUNT_ANCHOR = re.compile(r"\b([A-Za-z]+) do not\b")
+
+# The two counts `test_keyless`' module docstring states about `auth_required`:
+# how many adapters name the code at all, and how many of those can say it.
+# It counted once, and the one number was wrong in both directions — the same
+# class as the roster's "seven", one file over, and the loss tables beside it
+# already read which modules spell each code. One anchor each, on the phrase
+# the count cannot leave rather than on the sentence, because that paragraph is
+# written in its own voice and is meant to stay that way.
+# Whitespace-tolerant for the reason the read-surface anchor is: a paragraph
+# wraps where its width puts it, and a pin that forbade a wrap point would be
+# pinning the layout rather than the count.
+KEYLESS_NAMING_ANCHOR = re.compile(r"\b([A-Za-z]+)\s+adapters\s+name\s+it\b")
+KEYLESS_SAYING_ANCHOR = re.compile(r"\b([A-Za-z]+)\s+of\s+them\s+can\s+say\s+it\b")
 
 # The one roster row read cell by cell here. Its adapter id comes off the
 # module that owns the route rather than off this file, so a rename reaches
@@ -1072,10 +1102,12 @@ def roster_table_rows():
 def counted_as(word):
     """The number one spelled number word names, or ``None`` if it names none.
 
-    Spelling, not arithmetic: `NUMBER_WORDS` and `TENS_WORDS` are lists of names
-    and no count is written down here. The counts come off the descriptors. A
-    hyphenated compound is its two names looked up the same way, because the
-    surface total is thirty-six and a table running to twenty cannot spell it.
+    Spelling first: `NUMBER_WORDS` and `TENS_WORDS` are lists of names, and no
+    count this file checks is written down here — every one of them comes off
+    the descriptors. The only arithmetic is what a tens name means, its own
+    position in tens; a hyphenated compound is its head and its tail looked up
+    the same way, which is how a count past the flat table's end is spelled at
+    all.
     """
 
     spelled = [name.lower() for name in NUMBER_WORDS]
@@ -1136,6 +1168,45 @@ def surface_total():
     """Every route surface the source declares, across the whole roster."""
 
     return sum(len(runner.surface_descriptors(adapter_id)) for adapter_id in runner.ADAPTER_IDS)
+
+
+def read_surface_total():
+    """Every declared surface a caller reads: the roster's, less the activations.
+
+    ``transport.TOKEN_ACTIVATION_ROUTES`` is where this package says which
+    routes are spent rather than read, so it is what this counts by. Naming
+    `x_guest`'s activation here instead would be a second transcription of the
+    fact the paragraph under test already transcribes once.
+    """
+
+    return sum(
+        1
+        for adapter_id in runner.ADAPTER_IDS
+        for descriptor in runner.surface_descriptors(adapter_id)
+        if descriptor.route_id not in transport.TOKEN_ACTIVATION_ROUTES
+    )
+
+
+def adapters_naming_the_refusal():
+    """Who names `auth_required`, who can say it, and every module that says it.
+
+    Read by the scan the loss tables already run over every code `protocol.md`
+    tables, because the distinction the keyless docstring rests on is exactly
+    the one that scan draws: a module-level ``NAME = "code"`` and nothing else
+    is a declaration, everything that reaches the code is an emission. A module
+    that only mentions the string in its prose names it in neither sense, which
+    is why this reads syntax and not text — `hacker_news` spells the code once,
+    in a sentence saying it deliberately has no such branch.
+    """
+
+    code = test_keyless.AUTH_REQUIRED
+    spelling, declaring = loss_code_spelling({code})
+    roster = set(runner.ADAPTER_IDS)
+    return (
+        (spelling[code] | declaring[code]) & roster,
+        spelling[code] & roster,
+        spelling[code],
+    )
 
 
 def multi_surface_counts_in(text):
@@ -1280,17 +1351,30 @@ class RosterIsReadOffTheSourceTest(unittest.TestCase):
             ),
         )
 
-    def test_the_surface_total_it_states_is_the_descriptors_own(self):
-        """The "thirty-six route surfaces" of that same sentence, counted off the source.
+    def test_every_statement_of_the_surface_total_is_checked(self):
+        """Both statements of "thirty-six", and the count the second derives from it.
 
-        Distinct from the adapter count above and from the multi-surface count
-        below it — a surface total that merely equalled the roster size would be
-        a count of adapters wearing another name, which the first assertion here
-        rules out.
+        The pin that landed here read the first and stopped: it holds on the
+        words `route surfaces`, which the sentence two lines down does not
+        spell, so the roster paragraph stated the total twice, derived a third
+        count from it, and one of the three was checked. Add a read surface and
+        the unchecked pair goes wrong with nothing failing — which is how
+        "seven" survived three new adapters, surviving here inside the very
+        paragraph the pin was raised to hold.
+
+        Two anchors rather than one rewritten sentence, because the two
+        sentences are written in different voices and pinning either to the
+        other's phrasing would forbid the rewrite an anchor pin exists to
+        permit.
         """
 
-        stated = SURFACE_TOTAL_ANCHOR.findall(PROTOCOL_PATH.read_text(encoding="utf-8"))
+        text = PROTOCOL_PATH.read_text(encoding="utf-8")
+        stated = SURFACE_TOTAL_ANCHOR.findall(text)
+        read_stated = READ_SURFACE_ANCHOR.findall(text)
 
+        # Distinct from the adapter count above and from the multi-surface count
+        # below it — a surface total that merely equalled the roster size would
+        # be a count of adapters wearing another name.
         self.assertGreater(surface_total(), len(runner.ADAPTER_IDS))
         self.assertEqual(len(stated), 1, "protocol.md states the surface total {0} times".format(len(stated)))
         self.assertEqual(
@@ -1300,10 +1384,96 @@ class RosterIsReadOffTheSourceTest(unittest.TestCase):
                 stated[0], surface_total()
             ),
         )
+
+        self.assertEqual(
+            len(read_stated),
+            1,
+            "protocol.md states the read-surface split {0} times".format(len(read_stated)),
+        )
+        read, total = read_stated[0]
+        self.assertEqual(
+            counted_as(total),
+            surface_total(),
+            "protocol.md's second statement says {0}; the descriptors say {1}".format(
+                total, surface_total()
+            ),
+        )
+        # The derived count is a count of something else, so a sentence that had
+        # quietly restated the total under its name would fail rather than pass.
+        self.assertLess(read_surface_total(), surface_total())
+        self.assertEqual(
+            counted_as(read),
+            read_surface_total(),
+            "protocol.md says {0} of them are read; the descriptors say {1}".format(
+                read, read_surface_total()
+            ),
+        )
+
+        # Both readers can fail, and the second on exactly the shape this test
+        # was raised for: a paragraph whose second statement of the total no
+        # longer spells the phrase. The first reader is blind to the move —
+        # it still finds its one match and still agrees — which is the finding.
+        moved = (
+            "thirty-six route surfaces, because ten adapters reach more than"
+            " one. Thirty-five of the thirty-six carry records"
+        )
+        self.assertEqual(len(SURFACE_TOTAL_ANCHOR.findall(moved)), 1)
+        self.assertEqual(READ_SURFACE_ANCHOR.findall(moved), [])
         # The compound reader can fail rather than shrug: a name it cannot spell
         # answers None, which no count equals, so an unreadable number is a
         # failure here and never a pass.
         self.assertIsNone(counted_as("thirty-eleven"))
+
+    def test_the_keyless_docstring_counts_the_modules_that_name_it(self):
+        """`test_keyless`' counts of `auth_required`, off the scan the tables use.
+
+        It said the string was one "which seven adapters and the router all
+        know how to say". Five adapters can say it and nine name it, so the one
+        number was wrong in both directions at once — and it went wrong the way
+        the roster's "seven" did, with an adapter joining, a constant being
+        declared, and the sentence beside them the only thing counting.
+
+        Two counts because the sentence's subject needs both: a module that
+        binds the name and loads it nowhere cannot say the word, and four of
+        them are in the roster deliberately.
+        """
+
+        naming, saying, modules_saying = adapters_naming_the_refusal()
+
+        # The two counts are counts of different things, and the scan is shown
+        # to draw the line it claims to: a scan that read a declaration as an
+        # emission would collapse them into one number and pass both anchors.
+        self.assertLess(len(saying), len(naming))
+        # The other half of the sentence, enumerated rather than counted,
+        # because there is one of it.
+        self.assertIn("router", modules_saying)
+
+        for anchor, counted, subject in (
+            (KEYLESS_NAMING_ANCHOR, naming, "name it"),
+            (KEYLESS_SAYING_ANCHOR, saying, "can say it"),
+        ):
+            with self.subTest(subject=subject):
+                stated = anchor.findall(test_keyless.__doc__)
+
+                self.assertEqual(
+                    len(stated),
+                    1,
+                    "the keyless docstring states the {0} count {1} times".format(
+                        subject, len(stated)
+                    ),
+                )
+                self.assertEqual(
+                    counted_as(stated[0]),
+                    len(counted),
+                    "the keyless docstring says {0} {1}; the source says {2}: {3}".format(
+                        stated[0], subject, len(counted), sorted(counted)
+                    ),
+                )
+
+        # Both readers can fail on a count that stayed and a phrase that moved,
+        # which is the one thing an anchor pin trades for the rewrite it permits.
+        self.assertEqual(KEYLESS_NAMING_ANCHOR.findall("nine adapters name the code"), [])
+        self.assertEqual(KEYLESS_SAYING_ANCHOR.findall("five of them say it"), [])
 
     def test_the_youtube_row_names_every_surface_it_reads(self):
         # The row said one surface while the adapter reads two, which is how a

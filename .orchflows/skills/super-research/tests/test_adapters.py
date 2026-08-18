@@ -3405,6 +3405,25 @@ def youtube_page(fixture, status=200, target_id=None, cursor=""):
     )
 
 
+def youtube_comments_page(payload):
+    """Run the `next` operation over one payload built here rather than read whole.
+
+    The comment route's own request, because a page assembled in a test is only
+    evidence about this adapter if it arrives the way the origin's does: the
+    same operation, the same cursor, the same content type.
+    """
+
+    return adapter_page(
+        youtube_innertube,
+        200,
+        json.dumps(payload),
+        content_type="application/json",
+        request=youtube_request(
+            "next:" + YOUTUBE_VIDEO_ID, cursor=YOUTUBE_COMMENT_CURSOR
+        ),
+    )
+
+
 def attributes_of(record):
     """One record's named string facts, grouped under the names the route used."""
 
@@ -3593,27 +3612,43 @@ class InnerTubeCommentThreadTest(unittest.TestCase):
         # same way page three was.
         self.assertEqual(page.cursor_out, "COMMENTS_PAGE_FOUR")
 
-    def test_an_undeclared_container_name_is_still_drift_and_not_a_guess(self):
+    def test_a_page_under_an_undeclared_container_name_is_typed_drift(self):
         """The scan admits the names measured and not whatever looks like a list.
 
         Built beside the tree rather than by editing the fixture: the same
-        payload, its container renamed to a spelling no route sends. A parser
-        that matched any key holding `continuationItems` would read this one and
+        payload twice, once under the container name page three was measured
+        arriving in and once under a spelling no route sends. A parser that
+        matched any key holding `continuationItems` would read the second and
         report a page the platform never served in that shape, which is the
-        failure the per-route tuples were guarding against and the reason the
-        one tuple lists measured names only.
+        failure the per-route tuple guards and the reason it lists measured
+        names only.
+
+        Both halves are asserted because either alone proves little. The
+        measured half is what makes this a can-fail — one key name is the whole
+        difference between an `ok` page of two records and a refusal — and the
+        renamed half is asserted at the page the caller receives rather than at
+        the item scan under it, so a change that let an unread list conclude
+        `ok` with no records would fail here instead of passing under a name
+        promising the opposite.
         """
 
-        payload = json.loads(read_youtube("next_append_action_page.json"))
-        endpoint = payload[youtube_innertube.RECEIVED_ENDPOINTS_KEY][0]
+        renamed = json.loads(read_youtube("next_append_action_page.json"))
+        endpoint = renamed[youtube_innertube.RECEIVED_ENDPOINTS_KEY][0]
         endpoint["appendContinuationItemsCommand"] = endpoint.pop(
             "appendContinuationItemsAction"
         )
 
-        self.assertNotIn(
-            "appendContinuationItemsCommand", youtube_innertube.CONTINUATION_ACTIONS
+        measured, _ = youtube_comments_page(
+            json.loads(read_youtube("next_append_action_page.json"))
         )
-        self.assertIsNone(youtube_innertube.comment_items(payload))
+        drifted, _ = youtube_comments_page(renamed)
+
+        self.assertEqual(measured.outcome, "ok")
+        self.assertEqual(len(measured.records), 2)
+
+        self.assertEqual(drifted.outcome, "failed")
+        self.assertEqual(drifted.loss, ("schema_drift",))
+        self.assertEqual(drifted.records, ())
 
     def test_a_call_spending_the_token_carries_the_threads_it_returned(self):
         page, opener = youtube_page(
