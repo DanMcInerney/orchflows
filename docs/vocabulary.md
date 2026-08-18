@@ -109,7 +109,9 @@ that needs a different meaning needs a different word.
   its first unit is promoted; it completes when
   `<id>.gate.verify` completes. A successor root lives in a successor run
   opened after this root's result identity resolves and cites that identity
-  among its own fixed inputs.
+  among its own fixed inputs; the predecessor run's durable `successors.md`
+  names the planned root until `orch-spec` materializes it on the frontier's
+  completion trigger.
 - **template** — a directory of ticket stubs plus its `template.md`
   manifest, instantiated into a run's ticket directory by `tickets.py
   instantiate` and run by `orch-frontier`; the one form a composition

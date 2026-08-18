@@ -906,7 +906,8 @@ class ReverificationSplitTest(unittest.TestCase):
                 {
                     "successor intake": (
                         "successor run", "predecessor", "result identity",
-                        "resolved", "cited",
+                        "resolved", "cited", "`successors.md`", "sole writer",
+                        "materialization owner", "successor trigger", "replace",
                     ),
                     "one physical root": ("never", "second root", "same run"),
                 },
@@ -932,6 +933,11 @@ class ReverificationSplitTest(unittest.TestCase):
                         "gate-deferred", "already checked", "never",
                     ),
                     "root exception": ("root cut reader", "exception"),
+                    "successor trigger": (
+                        "`successors.md`", "`planned`", "successor trigger",
+                        "plan's materialization owner", "accepted", "`## Result` identity",
+                        "materializes", "replaces the plan",
+                    ),
                 },
             ),
             "orch-critique": (
@@ -952,6 +958,10 @@ class ReverificationSplitTest(unittest.TestCase):
                         "`checked_by`",
                     ),
                     "one path": ("one outside-independence path",),
+                    "root cut bookkeeping": (
+                        "on a root", "`checked_by`", "cut reader",
+                        "never", "final checker acceptance", "composite gate",
+                    ),
                 },
             ),
         }
@@ -964,6 +974,37 @@ class ReverificationSplitTest(unittest.TestCase):
             "workflow owners do not carry the verification split: "
             + ", ".join(gaps),
         )
+
+    def test_successor_owner_and_trigger_cannot_be_replaced_by_return_only_prose(self):
+        required = (
+            "`successors.md`", "sole writer", "materialization owner",
+            "successor trigger", "replace `successors.md`",
+        )
+        real = SPEC.read_text(encoding="utf-8")
+        clause = {"durable successor": required}
+        self.assertEqual([], _clause_gaps(real, clause))
+        return_only = (
+            "Return the ordered successor-run plan; a caller may open later kinds."
+        )
+        self.assertTrue(_clause_gaps(return_only, clause))
+
+    def test_contradictory_checker_and_second_gate_paths_fail_the_guardrail(self):
+        forbidden = (
+            "also dispatch a checker for a gate-deferred ticket",
+            "create a second composite gate",
+        )
+
+        def gaps(text):
+            flat = " ".join(text.split()).lower()
+            return [phrase for phrase in forbidden if phrase in flat]
+
+        joined = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in (DECOMPOSE, FRONTIER, INTEGRATE)
+        )
+        self.assertEqual([], gaps(joined))
+        for contradiction in forbidden:
+            self.assertEqual([contradiction], gaps(joined + "\n" + contradiction))
 
     def test_a_rule_and_an_engine_without_the_split_fail_the_check(self):
         """The can-fail direction, built beside the tree and never by

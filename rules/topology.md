@@ -70,7 +70,11 @@
    inputs`; par is the absence of such an edge, which rule 3's disjointness
    already governs, joined by a successor whose fixed inputs cite all of
    their accepted identities; loop is a ticket whose executor is
-   `orch-loop`. A named
+   `orch-loop`. Intake persists every sequential remainder in the first
+   run's `successors.md`; under [work-item.md](../contracts/work-item.md#root-ticket),
+   `orch-spec` is its sole writer and materialization
+   owner, and a completed frontier is the durable trigger that returns the
+   predecessor identity to it before the request is reported finished. A named
    multi-run shape is a template
    ([work-item.md](../contracts/work-item.md)) run by `orch-frontier`.
    Mixed decomposition inside one graph is undefined.

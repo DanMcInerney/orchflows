@@ -794,6 +794,82 @@ class RootGateLayoutTest(unittest.TestCase):
         self.assertEqual(classes.count(cutcheck.MULTIPLE_GATE_SYSTEMS), 1, findings)
         self.assertTrue(all(klass not in cutcheck.ADVISORY for klass in classes))
 
+    def test_two_unrelated_roots_fail_before_either_has_a_gate(self):
+        siblings = {"R1": self._root("R1"), "R2": self._root("R2")}
+        findings = cutcheck._root_gate_layout(siblings)
+        self.assertEqual(
+            [cutcheck.MULTIPLE_ROOTS], [finding[2] for finding in findings], findings
+        )
+
+        # Canonical template decomposers are stages of one top-level graph,
+        # and remain the explicit compatibility exception.
+        siblings["R2"]["depends_on"] = ["R1"]
+        self.assertEqual([], cutcheck._root_gate_layout(siblings))
+
+    def test_a_partial_or_wrongly_edged_gate_is_malformed(self):
+        unit = self._unit("R", "01", "scripts/one.py")
+        critique = "R.gate.critique.code"
+        siblings = {
+            "R": self._root("R"),
+            unit["id"]: unit,
+            critique: {
+                "id": critique,
+                "executor": tickets.GATE_EXECUTORS["critique"],
+                "depends_on": [unit["id"]],
+                "write_scope": [],
+            },
+        }
+        findings = cutcheck._root_gate_layout(siblings)
+        self.assertIn(cutcheck.MALFORMED_GATE, [finding[2] for finding in findings])
+
+    def test_command_rejects_the_independent_roots_and_partial_gate(self):
+        """The public command, not only the helper, owns both refusals."""
+
+        def body(ticket_id, executor, depends_on="[]"):
+            return tickets._render_ticket(
+                {
+                    "id": ticket_id, "run": "layout-command", "status": "ready",
+                    "executor": executor, "depends_on": depends_on,
+                    "write_scope": ["install.py"], "bound": "10m",
+                },
+                [
+                    ("Objective", "exercise the command layout"),
+                    ("Fixed inputs", "- fixed baseline"),
+                    ("Completion test", "- installer remains valid | oracle: "
+                     "`python install.py --dry-run` | oracle_class: deterministic | "
+                     "provenance: pre-existing"),
+                    ("Return fields", "status; result"),
+                    ("Result", ""), ("Verification", ""),
+                    ("Feedback", "[]"), ("Risks", "[]"),
+                ],
+            )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = Path(tmp) / "state"
+            run_dir = sink / "tickets" / "layout-command"
+            run_dir.mkdir(parents=True)
+            (run_dir / "R1.md").write_text(
+                body("R1", tickets.ROOT_EXECUTOR), encoding="utf-8"
+            )
+            (run_dir / "R2.md").write_text(
+                body("R2", tickets.ROOT_EXECUTOR), encoding="utf-8"
+            )
+            (run_dir / "R1.gate.critique.code.md").write_text(
+                body("R1.gate.critique.code", tickets.GATE_EXECUTORS["critique"]),
+                encoding="utf-8",
+            )
+            env = os.environ.copy()
+            env["ORCHFLOWS_STATE_HOME"] = str(sink)
+            result = subprocess.run(
+                [sys.executable, str(ROOT / "scripts" / "cutcheck.py"),
+                 "layout-command", "--baseline", BASELINE, "--lib", str(ROOT)],
+                cwd=str(ROOT), env=env, capture_output=True, text=True,
+                encoding="utf-8", errors="replace",
+            )
+        self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertIn(cutcheck.MULTIPLE_ROOTS, result.stdout)
+        self.assertIn(cutcheck.MALFORMED_GATE, result.stdout)
+
     def test_checker_plus_gate_and_uncovered_criteria_fail(self):
         """One ticket gets one independence path, even in the smallest cut.
 
@@ -830,6 +906,36 @@ class RootGateLayoutTest(unittest.TestCase):
         )
         self.assertEqual(cutcheck._gate_owners(siblings), ["R"])
         self.assertNotIn("profile", unit)
+
+    def test_gate_independence_counts_every_authored_here_criterion(self):
+        unit = self._unit("R", "01", "scripts/one.py")
+        unit["__completion_test"] = (
+            "- first | oracle: first command | oracle_class: deterministic | "
+            "provenance: authored-here\n"
+            "- second | oracle: second command | oracle_class: judged | "
+            "provenance: authored-here\n"
+        )
+        root = self._root("R")
+        root["__completion_test"] = (
+            "- final | oracle: final command | oracle_class: deterministic | "
+            "provenance: pre-existing\n"
+        )
+        siblings = {"R": root, unit["id"]: unit}
+        with tempfile.TemporaryDirectory() as tmp:
+            coverage = Path(tmp) / cutcheck.COVERAGE_FILE
+            coverage.write_text(
+                "| criterion | owner |\n|---|---|\n| 1 | R.01 |\n",
+                encoding="utf-8",
+            )
+            findings = cutcheck._coverage(
+                "R", coverage, ["R.01"], (Path(tmp),),
+                siblings=siblings, root="R",
+            )
+        self.assertIn(
+            cutcheck.UNCOVERED_GATE_CRITERION,
+            [finding[2] for finding in findings],
+            findings,
+        )
 
     def test_single_root_distinct_lenses_and_sole_owner_graph_pass(self):
         """The runtime's accepted one-root shape remains the lawful cut.

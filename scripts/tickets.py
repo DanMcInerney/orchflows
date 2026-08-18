@@ -78,6 +78,7 @@ import re
 import sys
 import tempfile
 import time
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -90,6 +91,11 @@ try:  # Windows only; POSIX append needs no lock. See _append_one_line.
     import msvcrt
 except ImportError:
     msvcrt = None
+
+try:  # POSIX only; Windows uses msvcrt for the same mandatory run lock.
+    import fcntl
+except ImportError:  # pragma: no cover - exercised on Windows
+    fcntl = None
 
 VALID_STATUSES = {
     "pending",
@@ -159,6 +165,7 @@ UTC_STAMP = "%Y-%m-%dT%H:%M:%SZ"
 # partition. `sink_convention` says which layout wrote it; item 06 states
 # the field list in the contract.
 RUN_IDENTITY_NAME = "run.json"
+RUN_LOCKS_DIR = "locks"
 SINK_CONVENTION = 2
 NO_SINK_ERROR = (
     "cannot resolve the state sink: no $ORCHFLOWS_STATE_HOME and no home directory"
@@ -587,6 +594,49 @@ def _runs_root():
         return None
 
 
+@contextmanager
+def _run_lock(run: str):
+    """Hold the one process lock protecting a physical run's mutations.
+
+    Atomic replace protects readers from partial files, but it cannot make a
+    read/check/write invariant atomic.  Every command that can move a run's
+    tickets or identity therefore holds this lock from its first state read
+    through its final write.  The lock lives outside the run payload trees so
+    a refused command does not create a ticket, worklog, or run identity.
+    """
+
+    try:
+        sink = state_root.state_root()
+        lock_dir = sink / RUN_LOCKS_DIR
+        lock_dir.mkdir(parents=True, exist_ok=True)
+        path = lock_dir / (run + ".lock")
+        handle = open(path, "a+b")
+    except OSError as error:
+        raise OSError(f"unable to lock run '{run}': {error}") from error
+    try:
+        handle.seek(0, 2)
+        if handle.tell() == 0:
+            handle.write(b"\0")
+            handle.flush()
+        handle.seek(0)
+        if msvcrt is not None:
+            msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+        elif fcntl is not None:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        else:  # pragma: no cover - every supported host has one implementation
+            raise OSError("this host provides neither msvcrt nor fcntl locking")
+        yield
+    finally:
+        try:
+            handle.seek(0)
+            if msvcrt is not None:
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            elif fcntl is not None:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        finally:
+            handle.close()
+
+
 def _improvement_root():
     """The sink's improvement tree, or ``None`` when no root can be resolved."""
 
@@ -881,7 +931,6 @@ def _identity_document(run: str, path: Path, project: dict, workspace: str, now)
         # there is no second project to confuse it with.
         updated["project"] = project
         updated.setdefault("run", run)
-        updated.setdefault("opened_at", stamp)
         updated.setdefault("sink_convention", SINK_CONVENTION)
 
     seen = existing.get("workspaces")
@@ -921,6 +970,43 @@ def _write_identity(run_dir: Path, document: dict) -> None:
     except BaseException:
         temporary.unlink(missing_ok=True)
         raise
+
+
+def _write_text_atomically(path: Path, text: str) -> None:
+    """Replace one existing text artifact without exposing a partial file."""
+
+    if not isinstance(path, Path):
+        # A deliberately instrumented path is the direct `_do_claim` test
+        # seam. Its write callback chooses the interleaving; replacing it with
+        # a second filesystem protocol would make that oracle test the helper.
+        path.write_text(text, encoding="utf-8")
+        return
+    if path.exists():
+        # Preserve the public writer's refusal on a non-writable target. An
+        # atomic rename may replace such a directory entry on some hosts even
+        # though writing the ticket itself is forbidden.
+        with open(path, "r+", encoding="utf-8"):
+            pass
+
+    handle = tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", newline="\n", dir=str(path.parent),
+        prefix=path.name + ".", suffix=".tmp", delete=False,
+    )
+    temporary = Path(handle.name)
+    try:
+        with handle:
+            handle.write(text)
+        _replace_atomically(temporary, path)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
+
+
+def _create_text_exclusively(path: Path, text: str) -> None:
+    """Create one immutable identity, losing rather than replacing a race."""
+
+    with open(path, "x", encoding="utf-8", newline="\n") as handle:
+        handle.write(text)
 
 
 def _identity_update(run: str, now, runs_root=None):
@@ -2118,9 +2204,10 @@ def _distinct_gate_lenses(lenses: list) -> list:
     seen = set()
     repeated = []
     for lens in lenses:
-        if lens in seen and lens not in repeated:
+        identity = lens.casefold()
+        if identity in seen and lens not in repeated:
             repeated.append(lens)
-        seen.add(lens)
+        seen.add(identity)
     if repeated:
         raise ValueError(
             "gate review lenses must be distinct; repeated: "
@@ -2494,42 +2581,56 @@ def _issue_ticket(run: str, ticket_id: str, text: str):
     over = _ceiling_error(f"ticket {run}/{ticket_id}", ticket_id, text)
     if over is not None:
         return over
+    if GATE_ID_MARKER in ticket_id:
+        return {
+            "error": f"ticket id '{ticket_id}' is reserved for `tickets.py gate`; "
+            "new and new --file cannot assemble a partial or alternate gate family"
+        }
     tickets_root = _tickets_root()
     if tickets_root is None:
         return {"error": NO_SINK_ERROR}
     ticket_path = tickets_root / run / f"{ticket_id}.md"
-    if ticket_path.exists():
+    try:
+        with _run_lock(run):
+            if ticket_path.exists():
+                return {
+                    "error": f"ticket id '{ticket_id}' is already issued in run '{run}': "
+                    f"{ticket_path}. An id is stable once issued (contracts/work-item.md)"
+                }
+            data = _parse_frontmatter(text)
+            if _executor_of(data) == ROOT_EXECUTOR:
+                existing_roots = []
+                run_dir = ticket_path.parent
+                for path in sorted(run_dir.glob("*.md")) if run_dir.is_dir() else []:
+                    loaded = _load_ticket(path)
+                    if "error" not in loaded and _executor_of(loaded) == ROOT_EXECUTOR:
+                        existing_roots.append(str(loaded.get("id") or path.stem))
+                if existing_roots:
+                    return {
+                        "error": f"run '{run}' already has root ticket "
+                        f"'{existing_roots[0]}': one physical run has one root and "
+                        "one composite gate. Open a successor run for another "
+                        "deliverable kind. Nothing was written"
+                    }
+            identity_dir, identity, refusal = _identity_update(
+                run, datetime.now(timezone.utc)
+            )
+            if refusal is not None:
+                return refusal
+            ticket_path.parent.mkdir(parents=True, exist_ok=True)
+            _create_text_exclusively(ticket_path, text)
+            try:
+                if identity is not None:
+                    identity_dir.mkdir(parents=True, exist_ok=True)
+                    _write_identity(identity_dir, identity)
+            except OSError:
+                ticket_path.unlink(missing_ok=True)
+                raise
+    except FileExistsError:
         return {
             "error": f"ticket id '{ticket_id}' is already issued in run '{run}': "
             f"{ticket_path}. An id is stable once issued (contracts/work-item.md)"
         }
-    data = _parse_frontmatter(text)
-    if _executor_of(data) == ROOT_EXECUTOR:
-        existing_roots = []
-        run_dir = ticket_path.parent
-        for path in sorted(run_dir.glob("*.md")) if run_dir.is_dir() else []:
-            loaded = _load_ticket(path)
-            if "error" not in loaded and _executor_of(loaded) == ROOT_EXECUTOR:
-                existing_roots.append(str(loaded.get("id") or path.stem))
-        if existing_roots:
-            return {
-                "error": f"run '{run}' already has root ticket "
-                f"'{existing_roots[0]}': one physical run has one root and "
-                "one composite gate. Open a successor run for another "
-                "deliverable kind. Nothing was written"
-            }
-    identity_dir, identity, refusal = _identity_update(
-        run, datetime.now(timezone.utc)
-    )
-    if refusal is not None:
-        return refusal
-    try:
-        ticket_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(ticket_path, "w", encoding="utf-8", newline="\n") as handle:
-            handle.write(text)
-        if identity is not None:
-            identity_dir.mkdir(parents=True, exist_ok=True)
-            _write_identity(identity_dir, identity)
     except OSError as error:
         ticket_path.unlink(missing_ok=True)
         return {"error": f"unwritable ticket: {error}"}
@@ -2732,46 +2833,51 @@ def _cmd_instantiate(rest):
         text = _set_frontmatter_field(text, "claimed_by", "")
         text = _set_frontmatter_field(text, "claimed_at", "")
         path = run_dir / f"{stub_id}.md"
-        if path.exists():
+        if GATE_ID_MARKER in stub_id:
             return {
-                "error": f"ticket id '{stub_id}' is already issued in run '{run}': "
-                f"{path}. Nothing was written"
+                "error": f"template stub id '{stub_id}' is reserved for "
+                "`tickets.py gate`; a template cannot assemble a partial or "
+                "alternate gate family. Nothing was written"
             }
         rendered.append((path, text))
     incoming_roots = [
         path.stem for path, text in rendered
         if _executor_of(_parse_frontmatter(text)) == ROOT_EXECUTOR
     ]
-    existing_roots = []
-    for path in sorted(run_dir.glob("*.md")) if run_dir.is_dir() else []:
-        loaded = _load_ticket(path)
-        if "error" not in loaded and _executor_of(loaded) == ROOT_EXECUTOR:
-            existing_roots.append(str(loaded.get("id") or path.stem))
-    # A template is itself one composite run graph and may lawfully contain
-    # several staged decomposers (benchmaker is the canonical example). What
-    # is refused is adding that graph's root system to a run that already has
-    # one; the template's accepted stubs remain byte-identical.
-    if existing_roots and incoming_roots:
-        return {
-            "error": f"run '{run}' would have root tickets "
-            f"{existing_roots + incoming_roots}: one physical run has one "
-            "root and one composite gate. Nothing was written"
-        }
-    identity_dir, identity, refusal = _identity_update(
-        run, datetime.now(timezone.utc)
-    )
-    if refusal is not None:
-        return refusal
     written = []
     try:
-        run_dir.mkdir(parents=True, exist_ok=True)
-        for path, text in rendered:
-            with open(path, "w", encoding="utf-8", newline="\n") as handle:
-                handle.write(text)
-            written.append(path)
-        if identity is not None:
-            identity_dir.mkdir(parents=True, exist_ok=True)
-            _write_identity(identity_dir, identity)
+        with _run_lock(run):
+            for path, _ in rendered:
+                if path.exists():
+                    return {
+                        "error": f"ticket id '{path.stem}' is already issued in run "
+                        f"'{run}': {path}. Nothing was written"
+                    }
+            existing_roots = []
+            for path in sorted(run_dir.glob("*.md")) if run_dir.is_dir() else []:
+                loaded = _load_ticket(path)
+                if "error" not in loaded and _executor_of(loaded) == ROOT_EXECUTOR:
+                    existing_roots.append(str(loaded.get("id") or path.stem))
+            # A template is itself one composite run graph and may lawfully
+            # contain several staged decomposers (benchmaker is canonical).
+            if existing_roots and incoming_roots:
+                return {
+                    "error": f"run '{run}' would have root tickets "
+                    f"{existing_roots + incoming_roots}: one physical run has one "
+                    "root and one composite gate. Nothing was written"
+                }
+            identity_dir, identity, refusal = _identity_update(
+                run, datetime.now(timezone.utc)
+            )
+            if refusal is not None:
+                return refusal
+            run_dir.mkdir(parents=True, exist_ok=True)
+            for path, text in rendered:
+                _create_text_exclusively(path, text)
+                written.append(path)
+            if identity is not None:
+                identity_dir.mkdir(parents=True, exist_ok=True)
+                _write_identity(identity_dir, identity)
     except OSError as error:
         # All or none: a half-instantiated template is a run with a graph
         # that has no terminal and dependencies that never complete.
@@ -2930,6 +3036,21 @@ def _gate_body(kind: str, root_id: str, lens: str, scope: list,
 
 
 def _cmd_gate(rest):
+    """Serialize the gate's complete state read and all-or-none creation."""
+
+    probe = list(rest)
+    for flag in ("--lens", "--write-scope", "--acceptance-from"):
+        _extract_flag(probe, flag)
+    if len(probe) != 2 or _segment_error("run id", probe[0]) is not None:
+        return _gate_under_run_lock(rest)
+    try:
+        with _run_lock(probe[0]):
+            return _gate_under_run_lock(rest)
+    except OSError as error:
+        return {"error": f"unable to create gate: {error}. Nothing was written"}
+
+
+def _gate_under_run_lock(rest):
     """Write one root ticket's gate stubs into its run.
 
     Refused rather than half-written: a root with no `<root>.NN` units has
@@ -2960,6 +3081,17 @@ def _cmd_gate(rest):
     root = by_id.get(root_id)
     if root is None:
         return {"error": f"root ticket '{root_id}' is not in run '{run}'"}
+    roots = sorted(
+        str(item.get("id") or "")
+        for item in items
+        if _executor_of(item) == ROOT_EXECUTOR
+    )
+    if _executor_of(root) != ROOT_EXECUTOR or roots != [root_id]:
+        return {
+            "error": f"gate root '{root_id}' is not the run's sole "
+            f"orch-decompose root ({roots or 'none'}). One physical run's "
+            "one gate belongs only to that root. Nothing was written"
+        }
     # One critique stub per stamped lens, and the label a caller does not
     # name is the stamped pack's domain -- the decomposer stamped it once
     # and never has to improvise a second name for the same lens. A root
@@ -3082,8 +3214,7 @@ def _cmd_gate(rest):
     try:
         for stub_id, text in rendered:
             path = run_dir / f"{stub_id}.md"
-            with open(path, "w", encoding="utf-8", newline="\n") as handle:
-                handle.write(text)
+            _create_text_exclusively(path, text)
             written.append(path)
     except OSError as error:
         for path in written:
@@ -3261,7 +3392,7 @@ def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime
     updated = _set_frontmatter_field(prior_text, "status", "claimed")
     updated = _set_frontmatter_field(updated, "claimed_by", claimed_by)
     updated = _set_frontmatter_field(updated, "claimed_at", timestamp)
-    ticket_path.write_text(updated, encoding="utf-8")
+    _write_text_atomically(ticket_path, updated)
     claimed = {
         "id": ticket_path.stem, "claimed_by": claimed_by, "claimed_at": timestamp
     }
@@ -3269,6 +3400,18 @@ def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime
 
 
 def _cmd_claim(rest):
+    probe = list(rest)
+    _extract_flag(probe, "--by")
+    if len(probe) != 2 or _segment_error("run id", probe[0]) is not None:
+        return _claim_under_run_lock(rest)
+    try:
+        with _run_lock(probe[0]):
+            return _claim_under_run_lock(rest)
+    except OSError as error:
+        return {"error": f"unwritable ticket: {error}"}
+
+
+def _claim_under_run_lock(rest):
     args = list(rest)
     claimed_by = _extract_flag(args, "--by")
     if claimed_by is None:
@@ -3301,6 +3444,19 @@ def _cmd_claim(rest):
 
 
 def _cmd_grant(rest):
+    probe = list(rest)
+    for flag in ("--write-scope", "--by"):
+        _extract_flag(probe, flag)
+    if len(probe) != 2 or _segment_error("run id", probe[0]) is not None:
+        return _grant_under_run_lock(rest)
+    try:
+        with _run_lock(probe[0]):
+            return _grant_under_run_lock(rest)
+    except OSError as error:
+        return {"error": f"unwritable ticket: {error}"}
+
+
+def _grant_under_run_lock(rest):
     """Record one caller-side widening of a claimed item's write scope.
 
     The gap this closes: a lane finds a file it must change that the cut did
@@ -3363,7 +3519,7 @@ def _cmd_grant(rest):
     updated = _set_frontmatter_field(updated, GRANTED_BY_KEY, granted_by.strip())
     updated = _set_frontmatter_field(updated, GRANTED_AT_KEY, timestamp)
     try:
-        ticket_path.write_text(updated, encoding="utf-8")
+        _write_text_atomically(ticket_path, updated)
     except OSError as error:
         return {"error": f"unwritable ticket: {error}"}
     return {
@@ -3380,6 +3536,18 @@ def _cmd_grant(rest):
 
 
 def _cmd_check(rest):
+    probe = list(rest)
+    _extract_flag(probe, "--by")
+    if len(probe) != 2 or _segment_error("run id", probe[0]) is not None:
+        return _check_under_run_lock(rest)
+    try:
+        with _run_lock(probe[0]):
+            return _check_under_run_lock(rest)
+    except OSError as error:
+        return {"error": f"unable to record check: {error}"}
+
+
+def _check_under_run_lock(rest):
     """Record the §10 checker's pass on one claimed item.
 
     The gap this closes: contracts/work-item.md:44 gave `checked_by` to "the
@@ -3444,7 +3612,7 @@ def _cmd_check(rest):
     except ValueError as error:
         return {"error": str(error)}
     try:
-        ticket_path.write_text(updated, encoding="utf-8")
+        _write_text_atomically(ticket_path, updated)
     except OSError as error:
         return {"error": f"unwritable ticket: {error}"}
     return {
@@ -3457,6 +3625,16 @@ def _cmd_check(rest):
 
 
 def _cmd_set_status(rest):
+    if len(rest) != 3 or _segment_error("run id", rest[0]) is not None:
+        return _set_status_under_run_lock(rest)
+    try:
+        with _run_lock(rest[0]):
+            return _set_status_under_run_lock(rest)
+    except OSError as error:
+        return {"error": f"unable to record status and terminal timing: {error}"}
+
+
+def _set_status_under_run_lock(rest):
     args = list(rest)
     if len(args) != 3:
         return {"error": f"usage: {SUBCOMMAND_USAGE['set-status']}"}
@@ -3474,6 +3652,7 @@ def _cmd_set_status(rest):
         return failure
     items, run_error = _run_tickets(run)
     terminal_transition = False
+    terminal_now = False
     terminal_id = ticket_id
     terminal_status = status
     if run_error is None:
@@ -3488,12 +3667,16 @@ def _cmd_set_status(rest):
         before_terminal = str(before_root.get("status") or "") in TERMINAL_STATES
         after_status = str(after_root.get("status") or "")
         terminal_transition = not before_terminal and after_status in TERMINAL_STATES
-        if terminal_transition:
+        terminal_now = after_status in TERMINAL_STATES
+        if terminal_now:
             terminal_id = str(after_root.get("id") or ticket_id)
             terminal_status = after_status
     identity_dir = None
     identity = None
-    if terminal_transition:
+    # Ask on every terminal observation, not only on the edge. If a process
+    # stopped after the ticket replace but before run.json, the same status
+    # retry completes the durable record from the still-missing timing keys.
+    if terminal_now:
         identity_dir, identity, refusal = _terminal_identity_update(
             run, terminal_id, terminal_status, datetime.now(timezone.utc)
         )
@@ -3501,13 +3684,13 @@ def _cmd_set_status(rest):
             return refusal
     updated = _set_frontmatter_field(text, "status", status)
     try:
-        ticket_path.write_text(updated, encoding="utf-8")
+        _write_text_atomically(ticket_path, updated)
         if identity is not None:
             identity_dir.mkdir(parents=True, exist_ok=True)
             _write_identity(identity_dir, identity)
     except OSError as error:
         try:
-            ticket_path.write_text(text, encoding="utf-8")
+            _write_text_atomically(ticket_path, text)
         except OSError:
             pass
         return {"error": f"unable to record status and terminal timing: {error}"}
@@ -3694,6 +3877,19 @@ def _further_child_prompt(executor, loaded: dict, ticket_path: Path, run_id, scr
 
 
 def _cmd_packet(rest):
+    probe = list(rest)
+    for flag in ("--reply-to", "--workspace", "--executor"):
+        _extract_flag(probe, flag)
+    if len(probe) != 2 or _segment_error("run id", probe[0]) is not None:
+        return _packet_under_run_lock(rest)
+    try:
+        with _run_lock(probe[0]):
+            return _packet_under_run_lock(rest)
+    except OSError as error:
+        return {"error": f"unable to emit packet: {error}"}
+
+
+def _packet_under_run_lock(rest):
     """Emit the by-reference dispatch packet for one ticket.
 
     The dispatcher never has to read the ticket body: this refuses a packet
@@ -4001,6 +4197,20 @@ def _cmd_packet(rest):
 
 
 def _cmd_result(rest):
+    probe = list(rest)
+    for flag in ("--section", "--file", "--text"):
+        _extract_flag(probe, flag)
+    probe = [arg for arg in probe if arg not in ("--append", "--replace")]
+    if len(probe) != 2 or _segment_error("run id", probe[0]) is not None:
+        return _result_under_run_lock(rest)
+    try:
+        with _run_lock(probe[0]):
+            return _result_under_run_lock(rest)
+    except OSError as error:
+        return {"error": f"unwritable ticket: {error}"}
+
+
+def _result_under_run_lock(rest):
     """Write one reserved section of a ticket in the state sink.
 
     The executor runs this from inside its own isolated worktree: ``--file``
@@ -4102,7 +4312,7 @@ def _cmd_result(rest):
             f"--replace to overwrite it deliberately. ticket: {ticket_path}"
         }
     try:
-        ticket_path.write_text(rendered, encoding="utf-8")
+        _write_text_atomically(ticket_path, rendered)
     except OSError as error:
         return {"error": f"unwritable ticket: {error}"}
     if append:
@@ -4480,6 +4690,24 @@ def _notes_terminal(path: Path):
 
 
 def _cmd_run_state(rest):
+    tree = None
+    if "--tree" in rest:
+        index = list(rest).index("--tree")
+        tree = rest[index + 1] if index + 1 < len(rest) else None
+    if (
+        not rest
+        or _segment_error("run id", rest[0]) is not None
+        or ("--tree" in rest and tree not in RUN_STATE_TREES)
+    ):
+        return _run_state_under_run_lock(rest)
+    try:
+        with _run_lock(rest[0]):
+            return _run_state_under_run_lock(rest)
+    except OSError as error:
+        return {"error": f"unwritable run state: {error}"}
+
+
+def _run_state_under_run_lock(rest):
     """Write this run's state into the one user-scope state sink.
 
     The channel rules/visibility.md §6 names. The root is resolved the way
@@ -4640,6 +4868,13 @@ def _cmd_run_state(rest):
     # identity document all exactly as it found them, and creates nothing.
     if refusal is not None:
         return refusal
+    identity_path = identity_dir / RUN_IDENTITY_NAME
+    try:
+        prior_identity = identity_path.read_bytes()
+    except FileNotFoundError:
+        prior_identity = None
+    except OSError as error:
+        return {"error": f"unreadable run identity {identity_path}: {error}"}
     try:
         run_dir.mkdir(parents=True, exist_ok=True)
         if document is not None:
@@ -4660,6 +4895,22 @@ def _cmd_run_state(rest):
                 block = f"\n{TERMINAL_HEADING}: {terminal}\n\n{evidence}\n"
             _append_one_line(path, block)
     except OSError as error:
+        # A failed payload is not a successful opening event. Restore the
+        # identity snapshot so its opened_at and receipt cannot be frozen by
+        # an attempt whose requested state never landed.
+        try:
+            if document is not None:
+                if prior_identity is None:
+                    identity_path.unlink(missing_ok=True)
+                else:
+                    _write_text_atomically(
+                        identity_path, prior_identity.decode("utf-8")
+                    )
+        except (OSError, UnicodeDecodeError) as rollback_error:
+            return {
+                "error": f"unwritable run state: {error}; identity rollback "
+                f"also failed: {rollback_error}"
+            }
         return {"error": f"unwritable run state: {error}"}
     if artifact is not None:
         mode = "artifact"

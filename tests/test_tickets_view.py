@@ -703,6 +703,35 @@ class GateStubsTest(unittest.TestCase):
             })
             self.assertEqual([], list(run_dir.glob("Q.gate.*.md")))
 
+    def test_lens_identity_is_case_insensitive_on_every_host(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            payload = run_cmd(
+                "gate", "testrun", "R", "--lens", "code,Code",
+                "--write-scope", "scripts/one.py",
+            )
+            self.assertIn("distinct", payload["error"])
+            self.assertEqual([], list(run_dir.glob("R.gate.*.md")))
+
+    def test_an_ordinary_ticket_cannot_take_the_gate_before_the_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            (run_dir / "Q.md").write_text(
+                ticket("Q", status="claimed", executor="orch-tdd"), encoding="utf-8"
+            )
+            (run_dir / "Q.01.md").write_text(
+                ticket("Q.01", deps="[Q]"), encoding="utf-8"
+            )
+            refused = run_cmd(
+                "gate", "testrun", "Q", "--lens", "code",
+                "--write-scope", "scripts/one.py",
+            )
+            self.assertIn("sole orch-decompose root", refused["error"])
+            self.assertEqual([], list(run_dir.glob("Q.gate.*.md")))
+            self.assertNotIn("error", self.gate())
+
     def test_a_second_gate_is_refused_and_the_first_stubs_stand(self):
         with tempfile.TemporaryDirectory() as tmp:
             sink = use_sink(Path(tmp))

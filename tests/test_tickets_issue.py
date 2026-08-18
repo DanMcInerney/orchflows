@@ -569,21 +569,22 @@ class InstructionCeilingTest(unittest.TestCase):
         script itself writes."""
 
         over = tickets_mod.INSTRUCTION_BUDGET + 100
-        exempt = (
-            ("00-root", tickets_mod.ROOT_EXECUTOR),
+        root_text = ceiling_ticket(
+            over, executor=tickets_mod.ROOT_EXECUTOR, ticket_id="00-root"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            payload, path = self.place(Path(tmp), root_text, ticket_id="00-root")
+            self.assertNotIn("error", payload)
+            self.assertTrue(path.is_file())
+        for ticket_id, executor in (
             ("00-root.gate.critique.code", "orch-critique"),
             ("00-root.gate.verify", "orch-verify"),
-        )
-        for ticket_id, executor in exempt:
-            with self.subTest(ticket_id), tempfile.TemporaryDirectory() as tmp:
-                tmp = Path(tmp)
-                payload, path = self.place(
-                    tmp,
-                    ceiling_ticket(over, executor=executor, ticket_id=ticket_id),
-                    ticket_id=ticket_id,
+        ):
+            with self.subTest(ticket_id):
+                text = ceiling_ticket(over, executor=executor, ticket_id=ticket_id)
+                self.assertIsNone(
+                    tickets_mod._ceiling_error("gate stub", ticket_id, text)
                 )
-                self.assertNotIn("error", payload)
-                self.assertTrue(path.is_file())
 
 
 class CriterionNestingTest(unittest.TestCase):
@@ -926,6 +927,45 @@ class NewTest(unittest.TestCase):
                 path.name: path.read_bytes() for path in run_dir.glob("*.md")
             })
 
+    def test_concurrent_root_creators_leave_exactly_one_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            (tmp / ".git").mkdir()
+            sink = use_sink(tmp)
+            common = [
+                "--executor", "orch-decompose", "--objective", "one kind",
+                "--criterion", GOOD_CRITERION, "--write-scope", "scratch/out.txt",
+            ]
+            processes = [
+                subprocess.Popen(
+                    [sys.executable, str(TICKETS_PY), "new", "race-run", root, *common],
+                    cwd=str(tmp), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                    text=True, encoding="utf-8", errors="replace",
+                )
+                for root in ("R1", "R2")
+            ]
+            results = [process.communicate(timeout=20) + (process.returncode,)
+                       for process in processes]
+            self.assertEqual([0, 1], sorted(result[2] for result in results), results)
+            run_dir = sink / "tickets" / "race-run"
+            roots = [
+                path for path in run_dir.glob("*.md")
+                if tickets_mod._executor_of(tickets_mod._parse_frontmatter(
+                    path.read_text(encoding="utf-8")
+                )) == tickets_mod.ROOT_EXECUTOR
+            ]
+            self.assertEqual(1, len(roots), results)
+
+    def test_new_reserves_every_gate_family_id(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            payload = run_cmd(
+                "new", "testrun", "R.gate.repair", "--executor", "orch-repair",
+                "--objective", "forge a gate", "--criterion", GOOD_CRITERION,
+            )
+            self.assertIn("reserved", payload["error"])
+            self.assertFalse((sink / "tickets" / "testrun" / "R.gate.repair.md").exists())
+
     def test_new_and_instantiate_share_immutable_run_identity(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
@@ -938,6 +978,10 @@ class NewTest(unittest.TestCase):
             self.assertNotIn("error", run_cmd(*new_args()))
             identity_path = sink / "runs" / "testrun" / "run.json"
             opened = identity_path.read_bytes()
+            (sink.parent / "receipt.json").write_text(
+                json.dumps({"version": 99, "source_commit": "c" * 40}),
+                encoding="utf-8",
+            )
             directory = make_template(tmp, {"A": stub("A"), "B": stub("B", "[A]")})
             appended = run_cmd(
                 "instantiate", str(directory), "--run", "testrun",
@@ -945,6 +989,10 @@ class NewTest(unittest.TestCase):
             )
             self.assertNotIn("error", appended)
             self.assertEqual(opened, identity_path.read_bytes())
+            (sink.parent / "receipt.json").write_text(
+                json.dumps({"version": 4, "source_commit": commit}),
+                encoding="utf-8",
+            )
 
             separate = run_cmd(
                 "instantiate", str(directory), "--run", "template-run",

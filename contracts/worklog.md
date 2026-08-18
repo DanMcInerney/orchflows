@@ -34,3 +34,9 @@ a successor has its own run view after its predecessor result is fixed.
 Fresh-context iteration, resumption, and post-hoc improvement read this
 view instead of transcripts; transcripts are never state. The sink
 layout it is rendered from is `scripts/tickets.py`'s.
+
+For a multi-kind request, `successors.md` beside this view is the durable
+successor plan: ordered kind, pack, proposed run/root ids and `planned` or
+`opened` state. It is not a transcript and not a second worklog. `orch-spec`
+is its sole writer; a drained `orch-frontier` reads it to trigger successor
+materialization from the predecessor's accepted result identity.

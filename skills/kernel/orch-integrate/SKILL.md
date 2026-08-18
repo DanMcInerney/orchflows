@@ -10,25 +10,22 @@ contracted return fields with the originating
 [delegation packet](../../../contracts/work-item.md#dispatch) — plus the
 caller write scope.
 
-Grade by dispatch: a work item takes the ticket grade —
-verification must cover each frozen criterion at its stated
-identities through one outside-independence path per
+Grade a work item by its ticket: verification covers every frozen criterion
+at its identities through one outside-independence path per
 [rules/verification.md](../../../rules/verification.md) §10
 (`authored-here` coverage rides `independence`: `gate` defers to the
-downstream gate, `checker` requires `checked_by`), needs-verify
-reachable; `suspended` is ticket-grade only, resuming from the
-ticket's `## Handoff`. A bare packet takes the packet grade — no
-completion test, so disposition stays accepted or rejected(blame) only;
-an exclusion-stop is adjudicated on its contracted return per
-[work-item.md](../../../contracts/work-item.md#dispatch) — the caller
-re-dispatches with a ticket when resume matters.
+gate, `checker` requires `checked_by`), needs-verify reachable. `suspended`
+resumes from `## Handoff`. A bare packet has no completion test: accept or
+reject(blame) its contract; after exclusion-stop, redispatch with a ticket only
+when resume matters.
 
-Check always: the returning child's name matches the ticket's
-`claimed_by`, its `checked_by`, or the re-verifier your own
-`tickets.py packet --executor` named — a mismatch is rejected(child), a
-lapsed claim returning outside its bound, never a caller under-supply;
+Always require the returning name to match `claimed_by`, `checked_by`, or the
+re-verifier your `tickets.py packet --executor` named; reject mismatch(child)
+and a lapsed claim outside its bound;
 reject a non-root ticket carrying both `independence: gate` and
 `checked_by` before acceptance;
+on a root, `checked_by` is cut reader bookkeeping, never final checker
+acceptance — authored-here acceptance rides the composite gate;
 `changed_artifacts` per
 [work-item.md](../../../contracts/work-item.md#dispatch); nothing a
 verification entry covers has changed since it was produced. For

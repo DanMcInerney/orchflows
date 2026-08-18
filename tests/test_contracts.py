@@ -476,6 +476,12 @@ class TestVerificationHomelessLaws(unittest.TestCase):
             "one repair", "one verification",
         ):
             self.assertIn(token, root, f"Root ticket omits {token!r}")
+        for token in (
+            "`independence: gate`", "`checked_by`", "cut reader",
+            "never satisfies", "composite gate", "`successors.md`",
+            "sole writer", "completed frontier", "accepted result identity",
+        ):
+            self.assertIn(token, root, f"Root ticket omits {token!r}")
 
         verification = self.law(10)
         for token in (
@@ -491,7 +497,11 @@ class TestVerificationHomelessLaws(unittest.TestCase):
         ):
             self.assertIn(token, topology_gate, f"topology.md §5 omits {token!r}")
         topology_successor = read_clause_flat("rules/topology.md", 7)
-        for token in ("successor run", "result identity", "resolved", "cited"):
+        for token in (
+            "successor run", "result identity", "resolved", "cited",
+            "`successors.md`", "sole writer", "materialization owner",
+            "durable trigger",
+        ):
             self.assertIn(token, topology_successor, f"topology.md §7 omits {token!r}")
 
         vocabulary = read_at_flat("docs/vocabulary.md")
@@ -518,6 +528,11 @@ class TestVerificationHomelessLaws(unittest.TestCase):
 
         worklog = read_flat("worklog.md")
         for token in ("one physical run", "one root", "composite gate"):
+            self.assertIn(token, worklog, f"worklog.md omits {token!r}")
+        for token in (
+            "`successors.md`", "durable successor plan", "not a transcript",
+            "sole writer", "drained `orch-frontier`", "accepted result identity",
+        ):
             self.assertIn(token, worklog, f"worklog.md omits {token!r}")
 
 
