@@ -435,10 +435,10 @@ def artifact_from(fetch, step=FEED_STEP, request=FEED_REQUEST):
     """One artifact out of one page produced beside the tree.
 
     It records what ``run_step`` records — the rows kept, the page's outcome,
-    the page's loss — so a page written beside the tree reaches the oracle in
-    exactly the shape a wrong adapter's would inside a real dispatch. That the
-    two agree is checked rather than assumed, against the same step of the run
-    that ships.
+    the page's loss, and the step's own kind and query — so a page written
+    beside the tree reaches the oracle in exactly the shape a wrong adapter's
+    would inside a real dispatch. That the two agree is checked rather than
+    assumed, against the same step of the run that ships.
     """
 
     clock = helpers.FakeClock()
@@ -462,6 +462,8 @@ def artifact_from(fetch, step=FEED_STEP, request=FEED_REQUEST):
                 records_kept=len(records),
                 outcome=page.outcome,
                 loss=tuple(page.loss),
+                kind=step.kind,
+                query=step.query,
             ),
         ),
         outcome=page.outcome,

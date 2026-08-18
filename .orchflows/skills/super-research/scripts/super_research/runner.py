@@ -365,6 +365,11 @@ def _refused_step(step: schema.AcquisitionStep, route_id: str, reason: str) -> s
         records_kept=0,
         outcome="refused",
         loss=(reason,),
+        # A refusal is a step whose kind and query are known — the step is in
+        # hand — and it is the one result whose records cannot say what it was,
+        # because it has none.
+        kind=step.kind,
+        query=step.query,
     )
 
 
@@ -588,6 +593,8 @@ def run_step(
             outcome=outcome,
             loss=tuple(loss),
             warnings=tuple(warnings),
+            kind=step.kind,
+            query=step.query,
         ),
         tuple(records),
         tuple(operations),

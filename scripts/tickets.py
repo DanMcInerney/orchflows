@@ -3617,26 +3617,12 @@ def _cmd_packet(rest):
         "Write your result into the ticket's own sections as you produce it, "
         "never in one write at the end; the join alone sets terminal status."
     )
-    if executor_script is None and further is None:
-        # The close law, beside the filing law it belongs to. These are
-        # contracts/work-item.md:95-97, :107-108 and :109-118 — the three
-        # sentences of a 1,690-word file an executor could reach only by
-        # following its body's link there, which is what the link was
-        # followed for (S3 F1). Carried for the item's own skill executor
-        # alone: a script node runs no completion test and files no
-        # Feedback, and each further §10 child's own head states its close.
-        prompt.append(
-            "Close by running `## Completion test` through `orch-verify` at "
-            "the result identity; `[]` fills an empty Feedback or Risks; an "
-            "excluded action suspends through `## Handoff`."
-        )
     # contracts/work-item.md's `isolation`: absent reads `none`, and only
     # `required` is told to establish anything, so a lane that must not stamp
     # itself is never handed the command. The pack is the second condition:
     # `required` says the item works alone, its pack's workspace cell says
     # what working alone is made of, and only a git mechanism is made of
-    # something this command can establish. The sibling resolves from this
-    # file's own location, so it points at whichever copy is running.
+    # something this command can establish.
     isolation = normalized_isolation(loaded.get("isolation"))
     # An empty scope is the third condition, and it is about what the item
     # writes rather than what it declares: an item authorized to change
@@ -3651,12 +3637,74 @@ def _cmd_packet(rest):
     # standing in over the executor's own, and that record is the `--base` the
     # join grades the merge against. The checker works in the workspace the
     # executor's record names; the re-verifier reads it.
-    if (
+    #
+    # Named once because two prompt lines below read it: the child that
+    # establishes a workspace is exactly the child that has a branch of its
+    # own, and a sentence whose premise is "your branch" is addressed to
+    # nobody else.
+    has_own_workspace = (
         further is None
         and isolation == REQUIRED_ISOLATION
         and writes_workspace_content
         and establishes_a_git_workspace(loaded.get("pack"))
-    ):
+    )
+    if executor_script is None and further is None:
+        # The close law, beside the filing law it belongs to. These are
+        # contracts/work-item.md:95-97, :107-108 and :109-118 — the three
+        # sentences of a 1,690-word file an executor could reach only by
+        # following its body's link there, which is what the link was
+        # followed for (S3 F1). Carried for the item's own skill executor
+        # alone: a script node runs no completion test and files no
+        # Feedback, and each further §10 child's own head states its close.
+        prompt.append(
+            "Close by running `## Completion test` through `orch-verify` at "
+            "the result identity; `[]` fills an empty Feedback or Risks; an "
+            "excluded action suspends through `## Handoff`."
+        )
+        # Carried for the close law's own reason, one rung down: how a check
+        # is read. Two lanes of one run piped a test command through `tail`,
+        # which drops the runner's summary -- written to stderr -- leaving
+        # exit status alone, and both then argued a check had passed because
+        # a following command ran (20260817T215731Z-research-depth, queued
+        # scope 7). Stated where the close is stated because a lane reads
+        # this packet and not the reference that would have said it.
+        prompt.append(
+            "A check's own summary line is its evidence: never pipe a test "
+            "command through `tail` or any other filter — the runner writes "
+            "that summary to stderr, and dropping it leaves exit status alone."
+        )
+        # The second half of the same lesson and the same run's queued scope
+        # 8: which checks are this executor's at all. Both lanes spent bound
+        # running the standards owner's repository-level suites inside their
+        # own branches. Stated rather than linked for the reason above, and
+        # visibility rather than law -- oracles.md's regression row already
+        # gives the full suite to the gate's row and never a unit's, and
+        # orch-frontier already gives the tip's checks to the engine.
+        prompt.append(
+            "Run the oracles your own `## Completion test` names, nothing "
+            "wider: a repository-level check the standards owner requires and "
+            "your ticket does not name is the engine's, run on the integrated "
+            "tip after each merge batch."
+        )
+        # The tail of that lesson, and it is addressed more narrowly than the
+        # head: it speaks about a branch, which a ticket establishing no
+        # workspace does not have. This run's three gate stubs declared no
+        # `isolation` and carried no `workspace_branch` where its two units
+        # carried `claude/sd-01` and `claude/sd-02`, and all three were told
+        # their green was provisional until a tip their work was already on
+        # (00-root.gate.critique.code, A3). The discriminator is the
+        # workspace, never the executor: the same stub sentence reached a
+        # critique, a repair and a re-verify.
+        if has_own_workspace:
+            prompt.append(
+                "Your branch is not the revision those repository-level "
+                "checks decide, and your green is provisional until the tip's."
+            )
+    # The four conditions above, spending the fact they were read for: the
+    # child that has a workspace of its own is the child told to establish
+    # one. The sibling script resolves from this file's own location, so it
+    # points at whichever copy is running.
+    if has_own_workspace:
         prompt.append(
             "Workspace establishment (isolation: required), your first act, "
             "run from inside your own workspace:"
