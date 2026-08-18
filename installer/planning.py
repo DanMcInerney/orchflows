@@ -28,7 +28,6 @@ from .foundation import (
     _require_project_root,
     _runtime_dirs,
     _scope_home,
-    discover_script_names,
 )
 from .managed_text import render_claude_settings, render_codex_agent_limits
 from .models import (
@@ -119,7 +118,9 @@ def _mints_claude_adapter(name: str, claude_adapter_set: str) -> bool:
 
 
 def _build_user_plan(
-    claude_adapter_set: str = "all", codex_limits_renderer=render_codex_agent_limits
+    claude_adapter_set: str = "all",
+    codex_limits_renderer=render_codex_agent_limits,
+    script_name_discoverer=None,
 ) -> Plan:
     lib_home = _lib_home("user", None)
     scope_home = _scope_home("user", None)
@@ -154,7 +155,7 @@ def _build_user_plan(
 
     scripts = [
         (REPO_ROOT / "scripts" / name, bin_dir / name)
-        for name in discover_script_names(REPO_ROOT / "scripts")
+        for name in script_name_discoverer(REPO_ROOT / "scripts")
     ]
 
     claude_scope_home = _claude_scope_home("user", None)
@@ -341,12 +342,15 @@ def build_plan(
     project_root: Path | None,
     claude_adapter_set: str = "all",
     codex_limits_renderer=render_codex_agent_limits,
+    script_name_discoverer=None,
 ) -> Plan:
     if scope == "project":
         # A project install writes no host skill surfaces at all, so the
         # adapter set has nothing to select.
         return _build_project_plan(_require_project_root(project_root))
-    return _build_user_plan(claude_adapter_set, codex_limits_renderer)
+    return _build_user_plan(
+        claude_adapter_set, codex_limits_renderer, script_name_discoverer
+    )
 
 
 def plan_entry_count(plan: Plan) -> int:

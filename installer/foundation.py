@@ -39,34 +39,6 @@ CANONICAL_DIRS = (
     "compositions",
     "templates",
 )
-SCRIPT_NAMES = (
-    "cutcheck.py",
-    # The documentation factory's oracle. Bodies invoke it by bare filename,
-    # so it resolves from the installed bin dir or not at all -- and it lived
-    # in scripts/ shipping to nothing until this line named it.
-    "doclint.py",
-    "friction.py",
-    "migrate_state.py",
-    # Named by bare filename from the evolve template's campaign stub. It
-    # shipped inside a canonical skills/ directory until P4-3 made it a
-    # script; scripts/ is not canonical, so the move un-shipped it and the
-    # stub's instruction pointed at nothing.
-    "search_plan.py",
-    "state_root.py",
-    "tickets.py",
-    "trace.py",
-    "ui.py",
-    "workspace.py",
-)
-SCRIPT_SUPPORT_PREFIXES = (
-    "tickets",
-    "ui",
-    "cutcheck",
-    "search_plan",
-    "trace",
-    "workspace",
-    "migrate_state",
-)
 CLAUDE_CLI_CANDIDATES = ("claude", "claude.exe", "claude.cmd")
 CODEX_CLI_CANDIDATES = ("codex", "codex.exe", "codex.cmd")
 PROFILES_MD = REPO_ROOT / "skills" / "engines" / "orch-frontier" / "references" / "profiles.md"
@@ -92,20 +64,6 @@ _TOML_TABLE_RE = re.compile(r"^\s*\[\[?[^\]]+\]\]?\s*(?:#.*)?$")
 _AGENTS_TABLE_RE = re.compile(r"^\s*\[agents\]\s*(?:#.*)?$")
 _AGENTS_DOTTED_LIMIT_RE = re.compile(r"^\s*agents\.(?:max_threads|max_depth)\s*=")
 _AGENTS_LIMIT_RE = re.compile(r"^\s*(?:max_threads|max_depth)\s*=")
-
-
-def discover_script_names(scripts_dir: Path) -> tuple[str, ...]:
-    """Return entrypoints plus flat helpers owned by compatibility facades."""
-
-    entrypoints = set(SCRIPT_NAMES)
-    support = sorted(
-        path.name
-        for path in scripts_dir.glob("*.py")
-        if path.name not in entrypoints
-        and any(path.stem.startswith(f"{prefix}_") for prefix in SCRIPT_SUPPORT_PREFIXES)
-    )
-    return SCRIPT_NAMES + tuple(support)
-
 
 # --- scope-derived paths -----------------------------------------------
 

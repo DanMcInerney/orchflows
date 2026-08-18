@@ -84,6 +84,42 @@ if sys.version_info < MIN_PYTHON:
         f"install.py`."
     )
 
+SCRIPT_NAMES = (
+    "cutcheck.py",
+    "doclint.py",
+    "friction.py",
+    "migrate_state.py",
+    "search_plan.py",
+    "state_root.py",
+    "tickets.py",
+    "trace.py",
+    "ui.py",
+    "workspace.py",
+)
+SCRIPT_SUPPORT_PREFIXES = (
+    "tickets",
+    "ui",
+    "cutcheck",
+    "search_plan",
+    "trace",
+    "workspace",
+    "migrate_state",
+)
+
+
+def discover_script_names(scripts_dir: Path) -> tuple[str, ...]:
+    """Return entrypoints plus flat helpers owned by compatibility facades."""
+
+    entrypoints = set(SCRIPT_NAMES)
+    support = sorted(
+        path.name
+        for path in scripts_dir.glob("*.py")
+        if path.name not in entrypoints
+        and any(path.stem.startswith(f"{prefix}_") for prefix in SCRIPT_SUPPORT_PREFIXES)
+    )
+    return SCRIPT_NAMES + tuple(support)
+
+
 from installer import planning as _planning
 from installer import presentation as _presentation
 from installer.application import (
@@ -115,8 +151,6 @@ from installer.foundation import (
     PROFILES_MD,
     PROFILE_ROLES,
     REPO_ROOT,
-    SCRIPT_NAMES,
-    SCRIPT_SUPPORT_PREFIXES,
     SHARED_ADAPTER_NAMES,
     STATE_HOME_ENV_VAR,
     STATE_SINK_SUBPATH,
@@ -138,7 +172,6 @@ from installer.foundation import (
     _runtime_dirs,
     _scope_home,
     _state_sink,
-    discover_script_names,
     tomllib,
 )
 from installer.managed_text import (
@@ -198,14 +231,20 @@ def render_codex_agent_limits(text: str) -> tuple[str, dict]:
 
 
 def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
-    return _planning._build_user_plan(claude_adapter_set, render_codex_agent_limits)
+    return _planning._build_user_plan(
+        claude_adapter_set, render_codex_agent_limits, discover_script_names
+    )
 
 
 def build_plan(
     scope: str, project_root: Path | None, claude_adapter_set: str = "all"
 ) -> Plan:
     return _planning.build_plan(
-        scope, project_root, claude_adapter_set, render_codex_agent_limits
+        scope,
+        project_root,
+        claude_adapter_set,
+        render_codex_agent_limits,
+        discover_script_names,
     )
 
 
