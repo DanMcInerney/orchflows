@@ -5443,6 +5443,12 @@ class TestPacketCarriesWhatTwoLanesSpentBoundLearning(unittest.TestCase):
             self.assertIn("summary line is its evidence", prompt)
             self.assertIn("`tail`", prompt)
 
+    def test_the_packet_states_the_repo_checks_are_the_engines(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prompt = self.prompt_for(Path(tmp))
+            self.assertIn("integrated tip", prompt)
+            self.assertIn("nothing wider", prompt)
+
 
 class TestReadyReportsWhatItCouldNotGrade(unittest.TestCase):
     """`ready` used to answer a read failure with silence: an unloadable
