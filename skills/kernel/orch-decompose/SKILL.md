@@ -4,15 +4,13 @@ description: Cut a stamped root ticket into work-item tickets under the pack's s
 role: planner
 ---
 
-Require: a root
-[ticket](../../../contracts/work-item.md#root-ticket) plus the stamped
-pack's slicing reference and oracle_policy. Reject a root missing any
-part that contract names, naming it.
+Require: a root [ticket](../../../contracts/work-item.md#root-ticket) and
+the stamped pack's slicing and oracle_policy. Reject any missing contract
+part, naming it.
 
-Goal: minimize the run's critical path subject to every item an atom.
-The atom test, and where a cut's count and its width are settled, are
-[rules/topology.md](../../../rules/topology.md) §3's; read it before
-the first item.
+Goal: minimize critical path subject to every item an atom; read its test,
+count and width law in [rules/topology.md](../../../rules/topology.md) §3
+before the first item.
 
 Cut the root ticket into [work items](../../../contracts/work-item.md)
 under the slicing, issued as `<root>.NN` into the root's own run
@@ -24,14 +22,12 @@ criteria name oracles from the pack's oracle policy, each with its
 provenance. Select `independence: gate` when the final gate covers all
 authored-here criteria on that item, regardless of oracle class; select
 `independence: checker` when any authored-here criterion is not covered
-there. Draw each edge under §3's edge rule and place each
-artifact two items would write under its sole-owner rule, at the point
-you decide one.
+there. Draw each edge under §3's edge rule and place each artifact two
+items would write under its sole-owner rule.
 Emit the assembly item the pack's cell names, on §4's terms.
 
-Then run `cutcheck.py` against the revision the set was cut from,
-repair every cut defect it reports through `tickets.py amend` and re-run
-it to exit 0; its advisories and what it cannot decide are
+Run `cutcheck.py` against the cut revision; repair every defect through
+`tickets.py amend` and re-run to exit 0. Its advisories and undecidables are
 [references/cut-lens.md](references/cut-lens.md)'s to judge. Only then
 write the run's one composite gate through `tickets.py gate`: one critique
 per unique lens name, all feeding one repair and one verification over the
