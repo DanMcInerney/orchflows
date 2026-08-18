@@ -923,10 +923,10 @@ def _write_identity(run_dir: Path, document: dict) -> None:
         raise
 
 
-def _identity_update(run: str, now):
+def _identity_update(run: str, now, runs_root=None):
     """Prepare this writer's one immutable run-identity update."""
 
-    runs_root = _runs_root()
+    runs_root = _runs_root() if runs_root is None else runs_root
     if runs_root is None:
         return None, None, {"error": NO_SINK_ERROR}
     run_dir = runs_root / run
@@ -2747,7 +2747,11 @@ def _cmd_instantiate(rest):
         loaded = _load_ticket(path)
         if "error" not in loaded and _executor_of(loaded) == ROOT_EXECUTOR:
             existing_roots.append(str(loaded.get("id") or path.stem))
-    if len(existing_roots) + len(incoming_roots) > 1:
+    # A template is itself one composite run graph and may lawfully contain
+    # several staged decomposers (benchmaker is the canonical example). What
+    # is refused is adding that graph's root system to a run that already has
+    # one; the template's accepted stubs remain byte-identical.
+    if existing_roots and incoming_roots:
         return {
             "error": f"run '{run}' would have root tickets "
             f"{existing_roots + incoming_roots}: one physical run has one "
@@ -4629,7 +4633,7 @@ def _cmd_run_state(rest):
             }
         replaced = target.exists()
     identity_dir, document, refusal = _identity_update(
-        run, datetime.now(timezone.utc)
+        run, datetime.now(timezone.utc), runs_root
     )
     # The identity gate runs before the payload and before either directory
     # exists: a refused write leaves the worklog, the artifact and the
