@@ -17,8 +17,12 @@ it imports `os` nowhere, so there is nothing to reach one with.
 
 Then the roster runs: thirty-four steps, twenty adapters, every route the core
 can reach, one artifact. Every step keeps rows, no step is refused, and the
-string `auth_required` — which seven adapters and the router all know how to
-say — appears in nothing the run produced.
+string `auth_required` appears in nothing the run produced — though nine
+adapters name it, five of them can say it, and the router says it too. The
+rest bind the constant and load it nowhere: no status a documented-keyless
+route can answer with is a report that a credential was needed. Both counts
+are read off the source by `test_dependency_boundary`, which holds this
+sentence against the same scan `protocol.md`'s loss tables answer to.
 
 Four adapters written beside the tree hold the oracle honest: one that reads
 the environment for a key and refuses when it finds none, one that says
@@ -226,7 +230,7 @@ def hydration(step_id, adapter_id, locator, target_id, max_items=200):
 def roster_manifest():
     """One dispatch over every adapter in the roster and every route it reaches.
 
-    Thirty-four steps rather than twenty: seven adapters read more than one
+    Thirty-four steps rather than twenty: ten adapters read more than one
     surface, and a keyless claim about an adapter that leaves one of its routes
     unread is a keyless claim about half of it.
     """
@@ -431,10 +435,10 @@ def artifact_from(fetch, step=FEED_STEP, request=FEED_REQUEST):
     """One artifact out of one page produced beside the tree.
 
     It records what ``run_step`` records — the rows kept, the page's outcome,
-    the page's loss — so a page written beside the tree reaches the oracle in
-    exactly the shape a wrong adapter's would inside a real dispatch. That the
-    two agree is checked rather than assumed, against the same step of the run
-    that ships.
+    the page's loss, and the step's own kind and query — so a page written
+    beside the tree reaches the oracle in exactly the shape a wrong adapter's
+    would inside a real dispatch. That the two agree is checked rather than
+    assumed, against the same step of the run that ships.
     """
 
     clock = helpers.FakeClock()
@@ -458,6 +462,8 @@ def artifact_from(fetch, step=FEED_STEP, request=FEED_REQUEST):
                 records_kept=len(records),
                 outcome=page.outcome,
                 loss=tuple(page.loss),
+                kind=step.kind,
+                query=step.query,
             ),
         ),
         outcome=page.outcome,

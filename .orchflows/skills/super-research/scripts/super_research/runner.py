@@ -240,14 +240,17 @@ def call_adapter(
 def surface_descriptors(adapter_id: str) -> Tuple[AdapterDescriptor, ...]:
     """Every route one adapter can reach, one descriptor each.
 
-    Most adapters read one route and this is its one descriptor. Four do not:
-    ``hacker_news`` reads two origins, ``github_rest`` reads one origin whose
-    anonymous hour is counted in two separate buckets, ``public_page`` selects
-    between two documents, and ``x_guest`` spends an activation to authorize
-    the route it reads. A budget belongs to whoever sets it, so an adapter like
-    those declares one descriptor per route and this is where the second
-    becomes reachable. Literal branches, like the two above: a surface the core
-    cannot see here is a route the scheduler would refuse to pace.
+    Most adapters read one route and this is its one descriptor. Ten do not.
+    Six read a second route plainly — ``bluesky``, ``prediction_markets``,
+    ``reddit_shreddit``, ``stocktwits``, ``web_search`` and
+    ``youtube_innertube`` — and four are worth a reason each: ``hacker_news``
+    reads two origins, ``github_rest`` reads one origin whose anonymous hour is
+    counted in two separate buckets, ``public_page`` selects between two
+    documents, and ``x_guest`` spends an activation to authorize the route it
+    reads. A budget belongs to whoever sets it, so an adapter like those
+    declares one descriptor per route and this is where the second becomes
+    reachable. Literal branches, like the two above: a surface the core cannot
+    see here is a route the scheduler would refuse to pace.
 
     A surface is not always something a caller reads. ``x_guest``'s activation
     returns a token rather than a record, so it appears here — where budgets
@@ -362,6 +365,11 @@ def _refused_step(step: schema.AcquisitionStep, route_id: str, reason: str) -> s
         records_kept=0,
         outcome="refused",
         loss=(reason,),
+        # A refusal is a step whose kind and query are known — the step is in
+        # hand — and it is the one result whose records cannot say what it was,
+        # because it has none.
+        kind=step.kind,
+        query=step.query,
     )
 
 
@@ -585,6 +593,8 @@ def run_step(
             outcome=outcome,
             loss=tuple(loss),
             warnings=tuple(warnings),
+            kind=step.kind,
+            query=step.query,
         ),
         tuple(records),
         tuple(operations),

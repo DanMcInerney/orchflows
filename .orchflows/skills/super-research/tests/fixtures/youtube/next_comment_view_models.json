@@ -1,0 +1,213 @@
+{
+ "responseContext": {},
+ "onResponseReceivedEndpoints": [
+  {
+   "reloadContinuationItemsCommand": {
+    "targetId": "comments-section",
+    "continuationItems": [
+     {
+      "commentsHeaderRenderer": {
+       "countText": {
+        "runs": [
+         {
+          "text": "23"
+         },
+         {
+          "text": " Comments"
+         }
+        ]
+       }
+      }
+     }
+    ]
+   }
+  },
+  {
+   "reloadContinuationItemsCommand": {
+    "targetId": "comments-section",
+    "continuationItems": [
+     {
+      "commentThreadRenderer": {
+       "commentViewModel": {
+        "commentViewModel": {
+         "commentId": "UgyyGmQFMmFbbTn5MfN4AaABAg",
+         "commentKey": "EhpVZ3l5R21RRk1tRmJiVG41TWZONEFhQUJBZyAoKAE%3D",
+         "toolbarStateKey": "EhpVZ3l5R21RRk1tRmJiVG41TWZONEFhQUJBZyAsKAE%3D"
+        }
+       },
+       "renderingPriority": "RENDERING_PRIORITY_UNKNOWN"
+      }
+     },
+     {
+      "commentThreadRenderer": {
+       "commentViewModel": {
+        "commentViewModel": {
+         "commentId": "UgyralckDuyMxNLY-7h4AaABAg",
+         "commentKey": "EhpVZ3lyYWxja0R1eU14TkxZLTdoNEFhQUJBZyAoKAE%3D",
+         "toolbarStateKey": "EhpVZ3lyYWxja0R1eU14TkxZLTdoNEFhQUJBZyAsKAE%3D"
+        }
+       },
+       "renderingPriority": "RENDERING_PRIORITY_UNKNOWN"
+      }
+     },
+     {
+      "commentThreadRenderer": {
+       "commentViewModel": {
+        "commentViewModel": {
+         "commentId": "UgyUiK-OZOBU_EFG0cp4AaABAg",
+         "commentKey": "EhpVZ3lVaUstT1pPQlVfRUZHMGNwNEFhQUJBZyAoKAE%3D",
+         "toolbarStateKey": "EhpVZ3lVaUstT1pPQlVfRUZHMGNwNEFhQUJBZyAsKAE%3D"
+        }
+       },
+       "renderingPriority": "RENDERING_PRIORITY_UNKNOWN"
+      }
+     },
+     {
+      "commentFilterContextViewModel": {
+       "text": {
+        "content": "Top is selected, so you'll see featured comments"
+       },
+       "accessibility": {
+        "accessibilityData": {
+         "label": "Top is selected, so you'll see featured comments"
+        }
+       }
+      }
+     }
+    ]
+   }
+  }
+ ],
+ "frameworkUpdates": {
+  "entityBatchUpdate": {
+   "mutations": [
+    {
+     "entityKey": "EhpVZ3l5R21RRk1tRmJiVG41TWZONEFhQUJBZyAoKAE%3D",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "commentEntityPayload": {
+       "key": "EhpVZ3l5R21RRk1tRmJiVG41TWZONEFhQUJBZyAoKAE%3D",
+       "properties": {
+        "commentId": "UgyyGmQFMmFbbTn5MfN4AaABAg",
+        "content": {
+         "content": "Nicd"
+        },
+        "publishedTime": "1 day ago",
+        "replyLevel": 0,
+        "toolbarStateKey": "EhpVZ3l5R21RRk1tRmJiVG41TWZONEFhQUJBZyAsKAE%3D"
+       },
+       "author": {
+        "channelId": "UCMfszfuTH2yay4usFythFWQ",
+        "displayName": "@DeltaLumineux",
+        "isVerified": false,
+        "isCreator": false
+       },
+       "toolbar": {
+        "likeCountLiked": "1",
+        "likeCountNotliked": " ",
+        "likeCountA11y": "0 likes",
+        "replyCount": "",
+        "replyCountA11y": "0 replies"
+       }
+      }
+     }
+    },
+    {
+     "entityKey": "EhpVZ3l5R21RRk1tRmJiVG41TWZONEFhQUJBZyAsKAE%3D",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "engagementToolbarStateEntityPayload": {
+       "key": "EhpVZ3l5R21RRk1tRmJiVG41TWZONEFhQUJBZyAsKAE%3D",
+       "likeState": "TOOLBAR_LIKE_STATE_INDIFFERENT",
+       "heartState": "TOOLBAR_HEART_STATE_HEARTED"
+      }
+     }
+    },
+    {
+     "entityKey": "EhpVZ3lyYWxja0R1eU14TkxZLTdoNEFhQUJBZyAoKAE%3D",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "commentEntityPayload": {
+       "key": "EhpVZ3lyYWxja0R1eU14TkxZLTdoNEFhQUJBZyAoKAE%3D",
+       "properties": {
+        "commentId": "UgyralckDuyMxNLY-7h4AaABAg",
+        "content": {
+         "content": "Crypto channel is back?"
+        },
+        "publishedTime": "3 days ago",
+        "replyLevel": 0,
+        "toolbarStateKey": "EhpVZ3lyYWxja0R1eU14TkxZLTdoNEFhQUJBZyAsKAE%3D"
+       },
+       "author": {
+        "channelId": "UCJIc4mD1LdQCeCs9vwO4h2Q",
+        "displayName": "@ErikTheGrateful",
+        "isVerified": false,
+        "isCreator": false
+       },
+       "toolbar": {
+        "likeCountLiked": "7",
+        "likeCountNotliked": "6",
+        "likeCountA11y": "6 likes",
+        "replyCount": "3",
+        "replyCountA11y": "3 replies"
+       }
+      }
+     }
+    },
+    {
+     "entityKey": "EhpVZ3lyYWxja0R1eU14TkxZLTdoNEFhQUJBZyAsKAE%3D",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "engagementToolbarStateEntityPayload": {
+       "key": "EhpVZ3lyYWxja0R1eU14TkxZLTdoNEFhQUJBZyAsKAE%3D",
+       "likeState": "TOOLBAR_LIKE_STATE_INDIFFERENT",
+       "heartState": "TOOLBAR_HEART_STATE_HEARTED"
+      }
+     }
+    },
+    {
+     "entityKey": "EhpVZ3lVaUstT1pPQlVfRUZHMGNwNEFhQUJBZyAoKAE%3D",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "commentEntityPayload": {
+       "key": "EhpVZ3lVaUstT1pPQlVfRUZHMGNwNEFhQUJBZyAoKAE%3D",
+       "properties": {
+        "commentId": "UgyUiK-OZOBU_EFG0cp4AaABAg",
+        "content": {
+         "content": "Maybe im crazy but SPX79K feels cheap compared to where this market could be in a few months."
+        },
+        "publishedTime": "2 days ago",
+        "replyLevel": 0,
+        "toolbarStateKey": "EhpVZ3lVaUstT1pPQlVfRUZHMGNwNEFhQUJBZyAsKAE%3D"
+       },
+       "author": {
+        "channelId": "UCj8aiJ3dw-i4QxMgAOrzwkg",
+        "displayName": "@BertoClipper",
+        "isVerified": false,
+        "isCreator": false
+       },
+       "toolbar": {
+        "likeCountLiked": "29",
+        "likeCountNotliked": "28",
+        "likeCountA11y": "28 likes",
+        "replyCount": "",
+        "replyCountA11y": "0 replies"
+       }
+      }
+     }
+    },
+    {
+     "entityKey": "EhpVZ3lVaUstT1pPQlVfRUZHMGNwNEFhQUJBZyAsKAE%3D",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "engagementToolbarStateEntityPayload": {
+       "key": "EhpVZ3lVaUstT1pPQlVfRUZHMGNwNEFhQUJBZyAsKAE%3D",
+       "likeState": "TOOLBAR_LIKE_STATE_INDIFFERENT",
+       "heartState": "TOOLBAR_HEART_STATE_UNHEARTED"
+      }
+     }
+    }
+   ]
+  }
+ }
+}

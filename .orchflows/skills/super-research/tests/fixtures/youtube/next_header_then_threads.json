@@ -1,0 +1,55 @@
+{
+ "responseContext": {},
+ "onResponseReceivedEndpoints": [
+  {
+   "clickTrackingParams": "CAAQ",
+   "reloadContinuationItemsCommand": {
+    "targetId": "comments-section",
+    "continuationItems": [
+     {"commentsHeaderRenderer": {"countText": {"simpleText": "1,292 Comments"}}}
+    ]
+   }
+  },
+  {
+   "clickTrackingParams": "CAAQ",
+   "reloadContinuationItemsCommand": {
+    "targetId": "comments-section",
+    "continuationItems": [
+     {
+      "commentThreadRenderer": {
+       "comment": {
+        "commentRenderer": {
+         "commentId": "UgxFirstComment",
+         "contentText": {"runs": [{"text": "bottom signal"}]},
+         "authorText": {"simpleText": "@first_watcher"},
+         "voteCount": {"simpleText": "272"},
+         "replyCount": 4
+        }
+       }
+      }
+     },
+     {
+      "commentThreadRenderer": {
+       "comment": {
+        "commentRenderer": {
+         "commentId": "UgxSecondComment",
+         "contentText": {"runs": [{"text": "charting is astrology for men"}]},
+         "authorText": {"simpleText": "@second_watcher"},
+         "voteCount": {"simpleText": "94"},
+         "replyCount": 0
+        }
+       }
+      }
+     },
+     {
+      "continuationItemRenderer": {
+       "continuationEndpoint": {
+        "continuationCommand": {"token": "COMMENTS_PAGE_TWO"}
+       }
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

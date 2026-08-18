@@ -3405,6 +3405,25 @@ def youtube_page(fixture, status=200, target_id=None, cursor=""):
     )
 
 
+def youtube_comments_page(payload):
+    """Run the `next` operation over one payload built here rather than read whole.
+
+    The comment route's own request, because a page assembled in a test is only
+    evidence about this adapter if it arrives the way the origin's does: the
+    same operation, the same cursor, the same content type.
+    """
+
+    return adapter_page(
+        youtube_innertube,
+        200,
+        json.dumps(payload),
+        content_type="application/json",
+        request=youtube_request(
+            "next:" + YOUTUBE_VIDEO_ID, cursor=YOUTUBE_COMMENT_CURSOR
+        ),
+    )
+
+
 def attributes_of(record):
     """One record's named string facts, grouped under the names the route used."""
 
@@ -3535,6 +3554,102 @@ class InnerTubeCommentThreadTest(unittest.TestCase):
     make one adapter call two reads.
     """
 
+    def test_the_threads_are_read_when_the_header_arrives_as_its_own_command(self):
+        """One answer carries the comment section in more than one piece.
+
+        The header — the comment count and the sort control — is its own
+        `reloadContinuationItemsCommand` and arrives *before* the one holding
+        the threads. Reading only the first command found returned a one-row
+        header and typed a video with 1,292 comments as having none. Measured
+        2026-08-17 on `next:4jZjM0Zs_LY`: entry 0 held one
+        `commentsHeaderRenderer`, entry 1 held fourteen threads.
+        """
+
+        page, _ = youtube_page(
+            "next_header_then_threads.json",
+            target_id="next:" + YOUTUBE_VIDEO_ID,
+            cursor=YOUTUBE_COMMENT_CURSOR,
+        )
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(len(page.records), 2)
+        self.assertEqual(
+            [record.body for record in page.records],
+            ["bottom signal", "charting is astrology for men"],
+        )
+        # The token still comes off the row that carries it, whichever command
+        # that row arrived under.
+        self.assertEqual(page.cursor_out, "COMMENTS_PAGE_TWO")
+
+    def test_a_page_past_the_second_arrives_under_the_append_action(self):
+        """The third page's own container name, which paging stopped at.
+
+        Page two arrives under `reloadContinuationItemsCommand`; the page after
+        it arrives under `appendContinuationItemsAction`, the same spelling the
+        `search` route uses. Measured 2026-08-17 on `next:__tEElLKowI`: page
+        three answered 200 carrying
+        `onResponseReceivedEndpoints[0].appendContinuationItemsAction` and
+        nothing else, while this module scanned for
+        `appendContinuationItemsCommand` — a spelling no route was measured
+        sending — so a page holding real threads came back as no list at all and
+        `_comments_page` typed it `schema_drift`. Depth ran to page two and then
+        reported a platform failure that had not happened.
+        """
+
+        page, _ = youtube_page(
+            "next_append_action_page.json",
+            target_id="next:" + YOUTUBE_VIDEO_ID,
+            cursor=YOUTUBE_COMMENT_CURSOR,
+        )
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(page.loss, ())
+        self.assertEqual(
+            [record.body for record in page.records],
+            ["third page, still reading", "and the page after this one is still offered"],
+        )
+        # The token off the row this page carried, so page four is reachable the
+        # same way page three was.
+        self.assertEqual(page.cursor_out, "COMMENTS_PAGE_FOUR")
+
+    def test_a_page_under_an_undeclared_container_name_is_typed_drift(self):
+        """The scan admits the names measured and not whatever looks like a list.
+
+        Built beside the tree rather than by editing the fixture: the same
+        payload twice, once under the container name page three was measured
+        arriving in and once under a spelling no route sends. A parser that
+        matched any key holding `continuationItems` would read the second and
+        report a page the platform never served in that shape, which is the
+        failure the per-route tuple guards and the reason it lists measured
+        names only.
+
+        Both halves are asserted because either alone proves little. The
+        measured half is what makes this a can-fail — one key name is the whole
+        difference between an `ok` page of two records and a refusal — and the
+        renamed half is asserted at the page the caller receives rather than at
+        the item scan under it, so a change that let an unread list conclude
+        `ok` with no records would fail here instead of passing under a name
+        promising the opposite.
+        """
+
+        renamed = json.loads(read_youtube("next_append_action_page.json"))
+        endpoint = renamed[youtube_innertube.RECEIVED_ENDPOINTS_KEY][0]
+        endpoint["appendContinuationItemsCommand"] = endpoint.pop(
+            "appendContinuationItemsAction"
+        )
+
+        measured, _ = youtube_comments_page(
+            json.loads(read_youtube("next_append_action_page.json"))
+        )
+        drifted, _ = youtube_comments_page(renamed)
+
+        self.assertEqual(measured.outcome, "ok")
+        self.assertEqual(len(measured.records), 2)
+
+        self.assertEqual(drifted.outcome, "failed")
+        self.assertEqual(drifted.loss, ("schema_drift",))
+        self.assertEqual(drifted.records, ())
+
     def test_a_call_spending_the_token_carries_the_threads_it_returned(self):
         page, opener = youtube_page(
             "next_comment_threads.json",
@@ -3632,6 +3747,291 @@ class InnerTubeCommentThreadTest(unittest.TestCase):
         self.assertIn("comment", " ".join(page.warnings))
         self.assertEqual(json.loads(opener.opened[0].body)["videoId"], YOUTUBE_VIDEO_ID)
         self.assertEqual(len(opener.opened), 1)
+
+
+class YoutubeCommentsOffTest(unittest.TestCase):
+    """A video nobody may comment on, which is an answer and not a broken read.
+
+    Measured 2026-08-17, side by side, through this package's own transport.
+    `next:DPhzzkjiD9s` answered 200 with four watch-next renderers whose last
+    is an `itemSectionRenderer` carrying `comment-item-section` and the token.
+    `next:yLY0LGmBTt8` answered 200 with three renderers —
+    `videoPrimaryInfoRenderer`, `videoSecondaryInfoRenderer`,
+    `compositeVideoPrimaryInfoRenderer` — and no `itemSectionRenderer` at all.
+    Both well formed. The second was typed `schema_drift`, so a three-video
+    depth read returned `yt-comments-1 failed loss ('schema_drift',)` and
+    `coverage.review_artifact` reported `step_carried_loss`, obliging the
+    calling lane to state a payload change that had not happened.
+
+    `protocol.md` reserves `schema_drift` for a payload arriving in a shape
+    this parser does not know, so that an empty result would have been a lie.
+    Here the empty is the truth, and the shape this parser does not know is
+    the other absence: the watch-next container itself gone.
+    """
+
+    def test_a_video_with_comments_off_answers_empty(self):
+        page, _ = youtube_page(
+            "next_comments_off.json", target_id="next:" + YOUTUBE_VIDEO_ID
+        )
+
+        self.assertEqual(page.outcome, "empty")
+        self.assertEqual(page.loss, ())
+        self.assertEqual(page.records, ())
+        # No section, so no token: there is no second call to make, and
+        # surfacing one would send the core after a page nobody offered.
+        self.assertEqual(page.cursor_out, "")
+
+    def test_the_warning_states_what_was_absent(self):
+        """An empty carries its own news, and the news is the video's.
+
+        The page below and the first call on a video with comments both answer
+        empty with no loss, so the warning is the only place a reader learns
+        which one this was. Naming the `comment-item-section` here would name
+        a container the answer did not carry, and `_drifted`'s sentence would
+        say the payload moved when it did not.
+        """
+
+        page, _ = youtube_page(
+            "next_comments_off.json", target_id="next:" + YOUTUBE_VIDEO_ID
+        )
+        with_a_token, _ = youtube_page(
+            "next_watch_page.json", target_id="next:" + YOUTUBE_VIDEO_ID
+        )
+        said = " ".join(page.warnings)
+
+        self.assertIn("lists no comment", said)
+        # `_drifted`'s own sentence, which no page answering `empty` may carry.
+        self.assertNotIn("changed shape", said)
+        self.assertNotIn(youtube_innertube.COMMENT_SECTION_IDENTIFIER, said)
+        # The other empty still says what it is, so the two stay tellable
+        # apart by the one thing either of them returns.
+        self.assertIn(
+            youtube_innertube.COMMENT_SECTION_IDENTIFIER, " ".join(with_a_token.warnings)
+        )
+
+    def test_a_missing_container_is_still_drift(self):
+        """The absence that is not the video's, which the branch above widens past.
+
+        Both payloads are built beside the fixture rather than by editing it,
+        because what is asserted is the difference between them and the page
+        that reads whole: the same watch page with the container this module
+        walks removed, and a continuation call answering with an endpoint list
+        and no container either. Neither states anything about comments, so
+        neither can be read as a video that has none — calling either empty
+        would report a comment section nobody looked in as one nobody wrote
+        in, which is the reading `schema_drift` exists to prevent.
+        """
+
+        no_container = json.loads(read_youtube("next_comments_off.json"))
+        del no_container[youtube_innertube.WATCH_NEXT_PATH[0]]
+
+        gone, _ = youtube_comments_page(no_container)
+        neither, _ = youtube_comments_page(
+            {youtube_innertube.RECEIVED_ENDPOINTS_KEY: []}
+        )
+
+        for page in (gone, neither):
+            with self.subTest(warning=page.warnings):
+                self.assertEqual(page.outcome, "failed")
+                self.assertEqual(page.loss, ("schema_drift",))
+                self.assertEqual(page.records, ())
+
+
+VIEW_MODEL_FIXTURE = "next_comment_view_models.json"
+
+
+def assert_the_old_shape_reads(case, page):
+    """The preservation oracle's own body, so a wrong adapter can meet it too.
+
+    Held apart from the test that runs it because a criterion which passes
+    before the change it guards has to be shown rejecting something, and the
+    only honest way to show that is to run these same assertions over a result
+    built beside the tree.
+    """
+
+    case.assertEqual(page.outcome, "ok")
+    case.assertEqual(
+        [record.body for record in page.records],
+        ["bottom signal", "charting is astrology for men"],
+    )
+    case.assertEqual(
+        [dict(record.engagement) for record in page.records],
+        [
+            {youtube_innertube.REPLY_COUNT_METRIC: 4},
+            {youtube_innertube.REPLY_COUNT_METRIC: 0},
+        ],
+    )
+    case.assertEqual(
+        attributes_of(page.records[0])[youtube_innertube.VOTE_COUNT_TEXT_KEY], ["272"]
+    )
+
+
+def view_model_page(fixture=VIEW_MODEL_FIXTURE):
+    """One `next` answer in the shape the platform now serves, read as comments."""
+
+    return youtube_page(
+        fixture, target_id="next:" + YOUTUBE_VIDEO_ID, cursor=YOUTUBE_COMMENT_CURSOR
+    )[0]
+
+
+class YoutubeCommentViewModelTest(unittest.TestCase):
+    """The second shape a `next` answer serves its threads in.
+
+    Measured 2026-08-17 on `next:4jZjM0Zs_LY`, page two: 13
+    `commentThreadRenderer`s and **zero** carrying `comment.commentRenderer`,
+    the path the old reader walks. The thread now carries a view model whose
+    `commentKey` addresses that thread's `commentEntityPayload` among the 66
+    entity-store mutations beside it, and the fields — author, body, id, counts
+    — live on that entity. `next_comment_view_models.json` is that answer
+    trimmed to three of those threads: the `28`/`29` row, the `6`/`7` row whose
+    `replyCount` states `"3"`, and the `" "`/`1` row of a comment nobody liked.
+    """
+
+    def test_one_record_per_thread(self):
+        # Four rows, three of them threads: the filter-context row the platform
+        # ships beside them costs a loop iteration and never a record.
+        page = view_model_page()
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(len(page.records), 3)
+        self.assertEqual([record.native_position for record in page.records], [0, 1, 2])
+        self.assertEqual(
+            [record.canonical_content_kind for record in page.records], ["comment"] * 3
+        )
+        self.assertEqual(
+            [record.native_parent_id for record in page.records], [YOUTUBE_VIDEO_ID] * 3
+        )
+
+    def test_fields_come_from_the_named_entity(self):
+        # The view model states a key and nothing else worth carrying; every
+        # field is read off the entity that key addresses, in the order the
+        # threads arrived rather than the order the mutations did.
+        page = view_model_page()
+
+        self.assertEqual(
+            [record.author for record in page.records],
+            ["@DeltaLumineux", "@ErikTheGrateful", "@BertoClipper"],
+        )
+        # `properties.content.content` is a plain string, not a runs holder:
+        # a reader that went through `route_text` would carry every body empty.
+        self.assertEqual(page.records[0].body, "Nicd")
+        self.assertEqual(page.records[1].body, "Crypto channel is back?")
+        self.assertEqual(
+            [record.native_item_id for record in page.records],
+            [
+                "UgyyGmQFMmFbbTn5MfN4AaABAg",
+                "UgyralckDuyMxNLY-7h4AaABAg",
+                "UgyUiK-OZOBU_EFG0cp4AaABAg",
+            ],
+        )
+        self.assertEqual(page.loss, ())
+        self.assertEqual([record.loss for record in page.records], [()] * 3)
+        # A reply count only where the field states digits. `""` is what this
+        # route writes for a thread with no replies, and zero-filling it would
+        # publish a count the origin never stated.
+        self.assertEqual(
+            [dict(record.engagement) for record in page.records],
+            [{}, {youtube_innertube.REPLY_COUNT_METRIC: 3}, {}],
+        )
+        self.assertEqual(
+            [
+                attributes_of(record)[youtube_innertube.PUBLISHED_TIME_KEY]
+                for record in page.records
+            ],
+            [["1 day ago"], ["3 days ago"], ["2 days ago"]],
+        )
+
+    def test_the_count_is_never_the_liked_one(self):
+        # `likeCountLiked` is the count *if you liked it* — every row's
+        # `likeCountNotliked` plus one. Reading it inflates all thirteen
+        # measured rows by exactly one, and turns a comment nobody liked into
+        # one with a like. The signed-out count rides verbatim, `" "` included:
+        # it is what the origin wrote for zero, and it is not parsed into one.
+        page = view_model_page()
+        carried = [
+            attributes_of(record)[youtube_innertube.LIKE_COUNT_NOTLIKED_KEY]
+            for record in page.records
+        ]
+
+        self.assertEqual(carried, [[" "], ["6"], ["28"]])
+        for record in page.records:
+            with self.subTest(item=record.native_item_id):
+                named = attributes_of(record)
+                self.assertNotIn("likeCountLiked", named)
+                self.assertNotIn("likeCountA11y", named)
+                self.assertNotIn(
+                    youtube_innertube.LIKE_COUNT_NOTLIKED_KEY, dict(record.engagement)
+                )
+
+    def test_an_unresolved_thread_is_marked(self):
+        # A key addressing nothing in the store this answer carried is a thread
+        # whose fields did not arrive, not a thread that is not there. Dropping
+        # it would report fewer comments than the platform listed, so it stays
+        # a record and says what it is short of.
+        page = view_model_page("next_view_model_without_entity.json")
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(len(page.records), 2)
+        self.assertEqual(page.records[0].loss, ())
+        self.assertEqual(page.records[1].loss, ("field_omitted",))
+        self.assertEqual(page.records[1].body, "")
+        self.assertEqual(page.records[1].engagement, ())
+        self.assertEqual(page.records[1].attributes, ())
+
+    def test_an_answer_with_no_mutation_list_is_drift(self):
+        # The threads arrived and the store they point into did not: that is
+        # the payload having moved, and typing it as an empty page would report
+        # a video with comments as having none.
+        page = view_model_page("next_view_models_no_entity_store.json")
+
+        self.assertEqual(page.outcome, "failed")
+        self.assertEqual(page.loss, ("schema_drift",))
+        self.assertEqual(page.records, ())
+
+    def test_the_old_shape_still_reads(self):
+        # `comment.commentRenderer` is still what the header-then-threads
+        # capture carries, and this change is additive: the old walk is
+        # unchanged and its fixture is untouched.
+        assert_the_old_shape_reads(self, view_model_page("next_header_then_threads.json"))
+
+    def test_the_old_shape_oracle_rejects_an_adapter_that_dropped_it(self):
+        """And the reading above is worth something, which needs showing.
+
+        This is the one criterion here that passed before the change it guards
+        — a preservation oracle that failed at the baseline would be guarding
+        nothing — so its discrimination comes from a wrong adapter kept beside
+        the tree rather than from the executor's own red. `old_shape_dropped`
+        believes a comment's fields live in the entity store only; the same
+        assertions run over its page, and reject it.
+        """
+
+        wrong = load_adapter_fixture("old_shape_dropped_adapter", YOUTUBE_FIXTURE_DIR)
+        page, _ = adapter_page(
+            wrong,
+            200,
+            read_youtube("next_header_then_threads.json"),
+            content_type="application/json",
+            request=youtube_request(
+                "next:" + YOUTUBE_VIDEO_ID, cursor=YOUTUBE_COMMENT_CURSOR
+            ),
+        )
+
+        self.assertEqual(page.records, ())
+        with self.assertRaises(AssertionError):
+            assert_the_old_shape_reads(self, page)
+        # And the same adapter leaves the shape this item added alone, so the
+        # rejection above is the older shape's loss and nothing else.
+        page, _ = adapter_page(
+            wrong,
+            200,
+            read_youtube(VIEW_MODEL_FIXTURE),
+            content_type="application/json",
+            request=youtube_request(
+                "next:" + YOUTUBE_VIDEO_ID, cursor=YOUTUBE_COMMENT_CURSOR
+            ),
+        )
+
+        self.assertEqual(len(page.records), 3)
 
 
 class InnerTubePlayerTest(unittest.TestCase):
@@ -3841,6 +4241,7 @@ WRONG_YOUTUBE_ADAPTERS = (
     "empty_captions_as_absence_adapter",
     "stale_version_as_empty_adapter",
     "every_player_as_attested_adapter",
+    "old_shape_dropped_adapter",
 )
 
 
@@ -3918,6 +4319,88 @@ def assert_captions_are_never_reported_absent(case, adapter_id, pages):
         case.assertEqual(
             loss, (row["expected_loss"],) if row["expected_loss"] else (), detail
         )
+
+
+# One caption track as the player names it: a signed address this package
+# neither makes nor reads, and the two facts the record needs alongside it.
+TRANSCRIPT_TRACK = {
+    "baseUrl": (
+        "https://www.youtube.com/api/timedtext?v=" + YOUTUBE_VIDEO_ID
+        + "&lang=en&expire=1786000000&signature=0f1e2d"
+    ),
+    "languageCode": "en",
+    "kind": "asr",
+}
+
+
+def transcript_page_two(status, body):
+    """Read the timed-text route's answer as the transcript's second page.
+
+    Page two is the one the core reaches by spending page one's continuation,
+    so it is reached here the same way: the cursor the first page publishes,
+    and the timed-text route seeded rather than InnerTube's.
+    """
+
+    clock = helpers.FakeClock()
+    carrier, opener = helpers.offline_transport(
+        clock, {transport.YOUTUBE_TIMEDTEXT_ROUTE: (status, body, "application/json")}
+    )
+    page = youtube_innertube.fetch_native_page(
+        carrier,
+        youtube_request(
+            youtube_innertube.TRANSCRIPT_OPERATION + ":" + YOUTUBE_VIDEO_ID,
+            cursor=youtube_innertube.transcript_cursor(YOUTUBE_VIDEO_ID, TRANSCRIPT_TRACK),
+        ),
+    )
+    return (page, opener)
+
+
+class YoutubeTranscriptFailureTest(unittest.TestCase):
+    """The three ways page two can fail, each reported rather than raised.
+
+    A caption address is signed and expires, and the timed-text payload is a
+    shape this package reads rather than one it is promised. So all three of
+    these are ordinary weather on this route, and the loss table in
+    ``protocol.md`` already names this adapter for all three. What a caller
+    must never get is a raise: an adapter that raises costs the core the whole
+    page and reports nothing, which is precisely the report the typed
+    vocabulary exists to make. Each test names the code the branch types, so
+    a branch retyped to a neighbouring code fails here too.
+    """
+
+    def test_a_non_200_returns_a_typed_page(self):
+        page, opener = transcript_page_two(404, "")
+
+        self.assertEqual(page.outcome, "failed")
+        self.assertEqual(page.loss, ("http_status",))
+        self.assertEqual(page.records, ())
+        # The read happened: this is the origin's answer, not a short circuit
+        # ahead of it.
+        self.assertEqual(len(opener.opened), 1)
+        self.assertIn("404", page.warnings[0])
+
+    def test_an_unparseable_body_returns_a_typed_page(self):
+        # What an expired signature answers with: 200, and no json in it.
+        page, _ = transcript_page_two(200, "<!DOCTYPE html><html><body>Sign in</body></html>")
+
+        self.assertEqual(page.outcome, "failed")
+        self.assertEqual(page.loss, ("malformed_json",))
+        self.assertEqual(page.records, ())
+
+    def test_an_answer_with_no_events_returns_a_typed_page(self):
+        # Json, and not the json3 the route declares: the events list is gone.
+        page, _ = transcript_page_two(200, '{"wireMagic": "pb3"}')
+
+        self.assertEqual(page.outcome, "failed")
+        self.assertEqual(page.loss, ("schema_drift",))
+        self.assertEqual(page.records, ())
+
+    def test_the_three_codes_are_the_ones_the_loss_table_names(self):
+        # Spelled as every sibling adapter spells them, because a code the
+        # core cannot recognise reports as little as a raise does.
+        self.assertEqual(youtube_innertube.HTTP_STATUS, "http_status")
+        self.assertEqual(youtube_innertube.MALFORMED_JSON, "malformed_json")
+        self.assertEqual(youtube_innertube.SCHEMA_DRIFT, "schema_drift")
 
 
 class AttestationIsNotAnAbsenceTest(unittest.TestCase):
@@ -4050,6 +4533,53 @@ class AttestationIsNotAnAbsenceTest(unittest.TestCase):
         self.assertEqual(page.outcome, "failed")
         self.assertEqual(page.loss, ("schema_drift",))
         self.assertIn(".".join(youtube_innertube.SEARCH_RESULTS_PATH), warning)
+
+    def test_a_search_continuation_page_is_read_and_not_typed_as_drift(self):
+        """Page two of a search carries no first-page container, and is not drift.
+
+        Measured 2026-08-17: `search:bitcoin price prediction` answered page one
+        with 19 rows and a cursor, and every page after it was typed
+        `schema_drift` because the adapter read only
+        `SEARCH_RESULTS_PATH` — a container a continuation answer never sends.
+        A search could therefore never return more than one page. With the
+        continuation shape declared, the same query read 92 rows over five
+        pages, all `ok`.
+        """
+
+        page, _ = youtube_page(
+            "search_continuation.json", target_id=YOUTUBE_SEARCH_TARGET, cursor="PAGE_TWO_TOKEN"
+        )
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(page.loss, ())
+        self.assertEqual(
+            tuple(record.native_item_id for record in page.records),
+            ("J-uXheGywLA", "K8vQrTmXp2A"),
+        )
+        # The rows carry the route's own view text, exactly as page one does:
+        # a continuation is the same shape arriving under a different key, so
+        # nothing about the record may differ because of where it was read.
+        self.assertEqual(
+            list(attributes_of(page.records[0])["viewCountText"]), ["12,345 views"]
+        )
+        # And the next token is spent from the same place, so paging continues
+        # past page two rather than stopping one short of the cap.
+        self.assertEqual(page.cursor_out, "PAGE_THREE_TOKEN")
+
+    def test_neither_search_shape_present_is_still_drift(self):
+        """The fix widens what counts as an answer; it must not swallow drift.
+
+        `search_reshaped.json` carries neither container, and stays `failed`.
+        Read beside the continuation test above: one asserts the new shape is
+        accepted, this one asserts the old refusal survived it.
+        """
+
+        page, _ = youtube_page("search_reshaped.json", target_id=YOUTUBE_SEARCH_TARGET)
+
+        self.assertIsNone(youtube_innertube.search_sections(json.loads(
+            read_youtube("search_reshaped.json")
+        )))
+        self.assertEqual(page.loss, ("schema_drift",))
 
     def test_the_field_a_caption_fetcher_needs_is_read_once_where_it_is_spent(self):
         # Caption retrieval was deferred by the spec, and the deferral's whole
