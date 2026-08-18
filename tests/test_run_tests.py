@@ -26,6 +26,8 @@ sys.path.insert(0, str(REPO_ROOT))
 from tools import run_tests  # noqa: E402
 
 RUN_TESTS_PY = REPO_ROOT / "tools" / "run_tests.py"
+CHECKS_YML = REPO_ROOT / ".github" / "workflows" / "checks.yml"
+AGENTS_MD = REPO_ROOT / "AGENTS.md"
 
 # In cp1252 and not in ASCII, versus in neither. The first proves the decode
 # is faithful, the second that an unencodable character costs a glyph and not
@@ -103,6 +105,18 @@ class TestGuardedSeams(unittest.TestCase):
                 self.assertEqual(b"", completed.stderr, completed.stderr)
                 self.assertEqual(1, completed.returncode, report)
                 self.assertIn("leaked whole-interpreter seam: " + seam, report)
+
+
+class TestWorkflowContract(unittest.TestCase):
+    def test_ci_runs_the_regression_suite_once_through_the_parallel_runner(self):
+        workflow = CHECKS_YML.read_text(encoding="utf-8")
+        self.assertEqual(1, workflow.count("run: python tools/run_tests.py"))
+        self.assertNotIn("run: python -m unittest discover", workflow)
+
+    def test_serial_residue_check_remains_a_documented_local_oracle(self):
+        guidance = AGENTS_MD.read_text(encoding="utf-8")
+        self.assertIn("python -m unittest discover -s tests -v", guidance)
+        self.assertIn("serial local compatibility oracle", guidance)
 
 
 class Console:
