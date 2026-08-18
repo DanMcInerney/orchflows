@@ -118,6 +118,8 @@ def artifact(steps=(), records=()):
 # source rather than spelled here. They are what the review reads a second read
 # by: a record that did not arrive at the kind discovery answers on is that item
 # again, at another representation. A literal here would let the two drift.
+PROTOCOL_PATH = Path(__file__).resolve().parent.parent / "references" / "protocol.md"
+
 YOUTUBE_DISCOVERED_AS = youtube_innertube.DESCRIPTOR.representation_kind
 YOUTUBE_TRANSCRIPT_AS = youtube_innertube.TRANSCRIPT_DESCRIPTOR.representation_kind
 
@@ -517,6 +519,13 @@ class DepthReviewTest(unittest.TestCase):
     that still counts hydration steps and hydration records would call the
     deepest manifest this module can build "no depth planned" — and a warning
     that fires on the fix is worse than one that never fired.
+
+    What each review reads is the step: the manifest one reads its
+    `AcquisitionStep`s and the artifact one reads the `StepResult` each record
+    names. Every earlier attempt read record shape instead, and shape cannot
+    answer this — a paging depth step's records look exactly like a search
+    step's, which is what the first case below asserts by handing the same rows
+    to both and demanding two different answers.
     """
 
     def test_a_manifest_planning_paging_depth_draws_none(self):
@@ -811,6 +820,31 @@ class StepIdentityTest(unittest.TestCase):
         self.assertEqual((older.kind, older.query), ("", ""))
         self.assertEqual(dataclasses.asdict(older)["kind"], "")
         self.assertEqual(dataclasses.asdict(older)["query"], "")
+
+
+class ProtocolDocTest(unittest.TestCase):
+    """The step grammar's owner states the two fields this review joins by."""
+
+    def test_the_protocol_states_what_a_step_result_echoes(self):
+        """Read as backticked names in the paragraph that states the shape.
+
+        A caller assembling or reading an artifact by hand has only this file
+        to learn from that a `StepResult` says what its step was, and the
+        review's whole correctness now rests on those two fields being filled.
+        The wrong result this fails against is the owner describing a
+        `StepResult` that carries neither — the state in which every reader
+        downstream went back to guessing. Paragraph-scoped rather than
+        line-scoped so a reflow of the prose cannot fail it.
+        """
+
+        body = PROTOCOL_PATH.read_text(encoding="utf-8")
+        stated = [block for block in body.split("\n\n") if "`StepResult`" in block]
+
+        self.assertTrue(stated, "protocol.md stopped naming `StepResult`")
+        self.assertTrue(
+            any("`kind`" in block and "`query`" in block for block in stated),
+            "protocol.md names `StepResult` and not the `kind` and `query` it carries",
+        )
 
 
 class SkillDocTest(unittest.TestCase):
