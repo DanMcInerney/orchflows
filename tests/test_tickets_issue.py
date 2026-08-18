@@ -904,6 +904,28 @@ class NewTest(unittest.TestCase):
             self.assertIn("T1", payload["error"])
             self.assertEqual(before, self.ticket_path(sink).read_text(encoding="utf-8"))
 
+    def test_second_root_is_an_atomic_refusal(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            first = run_cmd(
+                "new", "testrun", "R1", "--executor", "orch-decompose",
+                "--objective", "deliver the first kind", "--criterion", GOOD_CRITERION,
+                "--write-scope", "scratch/first.txt",
+            )
+            self.assertNotIn("error", first)
+            run_dir = sink / "tickets" / "testrun"
+            before = {path.name: path.read_bytes() for path in run_dir.glob("*.md")}
+            second = run_cmd(
+                "new", "testrun", "R2", "--executor", "orch-decompose",
+                "--objective", "deliver another kind", "--criterion", GOOD_CRITERION,
+                "--write-scope", "scratch/second.txt",
+            )
+            self.assertIn("one root", second["error"])
+            self.assertIn("R1", second["error"])
+            self.assertEqual(before, {
+                path.name: path.read_bytes() for path in run_dir.glob("*.md")
+            })
+
     def test_each_required_part_is_refused_by_name(self):
         with tempfile.TemporaryDirectory() as tmp:
             use_sink(Path(tmp))

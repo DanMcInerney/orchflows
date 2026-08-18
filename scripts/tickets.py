@@ -2408,6 +2408,21 @@ def _issue_ticket(run: str, ticket_id: str, text: str):
             "error": f"ticket id '{ticket_id}' is already issued in run '{run}': "
             f"{ticket_path}. An id is stable once issued (contracts/work-item.md)"
         }
+    data = _parse_frontmatter(text)
+    if _executor_of(data) == ROOT_EXECUTOR:
+        existing_roots = []
+        run_dir = ticket_path.parent
+        for path in sorted(run_dir.glob("*.md")) if run_dir.is_dir() else []:
+            loaded = _load_ticket(path)
+            if "error" not in loaded and _executor_of(loaded) == ROOT_EXECUTOR:
+                existing_roots.append(str(loaded.get("id") or path.stem))
+        if existing_roots:
+            return {
+                "error": f"run '{run}' already has root ticket "
+                f"'{existing_roots[0]}': one physical run has one root and "
+                "one composite gate. Open a successor run for another "
+                "deliverable kind. Nothing was written"
+            }
     try:
         ticket_path.parent.mkdir(parents=True, exist_ok=True)
         with open(ticket_path, "w", encoding="utf-8", newline="\n") as handle:
@@ -2619,6 +2634,21 @@ def _cmd_instantiate(rest):
                 f"{path}. Nothing was written"
             }
         rendered.append((path, text))
+    incoming_roots = [
+        path.stem for path, text in rendered
+        if _executor_of(_parse_frontmatter(text)) == ROOT_EXECUTOR
+    ]
+    existing_roots = []
+    for path in sorted(run_dir.glob("*.md")) if run_dir.is_dir() else []:
+        loaded = _load_ticket(path)
+        if "error" not in loaded and _executor_of(loaded) == ROOT_EXECUTOR:
+            existing_roots.append(str(loaded.get("id") or path.stem))
+    if len(existing_roots) + len(incoming_roots) > 1:
+        return {
+            "error": f"run '{run}' would have root tickets "
+            f"{existing_roots + incoming_roots}: one physical run has one "
+            "root and one composite gate. Nothing was written"
+        }
     written = []
     try:
         run_dir.mkdir(parents=True, exist_ok=True)
@@ -2825,6 +2855,22 @@ def _cmd_gate(rest):
             "error": "gate requires --lens: one critique stub per stamped "
             f"lens, and root ticket '{root_id}' names no pack whose domain "
             "could stand in. usage: " + GATE_USAGE
+        }
+    try:
+        lenses = _distinct_gate_lenses(lenses)
+    except ValueError as error:
+        return {"error": str(error) + ". Nothing was written"}
+    gate_roots = sorted({
+        str(item.get("id") or "").split(GATE_ID_MARKER, 1)[0]
+        for item in items
+        if GATE_ID_MARKER in str(item.get("id") or "")
+    })
+    other_gate_roots = [owner for owner in gate_roots if owner != root_id]
+    if other_gate_roots:
+        return {
+            "error": f"run '{run}' already has the one gate owned by root "
+            f"'{other_gate_roots[0]}': root '{root_id}' cannot create a "
+            "second gate family. Nothing was written"
         }
     # contracts/work-item.md: the root ticket's `write_scope` *is* the run's
     # scope, and the repair holds that scope. Read from the root when the

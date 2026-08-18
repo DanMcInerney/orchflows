@@ -619,6 +619,49 @@ class GateStubsTest(unittest.TestCase):
                 ["R.gate.critique.craft", "R.gate.critique.cut-lens"], sorted(edges)
             )
 
+    def test_one_root_owns_gate_files_and_distinct_lenses(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            duplicate = run_cmd(
+                "gate", "testrun", "R", "--lens", "code,code",
+                "--write-scope", "scripts/one.py",
+            )
+            self.assertIn("distinct", duplicate["error"])
+            self.assertEqual([], list(run_dir.glob("R.gate.*.md")))
+
+            created = run_cmd(
+                "gate", "testrun", "R", "--lens", "code,security",
+                "--write-scope", "scripts/one.py",
+            )
+            self.assertNotIn("error", created)
+            self.assertEqual(["code", "security"], created["gate"]["lenses"])
+            before = {
+                path.name: path.read_bytes() for path in run_dir.glob("R.gate.*.md")
+            }
+
+            (run_dir / "Q.md").write_text(
+                ticket(
+                    "Q", status="claimed", executor="orch-decompose",
+                    objective="a legacy second kind",
+                ),
+                encoding="utf-8",
+            )
+            (run_dir / "Q.01.md").write_text(
+                ticket("Q.01", deps="[Q]", objective="legacy unit"),
+                encoding="utf-8",
+            )
+            second = run_cmd(
+                "gate", "testrun", "Q", "--lens", "content",
+                "--write-scope", "docs/one.md",
+            )
+            self.assertIn("one gate", second["error"])
+            self.assertIn("R", second["error"])
+            self.assertEqual(before, {
+                path.name: path.read_bytes() for path in run_dir.glob("R.gate.*.md")
+            })
+            self.assertEqual([], list(run_dir.glob("Q.gate.*.md")))
+
     def test_a_second_gate_is_refused_and_the_first_stubs_stand(self):
         with tempfile.TemporaryDirectory() as tmp:
             sink = use_sink(Path(tmp))
