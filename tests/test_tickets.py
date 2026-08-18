@@ -5418,6 +5418,32 @@ class TestPacketCarriesTheCloseLaw(unittest.TestCase):
                 self.assertNotIn("Close by running", prompt)
 
 
+class TestPacketCarriesWhatTwoLanesSpentBoundLearning(unittest.TestCase):
+    """Queued scope 7 and 8 of the 20260817T215731Z-research-depth run, both
+    from the same pair of lanes: a test command piped through `tail` loses
+    the runner's summary, which it writes to stderr, and both lanes then
+    argued a check had passed from exit status and a following command; and
+    both spent bound running AGENTS.md's repository-level checks inside their
+    own branches, which orch-frontier gives to the engine on the integrated
+    tip. Neither is a new rule — oracles.md's regression row already gives
+    the full suite to the gate — so what is carried is the sentence a lane
+    acts on, beside the close law and for that sentence's reason: a rule
+    reachable only by following a link is one an executor does not read."""
+
+    def prompt_for(self, tmp: Path, body: str = FULL_TICKET, *extra) -> str:
+        make_packet_repo(tmp, body)
+        prompt = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main", *extra)[
+            "packet"
+        ]["prompt"]
+        return " ".join(prompt.split())
+
+    def test_the_packet_states_a_checks_summary_is_its_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prompt = self.prompt_for(Path(tmp))
+            self.assertIn("summary line is its evidence", prompt)
+            self.assertIn("`tail`", prompt)
+
+
 class TestReadyReportsWhatItCouldNotGrade(unittest.TestCase):
     """`ready` used to answer a read failure with silence: an unloadable
     ticket was dropped, a failed promotion write was `continue`, and a

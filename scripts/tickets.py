@@ -3630,6 +3630,18 @@ def _cmd_packet(rest):
             "the result identity; `[]` fills an empty Feedback or Risks; an "
             "excluded action suspends through `## Handoff`."
         )
+        # Carried for the close law's own reason, one rung down: how a check
+        # is read. Two lanes of one run piped a test command through `tail`,
+        # which drops the runner's summary -- written to stderr -- leaving
+        # exit status alone, and both then argued a check had passed because
+        # a following command ran (20260817T215731Z-research-depth, queued
+        # scope 7). Stated where the close is stated because a lane reads
+        # this packet and not the reference that would have said it.
+        prompt.append(
+            "A check's own summary line is its evidence: never pipe a test "
+            "command through `tail` or any other filter — the runner writes "
+            "that summary to stderr, and dropping it leaves exit status alone."
+        )
     # contracts/work-item.md's `isolation`: absent reads `none`, and only
     # `required` is told to establish anything, so a lane that must not stamp
     # itself is never handed the command. The pack is the second condition:
