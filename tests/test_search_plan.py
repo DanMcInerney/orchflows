@@ -14,6 +14,11 @@ import tempfile
 import unittest
 
 
+# Case partitions import this public seam by its package-qualified name.
+# Top-level discovery must bind that name before loading the partitions.
+sys.modules.setdefault("tests.test_search_plan", sys.modules[__name__])
+
+
 ROOT = Path(__file__).resolve().parents[1]
 # Since P4 both campaigns are ticket-set templates: a `template.md`
 # manifest plus the stubs `tickets.py instantiate` writes into a run. The
