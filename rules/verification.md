@@ -36,8 +36,9 @@
    preferring the fix that simplifies. A cause whose coherent fix
    exceeds the frozen spec's license is queued as candidate scope for
    its own spec, never widened into the correction.
-10. Independence enters every unit before its acceptance is final,
-    from at least one source outside the executing context: a
+10. Independence enters every unit before its acceptance is final through
+    exactly one mutually exclusive ordinary path for each criterion and
+    lens: a
     completion test whose oracles all carry `pre-existing` oracle
     provenance ([contracts/work-item.md](../contracts/work-item.md)) and
     each can fail on the objective (§8); one fresh checker
@@ -49,7 +50,12 @@
     oracle is deterministic that context is the join, which re-runs
     them, and where any is judged one fresh child re-verifies them all;
     a judged verdict per §6; or the downstream gate the ticket's
-    `independence` field names.
+    `independence` field names. A non-root gate-deferred ticket cannot
+    carry `checked_by`, and a checker identity is single and immutable;
+    the root cut reader is the distinct exception. Additional adversarial
+    review is a unique named root-gate critique lens feeding the same one
+    repair and terminal verification, never another ordinary independence
+    path.
     Acceptance resting only on checks the executing context authored
     is UNVERIFIED.
 11. A repair by the context that found the defect is accepted only on a

@@ -76,8 +76,9 @@ that needs a different meaning needs a different word.
   move — a line number, a list index, a path into a tree being edited —
   is not one, and neither is a count nor a reading taken from the
   environment.
-- **run** — one execution of a workflow against one spec; owns a run id
-  (`<utc-stamp>-<slug>`), a worklog, and a ticket directory. An ad-hoc
+- **run** — one physical execution of a workflow against one spec; owns a
+  run id (`<utc-stamp>-<slug>`), a worklog, a ticket directory, one root
+  ticket, and one composite gate. An ad-hoc
   run executes one ad-hoc ticket — or an ad-hoc set — instead: the
   tickets' objectives and completion tests are its frozen statement,
   the ticket files the whole record — no worklog.
@@ -152,7 +153,8 @@ that needs a different meaning needs a different word.
   `contracts/work-item.md`, independence law by `rules/verification.md`
   §10.
 - **independence** — acceptance evidence originating outside the
-  executing context; sources and law in `rules/verification.md` §10.
+  executing context through exactly one ordinary path; sources and law in
+  `rules/verification.md` §10.
   Research craft narrows the term for sources: no shared upstream.
 - **checker** — the fresh reviewer-corrector context (`orch-critique`
   dispatched with the ticket's write scope as its packet `authority`)
@@ -167,10 +169,12 @@ that needs a different meaning needs a different word.
   source, by identity.
 - **disagreement register** — where disagreement is recorded with both
   sides' evidence, never averaged away.
-- **lens** — the criteria set a reviewer applies; freshness law
-  `rules/verification.md` §6.
-- **gate** — the single review-fix pass a run crosses before final
-  verification; `orch-build`'s admission and a benchmark's
+- **lens** — the criteria set a reviewer applies; every additional root-gate
+  reviewer has a unique named lens; freshness law `rules/verification.md`
+  §6.
+- **gate** — the one composite critique-fix-verify path a run crosses: one
+  or more uniquely named critiques feed one repair and one verification;
+  `orch-build`'s admission and a benchmark's
   qualification are not gates.
 - **judge** — scoring one fixed candidate against frozen criteria, blind to
   other candidates: `orch-verify` where the criteria carry a score scale,
@@ -237,7 +241,7 @@ composition).
   writing the same artifact or slot, not returning same-named fields).
   Two lanes in one workspace are one lane with two authors: neither
   one's oracle output is attributable to its own change. Distinct from
-  **independence**, a property of acceptance evidence.
+  independence, a property of acceptance evidence.
 - **terminal state** — a closed exit: a ticket status in
   `contracts/work-item.md`'s terminal set; a run's is its root (or loop)
   ticket's, per `contracts/worklog.md`.

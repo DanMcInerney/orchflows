@@ -8,6 +8,9 @@ reconstructable from them by observation. Free notes a run appends
 through `tickets.py run-state --note` land in `runs/<run>/notes.md`
 beside the view and are not the view.
 
+A root-ticket run is one physical run with one root and one composite gate;
+a successor has its own run view after its predecessor result is fixed.
+
 - `goal` — the root ticket's `## Objective` and `## Completion test`
   verbatim; for a loop run the loop ticket's, and for a template run its
   terminal ticket's, whose `## Completion test` is the run's done-check.

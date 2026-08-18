@@ -64,9 +64,12 @@ dependencies point. Terms: `docs/vocabulary.md`.
   `scripts/state_root.py` owns resolving the state sink,
   the one channel every other script reaches it through;
   `scripts/tickets.py` owns the ticket directory: issuing, instantiating
-  a template, the gate stubs, claims and statuses, dispatch packets, the
-  executor's own sections, the rendered worklog view, and the run-state
-  and improvement records under the sink; its `tickets.py
+  a template, the one root/gate family in a run, claims and statuses,
+  dispatch packets, the executor's own sections, the rendered worklog
+  view, immutable run identity (`opened_at`, installed version and source
+  commit), immutable terminal timing (`terminal_at`, terminal ticket and
+  `elapsed_ms`), and the run-state and improvement records under the sink;
+  its `tickets.py
   help` is operator-only: usage a reader asks for, never a step a skill
   runs; its `tickets.py grant` is operator-only: widening a claimed
   item's authority is the dispatching caller's decision, never a step the

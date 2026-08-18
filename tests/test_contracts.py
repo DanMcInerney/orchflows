@@ -452,6 +452,74 @@ class TestVerificationHomelessLaws(unittest.TestCase):
                 "identity",
             )
 
+    def test_one_independence_path_unique_lenses_and_one_root_gate(self):
+        """The verification guardrail has no single contract owner, so pin
+        each conjunct at the canonical place that owns it.  The assertions
+        read scoped entries and clauses: repeating a token elsewhere cannot
+        satisfy the law."""
+
+        work_item = read_flat("work-item.md")
+        independence = read_bullet_flat("work-item.md", "`independence`")
+        checked_by = read_bullet_flat("work-item.md", "`checked_by`")
+        root = work_item.split("## Root ticket", 1)[1].split(
+            "## Template and stub", 1
+        )[0]
+        for token in (
+            "all authored-here criteria", "regardless of oracle class",
+            "exactly one outside-independence path",
+        ):
+            self.assertIn(token, independence, f"independence omits {token!r}")
+        for token in ("single", "immutable", "non-root", "`gate`"):
+            self.assertIn(token, checked_by, f"checked_by omits {token!r}")
+        for token in (
+            "one root ticket", "one composite gate", "unique lens",
+            "one repair", "one verification",
+        ):
+            self.assertIn(token, root, f"Root ticket omits {token!r}")
+
+        verification = self.law(10)
+        for token in (
+            "exactly one", "mutually exclusive", "pre-existing", "checker",
+            "downstream gate", "unique named", "root-gate critique lens",
+        ):
+            self.assertIn(token, verification, f"verification.md §10 omits {token!r}")
+
+        topology_gate = read_clause_flat("rules/topology.md", 5)
+        for token in (
+            "one root ticket", "one composite gate", "physical run",
+            "unique", "lens", "one repair", "one verification",
+        ):
+            self.assertIn(token, topology_gate, f"topology.md §5 omits {token!r}")
+        topology_successor = read_clause_flat("rules/topology.md", 7)
+        for token in ("successor run", "result identity", "resolved", "cited"):
+            self.assertIn(token, topology_successor, f"topology.md §7 omits {token!r}")
+
+        vocabulary = read_at_flat("docs/vocabulary.md")
+
+        def entry(term):
+            self.assertEqual(1, vocabulary.count(term), f"expected one {term} entry")
+            return vocabulary.split(term, 1)[1].split(" - **", 1)[0]
+
+        for token in ("physical execution", "one root ticket", "one composite gate"):
+            self.assertIn(token, entry("**run**"), f"run entry omits {token!r}")
+        for token in ("exactly one", "path"):
+            self.assertIn(token, entry("**independence**"), f"independence entry omits {token!r}")
+        for token in ("unique", "named", "additional"):
+            self.assertIn(token, entry("**lens**"), f"lens entry omits {token!r}")
+        for token in ("composite", "one repair", "one verification"):
+            self.assertIn(token, entry("**gate**"), f"gate entry omits {token!r}")
+
+        architecture = read_at_flat("ARCHITECTURE.md")
+        for token in (
+            "one root/gate family", "installed version", "source commit",
+            "`opened_at`", "`terminal_at`", "`elapsed_ms`",
+        ):
+            self.assertIn(token, architecture, f"ARCHITECTURE.md omits {token!r}")
+
+        worklog = read_flat("worklog.md")
+        for token in ("one physical run", "one root", "composite gate"):
+            self.assertIn(token, worklog, f"worklog.md omits {token!r}")
+
 
 class TestWorkItemCitationLaws(unittest.TestCase):
     """`contracts/work-item.md` resolves three collisions no other file
