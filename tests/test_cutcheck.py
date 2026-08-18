@@ -3226,16 +3226,22 @@ class TestCutcheckResolvesSink(unittest.TestCase):
 
     def test_a_sink_resident_run_is_graded_end_to_end(self):
         self.issue(self.sink / "tickets", "sink-clean")
-        env = dict(os.environ)
-        env[state_root.ENV_VAR] = str(self.sink)
-
-        done = subprocess.run(
-            [sys.executable, "scripts/cutcheck.py", "sink-clean",
-             "--baseline", BASELINE],
-            cwd=str(ROOT),
-            capture_output=True,
-            text=True,
-            env=env,
+        scratch_root = shared_root()
+        out, err = io.StringIO(), io.StringIO()
+        with self.launched_from(ROOT):
+            with mock.patch.object(
+                cutcheck, "_scratch_root", lambda _tree: scratch_root
+            ):
+                with mock.patch.object(
+                    cutcheck, "_remove_scratch_root", lambda _root: None
+                ):
+                    with contextlib.redirect_stdout(out):
+                        with contextlib.redirect_stderr(err):
+                            code = cutcheck.main(
+                                ["sink-clean", "--baseline", BASELINE]
+                            )
+        done = subprocess.CompletedProcess(
+            ["sink-clean", BASELINE], code, out.getvalue(), err.getvalue()
         )
 
         self.assertEqual(0, done.returncode, done.stdout + done.stderr)
