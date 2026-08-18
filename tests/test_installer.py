@@ -1,35 +1,35 @@
 """Compatibility seam for the complete installer regression collection."""
 
-from .test_installer_cases.support import setUpModule, tearDownModule
-from .test_installer_cases.application.configuration import (
+from tests.test_installer_cases.support import setUpModule, tearDownModule
+from tests.test_installer_cases.application.configuration import (
     TestClaudeConfigDir,
     TestCodexHome,
     TestCodexHooksPreflight,
 )
-from .test_installer_cases.application.partial_apply import TestPartialApplyAfterRmtree
-from .test_installer_cases.managed_text.claude_import import TestClaudeAlwaysOnImport
-from .test_installer_cases.managed_text.host_block import (
+from tests.test_installer_cases.application.partial_apply import TestPartialApplyAfterRmtree
+from tests.test_installer_cases.managed_text.claude_import import TestClaudeAlwaysOnImport
+from tests.test_installer_cases.managed_text.host_block import (
     TestHostBlockDemands,
     TestHostBlockRendering,
 )
-from .test_installer_cases.managed_text.markers import TestMarkerEngineMisuse
-from .test_installer_cases.managed_text.roles import TestRoleAgentInstructions
-from .test_installer_cases.planning.day_zero import TestDayZeroBootstrap
-from .test_installer_cases.planning.host_detection import DryRunOracleTest, TestHostAutoDetection
-from .test_installer_cases.planning.runtime import TestClaudeAdapterSet, TestRuntimeDirsSeedTheSink
-from .test_installer_cases.planning.scoped_hosts import (
+from tests.test_installer_cases.managed_text.markers import TestMarkerEngineMisuse
+from tests.test_installer_cases.managed_text.roles import TestRoleAgentInstructions
+from tests.test_installer_cases.planning.day_zero import TestDayZeroBootstrap
+from tests.test_installer_cases.planning.host_detection import DryRunOracleTest, TestHostAutoDetection
+from tests.test_installer_cases.planning.runtime import TestClaudeAdapterSet, TestRuntimeDirsSeedTheSink
+from tests.test_installer_cases.planning.scoped_hosts import (
     RoleProfileRefusalTest,
     TestScopedHostConfiguration,
 )
-from .test_installer_cases.planning.script_inventory import TestScriptNames
-from .test_installer_cases.planning.wrappers import (
+from tests.test_installer_cases.planning.script_inventory import TestScriptNames
+from tests.test_installer_cases.planning.wrappers import (
     TestBootstrapWrappers,
     TestDeclaredPythonFloor,
     TestPluginSubsystemRemoved,
 )
-from .test_installer_cases.receipt.install_receipt import TestInstallReceipt
-from .test_installer_cases.receipt.source_commit import TestSourceCommit, TestUnreadableReceipt
-from .test_installer_cases.uninstall.conservative import TestConservativeUninstall
+from tests.test_installer_cases.receipt.install_receipt import TestInstallReceipt
+from tests.test_installer_cases.receipt.source_commit import TestSourceCommit, TestUnreadableReceipt
+from tests.test_installer_cases.uninstall.conservative import TestConservativeUninstall
 
 
 # Keep the historical module identity: unittest keys module fixtures and stable

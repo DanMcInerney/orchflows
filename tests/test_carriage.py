@@ -7,16 +7,16 @@ by the sharded runner and existing callers.
 
 import unittest
 
-from .test_carriage_cases.carriage_validation import (
+from tests.test_carriage_cases.carriage_validation import (
     TestCarriageAgainstRepo,
     TestCarriagePackChecks,
     TestCarriageSeededViolation,
 )
-from .test_carriage_cases.copy_faithfulness import CopyFaithfulnessClauseTest
-from .test_carriage_cases.friction_destination import FrictionDestinationTest
-from .test_carriage_cases.script_ownership import ScriptOwnershipTest
-from .test_carriage_cases.subcommand_reach import SubcommandReachTest
-from .test_carriage_cases.verification_flow import (
+from tests.test_carriage_cases.copy_faithfulness import CopyFaithfulnessClauseTest
+from tests.test_carriage_cases.friction_destination import FrictionDestinationTest
+from tests.test_carriage_cases.script_ownership import ScriptOwnershipTest
+from tests.test_carriage_cases.subcommand_reach import SubcommandReachTest
+from tests.test_carriage_cases.verification_flow import (
     CutCheckOrderingTest,
     ReverificationSplitTest,
     TipCheckTest,

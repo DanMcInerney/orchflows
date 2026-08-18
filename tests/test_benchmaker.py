@@ -2,9 +2,9 @@
 
 import unittest
 
-from .test_benchmaker_cases.fixture import TestBenchmarkFixture
-from .test_benchmaker_cases.protocol import TestCanonicalBenchmaker
-from .test_benchmaker_cases.retirement import TestCanonicalSurface
+from tests.test_benchmaker_cases.fixture import TestBenchmarkFixture
+from tests.test_benchmaker_cases.protocol import TestCanonicalBenchmaker
+from tests.test_benchmaker_cases.retirement import TestCanonicalSurface
 
 __all__ = (
     "TestBenchmarkFixture",
@@ -15,4 +15,3 @@ __all__ = (
 
 if __name__ == "__main__":
     unittest.main()
-
