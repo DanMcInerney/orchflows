@@ -13,6 +13,8 @@ rules/verification.md §8 reaches in one hop, and rules/improvement.md §1
 on where the friction fallback writes when the logger is refused.
 Follows tests/test_validator.py's isolated-tmp-tree-plus-subprocess
 idiom for CLI-level fixtures."""
+import hashlib
+import json
 import re
 import shutil
 import subprocess
@@ -377,6 +379,78 @@ class ScriptOwnershipTest(unittest.TestCase):
                 ["unowned_newcomer.py"],
                 _scripts_without_owners(beside, architecture_text),
             )
+
+    def test_verification_guardrail_owner_paths_are_pinned(self):
+        """Pin the complete contract/workflow surface without claiming the
+        runtime and cut checker owned by predecessor tickets.  T0 bytes use
+        the repository pin file; prose owners use scoped semantic anchors."""
+
+        semantic_pins = {
+            "ARCHITECTURE.md": (
+                "one root/gate family", "immutable run identity",
+                "immutable terminal timing",
+            ),
+            "contracts/work-item.md": (
+                "exactly one outside-independence path", "one composite gate",
+            ),
+            "contracts/worklog.md": ("one physical run", "one composite gate"),
+            "docs/vocabulary.md": (
+                "one composite gate", "exactly one ordinary path",
+                "unique named lens",
+            ),
+            "rules/topology.md": ("successor run", "one composite gate"),
+            "rules/verification.md": (
+                "mutually exclusive ordinary path", "unique named root-gate critique lens",
+            ),
+            "skills/engines/orch-frontier/SKILL.md": (
+                "checker packet", "root cut reader",
+            ),
+            "skills/kernel/orch-critique/SKILL.md": (
+                "gate-deferred", "unique named root-gate critique lens",
+            ),
+            "skills/kernel/orch-decompose/SKILL.md": (
+                "regardless of oracle class", "one composite gate",
+            ),
+            "skills/kernel/orch-integrate/SKILL.md": (
+                "one outside-independence path", "`independence: gate`",
+            ),
+            "skills/workflows/orch-spec/SKILL.md": (
+                "successor run", "second root in the same run",
+            ),
+        }
+        expected = {
+            "ARCHITECTURE.md", "contracts/work-item.md", "contracts/worklog.md",
+            "docs/vocabulary.md", "rules/topology.md", "rules/verification.md",
+            "skills/engines/orch-frontier/SKILL.md",
+            "skills/kernel/orch-critique/SKILL.md",
+            "skills/kernel/orch-decompose/SKILL.md",
+            "skills/kernel/orch-integrate/SKILL.md",
+            "skills/workflows/orch-spec/SKILL.md",
+        }
+        self.assertEqual(expected, set(semantic_pins), "guardrail owner roster drifted")
+        self.assertTrue(
+            {"scripts/tickets.py", "scripts/cutcheck.py"}.isdisjoint(semantic_pins),
+            "this contract slice took predecessor runtime or cutcheck ownership",
+        )
+        for relative, phrases in semantic_pins.items():
+            text = re.sub(r"\s+", " ", (ROOT / relative).read_text(encoding="utf-8"))
+            for phrase in phrases:
+                self.assertIn(phrase, text, f"{relative} lost semantic pin {phrase!r}")
+
+        pins = json.loads(PINS.read_text(encoding="utf-8"))
+        for name in ("work-item.md", "worklog.md"):
+            actual = hashlib.sha256((CONTRACTS / name).read_bytes()).hexdigest()
+            self.assertEqual(actual, pins.get(name), f"{name} has no current T0 pin")
+
+        flat_architecture = re.sub(
+            r"\s+", " ", ARCHITECTURE.read_text(encoding="utf-8")
+        )
+        ownership = {
+            name: responsibility
+            for name, responsibility in _OWNERSHIP_CLAUSE.findall(flat_architecture)
+        }
+        self.assertIn("one root/gate family", ownership["tickets.py"])
+        self.assertIn("cut-defect detection", ownership["cutcheck.py"])
 
 
 TICKETS = SCRIPTS / "tickets.py"
