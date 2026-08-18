@@ -5449,6 +5449,20 @@ class TestPacketCarriesWhatTwoLanesSpentBoundLearning(unittest.TestCase):
             self.assertIn("integrated tip", prompt)
             self.assertIn("nothing wider", prompt)
 
+    def test_a_script_node_is_told_neither(self):
+        """Both sentences are about reading a check the executor ran, and a
+        script node runs none: it runs one command and files its stdout
+        verbatim (contracts/work-item.md, Executor form). Carried on the
+        close law's own condition, so who is told this is who is told to
+        close the item."""
+        with tempfile.TemporaryDirectory() as tmp:
+            prompt = self.prompt_for(
+                Path(tmp),
+                FULL_TICKET.replace("executor: orch-tdd", "executor: script:tools/m.py"),
+            )
+            self.assertNotIn("summary line", prompt)
+            self.assertNotIn("integrated tip", prompt)
+
 
 class TestReadyReportsWhatItCouldNotGrade(unittest.TestCase):
     """`ready` used to answer a read failure with silence: an unloadable
