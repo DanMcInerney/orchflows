@@ -17,8 +17,12 @@ it imports `os` nowhere, so there is nothing to reach one with.
 
 Then the roster runs: thirty-four steps, twenty adapters, every route the core
 can reach, one artifact. Every step keeps rows, no step is refused, and the
-string `auth_required` — which seven adapters and the router all know how to
-say — appears in nothing the run produced.
+string `auth_required` appears in nothing the run produced — though nine
+adapters name it, five of them can say it, and the router says it too. The
+rest bind the constant and load it nowhere: no status a documented-keyless
+route can answer with is a report that a credential was needed. Both counts
+are read off the source by `test_dependency_boundary`, which holds this
+sentence against the same scan `protocol.md`'s loss tables answer to.
 
 Four adapters written beside the tree hold the oracle honest: one that reads
 the environment for a key and refuses when it finds none, one that says

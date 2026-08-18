@@ -54,7 +54,7 @@ from pathlib import Path
 
 from super_research import runner, transport
 from super_research.adapters import youtube_innertube
-from tests import helpers
+from tests import helpers, test_keyless
 from tests.test_adapters import (
     EXECUTION_MODULES,
     EXECUTION_NAMES,
@@ -1025,6 +1025,19 @@ READ_SURFACE_ANCHOR = re.compile(
 # document anchors do.
 RESOLVER_COUNT_ANCHOR = re.compile(r"\b([A-Za-z]+) do not\b")
 
+# The two counts `test_keyless`' module docstring states about `auth_required`:
+# how many adapters name the code at all, and how many of those can say it.
+# It counted once, and the one number was wrong in both directions — the same
+# class as the roster's "seven", one file over, and the loss tables beside it
+# already read which modules spell each code. One anchor each, on the phrase
+# the count cannot leave rather than on the sentence, because that paragraph is
+# written in its own voice and is meant to stay that way.
+# Whitespace-tolerant for the reason the read-surface anchor is: a paragraph
+# wraps where its width puts it, and a pin that forbade a wrap point would be
+# pinning the layout rather than the count.
+KEYLESS_NAMING_ANCHOR = re.compile(r"\b([A-Za-z]+)\s+adapters\s+name\s+it\b")
+KEYLESS_SAYING_ANCHOR = re.compile(r"\b([A-Za-z]+)\s+of\s+them\s+can\s+say\s+it\b")
+
 # The one roster row read cell by cell here. Its adapter id comes off the
 # module that owns the route rather than off this file, so a rename reaches
 # the assertions.
@@ -1164,6 +1177,28 @@ def read_surface_total():
         for adapter_id in runner.ADAPTER_IDS
         for descriptor in runner.surface_descriptors(adapter_id)
         if descriptor.route_id not in transport.TOKEN_ACTIVATION_ROUTES
+    )
+
+
+def adapters_naming_the_refusal():
+    """Who names `auth_required`, who can say it, and every module that says it.
+
+    Read by the scan the loss tables already run over every code `protocol.md`
+    tables, because the distinction the keyless docstring rests on is exactly
+    the one that scan draws: a module-level ``NAME = "code"`` and nothing else
+    is a declaration, everything that reaches the code is an emission. A module
+    that only mentions the string in its prose names it in neither sense, which
+    is why this reads syntax and not text — `hacker_news` spells the code once,
+    in a sentence saying it deliberately has no such branch.
+    """
+
+    code = test_keyless.AUTH_REQUIRED
+    spelling, declaring = loss_code_spelling({code})
+    roster = set(runner.ADAPTER_IDS)
+    return (
+        (spelling[code] | declaring[code]) & roster,
+        spelling[code] & roster,
+        spelling[code],
     )
 
 
@@ -1381,6 +1416,57 @@ class RosterIsReadOffTheSourceTest(unittest.TestCase):
         # answers None, which no count equals, so an unreadable number is a
         # failure here and never a pass.
         self.assertIsNone(counted_as("thirty-eleven"))
+
+    def test_the_keyless_docstring_counts_the_modules_that_name_it(self):
+        """`test_keyless`' counts of `auth_required`, off the scan the tables use.
+
+        It said the string was one "which seven adapters and the router all
+        know how to say". Five adapters can say it and nine name it, so the one
+        number was wrong in both directions at once — and it went wrong the way
+        the roster's "seven" did, with an adapter joining, a constant being
+        declared, and the sentence beside them the only thing counting.
+
+        Two counts because the sentence's subject needs both: a module that
+        binds the name and loads it nowhere cannot say the word, and four of
+        them are in the roster deliberately.
+        """
+
+        naming, saying, modules_saying = adapters_naming_the_refusal()
+
+        # The two counts are counts of different things, and the scan is shown
+        # to draw the line it claims to: a scan that read a declaration as an
+        # emission would collapse them into one number and pass both anchors.
+        self.assertLess(len(saying), len(naming))
+        # The other half of the sentence, enumerated rather than counted,
+        # because there is one of it.
+        self.assertIn("router", modules_saying)
+
+        for anchor, counted, subject in (
+            (KEYLESS_NAMING_ANCHOR, naming, "name it"),
+            (KEYLESS_SAYING_ANCHOR, saying, "can say it"),
+        ):
+            with self.subTest(subject=subject):
+                stated = anchor.findall(test_keyless.__doc__)
+
+                self.assertEqual(
+                    len(stated),
+                    1,
+                    "the keyless docstring states the {0} count {1} times".format(
+                        subject, len(stated)
+                    ),
+                )
+                self.assertEqual(
+                    counted_as(stated[0]),
+                    len(counted),
+                    "the keyless docstring says {0} {1}; the source says {2}: {3}".format(
+                        stated[0], subject, len(counted), sorted(counted)
+                    ),
+                )
+
+        # Both readers can fail on a count that stayed and a phrase that moved,
+        # which is the one thing an anchor pin trades for the rewrite it permits.
+        self.assertEqual(KEYLESS_NAMING_ANCHOR.findall("nine adapters name the code"), [])
+        self.assertEqual(KEYLESS_SAYING_ANCHOR.findall("five of them say it"), [])
 
     def test_the_youtube_row_names_every_surface_it_reads(self):
         # The row said one surface while the adapter reads two, which is how a
