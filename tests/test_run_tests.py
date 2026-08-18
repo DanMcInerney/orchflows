@@ -172,6 +172,23 @@ class TestGuardedSeams(unittest.TestCase):
         self.assertEqual(1, completed.returncode, report)
         self.assertIn("leaked whole-interpreter seam: sys.path", report)
 
+    def test_an_expired_non_scratch_import_path_is_still_rejected(self):
+        statement = textwrap.dedent(
+            '''\
+            import os
+            import sys
+            from pathlib import Path
+
+            expired = Path(os.environ["PYTHONPATH"]) / "expired_import_path"
+            sys.path.append(str(expired))
+            '''
+        )
+        completed = run_fixture(self.import_leaking_module(statement))
+        report = completed.stdout.decode("utf-8", "replace")
+        self.assertEqual(b"", completed.stderr, completed.stderr)
+        self.assertEqual(1, completed.returncode, report)
+        self.assertIn("leaked whole-interpreter seam: sys.path", report)
+
     def test_a_nonzero_child_exit_rejects_an_ok_payload(self):
         source = textwrap.dedent(
             '''\
@@ -205,6 +222,25 @@ class TestWorkflowContract(unittest.TestCase):
         )
         self.assertIsNotNone(os_axis)
         self.assertIsNotNone(python_axis)
+        self.assertNotRegex(matrix, re.compile(r"^        include:", re.MULTILINE))
+        self.assertEqual(
+            {"os", "python-version", "exclude"},
+            set(re.findall(r"^        ([a-z][a-z0-9-]*):", matrix, re.MULTILINE)),
+        )
+        self.assertEqual(
+            1,
+            len(re.findall(
+                r"^    runs-on: \$\{\{ matrix\.os \}\}$", workflow, re.MULTILINE
+            )),
+        )
+        self.assertEqual(
+            1,
+            len(re.findall(
+                r"^          python-version: \$\{\{ matrix\.python-version \}\}$",
+                workflow,
+                re.MULTILINE,
+            )),
+        )
 
         def values(match):
             return [value.strip(" '\"") for value in match.group(1).split(",")]
@@ -273,9 +309,19 @@ class TestSchedule(unittest.TestCase):
     def test_a_cold_custom_directory_remains_alphabetical(self):
         with tempfile.TemporaryDirectory() as tmp:
             self.assertEqual(
-                ["test_alpha", "test_slow"],
+                [
+                    "tests.test_alpha",
+                    "tests.test_cutcheck",
+                    "tests.test_tickets",
+                ],
                 run_tests.schedule(
-                    ["test_slow", "test_alpha"], {}, Path(tmp)
+                    [
+                        "tests.test_cutcheck",
+                        "tests.test_alpha",
+                        "tests.test_tickets",
+                    ],
+                    {},
+                    Path(tmp),
                 ),
             )
 
