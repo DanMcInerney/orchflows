@@ -44,10 +44,7 @@ EXECUTOR_RE = re.compile(r"^executor:\s*(\S+)", re.MULTILINE)
 
 def canonical_bytes(value):
     return json.dumps(
-        value,
-        ensure_ascii=False,
-        separators=(",", ":"),
-        sort_keys=True,
+        value, ensure_ascii=False, separators=(",", ":"), sort_keys=True
     ).encode("utf-8")
 
 
@@ -454,11 +451,9 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
     # since P4 `orch-panel` too, judging being N blind verify lanes plus the
     # loop body's reduce. None of the four may reappear.
     executors = Counter(EXECUTOR_RE.findall(evolve))
-    required = Counter({
-        "orch-eval-design": 1,
-        "orch-loop": 1,
-        "orch-verify": 2,
-    })
+    required = Counter(
+        {"orch-eval-design": 1, "orch-loop": 1, "orch-verify": 2}
+    )
     if executors != required:
         errors.append("evolve-call-graph")
     eligibility = evolve[
