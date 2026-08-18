@@ -133,11 +133,13 @@ CORE_IMPORT_EDGES = {
     "transport": ("routes",),
 }
 
-# Everything the package takes from outside itself. Seventeen names, and the
-# check below resolves each one to where this interpreter actually answers it
-# from. `concurrent` and `threading` joined on 2026-08-17 with the fused
-# lanes; `test_pipeline.CONCURRENCY_OWNERS` names the three modules that may
-# import them.
+# Everything the package takes from outside itself, and the check below
+# resolves each one to where this interpreter actually answers it from. The
+# tuple is the count; a number in this line would be a second statement of
+# what is spelled out beneath it, and nothing would read it.
+# `concurrent` and `threading` joined on 2026-08-17 with the fused
+# lanes; `test_pipeline.CONCURRENCY_OWNERS` names the modules that may import
+# them.
 STANDARD_LIBRARY_IMPORTS = (
     "__future__",
     "argparse",
@@ -447,8 +449,8 @@ class RunnerDispatchTest(unittest.TestCase):
                 )
 
     def test_every_branch_reaches_the_module_its_own_id_names(self):
-        # The failure a count cannot see: twenty branches, one of them
-        # returning another adapter's descriptor.
+        # The failure a count cannot see: every branch the roster declares, one
+        # of them returning another adapter's descriptor.
         for function_name, member in (
             ("descriptor_for", "DESCRIPTOR"),
             ("call_adapter", "fetch_native_page"),
@@ -645,7 +647,9 @@ class BoundaryOracleCanFailTest(unittest.TestCase):
 
 PROTOCOL_PATH = Path(__file__).resolve().parent.parent / "references" / "protocol.md"
 
-# The three loss tables in `protocol.md`, named by the header row each carries.
+# The loss tables in `protocol.md`, named by the header row each carries — a
+# count of them here would be one more sentence nothing reads, and the two that
+# stood in this file already disagreed with each other.
 # Only tables with this shape are read; every other table in that file belongs
 # to someone else.
 LOSS_TABLE_HEADERS = ("| code | means | named by |",)
@@ -678,7 +682,7 @@ def module_name(path):
 
 
 def loss_table_rows():
-    """Every row of the two loss tables, as (code, cell) pairs in document order.
+    """Every row of the loss tables, as (code, cell) pairs in document order.
 
     Parsed rather than transcribed: the point of the exercise is that the table
     a reader reads is the one the assertions run against, so a cell nobody
@@ -773,22 +777,23 @@ def loss_code_spelling(codes):
     return (spelling, declaring)
 
 
-# Number words a heading or a docstring in this delivery may count in. Three
-# checks read it: the shortfall heading in `protocol.md`, this file's own
-# module count, and the multi-surface count both reference documents state.
-# It runs to twenty because that third one counts adapters, and the roster is
-# twenty adapters wide — a table that stopped short would read a lawful count
-# as an unspellable one.
+# Number words a heading or a docstring in this delivery may count in. The
+# checks below read it: the shortfall heading in `protocol.md`, this file's own
+# module count, what the reference documents state about the roster, and what
+# `test_keyless` states about `auth_required`. It runs at least as far as the
+# roster is wide, because the widest of those counts adapters — a table that
+# stopped short would read a lawful count as an unspellable one.
 NUMBER_WORDS = (
     "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
     "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen",
     "Eighteen", "Nineteen", "Twenty",
 )
 
-# The tens, for the one count above twenty this delivery states: the roster's
-# route-surface total, which is thirty-six. A tens name means its own position
-# in tens, which is the whole of the arithmetic here, and a compound is its two
-# names read the same way — `thirty-six` is `thirty` and `six`.
+# The tens, for the counts this delivery states past the flat table's end: the
+# roster's route-surface total, and the count of it that is read. A tens name
+# means its own position in tens, and a compound is its two names read the same
+# way — `forty-two` is `forty` and `two`, chosen as the example because nothing
+# in this delivery counts it and so nothing can make this line false.
 TENS_WORDS = ("Ten", "Twenty", "Thirty", "Forty", "Fifty")
 
 
@@ -909,7 +914,7 @@ class TheHostMirrorResolvesFromAnyCheckoutTest(unittest.TestCase):
 
 
 class LossVocabularyIsReadOffTheSourceTest(unittest.TestCase):
-    """`protocol.md`'s three loss tables, checked against the package's own syntax.
+    """`protocol.md`'s loss tables, checked against the package's own syntax.
 
     Every other enumeration in this suite is pinned and these were not, so
     they drifted the way an unpinned table does: `http_status` was documented
@@ -1097,10 +1102,12 @@ def roster_table_rows():
 def counted_as(word):
     """The number one spelled number word names, or ``None`` if it names none.
 
-    Spelling, not arithmetic: `NUMBER_WORDS` and `TENS_WORDS` are lists of names
-    and no count is written down here. The counts come off the descriptors. A
-    hyphenated compound is its two names looked up the same way, because the
-    surface total is thirty-six and a table running to twenty cannot spell it.
+    Spelling first: `NUMBER_WORDS` and `TENS_WORDS` are lists of names, and no
+    count this file checks is written down here — every one of them comes off
+    the descriptors. The only arithmetic is what a tens name means, its own
+    position in tens; a hyphenated compound is its head and its tail looked up
+    the same way, which is how a count past the flat table's end is spelled at
+    all.
     """
 
     spelled = [name.lower() for name in NUMBER_WORDS]
