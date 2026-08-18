@@ -3,8 +3,8 @@
 
 Family 1 is oracle discrimination and oracle shape. Family 2 is path
 reality. Family 3 is scope closure. Family 4 is pairwise safety. Family
-5 is acceptance coverage. Family 6 is executor legality. One invocation
-decides all six.
+5 is acceptance coverage. Family 6 is executor and verification-layout
+legality. One invocation decides all six.
 
 A reading none of them could make is reported under ``reading`` rather
 than absorbed into whichever family wanted it: a status that did not
@@ -163,7 +163,9 @@ from pathlib import Path
 try:  # in-repo; the installed copy sits flat beside tickets.py
     from scripts import state_root
     from scripts.tickets import (
+        CHECKED_BY_KEY,
         GATE_EXECUTORS,
+        GATE_ID_MARKER,
         ORACLE_CLASS_RE,
         PROVENANCE_RE,
         ROOT_EXECUTOR,
@@ -174,7 +176,9 @@ try:  # in-repo; the installed copy sits flat beside tickets.py
 except ImportError:  # pragma: no cover - the installed copy's path
     import state_root
     from tickets import (
+        CHECKED_BY_KEY,
         GATE_EXECUTORS,
+        GATE_ID_MARKER,
         ORACLE_CLASS_RE,
         PROVENANCE_RE,
         ROOT_EXECUTOR,
@@ -213,6 +217,9 @@ ORPHAN_CRITERION = "orphan-criterion"
 ORPHAN_ITEM = "orphan-item"
 COVERAGE_MAP_ABSENT = "coverage-map-absent"
 ILLEGAL_EXECUTOR = "illegal-executor"
+MULTIPLE_ROOTS = "multiple-roots"
+MULTIPLE_GATE_SYSTEMS = "multiple-gate-systems"
+MIXED_INDEPENDENCE = "mixed-independence"
 SYMLINK_IN_TREE = "symlink-in-tree"
 BYTECODE_WRITTEN = "bytecode-written"
 UNREAD_HALF = "unread-half"
@@ -249,6 +256,9 @@ FAMILY_OF = {
     ORPHAN_ITEM: FAMILY_5,
     COVERAGE_MAP_ABSENT: FAMILY_5,
     ILLEGAL_EXECUTOR: FAMILY_6,
+    MULTIPLE_ROOTS: FAMILY_6,
+    MULTIPLE_GATE_SYSTEMS: FAMILY_6,
+    MIXED_INDEPENDENCE: FAMILY_6,
     # No family: a reading that did not happen is a fact about this run on
     # this host, and the families are what a cut is graded on. It carries a
     # marker of its own so a reader filters it the way every other line is
@@ -1882,6 +1892,83 @@ def _gate_stub_of(ticket_id, roots):
     return None
 
 
+def _gate_owners(siblings):
+    """The root ids whose gate stubs this set already carries.
+
+    Read from the same marker ``tickets.py gate`` writes, not only from roots
+    that remain readable in the set. A manually assembled second gate is a
+    defect even where its root ticket is missing or malformed.
+    """
+
+    return sorted(
+        {
+            ticket_id.split(GATE_ID_MARKER, 1)[0]
+            for ticket_id in siblings
+            if GATE_ID_MARKER in ticket_id
+        }
+    )
+
+
+def _root_gate_layout(siblings):
+    """Family 6: one root/gate system and one independence path per ticket.
+
+    Runtime writers refuse each contradiction before writing it. Cutcheck
+    reads the other ingress -- legacy or manually assembled ticket sets -- so
+    those same shapes cannot become accepted merely because they already sit
+    on disk. A root's ``checked_by`` remains the cut-reader record the
+    work-item contract requires; only non-root gate-deferred tickets have no
+    checker path.
+    """
+
+    findings = []
+    roots = _root_ids(siblings)
+    gate_owners = _gate_owners(siblings)
+    rooted_gates = [root for root in roots if root in gate_owners]
+    # A canonical template may carry several top-level decomposer stubs in
+    # one composite graph. They become separate root systems only where each
+    # owns a gate family of its own; that is the manually assembled shape the
+    # runtime's ad-hoc writer now refuses.
+    if len(rooted_gates) > 1:
+        findings.append(
+            (
+                rooted_gates[1],
+                0,
+                MULTIPLE_ROOTS,
+                "one physical run has one root/gate system; found roots {}".format(
+                    ", ".join(rooted_gates)
+                ),
+            )
+        )
+    if len(gate_owners) > 1:
+        findings.append(
+            (
+                gate_owners[1],
+                0,
+                MULTIPLE_GATE_SYSTEMS,
+                "one physical run has one composite gate; found owners {}".format(
+                    ", ".join(gate_owners)
+                ),
+            )
+        )
+    root_set = set(roots)
+    for ticket_id in sorted(siblings):
+        frontmatter = siblings[ticket_id]
+        independence = str(frontmatter.get("independence") or "checker").strip()
+        checked_by = str(frontmatter.get(CHECKED_BY_KEY) or "").strip()
+        if ticket_id not in root_set and independence == "gate" and checked_by:
+            findings.append(
+                (
+                    ticket_id,
+                    0,
+                    MIXED_INDEPENDENCE,
+                    "gate-deferred non-root ticket also carries checked_by {}".format(
+                        checked_by
+                    ),
+                )
+            )
+    return findings
+
+
 def _issued_items(siblings, roots):
     """The ids that are work items of this cut, root and gate stubs excepted.
 
@@ -2499,6 +2586,7 @@ def main(argv=None):
         roots = (state_root.state_root(), worktree_root,
                  state_root.find_repo_root(Path.cwd()))
         findings.extend(_coverage_findings(args.run, run_dir, siblings, roots))
+        findings.extend(_root_gate_layout(siblings))
         findings.extend(_executor_legality(siblings, _lib_root(args.lib)))
         findings.extend(_symlink_findings(args.run, (baseline_tree, head_tree)))
     finally:
