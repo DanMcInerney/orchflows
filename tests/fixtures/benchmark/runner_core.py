@@ -1,0 +1,504 @@
+"""Deterministic evaluation and qualification for the benchmark fixture."""
+
+import hashlib
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+
+REFERENCE_FIELDS = (
+    "evaluation_design",
+    "runnable_cases",
+    "runner",
+    "scoring",
+    "provenance",
+    "reference_audit",
+    "attack_audit",
+    "measurement",
+    "qualification",
+)
+# Qualification covers everything it ran against: every component but its own,
+# so `qualification` stays last.
+COVERED_FIELDS = REFERENCE_FIELDS[:-1]
+# The dated checklist the attack record walks, and its classes one for one. A
+# record that agreed with a shorter list of its own would prove nothing, and
+# one naming a later checklist cannot be judged against this list at all.
+ATTACK_CHECKLIST = "attack-classes:2026-08-08"
+ATTACK_CLASSES = frozenset(
+    {
+        "answers shipped with the test",
+        "evaluation-logic gaps",
+        "excessive permissions",
+        "isolation failure",
+        "judge prompt injection",
+        "remote code execution",
+        "trusting untrusted output",
+        "weak string matching",
+    }
+)
+ATTACK_OUTCOMES = frozenset({"SUCCEEDED", "FAILED", "BLOCKED"})
+# `builders`' axes, which every recorded context carries.
+CONTEXT_AXIS_KEYS = frozenset({"model_id", "effort", "host_binding"})
+REQUIRED_QUALIFICATION_CRITERIA = {
+    "oracle_failability",
+    "coverage",
+    "discrimination",
+    "reproducibility",
+    "redundancy",
+    "provenance",
+    "execution_cost",
+}
+
+
+def canonical_json(value):
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+
+
+def sha256_bytes(value):
+    return f"sha256:{hashlib.sha256(value).hexdigest()}"
+
+
+def sha256_identity(path):
+    return sha256_bytes(path.read_bytes())
+
+
+def evidence_identity(evidence):
+    payload = {key: value for key, value in evidence.items() if key != "identity"}
+    return sha256_bytes(canonical_json(payload).encode("utf-8"))
+
+
+def load_json(path):
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def resolve_reference(root, reference):
+    path = (root / reference["locator"]).resolve()
+    path.relative_to(root)
+    if not path.is_file():
+        raise ValueError(f"missing reference: {reference['locator']}")
+    return path
+
+
+def execute_candidate(candidate_path, payload, timeout):
+    try:
+        completed = subprocess.run(
+            [sys.executable, str(candidate_path)],
+            input=canonical_json(payload),
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        return None, "candidate timed out"
+    if completed.returncode != 0:
+        return None, f"candidate exit {completed.returncode}"
+    try:
+        return json.loads(completed.stdout), ""
+    except json.JSONDecodeError:
+        return None, "candidate output was not JSON"
+
+
+def validate_components(manifest, design, case_set, scoring, provenance):
+    if design["scoring_identity"] != scoring["scoring_identity"]:
+        raise ValueError("design and scoring identities differ")
+    if design["aggregation"] != scoring["aggregation"]:
+        raise ValueError("design and scoring aggregation differ")
+    aggregation = scoring["aggregation"]
+    if aggregation != {
+        "operator": "all_required_status",
+        "status": scoring["required_status"],
+    }:
+        raise ValueError("unsupported scoring aggregation")
+    if scoring["ranking_eligibility"] != {"operator": "aggregation_passes"}:
+        raise ValueError("unsupported ranking eligibility")
+    if set(scoring["per_case"]) != {"PASS", "FAIL", "UNVERIFIED"}:
+        raise ValueError("per-case scoring statuses are incomplete")
+    if any(
+        not isinstance(value, (int, float))
+        for value in scoring["per_case"].values()
+    ):
+        raise ValueError("per-case scores must be numeric")
+
+    cases = case_set["cases"]
+    case_identities = [case["case_identity"] for case in cases]
+    if len(case_identities) != len(set(case_identities)):
+        raise ValueError("duplicate runnable case identity")
+    if set(case_identities) != set(design["case_specifications"]):
+        raise ValueError("design and runnable case identities differ")
+    case_coverage = {
+        dimension for case in cases for dimension in case["coverage"]
+    }
+    if case_coverage != set(design["intended_coverage"]):
+        raise ValueError("design and runnable case coverage differ")
+    if set(case_identities) != set(provenance["case_sources"]):
+        raise ValueError("case provenance map is incomplete")
+    source_identities = {source["identity"] for source in provenance["sources"]}
+    if source_identities != set(design["source_identities"]):
+        raise ValueError("design and provenance source identities differ")
+    for case in cases:
+        sources = set(provenance["case_sources"][case["case_identity"]])
+        if not sources or sources != set(case["covered_evidence"]):
+            raise ValueError("case provenance identities differ")
+        if not sources <= source_identities:
+            raise ValueError("case provenance source is unresolved")
+
+    expected = design["expected_execution_cost"]
+    manifest_cost = manifest["expected_cost"]
+    if (
+        manifest_cost["case_count"] != expected["case_count"]
+        or manifest_cost["candidate_processes_per_replay"]
+        != expected["candidate_processes"]
+        or manifest_cost["per_case_timeout_seconds"]
+        != expected["per_case_timeout_seconds"]
+        or len(cases) != expected["case_count"]
+    ):
+        raise ValueError("declared execution cost differs from the design")
+
+
+def evaluate_candidate(candidate_path, case_set, scoring, provenance, timeout):
+    cases = []
+    covered_evidence = set()
+    for case in case_set["cases"]:
+        observed, error = execute_candidate(candidate_path, case["input"], timeout)
+        verdict = "PASS" if not error and observed == case["expected"] else "FAIL"
+        covered_evidence.add(case["case_identity"])
+        covered_evidence.update(case["covered_evidence"])
+        covered_evidence.update(provenance["case_sources"][case["case_identity"]])
+        cases.append(
+            {
+                "case_identity": case["case_identity"],
+                "verdict": verdict,
+                "oracle_class": case["oracle_class"],
+                "observed": observed,
+                "error": error,
+            }
+        )
+
+    required_results = [
+        result
+        for case, result in zip(case_set["cases"], cases)
+        if case["required"]
+    ]
+    if not required_results:
+        raise ValueError("benchmark has no required case")
+    aggregation_passes = all(
+        result["verdict"] == scoring["required_status"]
+        for result in required_results
+    )
+    verdict = scoring["required_status"] if aggregation_passes else "FAIL"
+    score = sum(scoring["per_case"][result["verdict"]] for result in cases) / len(
+        cases
+    )
+    return {
+        "candidate_identity": sha256_identity(candidate_path),
+        "verdict": verdict,
+        "score": score,
+        "eligible_for_ranking": aggregation_passes,
+        "cases": cases,
+        "covered_evidence": sorted(covered_evidence),
+    }
+
+def verify_reference_audit(root, manifest, case_set):
+    """A count and its classes, never a rate, over a sample declared up front."""
+    audit = load_json(resolve_reference(root, manifest["reference_audit"]))
+    if audit["defect_count"] != len(audit["defect_classes"]):
+        raise ValueError("reference audit defect count differs from its classes")
+    identities = {case["case_identity"] for case in case_set["cases"]}
+    if set(audit["method"]) != identities:
+        raise ValueError("reference audit method does not cover every case")
+    if not str(audit["declared_sample"]).strip():
+        raise ValueError("reference audit declares no sample")
+    # Who audited is the record's own first substance; a record that names no
+    # context records no audit, whatever its status says.
+    context = audit["auditor_context"]
+    if set(context) != CONTEXT_AXIS_KEYS or not all(
+        str(value).strip() for value in context.values()
+    ):
+        raise ValueError("reference audit names no auditing context")
+
+
+def verify_attack_audit(root, manifest):
+    """Every class of the dated checklist answered; every hole declared."""
+    attack = load_json(resolve_reference(root, manifest["attack_audit"]))
+    if attack["checklist_identity"] != ATTACK_CHECKLIST:
+        raise ValueError("attack audit names a checklist this qualifier cannot check")
+    if set(attack["classes"]) != ATTACK_CLASSES:
+        raise ValueError("attack audit does not walk the dated checklist")
+    if set(attack["outcomes"]) != ATTACK_CLASSES:
+        raise ValueError("attack audit leaves a checklist class unanswered")
+    if not all(
+        recorded["outcome"] in ATTACK_OUTCOMES
+        for recorded in attack["outcomes"].values()
+    ):
+        raise ValueError("attack audit records an outcome the protocol has no value for")
+    declared = {name for hole in attack["unrepaired"] for name in hole["classes"]}
+    succeeded = {
+        name
+        for name, recorded in attack["outcomes"].items()
+        if recorded["outcome"] == "SUCCEEDED"
+    }
+    # An undeclared hole is the failure; a declared one is a gap.
+    if not succeeded <= declared:
+        raise ValueError("attack audit leaves a succeeding class undeclared")
+
+
+def failure_signature(case, result):
+    """One failing case's habit: its error and the keys that came out wrong."""
+    observed = result["observed"] or {}
+    expected = case["expected"]
+    return (
+        result["error"],
+        tuple(
+            key
+            for key in sorted(set(expected) | set(observed))
+            if observed.get(key) != expected.get(key)
+        ),
+    )
+
+
+def verify_measurement(root, manifest, case_set, calibration, stronger, weaker):
+    """The record carries the replay's own figures, not a restatement of them."""
+    measurement = load_json(resolve_reference(root, manifest["measurement"]))
+    statuses = {}
+    inversions = []
+    signatures = set()
+    for case, strong, weak in zip(
+        case_set["cases"], stronger["cases"], weaker["cases"]
+    ):
+        identity = case["case_identity"]
+        passed = (strong["verdict"] == "PASS", weak["verdict"] == "PASS")
+        statuses[identity] = {
+            (True, True): "both-pass",
+            (False, False): "both-fail",
+        }.get(passed, "split")
+        if passed == (False, True):
+            inversions.append(identity)
+        if statuses[identity] == "split":
+            # One repeated habit is one signature, however many cases it fails.
+            signatures.add(failure_signature(case, weak if not passed[1] else strong))
+    passes = [
+        sum(case["verdict"] == "PASS" for case in result["cases"])
+        for result in (stronger, weaker)
+    ]
+    recomputed = {
+        "candidates": {
+            calibration[rung]["locator"]: {
+                "candidate_identity": result["candidate_identity"],
+                "verdict": result["verdict"],
+                "score": result["score"],
+                "per_case": {
+                    case["case_identity"]: case["verdict"]
+                    for case in result["cases"]
+                },
+            }
+            for rung, result in (("known_good", stronger), ("known_bad", weaker))
+        },
+        "per_case_status": statuses,
+        "discriminating_set": sorted(
+            identity for identity, status in statuses.items() if status == "split"
+        ),
+        "inversions": inversions,
+        "distinct_failure_signatures": len(signatures),
+        "margin_cases": passes[0] - passes[1],
+    }
+    for field, value in recomputed.items():
+        if measurement[field] != value:
+            raise ValueError(f"measurement record {field} differs from the replay")
+
+
+def verify_qualification(
+    root, manifest, design, case_set, scoring, provenance, qualification
+):
+    calibration = qualification["calibration_candidates"]
+    known_good = resolve_reference(root, calibration["known_good"])
+    known_bad = resolve_reference(root, calibration["known_bad"])
+    timeout = manifest["expected_cost"]["per_case_timeout_seconds"]
+    good_first = evaluate_candidate(
+        known_good, case_set, scoring, provenance, timeout
+    )
+    good_second = evaluate_candidate(
+        known_good, case_set, scoring, provenance, timeout
+    )
+    bad = evaluate_candidate(known_bad, case_set, scoring, provenance, timeout)
+
+    if good_first["verdict"] != "PASS" or bad["verdict"] != "FAIL":
+        raise ValueError("qualification discrimination failed")
+    if bad["eligible_for_ranking"]:
+        raise ValueError("qualification failability failed")
+    if good_first != good_second:
+        raise ValueError("qualification reproducibility failed")
+
+    # The three stage records are components, so the verdict set reaches them
+    # only if something reads them. Resolving a locator is not reading it.
+    verify_reference_audit(root, manifest, case_set)
+    verify_attack_audit(root, manifest)
+    verify_measurement(root, manifest, case_set, calibration, good_first, bad)
+
+    case_coverage = {
+        case["case_identity"]: set(case["coverage"])
+        for case in case_set["cases"]
+    }
+    unique_coverage = {}
+    for case_identity, coverage in case_coverage.items():
+        other_coverage = set().union(
+            *(
+                other
+                for other_identity, other in case_coverage.items()
+                if other_identity != case_identity
+            )
+        )
+        unique = sorted(coverage - other_coverage)
+        if not unique:
+            raise ValueError("qualification redundancy failed")
+        unique_coverage[case_identity] = unique
+
+    covers = {name: manifest[name]["locator"] for name in COVERED_FIELDS}
+    covers["known_good"] = calibration["known_good"]["locator"]
+    covers["known_bad"] = calibration["known_bad"]["locator"]
+    expected = {
+        # An oracle a trick walks past cannot meaningfully fail, so the attack
+        # record is part of what failability is judged over.
+        "oracle_failability": {
+            "covers": [covers["runner"], covers["runnable_cases"], covers["scoring"], covers["known_bad"], covers["attack_audit"]],
+            "observation": {
+                "known_bad_verdict": bad["verdict"],
+                "eligible_for_ranking": bad["eligible_for_ranking"],
+            },
+        },
+        "coverage": {
+            "covers": [covers["evaluation_design"], covers["runnable_cases"]],
+            "observation": {
+                "case_count": len(case_set["cases"]),
+                "covered_dimensions": sorted(design["intended_coverage"]),
+            },
+        },
+        # Separation means something only where the expectations are right and
+        # the rungs actually separate: the audit decides the first, the
+        # measurement records the second.
+        "discrimination": {
+            "covers": [covers["runner"], covers["runnable_cases"], covers["scoring"], covers["known_good"], covers["known_bad"], covers["reference_audit"], covers["measurement"]],
+            "observation": {
+                "known_good_verdict": good_first["verdict"],
+                "known_bad_verdict": bad["verdict"],
+            },
+        },
+        "reproducibility": {
+            "covers": [covers["runner"], covers["runnable_cases"], covers["scoring"], covers["known_good"]],
+            "observation": {"identical_replays": good_first == good_second},
+        },
+        "redundancy": {
+            "covers": [covers["evaluation_design"], covers["runnable_cases"]],
+            "observation": {"unique_coverage": unique_coverage},
+        },
+        "provenance": {
+            "covers": [covers["evaluation_design"], covers["runnable_cases"], covers["provenance"]],
+            "observation": {"case_sources": provenance["case_sources"]},
+        },
+        "execution_cost": {
+            "covers": [covers["evaluation_design"], covers["runnable_cases"], covers["runner"]],
+            "observation": {
+                "replays": 3,
+                "candidate_processes": 3 * len(case_set["cases"]),
+                "per_case_timeout_seconds": timeout,
+            },
+        },
+    }
+
+    entries = {
+        entry["criterion"]: entry
+        for entry in qualification["entries"]
+        if entry["required"]
+    }
+    if set(entries) != REQUIRED_QUALIFICATION_CRITERIA:
+        raise ValueError("qualification criterion set is incomplete")
+    for criterion, expected_entry in expected.items():
+        entry = entries[criterion]
+        expected_covers = sorted(expected_entry["covers"])
+        if (
+            entry["verdict"] != "PASS"
+            or entry["oracle_class"] != "deterministic"
+            or sorted(entry["covers"]) != expected_covers
+        ):
+            raise ValueError(f"qualification {criterion} verdict is invalid")
+        evidence = entry["evidence"]
+        if (
+            evidence["observation"] != expected_entry["observation"]
+            or sorted(evidence["provenance"]) != expected_covers
+            or evidence["identity"] != evidence_identity(evidence)
+        ):
+            raise ValueError(f"qualification {criterion} evidence is invalid")
+
+    spend = expected["execution_cost"]["observation"]
+    if qualification["actual_qualification_spend"] != {
+        "replays": spend["replays"],
+        "candidate_processes": spend["candidate_processes"],
+    }:
+        raise ValueError("qualification spend is invalid")
+    if (
+        qualification["overall_verdict"] != "PASS"
+        or qualification["weakest_oracle_class"] != "deterministic"
+    ):
+        raise ValueError("qualification overall verdict is invalid")
+
+    optimization = next(
+        entry
+        for entry in qualification["entries"]
+        if entry["criterion"] == "optimization_resistance"
+    )
+    if manifest["protected_evidence"]["candidate_inaccessible_check"] is None:
+        if optimization["required"] or optimization["verdict"] != "UNVERIFIED":
+            raise ValueError("optimization resistance must remain UNVERIFIED")
+    if optimization["evidence"]["identity"] != evidence_identity(
+        optimization["evidence"]
+    ):
+        raise ValueError("optimization-resistance evidence is invalid")
+
+
+def replay(manifest_path, candidate_path, runner_path):
+    manifest_path = manifest_path.resolve()
+    candidate_path = candidate_path.resolve()
+    root = manifest_path.parent.resolve()
+    manifest = load_json(manifest_path)
+    references = {
+        name: resolve_reference(root, manifest[name]) for name in REFERENCE_FIELDS
+    }
+    if references["runner"] != runner_path.resolve():
+        raise ValueError("manifest runner does not resolve to this file")
+
+    design = load_json(references["evaluation_design"])
+    case_set = load_json(references["runnable_cases"])
+    scoring = load_json(references["scoring"])
+    provenance = load_json(references["provenance"])
+    qualification = load_json(references["qualification"])
+    validate_components(manifest, design, case_set, scoring, provenance)
+    verify_qualification(
+        root, manifest, design, case_set, scoring, provenance, qualification
+    )
+
+    result = evaluate_candidate(
+        candidate_path,
+        case_set,
+        scoring,
+        provenance,
+        manifest["expected_cost"]["per_case_timeout_seconds"],
+    )
+    # The benchmark this ran against is a git revision of the tree holding the
+    # manifest; the result restates only what it produced itself.
+    evidence_payload = {
+        "candidate_identity": result["candidate_identity"],
+        "cases": result["cases"],
+        "covered_evidence": result["covered_evidence"],
+    }
+    return {
+        "candidate_identity": result["candidate_identity"],
+        "verdict": result["verdict"],
+        "oracle_class": "deterministic",
+        "score": result["score"],
+        "eligible_for_ranking": result["eligible_for_ranking"],
+        "cases": result["cases"],
+        "covered_evidence": result["covered_evidence"],
+        "evidence_identity": sha256_bytes(
+            canonical_json(evidence_payload).encode("utf-8")
+        ),
+    }
