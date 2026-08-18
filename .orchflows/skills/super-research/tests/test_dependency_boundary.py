@@ -61,6 +61,7 @@ from tests.test_adapters import (
     WRITE_VERBS,
     code_strings,
 )
+from tests.test_keyless import roster_manifest
 from tests.test_transport import NETWORK_SEAM_MODULES, ROUTE_OWNING_MODULES
 
 PACKAGE_DIR = Path(__file__).resolve().parent.parent / "scripts" / "super_research"
@@ -1137,10 +1138,13 @@ def surface_total():
     return sum(len(runner.surface_descriptors(adapter_id)) for adapter_id in runner.ADAPTER_IDS)
 
 
-def multi_surface_counts_stated(path):
-    """Every multi-surface count one document states, in document order."""
+def multi_surface_counts_in(text):
+    """Every multi-surface count one passage states, in reading order.
 
-    text = path.read_text(encoding="utf-8")
+    Text rather than a path, because one of the passages is a docstring: the
+    sentence is the subject either way, and where it is kept is not.
+    """
+
     return tuple(
         counted_as(match.group(1)) for match in MULTI_SURFACE_ANCHOR.finditer(text)
     )
@@ -1157,9 +1161,15 @@ class RosterIsReadOffTheSourceTest(unittest.TestCase):
     the same treatment — the number stays in the prose, where a reader meets
     it, and the assertion runs against the prose.
 
-    The count is anchored on the phrase both paragraphs share rather than on
-    either sentence, because the two are written in different voices and a
-    sentence match would pin the voice along with the number.
+    Two docstrings stated it too, and they were the last two: `roster_manifest`
+    also said seven, and `surface_descriptors` counted four exceptions directly
+    above the chain that answers for ten.
+
+    Every one of them is anchored on the phrase its count cannot leave rather
+    than on its sentence — the three that share a phrase on that phrase, the
+    resolver on its own — because the four paragraphs are written in different
+    voices and are meant to stay that way, and a sentence match would pin the
+    voice along with the number.
     """
 
     def setUp(self):
@@ -1172,26 +1182,43 @@ class RosterIsReadOffTheSourceTest(unittest.TestCase):
         self.assertEqual(set(self.rows), set(runner.ADAPTER_IDS))
         return self.rows[YOUTUBE][column]
 
-    def test_the_multi_surface_count_is_the_descriptors_own(self):
+    def passages_counting_the_multi_surface_adapters(self):
+        """Every passage that counts them in the one phrase they share.
+
+        Two reference documents and one docstring. `roster_manifest` says why
+        its dispatch has more steps than the roster has adapters, and the
+        number in that sentence is the same fact `protocol.md` states about the
+        roster — kept beside the manifest, where its reader meets it, and
+        reached here by importing the function rather than by reading the file
+        it happens to sit in.
+        """
+
+        return (
+            (PROTOCOL_PATH.name, PROTOCOL_PATH.read_text(encoding="utf-8")),
+            (OPERATING_PATH.name, OPERATING_PATH.read_text(encoding="utf-8")),
+            ("test_keyless.roster_manifest", roster_manifest.__doc__),
+        )
+
+    def test_every_document_and_docstring_states_one_count(self):
         # If the source ever gave every adapter one surface the claim would be
         # vacuous rather than wrong, so the reading is shown to be a reading.
         self.assertGreater(len(self.multi), 1)
 
-        for path in (PROTOCOL_PATH, OPERATING_PATH):
-            with self.subTest(document=path.name):
-                stated = multi_surface_counts_stated(path)
+        for name, text in self.passages_counting_the_multi_surface_adapters():
+            with self.subTest(passage=name):
+                stated = multi_surface_counts_in(text)
                 self.assertEqual(
                     len(stated),
                     1,
                     "{0} states the multi-surface count {1} times".format(
-                        path.name, len(stated)
+                        name, len(stated)
                     ),
                 )
                 self.assertEqual(
                     stated[0],
                     len(self.multi),
                     "{0} says {1}; the descriptors say {2}: {3}".format(
-                        path.name, stated[0], len(self.multi), sorted(self.multi)
+                        name, stated[0], len(self.multi), sorted(self.multi)
                     ),
                 )
 

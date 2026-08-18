@@ -226,7 +226,7 @@ def hydration(step_id, adapter_id, locator, target_id, max_items=200):
 def roster_manifest():
     """One dispatch over every adapter in the roster and every route it reaches.
 
-    Thirty-four steps rather than twenty: seven adapters read more than one
+    Thirty-four steps rather than twenty: ten adapters read more than one
     surface, and a keyless claim about an adapter that leaves one of its routes
     unread is a keyless claim about half of it.
     """
