@@ -52,7 +52,7 @@ import sysconfig
 import unittest
 from pathlib import Path
 
-from super_research import runner
+from super_research import runner, transport
 from super_research.adapters import youtube_innertube
 from tests import helpers
 from tests.test_adapters import (
@@ -1006,6 +1006,18 @@ MULTI_SURFACE_ANCHOR = re.compile(r"\b([A-Za-z]+) adapters rea(?:d|ch) more than
 ROSTER_SIZE_ANCHOR = re.compile(r"\b([A-Za-z]+) adapters, ([A-Za-z]+) live plus `fake`")
 SURFACE_TOTAL_ANCHOR = re.compile(r"\b([A-Za-z]+(?:-[A-Za-z]+)?) route surfaces\b")
 
+# The same paragraph states that total a second time, two lines down, and
+# derives a count from it: "Thirty-five of the thirty-six are read". The anchor
+# above reaches neither, because the phrase it pins on is `route surfaces` and
+# this sentence does not spell it — so the paragraph stated the total twice and
+# one statement was checked, which is the drift this suite exists to stop
+# living inside the paragraph the pin reads. This is the second statement's own
+# anchor: the phrase its two counts cannot leave, whitespace-tolerant because
+# the document wraps between them.
+READ_SURFACE_ANCHOR = re.compile(
+    r"\b([A-Za-z]+(?:-[A-Za-z]+)?)\s+of\s+the\s+([A-Za-z]+(?:-[A-Za-z]+)?)\s+are\s+read\b"
+)
+
 # The same count where `surface_descriptors` states it about itself. Its own
 # paragraph rather than either document's, so its own anchor: the two words the
 # count cannot leave while the sentence still says that some adapters are the
@@ -1136,6 +1148,23 @@ def surface_total():
     """Every route surface the source declares, across the whole roster."""
 
     return sum(len(runner.surface_descriptors(adapter_id)) for adapter_id in runner.ADAPTER_IDS)
+
+
+def read_surface_total():
+    """Every declared surface a caller reads: the roster's, less the activations.
+
+    ``transport.TOKEN_ACTIVATION_ROUTES`` is where this package says which
+    routes are spent rather than read, so it is what this counts by. Naming
+    `x_guest`'s activation here instead would be a second transcription of the
+    fact the paragraph under test already transcribes once.
+    """
+
+    return sum(
+        1
+        for adapter_id in runner.ADAPTER_IDS
+        for descriptor in runner.surface_descriptors(adapter_id)
+        if descriptor.route_id not in transport.TOKEN_ACTIVATION_ROUTES
+    )
 
 
 def multi_surface_counts_in(text):
@@ -1280,17 +1309,30 @@ class RosterIsReadOffTheSourceTest(unittest.TestCase):
             ),
         )
 
-    def test_the_surface_total_it_states_is_the_descriptors_own(self):
-        """The "thirty-six route surfaces" of that same sentence, counted off the source.
+    def test_every_statement_of_the_surface_total_is_checked(self):
+        """Both statements of "thirty-six", and the count the second derives from it.
 
-        Distinct from the adapter count above and from the multi-surface count
-        below it — a surface total that merely equalled the roster size would be
-        a count of adapters wearing another name, which the first assertion here
-        rules out.
+        The pin that landed here read the first and stopped: it holds on the
+        words `route surfaces`, which the sentence two lines down does not
+        spell, so the roster paragraph stated the total twice, derived a third
+        count from it, and one of the three was checked. Add a read surface and
+        the unchecked pair goes wrong with nothing failing — which is how
+        "seven" survived three new adapters, surviving here inside the very
+        paragraph the pin was raised to hold.
+
+        Two anchors rather than one rewritten sentence, because the two
+        sentences are written in different voices and pinning either to the
+        other's phrasing would forbid the rewrite an anchor pin exists to
+        permit.
         """
 
-        stated = SURFACE_TOTAL_ANCHOR.findall(PROTOCOL_PATH.read_text(encoding="utf-8"))
+        text = PROTOCOL_PATH.read_text(encoding="utf-8")
+        stated = SURFACE_TOTAL_ANCHOR.findall(text)
+        read_stated = READ_SURFACE_ANCHOR.findall(text)
 
+        # Distinct from the adapter count above and from the multi-surface count
+        # below it — a surface total that merely equalled the roster size would
+        # be a count of adapters wearing another name.
         self.assertGreater(surface_total(), len(runner.ADAPTER_IDS))
         self.assertEqual(len(stated), 1, "protocol.md states the surface total {0} times".format(len(stated)))
         self.assertEqual(
@@ -1300,6 +1342,41 @@ class RosterIsReadOffTheSourceTest(unittest.TestCase):
                 stated[0], surface_total()
             ),
         )
+
+        self.assertEqual(
+            len(read_stated),
+            1,
+            "protocol.md states the read-surface split {0} times".format(len(read_stated)),
+        )
+        read, total = read_stated[0]
+        self.assertEqual(
+            counted_as(total),
+            surface_total(),
+            "protocol.md's second statement says {0}; the descriptors say {1}".format(
+                total, surface_total()
+            ),
+        )
+        # The derived count is a count of something else, so a sentence that had
+        # quietly restated the total under its name would fail rather than pass.
+        self.assertLess(read_surface_total(), surface_total())
+        self.assertEqual(
+            counted_as(read),
+            read_surface_total(),
+            "protocol.md says {0} of them are read; the descriptors say {1}".format(
+                read, read_surface_total()
+            ),
+        )
+
+        # Both readers can fail, and the second on exactly the shape this test
+        # was raised for: a paragraph whose second statement of the total no
+        # longer spells the phrase. The first reader is blind to the move —
+        # it still finds its one match and still agrees — which is the finding.
+        moved = (
+            "thirty-six route surfaces, because ten adapters reach more than"
+            " one. Thirty-five of the thirty-six carry records"
+        )
+        self.assertEqual(len(SURFACE_TOTAL_ANCHOR.findall(moved)), 1)
+        self.assertEqual(READ_SURFACE_ANCHOR.findall(moved), [])
         # The compound reader can fail rather than shrug: a name it cannot spell
         # answers None, which no count equals, so an unreadable number is a
         # failure here and never a pass.
