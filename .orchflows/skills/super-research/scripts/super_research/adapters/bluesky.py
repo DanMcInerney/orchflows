@@ -42,9 +42,8 @@ the payload stated an exact integer, under the AppView's own name for it.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
 from html.parser import HTMLParser
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from .. import transport
 from . import (
@@ -55,20 +54,11 @@ from . import (
     build_native_page,
     fetch_one_page,
 )
+from ._support import bluesky_extract as _extract
 
-# Where a Bluesky post lives for a reader. It is the app's own site and not
-# either route's origin — the AppView answers at an API host, and
-# `transport.origin_locator` resolves against the route that answered, which
-# would compose an address no browser serves. Neither payload publishes a
-# post's web address in any form: it publishes an ``at://`` URI, which is an
-# identity rather than a locator. So the address is composed from the handle
-# and the record key, the way `hacker_news.HN_ITEM_ORIGIN` composes an item's
-# address from its id — a host no route in this package reads is not a host the
-# transport seam owns. Measured 2026-08-17:
-# `bsky.app/profile/<handle>/post/<rkey>` answered 200.
-BLUESKY_APP_ORIGIN = "https://bsky.app"
-PROFILE_PATH = "/profile/"
-POST_PATH = "/post/"
+URI_KEY = _extract.URI_KEY
+_post_record = _extract._post_record
+_text = _extract._text
 
 # The search surface, and this adapter's primary: a step naming a query and no
 # operation is asking Bluesky to search.
@@ -155,9 +145,6 @@ CURSOR_PARAM = "cursor"
 LATEST_SORT = "latest"
 PAGE_LIMIT = "100"
 
-# The kind of record this module emits. Both surfaces answer with posts.
-POST_KIND = "post"
-
 # Where each surface keeps what it returned, and where a feed entry keeps its
 # post. Declared, never searched for: the whole value of a typed drift is that
 # it says the payload moved rather than that Bluesky went quiet.
@@ -165,49 +152,6 @@ POSTS_KEY = "posts"
 FEED_KEY = "feed"
 POST_KEY = "post"
 CURSOR_KEY = "cursor"
-
-# Every other key these payloads publish that this module reads, under the
-# AppView's own names.
-URI_KEY = "uri"
-CID_KEY = "cid"
-AUTHOR_KEY = "author"
-HANDLE_KEY = "handle"
-DID_KEY = "did"
-RECORD_KEY = "record"
-TEXT_KEY = "text"
-CREATED_AT_KEY = "createdAt"
-INDEXED_AT_KEY = "indexedAt"
-REPLY_KEY = "reply"
-PARENT_KEY = "parent"
-ROOT_KEY = "root"
-
-# The four counts this module carries, under the AppView's own names for them.
-LIKE_COUNT_METRIC = "likeCount"
-REPOST_COUNT_METRIC = "repostCount"
-REPLY_COUNT_METRIC = "replyCount"
-QUOTE_COUNT_METRIC = "quoteCount"
-POST_METRICS = (
-    LIKE_COUNT_METRIC,
-    REPOST_COUNT_METRIC,
-    REPLY_COUNT_METRIC,
-    QUOTE_COUNT_METRIC,
-)
-
-# The name a reply's thread root travels under. `native_parent_id` means the
-# post this one answers; the root of the thread is a separate fact and rides
-# here, the way a Reddit comment carries its `link_id` apart from its parent.
-ROOT_URI_ATTRIBUTE = "root_uri"
-
-# What a post row promises, so a record short of it says so. The evidence
-# records that these methods answer and what a post view carries; the row set
-# is this adapter's own declaration. A row naming no `uri` is not a post at
-# all rather than an incomplete one.
-POST_ROW_KEYS = (URI_KEY, TEXT_KEY, HANDLE_KEY, CREATED_AT_KEY)
-
-# The stamp these payloads write — `2026-08-10T18:23:59.962Z`, an ISO instant
-# with a fraction — and the one an artifact record holds.
-ROUTE_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%S"
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 # How much of a refusing body's own words ride into a warning. A refusal page
 # is a page, and a warning is a sentence.
@@ -224,7 +168,6 @@ REFUSING_STATUSES = (401, 403)
 HTTP_STATUS = "http_status"
 MALFORMED_JSON = "malformed_json"
 SCHEMA_DRIFT = "schema_drift"
-FIELD_OMITTED = "field_omitted"
 AUTH_REQUIRED = "auth_required"
 
 
@@ -282,150 +225,6 @@ def refusal_sentence(body: str) -> str:
     parser.feed(body)
     parser.close()
     return parser.runs[0][:REFUSAL_SENTENCE_LIMIT] if parser.runs else ""
-
-
-def record_key(uri: str) -> str:
-    """One post's record key: the last segment of the ``at://`` URI naming it.
-
-    An ``at://`` URI is an identity — an authority, a collection, and a key —
-    and the key is the part a reader's address ends in. Nothing else is taken
-    apart: the authority in the URI is a decentralised identifier and the
-    address is built from the handle the payload states beside it.
-    """
-
-    held = (uri or "").strip()
-    if not held or held.endswith("/"):
-        return ""
-    _, separator, last = held.rpartition("/")
-    return last if separator else ""
-
-
-def post_locator(handle: str, uri: str) -> str:
-    """One post's address on Bluesky's own app, or nothing without both parts."""
-
-    key = record_key(uri)
-    if not handle or not key:
-        return ""
-    return BLUESKY_APP_ORIGIN + PROFILE_PATH + handle + POST_PATH + key
-
-
-def _text(value: Any) -> str:
-    return value if isinstance(value, str) else ""
-
-
-def exact_count(value: Any) -> Optional[int]:
-    """One count the AppView published as an exact number, or nothing at all.
-
-    A bool is not a count and ``null`` is not one either: this payload
-    publishes its counts as json integers, and a post carrying no count for
-    something has no count for it rather than a zero this module wrote.
-    """
-
-    if isinstance(value, bool) or not isinstance(value, int):
-        return None
-    return value
-
-
-def route_instant_to_utc_iso(stamped: Any) -> str:
-    """This payload's stamp as the artifact's instant, or nothing.
-
-    A trailing ``Z`` and a fraction of varying length are the shape both
-    methods write. The fraction is dropped rather than rounded, so nothing is
-    stated that the origin did not, and a stamp in any other spelling is a
-    missing time rather than an approximated one.
-    """
-
-    if not isinstance(stamped, str) or not stamped.strip():
-        return ""
-    text = stamped.strip()
-    if text.endswith("Z"):
-        text = text[:-1]
-    text = text.split(".")[0]
-    try:
-        moment = datetime.strptime(text, ROUTE_INSTANT_FORMAT)
-    except ValueError:
-        return ""
-    return moment.replace(tzinfo=timezone.utc).strftime(RECORD_INSTANT_FORMAT)
-
-
-def _nested(payload: Any, *keys: str) -> Any:
-    """One value under a key path, or None the moment the path leaves a mapping."""
-
-    held: Any = payload
-    for key in keys:
-        if not isinstance(held, Mapping):
-            return None
-        held = held.get(key)
-    return held
-
-
-def _missing(row: Mapping[str, Any], keys: Sequence[str]) -> Tuple[str, ...]:
-    """Which of this row's declared fields the payload did not report."""
-
-    return tuple(key for key in keys if not row.get(key))
-
-
-def _engagement(post: Mapping[str, Any]) -> Tuple[Tuple[str, int], ...]:
-    """The counts this post stated, in the declared order, and no others."""
-
-    counted: List[Tuple[str, int]] = []
-    for name in POST_METRICS:
-        exact = exact_count(post.get(name))
-        if exact is not None:
-            counted.append((name, exact))
-    return tuple(counted)
-
-
-def reply_parents_of(post: Mapping[str, Any]) -> Tuple[str, str]:
-    """The post this one answers, and the root of the thread it sits in.
-
-    Both empty for a post that answers nothing. The AppView states both on the
-    record itself, so neither is derived: a reply names its parent and its
-    root, and a root is not a parent.
-    """
-
-    parent = _text(_nested(post, RECORD_KEY, REPLY_KEY, PARENT_KEY, URI_KEY))
-    root = _text(_nested(post, RECORD_KEY, REPLY_KEY, ROOT_KEY, URI_KEY))
-    return (parent, root)
-
-
-def _post_record(position: int, post: Mapping[str, Any]) -> NativeRecord:
-    """One post as either method's post view described it."""
-
-    uri = _text(post.get(URI_KEY))
-    handle = _text(_nested(post, AUTHOR_KEY, HANDLE_KEY))
-    row = {
-        URI_KEY: uri,
-        TEXT_KEY: _text(_nested(post, RECORD_KEY, TEXT_KEY)),
-        HANDLE_KEY: handle,
-        CREATED_AT_KEY: route_instant_to_utc_iso(_nested(post, RECORD_KEY, CREATED_AT_KEY)),
-    }
-    parent, root = reply_parents_of(post)
-    named: List[Tuple[str, str]] = []
-    for name, value in (
-        # The author's decentralised identifier, which is the identity a handle
-        # is only a current name for.
-        (DID_KEY, _text(_nested(post, AUTHOR_KEY, DID_KEY))),
-        (CID_KEY, _text(post.get(CID_KEY))),
-        # When the AppView saw it, which is not when its author wrote it.
-        (INDEXED_AT_KEY, _text(post.get(INDEXED_AT_KEY))),
-        (ROOT_URI_ATTRIBUTE, root),
-    ):
-        if value:
-            named.append((name, value))
-    return NativeRecord(
-        canonical_content_kind=POST_KIND,
-        canonical_locator=post_locator(handle, uri),
-        native_item_id=uri,
-        native_parent_id=parent,
-        body=row[TEXT_KEY],
-        author=handle,
-        published_at=row[CREATED_AT_KEY],
-        engagement=_engagement(post),
-        attributes=tuple(named),
-        native_position=position,
-        loss=(FIELD_OMITTED,) if _missing(row, POST_ROW_KEYS) else (),
-    )
 
 
 def _answered(
