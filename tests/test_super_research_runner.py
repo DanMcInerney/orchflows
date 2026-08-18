@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import os
 import shutil
 import subprocess
@@ -8,6 +9,7 @@ import tempfile
 import textwrap
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -45,6 +47,28 @@ class SuperResearchRunnerTests(unittest.TestCase):
             stderr=subprocess.STDOUT,
             text=True,
         )
+
+    def test_delegates_to_installed_python_39(self):
+        spec = importlib.util.spec_from_file_location("super_research_test_runner", RUNNER)
+        runner = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(runner)
+        command = [
+            "uv",
+            "run",
+            "--python",
+            "3.9",
+            "--no-project",
+            "python",
+            str(RUNNER),
+            "test_sample.FirstTests",
+        ]
+
+        with mock.patch.object(runner.sys, "version_info", (3, 12)):
+            with mock.patch.object(runner.subprocess, "call", return_value=7) as call:
+                status = runner.main(["test_sample.FirstTests"])
+
+        self.assertEqual(status, 7)
+        call.assert_called_once_with(command)
 
     def test_discovers_tests_from_project_scope_directory(self):
         self.write_test(

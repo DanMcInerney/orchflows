@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -39,7 +40,20 @@ def load_suite(selectors):
 
 
 def main(argv=None) -> int:
-    suite = load_suite(sys.argv[1:] if argv is None else argv)
+    selectors = sys.argv[1:] if argv is None else argv
+    if sys.version_info[:2] != (3, 9):
+        command = [
+            "uv",
+            "run",
+            "--python",
+            "3.9",
+            "--no-project",
+            "python",
+            str(Path(__file__).resolve()),
+            *selectors,
+        ]
+        return subprocess.call(command)
+    suite = load_suite(selectors)
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     return 0 if result.wasSuccessful() else 1
 
