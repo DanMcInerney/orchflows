@@ -35,8 +35,7 @@ not list is a symbol it does not list.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from .. import transport
 from . import (
@@ -47,19 +46,50 @@ from . import (
     build_native_page,
     fetch_one_page,
 )
-
-# Where a message and a symbol page live. It is Stocktwits' own site and not
-# either route's origin, so `transport.origin_locator` cannot resolve it — it
-# resolves against the route that answered, which here would name the API
-# host. Neither payload publishes a message's address, so it is composed from
-# the poster and the id, the way `hacker_news.HN_ITEM_ORIGIN` composes an
-# item's address from its id: a host no route in this package reads is not a
-# host the transport seam owns. Measured 2026-08-17:
-# `stocktwits.com/<username>/message/<id>` and `stocktwits.com/symbol/<SYM>`
-# both answered 200.
-STOCKTWITS_SITE_ORIGIN = "https://stocktwits.com"
-MESSAGE_PATH = "/message/"
-SYMBOL_PATH = "/symbol/"
+from ._support.stocktwits_records import (
+    BASIC_KEY,
+    BODY_KEY,
+    CONVERSATION_KEY,
+    CREATED_AT_KEY,
+    ENTITIES_KEY,
+    EXCHANGE_KEY,
+    FIELD_OMITTED,
+    ID_KEY,
+    IN_REPLY_TO_MESSAGE_ID_KEY,
+    LIKES_KEY,
+    LIKES_METRIC,
+    MESSAGE_PATH,
+    MESSAGE_ROW_KEYS,
+    PARENT_KEY,
+    PARENT_MESSAGE_ID_KEY,
+    POST_KIND,
+    ROUTE_INSTANT_FORMAT,
+    SENTIMENT_KEY,
+    SOURCE_KEY,
+    STOCKTWITS_SITE_ORIGIN,
+    SYMBOL_KIND,
+    SYMBOL_KEY,
+    SYMBOL_PATH,
+    SYMBOL_ROW_KEYS,
+    SYMBOLS_KEY,
+    TITLE_KEY,
+    TOTAL_KEY,
+    USER_KEY,
+    USERNAME_KEY,
+    WATCHLIST_COUNT_METRIC,
+    _engagement,
+    _message_record,
+    _missing,
+    _nested,
+    _symbol_record,
+    _text,
+    exact_count,
+    id_text,
+    message_locator,
+    reply_parent_of,
+    route_instant_to_utc_iso,
+    symbol_locator,
+)
 
 # The stream surface. It is this adapter's primary descriptor because a
 # request naming a symbol reads its stream, which is the call the core makes
@@ -128,10 +158,6 @@ LIMIT_PARAM = "limit"
 MAX_PARAM = "max"
 QUERY_PARAM = "q"
 
-# The kinds of record this module emits.
-POST_KIND = "post"
-SYMBOL_KIND = "symbol"
-
 # Where each surface keeps what it returned. Declared, never searched for.
 MESSAGES_KEY = "messages"
 RESULTS_KEY = "results"
@@ -139,230 +165,9 @@ CURSOR_KEY = "cursor"
 MORE_KEY = "more"
 MAX_KEY = "max"
 
-# Every other key these two payloads publish that this module reads, under
-# Stocktwits' own names.
-ID_KEY = "id"
-BODY_KEY = "body"
-CREATED_AT_KEY = "created_at"
-USER_KEY = "user"
-USERNAME_KEY = "username"
-SOURCE_KEY = "source"
-TITLE_KEY = "title"
-SYMBOLS_KEY = "symbols"
-SYMBOL_KEY = "symbol"
-EXCHANGE_KEY = "exchange"
-ENTITIES_KEY = "entities"
-SENTIMENT_KEY = "sentiment"
-BASIC_KEY = "basic"
-LIKES_KEY = "likes"
-TOTAL_KEY = "total"
-CONVERSATION_KEY = "conversation"
-PARENT_KEY = "parent"
-PARENT_MESSAGE_ID_KEY = "parent_message_id"
-IN_REPLY_TO_MESSAGE_ID_KEY = "in_reply_to_message_id"
-LIKES_METRIC = "likes"
-WATCHLIST_COUNT_METRIC = "watchlist_count"
-
-# What each kind of row promises, so a record short of it says so. The
-# evidence records that both routes answer and what a message carries; the
-# row sets are this adapter's own declaration. An id is absent from both:
-# a row without one is not a row of that kind at all.
-MESSAGE_ROW_KEYS = (ID_KEY, BODY_KEY, CREATED_AT_KEY, USERNAME_KEY)
-SYMBOL_ROW_KEYS = (SYMBOL_KEY, TITLE_KEY)
-
-# The stamp the stream emits is already the artifact's own instant format;
-# it is read through the format rather than copied so junk stays a missing
-# time and never an approximated one.
-ROUTE_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
-
 SCHEMA_DRIFT = "schema_drift"
 MALFORMED_JSON = "malformed_json"
 HTTP_STATUS = "http_status"
-FIELD_OMITTED = "field_omitted"
-
-
-def message_locator(username: str, message_id: str) -> str:
-    """One message's address on Stocktwits' own site, or nothing without both parts."""
-
-    if not username or not message_id:
-        return ""
-    return STOCKTWITS_SITE_ORIGIN + "/" + username + MESSAGE_PATH + message_id
-
-
-def symbol_locator(symbol: str) -> str:
-    """One symbol's stream page on Stocktwits' own site, or nothing without a symbol."""
-
-    return STOCKTWITS_SITE_ORIGIN + SYMBOL_PATH + symbol if symbol else ""
-
-
-def _text(value: Any) -> str:
-    return value if isinstance(value, str) else ""
-
-
-def exact_count(value: Any) -> Optional[int]:
-    """One count Stocktwits published as an exact number, or nothing at all.
-
-    A bool is not a count and ``null`` is not one either: the origin publishes
-    its counts as json integers, so anything else is a count this adapter was
-    not given rather than one it can recover.
-    """
-
-    if isinstance(value, bool) or not isinstance(value, int):
-        return None
-    return value
-
-
-def id_text(value: Any) -> str:
-    """One Stocktwits id as its decimal spelling, which is the only form a record holds.
-
-    The stream publishes every id as a json number; nothing is rounded,
-    formatted, or made here — an identifier's decimal digits are the identifier.
-    """
-
-    if isinstance(value, bool):
-        return ""
-    if isinstance(value, int):
-        return str(value)
-    return value if isinstance(value, str) else ""
-
-
-def route_instant_to_utc_iso(created_at: Any) -> str:
-    """The stream's stamp as the artifact's instant, or nothing.
-
-    The origin already writes ``%Y-%m-%dT%H:%M:%SZ``; reading it back through
-    that format is what keeps a stamp that moved from riding along as a time.
-    """
-
-    if not isinstance(created_at, str) or not created_at.strip():
-        return ""
-    try:
-        moment = datetime.strptime(created_at.strip(), ROUTE_INSTANT_FORMAT)
-    except ValueError:
-        return ""
-    return moment.replace(tzinfo=timezone.utc).strftime(ROUTE_INSTANT_FORMAT)
-
-
-def _missing(row: Mapping[str, Any], keys: Sequence[str]) -> Tuple[str, ...]:
-    """Which of this row's declared fields the payload did not report.
-
-    Absence, never falsehood: a message nobody has liked carries no `likes`
-    block, and that is a count nobody reported rather than a field left out.
-    """
-
-    return tuple(key for key in keys if row.get(key) is None or row.get(key) == "")
-
-
-def _engagement(pairs: Sequence[Tuple[str, Any]]) -> Tuple[Tuple[str, int], ...]:
-    counted = []
-    for name, value in pairs:
-        exact = exact_count(value)
-        if exact is not None:
-            counted.append((name, exact))
-    return tuple(counted)
-
-
-def _nested(payload: Mapping[str, Any], *keys: str) -> Any:
-    """One value under a key path, or None the moment the path leaves a mapping."""
-
-    held: Any = payload
-    for key in keys:
-        if not isinstance(held, Mapping):
-            return None
-        held = held.get(key)
-    return held
-
-
-def reply_parent_of(message: Mapping[str, Any]) -> Tuple[str, str]:
-    """The message this one answers, and the root of the thread it sits in.
-
-    Both empty for a message that is not a reply. A ``conversation`` block
-    marks a message that has replies as well as one that is a reply, and the
-    two are told apart by its own ``parent`` flag: a root names itself as
-    ``parent_message_id`` and answers nothing. A reply's parent is the
-    message it answers — ``in_reply_to_message_id`` — and the thread's root
-    is a separate fact that rides in attributes, the way an HN reply names the
-    comment it answers and carries the story apart.
-    """
-
-    conversation = message.get(CONVERSATION_KEY)
-    if not isinstance(conversation, Mapping) or conversation.get(PARENT_KEY) is True:
-        return ("", "")
-    root = id_text(conversation.get(PARENT_MESSAGE_ID_KEY))
-    answered = id_text(conversation.get(IN_REPLY_TO_MESSAGE_ID_KEY)) or root
-    return (answered, root)
-
-
-def _message_record(position: int, message: Mapping[str, Any], symbol: str) -> NativeRecord:
-    """One message as the stream listed it."""
-
-    message_id = id_text(message.get(ID_KEY))
-    username = _text(_nested(message, USER_KEY, USERNAME_KEY))
-    row = {
-        ID_KEY: message_id,
-        BODY_KEY: _text(message.get(BODY_KEY)),
-        CREATED_AT_KEY: route_instant_to_utc_iso(message.get(CREATED_AT_KEY)),
-        USERNAME_KEY: username,
-    }
-    answered, root = reply_parent_of(message)
-    named: List[Tuple[str, str]] = []
-    sentiment = _text(_nested(message, ENTITIES_KEY, SENTIMENT_KEY, BASIC_KEY))
-    if sentiment:
-        named.append((SENTIMENT_KEY, sentiment))
-    symbols = message.get(SYMBOLS_KEY)
-    for tagged in symbols if isinstance(symbols, list) else ():
-        # Every symbol the message tags, one pair each in the origin's order,
-        # rather than a list flattened into one string this module invented.
-        ticker = _text(tagged.get(SYMBOL_KEY)) if isinstance(tagged, Mapping) else ""
-        if ticker:
-            named.append((SYMBOL_KEY, ticker))
-    source = _text(_nested(message, SOURCE_KEY, TITLE_KEY))
-    if source:
-        named.append((SOURCE_KEY, source))
-    if root:
-        # The thread's root, which `native_parent_id` does not mean: a reply's
-        # parent is the message it answers.
-        named.append((PARENT_MESSAGE_ID_KEY, root))
-    return NativeRecord(
-        canonical_content_kind=POST_KIND,
-        canonical_locator=message_locator(username, message_id),
-        native_item_id=message_id,
-        native_parent_id=answered,
-        body=row[BODY_KEY],
-        author=username,
-        # The stream the message was read from, as the caller named it. A
-        # message tagging several symbols appears in each of their streams;
-        # the ones it tags are its `symbol` attributes.
-        community=symbol,
-        published_at=row[CREATED_AT_KEY],
-        # Present only when the origin stated one: a message nobody has liked
-        # carries no `likes` block, and no zero is written for it.
-        engagement=_engagement(((LIKES_METRIC, _nested(message, LIKES_KEY, TOTAL_KEY)),)),
-        attributes=tuple(named),
-        native_position=position,
-        loss=(FIELD_OMITTED,) if _missing(row, MESSAGE_ROW_KEYS) else (),
-    )
-
-
-def _symbol_record(position: int, result: Mapping[str, Any]) -> NativeRecord:
-    """One symbol as the search listed it."""
-
-    row = {
-        SYMBOL_KEY: _text(result.get(SYMBOL_KEY)),
-        TITLE_KEY: _text(result.get(TITLE_KEY)),
-    }
-    exchange = _text(result.get(EXCHANGE_KEY))
-    return NativeRecord(
-        canonical_content_kind=SYMBOL_KIND,
-        canonical_locator=symbol_locator(row[SYMBOL_KEY]),
-        native_item_id=row[SYMBOL_KEY],
-        title=row[TITLE_KEY],
-        # How many watchlists hold it, when the origin stated a number; a
-        # `null` here is a count nobody reported.
-        engagement=_engagement(((WATCHLIST_COUNT_METRIC, result.get(WATCHLIST_COUNT_METRIC)),)),
-        attributes=((EXCHANGE_KEY, exchange),) if exchange else (),
-        native_position=position,
-        loss=(FIELD_OMITTED,) if _missing(row, SYMBOL_ROW_KEYS) else (),
-    )
 
 
 def _answered(
