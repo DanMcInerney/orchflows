@@ -430,19 +430,19 @@ class ExtractionGapTest(unittest.TestCase):
 class CutTimeTest(unittest.TestCase):
     """At cut time HEAD is the baseline, and every honest oracle fails there.
 
-    The cut-time reading is spawned. It is the one grading whose subject is the
-    revision the invocation resolves `HEAD` against, and an in-process run
-    resolves it inside a process that has already imported the tool and stood
-    somewhere: what `HEAD` means to a fresh invocation is a fact about the
-    invocation. The baseline-behind-HEAD reading next door asks nothing of the
-    process and is graded in this one.
+    Both readings go through the public command in this process, standing at
+    the repository root and sharing the harness's real clones. Separate tests
+    retain the real process boundary; this claim is the status and findings for
+    two revisions, which `main` returns directly.
     """
 
     def test_same_revision_reads_green(self):
-        result = run_cutcheck_subprocess(
+        code, out = _graded_with(
+            self,
             ["cutcheck-f1-cuttime", "--baseline", "HEAD"]
         )
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        result = subprocess.CompletedProcess([], code, stdout=out, stderr="")
+        self.assertEqual(result.returncode, 0, result.stdout)
         self.assertEqual(reported(result), [])
 
     def test_a_baseline_behind_head_still_reports_it(self):
@@ -867,17 +867,14 @@ class RootGateLayoutTest(unittest.TestCase):
                 body("R1.gate.critique.code", tickets.GATE_EXECUTORS["critique"]),
                 encoding="utf-8",
             )
-            env = os.environ.copy()
-            env["ORCHFLOWS_STATE_HOME"] = str(sink)
-            result = subprocess.run(
-                [sys.executable, str(ROOT / "scripts" / "cutcheck.py"),
-                 "layout-command", "--baseline", BASELINE, "--lib", str(ROOT)],
-                cwd=str(ROOT), env=env, capture_output=True, text=True,
-                encoding="utf-8", errors="replace",
-            )
-        self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
-        self.assertIn(cutcheck.MULTIPLE_ROOTS, result.stdout)
-        self.assertIn(cutcheck.MALFORMED_GATE, result.stdout)
+            with mock.patch.dict(os.environ, {state_root.ENV_VAR: str(sink)}):
+                code, out = _graded_with(
+                    self,
+                    ["layout-command", "--baseline", BASELINE, "--lib", str(ROOT)],
+                )
+        self.assertNotEqual(0, code, out)
+        self.assertIn(cutcheck.MULTIPLE_ROOTS, out)
+        self.assertIn(cutcheck.MALFORMED_GATE, out)
 
     def test_checker_plus_gate_and_uncovered_criteria_fail(self):
         """One ticket gets one independence path, even in the smallest cut.
