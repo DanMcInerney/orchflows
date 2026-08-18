@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from tests.test_validator_cases.support import _IsolatedTree
 from tests.test_validator_cases.availability_and_packages import (
     TestASkippedCheckSaysSo,
     TestSyntheticPackageBoundaryInputs,
