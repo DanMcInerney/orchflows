@@ -68,6 +68,10 @@ RUN_JSON_FIELDS = frozenset({
     "orchflows",
     "orchflows.receipt_version",
     "orchflows.source_commit",
+    "terminal_at",
+    "terminal_ticket_id",
+    "terminal_status",
+    "elapsed_ms",
     "project",
     "project.root",
     "project.origin",
@@ -186,6 +190,30 @@ class TestWorklogStatesRunIdentity(unittest.TestCase):
 
     def test_the_contract_names_no_field_run_json_does_not_carry(self):
         self.assertEqual(set(), set(TOKEN.findall(self.block())) - RUN_JSON_FIELDS)
+
+    def test_installed_revision_and_terminal_timing_have_single_owners(self):
+        declared = TOKEN.findall(self.block())
+        for field in (
+            "orchflows.receipt_version",
+            "orchflows.source_commit",
+            "terminal_at",
+            "terminal_ticket_id",
+            "terminal_status",
+            "elapsed_ms",
+        ):
+            with self.subTest(field=field):
+                self.assertEqual(1, declared.count(field), field)
+
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            tickets_mod.state_root, "state_root", return_value=Path(tmp) / "state"
+        ):
+            self.assertEqual(
+                {"receipt_version": None, "source_commit": None},
+                tickets_mod._installed_orchflows_metadata(),
+            )
+        source = TICKETS_PY.read_text(encoding="utf-8")
+        self.assertEqual(1, source.count("def _installed_orchflows_metadata"))
+        self.assertEqual(1, source.count("def _terminal_identity_update"))
 
 
 # --- The prose half: the law and the documentation say what the code does ---

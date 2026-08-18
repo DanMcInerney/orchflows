@@ -54,6 +54,11 @@ else about it:
   when the receipt is missing, corrupt or legacy; ``orchflows.source_commit``
   — the exact installed-from commit from that receipt, likewise null rather
   than inferred.
+- ``terminal_at`` — the first instant the rendered worklog's terminal becomes
+  non-empty; ``terminal_ticket_id`` and ``terminal_status`` — the ticket and
+  terminal state that caused it; ``elapsed_ms`` — nonnegative milliseconds
+  from ``opened_at``. These four keys are absent while open and on legacy runs
+  whose opening instant was never recorded.
 - ``project`` — which project owns this run id; never rewritten once set.
   ``project.root`` — absolute path of the **main** checkout, a linked
   worktree resolved to it and a submodule to its superproject;
@@ -930,6 +935,50 @@ def _identity_update(run: str, now):
         run, run_dir / RUN_IDENTITY_NAME, project, workspace, now
     )
     return run_dir, document, refusal
+
+
+def _terminal_identity_update(run: str, ticket_id: str, status: str, now):
+    """Prepare the one timing write for a worklog-terminal transition.
+
+    No identity means a legacy run whose real opening instant is unknown, so
+    no terminal timing is fabricated. Any existing terminal field likewise
+    means the transition has already been recorded (or belongs to a legacy
+    partial shape) and is never rewritten or completed by guesswork.
+    """
+
+    runs_root = _runs_root()
+    if runs_root is None:
+        return None, None, {"error": NO_SINK_ERROR}
+    run_dir = runs_root / run
+    existing, error = _read_identity(run_dir / RUN_IDENTITY_NAME)
+    if error is not None:
+        return None, None, error
+    if existing is None:
+        return run_dir, None, None
+    timing_keys = (
+        "terminal_at", "terminal_ticket_id", "terminal_status", "elapsed_ms"
+    )
+    if any(key in existing for key in timing_keys):
+        return run_dir, None, None
+    opened = existing.get("opened_at")
+    if not isinstance(opened, str):
+        return run_dir, None, None
+    try:
+        opened_at = datetime.strptime(opened, UTC_STAMP).replace(tzinfo=timezone.utc)
+    except ValueError:
+        return run_dir, None, None
+    terminal_stamp = now.strftime(UTC_STAMP)
+    terminal_at = datetime.strptime(terminal_stamp, UTC_STAMP).replace(
+        tzinfo=timezone.utc
+    )
+    updated = dict(existing)
+    updated.update({
+        "terminal_at": terminal_stamp,
+        "terminal_ticket_id": ticket_id,
+        "terminal_status": status,
+        "elapsed_ms": max(0, int((terminal_at - opened_at).total_seconds() * 1000)),
+    })
+    return run_dir, updated, None
 
 
 # --- manual frontmatter parsing ---------------------------------------------
@@ -3419,8 +3468,45 @@ def _cmd_set_status(rest):
     text, failure = _read_utf8(ticket_path)
     if failure is not None:
         return failure
+    items, run_error = _run_tickets(run)
+    terminal_transition = False
+    terminal_id = ticket_id
+    terminal_status = status
+    if run_error is None:
+        before_root, _ = _run_goal(items)
+        simulated = []
+        for item in items:
+            changed = dict(item)
+            if str(changed.get("id") or "") == ticket_id:
+                changed["status"] = status
+            simulated.append(changed)
+        after_root, _ = _run_goal(simulated)
+        before_terminal = str(before_root.get("status") or "") in TERMINAL_STATES
+        after_status = str(after_root.get("status") or "")
+        terminal_transition = not before_terminal and after_status in TERMINAL_STATES
+        if terminal_transition:
+            terminal_id = str(after_root.get("id") or ticket_id)
+            terminal_status = after_status
+    identity_dir = None
+    identity = None
+    if terminal_transition:
+        identity_dir, identity, refusal = _terminal_identity_update(
+            run, terminal_id, terminal_status, datetime.now(timezone.utc)
+        )
+        if refusal is not None:
+            return refusal
     updated = _set_frontmatter_field(text, "status", status)
-    ticket_path.write_text(updated, encoding="utf-8")
+    try:
+        ticket_path.write_text(updated, encoding="utf-8")
+        if identity is not None:
+            identity_dir.mkdir(parents=True, exist_ok=True)
+            _write_identity(identity_dir, identity)
+    except OSError as error:
+        try:
+            ticket_path.write_text(text, encoding="utf-8")
+        except OSError:
+            pass
+        return {"error": f"unable to record status and terminal timing: {error}"}
     return {"set_status": {"run": run, "id": ticket_id, "status": status}}
 
 

@@ -319,6 +319,47 @@ class WorklogViewTest(unittest.TestCase):
             )
             self.assertIn("complete", self.render().split("## terminal")[1])
 
+    def test_terminal_timing_is_durable_across_shapes_and_retries(self):
+        shapes = (
+            (
+                "root",
+                {
+                    "R": ticket("R", status="claimed", executor="orch-decompose"),
+                    "R.01": ticket("R.01", status="complete", deps="[R]"),
+                },
+                "R",
+                "complete",
+            ),
+            (
+                "terminal",
+                {
+                    "A": ticket("A", status="complete"),
+                    "B": ticket("B", status="claimed", deps="[A]"),
+                },
+                "B",
+                "failed",
+            ),
+        )
+        for label, tickets, terminal_id, terminal_status in shapes:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                sink = use_sink(tmp)
+                (tmp / ".git").mkdir()
+                make_run(sink, tickets)
+                run_cmd("run-state", "testrun", "--note", "opened")
+                closed = run_cmd(
+                    "set-status", "testrun", terminal_id, terminal_status
+                )
+                self.assertNotIn("error", closed)
+                identity_path = sink / "runs" / "testrun" / "run.json"
+                identity = json.loads(identity_path.read_text(encoding="utf-8"))
+                self.assertEqual(terminal_id, identity["terminal_ticket_id"])
+                self.assertEqual(terminal_status, identity["terminal_status"])
+                self.assertGreaterEqual(identity["elapsed_ms"], 0)
+                first = identity_path.read_bytes()
+                run_cmd("set-status", "testrun", terminal_id, terminal_status)
+                self.assertEqual(first, identity_path.read_bytes())
+
     def test_a_loop_run_reads_its_goal_and_its_exit_off_the_loop_ticket(self):
         """A loop run has no `orch-decompose` root: the loop ticket is the
         one nothing depends on, so its `## Objective` and its done-check

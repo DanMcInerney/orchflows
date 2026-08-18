@@ -3729,8 +3729,9 @@ class TestRunIdentity(unittest.TestCase):
         # `UTC_STAMP` reads as the wrong shape rather than a missing attribute
         self.assertEqual(1, source.count('"%Y-%m-%dT%H:%M:%SZ"'), "shape restated")
         # a census of the sites that stamp, not a bound on them: `claim`,
-        # `grant` and the run identity, each through the one constant
-        self.assertEqual(3, source.count("strftime(UTC_STAMP)"), "stamped elsewhere")
+        # `grant`, run opening and terminal transition, each through the one
+        # constant
+        self.assertEqual(4, source.count("strftime(UTC_STAMP)"), "stamped elsewhere")
         self.assertEqual("%Y-%m-%dT%H:%M:%SZ", tickets_mod.UTC_STAMP)
 
     def test_an_existing_run_directory_without_an_identity_gains_one(self):
@@ -3932,6 +3933,55 @@ class TestRunIdentity(unittest.TestCase):
             self.assertEqual(
                 [str(main.resolve()), str(worktree.resolve())], workspaces_of()
             )
+
+
+class RunTerminalTimingTest(unittest.TestCase):
+    def test_worklog_terminal_transition_closes_once(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            use_sink(tmp)
+            repo = make_clone(tmp / "repo", ALPHA)
+            root = run_cmd(
+                repo, "new", "testrun", "R", "--executor", "orch-decompose",
+                "--objective", "deliver", "--criterion",
+                "x | oracle: y | oracle_class: deterministic",
+                "--write-scope", "scratch/root.txt",
+            )
+            self.assertNotIn("error", root)
+            unit = run_cmd(
+                repo, "new", "testrun", "R.01", "--executor", "orch-tdd",
+                "--objective", "unit", "--criterion",
+                "x | oracle: y | oracle_class: deterministic",
+                "--depends-on", "R", "--write-scope", "scratch/unit.txt",
+            )
+            self.assertNotIn("error", unit)
+            self.assertNotIn("terminal_at", identity_doc())
+
+            run_cmd(repo, "set-status", "testrun", "R.01", "complete")
+            self.assertNotIn("terminal_at", identity_doc())
+            run_cmd(
+                repo, "run-state", "testrun", "--terminal", "complete",
+                "--text", "notes channel only",
+            )
+            self.assertNotIn("terminal_at", identity_doc())
+
+            closed = run_cmd(repo, "set-status", "testrun", "R", "complete")
+            self.assertNotIn("error", closed)
+            doc = identity_doc()
+            self.assertRegex(doc["terminal_at"], STAMP_RE)
+            self.assertEqual("R", doc["terminal_ticket_id"])
+            self.assertEqual("complete", doc["terminal_status"])
+            self.assertGreaterEqual(doc["elapsed_ms"], 0)
+            terminal_identity = identity_bytes()
+
+            run_cmd(repo, "set-status", "testrun", "R", "failed")
+            self.assertEqual(terminal_identity, identity_bytes())
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_repo(tmp, {"T1": ("claimed", "[]")})
+            run_cmd(tmp, "set-status", "testrun", "T1", "complete")
+            self.assertFalse(identity_of().exists(), "legacy timing was fabricated")
 
 
 class TestAtomicReplace(unittest.TestCase):
@@ -4598,7 +4648,8 @@ class RunIdentitySpecificationTest(unittest.TestCase):
         for field in ("run", "sink_convention", "opened_at", "project.root",
                       "project.origin", "project.name", "workspaces[].path",
                       "workspaces[].first_seen", "orchflows.receipt_version",
-                      "orchflows.source_commit"):
+                      "orchflows.source_commit", "terminal_at",
+                      "terminal_ticket_id", "terminal_status", "elapsed_ms"):
             with self.subTest(field):
                 self.assertIn(field, docstring)
 
