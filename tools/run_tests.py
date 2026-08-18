@@ -7,8 +7,9 @@ performs whole-interpreter mutations (``install.Path.home``,
 thread parallelism unsound. Threads here only wait on subprocesses.
 
 Scheduling is longest-first from a duration cache written at
-``.orch/run_tests_times.json`` (gitignored runtime state), falling back
-to alphabetical when no cache exists. Results stream as modules finish;
+``.orch/run_tests_times.json`` (gitignored runtime state). On a cold
+repository checkout, known slow suite modules start first; custom test
+directories fall back to alphabetical. Results stream as modules finish;
 a failing module's captured output is reproduced verbatim.
 
 Stdlib only, no network, Python 3.9+, POSIX and Windows.
@@ -20,6 +21,8 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import html
+import inspect
 import json
 import os
 import subprocess
@@ -33,9 +36,102 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_TESTS_DIR = ROOT / "tests"
 CACHE_PATH = ROOT / ".orch" / "run_tests_times.json"
+DEFAULT_COLD_ORDER = (
+    "tests.test_cutcheck",
+    "tests.test_tickets",
+    "tests.test_canary_host",
+    "tests.test_installer",
+    "tests.test_validate",
+)
+IMPORT_BOOTSTRAP_ROOTS = frozenset(
+    os.path.normcase(os.path.abspath(str(path)))
+    for path in (
+        ROOT,
+        ROOT / "scripts",
+        ROOT / "benchmarks" / "benchmaker" / "tools",
+        ROOT / "skills" / "utilities" / "orch-visualize" / "scripts",
+    )
+)
 
 
 # --- child: run one module in this interpreter ------------------------
+
+
+def guarded_state() -> dict:
+    """Snapshot the process-global seams tests are allowed to borrow only.
+
+    The suite imports ``Path`` through ``install`` and ``html`` through
+    ``ui``; guarding their defining objects catches changes through either
+    alias without importing those large application modules into every child.
+    """
+
+    return {
+        "install.Path.home": inspect.getattr_static(Path, "home"),
+        "ui.html.escape": html.escape,
+        "pathlib.Path.open": inspect.getattr_static(Path, "open"),
+        "os.chdir": (os.chdir, os.getcwd()),
+        "sys.path": (sys.path, tuple(sys.path)),
+    }
+
+
+def meaningful_sys_path(entries):
+    """Drop inert scratch roots and the suite's exact bootstrap roots.
+
+    Isolated-tree tests execute copied tools whose lazy imports put that
+    temporary tree on ``sys.path``. ``TemporaryDirectory`` removes the tree
+    before the module returns; the dead absolute entry is inert in this
+    single-purpose child and is not live whole-interpreter residue.
+
+    A closed set of repository import roots is also intentional suite
+    bootstrap. Exact equality matters: another live path under the repository
+    or temporary tree remains residue rather than inheriting this exception.
+    """
+
+    temp_root = os.path.normcase(os.path.realpath(tempfile.gettempdir()))
+    meaningful = []
+    for entry in entries:
+        try:
+            raw = os.fspath(entry)
+        except TypeError:
+            meaningful.append(entry)
+            continue
+        absolute = os.path.normcase(os.path.realpath(raw))
+        if absolute in IMPORT_BOOTSTRAP_ROOTS:
+            continue
+        try:
+            in_scratch = os.path.commonpath((temp_root, absolute)) == temp_root
+        except ValueError:
+            in_scratch = False
+        if in_scratch and absolute != temp_root and not os.path.exists(absolute):
+            continue
+        meaningful.append(entry)
+    return tuple(meaningful)
+
+
+def leaked_seams(before: dict):
+    """Name every guarded seam whose identity or value escaped a test."""
+
+    leaked = []
+    if inspect.getattr_static(Path, "home") is not before["install.Path.home"]:
+        leaked.append("install.Path.home")
+    if html.escape is not before["ui.html.escape"]:
+        leaked.append("ui.html.escape")
+    if inspect.getattr_static(Path, "open") is not before["pathlib.Path.open"]:
+        leaked.append("pathlib.Path.open")
+    chdir, cwd = before["os.chdir"]
+    try:
+        cwd_leaked = os.getcwd() != cwd
+    except OSError:
+        cwd_leaked = True
+    if os.chdir is not chdir or cwd_leaked:
+        leaked.append("os.chdir")
+    path_object, path_value = before["sys.path"]
+    if (
+        sys.path is not path_object
+        or meaningful_sys_path(sys.path) != meaningful_sys_path(path_value)
+    ):
+        leaked.append("sys.path")
+    return leaked
 
 
 def run_child(module: str, import_root: str, result_path: str, verbosity: int) -> int:
@@ -51,19 +147,26 @@ def run_child(module: str, import_root: str, result_path: str, verbosity: int) -
     sys.path[:] = [p for p in sys.path if p and Path(p).resolve() != script_dir]
     sys.path.insert(0, import_root)
 
+    before = guarded_state()
     suite = unittest.TestLoader().loadTestsFromName(module)
     result = unittest.TextTestRunner(stream=sys.stderr, verbosity=verbosity).run(suite)
+    leaks = leaked_seams(before)
+    for seam in leaks:
+        sys.stderr.write("leaked whole-interpreter seam: " + seam + "\n")
     payload = {
         "module": module,
         "tests": result.testsRun,
         "failures": len(result.failures),
-        "errors": len(result.errors),
+        "errors": len(result.errors) + len(leaks),
         "skipped": len(result.skipped),
         "unexpected": len(result.unexpectedSuccesses),
-        "ok": result.wasSuccessful(),
+        "ok": result.wasSuccessful() and not leaks,
     }
-    Path(result_path).write_text(json.dumps(payload), encoding="utf-8")
-    return 0 if result.wasSuccessful() else 1
+    # A leaked ``Path.open`` must not keep the child from reporting that
+    # exact leak. ``open`` is a separate seam and the result path is absolute.
+    with open(result_path, "w", encoding="utf-8") as stream:
+        stream.write(json.dumps(payload))
+    return 0 if payload["ok"] else 1
 
 
 # --- parent: discovery, scheduling, dispatch --------------------------
@@ -127,10 +230,19 @@ def save_times(results) -> None:
         pass  # A timing cache is an optimization; never fail a run for it.
 
 
-def schedule(modules, times):
-    """Longest-first. Untimed modules sort first (unknown cost is the
-    risky one to leave for last), which makes an absent cache exactly
-    alphabetical order."""
+def schedule(modules, times, tests_dir=DEFAULT_TESTS_DIR):
+    """Schedule cached runs longest-first and cold repository runs by prior.
+
+    An unknown module alongside cached durations starts first because its
+    cost is risky. A custom suite has no repository timing evidence, so its
+    cold order stays generic and deterministic.
+    """
+
+    if not times:
+        if Path(tests_dir).resolve() == DEFAULT_TESTS_DIR.resolve():
+            rank = {name: index for index, name in enumerate(DEFAULT_COLD_ORDER)}
+            return sorted(modules, key=lambda name: (rank.get(name, len(rank)), name))
+        return sorted(modules)
 
     return sorted(modules, key=lambda name: (-times.get(name, float("inf")), name))
 
@@ -193,6 +305,9 @@ def run_module(module: str, import_root: Path, verbosity: int) -> dict:
             os.unlink(result_path)
         except OSError:
             pass
+    if completed.returncode and record.get("ok"):
+        record["ok"] = False
+        record["note"] = "child exited %d after reporting success" % completed.returncode
     record["duration"] = duration
     record["output"] = output
     record["returncode"] = completed.returncode
@@ -280,7 +395,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--no-cache",
         action="store_true",
-        help="ignore the duration cache: schedule alphabetically, as a cold checkout does",
+        help="ignore the duration cache: use cold-checkout scheduling",
     )
     parser.add_argument(
         "--tests-dir", default=str(DEFAULT_TESTS_DIR), help="directory of test_*.py (default: tests/)"
@@ -311,11 +426,10 @@ def main(argv=None) -> int:
     )
 
     verbosity = 2 if args.verbose else 1
-    # The cache is gitignored, so CI always schedules alphabetically while
-    # any local checkout that has run once schedules longest-first. Those
-    # are different co-schedulings, and a module only races the modules it
-    # runs beside: `--no-cache` is how a local run reproduces CI's.
-    ordered = schedule(selected, {} if args.no_cache else load_times())
+    # The cache is gitignored, so CI uses the repository's cold-start priors
+    # while a local checkout that has run once schedules from measured time.
+    # `--no-cache` is how a local run reproduces CI's co-scheduling.
+    ordered = schedule(selected, {} if args.no_cache else load_times(), tests_dir)
     jobs = min(args.jobs, len(ordered))
     print("running %d modules across %d workers" % (len(ordered), jobs))
     started = time.monotonic()

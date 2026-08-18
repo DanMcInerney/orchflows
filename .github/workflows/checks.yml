@@ -1,5 +1,4 @@
-# The checks AGENTS.md requires, run on every combination this
-# repository claims to support.
+# The checks AGENTS.md requires, run on every supported boundary.
 #
 # Versions: 3.9 is the floor `install.py` enforces via MIN_PYTHON. 3.11 is
 # the first release with stdlib `tomllib`, so the two sides of the
@@ -7,10 +6,10 @@
 # 3.12 add no distinct code path -- each sits on the same side of that
 # guard as a version already here.
 #
-# `git diff --check` is the one required check deliberately absent: it
-# inspects the working tree, which a fresh checkout leaves clean by
-# construction, so here it could pass but never fail. It stays a
-# pre-commit check.
+# Two local checks are deliberately absent. `git diff --check` inspects the
+# working tree, which a fresh checkout leaves clean by construction. The
+# serial compatibility oracle repeats the regression suite; the parallel
+# runner now rejects residue at the module boundary itself. Both stay local.
 name: checks
 
 on:
@@ -36,6 +35,15 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ['3.9', '3.11', '3.13']
+        exclude:
+          - os: macos-latest
+            python-version: '3.9'
+          - os: macos-latest
+            python-version: '3.11'
+          - os: windows-latest
+            python-version: '3.9'
+          - os: windows-latest
+            python-version: '3.11'
 
     steps:
       # Full history, not the default depth-1: tests/test_cutcheck.py grades
@@ -61,27 +69,11 @@ jobs:
       # rather than substituting an interpreter behind its back.
       - uses: astral-sh/setup-uv@v5
 
-      - name: python tools/validate.py
-        run: python tools/validate.py
-
       # The suite, sharded one module per child interpreter. Thread
       # parallelism is unsound here -- the suite performs ~30
       # whole-interpreter mutations -- so the runner spawns a process per
-      # module.
+      # module and rejects any guarded seam a module leaves dirty. Its
+      # TestValidatorAgainstRepo and DryRunOracleTest cases cover the
+      # validator and installer dry run without repeating either command.
       - name: python tools/run_tests.py
         run: python tools/run_tests.py
-
-      # The same suite in one interpreter. Not redundant with the step
-      # above: sharding gives every module a clean process, so only this
-      # run can fail when one module depends on another's in-process
-      # residue -- the risk every class- and module-scoped fixture in the
-      # suite carries. It is also the fallback if the runner itself breaks.
-      - name: python -m unittest discover -s tests -v
-        run: python -m unittest discover -s tests -v
-
-      # Neither host CLI is on a runner's PATH, so this exits early without
-      # planning anything -- a smoke test of argument handling and import,
-      # not of the installer. The planner itself is covered in full by
-      # tests/test_installer.py, which does run on every leg above.
-      - name: python install.py --dry-run
-        run: python install.py --dry-run

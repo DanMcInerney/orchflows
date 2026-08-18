@@ -24,9 +24,14 @@ python` where bare `python` is a Windows Store stub; Python 3.9 or newer,
 
 python tools/validate.py
 python tools/run_tests.py                # sharded, one process per module
-python -m unittest discover -s tests -v  # serial; proves no cross-module residue
+python -m unittest discover -s tests -v  # serial local compatibility oracle
 python install.py --dry-run
 git diff --check
+
+A full serial run remains a local compatibility oracle for accidental
+cross-module coupling. CI runs the regression suite once through
+`tools/run_tests.py`; that runner gives each module a clean process and rejects
+any guarded whole-interpreter seam the module leaves dirty.
 
 A green run here is provisional until the CI matrix in
 `.github/workflows/checks.yml` agrees — one host, one interpreter, one

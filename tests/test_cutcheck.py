@@ -94,6 +94,15 @@ def fixture_criteria(run, name):
     return cutcheck._criteria(section[cutcheck.COMPLETION_SECTION])
 
 
+def shared_baseline_tree():
+    """The harness's real baseline clone, shared by read-only tree probes."""
+
+    tree = cutcheck._scratch_tree(BASELINE, ROOT, shared_root())
+    if tree is None:
+        raise RuntimeError("no scratch tree was built for the baseline")
+    return tree
+
+
 class AffirmativeSummaryTest(unittest.TestCase):
     """A set with no finding outside the advisory set says so, rather than nothing.
 
@@ -421,19 +430,19 @@ class ExtractionGapTest(unittest.TestCase):
 class CutTimeTest(unittest.TestCase):
     """At cut time HEAD is the baseline, and every honest oracle fails there.
 
-    The cut-time reading is spawned. It is the one grading whose subject is the
-    revision the invocation resolves `HEAD` against, and an in-process run
-    resolves it inside a process that has already imported the tool and stood
-    somewhere: what `HEAD` means to a fresh invocation is a fact about the
-    invocation. The baseline-behind-HEAD reading next door asks nothing of the
-    process and is graded in this one.
+    Both readings go through the public command in this process, standing at
+    the repository root and sharing the harness's real clones. Separate tests
+    retain the real process boundary; this claim is the status and findings for
+    two revisions, which `main` returns directly.
     """
 
     def test_same_revision_reads_green(self):
-        result = run_cutcheck_subprocess(
+        code, out = _graded_with(
+            self,
             ["cutcheck-f1-cuttime", "--baseline", "HEAD"]
         )
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        result = subprocess.CompletedProcess([], code, stdout=out, stderr="")
+        self.assertEqual(result.returncode, 0, result.stdout)
         self.assertEqual(reported(result), [])
 
     def test_a_baseline_behind_head_still_reports_it(self):
@@ -858,15 +867,13 @@ class RootGateLayoutTest(unittest.TestCase):
                 body("R1.gate.critique.code", tickets.GATE_EXECUTORS["critique"]),
                 encoding="utf-8",
             )
-            env = os.environ.copy()
-            env["ORCHFLOWS_STATE_HOME"] = str(sink)
-            result = subprocess.run(
-                [sys.executable, str(ROOT / "scripts" / "cutcheck.py"),
-                 "layout-command", "--baseline", BASELINE, "--lib", str(ROOT)],
-                cwd=str(ROOT), env=env, capture_output=True, text=True,
-                encoding="utf-8", errors="replace",
-            )
-        self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+            with mock.patch.dict(
+                os.environ, {"ORCHFLOWS_STATE_HOME": str(sink)}
+            ):
+                result = run_cutcheck_subprocess(
+                    ["layout-command", "--baseline", "HEAD", "--lib", str(ROOT)]
+                )
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
         self.assertIn(cutcheck.MULTIPLE_ROOTS, result.stdout)
         self.assertIn(cutcheck.MALFORMED_GATE, result.stdout)
 
@@ -2466,11 +2473,9 @@ class BinaryOutputOracleTest(unittest.TestCase):
     that runs one in the repository it is testing is the one place that broke.
     """
 
-    def setUp(self):
-        scratch_root = Path(tempfile.mkdtemp(prefix=".cutcheck-binary-"))
-        self.addCleanup(remove_repo_tree, scratch_root)
-        self.tree = cutcheck._scratch_tree(BASELINE, ROOT, scratch_root)
-        self.assertIsNotNone(self.tree, "no scratch tree was built for the baseline")
+    @classmethod
+    def setUpClass(cls):
+        cls.tree = shared_baseline_tree()
 
     def test_a_command_printing_binary_is_graded_on_its_exit_status(self):
         self.assertEqual(cutcheck._run_once("git archive HEAD", self.tree), 0)
@@ -2479,11 +2484,9 @@ class BinaryOutputOracleTest(unittest.TestCase):
 class ScratchTreeHistoryTest(unittest.TestCase):
     """The graded tree is a repository of its own, holding the graded revision."""
 
-    def setUp(self):
-        scratch_root = Path(tempfile.mkdtemp(prefix=".cutcheck-history-"))
-        self.addCleanup(remove_repo_tree, scratch_root)
-        self.tree = cutcheck._scratch_tree(BASELINE, ROOT, scratch_root)
-        self.assertIsNotNone(self.tree, "no scratch tree was built for the baseline")
+    @classmethod
+    def setUpClass(cls):
+        cls.tree = shared_baseline_tree()
 
     def test_the_graded_revision_resolves_inside_the_tree(self):
         # Reading a revision out of the log is the history claim: an extract
@@ -3221,16 +3224,22 @@ class TestCutcheckResolvesSink(unittest.TestCase):
 
     def test_a_sink_resident_run_is_graded_end_to_end(self):
         self.issue(self.sink / "tickets", "sink-clean")
-        env = dict(os.environ)
-        env[state_root.ENV_VAR] = str(self.sink)
-
-        done = subprocess.run(
-            [sys.executable, "scripts/cutcheck.py", "sink-clean",
-             "--baseline", BASELINE],
-            cwd=str(ROOT),
-            capture_output=True,
-            text=True,
-            env=env,
+        scratch_root = shared_root()
+        out, err = io.StringIO(), io.StringIO()
+        with self.launched_from(ROOT):
+            with mock.patch.object(
+                cutcheck, "_scratch_root", lambda _tree: scratch_root
+            ):
+                with mock.patch.object(
+                    cutcheck, "_remove_scratch_root", lambda _root: None
+                ):
+                    with contextlib.redirect_stdout(out):
+                        with contextlib.redirect_stderr(err):
+                            code = cutcheck.main(
+                                ["sink-clean", "--baseline", BASELINE]
+                            )
+        done = subprocess.CompletedProcess(
+            ["sink-clean", BASELINE], code, out.getvalue(), err.getvalue()
         )
 
         self.assertEqual(0, done.returncode, done.stdout + done.stderr)
