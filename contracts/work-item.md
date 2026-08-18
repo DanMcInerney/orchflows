@@ -45,8 +45,8 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
   class; otherwise `checker`, which an absent field reads as.
 - `checked_by` — optional, lifecycle: the single immutable identity set by
   the §10 checker on its pass, through `tickets.py check`. It is invalid on
-  a non-root ticket whose `independence` is `gate`; the root cut checker is
-  the exception stated under Root ticket.
+  a non-root ticket whose `independence` is `gate`; root cut bookkeeping is
+  defined under Root ticket.
 - `depends_on` — graph position: list of item ids; empty list when none.
 - `write_scope` — packet `authority`: exactly what this item may change,
   in the workspace semantics of the ticket's `pack`; a strict subset of

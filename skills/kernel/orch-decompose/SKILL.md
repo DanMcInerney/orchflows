@@ -19,16 +19,17 @@ overlapping only siblings it is dependency-ordered with,
 `isolation: required` when the pack's workspace cell names a mechanism
 covering that scope, a bound, its edges, and a completion test whose
 criteria name oracles from the pack's oracle policy, each with its
-provenance. Select `independence: gate` when the final gate covers all
-authored-here criteria on that item, regardless of oracle class; select
-`independence: checker` when any authored-here criterion is not covered
-there. Draw each edge under §3's edge rule and place each artifact two
+provenance. Oracle class does not choose the field: stamp
+`independence: gate` if the final gate covers all authored-here criteria;
+otherwise stamp `independence: checker`. This holds regardless of oracle
+class. Draw each edge under §3's edge rule and place each artifact two
 items would write under its sole-owner rule.
 Emit the assembly item the pack's cell names, on §4's terms.
 
 Run `cutcheck.py` against the cut revision; repair every defect through
-`tickets.py amend` and re-run to exit 0. Its advisories and undecidables are
-[references/cut-lens.md](references/cut-lens.md)'s to judge. Only then
+`tickets.py amend` and re-run to exit 0.
+[The cut lens](references/cut-lens.md) judges advisories and whatever the
+script cannot decide. Only then
 write the run's one composite gate through `tickets.py gate`: one critique
 per unique lens name, all feeding one repair and one verification over the
 run's scope.
