@@ -867,14 +867,15 @@ class RootGateLayoutTest(unittest.TestCase):
                 body("R1.gate.critique.code", tickets.GATE_EXECUTORS["critique"]),
                 encoding="utf-8",
             )
-            with mock.patch.dict(os.environ, {state_root.ENV_VAR: str(sink)}):
-                code, out = _graded_with(
-                    self,
-                    ["layout-command", "--baseline", BASELINE, "--lib", str(ROOT)],
+            with mock.patch.dict(
+                os.environ, {"ORCHFLOWS_STATE_HOME": str(sink)}
+            ):
+                result = run_cutcheck_subprocess(
+                    ["layout-command", "--baseline", "HEAD", "--lib", str(ROOT)]
                 )
-        self.assertNotEqual(0, code, out)
-        self.assertIn(cutcheck.MULTIPLE_ROOTS, out)
-        self.assertIn(cutcheck.MALFORMED_GATE, out)
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn(cutcheck.MULTIPLE_ROOTS, result.stdout)
+        self.assertIn(cutcheck.MALFORMED_GATE, result.stdout)
 
     def test_checker_plus_gate_and_uncovered_criteria_fail(self):
         """One ticket gets one independence path, even in the smallest cut.
