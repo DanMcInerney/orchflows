@@ -8,6 +8,9 @@ reconstructable from them by observation. Free notes a run appends
 through `tickets.py run-state --note` land in `runs/<run>/notes.md`
 beside the view and are not the view.
 
+A root-ticket run is one physical run with one root and one composite gate;
+a successor has its own run view after its predecessor result is fixed.
+
 - `goal` — the root ticket's `## Objective` and `## Completion test`
   verbatim; for a loop run the loop ticket's, and for a template run its
   terminal ticket's, whose `## Completion test` is the run's done-check.
@@ -31,3 +34,9 @@ beside the view and are not the view.
 Fresh-context iteration, resumption, and post-hoc improvement read this
 view instead of transcripts; transcripts are never state. The sink
 layout it is rendered from is `scripts/tickets.py`'s.
+
+For a multi-kind request, `successors.md` beside this view is the durable
+successor plan: ordered kind, pack, proposed run/root ids and `planned` or
+`opened` state. It is not a transcript and not a second worklog. `orch-spec`
+is its sole writer; a drained `orch-frontier` reads it to trigger successor
+materialization from the predecessor's accepted result identity.

@@ -319,6 +319,47 @@ class WorklogViewTest(unittest.TestCase):
             )
             self.assertIn("complete", self.render().split("## terminal")[1])
 
+    def test_terminal_timing_is_durable_across_shapes_and_retries(self):
+        shapes = (
+            (
+                "root",
+                {
+                    "R": ticket("R", status="claimed", executor="orch-decompose"),
+                    "R.01": ticket("R.01", status="complete", deps="[R]"),
+                },
+                "R",
+                "complete",
+            ),
+            (
+                "terminal",
+                {
+                    "A": ticket("A", status="complete"),
+                    "B": ticket("B", status="claimed", deps="[A]"),
+                },
+                "B",
+                "failed",
+            ),
+        )
+        for label, tickets, terminal_id, terminal_status in shapes:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                sink = use_sink(tmp)
+                (tmp / ".git").mkdir()
+                make_run(sink, tickets)
+                run_cmd("run-state", "testrun", "--note", "opened")
+                closed = run_cmd(
+                    "set-status", "testrun", terminal_id, terminal_status
+                )
+                self.assertNotIn("error", closed)
+                identity_path = sink / "runs" / "testrun" / "run.json"
+                identity = json.loads(identity_path.read_text(encoding="utf-8"))
+                self.assertEqual(terminal_id, identity["terminal_ticket_id"])
+                self.assertEqual(terminal_status, identity["terminal_status"])
+                self.assertGreaterEqual(identity["elapsed_ms"], 0)
+                first = identity_path.read_bytes()
+                run_cmd("set-status", "testrun", terminal_id, terminal_status)
+                self.assertEqual(first, identity_path.read_bytes())
+
     def test_a_loop_run_reads_its_goal_and_its_exit_off_the_loop_ticket(self):
         """A loop run has no `orch-decompose` root: the loop ticket is the
         one nothing depends on, so its `## Objective` and its done-check
@@ -618,6 +659,78 @@ class GateStubsTest(unittest.TestCase):
             self.assertEqual(
                 ["R.gate.critique.craft", "R.gate.critique.cut-lens"], sorted(edges)
             )
+
+    def test_one_root_owns_gate_files_and_distinct_lenses(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            duplicate = run_cmd(
+                "gate", "testrun", "R", "--lens", "code,code",
+                "--write-scope", "scripts/one.py",
+            )
+            self.assertIn("distinct", duplicate["error"])
+            self.assertEqual([], list(run_dir.glob("R.gate.*.md")))
+
+            created = run_cmd(
+                "gate", "testrun", "R", "--lens", "code,security",
+                "--write-scope", "scripts/one.py",
+            )
+            self.assertNotIn("error", created)
+            self.assertEqual(["code", "security"], created["gate"]["lenses"])
+            before = {
+                path.name: path.read_bytes() for path in run_dir.glob("R.gate.*.md")
+            }
+
+            (run_dir / "Q.md").write_text(
+                ticket(
+                    "Q", status="claimed", executor="orch-decompose",
+                    objective="a legacy second kind",
+                ),
+                encoding="utf-8",
+            )
+            (run_dir / "Q.01.md").write_text(
+                ticket("Q.01", deps="[Q]", objective="legacy unit"),
+                encoding="utf-8",
+            )
+            second = run_cmd(
+                "gate", "testrun", "Q", "--lens", "content",
+                "--write-scope", "docs/one.md",
+            )
+            self.assertIn("one gate", second["error"])
+            self.assertIn("R", second["error"])
+            self.assertEqual(before, {
+                path.name: path.read_bytes() for path in run_dir.glob("R.gate.*.md")
+            })
+            self.assertEqual([], list(run_dir.glob("Q.gate.*.md")))
+
+    def test_lens_identity_is_case_insensitive_on_every_host(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            payload = run_cmd(
+                "gate", "testrun", "R", "--lens", "code,Code",
+                "--write-scope", "scripts/one.py",
+            )
+            self.assertIn("distinct", payload["error"])
+            self.assertEqual([], list(run_dir.glob("R.gate.*.md")))
+
+    def test_an_ordinary_ticket_cannot_take_the_gate_before_the_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            (run_dir / "Q.md").write_text(
+                ticket("Q", status="claimed", executor="orch-tdd"), encoding="utf-8"
+            )
+            (run_dir / "Q.01.md").write_text(
+                ticket("Q.01", deps="[Q]"), encoding="utf-8"
+            )
+            refused = run_cmd(
+                "gate", "testrun", "Q", "--lens", "code",
+                "--write-scope", "scripts/one.py",
+            )
+            self.assertIn("sole orch-decompose root", refused["error"])
+            self.assertEqual([], list(run_dir.glob("Q.gate.*.md")))
+            self.assertNotIn("error", self.gate())
 
     def test_a_second_gate_is_refused_and_the_first_stubs_stand(self):
         with tempfile.TemporaryDirectory() as tmp:

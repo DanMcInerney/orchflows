@@ -13,6 +13,8 @@ rules/verification.md §8 reaches in one hop, and rules/improvement.md §1
 on where the friction fallback writes when the logger is refused.
 Follows tests/test_validator.py's isolated-tmp-tree-plus-subprocess
 idiom for CLI-level fixtures."""
+import hashlib
+import json
 import re
 import shutil
 import subprocess
@@ -378,6 +380,78 @@ class ScriptOwnershipTest(unittest.TestCase):
                 _scripts_without_owners(beside, architecture_text),
             )
 
+    def test_verification_guardrail_owner_paths_are_pinned(self):
+        """Pin the complete contract/workflow surface without claiming the
+        runtime and cut checker owned by predecessor tickets.  T0 bytes use
+        the repository pin file; prose owners use scoped semantic anchors."""
+
+        semantic_pins = {
+            "ARCHITECTURE.md": (
+                "one root/gate family", "immutable run identity",
+                "immutable terminal timing",
+            ),
+            "contracts/work-item.md": (
+                "exactly one outside-independence path", "one composite gate",
+            ),
+            "contracts/worklog.md": ("one physical run", "one composite gate"),
+            "docs/vocabulary.md": (
+                "one composite gate", "exactly one ordinary path",
+                "unique named lens",
+            ),
+            "rules/topology.md": ("successor run", "one composite gate"),
+            "rules/verification.md": (
+                "mutually exclusive ordinary path", "unique named root-gate critique lens",
+            ),
+            "skills/engines/orch-frontier/SKILL.md": (
+                "checker packet", "root cut reader",
+            ),
+            "skills/kernel/orch-critique/SKILL.md": (
+                "gate-deferred", "unique named root-gate critique lens",
+            ),
+            "skills/kernel/orch-decompose/SKILL.md": (
+                "regardless of oracle class", "one composite gate",
+            ),
+            "skills/kernel/orch-integrate/SKILL.md": (
+                "one outside-independence path", "`independence: gate`",
+            ),
+            "skills/workflows/orch-spec/SKILL.md": (
+                "successor run", "second root in the same run",
+            ),
+        }
+        expected = {
+            "ARCHITECTURE.md", "contracts/work-item.md", "contracts/worklog.md",
+            "docs/vocabulary.md", "rules/topology.md", "rules/verification.md",
+            "skills/engines/orch-frontier/SKILL.md",
+            "skills/kernel/orch-critique/SKILL.md",
+            "skills/kernel/orch-decompose/SKILL.md",
+            "skills/kernel/orch-integrate/SKILL.md",
+            "skills/workflows/orch-spec/SKILL.md",
+        }
+        self.assertEqual(expected, set(semantic_pins), "guardrail owner roster drifted")
+        self.assertTrue(
+            {"scripts/tickets.py", "scripts/cutcheck.py"}.isdisjoint(semantic_pins),
+            "this contract slice took predecessor runtime or cutcheck ownership",
+        )
+        for relative, phrases in semantic_pins.items():
+            text = re.sub(r"\s+", " ", (ROOT / relative).read_text(encoding="utf-8"))
+            for phrase in phrases:
+                self.assertIn(phrase, text, f"{relative} lost semantic pin {phrase!r}")
+
+        pins = json.loads(PINS.read_text(encoding="utf-8"))
+        for name in ("work-item.md", "worklog.md"):
+            actual = hashlib.sha256((CONTRACTS / name).read_bytes()).hexdigest()
+            self.assertEqual(actual, pins.get(name), f"{name} has no current T0 pin")
+
+        flat_architecture = re.sub(
+            r"\s+", " ", ARCHITECTURE.read_text(encoding="utf-8")
+        )
+        ownership = {
+            name: responsibility
+            for name, responsibility in _OWNERSHIP_CLAUSE.findall(flat_architecture)
+        }
+        self.assertIn("one root/gate family", ownership["tickets.py"])
+        self.assertIn("cut-defect detection", ownership["cutcheck.py"])
+
 
 TICKETS = SCRIPTS / "tickets.py"
 SKILLS = ROOT / "skills"
@@ -565,6 +639,10 @@ class CopyFaithfulnessClauseTest(unittest.TestCase):
 
 FRONTIER = ROOT / "skills" / "engines" / "orch-frontier" / "SKILL.md"
 WORK_ITEM = CONTRACTS / "work-item.md"
+CRITIQUE = ROOT / "skills" / "kernel" / "orch-critique" / "SKILL.md"
+DECOMPOSE = ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md"
+INTEGRATE = ROOT / "skills" / "kernel" / "orch-integrate" / "SKILL.md"
+SPEC = ROOT / "skills" / "workflows" / "orch-spec" / "SKILL.md"
 
 # The cut is reviewed by an independent reader before any unit of it is
 # dispatched, and `scripts/tickets.py` emits that reader's packet off a root
@@ -600,7 +678,9 @@ _CONTRACT_CUT_CHECK = {
 
 # The clauses as written, so the can-fail copies below read as their files did
 # before them.
-_FRONTIER_CLAUSE_RE = re.compile(r"A\s+root's\s+cut\s+takes.*?cut\s+alone\.\s*", re.S)
+_FRONTIER_CLAUSE_RE = re.compile(
+    r"A\s+root\s+cut\s+reader.*?cut\s+alone\.\s*", re.S
+)
 _CONTRACT_CLAUSE_RE = re.compile(r"A root's cut is checked.*?cut checker\.\s*", re.S)
 
 
@@ -718,7 +798,9 @@ _FRONTIER_REVERIFICATION = {
 _SPLIT_CLAUSE_RE = re.compile(
     r"—\s+where\s+every\s+invalidated.*?fresh\s+child", re.S
 )
-_FRONTIER_SPLIT_RE = re.compile(r";\s+then,\s+where\s+its\s+pass.*?§10\)\.", re.S)
+_FRONTIER_SPLIT_RE = re.compile(
+    r"(?:;\s+then,|\.\s+Then,)\s+where\s+its\s+pass.*?§10\)\.", re.S
+)
 
 
 # Sixteen repair tickets in the same run each ran the whole required-check
@@ -812,6 +894,117 @@ class ReverificationSplitTest(unittest.TestCase):
             "orch-frontier's checker path states no re-verification split "
             f"covering: {', '.join(gaps)}",
         )
+
+    def test_workflows_carry_successor_runs_selected_independence_and_single_gate(self):
+        """Every skill that can select, dispatch, review, or join the path
+        carries the same guardrail; no workflow may silently reconstruct the
+        older checker-plus-gate or second-root topology."""
+
+        clauses = {
+            "orch-spec": (
+                SPEC,
+                {
+                    "successor intake": (
+                        "successor run", "predecessor", "result identity",
+                        "resolved", "cited", "`successors.md`", "sole writer",
+                        "materialization owner", "successor trigger", "replace",
+                    ),
+                    "one physical root": ("never", "second root", "same run"),
+                },
+            ),
+            "orch-decompose": (
+                DECOMPOSE,
+                {
+                    "selected gate independence": (
+                        "`independence: gate`", "all authored-here criteria",
+                        "regardless of oracle class", "`independence: checker`",
+                    ),
+                    "single composite gate": (
+                        "one composite gate", "unique lens", "one repair",
+                        "one verification",
+                    ),
+                },
+            ),
+            "orch-frontier": (
+                FRONTIER,
+                {
+                    "exclusive dispatch": (
+                        "one outside-independence path", "checker packet",
+                        "gate-deferred", "already checked", "never",
+                    ),
+                    "root exception": ("root cut reader", "exception"),
+                    "successor trigger": (
+                        "`successors.md`", "`planned`", "successor trigger",
+                        "plan's materialization owner", "accepted", "`## Result` identity",
+                        "materializes", "replaces the plan",
+                    ),
+                },
+            ),
+            "orch-critique": (
+                CRITIQUE,
+                {
+                    "checker refusal": ("Refuse", "non-root", "gate-deferred"),
+                    "single checker": ("single immutable", "`checked_by`"),
+                    "additional review": (
+                        "unique named", "root-gate critique lens",
+                    ),
+                },
+            ),
+            "orch-integrate": (
+                INTEGRATE,
+                {
+                    "contradiction refusal": (
+                        "reject", "non-root", "`independence: gate`",
+                        "`checked_by`",
+                    ),
+                    "one path": ("one outside-independence path",),
+                    "root cut bookkeeping": (
+                        "on a root", "`checked_by`", "cut reader",
+                        "never", "final checker acceptance", "composite gate",
+                    ),
+                },
+            ),
+        }
+        gaps = []
+        for owner, (path, required) in clauses.items():
+            for gap in _clause_gaps(path.read_text(encoding="utf-8"), required):
+                gaps.append(f"{owner}: {gap}")
+        self.assertEqual(
+            [], gaps,
+            "workflow owners do not carry the verification split: "
+            + ", ".join(gaps),
+        )
+
+    def test_successor_owner_and_trigger_cannot_be_replaced_by_return_only_prose(self):
+        required = (
+            "`successors.md`", "sole writer", "materialization owner",
+            "successor trigger", "replace `successors.md`",
+        )
+        real = SPEC.read_text(encoding="utf-8")
+        clause = {"durable successor": required}
+        self.assertEqual([], _clause_gaps(real, clause))
+        return_only = (
+            "Return the ordered successor-run plan; a caller may open later kinds."
+        )
+        self.assertTrue(_clause_gaps(return_only, clause))
+
+    def test_contradictory_checker_and_second_gate_paths_fail_the_guardrail(self):
+        forbidden = (
+            "also dispatch a checker for a gate-deferred ticket",
+            "create a second composite gate",
+        )
+
+        def gaps(text):
+            flat = " ".join(text.split()).lower()
+            return [phrase for phrase in forbidden if phrase in flat]
+
+        joined = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in (DECOMPOSE, FRONTIER, INTEGRATE)
+        )
+        self.assertEqual([], gaps(joined))
+        for contradiction in forbidden:
+            self.assertEqual([contradiction], gaps(joined + "\n" + contradiction))
 
     def test_a_rule_and_an_engine_without_the_split_fail_the_check(self):
         """The can-fail direction, built beside the tree and never by

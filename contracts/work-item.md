@@ -39,10 +39,14 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
   cell binding applies and workspace semantics are plain artifact paths.
 - `independence` — optional: `gate` | `checker` — the
   [rules/verification.md](../rules/verification.md) §10 source this
-  item's `authored-here` acceptance rides; `gate` is set at cut time only
-  when a downstream gate re-verifies this item; absent reads `checker`.
-- `checked_by` — optional, lifecycle: set by the §10 checker on its pass,
-  through `tickets.py check`.
+  item's `authored-here` acceptance rides. For authored-here acceptance,
+  exactly one outside-independence path is selected: `gate` is set at cut time when the downstream gate
+  re-verifies all authored-here criteria on this item, regardless of oracle
+  class; otherwise `checker`, which an absent field reads as.
+- `checked_by` — optional, lifecycle: the single immutable identity set by
+  the §10 checker on its pass, through `tickets.py check`. It is invalid on
+  a non-root ticket whose `independence` is `gate`; root cut bookkeeping is
+  defined under Root ticket.
 - `depends_on` — graph position: list of item ids; empty list when none.
 - `write_scope` — packet `authority`: exactly what this item may change,
   in the workspace semantics of the ticket's `pack`; a strict subset of
@@ -173,13 +177,18 @@ inherits verbatim; bound → `bound`. The stamped pack's
 criterion no oracle can check is a spec defect, not the decomposer's
 slack.
 
-Its subtree is `<id>.NN` unit tickets plus the gate stubs
-`<id>.gate.critique.<lens>` (read-only, one per stamped lens, in
-parallel), `<id>.gate.repair` (write authority over the run scope, behind
-every critique) and `<id>.gate.verify` (behind repair, carrying the
-root's acceptance); a loop ticket's iterations are `<id>.iter.NN`.
+A decomposed physical run has one root ticket and one composite gate. Its
+subtree is `<id>.NN` unit tickets plus the gate stubs
+`<id>.gate.critique.<lens>` (read-only, one per unique lens name, in
+parallel), `<id>.gate.repair` (the gate's one repair, with write authority
+over the run scope and behind every critique) and `<id>.gate.verify` (the
+gate's one verification, behind repair and carrying the root's acceptance);
+a loop ticket's iterations are `<id>.iter.NN`.
 Completion and succession are that vocabulary's `root ticket` entry, and
 discovered scope is a ticket that `depends_on` the run's gate.
+The root carries `independence: gate`. Its `checked_by` records only the cut
+reader below; it never satisfies the root result's outside-independence path,
+which is the composite gate.
 
 A root's cut is checked (rules/verification.md §10) before its first
 unit is promoted: `scripts/cutcheck.py` over the issued subtree always,
@@ -187,6 +196,12 @@ and one fresh reader as well where that subtree holds three or more
 `<id>.NN` or that run reported an advisory — correcting it through
 `tickets.py amend` and `new` rather than in the run's workspace, which
 the units write; `checked_by` on a root records that cut checker.
+
+For a multi-kind request, `orch-spec` persists the ordered successor plan as
+`successors.md` at `runs/<run>/successors.md` before opening the first root and is its sole
+writer. A completed frontier is the trigger that returns the predecessor's
+accepted result identity to that owner; the owner opens the planned successor
+root in its own physical run, cites the identity, and advances the plan.
 
 ## Template and stub
 

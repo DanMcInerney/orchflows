@@ -301,17 +301,25 @@ def refusing_to_write(path, error=PermissionError):
 
     target = Path(path).resolve()
     original = Path.write_text
+    original_atomic = tickets_mod._write_text_atomically
 
     def write_text(self, *args, **kwargs):
         if Path(self).resolve() == target:
             raise error(13, "Permission denied", str(self))
         return original(self, *args, **kwargs)
 
+    def write_atomically(path, text):
+        if Path(path).resolve() == target:
+            raise error(13, "Permission denied", str(path))
+        return original_atomic(path, text)
+
     Path.write_text = write_text
+    tickets_mod._write_text_atomically = write_atomically
     try:
         yield
     finally:
         Path.write_text = original
+        tickets_mod._write_text_atomically = original_atomic
 
 
 class TestPendingPromotion(unittest.TestCase):
@@ -1011,6 +1019,27 @@ class OSErrorHandlerTest(unittest.TestCase):
             result = run_main(worktree, "run-state", "testrun", "--note", "nowhere to land")
             self.assertEqual(1, result.returncode, result.stdout)
             self.assertIn("unwritable run state", json.loads(result.stdout)["error"])
+
+    def test_an_unreachable_identity_snapshot_is_the_payload_refusal(self):
+        """A failed payload setup must not trigger identity rollback when no
+        identity write landed."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            runs = sink_root() / "runs"
+            runs.mkdir(parents=True, exist_ok=True)
+            blocker = runs / "testrun"
+            original = "not a directory\n"
+            blocker.write_text(original, encoding="utf-8")
+
+            result = run_main(worktree, "run-state", "testrun", "--note", "nowhere")
+
+            self.assertEqual(1, result.returncode, result.stdout)
+            error = json.loads(result.stdout)["error"]
+            self.assertIn("unwritable run state", error, error)
+            self.assertNotIn("identity rollback also failed", error, error)
+            self.assertEqual(original, blocker.read_text(encoding="utf-8"))
 
 
 class TestMalformedFrontmatter(unittest.TestCase):
@@ -2776,8 +2805,9 @@ class TestRunStateRootResolution(unittest.TestCase):
             # `time` is the retry budget `_replace_atomically` waits out a
             # Windows refusal against, and it too starts nothing.
             self.assertEqual(
-                {"__future__", "datetime", "json", "msvcrt", "pathlib", "re",
-                 "scripts", "state_root", "sys", "tempfile", "time"},
+                {"__future__", "contextlib", "datetime", "fcntl", "json",
+                 "msvcrt", "pathlib", "re", "scripts", "state_root", "sys",
+                 "tempfile", "time"},
                 imported,
             )
 
@@ -3237,7 +3267,10 @@ class TestPacketEmitsTheEstablishmentCommand(unittest.TestCase):
             self.assertNotIn(str(TICKETS_PY.parent.resolve()), line)
 
     def test_the_emitting_code_holds_no_literal_interpreter_or_script_path(self):
-        source = " ".join(inspect.getsource(tickets_mod._cmd_packet).split())
+        source = " ".join((
+            inspect.getsource(tickets_mod._cmd_packet)
+            + inspect.getsource(tickets_mod._packet_under_run_lock)
+        ).split())
         self.assertNotIn("python3", source)
         self.assertNotIn("scripts/workspace.py", source)
         self.assertIn("sys.executable", source)
@@ -3677,6 +3710,48 @@ class TestRunIdentity(unittest.TestCase):
             self.assertEqual(doc["opened_at"], doc["workspaces"][0]["first_seen"])
             self.assertEqual("one\n", notes_of().read_text(encoding="utf-8"))
 
+    def test_receipt_metadata_all_opening_paths_and_legacy_nulls(self):
+        commit = "a" * 40
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = use_sink(tmp)
+            make_clone(tmp / "repo", ALPHA)
+            (sink.parent / "receipt.json").write_text(
+                json.dumps({"version": 4, "source_commit": commit}),
+                encoding="utf-8",
+            )
+            run_cmd(tmp / "repo", "run-state", "from-state", "--note", "opened")
+            self.assertEqual(
+                {"receipt_version": 4, "source_commit": commit},
+                identity_doc("from-state")["orchflows"],
+            )
+            run_cmd(
+                tmp / "repo", "new", "from-new", "T1", "--executor", "orch-tdd",
+                "--objective", "one", "--criterion",
+                "x | oracle: y | oracle_class: deterministic",
+            )
+            self.assertEqual(
+                {"receipt_version": 4, "source_commit": commit},
+                identity_doc("from-new")["orchflows"],
+            )
+
+        for label, receipt in (
+            ("missing", None),
+            ("corrupt", "{not json"),
+            ("legacy", json.dumps({"scope": "user"})),
+        ):
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                sink = use_sink(tmp)
+                repo = make_clone(tmp / "repo", ALPHA)
+                if receipt is not None:
+                    (sink.parent / "receipt.json").write_text(receipt, encoding="utf-8")
+                run_cmd(repo, "run-state", label, "--note", "opened")
+                self.assertEqual(
+                    {"receipt_version": None, "source_commit": None},
+                    identity_doc(label)["orchflows"],
+                )
+
     def test_the_timestamp_shape_has_one_owner_in_this_script(self):
         """A second literal is how `claimed_at` and `opened_at` come to
         disagree. The count is what catches one being pasted back in; a
@@ -3687,8 +3762,9 @@ class TestRunIdentity(unittest.TestCase):
         # `UTC_STAMP` reads as the wrong shape rather than a missing attribute
         self.assertEqual(1, source.count('"%Y-%m-%dT%H:%M:%SZ"'), "shape restated")
         # a census of the sites that stamp, not a bound on them: `claim`,
-        # `grant` and the run identity, each through the one constant
-        self.assertEqual(3, source.count("strftime(UTC_STAMP)"), "stamped elsewhere")
+        # `grant`, run opening and terminal transition, each through the one
+        # constant
+        self.assertEqual(4, source.count("strftime(UTC_STAMP)"), "stamped elsewhere")
         self.assertEqual("%Y-%m-%dT%H:%M:%SZ", tickets_mod.UTC_STAMP)
 
     def test_an_existing_run_directory_without_an_identity_gains_one(self):
@@ -3865,6 +3941,35 @@ class TestRunIdentity(unittest.TestCase):
                 sorted(notes_of().read_text(encoding="utf-8").splitlines()),
             )
 
+    def test_a_failed_first_payload_does_not_freeze_an_opening_identity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            use_sink(tmp)
+            repo = make_clone(tmp / "repo", ALPHA)
+            with mock.patch.object(
+                tickets_mod, "_append_one_line", side_effect=OSError("payload failed")
+            ):
+                payload = run_cmd(
+                    repo, "run-state", "testrun", "--note", "does not land"
+                )
+            self.assertIn("payload failed", payload["error"])
+            self.assertFalse(identity_of().exists())
+
+    def test_adopting_a_legacy_identity_never_invents_opened_at(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            use_sink(tmp)
+            repo = make_clone(tmp / "repo", ALPHA)
+            identity_of().parent.mkdir(parents=True)
+            identity_of().write_text(
+                json.dumps({"run": "testrun", "workspaces": []}) + "\n",
+                encoding="utf-8",
+            )
+            self.assertNotIn(
+                "error", run_cmd(repo, "run-state", "testrun", "--note", "legacy")
+            )
+            self.assertNotIn("opened_at", identity_doc())
+
     def test_the_identity_is_moved_into_place_never_written_over(self):
         """Atomicity is the claim `_write_identity` makes, and a plain write
         would pass the concurrency case above most days it ran. What is
@@ -3890,6 +3995,139 @@ class TestRunIdentity(unittest.TestCase):
             self.assertEqual(
                 [str(main.resolve()), str(worktree.resolve())], workspaces_of()
             )
+
+
+class RunTerminalTimingTest(unittest.TestCase):
+    def test_fake_clock_decides_exact_elapsed_milliseconds(self):
+        opened = datetime(2026, 8, 18, 1, 2, 3, tzinfo=timezone.utc)
+        closed = opened + timedelta(seconds=5)
+
+        class FakeDateTime(datetime):
+            values = iter((opened, closed))
+
+            @classmethod
+            def now(cls, tz=None):
+                return next(cls.values)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            use_sink(tmp)
+            repo = make_clone(tmp / "repo", ALPHA)
+            with mock.patch.object(tickets_mod, "datetime", FakeDateTime):
+                created = run_cmd(
+                    repo, "new", "testrun", "R", "--executor", "orch-decompose",
+                    "--objective", "deliver", "--criterion",
+                    "x | oracle: y | oracle_class: deterministic",
+                    "--write-scope", "scratch/root.txt",
+                )
+                self.assertNotIn("error", created)
+                closed_payload = run_cmd(
+                    repo, "set-status", "testrun", "R", "complete"
+                )
+            self.assertNotIn("error", closed_payload)
+            self.assertEqual(5000, identity_doc()["elapsed_ms"])
+
+    def test_terminal_identity_failure_is_reported_and_retry_is_durable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            use_sink(tmp)
+            repo = make_clone(tmp / "repo", ALPHA)
+            self.assertNotIn("error", run_cmd(
+                repo, "new", "testrun", "R", "--executor", "orch-decompose",
+                "--objective", "deliver", "--criterion",
+                "x | oracle: y | oracle_class: deterministic",
+                "--write-scope", "scratch/root.txt",
+            ))
+            real_write = tickets_mod._write_identity
+            with mock.patch.object(
+                tickets_mod, "_write_identity", side_effect=OSError("timing failed")
+            ):
+                failed = run_cmd(repo, "set-status", "testrun", "R", "complete")
+            self.assertIn("timing failed", failed["error"])
+            ticket = (sink_root() / "tickets" / "testrun" / "R.md").read_text(
+                encoding="utf-8"
+            )
+            self.assertEqual("ready", tickets_mod._parse_frontmatter(ticket)["status"])
+            self.assertNotIn("terminal_at", identity_doc())
+            with mock.patch.object(tickets_mod, "_write_identity", real_write):
+                retried = run_cmd(repo, "set-status", "testrun", "R", "complete")
+            self.assertNotIn("error", retried)
+            self.assertEqual("complete", identity_doc()["terminal_status"])
+
+    def test_same_status_retry_recovers_an_interrupted_terminal_identity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            use_sink(tmp)
+            repo = make_clone(tmp / "repo", ALPHA)
+            self.assertNotIn("error", run_cmd(
+                repo, "new", "testrun", "R", "--executor", "orch-decompose",
+                "--objective", "deliver", "--criterion",
+                "x | oracle: y | oracle_class: deterministic",
+                "--write-scope", "scratch/root.txt",
+            ))
+            with mock.patch.object(
+                tickets_mod, "_write_identity", side_effect=KeyboardInterrupt
+            ):
+                with self.assertRaises(KeyboardInterrupt):
+                    run_cmd(repo, "set-status", "testrun", "R", "complete")
+            ticket = (sink_root() / "tickets" / "testrun" / "R.md").read_text(
+                encoding="utf-8"
+            )
+            self.assertEqual(
+                "complete", tickets_mod._parse_frontmatter(ticket)["status"]
+            )
+            self.assertNotIn("terminal_at", identity_doc())
+
+            retried = run_cmd(repo, "set-status", "testrun", "R", "complete")
+            self.assertNotIn("error", retried)
+            self.assertEqual("complete", identity_doc()["terminal_status"])
+
+    def test_worklog_terminal_transition_closes_once(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            use_sink(tmp)
+            repo = make_clone(tmp / "repo", ALPHA)
+            root = run_cmd(
+                repo, "new", "testrun", "R", "--executor", "orch-decompose",
+                "--objective", "deliver", "--criterion",
+                "x | oracle: y | oracle_class: deterministic",
+                "--write-scope", "scratch/root.txt",
+            )
+            self.assertNotIn("error", root)
+            unit = run_cmd(
+                repo, "new", "testrun", "R.01", "--executor", "orch-tdd",
+                "--objective", "unit", "--criterion",
+                "x | oracle: y | oracle_class: deterministic",
+                "--depends-on", "R", "--write-scope", "scratch/unit.txt",
+            )
+            self.assertNotIn("error", unit)
+            self.assertNotIn("terminal_at", identity_doc())
+
+            run_cmd(repo, "set-status", "testrun", "R.01", "complete")
+            self.assertNotIn("terminal_at", identity_doc())
+            run_cmd(
+                repo, "run-state", "testrun", "--terminal", "complete",
+                "--text", "notes channel only",
+            )
+            self.assertNotIn("terminal_at", identity_doc())
+
+            closed = run_cmd(repo, "set-status", "testrun", "R", "complete")
+            self.assertNotIn("error", closed)
+            doc = identity_doc()
+            self.assertRegex(doc["terminal_at"], STAMP_RE)
+            self.assertEqual("R", doc["terminal_ticket_id"])
+            self.assertEqual("complete", doc["terminal_status"])
+            self.assertGreaterEqual(doc["elapsed_ms"], 0)
+            terminal_identity = identity_bytes()
+
+            run_cmd(repo, "set-status", "testrun", "R", "failed")
+            self.assertEqual(terminal_identity, identity_bytes())
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_repo(tmp, {"T1": ("claimed", "[]")})
+            run_cmd(tmp, "set-status", "testrun", "T1", "complete")
+            self.assertFalse(identity_of().exists(), "legacy timing was fabricated")
 
 
 class TestAtomicReplace(unittest.TestCase):
@@ -4555,7 +4793,9 @@ class RunIdentitySpecificationTest(unittest.TestCase):
         self.assertIn(tickets_mod.RUN_IDENTITY_NAME, docstring)
         for field in ("run", "sink_convention", "opened_at", "project.root",
                       "project.origin", "project.name", "workspaces[].path",
-                      "workspaces[].first_seen"):
+                      "workspaces[].first_seen", "orchflows.receipt_version",
+                      "orchflows.source_commit", "terminal_at",
+                      "terminal_ticket_id", "terminal_status", "elapsed_ms"):
             with self.subTest(field):
                 self.assertIn(field, docstring)
 
@@ -4569,8 +4809,11 @@ class RunIdentitySpecificationTest(unittest.TestCase):
                 .read_text(encoding="utf-8")
             )
             self.assertEqual(
-                ["opened_at", "project", "run", "sink_convention", "workspaces"],
+                ["opened_at", "orchflows", "project", "run", "sink_convention", "workspaces"],
                 sorted(identity),
+            )
+            self.assertEqual(
+                ["receipt_version", "source_commit"], sorted(identity["orchflows"])
             )
             self.assertEqual(["name", "origin", "root"], sorted(identity["project"]))
             self.assertEqual(
@@ -5054,6 +5297,49 @@ class TestCheckedByVerb(unittest.TestCase):
             self.assertEqual("T1", payload["check"]["id"])
             self.assertIn("checked_by: checker-a", path.read_text(encoding="utf-8"))
 
+    def test_one_checker_identity_and_unique_gate_lenses(self):
+        """A ticket has one checker identity; another review belongs to a
+        distinctly named gate lens rather than overwriting that identity."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.make(tmp)
+            first = run_cmd(tmp, "check", "testrun", "T1", "--by", "checker-a")
+            self.assertNotIn("error", first)
+            before = path.read_bytes()
+            repeated = run_cmd(tmp, "check", "testrun", "T1", "--by", "checker-b")
+            self.assertIn("already checked", repeated["error"])
+            self.assertIn("checker-a", repeated["error"])
+            self.assertEqual(before, path.read_bytes())
+
+        self.assertEqual(
+            ["code", "security"],
+            tickets_mod._distinct_gate_lenses(["code", "security"]),
+        )
+        with self.assertRaisesRegex(ValueError, "distinct"):
+            tickets_mod._distinct_gate_lenses(["code", "code"])
+        with self.assertRaisesRegex(ValueError, "distinct"):
+            tickets_mod._distinct_gate_lenses(["code", "Code"])
+
+    def test_concurrent_checkers_cannot_replace_the_first_identity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.make(tmp)
+            processes = [
+                subprocess.Popen(
+                    [sys.executable, str(TICKETS_PY), "check", "testrun", "T1",
+                     "--by", checker],
+                    cwd=str(tmp), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                    text=True, encoding="utf-8", errors="replace",
+                )
+                for checker in ("checker-a", "checker-b")
+            ]
+            results = [process.communicate(timeout=20) + (process.returncode,)
+                       for process in processes]
+            self.assertEqual([0, 1], sorted(result[2] for result in results), results)
+            data = tickets_mod._parse_frontmatter(path.read_text(encoding="utf-8"))
+            self.assertIn(data["checked_by"], ("checker-a", "checker-b"))
+
     def test_check_is_refused_on_a_ticket_that_is_not_claimed(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
@@ -5173,6 +5459,70 @@ class TestCheckerPathPacket(unittest.TestCase):
             payload = self.packet(tmp, "--executor", "orch-critique")
             self.assertIn("not claimed", payload["error"])
             self.assertNotIn("packet", payload)
+
+    def test_gate_deferred_ticket_excludes_checker_and_preserves_checker_paths(self):
+        gate_deferred = CLAIMED_ISOLATED_TICKET.replace(
+            "executor: orch-tdd", "executor: orch-tdd\nindependence: gate"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.make(tmp, gate_deferred)
+            before = path.read_bytes()
+            for executor in ("orch-critique", "orch-verify"):
+                with self.subTest(executor=executor):
+                    payload = self.packet(tmp, "--executor", executor)
+                    self.assertIn("downstream gate", payload["error"])
+                    self.assertNotIn("packet", payload)
+            checked = run_cmd(tmp, "check", "testrun", "T1", "--by", "checker-a")
+            self.assertIn("downstream gate", checked["error"])
+            self.assertEqual(before, path.read_bytes())
+            for argv in (
+                ("packet", "testrun", "T1", "--reply-to", "main", "--executor",
+                 "orch-critique"),
+                ("check", "testrun", "T1", "--by", "checker-a"),
+            ):
+                completed = run_full(tmp, *argv)
+                self.assertNotEqual(0, completed.returncode, completed.stdout)
+                self.assertIn("downstream gate", completed.stdout)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            self.make(tmp)
+            for executor in ("orch-critique", "orch-verify"):
+                with self.subTest(executor=executor):
+                    self.assertIn("packet", self.packet(tmp, "--executor", executor))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            root = ROOT_TICKET.replace(
+                "executor: orch-decompose",
+                "executor: orch-decompose\nindependence: gate",
+            )
+            path = make_packet_repo(tmp, root, tid="R1")
+            make_tickets(path.parent, {"R1.01": ("pending", "[]")})
+            critique = run_cmd(
+                tmp, "packet", "testrun", "R1", "--reply-to", "main",
+                "--executor", "orch-critique",
+            )
+            self.assertIn("packet", critique)
+            checked = run_cmd(tmp, "check", "testrun", "R1", "--by", "cut-reader")
+            self.assertNotIn("error", checked)
+
+    def test_checker_packet_is_refused_after_the_first_check(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            path = self.make(tmp)
+            self.assertNotIn(
+                "error", run_cmd(tmp, "check", "testrun", "T1", "--by", "checker-a")
+            )
+            before = path.read_bytes()
+            completed = run_full(
+                tmp, "packet", "testrun", "T1", "--reply-to", "main",
+                "--executor", "orch-critique",
+            )
+            self.assertNotEqual(0, completed.returncode, completed.stdout)
+            self.assertIn("already checked", completed.stdout)
+            self.assertEqual(before, path.read_bytes())
 
     def test_the_tickets_profile_override_stays_with_the_executors_dispatch(self):
         """contracts/work-item.md `profile` is the executor's role override;

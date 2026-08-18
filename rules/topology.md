@@ -57,16 +57,24 @@
    item. Assembly rewrites its inputs, so unit verification upstream of
    it is invalidated at the join; the final gate re-verifies the
    assembled artifact.
-5. One gate per run over one fixed revision — stubs per
-   [work-item.md](../contracts/work-item.md), Root ticket. Never one gate
-   per domain — cross-lens inconsistency is the most valuable finding
-   class.
+5. A decomposed physical run has one root ticket and one composite gate
+   over one fixed revision — stubs per
+   [work-item.md](../contracts/work-item.md), Root ticket. Every additional
+   reviewer is a unique named lens feeding that same gate's one repair and
+   one verification. Never one gate per domain — cross-lens inconsistency
+   is the most valuable finding class.
 6. Escalation: [delegation.md](delegation.md) §9.
-7. Multi-run work is root tickets on `depends_on` edges: seq is an
-   edge, the predecessor's `## Result` identity cited among the
-   successor's `## Fixed inputs`; par is the absence of one, which rule
-   3's disjointness already governs, joined by a ticket depending on
-   all of them; loop is a ticket whose executor is `orch-loop`. A named
+7. Multi-run work is successor roots linked by accepted result identities:
+   seq opens a successor run only after the predecessor's result identity is
+   resolved from `## Result` and cited among the successor's `## Fixed
+   inputs`; par is the absence of such an edge, which rule 3's disjointness
+   already governs, joined by a successor whose fixed inputs cite all of
+   their accepted identities; loop is a ticket whose executor is
+   `orch-loop`. Intake persists every sequential remainder in the first
+   run's `successors.md`; under [work-item.md](../contracts/work-item.md#root-ticket),
+   `orch-spec` is its sole writer and materialization
+   owner, and a completed frontier is the durable trigger that returns the
+   predecessor identity to it before the request is reported finished. A named
    multi-run shape is a template
    ([work-item.md](../contracts/work-item.md)) run by `orch-frontier`.
    Mixed decomposition inside one graph is undefined.

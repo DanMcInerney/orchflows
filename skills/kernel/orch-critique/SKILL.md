@@ -16,6 +16,12 @@ lacking evidence, it is an uncertainty, not a finding.
 Refuse a packet whose objective is repair but whose `authority` grants
 no write.
 
+Refuse a §10 checker packet for a non-root gate-deferred ticket or a
+ticket that is already checked: `checked_by` records one single immutable
+checker identity. An additional reviewer is instead a unique named
+root-gate critique lens; it is a read-only phase of the existing composite
+gate and never sets `checked_by`.
+
 As the §10 checker ([rules/verification.md](../../../rules/verification.md)
 §10) the lens is the ticket's own completion test — on a root ticket,
 the cut lens its packet names, corrected through `tickets.py amend` and
