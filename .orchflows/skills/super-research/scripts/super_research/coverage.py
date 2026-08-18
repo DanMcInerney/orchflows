@@ -54,9 +54,14 @@ absorb.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Iterable, Sequence, Tuple
+from typing import Dict, Iterable, Sequence, Tuple, Union
 
 from . import runner, schema
+
+# What a step is, to the two functions that ask whether one is depth. A manifest
+# holds `AcquisitionStep`s and an artifact holds `StepResult`s, and both carry
+# the kind and the query, so one reader answers for both.
+Step = Union[schema.AcquisitionStep, schema.StepResult]
 
 
 class CoverageError(ValueError):
@@ -361,15 +366,7 @@ RECALL_WAS_A_WINDOW = "recall_was_a_window"
 NOTHING_HYDRATED = "nothing_hydrated"
 
 
-def _pages_for_depth(adapter_id: str) -> bool:
-    """Whether any of this adapter's depth operations is one only paging reaches."""
-
-    return any(
-        target.kind == "discovery" for target in DEPTH_TARGETS.get(adapter_id, {}).values()
-    )
-
-
-def _depth_operation(step: schema.AcquisitionStep) -> str:
+def _depth_operation(step: Step) -> str:
     """The depth operation this step names, or "" if it names none.
 
     Read off the query's own `<name>:<argument>` prefix, which is where an
@@ -383,18 +380,26 @@ def _depth_operation(step: schema.AcquisitionStep) -> str:
     return operation if operation and operation in row else ""
 
 
-def _discovery_representation(adapter_id: str) -> str:
-    """The representation kind this adapter's discovery answers on, or "".
+def _is_depth(step: Step) -> bool:
+    """Whether this step is depth, read off the two facts the step states.
 
-    Read off :func:`runner.descriptor_for`, which answers what an adapter
-    reads: a record that arrived at any *other* kind this adapter declares is
-    that item at a second representation, and a second representation is a
-    second read. Empty for an adapter the core does not declare, which is the
-    one case where nothing can be concluded from the kind.
+    Depth is what a step is *for*, not which kind it wears. A hydration step is
+    always depth. A discovery step is depth when its query names one of this
+    adapter's paging depth operations, which is the only shape those can
+    lawfully take — :func:`runner._offers_another_page` spends a continuation
+    for a discovery step and no other, so an operation whose evidence rides one
+    is reachable no other way.
+
+    An `AcquisitionStep` and a `StepResult` both answer this, because both
+    carry the kind and the query. That is the whole point of the pair: the
+    manifest review and the artifact review decide the same question, and one
+    rule read from both sides is one rule to keep true.
     """
 
-    descriptor = runner.descriptor_for(adapter_id)
-    return descriptor.representation_kind if descriptor is not None else ""
+    if step.kind == "hydration":
+        return True
+    operation = _depth_operation(step)
+    return bool(operation) and DEPTH_TARGETS[step.adapter_id][operation].kind == "discovery"
 
 
 def _page_size(adapter_id: str) -> int:
@@ -419,14 +424,7 @@ def review_manifest(manifest: schema.AcquisitionManifest) -> Tuple[Advisory, ...
     discovery_adapters = set()
     deepened = set()
     for step in manifest.steps:
-        # Depth is what the step is for, not which kind it wears. A hydration
-        # step is always depth; a discovery step is depth when its query names
-        # one of this adapter's paging depth operations, which is the only
-        # shape those can lawfully take.
-        operation = _depth_operation(step)
-        if step.kind != "discovery":
-            deepened.add(step.adapter_id)
-        elif operation and DEPTH_TARGETS[step.adapter_id][operation].kind == "discovery":
+        if _is_depth(step):
             deepened.add(step.adapter_id)
         else:
             discovery_adapters.add(step.adapter_id)
@@ -546,41 +544,41 @@ def review_artifact(artifact: schema.AcquisitionArtifact) -> Tuple[Advisory, ...
                 )
             )
 
-    # Read off the records rather than the step list, for the reason
-    # `normalize` reads `discovery_not_recorded` off records: a record with a
-    # `discovery_locator` was hydrated, because the schema requires a nonempty
-    # one on every selected hit. A step list cannot tell a hydration-only
-    # dispatch from a run that discovered and never deepened, and a
-    # `StepResult` carries no query to say which operation a step ran.
+    # Which reads deepened something is decided by the step each record came
+    # from, and by nothing else. Every `AcquisitionRecord` carries the
+    # `step_id` of the step that produced it and an artifact's `steps` are one
+    # `StepResult` each, so the join is exact and nothing is matched by
+    # similarity or read off a record's shape.
     #
-    # That test is exact for depth that hydrates and blind to depth that pages:
-    # the core sets a `discovery_locator` only on a hydration step's own calls,
-    # so a `next` step's comments and a `transcript` step's cues carry none.
-    # For the adapters whose table row declares a paging operation, two more
-    # shapes count, and each is read off the record alone rather than against
-    # the rest of this artifact. Paging depth *is* a second artifact:
-    # :func:`plan_depth` takes the records a discovery run returned and its
-    # steps run as their own dispatch, so the video a comment names and the
-    # video a transcript is a representation of are both in artifact one.
-    # Asking this artifact to hold that item as well is what told a caller who
-    # had just acquired 57 comment records that nothing deepened anything —
-    # measured 2026-08-17, on the artifact the comments arrived in.
+    # It reads the step because every shape a record could be asked for is a
+    # proxy, and the last one this held was wrong in the field. A paging depth
+    # step's records carry no `discovery_locator` — the core sets one only on a
+    # hydration step's own calls — so the clause fell back to asking a comment
+    # to name a parent *this artifact holds*. Paging depth is inherently a
+    # second artifact: :func:`plan_depth` takes the records a discovery run
+    # returned and its steps run as their own dispatch, so the video a comment
+    # names is in artifact one. That is what told a caller who had just
+    # acquired 57 comment records that nothing had deepened anything, measured
+    # 2026-08-17 on the artifact the comments arrived in.
     #
-    # So what counts is what the record says about itself: it names a parent
-    # item, or it arrived at a representation this adapter's discovery does not
-    # answer on. Neither is read for an adapter whose depth all hydrates, where
-    # a parent id is ordinary discovery furniture: a Hacker News search hit
-    # names its story and deepened nothing.
+    # Still read off the records rather than the step list alone, for the
+    # reason `normalize` reads `discovery_not_recorded` off records: a staged
+    # hydration runs against a selection frozen from an artifact this one never
+    # saw, so an artifact holding hydrations and no discovery established no
+    # lineage and has nothing to report.
+    by_step = {result.step_id: result for result in artifact.steps}
     deepened = set()
     discovery_adapters = set()
     for record in artifact.records:
-        paging = _pages_for_depth(record.adapter_id)
-        discovered_as = _discovery_representation(record.adapter_id)
-        if (
-            record.discovery_locator
-            or (paging and record.native_parent_id)
-            or (paging and discovered_as and record.representation_kind != discovered_as)
-        ):
+        result = by_step.get(record.step_id)
+        if result is None or result.kind not in schema.STEP_KINDS:
+            # This artifact does not hold the step this record names, or holds
+            # one assembled by hand that states no kind. Either way the step
+            # cannot say what the read was, and the answer to a source that
+            # cannot answer is to say nothing — reaching for the next thing the
+            # record looks like is the defect above.
+            continue
+        if _is_depth(result):
             deepened.add(record.adapter_id)
         else:
             discovery_adapters.add(record.adapter_id)
