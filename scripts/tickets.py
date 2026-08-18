@@ -4919,15 +4919,19 @@ def _run_state_under_run_lock(rest):
     identity_path = identity_dir / RUN_IDENTITY_NAME
     try:
         prior_identity = identity_path.read_bytes()
-    except FileNotFoundError:
+    except (FileNotFoundError, NotADirectoryError):
+        # Match `_read_identity`: an unreachable identity location is absent
+        # here so the run-state payload write reports its own refusal.
         prior_identity = None
     except OSError as error:
         return {"error": f"unreadable run identity {identity_path}: {error}"}
+    identity_written = False
     try:
         run_dir.mkdir(parents=True, exist_ok=True)
         if document is not None:
             identity_dir.mkdir(parents=True, exist_ok=True)
             _write_identity(identity_dir, document)
+            identity_written = True
         if artifact is not None:
             path = run_dir / artifact
             with open(path, "w", encoding="utf-8", newline="\n") as handle:
@@ -4947,7 +4951,7 @@ def _run_state_under_run_lock(rest):
         # identity snapshot so its opened_at and receipt cannot be frozen by
         # an attempt whose requested state never landed.
         try:
-            if document is not None:
+            if identity_written:
                 if prior_identity is None:
                     identity_path.unlink(missing_ok=True)
                 else:

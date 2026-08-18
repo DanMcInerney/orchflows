@@ -1020,6 +1020,27 @@ class OSErrorHandlerTest(unittest.TestCase):
             self.assertEqual(1, result.returncode, result.stdout)
             self.assertIn("unwritable run state", json.loads(result.stdout)["error"])
 
+    def test_an_unreachable_identity_snapshot_is_the_payload_refusal(self):
+        """A failed payload setup must not trigger identity rollback when no
+        identity write landed."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            runs = sink_root() / "runs"
+            runs.mkdir(parents=True, exist_ok=True)
+            blocker = runs / "testrun"
+            original = "not a directory\n"
+            blocker.write_text(original, encoding="utf-8")
+
+            result = run_main(worktree, "run-state", "testrun", "--note", "nowhere")
+
+            self.assertEqual(1, result.returncode, result.stdout)
+            error = json.loads(result.stdout)["error"]
+            self.assertIn("unwritable run state", error, error)
+            self.assertNotIn("identity rollback also failed", error, error)
+            self.assertEqual(original, blocker.read_text(encoding="utf-8"))
+
 
 class TestMalformedFrontmatter(unittest.TestCase):
     def test_list_handles_ticket_with_no_frontmatter_delimiters(self):
