@@ -946,23 +946,26 @@ def _comments_page(
         cursor = cursor or continuation_in(entry)
     if records:
         return _answered(response, tuple(records), "ok", cursor_out=cursor)
-    # Two empties this route can honestly answer with, and neither is silent:
-    # the first call carries the token for the threads and no thread yet, and a
-    # video with comments turned off carries neither. The token is surfaced for
-    # the core to spend — following it here would make one call two reads.
-    return _answered(
-        response,
-        (),
-        "empty",
-        cursor_out=cursor,
-        warnings=(
-            "{0} answered 200 with the {1} carrying {2} and no thread".format(
-                NEXT_OPERATION,
-                COMMENT_SECTION_IDENTIFIER,
-                "a continuation token" if cursor else "no continuation token",
-            ),
-        ),
-    )
+    # Two empties this route can honestly answer with, and neither is silent.
+    # The first call on a video carries the token for the threads and no
+    # thread yet; the token is surfaced for the core to spend, because
+    # following it here would make one call two reads. A video with comments
+    # turned off carries no comment section at all — measured 2026-08-17,
+    # `next:yLY0LGmBTt8` answered 200 with three watch-next renderers and no
+    # `itemSectionRenderer` — so it reaches here with nothing to page. The
+    # warning is the only thing telling the two apart, and neither may borrow
+    # the other's: naming the section on a page that carried none would state
+    # a shape the origin did not send.
+    if cursor:
+        warning = (
+            "{0} answered 200 with the {1} carrying a continuation token and no"
+            " thread".format(NEXT_OPERATION, COMMENT_SECTION_IDENTIFIER)
+        )
+    else:
+        warning = "{0} answered 200 and the video lists no comment".format(
+            NEXT_OPERATION
+        )
+    return _answered(response, (), "empty", cursor_out=cursor, warnings=(warning,))
 
 
 def _playability_loss(status: str) -> str:

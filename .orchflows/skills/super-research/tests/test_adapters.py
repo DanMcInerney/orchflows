@@ -3781,6 +3781,34 @@ class YoutubeCommentsOffTest(unittest.TestCase):
         # surfacing one would send the core after a page nobody offered.
         self.assertEqual(page.cursor_out, "")
 
+    def test_the_warning_states_what_was_absent(self):
+        """An empty carries its own news, and the news is the video's.
+
+        The page below and the first call on a video with comments both answer
+        empty with no loss, so the warning is the only place a reader learns
+        which one this was. Naming the `comment-item-section` here would name
+        a container the answer did not carry, and `_drifted`'s sentence would
+        say the payload moved when it did not.
+        """
+
+        page, _ = youtube_page(
+            "next_comments_off.json", target_id="next:" + YOUTUBE_VIDEO_ID
+        )
+        with_a_token, _ = youtube_page(
+            "next_watch_page.json", target_id="next:" + YOUTUBE_VIDEO_ID
+        )
+        said = " ".join(page.warnings)
+
+        self.assertIn("lists no comment", said)
+        # `_drifted`'s own sentence, which no page answering `empty` may carry.
+        self.assertNotIn("changed shape", said)
+        self.assertNotIn(youtube_innertube.COMMENT_SECTION_IDENTIFIER, said)
+        # The other empty still says what it is, so the two stay tellable
+        # apart by the one thing either of them returns.
+        self.assertIn(
+            youtube_innertube.COMMENT_SECTION_IDENTIFIER, " ".join(with_a_token.warnings)
+        )
+
 
 VIEW_MODEL_FIXTURE = "next_comment_view_models.json"
 
