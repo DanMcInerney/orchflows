@@ -311,7 +311,7 @@ class BenchmakerRetirementCases:
             for path in sorted((PACKAGE / "tools").glob("*.py"))
             if path.name != "deseal_cases.py"
         )
-        surfaces.extend(sorted(FIXTURE.iterdir()))
+        surfaces.extend(path for path in sorted(FIXTURE.iterdir()) if path.is_file())
         named = [
             f"{path.relative_to(ROOT)}:{number}"
             for path in surfaces

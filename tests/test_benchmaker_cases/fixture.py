@@ -63,6 +63,18 @@ class TestBenchmarkFixture(unittest.TestCase):
     def _run(self, candidate: str) -> subprocess.CompletedProcess[str]:
         return self._run_fixture(FIXTURE, candidate)
 
+    def test_runner_import_keeps_the_fixture_tree_byte_quiet(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            isolated = Path(tmp)
+            for name in ("runner.py", "runner_core.py"):
+                shutil.copy2(FIXTURE / name, isolated / name)
+            result = subprocess.run(
+                [sys.executable, str(isolated / "runner.py"), "--help"],
+                cwd=isolated, capture_output=True, text=True,
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertFalse((isolated / "__pycache__").exists())
+
     def test_manifest_references_are_complete_and_locator_addressed(self):
         self.assertEqual(1, self.manifest["schema_version"])
         fixture_text = FIXTURE_MANIFEST.read_text(encoding="utf-8")
