@@ -21,7 +21,8 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT))
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from tools import run_tests  # noqa: E402
 
@@ -93,6 +94,9 @@ class TestGuardedSeams(unittest.TestCase):
             '''
         ) + textwrap.indent(statement + "\n", " " * 8)
 
+    def import_leaking_module(self, statement: str) -> str:
+        return statement + "\n\n" + self.CLEAN
+
     def test_a_clean_module_is_accepted(self):
         completed = run_fixture(self.CLEAN)
         report = completed.stdout.decode("utf-8", "replace")
@@ -120,6 +124,54 @@ class TestGuardedSeams(unittest.TestCase):
                 self.assertEqual(b"", completed.stderr, completed.stderr)
                 self.assertEqual(1, completed.returncode, report)
                 self.assertIn("leaked whole-interpreter seam: " + seam, report)
+
+    def test_each_import_time_whole_interpreter_leak_is_rejected_and_named(self):
+        for seam, statement in self.LEAKS.items():
+            with self.subTest(seam=seam):
+                completed = run_fixture(self.import_leaking_module(statement))
+                report = completed.stdout.decode("utf-8", "replace")
+                self.assertEqual(b"", completed.stderr, completed.stderr)
+                self.assertEqual(1, completed.returncode, report)
+                self.assertIn("leaked whole-interpreter seam: " + seam, report)
+
+    def test_an_arbitrary_live_import_path_is_still_rejected(self):
+        statement = textwrap.dedent(
+            '''\
+            import sys
+            from pathlib import Path
+
+            leaked = Path(__file__).with_name("live_import_path")
+            leaked.mkdir()
+            sys.path.append(str(leaked))
+            '''
+        )
+        completed = run_fixture(self.import_leaking_module(statement))
+        report = completed.stdout.decode("utf-8", "replace")
+        self.assertEqual(b"", completed.stderr, completed.stderr)
+        self.assertEqual(1, completed.returncode, report)
+        self.assertIn("leaked whole-interpreter seam: sys.path", report)
+
+    def test_a_nonzero_child_exit_rejects_an_ok_payload(self):
+        source = textwrap.dedent(
+            '''\
+            import atexit
+            import os
+            import unittest
+
+
+            atexit.register(lambda: os._exit(7))
+
+
+            class Clean(unittest.TestCase):
+                def test_it(self):
+                    self.assertTrue(True)
+            '''
+        )
+        completed = run_fixture(source)
+        report = completed.stdout.decode("utf-8", "replace")
+        self.assertEqual(b"", completed.stderr, completed.stderr)
+        self.assertEqual(1, completed.returncode, report)
+        self.assertIn("FAILED MODULE: test_fixture (exit 7)", report)
 
 
 class TestWorkflowContract(unittest.TestCase):

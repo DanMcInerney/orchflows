@@ -35,6 +35,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_TESTS_DIR = ROOT / "tests"
 CACHE_PATH = ROOT / ".orch" / "run_tests_times.json"
+IMPORT_BOOTSTRAP_ROOTS = frozenset(
+    os.path.normcase(os.path.abspath(str(path)))
+    for path in (
+        ROOT,
+        ROOT / "scripts",
+        ROOT / "benchmarks" / "benchmaker" / "tools",
+        ROOT / "skills" / "utilities" / "orch-visualize" / "scripts",
+    )
+)
 
 
 # --- child: run one module in this interpreter ------------------------
@@ -58,12 +67,16 @@ def guarded_state() -> dict:
 
 
 def meaningful_sys_path(entries):
-    """Drop expired scratch roots, which can no longer affect imports.
+    """Drop inert scratch roots and the suite's exact bootstrap roots.
 
     Isolated-tree tests execute copied tools whose lazy imports put that
     temporary tree on ``sys.path``. ``TemporaryDirectory`` removes the tree
     before the module returns; the dead absolute entry is inert in this
     single-purpose child and is not live whole-interpreter residue.
+
+    A closed set of repository import roots is also intentional suite
+    bootstrap. Exact equality matters: another live path under the repository
+    or temporary tree remains residue rather than inheriting this exception.
     """
 
     temp_root = os.path.normcase(os.path.abspath(tempfile.gettempdir()))
@@ -75,6 +88,8 @@ def meaningful_sys_path(entries):
             meaningful.append(entry)
             continue
         absolute = os.path.normcase(os.path.abspath(raw))
+        if absolute in IMPORT_BOOTSTRAP_ROOTS:
+            continue
         try:
             in_scratch = os.path.commonpath((temp_root, absolute)) == temp_root
         except ValueError:
@@ -124,8 +139,8 @@ def run_child(module: str, import_root: str, result_path: str, verbosity: int) -
     sys.path[:] = [p for p in sys.path if p and Path(p).resolve() != script_dir]
     sys.path.insert(0, import_root)
 
-    suite = unittest.TestLoader().loadTestsFromName(module)
     before = guarded_state()
+    suite = unittest.TestLoader().loadTestsFromName(module)
     result = unittest.TextTestRunner(stream=sys.stderr, verbosity=verbosity).run(suite)
     leaks = leaked_seams(before)
     for seam in leaks:
@@ -273,6 +288,9 @@ def run_module(module: str, import_root: Path, verbosity: int) -> dict:
             os.unlink(result_path)
         except OSError:
             pass
+    if completed.returncode and record.get("ok"):
+        record["ok"] = False
+        record["note"] = "child exited %d after reporting success" % completed.returncode
     record["duration"] = duration
     record["output"] = output
     record["returncode"] = completed.returncode
