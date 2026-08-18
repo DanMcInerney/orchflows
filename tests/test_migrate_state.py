@@ -6,17 +6,30 @@ the OS temporary directory.
 """
 from __future__ import annotations
 
-from .test_migrate_state_cases.apply import (
-    TestLegacyFriction,
-    TestMigrationApply,
-    TestMigrationIdempotent,
-)
-from .test_migrate_state_cases.collision import TestMigrationCollision
-from .test_migrate_state_cases.plan import (
-    TestMigrationPlan,
-    TestUnreadableDestination,
-    TestUsage,
-)
+if __package__:
+    from .test_migrate_state_cases.apply import (
+        TestLegacyFriction,
+        TestMigrationApply,
+        TestMigrationIdempotent,
+    )
+    from .test_migrate_state_cases.collision import TestMigrationCollision
+    from .test_migrate_state_cases.plan import (
+        TestMigrationPlan,
+        TestUnreadableDestination,
+        TestUsage,
+    )
+else:
+    from test_migrate_state_cases.apply import (
+        TestLegacyFriction,
+        TestMigrationApply,
+        TestMigrationIdempotent,
+    )
+    from test_migrate_state_cases.collision import TestMigrationCollision
+    from test_migrate_state_cases.plan import (
+        TestMigrationPlan,
+        TestUnreadableDestination,
+        TestUsage,
+    )
 
 __all__ = [
     "TestLegacyFriction",
