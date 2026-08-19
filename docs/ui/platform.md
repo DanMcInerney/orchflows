@@ -108,12 +108,15 @@ All projections use closed field sets. Run graphs contain ticket identifiers,
 dependency edges, lifecycle statuses, aggregate diagnostics, and event
 counts. The selected-ticket experience projection contains routing and claim
 metadata, canonical readiness facts, parsed verification rows, and the
-Objective, Result, Feedback, and Risks sections as inert strings. Session projections
+Objective, Result, Feedback, and Risks sections as inert strings. Its explicit
+`raw` field is the one narrow exception for the selected ticket's Markdown:
+the server redacts host paths before delivery and the browser renders the
+string inert. Session projections
 contain file identity metadata and subagent parent, depth, activity, evidence,
 and readability fields.
 
-No route returns arbitrary ticket sections, arbitrary filesystem paths,
-transcript text, prompt text, tool input or output, command output, file
+No route returns another ticket's body, arbitrary filesystem paths, transcript
+text, prompt text, tool input or output, command output, arbitrary file
 contents, or subagent conversation contents. The state and transcript roots are opened read-only;
 symbolic-link and path-containment checks keep reads inside those roots. No
 browser route starts a run, changes a ticket, writes friction, calls a model,

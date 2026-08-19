@@ -1,6 +1,6 @@
 """Regression for the shared projection seam consumed by feature views."""
 
-from tests.test_ui_cases._base import *  # noqa: F401,F403
+from tests.test_ui_cases._web import *  # noqa: F401,F403
 
 from scripts.ui_experience import project_experience
 
@@ -135,7 +135,7 @@ class TestExperienceFoundationGap(unittest.TestCase):
 
         session = selected["session"]
         self.assertEqual(
-            {"id", "title", "client", "project", "modified", "agent_count", "diagnostics", "agents"},
+            {"id", "title", "modified", "agent_count", "diagnostics", "agents"},
             set(session),
         )
         for agent in session["agents"]:
