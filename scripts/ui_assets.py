@@ -69,12 +69,15 @@ class FallbackReaderServer(ThreadingHTTPServer):
 
     daemon_threads = True
 
-    def __init__(self, root, port, transcripts, assets, dispatch, security_headers):
+    def __init__(
+        self, root, port, transcripts, assets, dispatch, security_headers, legacy_respond
+    ):
         self.root = Path(root).resolve()
         self.transcripts = transcripts
         self.assets = Path(assets).resolve()
         self.dispatch = dispatch
         self.security_headers = security_headers
+        self.legacy_respond = legacy_respond
         ThreadingHTTPServer.__init__(self, ("127.0.0.1", port), FallbackReaderHandler)
 
 

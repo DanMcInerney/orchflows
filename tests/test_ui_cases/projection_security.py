@@ -32,7 +32,7 @@ class TestProjectionContentWall(unittest.TestCase):
 
             with serving(main) as server:
                 for route in (
-                    "/",
+                    "/observe",
                     "/api/v1/runs",
                     "/api/v1/runs/run-gamma",
                     "/api/v1/runs/run-gamma/tickets/G1",

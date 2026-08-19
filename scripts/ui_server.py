@@ -409,8 +409,8 @@ def respond(start, path: str, if_none_match=None, transcripts=None) -> tuple:
 try:
     from scripts.ui_api import (
         UvicornReaderServer,
-        create_application,
-        create_server,
+        create_application as _create_application,
+        create_server as _create_server,
         project_friction,
         project_observe,
         project_run,
@@ -423,8 +423,8 @@ try:
 except ImportError:
     from ui_api import (
         UvicornReaderServer,
-        create_application,
-        create_server,
+        create_application as _create_application,
+        create_server as _create_server,
         project_friction,
         project_observe,
         project_run,
@@ -436,6 +436,14 @@ except ImportError:
     from ui_assets import resolve_asset_root
 
 ReaderServer = UvicornReaderServer
+
+
+def create_application(root, transcripts=None, assets=None):
+    return _create_application(root, transcripts, assets, respond)
+
+
+def create_server(root, port: int, transcripts=None, assets=None):
+    return _create_server(root, port, transcripts, assets, respond)
 
 
 def main(argv=None):

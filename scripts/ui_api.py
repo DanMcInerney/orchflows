@@ -336,15 +336,20 @@ def _legacy_location(path: str, query, root=None, transcripts=None) -> str:
 
 
 async def legacy_endpoint(request: Request):
-    root, transcripts = _context(request)
-    location = _legacy_location(request.url.path, request.query_params, root, transcripts)
-    if not location:
+    responder = request.app.state.legacy_respond
+    if responder is None:
         return Response("not found", status_code=404)
-    body = location.encode("utf-8")
-    tag = '"{0}"'.format(hashlib.sha256(body).hexdigest())
-    if _etag_matches(request.headers.get("If-None-Match", ""), tag):
-        return Response(status_code=304, headers={"ETag": tag, "Cache-Control": "no-cache"})
-    return RedirectResponse(location, status_code=307, headers={"ETag": tag, "Cache-Control": "no-cache"})
+    target = request.url.path
+    if request.url.query:
+        target += "?" + request.url.query
+    root, transcripts = _context(request)
+    status, tag, page = responder(
+        root, target, request.headers.get("If-None-Match"), transcripts
+    )
+    headers = {"Cache-Control": "no-cache"}
+    if tag:
+        headers["ETag"] = tag
+    return Response(page, status_code=status, media_type="text/html", headers=headers)
 
 
 if BaseHTTPMiddleware is not None:
@@ -358,7 +363,7 @@ else:
     SecurityHeadersMiddleware = None
 
 
-def create_application(root, transcripts=None, assets=None):
+def create_application(root, transcripts=None, assets=None, legacy_respond=None):
     if Starlette is None:
         raise RuntimeError("Starlette is available only in the installed private runtime")
     routes = [
@@ -370,9 +375,9 @@ def create_application(root, transcripts=None, assets=None):
         Route("/api/v1/sessions/{session}", session_endpoint, methods=["GET"]),
         Route("/api/observe", observe_endpoint, methods=["GET"]),
         Route("/assets/{asset:path}", asset_endpoint, methods=["GET"]),
-        Route("/", index_endpoint, methods=["GET"]),
+        Route("/observe", index_endpoint, methods=["GET"]),
+        Route("/{path:path}", legacy_endpoint, methods=["GET"]),
     ]
-    routes.extend(Route(path, legacy_endpoint, methods=["GET"]) for path in ("/ticket", "/graph", "/friction", "/sessions", "/session"))
     app = Starlette(
         routes=routes,
         middleware=[
@@ -383,6 +388,7 @@ def create_application(root, transcripts=None, assets=None):
     app.state.root = Path(root).resolve()
     app.state.transcripts = transcripts
     app.state.assets = resolve_asset_root() if assets is None else Path(assets).resolve()
+    app.state.legacy_respond = legacy_respond
     return app
 
 
@@ -432,25 +438,32 @@ def _fallback_dispatch(server, method, target, headers):
         value = project_observe(root, query.get("run", ""))
     if value is not None:
         return _fallback_json(value, headers)
-    if path == "/":
+    if path == "/observe":
         asset = read_asset(server.assets, "index.html")
         return _fallback_response(503, b"reader application unavailable") if asset is None else _fallback_response(200, asset[0], asset[1] + "; charset=utf-8", request_headers=headers, tag=asset[2])
     if path.startswith("/assets/"):
         asset = read_asset(server.assets, path.lstrip("/"))
         return _fallback_response(404, b"not found") if asset is None else _fallback_response(200, asset[0], asset[1], "public, max-age=31536000, immutable", headers, asset[2])
-    location = _legacy_location(path, query, root, transcripts)
-    if location:
-        return _fallback_response(307, b"", request_headers=headers, extra={"Location": location})
+    if server.legacy_respond is not None:
+        status, tag, page = server.legacy_respond(
+            root, target, headers.get("If-None-Match"), transcripts
+        )
+        body = page.encode("utf-8")
+        extra = {"Cache-Control": "no-cache", "Content-Type": "text/html; charset=utf-8"}
+        if tag:
+            extra["ETag"] = tag
+        extra["Content-Length"] = str(len(body))
+        return status, extra, body
     return _fallback_response(404, b"not found")
 
 
 class UvicornReaderServer:
     """Compatibility wrapper around one pre-bound Uvicorn socket."""
 
-    def __init__(self, root, port: int, transcripts=None, assets=None):
+    def __init__(self, root, port: int, transcripts=None, assets=None, legacy_respond=None):
         self.root = Path(root)
         self.transcripts = transcripts
-        self.application = create_application(root, transcripts, assets)
+        self.application = create_application(root, transcripts, assets, legacy_respond)
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._socket.bind(("127.0.0.1", port))
@@ -475,10 +488,18 @@ class UvicornReaderServer:
             pass
 
 
-def create_server(root, port: int, transcripts=None, assets=None):
+def create_server(root, port: int, transcripts=None, assets=None, legacy_respond=None):
     resolved_assets = resolve_asset_root() if assets is None else Path(assets).resolve()
     if Starlette is None:
         return FallbackReaderServer(
-            root, port, transcripts, resolved_assets, _fallback_dispatch, SECURITY_HEADERS
+            root,
+            port,
+            transcripts,
+            resolved_assets,
+            _fallback_dispatch,
+            SECURITY_HEADERS,
+            legacy_respond,
         )
-    return UvicornReaderServer(root, port, transcripts, resolved_assets)
+    return UvicornReaderServer(
+        root, port, transcripts, resolved_assets, legacy_respond
+    )

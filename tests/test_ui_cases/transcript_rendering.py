@@ -50,7 +50,7 @@ class TestContentWall(TranscriptCase):
             for route in every_route():
                 status, page = get(server, route)
 
-                self.assertIn(status, (200, 307, 404), route)
+                self.assertIn(status, (200, 404), route)
                 self.assertNotIn(TRANSCRIPT_SENTINEL, page, route)
 
     def test_the_sweep_still_renders_what_it_is_allowed_to(self):
@@ -98,9 +98,8 @@ class TestTranscriptsAreReadOnly(TranscriptCase):
         with serving(self.main, self.transcripts) as server:
             for route in every_route():
                 status, page = get(server, route)
-                self.assertIn(status, (200, 307, 404), route)
-                if status != 307:
-                    self.assertTrue(page, route)
+                self.assertIn(status, (200, 404), route)
+                self.assertTrue(page, route)
 
         self.assertEqual(before, snapshot(self.transcripts))
 
