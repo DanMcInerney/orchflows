@@ -63,6 +63,8 @@ button, input { font: inherit; }
   box-shadow: 0 1px 2px rgb(15 23 42 / 8%);
 }
 .react-flow__node.selected { outline: 3px solid #2563eb; outline-offset: 2px; }
+.observe-node { display: grid; gap: .3rem; }
+.observe-node small { color: #64748b; }
 .react-flow__edge-path { stroke: #64748b; }
 
 @media (max-width: 720px) {

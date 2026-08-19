@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 import install
 
-from tests.test_installer_cases.support import setUpModule, tearDownModule
+from tests.test_installer_cases.support import seed_user_frontend, setUpModule, tearDownModule
 from tests.test_installer_cases.application.configuration import (
     TestClaudeConfigDir,
     TestCodexHome,
@@ -77,6 +77,17 @@ TestUnreadableReceipt.__module__ = __name__
 TestConservativeUninstall.__module__ = __name__
 
 
+_day_zero_setup = TestDayZeroBootstrap.setUp
+
+
+def _day_zero_setup_with_user_frontend(self):
+    _day_zero_setup(self)
+    seed_user_frontend(self.home)
+
+
+TestDayZeroBootstrap.setUp = _day_zero_setup_with_user_frontend
+
+
 class TestFrontendDistribution(unittest.TestCase):
     def _frontend_plan(self, root: Path, source: Path) -> install.Plan:
         home = root / "home"
@@ -136,6 +147,24 @@ class TestFrontendDistribution(unittest.TestCase):
         self.assertEqual(project_plan.frontend_home, user_plan.frontend_home)
         self.assertEqual(project_plan.frontend_manifest_sha256, expected_identity)
         self.assertEqual(project_plan.frontend_action, "refuse")
+        self.assertIn(
+            (install.REPO_ROOT / "THIRD_PARTY_NOTICES.md", user_plan.lib_home / "THIRD_PARTY_NOTICES.md"),
+            user_plan.lib_copies,
+        )
+
+    def test_project_frontend_refusal_prevents_a_success_receipt(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            plan = install.Plan(
+                scope="project", project_root=root, scope_home=root / ".orchflows",
+                lib_home=root / ".orchflows" / "lib", bin_dir=root / ".orchflows" / "bin",
+                receipt_path=root / ".orchflows" / "receipt.json",
+                frontend_home=root / "missing-ui", frontend_manifest_sha256="expected",
+                frontend_action="refuse", manage_host_surfaces=False,
+            )
+            with self.assertRaisesRegex(RuntimeError, "healthy frontend assets"):
+                install.apply_plan(plan)
+            self.assertFalse(plan.receipt_path.exists())
 
     def test_apply_repairs_receipts_and_reports_without_a_javascript_toolchain(self):
         with tempfile.TemporaryDirectory() as raw:
@@ -192,6 +221,29 @@ class TestFrontendDistribution(unittest.TestCase):
                     install.apply_plan(broken_plan)
             self.assertEqual(install._frontend_manifest(plan.frontend_home), old_identity)
 
+    def test_failed_swap_and_failed_restore_keep_the_prior_backup(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            source = root / "source"
+            source.mkdir()
+            (source / "index.html").write_text("new", encoding="utf-8")
+            plan = self._frontend_plan(root, source)
+            plan.frontend_home.mkdir(parents=True)
+            (plan.frontend_home / "index.html").write_text("prior", encoding="utf-8")
+            real_replace = Path.replace
+
+            def fail_swaps(path, target):
+                if path.name.startswith((".ui-stage-", ".ui-backup-")):
+                    raise OSError("forced replacement failure")
+                return real_replace(path, target)
+
+            with patch.object(Path, "replace", fail_swaps):
+                with self.assertRaisesRegex(OSError, "forced replacement failure"):
+                    install.apply_plan(plan)
+            backups = list(plan.frontend_home.parent.glob(".ui-backup-*"))
+            self.assertEqual(1, len(backups))
+            self.assertEqual("prior", (backups[0] / "index.html").read_text(encoding="utf-8"))
+
     def test_uninstall_removes_an_unchanged_receipted_distribution(self):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
@@ -219,3 +271,17 @@ class TestFrontendDistribution(unittest.TestCase):
                 ],
             )
             self.assertTrue(plan.receipt_path.is_file())
+
+    def test_frontend_uninstall_dry_run_is_one_consistent_preview(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            source = root / "source"
+            source.mkdir()
+            (source / "index.html").write_text("observe", encoding="utf-8")
+            plan = self._frontend_plan(root, source)
+            install.apply_plan(plan)
+            with patch.object(install.Path, "home", return_value=root / "home"):
+                report = install.run_uninstall("user", None, dry_run=True)
+            self.assertTrue(plan.frontend_home.is_dir())
+            self.assertFalse(any("review frontend distribution" in item["action"] for item in report["manual_actions"]))
+            self.assertEqual("would remove empty frontend distribution", report["skill_actions"][-1]["action"])

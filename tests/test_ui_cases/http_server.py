@@ -1,5 +1,7 @@
 """Conditional HTTP, loopback, route, read-only, and asset regressions."""
 
+import socket
+
 from tests.test_ui_cases._web import *  # noqa: F401,F403
 class TestConditionalRequests(unittest.TestCase):
     """Spec criterion 10. A one-second poll that re-renders every page every
@@ -319,6 +321,17 @@ class TestCompiledApplicationServer(unittest.TestCase):
                     self.assertEqual(304, unchanged[0], route)
                     self.assertEqual("", unchanged[2], route)
 
+    def test_ticket_projection_names_source_and_partial_friction_health(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            main = make_sink(Path(tmp))
+            log = ui.read_friction(main)
+            with serving(main) as server:
+                status, _headers, body = fetch(server, "/api/v1/runs/run-gamma/tickets/G1")
+        payload = json.loads(body)
+        self.assertEqual(200, status)
+        self.assertEqual({"file_id": "G1", "unreadable": False}, payload["ticket"]["source"])
+        self.assertEqual({"skipped": log["skipped"], "unreadable": log["unreadable"]}, payload["friction_health"])
+
     def test_observe_compatibility_has_the_browser_contract_and_one_run_graph(self):
         with tempfile.TemporaryDirectory() as tmp:
             with serving(make_sink(Path(tmp))) as server:
@@ -377,10 +390,19 @@ class TestCompiledApplicationServer(unittest.TestCase):
                         method,
                     )
                     self.assertIsNone(headers.get("Access-Control-Allow-Origin"), method)
+                trace = request(server, "/api/v1/runs", "TRACE")
+                self.assertEqual(405, trace[0])
+                self.assertEqual("GET, HEAD", trace[1].get("Allow"))
                 refused = fetch(server, "/", {"Host": "reader.example"})
                 self.assertEqual(400, refused[0])
                 self.assertIsNone(refused[1].get("Access-Control-Allow-Origin"))
                 for route in ("/observe", "/api/v1/runs", "/not-found"):
                     status, headers, _body = fetch(server, route)
                     self.assertIn(status, (200, 404), route)
-                    self.assertTrue(required.issubset(set(headers)), route)
+                    self.assertTrue({name.lower() for name in required}.issubset({name.lower() for name in headers}), route)
+
+                raw = socket.create_connection(server.server_address, timeout=5)
+                with raw:
+                    raw.sendall(b"GET /api/v1/runs HTTP/1.1\r\nHost: 127.0.0.1\r\nHost: reader.example\r\nConnection: close\r\n\r\n")
+                    response = raw.recv(4096)
+                self.assertIn(b" 400 ", response.split(b"\r\n", 1)[0])

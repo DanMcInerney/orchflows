@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -13,8 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 MAX_PHYSICAL_LINES = 510
 SOURCE_SUFFIXES = frozenset({".py", ".sh", ".cmd", ".ps1", ".js", ".ts"})
 TYPESCRIPT_COMPONENT_SUFFIXES = frozenset({".tsx"})
-GENERATED_SOURCE_MANIFESTS = (Path("web/dist/.vite/manifest.json"),)
-GENERATED_PATH_FIELDS = ("file", "css", "assets")
+GENERATED_SOURCE_MANIFESTS = (Path("web/dist/.vite/orchflows-generated.json"),)
 
 
 def _is_source(path: Path) -> bool:
@@ -33,25 +33,17 @@ def generated_source_files(root: Path = ROOT) -> set[Path]:
         if not isinstance(records, dict):
             continue
         output_root = manifest.parent.parent.resolve()
-        for record in records.values():
-            if not isinstance(record, dict):
+        for value, expected_hash in records.items():
+            if not isinstance(value, str) or not isinstance(expected_hash, str):
                 continue
-            for field in GENERATED_PATH_FIELDS:
-                values = record.get(field, ())
-                if isinstance(values, str):
-                    values = (values,)
-                if not isinstance(values, (list, tuple)):
-                    continue
-                for value in values:
-                    if not isinstance(value, str):
-                        continue
-                    candidate = (output_root / value).resolve()
-                    try:
-                        candidate.relative_to(output_root)
-                    except ValueError:
-                        continue
-                    if candidate.is_file() and _is_source(candidate):
-                        generated.add(candidate)
+            candidate = (output_root / value).resolve()
+            try:
+                candidate.relative_to(output_root)
+                actual_hash = hashlib.sha256(candidate.read_bytes()).hexdigest()
+            except (OSError, ValueError):
+                continue
+            if actual_hash == expected_hash and candidate.is_file() and _is_source(candidate):
+                generated.add(candidate)
     return generated
 
 

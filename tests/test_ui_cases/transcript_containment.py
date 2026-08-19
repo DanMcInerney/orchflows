@@ -59,6 +59,17 @@ class TestTranscriptContainment(TranscriptCase):
 
         self.assertEqual(list(SESSIONS_NEWEST_FIRST), session_ids(self.sessions()))
 
+    def test_a_transcript_file_symlink_cannot_project_outside_content(self):
+        self.own_fixture()
+        outside = self.tmp / "outside-session.jsonl"
+        outside.write_text('{"type":"ai-title","aiTitle":"%s"}\n' % self.LEAKED_TITLE, encoding="utf-8")
+        link = self.transcripts / ALPHA_PROJECT / "1e6f0000-0000-4000-8000-00000000beef.jsonl"
+        try:
+            link.symlink_to(outside)
+        except (OSError, NotImplementedError) as error:
+            self.skipTest("cannot create a file symlink here: %s" % error)
+        self.assertNotIn(self.LEAKED_TITLE, self.sessions())
+
 
 class TestUnaddressableSessions(TranscriptCase):
     """A row is a promise that the link on it opens.

@@ -336,7 +336,9 @@ def _subagent_files(path: Path) -> tuple:
     if directory is None:
         return ()
     try:
-        return tuple(sorted(directory.glob(AGENT_FILE_GLOB))) if directory.is_dir() else ()
+        entries = sorted(directory.glob(AGENT_FILE_GLOB)) if directory.is_dir() else ()
+        resolved = (_in_tree(directory, entry.name) for entry in entries)
+        return tuple(path for path in resolved if path is not None and path.is_file())
     except OSError:
         return ()
 

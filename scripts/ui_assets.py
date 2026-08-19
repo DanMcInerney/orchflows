@@ -64,6 +64,15 @@ def manifest_paths(root: Path) -> tuple:
     return tuple(path.relative_to(base).as_posix() for path in files)
 
 
+def valid_host_headers(headers) -> bool:
+    """Exactly one unambiguous loopback authority."""
+
+    values = headers.get_all("Host", []) if hasattr(headers, "get_all") else [headers.get("Host", "")]
+    if len(values) != 1:
+        return False
+    return values[0].split(":", 1)[0].lower() in ("127.0.0.1", "localhost")
+
+
 class FallbackReaderServer(ThreadingHTTPServer):
     """Stdlib harness for source-tree checks without the private runtime."""
 
@@ -105,6 +114,11 @@ class FallbackReaderHandler(BaseHTTPRequestHandler):
     do_PATCH = _serve
     do_DELETE = _serve
     do_OPTIONS = _serve
+
+    def __getattr__(self, name):
+        if name.startswith("do_"):
+            return self._serve
+        raise AttributeError(name)
 
     def log_message(self, format, *args):
         pass

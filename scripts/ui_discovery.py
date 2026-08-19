@@ -31,8 +31,7 @@ def find_ticket(root: Path, run: str, ticket_id: str):
 
 
 def run_tickets(root: Path, run: str):
-    """Every ticket in one run, or ``None`` when the run does not resolve.
-    Guarded like ``find_ticket``: the run name is client-supplied."""
+    """Every ticket in one safely resolved run, or ``None``."""
 
     run = _safe_name(run)
     if not run:
@@ -44,9 +43,8 @@ def run_tickets(root: Path, run: str):
         return None
     if not found:
         return None
-    return [read_ticket(path) for path in sorted(run_dir.glob("*" + TICKET_SUFFIX))]
-
-
+    paths = (_in_tree(run_dir, path.name) for path in sorted(run_dir.glob("*" + TICKET_SUFFIX)))
+    return [read_ticket(path) for path in paths if path is not None]
 def graph_input(tickets) -> tuple:
     """``(node ids, edges)`` for one run. An edge runs from a dependency to
     the ticket that declares it, so it points up the layers."""
@@ -100,8 +98,6 @@ def identity_diagnostics(tickets) -> list:
             )
         )
     return diagnostics
-
-
 FRICTION_KEYS = ("ts", "observed", "expected", "category", "host")
 _EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
@@ -140,11 +136,16 @@ def read_friction(root) -> dict:
     the lines that could not be read as one and the names of the month
     files that could not be read at all."""
 
-    directory = Path(root).joinpath(*FRICTION_DIR)
+    directory = _in_tree(Path(root), *FRICTION_DIR)
     entries = []
     skipped = 0
     unreadable = []
-    for path in sorted(directory.glob("*" + JSONL_SUFFIX)) if directory.is_dir() else ():
+    entries_on_disk = sorted(directory.glob("*" + JSONL_SUFFIX)) if directory is not None and directory.is_dir() else ()
+    for entry_path in entries_on_disk:
+        path = _in_tree(directory, entry_path.name)
+        if path is None:
+            unreadable.append(entry_path.name)
+            continue
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
@@ -240,11 +241,13 @@ def discover(start) -> dict:
         empty = EMPTY_NO_SINK
     else:
         if tickets_root.is_dir():
-            for run_dir in sorted(p for p in tickets_root.iterdir() if p.is_dir()):
+            candidates = (_in_tree(tickets_root, p.name) for p in tickets_root.iterdir())
+            for run_dir in sorted(p for p in candidates if p is not None and p.is_dir()):
+                ticket_paths = (_in_tree(run_dir, p.name) for p in sorted(run_dir.glob("*.md")))
                 runs.append(
                     {
                         "run": run_dir.name,
-                        "tickets": [read_ticket(p) for p in sorted(run_dir.glob("*.md"))],
+                        "tickets": [read_ticket(p) for p in ticket_paths if p is not None],
                     }
                 )
         empty = "" if runs else EMPTY_NO_RUNS
@@ -329,7 +332,8 @@ def discover_sessions(transcripts=None) -> dict:
             diagnostics.append(
                 "{0}: {1}".format(DIAGNOSTIC_UNDECODABLE_SLUG, project.name)
             )
-        for path in sorted(project.glob("*" + JSONL_SUFFIX)):
+        transcript_paths = (_in_tree(project, path.name) for path in sorted(project.glob("*" + JSONL_SUFFIX)))
+        for path in (path for path in transcript_paths if path is not None and path.is_file()):
             identity = _facade_value("_stat_identity", _stat_identity)(path)
             if identity is None:
                 # A session the walk found and the path layer will not

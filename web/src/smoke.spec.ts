@@ -1,77 +1,48 @@
 // @ts-nocheck -- Playwright owns this Node-side harness; application code remains strict.
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { spawn } from "node:child_process";
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
-const dist = resolve(process.cwd(), "web", "dist");
 const executablePath = process.env.ORCHFLOWS_BROWSER_EXECUTABLE || undefined;
 test.use({ launchOptions: executablePath ? { executablePath } : undefined });
 
-let server;
+let serverProcess;
+let stateRoot = "";
 let origin = "";
-let taggedReads = 0;
-const serverEvents: string[] = [];
-
-function send(response, status, body, headers = {}) {
-  response.writeHead(status, {
-    "Cache-Control": "no-store",
-    "Content-Length": Buffer.byteLength(body),
-    ...headers
-  });
-  response.end(body);
-}
 
 test.beforeAll(async () => {
-  const index = await readFile(resolve(dist, "index.html"));
-  server = createServer(async (request, response) => {
-    const url = new URL(request.url || "/", "http://127.0.0.1");
-    if (url.pathname === "/api/observe") {
-      const tag = request.headers["if-none-match"];
-      serverEvents.push(`api:${tag || "none"}:${url.searchParams.toString()}`);
-      if (tag === '"one"' && taggedReads++ === 0) {
-        send(response, 304, "", { ETag: '"one"' });
-        return;
-      }
-      const changed = tag === '"one"' || tag === '"two"';
-      const snapshot = {
-        revision: changed ? "two" : "one",
-        active: true,
-        nodes: [
-          { id: "A", label: "Acquire", status: "complete" },
-          { id: "B", label: "Build", status: changed ? "complete" : "claimed" }
-        ],
-        edges: [{ id: "A-B", source: "A", target: "B" }]
-      };
-      const body = JSON.stringify(snapshot);
-      setTimeout(() => send(response, 200, body, {
-        "Content-Type": "application/json",
-        ETag: changed ? '"two"' : '"one"'
-      }), 80);
-      return;
-    }
-    if (/^\/assets\/[A-Za-z0-9._-]+$/.test(url.pathname)) {
-      serverEvents.push(`asset:${url.pathname}`);
-      const body = await readFile(resolve(dist, url.pathname.slice(1)));
-      const type = url.pathname.endsWith(".css") ? "text/css" : "text/javascript";
-      send(response, 200, body, { "Content-Type": type });
-      return;
-    }
-    send(response, 200, index, { "Content-Type": "text/html; charset=utf-8" });
+  stateRoot = await mkdtemp(join(tmpdir(), "orchflows-smoke-"));
+  await mkdir(join(stateRoot, "tickets"));
+  await cp(resolve("tests", "fixtures", "ui", "run-gamma"), join(stateRoot, "tickets", "run-gamma"), { recursive: true });
+  const transcriptRoot = join(stateRoot, "transcripts");
+  await mkdir(transcriptRoot);
+  serverProcess = spawn(process.env.ORCHFLOWS_PYTHON || "python", [
+    "-u", "scripts/ui.py", "--root", stateRoot, "--transcripts", transcriptRoot, "--port", "0"
+  ], { cwd: process.cwd(), stdio: ["ignore", "pipe", "pipe"] });
+  origin = await new Promise((resolveOrigin, reject) => {
+    let stderr = "";
+    serverProcess.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
+    serverProcess.stdout.on("data", (chunk) => {
+      const match = chunk.toString().match(/http:\/\/127\.0\.0\.1:\d+/);
+      if (match) resolveOrigin(match[0]);
+    });
+    serverProcess.once("exit", (code) => reject(new Error(`reader exited ${code}: ${stderr}`)));
   });
-  await new Promise((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
-  const address = server.address();
-  origin = `http://127.0.0.1:${address.port}`;
 });
 
 test.afterAll(async () => {
-  await new Promise((resolveClose) => server.close(resolveClose));
+  serverProcess?.kill();
+  await rm(stateRoot, { recursive: true, force: true });
 });
 
 test("Observe platform stays interactive and stable across a reader refresh", async ({ page }) => {
   const errors: string[] = [];
   const remoteRequests: string[] = [];
+  const localRequests: string[] = [];
+  const apiStatuses: number[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
   });
@@ -80,6 +51,10 @@ test("Observe platform stays interactive and stable across a reader refresh", as
     if (request.url().startsWith("http") && !request.url().startsWith(origin)) {
       remoteRequests.push(request.url());
     }
+    if (request.url().startsWith(origin)) localRequests.push(new URL(request.url()).pathname);
+  });
+  page.on("response", (response) => {
+    if (new URL(response.url()).pathname === "/api/observe") apiStatuses.push(response.status());
   });
   await page.addInitScript(() => {
     window.__orchflowsWorkerErrors = [];
@@ -99,18 +74,19 @@ test("Observe platform stays interactive and stable across a reader refresh", as
   });
 
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto(`${origin}/ticket?run=run-alpha&id=B`);
+  const documentResponse = await page.goto(`${origin}/observe?run=run-gamma`);
+  expect(documentResponse?.headers()["content-security-policy"]).toContain("default-src 'self'");
+  expect(documentResponse?.headers()["x-content-type-options"]).toBe("nosniff");
   await expect(page.locator("main[data-mode=observe]")).toBeVisible();
-  await expect(page.getByText("revision one")).toBeVisible();
+  await expect(page.getByText(/revision [0-9a-f]{64}/)).toBeVisible();
+  const firstRevision = await page.getByText(/revision [0-9a-f]{64}/).textContent();
   await expect(page.locator(".canvas")).toHaveAttribute("data-editing", "disabled");
-  expect(await page.locator("[draggable=true], .react-flow__handle").count()).toBe(0);
-  expect(serverEvents.some((event) => event.includes("run=run-alpha") && event.includes("id=B"))).toBe(true);
 
   await expect.poll(
-    () => serverEvents.some((event) => event.startsWith("asset:/assets/layout.worker-"))
+    () => localRequests.some((path) => path.startsWith("/assets/layout.worker-"))
   ).toBe(true);
   await expect.poll(
-    () => serverEvents.some((event) => event.startsWith("asset:/assets/elk.worker-"))
+    () => localRequests.some((path) => path.startsWith("/assets/elk.worker-"))
   ).toBe(true);
   await expect.poll(() => page.evaluate(() => window.__orchflowsWorkerErrors)).toEqual([]);
   await expect.poll(
@@ -118,8 +94,9 @@ test("Observe platform stays interactive and stable across a reader refresh", as
     { timeout: 10_000 }
   ).toBeGreaterThan(0);
 
-  const buildNode = page.locator(".react-flow__node").filter({ hasText: "Build" });
+  const buildNode = page.locator(".react-flow__node").filter({ hasText: "G5" });
   await expect(buildNode).toBeVisible();
+  expect(await page.locator("[draggable=true], .react-flow__handle").count()).toBe(0);
   await buildNode.focus();
   await page.keyboard.press("Enter");
   await expect(buildNode).toHaveClass(/selected/);
@@ -129,15 +106,19 @@ test("Observe platform stays interactive and stable across a reader refresh", as
   await page.locator(".react-flow__controls-zoomin").click();
   await expect.poll(() => viewport.getAttribute("style")).not.toBe(beforeZoom);
   const afterZoom = await viewport.getAttribute("style");
-  await expect(page.getByText("revision two")).toBeVisible({ timeout: 5_000 });
+  await expect.poll(() => apiStatuses.includes(304)).toBe(true);
+  const ticketPath = join(stateRoot, "tickets", "run-gamma", "G5.md");
+  const ticket = await readFile(ticketPath, "utf8");
+  await writeFile(ticketPath, ticket.replace("status: claimed", "status: complete"), "utf8");
+  await expect.poll(async () => page.getByText(/revision [0-9a-f]{64}/).textContent(), { timeout: 5_000 }).not.toBe(firstRevision);
   await expect(buildNode).toHaveClass(/selected/);
   expect(await viewport.getAttribute("style")).toBe(afterZoom);
 
   await expect.poll(
-    () => serverEvents.some((event) => event.startsWith("asset:/assets/layout.worker-"))
+    () => localRequests.some((path) => path.startsWith("/assets/layout.worker-"))
   ).toBe(true);
-  const firstApi = serverEvents.findIndex((event) => event.startsWith("api:"));
-  const workerAsset = serverEvents.findIndex((event) => event.startsWith("asset:/assets/layout.worker-"));
+  const firstApi = localRequests.findIndex((path) => path === "/api/observe");
+  const workerAsset = localRequests.findIndex((path) => path.startsWith("/assets/layout.worker-"));
   expect(workerAsset).toBeGreaterThan(firstApi);
 
   const accessibility = await new AxeBuilder({ page })

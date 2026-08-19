@@ -8,6 +8,8 @@ import {
   type Edge,
   type Node,
   type NodeChange,
+  type NodeProps,
+  type NodeTypes,
   type Viewport
 } from "@xyflow/react";
 import { Eye, Radio } from "lucide-react";
@@ -17,6 +19,14 @@ import { useObserveFeed } from "./feed";
 import { layoutSnapshot } from "./layout";
 
 const INITIAL_VIEWPORT: Viewport = { x: 48, y: 48, zoom: 1 };
+const NODE_TYPES: NodeTypes = {
+  observe: ({ data }: NodeProps) => (
+    <div className="observe-node">
+      <span>{String(data.label)}</span>
+      <small>{String(data.status)}</small>
+    </div>
+  )
+};
 
 function FlowCanvas({
   nodes,
@@ -46,6 +56,7 @@ function FlowCanvas({
     <ReactFlow
       nodes={selectedNodes}
       edges={edges}
+      nodeTypes={NODE_TYPES}
       viewport={viewport}
       onViewportChange={setViewport}
       onNodesChange={onNodesChange}
