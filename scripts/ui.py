@@ -1,20 +1,17 @@
 #!/usr/bin/env python3
-"""Read-only local HTTP view of orchflows run state in the state sink.
+"""Read-only loopback application for orchflows state and session metadata.
 
-Stdlib-only, cross-platform, and offline: every CSS byte is inlined from a
-module constant, so the page fetches nothing at view time. The process
-opens no file under the sink for writing and creates no directory there.
-The sink is untrusted data per ``rules/visibility.md`` §6, so every value
-reaching the page passes ``html.escape`` and no ticket content is ever
-emitted as markup. The root is the one user-scope sink
-``scripts/state_root.py`` resolves, so every workspace of every repository
-shows one run's tickets at one path and a run outlives the checkout it
-started in. Binds loopback only, never ``0.0.0.0``.
-
-It also lists the Claude Code sessions under ``~/.claude/projects``, as
-labels and structure alone: a transcript holds the operator's prompts,
-file contents and command output for every project on the machine, and
-this is not a transcript reader. That tree is read-only, forever.
+The installed immutable application is served offline from ``~/.orchflows/ui``
+and the checkout uses its committed ``web/dist`` only as a development seam.
+State-sink values are untrusted per ``rules/visibility.md`` §6: projections
+carry a closed metadata set, JSON is safe for an HTML origin, and neither a
+sink path nor ticket body reaches the application shell. The sink and any
+configured transcript tree are opened read-only. Session projections expose
+metadata and subagent structure only; Claude/Codex prompts, tool input, tool
+output, file contents, command output, and conversation text remain behind a
+hard content wall. The unauthenticated server binds ``127.0.0.1`` only,
+accepts only GET/HEAD, enables no CORS, and applies restrictive local-reader
+security headers to every response.
 
 Usage:
     ui.py [--root <sink>] [--port <n>] [--transcripts <path>]
