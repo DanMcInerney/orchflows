@@ -75,7 +75,6 @@ describe("TicketInspector", () => {
 
   it("renders passing and failing proof identities without losing oracle evidence", () => {
     const passing = snapshot();
-    passing.ticket = null;
     window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=proof-pass");
     const { unmount } = render(<TicketInspector snapshot={passing} location={location("proof-pass")} />);
     expect(screen.getAllByText("PASS")).toHaveLength(3);
@@ -85,7 +84,6 @@ describe("TicketInspector", () => {
     unmount();
 
     const failing = snapshot();
-    failing.ticket = null;
     window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=proof-fail");
     render(<TicketInspector snapshot={failing} location={location("proof-fail")} />);
     expect(screen.getByText("FAIL")).not.toBeNull();

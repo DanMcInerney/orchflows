@@ -97,6 +97,13 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         self.assertNotIn("linear-gradient", tokens)
         self.assertNotIn("backdrop-filter", tokens)
 
+        sessions_css = (ROOT / "web" / "src" / "features" / "sessions" / "sessions.css").read_text(encoding="utf-8")
+        now_css = (ROOT / "web" / "src" / "features" / "now" / "now.css").read_text(encoding="utf-8")
+        self.assertIn("background: var(--attention-surface)", sessions_css)
+        self.assertNotIn("color-mix", sessions_css)
+        self.assertNotIn("border-radius: 8px", now_css)
+        self.assertGreaterEqual(now_css.count("border-radius: var(--radius-control)"), 3)
+
         shell = (ROOT / "web" / "src" / "ObserveApp.tsx").read_text(encoding="utf-8")
         registry = (ROOT / "web" / "src" / "app" / "registry.ts").read_text(encoding="utf-8")
         router = (ROOT / "web" / "src" / "state" / "location.ts").read_text(encoding="utf-8")

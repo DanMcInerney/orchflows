@@ -69,6 +69,24 @@ async function openManifestIdentity(page, identity, width, height) {
   await expect(page.locator(".foundation-view"), identity.identity).toBeVisible({ timeout: 15_000 });
 }
 
+async function expectManifestIdentityTruth(page, identity) {
+  if (identity.identity === "run-map--blocked-causal--compact") {
+    const inspector = await page.locator(".run-inspector").boundingBox();
+    const graph = await page.locator(".run-map__graph-card").boundingBox();
+    expect(inspector, `${identity.identity}: inspector is rendered`).not.toBeNull();
+    expect(graph, `${identity.identity}: graph is rendered`).not.toBeNull();
+    expect(inspector.y, `${identity.identity}: inspector precedes graph`).toBeLessThan(graph.y);
+  }
+  if (identity.identity.startsWith("ticket--proof-pass--")) {
+    await expect(page.locator('.proof-row[data-verdict="pass"]'), `${identity.identity}: passing rows`).toHaveCount(3);
+    await expect(page.locator('.proof-row[data-verdict="fail"]'), `${identity.identity}: no failing rows`).toHaveCount(0);
+    await expect(page.locator(".proof-row").filter({ hasText: "Criterion 3" }), `${identity.identity}: Criterion 3 passes`).toHaveAttribute("data-verdict", "pass");
+  }
+  if (identity.identity.startsWith("ticket--proof-fail--")) {
+    await expect(page.locator(".proof-row").filter({ hasText: "Criterion 3" }), `${identity.identity}: Criterion 3 fails`).toHaveAttribute("data-verdict", "fail");
+  }
+}
+
 async function expectKeyboardParity(page, identity) {
   const selector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
   const result = await page.locator(selector).evaluateAll((elements) => {
@@ -262,9 +280,8 @@ test("capture every manifest identity", async ({ page }) => {
   await mkdir(output, { recursive: true });
   for (const identity of manifest.views) {
     const [width, height] = manifest.breakpoints[identity.breakpoint];
-    await page.setViewportSize({ width, height });
-    await page.goto(`${origin}${identity.path}`);
-    await expect(page.locator(".foundation-view")).toBeVisible();
+    await openManifestIdentity(page, identity, width, height);
+    await expectManifestIdentityTruth(page, identity);
     await page.screenshot({ path: join(output, `${identity.identity}.png`), fullPage: true });
   }
 });
@@ -277,6 +294,7 @@ test("audit every manifest identity", async ({ page }) => {
     const [width, height] = manifest.breakpoints[identity.breakpoint];
     await page.emulateMedia({ forcedColors: "none", reducedMotion: "no-preference" });
     await openManifestIdentity(page, identity, width, height);
+    await expectManifestIdentityTruth(page, identity);
     const result = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
     expect(result.violations, identity.identity).toEqual([]);
 

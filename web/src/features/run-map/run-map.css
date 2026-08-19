@@ -161,7 +161,8 @@
 .run-map__empty h1 { margin: var(--space-3) 0 var(--space-1); color: var(--text-strong); }
 
 @media (max-width: 1100px) {
-  .run-map__workspace.has-inspector { grid-template-columns: minmax(0, 1fr) 280px; }
+  .run-map__workspace.has-inspector { grid-template-columns: minmax(0, 1fr); }
+  .run-inspector { order: -1; }
   .run-map__canvas { height: 404px; }
   .run-map__legend { justify-content: flex-start; overflow-x: auto; }
 }
@@ -170,8 +171,6 @@
   .run-map__hero { align-items: flex-start; flex-direction: column; gap: var(--space-3); }
   .run-map__live { width: 100%; justify-content: space-between; }
   .run-summary__groups { grid-template-columns: 1fr; }
-  .run-map__workspace.has-inspector { grid-template-columns: 1fr; }
-  .run-inspector { order: -1; }
   .run-map__toolbar { align-items: stretch; flex-direction: column; }
   .run-map__search { width: 100%; }
   .run-map__filters { overflow-x: auto; }

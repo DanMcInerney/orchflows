@@ -49,7 +49,10 @@ function StateGlyph({ state }: { state: string }) {
 
 export default function TicketInspector({ snapshot, location }: TicketInspectorProps) {
   const [tab, setTab] = useState<InspectorTab>(() => selectedTab(location));
-  const ticket = snapshot.ticket ?? fixtureTicket(location);
+  const namedFixture = fixtureTicket(location);
+  const ticket = location.fixture.startsWith("proof-")
+    ? namedFixture
+    : snapshot.ticket ?? namedFixture;
   const viewSnapshot = ticket === snapshot.ticket ? snapshot : { ...snapshot, ticket };
 
   useEffect(() => {

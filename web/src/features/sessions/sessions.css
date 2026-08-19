@@ -10,7 +10,7 @@
 .sessions-view__search svg { width: var(--space-4); height: var(--space-4); flex: 0 0 auto; }
 .sessions-view__search input { min-width: 0; width: 100%; border: 0; outline: 0; color: var(--text-strong); background: transparent; }
 .sessions-view__search input::placeholder { color: var(--text-faint); }
-.sessions-view__diagnostic { display: flex; align-items: flex-start; gap: var(--space-3); margin-bottom: var(--space-4); padding: var(--space-3) var(--space-4); border: 1px solid var(--status-attention); border-radius: var(--radius-control); color: var(--text); background: color-mix(in srgb, var(--status-attention) 8%, var(--surface-1)); }
+.sessions-view__diagnostic { display: flex; align-items: flex-start; gap: var(--space-3); margin-bottom: var(--space-4); padding: var(--space-3) var(--space-4); border: 1px solid var(--status-attention); border-radius: var(--radius-control); color: var(--text); background: var(--attention-surface); }
 .sessions-view__diagnostic > svg { width: var(--space-5); flex: 0 0 auto; color: var(--status-attention); }
 .sessions-view__diagnostic strong, .sessions-view__diagnostic span { display: block; }
 .sessions-view__diagnostic strong { color: var(--text-strong); }
