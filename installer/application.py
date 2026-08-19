@@ -269,15 +269,6 @@ def apply_plan(
             "project install requires a healthy user runtime at "
             f"{private_runtime_home()}; run install.py --user first"
         )
-    if (
-        plan.scope == "project"
-        and plan.frontend_manifest_sha256 is not None
-        and _frontend_manifest_identity(plan.frontend_home) != plan.frontend_manifest_sha256
-    ):
-        raise RuntimeError(
-            "project install requires healthy frontend assets at "
-            f"{plan.frontend_home}; run install.py --user first"
-        )
     diverged = _diverged_role_agents(plan, old_receipt)
     # A kept agent stays in the plan so ``_remove_stale`` still counts it as
     # wanted; only its write is skipped. Dropping it from the plan would
@@ -326,7 +317,8 @@ def apply_plan(
         str(destination): destination.is_file()
         for _, destination in plan.frontend_assets
     }
-    _apply_frontend(plan)
+    if plan.frontend_assets:
+        _apply_frontend(plan)
 
     written_files = []
 
