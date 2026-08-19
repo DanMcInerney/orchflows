@@ -102,7 +102,7 @@
 .session-graph-canvas .react-flow__node-sessionAgent { width: 232px; border: 0; background: transparent; }
 .session-graph-canvas .react-flow__controls { overflow: hidden; border: 1px solid var(--border-strong); border-radius: var(--radius-control); box-shadow: none; }
 .session-graph-canvas .react-flow__controls button { color: var(--text); background: var(--surface-raised); border-bottom-color: var(--border-subtle); }
-.session-graph-canvas .react-flow__minimap { border: 1px solid var(--border-strong); border-radius: var(--radius-control); background: var(--surface-raised); }
+.session-graph-canvas .react-flow__minimap { width: 144px; height: 88px; border: 1px solid var(--border-strong); border-radius: var(--radius-control); background: var(--surface-raised); }
 
 .session-agent-node {
   min-height: 96px;
@@ -118,6 +118,9 @@
 
 .session-agent-node[data-selected="true"] { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent-selected); }
 .session-agent-node[data-kind="session"] { background: #151d2b; }
+.session-agent-node .react-flow__handle { width: 8px; height: 8px; border: 2px solid var(--session-graph-map); background: var(--session-graph-recorded); }
+.session-agent-node .react-flow__handle-left { left: -5px; }
+.session-agent-node .react-flow__handle-right { right: -5px; }
 .session-agent-node__kind { grid-row: 1 / span 2; color: var(--accent); }
 .session-agent-node__kind svg { width: 18px; height: 18px; }
 .session-agent-node__identity strong, .session-agent-node__identity span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

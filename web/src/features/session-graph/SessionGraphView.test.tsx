@@ -10,6 +10,7 @@ vi.mock("@xyflow/react", async () => {
     ...actual,
     ReactFlowProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     Background: () => null,
+    Handle: ({ "aria-label": ariaLabel }: { "aria-label": string }) => <span aria-label={ariaLabel} />,
     Controls: () => <div aria-label="Session graph zoom controls" />,
     MiniMap: ({ ariaLabel }: { ariaLabel: string }) => <div aria-label={ariaLabel} />,
     ReactFlow: ({ nodes, edges, nodeTypes, onNodeClick, children, ...props }: any) => {
@@ -21,7 +22,7 @@ vi.mock("@xyflow/react", async () => {
               <NodeComponent data={node.data} selected={node.selected} />
             </button>
           ))}
-          {edges.map((edge: any) => <span key={edge.id} aria-label={edge.ariaLabel}>{edge.label}</span>)}
+          {edges.map((edge: any) => <span key={edge.id} aria-label={edge.ariaLabel} />)}
           {children}
         </div>
       );

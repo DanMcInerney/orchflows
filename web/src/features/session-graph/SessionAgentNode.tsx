@@ -1,5 +1,5 @@
 import { AlertTriangle, Bot, CheckCircle2, CircleDashed, Radio, Workflow } from "lucide-react";
-import type { NodeProps } from "@xyflow/react";
+import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { TopologyNode } from "./topology";
 
 export interface SessionAgentNodeData extends Record<string, unknown>, TopologyNode {
@@ -22,6 +22,10 @@ export function SessionAgentNode({ data, selected }: NodeProps) {
       data-state={node.state}
       data-selected={selected ? "true" : "false"}
     >
+      {node.kind === "agent" && (
+        <Handle type="target" position={Position.Left} />
+      )}
+      <Handle type="source" position={Position.Right} />
       <span className="session-agent-node__kind" aria-hidden="true">
         {node.kind === "session" ? <Workflow /> : <Bot />}
       </span>

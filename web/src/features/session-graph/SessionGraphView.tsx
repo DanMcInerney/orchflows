@@ -28,15 +28,24 @@ function connectionFor(nodeId: string, topology: SessionTopology): string {
   return topology.edges.find((edge) => edge.target === nodeId)?.provenance ?? "connection unknown";
 }
 
+function topologyLevel(nodeId: string, topology: SessionTopology, seen = new Set<string>()): number {
+  if (nodeId === SESSION_NODE_ID || seen.has(nodeId)) return 0;
+  seen.add(nodeId);
+  const incoming = topology.edges.find((edge) => edge.target === nodeId);
+  if (!incoming || incoming.source === SESSION_NODE_ID) return 1;
+  return 1 + topologyLevel(incoming.source, topology, seen);
+}
+
 function graphNodes(topology: SessionTopology): Node<SessionAgentNodeData>[] {
   const rowsAtDepth = new Map<number, number>();
   return topology.nodes.map((node) => {
-    const row = rowsAtDepth.get(node.depth) ?? 0;
-    rowsAtDepth.set(node.depth, row + 1);
+    const level = topologyLevel(node.id, topology);
+    const row = rowsAtDepth.get(level) ?? 0;
+    rowsAtDepth.set(level, row + 1);
     return {
       id: node.id,
       type: "sessionAgent",
-      position: { x: 48 + Math.min(node.depth, 3) * 276, y: 48 + row * 132 },
+      position: { x: 48 + Math.min(level, 3) * 276, y: 48 + row * 132 },
       data: { ...node, connection: connectionFor(node.id, topology) },
       ariaLabel: `Select ${node.kind} ${node.label}, ${node.state}, ${connectionFor(node.id, topology)}`
     };
@@ -48,18 +57,18 @@ function graphEdges(topology: SessionTopology): Edge[] {
     id: edge.id,
     source: edge.source,
     target: edge.target,
-    label: edge.provenance,
     ariaLabel: `${edge.source} to ${edge.target}: ${edge.provenance}`,
     focusable: true,
     selectable: false,
     animated: false,
+    type: "smoothstep",
     className: edge.inferred ? "session-edge session-edge--inferred" : "session-edge"
   }));
 }
 
 function selectedNode(topology: SessionTopology, selected: string): TopologyNode {
   return topology.nodes.find((node) => node.id === selected)
-    ?? topology.nodes.find((node) => node.state === "running")
+    ?? topology.nodes.find((node) => node.kind === "agent" && node.state === "running")
     ?? topology.nodes[0];
 }
 
@@ -77,7 +86,7 @@ function EmptySession({ requested }: { requested: string }) {
 export function SessionGraphView({ snapshot, location }: { snapshot: ExperienceSnapshot; location: LocationState }) {
   const session = isSessionDetail(snapshot.session) ? snapshot.session : null;
   const topology = useMemo(() => session ? sessionTopology(session) : null, [session]);
-  const initial = topology?.nodes.find((node) => node.state === "running")?.id ?? SESSION_NODE_ID;
+  const initial = topology?.nodes.find((node) => node.kind === "agent" && node.state === "running")?.id ?? SESSION_NODE_ID;
   const [selection, setSelection] = useState(initial);
   if (!session || !topology) return <EmptySession requested={location.session} />;
 
@@ -137,8 +146,16 @@ export function SessionGraphView({ snapshot, location }: { snapshot: ExperienceS
                 proOptions={{ hideAttribution: true }}
               >
                 <Background gap={24} size={1} />
-                <MiniMap ariaLabel="Session topology minimap" pannable zoomable />
-                <Controls showInteractive={false} aria-label="Session graph zoom controls" />
+                <MiniMap
+                  ariaLabel="Session topology minimap"
+                  nodeColor="var(--status-running)"
+                  nodeStrokeColor="var(--session-graph-map)"
+                  maskColor="var(--session-graph-map)"
+                  position="bottom-left"
+                  pannable
+                  zoomable
+                />
+                <Controls position="top-left" showInteractive={false} aria-label="Session graph zoom controls" />
               </ReactFlow>
             </ReactFlowProvider>
           </div>
