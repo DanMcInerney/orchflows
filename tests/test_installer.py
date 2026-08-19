@@ -191,3 +191,31 @@ class TestFrontendDistribution(unittest.TestCase):
                 with self.assertRaisesRegex(OSError, "interrupted staging"):
                     install.apply_plan(broken_plan)
             self.assertEqual(install._frontend_manifest(plan.frontend_home), old_identity)
+
+    def test_uninstall_removes_an_unchanged_receipted_distribution(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            source = root / "source"
+            source.mkdir()
+            (source / "index.html").write_text("<main>observe</main>", encoding="utf-8")
+            plan = self._frontend_plan(root, source)
+            install.apply_plan(plan)
+
+            with patch.object(install.Path, "home", return_value=root / "home"):
+                report = install.run_uninstall("user", None, dry_run=False)
+
+            self.assertFalse(plan.frontend_home.exists())
+            self.assertEqual(
+                report["skill_actions"],
+                [
+                    {
+                        "path": str(plan.frontend_home / "index.html"),
+                        "action": "removed unchanged frontend asset",
+                    },
+                    {
+                        "path": str(plan.frontend_home),
+                        "action": "removed empty frontend distribution",
+                    },
+                ],
+            )
+            self.assertTrue(plan.receipt_path.is_file())

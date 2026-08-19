@@ -53,7 +53,7 @@ SHARED_ADAPTER_NAMES = ("orch-spec", "orch-frontier", "fix", "orch-build")
 # The Codex redirect set is that same set, under its older name.
 CODEX_SKILL_REDIRECT_NAMES = SHARED_ADAPTER_NAMES
 CLAUDE_ADAPTER_SETS = ("all", "four")
-AUTO_REMOVE_KINDS = frozenset(("adapter", "prompt", "codex-skill"))
+AUTO_REMOVE_KINDS = frozenset(("adapter", "prompt", "codex-skill", "frontend-asset"))
 CODEX_MAX_THREADS = 20
 CODEX_MAX_DEPTH = 1
 CLAUDE_MAX_TOOL_USE_CONCURRENCY = 20
