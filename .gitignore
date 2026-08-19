@@ -21,6 +21,9 @@ venv/
 .ruff_cache/
 .coverage
 htmlcov/
+node_modules/
+playwright-report/
+test-results/
 
 # OS and editor artifacts.
 .DS_Store
