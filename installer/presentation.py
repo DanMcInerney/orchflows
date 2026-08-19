@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+from .foundation import (
+    _claude_md_path,
+    _claude_settings_path,
+    _codex_agents_path,
+    _codex_config_path,
+)
 from .models import Plan
 from .planning import plan_entry_count
 from .runtime import private_runtime_home
+
 
 def print_plan(plan: Plan, source_commit: str | None) -> None:
     print(f"scope: {plan.scope}")
@@ -98,3 +105,41 @@ def print_plan(plan: Plan, source_commit: str | None) -> None:
     print(f"receipt: {plan.receipt_path}")
     print()
     print(f"planned entries: {plan_entry_count(plan)}")
+
+
+def print_summary(plan: Plan) -> None:
+    print(f"Installed orchflows at {plan.scope} scope.")
+    if plan.frontend_home is not None:
+        print(
+            f"  frontend:    {plan.frontend_home} "
+            f"({plan.frontend_action}; manifest {plan.frontend_manifest_sha256})"
+        )
+    if not plan.manage_host_surfaces:
+        print(f"  instruction blocks: {len(plan.blocks)} written")
+        for block in plan.blocks:
+            print(f"    {block.label}: {block.dest}")
+        print(f"  receipt:     {plan.receipt_path}")
+        return
+    if plan.scope == "user":
+        print(f"  detected Claude Code CLI: {'yes' if plan.claude_enabled else 'no'}")
+        print(f"  detected Codex CLI: {'yes' if plan.codex_enabled else 'no'}")
+        print(f"  private runtime: {private_runtime_home()}")
+    print(f"  library:     {plan.lib_home}  ({len(plan.lib_copies)} files)")
+    if plan.by_name:
+        print(f"  flat index:  {plan.lib_home / 'by-name'}  ({len(plan.by_name)} names)")
+    print(f"  scripts:     {plan.bin_dir}")
+    if plan.claude_enabled:
+        host_block_dest = plan.host_block.dest if plan.host_block is not None else "(none)"
+        print(
+            f"  Claude Code: {len(plan.claude_adapters)} skill adapter(s), {len(plan.claude_agents)} role agent(s); "
+            f"import in {_claude_md_path(plan.scope, plan.project_root)} -> {host_block_dest}; "
+            f"settings in {_claude_settings_path(plan.scope, plan.project_root)}"
+        )
+    if plan.codex_enabled:
+        print(
+            f"  Codex:       {len(plan.codex_prompts)} prompt(s), {len(plan.codex_skills)} redirect skill(s), "
+            f"{len(plan.codex_agents)} role agent(s); "
+            f"instruction block in {_codex_agents_path(plan.scope, plan.project_root)}; "
+            f"settings in {_codex_config_path(plan.scope, plan.project_root)}"
+        )
+    print(f"  receipt:     {plan.receipt_path}")
