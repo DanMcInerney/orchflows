@@ -230,6 +230,78 @@ class RuntimeVenvTests(unittest.TestCase):
         self.assertIn("requirements-runtime.txt", (install.REPO_ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8"))
         self.assertIn("requirements-runtime.txt", (install.REPO_ROOT / "README.md").read_text(encoding="utf-8"))
 
+    def test_runtime_health_requires_exact_server_dependency_versions(self):
+        runtime_home = self.home / ".orchflows" / "runtime"
+        runtime_python = install.private_runtime_python(runtime_home)
+        runtime_python.parent.mkdir(parents=True)
+        runtime_python.touch()
+        (runtime_home / install.RUNTIME_METADATA_FILENAME).write_text(
+            json.dumps(install._runtime_metadata()) + "\n", encoding="utf-8"
+        )
+
+        def probe(starlette="0.49.3", uvicorn="0.34.3"):
+            return subprocess.CompletedProcess(
+                [],
+                0,
+                stdout=json.dumps(
+                    {
+                        "prefix": str(runtime_home.resolve()),
+                        "version": list(sys.version_info[:3]),
+                        "dependencies": {
+                            "starlette": starlette,
+                            "uvicorn": uvicorn,
+                        },
+                    }
+                ),
+                stderr="",
+            )
+
+        with patch.object(install._runtime.subprocess, "run", return_value=probe()):
+            self.assertTrue(install.private_runtime_is_healthy(runtime_home))
+        with patch.object(
+            install._runtime.subprocess, "run", return_value=probe(starlette="0.49.2")
+        ):
+            self.assertFalse(install.private_runtime_is_healthy(runtime_home))
+        with patch.object(
+            install._runtime.subprocess, "run", return_value=probe(uvicorn="0.34.2")
+        ):
+            self.assertFalse(install.private_runtime_is_healthy(runtime_home))
+
+    def test_runtime_build_enforces_hashes_from_the_complete_lock(self):
+        runtime_home = self.home / ".orchflows" / "runtime"
+
+        def create_fake_runtime(home):
+            runtime_python = install.private_runtime_python(Path(home))
+            runtime_python.parent.mkdir(parents=True)
+            runtime_python.touch()
+
+        exact_probe = subprocess.CompletedProcess(
+            [],
+            0,
+            stdout=json.dumps(
+                {
+                    "prefix": str(runtime_home.resolve()),
+                    "version": list(sys.version_info[:3]),
+                    "dependencies": {
+                        "starlette": "0.49.3",
+                        "uvicorn": "0.34.3",
+                    },
+                }
+            ),
+            stderr="",
+        )
+        installed = subprocess.CompletedProcess([], 0, stdout="", stderr="")
+        with patch.object(
+            install.venv.EnvBuilder, "create", side_effect=create_fake_runtime
+        ), patch.object(
+            install._runtime.subprocess, "run", side_effect=[installed, exact_probe]
+        ) as run:
+            install._build_private_runtime(runtime_home)
+
+        command = run.call_args_list[0].args[0]
+        self.assertIn("--require-hashes", command)
+        self.assertEqual(str(install.RUNTIME_REQUIREMENTS), command[-1])
+
     def test_dependency_install_ignores_project_and_pip_location_overrides(self):
         contaminated = {
             "PIP_PREFIX": "project-prefix",

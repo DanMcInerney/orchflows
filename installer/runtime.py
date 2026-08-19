@@ -15,6 +15,7 @@ from pathlib import Path
 from .foundation import MIN_PYTHON, REPO_ROOT, _scope_home
 
 RUNTIME_REQUIREMENTS = REPO_ROOT / "requirements-runtime.txt"
+RUNTIME_DIRECT_REQUIREMENTS = REPO_ROOT / "requirements-runtime.in"
 RUNTIME_METADATA_FILENAME = ".orchflows-runtime.json"
 
 
@@ -35,6 +36,22 @@ def _runtime_requirement_lines() -> list[str]:
         for line in RUNTIME_REQUIREMENTS.read_text(encoding="utf-8").splitlines()
         if line.strip() and not line.lstrip().startswith("#")
     ]
+
+
+def _runtime_dependency_versions() -> dict[str, str]:
+    """Read the exact direct dependency identity owned by the input file."""
+
+    dependencies = {}
+    for raw_line in RUNTIME_DIRECT_REQUIREMENTS.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        match = re.fullmatch(r"([A-Za-z0-9_.-]+)==([^\s]+)", line)
+        if match is None:
+            raise ValueError(f"runtime dependency is not exactly pinned: {line}")
+        name, version = match.groups()
+        dependencies[name.lower().replace("_", "-")] = version
+    return dependencies
 
 
 def _runtime_metadata() -> dict:
@@ -90,13 +107,20 @@ def private_runtime_is_healthy(runtime_home: Path | None = None) -> bool:
     if metadata != expected_metadata:
         return False
     try:
+        expected_dependencies = _runtime_dependency_versions()
+    except (OSError, ValueError):
+        return False
+    try:
         probe = subprocess.run(
             [
                 str(runtime_python),
                 "-I",
                 "-c",
-                "import json, sys; print(json.dumps({"
-                "'prefix': sys.prefix, 'version': list(sys.version_info[:3])}))",
+                "import json, sys; from importlib.metadata import version; "
+                "names = json.loads(sys.argv[1]); print(json.dumps({"
+                "'prefix': sys.prefix, 'version': list(sys.version_info[:3]), "
+                "'dependencies': {name: version(name) for name in names}}))",
+                json.dumps(sorted(expected_dependencies)),
             ],
             capture_output=True,
             text=True,
@@ -113,6 +137,7 @@ def private_runtime_is_healthy(runtime_home: Path | None = None) -> bool:
         return (
             Path(reading["prefix"]).resolve() == home.resolve()
             and version >= MIN_PYTHON
+            and reading["dependencies"] == expected_dependencies
         )
     except (KeyError, OSError, TypeError, ValueError):
         return False
@@ -158,6 +183,7 @@ def _build_private_runtime(runtime_home: Path) -> Path:
                 "pip",
                 "install",
                 "--disable-pip-version-check",
+                "--require-hashes",
                 "--requirement",
                 str(RUNTIME_REQUIREMENTS),
             ],
