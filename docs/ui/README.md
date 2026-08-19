@@ -13,6 +13,11 @@ has four coordinated owners:
 - `tools/ui_frontend.py` captures, audits, and classifies diffs for that
   manifest without admitting captures or goldens to source control.
 
+The audit traverses every manifest identity at its ordinary viewport and also
+exercises a 200-percent zoom-equivalent reflow viewport, forced colors,
+reduced motion, and complete keyboard reachability parity. A passing default
+Axe scan alone is not treated as evidence for those scenarios.
+
 Feature views register additively through `web/src/app/registry.ts`; they do
 not rewrite the shared shell, tokens, router, reader projection, or graph
 primitives. Ticket prose is rendered only from the selected closed section

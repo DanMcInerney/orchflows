@@ -96,7 +96,7 @@ describe("RunMapView", () => {
     expect(screen.getByRole("heading", { name: "Every canonical dependency" })).not.toBeNull();
     expect(screen.getByRole("button", { name: "G4" })).not.toBeNull();
     expect(screen.queryByRole("button", { name: "G1" })).toBeNull();
-    expect(screen.getByLabelText("Run graph minimap")).not.toBeNull();
+    expect(screen.getByRole("img", { name: /Run graph minimap/ })).not.toBeNull();
     expect(screen.getByRole("button", { name: "Fit view" })).not.toBeNull();
     expect(screen.getByRole("button", { name: "Active" }).getAttribute("aria-pressed")).toBe("true");
   });
@@ -109,6 +109,14 @@ describe("RunMapView", () => {
     expect(screen.getByRole("button", { name: "G4" }).getAttribute("data-causal")).toBe("dimmed");
     expect(screen.getByRole("button", { name: "G2" }).getAttribute("data-causal")).toBe("focus");
     expect(screen.getByRole("button", { name: "Why waiting?" }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("renders a truthful minimap from the same visible nodes and canonical edges", () => {
+    const { container } = render(<RunMapView snapshot={snapshot()} location={location("full-expanded")} />);
+    const minimap = screen.getByRole("img", { name: "Run graph minimap, 6 nodes and 6 dependencies" });
+    expect(minimap.getAttribute("tabindex")).toBe("0");
+    expect(container.querySelectorAll(".run-map__minimap rect")).toHaveLength(6);
+    expect(container.querySelectorAll(".run-map__minimap line")).toHaveLength(6);
   });
 
   it("keeps malformed topology explicit without offering mutation controls", () => {

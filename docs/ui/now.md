@@ -6,4 +6,9 @@ Each compact path is a reversible projection of dependency depth. Brief, Plan, W
 
 Pause live freezes visual replacement for inspection; it does not stop or mutate a run. Selection, expanded groups, inspector tab, filters, graph component identity, and the paused flag are local view context and survive incoming snapshots. Reduced motion removes nonessential animation, and forced colors retain state words, glyphs, and borders.
 
+The fleet toolbar is explicitly a filter group: its filter glyph and label
+introduce `All runs` and `Needs attention`. It does not imply a text-search
+field. The expanded graph renders each canonical `depends_on` relation through
+real source and target endpoints.
+
 The view consumes only closed same-origin projections. It never displays or requests prompts, tool inputs or outputs, command output, file contents, transcript text, or subagent conversation content.

@@ -39,6 +39,16 @@ describe("Now view", () => {
     expect(screen.getByRole("button", { name: "Needs attention" }).getAttribute("aria-pressed")).toBe("true");
   });
 
+  it("gives the inspector tablist keyboard parity with pointer selection", async () => {
+    const user = userEvent.setup();
+    render(<NowView snapshot={snapshot} location={{ view: "now", run: "", ticket: "", session: "", fixture: "mixed-live" }} />);
+    const summary = screen.getByRole("tab", { name: "summary" });
+    summary.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByRole("tab", { name: "tickets" }).getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "tickets" }));
+  });
+
   it("keeps empty and unreadable projections explicit", () => {
     render(<NowView snapshot={snapshot} location={{ view: "now", run: "", ticket: "", session: "", fixture: "no-active-runs" }} />);
     expect(screen.getByText("No active runs. Waiting and completed work remains available.")).toBeTruthy();

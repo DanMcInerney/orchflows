@@ -90,6 +90,8 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             "--canvas: #090b10", "--surface-1: #11151d", "--space-1: 4px",
             "--space-4: 16px", "--radius-card: 12px", "--row-compact: 44px",
             "--status-running: #22d3ee", "--status-failed: #fb7185",
+            "--type-2xs: 10px", "--type-base: 14px", "--type-display: clamp(26px, 3vw, 40px)",
+            "--privacy-border: #293b43", "--status-border-attention: #92400e",
         ):
             self.assertIn(token, tokens)
         self.assertNotIn("linear-gradient", tokens)
@@ -99,6 +101,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         registry = (ROOT / "web" / "src" / "app" / "registry.ts").read_text(encoding="utf-8")
         router = (ROOT / "web" / "src" / "state" / "location.ts").read_text(encoding="utf-8")
         harness = (ROOT / "tools" / "ui_frontend.py").read_text(encoding="utf-8")
+        experience_harness = (ROOT / "web" / "src" / "smoke.spec.ts").read_text(encoding="utf-8")
         self.assertIn('data-mode="observe"', shell)
         self.assertIn("read only", shell.lower())
         self.assertIn("import.meta.glob", registry)
@@ -106,6 +109,8 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             self.assertIn(route, router)
         for command in ('add_parser("capture")', 'add_parser("audit")', 'add_parser("diff")'):
             self.assertIn(command, harness)
+        for scenario in ("200% zoom-equivalent reflow", "forced-colors: active", "prefers-reduced-motion: reduce", "expectKeyboardParity"):
+            self.assertIn(scenario, experience_harness)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
-import type { ExperienceSnapshot } from "../../api/schema";
+import type { ExperienceSnapshot, SessionSummary } from "../../api/schema";
 import type { LocationState } from "../../state/location";
 import { SessionsView } from "./SessionsView";
 
@@ -14,7 +14,7 @@ function snapshot(items: unknown[], diagnostics: string[] = []): ExperienceSnaps
     schema: "orchflows.experience.v1",
     navigation: [], selection: { view: "sessions", run: "", ticket: "", session: "" },
     runs: [], run: null, ticket: null,
-    sessions: { items, diagnostics, empty: items.length === 0 },
+    sessions: { items: items as SessionSummary[], diagnostics, empty: items.length === 0 },
     session: null, friction: { items: [], skipped: 0, unreadable: 0 }
   };
 }

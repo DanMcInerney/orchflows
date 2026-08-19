@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, ChevronDown, ChevronRight, Circle, Clock3, GitBranch, Pause, Play, Radio, Search, ShieldAlert } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, ChevronRight, Circle, Clock3, Filter, GitBranch, Pause, Play, Radio, ShieldAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { ViewProps } from "../../app/registry";
 import type { TicketSummary } from "../../api/schema";
@@ -83,10 +83,26 @@ function GroupStrip({ run, expanded, onToggle }: { run: FleetRun; expanded: Set<
 }
 
 function Inspector({ run, tab, setTab }: { run: FleetRun; tab: string; setTab: (tab: string) => void }) {
+  const tabs = ["summary", "tickets"];
   return <aside className="now-inspector" aria-labelledby="now-inspector-heading">
     <p className="now-kicker">Inspector evidence</p><h2 id="now-inspector-heading">{run.objective}</h2>
     <div className="now-tabs" role="tablist" aria-label="Run inspector">
-      {['summary', 'tickets'].map((name) => <button type="button" role="tab" key={name} aria-selected={tab === name} onClick={() => setTab(name)}>{name}</button>)}
+      {tabs.map((name, index) => <button
+        type="button"
+        role="tab"
+        key={name}
+        aria-selected={tab === name}
+        tabIndex={tab === name ? 0 : -1}
+        onClick={() => setTab(name)}
+        onKeyDown={(event) => {
+          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+          event.preventDefault();
+          const offset = event.key === "ArrowRight" ? 1 : -1;
+          const next = (index + offset + tabs.length) % tabs.length;
+          setTab(tabs[next]);
+          event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+        }}
+      >{name}</button>)}
     </div>
     <div role="tabpanel" tabIndex={0}>
       {tab === "summary" ? <dl>
@@ -134,7 +150,7 @@ export default function NowView({ snapshot, location }: ViewProps) {
     </header>
     {fixture?.diagnostic && <div className="now-diagnostic" role="status"><ShieldAlert aria-hidden="true" /><span><strong>Unreadable canonical data</strong>{fixture.diagnostic}</span></div>}
     <div className="now-toolbar" aria-label="Fleet filters">
-      <Search aria-hidden="true" /><span>Show</span>
+      <Filter aria-hidden="true" /><span>Filter</span>
       <button type="button" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>All runs</button>
       <button type="button" aria-pressed={filter === "attention"} onClick={() => setFilter("attention")}>Needs attention</button>
       <small>{visible.length} visible</small>

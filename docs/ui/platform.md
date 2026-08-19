@@ -131,8 +131,14 @@ inventory. It declares 48 deterministic identities across Now, Workflows run
 maps, ticket details, Sessions, session graphs, and Friction at 1440×1024 and
 1024×768. `tools/ui_frontend.py capture`, `audit`, and `diff` consume that
 manifest. Capture writes ephemeral evidence only; audit applies WCAG 2.2 AA
-rules to every identity; diff reports `no-golden` explicitly for this
-greenfield foundation until a separate owner admits goldens.
+rules plus 200-percent zoom-equivalent reflow, forced-colors, reduced-motion,
+and keyboard-reach parity to every identity; diff reports `no-golden`
+explicitly for this greenfield foundation until a separate owner admits
+goldens.
+
+`web/src/styles/tokens.css` is the single carrier for the closed type-size
+scale and shared privacy, status-border, radius, spacing, surface, and focus
+decisions. Feature CSS consumes those names rather than spelling synonyms.
 
 ## Successor boundary
 

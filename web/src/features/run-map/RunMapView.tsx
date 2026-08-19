@@ -2,7 +2,6 @@ import {
   Background,
   Controls,
   Handle,
-  MiniMap,
   Position,
   ReactFlow,
   ReactFlowProvider,
@@ -30,6 +29,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { RunDetail, TicketSummary } from "../../api/schema";
 import type { ViewProps } from "../../app/registry";
 import { runForIdentity } from "./fixtures";
+import { RunTopologyMiniMap } from "./RunTopologyMiniMap";
 import {
   authoritativeCausalFocus,
   buildTopology,
@@ -168,7 +168,13 @@ function projectedGraph(
           claimed_by: "",
           depends_on: [],
           unreadable: true,
-          readiness: { state: "unknown", dependencies: [], explanation: `${id} is a missing dependency` }
+          readiness: {
+            state: "unknown",
+            dependencies: [],
+            explanation: `${id} is a missing dependency`,
+            cause: "malformed_topology",
+            causal_chain: [id]
+          }
         },
         causal: causal ? (focus.has(id) ? "focus" : "dimmed") : "off"
       } satisfies TicketNodeData
@@ -442,7 +448,7 @@ export function RunMapView({ snapshot, location }: ViewProps) {
                 proOptions={{ hideAttribution: true }}
               >
                 <Background gap={24} size={1} />
-                <MiniMap ariaLabel="Run graph minimap" pannable zoomable />
+                <RunTopologyMiniMap nodes={graph.nodes} edges={graph.edges} />
                 <Controls showInteractive={false} aria-label="Pan, zoom, and fit graph" />
               </ReactFlow>
             </ReactFlowProvider> : <div className="run-map__no-match"><Search aria-hidden="true" /><strong>No matching work items</strong><button type="button" onClick={() => { setFilter("all"); setQuery(""); }}>Clear filters</button></div>}

@@ -24,6 +24,10 @@ The accurate graph preserves canonical edges and displays cycles, dangling depen
 
 Search matches a plain ticket id or executor label. Filters are `Active`, `Problems`, `Ready now`, `Critical path`, and `All`. Pan, zoom, fit, minimap, graph nodes, edges, disclosure breadcrumbs, group expansion, causal focus, pause or resume, and inspector close are keyboard reachable and carry accessible names and state.
 
+The minimap is derived from the exact visible graph projection and draws every
+visible node and dependency edge; it never substitutes an unlabelled viewport
+slab for topology. Its accessible name reports the same node and edge counts.
+
 Every status uses a glyph, word, and border in addition to its token color. Causal mode strengthens the focused edge and node borders while retaining labels; forced-colors replaces dimming with dashed irrelevant topology. Reduced-motion removes animated edge behavior. At compact width, the inspector moves before the graph, filters scroll without clipping, and the navigation and graph remain usable at 200 percent zoom.
 
 The view uses only the platform's frozen color, spacing, radius, row-height, type, and focus tokens. Monospace is limited to ticket and run identities and exact causal evidence.
