@@ -6,7 +6,7 @@
 .sessions-view__toolbar h2 { color: var(--text-strong); }
 .sessions-view__toolbar > div > p:last-child { margin-top: var(--space-1); color: var(--text-faint); }
 .sessions-view__search { min-height: var(--row-compact); width: min(320px, 100%); display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-3); border: 1px solid var(--border-strong); border-radius: var(--radius-control); color: var(--text-muted); background: var(--surface-2); }
-.sessions-view__search:focus-within { border-color: var(--focus); }
+.sessions-view__search:focus-within { border-color: var(--focus); outline: 3px solid var(--focus); outline-offset: 3px; }
 .sessions-view__search svg { width: var(--space-4); height: var(--space-4); flex: 0 0 auto; }
 .sessions-view__search input { min-width: 0; width: 100%; border: 0; outline: 0; color: var(--text-strong); background: transparent; }
 .sessions-view__search input::placeholder { color: var(--text-faint); }
