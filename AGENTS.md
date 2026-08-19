@@ -14,7 +14,7 @@ command is `python scripts/friction.py "<what happened>" "<what was
 expected or missing>"`, same sink, same flags. `orch-off` suspends
 routing for the session on request.
 
-- Project-scope custom item: `super-research` — keyless read-only acquisition from public surfaces — at `.orchflows/skills/super-research/SKILL.md`.
+- Project-scope custom item: `super-research` — manual invocation only; keyless read-only acquisition from public surfaces — at `.orchflows/skills/super-research/SKILL.md`.
 
 ## Required checks
 

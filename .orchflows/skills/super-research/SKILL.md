@@ -2,6 +2,7 @@
 name: super-research
 description: Use for keyless read-only acquisition of public records: Reddit, X, Bluesky, YouTube, HN, GitHub, LinkedIn, Stocktwits, markets, open web.
 role: worker
+disable-model-invocation: true
 ---
 
 Require: one bounded question naming the platforms it reaches, a frozen `as_of`

@@ -1,6 +1,7 @@
 ---
 name: super-research
 description: Use for keyless read-only acquisition of public records: Reddit, X, Bluesky, YouTube, HN, GitHub, LinkedIn, Stocktwits, markets, open web.
+disable-model-invocation: true
 ---
 @../../../.orchflows/skills/super-research/SKILL.md
 
