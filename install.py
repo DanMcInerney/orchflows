@@ -183,6 +183,7 @@ from installer.foundation import (
     _codex_hooks_warnings,
     _codex_scope_home,
     _codex_user_home,
+    _frontend_home,
     _iter_json_strings,
     _lib_home,
     _require_project_root,
@@ -207,6 +208,8 @@ from installer.models import (
     Plan,
     _day_zero_documents,
     _host_block_content,
+    _frontend_manifest,
+    _frontend_manifest_identity,
     _is_build_artifact,
 )
 from installer.packages import (

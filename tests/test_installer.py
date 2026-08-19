@@ -1,5 +1,16 @@
 """Compatibility seam for the complete installer regression collection."""
 
+from __future__ import annotations
+
+import hashlib
+import json
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+import install
+
 from tests.test_installer_cases.support import setUpModule, tearDownModule
 from tests.test_installer_cases.application.configuration import (
     TestClaudeConfigDir,
@@ -61,3 +72,41 @@ TestInstallReceipt.__module__ = __name__
 TestSourceCommit.__module__ = __name__
 TestUnreadableReceipt.__module__ = __name__
 TestConservativeUninstall.__module__ = __name__
+
+
+class TestFrontendDistribution(unittest.TestCase):
+    def test_user_plan_carries_the_exact_distribution_and_project_borrows_it(self):
+        source_root = install.REPO_ROOT / "web" / "dist"
+        expected_files = {
+            path.relative_to(source_root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in sorted(source_root.rglob("*"))
+            if path.is_file()
+        }
+        encoded = json.dumps(expected_files, sort_keys=True, separators=(",", ":"))
+        expected_identity = hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+        with tempfile.TemporaryDirectory() as raw:
+            home = Path(raw) / "home"
+            project = Path(raw) / "project"
+            home.mkdir()
+            project.mkdir()
+            with patch.object(install.Path, "home", return_value=home), patch.object(
+                install.shutil, "which", return_value="mock-host"
+            ):
+                user_plan = install.build_plan("user", None)
+                project_plan = install.build_plan("project", project)
+
+        planned_files = {
+            destination.relative_to(user_plan.frontend_home).as_posix(): hashlib.sha256(
+                source.read_bytes()
+            ).hexdigest()
+            for source, destination in user_plan.frontend_assets
+        }
+        self.assertEqual(planned_files, expected_files)
+        self.assertEqual(user_plan.frontend_manifest_sha256, expected_identity)
+        self.assertEqual(user_plan.frontend_action, "create")
+        self.assertEqual(user_plan.frontend_home, home / ".orchflows" / "ui")
+        self.assertEqual(project_plan.frontend_assets, [])
+        self.assertEqual(project_plan.frontend_home, user_plan.frontend_home)
+        self.assertEqual(project_plan.frontend_manifest_sha256, expected_identity)
+        self.assertEqual(project_plan.frontend_action, "refuse")

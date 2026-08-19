@@ -89,6 +89,12 @@ def _scope_home(scope: str, project_root: Path | None) -> Path:
     return _require_project_root(project_root) / ".orchflows"
 
 
+def _frontend_home() -> Path:
+    """The user-owned immutable browser distribution borrowed by projects."""
+
+    return _scope_home("user", None) / "ui"
+
+
 def _bin_dir(scope: str, project_root: Path | None) -> Path:
     if scope == "user":
         return Path.home() / ".orchflows" / "bin"
