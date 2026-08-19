@@ -11,6 +11,7 @@ from .foundation import (
     _claude_scope_home,
     _claude_user_home,
     _codex_user_home,
+    _frontend_home,
     _require_project_root,
     _scope_home,
 )
@@ -37,13 +38,17 @@ def _uninstall_boundary(path: Path, scope: str, project_root: Path | None) -> Pa
 def _auto_remove_path_is_safe(
     path: Path, kind: str, scope: str, project_root: Path | None
 ) -> bool:
-    if kind == "adapter":
+    if kind == "frontend-asset":
+        boundary = _frontend_home()
+    elif kind == "adapter":
         boundary = _claude_scope_home(scope, project_root) / "skills"
     elif kind == "codex-skill":
         boundary = _codex_user_home() / "skills"
     else:
         boundary = _codex_user_home() / "prompts"
-    if kind == "adapter":
+    if kind == "frontend-asset":
+        scope_boundary = _frontend_home().parent
+    elif kind == "adapter":
         scope_boundary = (
             _require_project_root(project_root) if scope == "project" else _claude_user_home()
         )
@@ -101,10 +106,11 @@ def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
             continue
 
         if not _auto_remove_path_is_safe(path, kind, scope, project_root):
+            noun = "frontend asset" if kind == "frontend-asset" else "skill file"
             manual_actions.append(
                 {
                     "path": str(path),
-                    "action": "review skill file; path is outside its verified install boundary; not removed",
+                    "action": f"review {noun}; path is outside its verified install boundary; not removed",
                 }
             )
             continue
@@ -143,7 +149,8 @@ def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
             continue
 
         if dry_run:
-            skill_actions.append({"path": str(path), "action": "would remove unchanged skill"})
+            noun = "frontend asset" if kind == "frontend-asset" else "skill"
+            skill_actions.append({"path": str(path), "action": f"would remove unchanged {noun}"})
             continue
         try:
             path.unlink()
@@ -152,8 +159,49 @@ def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
                 {"path": str(path), "action": f"remove skill file manually; automatic removal failed: {error}"}
             )
             continue
-        _prune_empty_dirs(path.parent, _uninstall_boundary(path, scope, project_root))
-        skill_actions.append({"path": str(path), "action": "removed unchanged skill"})
+        prune_boundary = (
+            _frontend_home()
+            if kind == "frontend-asset"
+            else _uninstall_boundary(path, scope, project_root)
+        )
+        _prune_empty_dirs(path.parent, prune_boundary)
+        noun = "frontend asset" if kind == "frontend-asset" else "skill"
+        skill_actions.append({"path": str(path), "action": f"removed unchanged {noun}"})
+
+    frontend = receipt.get("frontend")
+    if isinstance(frontend, dict) and frontend.get("uninstall") == "receipt-guarded":
+        frontend_home = Path(str(frontend.get("home", "")))
+        expected_home = _frontend_home()
+        try:
+            safe_home = (
+                not frontend_home.is_symlink()
+                and frontend_home.resolve() == expected_home.resolve()
+            )
+        except OSError:
+            safe_home = False
+        if safe_home and frontend_home.is_dir() and not any(frontend_home.iterdir()):
+            if dry_run:
+                skill_actions.append(
+                    {
+                        "path": str(frontend_home),
+                        "action": "would remove empty frontend distribution",
+                    }
+                )
+            else:
+                frontend_home.rmdir()
+                skill_actions.append(
+                    {
+                        "path": str(frontend_home),
+                        "action": "removed empty frontend distribution",
+                    }
+                )
+        elif frontend_home.exists():
+            manual_actions.append(
+                {
+                    "path": str(frontend_home),
+                    "action": "review frontend distribution; modified or outside its verified boundary; not removed",
+                }
+            )
 
     for entry in receipt.get("blocks", []):
         manual_actions.append(

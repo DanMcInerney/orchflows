@@ -28,6 +28,11 @@ def print_plan(plan: Plan, source_commit: str | None) -> None:
             "private runtime: refuse; project scope requires a healthy user "
             f"runtime at {private_runtime_home()}"
         )
+    if plan.frontend_home is not None:
+        print(
+            f"frontend distribution: {plan.frontend_action} {plan.frontend_home} "
+            f"(manifest {plan.frontend_manifest_sha256})"
+        )
     print()
     print(f"runtime directories ({len(plan.runtime_dirs)}):")
     for directory in plan.runtime_dirs:
@@ -44,6 +49,12 @@ def print_plan(plan: Plan, source_commit: str | None) -> None:
     print(f"scripts ({len(plan.scripts)}):")
     for pair in plan.scripts:
         print(f"  install: {pair[1]}")
+    print()
+    print(f"frontend assets ({len(plan.frontend_assets)}):")
+    for pair in plan.frontend_assets:
+        print(f"  copy: {pair[1]}")
+    if not plan.frontend_assets and plan.frontend_home is not None:
+        print(f"  borrow: {plan.frontend_home}")
     print()
     print(f"Claude Code skill adapters ({len(plan.claude_adapters)}):")
     for pair in plan.claude_adapters:
