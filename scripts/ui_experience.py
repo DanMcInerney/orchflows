@@ -164,7 +164,7 @@ def _ticket_detail(ticket: dict, run_record: dict, root: Path, run: str) -> dict
         ).splitlines()
         if line.strip().startswith(("- ", "* ", "+ "))
     ]
-    record["write_scope"] = [_text(item) for item in ticket.get("write_scope", ())]
+    record["write_scope"] = [_redact_host_paths(_text(item), root, {}) for item in ticket.get("write_scope", ())]
     record["pack"] = _text(ticket.get("pack"))
     events = read_events(root, run)
     record["history"] = [

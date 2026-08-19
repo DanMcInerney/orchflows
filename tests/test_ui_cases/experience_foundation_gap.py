@@ -6,6 +6,30 @@ from scripts.ui_experience import project_experience
 
 
 class TestExperienceFoundationGap(unittest.TestCase):
+    def test_ticket_inputs_scope_and_raw_share_the_host_path_boundary(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = make_sink(Path(raw), runs=("run-gamma",))
+            ticket_path = root / "tickets" / "run-gamma" / "G1.md"
+            private_path = r"C:\Users\private\source\input.md"
+            ticket_text = ticket_path.read_text(encoding="utf-8").replace(
+                "  - scratch/g1.txt", "  - {0}".format(private_path), 1
+            )
+            ticket_path.write_text(
+                ticket_text + "\n## Fixed inputs\n\n- {0}\n".format(private_path),
+                encoding="utf-8",
+            )
+
+            selected = project_experience(
+                root,
+                query={"view": "ticket", "run": "run-gamma", "ticket": "G1"},
+            )
+
+        ticket = selected["ticket"]
+        self.assertEqual(["[redacted-host-path]"], ticket["inputs"])
+        self.assertEqual(["[redacted-host-path]"], ticket["write_scope"])
+        self.assertNotIn(private_path, ticket["raw"])
+        self.assertIn("[redacted-host-path]", ticket["raw"])
+
     def test_ticket_inputs_redact_host_paths_like_raw_ticket_text(self):
         with tempfile.TemporaryDirectory() as raw:
             root = make_sink(Path(raw), runs=("run-gamma",))
