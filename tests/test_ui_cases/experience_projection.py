@@ -48,11 +48,12 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         self.assertEqual("G1", selected["id"])
         self.assertEqual("rows", selected["verification"]["state"])
         self.assertEqual(["PASS", "PASS", "FAIL"], [row["verdict"] for row in selected["verification"]["rows"]])
-        self.assertEqual({"state", "dependencies", "explanation"}, set(selected["readiness"]))
         self.assertEqual(
             expected_readiness,
-            selected["readiness"],
+            {key: selected["readiness"][key] for key in expected_readiness},
         )
+        self.assertEqual("none", selected["readiness"]["cause"])
+        self.assertEqual([], selected["readiness"]["causal_chain"])
         encoded = json.dumps(projected, sort_keys=True)
         self.assertNotIn(TRANSCRIPT_SENTINEL, encoded)
         self.assertNotIn(str(root), encoded)
