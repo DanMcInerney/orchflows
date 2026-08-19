@@ -7,7 +7,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { ExperienceSnapshot } from "../../api/schema";
 import type { LocationState } from "../../state/location";
 import {
-  detailRows, durableHistory, inspectorTabs, linkedFriction, proofRows, rawTicket,
+  detailRows, durableHistory, fixtureTicket, inspectorTabs, linkedFriction, proofRows, rawTicket,
   selectedTab, statusState, tabPath, type InspectorTab
 } from "./model";
 import "./inspector.css";
@@ -39,7 +39,8 @@ function EmptyEvidence({ title, children }: { title: string; children: ReactNode
 
 export default function TicketInspector({ snapshot, location }: TicketInspectorProps) {
   const [tab, setTab] = useState<InspectorTab>(() => selectedTab(location));
-  const ticket = snapshot.ticket;
+  const ticket = snapshot.ticket ?? fixtureTicket(location);
+  const viewSnapshot = ticket === snapshot.ticket ? snapshot : { ...snapshot, ticket };
 
   useEffect(() => {
     const sync = () => setTab(selectedTab(location));
@@ -53,9 +54,9 @@ export default function TicketInspector({ snapshot, location }: TicketInspectorP
   }
 
   const state = statusState(ticket);
-  const rows = proofRows(snapshot, location.fixture);
-  const friction = linkedFriction(snapshot, location);
-  const history = durableHistory(snapshot, location);
+  const rows = proofRows(viewSnapshot, location.fixture);
+  const friction = linkedFriction(viewSnapshot, location);
+  const history = durableHistory(viewSnapshot, location);
   const objective = ticket.sections.objective || "No objective was recorded.";
   const result = ticket.sections.result;
 
@@ -151,7 +152,7 @@ export default function TicketInspector({ snapshot, location }: TicketInspectorP
 
         <Tabs.Content className="inspector-panel" value="raw">
           <article className="inspector-card"><div className="panel-heading"><p className="eyebrow">Inert source</p><h2>Raw ticket markdown</h2><p className="raw-privacy"><LockKeyhole aria-hidden="true" /> Host paths are redacted. Markup is displayed as text and never executed.</p></div>
-            <pre className="raw-ticket" tabIndex={0} aria-label="Raw ticket markdown"><code>{rawTicket(snapshot, location)}</code></pre>
+            <pre className="raw-ticket" tabIndex={0} aria-label="Raw ticket markdown"><code>{rawTicket(viewSnapshot, location)}</code></pre>
           </article>
         </Tabs.Content>
       </Tabs.Root>

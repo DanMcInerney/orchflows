@@ -72,18 +72,23 @@ describe("TicketInspector", () => {
   });
 
   it("renders passing and failing proof identities without losing oracle evidence", () => {
+    const passing = snapshot();
+    passing.ticket = null;
     window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=proof-pass");
-    const { unmount } = render(<TicketInspector snapshot={snapshot()} location={location("proof-pass")} />);
-    expect(screen.getAllByText("PASS")).toHaveLength(2);
+    const { unmount } = render(<TicketInspector snapshot={passing} location={location("proof-pass")} />);
+    expect(screen.getAllByText("PASS")).toHaveLength(3);
     expect(screen.queryByText("FAIL")).toBeNull();
     expect(screen.getByText("install.py --dry-run")).not.toBeNull();
-    expect(screen.getByText("3 scripts, 4 expected")).not.toBeNull();
+    expect(screen.getByText("plan named 4 scripts, 4 expected")).not.toBeNull();
     unmount();
 
+    const failing = snapshot();
+    failing.ticket = null;
     window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=proof-fail");
-    render(<TicketInspector snapshot={snapshot()} location={location("proof-fail")} />);
+    render(<TicketInspector snapshot={failing} location={location("proof-fail")} />);
     expect(screen.getByText("FAIL")).not.toBeNull();
-    expect(screen.getAllByText("deterministic", { selector: "span" })).toHaveLength(2);
+    expect(screen.getByLabelText("Ticket state: failed")).not.toBeNull();
+    expect(screen.getAllByText("deterministic", { selector: "span" })).toHaveLength(3);
   });
 
   it("shows only friction linked by both run and ticket", () => {
@@ -124,5 +129,15 @@ describe("TicketInspector", () => {
     render(<TicketInspector snapshot={value} location={location("")} />);
     expect(screen.getByRole("heading", { name: "Proof unavailable" })).not.toBeNull();
     expect(screen.getByText(/Unknown is preserved/)).not.toBeNull();
+  });
+
+  it("renders named deterministic fixture evidence when the fixed reader fixture cannot select a ticket", () => {
+    const value = snapshot();
+    value.ticket = null;
+    window.history.replaceState({}, "", "/runs/run-gamma/tickets/G4?fixture=running-overview");
+    render(<TicketInspector snapshot={value} location={location("running-overview", "G4")} />);
+    expect(screen.getByRole("heading", { name: "G4" })).not.toBeNull();
+    expect(screen.getByText(/assigned worker is executing this ticket/i)).not.toBeNull();
+    expect(screen.queryByRole("heading", { name: "Ticket unavailable" })).toBeNull();
   });
 });

@@ -1,8 +1,9 @@
-import type { ExperienceSnapshot, ReadinessState, TicketSummary } from "../../api/schema";
+import type { ExperienceSnapshot, ReadinessState, TicketDetail, TicketSummary } from "../../api/schema";
 import type { LocationState } from "../../state/location";
 
 export const inspectorTabs = ["overview", "details", "proof", "friction", "history", "raw"] as const;
 export type InspectorTab = (typeof inspectorTabs)[number];
+export type InspectorState = ReadinessState | "failed";
 
 export interface InspectorProofRow {
   criterion: string;
@@ -61,16 +62,66 @@ escaped characters, never as live markup.
 
 Nothing was done; this file exists to be read.`;
 
+const proofFixtureRows = [
+  { "#": "1", verdict: "PASS", oracle: "tools/validate.py", class: "deterministic", evidence: "exit 0, zero output" },
+  { "#": "2", verdict: "PASS", oracle: "the named test", class: "deterministic", evidence: "(?:src|href) matched nothing on either route" },
+  { "#": "3", verdict: "PASS", oracle: "install.py --dry-run", class: "deterministic", evidence: "plan named 4 scripts, 4 expected" }
+];
+
+export function fixtureTicket(location: LocationState): TicketDetail | null {
+  if (!fixtureTab[location.fixture]) return null;
+  const running = location.fixture === "running-overview";
+  const unavailableHistory = location.fixture === "history-unavailable";
+  const raw = location.fixture === "raw-escaped";
+  const proof = location.fixture.startsWith("proof-");
+  const rows = proof ? proofFixtureRows.map((row, index) =>
+    location.fixture === "proof-fail" && index === 2
+      ? { ...row, verdict: "FAIL", evidence: "plan named 3 scripts, 4 expected" }
+      : row
+  ) : [];
+  return {
+    id: location.ticket,
+    status: running || raw ? "claimed" : unavailableHistory ? "suspended" : location.fixture === "proof-fail" ? "failed" : "complete",
+    executor: running ? "orch-render" : raw ? "orch-verify" : "orch-tdd",
+    bound: running ? "90m" : unavailableHistory ? "30m" : raw ? "45m" : "90m",
+    claimed_at: "2026-01-01T00:20:00Z",
+    claimed_by: "fixture-agent",
+    depends_on: raw ? ["A1"] : [],
+    unreadable: false,
+    readiness: {
+      state: running || raw ? "running" : unavailableHistory ? "attention" : "complete",
+      dependencies: [],
+      explanation: running
+        ? "The assigned worker is executing this ticket within its bound."
+        : unavailableHistory
+          ? "The ticket is suspended and has no durable event projection."
+          : "Every dependency and criterion is complete.",
+      cause: unavailableHistory ? "suspended_handoff" : "none",
+      causal_chain: []
+    },
+    sections: {
+      objective: raw
+        ? "Untrusted ticket text: <script>alert(1)</script> must remain inert."
+        : running
+          ? "Expose canonical ticket evidence without revealing private agent activity."
+          : "Keep each verification criterion, oracle, verdict, and evidence identity visible.",
+      ...(proof ? { result: location.fixture === "proof-pass" ? "All criteria passed." : "One criterion requires attention." } : {})
+    },
+    verification: { state: rows.length ? "rows" : "unknown", rows },
+    inputs: ["accepted reader projection", "frozen view identity"],
+    write_scope: ["web/src/features/inspector"],
+    pack: "orch-design-pack",
+    history: [],
+    raw: raw ? fixtureRaw : ""
+  };
+}
+
 function record(value: unknown): UnknownRecord {
   return value && typeof value === "object" ? value as UnknownRecord : {};
 }
 
 function text(value: unknown): string {
   return typeof value === "string" ? value : "";
-}
-
-function textList(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
 export function selectedTab(location: LocationState, search = window.location.search): InspectorTab {
@@ -85,7 +136,8 @@ export function tabPath(tab: InspectorTab, search = window.location.search): str
   return `${window.location.pathname}?${query.toString()}`;
 }
 
-export function statusState(ticket: TicketSummary): ReadinessState {
+export function statusState(ticket: TicketSummary): InspectorState {
+  if (ticket.status === "failed") return "failed";
   if (ticket.readiness.state !== "unknown") return ticket.readiness.state;
   if (ticket.status === "claimed") return "running";
   if (ticket.status === "ready") return "ready";
@@ -112,7 +164,7 @@ export function proofRows(snapshot: ExperienceSnapshot, fixture: string): Inspec
   const rows = snapshot.ticket?.verification.rows ?? [];
   return rows.map((value, index) => {
     const row = record(value);
-    const verdict = fixture === "proof-pass" ? "PASS" : text(row.verdict) || "UNKNOWN";
+    const verdict = text(row.verdict) || "UNKNOWN";
     return {
       criterion: text(row["#"]) || String(index + 1),
       verdict,
