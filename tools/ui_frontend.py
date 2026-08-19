@@ -97,8 +97,22 @@ def smoke(browser: str) -> dict:
     if browser not in {"auto", "chromium"}:
         raise RuntimeError("unsupported browser: {0}".format(browser))
     environment = os.environ.copy()
+    environment.pop("FORCE_COLOR", None)
     environment["ORCHFLOWS_BROWSER"] = browser
-    _run("exec", "playwright", "test", "--config", "web/playwright.config.ts", env=environment)
+    if browser == "auto" and "ORCHFLOWS_BROWSER_EXECUTABLE" not in environment:
+        candidates = (
+            Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe"),
+            Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"),
+            Path(r"/usr/bin/google-chrome"),
+            Path(r"/usr/bin/chromium"),
+        )
+        installed = next((path for path in candidates if path.is_file()), None)
+        if installed:
+            environment["ORCHFLOWS_BROWSER_EXECUTABLE"] = str(installed)
+    _run(
+        "exec", "playwright", "test", "web/src/smoke.spec.ts",
+        "--workers=1", "--reporter=line", env=environment,
+    )
     return {"browser": browser, "contract": "observe-v1"}
 
 

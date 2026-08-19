@@ -133,7 +133,7 @@ export function ObserveApp() {
               </Tabs.Content>
             </Tabs.Root>
           </aside>
-          <section className="canvas" aria-label="Run map canvas">
+          <section className="canvas" aria-label="Run map canvas" data-editing="disabled">
             <ReactFlowProvider>
               <FlowCanvas
                 nodes={nodes}

@@ -4,6 +4,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   root: "web",
   plugins: [react()],
+  worker: { format: "es" },
   build: {
     outDir: "dist",
     emptyOutDir: true,
