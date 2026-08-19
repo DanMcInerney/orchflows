@@ -59,6 +59,13 @@ export function sessionsModel(value: unknown): SessionsModel {
 
 export function fixtureSessions(model: SessionsModel, fixture: string): SessionsModel {
   if (fixture === "empty") return { items: [], diagnostics: [], empty: true };
+  if (fixture === "populated") {
+    return {
+      items: model.items.map((item) => ({ ...item, diagnostics: [] })),
+      diagnostics: [],
+      empty: model.items.length === 0
+    };
+  }
   if (fixture !== "diagnostic") return model;
   const diagnosticItems = model.items.filter((item) => item.diagnostics.length > 0);
   const itemDiagnostics = [...new Set(diagnosticItems.flatMap((item) => item.diagnostics))];
@@ -75,4 +82,15 @@ export function fixtureSessions(model: SessionsModel, fixture: string): Sessions
 
 export function sessionLabel(item: SessionSummary): string {
   return item.title || "Untitled session";
+}
+
+export function activityLabel(value: string): string {
+  if (!value) return "Activity not reported";
+  const milliseconds = /^\d{16,}$/.test(value)
+    ? Number(value.slice(0, -6))
+    : Date.parse(value);
+  if (!Number.isFinite(milliseconds)) return value;
+  const date = new Date(milliseconds);
+  if (Number.isNaN(date.getTime())) return value;
+  return `${date.toISOString().slice(0, 16).replace("T", " ")}Z`;
 }

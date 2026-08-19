@@ -29,6 +29,7 @@
 .sessions-view__unknown { color: var(--status-unknown); }
 .sessions-view__unknown > span, .sessions-view__unknown small { display: block; }
 .sessions-view__unknown small { color: var(--text-faint); }
+.sessions-view__modified time { white-space: nowrap; }
 .sessions-view__diagnostic-count { color: var(--status-attention); }
 .sessions-view__empty { min-height: 320px; display: flex; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-8); text-align: left; }
 .sessions-view__empty > svg { width: var(--space-8); height: var(--space-8); color: var(--status-unknown); }

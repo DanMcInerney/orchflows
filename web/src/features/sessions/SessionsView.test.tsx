@@ -64,6 +64,9 @@ describe("SessionsView", () => {
     expect(document.activeElement).toBe(screen.getByRole("searchbox", { name: "Filter sessions by title or identity" }));
     await user.tab();
     expect(document.activeElement).toBe(link);
+    expect(screen.getAllByText("Metadata ready")).toHaveLength(2);
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.getByText("2026-08-19 09:00Z").getAttribute("title")).toBe("2026-08-19T09:00:00Z");
     expect(document.body.textContent).not.toContain(PRIVATE_SENTINEL);
   });
 

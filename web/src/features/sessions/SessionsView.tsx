@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 
 import type { ExperienceSnapshot } from "../../api/schema";
 import type { LocationState } from "../../state/location";
-import { fixtureSessions, sessionLabel, sessionsModel } from "./model";
+import { activityLabel, fixtureSessions, sessionLabel, sessionsModel } from "./model";
 import "./sessions.css";
 
 export interface SessionsViewProps {
@@ -95,7 +95,10 @@ export function SessionsView({ snapshot, location }: SessionsViewProps) {
                     <span>{item.client || "Unknown client"}<small>{item.project || "Project metadata unavailable"}</small></span>
                   </span>
                   <span className="sessions-view__agents"><UsersRound aria-hidden="true" /> {item.agentCount} {item.agentCount === 1 ? "agent" : "agents"}</span>
-                  <span className="sessions-view__modified"><Clock3 aria-hidden="true" /> {item.modified || "Activity not reported"}</span>
+                  <span className="sessions-view__modified">
+                    <Clock3 aria-hidden="true" />
+                    <time className="mono" dateTime={item.modified || undefined} title={item.modified || undefined}>{activityLabel(item.modified)}</time>
+                  </span>
                   <span className="sessions-view__diagnostic-count">
                     {item.diagnostics.length ? <><AlertTriangle aria-hidden="true" /> {item.diagnostics.length} diagnostic</> : "Metadata ready"}
                   </span>
