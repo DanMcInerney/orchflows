@@ -128,7 +128,7 @@ export function FrictionView({ snapshot, location }: FrictionViewProps) {
   const unreadable = fixtureEmpty ? 0 : Math.max(0, snapshot.friction.unreadable);
 
   return (
-    <div className="friction-view" data-view="friction" data-state={items.length ? "populated" : "empty"}>
+    <div className="friction-view foundation-view" data-view="friction" data-state={items.length ? "populated" : "empty"}>
       <IntegrityNotice skipped={skipped} unreadable={unreadable} />
       <header className="friction-hero">
         <div>

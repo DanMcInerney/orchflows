@@ -42,6 +42,7 @@ describe("FrictionView", () => {
     expect(screen.getByRole("link", { name: /Ticket 00-ui\.07/ }).getAttribute("href")).toBe("/runs/run%20%2F%20alpha/tickets/00-ui.07");
     expect(screen.queryByRole("button")).toBeNull();
     expect(container.querySelector("form, input, textarea, select")).toBeNull();
+    expect(container.querySelector(".friction-view.foundation-view")).not.toBeNull();
   });
 
   it("escapes markup, redacts host paths, and drops every field outside the closed projection", () => {
