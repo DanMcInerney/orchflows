@@ -49,11 +49,10 @@ whitespace-delimited words. Use terms exactly as
 
 ## Runtime routing pins
 
-Use the unprefixed script family facade named by the calling skill;
-same-family helpers are private implementation detail and are discovered
-from code, not inventoried here. Two non-derivable admission facts stay
-pinned: `scripts/cutcheck.py` owns cut-defect detection over issued ticket
-sets; `scripts/tickets.py` owns the public ticket facade, the one root/gate
+Helper membership is derived from code, not inventoried here. Two
+non-derivable admission facts stay pinned: `scripts/cutcheck.py` owns
+cut-defect detection over issued ticket sets; `scripts/tickets.py` owns
+the public ticket facade, the one root/gate
 family, immutable run identity (`opened_at`, installed version, source commit),
 and immutable terminal timing (`terminal_at`, terminal ticket, `elapsed_ms`).
 `tickets.py help` is operator-only: it answers an operator's usage request.
