@@ -1,160 +1,133 @@
-import * as Tabs from "@radix-ui/react-tabs";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import {
-  Background,
-  Controls,
-  ReactFlow,
-  ReactFlowProvider,
-  type Edge,
-  type Node,
-  type NodeChange,
-  type NodeProps,
-  type NodeTypes,
-  type Viewport
-} from "@xyflow/react";
-import { Eye, Radio } from "lucide-react";
+import { Activity, AlertTriangle, Eye, LockKeyhole, Radio, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { registeredViews } from "./app/registry";
+import type { ExperienceSnapshot, NavigationItem, ViewId } from "./api/schema";
+import { useExperienceFeed } from "./feed";
+import { RunGraph } from "./graph/RunGraph";
+import { fixtureText, fixtureTickets } from "./testing/fixtures";
+import { parseLocation, pathFor, type LocationState } from "./state/location";
 
-import { useObserveFeed } from "./feed";
-import { layoutSnapshot } from "./layout";
+function isViewId(id: NavigationItem["id"]): id is ViewId { return id !== "create"; }
 
-const INITIAL_VIEWPORT: Viewport = { x: 48, y: 48, zoom: 1 };
-const NODE_TYPES: NodeTypes = {
-  observe: ({ data }: NodeProps) => (
-    <div className="observe-node">
-      <span>{String(data.label)}</span>
-      <small>{String(data.status)}</small>
-    </div>
-  )
-};
+const FALLBACK_NAVIGATION: NavigationItem[] = [
+  { id: "now", label: "Now", path: "/now", disabled: false, explanation: "" },
+  { id: "run-map", label: "Workflows", path: "/runs/", disabled: false, explanation: "" },
+  {
+    id: "create", label: "Create", path: "", disabled: true,
+    explanation: "Future workflow authoring is unavailable in this read-only observer."
+  },
+  { id: "sessions", label: "Sessions", path: "/sessions", disabled: false, explanation: "" },
+  { id: "friction", label: "Friction", path: "/friction", disabled: false, explanation: "" }
+];
 
-function FlowCanvas({
-  nodes,
-  edges,
-  selectedId,
-  onSelectedId
-}: {
-  nodes: Node[];
-  edges: Edge[];
-  selectedId: string | null;
-  onSelectedId: (id: string | null) => void;
-}) {
-  const [viewport, setViewport] = useState(INITIAL_VIEWPORT);
-  const selectedNodes = useMemo(
-    () => nodes.map((node) => ({ ...node, selected: node.id === selectedId })),
-    [nodes, selectedId]
-  );
-  const onNodesChange = (changes: NodeChange[]) => {
-    const selected = changes.find(
-      (change): change is Extract<NodeChange, { type: "select" }> =>
-        change.type === "select" && change.selected
-    );
-    if (selected) onSelectedId(selected.id);
+function useLocationState(): [LocationState, (view: ViewId) => void] {
+  const [location, setLocation] = useState(() => parseLocation());
+  useEffect(() => {
+    const changed = () => setLocation(parseLocation());
+    window.addEventListener("popstate", changed);
+    return () => window.removeEventListener("popstate", changed);
+  }, []);
+  const navigate = (view: ViewId) => {
+    const path = pathFor(view, location);
+    window.history.pushState({}, "", path);
+    setLocation(parseLocation());
   };
+  return [location, navigate];
+}
 
+function FoundationView({ snapshot, location }: { snapshot: ExperienceSnapshot; location: LocationState }) {
+  const copy = fixtureText(location.fixture);
+  const tickets = location.fixture ? fixtureTickets(location.fixture) : snapshot.run?.tickets ?? [];
   return (
-    <ReactFlow
-      nodes={selectedNodes}
-      edges={edges}
-      nodeTypes={NODE_TYPES}
-      viewport={viewport}
-      onViewportChange={setViewport}
-      onNodesChange={onNodesChange}
-      nodesDraggable={false}
-      nodesConnectable={false}
-      edgesReconnectable={false}
-      deleteKeyCode={null}
-      minZoom={0.4}
-      maxZoom={1.8}
-      proOptions={{ hideAttribution: true }}
-      aria-label="Observe dependency graph"
-    >
-      <Background gap={24} size={1} />
-      <Controls showInteractive={false} />
-    </ReactFlow>
+    <div className="foundation-view" data-view={location.view} data-fixture={location.fixture || "live"}>
+      <section className="hero" aria-labelledby="view-title">
+        <div>
+          <p className="eyebrow"><Activity aria-hidden="true" /> {copy.eyebrow}</p>
+          <h1 id="view-title">{copy.title}</h1>
+          <p>{copy.note}</p>
+        </div>
+        <div className="hero__metric" aria-label={`${tickets.length} work items`}>
+          <strong>{tickets.length}</strong><span>work items</span>
+        </div>
+      </section>
+      <section className="view-grid">
+        <article className="graph-card" aria-labelledby="graph-heading">
+          <header className="card-heading">
+            <div><p className="eyebrow">Current topology</p><h2 id="graph-heading">Dependency map</h2></div>
+            <span className="live-chip"><Radio aria-hidden="true" /> {tickets.some((item) => item.readiness.state === "running") ? "live" : "settled"}</span>
+          </header>
+          <div className="graph-frame">
+            {tickets.length ? <RunGraph tickets={tickets} /> : <p className="empty-state">No work items in this state.</p>}
+          </div>
+        </article>
+        <aside className="evidence-card" aria-labelledby="evidence-heading">
+          <p className="eyebrow">Inspector evidence</p>
+          <h2 id="evidence-heading">Safe projection</h2>
+          <dl>
+            <div><dt>Schema</dt><dd>experience.v1</dd></div>
+            <div><dt>Run</dt><dd className="mono">{location.run || snapshot.selection.run || "none"}</dd></div>
+            <div><dt>State</dt><dd>{location.fixture || "live"}</dd></div>
+          </dl>
+          <p className="privacy-note"><LockKeyhole aria-hidden="true" /> Prompts, tools, command output, files, and conversations remain private.</p>
+        </aside>
+      </section>
+    </div>
   );
 }
 
 export function ObserveApp() {
-  const { snapshot, unavailable } = useObserveFeed();
-  const [nodes, setNodes] = useState<Node[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!snapshot) return;
-    let current = true;
-    void layoutSnapshot(snapshot).then((laidOut) => {
-      if (current) setNodes(laidOut);
-    });
-    return () => {
-      current = false;
-    };
-  }, [snapshot]);
-
-  useEffect(() => {
-    if (selectedId && snapshot && !snapshot.nodes.some((node) => node.id === selectedId)) {
-      setSelectedId(null);
-    }
-  }, [selectedId, snapshot]);
-
-  const edges = useMemo<Edge[]>(
-    () => snapshot?.edges.map((edge) => ({ ...edge, animated: snapshot.active })) ?? [],
-    [snapshot]
-  );
-  const selected = snapshot?.nodes.find((node) => node.id === selectedId);
+  const [location, navigate] = useLocationState();
+  const { snapshot, unavailable } = useExperienceFeed(location);
+  const views = useMemo(registeredViews, []);
+  const FeatureView = views[location.view];
+  const navigation = snapshot?.navigation ?? FALLBACK_NAVIGATION;
 
   return (
     <Tooltip.Provider delayDuration={300}>
       <main data-mode="observe" className="shell">
         <header className="masthead">
-          <div className="brand"><Eye aria-hidden="true" /> orchflows</div>
+          <a className="brand" href="/now" onClick={(event) => { event.preventDefault(); navigate("now"); }}>
+            <Eye aria-hidden="true" /><span>orchflows</span>
+          </a>
           <div className="mode"><Radio aria-hidden="true" /> Observe</div>
           <Tooltip.Root>
             <Tooltip.Trigger asChild>
-              <span className="read-only" tabIndex={0}>read only</span>
+              <span className="read-only" tabIndex={0}><LockKeyhole aria-hidden="true" /> read only</span>
             </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Content className="tooltip" sideOffset={6}>
-                This view cannot start, edit, or delete a run.
-              </Tooltip.Content>
-            </Tooltip.Portal>
+            <Tooltip.Portal><Tooltip.Content className="tooltip" sideOffset={8}>This view cannot start, edit, or delete a run.</Tooltip.Content></Tooltip.Portal>
           </Tooltip.Root>
         </header>
-        <section className="workspace" aria-busy={!snapshot}>
-          <aside className="rail">
-            <Tabs.Root defaultValue="overview">
-              <Tabs.List aria-label="Observe panels">
-                <Tabs.Trigger value="overview">Overview</Tabs.Trigger>
-                <Tabs.Trigger value="selection">Selection</Tabs.Trigger>
-              </Tabs.List>
-              <Tabs.Content value="overview">
-                <h1>Run map</h1>
-                <p>{snapshot ? `revision ${snapshot.revision}` : "Waiting for reader"}</p>
-                <p>{snapshot?.nodes.length ?? 0} work items</p>
-                {unavailable && <p role="status">Reader unavailable; retrying.</p>}
-              </Tabs.Content>
-              <Tabs.Content value="selection">
-                <h1>Selected work item</h1>
-                {selected ? (
-                  <dl>
-                    <dt>Identity</dt><dd>{selected.id}</dd>
-                    <dt>Status</dt><dd>{selected.status}</dd>
-                  </dl>
-                ) : <p>Use the keyboard or pointer to select a node.</p>}
-              </Tabs.Content>
-            </Tabs.Root>
-          </aside>
-          <section className="canvas" aria-label="Run map canvas" data-editing="disabled">
-            <ReactFlowProvider>
-              <FlowCanvas
-                nodes={nodes}
-                edges={edges}
-                selectedId={selectedId}
-                onSelectedId={setSelectedId}
-              />
-            </ReactFlowProvider>
+        <div className="workspace" aria-busy={!snapshot}>
+          <nav className="rail" aria-label="Observe views">
+            <p className="rail__label">Workspace</p>
+            {navigation.map((item) => {
+              if (item.disabled || !isViewId(item.id)) return (
+                <span key={item.id} className="rail__disabled" aria-disabled="true" title={item.explanation}>
+                  <span aria-hidden="true" className="nav-dot" />{item.label}<small>future</small>
+                  <span className="sr-only">{item.explanation}</span>
+                </span>
+              );
+              const viewId = item.id;
+              const current = location.view === viewId
+                || (viewId === "run-map" && location.view === "ticket")
+                || (viewId === "sessions" && location.view === "session-graph");
+              return (
+                <a key={viewId} href={pathFor(viewId, location)} aria-current={current ? "page" : undefined}
+                  onClick={(event) => { event.preventDefault(); navigate(viewId); }}>
+                  <span aria-hidden="true" className="nav-dot" />{item.label}
+                </a>
+              );
+            })}
+            <div className="rail__status"><RefreshCw aria-hidden="true" /><span>{unavailable ? "Reader unavailable; retrying" : "Safe live feed"}</span></div>
+          </nav>
+          <section className="content" aria-live="polite">
+            {unavailable && <div className="notice" role="status"><AlertTriangle aria-hidden="true" /> Reader unavailable; the last safe snapshot remains visible.</div>}
+            {snapshot ? (
+              FeatureView ? <FeatureView snapshot={snapshot} location={location} /> : <FoundationView snapshot={snapshot} location={location} />
+            ) : <div className="loading"><span className="pulse" aria-hidden="true" />Waiting for reader</div>}
           </section>
-        </section>
+        </div>
       </main>
     </Tooltip.Provider>
   );

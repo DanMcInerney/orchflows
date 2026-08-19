@@ -85,6 +85,7 @@ The same-origin routes are:
 | `/api/v1/friction` | aggregate friction health |
 | `/api/v1/sessions` | session metadata summaries |
 | `/api/v1/sessions/{session}` | session and subagent structure metadata |
+| `/api/v1/experience` | closed `orchflows.experience.v1` shell, selection, readiness, and safe view projection |
 | `/api/observe` | minimal graph snapshot used by the first browser shell |
 
 Successful JSON and asset responses carry content-derived ETags. The browser
@@ -93,30 +94,49 @@ also carry immutable caching. The earlier `/ticket`, `/graph`, `/friction`,
 `/sessions`, and `/session` links redirect to equivalent application URLs
 when their target still exists.
 
+The browser owns semantic, refresh-safe application routes at `/now`,
+`/runs/{run}`, `/runs/{run}/tickets/{ticket}`, `/sessions`,
+`/sessions/{session}`, and `/friction`. The persistent information
+architecture is exactly **Now / Workflows / Create / Sessions / Friction**.
+Workflows owns run-map and ticket deep links. Create is visibly disabled and
+reserved for future workflow authoring; this observer exposes no creation or
+mutation route.
+
 ## Projection and privacy boundary
 
 All projections use closed field sets. Run graphs contain ticket identifiers,
 dependency edges, lifecycle statuses, aggregate diagnostics, and event
-counts. Ticket projections contain routing and claim metadata, verification
-state and entry count, and a linked-friction count. Session projections
+counts. The selected-ticket experience projection contains routing and claim
+metadata, canonical readiness facts, parsed verification rows, and the
+Objective, Result, Feedback, and Risks sections as inert strings. Session projections
 contain file identity metadata and subagent parent, depth, activity, evidence,
 and readability fields.
 
-No route returns ticket bodies, arbitrary filesystem paths, transcript text,
-prompt text, tool input or output, command output, file contents, or subagent
-conversation contents. The state and transcript roots are opened read-only;
+No route returns arbitrary ticket sections, arbitrary filesystem paths,
+transcript text, prompt text, tool input or output, command output, file
+contents, or subagent conversation contents. The state and transcript roots are opened read-only;
 symbolic-link and path-containment checks keep reads inside those roots. No
 browser route starts a run, changes a ticket, writes friction, calls a model,
 or exposes another mutation endpoint. Ticket lifecycle meanings remain owned
 by [the work-item contract](../../contracts/work-item.md); the UI does not
 invent a second phase taxonomy.
 
+## Rendered-experience admission
+
+`docs/ui/view-manifest.json` is the canonical `orchflows.view-manifest.v1`
+inventory. It declares 48 deterministic identities across Now, Workflows run
+maps, ticket details, Sessions, session graphs, and Friction at 1440×1024 and
+1024×768. `tools/ui_frontend.py capture`, `audit`, and `diff` consume that
+manifest. Capture writes ephemeral evidence only; audit applies WCAG 2.2 AA
+rules to every identity; diff reports `no-golden` explicitly for this
+greenfield foundation until a separate owner admits goldens.
+
 ## Successor boundary
 
-This platform stops at a secure data, asset, and graph seam. The
-`20260819T044203Z-orchflows-ui-experience-v2` successor, rooted at
-`00-observability-ui` under `orch-design-pack`, consumes the accepted platform
-result and owns the final dark-mode Now view, summarized and exact run maps,
-ticket inspector, Sessions and session graph, Friction treatment, responsive
-states, and visual verification. Workflow creation, provider calls,
-authentication, and run initiation require a later product specification.
+This platform now owns the secure data seam, frozen dark shell and tokens,
+semantic router, closed experience contract, shared read-only graph
+primitives, deterministic fixtures, and rendered-experience harness. Feature
+view behavior—exact Now, Workflows, ticket, Sessions, session-graph, and
+Friction treatments—belongs to the dependent view tickets. Workflow creation,
+provider calls, authentication, and run initiation require a later product
+specification.

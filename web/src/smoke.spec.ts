@@ -10,10 +10,33 @@ const executablePath = process.env.ORCHFLOWS_BROWSER_EXECUTABLE || undefined;
 test.use({ launchOptions: executablePath ? { executablePath } : undefined });
 
 let serverProcess;
+let devProcess;
 let stateRoot = "";
 let origin = "";
+const action = process.env.ORCHFLOWS_UI_ACTION || "smoke";
+const apiOrigin = process.env.ORCHFLOWS_UI_API_ORIGIN || "";
+
+async function startVite() {
+  const viteScript = resolve("node_modules", "vite", "bin", "vite.js");
+  devProcess = spawn(process.execPath, [viteScript, "--host", "127.0.0.1", "--port", "0"], {
+    cwd: process.cwd(), env: { ...process.env, ORCHFLOWS_UI_API_ORIGIN: apiOrigin }, stdio: ["ignore", "pipe", "pipe"]
+  });
+  origin = await new Promise((resolveOrigin, reject) => {
+    let stderr = "";
+    devProcess.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
+    devProcess.stdout.on("data", (chunk) => {
+      const match = chunk.toString().match(/http:\/\/127\.0\.0\.1:\d+/);
+      if (match) resolveOrigin(match[0]);
+    });
+    devProcess.once("exit", (code) => reject(new Error(`vite exited ${code}: ${stderr}`)));
+  });
+}
 
 test.beforeAll(async () => {
+  if (action !== "smoke") {
+    await startVite();
+    return;
+  }
   stateRoot = await mkdtemp(join(tmpdir(), "orchflows-smoke-"));
   await mkdir(join(stateRoot, "tickets"));
   await cp(resolve("tests", "fixtures", "ui", "run-gamma"), join(stateRoot, "tickets", "run-gamma"), { recursive: true });
@@ -35,10 +58,12 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   serverProcess?.kill();
+  devProcess?.kill();
   await rm(stateRoot, { recursive: true, force: true });
 });
 
 test("Observe platform stays interactive and stable across a reader refresh", async ({ page }) => {
+  test.skip(action !== "smoke");
   const errors: string[] = [];
   const remoteRequests: string[] = [];
   const localRequests: string[] = [];
@@ -136,4 +161,33 @@ test("Observe platform stays interactive and stable across a reader refresh", as
 
   expect(remoteRequests).toEqual([]);
   expect(errors).toEqual([]);
+});
+
+test("capture every manifest identity", async ({ page }) => {
+  test.skip(action !== "capture");
+  test.setTimeout(180_000);
+  const manifest = JSON.parse(await readFile(process.env.ORCHFLOWS_UI_MANIFEST, "utf8"));
+  const output = process.env.ORCHFLOWS_UI_OUTPUT;
+  await mkdir(output, { recursive: true });
+  for (const identity of manifest.views) {
+    const [width, height] = manifest.breakpoints[identity.breakpoint];
+    await page.setViewportSize({ width, height });
+    await page.goto(`${origin}${identity.path}`);
+    await expect(page.locator(".foundation-view")).toBeVisible();
+    await page.screenshot({ path: join(output, `${identity.identity}.png`), fullPage: true });
+  }
+});
+
+test("audit every manifest identity", async ({ page }) => {
+  test.skip(action !== "audit");
+  test.setTimeout(180_000);
+  const manifest = JSON.parse(await readFile(process.env.ORCHFLOWS_UI_MANIFEST, "utf8"));
+  for (const identity of manifest.views) {
+    const [width, height] = manifest.breakpoints[identity.breakpoint];
+    await page.setViewportSize({ width, height });
+    await page.goto(`${origin}${identity.path}`);
+    await expect(page.locator(".foundation-view")).toBeVisible();
+    const result = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
+    expect(result.violations, identity.identity).toEqual([]);
+  }
 });
