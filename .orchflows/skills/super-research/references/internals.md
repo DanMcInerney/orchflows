@@ -34,7 +34,8 @@ list: `ledger.py`, `ordering.py` and `pacing.py` were split out of `runner.py`,
 
 `runner.py` re-exports every name moved to `ledger`, `ordering` and `pacing`,
 `cli.py` every name moved to `probes` and `smoke`, and `transport.py` every public
-name from the ordered `routes` facade, so each has one public address. Tests are
+name from the ordered `routes` facade, preserving established imports without a
+second route inventory. Tests are
 `tests/`, with `tests/helpers.py` and `tests/fixtures/**`; the whole suite runs
 with no network reachable.
 
@@ -90,8 +91,8 @@ The classes and their three rules are [protocol.md](protocol.md)'s. This is the
 machinery behind them.
 
 [`_support/route_contracts.py`](../scripts/super_research/_support/route_contracts.py)
-owns `K1` credentials; catalogs name them; [`routes.py`](../scripts/super_research/routes.py)
-exposes their ordered public facade. `transport.py` attaches one only at send time;
+owns `K1` credentials; catalogs reference them; [`routes.py`](../scripts/super_research/routes.py)
+holds the ordered route facade. `transport.py` attaches one only at send time;
 none enters manifests or artifacts or survives in answer addresses.
 
 The `K3` label has to be on the row rather than on the page:
