@@ -266,6 +266,19 @@ CASE_MODULES = (
     "scope",
 )
 
+# Case modules deliberately share this facade's helpers through ``import *``.
+# TestCase classes are loader-owned instead: exporting one would bind the same
+# class into every case module and make discovery execute it once per binding.
+__all__ = tuple(
+    name
+    for name, value in globals().items()
+    if not name.startswith("_")
+    and not (
+        isinstance(value, type)
+        and issubclass(value, unittest.TestCase)
+    )
+)
+
 
 def load_tests(loader, standard_tests, pattern):
     # The explicit loader keeps every case in this module's child process.
