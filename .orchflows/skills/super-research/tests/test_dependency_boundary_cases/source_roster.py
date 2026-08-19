@@ -1,8 +1,10 @@
 """Source-roster documentation and descriptor checks."""
 
+import inspect
+import re
 import unittest
 
-from super_research import runner
+from super_research import probes, runner
 from super_research.adapters import youtube_innertube
 from tests import test_keyless
 
@@ -160,6 +162,41 @@ class RosterIsReadOffTheSourceTest(unittest.TestCase):
                 live, sorted(live_adapters())
             ),
         )
+
+    def test_every_statement_of_the_probe_roster_size_is_checked(self):
+        """Both probe-count claims, read against the literal probe table."""
+
+        pattern = re.compile(r"\b([A-Za-z-]+) probes, one per live adapter\b")
+        source = inspect.getsource(probes)
+        matches = list(pattern.finditer(source))
+        expected = len(probes.SMOKE_PROBES)
+
+        self.assertEqual(
+            len(matches),
+            2,
+            "probes.py states the probe count {0} times".format(len(matches)),
+        )
+        self.assertEqual(
+            [counted_as(match.group(1)) for match in matches],
+            [expected, expected],
+            "probes.py's two claims must match its {0}-row table".format(expected),
+        )
+
+        # Each occurrence is independently observed: changing either one to a
+        # readable wrong count makes the compound oracle disagree with source.
+        for changed in matches:
+            mutated = (
+                source[: changed.start(1)]
+                + "one"
+                + source[changed.end(1) :]
+            )
+            self.assertNotEqual(
+                [
+                    counted_as(match.group(1))
+                    for match in pattern.finditer(mutated)
+                ],
+                [expected, expected],
+            )
 
     def test_every_statement_of_the_surface_total_is_checked(self):
         """Both statements of "thirty-six", and the count the second derives from it.
