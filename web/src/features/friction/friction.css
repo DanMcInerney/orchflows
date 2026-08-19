@@ -246,9 +246,9 @@
   display: grid;
   flex: 0 0 var(--row-comfortable);
   place-items: center;
-  border: 1px solid var(--status-complete);
+  border: 1px solid var(--status-unknown);
   border-radius: var(--radius-card);
-  color: var(--status-complete);
+  color: var(--status-unknown);
   background: var(--surface-2);
 }
 

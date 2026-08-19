@@ -72,10 +72,18 @@ describe("FrictionView", () => {
   it("shows an honest empty state for the empty identity", () => {
     render(<FrictionView snapshot={snapshot([{ observed: "would otherwise render" }], 4, 3)} location={{ ...location, fixture: "empty" }} />);
 
-    expect(screen.getByRole("heading", { name: "No friction recorded" })).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "No friction records available" })).not.toBeNull();
     expect(screen.getByLabelText("0 friction records")).not.toBeNull();
     expect(screen.queryByText("would otherwise render")).toBeNull();
     expect(screen.queryByRole("heading", { name: "Some log records need attention" })).toBeNull();
+  });
+
+  it("makes exact linked navigation visible in the populated capture fixture", () => {
+    render(<FrictionView snapshot={snapshot([{ observed: "Canonical unlinked record" }])} location={location} />);
+
+    expect(screen.getByRole("link", { name: "Run run-gamma" }).getAttribute("href")).toBe("/runs/run-gamma");
+    expect(screen.getByRole("link", { name: "Ticket G1" }).getAttribute("href")).toBe("/runs/run-gamma/tickets/G1");
+    expect(screen.getByRole("heading", { name: "Canonical unlinked record" })).not.toBeNull();
   });
 
   it("keeps incomplete linkage explicit instead of inventing a route", () => {

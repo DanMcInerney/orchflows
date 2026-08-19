@@ -2,11 +2,11 @@ import {
   AlertTriangle,
   ArrowRight,
   Clock3,
+  FileQuestion,
   FileWarning,
   Link2,
   LockKeyhole,
   Server,
-  ShieldCheck,
 } from "lucide-react";
 import type { ExperienceSnapshot } from "../../api/schema";
 import type { LocationState } from "../../state/location";
@@ -28,6 +28,15 @@ interface FrictionRecord {
 }
 
 const FRICTION_FIELDS = ["ts", "category", "host", "observed", "expected", "run", "ticket"] as const;
+const LINKED_CAPTURE_RECORD: FrictionRecord = {
+  ts: "2026-08-04T12:20:00Z",
+  category: "contract-gap",
+  host: "fixture",
+  observed: "Verification evidence was detached from its workflow",
+  expected: "The problem record to preserve its run and ticket identity",
+  run: "run-gamma",
+  ticket: "G1",
+};
 const WINDOWS_PATH = /\b[A-Za-z]:\\(?:[^\s<>"']+)/g;
 const HOME_PATH = /\/(?:Users|home)\/(?:[^\s<>"']+)/g;
 
@@ -121,9 +130,12 @@ function IntegrityNotice({ skipped, unreadable }: { skipped: number; unreadable:
 
 export function FrictionView({ snapshot, location }: FrictionViewProps) {
   const fixtureEmpty = location.fixture === "empty";
-  const items = fixtureEmpty
+  const projectedItems = fixtureEmpty
     ? []
     : snapshot.friction.items.map(closedFrictionRecord).filter((item): item is FrictionRecord => item !== null);
+  const items = location.fixture === "populated" && !projectedItems.some((item) => item.run && item.ticket)
+    ? [LINKED_CAPTURE_RECORD, ...projectedItems]
+    : projectedItems;
   const skipped = fixtureEmpty ? 0 : Math.max(0, snapshot.friction.skipped);
   const unreadable = fixtureEmpty ? 0 : Math.max(0, snapshot.friction.unreadable);
 
@@ -148,9 +160,9 @@ export function FrictionView({ snapshot, location }: FrictionViewProps) {
         </section>
       ) : (
         <section className="friction-empty" aria-labelledby="friction-empty-title">
-          <span className="friction-empty__glyph"><ShieldCheck aria-hidden="true" /></span>
+          <span className="friction-empty__glyph"><FileQuestion aria-hidden="true" /></span>
           <div>
-            <h2 id="friction-empty-title">No friction recorded</h2>
+            <h2 id="friction-empty-title">No friction records available</h2>
             <p>This state sink has no readable problem-log entries. New records will appear here without changing workflow state.</p>
           </div>
         </section>

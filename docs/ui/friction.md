@@ -15,9 +15,13 @@ The rendered contract owns four identities from `docs/ui/view-manifest.json`:
 - `friction--empty--compact`
 
 `populated` renders the closed friction projection supplied by
-`orchflows.experience.v1`. `empty` deliberately renders no records or reader
-diagnostics so the absence treatment remains deterministic even when the
-fixture corpus contains problem logs.
+`orchflows.experience.v1`. When that explicit capture fixture contains no
+fully linked record, the view prepends one visibly labelled fixture record for
+`run-gamma` / `G1`; live projections are never supplemented. `empty`
+deliberately renders no records or reader diagnostics so the absence treatment
+remains deterministic even when the fixture corpus contains problem logs. Its
+neutral file-question mark denotes unavailable evidence, not verified
+completion.
 
 ## Information and interaction contract
 
