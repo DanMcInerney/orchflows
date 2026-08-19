@@ -135,7 +135,9 @@ or charts from its relationships. This delivery view points to
 [`orch-spec`](skills/workflows/orch-spec/SKILL.md),
 [`orch-decompose`](skills/kernel/orch-decompose/SKILL.md), and
 [`orch-frontier`](skills/engines/orch-frontier/SKILL.md);
-[verification](rules/verification.md) owns acceptance:
+[verification](rules/verification.md) owns acceptance. This view shows
+only the authored-here checker-or-gate choice; that rule owns the other
+ordinary paths and their details:
 
 ```mermaid
 flowchart TD
@@ -146,10 +148,12 @@ flowchart TD
     cut -->|no| frontier["orch-frontier — dispatch ready units"]
     reader --> frontier
     frontier --> exec["unit executor"]
-    exec --> path{"one ordinary acceptance path"}
-    path -->|checker| checker["fresh checker → re-verification"]
-    path -->|composite gate| gate["lens critiques → one repair → terminal verification"]
-    checker --> accepted["accepted result"]
+    exec --> path{"authored-here coverage"}
+    path -->|unit-local| checker["fresh checker"]
+    path -->|gate-deferred| join["orch-integrate — each return crosses once"]
+    checker --> join
+    join -->|named downstream gate| gate["composite gate"]
+    join -->|otherwise| accepted["accepted result"]
     gate --> accepted
 ```
 
@@ -237,8 +241,8 @@ saved workflows are no longer the difference, so this is what is:
 
 - **Cross-harness.** One library drives both Claude Code and Codex.
 - **Verification is contractual, not merely available.** Adversarial
-  review is house advice there; here a named oracle and one review gate
-  are law between an executor's claim and "done".
+  review is house advice there; here named oracles and the applicable
+  independent path stand between an executor's claim and "done".
 - **Self-improving.** Nothing there mines runs into fixes; here friction
   and traces feed `orch-self-improve`, including on itself.
 - **Survives session death.** Exit mid-run and a workflow starts fresh
