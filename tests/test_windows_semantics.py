@@ -3,7 +3,7 @@
 A guard nothing exercises is a guard that can stop working without
 anyone noticing, and this one's whole value is that it fires on a host
 where the underlying platform never would. Both sides are asserted: the
-shape that killed a pull request on all three Windows cells, and the
+shape that killed a pull request on CI's one Windows leg, and the
 shape the suite uses everywhere and must never flag.
 """
 
@@ -26,10 +26,20 @@ if str(ROOT) not in sys.path:
 # installs the guard, and discovery imports every module before running
 # any test -- so this line is what guarantees the guard is in place for
 # the whole suite under a runner that never imports the package itself.
+import tests as tests_package  # noqa: E402
 from tests import _windows_semantics as guard  # noqa: E402
 
 ON_WINDOWS = os.name == "nt"
 WHY_SKIPPED = "the guard is not installed on Windows: the platform enforces this itself"
+
+
+class CurrentCITopologyDocumentationTest(unittest.TestCase):
+    def test_scoped_docstrings_name_ci_s_one_windows_leg(self):
+        for module_doc in (tests_package.__doc__, guard.__doc__, __doc__):
+            with self.subTest(module_doc=module_doc):
+                flat = " ".join(module_doc.split())
+                self.assertIn("one Windows leg", flat)
+                self.assertNotIn("three Windows cells", flat)
 
 
 class StandsElsewhere(unittest.TestCase):
