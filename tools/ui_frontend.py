@@ -279,7 +279,8 @@ def _prepare_generated_distribution() -> None:
         for path in sorted(candidate for candidate in DIST.rglob("*") if candidate.is_file())
         if path != GENERATED_MANIFEST
     }
-    GENERATED_MANIFEST.write_text(json.dumps(entries, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    payload = (json.dumps(entries, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    GENERATED_MANIFEST.write_bytes(payload)
 
 
 def verify_build() -> dict:

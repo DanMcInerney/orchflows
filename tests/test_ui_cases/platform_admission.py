@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+from unittest import mock
 
 from tests.test_ui_cases._base import *  # noqa: F401,F403
 from tools import check_source_sizes as sizes
@@ -39,3 +40,31 @@ class TestPlatformAdmission(unittest.TestCase):
             self.assertEqual({asset.resolve()}, sizes.generated_source_files(root))
             asset.write_text("authored mutation\n", encoding="utf-8")
             self.assertEqual(set(), sizes.generated_source_files(root))
+
+    def test_generated_manifest_rewrites_a_crlf_checkout_to_canonical_lf_bytes(self):
+        with tempfile.TemporaryDirectory() as raw:
+            dist = Path(raw) / "dist"
+            asset = dist / "assets" / "index-12345678.js"
+            manifest = dist / ".vite" / "orchflows-generated.json"
+            asset.parent.mkdir(parents=True)
+            manifest.parent.mkdir(parents=True)
+            asset.write_bytes(b"generated\n")
+            manifest.write_bytes(b'{\r\n  "stale": "checkout"\r\n}\r\n')
+            expected = (
+                json.dumps(
+                    {"assets/index-12345678.js": hashlib.sha256(asset.read_bytes()).hexdigest()},
+                    indent=2,
+                    sort_keys=True,
+                )
+                + "\n"
+            ).encode("utf-8")
+
+            with mock.patch.object(frontend, "DIST", dist), mock.patch.object(
+                frontend, "GENERATED_MANIFEST", manifest
+            ):
+                frontend._prepare_generated_distribution()
+                first = frontend._dist_identity()
+                self.assertEqual(expected, manifest.read_bytes())
+                self.assertNotIn(b"\r\n", manifest.read_bytes())
+                frontend._prepare_generated_distribution()
+                self.assertEqual(first, frontend._dist_identity())
