@@ -1,6 +1,7 @@
 """Cutcheck behavioral cases loaded explicitly by tests.test_cutcheck."""
 
 from tests.test_cutcheck import *  # noqa: F401,F403
+from tests.test_cutcheck import RuntimeInterpreterBoundaryTests  # noqa: F401
 
 try:
     del load_tests

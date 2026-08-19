@@ -11,6 +11,7 @@ shape stops being something only three cells of the matrix can see.
 
 from __future__ import annotations
 
+import importlib
 import io
 import os
 import re
@@ -213,6 +214,31 @@ class TestGuardedSeams(unittest.TestCase):
 
 
 class TestWorkflowContract(unittest.TestCase):
+    def test_star_imported_facades_do_not_export_test_cases(self):
+        facade_pattern = re.compile(
+            r"^from (tests\.test_[^. ]+) import \*", re.MULTILINE
+        )
+        facades = {
+            match.group(1)
+            for path in (REPO_ROOT / "tests").rglob("*.py")
+            for match in facade_pattern.finditer(path.read_text(encoding="utf-8"))
+        }
+        offenders = []
+        for module_name in sorted(facades):
+            module = importlib.import_module(module_name)
+            exported = getattr(
+                module,
+                "__all__",
+                tuple(name for name in vars(module) if not name.startswith("_")),
+            )
+            offenders.extend(
+                "{}.{}".format(module_name, name)
+                for name in exported
+                if isinstance(getattr(module, name), type)
+                and issubclass(getattr(module, name), unittest.TestCase)
+            )
+        self.assertEqual([], offenders)
+
     def test_ci_has_exactly_the_five_supported_boundary_legs(self):
         workflow = CHECKS_YML.read_text(encoding="utf-8")
         matrix = workflow.split("      matrix:\n", 1)[1].split("\n    steps:", 1)[0]

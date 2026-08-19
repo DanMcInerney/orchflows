@@ -151,28 +151,32 @@ the same loop to the library's own skills.
 
 ### Visualize anything
 
-`orch-visualize` renders anything you hand it as a verified visual
-page — a workflow, your session trace, a codebase, a process from a
-doc — choosing the form per subject: Mermaid graphs (ELK layout),
-styled HTML panels for timelines and comparisons, Vega-Lite charts
-for data. Every visual is syntax-checked and legibility-linted before
-it comes back. This is its drawing of the pipeline that ships every
-orchflows delivery:
+[`orch-visualize`](skills/utilities/orch-visualize/SKILL.md) renders a
+supplied subject as a verified visual page, choosing diagrams, panels,
+or charts from its relationships. This delivery view points to
+[`orch-spec`](skills/workflows/orch-spec/SKILL.md),
+[`orch-decompose`](skills/kernel/orch-decompose/SKILL.md), and
+[`orch-frontier`](skills/engines/orch-frontier/SKILL.md);
+[verification](rules/verification.md) owns acceptance. This view shows
+only the authored-here checker-or-gate choice; that rule owns the other
+ordinary paths and their details:
 
 ```mermaid
 flowchart TD
-    spec["orch-spec — freeze exactly what should be made, as one root ticket"] --> pack{"pack: code | content | research | design"}
-    pack -->|stamped| dec["orch-decompose — cut the root ticket into ordered tickets"]
-    dec --> frontier["orch-frontier — dispatch every ready ticket"]
-    frontier --> exec["executor: orch-tdd | orch-draft / orch-edit | orch-investigate / orch-synthesize | orch-render"]
-    exec -.-> chk["orch-critique — fresh agent double-checks and corrects (when needed)"]
-    exec --> integ["orch-integrate — accept or reject the returned work"]
-    chk --> integ
-    integ -.->|rejected| frontier
-    integ --> ver1["orch-verify — run any remaining checks"]
-    ver1 --> frontier
-    frontier --> gate["gate tickets — critique per lens, then repair confirmed defects"]
-    gate --> final["orch-verify — final result matches the original request"]
+    spec["orch-spec — freeze one root ticket"] --> pack{"stamp a domain pack"}
+    pack --> dec["orch-decompose — cut ordered units"]
+    dec --> cut{"subtree ≥ 3 units or cutcheck advisory?"}
+    cut -->|yes| reader["root cut reader"]
+    cut -->|no| frontier["orch-frontier — dispatch ready units"]
+    reader --> frontier
+    frontier --> exec["unit executor"]
+    exec --> path{"authored-here coverage"}
+    path -->|unit-local| checker["fresh checker"]
+    path -->|gate-deferred| join["orch-integrate — each return crosses once"]
+    checker --> join
+    join -->|named downstream gate| gate["composite gate"]
+    join -->|otherwise| accepted["accepted result"]
+    gate --> accepted
 ```
 
 ## Design
@@ -259,8 +263,8 @@ saved workflows are no longer the difference, so this is what is:
 
 - **Cross-harness.** One library drives both Claude Code and Codex.
 - **Verification is contractual, not merely available.** Adversarial
-  review is house advice there; here a named oracle and one review gate
-  are law between an executor's claim and "done".
+  review is house advice there; here named oracles and the applicable
+  independent path stand between an executor's claim and "done".
 - **Self-improving.** Nothing there mines runs into fixes; here friction
   and traces feed `orch-self-improve`, including on itself.
 - **Survives session death.** Exit mid-run and a workflow starts fresh
