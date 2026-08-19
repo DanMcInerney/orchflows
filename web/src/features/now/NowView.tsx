@@ -124,7 +124,7 @@ export default function NowView({ snapshot, location }: ViewProps) {
     const next = new Set(current); next.has(id) ? next.delete(id) : next.add(id); return next;
   });
 
-  return <div className="now-view" data-fixture={location.fixture || "live"}>
+  return <div className="foundation-view now-view" data-fixture={location.fixture || "live"}>
     <header className="now-header">
       <div><p className="now-kicker"><Radio aria-hidden="true" /> Fleet overview</p><h1>Now</h1><p>Every eligible run, ordered by what needs you first.</p></div>
       <div className="now-live" role="status" aria-live="polite" data-paused={paused}>

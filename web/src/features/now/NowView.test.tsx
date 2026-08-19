@@ -16,7 +16,8 @@ const snapshot: ExperienceSnapshot = {
 describe("Now view", () => {
   it("renders honest bands, exact counts, and reversible expansion", async () => {
     const user = userEvent.setup();
-    render(<NowView snapshot={snapshot} location={{ view: "now", run: "", ticket: "", session: "", fixture: "mixed-live" }} />);
+    const { container } = render(<NowView snapshot={snapshot} location={{ view: "now", run: "", ticket: "", session: "", fixture: "mixed-live" }} />);
+    expect(container.querySelector(".foundation-view.now-view")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Now" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Needs attention, 1 runs" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Active now, 1 runs" })).toBeTruthy();

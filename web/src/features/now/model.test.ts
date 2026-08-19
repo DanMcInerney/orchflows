@@ -8,6 +8,7 @@ describe("Now fleet projection", () => {
     const fleet = projectFleet([...runs, runs[0]]);
     expect(fleet.map((run) => run.band)).toEqual(["attention", "active", "completed"]);
     expect(new Set(fleet.map((run) => run.id)).size).toBe(fleet.length);
+    expect(projectFleet(nowFixture("needs-attention").runs).map((run) => run.band)).toEqual(["attention", "completed"]);
   });
 
   it("rolls exact states by frozen precedence", () => {

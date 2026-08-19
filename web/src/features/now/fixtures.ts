@@ -68,7 +68,7 @@ export function nowFixture(state: string): { runs: NowRun[]; paused: boolean; di
     runs: [attentionRun(true), completedRun()], paused: false,
     diagnostic: "One run contains malformed or unreadable canonical state. It remains visible and is never guessed.",
   };
-  if (state === "needs-attention") return { runs: [attentionRun(), activeRun(), completedRun()], paused: false, diagnostic: "" };
+  if (state === "needs-attention") return { runs: [attentionRun(), completedRun()], paused: false, diagnostic: "" };
   if (state === "live-paused") return { runs: [activeRun(), completedRun()], paused: true, diagnostic: "" };
   return { runs: [attentionRun(), activeRun(), completedRun()], paused: false, diagnostic: "" };
 }
