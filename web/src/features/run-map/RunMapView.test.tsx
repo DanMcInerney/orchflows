@@ -84,7 +84,8 @@ function location(fixture: string): LocationState {
 
 describe("RunMapView", () => {
   it("expands semantically while preserving filters and exposing keyboard graph controls", () => {
-    render(<RunMapView snapshot={snapshot()} location={location("summary-active")} />);
+    const view = render(<RunMapView snapshot={snapshot()} location={location("summary-active")} />);
+    expect(view.container.querySelector(".foundation-view[data-view='run-map']")).not.toBeNull();
     expect(screen.getByRole("heading", { name: "Readiness, without invented phases" })).not.toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /Open canonical graph/i }));
     expect(screen.getByRole("heading", { name: "Readiness groups collapsed" })).not.toBeNull();
