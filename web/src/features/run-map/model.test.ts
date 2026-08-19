@@ -26,7 +26,7 @@ function ticket(
     claimed_by: "",
     depends_on,
     unreadable: false,
-    readiness: { state, dependencies, explanation: `${id} canonical ${state}`, cause, causal_chain } as TicketSummary["readiness"] & { cause: CanonicalCause; causal_chain: string[] }
+    readiness: { state, dependencies, explanation: `${id} canonical ${state}`, cause, causal_chain }
   };
 }
 

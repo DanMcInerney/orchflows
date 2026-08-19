@@ -49,7 +49,7 @@ function ticket(id: string, status: string, state: ReadinessState): TicketSummar
     claimed_by: "fixture-agent",
     depends_on: [],
     unreadable: false,
-    readiness: { state, dependencies: [], explanation: `${id} canonical ${state}` }
+    readiness: { state, dependencies: [], explanation: `${id} canonical ${state}`, cause: "none", causal_chain: [id] }
   };
 }
 
@@ -67,10 +67,10 @@ function snapshot(prefix = "G"): ExperienceSnapshot {
     navigation: [],
     selection: { view: "run-map", run: "run-gamma", ticket: "", session: "" },
     runs: [
-      { id: "run-gamma", ticket_count: tickets.length, active: true },
-      { id: "run-delta", ticket_count: 3, active: false }
+      { id: "run-gamma", ticket_count: tickets.length, active: true, objective: "", repository: "", client: "", last_activity: "", unreadable: false, tickets },
+      { id: "run-delta", ticket_count: 3, active: false, objective: "", repository: "", client: "", last_activity: "", unreadable: false, tickets: [] }
     ],
-    run: { id: "run-gamma", active: true, tickets, counts: { claimed: 1, pending: 1 } },
+    run: { id: "run-gamma", active: true, tickets, diagnostics: [], counts: { claimed: 1, pending: 1 } },
     ticket: null,
     sessions: { items: [], diagnostics: [], empty: true },
     session: null,
@@ -115,6 +115,10 @@ describe("RunMapView", () => {
       { ...ticket("E1", "ready", "ready"), depends_on: ["E3"] },
       { ...ticket("E2", "pending", "waiting"), depends_on: ["E1"] },
       { ...ticket("E3", "pending", "waiting"), depends_on: ["E2", "ZZ9"] }
+    ];
+    malformed.run.diagnostics = [
+      { kind: "dangling", ticket_ids: ["E3", "ZZ9"], message: "E3 depends on missing ticket ZZ9." },
+      { kind: "cycle", ticket_ids: ["E1", "E2", "E3"], message: "Dependency cycle: E1 → E3 → E2 → E1" }
     ];
     render(<RunMapView snapshot={malformed} location={location("malformed-topology")} />);
     expect(screen.getByRole("heading", { name: "2 canonical graph issues" })).not.toBeNull();

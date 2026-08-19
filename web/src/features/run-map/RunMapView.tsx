@@ -41,12 +41,6 @@ import "./run-map.css";
 
 type DisclosureLevel = 0 | 1 | 2 | 3;
 
-interface CanonicalRunDiagnostic {
-  kind: string;
-  ticket_ids: string[];
-  message: string;
-}
-
 interface TicketNodeData extends Record<string, unknown> {
   ticket: TicketSummary;
   causal: "focus" | "dimmed" | "off";
@@ -309,10 +303,7 @@ export function RunMapView({ snapshot, location }: ViewProps) {
   useEffect(() => { if (!paused) setHeldRun(projectedIncoming); }, [paused, projectedIncoming]);
   const run = paused ? heldRun : projectedIncoming;
   const topology = useMemo(() => buildTopology(run?.tickets ?? []), [run]);
-  const diagnostics = useMemo(() => {
-    const projected = (run as (RunDetail & { diagnostics?: CanonicalRunDiagnostic[] }) | null)?.diagnostics;
-    return projected ?? topology.diagnostics;
-  }, [run, topology.diagnostics]);
+  const diagnostics = run?.diagnostics ?? topology.diagnostics;
   const visibleTickets = useMemo(
     () => filterTickets(run?.tickets ?? [], filter, query, topology.criticalPath),
     [filter, query, run, topology.criticalPath]

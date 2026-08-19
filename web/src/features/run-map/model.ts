@@ -1,14 +1,11 @@
-import type { ReadinessState, TicketSummary } from "../../api/schema";
+import type { Readiness, ReadinessCause, ReadinessState, TicketSummary } from "../../api/schema";
 
 export type RunMapFilter = "active" | "problems" | "ready" | "critical" | "all";
 export type DiagnosticKind = "cycle" | "dangling" | "duplicate" | "unreadable" | "inferred";
 export type CauseKind = "pending" | "suspended" | "failed" | "stale" | "malformed" | "none";
-export type CanonicalCause = "pending_dependency" | "suspended_handoff" | "failed_upstream" | "blocked_upstream" | "stale_claim" | "malformed_topology" | "none";
+export type CanonicalCause = ReadinessCause;
 
-export interface CanonicalCausalReadiness {
-  cause: CanonicalCause;
-  causal_chain: string[];
-}
+export type CanonicalCausalReadiness = Pick<Readiness, "cause" | "causal_chain">;
 
 export interface CanonicalEdge {
   id: string;
@@ -226,16 +223,8 @@ export function authoritativeCausalFocus(ticketId: string, tickets: TicketSummar
     summary: causeSummary("malformed", undefined),
     evidence: "Selected ticket is absent from the canonical graph."
   };
-  const canonical = selected.readiness as typeof selected.readiness & Partial<CanonicalCausalReadiness>;
-  if (!canonical.cause || !canonical.causal_chain) return {
-    ticketIds: [selected.id],
-    edgeIds: [],
-    kind: "malformed",
-    summary: "Canonical causal evidence is unavailable.",
-    evidence: selected.readiness.explanation
-  };
-  const kind = classifyCause(canonical.cause);
-  const chain = canonical.causal_chain;
+  const kind = classifyCause(selected.readiness.cause);
+  const chain = selected.readiness.causal_chain;
   const blocker = indexed.get(chain.at(-1) ?? "");
   if (kind === "none" || chain.length < 2) return {
     ticketIds: selected ? [selected.id] : [],
