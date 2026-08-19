@@ -150,7 +150,9 @@ def _ticket_detail(ticket: dict, run_record: dict, root: Path, run: str) -> dict
     record["verification"] = parse_verification(_text(sections.get("Verification")))
     record["inputs"] = [
         line.strip()[2:].strip()
-        for line in _text(sections.get("Fixed inputs")).splitlines()
+        for line in _redact_host_paths(
+            _text(sections.get("Fixed inputs")), root, ticket
+        ).splitlines()
         if line.strip().startswith(("- ", "* ", "+ "))
     ]
     record["write_scope"] = [_text(item) for item in ticket.get("write_scope", ())]

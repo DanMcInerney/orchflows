@@ -6,6 +6,25 @@ from scripts.ui_experience import project_experience
 
 
 class TestExperienceFoundationGap(unittest.TestCase):
+    def test_ticket_inputs_redact_host_paths_like_raw_ticket_text(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = make_sink(Path(raw), runs=("run-gamma",))
+            ticket_path = root / "tickets" / "run-gamma" / "G1.md"
+            private_path = r"C:\Users\private\source\input.md"
+            ticket_path.write_text(
+                ticket_path.read_text(encoding="utf-8")
+                + "\n## Fixed inputs\n\n- {0}\n".format(private_path),
+                encoding="utf-8",
+            )
+
+            selected = project_experience(
+                root,
+                query={"view": "ticket", "run": "run-gamma", "ticket": "G1"},
+            )
+
+        self.assertEqual(["[redacted-host-path]"], selected["ticket"]["inputs"])
+        self.assertNotIn(private_path, selected["ticket"]["raw"])
+
     def test_feature_entries_and_safe_live_fields_share_one_contract(self):
         registry = (ROOT / "web" / "src" / "app" / "registry.ts").read_text(
             encoding="utf-8"
