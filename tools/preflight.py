@@ -3,8 +3,8 @@
 
 The matrix has five active CI legs: three Ubuntu, one macOS, and one Windows.
 A local green covers at most one OS/interpreter pair, so AGENTS.md calls
-it provisional. This closes the interpreter axis before a push; the
-summary names what remains uncovered.
+it provisional. Preflight reruns the suite under each locally installed
+CI interpreter and names missing versions and other operating systems.
 
 The version axis is not hypothetical. `Path.resolve()` on a name holding
 a NUL raises through 3.12 and answers a path on 3.13, and the suite
