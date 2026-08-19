@@ -234,24 +234,22 @@ function projectedGraph(
   };
 }
 
-function FleetView({ runs, currentRun, onOpen }: {
+function FleetView({ runs }: {
   runs: ViewProps["snapshot"]["runs"];
-  currentRun: string;
-  onOpen: () => void;
 }) {
   return (
     <section className="run-fleet" aria-labelledby="fleet-heading">
       <header><p className="run-map__eyebrow">Level 0 · fleet</p><h2 id="fleet-heading">Current workflows</h2></header>
       <div className="run-fleet__list">
         {runs.map((run) => (
-          <button key={run.id} type="button" className="run-fleet__row" onClick={run.id === currentRun ? onOpen : undefined}>
+          <a key={run.id} className="run-fleet__row" href={`/runs/${encodeURIComponent(run.id)}`}>
             <span className="run-fleet__identity"><CircleDot aria-hidden="true" /><strong>{run.id}</strong></span>
             <span className="run-fleet__macro" aria-label={`${run.ticket_count} work items`}>
               {Array.from({ length: Math.min(run.ticket_count, 6) }, (_, index) => <i key={index} />)}
             </span>
             <span className={`run-fleet__state ${run.active ? "is-active" : ""}`}>{run.active ? "active" : "settled"}</span>
             <ChevronRight aria-hidden="true" />
-          </button>
+          </a>
         ))}
       </div>
     </section>
@@ -424,7 +422,7 @@ export function RunMapView({ snapshot, location }: ViewProps) {
         {level === 3 && <><ChevronRight aria-hidden="true" /><span aria-current="page">Inspector</span></>}
       </nav>
 
-      {level === 0 && <FleetView runs={snapshot.runs} currentRun={run.id} onOpen={() => setLevel(1)} />}
+      {level === 0 && <FleetView runs={snapshot.runs} />}
       {level === 1 && <SummaryView run={run} onGroup={openGroup} onExpand={() => setLevel(2)} />}
       {level >= 2 && <section className={`run-map__workspace ${level === 3 ? "has-inspector" : ""}`}>
         {level === 3 && compact && <Inspector ticket={ticket} group={group} causal={causal} onWhy={whyWaiting} onClose={() => { setLevel(2); setCausal(null); }} />}

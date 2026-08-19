@@ -162,4 +162,12 @@ describe("RunMapView", () => {
     expect(screen.getByPlaceholderText("Search ticket or executor").getAttribute("value")).toBe("G4");
     expect(screen.getByRole("heading", { name: "Every canonical dependency" })).not.toBeNull();
   });
+
+  it("gives every enabled fleet row a canonical navigable destination", () => {
+    render(<RunMapView snapshot={snapshot()} location={location("summary-active")} />);
+    fireEvent.click(screen.getByRole("button", { name: "Fleet" }));
+
+    expect(screen.getByRole("link", { name: /run-gamma/ }).getAttribute("href")).toBe("/runs/run-gamma");
+    expect(screen.getByRole("link", { name: /run-delta/ }).getAttribute("href")).toBe("/runs/run-delta");
+  });
 });

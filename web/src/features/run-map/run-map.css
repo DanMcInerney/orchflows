@@ -23,7 +23,7 @@
 .run-fleet > header, .run-summary__heading { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-subtle); }
 .run-fleet h2, .run-summary h2, .run-map__graph-card h2, .run-inspector h2, .run-map__diagnostics h2 { margin: var(--space-1) 0 0; color: var(--text-strong); font-size: var(--type-title-md); }
 .run-fleet__list { padding: var(--space-2); }
-.run-fleet__row { width: 100%; min-height: var(--row-comfortable); display: grid; grid-template-columns: minmax(180px, 1fr) 160px 80px 20px; align-items: center; gap: var(--space-4); padding: 0 var(--space-3); border: 1px solid transparent; border-radius: var(--radius-control); color: var(--text); background: transparent; text-align: left; }
+.run-fleet__row { width: 100%; min-height: var(--row-comfortable); display: grid; grid-template-columns: minmax(180px, 1fr) 160px 80px 20px; align-items: center; gap: var(--space-4); padding: 0 var(--space-3); border: 1px solid transparent; border-radius: var(--radius-control); color: var(--text); background: transparent; text-align: left; text-decoration: none; cursor: pointer; }
 .run-fleet__row:hover { border-color: var(--border-strong); background: var(--surface-2); }
 .run-fleet__identity { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-mono); }
 .run-fleet__identity svg { width: 16px; color: var(--accent); }

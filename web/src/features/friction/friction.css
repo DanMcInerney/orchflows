@@ -134,6 +134,30 @@
   gap: var(--space-3);
 }
 
+.friction-feed__more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  color: var(--text-muted);
+  font-size: var(--type-sm);
+}
+
+.friction-feed__more button {
+  min-height: 36px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  color: var(--text-strong);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.friction-feed__more button:hover {
+  border-color: var(--accent);
+}
+
 .friction-record {
   overflow: hidden;
   border: 1px solid var(--border-subtle);

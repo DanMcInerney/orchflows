@@ -42,7 +42,7 @@ function RunRow({ run, selected, onSelect }: { run: FleetRun; selected: boolean;
   return <button type="button" className="now-run" data-band={run.band} aria-pressed={selected} onClick={onSelect}>
     <span className="now-run__tone" aria-hidden="true">{stateGlyph(run.band === "attention" ? "attention" : run.band === "completed" ? "complete" : "running")}</span>
     <span className="now-run__copy">
-      <strong>{run.objective}</strong>
+      <strong className="now-objective-summary" title={run.objective}>{run.objective}</strong>
       <span><GitBranch aria-hidden="true" /> {run.repository}</span>
       <span className="now-run__path">{run.path || "Canonical groups unavailable"}</span>
     </span>
@@ -85,7 +85,8 @@ function GroupStrip({ run, expanded, onToggle }: { run: FleetRun; expanded: Set<
 function Inspector({ run, tab, setTab }: { run: FleetRun; tab: string; setTab: (tab: string) => void }) {
   const tabs = ["summary", "tickets"];
   return <aside className="now-inspector" aria-labelledby="now-inspector-heading">
-    <p className="now-kicker">Inspector evidence</p><h2 id="now-inspector-heading">{run.objective}</h2>
+    <p className="now-kicker">Inspector evidence</p><h2 id="now-inspector-heading" className="now-objective-summary" title={run.objective}>{run.objective}</h2>
+    <details className="now-objective-details"><summary>Full objective</summary><p>{run.objective}</p></details>
     <div className="now-tabs" role="tablist" aria-label="Run inspector">
       {tabs.map((name, index) => <button
         type="button"
@@ -161,7 +162,7 @@ export default function NowView({ snapshot, location }: ViewProps) {
       </div>
       <main className="now-map" aria-labelledby="now-map-heading">
         {selected ? <>
-          <header><div><p className="now-kicker">Active objective</p><h2 id="now-map-heading">{selected.objective}</h2></div><CountSummary counts={selected.counts} /></header>
+          <header><div><p className="now-kicker">Active objective</p><h2 id="now-map-heading" className="now-objective-summary" title={selected.objective}>{selected.objective}</h2></div><CountSummary counts={selected.counts} /></header>
           <GroupStrip run={selected} expanded={expanded} onToggle={toggleGroup} />
           <div className="now-graph" aria-label="Expanded canonical dependency graph">
             {selected.tickets.length && !selected.unreadable ? <RunGraph tickets={selected.tickets as TicketSummary[]} /> : <div className="now-unavailable"><ShieldAlert aria-hidden="true" /><strong>Exact graph unavailable</strong><span>The run stays visible until its canonical tickets can be read.</span></div>}

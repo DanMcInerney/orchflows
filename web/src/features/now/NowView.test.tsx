@@ -57,4 +57,25 @@ describe("Now view", () => {
     expect(screen.getByText("Unreadable canonical data")).toBeTruthy();
     expect(screen.getByText("Exact graph unavailable")).toBeTruthy();
   });
+
+  it("bounds long objective summaries while preserving deliberate full disclosure", async () => {
+    const user = userEvent.setup();
+    const objective = "A very long objective ".repeat(180);
+    const longSnapshot: ExperienceSnapshot = {
+      ...snapshot,
+      runs: [{
+        id: "long-run", ticket_count: 0, active: true, objective,
+        repository: "orchflows", client: "Codex", last_activity: "now",
+        unreadable: false, tickets: []
+      }]
+    };
+    const { container } = render(<NowView snapshot={longSnapshot} location={{ view: "now", run: "", ticket: "", session: "", fixture: "" }} />);
+
+    expect(container.querySelectorAll(".now-objective-summary")).toHaveLength(3);
+    const disclosure = screen.getByText("Full objective").closest("details");
+    expect(disclosure?.hasAttribute("open")).toBe(false);
+    await user.click(screen.getByText("Full objective"));
+    expect(disclosure?.hasAttribute("open")).toBe(true);
+    expect(disclosure?.textContent).toContain(objective);
+  });
 });

@@ -58,6 +58,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         self.assertNotIn(TRANSCRIPT_SENTINEL, encoded)
         self.assertNotIn(str(root), encoded)
         self.assertNotIn(str(transcripts), encoded)
+        self.assertNotIn("not-an-encoded-path", encoded)
         self.assertNotIn("toolu_alpha_01", encoded)
         self.assertNotIn("file-history", encoded)
 

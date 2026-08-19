@@ -89,11 +89,17 @@ describe("SessionsView", () => {
   });
 
   it("renders diagnostic metadata and never upgrades absent provider facts", () => {
-    render(<SessionsView snapshot={snapshot(populated)} location={location("diagnostic")} />);
+    render(<SessionsView snapshot={snapshot(populated, [
+      "project directory name is not an encoded path: C--Users-private-project",
+      "second raw parser diagnostic that should not be copied into the banner"
+    ])} location={location("diagnostic")} />);
     const status = screen.getByRole("status");
     expect(status.textContent).toContain("Metadata needs attention");
+    expect(status.textContent).toContain("2 discovery signals");
+    expect(status.textContent).not.toContain("C--Users-private-project");
+    expect(status.textContent).not.toContain("second raw parser diagnostic");
+    expect(status.textContent?.length).toBeLessThan(180);
     expect(status.compareDocumentPosition(screen.getByRole("heading", { name: "Sessions" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByText("unreadable transcript lines: 1")).toBeTruthy();
     expect(document.querySelectorAll("[data-state='attention']")).toHaveLength(1);
     expect(screen.getByText("Unknown client")).toBeTruthy();
     expect(screen.queryByText("Codex")).toBeNull();

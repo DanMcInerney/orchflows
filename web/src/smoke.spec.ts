@@ -41,8 +41,32 @@ test.beforeAll(async () => {
   stateRoot = await mkdtemp(join(tmpdir(), "orchflows-smoke-"));
   await mkdir(join(stateRoot, "tickets"));
   await cp(resolve("tests", "fixtures", "ui", "run-gamma"), join(stateRoot, "tickets", "run-gamma"), { recursive: true });
+  await cp(resolve("tests", "fixtures", "ui", "run-gamma"), join(stateRoot, "tickets", "run-delta"), { recursive: true });
+  const objectivePath = join(stateRoot, "tickets", "run-gamma", "G1.md");
+  const objectiveTicket = await readFile(objectivePath, "utf8");
+  await writeFile(
+    objectivePath,
+    objectiveTicket.replace(
+      "A ticket whose `## Verification` carries the five-column table shape, one\nrow of which escapes a pipe inside its evidence cell.",
+      "A deliberately long workflow objective that must remain glanceable on the fleet dashboard while its complete canonical wording remains available on demand. ".repeat(35)
+    ),
+    "utf8"
+  );
   const transcriptRoot = join(stateRoot, "transcripts");
-  await mkdir(transcriptRoot);
+  await cp(resolve("tests", "fixtures", "transcripts"), transcriptRoot, { recursive: true });
+  const agentRoot = join(transcriptRoot, "-Users-dmcinerney-tools-alpha", "11111111-1111-4111-8111-111111111111", "subagents");
+  for (let index = 20; index < 38; index += 1) {
+    await writeFile(join(agentRoot, `agent-browser-${index}.meta.json`), JSON.stringify({
+      agentType: "orch-worker", description: `Browser geometry agent ${index}`,
+      toolUseId: `tool-browser-${index}`, spawnDepth: 1
+    }), "utf8");
+  }
+  const frictionRoot = join(stateRoot, "friction");
+  await mkdir(frictionRoot);
+  await writeFile(join(frictionRoot, "2026-08.jsonl"), Array.from({ length: 130 }, (_, index) => JSON.stringify({
+    ts: `2026-08-19T12:${String(index % 60).padStart(2, "0")}:00Z`, category: "browser-guard",
+    host: "fixture", observed: `Synthetic friction ${index + 1}`, expected: "A bounded initial feed"
+  })).join("\n"), "utf8");
   serverProcess = spawn(process.env.ORCHFLOWS_PYTHON || "python", [
     "-u", "scripts/ui.py", "--root", stateRoot, "--transcripts", transcriptRoot, "--port", "0"
   ], { cwd: process.cwd(), stdio: ["ignore", "pipe", "pipe"] });
@@ -276,6 +300,52 @@ test("compiled experience preserves keyboard-reachable observer state across ref
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(641);
   expect(remoteRequests).toEqual([]);
   expect(errors).toEqual([]);
+});
+
+test("experience drill-down stays actionable and bounded in a real browser", async ({ page }) => {
+  test.skip(action !== "smoke" || !experienceMode);
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 1440, height: 1024 });
+
+  await page.goto(`${origin}/runs/run-gamma`);
+  await page.getByRole("button", { name: "Fleet" }).click();
+  await page.getByRole("link", { name: /run-delta/ }).click();
+  await expect(page).toHaveURL(/\/runs\/run-delta$/);
+  await expect(page.getByRole("heading", { level: 1, name: "run-delta" })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("heading", { level: 1, name: "run-gamma" })).toBeVisible();
+
+  await page.goto(`${origin}/sessions`);
+  const diagnostic = page.locator(".sessions-view__diagnostic");
+  await expect(diagnostic).toContainText("Metadata needs attention");
+  expect((await diagnostic.textContent())?.length).toBeLessThan(180);
+  await expect(diagnostic).not.toContainText("not-an-encoded-path");
+
+  await page.goto(`${origin}/sessions/11111111-1111-4111-8111-111111111111`);
+  const agent = page.locator(".react-flow__node").filter({ has: page.locator('[data-kind="agent"]') }).nth(5);
+  await expect(agent).toBeVisible();
+  const agentLabel = await agent.locator("strong").textContent();
+  const agentBox = await agent.boundingBox();
+  const canvasBox = await page.locator(".session-graph-canvas").boundingBox();
+  expect(agentBox).not.toBeNull();
+  expect(canvasBox).not.toBeNull();
+  expect(agentBox.y).toBeGreaterThanOrEqual(canvasBox.y);
+  expect(agentBox.y + agentBox.height).toBeLessThanOrEqual(canvasBox.y + canvasBox.height);
+  await agent.click();
+  await expect(page.locator("#session-inspector-heading")).toHaveText(agentLabel || "");
+
+  await page.goto(`${origin}/now`);
+  await expect(page.locator(".now-run").first()).toBeVisible();
+  const objectiveHeights = await page.locator(".now-objective-summary").evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height));
+  expect(Math.max(...objectiveHeights)).toBeLessThanOrEqual(72);
+  await expect(page.getByText("Full objective")).toBeVisible();
+
+  await page.goto(`${origin}/friction`);
+  await expect(page.locator(".friction-record")).toHaveCount(50);
+  await expect(page.getByText("Showing 50 of 130 records")).toBeVisible();
+  await page.getByRole("button", { name: "Show 50 more friction records" }).click();
+  await expect(page.locator(".friction-record")).toHaveCount(100);
+  await expect(page.getByText("Showing 100 of 130 records")).toBeVisible();
 });
 
 test("capture every manifest identity", async ({ page }) => {

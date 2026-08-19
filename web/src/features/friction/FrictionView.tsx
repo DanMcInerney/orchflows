@@ -8,6 +8,7 @@ import {
   LockKeyhole,
   Server,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import type { ExperienceSnapshot } from "../../api/schema";
 import type { LocationState } from "../../state/location";
 import "./friction.css";
@@ -28,6 +29,7 @@ interface FrictionRecord {
 }
 
 const FRICTION_FIELDS = ["ts", "category", "host", "observed", "expected", "run", "ticket"] as const;
+const FRICTION_PAGE_SIZE = 50;
 const LINKED_CAPTURE_RECORD: FrictionRecord = {
   ts: "2026-08-04T12:20:00Z",
   category: "contract-gap",
@@ -129,6 +131,8 @@ function IntegrityNotice({ skipped, unreadable }: { skipped: number; unreadable:
 }
 
 export function FrictionView({ snapshot, location }: FrictionViewProps) {
+  const [visibleLimit, setVisibleLimit] = useState(FRICTION_PAGE_SIZE);
+  useEffect(() => setVisibleLimit(FRICTION_PAGE_SIZE), [location.fixture]);
   const fixtureEmpty = location.fixture === "empty";
   const projectedItems = fixtureEmpty
     ? []
@@ -138,6 +142,7 @@ export function FrictionView({ snapshot, location }: FrictionViewProps) {
     : projectedItems;
   const skipped = fixtureEmpty ? 0 : Math.max(0, snapshot.friction.skipped);
   const unreadable = fixtureEmpty ? 0 : Math.max(0, snapshot.friction.unreadable);
+  const visibleItems = items.slice(0, visibleLimit);
 
   return (
     <div className="friction-view foundation-view" data-view="friction" data-state={items.length ? "populated" : "empty"}>
@@ -155,9 +160,19 @@ export function FrictionView({ snapshot, location }: FrictionViewProps) {
       </header>
 
       {items.length ? (
-        <section className="friction-feed" aria-label="Friction records">
-          {items.map((record, index) => <FrictionRecordCard key={`${record.ts || "undated"}-${index}`} record={record} index={index} />)}
-        </section>
+        <>
+          <section className="friction-feed" aria-label="Friction records">
+            {visibleItems.map((record, index) => <FrictionRecordCard key={`${record.ts || "undated"}-${index}`} record={record} index={index} />)}
+          </section>
+          <div className="friction-feed__more" role="status">
+            <span>Showing {visibleItems.length} of {items.length} records</span>
+            {visibleItems.length < items.length && <button
+              type="button"
+              onClick={() => setVisibleLimit((limit) => Math.min(limit + FRICTION_PAGE_SIZE, items.length))}
+              aria-label={`Show ${Math.min(FRICTION_PAGE_SIZE, items.length - visibleItems.length)} more friction records`}
+            >Show {Math.min(FRICTION_PAGE_SIZE, items.length - visibleItems.length)} more</button>}
+          </div>
+        </>
       ) : (
         <section className="friction-empty" aria-labelledby="friction-empty-title">
           <span className="friction-empty__glyph"><FileQuestion aria-hidden="true" /></span>

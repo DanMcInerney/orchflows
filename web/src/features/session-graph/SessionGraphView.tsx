@@ -190,7 +190,7 @@ export function SessionGraphView({ snapshot, location }: { snapshot: ExperienceS
                 deleteKeyCode={null}
                 fitView
                 fitViewOptions={{ padding: 0.16, maxZoom: 0.88 }}
-                minZoom={0.5}
+                minZoom={0.05}
                 maxZoom={1.6}
                 proOptions={{ hideAttribution: true }}
               >

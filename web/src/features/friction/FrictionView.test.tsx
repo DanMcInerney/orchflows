@@ -1,4 +1,5 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ExperienceSnapshot, FrictionItem } from "../../api/schema";
 import type { LocationState } from "../../state/location";
@@ -104,5 +105,18 @@ describe("FrictionView", () => {
     expect(closedFrictionRecord(["not", "a", "record"])).toBeNull();
     expect(closedFrictionRecord({ observed: 42, expected: false })).toBeNull();
     expect(closedFrictionRecord({ observed: "kept", extra: "dropped" })).toEqual({ observed: "kept" });
+  });
+
+  it("mounts a bounded initial window and reveals more without losing the canonical total", async () => {
+    const user = userEvent.setup();
+    const items = Array.from({ length: 130 }, (_, index) => ({ observed: `Record ${index + 1}` }));
+    const { container } = render(<FrictionView snapshot={snapshot(items)} location={{ ...location, fixture: "" }} />);
+
+    expect(screen.getByLabelText("130 friction records")).not.toBeNull();
+    expect(container.querySelectorAll(".friction-record")).toHaveLength(50);
+    expect(screen.getByText("Showing 50 of 130 records")).not.toBeNull();
+    await user.click(screen.getByRole("button", { name: "Show 50 more friction records" }));
+    expect(container.querySelectorAll(".friction-record")).toHaveLength(100);
+    expect(screen.getByText("Showing 100 of 130 records")).not.toBeNull();
   });
 });

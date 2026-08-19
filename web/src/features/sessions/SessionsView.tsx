@@ -35,7 +35,10 @@ export function SessionsView({ snapshot, location }: SessionsViewProps) {
       {model.diagnostics.length > 0 && (
         <div className="sessions-view__diagnostic" role="status">
           <AlertTriangle aria-hidden="true" />
-          <div><strong>Metadata needs attention</strong><span>{model.diagnostics.join(" ")}</span></div>
+          <div>
+            <strong>Metadata needs attention</strong>
+            <span>{model.diagnostics.length} discovery {model.diagnostics.length === 1 ? "signal" : "signals"}. Session rows remain available below.</span>
+          </div>
         </div>
       )}
 
