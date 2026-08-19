@@ -87,7 +87,7 @@ export function SessionGraphView({ snapshot, location }: { snapshot: ExperienceS
   const inferredCount = topology.edges.filter((edge) => edge.inferred).length;
 
   return (
-    <div className="session-graph-view" data-view="session-graph" data-fixture={location.fixture || "live"}>
+    <div className="foundation-view session-graph-view" data-view="session-graph" data-fixture={location.fixture || "live"}>
       {topology.diagnostics.length > 0 && (
         <section className="session-graph-alert" aria-labelledby="session-graph-alert-title">
           <AlertTriangle aria-hidden="true" />
