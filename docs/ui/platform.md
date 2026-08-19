@@ -1,0 +1,122 @@
+# UI platform
+
+The UI platform is a local, read-only projection of orchflows state. It
+provides a stable browser and JSON boundary for the visual experience without
+making a browser a second workflow engine. The state sink remains the source
+of truth, and its records remain untrusted data under
+[visibility law](../../rules/visibility.md) §6.
+
+## Run the reader
+
+From a source checkout, run:
+
+    uv run --no-project python scripts/ui.py
+
+After a user install, run the same installed facade with the private runtime:
+
+    $HOME/.orchflows/runtime/bin/python $HOME/.orchflows/bin/ui.py
+
+On Windows PowerShell, the equivalent is:
+
+    & "$HOME\.orchflows\runtime\Scripts\python.exe" "$HOME\.orchflows\bin\ui.py"
+
+The reader prints its URL and binds `127.0.0.1:8787`. `--port 0` selects a
+free loopback port. `--root` selects another state sink; otherwise
+`scripts/state_root.py` resolves the per-user sink. `--transcripts` selects a
+Claude Code project-transcript root; otherwise the reader looks under
+`~/.claude/projects`. A missing transcript root produces an explicit empty
+projection.
+
+## Dependency and compatibility contract
+
+The installed reader uses Python 3.9 or newer. `requirements-runtime.in` owns
+the two direct server pins, Starlette 0.49.3 and Uvicorn 0.34.3;
+`requirements-runtime.txt` owns their fully pinned, hash-locked transitive
+closure. `pyproject.toml` mirrors the direct pins for repository tooling. The
+versions deliberately retain the Python 3.9 floor and are compatibility debt,
+not an invitation to raise that floor during an unrelated UI change.
+
+The browser application uses React 19, React Flow, and ELK for the graph seam,
+with Radix primitives and Lucide icons. Node 20.19 or newer and pnpm 10.32.1
+are development inputs only. An installed user never needs Node, pnpm, npm, or
+a frontend build. [Third-party notices](../../THIRD_PARTY_NOTICES.md) records
+the version, source, license, and distributed artifact for every shipped
+browser and Python dependency, including elkjs under its EPL-2.0 option.
+
+## Immutable asset lifecycle
+
+`web/src` is the authored TypeScript source. The lockfile and Vite build
+produce `web/dist`: one index, one Vite manifest, and content-hashed local
+scripts, styles, and workers. The committed distribution has no source maps,
+remote URLs, or view-time network dependency. Maintainers verify it with:
+
+    uv run --no-project python tools/ui_frontend.py verify-build
+    uv run --no-project python tools/ui_frontend.py audit-licenses
+    uv run --no-project python tools/ui_frontend.py smoke
+
+A user install stages the distribution, checks its manifest identity, then
+creates, reuses, or repairs `~/.orchflows/ui`. The receipt records each asset
+and the distribution identity. A project install borrows that user-owned
+distribution and refuses an absent or unhealthy copy. Uninstall removes only
+unchanged receipted assets and leaves modified or out-of-bound paths for
+review.
+
+Fresh installation may access the configured Python package index because
+this repository ships no wheelhouse. After installation the reader is
+offline: it serves the installed immutable assets and reads local state only.
+
+## HTTP and API boundary
+
+`scripts/ui.py` is the public CLI. Its Starlette application is served by
+Uvicorn from a socket pre-bound to `127.0.0.1`; a small standard-library
+compatibility server preserves the same contract when the facade is imported
+outside the installed runtime. Both accept only `GET` and `HEAD`, reject
+non-loopback host headers, enable no CORS middleware, and attach restrictive
+CSP, frame, origin, referrer, and content-type headers to every response.
+
+The same-origin routes are:
+
+| route | projection |
+|---|---|
+| `/` and `/assets/*` | immutable browser distribution |
+| `/api/v1/runs` | run summaries and lifecycle-status counts |
+| `/api/v1/runs/{run}` | one canonical dependency graph and run diagnostics |
+| `/api/v1/runs/{run}/tickets/{ticket}` | one closed ticket summary plus linked-friction count |
+| `/api/v1/friction` | aggregate friction health |
+| `/api/v1/sessions` | session metadata summaries |
+| `/api/v1/sessions/{session}` | session and subagent structure metadata |
+| `/api/observe` | minimal graph snapshot used by the first browser shell |
+
+Successful JSON and asset responses carry content-derived ETags. The browser
+uses `If-None-Match`; unchanged resources return `304`, while hashed assets
+also carry immutable caching. The earlier `/ticket`, `/graph`, `/friction`,
+`/sessions`, and `/session` links redirect to equivalent application URLs
+when their target still exists.
+
+## Projection and privacy boundary
+
+All projections use closed field sets. Run graphs contain ticket identifiers,
+dependency edges, lifecycle statuses, aggregate diagnostics, and event
+counts. Ticket projections contain routing and claim metadata, verification
+state and entry count, and a linked-friction count. Session projections
+contain file identity metadata and subagent parent, depth, activity, evidence,
+and readability fields.
+
+No route returns ticket bodies, arbitrary filesystem paths, transcript text,
+prompt text, tool input or output, command output, file contents, or subagent
+conversation contents. The state and transcript roots are opened read-only;
+symbolic-link and path-containment checks keep reads inside those roots. No
+browser route starts a run, changes a ticket, writes friction, calls a model,
+or exposes another mutation endpoint. Ticket lifecycle meanings remain owned
+by [the work-item contract](../../contracts/work-item.md); the UI does not
+invent a second phase taxonomy.
+
+## Successor boundary
+
+This platform stops at a secure data, asset, and graph seam. The
+`20260819T044203Z-orchflows-ui-experience-v2` successor, rooted at
+`00-observability-ui` under `orch-design-pack`, consumes the accepted platform
+result and owns the final dark-mode Now view, summarized and exact run maps,
+ticket inspector, Sessions and session graph, Friction treatment, responsive
+states, and visual verification. Workflow creation, provider calls,
+authentication, and run initiation require a later product specification.
