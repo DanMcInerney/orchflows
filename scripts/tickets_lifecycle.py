@@ -15,11 +15,6 @@ if __package__:
     from .tickets_worklog import _run_goal, _run_tickets
 else:
     from tickets_worklog import _run_goal, _run_tickets
-if __package__:
-    from .ui_readiness import readiness_facts
-else:
-    from ui_readiness import readiness_facts
-
 CLAIM_USAGE = 'claim <run> <id> --by <name>'
 SET_STATUS_USAGE = 'set-status <run> <id> <status>'
 GRANT_USAGE = 'grant <run> <id> --write-scope <path>[,<path>] --by <name>'
@@ -29,6 +24,21 @@ GRANTABLE_STATUSES = frozenset({'claimed', 'suspended'})
 CHECK_USAGE = 'check <run> <id> --by <name>'
 CHECKED_BY_KEY = 'checked_by'
 CHECKABLE_STATUSES = GRANTABLE_STATUSES
+def readiness_facts(ticket: dict, tickets: dict) -> dict:
+    """Return canonical dependency facts without I/O or a clock."""
+    dependencies = [str(value) for value in (ticket.get('depends_on') or [])]
+    dangling = [value for value in dependencies if value not in tickets]
+    incomplete = [
+        value for value in dependencies
+        if value in tickets and tickets[value].get('status') != 'complete'
+    ]
+    status = str(ticket.get('status') or '')
+    return {
+        'status_valid': status in VALID_STATUSES,
+        'dangling': dangling,
+        'incomplete': incomplete,
+        'dependencies_complete': not dangling and not incomplete,
+    }
 def _cited_paths(section_text: str, write_scope=()):
     """Every existing file one section cites, absolutely, inside
     ``write_scope``, as ``(paths, unreadable)``.

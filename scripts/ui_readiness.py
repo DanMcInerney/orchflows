@@ -4,27 +4,10 @@ from __future__ import annotations
 
 try:
     from scripts.tickets_format import TERMINAL_STATES, VALID_STATUSES
+    from scripts.tickets_lifecycle import readiness_facts
 except ImportError:
     from tickets_format import TERMINAL_STATES, VALID_STATUSES
-
-
-def readiness_facts(ticket: dict, tickets: dict) -> dict:
-    """Return lifecycle facts without reading, writing, or consulting a clock."""
-
-    dependencies = [str(value) for value in (ticket.get("depends_on") or [])]
-    dangling = [value for value in dependencies if value not in tickets]
-    incomplete = [
-        value
-        for value in dependencies
-        if value in tickets and tickets[value].get("status") != "complete"
-    ]
-    status = str(ticket.get("status") or "")
-    return {
-        "status_valid": status in VALID_STATUSES,
-        "dangling": dangling,
-        "incomplete": incomplete,
-        "dependencies_complete": not dangling and not incomplete,
-    }
+    from tickets_lifecycle import readiness_facts
 
 
 def explain_ticket(ticket: dict, tickets: dict) -> dict:
