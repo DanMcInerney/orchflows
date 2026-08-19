@@ -18,12 +18,26 @@ from typing import Dict
 ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / "web" / "dist"
 LOCK = ROOT / "pnpm-lock.yaml"
+RUNTIME_REQUIREMENTS = ROOT / "requirements-runtime.txt"
+NOTICES = ROOT / "THIRD_PARTY_NOTICES.md"
+BUNDLE_MANIFEST = DIST / ".vite" / "manifest.json"
 REMOTE_ASSET = re.compile(
     rb"(?:src|href)=[\"']https?://|url\(\s*[\"']?https?://|"
     rb"(?:fetch|import)\(\s*[\"']https?://|new\s+Worker\(\s*[\"']https?://",
     re.IGNORECASE,
 )
 HASHED_ASSET = re.compile(r".+-[0-9A-Za-z_-]{8,}\.(?:css|js)$")
+PYTHON_LICENSES = {
+    "anyio": "MIT",
+    "click": "BSD-3-Clause",
+    "colorama": "BSD-3-Clause",
+    "exceptiongroup": "MIT",
+    "h11": "MIT",
+    "idna": "BSD-3-Clause",
+    "starlette": "BSD-3-Clause",
+    "typing-extensions": "PSF-2.0",
+    "uvicorn": "BSD-3-Clause",
+}
 
 
 def _pnpm() -> str:
@@ -48,6 +62,180 @@ def _run(*arguments: str, env: dict | None = None) -> None:
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _plain_markdown(value: str) -> str:
+    return value.replace("**", "").replace("`", "").strip()
+
+
+def _notice_rows(text: str, heading: str, next_heading: str) -> Dict[str, tuple]:
+    start = text.find(heading)
+    end = text.find(next_heading, start + len(heading))
+    if start < 0 or end < 0:
+        raise RuntimeError("third-party notice table is missing: {0}".format(heading))
+    rows = {}
+    for line in text[start:end].splitlines():
+        if not line.startswith("|"):
+            continue
+        cells = [_plain_markdown(cell) for cell in line.strip().strip("|").split("|")]
+        if len(cells) != 5 or cells[0] in {"Package", "---"}:
+            continue
+        package, version, _source, license_name, artifact = cells
+        if package in rows:
+            raise RuntimeError("duplicate notice row: {0}".format(package))
+        rows[package] = (version, license_name, artifact)
+    if not rows:
+        raise RuntimeError("third-party notice table is empty: {0}".format(heading))
+    return rows
+
+
+def _runtime_identities(text: str) -> Dict[str, str]:
+    identities = {}
+    pattern = re.compile(r"^([A-Za-z0-9_.-]+)==([^\s\\]+)", re.MULTILINE)
+    for name, version in pattern.findall(text):
+        identities[name.lower().replace("_", "-")] = version
+    if not identities:
+        raise RuntimeError("requirements-runtime.txt contains no pinned identities")
+    return identities
+
+
+def _unquote_yaml(value: str) -> str:
+    value = value.strip()
+    return value[1:-1] if len(value) >= 2 and value[0] == value[-1] == "'" else value
+
+
+def _production_snapshots(text: str) -> Dict[str, str]:
+    before_packages, marker, after_packages = text.partition("\npackages:\n")
+    if not marker:
+        raise RuntimeError("pnpm lock has no packages section")
+    roots = {}
+    dependency_name = None
+    in_dependencies = False
+    for line in before_packages.splitlines():
+        indent = len(line) - len(line.lstrip())
+        stripped = line.strip()
+        if indent == 4:
+            in_dependencies = stripped == "dependencies:"
+            dependency_name = None
+        elif in_dependencies and indent == 6 and stripped.endswith(":"):
+            dependency_name = _unquote_yaml(stripped[:-1])
+        elif in_dependencies and dependency_name and indent == 8 and stripped.startswith("version:"):
+            roots[dependency_name] = _unquote_yaml(stripped.split(":", 1)[1])
+    if not roots:
+        raise RuntimeError("pnpm lock importer has no production dependencies")
+
+    _packages, snapshot_marker, snapshot_text = after_packages.partition("\nsnapshots:\n")
+    if not snapshot_marker:
+        raise RuntimeError("pnpm lock has no snapshots section")
+    snapshots: Dict[str, Dict[str, str]] = {}
+    current = None
+    in_dependencies = False
+    for line in snapshot_text.splitlines():
+        indent = len(line) - len(line.lstrip())
+        stripped = line.strip()
+        if indent == 2 and stripped:
+            raw_key = stripped.split(":", 1)[0]
+            current = _unquote_yaml(raw_key)
+            snapshots[current] = {}
+            in_dependencies = False
+        elif current and indent == 4:
+            in_dependencies = stripped == "dependencies:"
+        elif current and in_dependencies and indent == 6 and ":" in stripped:
+            name, version = stripped.split(":", 1)
+            snapshots[current][_unquote_yaml(name)] = _unquote_yaml(version)
+
+    closure = {}
+    queue = ["{0}@{1}".format(name, version) for name, version in roots.items()]
+    seen = set()
+    while queue:
+        key = queue.pop()
+        if key in seen:
+            continue
+        seen.add(key)
+        if key not in snapshots:
+            raise RuntimeError("production snapshot is missing: {0}".format(key))
+        package, separator, version = key.split("(", 1)[0].rpartition("@")
+        if not separator or not package:
+            raise RuntimeError("invalid production snapshot identity: {0}".format(key))
+        if package.startswith("@types/"):
+            continue
+        prior = closure.setdefault(package, version)
+        if prior != version:
+            raise RuntimeError("multiple production versions are unsupported: {0}".format(package))
+        for name, child_version in snapshots[key].items():
+            queue.append("{0}@{1}".format(name, child_version))
+    return closure
+
+
+def _assert_notice_inventory(
+    expected: Dict[str, str], rows: Dict[str, tuple], licenses: Dict[str, str], kind: str
+) -> None:
+    if set(rows) != set(expected):
+        missing = sorted(set(expected) - set(rows))
+        extra = sorted(set(rows) - set(expected))
+        raise RuntimeError("{0} notice inventory mismatch; missing={1}, extra={2}".format(
+            kind, missing, extra
+        ))
+    for package, version in expected.items():
+        seen_version, seen_license, _artifact = rows[package]
+        if seen_version != version:
+            raise RuntimeError("{0} notice version mismatch: {1}".format(kind, package))
+        expected_license = licenses.get(package)
+        if expected_license is None:
+            raise RuntimeError("{0} license policy is missing: {1}".format(kind, package))
+        if seen_license != expected_license:
+            raise RuntimeError("{0} notice license mismatch: {1}".format(kind, package))
+
+
+def audit_licenses() -> dict:
+    inputs = (RUNTIME_REQUIREMENTS, LOCK, BUNDLE_MANIFEST, NOTICES)
+    missing = [str(path.relative_to(ROOT)) for path in inputs if not path.is_file()]
+    if missing:
+        raise RuntimeError("license audit input is missing: {0}".format(", ".join(missing)))
+
+    notice_text = NOTICES.read_text(encoding="utf-8")
+    python_rows = _notice_rows(notice_text, "### Python runtime", "### Browser runtime")
+    browser_rows = _notice_rows(notice_text, "### Browser runtime", "## Adapted engineering material")
+    python_identities = _runtime_identities(RUNTIME_REQUIREMENTS.read_text(encoding="utf-8"))
+    browser_identities = _production_snapshots(LOCK.read_text(encoding="utf-8"))
+    browser_licenses = {
+        package: "ISC" if package.startswith("d3-") or package == "lucide-react" else "MIT"
+        for package in browser_identities
+    }
+    browser_licenses["elkjs"] = "EPL-2.0 (selected option)"
+    _assert_notice_inventory(python_identities, python_rows, PYTHON_LICENSES, "Python")
+    _assert_notice_inventory(browser_identities, browser_rows, browser_licenses, "browser")
+
+    for package, (_version, _license, artifact) in browser_rows.items():
+        expected_artifact = "E" if package == "elkjs" else "B"
+        if artifact != expected_artifact:
+            raise RuntimeError("browser notice artifact mismatch: {0}".format(package))
+    if "elects the Eclipse Public License 2.0 (EPL-2.0) option" not in _plain_markdown(notice_text):
+        raise RuntimeError("elkjs EPL-2.0 election statement is missing")
+
+    try:
+        manifest = json.loads(BUNDLE_MANIFEST.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise RuntimeError("bundled manifest is not valid JSON") from error
+    entry = manifest.get("index.html", {}).get("file") if isinstance(manifest, dict) else None
+    if not isinstance(entry, str) or not HASHED_ASSET.fullmatch(entry.split("/", 1)[-1]):
+        raise RuntimeError("bundled manifest has no content-hashed browser entry")
+    if not (DIST / entry).is_file():
+        raise RuntimeError("bundled manifest entry is missing from web/dist")
+    if len(list((DIST / "assets").glob("elk.worker-*.js"))) != 1:
+        raise RuntimeError("bundled manifest identity has no unique ELK API worker")
+    if len(list((DIST / "assets").glob("elk-worker.min-*.js"))) != 1:
+        raise RuntimeError("bundled manifest identity has no unique ELK engine worker")
+
+    return {
+        "browser_packages": len(browser_identities),
+        "elkjs_license": "EPL-2.0",
+        "lock_sha256": _sha256(LOCK),
+        "manifest_sha256": _sha256(BUNDLE_MANIFEST),
+        "notices_sha256": _sha256(NOTICES),
+        "python_packages": len(python_identities),
+        "requirements_sha256": _sha256(RUNTIME_REQUIREMENTS),
+    }
 
 
 def _dist_identity() -> Dict[str, str]:
@@ -120,11 +308,17 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("verify-build")
+    commands.add_parser("audit-licenses")
     smoke_parser = commands.add_parser("smoke")
     smoke_parser.add_argument("--browser", default="auto")
     arguments = parser.parse_args(argv)
     try:
-        evidence = verify_build() if arguments.command == "verify-build" else smoke(arguments.browser)
+        if arguments.command == "verify-build":
+            evidence = verify_build()
+        elif arguments.command == "audit-licenses":
+            evidence = audit_licenses()
+        else:
+            evidence = smoke(arguments.browser)
     except (OSError, RuntimeError) as error:
         print("ui-frontend {0}: FAIL: {1}".format(arguments.command, error), file=sys.stderr)
         return 1
