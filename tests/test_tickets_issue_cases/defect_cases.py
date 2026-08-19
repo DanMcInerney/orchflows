@@ -75,6 +75,19 @@ class TicketDefectsTest(unittest.TestCase):
         self.assertTrue(any("in-progress" in defect for defect in defects), defects)
         self.assertTrue(any("complete" in defect for defect in defects), defects)
 
+    def test_legacy_checker_reading_and_real_checker_lifecycle_remain_valid(self):
+        self.assertEqual([], tickets_mod.ticket_defects(GOOD_TICKET))
+        checked = GOOD_TICKET.replace("status: ready", "status: claimed").replace(
+            "executor: orch-tdd",
+            "executor: orch-tdd\nindependence: checker\nchecked_by: checker-a",
+        ).replace("claimed_by:", "claimed_by: agent-a")
+        self.assertEqual([], tickets_mod.ticket_defects(checked))
+
+        root_cut_check = checked.replace("executor: orch-tdd", "executor: orch-decompose").replace(
+            "independence: checker", "independence: gate"
+        )
+        self.assertEqual([], tickets_mod.ticket_defects(root_cut_check))
+
     def test_each_required_body_section_is_named_when_absent(self):
         for section in (
             "Objective", "Fixed inputs", "Completion test", "Return fields",

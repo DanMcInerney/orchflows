@@ -311,6 +311,43 @@ class NewTest(unittest.TestCase):
             self.assertIn("oracle_class", payload["error"])
             self.assertFalse(self.ticket_path(sink).exists())
 
+    def test_a_file_cannot_forge_or_mix_its_independence_path(self):
+        variants = (
+            (
+                "off-enum independence",
+                GOOD_TICKET.replace(
+                    "executor: orch-tdd", "executor: orch-tdd\nindependence: solo"
+                ),
+                "solo",
+            ),
+            (
+                "gate plus checker identity",
+                GOOD_TICKET.replace(
+                    "executor: orch-tdd",
+                    "executor: orch-tdd\nindependence: gate\nchecked_by: checker-a",
+                ),
+                "checked_by",
+            ),
+            (
+                "checker identity before dispatch",
+                GOOD_TICKET.replace(
+                    "executor: orch-tdd",
+                    "executor: orch-tdd\nindependence: checker\nchecked_by: forged-before-dispatch",
+                ),
+                "checked_by",
+            ),
+        )
+        for label, text, evidence in variants:
+            with self.subTest(label), tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                sink = use_sink(tmp)
+                source = tmp / "T1.md"
+                source.write_text(text, encoding="utf-8")
+                payload = run_cmd("new", "testrun", "--file", str(source))
+                self.assertIn("error", payload)
+                self.assertIn(evidence, payload["error"])
+                self.assertFalse(self.ticket_path(sink).exists())
+
     def test_a_file_whose_run_disagrees_with_the_argument_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
