@@ -1,4 +1,4 @@
-import { AlertTriangle, Clock3, FolderSearch, LockKeyhole, Search, UsersRound } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, FolderSearch, LockKeyhole, Search, UsersRound } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import type { ExperienceSnapshot } from "../../api/schema";
@@ -92,7 +92,7 @@ export function SessionsView({ snapshot, location }: SessionsViewProps) {
                   </span>
                   <span className="sessions-view__unknown" data-unknown={!item.client || undefined}>
                     <FolderSearch aria-hidden="true" />
-                    <span>{item.client || "Unknown client"}<small>{item.project || "Project metadata unavailable"}</small></span>
+                    <span>{item.client || "Unknown client"}<small>{item.project || "Unknown project"}</small></span>
                   </span>
                   <span className="sessions-view__agents"><UsersRound aria-hidden="true" /> {item.agentCount} {item.agentCount === 1 ? "agent" : "agents"}</span>
                   <span className="sessions-view__modified">
@@ -100,7 +100,9 @@ export function SessionsView({ snapshot, location }: SessionsViewProps) {
                     <time className="mono" dateTime={item.modified || undefined} title={item.modified || undefined}>{activityLabel(item.modified)}</time>
                   </span>
                   <span className="sessions-view__diagnostic-count" data-state={item.diagnostics.length ? "attention" : "ready"}>
-                    {item.diagnostics.length ? <><AlertTriangle aria-hidden="true" /> {item.diagnostics.length} diagnostic</> : "Metadata ready"}
+                    {item.diagnostics.length
+                      ? <><AlertTriangle aria-hidden="true" /> {item.diagnostics.length} diagnostic</>
+                      : <><CheckCircle2 aria-hidden="true" /> Metadata ready</>}
                   </span>
                 </a>
               </li>

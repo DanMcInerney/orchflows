@@ -57,7 +57,7 @@ describe("SessionsView", () => {
     expect(screen.getByText("Claude Code")).toBeTruthy();
     expect(screen.getByText("orchflows")).toBeTruthy();
     expect(screen.getByText("Unknown client")).toBeTruthy();
-    expect(screen.getByText("Project metadata unavailable")).toBeTruthy();
+    expect(screen.getByText("Unknown project")).toBeTruthy();
     expect(document.querySelectorAll("[data-state='ready']")).toHaveLength(2);
     expect(document.querySelectorAll("[data-unknown]")).toHaveLength(1);
     const link = screen.getByRole("link", { name: "Open Index safe session metadata" });
@@ -67,6 +67,7 @@ describe("SessionsView", () => {
     await user.tab();
     expect(document.activeElement).toBe(link);
     expect(screen.getAllByText("Metadata ready")).toHaveLength(2);
+    expect(document.querySelectorAll("[data-state='ready'] svg")).toHaveLength(2);
     expect(screen.queryByRole("status")).toBeNull();
     expect(screen.getByText("2026-08-19 09:00Z").getAttribute("title")).toBe("2026-08-19T09:00:00Z");
     expect(document.body.textContent).not.toContain(PRIVATE_SENTINEL);

@@ -2,7 +2,7 @@
 
 Sessions is the read-only metadata index at `/sessions`. It lists only closed fields supplied by `orchflows.experience.v1`: session identity, title metadata, last-modified metadata, agent count, diagnostic labels, and optional safe client and project labels. Selecting a row follows the canonical `/sessions/{session}` route for the topology-only agent graph.
 
-The view deliberately labels absent facts as **Unknown client** and **Project metadata unavailable**. It does not infer either value from a title, identifier, transcript-root slug, or filesystem path. A known label appears only when the platform supplies the corresponding closed `client` or pre-redacted `project` field.
+The view deliberately labels absent facts as **Unknown client** and **Unknown project**. It does not infer either value from a title, identifier, transcript-root slug, or filesystem path. A known label appears only when the platform supplies the corresponding closed `client` or pre-redacted `project` field.
 
 Prompts, tool inputs and outputs, command output, file contents, paths, transcript messages, and subagent conversations are not view inputs and are never rendered. The adapter copies only the seven closed fields above and drops every other property before rendering. React text rendering keeps metadata inert.
 
