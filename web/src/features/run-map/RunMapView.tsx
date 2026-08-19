@@ -1,7 +1,9 @@
 import {
   Background,
   Controls,
+  Handle,
   MiniMap,
+  Position,
   ReactFlow,
   ReactFlowProvider,
   type Edge,
@@ -83,10 +85,12 @@ function TicketNode({ data, selected }: NodeProps) {
       aria-label={`${ticket.id}, ${ticket.readiness.state}: ${ticket.readiness.explanation}`}
       aria-current={selected ? "true" : undefined}
     >
+      <Handle type="target" position={Position.Left} isConnectable={false} aria-hidden="true" />
       <span className="run-ticket-node__glyph" aria-hidden="true">{statusGlyph(ticket.readiness.state)}</span>
       <strong>{ticket.id}</strong>
       <span className="run-ticket-node__state">{ticket.readiness.state}</span>
       <small>{ticket.executor || "executor unavailable"}</small>
+      <Handle type="source" position={Position.Right} isConnectable={false} aria-hidden="true" />
     </article>
   );
 }
@@ -95,9 +99,11 @@ function GroupNode({ data, selected }: NodeProps) {
   const { group } = data as GroupNodeData;
   return (
     <article className="run-group-node" data-status={group.id} aria-current={selected ? "true" : undefined}>
+      <Handle type="target" position={Position.Left} isConnectable={false} aria-hidden="true" />
       <span className="run-group-node__glyph" aria-hidden="true">{statusGlyph(group.id)}</span>
       <div><strong>{group.label}</strong><small>{group.ticketIds.length} work items</small></div>
       <span className="run-group-node__ids">{group.ticketIds.join(" · ")}</span>
+      <Handle type="source" position={Position.Right} isConnectable={false} aria-hidden="true" />
     </article>
   );
 }
@@ -114,10 +120,33 @@ function projectedGraph(
   const topology = buildTopology(tickets);
   const focus = new Set(causal?.ticketIds ?? []);
   if (expanded) {
+    const indexed = new Map(tickets.map((ticket) => [ticket.id, ticket]));
+    const depths = new Map<string, number>();
+    function depth(id: string, active = new Set<string>()): number {
+      if (topology.diagnostics.some((diagnostic) => diagnostic.kind === "cycle")) return 0;
+      const known = depths.get(id);
+      if (known !== undefined) return known;
+      if (active.has(id)) return 0;
+      const ticket = indexed.get(id);
+      const next = new Set(active).add(id);
+      const value = ticket?.depends_on.length
+        ? Math.max(0, ...ticket.depends_on.map((dependency) => depth(dependency, next))) + 1
+        : 0;
+      depths.set(id, value);
+      return value;
+    }
+    const lanes = new Map<number, number>();
     const nodes: Node[] = tickets.map((ticket, index) => ({
       id: ticket.id,
       type: "ticket",
-      position: { x: 56 + (index % 3) * 264, y: 56 + Math.floor(index / 3) * 140 },
+      position: topology.diagnostics.some((diagnostic) => diagnostic.kind === "cycle")
+        ? { x: 56 + (index % 3) * 264, y: 56 + Math.floor(index / 3) * 140 }
+        : (() => {
+            const column = depth(ticket.id);
+            const lane = lanes.get(column) ?? 0;
+            lanes.set(column, lane + 1);
+            return { x: 40 + column * 204, y: 52 + lane * 120 };
+          })(),
       selected: ticket.id === selectedTicket,
       data: {
         ticket,
@@ -153,6 +182,7 @@ function projectedGraph(
           id: edge.id,
           source: edge.source,
           target: edge.target,
+          type: "straight",
           focusable: true,
           ariaLabel: `${edge.source} is a dependency of ${edge.target}`,
           className: causal ? (isFocus ? "run-edge--focus" : "run-edge--dimmed") : "",
@@ -187,6 +217,7 @@ function projectedGraph(
       source: `group:${bundle.source}`,
       target: `group:${bundle.target}`,
       label: `${bundle.count}`,
+      type: "straight",
       focusable: true,
       ariaLabel: `${bundle.count} dependencies from ${bundle.source} to ${bundle.target}`
     }))
@@ -287,10 +318,10 @@ function Inspector({ ticket, group, causal, onWhy, onClose }: {
 }
 
 export function RunMapView({ snapshot, location }: ViewProps) {
-  const identity = location.fixture || "summary-active";
+  const identity = location.fixture || "live";
   const incoming = snapshot.run;
   const [paused, setPaused] = useState(false);
-  const [heldRun, setHeldRun] = useState<RunDetail | null>(() => incoming ? runForIdentity(incoming, identity) : null);
+  const [heldRun, setHeldRun] = useState<RunDetail | null>(() => location.fixture ? runForIdentity(incoming, identity, location.run) : incoming);
   const [level, setLevel] = useState<DisclosureLevel>(() => initialLevel(identity));
   const [expanded, setExpanded] = useState(identity === "full-expanded" || identity === "blocked-causal" || identity === "malformed-topology");
   const [filter, setFilter] = useState<RunMapFilter>("all");
@@ -299,7 +330,10 @@ export function RunMapView({ snapshot, location }: ViewProps) {
   const [selectedGroup, setSelectedGroup] = useState("");
   const [causal, setCausal] = useState<CausalFocus | null>(null);
 
-  const projectedIncoming = useMemo(() => incoming ? runForIdentity(incoming, identity) : null, [identity, incoming]);
+  const projectedIncoming = useMemo(
+    () => location.fixture ? runForIdentity(incoming, identity, location.run) : incoming,
+    [identity, incoming, location.fixture, location.run]
+  );
   useEffect(() => { if (!paused) setHeldRun(projectedIncoming); }, [paused, projectedIncoming]);
   const run = paused ? heldRun : projectedIncoming;
   const topology = useMemo(() => buildTopology(run?.tickets ?? []), [run]);

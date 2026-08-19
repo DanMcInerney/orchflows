@@ -34,7 +34,9 @@ vi.mock("@xyflow/react", () => ({
   </div>,
   Background: () => null,
   MiniMap: ({ ariaLabel }: { ariaLabel: string }) => <div aria-label={ariaLabel} />,
-  Controls: ({ "aria-label": label }: { "aria-label": string }) => <div aria-label={label}><button type="button">Zoom in</button><button type="button">Zoom out</button><button type="button">Fit view</button></div>
+  Controls: ({ "aria-label": label }: { "aria-label": string }) => <div aria-label={label}><button type="button">Zoom in</button><button type="button">Zoom out</button><button type="button">Fit view</button></div>,
+  Handle: () => null,
+  Position: { Left: "left", Right: "right" }
 }));
 
 afterEach(cleanup);

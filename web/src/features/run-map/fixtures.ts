@@ -15,6 +15,48 @@ function readiness(
   return { state, dependencies, explanation, cause, causal_chain };
 }
 
+function fixtureTicket(id: string): TicketSummary {
+  return {
+    id,
+    status: "pending",
+    executor: "orch-render",
+    bound: "90m",
+    claimed_at: "",
+    claimed_by: "",
+    depends_on: [],
+    unreadable: false,
+    readiness: readiness("ready", [], `${id} has complete dependencies and is eligible`, "none", [id])
+  };
+}
+
+function deterministicRun(runId: string, identity: string): RunDetail {
+  if (identity === "malformed-topology") {
+    const [one, two, three, four] = ["E1", "E2", "E3", "E4"].map(fixtureTicket);
+    return {
+      id: runId || "run-epsilon",
+      active: true,
+      counts: { pending: 3, ready: 1 },
+      tickets: [
+        projected(one, { status: "ready", depends_on: [three.id], readiness: readiness("waiting", [three.id], `${one.id} waits for: ${three.id}`, "malformed_topology", [one.id, three.id]) }),
+        projected(two, { depends_on: [one.id], readiness: readiness("waiting", [one.id], `${two.id} waits for: ${one.id}`, "malformed_topology", [two.id, one.id]) }),
+        projected(three, { depends_on: [two.id], readiness: readiness("waiting", [two.id], `${three.id} waits for: ${two.id}`, "malformed_topology", [three.id, two.id]) }),
+        projected(four, { depends_on: ["ZZ9", one.id], readiness: readiness("attention", ["ZZ9"], `${four.id} names missing dependencies: ZZ9`, "malformed_topology", [four.id, "ZZ9"]) })
+      ],
+      diagnostics: [
+        { kind: "cycle", ticket_ids: [one.id, three.id, two.id], message: `Dependency cycle: ${one.id} → ${three.id} → ${two.id} → ${one.id}` },
+        { kind: "dangling", ticket_ids: [four.id, "ZZ9"], message: `${four.id} depends on missing ticket ZZ9.` }
+      ]
+    };
+  }
+  return {
+    id: runId || (identity === "completed" ? "run-delta" : "run-gamma"),
+    active: identity !== "completed",
+    counts: { complete: 2, blocked: 1, claimed: 1, pending: 2 },
+    diagnostics: [],
+    tickets: ["G1", "G2", "G3", "G4", "G5", "G6", "G7"].map(fixtureTicket)
+  };
+}
+
 function activeTopology(run: RunDetail): RunDetail {
   if (run.tickets.length < 5) return run;
   const [spec, verify, foundation, render, gate, ...rest] = run.tickets;
@@ -60,7 +102,8 @@ function activeTopology(run: RunDetail): RunDetail {
   return { ...run, active: true, tickets };
 }
 
-export function runForIdentity(run: RunDetail, identity: string): RunDetail {
+export function runForIdentity(run: RunDetail | null, identity: string, requestedRun = ""): RunDetail {
+  run = run ?? deterministicRun(requestedRun, identity);
   if (identity === "malformed-topology") return run;
   const projectedRun = activeTopology(run);
   if (identity !== "completed") return projectedRun;

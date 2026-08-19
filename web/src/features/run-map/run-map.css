@@ -62,10 +62,13 @@
 .run-map__filters button[aria-pressed="true"] { border-color: var(--border-strong); color: var(--text-strong); background: var(--surface-raised); }
 .run-map__canvas { height: 456px; background: var(--run-map-canvas); }
 .run-map__canvas .react-flow__background pattern circle { fill: var(--border-subtle); }
-.run-map__canvas .react-flow__node-ticket { width: 220px; border: 0; background: transparent; }
+.run-map__canvas .react-flow__node-ticket { width: 184px; border: 0; background: transparent; }
 .run-map__canvas .react-flow__node-group { width: 280px; border: 0; background: transparent; }
 .run-map__canvas .react-flow__node:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
 .run-map__canvas .react-flow__edge-path { stroke: var(--status-waiting); stroke-width: 1.5; }
+.run-map__canvas .react-flow__edge-text { fill: var(--text-strong); font: 700 11px var(--font-mono); }
+.run-map__canvas .react-flow__edge-textbg { fill: var(--surface-raised); stroke: var(--border-strong); }
+.run-map__canvas .react-flow__handle { width: 6px; height: 6px; border: 1px solid var(--border-strong); background: var(--surface-raised); }
 .run-map__canvas .run-edge--focus .react-flow__edge-path { stroke: var(--accent); stroke-width: 3; }
 .run-map__canvas .run-edge--dimmed { opacity: .2; }
 .run-map__canvas .react-flow__edge:focus-visible .react-flow__edge-path { stroke: var(--focus); stroke-width: 3; }
