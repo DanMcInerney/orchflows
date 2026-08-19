@@ -41,36 +41,29 @@ class TestConditionalRequests(unittest.TestCase):
                     self.assertEqual(etag, again[1].get("ETag"), route)
                     self.assertNotEqual("", body, route)
 
-    def test_a_projected_ticket_field_changing_answers_200_with_a_different_tag(self):
+    def test_a_ticket_changing_size_answers_200_with_a_different_tag(self):
         with tempfile.TemporaryDirectory() as tmp:
             main = make_sink(Path(tmp))
             ticket = main / "tickets" / SETTLED_RUN / "D1.md"
             with serving(main) as server:
-                route = "/api/v1/runs/{0}".format(SETTLED_RUN)
-                first = fetch(server, route)[1].get("ETag")
-                text = ticket.read_text(encoding="utf-8")
-                ticket.write_text(text.replace("status: complete", "status: failed"), encoding="utf-8")
+                first = fetch(server, graph_url(SETTLED_RUN))[1].get("ETag")
+                with ticket.open("a", encoding="utf-8") as handle:
+                    handle.write("\nanother line\n")
                 status, headers, _ = fetch(
-                    server, route, {"If-None-Match": first}
+                    server, graph_url(SETTLED_RUN), {"If-None-Match": first}
                 )
 
             self.assertEqual(200, status)
             self.assertNotEqual(first, headers.get("ETag"))
 
-    def test_a_same_size_projected_rewrite_answers_200_with_a_new_tag(self):
+    def test_a_same_second_rewrite_of_the_same_size_answers_200_with_a_new_tag(self):
         with tempfile.TemporaryDirectory() as tmp:
             main = make_sink(Path(tmp))
-            ticket = main / "tickets" / SETTLED_RUN / "D4.md"
+            ticket = main / "tickets" / SETTLED_RUN / "D1.md"
             with serving(main) as server:
-                route = "/api/v1/runs/{0}".format(SETTLED_RUN)
-                first = fetch(server, route)[1].get("ETag")
-                before = ticket.stat().st_size
-                raw = ticket.read_bytes()
-                ticket.write_bytes(
-                    raw.replace(b"status: blocked", b"status: limited", 1)
-                )
-                self.assertEqual(before, ticket.stat().st_size)
-                status, headers, body = fetch(server, route, {"If-None-Match": first})
+                first = fetch(server, "/")[1].get("ETag")
+                self.touch(ticket)
+                status, headers, body = fetch(server, "/", {"If-None-Match": first})
 
             self.assertEqual(200, status)
             self.assertNotEqual(first, headers.get("ETag"))
@@ -94,7 +87,7 @@ class TestConditionalRequests(unittest.TestCase):
                 for header in ({}, {"If-None-Match": '"not-a-real-tag"'}):
                     status, _, body = fetch(server, "/", header)
                     self.assertEqual(200, status)
-                self.assertIn('id="root"', body)
+                self.assertIn("<main", body)
 
     def test_a_wildcard_or_weak_validator_is_honoured_as_rfc7232_requires(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -154,7 +147,7 @@ class TestLoopbackOnly(unittest.TestCase):
                 self.assertNotEqual("0.0.0.0", host)
                 status, page = get(server, "/")
                 self.assertEqual(200, status)
-                self.assertIn('id="root"', page)
+                self.assertIn("orchflows runs", page)
 
     def test_an_unavailable_port_exits_2_with_a_message_not_a_traceback(self):
         # The bind failure is injected rather than provoked by holding the
@@ -210,9 +203,8 @@ class TestReadOnly(unittest.TestCase):
             with serving(main, transcripts) as server:
                 for route in every_route():
                     status, page = get(server, route)
-                    self.assertIn(status, (200, 307, 404))
-                    if status != 307:
-                        self.assertTrue(page)
+                    self.assertIn(status, (200, 404))
+                    self.assertTrue(page)
 
             self.assertEqual(before, snapshot(main))
 
@@ -275,7 +267,7 @@ class TestCompiledApplicationServer(unittest.TestCase):
             assets = [manifest["index.html"]["file"]]
             assets.extend(manifest["index.html"].get("css", ()))
             with serving(main) as server:
-                status, headers, page = fetch(server, "/")
+                status, headers, page = fetch(server, "/observe")
                 self.assertEqual(200, status)
                 self.assertIn('id="root"', page)
                 self.assertEqual("text/html; charset=utf-8", headers.get("Content-Type"))
@@ -349,24 +341,22 @@ class TestCompiledApplicationServer(unittest.TestCase):
                 {"id", "source", "target"}, set(payload["edges"][0])
             )
 
-    def test_legacy_deep_links_redirect_without_losing_identity(self):
-        redirects = {
-            "/ticket?run=run-gamma&id=G1": "/?run=run-gamma&ticket=G1",
-            "/graph?run=run-gamma": "/?run=run-gamma",
-            "/session?id={0}".format(TITLED_SESSION): "/?session={0}".format(
-                TITLED_SESSION
-            ),
-            "/sessions": "/?view=sessions",
-            "/friction": "/?view=friction",
+    def test_legacy_deep_links_keep_their_rendered_identity(self):
+        routes = {
+            "/ticket?run=run-gamma&id=G1": "G1",
+            "/graph?run=run-gamma": "run-gamma",
+            "/session?id={0}".format(TITLED_SESSION): TITLED_SESSION,
+            "/sessions": "sessions",
+            "/friction": "friction",
         }
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             with serving(make_sink(tmp), make_transcripts(tmp)) as server:
-                for route, location in redirects.items():
+                for route, identity in routes.items():
                     status, headers, body = fetch(server, route)
-                    self.assertEqual(307, status, route)
-                    self.assertEqual(location, headers.get("Location"), route)
-                    self.assertEqual("", body, route)
+                    self.assertEqual(200, status, route)
+                    self.assertIn(identity, body, route)
+                    self.assertTrue(headers.get("ETag"), route)
 
     def test_host_methods_cors_headers_and_binding_fail_closed(self):
         required = {
@@ -390,7 +380,7 @@ class TestCompiledApplicationServer(unittest.TestCase):
                 refused = fetch(server, "/", {"Host": "reader.example"})
                 self.assertEqual(400, refused[0])
                 self.assertIsNone(refused[1].get("Access-Control-Allow-Origin"))
-                for route in ("/", "/api/v1/runs", "/not-found"):
+                for route in ("/observe", "/api/v1/runs", "/not-found"):
                     status, headers, _body = fetch(server, route)
                     self.assertIn(status, (200, 404), route)
                     self.assertTrue(required.issubset(set(headers)), route)
