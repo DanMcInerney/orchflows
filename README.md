@@ -19,9 +19,21 @@ configures whichever CLI it finds. To update: `git pull`, rerun.
 User installs create or reuse `~/.orchflows/runtime`, a private Python
 environment used by installed commands even when installation starts from
 an active project environment. Runtime dependencies are declared in
-`requirements-runtime.txt`; the current declaration is intentionally empty.
+`requirements-runtime.txt`, with exact hashes for the local UI server and its
+transitive closure.
 Project installs never create an environment in the project, dry runs create
 nothing, and uninstall retains the private runtime for explicit manual cleanup.
+
+## Observe
+
+The local UI shows the current workflow graph without changing it. From a
+checkout, start it with `uv run --no-project python scripts/ui.py`; an installed
+copy runs through the private Python environment. It binds only to
+`127.0.0.1`, serves its prebuilt assets offline, and exposes metadata rather
+than prompts, tool output, or transcript contents. See the
+[UI platform](docs/ui/platform.md) for installed commands, routes, security
+boundaries, and the split between this platform and the dark-mode visual
+experience that follows it.
 
 ## Use
 

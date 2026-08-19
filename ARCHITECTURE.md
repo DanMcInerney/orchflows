@@ -46,14 +46,26 @@ dependencies point. Terms: `docs/vocabulary.md`.
   each scope writes, detects and removes is `install.py`'s docstring's.
   `install.py` is the compatibility facade; `installer/` owns the static
   support modules, including the private-runtime lifecycle in
-  `installer/runtime.py`. User scope owns one private runtime at
-  `~/.orchflows/runtime`; project scope verifies and borrows it, renders
-  caller-local paths, and never creates an environment in a repository.
-  Runtime replacement is staged and probed before an installer-owned prior
-  generation is moved.
-- `requirements-runtime.txt` — the installed runtime's dependency contract.
-  `pyproject.toml` mirrors its current empty dependency set for repository
-  tooling; this revision installs no third-party package.
+  `installer/runtime.py`, and the immutable-frontend lifecycle across
+  `installer/planning.py`, `installer/application.py`, and
+  `installer/uninstall.py`. User scope owns one private runtime at
+  `~/.orchflows/runtime` and one manifest-identified browser distribution at
+  `~/.orchflows/ui`; project scope verifies and borrows both, renders
+  caller-local paths, and never creates an environment or UI distribution in
+  a repository. Runtime and frontend replacement are staged and probed before
+  an installer-owned prior generation is moved.
+- `requirements-runtime.in` / `requirements-runtime.txt` — the installed
+  runtime's direct dependency pins and hash-locked transitive contract.
+  `pyproject.toml` mirrors the Starlette and Uvicorn direct pins for repository
+  tooling; `THIRD_PARTY_NOTICES.md` owns attribution for their closure and the
+  distributed browser dependency closure.
+- `package.json` / `pnpm-lock.yaml` — the browser source's exact development
+  and build graph; Node and pnpm stop at this repository boundary.
+  `tools/ui_frontend.py` owns deterministic build, license, and browser-smoke
+  admission. `web/src` owns authored React/TypeScript and worker source;
+  `web/dist` owns the committed, content-hashed, no-source-map distribution
+  copied by the installer. The installed reader never invokes a frontend
+  package manager or build.
 - `scripts/` — repository-root scripts — Python 3.9+, Windows and
   POSIX, no network at run time — one owner each. The unprefixed family
   module is the public CLI and import compatibility facade; implementation
@@ -135,9 +147,14 @@ dependencies point. Terms: `docs/vocabulary.md`.
   transcript discovery; `scripts/ui_layout.py` owns dependency and session
   graph layout; `scripts/ui_model.py` owns shared UI models, parsing, and
   safe-path primitives; `scripts/ui_render.py` owns HTML and SVG primitives
-  and session-view rendering; `scripts/ui_server.py` owns route rendering,
-  validators, and the loopback HTTP server; `scripts/ui_sessions.py` owns
-  transcript parsing, caching, and session models; `scripts/workspace.py`
+  and session-view rendering; `scripts/ui_server.py` owns legacy route
+  rendering and validators; `scripts/ui_api.py` owns the closed JSON
+  projections, Starlette routes, security middleware, and loopback Uvicorn
+  server; `scripts/ui_assets.py` owns contained immutable-asset reads and the
+  standard-library compatibility server; `scripts/ui_sessions.py` owns
+  transcript parsing, caching, and session models. The complete reader
+  boundary and successor handoff are [documented here](docs/ui/platform.md).
+  `scripts/workspace.py`
   owns the public workspace CLI, lifecycle stamps, and isolation grade at the
   join; `scripts/workspace_git.py` owns git lifecycle operations and guarded
   ticket stamps for that facade; `scripts/workspace_scope.py` owns
