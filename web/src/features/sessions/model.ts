@@ -4,6 +4,8 @@ export interface SessionSummary {
   modified: string;
   agentCount: number;
   diagnostics: string[];
+  client: string;
+  project: string;
 }
 
 export interface SessionsModel {
@@ -37,7 +39,9 @@ function session(value: unknown): SessionSummary | null {
     title: text(value.title),
     modified: text(value.modified),
     agentCount: count(value.agent_count),
-    diagnostics: textList(value.diagnostics)
+    diagnostics: textList(value.diagnostics),
+    client: text(value.client),
+    project: text(value.project)
   };
 }
 

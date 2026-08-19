@@ -1,10 +1,10 @@
 # Sessions view
 
-Sessions is the read-only metadata index at `/sessions`. It lists only the closed fields supplied by `orchflows.experience.v1`: session identity, title metadata, last-modified metadata, agent count, and diagnostic labels. Selecting a row follows the canonical `/sessions/{session}` route for the topology-only agent graph.
+Sessions is the read-only metadata index at `/sessions`. It lists only closed fields supplied by `orchflows.experience.v1`: session identity, title metadata, last-modified metadata, agent count, diagnostic labels, and optional safe client and project labels. Selecting a row follows the canonical `/sessions/{session}` route for the topology-only agent graph.
 
-The view deliberately labels the client as **Unknown client** and the project as **Project metadata unavailable** because neither fact exists in the accepted session-summary projection. It does not infer either value from a title, identifier, transcript-root slug, or filesystem path. Adding those labels later requires a corresponding closed API field from the platform owner.
+The view deliberately labels absent facts as **Unknown client** and **Project metadata unavailable**. It does not infer either value from a title, identifier, transcript-root slug, or filesystem path. A known label appears only when the platform supplies the corresponding closed `client` or pre-redacted `project` field.
 
-Prompts, tool inputs and outputs, command output, file contents, paths, transcript messages, and subagent conversations are not view inputs and are never rendered. The adapter copies only the five closed fields above and drops every other property before rendering. React text rendering keeps metadata inert.
+Prompts, tool inputs and outputs, command output, file contents, paths, transcript messages, and subagent conversations are not view inputs and are never rendered. The adapter copies only the seven closed fields above and drops every other property before rendering. React text rendering keeps metadata inert.
 
 ## Deterministic identities
 

@@ -92,7 +92,7 @@ export function SessionsView({ snapshot, location }: SessionsViewProps) {
                   </span>
                   <span className="sessions-view__unknown">
                     <FolderSearch aria-hidden="true" />
-                    <span>Unknown client<small>Project metadata unavailable</small></span>
+                    <span>{item.client || "Unknown client"}<small>{item.project || "Project metadata unavailable"}</small></span>
                   </span>
                   <span className="sessions-view__agents"><UsersRound aria-hidden="true" /> {item.agentCount} {item.agentCount === 1 ? "agent" : "agents"}</span>
                   <span className="sessions-view__modified"><Clock3 aria-hidden="true" /> {item.modified || "Activity not reported"}</span>

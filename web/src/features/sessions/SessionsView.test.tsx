@@ -30,6 +30,8 @@ const populated = [
     modified: "2026-08-19T09:00:00Z",
     agent_count: 2,
     diagnostics: [],
+    client: "Claude Code",
+    project: "orchflows",
     provider: PRIVATE_SENTINEL,
     cwd: `C:/private/${PRIVATE_SENTINEL}`,
     prompt: PRIVATE_SENTINEL,
@@ -51,8 +53,10 @@ describe("SessionsView", () => {
     render(<SessionsView snapshot={snapshot(populated)} location={location("populated")} />);
 
     expect(screen.getByRole("heading", { name: "Sessions", level: 1 })).toBeTruthy();
-    expect(screen.getAllByText("Unknown client")).toHaveLength(2);
-    expect(screen.getAllByText("Project metadata unavailable")).toHaveLength(2);
+    expect(screen.getByText("Claude Code")).toBeTruthy();
+    expect(screen.getByText("orchflows")).toBeTruthy();
+    expect(screen.getByText("Unknown client")).toBeTruthy();
+    expect(screen.getByText("Project metadata unavailable")).toBeTruthy();
     const link = screen.getByRole("link", { name: "Open Index safe session metadata" });
     expect(link.getAttribute("href")).toBe("/sessions/11111111-1111-4111-8111-111111111111");
     await user.tab();
