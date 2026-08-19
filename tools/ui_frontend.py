@@ -336,6 +336,60 @@ def smoke(browser: str) -> dict:
     return {"browser": browser, "contract": "observe-v1"}
 
 
+def _view_manifest(path: str) -> dict:
+    manifest = json.loads(Path(path).read_text(encoding="utf-8"))
+    if manifest.get("schema") != "orchflows.view-manifest.v1":
+        raise RuntimeError("unsupported view manifest schema")
+    identities = [item.get("identity") for item in manifest.get("views", ())]
+    if len(identities) != 48 or len(set(identities)) != 48:
+        raise RuntimeError("view manifest must carry 48 unique identities")
+    return manifest
+
+
+def _visual_run(action: str, host: str, port: int, manifest: str, browser: str, output=None) -> dict:
+    if host not in ("127.0.0.1", "localhost"):
+        raise RuntimeError("visual harness accepts a loopback host only")
+    if browser not in {"auto", "chromium"}:
+        raise RuntimeError("unsupported browser: {0}".format(browser))
+    contract = _view_manifest(manifest)
+    environment = os.environ.copy()
+    environment.pop("FORCE_COLOR", None)
+    environment["ORCHFLOWS_UI_ACTION"] = action
+    environment["ORCHFLOWS_UI_API_ORIGIN"] = "http://{0}:{1}".format(host, port)
+    environment["ORCHFLOWS_UI_MANIFEST"] = str(Path(manifest).resolve())
+    if output is not None:
+        destination = Path(output).resolve()
+        destination.mkdir(parents=True, exist_ok=True)
+        environment["ORCHFLOWS_UI_OUTPUT"] = str(destination)
+    if browser == "auto" and "ORCHFLOWS_BROWSER_EXECUTABLE" not in environment:
+        candidates = (
+            Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe"),
+            Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"),
+            Path("/usr/bin/google-chrome"), Path("/usr/bin/chromium"),
+        )
+        installed = next((path for path in candidates if path.is_file()), None)
+        if installed:
+            environment["ORCHFLOWS_BROWSER_EXECUTABLE"] = str(installed)
+    _run("exec", "playwright", "test", "web/src/smoke.spec.ts", "--workers=1", "--reporter=line", env=environment)
+    return {"browser": browser, "identities": [item["identity"] for item in contract["views"]]}
+
+
+def diff_captures(actual: str, goldens: str, manifest: str) -> dict:
+    contract = _view_manifest(manifest)
+    actual_root, golden_root = Path(actual), Path(goldens)
+    results = {}
+    for item in contract["views"]:
+        identity = item["identity"]
+        seen, golden = actual_root / (identity + ".png"), golden_root / (identity + ".png")
+        if not golden.is_file():
+            results[identity] = "no-golden"
+        elif not seen.is_file():
+            results[identity] = "missing"
+        else:
+            results[identity] = "match" if _sha256(seen) == _sha256(golden) else "different"
+    return {"results": results, "no_golden": sum(value == "no-golden" for value in results.values())}
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -343,12 +397,31 @@ def main(argv=None) -> int:
     commands.add_parser("audit-licenses")
     smoke_parser = commands.add_parser("smoke")
     smoke_parser.add_argument("--browser", default="auto")
+    capture_parser = commands.add_parser("capture")
+    audit_parser = commands.add_parser("audit")
+    diff_parser = commands.add_parser("diff")
+    for visual in (capture_parser, audit_parser):
+        visual.add_argument("--host", default="127.0.0.1")
+        visual.add_argument("--port", type=int, required=True)
+        visual.add_argument("--manifest", required=True)
+        visual.add_argument("--browser", default="auto")
+    capture_parser.add_argument("--output", required=True)
+    audit_parser.add_argument("--standard", default="wcag22aa", choices=("wcag22aa",))
+    diff_parser.add_argument("--actual", required=True)
+    diff_parser.add_argument("--goldens", required=True)
+    diff_parser.add_argument("--manifest", required=True)
     arguments = parser.parse_args(argv)
     try:
         if arguments.command == "verify-build":
             evidence = verify_build()
         elif arguments.command == "audit-licenses":
             evidence = audit_licenses()
+        elif arguments.command == "capture":
+            evidence = _visual_run("capture", arguments.host, arguments.port, arguments.manifest, arguments.browser, arguments.output)
+        elif arguments.command == "audit":
+            evidence = _visual_run("audit", arguments.host, arguments.port, arguments.manifest, arguments.browser)
+        elif arguments.command == "diff":
+            evidence = diff_captures(arguments.actual, arguments.goldens, arguments.manifest)
         else:
             evidence = smoke(arguments.browser)
     except (OSError, RuntimeError) as error:

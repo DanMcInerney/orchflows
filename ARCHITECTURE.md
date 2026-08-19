@@ -61,8 +61,13 @@ dependencies point. Terms: `docs/vocabulary.md`.
   distributed browser dependency closure.
 - `package.json` / `pnpm-lock.yaml` — the browser source's exact development
   and build graph; Node and pnpm stop at this repository boundary.
-  `tools/ui_frontend.py` owns deterministic build, license, and browser-smoke
-  admission. `web/src` owns authored React/TypeScript and worker source;
+  `tools/ui_frontend.py` owns deterministic build, license, browser-smoke,
+  manifest capture, WCAG audit, and greenfield/golden diff admission.
+  `web/src/api` owns the typed closed reader contract, `web/src/state` owns
+  semantic location state, `web/src/app` owns additive view registration,
+  `web/src/design` and `web/src/styles` own frozen visual tokens, and
+  `web/src/graph` owns shared read-only graph primitives. `web/src/testing`
+  owns deterministic rendered states. `web/src` owns the remaining authored React/TypeScript and worker source;
   `web/dist` owns the committed, content-hashed, no-source-map distribution
   copied by the installer. The installed reader never invokes a frontend
   package manager or build.
@@ -152,7 +157,11 @@ dependencies point. Terms: `docs/vocabulary.md`.
   projections, Starlette routes, security middleware, and loopback Uvicorn
   server; `scripts/ui_assets.py` owns contained immutable-asset reads and the
   standard-library compatibility server; `scripts/ui_sessions.py` owns
-  transcript parsing, caching, and session models. The complete reader
+  transcript parsing, caching, and session models; `scripts/ui_readiness.py`
+  owns pure canonical readiness facts and causal explanations consumed by
+  both lifecycle and UI callers; `scripts/ui_experience.py` owns the closed
+  `orchflows.experience.v1` projection, frozen navigation contract, and
+  semantic SPA-path recognition. The complete reader
   boundary and successor handoff are [documented here](docs/ui/platform.md).
   `scripts/workspace.py`
   owns the public workspace CLI, lifecycle stamps, and isolation grade at the

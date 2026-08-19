@@ -38,6 +38,7 @@ try:
     from scripts.ui_model import ACTIVE_STATUS, _safe_name, parse_verification
     from scripts.ui_layout import graph_layout
     from scripts.ui_sessions import read_session
+    from scripts.ui_experience import SPA_ROUTE_PATTERNS, is_spa_path, project_experience
 except ImportError:
     from ui_assets import FallbackReaderServer, read_asset, resolve_asset_root, valid_host_headers
     from ui_discovery import (
@@ -54,6 +55,7 @@ except ImportError:
     from ui_model import ACTIVE_STATUS, _safe_name, parse_verification
     from ui_layout import graph_layout
     from ui_sessions import read_session
+    from ui_experience import SPA_ROUTE_PATTERNS, is_spa_path, project_experience
 
 API_VERSION = "v1"
 JSON_TYPE = "application/json; charset=utf-8"
@@ -114,8 +116,6 @@ def _run_record(root: Path, run: str, tickets: list) -> dict:
             "unreadable": bool(events and events["unreadable"]),
         },
     }
-
-
 def project_runs(root: Path) -> dict:
     found = discover(root)
     runs = []
@@ -130,13 +130,9 @@ def project_runs(root: Path) -> dict:
             }
         )
     return {"api_version": API_VERSION, "runs": runs, "empty": found["empty"]}
-
-
 def project_run(root: Path, run: str):
     tickets = run_tickets(root, run)
     return None if tickets is None else _run_record(root, run, tickets)
-
-
 def project_ticket(root: Path, run: str, ticket_id: str):
     ticket = find_ticket(root, run, ticket_id)
     if ticket is None:
@@ -157,8 +153,6 @@ def project_ticket(root: Path, run: str, ticket_id: str):
             "unreadable": list(friction["unreadable"]),
         },
     }
-
-
 def project_friction(root: Path) -> dict:
     log = read_friction(root)
     return {
@@ -167,8 +161,6 @@ def project_friction(root: Path) -> dict:
         "skipped": log["skipped"],
         "unreadable": len(log["unreadable"]),
     }
-
-
 def _session_record(session: dict) -> dict:
     return {
         "id": session["id"],
@@ -178,8 +170,6 @@ def _session_record(session: dict) -> dict:
         "agent_count": session["agent_count"],
         "diagnostics": list(session.get("diagnostics", ())),
     }
-
-
 def project_sessions(transcripts) -> dict:
     found = read_sessions(transcripts)
     return {
@@ -188,8 +178,6 @@ def project_sessions(transcripts) -> dict:
         "diagnostics": list(found["diagnostics"]),
         "empty": found["empty"],
     }
-
-
 def project_session(transcripts, session_id: str):
     found = find_session(transcripts, session_id)
     if found is None:
@@ -210,8 +198,6 @@ def project_session(transcripts, session_id: str):
         for agent in session["agents"]
     ]
     return {"api_version": API_VERSION, "session": projected}
-
-
 def project_observe(root: Path, requested_run: str) -> dict:
     found = discover(root)
     names = [item["run"] for item in found["runs"]]
@@ -303,6 +289,11 @@ async def observe_endpoint(request: Request):
     return _json_response(request, project_observe(_context(request)[0], request.query_params.get("run", "")))
 
 
+async def experience_endpoint(request: Request):
+    root, transcripts = _context(request)
+    return _json_response(request, project_experience(root, transcripts, dict(request.query_params)))
+
+
 async def index_endpoint(request: Request):
     asset = read_asset(request.app.state.assets, "index.html")
     if asset is None:
@@ -377,9 +368,10 @@ def create_application(root, transcripts=None, assets=None, legacy_respond=None)
         Route("/api/v1/friction", friction_endpoint, methods=["GET"]),
         Route("/api/v1/sessions", sessions_endpoint, methods=["GET"]),
         Route("/api/v1/sessions/{session}", session_endpoint, methods=["GET"]),
+        Route("/api/v1/experience", experience_endpoint, methods=["GET"]),
         Route("/api/observe", observe_endpoint, methods=["GET"]),
         Route("/assets/{asset:path}", asset_endpoint, methods=["GET"]),
-        Route("/observe", index_endpoint, methods=["GET"]),
+        *[Route(pattern, index_endpoint, methods=["GET"]) for pattern in SPA_ROUTE_PATTERNS],
         Route("/{path:path}", legacy_endpoint, methods=["GET"]),
     ]
     app = Starlette(
@@ -437,11 +429,13 @@ def _fallback_dispatch(server, method, target, headers):
     elif path.startswith("/api/v1/sessions/"):
         value = project_session(transcripts, path.rsplit("/", 1)[-1])
         return _fallback_json(value if value is not None else {"error": "not found"}, headers, 200 if value is not None else 404)
+    elif path == "/api/v1/experience":
+        value = project_experience(root, transcripts, query)
     elif path == "/api/observe":
         value = project_observe(root, query.get("run", ""))
     if value is not None:
         return _fallback_json(value, headers)
-    if path == "/observe":
+    if is_spa_path(path):
         asset = read_asset(server.assets, "index.html")
         return _fallback_response(503, b"reader application unavailable") if asset is None else _fallback_response(200, asset[0], asset[1] + "; charset=utf-8", request_headers=headers, tag=asset[2])
     if path.startswith("/assets/"):

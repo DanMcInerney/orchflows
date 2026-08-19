@@ -1,10 +1,15 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
+declare const process: { env: Record<string, string | undefined> };
+
 export default defineConfig({
   root: "web",
   plugins: [react()],
   worker: { format: "es" },
+  server: process.env.ORCHFLOWS_UI_API_ORIGIN ? {
+    proxy: { "/api": process.env.ORCHFLOWS_UI_API_ORIGIN }
+  } : undefined,
   build: {
     outDir: "dist",
     emptyOutDir: true,
