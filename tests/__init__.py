@@ -14,8 +14,8 @@ Two of them, for two hazards a single test cannot be trusted to remember:
   the variable for the one call it wraps and restores it, never for the
   rest of the process.
 - ``_windows_semantics.install`` makes POSIX refuse the directory
-  deletions Windows refuses, so the three Windows cells of CI's matrix
-  stop being the first place that shape is seen.
+  deletions Windows refuses, so CI's one Windows leg stops being the
+  first place that shape is seen.
 
 Neither is reached by importing this package alone, because
 ``unittest discover -s tests`` — the check ``AGENTS.md`` requires — makes

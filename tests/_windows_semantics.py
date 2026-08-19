@@ -6,12 +6,10 @@ it and the call fails with ``WinError 32``. POSIX carries no such
 handle, so the same code deletes the tree, leaves the process sitting in
 a path that no longer resolves, and passes.
 
-That difference is invisible on this host and fatal on three of CI's
-nine cells, and it is where this suite's Windows failures have come
-from. Installed on POSIX, these guards raise before the deletion so the
-test fails here, where the diagnosis is a stack trace rather than a
-matrix cell. On Windows they are not installed: the platform already
-enforces this, and better.
+That difference is invisible on this host and fatal on CI's one Windows
+leg among five active CI legs. Installed on POSIX, these guards raise
+before the deletion so the diagnosis is a local stack trace. On Windows
+they are not installed: the platform already enforces this, and better.
 
 Imported for effect by ``tests/__init__.py``, so every runner that can
 load a test module has already installed it.

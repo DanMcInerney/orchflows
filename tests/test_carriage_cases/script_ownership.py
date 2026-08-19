@@ -13,8 +13,7 @@ _OWNERSHIP_CLAUSE = re.compile(r"`scripts/([^`/]+\.py)`\s+owns\s+([^;.]+)")
 _FAMILY_ROUTE_PINS = (
     "unprefixed family module is the public command and import facade",
     "same-family helpers own internal concerns",
-    "same-family helpers are private implementation detail",
-    "discovered from code, not inventoried here",
+    "from code, not inventoried here",
 )
 
 
