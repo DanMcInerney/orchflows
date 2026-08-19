@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 from pathlib import Path
@@ -11,10 +12,47 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 MAX_PHYSICAL_LINES = 510
 SOURCE_SUFFIXES = frozenset({".py", ".sh", ".cmd", ".ps1", ".js", ".ts"})
+TYPESCRIPT_COMPONENT_SUFFIXES = frozenset({".tsx"})
+GENERATED_SOURCE_MANIFESTS = (Path("web/dist/.vite/manifest.json"),)
+GENERATED_PATH_FIELDS = ("file", "css", "assets")
 
 
 def _is_source(path: Path) -> bool:
-    return path.suffix in SOURCE_SUFFIXES
+    return path.suffix in SOURCE_SUFFIXES or path.suffix in TYPESCRIPT_COMPONENT_SUFFIXES
+
+
+def generated_source_files(root: Path = ROOT) -> set[Path]:
+    """Return source files explicitly enumerated by generated manifests."""
+    generated = set()
+    for relative_manifest in GENERATED_SOURCE_MANIFESTS:
+        manifest = root / relative_manifest
+        try:
+            records = json.loads(manifest.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            continue
+        if not isinstance(records, dict):
+            continue
+        output_root = manifest.parent.parent.resolve()
+        for record in records.values():
+            if not isinstance(record, dict):
+                continue
+            for field in GENERATED_PATH_FIELDS:
+                values = record.get(field, ())
+                if isinstance(values, str):
+                    values = (values,)
+                if not isinstance(values, (list, tuple)):
+                    continue
+                for value in values:
+                    if not isinstance(value, str):
+                        continue
+                    candidate = (output_root / value).resolve()
+                    try:
+                        candidate.relative_to(output_root)
+                    except ValueError:
+                        continue
+                    if candidate.is_file() and _is_source(candidate):
+                        generated.add(candidate)
+    return generated
 
 
 def tracked_source_files(root: Path = ROOT, pathspecs=()) -> list[Path]:
@@ -64,6 +102,8 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
 
     files = source_files_from_paths(args.paths) if args.paths else tracked_source_files()
+    generated = generated_source_files()
+    files = [path for path in files if path.resolve() not in generated]
     oversized = oversized_files(files)
     for path, count in oversized:
         try:
@@ -71,6 +111,13 @@ def main(argv=None) -> int:
         except ValueError:
             label = path
         print(f"{label}: {count} physical lines (maximum {MAX_PHYSICAL_LINES})")
+    verdict = "FAIL" if oversized else "PASS"
+    manifests = ",".join(path.as_posix() for path in GENERATED_SOURCE_MANIFESTS)
+    print(
+        f"source-size policy: {verdict}; authored_sources={len(files)}; "
+        f"generated_sources={len(generated)}; maximum={MAX_PHYSICAL_LINES}; "
+        f"manifests={manifests}"
+    )
     return 1 if oversized else 0
 
 
