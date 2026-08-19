@@ -88,6 +88,8 @@ describe("TicketInspector", () => {
     render(<TicketInspector snapshot={failing} location={location("proof-fail")} />);
     expect(screen.getByText("FAIL")).not.toBeNull();
     expect(screen.getByLabelText("Ticket state: failed")).not.toBeNull();
+    expect(screen.getByText("Criterion 3 failed")).not.toBeNull();
+    expect(screen.getByText(/install.py --dry-run: plan named 3 scripts/)).not.toBeNull();
     expect(screen.getAllByText("deterministic", { selector: "span" })).toHaveLength(3);
   });
 

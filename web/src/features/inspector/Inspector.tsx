@@ -1,7 +1,7 @@
 import * as Tabs from "@radix-ui/react-tabs";
 import {
-  AlertTriangle, ArrowRight, CheckCircle2, CircleDot, CircleHelp, Clock3,
-  Code2, FileCheck2, Flame, History, LayoutDashboard, ListChecks, LockKeyhole
+  Activity, AlertTriangle, ArrowRight, CheckCircle2, CircleHelp, Clock3,
+  Code2, FileCheck2, Flame, History, LayoutDashboard, ListChecks, LockKeyhole, XCircle
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import type { ExperienceSnapshot } from "../../api/schema";
@@ -35,6 +35,16 @@ const tabIcons: Record<InspectorTab, ReactNode> = {
 
 function EmptyEvidence({ title, children }: { title: string; children: ReactNode }) {
   return <div className="inspector-empty"><CircleHelp aria-hidden="true" /><h3>{title}</h3><p>{children}</p></div>;
+}
+
+function StateGlyph({ state }: { state: string }) {
+  if (state === "running") return <Activity aria-hidden="true" />;
+  if (state === "complete") return <CheckCircle2 aria-hidden="true" />;
+  if (state === "failed") return <XCircle aria-hidden="true" />;
+  if (state === "attention") return <AlertTriangle aria-hidden="true" />;
+  if (state === "waiting") return <Clock3 aria-hidden="true" />;
+  if (state === "ready") return <ArrowRight aria-hidden="true" />;
+  return <CircleHelp aria-hidden="true" />;
 }
 
 export default function TicketInspector({ snapshot, location }: TicketInspectorProps) {
@@ -77,10 +87,9 @@ export default function TicketInspector({ snapshot, location }: TicketInspectorP
           <div>
             <p className="eyebrow">Inspector evidence</p>
             <h1 id="ticket-title">{ticket.id}</h1>
-            <p>{objective}</p>
           </div>
           <div className="inspector-status" data-state={state} aria-label={`Ticket state: ${state}`}>
-            <CircleDot aria-hidden="true" /><span>{state}</span><small>{ticket.status}</small>
+            <StateGlyph state={state} /><span>{state}</span><small>{ticket.status}</small>
           </div>
         </div>
       </header>
@@ -104,7 +113,7 @@ export default function TicketInspector({ snapshot, location }: TicketInspectorP
             </article>
             <article className="inspector-card inspector-card--phase">
               <p className="eyebrow">What is happening</p><h2>Current phase</h2>
-              <div className="phase-state" data-state={state}><CircleDot aria-hidden="true" /><strong>{state}</strong><span>{ticket.status}</span></div>
+              <div className="phase-state" data-state={state}><StateGlyph state={state} /><strong>{state}</strong><span>{ticket.status}</span></div>
               <p>{ticket.readiness.explanation || "No readiness explanation was projected."}</p>
             </article>
             <article className="inspector-card inspector-card--next">
@@ -122,6 +131,7 @@ export default function TicketInspector({ snapshot, location }: TicketInspectorP
 
         <Tabs.Content className="inspector-panel" value="proof">
           <article className="inspector-card"><div className="panel-heading"><p className="eyebrow">Verification evidence</p><h2>Criteria and verdicts</h2><p>Every projected criterion keeps its oracle class and evidence identity.</p></div>
+            {rows.some((row) => row.verdict.toLowerCase() === "fail") && <div className="proof-alert" role="status"><AlertTriangle aria-hidden="true" /><div><strong>Criterion {rows.find((row) => row.verdict.toLowerCase() === "fail")?.criterion} failed</strong><p>{rows.find((row) => row.verdict.toLowerCase() === "fail")?.oracle}: {rows.find((row) => row.verdict.toLowerCase() === "fail")?.evidence}</p></div></div>}
             {rows.length ? <div className="proof-list" role="list" aria-label="Verification criteria">{rows.map((row) => {
               const verdict = row.verdict.toLowerCase();
               const Icon = verdict === "pass" ? CheckCircle2 : verdict === "fail" ? AlertTriangle : CircleHelp;
