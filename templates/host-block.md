@@ -40,7 +40,7 @@ missing input, tool, or document; surprising output; a gap or ambiguity
 in a skill, rule, or contract; a workaround — log it the moment it
 happens, then continue:
 
-    {{PYTHON}} {{ORCH_BIN}}/friction.py "<what happened>" "<what was expected or missing>"
+{{FRICTION_COMMANDS}}
 
 Optional flags: `--category`, `--skill <orch-name>`, `--ticket <id>`,
 `--run <run-id>`.

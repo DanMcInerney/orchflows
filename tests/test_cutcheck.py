@@ -33,6 +33,34 @@ from tests.baseline_pin import (  # noqa: E402  the invocation's one owner
 from tests.tree_removal import remove_repo_tree  # noqa: E402  the removal's one owner
 
 
+class RuntimeInterpreterBoundaryTests(unittest.TestCase):
+    """Cut checks execute ticket oracles in the caller's project context."""
+
+    def test_oracle_subprocesses_inherit_the_caller_environment(self):
+        caller = {
+            "PATH": "cutcheck-oracle-path",
+            "VIRTUAL_ENV": "cutcheck-oracle-venv",
+        }
+        observed = []
+
+        def run_in_caller(*args, **kwargs):
+            observed.append((dict(os.environ), kwargs))
+            return subprocess.CompletedProcess(args[0], 0, b"", b"")
+
+        with mock.patch.dict(os.environ, caller, clear=False):
+            with mock.patch.object(cutcheck.subprocess, "run", side_effect=run_in_caller):
+                with mock.patch.object(
+                    cutcheck._execute_module, "_mutations", return_value=[]
+                ):
+                    self.assertEqual(0, cutcheck._run_once("git status --short", ROOT))
+                self.assertEqual(0, cutcheck._git(["status"], ROOT).returncode)
+
+        self.assertEqual(2, len(observed))
+        for environment, kwargs in observed:
+            self.assertEqual(caller, {name: environment[name] for name in caller})
+            self.assertNotIn("env", kwargs)
+
+
 def reported(result, family=cutcheck.FAMILY):
     return [line for line in result.stdout.splitlines() if family in line]
 
@@ -236,6 +264,19 @@ CASE_MODULES = (
     "spans",
     "scratch",
     "scope",
+)
+
+# Case modules deliberately share this facade's helpers through ``import *``.
+# TestCase classes are loader-owned instead: exporting one would bind the same
+# class into every case module and make discovery execute it once per binding.
+__all__ = tuple(
+    name
+    for name, value in globals().items()
+    if not name.startswith("_")
+    and not (
+        isinstance(value, type)
+        and issubclass(value, unittest.TestCase)
+    )
 )
 
 

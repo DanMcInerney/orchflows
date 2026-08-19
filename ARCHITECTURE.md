@@ -34,16 +34,22 @@ whitespace-delimited words. Use terms exactly as
   reading order; each remaining file owns its named subject
   ([documentation design](docs/documentation.md)).
 - [`scripts/`](scripts/) owns repository automation. Its programs use
-  stdlib Python 3, run on Windows and POSIX, and require no network at
+  Python 3.9+, run on Windows and POSIX, and require no network at
   run time. An unprefixed family module is the public command and import
   facade; same-family helpers own internal concerns.
 - [`tools/validate.py`](tools/validate.py) owns mechanical library-text
-  admission. [`tests/`](tests/) owns executable regression evidence and
-  pinned canonical bytes. [`AGENTS.md`](AGENTS.md) owns the repository's
-  required check commands and local-versus-CI guidance.
+  admission; [`tools/check_source_sizes.py`](tools/check_source_sizes.py)
+  owns executable-source line ceilings. [`tests/`](tests/) owns regression
+  evidence and pinned canonical bytes. [`AGENTS.md`](AGENTS.md) owns required
+  checks and local-versus-CI guidance.
 - [`templates/`](templates/) owns host-block source. [`install.py`](install.py)
-  owns installation and removal behavior; its docstring is the detailed
-  write-scope owner.
+  is the installation compatibility facade; [`installer/`](installer/) owns
+  static support, and `installer/runtime.py` owns the private runtime at
+  `~/.orchflows/runtime`. User scope creates or reuses it; project scope
+  verifies and borrows it, never creating an environment in a repository.
+  Replacement is staged and probed before an owned prior generation moves.
+  [`requirements-runtime.txt`](requirements-runtime.txt) owns runtime
+  dependencies; [`pyproject.toml`](pyproject.toml) mirrors them for tooling.
 - [`DESIGN.md`](DESIGN.md) owns non-normative rationale. [`README.md`](README.md)
   is the non-normative human entry surface, not an owner of agent law.
 

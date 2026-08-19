@@ -366,5 +366,5 @@ class VisibilitySymlinkClauseTest(unittest.TestCase):
         clause = _visibility_clause(5)
         self.assertIn("No symlinks", clause, clause)
         bullet = " ".join((ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8").split())
-        for kept in ("stdlib Python 3", "Windows and POSIX", "no network"):
+        for kept in ("Python 3.9+", "Windows and POSIX", "no network"):
             self.assertIn(kept, bullet)

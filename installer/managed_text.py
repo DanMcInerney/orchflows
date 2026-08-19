@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import PurePath
 
 from .foundation import (
@@ -26,13 +27,48 @@ def render_host_block(
     skills_dir: PurePath,
     lib_dir: PurePath,
     python_interpreter: str,
+    portable: bool = False,
 ) -> str:
+    if portable:
+        friction_commands = (
+            '    PowerShell: & "$HOME\\.orchflows\\runtime\\Scripts\\python.exe" '
+            '"$HOME\\.orchflows\\bin\\friction.py" "<what happened>" '
+            '"<what was expected or missing>"\n'
+            '    POSIX: "$HOME/.orchflows/runtime/bin/python" '
+            '"$HOME/.orchflows/bin/friction.py" "<what happened>" '
+            '"<what was expected or missing>"'
+        )
+    elif os.name == "nt":
+        def powershell_token(value: object) -> str:
+            return "'" + str(value).replace("'", "''") + "'"
+
+        friction_commands = "    PowerShell: & " + " ".join(
+            powershell_token(value)
+            for value in (
+                python_interpreter,
+                bin_dir / "friction.py",
+                "<what happened>",
+                "<what was expected or missing>",
+            )
+        )
+    else:
+        import shlex
+
+        friction_commands = "    POSIX: " + shlex.join(
+            [
+                python_interpreter,
+                str(PurePath(bin_dir) / "friction.py"),
+                "<what happened>",
+                "<what was expected or missing>",
+            ]
+        )
     return (
         template_text.replace("{{ORCH_BIN}}", str(bin_dir))
         .replace("{{ORCH_DOCS}}", str(docs_dir))
         .replace("{{ORCH_SKILLS}}", str(skills_dir))
         .replace("{{ORCH_LIB}}", str(lib_dir))
         .replace("{{PYTHON}}", python_interpreter)
+        .replace("{{FRICTION_COMMANDS}}", friction_commands)
     )
 
 

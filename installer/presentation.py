@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from .models import Plan
 from .planning import plan_entry_count
+from .runtime import private_runtime_home
 
 def print_plan(plan: Plan, source_commit: str | None) -> None:
     print(f"scope: {plan.scope}")
@@ -15,6 +16,18 @@ def print_plan(plan: Plan, source_commit: str | None) -> None:
     print(f"source commit: {source_commit or 'unknown'}")
     print(f"library home: {plan.lib_home}")
     print(f"bin dir: {plan.bin_dir}")
+    if plan.scope == "user":
+        if plan.runtime_action is None:
+            print(f"private runtime: not needed {private_runtime_home()}")
+        else:
+            print(f"private runtime: {plan.runtime_action} {private_runtime_home()}")
+    elif plan.runtime_action == "reuse":
+        print(f"private runtime: reuse required at {private_runtime_home()} (project scope)")
+    else:
+        print(
+            "private runtime: refuse; project scope requires a healthy user "
+            f"runtime at {private_runtime_home()}"
+        )
     print()
     print(f"runtime directories ({len(plan.runtime_dirs)}):")
     for directory in plan.runtime_dirs:
