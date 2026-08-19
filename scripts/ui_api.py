@@ -38,7 +38,7 @@ try:
     from scripts.ui_model import ACTIVE_STATUS, _safe_name, parse_verification
     from scripts.ui_layout import graph_layout
     from scripts.ui_sessions import read_session
-    from scripts.ui_experience import SPA_ROUTE_PATTERNS, is_spa_path, project_experience
+    from scripts.ui_experience import SPA_ROUTE_PATTERNS, browser_navigation, is_spa_path, project_experience
 except ImportError:
     from ui_assets import FallbackReaderServer, read_asset, resolve_asset_root, valid_host_headers
     from ui_discovery import (
@@ -55,7 +55,7 @@ except ImportError:
     from ui_model import ACTIVE_STATUS, _safe_name, parse_verification
     from ui_layout import graph_layout
     from ui_sessions import read_session
-    from ui_experience import SPA_ROUTE_PATTERNS, is_spa_path, project_experience
+    from ui_experience import SPA_ROUTE_PATTERNS, browser_navigation, is_spa_path, project_experience
 
 API_VERSION = "v1"
 JSON_TYPE = "application/json; charset=utf-8"
@@ -301,6 +301,12 @@ async def index_endpoint(request: Request):
     return _bytes_response(request, asset[0], asset[1], "no-cache", asset[2])
 
 
+async def spa_endpoint(request: Request):
+    if browser_navigation(request.url.path, request.headers):
+        return await index_endpoint(request)
+    return await legacy_endpoint(request)
+
+
 async def asset_endpoint(request: Request):
     asset = read_asset(request.app.state.assets, "assets/" + request.path_params["asset"])
     if asset is None:
@@ -371,7 +377,7 @@ def create_application(root, transcripts=None, assets=None, legacy_respond=None)
         Route("/api/v1/experience", experience_endpoint, methods=["GET"]),
         Route("/api/observe", observe_endpoint, methods=["GET"]),
         Route("/assets/{asset:path}", asset_endpoint, methods=["GET"]),
-        *[Route(pattern, index_endpoint, methods=["GET"]) for pattern in SPA_ROUTE_PATTERNS],
+        *[Route(pattern, spa_endpoint, methods=["GET"]) for pattern in SPA_ROUTE_PATTERNS],
         Route("/{path:path}", legacy_endpoint, methods=["GET"]),
     ]
     app = Starlette(
@@ -435,7 +441,7 @@ def _fallback_dispatch(server, method, target, headers):
         value = project_observe(root, query.get("run", ""))
     if value is not None:
         return _fallback_json(value, headers)
-    if is_spa_path(path):
+    if is_spa_path(path) and browser_navigation(path, headers):
         asset = read_asset(server.assets, "index.html")
         return _fallback_response(503, b"reader application unavailable") if asset is None else _fallback_response(200, asset[0], asset[1] + "; charset=utf-8", request_headers=headers, tag=asset[2])
     if path.startswith("/assets/"):

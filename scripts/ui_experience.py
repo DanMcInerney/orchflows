@@ -49,6 +49,13 @@ def is_spa_path(path: str) -> bool:
     ) or (len(parts) == 4 and parts[0] == "runs" and parts[2] == "tickets")
 
 
+def browser_navigation(path: str, headers) -> bool:
+    """Distinguish document navigation from the legacy no-Accept reader API."""
+
+    accept = next((value for name, value in headers.items() if name.lower() == "accept"), "")
+    return path == "/observe" or "text/html" in accept.lower()
+
+
 def _text(value) -> str:
     return value if isinstance(value, str) else "" if value is None else str(value)
 
