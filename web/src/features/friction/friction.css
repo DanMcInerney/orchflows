@@ -282,7 +282,7 @@
 
 .friction-privacy svg {
   flex: 0 0 15px;
-  margin-top: 2px;
+  margin-top: var(--space-1);
   color: var(--accent);
 }
 
