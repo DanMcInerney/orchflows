@@ -14,7 +14,9 @@ list: `ledger.py`, `ordering.py` and `pacing.py` were split out of `runner.py`,
 | module | owns |
 | --- | --- |
 | `schema.py` | closed enums, the immutable manifest and artifact values, `parse_manifest` |
-| `routes.py` | every route constant and every `K1` public client credential: the closed allowlist of reachable hosts, declarations only |
+| [`_support/route_catalog_k0.py`](../scripts/super_research/_support/route_catalog_k0.py), [`route_catalog_k1_k4.py`](../scripts/super_research/_support/route_catalog_k1_k4.py) | endpoint declarations by class |
+| [`_support/route_contracts.py`](../scripts/super_research/_support/route_contracts.py) | route identifiers, shapes, and `K1` credentials |
+| [`routes.py`](../scripts/super_research/routes.py) | ordered public facade |
 | `transport.py` | the outbound request — the opener, method admission, the byte cap, refusal parsing, the guest-token store, the captive-portal detector, `route_admissions` |
 | `router.py` | one step's route decision, from per-route booleans alone |
 | `runner.py` | literal adapter dispatch, and one manifest run to one artifact plus its ledger |
@@ -24,15 +26,15 @@ list: `ledger.py`, `ordering.py` and `pacing.py` were split out of `runner.py`,
 | `cache.py` | one run's TTL memory of reads it already made |
 | `normalize.py` | native pages to immutable records; grouping and provenance edges |
 | `project.py` | a pure bounded subset of one artifact |
-| `probes.py` | the thirteen liveness probe declarations |
+| `probes.py` | the nineteen liveness probe declarations |
 | `smoke.py` | one probe's read, and the standing it leaves an adapter at |
 | `cli.py` | three operations, and everything an operator reads |
 | `adapters/__init__.py` | `AdapterDescriptor`, `NativeRecord`, `NativePage`, `fetch_one_page` |
 | `adapters/<id>.py` | one route's parser, one `DESCRIPTOR`, one `fetch_native_page` |
 
 `runner.py` re-exports every name moved to `ledger`, `ordering` and `pacing`,
-`cli.py` every name moved to `probes` and `smoke`, and `transport.py` every name
-moved to `routes`, so each name has one definition and one address. Tests are
+`cli.py` every name moved to `probes` and `smoke`, and `transport.py` every public
+name from the ordered `routes` facade, so each has one public address. Tests are
 `tests/`, with `tests/helpers.py` and `tests/fixtures/**`; the whole suite runs
 with no network reachable.
 
@@ -87,10 +89,10 @@ exposed it.
 The classes and their three rules are [protocol.md](protocol.md)'s. This is the
 machinery behind them.
 
-A `K1` public client credential is a route constant `routes.py` declares and
-`transport.py` re-exports. It is attached at send time, never enters a manifest
-or an artifact, and is stripped back off the answering address before that
-address leaves the transport seam.
+[`_support/route_contracts.py`](../scripts/super_research/_support/route_contracts.py)
+owns `K1` credentials; catalogs name them; [`routes.py`](../scripts/super_research/routes.py)
+exposes their ordered public facade. `transport.py` attaches one only at send time;
+none enters manifests or artifacts or survives in answer addresses.
 
 The `K3` label has to be on the row rather than on the page:
 `normalize.normalize_page` builds a record's loss from that native record's own
