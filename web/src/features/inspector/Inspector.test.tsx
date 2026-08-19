@@ -15,7 +15,7 @@ function snapshot(overrides: Record<string, unknown> = {}): ExperienceSnapshot {
     claimed_by: "fixture-agent",
     depends_on: ["G0"],
     unreadable: false,
-    readiness: { state: "complete", dependencies: [], explanation: "G1 is complete" },
+    readiness: { state: "complete", dependencies: [], explanation: "G1 is complete", cause: "none", causal_chain: [] },
     sections: { objective: "Prove the inspector without exposing private activity.", result: "The safe result." },
     verification: {
       state: "rows",
@@ -35,7 +35,7 @@ function snapshot(overrides: Record<string, unknown> = {}): ExperienceSnapshot {
     selection: { view: "ticket", run: "run-gamma", ticket: "G1", session: "" },
     runs: [], run: null, ticket, sessions: { items: [], diagnostics: [], empty: true }, session: null,
     friction: { items: [], skipped: 0, unreadable: 0 }
-  } as unknown as ExperienceSnapshot;
+  } as ExperienceSnapshot;
 }
 
 function location(fixture: string, ticket = "G1"): LocationState {

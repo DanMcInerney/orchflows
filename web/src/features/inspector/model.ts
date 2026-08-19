@@ -97,17 +97,14 @@ export function statusState(ticket: TicketSummary): ReadinessState {
 
 export function detailRows(ticket: ExperienceSnapshot["ticket"]): Array<{ label: string; value: string; mono?: boolean }> {
   if (!ticket) return [];
-  const extended = record(ticket);
-  const inputs = textList(extended.inputs);
-  const scope = textList(extended.write_scope);
   return [
     { label: "Worker", value: ticket.executor || "Unavailable", mono: true },
     { label: "Dependencies", value: ticket.depends_on.length ? ticket.depends_on.join(", ") : "None", mono: true },
-    { label: "Inputs", value: inputs.length ? inputs.join(", ") : "Unavailable" },
-    { label: "Scope", value: scope.length ? scope.join(", ") : "Unavailable", mono: true },
+    { label: "Inputs", value: ticket.inputs.length ? ticket.inputs.join(", ") : "Unavailable" },
+    { label: "Scope", value: ticket.write_scope.length ? ticket.write_scope.join(", ") : "Unavailable", mono: true },
     { label: "Limit", value: ticket.bound || "Unavailable" },
     { label: "Claim", value: ticket.claimed_by && ticket.claimed_at ? `${ticket.claimed_by} · ${ticket.claimed_at}` : "Unclaimed" },
-    { label: "Pack", value: text(extended.pack) || "Unavailable", mono: true }
+    { label: "Pack", value: ticket.pack || "Unavailable", mono: true }
   ];
 }
 
@@ -153,13 +150,11 @@ export function linkedFriction(snapshot: ExperienceSnapshot, location: LocationS
 
 export function durableHistory(snapshot: ExperienceSnapshot, location: LocationState): InspectorHistoryRecord[] {
   if (location.fixture === "history-unavailable") return [];
-  const history = record(snapshot.ticket).history;
-  if (!Array.isArray(history)) return [];
-  return history.map(record).map((item) => ({
-    ts: text(item.ts) || "Timestamp unavailable",
-    event: text(item.event) || "unknown event",
-    agent: text(item.agent) || "Agent unavailable",
-    detail: text(item.detail)
+  return (snapshot.ticket?.history ?? []).map((item) => ({
+    ts: item.ts || "Timestamp unavailable",
+    event: item.event || "unknown event",
+    agent: item.agent || "Agent unavailable",
+    detail: item.detail
   }));
 }
 
@@ -170,7 +165,7 @@ export function redactHostPaths(value: string): string {
 }
 
 export function rawTicket(snapshot: ExperienceSnapshot, location: LocationState): string {
-  const projected = text(record(snapshot.ticket).raw);
+  const projected = snapshot.ticket?.raw ?? "";
   if (projected) return redactHostPaths(projected);
   if (location.fixture === "raw-escaped") return fixtureRaw;
   return "Raw ticket markdown is unavailable in this reader projection.";

@@ -49,7 +49,7 @@ export default function TicketInspector({ snapshot, location }: TicketInspectorP
   }, [location.fixture, location.run, location.ticket]);
 
   if (!ticket) {
-    return <section className="ticket-inspector" aria-labelledby="ticket-title"><EmptyEvidence title="Ticket unavailable">The selected ticket is not present in the safe reader projection.</EmptyEvidence></section>;
+    return <section className="foundation-view ticket-inspector" aria-labelledby="ticket-title"><EmptyEvidence title="Ticket unavailable">The selected ticket is not present in the safe reader projection.</EmptyEvidence></section>;
   }
 
   const state = statusState(ticket);
@@ -66,7 +66,7 @@ export default function TicketInspector({ snapshot, location }: TicketInspectorP
   };
 
   return (
-    <section className="ticket-inspector" data-state={state} data-fixture={location.fixture || "live"} aria-labelledby="ticket-title">
+    <section className="foundation-view ticket-inspector" data-state={state} data-fixture={location.fixture || "live"} aria-labelledby="ticket-title">
       <header className="inspector-header">
         <div className="inspector-breadcrumb" aria-label="Ticket location">
           <span>Workflows</span><ArrowRight aria-hidden="true" /><span className="mono">{location.run}</span><ArrowRight aria-hidden="true" />
