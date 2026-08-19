@@ -3,60 +3,49 @@
 import hashlib
 import json
 import re
-import tempfile
 import unittest
-from pathlib import Path
 
 from ._support import CONTRACTS, PINS, ROOT
 
-SCRIPTS = ROOT / "scripts"
 ARCHITECTURE = ROOT / "ARCHITECTURE.md"
 
-# The form ARCHITECTURE.md's script clauses already take:
-# `scripts/<name>.py` owns <responsibility>. A bare mention names no owner.
 _OWNERSHIP_CLAUSE = re.compile(r"`scripts/([^`/]+\.py)`\s+owns\s+([^;.]+)")
+_FAMILY_ROUTE_PINS = (
+    "unprefixed family module is the public command and import facade",
+    "same-family helpers own internal concerns",
+    "same-family helpers are private implementation detail",
+    "discovered from code, not inventoried here",
+)
 
 
-def _scripts_without_owners(scripts_dir, architecture_text):
-    """Every script whose responsibility the architecture never states."""
+def _missing_family_route_pins(architecture_text):
+    """Stable routing facts absent from the scripts-family owner."""
     flat = re.sub(r"\s+", " ", architecture_text)
-    owned = {m.group(1): m.group(2).strip() for m in _OWNERSHIP_CLAUSE.finditer(flat)}
-    return sorted(p.name for p in scripts_dir.glob("*.py") if not owned.get(p.name))
+    return [pin for pin in _FAMILY_ROUTE_PINS if pin not in flat]
 
 
 class ScriptOwnershipTest(unittest.TestCase):
-    """ARCHITECTURE.md names the responsibility of every repository script."""
+    """ARCHITECTURE.md routes script families and pins exceptional owners."""
 
-    def test_every_script_is_named_with_the_responsibility_it_owns(self):
-        unowned = _scripts_without_owners(
-            SCRIPTS, ARCHITECTURE.read_text(encoding="utf-8")
-        )
+    def test_architecture_routes_script_families_without_a_helper_inventory(self):
         self.assertEqual(
             [],
-            unowned,
-            "ARCHITECTURE.md states no '`scripts/<name>` owns <responsibility>' "
-            f"clause for: {', '.join(unowned)}",
+            _missing_family_route_pins(ARCHITECTURE.read_text(encoding="utf-8")),
         )
 
-    def test_a_script_with_no_owner_fails_the_check(self):
-        """The can-fail direction uses a copy beside the tree."""
-        architecture_text = ARCHITECTURE.read_text(encoding="utf-8")
-        with tempfile.TemporaryDirectory() as tmp:
-            beside = Path(tmp) / "scripts"
-            beside.mkdir()
-            for script in SCRIPTS.glob("*.py"):
-                (beside / script.name).write_text("", encoding="utf-8")
-            self.assertEqual(
-                [],
-                _scripts_without_owners(beside, architecture_text),
-                "the copy must start fully owned, or the newcomer below is "
-                "not what the check reacted to",
-            )
-            (beside / "unowned_newcomer.py").write_text("", encoding="utf-8")
-            self.assertEqual(
-                ["unowned_newcomer.py"],
-                _scripts_without_owners(beside, architecture_text),
-            )
+    def test_each_missing_family_route_fact_fails_the_check(self):
+        """The can-fail direction excises each fact from a copy."""
+        architecture_text = re.sub(
+            r"\s+", " ", ARCHITECTURE.read_text(encoding="utf-8")
+        )
+        for pin in _FAMILY_ROUTE_PINS:
+            with self.subTest(pin=pin):
+                wrong = architecture_text.replace(pin, "")
+                self.assertNotEqual(architecture_text, wrong)
+                self.assertEqual(
+                    [pin],
+                    _missing_family_route_pins(wrong),
+                )
 
     def test_verification_guardrail_owner_paths_are_pinned(self):
         """Pin the complete contract/workflow surface."""
