@@ -172,8 +172,8 @@ discovery→hydration pair to be staged as two dispatches.
 
 ## Access ladder
 
-Six classes plus `offline`, ordered by **preference, not authority** — every class
-but `K5` is uncredentialed.
+Six classes plus `offline`, in **preference, not authority** order. `K0`–`K4`
+need no user-supplied credential.
 
 | class | meaning |
 | --- | --- |
@@ -185,8 +185,8 @@ but `K5` is uncredentialed.
 | `K5` | user-supplied credential — an optional throughput upgrade, never a precondition |
 | `offline` | the `fake` fixture adapter; never live evidence |
 
-1. No first-release capability may depend on `K5`. Absence of a credential yields
-   full capability at lower throughput, never a refusal.
+1. No first-release capability may depend on `K5`. Without a user-supplied
+   credential, full capability remains at lower throughput, never a refusal.
 2. A `K3` route is labelled with its operator identity and carries
    `third_party_archive` on **every record**, never on the page alone.
 3. A `K4` discovery hit and its hydrated target are linked, never merged.
