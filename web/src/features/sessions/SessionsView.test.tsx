@@ -58,6 +58,8 @@ describe("SessionsView", () => {
     expect(screen.getByText("orchflows")).toBeTruthy();
     expect(screen.getByText("Unknown client")).toBeTruthy();
     expect(screen.getByText("Project metadata unavailable")).toBeTruthy();
+    expect(document.querySelectorAll("[data-state='ready']")).toHaveLength(2);
+    expect(document.querySelectorAll("[data-unknown]")).toHaveLength(1);
     const link = screen.getByRole("link", { name: "Open Index safe session metadata" });
     expect(link.getAttribute("href")).toBe("/sessions/11111111-1111-4111-8111-111111111111");
     await user.tab();
@@ -87,8 +89,11 @@ describe("SessionsView", () => {
 
   it("renders diagnostic metadata and never upgrades absent provider facts", () => {
     render(<SessionsView snapshot={snapshot(populated)} location={location("diagnostic")} />);
-    expect(screen.getByRole("status").textContent).toContain("Metadata needs attention");
+    const status = screen.getByRole("status");
+    expect(status.textContent).toContain("Metadata needs attention");
+    expect(status.compareDocumentPosition(screen.getByRole("heading", { name: "Sessions" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByText("unreadable transcript lines: 1")).toBeTruthy();
+    expect(document.querySelectorAll("[data-state='attention']")).toHaveLength(1);
     expect(screen.getByText("Unknown client")).toBeTruthy();
     expect(screen.queryByText("Codex")).toBeNull();
     expect(screen.queryByText("Claude")).toBeNull();

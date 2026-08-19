@@ -32,6 +32,13 @@ export function SessionsView({ snapshot, location }: SessionsViewProps) {
 
   return (
     <div className="foundation-view sessions-view" data-view="sessions" data-fixture={location.fixture || "live"}>
+      {model.diagnostics.length > 0 && (
+        <div className="sessions-view__diagnostic" role="status">
+          <AlertTriangle aria-hidden="true" />
+          <div><strong>Metadata needs attention</strong><span>{model.diagnostics.join(" ")}</span></div>
+        </div>
+      )}
+
       <section className="sessions-view__hero hero" aria-labelledby="sessions-title">
         <div>
           <p className="eyebrow"><LockKeyhole aria-hidden="true" /> Safe metadata index</p>
@@ -42,13 +49,6 @@ export function SessionsView({ snapshot, location }: SessionsViewProps) {
           <strong>{model.items.length}</strong><span>sessions</span>
         </div>
       </section>
-
-      {model.diagnostics.length > 0 && (
-        <div className="sessions-view__diagnostic" role="status">
-          <AlertTriangle aria-hidden="true" />
-          <div><strong>Metadata needs attention</strong><span>{model.diagnostics.join(" ")}</span></div>
-        </div>
-      )}
 
       <section className="sessions-view__index" aria-labelledby="session-index-heading">
         <header className="sessions-view__toolbar">
@@ -90,7 +90,7 @@ export function SessionsView({ snapshot, location }: SessionsViewProps) {
                     <strong>{sessionLabel(item)}</strong>
                     <span className="mono">{item.id}</span>
                   </span>
-                  <span className="sessions-view__unknown">
+                  <span className="sessions-view__unknown" data-unknown={!item.client || undefined}>
                     <FolderSearch aria-hidden="true" />
                     <span>{item.client || "Unknown client"}<small>{item.project || "Project metadata unavailable"}</small></span>
                   </span>
@@ -99,7 +99,7 @@ export function SessionsView({ snapshot, location }: SessionsViewProps) {
                     <Clock3 aria-hidden="true" />
                     <time className="mono" dateTime={item.modified || undefined} title={item.modified || undefined}>{activityLabel(item.modified)}</time>
                   </span>
-                  <span className="sessions-view__diagnostic-count">
+                  <span className="sessions-view__diagnostic-count" data-state={item.diagnostics.length ? "attention" : "ready"}>
                     {item.diagnostics.length ? <><AlertTriangle aria-hidden="true" /> {item.diagnostics.length} diagnostic</> : "Metadata ready"}
                   </span>
                 </a>
