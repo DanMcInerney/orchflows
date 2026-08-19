@@ -66,6 +66,10 @@ function initialLevel(identity: string): DisclosureLevel {
   return 2;
 }
 
+function compactWorkspace(): boolean {
+  return typeof window.matchMedia === "function" && window.matchMedia("(max-width: 1100px)").matches;
+}
+
 function statusGlyph(state: string): string {
   if (state === "complete") return "✓";
   if (state === "attention") return "!";
@@ -335,12 +339,21 @@ export function RunMapView({ snapshot, location }: ViewProps) {
   const [selectedTicket, setSelectedTicket] = useState("");
   const [selectedGroup, setSelectedGroup] = useState("");
   const [causal, setCausal] = useState<CausalFocus | null>(null);
+  const [compact, setCompact] = useState(compactWorkspace);
 
   const projectedIncoming = useMemo(
     () => location.fixture ? runForIdentity(incoming, identity, location.run) : incoming,
     [identity, incoming, location.fixture, location.run]
   );
   useEffect(() => { if (!paused) setHeldRun(projectedIncoming); }, [paused, projectedIncoming]);
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const query = window.matchMedia("(max-width: 1100px)");
+    const changed = () => setCompact(query.matches);
+    query.addEventListener("change", changed);
+    changed();
+    return () => query.removeEventListener("change", changed);
+  }, []);
   const run = paused ? heldRun : projectedIncoming;
   const topology = useMemo(() => buildTopology(run?.tickets ?? []), [run]);
   const diagnostics = run?.diagnostics ?? topology.diagnostics;
@@ -414,6 +427,7 @@ export function RunMapView({ snapshot, location }: ViewProps) {
       {level === 0 && <FleetView runs={snapshot.runs} currentRun={run.id} onOpen={() => setLevel(1)} />}
       {level === 1 && <SummaryView run={run} onGroup={openGroup} onExpand={() => setLevel(2)} />}
       {level >= 2 && <section className={`run-map__workspace ${level === 3 ? "has-inspector" : ""}`}>
+        {level === 3 && compact && <Inspector ticket={ticket} group={group} causal={causal} onWhy={whyWaiting} onClose={() => { setLevel(2); setCausal(null); }} />}
         <article className="run-map__graph-card" aria-labelledby="canonical-graph-heading">
           <header className="run-map__graph-heading">
             <div><p className="run-map__eyebrow">Level 2 · topology</p><h2 id="canonical-graph-heading">{expanded ? "Every canonical dependency" : "Readiness groups collapsed"}</h2></div>
@@ -457,7 +471,7 @@ export function RunMapView({ snapshot, location }: ViewProps) {
             {(["waiting", "ready", "running", "attention", "complete", "unknown"] as const).map((state) => <span key={state} data-status={state}><i aria-hidden="true">{statusGlyph(state)}</i>{state}</span>)}
           </footer>
         </article>
-        {level === 3 && <Inspector ticket={ticket} group={group} causal={causal} onWhy={whyWaiting} onClose={() => { setLevel(2); setCausal(null); }} />}
+        {level === 3 && !compact && <Inspector ticket={ticket} group={group} causal={causal} onWhy={whyWaiting} onClose={() => { setLevel(2); setCausal(null); }} />}
       </section>}
 
       {diagnostics.length > 0 && <section className="run-map__diagnostics" aria-labelledby="diagnostics-heading">

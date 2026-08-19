@@ -76,6 +76,12 @@ async function expectManifestIdentityTruth(page, identity) {
     expect(inspector, `${identity.identity}: inspector is rendered`).not.toBeNull();
     expect(graph, `${identity.identity}: graph is rendered`).not.toBeNull();
     expect(inspector.y, `${identity.identity}: inspector precedes graph`).toBeLessThan(graph.y);
+    const sourceOrder = await page.evaluate(() => {
+      const inspectorElement = document.querySelector(".run-inspector");
+      const graphElement = document.querySelector(".run-map__graph-card");
+      return Boolean(inspectorElement?.compareDocumentPosition(graphElement) & Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+    expect(sourceOrder, `${identity.identity}: focus source order follows visual order`).toBe(true);
   }
   if (identity.identity.startsWith("ticket--proof-pass--")) {
     await expect(page.locator('.proof-row[data-verdict="pass"]'), `${identity.identity}: passing rows`).toHaveCount(3);
