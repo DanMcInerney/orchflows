@@ -99,10 +99,14 @@
 .session-graph-canvas .session-edge--inferred .react-flow__edge-path { stroke: var(--session-graph-inferred); stroke-dasharray: 7 5; }
 .session-graph-canvas .react-flow__edge-text { fill: var(--text-muted); font-size: 10px; }
 .session-graph-canvas .react-flow__edge-textbg { fill: var(--session-graph-map); fill-opacity: .94; }
-.session-graph-canvas .react-flow__node-sessionAgent { width: 232px; border: 0; background: transparent; }
+.session-graph-canvas .react-flow__node-sessionAgent { width: 220px; border: 0; background: transparent; }
 .session-graph-canvas .react-flow__controls { overflow: hidden; border: 1px solid var(--border-strong); border-radius: var(--radius-control); box-shadow: none; }
 .session-graph-canvas .react-flow__controls button { color: var(--text); background: var(--surface-raised); border-bottom-color: var(--border-subtle); }
-.session-graph-canvas .react-flow__minimap { width: 144px; height: 88px; border: 1px solid var(--border-strong); border-radius: var(--radius-control); background: var(--surface-raised); }
+.session-graph-minimap { position: absolute; z-index: 5; left: var(--space-4); bottom: var(--space-3); width: 144px; height: 88px; border: 1px solid var(--text-faint); border-radius: var(--radius-control); background: var(--surface-raised); }
+.session-graph-minimap path { fill: none; stroke: var(--status-running); stroke-width: 1.5; }
+.session-graph-minimap path.is-inferred { stroke: var(--status-attention); stroke-dasharray: 4 3; }
+.session-graph-minimap rect { fill: var(--surface-2); stroke: var(--text-faint); stroke-width: 1.5; }
+.session-graph-minimap rect.is-running { fill: var(--status-running); stroke: var(--canvas); }
 
 .session-agent-node {
   min-height: 96px;
@@ -110,7 +114,7 @@
   grid-template-columns: 24px minmax(0, 1fr) auto;
   gap: var(--space-1) var(--space-2);
   padding: var(--space-3);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--text-faint);
   border-radius: var(--radius-card);
   color: var(--text);
   background: var(--surface-2);
@@ -125,6 +129,7 @@
 .session-agent-node__kind svg { width: 18px; height: 18px; }
 .session-agent-node__identity strong, .session-agent-node__identity span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .session-agent-node__identity strong { color: var(--text-strong); font: 700 13px/1.35 var(--font-mono); }
+.session-agent-node[data-kind="session"] .session-agent-node__identity strong { font-family: var(--font-ui); }
 .session-agent-node__identity span { margin-top: 2px; color: var(--text-faint); font-size: 11px; }
 .session-agent-node__state { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--status-unknown); font-size: 10px; font-weight: 740; text-transform: uppercase; }
 .session-agent-node__state svg { width: 12px; height: 12px; }

@@ -12,7 +12,6 @@ vi.mock("@xyflow/react", async () => {
     Background: () => null,
     Handle: ({ "aria-label": ariaLabel }: { "aria-label": string }) => <span aria-label={ariaLabel} />,
     Controls: () => <div aria-label="Session graph zoom controls" />,
-    MiniMap: ({ ariaLabel }: { ariaLabel: string }) => <div aria-label={ariaLabel} />,
     ReactFlow: ({ nodes, edges, nodeTypes, onNodeClick, children, ...props }: any) => {
       const NodeComponent = nodeTypes.sessionAgent;
       return (
@@ -69,7 +68,7 @@ describe("SessionGraphView", () => {
 
     expect(screen.getByRole("heading", { name: "Safe session title" })).not.toBeNull();
     expect(screen.getByLabelText("Session agent topology")).not.toBeNull();
-    expect(screen.getByLabelText("Session topology minimap")).not.toBeNull();
+    expect(screen.getByLabelText(/Session topology minimap/)).not.toBeNull();
     expect(screen.getByLabelText("Session graph zoom controls")).not.toBeNull();
     expect(screen.getByLabelText(/agent-one to agent-two: recorded parent/)).not.toBeNull();
 

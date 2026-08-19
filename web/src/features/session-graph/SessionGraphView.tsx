@@ -1,7 +1,6 @@
 import {
   Background,
   Controls,
-  MiniMap,
   ReactFlow,
   ReactFlowProvider,
   type Edge,
@@ -36,20 +35,70 @@ function topologyLevel(nodeId: string, topology: SessionTopology, seen = new Set
   return 1 + topologyLevel(incoming.source, topology, seen);
 }
 
-function graphNodes(topology: SessionTopology): Node<SessionAgentNodeData>[] {
+function topologyPositions(topology: SessionTopology): Map<string, { level: number; row: number }> {
   const rowsAtDepth = new Map<number, number>();
-  return topology.nodes.map((node) => {
+  return new Map(topology.nodes.map((node) => {
     const level = topologyLevel(node.id, topology);
     const row = rowsAtDepth.get(level) ?? 0;
     rowsAtDepth.set(level, row + 1);
+    return [node.id, { level, row }];
+  }));
+}
+
+function graphNodes(topology: SessionTopology): Node<SessionAgentNodeData>[] {
+  const positions = topologyPositions(topology);
+  return topology.nodes.map((node) => {
+    const { level, row } = positions.get(node.id) ?? { level: 0, row: 0 };
     return {
       id: node.id,
       type: "sessionAgent",
-      position: { x: 48 + Math.min(level, 3) * 276, y: 48 + row * 132 },
+      position: { x: 48 + Math.min(level, 3) * 236, y: 48 + row * 132 },
       data: { ...node, connection: connectionFor(node.id, topology) },
       ariaLabel: `Select ${node.kind} ${node.label}, ${node.state}, ${connectionFor(node.id, topology)}`
     };
   });
+}
+
+function TopologyMiniMap({ topology }: { topology: SessionTopology }) {
+  const positions = topologyPositions(topology);
+  const point = (id: string) => {
+    const { level, row } = positions.get(id) ?? { level: 0, row: 0 };
+    return { x: 8 + Math.min(level, 3) * 44, y: 9 + row * 18 };
+  };
+  return (
+    <svg
+      className="session-graph-minimap"
+      viewBox="0 0 128 76"
+      role="img"
+      aria-label={`Session topology minimap, ${topology.nodes.length} nodes and ${topology.edges.length} edges`}
+    >
+      {topology.edges.map((edge) => {
+        const source = point(edge.source);
+        const target = point(edge.target);
+        return (
+          <path
+            key={edge.id}
+            className={edge.inferred ? "is-inferred" : undefined}
+            d={`M ${source.x + 18} ${source.y + 5} L ${target.x} ${target.y + 5}`}
+          />
+        );
+      })}
+      {topology.nodes.map((node) => {
+        const position = point(node.id);
+        return (
+          <rect
+            key={node.id}
+            className={node.state === "running" ? "is-running" : undefined}
+            x={position.x}
+            y={position.y}
+            width="18"
+            height="10"
+            rx="2"
+          />
+        );
+      })}
+    </svg>
+  );
 }
 
 function graphEdges(topology: SessionTopology): Edge[] {
@@ -139,22 +188,13 @@ export function SessionGraphView({ snapshot, location }: { snapshot: ExperienceS
                 nodesConnectable={false}
                 edgesReconnectable={false}
                 deleteKeyCode={null}
-                fitView
-                fitViewOptions={{ padding: 0.18 }}
+                defaultViewport={{ x: 20, y: 70, zoom: 0.88 }}
                 minZoom={0.5}
                 maxZoom={1.6}
                 proOptions={{ hideAttribution: true }}
               >
                 <Background gap={24} size={1} />
-                <MiniMap
-                  ariaLabel="Session topology minimap"
-                  nodeColor="var(--status-running)"
-                  nodeStrokeColor="var(--session-graph-map)"
-                  maskColor="var(--session-graph-map)"
-                  position="bottom-left"
-                  pannable
-                  zoomable
-                />
+                <TopologyMiniMap topology={topology} />
                 <Controls position="top-left" showInteractive={false} aria-label="Session graph zoom controls" />
               </ReactFlow>
             </ReactFlowProvider>
