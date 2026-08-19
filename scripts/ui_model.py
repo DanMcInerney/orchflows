@@ -377,8 +377,9 @@ def read_ticket(path: Path) -> dict:
         "claimed_at": _scalar(front.get("claimed_at")),
         "claimed_by": _scalar(front.get("claimed_by")),
         "depends_on": _sequence(front.get("depends_on")),
+        "write_scope": _sequence(front.get("write_scope")), "pack": _scalar(front.get("pack")),
         "objective": sections.get("Objective", ""),
-        "sections": sections,
+        "sections": sections, "raw": text,
         "unreadable": unreadable,
         "path": str(path),
     }
