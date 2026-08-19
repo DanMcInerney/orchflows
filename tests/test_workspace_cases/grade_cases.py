@@ -1,6 +1,31 @@
 """Workspace isolation, scope, and cleanup grading behavior."""
 
 from .common import *  # noqa: F401,F403
+from unittest import mock
+
+
+class RuntimeInterpreterBoundaryTests(unittest.TestCase):
+    """Workspace grading leaves git in the caller's worktree environment."""
+
+    def test_git_subprocesses_inherit_the_caller_environment(self):
+        caller = {
+            "PATH": "workspace-git-path",
+            "VIRTUAL_ENV": "workspace-git-venv",
+        }
+        observed = []
+
+        def run_in_caller(*args, **kwargs):
+            observed.append((dict(os.environ), kwargs))
+            return subprocess.CompletedProcess(args[0], 0, b"", b"")
+
+        with mock.patch.dict(os.environ, caller, clear=False):
+            with mock.patch.object(workspace.workspace_git.subprocess, "run", side_effect=run_in_caller):
+                self.assertEqual((0, "", ""), workspace._git("status", "--porcelain"))
+
+        self.assertEqual(1, len(observed))
+        environment, kwargs = observed[0]
+        self.assertEqual(caller, {name: environment[name] for name in caller})
+        self.assertNotIn("env", kwargs)
 
 @unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
 class TestCheckGradesFromTheCallersGit(unittest.TestCase):

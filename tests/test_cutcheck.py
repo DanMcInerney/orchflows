@@ -33,6 +33,34 @@ from tests.baseline_pin import (  # noqa: E402  the invocation's one owner
 from tests.tree_removal import remove_repo_tree  # noqa: E402  the removal's one owner
 
 
+class RuntimeInterpreterBoundaryTests(unittest.TestCase):
+    """Cut checks execute ticket oracles in the caller's project context."""
+
+    def test_oracle_subprocesses_inherit_the_caller_environment(self):
+        caller = {
+            "PATH": "cutcheck-oracle-path",
+            "VIRTUAL_ENV": "cutcheck-oracle-venv",
+        }
+        observed = []
+
+        def run_in_caller(*args, **kwargs):
+            observed.append((dict(os.environ), kwargs))
+            return subprocess.CompletedProcess(args[0], 0, b"", b"")
+
+        with mock.patch.dict(os.environ, caller, clear=False):
+            with mock.patch.object(cutcheck.subprocess, "run", side_effect=run_in_caller):
+                with mock.patch.object(
+                    cutcheck._execute_module, "_mutations", return_value=[]
+                ):
+                    self.assertEqual(0, cutcheck._run_once("git status --short", ROOT))
+                self.assertEqual(0, cutcheck._git(["status"], ROOT).returncode)
+
+        self.assertEqual(2, len(observed))
+        for environment, kwargs in observed:
+            self.assertEqual(caller, {name: environment[name] for name in caller})
+            self.assertNotIn("env", kwargs)
+
+
 def reported(result, family=cutcheck.FAMILY):
     return [line for line in result.stdout.splitlines() if family in line]
 

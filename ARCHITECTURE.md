@@ -44,7 +44,17 @@ dependencies point. Terms: `docs/vocabulary.md`.
   `tests/pins.json` is where `validate.py` reads them from.
 - `install.sh` / `install.cmd` + `install.py` — setup and teardown; what
   each scope writes, detects and removes is `install.py`'s docstring's.
-- `scripts/` — repository-root scripts — stdlib Python 3, Windows and
+  `install.py` is the compatibility facade; `installer/` owns the static
+  support modules, including the private-runtime lifecycle in
+  `installer/runtime.py`. User scope owns one private runtime at
+  `~/.orchflows/runtime`; project scope verifies and borrows it, renders
+  caller-local paths, and never creates an environment in a repository.
+  Runtime replacement is staged and probed before an installer-owned prior
+  generation is moved.
+- `requirements-runtime.txt` — the installed runtime's dependency contract.
+  `pyproject.toml` mirrors its current empty dependency set for repository
+  tooling; this revision installs no third-party package.
+- `scripts/` — repository-root scripts — Python 3.9+, Windows and
   POSIX, no network at run time — one owner each. The unprefixed family
   module is the public CLI and import compatibility facade; implementation
   dependencies point from that facade into its static `<name>_*` helpers,

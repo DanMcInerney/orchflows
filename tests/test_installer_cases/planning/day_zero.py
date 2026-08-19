@@ -22,7 +22,7 @@ class TestDayZeroBootstrap(unittest.TestCase):
         # Unresolved, for the reason test_project_plan_writes_only_...
         # states: the rendered text carries this spelling, and resolving
         # it here disagrees on any host whose temp dir holds a symlink.
-        self.user_docs = str(self.home / ".orchflows" / "lib" / "docs")
+        self.user_docs = "~/.orchflows/lib/docs"
 
     def project_plan(self):
         with patch.object(install.Path, "home", return_value=self.home):
@@ -46,8 +46,12 @@ class TestDayZeroBootstrap(unittest.TestCase):
 
         # One native path per factory, not a directory plus a separator
         # the host may not use: this is what the reader opens.
-        self.assertIn(str(Path(self.user_docs) / "vocabulary-authoring.md"), vocabulary)
-        self.assertIn(str(Path(self.user_docs) / "documentation.md"), ownership_map)
+        self.assertIn(
+            str(PurePosixPath(self.user_docs) / "vocabulary-authoring.md"), vocabulary
+        )
+        self.assertIn(
+            str(PurePosixPath(self.user_docs) / "documentation.md"), ownership_map
+        )
         for content in (vocabulary, ownership_map):
             # Rendered against the user library, like the host block: a
             # project install carries no library of its own to point at.
@@ -88,7 +92,9 @@ class TestDayZeroBootstrap(unittest.TestCase):
             self.assertIn(str(dest), output)
 
     def bootstrap(self) -> dict:
-        with patch.object(install.Path, "home", return_value=self.home):
+        with patch.object(install.Path, "home", return_value=self.home), patch.object(
+            install, "private_runtime_is_healthy", return_value=True
+        ):
             return install.apply_plan(install.build_plan("project", self.project))
 
     def recorded(self, receipt) -> dict:

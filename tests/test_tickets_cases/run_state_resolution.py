@@ -49,7 +49,7 @@ class TestRunStateRootResolution(unittest.TestCase):
             # Windows refusal against, and it too starts nothing.
             self.assertEqual(
                 {"__future__", "contextlib", "datetime", "fcntl", "json",
-                 "msvcrt", "pathlib", "re", "scripts", "state_root", "sys",
+                 "msvcrt", "pathlib", "re", "scripts", "shlex", "state_root", "sys",
                  "tempfile", "time", "tickets_format", "tickets_store",
                  "tickets_issue", "tickets_lifecycle", "tickets_packet",
                  "tickets_result", "tickets_worklog", "tickets_dispatch",
