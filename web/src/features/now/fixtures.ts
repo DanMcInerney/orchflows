@@ -4,7 +4,11 @@ import type { NowRun, NowTicket } from "./model";
 function ticket(id: string, status: string, state: ReadinessState, depends_on: string[], title: string): NowTicket {
   return {
     id, title, status, executor: "orch-render", bound: "90m", claimed_at: "", claimed_by: "",
-    depends_on, unreadable: false, readiness: { state, dependencies: depends_on, explanation: `${id} is ${state}` },
+    depends_on, unreadable: false, readiness: {
+      state, dependencies: depends_on, explanation: `${id} is ${state}`,
+      cause: state === "attention" ? "blocked_upstream" : state === "waiting" ? "pending_dependency" : "none",
+      causal_chain: depends_on,
+    },
   };
 }
 

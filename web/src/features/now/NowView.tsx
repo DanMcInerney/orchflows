@@ -9,16 +9,16 @@ import "./now.css";
 
 export const viewId = "now" as const;
 
-function liveRuns({ runs, run }: ViewProps["snapshot"]): NowRun[] {
+function liveRuns({ runs }: ViewProps["snapshot"]): NowRun[] {
   return runs.map((summary) => {
-    const tickets = run?.id === summary.id ? run.tickets : [];
     return {
       id: summary.id,
-      objective: summary.id,
-      repository: "Canonical workspace unavailable in this projection",
-      lastActivity: "Activity unavailable",
-      tickets,
-      unreadable: !tickets.length && summary.ticket_count > 0,
+      objective: summary.objective || summary.id,
+      repository: summary.repository || "Repository unavailable",
+      client: summary.client || undefined,
+      lastActivity: summary.last_activity || "Activity unavailable",
+      tickets: summary.tickets,
+      unreadable: summary.unreadable || (!summary.tickets.length && summary.ticket_count > 0),
     };
   });
 }
