@@ -20,7 +20,7 @@ try:
     from scripts.ui_layout import DIAGNOSTIC_CYCLE, DIAGNOSTIC_DANGLING, graph_layout
     from scripts.ui_model import parse_verification
     from scripts.ui_readiness import explain_run
-    from scripts.ui_sessions import read_session
+    from scripts.ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG, read_session
 except ImportError:
     from ui_discovery import (
         discover, find_session, find_ticket, graph_input, identity_diagnostics,
@@ -29,7 +29,7 @@ except ImportError:
     from ui_layout import DIAGNOSTIC_CYCLE, DIAGNOSTIC_DANGLING, graph_layout
     from ui_model import parse_verification
     from ui_readiness import explain_run
-    from ui_sessions import read_session
+    from ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG, read_session
 
 SCHEMA = "orchflows.experience.v1"
 SPA_ROUTE_PATTERNS = (
@@ -92,6 +92,15 @@ def _session_list_summary(session: dict) -> dict:
     record["client"] = ""
     record["project"] = re.split(r"[\\/]", named_cwd)[-1] if named_cwd else ""
     return record
+
+
+def _session_diagnostic(message) -> str:
+    """Keep local slug identity out of the browser-safe projection."""
+
+    message = _text(message)
+    if message.startswith(DIAGNOSTIC_UNDECODABLE_SLUG + ":"):
+        return DIAGNOSTIC_UNDECODABLE_SLUG
+    return message
 
 
 def _ticket_summary(ticket: dict, explanations: dict, indexed: dict, malformed_ids) -> dict:
@@ -314,7 +323,7 @@ def project_experience(root, transcripts=None, query=None) -> dict:
         "ticket": _ticket_detail(ticket, run_record, root, run) if ticket is not None else None,
         "sessions": {
             "items": [_session_list_summary(item) for item in sessions["sessions"]],
-            "diagnostics": [_text(item) for item in sessions["diagnostics"]],
+            "diagnostics": [_session_diagnostic(item) for item in sessions["diagnostics"]],
             "empty": bool(sessions["empty"]),
         },
         "session": _selected_session(transcripts, session_id),

@@ -4,9 +4,23 @@ from tests.test_ui_cases._web import *  # noqa: F401,F403
 
 import scripts.ui_experience as experience
 import scripts.ui_readiness as readiness
+from scripts.ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG
 
 
 class ExperienceFoundationContractTests(unittest.TestCase):
+    def test_session_slug_diagnostic_keeps_legacy_identity_but_api_is_path_safe(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            root = make_sink(tmp)
+            transcripts = make_transcripts(tmp)
+            raw = experience.read_sessions(transcripts)["diagnostics"]
+            projected = experience.project_experience(root, transcripts)["sessions"]["diagnostics"]
+
+        diagnostic = DIAGNOSTIC_UNDECODABLE_SLUG
+        self.assertIn("{0}: {1}".format(diagnostic, UNDECODABLE_PROJECT), raw)
+        self.assertIn(diagnostic, projected)
+        self.assertNotIn(UNDECODABLE_PROJECT, json.dumps(projected, sort_keys=True))
+
     def test_safe_projection_tokens_shell_and_manifest_form_one_contract(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
