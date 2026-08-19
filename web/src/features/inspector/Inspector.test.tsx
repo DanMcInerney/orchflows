@@ -50,8 +50,9 @@ afterEach(() => {
 describe("TicketInspector", () => {
   it("opens a direct-linked tab and keeps pointer selection in the URL", async () => {
     window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=running-overview&tab=proof");
-    render(<TicketInspector snapshot={snapshot()} location={location("running-overview")} />);
+    const { container } = render(<TicketInspector snapshot={snapshot()} location={location("running-overview")} />);
 
+    expect(container.querySelector(".foundation-view.ticket-inspector")).not.toBeNull();
     expect(screen.getByRole("tab", { name: /Proof/ }).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByRole("heading", { name: "Criteria and verdicts" })).not.toBeNull();
 
