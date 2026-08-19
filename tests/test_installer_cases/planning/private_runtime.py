@@ -218,14 +218,14 @@ class RuntimeVenvTests(unittest.TestCase):
         self.assertIn("retained", manual[str(runtime_home)])
         self.assertTrue(install.private_runtime_is_healthy(runtime_home))
 
-    def test_dependency_contract_is_empty_documented_and_project_safe(self):
-        declared = [
-            line.strip()
-            for line in install.RUNTIME_REQUIREMENTS.read_text(encoding="utf-8").splitlines()
-            if line.strip() and not line.lstrip().startswith("#")
-        ]
-        self.assertEqual([], declared)
-        self.assertIn("dependencies = []", (install.REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    def test_runtime_dependency_direct_set_has_one_owner_and_is_mirrored(self):
+        direct = (install.REPO_ROOT / "requirements-runtime.in").read_text(
+            encoding="utf-8"
+        ).splitlines()
+        self.assertEqual(["starlette==0.49.3", "uvicorn==0.34.3"], direct)
+        project = (install.REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        self.assertIn('"starlette==0.49.3"', project)
+        self.assertIn('"uvicorn==0.34.3"', project)
         self.assertNotIn("Stdlib-only", install.__doc__ or "")
         self.assertIn("requirements-runtime.txt", (install.REPO_ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8"))
         self.assertIn("requirements-runtime.txt", (install.REPO_ROOT / "README.md").read_text(encoding="utf-8"))
