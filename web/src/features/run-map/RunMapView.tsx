@@ -41,6 +41,12 @@ import "./run-map.css";
 
 type DisclosureLevel = 0 | 1 | 2 | 3;
 
+interface CanonicalRunDiagnostic {
+  kind: string;
+  ticket_ids: string[];
+  message: string;
+}
+
 interface TicketNodeData extends Record<string, unknown> {
   ticket: TicketSummary;
   causal: "focus" | "dimmed" | "off";
@@ -303,6 +309,10 @@ export function RunMapView({ snapshot, location }: ViewProps) {
   useEffect(() => { if (!paused) setHeldRun(projectedIncoming); }, [paused, projectedIncoming]);
   const run = paused ? heldRun : projectedIncoming;
   const topology = useMemo(() => buildTopology(run?.tickets ?? []), [run]);
+  const diagnostics = useMemo(() => {
+    const projected = (run as (RunDetail & { diagnostics?: CanonicalRunDiagnostic[] }) | null)?.diagnostics;
+    return projected ?? topology.diagnostics;
+  }, [run, topology.diagnostics]);
   const visibleTickets = useMemo(
     () => filterTickets(run?.tickets ?? [], filter, query, topology.criticalPath),
     [filter, query, run, topology.criticalPath]
@@ -419,9 +429,9 @@ export function RunMapView({ snapshot, location }: ViewProps) {
         {level === 3 && <Inspector ticket={ticket} group={group} causal={causal} onWhy={whyWaiting} onClose={() => { setLevel(2); setCausal(null); }} />}
       </section>}
 
-      {topology.diagnostics.length > 0 && <section className="run-map__diagnostics" aria-labelledby="diagnostics-heading">
-        <header><AlertTriangle aria-hidden="true" /><div><p className="run-map__eyebrow">Topology diagnostics</p><h2 id="diagnostics-heading">{topology.diagnostics.length} canonical graph {topology.diagnostics.length === 1 ? "issue" : "issues"}</h2></div></header>
-        <ul>{topology.diagnostics.map((diagnostic) => <li key={diagnostic.id}><strong>{diagnostic.kind}</strong><span>{diagnostic.message}</span></li>)}</ul>
+      {diagnostics.length > 0 && <section className="run-map__diagnostics" aria-labelledby="diagnostics-heading">
+        <header><AlertTriangle aria-hidden="true" /><div><p className="run-map__eyebrow">Topology diagnostics</p><h2 id="diagnostics-heading">{diagnostics.length} canonical graph {diagnostics.length === 1 ? "issue" : "issues"}</h2></div></header>
+        <ul>{diagnostics.map((diagnostic, index) => <li key={`${diagnostic.kind}:${diagnostic.message}:${index}`}><strong>{diagnostic.kind}</strong><span>{diagnostic.message}</span></li>)}</ul>
       </section>}
       <p className="run-map__status sr-only" aria-live="polite">{paused ? "Live updates paused; the displayed snapshot is held." : "Live updates enabled."}</p>
       <div className="run-map__read-only"><LockKeyhole aria-hidden="true" /><span>Observe only</span>No graph, ticket, or workflow controls can mutate state.</div>

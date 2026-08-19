@@ -4,7 +4,8 @@ import {
   authoritativeCausalFocus,
   buildTopology,
   filterTickets,
-  readinessGroups
+  readinessGroups,
+  type CanonicalCause
 } from "./model";
 
 function ticket(
@@ -12,7 +13,9 @@ function ticket(
   status: string,
   state: ReadinessState,
   depends_on: string[] = [],
-  dependencies: string[] = depends_on
+  dependencies: string[] = depends_on,
+  cause: CanonicalCause = "none",
+  causal_chain: string[] = [id]
 ): TicketSummary {
   return {
     id,
@@ -23,7 +26,7 @@ function ticket(
     claimed_by: "",
     depends_on,
     unreadable: false,
-    readiness: { state, dependencies, explanation: `${id} canonical ${state}` }
+    readiness: { state, dependencies, explanation: `${id} canonical ${state}`, cause, causal_chain } as TicketSummary["readiness"] & { cause: CanonicalCause; causal_chain: string[] }
   };
 }
 
@@ -73,28 +76,20 @@ describe("run-map topology model", () => {
   });
 
   it("follows only authoritative readiness dependencies for the shortest causal chain", () => {
-    const root = {
-      ...ticket("ROOT", "suspended", "attention", [], []),
-      readiness: { state: "attention" as const, dependencies: [], explanation: "ROOT is suspended" }
-    };
-    const middle = {
-      ...ticket("MID", "pending", "waiting", ["ROOT"], ["ROOT"]),
-      readiness: { state: "waiting" as const, dependencies: ["ROOT"], explanation: "MID waits for ROOT" }
-    };
-    const leaf = {
-      ...ticket("LEAF", "pending", "waiting", ["IGNORED", "MID"], ["MID"]),
-      readiness: { state: "waiting" as const, dependencies: ["MID"], explanation: "LEAF waits for MID" }
-    };
+    const root = ticket("ROOT", "suspended", "attention", [], []);
+    const middle = ticket("MID", "pending", "waiting", ["ROOT"], ["ROOT"]);
+    const leaf = ticket("LEAF", "pending", "waiting", ["IGNORED", "MID"], ["MID"], "suspended_handoff", ["LEAF", "MID", "ROOT"]);
+    leaf.readiness.explanation = "LEAF waits for suspended ROOT";
     const focus = authoritativeCausalFocus("LEAF", [leaf, middle, root]);
     expect(focus.ticketIds).toEqual(["LEAF", "MID", "ROOT"]);
     expect(focus.edgeIds).toEqual(["MID->LEAF", "ROOT->MID"]);
     expect(focus.kind).toBe("suspended");
     expect(focus.summary).toBe("Waiting on suspended handoff ROOT.");
-    expect(focus.evidence).toBe("ROOT is suspended");
+    expect(focus.evidence).toBe("LEAF waits for suspended ROOT");
   });
 
   it("does not infer a wait from graph edges when canonical readiness names none", () => {
-    const ready = ticket("READY", "ready", "ready", ["UPSTREAM"], []);
+    const ready = ticket("READY", "ready", "ready", ["UPSTREAM"], [], "none", ["READY"]);
     const focus = authoritativeCausalFocus("READY", [ready, ticket("UPSTREAM", "claimed", "running")]);
     expect(focus.kind).toBe("none");
     expect(focus.ticketIds).toEqual(["READY"]);

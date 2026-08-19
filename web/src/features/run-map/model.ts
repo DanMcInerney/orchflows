@@ -3,6 +3,12 @@ import type { ReadinessState, TicketSummary } from "../../api/schema";
 export type RunMapFilter = "active" | "problems" | "ready" | "critical" | "all";
 export type DiagnosticKind = "cycle" | "dangling" | "duplicate" | "unreadable" | "inferred";
 export type CauseKind = "pending" | "suspended" | "failed" | "stale" | "malformed" | "none";
+export type CanonicalCause = "pending_dependency" | "suspended_handoff" | "failed_upstream" | "blocked_upstream" | "stale_claim" | "malformed_topology" | "none";
+
+export interface CanonicalCausalReadiness {
+  cause: CanonicalCause;
+  causal_chain: string[];
+}
 
 export interface CanonicalEdge {
   id: string;
@@ -191,12 +197,13 @@ export function filterTickets(
   });
 }
 
-function classifyCause(ticket: TicketSummary | undefined): CauseKind {
-  if (!ticket || ticket.unreadable || ticket.readiness.state === "unknown") return "malformed";
-  if (/\bstale\b/i.test(ticket.readiness.explanation)) return "stale";
-  if (ticket.status === "suspended") return "suspended";
-  if (["failed", "blocked", "limited"].includes(ticket.status)) return "failed";
-  return "pending";
+function classifyCause(cause: CanonicalCause): CauseKind {
+  if (cause === "suspended_handoff") return "suspended";
+  if (cause === "failed_upstream" || cause === "blocked_upstream") return "failed";
+  if (cause === "stale_claim") return "stale";
+  if (cause === "malformed_topology") return "malformed";
+  if (cause === "pending_dependency") return "pending";
+  return "none";
 }
 
 function causeSummary(kind: CauseKind, ticket: TicketSummary | undefined): string {
@@ -212,44 +219,36 @@ function causeSummary(kind: CauseKind, ticket: TicketSummary | undefined): strin
 export function authoritativeCausalFocus(ticketId: string, tickets: TicketSummary[]): CausalFocus {
   const indexed = new Map(tickets.map((ticket) => [ticket.id, ticket]));
   const selected = indexed.get(ticketId);
-  if (!selected || selected.readiness.dependencies.length === 0) return {
-    ticketIds: selected ? [selected.id] : [],
+  if (!selected) return {
+    ticketIds: [],
     edgeIds: [],
-    kind: selected ? "none" : "malformed",
-    summary: selected ? causeSummary("none", selected) : causeSummary("malformed", undefined),
-    evidence: selected?.readiness.explanation ?? "Selected ticket is absent from the canonical graph."
+    kind: "malformed",
+    summary: causeSummary("malformed", undefined),
+    evidence: "Selected ticket is absent from the canonical graph."
   };
-
-  const queue = selected.readiness.dependencies.map((dependency) => [selected.id, dependency]);
-  const visited = new Set([selected.id]);
-  while (queue.length) {
-    const path = queue.shift() as string[];
-    const currentId = path.at(-1) as string;
-    const current = indexed.get(currentId);
-    if (!current) return {
-      ticketIds: path,
-      edgeIds: path.slice(1).map((id, index) => `${id}->${path[index]}`),
-      kind: "malformed",
-      summary: causeSummary("malformed", undefined),
-      evidence: `${path.at(-2)} names missing dependency ${currentId}.`
-    };
-    const kind = classifyCause(current);
-    if (kind !== "pending" || current.readiness.dependencies.length === 0) return {
-      ticketIds: path,
-      edgeIds: path.slice(1).map((id, index) => `${id}->${path[index]}`),
-      kind,
-      summary: causeSummary(kind, current),
-      evidence: current.readiness.explanation
-    };
-    if (visited.has(currentId)) continue;
-    visited.add(currentId);
-    for (const dependency of current.readiness.dependencies) queue.push([...path, dependency]);
-  }
-  return {
+  const canonical = selected.readiness as typeof selected.readiness & Partial<CanonicalCausalReadiness>;
+  if (!canonical.cause || !canonical.causal_chain) return {
     ticketIds: [selected.id],
     edgeIds: [],
     kind: "malformed",
-    summary: "The authoritative readiness chain contains a cycle.",
+    summary: "Canonical causal evidence is unavailable.",
+    evidence: selected.readiness.explanation
+  };
+  const kind = classifyCause(canonical.cause);
+  const chain = canonical.causal_chain;
+  const blocker = indexed.get(chain.at(-1) ?? "");
+  if (kind === "none" || chain.length < 2) return {
+    ticketIds: selected ? [selected.id] : [],
+    edgeIds: [],
+    kind,
+    summary: causeSummary(kind, selected),
+    evidence: selected.readiness.explanation
+  };
+  return {
+    ticketIds: chain,
+    edgeIds: chain.slice(1).map((id, index) => `${id}->${chain[index]}`),
+    kind,
+    summary: causeSummary(kind, blocker),
     evidence: selected.readiness.explanation
   };
 }
