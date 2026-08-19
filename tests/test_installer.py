@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
+import shutil
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -75,6 +78,29 @@ TestConservativeUninstall.__module__ = __name__
 
 
 class TestFrontendDistribution(unittest.TestCase):
+    def _frontend_plan(self, root: Path, source: Path) -> install.Plan:
+        home = root / "home"
+        scope_home = home / ".orchflows"
+        frontend_home = scope_home / "ui"
+        identity = install._frontend_manifest_identity(source)
+        return install.Plan(
+            scope="user",
+            project_root=None,
+            lib_home=scope_home / "lib",
+            scope_home=scope_home,
+            bin_dir=scope_home / "bin",
+            receipt_path=scope_home / "receipt.json",
+            frontend_home=frontend_home,
+            frontend_assets=[
+                (path, frontend_home / path.relative_to(source))
+                for path in sorted(source.rglob("*"))
+                if path.is_file()
+            ],
+            frontend_manifest_sha256=identity,
+            frontend_action="repair" if frontend_home.exists() else "create",
+            manage_host_surfaces=False,
+        )
+
     def test_user_plan_carries_the_exact_distribution_and_project_borrows_it(self):
         source_root = install.REPO_ROOT / "web" / "dist"
         expected_files = {
@@ -110,3 +136,58 @@ class TestFrontendDistribution(unittest.TestCase):
         self.assertEqual(project_plan.frontend_home, user_plan.frontend_home)
         self.assertEqual(project_plan.frontend_manifest_sha256, expected_identity)
         self.assertEqual(project_plan.frontend_action, "refuse")
+
+    def test_apply_repairs_receipts_and_reports_without_a_javascript_toolchain(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            source = root / "source"
+            (source / "assets").mkdir(parents=True)
+            (source / "index.html").write_text("<main>observe</main>", encoding="utf-8")
+            (source / "assets" / "app-deadbeef.js").write_text("boot()", encoding="utf-8")
+            plan = self._frontend_plan(root, source)
+            plan.frontend_home.mkdir(parents=True)
+            (plan.frontend_home / "index.html").write_text("corrupt", encoding="utf-8")
+            (plan.frontend_home / "stale.js").write_text("stale", encoding="utf-8")
+
+            with patch("subprocess.run", side_effect=AssertionError("Node/pnpm process invoked")):
+                receipt = install.apply_plan(plan)
+
+            self.assertEqual(
+                install._frontend_manifest_identity(plan.frontend_home),
+                plan.frontend_manifest_sha256,
+            )
+            self.assertFalse((plan.frontend_home / "stale.js").exists())
+            self.assertEqual(receipt["frontend"]["manifest_sha256"], plan.frontend_manifest_sha256)
+            self.assertEqual(
+                {entry["kind"] for entry in receipt["files"]}, {"frontend-asset"}
+            )
+
+            output = io.StringIO()
+            with redirect_stdout(output):
+                install.print_plan(plan)
+                install.print_summary(plan)
+            report = output.getvalue()
+            self.assertIn(str(plan.frontend_home), report)
+            self.assertIn(plan.frontend_manifest_sha256, report)
+
+            old_identity = install._frontend_manifest(plan.frontend_home)
+            broken_source = root / "broken-source"
+            shutil.copytree(source, broken_source)
+            (broken_source / "assets" / "second-cafebabe.js").write_text(
+                "second()", encoding="utf-8"
+            )
+            broken_plan = self._frontend_plan(root, broken_source)
+            real_copy = shutil.copy2
+            copy_count = 0
+
+            def interrupted_copy(source_path, destination_path):
+                nonlocal copy_count
+                copy_count += 1
+                if copy_count == 2:
+                    raise OSError("interrupted staging")
+                return real_copy(source_path, destination_path)
+
+            with patch("installer.application.shutil.copy2", side_effect=interrupted_copy):
+                with self.assertRaisesRegex(OSError, "interrupted staging"):
+                    install.apply_plan(broken_plan)
+            self.assertEqual(install._frontend_manifest(plan.frontend_home), old_identity)

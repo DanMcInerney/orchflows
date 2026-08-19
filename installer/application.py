@@ -21,6 +21,7 @@ from .foundation import (
 )
 from .managed_text import upsert_import_line, upsert_marked_block
 from .models import Plan
+from .models import _frontend_manifest_identity
 from .runtime import (
     _create_private_runtime,
     private_runtime_home,
@@ -150,6 +151,55 @@ def _remove_stale(old_receipt, kind: str, keep_paths: set, boundary: Path) -> No
         _prune_empty_dirs(path.parent, boundary)
 
 
+def _apply_frontend(plan: Plan) -> None:
+    """Stage and verify the immutable distribution before replacing it."""
+
+    home = plan.frontend_home
+    expected = plan.frontend_manifest_sha256
+    if home is None or expected is None:
+        return
+    if plan.frontend_action == "refuse":
+        raise RuntimeError(
+            f"project install requires healthy frontend assets at {home}; "
+            "run install.py --user first"
+        )
+    if plan.frontend_action == "reuse":
+        if _frontend_manifest_identity(home) != expected:
+            raise RuntimeError(f"frontend assets changed after planning: {home}")
+        return
+    if home.is_symlink() or (home.exists() and not home.is_dir()):
+        raise RuntimeError(f"refusing to replace frontend path that is not a directory: {home}")
+
+    home.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=".ui-stage-", dir=home.parent))
+    backup = None
+    try:
+        for source, destination in plan.frontend_assets:
+            relative = destination.relative_to(home)
+            staged_destination = staging / relative
+            staged_destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, staged_destination)
+        if _frontend_manifest_identity(staging) != expected:
+            raise RuntimeError("staged frontend assets do not match the planned manifest")
+
+        if home.exists():
+            backup = Path(tempfile.mkdtemp(prefix=".ui-backup-", dir=home.parent))
+            backup.rmdir()
+            home.replace(backup)
+        try:
+            staging.replace(home)
+        except BaseException:
+            if backup is not None and not home.exists():
+                backup.replace(home)
+                backup = None
+            raise
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging)
+        if backup is not None and backup.exists():
+            shutil.rmtree(backup)
+
+
 def _diverged_role_agents(plan: Plan, old_receipt: dict | None) -> list:
     """Role agents on disk whose content is not what this install would write.
 
@@ -219,6 +269,15 @@ def apply_plan(
             "project install requires a healthy user runtime at "
             f"{private_runtime_home()}; run install.py --user first"
         )
+    if (
+        plan.scope == "project"
+        and plan.frontend_manifest_sha256 is not None
+        and _frontend_manifest_identity(plan.frontend_home) != plan.frontend_manifest_sha256
+    ):
+        raise RuntimeError(
+            "project install requires healthy frontend assets at "
+            f"{plan.frontend_home}; run install.py --user first"
+        )
     diverged = _diverged_role_agents(plan, old_receipt)
     # A kept agent stays in the plan so ``_remove_stale`` still counts it as
     # wanted; only its write is skipped. Dropping it from the plan would
@@ -263,7 +322,21 @@ def apply_plan(
     for directory in plan.runtime_dirs:
         directory.mkdir(parents=True, exist_ok=True)
 
+    frontend_existed = {
+        str(destination): destination.is_file()
+        for _, destination in plan.frontend_assets
+    }
+    _apply_frontend(plan)
+
     written_files = []
+
+    for _, destination in plan.frontend_assets:
+        action = install_action(
+            destination,
+            "frontend-asset",
+            frontend_existed[str(destination)],
+        )
+        written_files.append(_installed_file(destination, "frontend-asset", action))
 
     # Everything below writes into ``.claude``/``.codex`` (adapters, prompts,
     # redirect skills, role agents, host configs). Thin project plans set
@@ -426,6 +499,16 @@ def apply_plan(
             if plan.scope == "user"
             else None
         ),
+        "frontend": (
+            {
+                "home": str(plan.frontend_home),
+                "manifest_sha256": plan.frontend_manifest_sha256,
+                "action": plan.frontend_action,
+                "uninstall": "borrowed" if plan.scope == "project" else "receipt-guarded",
+            }
+            if plan.frontend_home is not None
+            else None
+        ),
     }
     _write_json(plan.receipt_path, receipt)
     return receipt
@@ -433,6 +516,11 @@ def apply_plan(
 
 def print_summary(plan: Plan) -> None:
     print(f"Installed orchflows at {plan.scope} scope.")
+    if plan.frontend_home is not None:
+        print(
+            f"  frontend:    {plan.frontend_home} "
+            f"({plan.frontend_action}; manifest {plan.frontend_manifest_sha256})"
+        )
     if not plan.manage_host_surfaces:
         print(f"  instruction blocks: {len(plan.blocks)} written")
         for block in plan.blocks:
