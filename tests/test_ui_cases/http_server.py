@@ -41,29 +41,36 @@ class TestConditionalRequests(unittest.TestCase):
                     self.assertEqual(etag, again[1].get("ETag"), route)
                     self.assertNotEqual("", body, route)
 
-    def test_a_ticket_changing_size_answers_200_with_a_different_tag(self):
+    def test_a_projected_ticket_field_changing_answers_200_with_a_different_tag(self):
         with tempfile.TemporaryDirectory() as tmp:
             main = make_sink(Path(tmp))
             ticket = main / "tickets" / SETTLED_RUN / "D1.md"
             with serving(main) as server:
-                first = fetch(server, graph_url(SETTLED_RUN))[1].get("ETag")
-                with ticket.open("a", encoding="utf-8") as handle:
-                    handle.write("\nanother line\n")
+                route = "/api/v1/runs/{0}".format(SETTLED_RUN)
+                first = fetch(server, route)[1].get("ETag")
+                text = ticket.read_text(encoding="utf-8")
+                ticket.write_text(text.replace("status: complete", "status: failed"), encoding="utf-8")
                 status, headers, _ = fetch(
-                    server, graph_url(SETTLED_RUN), {"If-None-Match": first}
+                    server, route, {"If-None-Match": first}
                 )
 
             self.assertEqual(200, status)
             self.assertNotEqual(first, headers.get("ETag"))
 
-    def test_a_same_second_rewrite_of_the_same_size_answers_200_with_a_new_tag(self):
+    def test_a_same_size_projected_rewrite_answers_200_with_a_new_tag(self):
         with tempfile.TemporaryDirectory() as tmp:
             main = make_sink(Path(tmp))
-            ticket = main / "tickets" / SETTLED_RUN / "D1.md"
+            ticket = main / "tickets" / SETTLED_RUN / "D4.md"
             with serving(main) as server:
-                first = fetch(server, "/")[1].get("ETag")
-                self.touch(ticket)
-                status, headers, body = fetch(server, "/", {"If-None-Match": first})
+                route = "/api/v1/runs/{0}".format(SETTLED_RUN)
+                first = fetch(server, route)[1].get("ETag")
+                before = ticket.stat().st_size
+                raw = ticket.read_bytes()
+                ticket.write_bytes(
+                    raw.replace(b"status: blocked", b"status: limited", 1)
+                )
+                self.assertEqual(before, ticket.stat().st_size)
+                status, headers, body = fetch(server, route, {"If-None-Match": first})
 
             self.assertEqual(200, status)
             self.assertNotEqual(first, headers.get("ETag"))
@@ -87,7 +94,7 @@ class TestConditionalRequests(unittest.TestCase):
                 for header in ({}, {"If-None-Match": '"not-a-real-tag"'}):
                     status, _, body = fetch(server, "/", header)
                     self.assertEqual(200, status)
-                    self.assertIn("<main", body)
+                self.assertIn('id="root"', body)
 
     def test_a_wildcard_or_weak_validator_is_honoured_as_rfc7232_requires(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -147,7 +154,7 @@ class TestLoopbackOnly(unittest.TestCase):
                 self.assertNotEqual("0.0.0.0", host)
                 status, page = get(server, "/")
                 self.assertEqual(200, status)
-                self.assertIn("orchflows runs", page)
+                self.assertIn('id="root"', page)
 
     def test_an_unavailable_port_exits_2_with_a_message_not_a_traceback(self):
         # The bind failure is injected rather than provoked by holding the
@@ -203,8 +210,9 @@ class TestReadOnly(unittest.TestCase):
             with serving(main, transcripts) as server:
                 for route in every_route():
                     status, page = get(server, route)
-                    self.assertIn(status, (200, 404))
-                    self.assertTrue(page)
+                    self.assertIn(status, (200, 307, 404))
+                    if status != 307:
+                        self.assertTrue(page)
 
             self.assertEqual(before, snapshot(main))
 
@@ -251,3 +259,138 @@ class TestNoNetworkAssets(unittest.TestCase):
                 for route in every_route():
                     _, page = get(server, route)
                     self.assertIsNone(REMOTE_ASSET_RE.search(page), route)
+
+
+class TestCompiledApplicationServer(unittest.TestCase):
+    """The installed reader is the immutable application plus frozen JSON."""
+
+    def test_the_application_and_every_manifest_asset_are_served_with_validators(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            main = make_sink(Path(tmp))
+            manifest = json.loads(
+                (ROOT / "web" / "dist" / ".vite" / "manifest.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            assets = [manifest["index.html"]["file"]]
+            assets.extend(manifest["index.html"].get("css", ()))
+            with serving(main) as server:
+                status, headers, page = fetch(server, "/")
+                self.assertEqual(200, status)
+                self.assertIn('id="root"', page)
+                self.assertEqual("text/html; charset=utf-8", headers.get("Content-Type"))
+                self.assertTrue(headers.get("ETag"))
+                self.assertEqual("no-cache", headers.get("Cache-Control"))
+                for asset in assets:
+                    status, seen, body = fetch(server, "/" + asset)
+                    self.assertEqual(200, status, asset)
+                    self.assertTrue(body, asset)
+                    self.assertTrue(seen.get("ETag"), asset)
+                    self.assertIn("immutable", seen.get("Cache-Control", ""), asset)
+                    repeated = fetch(
+                        server, "/" + asset, {"If-None-Match": seen.get("ETag")}
+                    )
+                    self.assertEqual(304, repeated[0], asset)
+                    self.assertEqual("", repeated[2], asset)
+                    head = request(server, "/" + asset, method="HEAD")
+                    self.assertEqual(200, head[0], asset)
+                    self.assertEqual("", head[2], asset)
+                    self.assertEqual(seen.get("Content-Type"), head[1].get("Content-Type"))
+                    self.assertEqual(seen.get("Content-Length"), head[1].get("Content-Length"))
+
+    def test_the_v1_projection_surface_is_json_only_and_conditional(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            main = make_sink(Path(tmp))
+            transcripts = make_transcripts(Path(tmp))
+            routes = (
+                "/api/v1/runs",
+                "/api/v1/runs/run-gamma",
+                "/api/v1/runs/run-gamma/tickets/G1",
+                "/api/v1/friction",
+                "/api/v1/sessions",
+                "/api/v1/sessions/{0}".format(TITLED_SESSION),
+                "/api/observe?run=run-gamma",
+            )
+            with serving(main, transcripts) as server:
+                for route in routes:
+                    status, headers, body = fetch(server, route)
+                    self.assertEqual(200, status, route)
+                    self.assertEqual(
+                        "application/json; charset=utf-8",
+                        headers.get("Content-Type"),
+                        route,
+                    )
+                    self.assertIsInstance(json.loads(body), dict, route)
+                    tag = headers.get("ETag")
+                    self.assertTrue(tag, route)
+                    unchanged = fetch(server, route, {"If-None-Match": tag})
+                    self.assertEqual(304, unchanged[0], route)
+                    self.assertEqual("", unchanged[2], route)
+
+    def test_observe_compatibility_has_the_browser_contract_and_one_run_graph(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with serving(make_sink(Path(tmp))) as server:
+                status, _headers, body = fetch(server, "/api/observe?run=run-gamma")
+
+            payload = json.loads(body)
+            self.assertEqual(200, status)
+            self.assertEqual(
+                {"revision", "active", "nodes", "edges"}, set(payload)
+            )
+            self.assertTrue(payload["revision"])
+            self.assertEqual(
+                ["G1", "G2", "G3", "G4", "G5", "G6", "G7"],
+                sorted(node["id"] for node in payload["nodes"]),
+            )
+            self.assertEqual(
+                {"id", "label", "status"}, set(payload["nodes"][0])
+            )
+            self.assertEqual(
+                {"id", "source", "target"}, set(payload["edges"][0])
+            )
+
+    def test_legacy_deep_links_redirect_without_losing_identity(self):
+        redirects = {
+            "/ticket?run=run-gamma&id=G1": "/?run=run-gamma&ticket=G1",
+            "/graph?run=run-gamma": "/?run=run-gamma",
+            "/session?id={0}".format(TITLED_SESSION): "/?session={0}".format(
+                TITLED_SESSION
+            ),
+            "/sessions": "/?view=sessions",
+            "/friction": "/?view=friction",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            with serving(make_sink(tmp), make_transcripts(tmp)) as server:
+                for route, location in redirects.items():
+                    status, headers, body = fetch(server, route)
+                    self.assertEqual(307, status, route)
+                    self.assertEqual(location, headers.get("Location"), route)
+                    self.assertEqual("", body, route)
+
+    def test_host_methods_cors_headers_and_binding_fail_closed(self):
+        required = {
+            "Content-Security-Policy",
+            "X-Content-Type-Options",
+            "Referrer-Policy",
+            "Cross-Origin-Resource-Policy",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            with serving(make_sink(Path(tmp))) as server:
+                self.assertEqual("127.0.0.1", server.server_address[0])
+                for method in ("POST", "PUT", "PATCH", "DELETE", "OPTIONS"):
+                    status, headers, _body = request(server, "/api/v1/runs", method)
+                    self.assertEqual(405, status, method)
+                    self.assertEqual(
+                        {"GET", "HEAD"},
+                        set(headers.get("Allow", "").replace(" ", "").split(",")),
+                        method,
+                    )
+                    self.assertIsNone(headers.get("Access-Control-Allow-Origin"), method)
+                refused = fetch(server, "/", {"Host": "reader.example"})
+                self.assertEqual(400, refused[0])
+                self.assertIsNone(refused[1].get("Access-Control-Allow-Origin"))
+                for route in ("/", "/api/v1/runs", "/not-found"):
+                    status, headers, _body = fetch(server, route)
+                    self.assertIn(status, (200, 404), route)
+                    self.assertTrue(required.issubset(set(headers)), route)

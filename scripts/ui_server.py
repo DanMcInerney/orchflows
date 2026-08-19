@@ -406,60 +406,36 @@ def respond(start, path: str, if_none_match=None, transcripts=None) -> tuple:
 
 # --- serving -----------------------------------------------------------------
 
+try:
+    from scripts.ui_api import (
+        UvicornReaderServer,
+        create_application,
+        create_server,
+        project_friction,
+        project_observe,
+        project_run,
+        project_runs,
+        project_session,
+        project_sessions,
+        project_ticket,
+    )
+    from scripts.ui_assets import resolve_asset_root
+except ImportError:
+    from ui_api import (
+        UvicornReaderServer,
+        create_application,
+        create_server,
+        project_friction,
+        project_observe,
+        project_run,
+        project_runs,
+        project_session,
+        project_sessions,
+        project_ticket,
+    )
+    from ui_assets import resolve_asset_root
 
-class ReaderServer(ThreadingHTTPServer):
-    """Carries the roots, so the handler needs neither a global nor a
-    closure. ``transcripts`` is ``None`` where none was configured, and the
-    session views read nothing at all in that case."""
-
-    daemon_threads = True
-
-    def __init__(self, address, handler_class, root: Path, transcripts=None):
-        self.root = root
-        self.transcripts = transcripts
-        ThreadingHTTPServer.__init__(self, address, handler_class)
-
-
-class ReaderHandler(BaseHTTPRequestHandler):
-    server_version = "orchflows-ui"
-    sys_version = ""
-
-    def do_GET(self):
-        status, etag, page = respond(
-            self.server.root,
-            self.path,
-            self.headers.get("If-None-Match"),
-            self.server.transcripts,
-        )
-        self.send_response(status)
-        if etag:
-            self.send_header("ETag", etag)
-        # A live view of a directory that changes underneath it: hold the
-        # page but revalidate every time. `no-store` would forbid holding
-        # it at all, so no client would ever send `If-None-Match` and the
-        # 304 would be unreachable.
-        self.send_header("Cache-Control", "no-cache")
-        if status == 304:
-            self.end_headers()
-            return
-        body = page.encode("utf-8")
-        self.send_header("Content-Type", "text/html; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-
-    def log_message(self, format, *args):
-        """Silent. The one line worth reading is the URL printed at start."""
-
-
-def create_server(root, port: int, transcripts=None) -> ReaderServer:
-    """Bind loopback only. Nothing here authenticates a request, and neither
-    the sink nor a transcript is public data -- the second emphatically so
-    -- therefore the socket never leaves this host. Port 0 asks the OS for a
-    free port; the caller reads back ``server_address``.
-    """
-
-    return ReaderServer((LOOPBACK_HOST, port), ReaderHandler, Path(root), transcripts)
+ReaderServer = UvicornReaderServer
 
 
 def main(argv=None):

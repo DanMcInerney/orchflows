@@ -233,17 +233,21 @@ def write_ticket(run_dir: Path, ticket_id: str, **fields) -> Path:
     return path
 
 
-def fetch(server, route: str, headers=None) -> tuple:
+def request(server, route: str, method="GET", headers=None) -> tuple:
     """``(status, headers, body)`` over the real socket."""
 
     host, port = server.server_address[0], server.server_address[1]
     connection = http.client.HTTPConnection(host, port, timeout=5)
     try:
-        connection.request("GET", route, headers=headers or {})
+        connection.request(method, route, headers=headers or {})
         response = connection.getresponse()
         return response.status, response.headers, response.read().decode("utf-8")
     finally:
         connection.close()
+
+
+def fetch(server, route: str, headers=None) -> tuple:
+    return request(server, route, headers=headers)
 
 
 def get(server, route: str) -> tuple:
