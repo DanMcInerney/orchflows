@@ -23,7 +23,7 @@ except ModuleNotFoundError:  # The installed CLI runs under the private runtime.
     TrustedHostMiddleware = Request = RedirectResponse = Response = Route = None
 
 try:
-    from scripts.ui_assets import FallbackReaderServer, read_asset, resolve_asset_root
+    from scripts.ui_assets import FallbackReaderServer, read_asset, resolve_asset_root, valid_host_headers
     from scripts.ui_discovery import (
         discover,
         find_session,
@@ -36,9 +36,10 @@ try:
         run_tickets,
     )
     from scripts.ui_model import ACTIVE_STATUS, _safe_name, parse_verification
+    from scripts.ui_layout import graph_layout
     from scripts.ui_sessions import read_session
 except ImportError:
-    from ui_assets import FallbackReaderServer, read_asset, resolve_asset_root
+    from ui_assets import FallbackReaderServer, read_asset, resolve_asset_root, valid_host_headers
     from ui_discovery import (
         discover,
         find_session,
@@ -51,6 +52,7 @@ except ImportError:
         run_tickets,
     )
     from ui_model import ACTIVE_STATUS, _safe_name, parse_verification
+    from ui_layout import graph_layout
     from ui_sessions import read_session
 
 API_VERSION = "v1"
@@ -67,8 +69,6 @@ SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
 }
-
-
 def _ticket_record(ticket: dict) -> dict:
     verification = parse_verification(ticket["sections"].get("Verification", ""))
     return {
@@ -83,21 +83,21 @@ def _ticket_record(ticket: dict) -> dict:
             "state": verification["state"],
             "entries": len(verification["rows"]),
         },
+        "source": {"file_id": ticket["file_id"], "unreadable": ticket["unreadable"]},
     }
-
-
 def _run_record(root: Path, run: str, tickets: list) -> dict:
     nodes = [
         {"id": ticket["id"], "label": ticket["id"], "status": ticket["status"]}
         for ticket in tickets
     ]
+    layout = graph_layout(*graph_input(tickets))
     edges = [
         {
             "id": "{0}->{1}".format(source, target),
             "source": source,
             "target": target,
         }
-        for source, target in graph_input(tickets)[1]
+        for source, target in layout["edges"]
     ]
     events = read_events(root, run)
     return {
@@ -106,7 +106,7 @@ def _run_record(root: Path, run: str, tickets: list) -> dict:
         "active": any(ticket["status"] == ACTIVE_STATUS for ticket in tickets),
         "nodes": nodes,
         "edges": edges,
-        "diagnostics": identity_diagnostics(tickets),
+        "diagnostics": identity_diagnostics(tickets) + layout["diagnostics"],
         "events": {
             "present": events is not None,
             "entries": len(events["entries"]) if events else 0,
@@ -152,6 +152,10 @@ def project_ticket(root: Path, run: str, ticket_id: str):
         "run": run,
         "ticket": _ticket_record(ticket),
         "linked_friction": linked,
+        "friction_health": {
+            "skipped": friction["skipped"],
+            "unreadable": list(friction["unreadable"]),
+        },
     }
 
 
@@ -258,7 +262,7 @@ def _bytes_response(request: Request, body: bytes, media_type: str, cache: str, 
 def _json_response(request: Request, value, status=200):
     if status != 200:
         return Response(_json_bytes(value), status_code=status, media_type="application/json")
-    return _bytes_response(request, _json_bytes(value), "application/json", "no-cache")
+    return _bytes_response(request, _json_bytes(value), JSON_TYPE, "no-cache")
 
 
 def _context(request: Request):
@@ -409,8 +413,7 @@ def _fallback_json(value, request_headers, status=200):
 
 
 def _fallback_dispatch(server, method, target, headers):
-    host = headers.get("Host", "").split(":", 1)[0].lower()
-    if host not in ("127.0.0.1", "localhost"):
+    if not valid_host_headers(headers):
         return _fallback_response(400, b"invalid host")
     if method not in ("GET", "HEAD"):
         return _fallback_response(405, b"method not allowed", request_headers=headers, extra={"Allow": "GET, HEAD"})

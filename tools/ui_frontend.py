@@ -21,9 +21,11 @@ LOCK = ROOT / "pnpm-lock.yaml"
 RUNTIME_REQUIREMENTS = ROOT / "requirements-runtime.txt"
 NOTICES = ROOT / "THIRD_PARTY_NOTICES.md"
 BUNDLE_MANIFEST = DIST / ".vite" / "manifest.json"
+GENERATED_MANIFEST = DIST / ".vite" / "orchflows-generated.json"
 REMOTE_ASSET = re.compile(
-    rb"(?:src|href)=[\"']https?://|url\(\s*[\"']?https?://|"
-    rb"(?:fetch|import)\(\s*[\"']https?://|new\s+Worker\(\s*[\"']https?://",
+    rb"(?:src|href)\s*=\s*[\"'`]?\s*(?:https?:)?//|"
+    rb"(?:url|(?:fetch|import)|new\s+Worker)\s*\(\s*[\"'`]?\s*(?:https?:)?//|"
+    rb"@import\s+[\"'`]?\s*(?:https?:)?//",
     re.IGNORECASE,
 )
 HASHED_ASSET = re.compile(r".+-[0-9A-Za-z_-]{8,}\.(?:css|js)$")
@@ -38,6 +40,10 @@ PYTHON_LICENSES = {
     "typing-extensions": "PSF-2.0",
     "uvicorn": "BSD-3-Clause",
 }
+PYTHON_ARTIFACTS = {
+    name: "P: {0}/".format(name.replace("-", "_")) for name in PYTHON_LICENSES
+}
+PYTHON_ARTIFACTS["typing-extensions"] = "P: typing_extensions.py"
 
 
 def _pnpm() -> str:
@@ -80,10 +86,10 @@ def _notice_rows(text: str, heading: str, next_heading: str) -> Dict[str, tuple]
         cells = [_plain_markdown(cell) for cell in line.strip().strip("|").split("|")]
         if len(cells) != 5 or cells[0] in {"Package", "---"}:
             continue
-        package, version, _source, license_name, artifact = cells
+        package, version, source, license_name, artifact = cells
         if package in rows:
             raise RuntimeError("duplicate notice row: {0}".format(package))
-        rows[package] = (version, license_name, artifact)
+        rows[package] = (version, source, license_name, artifact)
     if not rows:
         raise RuntimeError("third-party notice table is empty: {0}".format(heading))
     return rows
@@ -177,7 +183,7 @@ def _assert_notice_inventory(
             kind, missing, extra
         ))
     for package, version in expected.items():
-        seen_version, seen_license, _artifact = rows[package]
+        seen_version, seen_source, seen_license, seen_artifact = rows[package]
         if seen_version != version:
             raise RuntimeError("{0} notice version mismatch: {1}".format(kind, package))
         expected_license = licenses.get(package)
@@ -185,6 +191,11 @@ def _assert_notice_inventory(
             raise RuntimeError("{0} license policy is missing: {1}".format(kind, package))
         if seen_license != expected_license:
             raise RuntimeError("{0} notice license mismatch: {1}".format(kind, package))
+        source_root = "https://pypi.org/project/" if kind == "Python" else "https://www.npmjs.com/package/"
+        if "{0}{1}".format(source_root, package) not in seen_source or version not in seen_source:
+            raise RuntimeError("{0} notice source mismatch: {1}".format(kind, package))
+        if kind == "Python" and seen_artifact != PYTHON_ARTIFACTS[package]:
+            raise RuntimeError("Python notice artifact mismatch: {0}".format(package))
 
 
 def audit_licenses() -> dict:
@@ -206,7 +217,7 @@ def audit_licenses() -> dict:
     _assert_notice_inventory(python_identities, python_rows, PYTHON_LICENSES, "Python")
     _assert_notice_inventory(browser_identities, browser_rows, browser_licenses, "browser")
 
-    for package, (_version, _license, artifact) in browser_rows.items():
+    for package, (_version, _source, _license, artifact) in browser_rows.items():
         expected_artifact = "E" if package == "elkjs" else "B"
         if artifact != expected_artifact:
             raise RuntimeError("browser notice artifact mismatch: {0}".format(package))
@@ -256,10 +267,26 @@ def _dist_identity() -> Dict[str, str]:
     return identity
 
 
+def _prepare_generated_distribution() -> None:
+    """Normalize the vendored worker and attest every generated output."""
+
+    for path in (DIST / "assets").glob("elk-worker.min-*.js"):
+        payload = path.read_bytes().replace(b"\t\n", b"\\t\n")
+        path.write_bytes(payload)
+    GENERATED_MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+    entries = {
+        path.relative_to(DIST).as_posix(): _sha256(path)
+        for path in sorted(candidate for candidate in DIST.rglob("*") if candidate.is_file())
+        if path != GENERATED_MANIFEST
+    }
+    GENERATED_MANIFEST.write_text(json.dumps(entries, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
 def verify_build() -> dict:
     if not LOCK.is_file():
         raise RuntimeError("pnpm-lock.yaml is missing")
     before = _sha256(LOCK)
+    committed = _dist_identity()
     _run("install", "--frozen-lockfile")
     _run("run", "typecheck")
     _run("run", "test")
@@ -268,9 +295,12 @@ def verify_build() -> dict:
     for _ in range(2):
         shutil.rmtree(DIST, ignore_errors=True)
         _run("run", "build")
+        _prepare_generated_distribution()
         identities.append(_dist_identity())
     if identities[0] != identities[1]:
         raise RuntimeError("two clean production builds produced different bytes")
+    if committed != identities[0]:
+        raise RuntimeError("committed web/dist differs from the deterministic production build")
     if _sha256(LOCK) != before:
         raise RuntimeError("the frozen install or build mutated pnpm-lock.yaml")
     encoded = json.dumps(identities[0], sort_keys=True, separators=(",", ":"))
@@ -287,6 +317,7 @@ def smoke(browser: str) -> dict:
     environment = os.environ.copy()
     environment.pop("FORCE_COLOR", None)
     environment["ORCHFLOWS_BROWSER"] = browser
+    environment.setdefault("ORCHFLOWS_PYTHON", sys.executable)
     if browser == "auto" and "ORCHFLOWS_BROWSER_EXECUTABLE" not in environment:
         candidates = (
             Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe"),

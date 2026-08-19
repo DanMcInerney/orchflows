@@ -445,7 +445,7 @@ MAX_NAME_BYTES = 255
 # `ValueError: embedded null byte`, which `BaseHTTPRequestHandler` does not
 # catch, so the client gets no HTTP response at all and `socketserver`
 # prints the absolute tickets path to stderr.
-UNSAFE_NAME_RE = re.compile(r"[\x00-\x1f\x7f/\\]")
+UNSAFE_NAME_RE = re.compile(r"[\x00-\x1f\x7f:/\\]")
 
 
 def _safe_name(value) -> str:

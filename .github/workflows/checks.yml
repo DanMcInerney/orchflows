@@ -47,6 +47,12 @@ jobs:
           version: 10.32.1
           run_install: false
 
+      - name: install exact reader backend
+        run: uv pip install --system --require-hashes -r requirements-runtime.txt
+
+      - name: verify distributed dependency notices
+        run: uv run --no-project python tools/ui_frontend.py audit-licenses
+
       - name: verify reproducible frontend build
         run: uv run --no-project python tools/ui_frontend.py verify-build
 
@@ -98,6 +104,9 @@ jobs:
       # declared command is candidate-facing evidence; CI matches it
       # rather than substituting an interpreter behind its back.
       - uses: astral-sh/setup-uv@v5
+
+      - name: install exact reader backend
+        run: uv pip install --system --require-hashes -r requirements-runtime.txt
 
       # The suite, sharded one module per child interpreter. Thread
       # parallelism is unsound here -- the suite performs ~30

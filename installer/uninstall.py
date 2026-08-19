@@ -76,6 +76,7 @@ def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
 
     skill_actions = []
     manual_actions = []
+    planned_removals = set()
     for entry in receipt.get("files", []):
         path = Path(entry["path"])
         kind = entry.get("kind", "unknown")
@@ -151,6 +152,7 @@ def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
         if dry_run:
             noun = "frontend asset" if kind == "frontend-asset" else "skill"
             skill_actions.append({"path": str(path), "action": f"would remove unchanged {noun}"})
+            planned_removals.add(path.resolve())
             continue
         try:
             path.unlink()
@@ -179,7 +181,16 @@ def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
             )
         except OSError:
             safe_home = False
-        if safe_home and frontend_home.is_dir() and not any(frontend_home.iterdir()):
+        remaining = ()
+        if safe_home and frontend_home.is_dir():
+            try:
+                remaining = tuple(
+                    path for path in frontend_home.rglob("*")
+                    if path.is_file() and path.resolve() not in planned_removals
+                )
+            except OSError:
+                remaining = (frontend_home,)
+        if safe_home and frontend_home.is_dir() and not remaining:
             if dry_run:
                 skill_actions.append(
                     {

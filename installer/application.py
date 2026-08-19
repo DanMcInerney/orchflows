@@ -170,6 +170,7 @@ def _apply_frontend(plan: Plan) -> None:
     home.parent.mkdir(parents=True, exist_ok=True)
     staging = Path(tempfile.mkdtemp(prefix=".ui-stage-", dir=home.parent))
     backup = None
+    committed = False
     try:
         for source, destination in plan.frontend_assets:
             relative = destination.relative_to(home)
@@ -185,15 +186,21 @@ def _apply_frontend(plan: Plan) -> None:
             home.replace(backup)
         try:
             staging.replace(home)
+            committed = True
         except BaseException:
             if backup is not None and not home.exists():
-                backup.replace(home)
-                backup = None
+                try:
+                    backup.replace(home)
+                    backup = None
+                except OSError:
+                    # The prior generation is still complete at ``backup``.
+                    # Keep the only recoverable generation after two failures.
+                    pass
             raise
     finally:
         if staging.exists():
             shutil.rmtree(staging)
-        if backup is not None and backup.exists():
+        if committed and backup is not None and backup.exists():
             shutil.rmtree(backup)
 
 
@@ -314,7 +321,7 @@ def apply_plan(
         str(destination): destination.is_file()
         for _, destination in plan.frontend_assets
     }
-    if plan.frontend_assets:
+    if plan.frontend_action is not None:
         _apply_frontend(plan)
 
     written_files = []

@@ -168,6 +168,9 @@ def _build_user_plan(
             if path.is_file() and not _is_build_artifact(path):
                 rel = path.relative_to(REPO_ROOT)
                 lib_copies.append((path, lib_home / rel))
+    notices = REPO_ROOT / "THIRD_PARTY_NOTICES.md"
+    if notices.is_file():
+        lib_copies.append((notices, lib_home / notices.name))
 
     frontend_source = REPO_ROOT / "web" / "dist"
     frontend_home = _frontend_home()
