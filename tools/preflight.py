@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Run the suite under every locally installed interpreter CI uses.
 
-A local green covers one of nine CI cells -- one OS, one interpreter --
-and AGENTS.md calls it provisional for that reason. Two of the three
-axes are closable before a push and this closes one of them: the
-interpreter. What is left uncovered is named in the summary rather than
-left to be discovered by a runner four minutes later.
+The matrix has five active CI legs: three Ubuntu, one macOS, and one Windows.
+A local green covers at most one OS/interpreter pair, so AGENTS.md calls
+it provisional. Preflight reruns the suite under each locally installed
+CI interpreter and names missing versions and other operating systems.
 
 The version axis is not hypothetical. `Path.resolve()` on a name holding
 a NUL raises through 3.12 and answers a path on 3.13, and the suite

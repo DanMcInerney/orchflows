@@ -32,8 +32,8 @@ STEP_KINDS = ("discovery", "hydration")
 # failure and a failure never erases a usable record.
 OUTCOMES = ("ok", "empty", "partial", "failed", "refused")
 
-# Preference order, not authority order: every class but K5 is uncredentialed,
-# and `offline` is the fixture adapter's class.
+# Preference order, not authority order. K0-K4 need no user-supplied credential;
+# K1 may use a public client credential. `offline` is for fixtures.
 ACCESS_CLASSES = ("K0", "K1", "K2", "K3", "K4", "K5", "offline")
 
 REPRESENTATION_KINDS = ("index", "native", "page", "feed", "transcript")

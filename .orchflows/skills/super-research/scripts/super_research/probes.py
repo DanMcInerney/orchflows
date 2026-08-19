@@ -1,6 +1,6 @@
 """Probe table: the one liveness read each live adapter is smoked on.
 
-Thirteen probes, one per live adapter, and the offline adapter deliberately has
+Nineteen probes, one per live adapter, and the offline adapter deliberately has
 none — a smoke for ``fake`` would report this suite's health as a platform's.
 Each probe names the step its read is made as, the route it leaves by, and the
 field set that adapter's row in the spec's adapter roster promises. Nothing
@@ -63,7 +63,7 @@ class SmokeProbe:
     max_items: int = 200
 
 
-# Thirteen probes, one per live adapter, each asserting the field set its row
+# Nineteen probes, one per live adapter, each asserting the field set its row
 # in the spec's adapter roster names. Two rows name a field the artifact
 # contract cannot carry and are noted where they occur; nothing else is
 # omitted, and nothing is asserted that the row does not name.
