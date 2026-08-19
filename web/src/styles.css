@@ -1,0 +1,83 @@
+:root {
+  color: #1a2433;
+  background: #f6f7f9;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { width: 100%; height: 100%; margin: 0; }
+button, input { font: inherit; }
+
+.shell { height: 100%; display: grid; grid-template-rows: 3.5rem 1fr; }
+.masthead {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 1.1rem;
+  border-bottom: 1px solid #d5dbe3;
+  background: #fff;
+}
+.brand, .mode { display: inline-flex; align-items: center; gap: .45rem; }
+.brand { font-weight: 720; letter-spacing: -.02em; }
+.brand svg, .mode svg { width: 1.05rem; height: 1.05rem; }
+.mode { margin-left: auto; color: #334155; }
+.read-only {
+  border: 1px solid #c3cad4;
+  border-radius: 999px;
+  padding: .2rem .55rem;
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.tooltip {
+  border-radius: .35rem;
+  padding: .45rem .6rem;
+  color: #fff;
+  background: #1e293b;
+  font-size: .78rem;
+}
+.workspace { min-height: 0; display: grid; grid-template-columns: 18rem 1fr; }
+.rail { padding: 1rem; border-right: 1px solid #d5dbe3; background: #fff; overflow: auto; }
+.rail [role="tablist"] { display: grid; grid-template-columns: 1fr 1fr; gap: .3rem; }
+.rail [role="tab"] {
+  border: 1px solid transparent;
+  border-radius: .35rem;
+  padding: .45rem;
+  color: inherit;
+  background: transparent;
+}
+.rail [role="tab"][data-state="active"] { border-color: #b9c2ce; background: #f1f4f7; }
+.rail h1 { margin: 1.2rem 0 .4rem; font-size: 1rem; }
+.rail p, .rail dl { color: #526173; font-size: .88rem; }
+.rail dt { font-weight: 650; }
+.rail dd { margin: 0 0 .7rem; }
+.canvas { min-width: 0; min-height: 0; background: #f6f7f9; }
+.react-flow__node {
+  width: 180px;
+  min-height: 68px;
+  padding: .75rem;
+  border: 1px solid #94a3b8;
+  border-radius: .5rem;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 8%);
+}
+.react-flow__node.selected { outline: 3px solid #2563eb; outline-offset: 2px; }
+.react-flow__edge-path { stroke: #64748b; }
+
+@media (max-width: 720px) {
+  .shell { grid-template-rows: auto 1fr; }
+  .masthead { min-height: 3.25rem; flex-wrap: wrap; padding-block: .55rem; }
+  .workspace { grid-template-columns: 1fr; grid-template-rows: auto minmax(22rem, 1fr); }
+  .rail { border-right: 0; border-bottom: 1px solid #d5dbe3; padding: .7rem; }
+  .rail h1, .rail p { margin-block: .45rem; }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root { color: #e5e7eb; background: #0f172a; }
+  .masthead, .rail, .react-flow__node { background: #111827; }
+  .masthead, .rail { border-color: #334155; }
+  .canvas { background: #0f172a; }
+  .mode, .rail p, .rail dl { color: #cbd5e1; }
+  .rail [role="tab"][data-state="active"] { border-color: #475569; background: #1e293b; }
+}
