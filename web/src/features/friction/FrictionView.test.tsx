@@ -1,6 +1,6 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import type { ExperienceSnapshot } from "../../api/schema";
+import type { ExperienceSnapshot, FrictionItem } from "../../api/schema";
 import type { LocationState } from "../../state/location";
 import { FrictionView, closedFrictionRecord } from "./FrictionView";
 
@@ -18,7 +18,7 @@ function snapshot(items: unknown[], skipped = 0, unreadable = 0): ExperienceSnap
     ticket: null,
     sessions: { items: [], diagnostics: [], empty: true },
     session: null,
-    friction: { items, skipped, unreadable },
+    friction: { items: items as FrictionItem[], skipped, unreadable },
   };
 }
 

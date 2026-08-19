@@ -312,12 +312,13 @@ def verify_build() -> dict:
     }
 
 
-def smoke(browser: str) -> dict:
+def smoke(browser: str, experience: bool = False) -> dict:
     if browser not in {"auto", "chromium"}:
         raise RuntimeError("unsupported browser: {0}".format(browser))
     environment = os.environ.copy()
     environment.pop("FORCE_COLOR", None)
     environment["ORCHFLOWS_BROWSER"] = browser
+    environment["ORCHFLOWS_UI_EXPERIENCE"] = "1" if experience else "0"
     environment.setdefault("ORCHFLOWS_PYTHON", sys.executable)
     if browser == "auto" and "ORCHFLOWS_BROWSER_EXECUTABLE" not in environment:
         candidates = (
@@ -333,7 +334,7 @@ def smoke(browser: str) -> dict:
         "exec", "playwright", "test", "web/src/smoke.spec.ts",
         "--workers=1", "--reporter=line", env=environment,
     )
-    return {"browser": browser, "contract": "observe-v1"}
+    return {"browser": browser, "contract": "experience-v1" if experience else "observe-v1"}
 
 
 def _view_manifest(path: str) -> dict:
@@ -397,6 +398,7 @@ def main(argv=None) -> int:
     commands.add_parser("audit-licenses")
     smoke_parser = commands.add_parser("smoke")
     smoke_parser.add_argument("--browser", default="auto")
+    smoke_parser.add_argument("--experience", action="store_true")
     capture_parser = commands.add_parser("capture")
     audit_parser = commands.add_parser("audit")
     diff_parser = commands.add_parser("diff")
@@ -423,7 +425,7 @@ def main(argv=None) -> int:
         elif arguments.command == "diff":
             evidence = diff_captures(arguments.actual, arguments.goldens, arguments.manifest)
         else:
-            evidence = smoke(arguments.browser)
+            evidence = smoke(arguments.browser, arguments.experience)
     except (OSError, RuntimeError) as error:
         print("ui-frontend {0}: FAIL: {1}".format(arguments.command, error), file=sys.stderr)
         return 1

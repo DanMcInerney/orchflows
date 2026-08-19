@@ -188,7 +188,8 @@ export function SessionGraphView({ snapshot, location }: { snapshot: ExperienceS
                 nodesConnectable={false}
                 edgesReconnectable={false}
                 deleteKeyCode={null}
-                defaultViewport={{ x: 20, y: 70, zoom: 0.88 }}
+                fitView
+                fitViewOptions={{ padding: 0.16, maxZoom: 0.88 }}
                 minZoom={0.5}
                 maxZoom={1.6}
                 proOptions={{ hideAttribution: true }}

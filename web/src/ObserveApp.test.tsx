@@ -53,12 +53,12 @@ describe("ObserveApp foundation", () => {
   it("keeps a safe ETag feed behind a semantic read-only shell", async () => {
     render(<ObserveApp />);
     await act(async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
-    expect(screen.getByRole("main").getAttribute("data-mode")).toBe("observe");
+    expect(document.querySelector("main[data-mode='observe']")).not.toBeNull();
     expect(screen.getByText("read only")).not.toBeNull();
     expect(screen.getByText("Workflows")).not.toBeNull();
     expect(screen.getByText("future")).not.toBeNull();
-    expect(screen.getByRole("heading", { name: "Work is moving across three runs" })).not.toBeNull();
-    expect(screen.getByTestId("run-graph").textContent).toBe("3 projected tickets");
+    expect(screen.getByRole("heading", { level: 1, name: "Now" })).not.toBeNull();
+    expect(screen.getAllByRole("heading", { name: "Restore installed-reader portability across supported hosts" })).toHaveLength(2);
     expect(screen.queryByRole("button", { name: /start|edit|delete/i })).toBeNull();
     expect(vi.mocked(fetch).mock.calls[0][0]).toContain("/api/v1/experience?view=now");
     await vi.advanceTimersByTimeAsync(750);

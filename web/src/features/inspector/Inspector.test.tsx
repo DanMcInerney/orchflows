@@ -27,6 +27,8 @@ function snapshot(overrides: Record<string, unknown> = {}): ExperienceSnapshot {
     inputs: ["accepted schema"],
     write_scope: ["web/src/features/inspector"],
     pack: "orch-design-pack",
+    history: [],
+    raw: "",
     ...overrides
   };
   return {
@@ -35,7 +37,7 @@ function snapshot(overrides: Record<string, unknown> = {}): ExperienceSnapshot {
     selection: { view: "ticket", run: "run-gamma", ticket: "G1", session: "" },
     runs: [], run: null, ticket, sessions: { items: [], diagnostics: [], empty: true }, session: null,
     friction: { items: [], skipped: 0, unreadable: 0 }
-  } as ExperienceSnapshot;
+  } as unknown as ExperienceSnapshot;
 }
 
 function location(fixture: string, ticket = "G1"): LocationState {

@@ -15,6 +15,7 @@ let stateRoot = "";
 let origin = "";
 const action = process.env.ORCHFLOWS_UI_ACTION || "smoke";
 const apiOrigin = process.env.ORCHFLOWS_UI_API_ORIGIN || "";
+const experienceMode = process.env.ORCHFLOWS_UI_EXPERIENCE === "1";
 
 async function startVite() {
   const viteScript = resolve("node_modules", "vite", "bin", "vite.js");
@@ -62,8 +63,52 @@ test.afterAll(async () => {
   await rm(stateRoot, { recursive: true, force: true });
 });
 
+async function openManifestIdentity(page, identity, width, height) {
+  await page.setViewportSize({ width, height });
+  await page.goto(`${origin}${identity.path}`);
+  await expect(page.locator(".foundation-view"), identity.identity).toBeVisible({ timeout: 15_000 });
+}
+
+async function expectKeyboardParity(page, identity) {
+  const selector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  const result = await page.locator(selector).evaluateAll((elements) => {
+    const interactive = elements.filter((element) => {
+      const style = getComputedStyle(element);
+      const bounds = element.getBoundingClientRect();
+      return style.visibility !== "hidden" && style.display !== "none" && bounds.width > 0 && bounds.height > 0
+        && !(element as HTMLButtonElement).disabled && element.getAttribute("aria-disabled") !== "true"
+        && element.getAttribute("role") !== "tablist";
+    });
+    const failures = [];
+    for (const element of interactive) {
+      const target = element as HTMLElement;
+      target.focus();
+      const active = document.activeElement;
+      const replacement = active?.getAttribute("role") === target.getAttribute("role")
+        && active?.textContent?.trim() === target.textContent?.trim();
+      if (active !== target && !replacement) failures.push(`${target.tagName.toLowerCase()} ${(target.textContent ?? "").trim().slice(0, 48)}`);
+    }
+    return { checked: interactive.length, failures };
+  });
+  expect(result.checked, `${identity.identity}: keyboard affordances checked`).toBeGreaterThan(0);
+  expect(result.failures, `${identity.identity}: keyboard reach must match pointer reach`).toEqual([]);
+}
+
+async function expectReducedMotion(page, identity) {
+  expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches), identity.identity).toBe(true);
+  const moving = await page.locator("*").evaluateAll((elements) => elements.filter((element) => {
+    const style = getComputedStyle(element);
+    const seconds = (value) => value.split(",").some((part) => {
+      const duration = Number.parseFloat(part);
+      return part.trim().endsWith("ms") ? duration > .001 : duration > .000001;
+    });
+    return seconds(style.animationDuration) || seconds(style.transitionDuration);
+  }).map((element) => element.tagName.toLowerCase()));
+  expect(moving, `${identity.identity}: reduced motion leaves active durations`).toEqual([]);
+}
+
 test("Observe platform stays interactive and stable across a reader refresh", async ({ page }) => {
-  test.skip(action !== "smoke");
+  test.skip(action !== "smoke" || experienceMode);
   const errors: string[] = [];
   const remoteRequests: string[] = [];
   const localRequests: string[] = [];
@@ -163,6 +208,52 @@ test("Observe platform stays interactive and stable across a reader refresh", as
   expect(errors).toEqual([]);
 });
 
+test("compiled experience preserves keyboard-reachable observer state across refresh", async ({ page }) => {
+  test.skip(action !== "smoke" || !experienceMode);
+  const errors: string[] = [];
+  const remoteRequests: string[] = [];
+  const apiStatuses: number[] = [];
+  page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("request", (request) => {
+    if (request.url().startsWith("http") && !request.url().startsWith(origin)) remoteRequests.push(request.url());
+  });
+  page.on("response", (response) => {
+    if (new URL(response.url()).pathname === "/api/v1/experience") apiStatuses.push(response.status());
+  });
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const response = await page.goto(`${origin}/now`);
+  expect(response?.headers()["content-security-policy"]).toContain("default-src 'self'");
+  await expect(page.locator("main[data-mode=observe]")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Now" })).toBeVisible();
+
+  const attention = page.getByRole("button", { name: "Needs attention", exact: true });
+  await attention.click();
+  await expect(attention).toHaveAttribute("aria-pressed", "true");
+  const firstGroup = page.locator(".now-groups button").first();
+  await firstGroup.click();
+  await expect(firstGroup).toHaveAttribute("aria-expanded", "true");
+  const pause = page.getByRole("button", { name: "Pause live" });
+  await pause.click();
+  await expect(page.getByRole("button", { name: "Resume live" })).toHaveAttribute("aria-pressed", "true");
+
+  const summary = page.getByRole("tab", { name: "summary" });
+  await summary.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("tab", { name: "tickets" })).toHaveAttribute("aria-selected", "true");
+  await expect.poll(() => apiStatuses.includes(304)).toBe(true);
+  await expect(attention).toHaveAttribute("aria-pressed", "true");
+  await expect(firstGroup).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("button", { name: "Resume live" })).toBeVisible();
+
+  await page.setViewportSize({ width: 640, height: 780 });
+  await expect(page.locator(".now-layout")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(641);
+  expect(remoteRequests).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
 test("capture every manifest identity", async ({ page }) => {
   test.skip(action !== "capture");
   test.setTimeout(180_000);
@@ -180,14 +271,31 @@ test("capture every manifest identity", async ({ page }) => {
 
 test("audit every manifest identity", async ({ page }) => {
   test.skip(action !== "audit");
-  test.setTimeout(180_000);
+  test.setTimeout(600_000);
   const manifest = JSON.parse(await readFile(process.env.ORCHFLOWS_UI_MANIFEST, "utf8"));
   for (const identity of manifest.views) {
     const [width, height] = manifest.breakpoints[identity.breakpoint];
-    await page.setViewportSize({ width, height });
-    await page.goto(`${origin}${identity.path}`);
-    await expect(page.locator(".foundation-view")).toBeVisible();
+    await page.emulateMedia({ forcedColors: "none", reducedMotion: "no-preference" });
+    await openManifestIdentity(page, identity, width, height);
     const result = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
     expect(result.violations, identity.identity).toEqual([]);
+
+    await openManifestIdentity(page, identity, Math.max(320, Math.floor(width / 2)), height);
+    const reflow = await page.evaluate(() => ({ width: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
+    expect(reflow.scroll, `${identity.identity}: 200% zoom-equivalent reflow`).toBeLessThanOrEqual(reflow.width + 1);
+
+    await page.emulateMedia({ forcedColors: "active", reducedMotion: "no-preference" });
+    await openManifestIdentity(page, identity, width, height);
+    expect(await page.evaluate(() => matchMedia("(forced-colors: active)").matches), identity.identity).toBe(true);
+    const forced = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
+    expect(forced.violations, `${identity.identity}: forced colors`).toEqual([]);
+
+    await page.emulateMedia({ forcedColors: "none", reducedMotion: "reduce" });
+    await openManifestIdentity(page, identity, width, height);
+    await expectReducedMotion(page, identity);
+
+    await page.emulateMedia({ forcedColors: "none", reducedMotion: "no-preference" });
+    await openManifestIdentity(page, identity, width, height);
+    await expectKeyboardParity(page, identity);
   }
 });

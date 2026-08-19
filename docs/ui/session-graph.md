@@ -31,5 +31,9 @@ glyph and word in addition to its status color, while inferred topology uses a
 dashed edge, provenance text, and a diagnostic. Reduced-motion and forced-color
 preferences retain the same information and visible selection.
 
+Initial layout uses a bounded fit over the complete canonical node set, so the
+compact graph exposes every node above the provenance legend before the user
+zooms or pans.
+
 The wide and compact populated and diagnostic identities are capture evidence.
 They are not golden captures until separately approved by view identity.

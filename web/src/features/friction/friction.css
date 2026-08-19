@@ -47,13 +47,13 @@
 
 .friction-integrity h2 {
   color: var(--text-strong);
-  font-size: 14px;
+  font-size: var(--type-base);
 }
 
 .friction-integrity p {
   margin-top: var(--space-1);
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: var(--type-md);
 }
 
 .friction-hero {
@@ -75,7 +75,7 @@
 .friction-eyebrow,
 .friction-record__category {
   color: var(--status-attention);
-  font-size: 11px;
+  font-size: var(--type-xs);
   font-weight: 760;
   letter-spacing: .11em;
   text-transform: uppercase;
@@ -94,7 +94,7 @@
 .friction-hero h1 {
   margin-top: var(--space-1);
   color: var(--text-strong);
-  font-size: clamp(28px, 3vw, 40px);
+  font-size: var(--type-display);
   line-height: 1.1;
   letter-spacing: -.035em;
 }
@@ -120,13 +120,13 @@
 
 .friction-count strong {
   color: var(--text-strong);
-  font: 28px/1 var(--font-mono);
+  font: var(--type-display)/1 var(--font-mono);
 }
 
 .friction-count span {
   margin-top: var(--space-1);
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--type-sm);
 }
 
 .friction-feed {
@@ -153,7 +153,7 @@
   max-width: 760px;
   margin-top: var(--space-2);
   color: var(--text-strong);
-  font-size: 15px;
+  font-size: var(--type-lg);
   line-height: 1.45;
 }
 
@@ -161,7 +161,7 @@
   flex: 0 0 auto;
   min-height: var(--row-compact);
   color: var(--text-faint);
-  font: 11px/1.4 var(--font-mono);
+  font: var(--type-xs)/1.4 var(--font-mono);
   white-space: nowrap;
 }
 
@@ -177,7 +177,7 @@
 
 .friction-record__expectation > span {
   color: var(--text-faint);
-  font-size: 11px;
+  font-size: var(--type-xs);
   font-weight: 750;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -194,7 +194,7 @@
   gap: var(--space-4);
   padding: var(--space-2) var(--space-5);
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: var(--type-sm);
 }
 
 .friction-record__links {
@@ -215,7 +215,7 @@
 
 .friction-record code {
   color: inherit;
-  font: 12px/1.4 var(--font-mono);
+  font: var(--type-sm)/1.4 var(--font-mono);
 }
 
 .friction-record__unlinked {
@@ -259,7 +259,7 @@
 
 .friction-empty h2 {
   color: var(--text-strong);
-  font-size: 18px;
+  font-size: var(--type-title-lg);
 }
 
 .friction-empty p {
@@ -273,11 +273,11 @@
   gap: var(--space-2);
   margin-top: var(--space-4);
   padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--privacy-border);
   border-radius: var(--radius-control);
-  color: var(--text-muted);
-  background: var(--surface-1);
-  font-size: 12px;
+  color: var(--privacy-text);
+  background: var(--privacy-surface);
+  font-size: var(--type-sm);
 }
 
 .friction-privacy svg {
