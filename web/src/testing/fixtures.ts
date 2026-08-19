@@ -17,7 +17,14 @@ export function fixtureText(state: string) {
 function ticket(id: string, status: string, state: ReadinessState, depends_on: string[], explanation: string): TicketSummary {
   return {
     id, status, executor: "orch-render", bound: "90m", claimed_at: "", claimed_by: "",
-    depends_on, unreadable: false, readiness: { state, dependencies: [], explanation }
+    depends_on, unreadable: false,
+    readiness: {
+      state,
+      dependencies: [],
+      explanation,
+      cause: state === "waiting" ? "pending_dependency" : "none",
+      causal_chain: depends_on
+    }
   };
 }
 
