@@ -174,3 +174,28 @@ class TestTranscriptDegradation(TranscriptCase):
         cell = session_cell(self.sessions(), TITLED_SESSION, "title")
 
         self.assertIn(ui.EMPTY_NO_TITLE, cell)
+
+
+class TestSessionProjectionContentWall(TranscriptCase):
+    def test_session_json_is_metadata_and_structure_never_transcript_content(self):
+        before = snapshot(self.transcripts)
+        routes = (
+            "/api/v1/sessions",
+            "/api/v1/sessions/{0}".format(TITLED_SESSION),
+            "/api/v1/sessions/{0}".format(MARKUP_SESSION),
+        )
+
+        with serving(self.main, self.transcripts) as server:
+            for route in routes:
+                status, _headers, body = fetch(server, route)
+                self.assertEqual(200, status, route)
+                self.assertNotIn(TRANSCRIPT_SENTINEL, body, route)
+                self.assertNotIn(str(self.transcripts), body, route)
+                self.assertNotIn("tool_use", body, route)
+                self.assertNotIn("tool_result", body, route)
+                self.assertNotIn("last-prompt", body, route)
+                if MARKUP_SESSION in route:
+                    self.assertNotIn(PAYLOAD, body)
+                    self.assertIn(PAYLOAD, json.loads(body)["session"]["title"])
+
+        self.assertEqual(before, snapshot(self.transcripts))

@@ -26,6 +26,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  frontend:
+    name: frozen Observe frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - uses: astral-sh/setup-uv@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+          run_install: false
+
+      - name: install exact reader backend
+        run: uv pip install --system --require-hashes -r requirements-runtime.txt
+
+      - name: verify distributed dependency notices
+        run: uv run --no-project python tools/ui_frontend.py audit-licenses
+
+      - name: verify reproducible frontend build
+        run: uv run --no-project python tools/ui_frontend.py verify-build
+
+      - name: install browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: verify Observe browser contract
+        run: uv run --no-project python tools/ui_frontend.py smoke --browser chromium
+
   checks:
     name: py${{ matrix.python-version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -68,6 +104,9 @@ jobs:
       # declared command is candidate-facing evidence; CI matches it
       # rather than substituting an interpreter behind its back.
       - uses: astral-sh/setup-uv@v5
+
+      - name: install exact reader backend
+        run: uv pip install --system --require-hashes -r requirements-runtime.txt
 
       # The suite, sharded one module per child interpreter. Thread
       # parallelism is unsound here -- the suite performs ~30

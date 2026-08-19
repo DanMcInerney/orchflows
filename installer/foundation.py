@@ -53,7 +53,7 @@ SHARED_ADAPTER_NAMES = ("orch-spec", "orch-frontier", "fix", "orch-build")
 # The Codex redirect set is that same set, under its older name.
 CODEX_SKILL_REDIRECT_NAMES = SHARED_ADAPTER_NAMES
 CLAUDE_ADAPTER_SETS = ("all", "four")
-AUTO_REMOVE_KINDS = frozenset(("adapter", "prompt", "codex-skill"))
+AUTO_REMOVE_KINDS = frozenset(("adapter", "prompt", "codex-skill", "frontend-asset"))
 CODEX_MAX_THREADS = 20
 CODEX_MAX_DEPTH = 1
 CLAUDE_MAX_TOOL_USE_CONCURRENCY = 20
@@ -87,6 +87,12 @@ def _scope_home(scope: str, project_root: Path | None) -> Path:
     if scope == "user":
         return Path.home() / ".orchflows"
     return _require_project_root(project_root) / ".orchflows"
+
+
+def _frontend_home() -> Path:
+    """The user-owned immutable browser distribution borrowed by projects."""
+
+    return _scope_home("user", None) / "ui"
 
 
 def _bin_dir(scope: str, project_root: Path | None) -> Path:

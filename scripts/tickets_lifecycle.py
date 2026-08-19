@@ -15,7 +15,6 @@ if __package__:
     from .tickets_worklog import _run_goal, _run_tickets
 else:
     from tickets_worklog import _run_goal, _run_tickets
-
 CLAIM_USAGE = 'claim <run> <id> --by <name>'
 SET_STATUS_USAGE = 'set-status <run> <id> <status>'
 GRANT_USAGE = 'grant <run> <id> --write-scope <path>[,<path>] --by <name>'
@@ -25,6 +24,21 @@ GRANTABLE_STATUSES = frozenset({'claimed', 'suspended'})
 CHECK_USAGE = 'check <run> <id> --by <name>'
 CHECKED_BY_KEY = 'checked_by'
 CHECKABLE_STATUSES = GRANTABLE_STATUSES
+def readiness_facts(ticket: dict, tickets: dict) -> dict:
+    """Return canonical dependency facts without I/O or a clock."""
+    dependencies = [str(value) for value in (ticket.get('depends_on') or [])]
+    dangling = [value for value in dependencies if value not in tickets]
+    incomplete = [
+        value for value in dependencies
+        if value in tickets and tickets[value].get('status') != 'complete'
+    ]
+    status = str(ticket.get('status') or '')
+    return {
+        'status_valid': status in VALID_STATUSES,
+        'dangling': dangling,
+        'incomplete': incomplete,
+        'dependencies_complete': not dangling and not incomplete,
+    }
 def _cited_paths(section_text: str, write_scope=()):
     """Every existing file one section cites, absolutely, inside
     ``write_scope``, as ``(paths, unreadable)``.
@@ -179,15 +193,16 @@ def _cmd_ready(rest):
                 skipped.append({'id': data['id'], 'reason': data['error']})
                 continue
             depends_on = data.get('depends_on') or []
-            dangling = [dep for dep in depends_on if dep not in tickets]
+            facts = readiness_facts(data, tickets)
+            dangling = facts['dangling']
             if dangling:
                 skipped.append({'id': data['id'], 'reason': 'depends_on names no ticket in this run: ' + ', '.join((str(dep) for dep in dangling))})
                 continue
             status = data.get('status')
-            if status not in VALID_STATUSES:
+            if not facts['status_valid']:
                 skipped.append({'id': data['id'], 'reason': f"status '{status}' is none of {sorted(VALID_STATUSES)}, so readiness cannot be graded"})
                 continue
-            deps_complete = all((tickets.get(dep, {}).get('status') == 'complete' for dep in depends_on))
+            deps_complete = facts['dependencies_complete']
             if not deps_complete:
                 continue
             eligible = False

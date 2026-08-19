@@ -159,6 +159,14 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def seed_user_frontend(home: Path) -> Path:
+    """Give a fake home the frontend precondition a project apply borrows."""
+
+    destination = home / ".orchflows" / "ui"
+    shutil.copytree(install.REPO_ROOT / "web" / "dist", destination)
+    return destination
+
+
 def mock_host_clis(*hosts: str):
     """Return a deterministic PATH lookup patch for selected host CLIs."""
 

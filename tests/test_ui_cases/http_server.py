@@ -1,5 +1,7 @@
 """Conditional HTTP, loopback, route, read-only, and asset regressions."""
 
+import socket
+
 from tests.test_ui_cases._web import *  # noqa: F401,F403
 class TestConditionalRequests(unittest.TestCase):
     """Spec criterion 10. A one-second poll that re-renders every page every
@@ -87,7 +89,7 @@ class TestConditionalRequests(unittest.TestCase):
                 for header in ({}, {"If-None-Match": '"not-a-real-tag"'}):
                     status, _, body = fetch(server, "/", header)
                     self.assertEqual(200, status)
-                    self.assertIn("<main", body)
+                self.assertIn("<main", body)
 
     def test_a_wildcard_or_weak_validator_is_honoured_as_rfc7232_requires(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -251,3 +253,156 @@ class TestNoNetworkAssets(unittest.TestCase):
                 for route in every_route():
                     _, page = get(server, route)
                     self.assertIsNone(REMOTE_ASSET_RE.search(page), route)
+
+
+class TestCompiledApplicationServer(unittest.TestCase):
+    """The installed reader is the immutable application plus frozen JSON."""
+
+    def test_the_application_and_every_manifest_asset_are_served_with_validators(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            main = make_sink(Path(tmp))
+            manifest = json.loads(
+                (ROOT / "web" / "dist" / ".vite" / "manifest.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            assets = [manifest["index.html"]["file"]]
+            assets.extend(manifest["index.html"].get("css", ()))
+            with serving(main) as server:
+                status, headers, page = fetch(server, "/observe")
+                self.assertEqual(200, status)
+                self.assertIn('id="root"', page)
+                self.assertEqual("text/html; charset=utf-8", headers.get("Content-Type"))
+                self.assertTrue(headers.get("ETag"))
+                self.assertEqual("no-cache", headers.get("Cache-Control"))
+                for asset in assets:
+                    status, seen, body = fetch(server, "/" + asset)
+                    self.assertEqual(200, status, asset)
+                    self.assertTrue(body, asset)
+                    self.assertTrue(seen.get("ETag"), asset)
+                    self.assertIn("immutable", seen.get("Cache-Control", ""), asset)
+                    repeated = fetch(
+                        server, "/" + asset, {"If-None-Match": seen.get("ETag")}
+                    )
+                    self.assertEqual(304, repeated[0], asset)
+                    self.assertEqual("", repeated[2], asset)
+                    head = request(server, "/" + asset, method="HEAD")
+                    self.assertEqual(200, head[0], asset)
+                    self.assertEqual("", head[2], asset)
+                    self.assertEqual(seen.get("Content-Type"), head[1].get("Content-Type"))
+                    self.assertEqual(seen.get("Content-Length"), head[1].get("Content-Length"))
+
+    def test_the_v1_projection_surface_is_json_only_and_conditional(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            main = make_sink(Path(tmp))
+            transcripts = make_transcripts(Path(tmp))
+            routes = (
+                "/api/v1/runs",
+                "/api/v1/runs/run-gamma",
+                "/api/v1/runs/run-gamma/tickets/G1",
+                "/api/v1/friction",
+                "/api/v1/sessions",
+                "/api/v1/sessions/{0}".format(TITLED_SESSION),
+                "/api/observe?run=run-gamma",
+            )
+            with serving(main, transcripts) as server:
+                for route in routes:
+                    status, headers, body = fetch(server, route)
+                    self.assertEqual(200, status, route)
+                    self.assertEqual(
+                        "application/json; charset=utf-8",
+                        headers.get("Content-Type"),
+                        route,
+                    )
+                    self.assertIsInstance(json.loads(body), dict, route)
+                    tag = headers.get("ETag")
+                    self.assertTrue(tag, route)
+                    unchanged = fetch(server, route, {"If-None-Match": tag})
+                    self.assertEqual(304, unchanged[0], route)
+                    self.assertEqual("", unchanged[2], route)
+
+    def test_ticket_projection_names_source_and_partial_friction_health(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            main = make_sink(Path(tmp))
+            log = ui.read_friction(main)
+            with serving(main) as server:
+                status, _headers, body = fetch(server, "/api/v1/runs/run-gamma/tickets/G1")
+        payload = json.loads(body)
+        self.assertEqual(200, status)
+        self.assertEqual({"file_id": "G1", "unreadable": False}, payload["ticket"]["source"])
+        self.assertEqual({"skipped": log["skipped"], "unreadable": log["unreadable"]}, payload["friction_health"])
+
+    def test_observe_compatibility_has_the_browser_contract_and_one_run_graph(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with serving(make_sink(Path(tmp))) as server:
+                status, _headers, body = fetch(server, "/api/observe?run=run-gamma")
+
+            payload = json.loads(body)
+            self.assertEqual(200, status)
+            self.assertEqual(
+                {"revision", "active", "nodes", "edges"}, set(payload)
+            )
+            self.assertTrue(payload["revision"])
+            self.assertEqual(
+                ["G1", "G2", "G3", "G4", "G5", "G6", "G7"],
+                sorted(node["id"] for node in payload["nodes"]),
+            )
+            self.assertEqual(
+                {"id", "label", "status"}, set(payload["nodes"][0])
+            )
+            self.assertEqual(
+                {"id", "source", "target"}, set(payload["edges"][0])
+            )
+
+    def test_legacy_deep_links_keep_their_rendered_identity(self):
+        routes = {
+            "/ticket?run=run-gamma&id=G1": "G1",
+            "/graph?run=run-gamma": "run-gamma",
+            "/session?id={0}".format(TITLED_SESSION): TITLED_SESSION,
+            "/sessions": "sessions",
+            "/friction": "friction",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            with serving(make_sink(tmp), make_transcripts(tmp)) as server:
+                for route, identity in routes.items():
+                    status, headers, body = fetch(server, route)
+                    self.assertEqual(200, status, route)
+                    self.assertIn(identity, body, route)
+                    self.assertTrue(headers.get("ETag"), route)
+
+    def test_host_methods_cors_headers_and_binding_fail_closed(self):
+        required = {
+            "Content-Security-Policy",
+            "X-Content-Type-Options",
+            "Referrer-Policy",
+            "Cross-Origin-Resource-Policy",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            with serving(make_sink(Path(tmp))) as server:
+                self.assertEqual("127.0.0.1", server.server_address[0])
+                for method in ("POST", "PUT", "PATCH", "DELETE", "OPTIONS"):
+                    status, headers, _body = request(server, "/api/v1/runs", method)
+                    self.assertEqual(405, status, method)
+                    self.assertEqual(
+                        {"GET", "HEAD"},
+                        set(headers.get("Allow", "").replace(" ", "").split(",")),
+                        method,
+                    )
+                    self.assertIsNone(headers.get("Access-Control-Allow-Origin"), method)
+                trace = request(server, "/api/v1/runs", "TRACE")
+                self.assertEqual(405, trace[0])
+                self.assertEqual("GET, HEAD", trace[1].get("Allow"))
+                refused = fetch(server, "/", {"Host": "reader.example"})
+                self.assertEqual(400, refused[0])
+                self.assertIsNone(refused[1].get("Access-Control-Allow-Origin"))
+                for route in ("/observe", "/api/v1/runs", "/not-found"):
+                    status, headers, _body = fetch(server, route)
+                    self.assertIn(status, (200, 404), route)
+                    self.assertTrue({name.lower() for name in required}.issubset({name.lower() for name in headers}), route)
+
+                raw = socket.create_connection(server.server_address, timeout=5)
+                with raw:
+                    raw.sendall(b"GET /api/v1/runs HTTP/1.1\r\nHost: 127.0.0.1\r\nHost: reader.example\r\nConnection: close\r\n\r\n")
+                    response = raw.recv(4096)
+                self.assertIn(b" 400 ", response.split(b"\r\n", 1)[0])

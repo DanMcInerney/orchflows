@@ -164,6 +164,17 @@ class TestGraphDiagnostics(unittest.TestCase):
         self.assertIn(ui.DIAGNOSTIC_CYCLE, named)
         self.assertIn(ui.DIAGNOSTIC_DANGLING, named)
 
+    def test_api_graphs_use_the_same_normalized_structural_contract(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            graph = ui.project_run(make_sink(Path(tmp)), CYCLIC_RUN)
+        node_ids = {node["id"] for node in graph["nodes"]}
+        edge_ids = [edge["id"] for edge in graph["edges"]]
+        self.assertEqual(len(edge_ids), len(set(edge_ids)))
+        self.assertTrue(all(edge["source"] in node_ids and edge["target"] in node_ids for edge in graph["edges"]))
+        named = " ".join(graph["diagnostics"])
+        self.assertIn(ui.DIAGNOSTIC_CYCLE, named)
+        self.assertIn(ui.DIAGNOSTIC_DANGLING, named)
+
 
 class TestGraphView(unittest.TestCase):
     """The graph route: coordinates from the server, rendered as inline SVG.

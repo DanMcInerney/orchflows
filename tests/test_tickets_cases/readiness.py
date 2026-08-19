@@ -14,6 +14,36 @@ class TestReadyReportsWhatItCouldNotGrade(unittest.TestCase):
     def ready(self, tmp: Path):
         return run_cmd(tmp, "ready", "--run", "testrun")
 
+    def test_the_flat_ticket_family_needs_no_ui_reader_module(self):
+        """The installed ticket command is copied as its closed ticket family.
+
+        Reader modules are not part of that portable packet. Readiness must
+        therefore remain executable when only the established ``tickets_*``
+        support set and state-root resolver sit beside the facade.
+        """
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            flat = tmp / "bin"
+            flat.mkdir()
+            for source in (*TICKETS_MODULES, STATE_ROOT_PY):
+                (flat / source.name).write_text(
+                    source.read_text(encoding="utf-8"), encoding="utf-8"
+                )
+            repo = tmp / "repo"
+            (repo / ".git").mkdir(parents=True)
+            sink = tmp / "sink"
+            make_tickets(sink / "tickets" / "testrun", {"T1": ("ready", "[]")})
+            environment = os.environ.copy()
+            environment[STATE_HOME_ENV_VAR] = str(sink)
+            completed = subprocess.run(
+                [sys.executable, str(flat / "tickets.py"), "ready", "--run", "testrun"],
+                cwd=str(repo), env=environment, capture_output=True, text=True,
+                encoding="utf-8", errors="replace",
+            )
+            self.assertEqual(0, completed.returncode, completed.stderr)
+            payload = json.loads(completed.stdout)
+            self.assertEqual(["T1"], [item["id"] for item in payload["ready"]])
+
     def test_a_readable_run_reports_an_empty_skipped_list(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)

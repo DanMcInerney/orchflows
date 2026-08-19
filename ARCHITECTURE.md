@@ -44,12 +44,25 @@ whitespace-delimited words. Use terms exactly as
   checks and local-versus-CI guidance.
 - [`templates/`](templates/) owns host-block source. [`install.py`](install.py)
   is the installation compatibility facade; [`installer/`](installer/) owns
-  static support, and `installer/runtime.py` owns the private runtime at
-  `~/.orchflows/runtime`. User scope creates or reuses it; project scope
-  verifies and borrows it, never creating an environment in a repository.
-  Replacement is staged and probed before an owned prior generation moves.
-  [`requirements-runtime.txt`](requirements-runtime.txt) owns runtime
-  dependencies; [`pyproject.toml`](pyproject.toml) mirrors them for tooling.
+  static support, `installer/runtime.py` owns the private runtime at
+  `~/.orchflows/runtime`, and the planning/application/uninstall modules own
+  the immutable frontend at `~/.orchflows/ui`. User scope creates or reuses
+  both; project scope verifies and borrows them, never creating an environment
+  or UI distribution in a repository. Replacement is staged and probed before
+  an owned prior generation moves. [`requirements-runtime.in`](requirements-runtime.in)
+  and [`requirements-runtime.txt`](requirements-runtime.txt) own direct pins
+  and the hash-locked runtime closure; [`pyproject.toml`](pyproject.toml)
+  mirrors direct pins for tooling.
+- [`package.json`](package.json) and [`pnpm-lock.yaml`](pnpm-lock.yaml) own the
+  exact browser build graph; Node and pnpm stop at the repository boundary.
+  [`tools/ui_frontend.py`](tools/ui_frontend.py) owns deterministic build,
+  license, browser-smoke, capture, accessibility, and visual-diff admission.
+  `web/src/api`, `state`, `app`, `design`/`styles`, `graph`, and `testing` own
+  the closed reader contract, semantic location, view registry, tokens,
+  read-only graph primitives, and deterministic rendered states respectively.
+  `web/src` owns remaining React/TypeScript and worker source; `web/dist` owns
+  the committed content-hashed distribution copied by the installer. The
+  installed reader never invokes a frontend package manager or build.
 - [`DESIGN.md`](DESIGN.md) owns non-normative rationale. [`README.md`](README.md)
   is the non-normative human entry surface, not an owner of agent law.
 
@@ -64,6 +77,15 @@ and immutable terminal timing (`terminal_at`, terminal ticket, `elapsed_ms`).
 `tickets.py help` is operator-only: it answers an operator's usage request.
 `tickets.py grant` is operator-only: only the dispatcher widens claimed
 authority.
+
+The UI reader family keeps one closed boundary: `scripts/ui_api.py` owns JSON
+projections, Starlette routes, security middleware, and loopback Uvicorn;
+`scripts/ui_assets.py` owns contained immutable-asset reads and the standard-
+library compatibility server; `scripts/ui_experience.py` owns the
+`orchflows.experience.v1` projection, navigation contract, and SPA-path
+recognition; `scripts/ui_readiness.py` owns canonical readiness facts and
+causal explanations. Legacy rendering stays in `scripts/ui_server.py`.
+[The platform contract](docs/ui/platform.md) owns the complete boundary.
 
 ## State boundary
 

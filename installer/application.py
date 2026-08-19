@@ -11,16 +11,14 @@ from pathlib import Path
 
 from .foundation import (
     _claude_agents_dir,
-    _claude_md_path,
     _claude_scope_home,
-    _claude_settings_path,
     _codex_agents_dir,
-    _codex_agents_path,
-    _codex_config_path,
     _codex_user_home,
 )
 from .managed_text import upsert_import_line, upsert_marked_block
 from .models import Plan
+from .models import _frontend_manifest_identity
+from .presentation import print_summary
 from .runtime import (
     _create_private_runtime,
     private_runtime_home,
@@ -150,6 +148,62 @@ def _remove_stale(old_receipt, kind: str, keep_paths: set, boundary: Path) -> No
         _prune_empty_dirs(path.parent, boundary)
 
 
+def _apply_frontend(plan: Plan) -> None:
+    """Stage and verify the immutable distribution before replacing it."""
+
+    home = plan.frontend_home
+    expected = plan.frontend_manifest_sha256
+    if home is None or expected is None:
+        return
+    if plan.frontend_action == "refuse":
+        raise RuntimeError(
+            f"project install requires healthy frontend assets at {home}; "
+            "run install.py --user first"
+        )
+    if plan.frontend_action == "reuse":
+        if _frontend_manifest_identity(home) != expected:
+            raise RuntimeError(f"frontend assets changed after planning: {home}")
+        return
+    if home.is_symlink() or (home.exists() and not home.is_dir()):
+        raise RuntimeError(f"refusing to replace frontend path that is not a directory: {home}")
+
+    home.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=".ui-stage-", dir=home.parent))
+    backup = None
+    committed = False
+    try:
+        for source, destination in plan.frontend_assets:
+            relative = destination.relative_to(home)
+            staged_destination = staging / relative
+            staged_destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, staged_destination)
+        if _frontend_manifest_identity(staging) != expected:
+            raise RuntimeError("staged frontend assets do not match the planned manifest")
+
+        if home.exists():
+            backup = Path(tempfile.mkdtemp(prefix=".ui-backup-", dir=home.parent))
+            backup.rmdir()
+            home.replace(backup)
+        try:
+            staging.replace(home)
+            committed = True
+        except BaseException:
+            if backup is not None and not home.exists():
+                try:
+                    backup.replace(home)
+                    backup = None
+                except OSError:
+                    # The prior generation is still complete at ``backup``.
+                    # Keep the only recoverable generation after two failures.
+                    pass
+            raise
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging)
+        if committed and backup is not None and backup.exists():
+            shutil.rmtree(backup)
+
+
 def _diverged_role_agents(plan: Plan, old_receipt: dict | None) -> list:
     """Role agents on disk whose content is not what this install would write.
 
@@ -263,7 +317,22 @@ def apply_plan(
     for directory in plan.runtime_dirs:
         directory.mkdir(parents=True, exist_ok=True)
 
+    frontend_existed = {
+        str(destination): destination.is_file()
+        for _, destination in plan.frontend_assets
+    }
+    if plan.frontend_action is not None:
+        _apply_frontend(plan)
+
     written_files = []
+
+    for _, destination in plan.frontend_assets:
+        action = install_action(
+            destination,
+            "frontend-asset",
+            frontend_existed[str(destination)],
+        )
+        written_files.append(_installed_file(destination, "frontend-asset", action))
 
     # Everything below writes into ``.claude``/``.codex`` (adapters, prompts,
     # redirect skills, role agents, host configs). Thin project plans set
@@ -426,39 +495,16 @@ def apply_plan(
             if plan.scope == "user"
             else None
         ),
+        "frontend": (
+            {
+                "home": str(plan.frontend_home),
+                "manifest_sha256": plan.frontend_manifest_sha256,
+                "action": plan.frontend_action,
+                "uninstall": "borrowed" if plan.scope == "project" else "receipt-guarded",
+            }
+            if plan.frontend_home is not None
+            else None
+        ),
     }
     _write_json(plan.receipt_path, receipt)
     return receipt
-
-
-def print_summary(plan: Plan) -> None:
-    print(f"Installed orchflows at {plan.scope} scope.")
-    if not plan.manage_host_surfaces:
-        print(f"  instruction blocks: {len(plan.blocks)} written")
-        for block in plan.blocks:
-            print(f"    {block.label}: {block.dest}")
-        print(f"  receipt:     {plan.receipt_path}")
-        return
-    if plan.scope == "user":
-        print(f"  detected Claude Code CLI: {'yes' if plan.claude_enabled else 'no'}")
-        print(f"  detected Codex CLI: {'yes' if plan.codex_enabled else 'no'}")
-        print(f"  private runtime: {private_runtime_home()}")
-    print(f"  library:     {plan.lib_home}  ({len(plan.lib_copies)} files)")
-    if plan.by_name:
-        print(f"  flat index:  {plan.lib_home / 'by-name'}  ({len(plan.by_name)} names)")
-    print(f"  scripts:     {plan.bin_dir}")
-    if plan.claude_enabled:
-        host_block_dest = plan.host_block.dest if plan.host_block is not None else "(none)"
-        print(
-            f"  Claude Code: {len(plan.claude_adapters)} skill adapter(s), {len(plan.claude_agents)} role agent(s); "
-            f"import in {_claude_md_path(plan.scope, plan.project_root)} -> {host_block_dest}; "
-            f"settings in {_claude_settings_path(plan.scope, plan.project_root)}"
-        )
-    if plan.codex_enabled:
-        print(
-            f"  Codex:       {len(plan.codex_prompts)} prompt(s), {len(plan.codex_skills)} redirect skill(s), "
-            f"{len(plan.codex_agents)} role agent(s); "
-            f"instruction block in {_codex_agents_path(plan.scope, plan.project_root)}; "
-            f"settings in {_codex_config_path(plan.scope, plan.project_root)}"
-        )
-    print(f"  receipt:     {plan.receipt_path}")

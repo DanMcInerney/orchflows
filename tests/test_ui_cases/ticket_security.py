@@ -1,6 +1,7 @@
 """Ticket containment, refusal, section, and elapsed-meter regressions."""
 
 from tests.test_ui_cases._web import *  # noqa: F401,F403
+from tests.test_ui_cases.projection_security import *  # noqa: F401,F403
 class TestUnreadableTicketFile(unittest.TestCase):
     """`read_ticket` promises the same shape for a file it cannot read as
     for one it can. Being handed such a path is not hypothetical:
@@ -180,6 +181,24 @@ class TestTicketTreeContainment(unittest.TestCase):
             # the tree, so 404 above is containment and not a dead route.
             self.assertEqual(200, ui.render_route(main, graph_url("run-gamma"))[0])
 
+    def test_file_symlinks_cannot_escape_ticket_or_friction_roots(self):
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            main = make_sink(tmp)
+            outside_ticket = tmp / "leaked.md"
+            outside_log = tmp / "leaked.jsonl"
+            outside_ticket.write_text("---\nid: LEAK\nstatus: claimed\n---\n", encoding="utf-8")
+            outside_log.write_text('{"observed":"OUTSIDE"}\n', encoding="utf-8")
+            ticket_link = main / "tickets" / "run-gamma" / "LEAK.md"
+            log_link = main / "friction" / "2099-01.jsonl"
+            try:
+                ticket_link.symlink_to(outside_ticket)
+                log_link.symlink_to(outside_log)
+            except (OSError, NotImplementedError) as error:
+                self.skipTest("cannot create file symlinks here: %s" % error)
+            self.assertNotIn("LEAK", [ticket["id"] for ticket in ui.run_tickets(main, "run-gamma")])
+            self.assertNotIn("OUTSIDE", [entry.get("observed") for entry in ui.read_friction(main)["entries"]])
+
 
 # Names a client can send that the path layer refuses outright rather than
 # answering "no such file": NUL raises `ValueError: embedded null byte` out
@@ -188,6 +207,9 @@ class TestTicketTreeContainment(unittest.TestCase):
 # `BaseHTTPRequestHandler`, so before the guard the client got no HTTP
 # response at all and `socketserver` printed the absolute tickets path.
 REFUSED_NAMES = (
+    ":",
+    "C:run-gamma",
+    "C:G1",
     "\x00",
     "lead\x00ing",
     "\x00trailing",

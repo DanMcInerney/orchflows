@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 
@@ -62,6 +64,10 @@ class Plan:
     runtime_dirs: list = field(default_factory=list)
     lib_copies: list = field(default_factory=list)       # (src, dest)
     scripts: list = field(default_factory=list)          # (src, dest)
+    frontend_home: Path | None = None
+    frontend_assets: list = field(default_factory=list)  # (src, dest)
+    frontend_manifest_sha256: str | None = None
+    frontend_action: str | None = None                   # create, reuse, repair or refuse
     claude_adapters: list = field(default_factory=list)  # (dest, content) — per-skill SKILL.md stubs
     codex_prompts: list = field(default_factory=list)    # (dest, content)
     codex_skills: list = field(default_factory=list)     # (dest, content) — redirect stubs
@@ -90,6 +96,26 @@ def _is_build_artifact(path: Path) -> bool:
     if path.suffix in _BUILD_ARTIFACT_SUFFIXES:
         return True
     return any(part in _BUILD_ARTIFACT_DIR_NAMES for part in path.parts)
+
+
+def _frontend_manifest(root: Path) -> dict[str, str]:
+    """Return the relative-name and byte-hash identity of one distribution."""
+
+    if not root.is_dir():
+        return {}
+    return {
+        path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in sorted(root.rglob("*"))
+        if path.is_file()
+    }
+
+
+def _frontend_manifest_identity(root: Path) -> str | None:
+    manifest = _frontend_manifest(root)
+    if not manifest or "index.html" not in manifest:
+        return None
+    encoded = json.dumps(manifest, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
 def _host_block_content(portable: bool = False) -> tuple[str, str, str]:

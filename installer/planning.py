@@ -24,6 +24,7 @@ from .foundation import (
     _codex_config_path,
     _codex_hooks_warnings,
     _codex_user_home,
+    _frontend_home,
     _lib_home,
     _require_project_root,
     _runtime_dirs,
@@ -37,6 +38,7 @@ from .models import (
     Plan,
     _day_zero_documents,
     _host_block_content,
+    _frontend_manifest_identity,
     _is_build_artifact,
 )
 from .packages import (
@@ -76,12 +78,23 @@ def _build_project_plan(project_root: Path) -> Plan:
         ),
     ]
     scope_home = _scope_home("project", project_root)
+    frontend_home = _frontend_home()
+    frontend_identity = _frontend_manifest_identity(REPO_ROOT / "web" / "dist")
+    if frontend_identity is None:
+        raise RuntimeError("web/dist is missing its immutable index.html distribution")
     return Plan(
         scope="project",
         project_root=project_root,
         lib_home=_lib_home("project", project_root),
         scope_home=scope_home,
         bin_dir=_bin_dir("project", project_root),
+        frontend_home=frontend_home,
+        frontend_manifest_sha256=frontend_identity,
+        frontend_action=(
+            "reuse"
+            if _frontend_manifest_identity(frontend_home) == frontend_identity
+            else "refuse"
+        ),
         blocks=blocks,
         day_zero=_day_zero_documents(project_root),
         receipt_path=scope_home / "receipt.json",
@@ -155,6 +168,26 @@ def _build_user_plan(
             if path.is_file() and not _is_build_artifact(path):
                 rel = path.relative_to(REPO_ROOT)
                 lib_copies.append((path, lib_home / rel))
+    notices = REPO_ROOT / "THIRD_PARTY_NOTICES.md"
+    if notices.is_file():
+        lib_copies.append((notices, lib_home / notices.name))
+
+    frontend_source = REPO_ROOT / "web" / "dist"
+    frontend_home = _frontend_home()
+    frontend_identity = _frontend_manifest_identity(frontend_source)
+    if frontend_identity is None:
+        raise RuntimeError("web/dist is missing its immutable index.html distribution")
+    frontend_assets = [
+        (path, frontend_home / path.relative_to(frontend_source))
+        for path in sorted(frontend_source.rglob("*"))
+        if path.is_file()
+    ]
+    installed_frontend_identity = _frontend_manifest_identity(frontend_home)
+    frontend_action = (
+        "reuse"
+        if installed_frontend_identity == frontend_identity
+        else ("repair" if frontend_home.exists() else "create")
+    )
 
     scripts = [
         (REPO_ROOT / "scripts" / name, bin_dir / name)
@@ -323,6 +356,10 @@ def _build_user_plan(
         runtime_dirs=_runtime_dirs("user", None),
         lib_copies=lib_copies,
         scripts=scripts,
+        frontend_home=frontend_home,
+        frontend_assets=frontend_assets,
+        frontend_manifest_sha256=frontend_identity,
+        frontend_action=frontend_action,
         claude_adapters=claude_adapters,
         codex_prompts=codex_prompts,
         codex_skills=codex_skills,
@@ -369,6 +406,7 @@ def plan_entry_count(plan: Plan) -> int:
         len(plan.runtime_dirs)
         + len(plan.lib_copies)
         + len(plan.scripts)
+        + len(plan.frontend_assets)
         + len(plan.claude_adapters)
         + len(plan.codex_prompts)
         + len(plan.codex_skills)

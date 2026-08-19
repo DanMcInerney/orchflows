@@ -377,8 +377,9 @@ def read_ticket(path: Path) -> dict:
         "claimed_at": _scalar(front.get("claimed_at")),
         "claimed_by": _scalar(front.get("claimed_by")),
         "depends_on": _sequence(front.get("depends_on")),
+        "write_scope": _sequence(front.get("write_scope")), "pack": _scalar(front.get("pack")),
         "objective": sections.get("Objective", ""),
-        "sections": sections,
+        "sections": sections, "raw": text,
         "unreadable": unreadable,
         "path": str(path),
     }
@@ -445,7 +446,7 @@ MAX_NAME_BYTES = 255
 # `ValueError: embedded null byte`, which `BaseHTTPRequestHandler` does not
 # catch, so the client gets no HTTP response at all and `socketserver`
 # prints the absolute tickets path to stderr.
-UNSAFE_NAME_RE = re.compile(r"[\x00-\x1f\x7f/\\]")
+UNSAFE_NAME_RE = re.compile(r"[\x00-\x1f\x7f:/\\]")
 
 
 def _safe_name(value) -> str:

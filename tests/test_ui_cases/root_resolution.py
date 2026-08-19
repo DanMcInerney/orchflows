@@ -196,3 +196,23 @@ class TestUiResolvesSink(unittest.TestCase):
                 (sink / "tickets" / "run-alpha" / "A1.md").resolve(),
                 ui._in_tree(sink / "tickets", "run-alpha", "A1.md"),
             )
+
+
+class TestInstalledAssetResolution(unittest.TestCase):
+    def test_an_installed_script_resolves_the_sibling_distribution(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / ".orchflows"
+            script = home / "bin" / "ui_assets.py"
+            distribution = home / "ui"
+            script.parent.mkdir(parents=True)
+            distribution.mkdir()
+            script.write_text("# installed seam\n", encoding="utf-8")
+            (distribution / "index.html").write_text("installed", encoding="utf-8")
+
+            self.assertEqual(distribution.resolve(), ui.resolve_asset_root(script))
+
+    def test_a_checkout_script_resolves_the_committed_distribution(self):
+        self.assertEqual(
+            (ROOT / "web" / "dist").resolve(),
+            ui.resolve_asset_root(ROOT / "scripts" / "ui_assets.py"),
+        )
