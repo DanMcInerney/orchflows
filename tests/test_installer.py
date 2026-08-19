@@ -17,6 +17,7 @@ from tests.test_installer_cases.managed_text.roles import TestRoleAgentInstructi
 from tests.test_installer_cases.planning.day_zero import TestDayZeroBootstrap
 from tests.test_installer_cases.planning.host_detection import DryRunOracleTest, TestHostAutoDetection
 from tests.test_installer_cases.planning.runtime import TestClaudeAdapterSet, TestRuntimeDirsSeedTheSink
+from tests.test_installer_cases.planning.private_runtime import RuntimeVenvTests
 from tests.test_installer_cases.planning.scoped_hosts import (
     RoleProfileRefusalTest,
     TestScopedHostConfiguration,
@@ -49,6 +50,7 @@ DryRunOracleTest.__module__ = __name__
 TestHostAutoDetection.__module__ = __name__
 TestClaudeAdapterSet.__module__ = __name__
 TestRuntimeDirsSeedTheSink.__module__ = __name__
+RuntimeVenvTests.__module__ = __name__
 RoleProfileRefusalTest.__module__ = __name__
 TestScopedHostConfiguration.__module__ = __name__
 TestScriptNames.__module__ = __name__

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Install orchflows for Claude Code and/or Codex from a git clone.
 
-Stdlib-only, cross-platform (Windows + POSIX), pathlib throughout, never
+Cross-platform (Windows + POSIX), pathlib throughout, never
 symlinks. User scope is primary and auto-detects which host(s) to
 configure: the Claude half runs only when a Claude CLI is on ``PATH``, and
 the Codex half only when a Codex CLI is on ``PATH``. If neither is found,
 the installer warns and exits successfully without writing anything.
 
-- ``~/.orchflows/`` (library, scripts, receipt, the rendered
+- ``~/.orchflows/`` (private Python runtime, library, scripts, receipt, the rendered
   ``host-block.md``). The library also carries a flat, host-agnostic
   ``lib/by-name/<orch-name>/SKILL.md`` index: one deterministic path per
   canonical package (every skill tier plus packs), each a redirect pointer
@@ -48,7 +48,10 @@ names (``docs/vocabulary.md``, ``ARCHITECTURE.md``) where the project holds
 none — a document already there is left byte-identical, and the receipt says
 which of the two the installer wrote — plus a minimal receipt. Both blocks stay
 inline marker blocks (never an import) since a project is committable and
-must stay self-contained for teammates without the same ``~/.orchflows``.
+must resolve each teammate's own ``~/.orchflows`` rather than freezing the
+installer's absolute home or operating-system runtime path. Project apply
+requires that user install and refuses before writing when its private runtime
+is absent or unhealthy.
 Durable state is user-scope in either scope: an install seeds the one sink
 ``_state_sink`` names and never a project runtime tree, so a record carries
 the project it arose in as a field rather than by its location. Of
@@ -61,6 +64,7 @@ prints the drift, and a null commit says on stderr which read came up empty.
 A receipt that will not read is refused, never overwritten as if absent.
 
 ``--dry-run`` builds and prints the exact same plan an install would apply,
+including whether the private runtime would be created, reused or repaired,
 without writing anything. ``--uninstall`` removes only unchanged generated
 skill entrypoints. It prints manual cleanup for every other path in the
 scope's ``receipt.json`` (gracefully, even for a receipt from an older, full
@@ -133,6 +137,8 @@ def discover_script_names(scripts_dir: Path) -> tuple[str, ...]:
 
 from installer import planning as _planning
 from installer import presentation as _presentation
+from installer import application as _application
+from installer import runtime as _runtime
 from installer.application import (
     _diverged_role_agents,
     _installed_file,
@@ -243,6 +249,31 @@ from installer import packages as _packages
 _discover_packages_impl = discover_packages
 _detect_hosts_impl = detect_hosts
 
+RUNTIME_METADATA_FILENAME = _runtime.RUNTIME_METADATA_FILENAME
+RUNTIME_REQUIREMENTS = _runtime.RUNTIME_REQUIREMENTS
+_dependency_environment = _runtime._dependency_environment
+_read_runtime_metadata = _runtime._read_runtime_metadata
+_runtime_metadata = _runtime._runtime_metadata
+_runtime_requirement_lines = _runtime._runtime_requirement_lines
+private_runtime_action = _runtime.private_runtime_action
+private_runtime_home = _runtime.private_runtime_home
+private_runtime_is_healthy = _runtime.private_runtime_is_healthy
+private_runtime_is_owned = _runtime.private_runtime_is_owned
+private_runtime_python = _runtime.private_runtime_python
+venv = _runtime.venv
+
+_build_private_runtime_impl = _runtime._build_private_runtime
+_create_private_runtime_impl = _runtime._create_private_runtime
+
+
+def _build_private_runtime(runtime_home: Path) -> Path:
+    return _build_private_runtime_impl(runtime_home)
+
+
+def _create_private_runtime() -> Path:
+    _runtime._build_private_runtime = _build_private_runtime
+    return _create_private_runtime_impl()
+
 
 def _sync_installer_seams() -> None:
     for module in (_foundation, _models, _packages, _planning):
@@ -250,6 +281,13 @@ def _sync_installer_seams() -> None:
             module.REPO_ROOT = REPO_ROOT
     _managed_text.CODEX_MAX_THREADS = CODEX_MAX_THREADS
     _planning.detect_hosts = detect_hosts
+    _planning.private_runtime_action = private_runtime_action
+    _planning.private_runtime_is_healthy = private_runtime_is_healthy
+    _models.private_runtime_python = private_runtime_python
+    _runtime.RUNTIME_REQUIREMENTS = RUNTIME_REQUIREMENTS
+    _runtime._build_private_runtime = _build_private_runtime
+    _application._create_private_runtime = _create_private_runtime
+    _application.private_runtime_is_healthy = private_runtime_is_healthy
 
 
 def discover_packages():
@@ -291,6 +329,7 @@ def print_plan(plan: Plan) -> None:
 
 
 def apply_plan(plan: Plan, keep_role_agents: bool | None = None) -> dict:
+    _sync_installer_seams()
     return _apply_plan(plan, resolve_source_commit(), keep_role_agents)
 
 
@@ -402,6 +441,13 @@ def main(argv=None) -> int:
     # like a run that had planned the whole install.
     if args.dry_run:
         print_plan(plan)
+        if plan.runtime_action == "refuse":
+            print(
+                f"error: refusing install because {private_runtime_home()} is "
+                "not a healthy installer-owned runtime",
+                file=sys.stderr,
+            )
+            return 1
         if (plan.claude_enabled or plan.codex_enabled) and plan_entry_count(plan) == 0:
             print(
                 "error: a host is enabled but the plan is empty; nothing would be installed",

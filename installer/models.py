@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from .foundation import HOST_BLOCK_TEMPLATE, _bin_dir, _lib_home
 from .managed_text import render_host_block
-from .packages import resolved_python_interpreter, template_markers
+from .packages import template_markers
+from .runtime import private_runtime_python
 
 # --- plan -----------------------------------------------------------------
 
@@ -76,6 +77,7 @@ class Plan:
     manage_host_surfaces: bool = True                    # False for thin project plans
     claude_enabled: bool = True                          # user scope: a Claude CLI was detected
     codex_enabled: bool = True                           # user scope: a Codex CLI was detected
+    runtime_action: str | None = None                    # create, reuse, repair or refuse
 
 
 _BUILD_ARTIFACT_SUFFIXES = (".pyc", ".pyo")
@@ -90,17 +92,23 @@ def _is_build_artifact(path: Path) -> bool:
     return any(part in _BUILD_ARTIFACT_DIR_NAMES for part in path.parts)
 
 
-def _host_block_content() -> tuple[str, str, str]:
+def _host_block_content(portable: bool = False) -> tuple[str, str, str]:
     """Render the instruction block against the *user* library paths
     (``~/.orchflows/...``). Both scopes point here: project installs carry
     no library of their own and read the user install instead."""
 
-    lib_home = _lib_home("user", None)
-    bin_dir = _bin_dir("user", None)
+    lib_home = PurePosixPath("~/.orchflows/lib") if portable else _lib_home("user", None)
+    bin_dir = PurePosixPath("~/.orchflows/bin") if portable else _bin_dir("user", None)
     template_text = HOST_BLOCK_TEMPLATE.read_text(encoding="utf-8")
     start_marker, end_marker = template_markers(template_text)
     content = render_host_block(
-        template_text, bin_dir, lib_home / "docs", lib_home / "skills", lib_home, resolved_python_interpreter()
+        template_text,
+        bin_dir,
+        lib_home / "docs",
+        lib_home / "skills",
+        lib_home,
+        str(private_runtime_python()),
+        portable=portable,
     )
     return content, start_marker, end_marker
 
@@ -148,7 +156,7 @@ def _day_zero_documents(project_root: Path) -> list:
     no library of its own to point at.
     """
 
-    docs_dir = _lib_home("user", None) / "docs"
+    docs_dir = PurePosixPath("~/.orchflows/lib/docs")
     return [
         DayZeroPlan(
             project_root / "docs" / "vocabulary.md",

@@ -22,7 +22,9 @@ class TestHostBlockRendering(unittest.TestCase):
     def test_render_host_block_substitutes_resolved_interpreter(self):
         rendered = self._rendered("/usr/bin/python3")
 
-        self.assertIn("/usr/bin/python3 /bin/friction.py", rendered)
+        self.assertIn("/usr/bin/python3", rendered)
+        self.assertIn("/bin/friction.py", rendered)
+        self.assertNotIn("{{FRICTION_COMMANDS}}", rendered)
         self.assertNotIn("{{PYTHON}}", rendered)
         self.assertNotIn("{{ORCH_LIB}}", rendered)
 
@@ -79,14 +81,17 @@ class TestHostBlockRendering(unittest.TestCase):
         for gone in ("orch-task", "orch-deliver", "orch-compose"):
             self.assertNotIn(gone, rendered)
 
-    def test_build_plan_host_block_uses_running_interpreter(self):
+    def test_build_plan_host_block_uses_private_runtime_interpreter(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)
 
             plan = install.build_plan("project", project)
 
             block = plan.blocks[0].content
-            self.assertIn(f"{install.resolved_python_interpreter()} ", block)
+            self.assertIn("$HOME/.orchflows/runtime/bin/python", block)
+            self.assertIn("$HOME\\.orchflows\\runtime\\Scripts\\python.exe", block)
+            self.assertNotIn(str(install.private_runtime_python()), block)
+            self.assertNotIn(f"{install.resolved_python_interpreter()} ", block)
             self.assertNotIn("{{PYTHON}}", block)
 
 
@@ -165,8 +170,7 @@ _HOST_BLOCK_DEMANDS = {
         "{{ORCH_LIB}}/by-name/<orch-name>/SKILL.md",
     ),
     "log friction the moment it happens, and never skip the log": (
-        '{{PYTHON}} {{ORCH_BIN}}/friction.py "<what happened>" '
-        '"<what was expected or missing>"',
+        "{{FRICTION_COMMANDS}}",
         "`--category`",
         "`--skill <orch-name>`",
         "`--ticket <id>`",

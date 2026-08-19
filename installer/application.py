@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -20,6 +21,12 @@ from .foundation import (
 )
 from .managed_text import upsert_import_line, upsert_marked_block
 from .models import Plan
+from .runtime import (
+    _create_private_runtime,
+    private_runtime_home,
+    private_runtime_is_healthy,
+    private_runtime_python,
+)
 
 # --- apply -----------------------------------------------------------------
 
@@ -36,6 +43,53 @@ def _load_json(path: Path):
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
         raise ValueError(f"{path} is unreadable ({error}); move it aside and rerun") from error
+
+
+def _write_json(path: Path, value: dict) -> None:
+    """Atomically replace one installer-owned JSON document."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handle = tempfile.NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        dir=path.parent,
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        delete=False,
+    )
+    temporary = Path(handle.name)
+    try:
+        with handle:
+            json.dump(value, handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+        temporary.replace(path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+
+
+def _record_runtime_intent(plan: Plan, old_receipt: dict | None) -> None:
+    """Make a first or interrupted runtime install discoverable by uninstall."""
+
+    receipt = dict(old_receipt or {})
+    receipt.update(
+        {
+            "version": 4,
+            "scope": "user",
+            "project_root": None,
+            "lib_home": str(plan.lib_home),
+            "bin_dir": str(plan.bin_dir),
+            "install_in_progress": True,
+            "runtime": {
+                "home": str(private_runtime_home()),
+                "python": str(private_runtime_python()),
+                "uninstall": "retained",
+            },
+        }
+    )
+    for key in ("files", "blocks", "imports", "dirs"):
+        receipt.setdefault(key, [])
+    _write_json(plan.receipt_path, receipt)
 
 
 def _sha256_file(path: Path) -> str:
@@ -156,6 +210,15 @@ def apply_plan(
     plan: Plan, source_commit: str | None, keep_role_agents: bool | None = None
 ) -> dict:
     old_receipt = _load_json(plan.receipt_path)
+    if (
+        plan.scope == "project"
+        and plan.runtime_action is not None
+        and not private_runtime_is_healthy()
+    ):
+        raise RuntimeError(
+            "project install requires a healthy user runtime at "
+            f"{private_runtime_home()}; run install.py --user first"
+        )
     diverged = _diverged_role_agents(plan, old_receipt)
     # A kept agent stays in the plan so ``_remove_stale`` still counts it as
     # wanted; only its write is skipped. Dropping it from the plan would
@@ -179,6 +242,12 @@ def apply_plan(
     def install_details(path: Path, kind: str, details: dict) -> dict:
         old_entry = old_entries.get((str(path), kind), {})
         return old_entry.get("details") or details
+
+    if plan.scope == "user" and plan.runtime_action is not None:
+        # This lands before the first runtime mutation. If anything below
+        # fails, uninstall can still discover the retained runtime.
+        _record_runtime_intent(plan, old_receipt)
+        _create_private_runtime()
 
     # Library tree: fully installer-owned, replaced wholesale. Thin project
     # plans carry no lib_copies and never touch a project's ``.orchflows/lib``.
@@ -348,9 +417,17 @@ def apply_plan(
         "blocks": written_blocks,
         "imports": written_imports,
         "dirs": list(dict.fromkeys([str(d) for d in plan.runtime_dirs] + extra_dirs)),
+        "runtime": (
+            {
+                "home": str(private_runtime_home()),
+                "python": str(private_runtime_python()),
+                "uninstall": "retained",
+            }
+            if plan.scope == "user"
+            else None
+        ),
     }
-    plan.receipt_path.parent.mkdir(parents=True, exist_ok=True)
-    plan.receipt_path.write_text(json.dumps(receipt, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    _write_json(plan.receipt_path, receipt)
     return receipt
 
 
@@ -365,6 +442,7 @@ def print_summary(plan: Plan) -> None:
     if plan.scope == "user":
         print(f"  detected Claude Code CLI: {'yes' if plan.claude_enabled else 'no'}")
         print(f"  detected Codex CLI: {'yes' if plan.codex_enabled else 'no'}")
+        print(f"  private runtime: {private_runtime_home()}")
     print(f"  library:     {plan.lib_home}  ({len(plan.lib_copies)} files)")
     if plan.by_name:
         print(f"  flat index:  {plan.lib_home / 'by-name'}  ({len(plan.by_name)} names)")

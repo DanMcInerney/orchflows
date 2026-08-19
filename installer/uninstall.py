@@ -180,6 +180,18 @@ def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
     for dir_str in receipt.get("dirs", []):
         manual_actions.append({"path": dir_str, "action": "remove directory manually when empty"})
 
+    runtime = receipt.get("runtime")
+    if isinstance(runtime, dict) and runtime.get("home"):
+        manual_actions.append(
+            {
+                "path": str(runtime["home"]),
+                "action": (
+                    "retained private runtime; remove manually after installed "
+                    "orchflows commands no longer need it"
+                ),
+            }
+        )
+
     manual_actions.append(
         {"path": str(receipt_path), "action": "delete receipt after completing manual cleanup"}
     )

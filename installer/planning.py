@@ -51,13 +51,14 @@ from .packages import (
     split_frontmatter,
     template_adapter_body,
 )
+from .runtime import private_runtime_action, private_runtime_is_healthy
 
 def _build_project_plan(project_root: Path) -> Plan:
     """Thin stub: only the two managed instruction blocks plus a minimal
     receipt. No lib copy, no runtime dirs, no ``.claude``/``.codex`` writes —
     a project install borrows the user install for everything else."""
 
-    host_block, start_marker, end_marker = _host_block_content()
+    host_block, start_marker, end_marker = _host_block_content(portable=True)
     blocks = [
         BlockPlan(
             _claude_md_path("project", project_root),
@@ -85,6 +86,7 @@ def _build_project_plan(project_root: Path) -> Plan:
         day_zero=_day_zero_documents(project_root),
         receipt_path=scope_home / "receipt.json",
         manage_host_surfaces=False,
+        runtime_action="reuse" if private_runtime_is_healthy() else "refuse",
     )
 
 
@@ -141,6 +143,7 @@ def _build_user_plan(
             ],
             claude_enabled=False,
             codex_enabled=False,
+            runtime_action=None,
         )
 
     lib_copies = []
@@ -334,6 +337,7 @@ def _build_user_plan(
         warnings=warnings,
         claude_enabled=claude_enabled,
         codex_enabled=codex_enabled,
+        runtime_action=private_runtime_action(),
     )
 
 
@@ -376,4 +380,9 @@ def plan_entry_count(plan: Plan) -> int:
         + len(plan.day_zero)
         + (1 if plan.host_block is not None else 0)
         + (1 if plan.claude_import is not None else 0)
+        + (
+            1
+            if plan.scope == "user" and plan.runtime_action in ("create", "repair")
+            else 0
+        )
     )

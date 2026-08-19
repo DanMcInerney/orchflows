@@ -1,6 +1,8 @@
 """Ticket packet support."""
 
 from __future__ import annotations
+import re
+import shlex
 import sys
 from pathlib import Path
 try:
@@ -33,6 +35,21 @@ PACKET_SECTIONS = (('objective', 'Objective'), ('inputs', 'Fixed inputs'), ('ret
 CHECKER_EXECUTOR = 'orch-critique'
 REVERIFIER_EXECUTOR = 'orch-verify'
 CHECKER_PATH_EXECUTORS = (CHECKER_EXECUTOR, REVERIFIER_EXECUTOR)
+_SHELL_SAFE_TOKEN = re.compile(r'^[A-Za-z0-9_./:\\=-]+$')
+
+
+def _command_text(*arguments) -> str:
+    """Render argv as one executable command for the host's native shell."""
+
+    values = [str(argument) for argument in arguments]
+    if all(_SHELL_SAFE_TOKEN.fullmatch(value) for value in values):
+        return ' '.join(values)
+    if sys.platform == 'win32':
+        def quote(value: str) -> str:
+            return "'" + value.replace("'", "''") + "'"
+
+        return '& ' + ' '.join(quote(value) for value in values)
+    return shlex.join(values)
 CUT_LENS_PARTS = ('skills', 'kernel', 'orch-decompose', 'references', 'cut-lens.md')
 GATE_CRITIQUE_ID = '{root}.gate.critique.{lens}'
 GATE_REPAIR_ID = '{root}.gate.repair'
@@ -112,19 +129,19 @@ def _further_child_prompt(executor, loaded: dict, ticket_path: Path, run_id, scr
     is_root = _executor_of(loaded) == ROOT_EXECUTOR
     recorded = str(loaded.get('workspace_baseline') or '').strip().split()
     baseline = recorded[0] if recorded else 'REV'
-    cut_check = f"{sys.executable} {script.with_name('cutcheck.py')} --baseline {baseline} {run_id}"
+    cut_check = _command_text(sys.executable, script.with_name('cutcheck.py'), '--baseline', baseline, run_id)
     unresolved = '' if recorded else ', REV being the revision the set was cut from'
     if is_root and executor == CHECKER_EXECUTOR:
         head.append(f"This is the rules/verification.md §10 checker's pass on the cut {claimed_by} produced under its claim, never a second decomposition: the lens is {_cut_lens_path()}, and its object is the issued subtree — the `{loaded['id']}.NN` items and the gate stubs — read as data.")
         head.append("Your authority is not the root's `write_scope`, which is the run's workspace and the units' to write. It is the unclaimed subtree's cut-time sections, corrected in place with:")
-        head.append(f'{sys.executable} {script} amend {run_id} ID --section SECTION --file PATH')
+        head.append(_command_text(sys.executable, script, 'amend', run_id, 'ID', '--section', 'SECTION', '--file', 'PATH'))
         head.append('and, for an item the cut is missing:')
-        head.append(f'{sys.executable} {script} new {run_id} ID --file PATH')
+        head.append(_command_text(sys.executable, script, 'new', run_id, 'ID', '--file', 'PATH'))
         head.append('Both are refused once a unit is claimed, and so is this packet: the cut is corrected before any unit of it is dispatched.')
         head.append(f'Your repair is accepted on the cut check re-run to exit 0 (rules/verification.md §11){unresolved}:')
         head.append(cut_check)
         head.append("Append your findings and the changes you made to the root's `## Result`, and record the pass with:")
-        head.append(f"{sys.executable} {script} check {run_id} {loaded['id']} --by NAME")
+        head.append(_command_text(sys.executable, script, 'check', run_id, loaded['id'], '--by', 'NAME'))
     elif is_root:
         head.append(f'This is the rules/verification.md §10 re-verification of a checked cut, never a second decomposition: the completion test at the checked set is the cut check, read on the host that produced it{unresolved}:')
         head.append(cut_check)
@@ -133,7 +150,7 @@ def _further_child_prompt(executor, loaded: dict, ticket_path: Path, run_id, scr
         scope = effective_write_scope(loaded)
         head.append(f"This is the rules/verification.md §10 checker's pass on a result {claimed_by} produced under its claim, never a re-execution of the item: the lens is the ticket's own `## Completion test`, at {at_identity}.")
         head.append(f"Your authority is the ticket's own write scope, {scope} — correct inside it, and append your findings, changes and the verification entries they invalidate to `## Result`. Record the pass, after correcting, with:")
-        head.append(f"{sys.executable} {script} check {run_id} {loaded['id']} --by NAME")
+        head.append(_command_text(sys.executable, script, 'check', run_id, loaded['id'], '--by', 'NAME'))
     else:
         head.append(f"This is the rules/verification.md §10 re-verification of a checked result, never a re-execution of the item: run the ticket's `## Completion test` at {at_identity}, reusing prior `## Verification` entries whose `covers` are unchanged there.")
         head.append("Your authority grants no write: the item's workspace and its `## Result` are another context's, and `## Verification` is the one section you file.")
@@ -252,13 +269,13 @@ def _packet_under_run_lock(rest):
             prompt.append("Your branch is not the revision those repository-level checks decide, and your green is provisional until the tip's.")
     if has_own_workspace:
         prompt.append('Workspace establishment (isolation: required), your first act, run from inside your own workspace:')
-        prompt.append(f"{sys.executable} {script.with_name('workspace.py')} start {run_id} {loaded['id']}")
+        prompt.append(_command_text(sys.executable, script.with_name('workspace.py'), 'start', run_id, loaded['id']))
     prompt.append('Run-state channel (rules/visibility.md §6), from your own workspace, with TEXT and NAME replaced:')
-    prompt.append(f'{sys.executable} {script} run-state {run_id} --note TEXT')
-    prompt.append(f'{sys.executable} {script} run-state {run_id} --artifact NAME --text TEXT')
+    prompt.append(_command_text(sys.executable, script, 'run-state', run_id, '--note', 'TEXT'))
+    prompt.append(_command_text(sys.executable, script, 'run-state', run_id, '--artifact', 'NAME', '--text', 'TEXT'))
     prompt.append(f"Filing channel (contracts/work-item.md's filing law), from your own workspace, with SECTION one of {list(EXECUTOR_SECTIONS)}, PATH a file in your own workspace and TEXT one line; add --append to write after content already there:")
-    prompt.append(f"{sys.executable} {script} result {run_id} {loaded['id']} --section SECTION --file PATH")
-    prompt.append(f"{sys.executable} {script} result {run_id} {loaded['id']} --section SECTION --text TEXT")
+    prompt.append(_command_text(sys.executable, script, 'result', run_id, loaded['id'], '--section', 'SECTION', '--file', 'PATH'))
+    prompt.append(_command_text(sys.executable, script, 'result', run_id, loaded['id'], '--section', 'SECTION', '--text', 'TEXT'))
     assigned_name = str(loaded.get('claimed_by') or '').strip() or None if executor in DISPATCHING_EXECUTORS else None
     if assigned_name is not None:
         prompt.append(f"Your own assigned name is `{assigned_name}` (the ticket's `claimed_by`): every packet you dispatch carries it as that child's `reply_to`.")

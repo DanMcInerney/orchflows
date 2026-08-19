@@ -2,6 +2,139 @@
 
 from .packet_workspace import *  # noqa: F401,F403
 
+RUNTIME_CLAIMED_TICKET = ISOLATED_TICKET.replace(
+    "status: ready", "status: claimed\nclaimed_by: agent-a"
+)
+RUNTIME_ROOT_TICKET = (
+    FULL_TICKET.replace("id: T1", "id: R1")
+    .replace("executor: orch-tdd", "executor: orch-decompose")
+    .replace("status: ready", "status: claimed\nclaimed_by: cutter-a")
+)
+
+
+class RuntimeInterpreterBoundaryTests(unittest.TestCase):
+    """Built-ins stay in their runtime while caller environment stays local."""
+
+    def test_internal_builtin_commands_use_the_current_interpreter(self):
+        runtime = "ORCHFLOWS_RUNTIME_INTERPRETER"
+        prompts = []
+        with mock.patch.object(tickets_mod._tickets_packet_module.sys, "executable", runtime):
+            with tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                make_packet_repo(tmp, RUNTIME_CLAIMED_TICKET)
+                for extra in ((), ("--executor", "orch-critique")):
+                    prompts.append(
+                        run_cmd(
+                            tmp, "packet", "testrun", "T1", "--reply-to", "main", *extra
+                        )["packet"]["prompt"]
+                    )
+            with tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                path = make_packet_repo(tmp, RUNTIME_ROOT_TICKET, tid="R1")
+                make_tickets(path.parent, {"R1.01": ("pending", "[]")})
+                for executor in ("orch-critique", "orch-verify"):
+                    prompts.append(
+                        run_cmd(
+                            tmp,
+                            "packet",
+                            "testrun",
+                            "R1",
+                            "--reply-to",
+                            "main",
+                            "--executor",
+                            executor,
+                        )["packet"]["prompt"]
+                    )
+
+        builtins = {"cutcheck.py", "tickets.py", "workspace.py"}
+        rendered = []
+        for prompt in prompts:
+            for line in prompt.splitlines():
+                tokens = line.split()
+                if len(tokens) > 1 and Path(tokens[1]).name in builtins:
+                    rendered.append(tokens)
+        self.assertEqual(builtins, {Path(tokens[1]).name for tokens in rendered})
+        for tokens in rendered:
+            self.assertEqual(runtime, tokens[0], tokens)
+
+    def test_ticket_commands_inherit_the_caller_environment(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = Path(tmp) / "caller state"
+            caller = {
+                STATE_HOME_ENV_VAR: str(sink),
+                "VIRTUAL_ENV": str(Path(tmp) / "project venv"),
+            }
+            with mock.patch.dict(os.environ, caller, clear=False):
+                completed = run_full(ROOT, "run-state", "inheritance", "--note", "from caller")
+            self.assertEqual(0, completed.returncode, completed.stderr)
+            payload = json.loads(completed.stdout)
+            notes = sink / "runs" / "inheritance" / "notes.md"
+            self.assertEqual(str(notes), payload["run_state"]["path"])
+            self.assertEqual("from caller\n", notes.read_text(encoding="utf-8"))
+
+    def test_rendered_builtin_command_executes_from_a_spaced_install_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_packet_repo(tmp, RUNTIME_CLAIMED_TICKET)
+            installed = tmp / "installed bin with spaces"
+            installed.mkdir()
+            source = TICKETS_PY.parent
+            names = {"state_root.py", "cutcheck.py"}
+            names.update(path.name for path in source.glob("tickets*.py"))
+            names.update(path.name for path in source.glob("workspace*.py"))
+            for name in names:
+                (installed / name).write_text(
+                    (source / name).read_text(encoding="utf-8"), encoding="utf-8"
+                )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(installed / "tickets.py"),
+                    "packet",
+                    "testrun",
+                    "T1",
+                    "--reply-to",
+                    "main",
+                ],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                cwd=str(tmp),
+            )
+            self.assertEqual(0, completed.returncode, completed.stderr)
+            prompt = json.loads(completed.stdout)["packet"]["prompt"]
+            command = next(
+                line
+                for line in prompt.splitlines()
+                if "run-state" in line and "--note" in line
+            ).replace("TEXT", "spaced-ok")
+            if os.name == "nt":
+                invoked = subprocess.run(
+                    ["powershell", "-NoProfile", "-Command", command],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    cwd=str(tmp),
+                )
+            else:
+                invoked = subprocess.run(
+                    ["/bin/sh", "-c", command],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    cwd=str(tmp),
+                )
+            self.assertEqual(0, invoked.returncode, invoked.stderr)
+            self.assertEqual(
+                "spaced-ok\n",
+                (sink_root() / "runs" / "testrun" / "notes.md").read_text(
+                    encoding="utf-8"
+                ),
+            )
+
 @unittest.skipUnless(git_available(), "git is not on PATH")
 class TestExecutedPacketSeam(unittest.TestCase):
     """The establishment line is not read, it is run: lifted verbatim out of

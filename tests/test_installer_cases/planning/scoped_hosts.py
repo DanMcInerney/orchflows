@@ -357,9 +357,10 @@ class TestScopedHostConfiguration(unittest.TestCase):
             # Resolving here would only agree with the rendered text on a
             # host whose temp dir has no symlink in it -- macOS resolves
             # /var to /private/var and the comparison fails for no reason.
-            user_lib = str(home / ".orchflows" / "lib")
+            user_lib = "~/.orchflows/lib"
             for block in plan.blocks:
                 self.assertIn(user_lib, block.content)
+                self.assertNotIn(str(home), block.content)
                 self.assertNotIn(str(project), block.content)
 
     def test_project_apply_writes_only_blocks_and_receipt(self):
@@ -367,7 +368,9 @@ class TestScopedHostConfiguration(unittest.TestCase):
             home = Path(tmp) / "home"
             project = Path(tmp) / "project"
             project.mkdir()
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), patch.object(
+                install, "private_runtime_is_healthy", return_value=True
+            ):
                 plan = install.build_plan("project", project)
                 install.apply_plan(plan)
 
@@ -404,7 +407,9 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            with patch.object(install.Path, "home", return_value=home):
+            with patch.object(install.Path, "home", return_value=home), patch.object(
+                install, "private_runtime_is_healthy", return_value=True
+            ):
                 plan = install.build_plan("project", project)
                 install.apply_plan(plan)
 
