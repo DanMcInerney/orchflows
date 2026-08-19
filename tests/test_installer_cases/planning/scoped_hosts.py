@@ -368,6 +368,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             home = Path(tmp) / "home"
             project = Path(tmp) / "project"
             project.mkdir()
+            seed_user_frontend(home)
             with patch.object(install.Path, "home", return_value=home), patch.object(
                 install, "private_runtime_is_healthy", return_value=True
             ):
@@ -391,6 +392,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             legacy_adapter.write_text("legacy adapter\n", encoding="utf-8")
             receipt_path = project / ".orchflows" / "receipt.json"
             receipt_path.parent.mkdir(parents=True)
+            seed_user_frontend(home)
             receipt_path.write_text(
                 json.dumps(
                     {

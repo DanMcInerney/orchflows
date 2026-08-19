@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 import install
 
-from tests.test_installer_cases.support import setUpModule, tearDownModule
+from tests.test_installer_cases.support import seed_user_frontend, setUpModule, tearDownModule
 from tests.test_installer_cases.application.configuration import (
     TestClaudeConfigDir,
     TestCodexHome,
@@ -75,6 +75,17 @@ TestInstallReceipt.__module__ = __name__
 TestSourceCommit.__module__ = __name__
 TestUnreadableReceipt.__module__ = __name__
 TestConservativeUninstall.__module__ = __name__
+
+
+_day_zero_setup = TestDayZeroBootstrap.setUp
+
+
+def _day_zero_setup_with_user_frontend(self):
+    _day_zero_setup(self)
+    seed_user_frontend(self.home)
+
+
+TestDayZeroBootstrap.setUp = _day_zero_setup_with_user_frontend
 
 
 class TestFrontendDistribution(unittest.TestCase):
