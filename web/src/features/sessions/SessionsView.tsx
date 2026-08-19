@@ -31,7 +31,7 @@ export function SessionsView({ snapshot, location }: SessionsViewProps) {
   const diagnostics = diagnosticCount(model);
 
   return (
-    <div className="sessions-view" data-view="sessions" data-fixture={location.fixture || "live"}>
+    <div className="foundation-view sessions-view" data-view="sessions" data-fixture={location.fixture || "live"}>
       <section className="sessions-view__hero hero" aria-labelledby="sessions-title">
         <div>
           <p className="eyebrow"><LockKeyhole aria-hidden="true" /> Safe metadata index</p>

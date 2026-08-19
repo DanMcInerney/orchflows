@@ -53,6 +53,7 @@ describe("SessionsView", () => {
     render(<SessionsView snapshot={snapshot(populated)} location={location("populated")} />);
 
     expect(screen.getByRole("heading", { name: "Sessions", level: 1 })).toBeTruthy();
+    expect(document.querySelector("[data-view='sessions']")?.classList.contains("foundation-view")).toBe(true);
     expect(screen.getByText("Claude Code")).toBeTruthy();
     expect(screen.getByText("orchflows")).toBeTruthy();
     expect(screen.getByText("Unknown client")).toBeTruthy();
