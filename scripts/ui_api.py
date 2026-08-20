@@ -30,7 +30,14 @@ try:
         ui_workflows_projection,
     )
     from scripts.ui_assets import FallbackReaderServer, read_asset, resolve_asset_root, valid_host_headers
-    from scripts.ui_experience import SPA_ROUTE_PATTERNS, browser_navigation, is_spa_path, project_experience
+    from scripts.ui_experience import (
+        SPA_ROUTE_PATTERNS,
+        VIEW_SLICES,
+        browser_navigation,
+        is_spa_path,
+        project_experience,
+        project_view,
+    )
 except ImportError:
     import ui_friction_projection
     import ui_now_projection
@@ -38,7 +45,14 @@ except ImportError:
     import ui_sessions_projection
     import ui_workflows_projection
     from ui_assets import FallbackReaderServer, read_asset, resolve_asset_root, valid_host_headers
-    from ui_experience import SPA_ROUTE_PATTERNS, browser_navigation, is_spa_path, project_experience
+    from ui_experience import (
+        SPA_ROUTE_PATTERNS,
+        VIEW_SLICES,
+        browser_navigation,
+        is_spa_path,
+        project_experience,
+        project_view,
+    )
 
 JSON_TYPE = "application/json; charset=utf-8"
 SECURITY_HEADERS = {
@@ -61,6 +75,18 @@ PROJECTOR_MODULES = (
     ui_sessions_projection,
     ui_friction_projection,
 )
+VIEW_QUERY_FIELDS = {
+    "now": frozenset(),
+    "run-map": frozenset(("run",)),
+    "inspector": frozenset(("run", "ticket")),
+    "sessions": frozenset(),
+    "session-graph": frozenset(("session",)),
+    "friction": frozenset(),
+}
+VIEW_REQUIRED_FIELDS = {
+    "inspector": frozenset(("run", "ticket")),
+    "session-graph": frozenset(("session",)),
+}
 
 
 def _projector_route_specs(modules=None) -> tuple:
@@ -79,6 +105,18 @@ def _projector_route_specs(modules=None) -> tuple:
             seen.add(key)
             assembled.append((method, path, module, function_name))
     return tuple(assembled)
+
+
+def _validated_view_query(view: str, values):
+    if view not in VIEW_SLICES or view not in VIEW_QUERY_FIELDS:
+        return None
+    if not set(values).issubset(VIEW_QUERY_FIELDS[view]):
+        return None
+    if not VIEW_REQUIRED_FIELDS.get(view, frozenset()).issubset(values):
+        return None
+    if any(len(items) != 1 or not items[0] for items in values.values()):
+        return None
+    return {key: items[0] for key, items in values.items()}
 
 
 project_observe = ui_now_projection.project_observe
@@ -164,6 +202,19 @@ async def experience_endpoint(request: Request):
     return _json_response(request, project_experience(root, transcripts, dict(request.query_params)))
 
 
+async def view_endpoint(request: Request):
+    root, transcripts = _context(request)
+    view = request.path_params["view"]
+    values = {
+        key: request.query_params.getlist(key)
+        for key in request.query_params
+    }
+    query = _validated_view_query(view, values)
+    if query is None:
+        return _json_response(request, {"error": "invalid request"}, 422)
+    return _json_response(request, project_view(root, transcripts, view, query))
+
+
 def _starlette_projector_routes():
     endpoints = {
         (ui_now_projection, "project_observe"): observe_endpoint,
@@ -235,6 +286,7 @@ def create_application(root, transcripts=None, assets=None, legacy_respond=None)
         raise RuntimeError("Starlette is available only in the installed private runtime")
     routes = [
         *_starlette_projector_routes(),
+        Route("/api/v1/views/{view}", view_endpoint, methods=["GET"]),
         Route("/api/v1/experience", experience_endpoint, methods=["GET"]),
         Route("/assets/{asset:path}", asset_endpoint, methods=["GET"]),
         *[Route(pattern, spa_endpoint, methods=["GET"]) for pattern in SPA_ROUTE_PATTERNS],
@@ -276,10 +328,18 @@ def _fallback_dispatch(server, method, target, headers):
     if method not in ("GET", "HEAD"):
         return _fallback_response(405, b"method not allowed", request_headers=headers, extra={"Allow": "GET, HEAD"})
     parsed = urlsplit(target)
-    path, query = unquote(parsed.path), {key: values[0] for key, values in parse_qs(parsed.query).items()}
+    path = unquote(parsed.path)
+    query_values = parse_qs(parsed.query, keep_blank_values=True)
+    query = {key: values[0] for key, values in query_values.items()}
     root, transcripts = server.root, server.transcripts
     value = None
-    if path == "/api/v1/runs":
+    if path.startswith("/api/v1/views/"):
+        view = path.rsplit("/", 1)[-1]
+        validated = _validated_view_query(view, query_values)
+        if validated is None:
+            return _fallback_json({"error": "invalid request"}, headers, 422)
+        value = project_view(root, transcripts, view, validated)
+    elif path == "/api/v1/runs":
         value = project_runs(root)
     elif path.startswith("/api/v1/runs/"):
         parts = path.strip("/").split("/")
