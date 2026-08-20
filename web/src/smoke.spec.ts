@@ -94,6 +94,36 @@ async function openManifestIdentity(page, identity, width, height) {
 }
 
 async function expectManifestIdentityTruth(page, identity) {
+  if (identity.identity.startsWith("workflow-catalog--populated--")) {
+    await expect(page.locator(".workflow-catalog__row"), `${identity.identity}: canonical definitions`).toHaveCount(14);
+    await expect(page.locator(".workflow-catalog a[href^='/runs/']"), `${identity.identity}: definition-only catalog`).toHaveCount(0);
+  }
+  if (identity.identity.startsWith("workflow-catalog--empty--")) {
+    await expect(page.getByRole("heading", { name: "No workflow definitions available" })).toBeVisible();
+  }
+  if (identity.identity.startsWith("workflow-detail--unreadable--")) {
+    await expect(page.getByRole("heading", { name: "1 topology diagnostic" })).toBeVisible();
+  }
+  if (identity.identity.startsWith("workflow-detail--complex-loop--")) {
+    await expect(page.getByRole("button", { name: "Select loop 02-campaign loops to 02-campaign" })).toBeVisible();
+    await expect(page.getByText("02-campaign loops to 02-campaign — bounded generations")).toBeVisible();
+    if (identity.breakpoint === "compact") {
+      const inspector = await page.locator(".workflow-inspector").boundingBox();
+      const graph = await page.locator(".workflow-detail__graph-panel").boundingBox();
+      expect(inspector, `${identity.identity}: inspector is rendered`).not.toBeNull();
+      expect(graph, `${identity.identity}: graph is rendered`).not.toBeNull();
+      expect(inspector.y, `${identity.identity}: inspector precedes graph`).toBeLessThan(graph.y);
+    }
+  }
+  if (identity.identity.startsWith("workflow-source--missing-source--")) {
+    await expect(page.getByRole("heading", { name: "Source not found" })).toBeVisible();
+  }
+  if (identity.identity.startsWith("workflow-source--unreadable-source--")) {
+    await expect(page.getByRole("heading", { name: "Source is unreadable" })).toBeVisible();
+  }
+  if (identity.identity.startsWith("workflow-")) {
+    await expect(page.getByRole("link", { name: "Workflows", exact: true }).first()).toHaveAttribute("aria-current", "page");
+  }
   if (identity.identity === "run-map--blocked-causal--compact") {
     const inspector = await page.locator(".run-inspector").boundingBox();
     const graph = await page.locator(".run-map__graph-card").boundingBox();
@@ -306,6 +336,16 @@ test("experience drill-down stays actionable and bounded in a real browser", asy
   test.skip(action !== "smoke" || !experienceMode);
   test.setTimeout(90_000);
   await page.setViewportSize({ width: 1440, height: 1024 });
+
+  await page.goto(`${origin}/workflows`);
+  const workflowCatalog = page.getByRole("list", { name: "Workflow definitions" });
+  await expect(workflowCatalog.locator(":scope > li")).toHaveCount(14);
+  await expect(workflowCatalog.locator("a[href^='/runs/']")).toHaveCount(0);
+  await page.getByRole("link", { name: "fix", exact: true }).click();
+  await expect(page).toHaveURL(/\/workflows\/fix$/);
+  await expect(page.getByRole("heading", { level: 1, name: "fix" })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("heading", { level: 1, name: "Workflows" })).toBeVisible();
 
   await page.goto(`${origin}/runs/run-gamma`);
   await page.getByRole("button", { name: "Fleet" }).click();

@@ -98,6 +98,9 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             "sessions": ["populated", "empty", "diagnostic"],
             "session-graph": ["populated", "diagnostic"],
             "friction": ["populated", "empty"],
+            "workflow-catalog": ["populated", "empty"],
+            "workflow-detail": ["unreadable", "complex-loop"],
+            "workflow-source": ["missing-source", "unreadable-source"],
         }
         expected = {
             "{0}--{1}--{2}".format(view, state, breakpoint)
@@ -108,7 +111,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         self.assertEqual("orchflows.view-manifest.v1", manifest["schema"])
         self.assertEqual({"wide": [1440, 1024], "compact": [1024, 768]}, manifest["breakpoints"])
         self.assertEqual(expected, {item["identity"] for item in manifest["views"]})
-        self.assertEqual(48, len(manifest["views"]))
+        self.assertEqual(60, len(manifest["views"]))
         for item in manifest["views"]:
             self.assertEqual(item["identity"], "{view}--{state}--{breakpoint}".format(**item))
             self.assertTrue(item["path"].startswith("/"))
@@ -136,6 +139,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         app = (ROOT / "web" / "src" / "ObserveApp.tsx").read_text(encoding="utf-8")
         shell = (ROOT / "web" / "src" / "app" / "shell" / "Shell.tsx").read_text(encoding="utf-8")
         composition = (ROOT / "web" / "src" / "app" / "shell" / "featureCatalog.ts").read_text(encoding="utf-8")
+        application_catalog = (ROOT / "web" / "src" / "app" / "catalog.ts").read_text(encoding="utf-8")
         harness = (ROOT / "tools" / "ui_frontend.py").read_text(encoding="utf-8")
         experience_harness = (ROOT / "web" / "src" / "smoke.spec.ts").read_text(encoding="utf-8")
         self.assertEqual('import { Shell } from "./app/shell/Shell";\n\nexport function ObserveApp() {\n  return <Shell />;\n}\n', app)
@@ -153,6 +157,8 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             self.assertFalse(removed.exists(), str(removed))
         self.assertNotIn("import.meta.glob", composition)
         self.assertEqual(6, composition.count("defineFeature({"))
+        self.assertEqual(3, application_catalog.count("const workflow"))
+        self.assertIn('navigation: { label: "Workflows", home: { fixture: "" } }', application_catalog)
         for command in ('add_parser("capture")', 'add_parser("audit")', 'add_parser("diff")'):
             self.assertIn(command, harness)
         for scenario in ("200% zoom-equivalent reflow", "forced-colors: active", "prefers-reduced-motion: reduce", "expectKeyboardParity"):

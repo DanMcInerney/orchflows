@@ -127,9 +127,10 @@ invent a second phase taxonomy.
 ## Rendered-experience admission
 
 `docs/ui/view-manifest.json` is the canonical `orchflows.view-manifest.v1`
-inventory. It declares 48 deterministic identities across Now, Workflows run
-maps, ticket details, Sessions, session graphs, and Friction at 1440×1024 and
-1024×768. `tools/ui_frontend.py capture`, `audit`, and `diff` consume that
+inventory. It declares 60 deterministic identities across Now, the Workflows
+definition catalog, definition detail and contained source states, preserved
+Workflows run maps and ticket details, Sessions, session graphs, and Friction
+at 1440×1024 and 1024×768. `tools/ui_frontend.py capture`, `audit`, and `diff` consume that
 manifest. Capture writes ephemeral evidence only; audit applies WCAG 2.2 AA
 rules plus 200-percent zoom-equivalent reflow, forced-colors, reduced-motion,
 and keyboard-reach parity to every identity; diff reports `no-golden`
