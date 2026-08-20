@@ -18,6 +18,10 @@ export interface SessionDetail {
   agents: SessionAgent[];
 }
 
+export interface SessionGraphModel {
+  session: SessionDetail | null;
+}
+
 export type ConnectionProvenance =
   | "session root"
   | "spawn depth 1"
@@ -167,3 +171,5 @@ export function isSessionDetail(value: unknown): value is SessionDetail {
 }
 
 export { SESSION_NODE_ID };
+
+export const model = { sessionTopology, isSessionDetail };

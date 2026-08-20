@@ -3,6 +3,7 @@ import * as now from "./now";
 import * as runMap from "./run-map";
 import * as inspector from "./inspector";
 import * as sessions from "./sessions";
+import * as sessionGraph from "./session-graph";
 
 const nowSources = import.meta.glob("./now/**/*.{ts,tsx}", {
   eager: true,
@@ -23,6 +24,12 @@ const inspectorSources = import.meta.glob("./inspector/**/*.{ts,tsx}", {
 }) as Record<string, string>;
 
 const sessionsSources = import.meta.glob("./sessions/**/*.{ts,tsx}", {
+  eager: true,
+  query: "?raw",
+  import: "default",
+}) as Record<string, string>;
+
+const sessionGraphSources = import.meta.glob("./session-graph/**/*.{ts,tsx}", {
   eager: true,
   query: "?raw",
   import: "default",
@@ -107,6 +114,25 @@ describe("feature package boundaries", () => {
 
     for (const source of Object.values(sessionsSources)) {
       expect(source).not.toMatch(/from\s+["'][^"']*(?:\.\.\/\.\.\/(?:api|app|state)|\.\.\/(?:now|run-map|inspector|session-graph|friction))[\w\W]*?["']/);
+    }
+  });
+
+  it("closes session-graph behind its session-correlated data contract", async () => {
+    expect(Object.keys(sessionGraph)).toEqual(expect.arrayContaining([
+      "route", "schema", "request", "polling", "project", "data",
+      "model", "fixtures", "styles", "loadView",
+    ]));
+    const matched = sessionGraph.route.match({ pathname: "/sessions/session%20alpha", search: "?fixture=diagnostic", hash: "" });
+    expect(matched).toEqual({ session: "session alpha", fixture: "diagnostic" });
+    expect(sessionGraph.route.build(matched!)).toBe("/sessions/session%20alpha?fixture=diagnostic");
+    expect(sessionGraph.request({ session: "session alpha", fixture: "diagnostic" })).toEqual({
+      url: "/api/v1/views/session-graph?session=session+alpha",
+    });
+    expect(() => sessionGraph.schema({ schema: "orchflows.sessions.v1", sessions: {} })).toThrow();
+    expect((await sessionGraph.loadView()).default).toBeTypeOf("function");
+
+    for (const source of Object.values(sessionGraphSources)) {
+      expect(source).not.toMatch(/from\s+["'][^"']*(?:\.\.\/\.\.\/(?:api|app|state)|\.\.\/(?:now|run-map|inspector|sessions|friction))[\w\W]*?["']/);
     }
   });
 });
