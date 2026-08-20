@@ -57,6 +57,75 @@ class TestRoutingBenchRun(unittest.TestCase):
             if any(str(part).endswith("install.py") for part in command)
         ]
 
+    def test_case_requires_role_and_exact_skill(self):
+        cases = [
+            {
+                "id": "matching-child",
+                "prompt": "matching child",
+                "expected": "build",
+                "note": "",
+                "required_role": "worker",
+                "required_skill": "orch-build",
+            },
+            {
+                "id": "parent-only",
+                "prompt": "parent only",
+                "expected": "build",
+                "note": "",
+                "required_role": "worker",
+                "required_skill": "orch-build",
+            },
+        ]
+        transcripts = {
+            "matching child": [
+                _launch("worker-1", "orch-worker", "Apply orch-build exactly"),
+                {
+                    "type": "assistant",
+                    "parent_tool_use_id": "worker-1",
+                    "message": {
+                        "content": [
+                            {
+                                "type": "tool_use",
+                                "id": "primary-1",
+                                "name": "Skill",
+                                "input": {"skill": "orch-build"},
+                            }
+                        ]
+                    },
+                },
+            ],
+            "parent only": [_skill_use("orch-build")],
+        }
+
+        def _fake_run(command, **kwargs):
+            self.calls.append((list(command), kwargs))
+            stdout = ""
+            if "-p" in command:
+                prompt = command[command.index("-p") + 1]
+                stdout = _stream(transcripts[prompt])
+            return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+        with mock.patch.object(routing_live.subprocess, "run", side_effect=_fake_run):
+            records = routing_live.run_benchmark(
+                adapter_sets=("all",),
+                cases=cases,
+                repeat=1,
+                max_turns=3,
+                timeout=5,
+                claude_invocation=["claude"],
+                root=self.root,
+            )
+
+        by_case = {record["case"]: record for record in records}
+        self.assertTrue(by_case["matching-child"]["match"])
+        self.assertEqual(
+            "passed", by_case["matching-child"]["execution_conformance"]["status"]
+        )
+        self.assertFalse(by_case["parent-only"]["match"])
+        self.assertEqual(
+            "failed", by_case["parent-only"]["execution_conformance"]["status"]
+        )
+
     def test_one_graded_launch_per_case_per_adapter_set_per_repeat(self):
         records = self._run(repeat=2)
         self.assertEqual(len(self.CASES) * 2 * 2, len(records))

@@ -266,12 +266,16 @@ def grade_transcript(
 ) -> dict:
     events = list(_json_events(stdout))
     observed, first_event, turns = _decide(events)
+    execution_conformance = _execution_conformance(
+        events, expected_role, expected_skill
+    )
+    if observed == UNROUTED and execution_conformance["status"] == "passed":
+        observed = _classify_skill(expected_skill)
+        first_event = f"ChildSkill({expected_skill})"
     return {
         "observed": observed,
         "first_event": first_event,
         "turns": turns,
         "cost_usd": _stream_cost(events),
-        "execution_conformance": _execution_conformance(
-            events, expected_role, expected_skill
-        ),
+        "execution_conformance": execution_conformance,
     }
