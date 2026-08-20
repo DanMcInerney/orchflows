@@ -132,6 +132,21 @@ def template_adapter_body(name: str, lib_template_dir: Path, frontmatter: str) -
     )
 
 
+def codex_role_adapter_body(name: str, role: str, lib_skill_md: Path) -> str:
+    """Explicit Codex dispatch gate for one role-bearing named skill."""
+
+    agent_type = f"orch_{role}"
+    return (
+        f"`{name}` requires the matching role `orch-{role}`. If this context "
+        f"is already that established child, read {lib_skill_md} and execute "
+        "the exact named skill directly; never redispatch it. Otherwise root "
+        f"must dispatch one child with agent_type `{agent_type}`, passing the "
+        "complete packet and exact named skill; refuse execution when that "
+        "matching role child is missing or mismatched; there is no inline "
+        "fallback.\n"
+    )
+
+
 # --- host role agents, parsed from the canonical table -----------------
 
 

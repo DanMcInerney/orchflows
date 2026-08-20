@@ -112,6 +112,47 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         for anchor in ("exact named skill", "directly", "never redispatch"):
             self.assertIn(anchor, role_agent)
 
+    def test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".codex").mkdir()
+            with patch.object(install.Path, "home", return_value=home), patch.object(
+                install.shutil, "which", return_value="codex"
+            ):
+                plan = install.build_plan("user", None)
+
+        prompts = {dest.stem: content for dest, content in plan.codex_prompts}
+        redirects = {dest.parent.name: content for dest, content in plan.codex_skills}
+        for name, role in self.WORKFLOW_ROLES.items():
+            with self.subTest(prompt=name):
+                prompt = prompts[name]
+                for anchor in (
+                    f"agent_type `orch_{role}`",
+                    f"`{name}`",
+                    "complete packet",
+                    "matching role",
+                    "directly",
+                    "refuse",
+                ):
+                    self.assertIn(anchor, prompt)
+                self.assertNotIn("automatic binding", prompt)
+                self.assertNotIn("root guard", prompt)
+                self.assertNotIn("hook", prompt.lower())
+
+        for name in {"orch-spec", "orch-build"}:
+            with self.subTest(redirect=name):
+                content = redirects[name]
+                role = self.WORKFLOW_ROLES[name]
+                self.assertIn(f"agent_type `orch_{role}`", content)
+                self.assertIn("matching role", content)
+                self.assertIn("refuse", content)
+
+        role_agent = install.render_codex_agent(
+            "orch-planner", install.load_role_profiles()["orch-planner"]
+        )
+        for anchor in ("exact named skill", "directly", "never redispatch", "mismatched"):
+            self.assertIn(anchor, role_agent)
+
 
 if __name__ == "__main__":
     unittest.main()
