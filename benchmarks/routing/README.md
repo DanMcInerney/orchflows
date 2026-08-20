@@ -15,11 +15,11 @@ Opt-in and usage-consuming: one isolated live `claude` session per case,
 set and repeat (the login must survive isolation; `--max-budget-usd` caps
 spend). A pre-route failure grades `error`, outside the rate; final text
 with nothing route-bearing is `answer`; a `by-name/<name>/SKILL.md` read is
-`named:<name>`.
+`named:<name>`. A direct role-bearing case names `required_role` and exact
+`required_skill`; it matches only for one matching-child execution and none at root.
 
 **Decision rule.** Four ships if its misroute rate ≤ all's + 0.05, over
 repeats enough to beat the spread. **Verdict 2026-08-16** (results file):
 all 0.500, four 0.633 — four fails; `all` stays. Decisive alone: named 5/5
-vs 0/5 — under four no session used the by-name fallback. Caveat: the temp
-repo is empty, so ticket/fix prompts naming repo files graded `answer` in
-both sets (0/20); give the repo a fixture tree before re-measuring those.
+vs 0/5 — under four no session used the by-name fallback. Caveat: the temp repo
+is empty, so ticket/fix file prompts graded `answer` in both sets (0/20).

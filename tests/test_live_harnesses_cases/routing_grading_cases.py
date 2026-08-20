@@ -9,6 +9,7 @@ ROUTING_DIR = Path(__file__).resolve().parents[2] / "benchmarks" / "routing"
 ROUTING_CASES = ROUTING_DIR / "cases.json"
 ROUTE_CLASSES = ("answer", "ticket", "fix", "build", "named")
 CASE_KEYS = {"id", "prompt", "expected", "note", "distractor"}
+ROLE_SKILL_KEYS = {"required_role", "required_skill"}
 # A deleted or never-routed name whose surface words a prompt can borrow
 # without the prompt's correct route changing.
 LURE_WORDS = ("diagnose", "triage", "review", "worklog")
@@ -30,7 +31,12 @@ class TestRoutingCases(unittest.TestCase):
         self.assertIsInstance(self.cases, list)
         for case in self.cases:
             with self.subTest(case=case.get("id")):
-                self.assertEqual(CASE_KEYS, set(case))
+                expected_keys = (
+                    CASE_KEYS | ROLE_SKILL_KEYS
+                    if case["expected"] == "build"
+                    else CASE_KEYS
+                )
+                self.assertEqual(expected_keys, set(case))
                 self.assertIsInstance(case["distractor"], bool)
                 for key in ("id", "prompt", "expected", "note"):
                     self.assertTrue(case[key].strip(), key)
@@ -165,6 +171,19 @@ class TestRoutingGrading(unittest.TestCase):
         self.assertEqual("failed", graded["status"])
         self.assertIn("missing_matching_role_child", graded["reasons"])
         self.assertEqual(0, graded["primary_skill_executions"])
+
+    def test_root_primary_skill_fails_even_with_matching_child_execution(self):
+        graded = self._conformance(
+            [
+                _skill_use("orch-build"),
+                _launch("role-1", "orch-worker", "Apply orch-build exactly"),
+                _child_skill("role-1", "orch-build"),
+            ]
+        )
+
+        self.assertEqual("failed", graded["status"])
+        self.assertIn("root_primary_skill_execution", graded["reasons"])
+        self.assertEqual(1, graded["root_primary_skill_executions"])
 
     def test_matching_role_child_requires_exact_skill(self):
         wrong_skill = [
@@ -415,6 +434,8 @@ class TestRoutingCaseLoader(unittest.TestCase):
         self.assertEqual(2, len(build), [case["id"] for case in build])
         for case in build:
             self.assertIn("orch-build", case["prompt"])
+            self.assertEqual("worker", case["required_role"])
+            self.assertEqual("orch-build", case["required_skill"])
         for case in cases:
             if case["expected"] != "build":
                 self.assertNotIn("orch-build", case["prompt"], case["id"])
@@ -442,4 +463,14 @@ class TestRoutingCaseLoader(unittest.TestCase):
     def test_a_named_route_without_a_name_is_refused(self):
         payload = [{"id": "a", "prompt": "p", "expected": "named:", "note": "n"}]
         with self.assertRaisesRegex(ValueError, "named"):
+            routing_live.load_cases(self._write(payload))
+
+    def test_a_role_bearing_route_requires_its_exact_role_skill_pair(self):
+        payload = [{"id": "a", "prompt": "p", "expected": "build", "note": "n"}]
+        with self.assertRaisesRegex(ValueError, "role/skill"):
+            routing_live.load_cases(self._write(payload))
+
+        payload[0]["required_role"] = "planner"
+        payload[0]["required_skill"] = "orch-spec"
+        with self.assertRaisesRegex(ValueError, "role/skill"):
             routing_live.load_cases(self._write(payload))

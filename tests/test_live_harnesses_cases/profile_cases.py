@@ -7,16 +7,18 @@ from ._support import *
 
 class TestClaudeLiveProfiles(unittest.TestCase):
     def test_role_skill_topology_is_enforced(self):
-        agent_type = "orch-worker-e2e-42"
+        agent_type = "orch-worker"
+        skill_name = "orch-profile-probe-worker-42"
         sentinel = "ORCH_SKILL_EXECUTED:orch-build"
         matching = [
             {"type": "system", "subtype": "init", "agents": [agent_type]},
-            _launch("worker-1", agent_type),
-            _reply("worker-1", sentinel),
+            _skill_use(skill_name, "skill-1"),
+            _reply("skill-1", sentinel),
         ]
 
         result = claude_live._analyze_run(
-            _stream(matching), returncode=0, expected={agent_type: sentinel}
+            _stream(matching), returncode=0, expected={agent_type: sentinel},
+            expected_skills={skill_name: agent_type},
         )
         self.assertTrue(result["passed"])
         self.assertEqual("enforced", result["role_skill_topology"]["mode"])
@@ -24,7 +26,8 @@ class TestClaudeLiveProfiles(unittest.TestCase):
 
         parent_only = matching[:2] + [_parent_text(sentinel)]
         result = claude_live._analyze_run(
-            _stream(parent_only), returncode=0, expected={agent_type: sentinel}
+            _stream(parent_only), returncode=0, expected={agent_type: sentinel},
+            expected_skills={skill_name: agent_type},
         )
         self.assertFalse(result["passed"])
         self.assertEqual("failed", result["role_skill_topology"]["profile_selection"])
@@ -44,10 +47,41 @@ class TestClaudeLiveProfiles(unittest.TestCase):
             self.assertEqual(configured[agent_type]["model"], definition["model"])
             self.assertEqual(configured[agent_type].get("effort"), definition.get("effort"))
 
+    def test_builds_generated_role_bound_skill_adapters(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            mapping = claude_live._build_probe_adapters(
+                claude_live.PROFILE_NAMES, Path(tmp), pid=42
+            )
+
+            self.assertEqual(
+                {
+                    "orch-profile-probe-planner-42": "orch-planner",
+                    "orch-profile-probe-worker-42": "orch-worker",
+                },
+                mapping,
+            )
+            for skill_name, agent_type in mapping.items():
+                content = (
+                    Path(tmp) / "skills" / skill_name / "SKILL.md"
+                ).read_text(encoding="utf-8")
+                frontmatter, body = claude_live.install.split_frontmatter(content)
+                self.assertEqual(
+                    "fork", claude_live.install.frontmatter_field(frontmatter, "context")
+                )
+                self.assertEqual(
+                    agent_type,
+                    claude_live.install.frontmatter_field(frontmatter, "agent"),
+                )
+                self.assertNotIn("ORCH_PROFILE_LOADED:", body)
+
     def test_accepts_exact_registered_launches_and_forwarded_sentinels(self):
         expected = {
-            "orch-planner-e2e-42": "SENTINEL:planner",
-            "orch-worker-e2e-42": "SENTINEL:worker",
+            "orch-planner": "SENTINEL:planner",
+            "orch-worker": "SENTINEL:worker",
+        }
+        expected_skills = {
+            "orch-profile-probe-planner-42": "orch-planner",
+            "orch-profile-probe-worker-42": "orch-worker",
         }
         events = [
             {
@@ -56,11 +90,12 @@ class TestClaudeLiveProfiles(unittest.TestCase):
                 "agents": list(expected),
             }
         ]
-        for index, (agent_type, sentinel) in enumerate(expected.items()):
+        for index, (skill_name, agent_type) in enumerate(expected_skills.items()):
             tool_id = f"tool-{index}"
+            sentinel = expected[agent_type]
             events.extend(
                 [
-                    _launch(tool_id, agent_type),
+                    _skill_use(skill_name, tool_id),
                     {
                         "type": "assistant",
                         "parent_tool_use_id": tool_id,
@@ -76,6 +111,7 @@ class TestClaudeLiveProfiles(unittest.TestCase):
             _stream(events),
             returncode=0,
             expected=expected,
+            expected_skills=expected_skills,
         )
 
         self.assertTrue(result["passed"])
@@ -89,7 +125,8 @@ class TestClaudeLiveProfiles(unittest.TestCase):
         )
 
     def test_rejects_duplicate_launches(self):
-        agent_type = "orch-worker-e2e-42"
+        agent_type = "orch-worker"
+        skill_name = "orch-profile-probe-worker-42"
         sentinel = "SENTINEL:worker"
         events = [
             {"type": "system", "subtype": "init", "agents": [agent_type]},
@@ -101,8 +138,8 @@ class TestClaudeLiveProfiles(unittest.TestCase):
                         {
                             "type": "tool_use",
                             "id": tool_id,
-                            "name": "Agent",
-                            "input": {"subagent_type": agent_type},
+                            "name": "Skill",
+                            "input": {"skill": skill_name},
                         }
                         for tool_id in ("tool-1", "tool-2")
                     ]
@@ -115,19 +152,40 @@ class TestClaudeLiveProfiles(unittest.TestCase):
             _stream(events),
             returncode=0,
             expected={agent_type: sentinel},
+            expected_skills={skill_name: agent_type},
         )
 
         self.assertFalse(result["passed"])
-        self.assertEqual([agent_type], result["invalid_launches"])
+        self.assertEqual([skill_name], result["invalid_launches"])
+
+    def test_explicit_agent_launch_cannot_substitute_for_generated_adapter(self):
+        agent_type = "orch-worker"
+        skill_name = "orch-profile-probe-worker-42"
+        sentinel = "SENTINEL:worker"
+        events = [
+            {"type": "system", "subtype": "init", "agents": [agent_type]},
+            _launch("worker-1", agent_type),
+            _reply("worker-1", sentinel),
+        ]
+
+        result = claude_live._analyze_run(
+            _stream(events), 0, {agent_type: sentinel}, {skill_name: agent_type}
+        )
+
+        self.assertFalse(result["passed"])
+        self.assertEqual(1, result["manual_root_launches"])
 
     def test_timeout_returns_structured_failure(self):
-        expected = {"orch-worker-e2e-42": "SENTINEL:worker"}
+        expected = {"orch-worker": "SENTINEL:worker"}
+        expected_skills = {"orch-profile-probe-worker-42": "orch-worker"}
         expired = subprocess.TimeoutExpired(
             ["claude"], 1, output="not-json", stderr="probe timed out"
         )
 
         with mock.patch.object(claude_live.subprocess, "run", side_effect=expired):
-            result, stderr = claude_live._run_probe(["claude"], 1, expected)
+            result, stderr = claude_live._run_probe(
+                ["claude"], 1, expected, expected_skills
+            )
 
         self.assertFalse(result["passed"])
         self.assertTrue(result["timed_out"])

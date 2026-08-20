@@ -182,10 +182,16 @@ def _execution_conformance(
         parent_id == primary_parent and skill == expected_skill
         for parent_id, _depth, skill in skill_uses
     )
+    root_primary = sum(
+        parent_id is None and skill == expected_skill
+        for parent_id, _depth, skill in skill_uses
+    )
     all_child_primary = sum(
         parent_id is not None and skill == expected_skill
         for parent_id, _depth, skill in skill_uses
     )
+    if root_primary:
+        reasons.append("root_primary_skill_execution")
     if direct_primary != 1:
         reasons.append("missing_exact_primary_skill" if direct_primary == 0
                        else "duplicate_primary_skill")
@@ -202,6 +208,7 @@ def _execution_conformance(
         "status": "failed" if reasons else "passed",
         "reasons": reasons,
         "primary_skill_executions": all_child_primary,
+        "root_primary_skill_executions": root_primary,
         "helper_launches": len(primary_helpers),
     }
 

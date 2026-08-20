@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Run an opt-in, usage-consuming Claude Code subagent profile probe.
 
-The probe defines unique session-scoped copies of the installer-rendered
-planner and worker profiles. It launches each through Claude's Agent
-tool, validates the exact launch set and private child sentinels, and leaves no
-agent files or persisted session behind.
+The probe renders session-scoped skill adapters through the production
+frontmatter transform. Each adapter selects an installer-rendered planner or
+worker profile through ``context: fork`` plus ``agent``. The transcript must
+show the parent invoking the skill and the profile-only sentinel returning from
+that skill's child context; no explicit Agent launch can satisfy the probe.
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -58,7 +60,6 @@ def _build_probe_agents(
     selected: tuple[str, ...] | list[str], pid: int | None = None
 ) -> tuple[dict[str, dict], dict[str, str], dict[str, dict]]:
     profiles = install.load_role_profiles()
-    probe_pid = os.getpid() if pid is None else pid
     agents = {}
     expected = {}
     configured = {}
@@ -67,12 +68,12 @@ def _build_probe_agents(
         metadata, instructions = _parse_rendered_agent(
             install.render_claude_agent(profile_name, profile)
         )
-        agent_type = f"{metadata['name']}-e2e-{probe_pid}"
+        agent_type = metadata["name"]
         if _CLAUDE_AGENT_NAME_RE.fullmatch(agent_type) is None:
             raise ValueError(f"invalid Claude probe agent name: {agent_type}")
         sentinel = f"ORCH_PROFILE_LOADED:{profile_name}"
         definition = {
-            "description": f"Live profile probe for {profile_name}; use only when explicitly named.",
+            "description": f"Live profile probe for {profile_name}; selected only by its probe skill.",
             "prompt": (
                 instructions
                 + f"\n\nFor the exact input PROFILE_PROBE, return exactly {sentinel} and do not use tools."
@@ -92,6 +93,39 @@ def _build_probe_agents(
     return agents, expected, configured
 
 
+def _build_probe_adapters(
+    selected: tuple[str, ...] | list[str], config_dir: Path, pid: int | None = None
+) -> dict[str, str]:
+    """Write generated role-bearing adapters and return skill -> agent.
+
+    The sentinel lives only in the role agent prompt. The skill body asks for
+    that sentinel without spelling it, so inline execution or the wrong role
+    cannot accidentally pass.
+    """
+
+    probe_pid = os.getpid() if pid is None else pid
+    skill_agents = {}
+    for profile_name in selected:
+        role = profile_name.removeprefix("orch-")
+        skill_name = f"orch-profile-probe-{role}-{probe_pid}"
+        source_frontmatter = (
+            "---\n"
+            f"name: {skill_name}\n"
+            f"description: Exercise the generated {role} role adapter.\n"
+            f"role: {role}\n"
+            "---\n"
+        )
+        adapter = install.host_legal_frontmatter(source_frontmatter) + (
+            "\nReturn exactly the ORCH_PROFILE_LOADED sentinel supplied by your "
+            "role-agent instructions. Do not use tools.\n"
+        )
+        destination = config_dir / "skills" / skill_name / "SKILL.md"
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(adapter, encoding="utf-8")
+        skill_agents[skill_name] = profile_name
+    return skill_agents
+
+
 def _json_events(stdout: str):
     for line in stdout.splitlines():
         try:
@@ -102,13 +136,20 @@ def _json_events(stdout: str):
             yield event
 
 
-def _analyze_run(stdout: str, returncode: int, expected: dict[str, str]) -> dict:
+def _analyze_run(
+    stdout: str,
+    returncode: int,
+    expected: dict[str, str],
+    expected_skills: dict[str, str],
+) -> dict:
     registered = set()
-    launch_counts = Counter()
-    tool_agent_types = {}
+    skill_counts = Counter()
+    tool_skills = {}
     child_text = defaultdict(list)
     reported_models = defaultdict(set)
     unexpected_child_tools = 0
+    manual_root_launches = 0
+    root_text = []
 
     for event in _json_events(stdout):
         if event.get("type") == "system" and event.get("subtype") == "init":
@@ -122,17 +163,32 @@ def _analyze_run(stdout: str, returncode: int, expected: dict[str, str]) -> dict
             for block in blocks:
                 if not isinstance(block, dict):
                     continue
-                if block.get("type") != "tool_use" or block.get("name") not in {"Agent", "Task"}:
+                if block.get("type") == "text":
+                    root_text.append(block.get("text", ""))
                     continue
-                agent_type = (block.get("input") or {}).get("subagent_type")
+                if block.get("type") != "tool_use":
+                    continue
+                if block.get("name") in {"Agent", "Task"}:
+                    manual_root_launches += 1
+                    continue
+                if block.get("name") not in {"Skill", "SlashCommand"}:
+                    continue
+                block_input = block.get("input") or {}
+                skill_name = None
+                for key in ("skill", "name", "command"):
+                    value = block_input.get(key)
+                    if isinstance(value, str) and value.strip():
+                        skill_name = value.split()[0].lstrip("/")
+                        break
                 tool_id = block.get("id")
-                if agent_type:
-                    launch_counts[agent_type] += 1
-                if agent_type and tool_id:
-                    tool_agent_types[tool_id] = agent_type
+                if skill_name:
+                    skill_counts[skill_name] += 1
+                if skill_name and tool_id:
+                    tool_skills[tool_id] = skill_name
             continue
 
-        agent_type = tool_agent_types.get(parent_tool_use_id)
+        skill_name = tool_skills.get(parent_tool_use_id)
+        agent_type = expected_skills.get(skill_name) if skill_name else None
         if agent_type is None:
             continue
         if message.get("model"):
@@ -147,9 +203,9 @@ def _analyze_run(stdout: str, returncode: int, expected: dict[str, str]) -> dict
 
     missing_registrations = sorted(set(expected) - registered)
     invalid_launches = sorted(
-        agent_type for agent_type in expected if launch_counts[agent_type] != 1
+        skill_name for skill_name in expected_skills if skill_counts[skill_name] != 1
     )
-    unexpected_launches = sorted(set(launch_counts) - set(expected))
+    unexpected_launches = sorted(set(skill_counts) - set(expected_skills))
     missing_sentinels = sorted(
         agent_type
         for agent_type, sentinel in expected.items()
@@ -162,34 +218,39 @@ def _analyze_run(stdout: str, returncode: int, expected: dict[str, str]) -> dict
         and not unexpected_launches
         and not missing_sentinels
         and unexpected_child_tools == 0
+        and manual_root_launches == 0
+        and not any(sentinel in "\n".join(root_text) for sentinel in expected.values())
     )
     return {
         "passed": passed,
         "returncode": returncode,
         "registered_agent_types": sorted(registered & set(expected)),
         "missing_registrations": missing_registrations,
-        "launch_counts": {agent_type: launch_counts[agent_type] for agent_type in expected},
+        "skill_invocation_counts": {
+            skill_name: skill_counts[skill_name] for skill_name in expected_skills
+        },
         "invalid_launches": invalid_launches,
         "unexpected_launches": unexpected_launches,
         "missing_sentinels": missing_sentinels,
         "unexpected_child_tools": unexpected_child_tools,
+        "manual_root_launches": manual_root_launches,
         "reported_models": {
             agent_type: sorted(reported_models[agent_type]) for agent_type in expected
         },
         "role_skill_topology": {
             "mode": "enforced",
             "profile_selection": "verified" if passed else "failed",
-            "binding": "context:fork+agent",
+            "binding": "generated context:fork+agent adapter",
         },
     }
 
 
-def _parent_prompt(agent_types: list[str]) -> str:
-    mentions = "\n".join(f"@{agent_type} PROFILE_PROBE" for agent_type in agent_types)
+def _parent_prompt(skill_names: list[str]) -> str:
+    invocations = "\n".join(f"/{skill_name}" for skill_name in skill_names)
     return (
-        "Launch exactly one foreground subagent for each @mention below. Pass each one exactly "
-        "PROFILE_PROBE, use no other agents, wait for all results, and return their raw results.\n"
-        + mentions
+        "Invoke each exact skill below once. Do not launch agents explicitly; each skill's "
+        "generated adapter owns its child binding. Wait for all results and return them raw.\n"
+        + invocations
     )
 
 
@@ -199,7 +260,13 @@ def _captured_text(value: str | bytes | None) -> str:
     return value or ""
 
 
-def _run_probe(command: list[str], timeout: int, expected: dict[str, str]) -> tuple[dict, str]:
+def _run_probe(
+    command: list[str],
+    timeout: int,
+    expected: dict[str, str],
+    expected_skills: dict[str, str],
+    env: dict | None = None,
+) -> tuple[dict, str]:
     try:
         completed = subprocess.run(
             command,
@@ -207,14 +274,19 @@ def _run_probe(command: list[str], timeout: int, expected: dict[str, str]) -> tu
             text=True,
             encoding="utf-8",
             errors="replace",
+            env=env,
             timeout=timeout,
             check=False,
         )
-        result = _analyze_run(completed.stdout, completed.returncode, expected)
+        result = _analyze_run(
+            completed.stdout, completed.returncode, expected, expected_skills
+        )
         result["timed_out"] = False
         return result, completed.stderr
     except subprocess.TimeoutExpired as exc:
-        result = _analyze_run(_captured_text(exc.stdout), 124, expected)
+        result = _analyze_run(
+            _captured_text(exc.stdout), 124, expected, expected_skills
+        )
         result["timed_out"] = True
         return result, _captured_text(exc.stderr)
 
@@ -229,31 +301,37 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     selected = tuple(args.profile or PROFILE_NAMES)
 
-    agents, expected, configured = _build_probe_agents(selected)
-    agent_types = list(expected)
     claude_invocation = _claude_command()
-    command = claude_invocation + [
-        "-p",
-        _parent_prompt(agent_types),
-        "--output-format",
-        "stream-json",
-        "--verbose",
-        "--forward-subagent-text",
-        "--no-session-persistence",
-        "--max-budget-usd",
-        str(args.max_budget_usd),
-        "--model",
-        args.parent_model,
-        "--effort",
-        args.parent_effort,
-        "--tools",
-        "Agent",
-        "--agents",
-        json.dumps(agents, separators=(",", ":")),
-        "--allowedTools",
-        *(f"Agent({agent_type})" for agent_type in agent_types),
-    ]
-    result, stderr = _run_probe(command, args.timeout, expected)
+    with tempfile.TemporaryDirectory(prefix="orchflows-claude-profile-") as tmp:
+        config_dir = Path(tmp) / ".claude"
+        agents, expected, configured = _build_probe_agents(selected)
+        expected_skills = _build_probe_adapters(selected, config_dir)
+        env = os.environ.copy()
+        env["CLAUDE_CONFIG_DIR"] = str(config_dir)
+        command = claude_invocation + [
+            "-p",
+            _parent_prompt(list(expected_skills)),
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--forward-subagent-text",
+            "--no-session-persistence",
+            "--max-budget-usd",
+            str(args.max_budget_usd),
+            "--model",
+            args.parent_model,
+            "--effort",
+            args.parent_effort,
+            "--tools",
+            "Skill",
+            "--agents",
+            json.dumps(agents, separators=(",", ":")),
+            "--allowedTools",
+            *(f"Skill({skill_name})" for skill_name in expected_skills),
+        ]
+        result, stderr = _run_probe(
+            command, args.timeout, expected, expected_skills, env=env
+        )
     result.update(
         {
             "claude": claude_invocation[-1],
