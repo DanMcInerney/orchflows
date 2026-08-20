@@ -5,6 +5,7 @@ import {
   CatalogError,
   defineCatalog,
   defineFeature,
+  featureCatalog,
   matchCatalog,
   type FeatureSpec,
   type RouteLocation,
@@ -83,6 +84,34 @@ describe("feature catalog", () => {
       itemFeature("workflow-detail", 10, { item: "shared" }),
       itemFeature("workflow-source", 20, { item: "shared" }),
     ]))).toBe("duplicate-href");
+  });
+
+  it("keeps generic catalog validation feature-blind", () => {
+    const workflowDetail = itemFeature("workflow-detail", 10);
+    const runMap = { ...workflowDetail, id: "run-map" as const };
+
+    expect(defineCatalog([runMap])).toEqual([runMap]);
+  });
+
+  it("owns the complete application route and navigation catalog literally", () => {
+    expect(featureCatalog.map((entry) => entry.id)).toEqual([
+      "now",
+      "workflows",
+      "run-map",
+      "workflow-detail",
+      "workflow-source",
+      "ticket",
+      "create",
+      "sessions",
+      "session-graph",
+      "friction",
+    ]);
+
+    const visibleRail = featureCatalog.flatMap((entry) => {
+      if (entry.kind === "disabled") return [entry.navigation.label];
+      return entry.navigation === false ? [] : [entry.navigation.label];
+    });
+    expect(visibleRail).toEqual(["Now", "Workflows", "Create", "Sessions", "Friction"]);
   });
 
   it("rejects noncanonical and non-round-tripping navigation homes", () => {

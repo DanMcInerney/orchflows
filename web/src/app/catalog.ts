@@ -4,6 +4,12 @@ import {
   lazy,
   type ComponentType,
 } from "react";
+import * as friction from "../features/friction";
+import * as inspector from "../features/inspector";
+import * as now from "../features/now";
+import * as runMap from "../features/run-map";
+import * as sessionGraph from "../features/session-graph";
+import * as sessions from "../features/sessions";
 import * as workflows from "../features/workflows";
 import { usePollingTransport } from "../shared/transport";
 import type {
@@ -147,10 +153,9 @@ export function defineFeature<K extends ViewId, Route, Payload, Model>(
 export function defineCatalog<const Entries extends readonly CatalogEntry[]>(
   entries: Entries,
 ): readonly CatalogEntry[] {
-  const applicationEntries = bindWorkflowDefinitions(entries);
   const identities = new Set<string>();
   const hrefs = new Set<string>();
-  for (const entry of applicationEntries) {
+  for (const entry of entries) {
     if (identities.has(entry.id)) {
       throw new CatalogError("duplicate-id", `Duplicate catalog identity: ${entry.id}`);
     }
@@ -163,51 +168,109 @@ export function defineCatalog<const Entries extends readonly CatalogEntry[]>(
       hrefs.add(entry.navigationHref);
     }
   }
-  return Object.freeze(applicationEntries);
+  return Object.freeze([...entries]);
 }
 
-const workflowList = defineFeature({
-  kind: "feature",
-  id: "workflows",
-  matchPriority: 10,
-  navigation: { label: "Workflows", home: { fixture: "" } },
-  activeNavigationId: "workflows",
-  ...workflows.list,
-});
-
-const workflowDetail = defineFeature({
-  kind: "feature",
-  id: "workflow-detail",
-  matchPriority: 20,
-  navigation: false,
-  activeNavigationId: "workflows",
-  ...workflows.detail,
-});
-
-const workflowSource = defineFeature({
-  kind: "feature",
-  id: "workflow-source",
-  matchPriority: 30,
-  navigation: false,
-  activeNavigationId: "workflows",
-  ...workflows.source,
-});
-
-function bindWorkflowDefinitions(entries: readonly CatalogEntry[]): CatalogEntry[] {
-  if (!entries.some((entry) => entry.id === "run-map")
-    || entries.some((entry) => entry.id === "workflows")) {
-    return [...entries];
-  }
-  return entries.flatMap((entry) => {
-    if (entry.id !== "run-map" || entry.kind !== "feature") return [entry];
-    const hiddenRunMap: FeatureRegistration = {
-      ...entry,
-      navigation: false,
-      navigationHref: null,
-    };
-    return [workflowList, hiddenRunMap, workflowDetail, workflowSource];
-  });
-}
+export const featureCatalog = defineCatalog([
+  defineFeature({
+    kind: "feature",
+    id: "now",
+    matchPriority: 10,
+    navigation: { label: "Now", home: { fixture: "" } },
+    activeNavigationId: "now",
+    route: now.route,
+    data: now.data,
+    loadView: now.loadView,
+  }),
+  defineFeature({
+    kind: "feature",
+    id: "workflows",
+    matchPriority: 10,
+    navigation: { label: "Workflows", home: { fixture: "" } },
+    activeNavigationId: "workflows",
+    route: workflows.list.route,
+    data: workflows.list.data,
+    loadView: workflows.list.loadView,
+  }),
+  defineFeature({
+    kind: "feature",
+    id: "run-map",
+    matchPriority: 10,
+    navigation: false,
+    activeNavigationId: "workflows",
+    route: runMap.route,
+    data: runMap.data,
+    loadView: runMap.loadView,
+  }),
+  defineFeature({
+    kind: "feature",
+    id: "workflow-detail",
+    matchPriority: 20,
+    navigation: false,
+    activeNavigationId: "workflows",
+    route: workflows.detail.route,
+    data: workflows.detail.data,
+    loadView: workflows.detail.loadView,
+  }),
+  defineFeature({
+    kind: "feature",
+    id: "workflow-source",
+    matchPriority: 30,
+    navigation: false,
+    activeNavigationId: "workflows",
+    route: workflows.source.route,
+    data: workflows.source.data,
+    loadView: workflows.source.loadView,
+  }),
+  defineFeature({
+    kind: "feature",
+    id: "ticket",
+    matchPriority: 20,
+    navigation: false,
+    activeNavigationId: "workflows",
+    route: inspector.route,
+    data: inspector.data,
+    loadView: inspector.loadView,
+  }),
+  {
+    kind: "disabled",
+    id: "create",
+    navigation: {
+      label: "Create",
+      reason: "Future workflow authoring is unavailable in this read-only observer.",
+    },
+  },
+  defineFeature({
+    kind: "feature",
+    id: "sessions",
+    matchPriority: 10,
+    navigation: { label: "Sessions", home: { fixture: "" } },
+    activeNavigationId: "sessions",
+    route: sessions.route,
+    data: sessions.data,
+    loadView: sessions.loadView,
+  }),
+  defineFeature({
+    kind: "feature",
+    id: "session-graph",
+    matchPriority: 20,
+    navigation: false,
+    activeNavigationId: "sessions",
+    route: sessionGraph.route,
+    data: sessionGraph.data,
+    loadView: sessionGraph.loadView,
+  }),
+  defineFeature({
+    kind: "feature",
+    id: "friction",
+    matchPriority: 10,
+    navigation: { label: "Friction", home: { fixture: "" } },
+    activeNavigationId: "friction",
+    route: friction.route,
+    data: friction.data,
+    loadView: friction.loadView,
+  }),
+] as const);
 
 export function matchCatalog(
   catalog: readonly CatalogEntry[],
