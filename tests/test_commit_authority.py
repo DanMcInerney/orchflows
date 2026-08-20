@@ -22,7 +22,7 @@ from scripts import tickets as ticket_facade  # noqa: E402,F401  binds pack regi
 
 FIXTURE = ROOT / "tests" / "fixtures" / "final_specs" / "01" / "authorities.json"
 TDD_SKILL = ROOT / "skills" / "instances" / "orch-tdd" / "SKILL.md"
-FOUNDATION_BASELINE = "8706e86bbac266d018a44b0a5f6c9c80874b1576"
+FOUNDATION_BASELINE = "ee538224ded702db0ea9ca6ccf09972edca6d665"
 GIT_ENV = dict(
     os.environ,
     GIT_AUTHOR_NAME="authority-fixture",
@@ -215,6 +215,17 @@ class CommitAuthorityReplayTest(unittest.TestCase):
 class AdmissionAuthorityTest(unittest.TestCase):
     def base(self):
         return dict(authority_fixtures()[0])
+
+    def test_foundation_baseline_is_reachable_from_the_repository_head(self):
+        reachable = git(
+            ROOT,
+            "merge-base",
+            "--is-ancestor",
+            FOUNDATION_BASELINE,
+            "HEAD",
+            check=False,
+        )
+        self.assertEqual(0, reachable.returncode, reachable.stderr)
 
     def test_closed_admission_matrix(self):
         valid = self.base()
