@@ -87,6 +87,13 @@ VIEW_REQUIRED_FIELDS = {
     "inspector": frozenset(("run", "ticket")),
     "session-graph": frozenset(("session",)),
 }
+INVALID_REQUEST = {
+    "error": {"code": "invalid_request", "message": "request could not be served"}
+}
+NOT_FOUND = {"error": {"code": "not_found", "message": "resource not found"}}
+INTERNAL_ERROR = {
+    "error": {"code": "internal_error", "message": "projection failed"}
+}
 
 
 def _projector_route_specs(modules=None) -> tuple:
@@ -117,6 +124,19 @@ def _validated_view_query(view: str, values):
     if any(len(items) != 1 or not items[0] for items in values.values()):
         return None
     return {key: items[0] for key, items in values.items()}
+
+
+def _view_projection(root, transcripts, view: str, query) -> tuple:
+    if view == "run-map" and query.get("run"):
+        if project_run(root, query["run"]) is None:
+            return 404, NOT_FOUND
+    elif view == "inspector":
+        if project_ticket(root, query["run"], query["ticket"]) is None:
+            return 404, NOT_FOUND
+    elif view == "session-graph":
+        if project_session(transcripts, query["session"]) is None:
+            return 404, NOT_FOUND
+    return 200, project_view(root, transcripts, view, query)
 
 
 project_observe = ui_now_projection.project_observe
@@ -163,43 +183,64 @@ def _context(request: Request):
     return request.app.state.root, request.app.state.transcripts
 
 
+def _projected_response(request: Request, projector, *args):
+    try:
+        value = projector(*args)
+    except Exception:
+        return _json_response(request, INTERNAL_ERROR, 500)
+    if value is None:
+        return _json_response(request, {"error": "not found"}, 404)
+    return _json_response(request, value)
+
+
 async def runs_endpoint(request: Request):
-    return _json_response(request, project_runs(_context(request)[0]))
+    return _projected_response(request, project_runs, _context(request)[0])
 
 
 async def run_endpoint(request: Request):
     root, _ = _context(request)
-    run = request.path_params["run"]
-    value = project_run(root, run)
-    return _json_response(request, value if value is not None else {"error": "not found"}, 200 if value is not None else 404)
+    return _projected_response(request, project_run, root, request.path_params["run"])
 
 
 async def ticket_endpoint(request: Request):
     root, _ = _context(request)
-    value = project_ticket(root, request.path_params["run"], request.path_params["ticket"])
-    return _json_response(request, value if value is not None else {"error": "not found"}, 200 if value is not None else 404)
+    return _projected_response(
+        request,
+        project_ticket,
+        root,
+        request.path_params["run"],
+        request.path_params["ticket"],
+    )
 
 
 async def friction_endpoint(request: Request):
-    return _json_response(request, project_friction(_context(request)[0]))
+    return _projected_response(request, project_friction, _context(request)[0])
 
 
 async def sessions_endpoint(request: Request):
-    return _json_response(request, project_sessions(_context(request)[1]))
+    return _projected_response(request, project_sessions, _context(request)[1])
 
 
 async def session_endpoint(request: Request):
-    value = project_session(_context(request)[1], request.path_params["session"])
-    return _json_response(request, value if value is not None else {"error": "not found"}, 200 if value is not None else 404)
+    return _projected_response(
+        request, project_session, _context(request)[1], request.path_params["session"]
+    )
 
 
 async def observe_endpoint(request: Request):
-    return _json_response(request, project_observe(_context(request)[0], request.query_params.get("run", "")))
+    return _projected_response(
+        request,
+        project_observe,
+        _context(request)[0],
+        request.query_params.get("run", ""),
+    )
 
 
 async def experience_endpoint(request: Request):
     root, transcripts = _context(request)
-    return _json_response(request, project_experience(root, transcripts, dict(request.query_params)))
+    return _projected_response(
+        request, project_experience, root, transcripts, dict(request.query_params)
+    )
 
 
 async def view_endpoint(request: Request):
@@ -211,8 +252,12 @@ async def view_endpoint(request: Request):
     }
     query = _validated_view_query(view, values)
     if query is None:
-        return _json_response(request, {"error": "invalid request"}, 422)
-    return _json_response(request, project_view(root, transcripts, view, query))
+        return _json_response(request, INVALID_REQUEST, 422)
+    try:
+        status, value = _view_projection(root, transcripts, view, query)
+    except Exception:
+        return _json_response(request, INTERNAL_ERROR, 500)
+    return _json_response(request, value, status)
 
 
 def _starlette_projector_routes():
@@ -322,6 +367,49 @@ def _fallback_json(value, request_headers, status=200):
     return _fallback_response(status, _json_bytes(value), JSON_TYPE, request_headers=request_headers)
 
 
+def _fallback_api(path, query, query_values, root, transcripts, headers):
+    try:
+        if path.startswith("/api/v1/views/"):
+            view = path.rsplit("/", 1)[-1]
+            validated = _validated_view_query(view, query_values)
+            if validated is None:
+                return _fallback_json(INVALID_REQUEST, headers, 422)
+            status, value = _view_projection(root, transcripts, view, validated)
+            return _fallback_json(value, headers, status)
+        if path == "/api/v1/runs":
+            return _fallback_json(project_runs(root), headers)
+        if path.startswith("/api/v1/runs/"):
+            parts = path.strip("/").split("/")
+            value = None
+            if len(parts) == 4:
+                value = project_run(root, parts[3])
+            elif len(parts) == 6 and parts[4] == "tickets":
+                value = project_ticket(root, parts[3], parts[5])
+            return _fallback_json(
+                value if value is not None else {"error": "not found"},
+                headers,
+                200 if value is not None else 404,
+            )
+        if path == "/api/v1/friction":
+            return _fallback_json(project_friction(root), headers)
+        if path == "/api/v1/sessions":
+            return _fallback_json(project_sessions(transcripts), headers)
+        if path.startswith("/api/v1/sessions/"):
+            value = project_session(transcripts, path.rsplit("/", 1)[-1])
+            return _fallback_json(
+                value if value is not None else {"error": "not found"},
+                headers,
+                200 if value is not None else 404,
+            )
+        if path == "/api/v1/experience":
+            return _fallback_json(project_experience(root, transcripts, query), headers)
+        if path == "/api/observe":
+            return _fallback_json(project_observe(root, query.get("run", "")), headers)
+    except Exception:
+        return _fallback_json(INTERNAL_ERROR, headers, 500)
+    return None
+
+
 def _fallback_dispatch(server, method, target, headers):
     if not valid_host_headers(headers):
         return _fallback_response(400, b"invalid host")
@@ -332,35 +420,11 @@ def _fallback_dispatch(server, method, target, headers):
     query_values = parse_qs(parsed.query, keep_blank_values=True)
     query = {key: values[0] for key, values in query_values.items()}
     root, transcripts = server.root, server.transcripts
-    value = None
-    if path.startswith("/api/v1/views/"):
-        view = path.rsplit("/", 1)[-1]
-        validated = _validated_view_query(view, query_values)
-        if validated is None:
-            return _fallback_json({"error": "invalid request"}, headers, 422)
-        value = project_view(root, transcripts, view, validated)
-    elif path == "/api/v1/runs":
-        value = project_runs(root)
-    elif path.startswith("/api/v1/runs/"):
-        parts = path.strip("/").split("/")
-        if len(parts) == 4:
-            value = project_run(root, parts[3])
-        elif len(parts) == 6 and parts[4] == "tickets":
-            value = project_ticket(root, parts[3], parts[5])
-        return _fallback_json(value if value is not None else {"error": "not found"}, headers, 200 if value is not None else 404)
-    elif path == "/api/v1/friction":
-        value = project_friction(root)
-    elif path == "/api/v1/sessions":
-        value = project_sessions(transcripts)
-    elif path.startswith("/api/v1/sessions/"):
-        value = project_session(transcripts, path.rsplit("/", 1)[-1])
-        return _fallback_json(value if value is not None else {"error": "not found"}, headers, 200 if value is not None else 404)
-    elif path == "/api/v1/experience":
-        value = project_experience(root, transcripts, query)
-    elif path == "/api/observe":
-        value = project_observe(root, query.get("run", ""))
-    if value is not None:
-        return _fallback_json(value, headers)
+    api_response = _fallback_api(
+        path, query, query_values, root, transcripts, headers
+    )
+    if api_response is not None:
+        return api_response
     if is_spa_path(path) and browser_navigation(path, headers):
         asset = read_asset(server.assets, "index.html")
         return _fallback_response(503, b"reader application unavailable") if asset is None else _fallback_response(200, asset[0], asset[1] + "; charset=utf-8", request_headers=headers, tag=asset[2])
