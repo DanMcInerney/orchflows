@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import * as now from "./now";
 import * as runMap from "./run-map";
 import * as inspector from "./inspector";
+import * as sessions from "./sessions";
 
 const nowSources = import.meta.glob("./now/**/*.{ts,tsx}", {
   eager: true,
@@ -16,6 +17,12 @@ const runMapSources = import.meta.glob("./run-map/**/*.{ts,tsx}", {
 }) as Record<string, string>;
 
 const inspectorSources = import.meta.glob("./inspector/**/*.{ts,tsx}", {
+  eager: true,
+  query: "?raw",
+  import: "default",
+}) as Record<string, string>;
+
+const sessionsSources = import.meta.glob("./sessions/**/*.{ts,tsx}", {
   eager: true,
   query: "?raw",
   import: "default",
@@ -55,7 +62,7 @@ describe("feature package boundaries", () => {
     expect(matched).toEqual({ run: "run alpha", fixture: "full-expanded" });
     expect(runMap.route.build(matched!)).toBe("/runs/run%20alpha?fixture=full-expanded");
     expect(runMap.request({ run: "run alpha", fixture: "" })).toEqual({ url: "/api/v1/views/run-map?run=run+alpha" });
-    expect(runMap.request({ run: "ignored", fixture: "summary-active" })).toEqual({ url: "/api/v1/views/run-map" });
+    expect(runMap.request({ run: "fixture-run", fixture: "summary-active" })).toEqual({ url: "/api/v1/views/run-map?run=fixture-run" });
     expect(() => runMap.schema({ schema: "orchflows.now.v1", runs: [] })).toThrow();
     expect((await runMap.loadView()).default).toBeTypeOf("function");
 
@@ -75,12 +82,31 @@ describe("feature package boundaries", () => {
     expect(inspector.request({ run: "run alpha", ticket: "T/1", fixture: "" })).toEqual({
       url: "/api/v1/views/inspector?run=run+alpha&ticket=T%2F1",
     });
-    expect(inspector.request({ run: "ignored", ticket: "ignored", fixture: "proof-pass" })).toEqual({ url: "/api/v1/views/inspector" });
+    expect(inspector.request({ run: "fixture-run", ticket: "fixture-ticket", fixture: "proof-pass" })).toEqual({
+      url: "/api/v1/views/inspector?run=fixture-run&ticket=fixture-ticket",
+    });
     expect(() => inspector.schema({ schema: "orchflows.session-graph.v1", session: null })).toThrow();
     expect((await inspector.loadView()).default).toBeTypeOf("function");
 
     for (const source of Object.values(inspectorSources)) {
       expect(source).not.toMatch(/from\s+["'][^"']*(?:\.\.\/\.\.\/(?:api|app|state)|\.\.\/(?:now|run-map|sessions|session-graph|friction))[\w\W]*?["']/);
+    }
+  });
+
+  it("closes sessions behind its index data contract", async () => {
+    expect(Object.keys(sessions)).toEqual(expect.arrayContaining([
+      "route", "schema", "request", "polling", "project", "data",
+      "model", "fixtures", "styles", "loadView",
+    ]));
+    const matched = sessions.route.match({ pathname: "/sessions/", search: "?fixture=populated", hash: "" });
+    expect(matched).toEqual({ fixture: "populated" });
+    expect(sessions.route.build(matched!)).toBe("/sessions?fixture=populated");
+    expect(sessions.request({ fixture: "populated" })).toEqual({ url: "/api/v1/views/sessions" });
+    expect(() => sessions.schema({ schema: "orchflows.inspector.v1", run: null, ticket: null })).toThrow();
+    expect((await sessions.loadView()).default).toBeTypeOf("function");
+
+    for (const source of Object.values(sessionsSources)) {
+      expect(source).not.toMatch(/from\s+["'][^"']*(?:\.\.\/\.\.\/(?:api|app|state)|\.\.\/(?:now|run-map|inspector|session-graph|friction))[\w\W]*?["']/);
     }
   });
 });

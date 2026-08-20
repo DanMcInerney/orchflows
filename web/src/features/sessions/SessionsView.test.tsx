@@ -2,26 +2,18 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
-import type { ExperienceSnapshot, SessionSummary } from "../../api/schema";
-import type { LocationState } from "../../state/location";
+import { sessionsModel, type SessionsModel } from "./model";
 import { SessionsView } from "./SessionsView";
 
 const PRIVATE_SENTINEL = "ZQXJVWNTRPKB-transcript-content-must-not-render";
 afterEach(cleanup);
 
-function snapshot(items: unknown[], diagnostics: string[] = []): ExperienceSnapshot {
-  return {
-    schema: "orchflows.experience.v1",
-    navigation: [], selection: { view: "sessions", run: "", ticket: "", session: "" },
-    runs: [], run: null, ticket: null,
-    sessions: { items: items as SessionSummary[], diagnostics, empty: items.length === 0 },
-    session: null, friction: { items: [], skipped: 0, unreadable: 0 }
-  };
+function model(items: unknown[], diagnostics: string[] = []): SessionsModel {
+  return sessionsModel({ items, diagnostics, empty: items.length === 0 });
 }
 
-function location(fixture: string): LocationState {
-  return { view: "sessions", run: "", ticket: "", session: "", fixture };
-}
+const route = (fixture: string) => ({ fixture });
+const ready = (value: SessionsModel) => ({ status: "ready", model: value, error: null } as const);
 
 const populated = [
   {
@@ -50,7 +42,7 @@ const populated = [
 describe("SessionsView", () => {
   it("renders populated safe metadata, honest unknown clients, and semantic selection", async () => {
     const user = userEvent.setup();
-    render(<SessionsView snapshot={snapshot(populated)} location={location("populated")} />);
+    render(<SessionsView state={ready(model(populated))} route={route("populated")} />);
 
     expect(screen.getByRole("heading", { name: "Sessions", level: 1 })).toBeTruthy();
     expect(document.querySelector("[data-view='sessions']")?.classList.contains("foundation-view")).toBe(true);
@@ -75,24 +67,24 @@ describe("SessionsView", () => {
 
   it("filters only on the projected title and identity", async () => {
     const user = userEvent.setup();
-    render(<SessionsView snapshot={snapshot(populated)} location={location("populated")} />);
+    render(<SessionsView state={ready(model(populated))} route={route("populated")} />);
     await user.type(screen.getByRole("searchbox", { name: "Filter sessions by title or identity" }), "55555555");
     expect(screen.queryByText("Index safe session metadata")).toBeNull();
     expect(screen.getByText("Unreadable metadata stays explicit")).toBeTruthy();
   });
 
   it("renders the explicit empty identity without session affordances", () => {
-    render(<SessionsView snapshot={snapshot(populated)} location={location("empty")} />);
+    render(<SessionsView state={ready(model(populated))} route={route("empty")} />);
     expect(screen.getByRole("status").textContent).toContain("No sessions discovered");
     expect(screen.queryByRole("link")).toBeNull();
     expect(screen.queryByRole("searchbox")).toBeNull();
   });
 
   it("renders diagnostic metadata and never upgrades absent provider facts", () => {
-    render(<SessionsView snapshot={snapshot(populated, [
+    render(<SessionsView state={ready(model(populated, [
       "project directory name is not an encoded path: C--Users-private-project",
       "second raw parser diagnostic that should not be copied into the banner"
-    ])} location={location("diagnostic")} />);
+    ]))} route={route("diagnostic")} />);
     const status = screen.getByRole("status");
     expect(status.textContent).toContain("Metadata needs attention");
     expect(status.textContent).toContain("2 discovery signals");
