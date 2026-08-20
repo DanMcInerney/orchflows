@@ -86,6 +86,8 @@ def installed_source(root: Path, installed_path: str) -> tuple[Path, Path] | Non
     if installed.startswith("lib/"):
         return roots.library, roots.library / installed.removeprefix("lib/")
     if installed.startswith("bin/") and installed.count("/") == 1:
+        if not contained_directory(roots.package, roots.executable):
+            return None
         return roots.executable, roots.executable / installed.removeprefix("bin/")
     return None
 

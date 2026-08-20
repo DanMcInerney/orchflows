@@ -25,6 +25,34 @@ UNREADABLE = {
 
 
 class WorkflowSourceTests(unittest.TestCase):
+    def test_installed_bin_root_symlink_cannot_redirect_source_inventory(self):
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
+            package = Path(directory)
+            root = package / "lib"
+            self._skill(
+                root,
+                "workflows",
+                "demo",
+                "Require: input.\n\nRun `runner.py execute`.\n\nReturn: output.\n",
+            )
+            external_bin = Path(outside) / "bin"
+            external_bin.mkdir()
+            (external_bin / "runner.py").write_text(
+                "OUTSIDE_SECRET\n", encoding="utf-8"
+            )
+            try:
+                os.symlink(external_bin, package / "bin", target_is_directory=True)
+            except OSError as error:
+                self.skipTest(f"symlink unavailable: {error}")
+            source_id = identity.source_id("bin/runner.py")
+
+            inventory = sources.source_inventory(root, "demo")
+            status, payload = sources.project_source(root, "demo", source_id)
+
+        self.assertNotIn(source_id, inventory)
+        self.assertEqual((404, NOT_FOUND), (status, payload))
+        self.assertNotIn("OUTSIDE_SECRET", repr(payload))
+
     def test_redacts_posix_drive_and_unc_paths_with_spaces_before_hashing(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
