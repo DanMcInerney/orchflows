@@ -119,16 +119,28 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         self.assertNotIn("border-radius: 8px", now_css)
         self.assertGreaterEqual(now_css.count("border-radius: var(--radius-control)"), 3)
 
-        shell = (ROOT / "web" / "src" / "ObserveApp.tsx").read_text(encoding="utf-8")
-        registry = (ROOT / "web" / "src" / "app" / "registry.ts").read_text(encoding="utf-8")
-        router = (ROOT / "web" / "src" / "state" / "location.ts").read_text(encoding="utf-8")
+        app = (ROOT / "web" / "src" / "ObserveApp.tsx").read_text(encoding="utf-8")
+        shell = (ROOT / "web" / "src" / "app" / "shell" / "Shell.tsx").read_text(encoding="utf-8")
+        composition = (ROOT / "web" / "src" / "app" / "shell" / "featureCatalog.ts").read_text(encoding="utf-8")
+        compatibility_types = (ROOT / "web" / "src" / "api" / "schema.ts").read_text(encoding="utf-8")
         harness = (ROOT / "tools" / "ui_frontend.py").read_text(encoding="utf-8")
         experience_harness = (ROOT / "web" / "src" / "smoke.spec.ts").read_text(encoding="utf-8")
+        self.assertEqual('import { Shell } from "./app/shell/Shell";\n\nexport function ObserveApp() {\n  return <Shell />;\n}\n', app)
         self.assertIn('data-mode="observe"', shell)
         self.assertIn("read only", shell.lower())
-        self.assertIn("import.meta.glob", registry)
-        for route in ("/now", "/runs/", "/tickets/", "/sessions", "/friction"):
-            self.assertIn(route, router)
+        self.assertIn('import { featureCatalog } from "./featureCatalog"', shell)
+        self.assertNotIn("FALLBACK", shell)
+        self.assertNotIn("ExperienceSnapshot", compatibility_types)
+        self.assertNotIn("function ", compatibility_types)
+        for removed in (
+            ROOT / "web" / "src" / "app" / "registry.ts",
+            ROOT / "web" / "src" / "state" / "location.ts",
+            ROOT / "web" / "src" / "api" / "client.ts",
+            ROOT / "web" / "src" / "feed.ts",
+        ):
+            self.assertFalse(removed.exists(), str(removed))
+        self.assertNotIn("import.meta.glob", composition)
+        self.assertEqual(6, composition.count("defineFeature({"))
         for command in ('add_parser("capture")', 'add_parser("audit")', 'add_parser("diff")'):
             self.assertIn(command, harness)
         for scenario in ("200% zoom-equivalent reflow", "forced-colors: active", "prefers-reduced-motion: reduce", "expectKeyboardParity"):

@@ -50,17 +50,29 @@ class TestExperienceFoundationGap(unittest.TestCase):
         self.assertNotIn(private_path, selected["ticket"]["raw"])
 
     def test_feature_entries_and_safe_live_fields_share_one_contract(self):
-        registry = (ROOT / "web" / "src" / "app" / "registry.ts").read_text(
-            encoding="utf-8"
-        )
-        self.assertIn(
-            'import.meta.glob<ViewModule>("../views/*.tsx", { eager: true })',
-            registry,
-        )
-        self.assertIn(
-            'import.meta.glob<ViewModule>("../features/*/index.tsx", { eager: true })',
-            registry,
-        )
+        composition = (
+            ROOT / "web" / "src" / "app" / "shell" / "featureCatalog.ts"
+        ).read_text(encoding="utf-8")
+        expected_packages = {
+            "friction": "friction",
+            "inspector": "inspector",
+            "now": "now",
+            "runMap": "run-map",
+            "sessionGraph": "session-graph",
+            "sessions": "sessions",
+        }
+        for alias, package in expected_packages.items():
+            self.assertIn(
+                'import * as {0} from "../../features/{1}"'.format(alias, package),
+                composition,
+            )
+            index = (
+                ROOT / "web" / "src" / "features" / package / "index.ts"
+            ).read_text(encoding="utf-8")
+            self.assertNotIn("defineFeature", index)
+            self.assertNotIn("featureCatalog", index)
+        self.assertEqual(1, composition.count("defineCatalog(["))
+        self.assertNotIn("import.meta.glob", composition)
 
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
