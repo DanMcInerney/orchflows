@@ -33,6 +33,7 @@ PUBLIC_ROUTE_SPECS = (
         "/api/v1/workflows/{workflow_id}/sources/{source_id}",
         "project_workflow_source",
     ),
+    ("GET", "/api/v1/workflows/{workflow_id:path}", "project_workflow"),
 )
 CATALOG_SCHEMA = "orchflows.workflow-catalog.v1"
 PACKAGE_ROOT = catalog.ROOT

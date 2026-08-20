@@ -70,6 +70,16 @@ class WorkflowHttpTests(unittest.TestCase):
             self.assertNotIn("no-such", body)
             self.assertNotIn("private", body)
 
+    def test_unknown_nested_workflow_path_stays_in_json_api(self):
+        route = "/api/v1/workflows/evolve/private"
+        with tempfile.TemporaryDirectory() as directory:
+            with serving(make_sink(Path(directory))) as server:
+                status, headers, body = fetch(server, route)
+
+        self.assertEqual(404, status)
+        self.assertEqual(NOT_FOUND, json.loads(body))
+        self.assertIsNone(headers.get("ETag"))
+
     def test_unreadable_source_and_unexpected_faults_are_closed_and_uncached(self):
         private = RuntimeError(r"private C:\host\secret")
         with tempfile.TemporaryDirectory() as directory:
