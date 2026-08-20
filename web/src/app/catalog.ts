@@ -4,6 +4,7 @@ import {
   lazy,
   type ComponentType,
 } from "react";
+import * as workflows from "../features/workflows";
 import { usePollingTransport } from "../shared/transport";
 import type {
   FeatureData,
@@ -145,10 +146,11 @@ export function defineFeature<K extends ViewId, Route, Payload, Model>(
 
 export function defineCatalog<const Entries extends readonly CatalogEntry[]>(
   entries: Entries,
-): Readonly<Entries> {
+): readonly CatalogEntry[] {
+  const applicationEntries = bindWorkflowDefinitions(entries);
   const identities = new Set<string>();
   const hrefs = new Set<string>();
-  for (const entry of entries) {
+  for (const entry of applicationEntries) {
     if (identities.has(entry.id)) {
       throw new CatalogError("duplicate-id", `Duplicate catalog identity: ${entry.id}`);
     }
@@ -161,7 +163,50 @@ export function defineCatalog<const Entries extends readonly CatalogEntry[]>(
       hrefs.add(entry.navigationHref);
     }
   }
-  return Object.freeze([...entries]) as unknown as Readonly<Entries>;
+  return Object.freeze(applicationEntries);
+}
+
+const workflowList = defineFeature({
+  kind: "feature",
+  id: "workflows",
+  matchPriority: 10,
+  navigation: { label: "Workflows", home: { fixture: "" } },
+  activeNavigationId: "workflows",
+  ...workflows.list,
+});
+
+const workflowDetail = defineFeature({
+  kind: "feature",
+  id: "workflow-detail",
+  matchPriority: 20,
+  navigation: false,
+  activeNavigationId: "workflows",
+  ...workflows.detail,
+});
+
+const workflowSource = defineFeature({
+  kind: "feature",
+  id: "workflow-source",
+  matchPriority: 30,
+  navigation: false,
+  activeNavigationId: "workflows",
+  ...workflows.source,
+});
+
+function bindWorkflowDefinitions(entries: readonly CatalogEntry[]): CatalogEntry[] {
+  if (!entries.some((entry) => entry.id === "run-map")
+    || entries.some((entry) => entry.id === "workflows")) {
+    return [...entries];
+  }
+  return entries.flatMap((entry) => {
+    if (entry.id !== "run-map" || entry.kind !== "feature") return [entry];
+    const hiddenRunMap: FeatureRegistration = {
+      ...entry,
+      navigation: false,
+      navigationHref: null,
+    };
+    return [workflowList, hiddenRunMap, workflowDetail, workflowSource];
+  });
 }
 
 export function matchCatalog(
