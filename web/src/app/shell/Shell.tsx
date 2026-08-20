@@ -18,10 +18,6 @@ export function Shell() {
     }
   }, [match]);
 
-  const navigation = featureCatalog.flatMap((entry) => {
-    if (entry.kind === "disabled") return [entry];
-    return entry.navigation === false ? [] : [entry];
-  });
   const FeatureHost = match?.View;
 
   return (
@@ -51,7 +47,7 @@ export function Shell() {
         <div className="workspace">
           <nav className="rail" aria-label="Observe views">
             <p className="rail__label">Workspace</p>
-            {navigation.map((entry) => {
+            {featureCatalog.map((entry) => {
               if (entry.kind === "disabled") {
                 return (
                   <span
@@ -67,9 +63,9 @@ export function Shell() {
                   </span>
                 );
               }
+              if (entry.navigation === false) return null;
               const current = match?.activeNavigationId === entry.activeNavigationId;
               const href = entry.navigationHref as string;
-              const label = entry.navigation === false ? entry.id : entry.navigation.label;
               return (
                 <a
                   key={entry.id}
@@ -80,7 +76,7 @@ export function Shell() {
                     navigate(href);
                   }}
                 >
-                  <span aria-hidden="true" className="nav-dot" />{label}
+                  <span aria-hidden="true" className="nav-dot" />{entry.navigation.label}
                 </a>
               );
             })}
