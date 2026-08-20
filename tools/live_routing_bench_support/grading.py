@@ -12,6 +12,7 @@ UNROUTED = "unrouted"
 # unauthenticated CLI -- is neither a route nor a misroute; the first
 # live run graded "Not logged in" as `answer` and read 100% misroute.
 ERROR = "error"
+ROLE_AGENT_TYPES = {"planner": "orch-planner", "worker": "orch-worker"}
 
 # The host block's routing table, read as transcript evidence.
 TICKET_SKILLS = frozenset({"orch-frontier", "orch-spec"})
@@ -109,6 +110,109 @@ def _stream_cost(events: list) -> float | None:
     return cost
 
 
+def _tool_blocks(event: dict):
+    if event.get("type") != "assistant":
+        return
+    for block in (event.get("message") or {}).get("content") or []:
+        if isinstance(block, dict) and block.get("type") == "tool_use":
+            yield block
+
+
+def _execution_conformance(
+    events: list, expected_role: str | None, expected_skill: str | None
+) -> dict:
+    """Grade the native child edge separately from the route classification.
+
+    The route says *what* was selected.  This result says whether a substantive
+    exact-named skill was actually executed by the one matching root child.
+    Only one helper layer below a planner is accepted, and that helper may not
+    execute the planner's primary skill.
+    """
+
+    if expected_role is None and expected_skill is None:
+        return {
+            "status": "not_applicable",
+            "reasons": [],
+            "primary_skill_executions": 0,
+            "helper_launches": 0,
+        }
+    if expected_role not in ROLE_AGENT_TYPES or not expected_skill:
+        raise ValueError("expected_role and expected_skill must name a planner/worker skill pair")
+
+    expected_agent_type = ROLE_AGENT_TYPES[expected_role]
+    root_launches = {}
+    launch_depths = {}
+    helper_launches = []
+    skill_uses = []
+
+    for event in events:
+        parent_id = event.get("parent_tool_use_id")
+        context_depth = launch_depths.get(parent_id, 0 if parent_id is None else None)
+        for block in _tool_blocks(event):
+            name = block.get("name")
+            block_input = block.get("input") or {}
+            tool_id = block.get("id")
+            if name in {"Agent", "Task"} and tool_id:
+                agent_type = block_input.get("subagent_type")
+                if parent_id is None:
+                    root_launches[tool_id] = agent_type
+                    launch_depths[tool_id] = 1
+                elif context_depth is not None:
+                    launch_depths[tool_id] = context_depth + 1
+                    helper_launches.append((tool_id, agent_type, context_depth + 1))
+            elif name in SKILL_TOOLS:
+                skill = _skill_name(block_input)
+                if skill:
+                    skill_uses.append((parent_id, context_depth, skill))
+
+    reasons = []
+    matching = [tool_id for tool_id, agent_type in root_launches.items()
+                if agent_type == expected_agent_type]
+    mismatched = [tool_id for tool_id, agent_type in root_launches.items()
+                  if agent_type != expected_agent_type]
+    if not matching:
+        reasons.append("missing_matching_role_child")
+    elif len(matching) > 1:
+        reasons.append("multiple_matching_role_children")
+    if mismatched:
+        reasons.append("mismatched_root_role_child")
+
+    primary_parent = matching[0] if len(matching) == 1 else None
+    direct_primary = sum(
+        parent_id == primary_parent and skill == expected_skill
+        for parent_id, _depth, skill in skill_uses
+    )
+    root_primary = sum(
+        parent_id is None and skill == expected_skill
+        for parent_id, _depth, skill in skill_uses
+    )
+    all_child_primary = sum(
+        parent_id is not None and skill == expected_skill
+        for parent_id, _depth, skill in skill_uses
+    )
+    if root_primary:
+        reasons.append("root_primary_skill_execution")
+    if direct_primary != 1:
+        reasons.append("missing_exact_primary_skill" if direct_primary == 0
+                       else "duplicate_primary_skill")
+    if all_child_primary > direct_primary:
+        reasons.append("primary_skill_redispatched")
+
+    primary_helpers = [launch for launch in helper_launches if launch[2] == 2]
+    if expected_role != "planner" and primary_helpers:
+        reasons.append("worker_helper_topology_unsupported")
+    if any(depth > 2 for _tool_id, _agent_type, depth in helper_launches):
+        reasons.append("nested_helper_topology_unsupported")
+
+    return {
+        "status": "failed" if reasons else "passed",
+        "reasons": reasons,
+        "primary_skill_executions": all_child_primary,
+        "root_primary_skill_executions": root_primary,
+        "helper_launches": len(primary_helpers),
+    }
+
+
 def _decide(events: list) -> tuple[str, str | None, int]:
     """The first route-bearing event of the parent session decides the route.
 
@@ -161,12 +265,24 @@ def _decide(events: list) -> tuple[str, str | None, int]:
     return UNROUTED, None, turns
 
 
-def grade_transcript(stdout: str) -> dict:
+def grade_transcript(
+    stdout: str,
+    *,
+    expected_role: str | None = None,
+    expected_skill: str | None = None,
+) -> dict:
     events = list(_json_events(stdout))
     observed, first_event, turns = _decide(events)
+    execution_conformance = _execution_conformance(
+        events, expected_role, expected_skill
+    )
+    if observed == UNROUTED and execution_conformance["status"] == "passed":
+        observed = _classify_skill(expected_skill)
+        first_event = f"ChildSkill({expected_skill})"
     return {
         "observed": observed,
         "first_event": first_event,
         "turns": turns,
         "cost_usd": _stream_cost(events),
+        "execution_conformance": execution_conformance,
     }

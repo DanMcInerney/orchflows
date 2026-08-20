@@ -127,6 +127,12 @@ def _classify_surface(
         "missing_sentinels": missing,
         "unexpected_tool_actions": len(forbidden_actions),
         "returncode": returncode,
+        "role_skill_topology": {
+            "mode": "advisory",
+            "profile_selection": status,
+            "automatic_binding_claimed": False,
+            "hard_root_guard_claimed": False,
+        },
     }
 
 

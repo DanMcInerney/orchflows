@@ -1,7 +1,7 @@
 ---
 name: orch-fixture
 description: Freeze one completed ticket into a replayable canary item with golden verdicts. Use when a proven ticket should guard against drift.
-role: none
+role: worker
 ---
 
 Require: one completed [ticket](../../../contracts/work-item.md) with

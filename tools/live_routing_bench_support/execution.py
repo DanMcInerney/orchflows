@@ -93,7 +93,14 @@ def _case_command(claude_invocation: list, prompt: str, max_turns: int) -> list:
 
 
 def _run_case(
-    claude_invocation: list, prompt: str, cwd: Path, env: dict, max_turns: int, timeout: int
+    claude_invocation: list,
+    prompt: str,
+    cwd: Path,
+    env: dict,
+    max_turns: int,
+    timeout: int,
+    expected_role: str | None = None,
+    expected_skill: str | None = None,
 ) -> dict:
     command = _case_command(claude_invocation, prompt, max_turns)
     try:
@@ -111,7 +118,9 @@ def _run_case(
         stdout, returncode, timed_out = completed.stdout, completed.returncode, False
     except subprocess.TimeoutExpired as exc:
         stdout, returncode, timed_out = _captured_text(exc.stdout), 124, True
-    graded = grade_transcript(stdout)
+    graded = grade_transcript(
+        stdout, expected_role=expected_role, expected_skill=expected_skill
+    )
     if timed_out:
         # A session killed at the timeout never got to route: it is neither a
         # route nor a misroute, which is what ERROR means here. Grading it
@@ -153,19 +162,31 @@ def run_benchmark(
                 if max_budget_usd is not None and spent >= max_budget_usd:
                     return records
                 graded = _run_case(
-                    claude_invocation, case["prompt"], repo, env, max_turns, timeout
+                    claude_invocation,
+                    case["prompt"],
+                    repo,
+                    env,
+                    max_turns,
+                    timeout,
+                    expected_role=case.get("required_role"),
+                    expected_skill=case.get("required_skill"),
                 )
+                conformance = graded["execution_conformance"]
                 record = {
                     "adapter_set": adapter_set,
                     "case": case["id"],
                     "repeat": index,
                     "expected": case["expected"],
                     "observed": graded["observed"],
-                    "match": graded["observed"] == case["expected"],
+                    "match": (
+                        graded["observed"] == case["expected"]
+                        and conformance["status"] in {"not_applicable", "passed"}
+                    ),
                     "first_event": graded["first_event"],
                     "turns": graded["turns"],
                     "returncode": graded["returncode"],
                     "timed_out": graded["timed_out"],
+                    "execution_conformance": conformance,
                 }
                 if graded["cost_usd"] is not None:
                     record["cost_usd"] = graded["cost_usd"]

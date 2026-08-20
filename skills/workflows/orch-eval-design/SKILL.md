@@ -1,7 +1,7 @@
 ---
 name: orch-eval-design
 description: Design one frozen candidate-blind evaluation from fixed evidence. Use before benchmark construction or direct judged scoring.
-role: none
+role: planner
 ---
 
 Require: one complete

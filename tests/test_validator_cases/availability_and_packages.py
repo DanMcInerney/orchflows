@@ -177,7 +177,7 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
         self.assertEqual(1, result.returncode)
         self.assertIn("engines skill must declare role: none", result.stdout)
 
-    def test_workflow_declaring_role_other_than_none_is_error(self):
+    def test_workflow_declaring_planner_role_is_valid(self):
         self._write_skill(
             "someworkflowpkg",
             b"---\nname: someworkflowpkg\ndescription: a workflow with a non-none role\nrole: planner\n---\n"
@@ -185,8 +185,18 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
             tier="workflows",
         )
         result = self._run()
+        self.assertEqual(0, result.returncode, result.stdout)
+
+    def test_workflow_declaring_none_role_is_error(self):
+        self._write_skill(
+            "someworkflowpkg",
+            b"---\nname: someworkflowpkg\ndescription: a glue workflow\nrole: none\n---\n"
+            b"Require: x.\nNever: y.\nReturn: z.\n",
+            tier="workflows",
+        )
+        result = self._run()
         self.assertEqual(1, result.returncode)
-        self.assertIn("workflows skill must declare role: none", result.stdout)
+        self.assertIn("workflows skill must declare planner or worker", result.stdout)
 
     def test_pack_declaring_role_at_all_is_error(self):
         self._write_pack(

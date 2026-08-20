@@ -1,7 +1,7 @@
 ---
 name: orch-build
 description: Materialize or change one library or scoped custom item through the admission tests. Use for any new or amended skill, pack, or contract.
-role: none
+role: worker
 ---
 
 Require: the item's intended contract — what it requires, returns, and

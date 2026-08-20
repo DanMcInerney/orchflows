@@ -1,7 +1,7 @@
 ---
 name: orch-repair
 description: Fix accepted verified defects with the smallest coherent change. Use inside the gate or on any accepted defect set.
-role: none
+role: worker
 ---
 
 Require: the accepted defect set the packet's `inputs` name — each

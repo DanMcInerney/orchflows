@@ -1,7 +1,7 @@
 ---
 name: orch-triage
 description: Triage a queue of items into agent-ready dispositions with compacted briefs. Use before any of them is dispatched.
-role: none
+role: planner
 ---
 
 Require: the queue — ticket directories, inboxes, or listed items.

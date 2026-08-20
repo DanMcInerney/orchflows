@@ -43,6 +43,7 @@ from .models import (
 )
 from .packages import (
     TEMPLATE_MANIFEST,
+    codex_role_adapter_body,
     discover_packages,
     discover_templates,
     frontmatter_field,
@@ -206,6 +207,7 @@ def _build_user_plan(
         text = skill_md.read_text(encoding="utf-8")
         frontmatter, body = split_frontmatter(text)
         description = frontmatter_field(frontmatter, "description") or ""
+        role = frontmatter_field(frontmatter, "role") or "none"
         lib_skill_md = (lib_home / rel).resolve()
         # Flat, host-agnostic resolution: one deterministic path per canonical
         # name, tier or pack alike, so no agent has to guess a sublayer. The
@@ -222,14 +224,25 @@ def _build_user_plan(
                 (claude_scope_home / "skills" / name / "SKILL.md", host_legal_frontmatter(frontmatter) + f"@{lib_skill_md}\n")
             )
         if codex_enabled:
+            codex_body = (
+                codex_role_adapter_body(name, role, lib_skill_md)
+                if role in PROFILE_ROLES
+                else body.strip() + "\n"
+            )
             codex_prompts.append(
-                (codex_user_home / "prompts" / f"{name}.md", f"# {description}\n\n{body.strip()}\n")
+                (codex_user_home / "prompts" / f"{name}.md", f"# {description}\n\n{codex_body}")
             )
             if name in CODEX_SKILL_REDIRECT_NAMES:
                 codex_skills.append(
                     (
                         codex_user_home / "skills" / name / "SKILL.md",
-                        frontmatter + f"\nRead {lib_skill_md} and follow it exactly.\n",
+                        frontmatter
+                        + "\n"
+                        + (
+                            codex_role_adapter_body(name, role, lib_skill_md)
+                            if role in PROFILE_ROLES
+                            else f"Read {lib_skill_md} and follow it exactly.\n"
+                        ),
                     )
                 )
 

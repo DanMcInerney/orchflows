@@ -1,7 +1,7 @@
 ---
 name: orch-spec
 description: Turn a request plus evidence into a routing-stamped, decomposition-ready root ticket. Use before any delivery run.
-role: none
+role: planner
 ---
 
 Require: the request as the packet's `objective`; the workspace or

@@ -143,6 +143,8 @@
     "id": "build-friction-summary-skill",
     "prompt": "use orch-build to write a new orchflows skill that summarizes a run's friction entries",
     "expected": "build",
+    "required_role": "worker",
+    "required_skill": "orch-build",
     "note": "Names orch-build outright, which is the only thing that makes build a route: the host block routes an unnamed request to answer, ticket or fix.",
     "distractor": false
   },
@@ -150,6 +152,8 @@
     "id": "build-amend-tdd",
     "prompt": "with orch-build, amend orch-tdd so it names its craft reference explicitly",
     "expected": "build",
+    "required_role": "worker",
+    "required_skill": "orch-build",
     "note": "Named again, and an amendment rather than a new item: naming is what decides the route, not what the change is to.",
     "distractor": false
   },

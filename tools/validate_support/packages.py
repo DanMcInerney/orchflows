@@ -186,6 +186,8 @@ def validate_role(fm: dict, pkg: dict, diag: Diagnostics) -> None:
         return
     if pkg["kind"] in ROLE_NONE_TIERS and role != "none":
         diag.error(file_label, f"{pkg['kind']} skill must declare role: none, got '{role}'")
+    if pkg["kind"] == "workflows" and role == "none":
+        diag.error(file_label, "workflows skill must declare planner or worker, got 'none'")
 
 
 def validate_anatomy(body: str, pkg: dict, diag: Diagnostics) -> None:

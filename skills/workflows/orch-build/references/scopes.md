@@ -18,13 +18,14 @@ repository itself and needs no install.
   binding only at their scope, written to a skill's anatomy. What a
   custom item may be named is `orch-build`'s `Never:`.
 - Host integrations match the installer's own: a Claude adapter stub
-  at the scope's `.claude/skills/<name>/SKILL.md`, carrying only the
-  host-legal frontmatter subset (`name`, `description`) plus an
+  at the scope's `.claude/skills/<name>/SKILL.md`, carrying the
+  host-legal frontmatter (`name`, `description`, and for a role-bearing
+  skill `context: fork` plus its matching `agent`) and an
   `@`-include of the item file — by absolute path at user scope, and by
   a path relative to the stub at project scope, because a project stub
   is committed and an absolute path in a committed file resolves on the
-  machine that wrote it and nowhere else — never an orchflows-only key
-  such as `role`, which the item file itself keeps in full anatomy —
+  machine that wrote it and nowhere else — never the orchflows-only
+  `role`, which the item file itself keeps in full anatomy —
   and one routing line naming the item in the scope's AGENTS.md, which
   is the Codex surface.
 - The scope's named oracle (library lens) is the only oracle for a
