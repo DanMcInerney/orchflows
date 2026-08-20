@@ -4,19 +4,17 @@ import {
   Code2, FileCheck2, Flame, History, LayoutDashboard, ListChecks, LockKeyhole, XCircle
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import type { ExperienceSnapshot } from "../../api/schema";
-import type { LocationState } from "../../state/location";
+import type { FeatureState } from "../../shared/transport/types";
 import {
   detailRows, durableHistory, fixtureTicket, inspectorTabs, linkedFriction, proofRows, rawTicket,
-  selectedTab, statusState, tabPath, type InspectorTab
+  selectedTab, statusState, tabPath, type InspectorModel, type InspectorTab
 } from "./model";
+import type { InspectorRoute } from "./route";
 import "./inspector.css";
 
-export const viewId = "ticket" as const;
-
 export interface TicketInspectorProps {
-  snapshot: ExperienceSnapshot;
-  location: LocationState;
+  route: InspectorRoute;
+  state: FeatureState<InspectorModel>;
 }
 
 const tabLabels: Record<InspectorTab, string> = {
@@ -47,29 +45,34 @@ function StateGlyph({ state }: { state: string }) {
   return <CircleHelp aria-hidden="true" />;
 }
 
-export default function TicketInspector({ snapshot, location }: TicketInspectorProps) {
-  const [tab, setTab] = useState<InspectorTab>(() => selectedTab(location));
-  const namedFixture = fixtureTicket(location);
-  const ticket = location.fixture.startsWith("proof-")
+export default function TicketInspector({ route, state: featureState }: TicketInspectorProps) {
+  const [tab, setTab] = useState<InspectorTab>(() => selectedTab(route));
+  const namedFixture = fixtureTicket(route);
+  const ticket = route.fixture.startsWith("proof-")
     ? namedFixture
-    : snapshot.ticket ?? namedFixture;
-  const viewSnapshot = ticket === snapshot.ticket ? snapshot : { ...snapshot, ticket };
+    : featureState.model?.ticket ?? namedFixture;
+  const viewModel: InspectorModel = ticket === featureState.model?.ticket
+    ? featureState.model ?? { run: null, ticket: null }
+    : { run: featureState.model?.run ?? null, ticket };
 
   useEffect(() => {
-    const sync = () => setTab(selectedTab(location));
+    const sync = () => setTab(selectedTab(route));
     window.addEventListener("popstate", sync);
     sync();
     return () => window.removeEventListener("popstate", sync);
-  }, [location.fixture, location.run, location.ticket]);
+  }, [route.fixture, route.run, route.ticket]);
+
+  if (!route.fixture && featureState.status === "loading") return <div className="loading">Waiting for reader</div>;
+  if (!route.fixture && featureState.status === "error") return <div className="notice" role="status">{featureState.error.message}</div>;
 
   if (!ticket) {
     return <section className="foundation-view ticket-inspector" aria-labelledby="ticket-title"><EmptyEvidence title="Ticket unavailable">The selected ticket is not present in the safe reader projection.</EmptyEvidence></section>;
   }
 
   const state = statusState(ticket);
-  const rows = proofRows(viewSnapshot, location.fixture);
-  const friction = linkedFriction(viewSnapshot, location);
-  const history = durableHistory(viewSnapshot, location);
+  const rows = proofRows(viewModel, route.fixture);
+  const friction = linkedFriction(viewModel, route);
+  const history = durableHistory(viewModel, route);
   const objective = ticket.sections.objective || "No objective was recorded.";
   const result = ticket.sections.result;
 
@@ -80,10 +83,11 @@ export default function TicketInspector({ snapshot, location }: TicketInspectorP
   };
 
   return (
-    <section className="foundation-view ticket-inspector" data-state={state} data-fixture={location.fixture || "live"} aria-labelledby="ticket-title">
+    <section className="foundation-view ticket-inspector" data-state={state} data-fixture={route.fixture || "live"} aria-labelledby="ticket-title">
+      {featureState.status === "stale" && <div className="notice" role="status">{featureState.error.message}</div>}
       <header className="inspector-header">
         <div className="inspector-breadcrumb" aria-label="Ticket location">
-          <span>Workflows</span><ArrowRight aria-hidden="true" /><span className="mono">{location.run}</span><ArrowRight aria-hidden="true" />
+          <span>Workflows</span><ArrowRight aria-hidden="true" /><span className="mono">{route.run}</span><ArrowRight aria-hidden="true" />
           <strong className="mono">{ticket.id}</strong>
         </div>
         <div className="inspector-heading">
@@ -165,7 +169,7 @@ export default function TicketInspector({ snapshot, location }: TicketInspectorP
 
         <Tabs.Content className="inspector-panel" value="raw">
           <article className="inspector-card"><div className="panel-heading"><p className="eyebrow">Inert source</p><h2>Raw ticket markdown</h2><p className="raw-privacy"><LockKeyhole aria-hidden="true" /> Host paths are redacted. Markup is displayed as text and never executed.</p></div>
-            <pre className="raw-ticket" tabIndex={0} aria-label="Raw ticket markdown"><code>{rawTicket(viewSnapshot, location)}</code></pre>
+            <pre className="raw-ticket" tabIndex={0} aria-label="Raw ticket markdown"><code>{rawTicket(viewModel, route)}</code></pre>
           </article>
         </Tabs.Content>
       </Tabs.Root>

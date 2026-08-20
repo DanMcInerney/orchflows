@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as now from "./now";
 import * as runMap from "./run-map";
+import * as inspector from "./inspector";
 
 const nowSources = import.meta.glob("./now/**/*.{ts,tsx}", {
   eager: true,
@@ -9,6 +10,12 @@ const nowSources = import.meta.glob("./now/**/*.{ts,tsx}", {
 }) as Record<string, string>;
 
 const runMapSources = import.meta.glob("./run-map/**/*.{ts,tsx}", {
+  eager: true,
+  query: "?raw",
+  import: "default",
+}) as Record<string, string>;
+
+const inspectorSources = import.meta.glob("./inspector/**/*.{ts,tsx}", {
   eager: true,
   query: "?raw",
   import: "default",
@@ -54,6 +61,26 @@ describe("feature package boundaries", () => {
 
     for (const source of Object.values(runMapSources)) {
       expect(source).not.toMatch(/from\s+["'][^"']*(?:\.\.\/\.\.\/(?:api|app|state)|\.\.\/(?:now|inspector|sessions|session-graph|friction))[\w\W]*?["']/);
+    }
+  });
+
+  it("closes inspector behind its ticket-correlated data contract", async () => {
+    expect(Object.keys(inspector)).toEqual(expect.arrayContaining([
+      "route", "schema", "request", "polling", "project", "data",
+      "model", "fixtures", "styles", "loadView",
+    ]));
+    const matched = inspector.route.match({ pathname: "/runs/run%20alpha/tickets/T%2F1", search: "?fixture=proof-pass", hash: "" });
+    expect(matched).toEqual({ run: "run alpha", ticket: "T/1", fixture: "proof-pass" });
+    expect(inspector.route.build(matched!)).toBe("/runs/run%20alpha/tickets/T%2F1?fixture=proof-pass");
+    expect(inspector.request({ run: "run alpha", ticket: "T/1", fixture: "" })).toEqual({
+      url: "/api/v1/views/inspector?run=run+alpha&ticket=T%2F1",
+    });
+    expect(inspector.request({ run: "ignored", ticket: "ignored", fixture: "proof-pass" })).toEqual({ url: "/api/v1/views/inspector" });
+    expect(() => inspector.schema({ schema: "orchflows.session-graph.v1", session: null })).toThrow();
+    expect((await inspector.loadView()).default).toBeTypeOf("function");
+
+    for (const source of Object.values(inspectorSources)) {
+      expect(source).not.toMatch(/from\s+["'][^"']*(?:\.\.\/\.\.\/(?:api|app|state)|\.\.\/(?:now|run-map|sessions|session-graph|friction))[\w\W]*?["']/);
     }
   });
 });
