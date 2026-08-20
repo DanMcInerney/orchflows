@@ -32,14 +32,16 @@ def split_frontmatter(text: str):
 
 
 def host_legal_frontmatter(frontmatter: str) -> str:
-    """Host-legal subset for Claude adapter stubs: name and description
-    only; orchflows-only keys (role) stay in the item file."""
+    """Claude adapter frontmatter, including native role-child binding."""
     kept = [
         line
         for line in frontmatter.splitlines(keepends=True)
         if line.rstrip("\r\n") == "---"
         or line.partition(":")[0].strip() in ("name", "description")
     ]
+    role = frontmatter_field(frontmatter, "role")
+    if role in ("planner", "worker"):
+        kept[-1:-1] = ["context: fork\n", f"agent: orch-{role}\n"]
     return "".join(kept)
 
 
@@ -183,7 +185,10 @@ def _role_description(name: str) -> str:
 # already carries the clauses a child acts on (stay in scope; write the
 # return into the durable artifact; deliver it by SendMessage). No rendered
 # role agent file names roles.md anywhere (D-2).
-ROLE_INSTRUCTIONS = "Stay within the delegated scope."
+ROLE_INSTRUCTIONS = (
+    "Stay within the delegated scope. Execute the packet's exact named skill "
+    "directly; never redispatch it. Refuse a missing or mismatched role."
+)
 
 def render_codex_agent(name: str, profile: dict) -> str:
     binding = profile["codex"]
