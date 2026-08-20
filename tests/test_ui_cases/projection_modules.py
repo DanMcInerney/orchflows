@@ -39,6 +39,12 @@ class FacadeRouteAssemblyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicate.*GET.*/api/observe"):
             api._projector_route_specs(DOMAIN_MODULES + (duplicate,))
 
+        with patch.object(api, "PROJECTOR_MODULES", DOMAIN_MODULES + (duplicate,)):
+            with patch.object(api, "FallbackReaderServer") as fallback:
+                with self.assertRaisesRegex(ValueError, "duplicate.*GET.*/api/observe"):
+                    api.create_server(Path.cwd(), 0)
+                fallback.assert_not_called()
+
     def test_facade_imports_in_package_and_flat_installed_layouts(self):
         self.assertIs(api, importlib.import_module("scripts.ui_api"))
         completed = subprocess.run(

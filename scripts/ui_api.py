@@ -476,6 +476,7 @@ class UvicornReaderServer:
 
 
 def create_server(root, port: int, transcripts=None, assets=None, legacy_respond=None):
+    _projector_route_specs()
     resolved_assets = resolve_asset_root() if assets is None else Path(assets).resolve()
     if Starlette is None:
         return FallbackReaderServer(
