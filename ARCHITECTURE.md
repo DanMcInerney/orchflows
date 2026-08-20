@@ -78,13 +78,19 @@ and immutable terminal timing (`terminal_at`, terminal ticket, `elapsed_ms`).
 `tickets.py grant` is operator-only: only the dispatcher widens claimed
 authority.
 
-The UI reader family keeps one closed boundary: `scripts/ui_api.py` owns JSON
-projections, Starlette routes, security middleware, and loopback Uvicorn;
-`scripts/ui_assets.py` owns contained immutable-asset reads and the standard-
-library compatibility server; `scripts/ui_experience.py` owns the
-`orchflows.experience.v1` projection, navigation contract, and SPA-path
-recognition; `scripts/ui_readiness.py` owns canonical readiness facts and
-causal explanations. Legacy rendering stays in `scripts/ui_server.py`.
+The UI reader family keeps one closed boundary: `scripts/ui_api.py` owns
+explicit route assembly, query validation, shared JSON ETags and closed
+failures, security middleware, and loopback Starlette/Uvicorn with fallback
+parity. Domain projections belong to `scripts/ui_now_projection.py`,
+`scripts/ui_runs_projection.py`, `scripts/ui_workflows_projection.py`,
+`scripts/ui_sessions_projection.py`, and `scripts/ui_friction_projection.py`;
+Workflows remains a route-free Phase-A run-summary adapter.
+`scripts/ui_experience.py` owns only the `orchflows.experience.v1`
+compatibility projection, its closed feature slices, navigation contract, and
+SPA-path recognition. `scripts/ui_assets.py` owns contained immutable-asset
+reads and the standard-library compatibility server; `scripts/ui_readiness.py`
+owns canonical readiness facts and causal explanations. Legacy rendering
+stays in `scripts/ui_server.py`.
 [The platform contract](docs/ui/platform.md) owns the complete boundary.
 
 ## State boundary

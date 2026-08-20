@@ -114,5 +114,39 @@ class ClosedViewProjectionTests(unittest.TestCase):
         self.assertEqual((), workflows.ROUTE_SPECS)
 
 
+class ProjectionOwnershipTests(unittest.TestCase):
+    def test_aggregate_discovers_every_projection_contract_module(self):
+        tree = ast.parse((ROOT / "tests" / "test_ui.py").read_text(encoding="utf-8"))
+        imported = {
+            node.module
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom)
+        }
+        expected = {
+            "tests.test_ui_cases.domain_projections",
+            "tests.test_ui_cases.experience_projection",
+            "tests.test_ui_cases.projection_modules",
+            "tests.test_ui_cases.projection_security",
+        }
+
+        self.assertTrue(expected.issubset(imported), expected - imported)
+
+    def test_architecture_names_the_facade_domains_and_compatibility_owner(self):
+        architecture = (ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8")
+        owners = {
+            "scripts/ui_api.py",
+            "scripts/ui_experience.py",
+            "scripts/ui_now_projection.py",
+            "scripts/ui_runs_projection.py",
+            "scripts/ui_workflows_projection.py",
+            "scripts/ui_sessions_projection.py",
+            "scripts/ui_friction_projection.py",
+        }
+
+        for owner in owners:
+            with self.subTest(owner=owner):
+                self.assertIn("`{0}`".format(owner), architecture)
+
+
 if __name__ == "__main__":
     unittest.main()
