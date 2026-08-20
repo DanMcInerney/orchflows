@@ -142,6 +142,25 @@ class WorkflowSummaryManifestTests(unittest.TestCase):
         self.assertIs(multi_node, summaries.validate_manifest(multi_node, {"demo"}))
         self.assertIs(self_cycle, summaries.validate_manifest(self_cycle, {"demo"}))
 
+    def test_malformed_member_types_fail_as_manifest_errors(self):
+        candidates = []
+        for section, field, value in (
+            ("node", "id", 1),
+            ("node", "label", ["First"]),
+            ("edge", "source", ["one"]),
+            ("edge", "target", {"two": True}),
+            ("edge", "kind", ["sequence"]),
+        ):
+            manifest = self._synthetic_manifest()
+            member = manifest["workflows"]["demo"][section + "s"][0]
+            member[field] = value
+            candidates.append((f"{section}.{field}", manifest))
+
+        for subject, manifest in candidates:
+            with self.subTest(subject=subject):
+                with self.assertRaises(summaries.SummaryManifestError):
+                    summaries.validate_manifest(manifest, {"demo"})
+
     @staticmethod
     def _synthetic_manifest():
         return {

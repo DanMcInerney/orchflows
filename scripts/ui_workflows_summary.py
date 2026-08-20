@@ -130,6 +130,8 @@ def _validate_summary(workflow_id: str, summary: object) -> None:
         source = edge["source"]
         target = edge["target"]
         kind = edge["kind"]
+        if not all(isinstance(value, str) for value in (source, target, kind)):
+            raise SummaryManifestError(f"{workflow_id} has a malformed edge")
         if source not in node_ids or target not in node_ids:
             raise SummaryManifestError(f"{workflow_id} has an unknown edge endpoint")
         if kind not in EDGE_KINDS:
