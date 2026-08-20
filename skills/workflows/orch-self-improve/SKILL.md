@@ -1,7 +1,7 @@
 ---
 name: orch-self-improve
 description: Mine friction logs and run state into single-owner proposals. Use as self-improve's mining stub, or alone when proposals suffice.
-role: none
+role: planner
 ---
 
 Require: a window — the sessions, runs, projects, or period this cycle

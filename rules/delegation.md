@@ -4,20 +4,17 @@
    [delegation packet](../contracts/work-item.md#dispatch), which owns
    what a missing part costs; a dispatch naming an identity that does
    not resolve where it says it is is refused, not repaired.
-2. The inline rung is glue only — dispatch mechanics, joins, user
-   interaction, answers from evidence already in context; spawn a role
-   for glue only under context isolation, parallelism, specialized
-   instructions, or tool restriction. Work that changes a deliverable
-   runs inline only as an ad-hoc ticket whose independence enters from
-   outside the executing context ([verification.md](verification.md)
-   §10); otherwise, absent a tested script, it spawns the resolved
-   role, the cheapest capable rung of the ladder.
+2. Root and `role: none` are glue-only: routing, dispatch mechanics,
+   joins, verbatim user interaction, and answers decided by evidence
+   already in context. Neither executes a role-bearing skill body nor
+   authors or changes a deliverable. Every such skill runs in a child
+   whose role matches its declaration; inline execution is forbidden.
 3. Star topology: children never communicate peer to peer; every result
    crosses exactly one join owned by the dispatching caller. There is no
    sideways handoff of control — only call/return and suspension.
 4. Authority attenuates: a child's write scope is a subset of its
-   caller's at every depth, and a child never re-dispatches its primary
-   work.
+   caller's at every depth. It executes its exact named skill directly
+   and never re-dispatches that primary work.
 5. Every child return crosses `orch-integrate` — the single join,
    strictness graded by dispatch type — before the caller trusts any of
    it; no caller states a parallel prose join.

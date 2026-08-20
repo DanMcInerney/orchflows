@@ -19,3 +19,9 @@
    is refused, never substituted silently.
 5. An override binds only the dispatch naming it; it never propagates to
    a descendant dispatch.
+6. A role-bearing skill runs only in an established child of the
+   matching role. That child executes the exact named skill directly;
+   root, `role: none`, and a mismatched child refuse it.
+7. A child needing a user-only decision returns a `kind: user-only`
+   question and resume state. Root asks its text verbatim and returns
+   the answer without deciding it.

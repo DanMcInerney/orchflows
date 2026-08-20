@@ -21,16 +21,17 @@ missing effort control it is no stop on its own — what an unisolated
 child then shares with its siblings is the caller's to weigh before
 dispatching them.
 
-On Claude Code only a child the orchestrator itself dispatched can
-spawn children; a grandchild cannot. So a stub whose executor must
-itself dispatch — an engine stub, or a blind scoring lane that spawns
-the children applying each candidate — is run by the engine at depth
-one, or inline in the engine's own context.
+On Claude Code a role-bearing skill adapter declares `context: fork`
+and `agent: orch-planner` or `agent: orch-worker`; those native fields
+establish the matching role child before its exact named body runs.
 
 On Codex, `agent_type` selects the installed profile; `task_name` only
-labels the child. A spawn surface that omits `agent_type` cannot apply a
-profile and stops the dispatch. Codex V2 profile selection uses a
-non-full-history fork (`fork_turns="none"` or a positive turn count).
+labels the child. Root explicitly dispatches the exact named skill and
+complete packet to that matching role child. Missing or mismatched
+`agent_type` refuses execution; a role child runs its primary skill
+directly. Codex V2 profile selection uses a non-full-history fork
+(`fork_turns="none"` or a positive turn count). These are contractual
+instructions, not a claimed automatic binding or hard root guard.
 
 Child names are unique within a run; a resumed child keeps its name.
 

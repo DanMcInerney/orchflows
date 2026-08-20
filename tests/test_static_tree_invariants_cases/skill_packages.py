@@ -11,14 +11,6 @@ ROLE_TABLE = {
     # none: engines
     "orch-loop": "none",
     "orch-frontier": "none",
-    # none: workflows
-    "orch-build": "none",
-    "orch-eval-design": "none",
-    "orch-fixture": "none",
-    "orch-repair": "none",
-    "orch-self-improve": "none",
-    "orch-spec": "none",
-    "orch-triage": "none",
     # none: named kernel and utility
     "orch-integrate": "none",
     "orch-off": "none",
@@ -26,6 +18,10 @@ ROLE_TABLE = {
     "orch-critique": "planner",
     "orch-synthesize": "planner",
     "orch-decompose": "planner",
+    "orch-eval-design": "planner",
+    "orch-self-improve": "planner",
+    "orch-spec": "planner",
+    "orch-triage": "planner",
     # worker
     "orch-investigate": "worker",
     "orch-verify": "worker",
@@ -35,6 +31,9 @@ ROLE_TABLE = {
     "orch-edit": "worker",
     "orch-resolve-conflicts": "worker",
     "orch-visualize": "worker",
+    "orch-build": "worker",
+    "orch-fixture": "worker",
+    "orch-repair": "worker",
 }
 
 

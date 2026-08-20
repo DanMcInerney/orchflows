@@ -1,0 +1,77 @@
+"""Focused acceptance oracle for the thin-orchestrator contract."""
+
+from __future__ import annotations
+
+import re
+import unittest
+from pathlib import Path
+
+from tools import validate
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def _frontmatter(path: str) -> dict[str, str]:
+    text = (ROOT / path).read_text(encoding="utf-8")
+    frontmatter = text.split("---", 2)[1]
+    return {
+        key.strip(): value.strip()
+        for line in frontmatter.splitlines()
+        if (key := line.partition(":")[0]) and (value := line.partition(":")[2])
+    }
+
+
+class ThinOrchestratorContractTests(unittest.TestCase):
+    WORKFLOW_ROLES = {
+        "orch-spec": "planner",
+        "orch-eval-design": "planner",
+        "orch-self-improve": "planner",
+        "orch-triage": "planner",
+        "orch-build": "worker",
+        "orch-fixture": "worker",
+        "orch-repair": "worker",
+    }
+
+    def test_canonical_role_map_and_glue_only_contract(self):
+        for name, role in self.WORKFLOW_ROLES.items():
+            with self.subTest(skill=name):
+                self.assertEqual(
+                    role,
+                    _frontmatter(f"skills/workflows/{name}/SKILL.md")["role"],
+                )
+
+        glue = {
+            "skills/engines/orch-frontier/SKILL.md",
+            "skills/engines/orch-loop/SKILL.md",
+            "skills/kernel/orch-integrate/SKILL.md",
+            "skills/utilities/orch-off/SKILL.md",
+        }
+        for path in glue:
+            with self.subTest(glue=path):
+                self.assertEqual("none", _frontmatter(path)["role"])
+
+        delegation = (ROOT / "rules/delegation.md").read_text(encoding="utf-8")
+        roles = (ROOT / "rules/roles.md").read_text(encoding="utf-8")
+        profiles = (
+            ROOT / "skills/engines/orch-frontier/references/profiles.md"
+        ).read_text(encoding="utf-8")
+        host = (ROOT / "templates/host-block.md").read_text(encoding="utf-8")
+        combined = "\n".join((delegation, roles, profiles, host))
+
+        for anchor in (
+            "glue-only",
+            "role-bearing",
+            "exact named skill",
+            "matching role",
+            "user-only",
+            "verbatim",
+        ):
+            self.assertIn(anchor, combined)
+        self.assertNotIn("ad-hoc ticket", delegation)
+        self.assertNotRegex(delegation, re.compile(r"inline fallback", re.I))
+        self.assertLessEqual(validate.body_words(host), 400)
+
+
+if __name__ == "__main__":
+    unittest.main()
