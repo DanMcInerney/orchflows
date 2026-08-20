@@ -40,7 +40,8 @@ except ImportError:
 
 SCHEMA = "orchflows.experience.v1"
 SPA_ROUTE_PATTERNS = (
-    "/", "/observe", "/now", "/runs", "/runs/{run}",
+    "/", "/observe", "/now", "/workflows", "/workflows/{workflow}",
+    "/workflows/{workflow}/sources/{source}", "/runs", "/runs/{run}",
     "/runs/{run}/tickets/{ticket}", "/sessions", "/sessions/{session}", "/friction",
 )
 NAVIGATION = (
@@ -75,9 +76,12 @@ VIEW_SLICES = {
 
 def is_spa_path(path: str) -> bool:
     parts = path.strip("/").split("/") if path != "/" else []
-    return path in ("/", "/observe", "/now", "/runs", "/sessions", "/friction") or (
-        len(parts) == 2 and parts[0] in ("runs", "sessions")
-    ) or (len(parts) == 4 and parts[0] == "runs" and parts[2] == "tickets")
+    return (
+        path in ("/", "/observe", "/now", "/workflows", "/runs", "/sessions", "/friction")
+        or (len(parts) == 2 and parts[0] in ("workflows", "runs", "sessions"))
+        or (len(parts) == 4 and parts[0] == "runs" and parts[2] == "tickets")
+        or (len(parts) == 4 and parts[0] == "workflows" and parts[2] == "sources")
+    )
 
 
 def browser_navigation(path: str, headers) -> bool:

@@ -159,6 +159,12 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         self.assertEqual(6, composition.count("defineFeature({"))
         self.assertEqual(3, application_catalog.count("const workflow"))
         self.assertIn('navigation: { label: "Workflows", home: { fixture: "" } }', application_catalog)
+        for path in (
+            "/workflows",
+            "/workflows/evolve",
+            "/workflows/evolve/sources/src_campaign",
+        ):
+            self.assertTrue(experience.is_spa_path(path), path)
         for command in ('add_parser("capture")', 'add_parser("audit")', 'add_parser("diff")'):
             self.assertIn(command, harness)
         for scenario in ("200% zoom-equivalent reflow", "forced-colors: active", "prefers-reduced-motion: reduce", "expectKeyboardParity"):
