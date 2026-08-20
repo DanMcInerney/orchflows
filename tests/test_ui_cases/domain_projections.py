@@ -11,6 +11,7 @@ import scripts.ui_now_projection as now
 import scripts.ui_runs_projection as runs
 import scripts.ui_workflows_projection as workflows
 import scripts.ui_sessions_projection as sessions
+import scripts.ui_friction_projection as friction
 
 
 PROJECTORS = (
@@ -152,6 +153,23 @@ class SessionsProjectionTests(unittest.TestCase):
         self.assertNotIn(TRANSCRIPT_SENTINEL, encoded)
         self.assertNotIn(str(transcripts), encoded)
         self.assertNotIn("toolu_alpha_01", encoded)
+
+
+class FrictionProjectionTests(unittest.TestCase):
+    def test_friction_preserves_health_counts_without_log_content(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_sink(Path(tmp))
+            before = snapshot(root)
+            projected = friction.project_friction(root)
+            self.assertEqual(before, snapshot(root))
+            self.assertEqual(legacy.project_friction(root), projected)
+
+        self.assertEqual({"api_version", "entries", "skipped", "unreadable"}, set(projected))
+        self.assertGreater(projected["entries"], 0)
+        encoded = json.dumps(projected, sort_keys=True)
+        self.assertNotIn(str(root), encoded)
+        self.assertNotIn("observed", encoded)
+        self.assertNotIn("expected", encoded)
 
 
 if __name__ == "__main__":
