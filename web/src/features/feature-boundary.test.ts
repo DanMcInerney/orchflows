@@ -4,6 +4,7 @@ import * as runMap from "./run-map";
 import * as inspector from "./inspector";
 import * as sessions from "./sessions";
 import * as sessionGraph from "./session-graph";
+import * as friction from "./friction";
 
 const nowSources = import.meta.glob("./now/**/*.{ts,tsx}", {
   eager: true,
@@ -30,6 +31,12 @@ const sessionsSources = import.meta.glob("./sessions/**/*.{ts,tsx}", {
 }) as Record<string, string>;
 
 const sessionGraphSources = import.meta.glob("./session-graph/**/*.{ts,tsx}", {
+  eager: true,
+  query: "?raw",
+  import: "default",
+}) as Record<string, string>;
+
+const frictionSources = import.meta.glob("./friction/**/*.{ts,tsx}", {
   eager: true,
   query: "?raw",
   import: "default",
@@ -133,6 +140,23 @@ describe("feature package boundaries", () => {
 
     for (const source of Object.values(sessionGraphSources)) {
       expect(source).not.toMatch(/from\s+["'][^"']*(?:\.\.\/\.\.\/(?:api|app|state)|\.\.\/(?:now|run-map|inspector|sessions|friction))[\w\W]*?["']/);
+    }
+  });
+
+  it("closes friction behind its health data contract", async () => {
+    expect(Object.keys(friction)).toEqual(expect.arrayContaining([
+      "route", "schema", "request", "polling", "project", "data",
+      "model", "fixtures", "styles", "loadView",
+    ]));
+    const matched = friction.route.match({ pathname: "/friction/", search: "?fixture=canonical-linked", hash: "" });
+    expect(matched).toEqual({ fixture: "canonical-linked" });
+    expect(friction.route.build(matched!)).toBe("/friction?fixture=canonical-linked");
+    expect(friction.request({ fixture: "canonical-linked" })).toEqual({ url: "/api/v1/views/friction" });
+    expect(() => friction.schema({ schema: "orchflows.now.v1", runs: [] })).toThrow();
+    expect((await friction.loadView()).default).toBeTypeOf("function");
+
+    for (const source of Object.values(frictionSources)) {
+      expect(source).not.toMatch(/from\s+["'][^"']*(?:\.\.\/\.\.\/(?:api|app|state)|\.\.\/(?:now|run-map|inspector|sessions|session-graph))[\w\W]*?["']/);
     }
   });
 });
