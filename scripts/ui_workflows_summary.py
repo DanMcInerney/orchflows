@@ -41,6 +41,58 @@ def _closed_object(value: object, fields: set[str], subject: str) -> dict:
     return value
 
 
+def _adjacency(node_ids: set[str], edges: list[dict]) -> dict[str, set[str]]:
+    adjacent = {node_id: set() for node_id in node_ids}
+    for edge in edges:
+        adjacent[edge["source"]].add(edge["target"])
+    return adjacent
+
+
+def _has_cycle(adjacent: dict[str, set[str]]) -> bool:
+    visiting = set()
+    visited = set()
+
+    def visit(node_id: str) -> bool:
+        if node_id in visiting:
+            return True
+        if node_id in visited:
+            return False
+        visiting.add(node_id)
+        if any(visit(target) for target in adjacent[node_id]):
+            return True
+        visiting.remove(node_id)
+        visited.add(node_id)
+        return False
+
+    return any(visit(node_id) for node_id in adjacent)
+
+
+def _can_reach(adjacent: dict[str, set[str]], start: str, target: str) -> bool:
+    pending = [start]
+    visited = set()
+    while pending:
+        node_id = pending.pop()
+        if node_id == target:
+            return True
+        if node_id in visited:
+            continue
+        visited.add(node_id)
+        pending.extend(adjacent[node_id] - visited)
+    return False
+
+
+def _validate_cycles(workflow_id: str, node_ids: set[str], edges: list[dict]) -> None:
+    ordinary_edges = [edge for edge in edges if edge["kind"] != "loop"]
+    if _has_cycle(_adjacency(node_ids, ordinary_edges)):
+        raise SummaryManifestError(f"{workflow_id} has a cycle without a loop edge")
+
+    for loop_edge in (edge for edge in edges if edge["kind"] == "loop"):
+        other_edges = [edge for edge in edges if edge is not loop_edge]
+        adjacent = _adjacency(node_ids, other_edges)
+        if not _can_reach(adjacent, loop_edge["target"], loop_edge["source"]):
+            raise SummaryManifestError(f"{workflow_id} has a loop outside a cycle")
+
+
 def _validate_summary(workflow_id: str, summary: object) -> None:
     summary = _closed_object(summary, {"nodes", "edges"}, workflow_id)
     nodes = summary["nodes"]
@@ -86,6 +138,7 @@ def _validate_summary(workflow_id: str, summary: object) -> None:
         if edge_tuple in edge_tuples:
             raise SummaryManifestError(f"{workflow_id} has a duplicate edge")
         edge_tuples.add(edge_tuple)
+    _validate_cycles(workflow_id, node_ids, edges)
 
 
 def validate_manifest(

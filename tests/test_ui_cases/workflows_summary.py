@@ -113,6 +113,35 @@ class WorkflowSummaryManifestTests(unittest.TestCase):
         with self.assertRaises(summaries.SummaryManifestError):
             summaries.validate_manifest(manifest, {"demo"})
 
+    def test_every_directed_cycle_contains_a_loop_edge(self):
+        manifest = self._synthetic_manifest()
+        manifest["workflows"]["demo"]["edges"].append(
+            {"source": "two", "target": "one", "kind": "branch"}
+        )
+
+        with self.assertRaises(summaries.SummaryManifestError):
+            summaries.validate_manifest(manifest, {"demo"})
+
+    def test_every_loop_edge_is_part_of_a_directed_cycle(self):
+        manifest = self._synthetic_manifest()
+        manifest["workflows"]["demo"]["edges"][0]["kind"] = "loop"
+
+        with self.assertRaises(summaries.SummaryManifestError):
+            summaries.validate_manifest(manifest, {"demo"})
+
+    def test_loop_edges_can_close_multi_node_cycles_or_self_cycles(self):
+        multi_node = self._synthetic_manifest()
+        multi_node["workflows"]["demo"]["edges"].append(
+            {"source": "two", "target": "one", "kind": "loop"}
+        )
+        self_cycle = self._synthetic_manifest()
+        self_cycle["workflows"]["demo"]["edges"].append(
+            {"source": "two", "target": "two", "kind": "loop"}
+        )
+
+        self.assertIs(multi_node, summaries.validate_manifest(multi_node, {"demo"}))
+        self.assertIs(self_cycle, summaries.validate_manifest(self_cycle, {"demo"}))
+
     @staticmethod
     def _synthetic_manifest():
         return {
