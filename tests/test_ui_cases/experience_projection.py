@@ -10,21 +10,16 @@ from scripts.ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG
 
 
 class ExperienceFoundationContractTests(unittest.TestCase):
-    def test_modularization_spec_is_the_accepted_content_with_locator_repair(self):
+    def test_modularization_spec_is_the_accepted_content_with_locator_repairs(self):
         path = ROOT / "docs" / "ui" / "modularization.md"
         implemented = path.read_bytes()
-        repaired = implemented.replace(
-            b"../../web/src/features/session-graph/index.ts)",
-            b"../../web/src/features/session-graph/index.tsx)",
-        )
 
-        self.assertNotEqual(implemented, repaired)
         self.assertNotIn(
             b"../../web/src/features/session-graph/index.tsx)", implemented
         )
         self.assertEqual(
-            "D5B7418736D058B881BD9C673277DED0E23816809643FF51BA1631A2A4DC3E87",
-            hashlib.sha256(repaired).hexdigest().upper(),
+            "6AEF8758EBEC2DCB6C117A6A566FB0843B6061AF6CE3441278869E7A462AF303",
+            hashlib.sha256(implemented).hexdigest().upper(),
         )
 
     def test_session_slug_diagnostic_keeps_legacy_identity_but_api_is_path_safe(self):
@@ -141,7 +136,6 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         app = (ROOT / "web" / "src" / "ObserveApp.tsx").read_text(encoding="utf-8")
         shell = (ROOT / "web" / "src" / "app" / "shell" / "Shell.tsx").read_text(encoding="utf-8")
         composition = (ROOT / "web" / "src" / "app" / "shell" / "featureCatalog.ts").read_text(encoding="utf-8")
-        compatibility_types = (ROOT / "web" / "src" / "api" / "schema.ts").read_text(encoding="utf-8")
         harness = (ROOT / "tools" / "ui_frontend.py").read_text(encoding="utf-8")
         experience_harness = (ROOT / "web" / "src" / "smoke.spec.ts").read_text(encoding="utf-8")
         self.assertEqual('import { Shell } from "./app/shell/Shell";\n\nexport function ObserveApp() {\n  return <Shell />;\n}\n', app)
@@ -149,11 +143,10 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         self.assertIn("read only", shell.lower())
         self.assertIn('import { featureCatalog } from "./featureCatalog"', shell)
         self.assertNotIn("FALLBACK", shell)
-        self.assertNotIn("ExperienceSnapshot", compatibility_types)
-        self.assertNotIn("function ", compatibility_types)
         for removed in (
             ROOT / "web" / "src" / "app" / "registry.ts",
             ROOT / "web" / "src" / "state" / "location.ts",
+            ROOT / "web" / "src" / "api" / "schema.ts",
             ROOT / "web" / "src" / "api" / "client.ts",
             ROOT / "web" / "src" / "feed.ts",
         ):

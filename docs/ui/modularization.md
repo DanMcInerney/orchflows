@@ -4,7 +4,7 @@ This specification changes ownership before any visual redesign. It makes a comp
 
 ## Baseline coupling and preserved invariants
 
-PR 74's shell is component-additive, not feature-modular. The registry eagerly discovers views, while navigation, route parsing, the shared `ExperienceSnapshot`, polling, and whole-snapshot handoff remain separate central seams ([registry](../../web/src/app/registry.ts), [shell](../../web/src/ObserveApp.tsx), [router](../../web/src/state/location.ts), [schema](../../web/src/api/schema.ts), [client](../../web/src/api/client.ts), [feed](../../web/src/feed.ts)). A feature change therefore crosses browser and reader concerns assigned to different owners ([architecture](../../ARCHITECTURE.md), [rendered UI contract](README.md)). Feature indices are narrow but not uniform: for example, the [session-graph index](../../web/src/features/session-graph/index.ts) also exports `sessionTopology`.
+PR 74's shell is component-additive, not feature-modular. The registry eagerly discovers views, while navigation, route parsing, the shared `ExperienceSnapshot`, polling, and whole-snapshot handoff remain separate central seams (`web/src/app/registry.ts`, [shell](../../web/src/ObserveApp.tsx), `web/src/state/location.ts`, `web/src/api/schema.ts`, `web/src/api/client.ts`, `web/src/feed.ts`). A feature change therefore crosses browser and reader concerns assigned to different owners ([architecture](../../ARCHITECTURE.md), [rendered UI contract](README.md)). Feature indices are narrow but not uniform: for example, the [session-graph index](../../web/src/features/session-graph/index.ts) also exports `sessionTopology`.
 
 Implementation must replace glob discovery with one explicit static typed catalog. The catalog is the sole architectural owner of display order, rail participation, route matching/building, view loading, and the binding of a route to one feature's data contract. Feature packages supply private implementations the catalog registers: route functions, schema, request and polling policy, projection, model, view, fixtures, styles, and focused tests. Those functions cannot self-register or dispatch. One shared feature-blind transport retains ETag and polling mechanics. Python domain projections split behind the existing `ui_api` facade.
 
@@ -52,7 +52,7 @@ For an enabled rail row, the canonical href is `route.build(navigation.home)`. F
 
 The router evaluates every routable row, selects the highest `matchPriority`, and treats zero matches as the shell's not-found state. Tied highest matches are a catalog-construction error and an admission-test failure. Priority is explicit and independent of array order, so rail reordering cannot alter routing. Duplicate identities and enabled-rail canonical hrefs are also rejected.
 
-This catalog replaces fallback navigation, parent-route exceptions, and route switches ([shell](../../web/src/ObserveApp.tsx), [location](../../web/src/state/location.ts)). There is no second registration or routing owner.
+This catalog replaces fallback navigation, parent-route exceptions, and route switches ([shell](../../web/src/ObserveApp.tsx), `web/src/state/location.ts`). There is no second registration or routing owner.
 
 ## Feature-local frontend boundary
 
