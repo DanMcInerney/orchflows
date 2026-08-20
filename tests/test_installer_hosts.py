@@ -1,6 +1,10 @@
 """Installer host-planning cases exposed as an independent process shard."""
 
-from tests import test_installer as _facade
+import sys
+
+_facade = sys.modules.get("test_installer")
+if _facade is None:
+    from tests import test_installer as _facade
 from tests.test_installer_cases.planning.host_detection import DryRunOracleTest, TestHostAutoDetection
 from tests.test_installer_cases.planning.scoped_hosts import (
     RoleProfileRefusalTest,

@@ -1,6 +1,10 @@
 """Installer application and managed-text cases without shared installs."""
 
-from tests import test_installer as _facade
+import sys
+
+_facade = sys.modules.get("test_installer")
+if _facade is None:
+    from tests import test_installer as _facade
 from tests.test_installer_cases.application.partial_apply import TestPartialApplyAfterRmtree
 from tests.test_installer_cases.managed_text.host_block import (
     TestHostBlockDemands,

@@ -10,7 +10,6 @@ shape stops being something only three cells of the matrix can see.
 """
 
 from __future__ import annotations
-
 import importlib
 import io
 import os
@@ -22,13 +21,11 @@ import textwrap
 import unittest
 from pathlib import Path
 from unittest import mock
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from tools import run_tests  # noqa: E402
-
 RUN_TESTS_PY = REPO_ROOT / "tools" / "run_tests.py"
 CHECKS_YML = REPO_ROOT / ".github" / "workflows" / "checks.yml"
 AGENTS_MD = REPO_ROOT / "AGENTS.md"
@@ -38,7 +35,6 @@ AGENTS_MD = REPO_ROOT / "AGENTS.md"
 # the report.
 ENCODABLE = "é"  # é
 UNENCODABLE = "★"  # ★
-
 
 def run_fixture(source: str):
     """Run one synthetic module through the same child boundary as CI."""
@@ -324,6 +320,10 @@ class TestSchedule(unittest.TestCase):
             if name.startswith("tests.test_installer")
         ]
         self.assertGreaterEqual(len(modules), 3)
+        for name in modules:
+            if name != "tests.test_installer":
+                source = REPO_ROOT.joinpath(*name.split(".")).with_suffix(".py")
+                self.assertIn('sys.modules.get("test_installer")', source.read_text())
         stack = list(unittest.TestLoader().loadTestsFromNames(modules))
         identities = []
         while stack:
@@ -334,8 +334,8 @@ class TestSchedule(unittest.TestCase):
                 identities.append(item.id())
         self.assertEqual(len(identities), len(set(identities)))
         self.assertTrue(identities)
-        self.assertTrue(all(name.startswith("tests.test_installer.") for name in identities))
-
+        prefixes = ("tests.test_installer.", "test_installer.")
+        self.assertTrue(all(name.startswith(prefixes) for name in identities))
     def test_timing_record_carries_context_occupancy_modules_and_outcomes(self):
         records = [{"module": "tests.test_one", "tests": 3, "failures": 1,
                     "errors": 0, "skipped": 1, "unexpected": 0, "ok": False,
