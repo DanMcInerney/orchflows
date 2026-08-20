@@ -69,14 +69,21 @@ class TestFrictionFeed(unittest.TestCase):
             self.assertNotIn("unreadable", page)
             self.assertIn("1 entry", page)
 
-    def test_an_entry_missing_a_category_or_host_is_shown_rather_than_dropped(self):
-        # An older logger wrote entries without them. Dropping the entry
-        # would lose the observation the law exists to keep.
+    def test_an_entry_missing_a_host_is_shown_rather_than_dropped(self):
+        # An older logger wrote an entry without one. Dropping the entry would
+        # lose the observation the law exists to keep.
         with tempfile.TemporaryDirectory() as tmp:
             page = self.feed(tmp)
 
             self.assertIn("an entry written by an older logger", page)
-            self.assertEqual(2, page.count(ui.EMPTY_UNSET))
+            self.assertEqual(1, page.count(ui.EMPTY_UNSET))
+
+    def test_historical_categories_are_ignored(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            page = self.feed(tmp)
+
+            for historical_value in ("missing-doc", "workaround", "surprising-output", "contract-gap"):
+                self.assertNotIn(historical_value, page)
 
     def test_an_untrusted_entry_reaches_the_feed_escaped(self):
         with tempfile.TemporaryDirectory() as tmp:

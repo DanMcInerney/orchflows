@@ -11,6 +11,9 @@ WRITE_SCOPE_KEY = "write_scope"
 UNGRADABLE_IN_SCOPE = (" ", "\t", "(", ")")
 SPACING = (" ", "\t")
 CONTRACT = "contracts/work-item.md"
+PLANLESS_GRANT_STATUSES = frozenset({
+    "claimed", "suspended", "complete", "blocked", "stalled", "limited", "failed",
+})
 
 
 def _exists_as_path(entry: str, root) -> bool:
@@ -83,3 +86,38 @@ def _in_scope(name: str, scope) -> bool:
     """A path prefix compared on whole segments: `docs` never takes `docsmith`."""
 
     return any(name == prefix or name.startswith(prefix + "/") for prefix in scope)
+
+
+def _actual_mutations(name_status: str) -> list:
+    """Normalize ``git diff --name-status --no-renames -z`` rows."""
+
+    tokens = name_status.split("\0")
+    rows = []
+    index = 0
+    operations = {"A": "create", "D": "delete", "M": "change", "T": "change"}
+    while index < len(tokens) and tokens[index]:
+        status = tokens[index]
+        if "\t" in status:
+            status, path = status.split("\t", 1)
+            index += 1
+        elif index + 1 < len(tokens):
+            path = tokens[index + 1]
+            index += 2
+        else:
+            raise Refused("git name-status output ended before its path")
+        operation = operations.get(status[:1])
+        if operation is None:
+            raise Refused(f"git name-status returned unsupported status {status!r}")
+        rows.append((operation, path))
+    return sorted(set(rows))
+
+
+def _operation_plan_required(data) -> bool:
+    """Whether the join grades operations in addition to path authority.
+
+    A plan, once declared, is always exact.  The migration exception is only
+    an already claimed or terminal ticket with no plan; pending and ready v1
+    tickets must be re-cut before admission rather than grandfathered here.
+    """
+
+    return "mutations" in data or str(data.get("status") or "") not in PLANLESS_GRANT_STATUSES

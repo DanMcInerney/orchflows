@@ -11,10 +11,9 @@ class TestPendingPromotion(unittest.TestCase):
                 "T2": ("pending", "[T1]"),
             })
             payload = run_cmd(tmp, "ready", "--run", "testrun")
-            ids = [t["id"] for t in payload["ready"]]
-            self.assertEqual(["T2"], ids)
-            self.assertEqual("ready", payload["ready"][0]["status"])
-            self.assertIn("status: ready", (run_dir / "T2.md").read_text(encoding="utf-8"))
+            self.assertEqual([], payload["ready"])
+            self.assertIn("requires `recut`", payload["skipped"][0]["reason"])
+            self.assertIn("status: pending", (run_dir / "T2.md").read_text(encoding="utf-8"))
 
     def test_pending_with_incomplete_deps_stays_pending(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -38,44 +37,37 @@ class TestPendingPromotion(unittest.TestCase):
 
 
 class TestClaim(unittest.TestCase):
-    def test_claim_happy_path_transitions_ready_to_claimed(self):
+    def test_ready_v0_requires_recut_before_claim(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             run_dir = make_repo(tmp, {"T1": ("ready", "[]")})
             payload = run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-a")
-            self.assertEqual("agent-a", payload["claimed"]["claimed_by"])
-            self.assertEqual("T1", payload["claimed"]["id"])
+            self.assertIn("requires `recut`", payload["error"])
             text = (run_dir / "T1.md").read_text(encoding="utf-8")
-            self.assertIn("status: claimed", text)
-            self.assertIn("claimed_by: agent-a", text)
-            self.assertRegex(text, r"claimed_at: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+            self.assertIn("status: ready", text)
+            self.assertNotIn("claimed_by: agent-a", text)
 
     def test_claim_on_fresh_claim_is_rejected_not_stale(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             make_repo(tmp, {"T1": ("ready", "[]")})
             first = run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-a")
-            self.assertIn("claimed", first)
-            second = run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-b")
-            self.assertIn("error", second)
+            self.assertIn("requires `recut`", first["error"])
 
-    def test_stale_claim_is_reclaimed(self):
+    def test_stale_v0_claim_is_not_reclaimed(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             run_dir = make_repo(tmp, {"T1": ("ready", "[]")})
             ticket_path = run_dir / "T1.md"
-            first = run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-a")
-            self.assertIn("claimed", first)
-            # backdate the claim well past the ticket's 30m bound, and the
-            # file with it: staleness is motion as well as the clock, so a
-            # claim whose ticket was written a moment ago is still moving
             text = ticket_path.read_text(encoding="utf-8")
+            text = tickets_mod._set_frontmatter_field(text, "status", "claimed")
+            text = tickets_mod._set_frontmatter_field(text, "claimed_by", "agent-a")
             text = tickets_mod._set_frontmatter_field(text, "claimed_at", "2020-01-01T00:00:00Z")
             ticket_path.write_text(text, encoding="utf-8")
             backdate(ticket_path, 10 * 24 * 60)
             second = run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-b")
-            self.assertEqual("agent-b", second["claimed"]["claimed_by"])
-            self.assertIn("claimed_by: agent-b", ticket_path.read_text(encoding="utf-8"))
+            self.assertIn("requires `recut`", second["error"])
+            self.assertIn("claimed_by: agent-a", ticket_path.read_text(encoding="utf-8"))
 
     def test_two_writer_claim_race_yields_exactly_one_winner(self):
         """Two threads in flight at once over one ticket, both holding the
@@ -338,8 +330,12 @@ class TimeParseFallbackTest(unittest.TestCase):
                 "T3": ("30m", "yesterday"),  # the stamp, not the bound, frees this
                 "T4": ("30m", minutes_ago(5)),  # a live claim, stated bound
             })
-            ready = {item["id"] for item in run_cmd(tmp, "ready")["ready"]}
-        self.assertEqual({"T2", "T3"}, ready)
+            payload = run_cmd(tmp, "ready")
+            stale = {
+                item["id"] for item in payload["skipped"]
+                if "stale legacy claim" in item.get("reason", "")
+            }
+        self.assertEqual({"T2", "T3"}, stale)
 
 
 RESULT_TICKET = """---

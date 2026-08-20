@@ -21,7 +21,7 @@ class InstantiateTest(unittest.TestCase):
             self.assertNotIn("error", payload)
             self.assertEqual(["A", "B", "C"], payload["instantiate"]["ids"])
             listed = {item["id"]: item["status"] for item in run_cmd("list", "--run", "testrun")["tickets"]}
-            self.assertEqual({"A": "ready", "B": "pending", "C": "pending"}, listed)
+            self.assertEqual({"A": "pending", "B": "pending", "C": "pending"}, listed)
 
     def test_the_edgeless_stub_is_the_only_one_ready(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -43,8 +43,78 @@ class InstantiateTest(unittest.TestCase):
             data = tickets_mod._parse_frontmatter(text)
             self.assertEqual(["scripts/a.py"], data["write_scope"])
             self.assertEqual("testrun", data["run"])
-            self.assertEqual("ready", data["status"])
+            self.assertEqual("pending", data["status"])
             self.assertEqual([], tickets_mod.ticket_defects(text))
+
+    def test_inputs_render_json_safely_and_receive_run_dependency_and_baseline_identities(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = use_sink(tmp)
+            stubs = three_stubs()
+            stubs["A"] = stubs["A"].replace(
+                "None.",
+                '- input: {"name":"question","type":"literal","value":"{{target}}"}',
+            )
+            directory = make_template(tmp, stubs)
+            exact = 'a "quoted" value'
+            payload = self.instantiate(directory, "--set", f"target={exact}")
+            self.assertNotIn("error", payload)
+            first = (self.run_dir(sink) / "A.md").read_text(encoding="utf-8")
+            second = (self.run_dir(sink) / "B.md").read_text(encoding="utf-8")
+            first_inputs = [
+                json.loads(line[len("- input: "):])
+                for line in tickets_mod._sections(first)["Fixed inputs"].splitlines()
+            ]
+            second_inputs = [
+                json.loads(line[len("- input: "):])
+                for line in tickets_mod._sections(second)["Fixed inputs"].splitlines()
+            ]
+            self.assertEqual(exact, next(x["value"] for x in first_inputs if x["name"] == "question"))
+            baseline = next(x for x in first_inputs if x["name"] == "baseline")
+            self.assertEqual("git-tree", baseline["identity"]["kind"])
+            self.assertRegex(baseline["identity"]["revision"], r"^[0-9a-f]{40,64}$")
+            dependency = next(x for x in second_inputs if x["name"] == "a-result")
+            self.assertEqual(
+                {"kind": "ticket-section", "run": "testrun", "section": "Result", "ticket": "A"},
+                dependency["identity"],
+            )
+
+    def test_a_numeric_dependency_id_receives_a_valid_input_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = use_sink(tmp)
+            stubs = {
+                "00-first": stub("00-first", executor="orch-investigate"),
+                "01-second": stub(
+                    "01-second", "[00-first]", executor="orch-verify"
+                ),
+            }
+            directory = make_template(tmp, stubs)
+            payload = self.instantiate(directory, "--set", "target=scratch/a.py")
+            self.assertNotIn("error", payload)
+            second = (self.run_dir(sink) / "01-second.md").read_text(encoding="utf-8")
+            records = [
+                json.loads(line[len("- input: "):])
+                for line in tickets_mod._sections(second)["Fixed inputs"].splitlines()
+            ]
+            dependency = next(
+                item for item in records
+                if (item.get("identity") or {}).get("ticket") == "00-first"
+            )
+            self.assertEqual("ticket-00-first-result", dependency["name"])
+
+    def test_legacy_template_prose_is_migrated_to_a_literal_not_left_as_a_prose_bullet(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = use_sink(tmp)
+            directory = make_template(tmp, three_stubs())
+            payload = self.instantiate(directory, "--set", "target=scripts/a.py")
+            self.assertNotIn("error", payload)
+            text = (self.run_dir(sink) / "A.md").read_text(encoding="utf-8")
+            lines = tickets_mod._sections(text)["Fixed inputs"].splitlines()
+            self.assertTrue(all(line.startswith("- input: {") for line in lines))
+            records = [json.loads(line[len("- input: "):]) for line in lines]
+            self.assertIn(None, [record.get("value") for record in records])
 
     def test_an_instantiated_ticket_is_claimable_and_dispatchable(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -52,10 +122,10 @@ class InstantiateTest(unittest.TestCase):
             use_sink(tmp)
             directory = make_template(tmp, three_stubs())
             self.instantiate(directory, "--set", "target=scripts/a.py")
-            packet = run_cmd("packet", "testrun", "A", "--reply-to", "main")
-            self.assertNotIn("error", packet)
             claimed = run_cmd("claim", "testrun", "A", "--by", "agent-a")
             self.assertEqual("agent-a", claimed["claimed"]["claimed_by"])
+            packet = run_cmd("packet", "testrun", "A", "--reply-to", "main")
+            self.assertNotIn("error", packet)
 
     def test_a_declared_placeholder_no_set_supplies_is_refused_by_name(self):
         with tempfile.TemporaryDirectory() as tmp:

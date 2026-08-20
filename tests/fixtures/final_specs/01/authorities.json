@@ -1,0 +1,82 @@
+[
+  {
+    "excluded_actions": [
+      "vcs.integrate",
+      "vcs.open-pr"
+    ],
+    "executor": "orch-tdd",
+    "isolation": "required",
+    "pack": "orch-code-pack",
+    "source": "20260813-benchmark-taxonomy/t01-taxonomy-cases-tracer",
+    "source_isolation": null,
+    "write_scope": [
+      "src/bench_stack/manifests.py",
+      "src/bench_stack/case_selection.py",
+      "src/bench_stack/cli.py",
+      "tests/test_manifests.py",
+      "tests/test_taxonomy.py",
+      "tests/test_cli.py",
+      "tests/test_architecture.py"
+    ]
+  },
+  {
+    "excluded_actions": [
+      "vcs.integrate",
+      "vcs.open-pr"
+    ],
+    "executor": "orch-tdd",
+    "isolation": "required",
+    "pack": "orch-code-pack",
+    "source": "20260813-benchmark-taxonomy/t02-config-serializer-lift",
+    "source_isolation": null,
+    "write_scope": [
+      "src/bench_stack/web_config.py",
+      "tests/test_web.py",
+      "tests/test_taxonomy.py"
+    ]
+  },
+  {
+    "excluded_actions": [
+      "vcs.integrate",
+      "vcs.open-pr"
+    ],
+    "executor": "orch-tdd",
+    "isolation": "required",
+    "pack": "orch-code-pack",
+    "source": "20260813-benchmark-taxonomy/t04a-manifest-taxonomy-first-half",
+    "source_isolation": null,
+    "write_scope": [
+      "src/bench_stack/benchmarks/agentdojo/benchmark.toml",
+      "src/bench_stack/benchmarks/agentlongbench/benchmark.toml",
+      "src/bench_stack/benchmarks/apex_agents/benchmark.toml",
+      "src/bench_stack/benchmarks/appworld/benchmark.toml",
+      "src/bench_stack/benchmarks/bfcl/benchmark.toml",
+      "src/bench_stack/benchmarks/bird_sql/benchmark.toml",
+      "src/bench_stack/benchmarks/deep_swe/benchmark.toml",
+      "src/bench_stack/benchmarks/deepresearch_bench/benchmark.toml",
+      "src/bench_stack/benchmarks/livecodebench/benchmark.toml",
+      "src/bench_stack/benchmarks/llm_deliberation/benchmark.toml",
+      "src/bench_stack/benchmarks/malicious_skill_detection/benchmark.toml",
+      "src/bench_stack/benchmarks/mock/benchmark.toml",
+      "src/bench_stack/benchmarks/skillsbench/benchmark.toml"
+    ]
+  },
+  {
+    "excluded_actions": [
+      "vcs.isolate",
+      "vcs.commit",
+      "vcs.open-pr"
+    ],
+    "executor": "orch-tdd",
+    "isolation": "required",
+    "pack": "orch-code-pack",
+    "source": "orchflows-ui-2026-08-10/U1",
+    "source_isolation": null,
+    "write_scope": [
+      "scripts/ui.py",
+      "tests/test_ui.py",
+      "tests/fixtures/ui/",
+      "install.py"
+    ]
+  }
+]

@@ -60,7 +60,6 @@ function FrictionRecordCard({ record, index }: { record: FrictionRecord; index: 
     <article className="friction-record" aria-labelledby={headingId}>
       <header className="friction-record__header">
         <div>
-          <p className="friction-record__category"><FileWarning aria-hidden="true" />{record.category || "Uncategorized"}</p>
           <h2 id={headingId}>{record.observed || "Observed condition unavailable"}</h2>
         </div>
         <time dateTime={record.ts || undefined}><Clock3 aria-hidden="true" />{timestamp(record.ts)}</time>

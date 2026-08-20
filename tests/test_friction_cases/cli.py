@@ -5,7 +5,7 @@ from .common import _IsolatedRepoTestCase
 
 class TestMainWritesEntry(_IsolatedRepoTestCase):
     def test_appends_exactly_one_json_line_with_required_keys(self):
-        rc, out = self._run_main(["observed thing", "expected thing", "--category", "tool-failure"])
+        rc, out = self._run_main(["observed thing", "expected thing"])
         self.assertEqual(rc, 0)
         self.assertEqual(out.strip(), "friction logged")
         lines = self._log_path().read_text(encoding="utf-8").splitlines()
@@ -14,11 +14,12 @@ class TestMainWritesEntry(_IsolatedRepoTestCase):
         self.assertEqual(set(entry), REQUIRED_ENTRY_KEYS)
         self.assertEqual(entry["observed"], "observed thing")
         self.assertEqual(entry["expected"], "expected thing")
-        self.assertEqual(entry["category"], "tool-failure")
 
     def test_second_call_appends_a_second_line_not_a_rewrite(self):
         self._run_main(["first observed", "first expected"])
+        prefix = self._log_path().read_bytes()
         self._run_main(["second observed", "second expected"])
+        self.assertEqual(prefix, self._log_path().read_bytes()[:len(prefix)])
         lines = self._log_path().read_text(encoding="utf-8").splitlines()
         self.assertEqual(len(lines), 2)
         self.assertEqual(json.loads(lines[0])["observed"], "first observed")
@@ -27,28 +28,27 @@ class TestMainWritesEntry(_IsolatedRepoTestCase):
     def test_flag_equals_value_forms_parse(self):
         rc, _ = self._run_main([
             "o", "e",
-            "--category=workaround", "--skill=orch-tdd",
+            "--skill=orch-tdd",
             "--ticket=t2-friction-hardening", "--run=20260717T161634Z-adversarial-test-sweep",
         ])
         self.assertEqual(rc, 0)
         entry = json.loads(self._log_path().read_text(encoding="utf-8").splitlines()[-1])
-        self.assertEqual(entry["category"], "workaround")
         self.assertEqual(entry["skill"], "orch-tdd")
         self.assertEqual(entry["ticket"], "t2-friction-hardening")
         self.assertEqual(entry["run"], "20260717T161634Z-adversarial-test-sweep")
 
     def test_mixed_space_and_equals_flag_forms_parse_together(self):
-        rc, _ = self._run_main(["o", "e", "--category", "misrouting", "--skill=orch-tdd"])
+        rc, _ = self._run_main(["o", "e", "--ticket", "t1", "--skill=orch-tdd"])
         self.assertEqual(rc, 0)
         entry = json.loads(self._log_path().read_text(encoding="utf-8").splitlines()[-1])
-        self.assertEqual(entry["category"], "misrouting")
+        self.assertEqual(entry["ticket"], "t1")
         self.assertEqual(entry["skill"], "orch-tdd")
 
-    def test_omitted_category_defaults_to_uncategorized(self):
+    def test_first_call_with_only_observed_and_expected_has_no_extra_label(self):
         rc, _ = self._run_main(["o", "e"])
         self.assertEqual(rc, 0)
         entry = json.loads(self._log_path().read_text(encoding="utf-8").splitlines()[-1])
-        self.assertEqual(entry["category"], "uncategorized")
+        self.assertEqual(REQUIRED_ENTRY_KEYS, set(entry))
         self.assertIsNone(entry["skill"])
 
     def test_git_lookup_missing_executable_still_appends_entry(self):

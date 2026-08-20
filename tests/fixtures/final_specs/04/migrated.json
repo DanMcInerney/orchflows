@@ -1,0 +1,16 @@
+[
+  {"evidence":"two sweeps","expected":"identity-digest-mismatch","ticket":"T01-tracked-evidence-and-true-liveness"},
+  {"evidence":"transport.py","expected":"git-symbol-absent","ticket":"T05-declared-route-owning-modules"},
+  {"evidence":".pytest_cache","expected":"git-path-absent","ticket":"03-in-copy-mutation"},
+  {"evidence":"run-state","expected":"git-symbol-absent","ticket":"09-tickets-subcommand-reach"},
+  {"evidence":"SHA-256","expected":"identity-digest-invalid","ticket":"00-rollback-capsule"},
+  {"evidence":"Frozen CSV SHA-256","expected":"identity-schema","ticket":"01-event-safe-protocol"},
+  {"evidence":"Repair evidence","expected":"ticket-section-absent","ticket":"ci-fast-v2"},
+  {"evidence":"L16","expected":"identity-locator-absent","ticket":"R3D-REPORT-DELIVERY.05"},
+  {"evidence":"intake evidence packet","expected":"ticket-section-absent","ticket":"R3D-RESEARCH.12"},
+  {"evidence":"intake evidence packet","expected":"identity-locator-invalid","ticket":"R3D-RESEARCH.16"},
+  {"evidence":"plan_install","expected":"git-symbol-absent","ticket":"runtime-venv"},
+  {"evidence":"repository root","expected":"git-remote-mismatch","ticket":"DOCS.05"},
+  {"evidence":"experience_foundation_gap.py","expected":"git-path-absent","ticket":"00-reproduce"},
+  {"evidence":"00-reproduce","expected":"git-path-absent","ticket":"01-cause"}
+]

@@ -259,7 +259,7 @@ class TestRunLiveSweepCleanupPaths(unittest.TestCase):
 
         tagged = [entry for entry in seen_entries if entry.get("run") == "fixed-run-id"]
         self.assertEqual(1, len(tagged))
-        self.assertEqual(sweep_live.FRICTION_CATEGORY, tagged[0]["category"])
+        self.assertNotIn("category", tagged[0])
 
 
 class TestMainGuard(unittest.TestCase):

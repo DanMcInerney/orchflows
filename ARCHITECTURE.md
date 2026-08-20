@@ -36,7 +36,15 @@ whitespace-delimited words. Use terms exactly as
 - [`scripts/`](scripts/) owns repository automation. Its programs use
   Python 3.9+, run on Windows and POSIX, and require no network at
   run time. An unprefixed family module is the public command and import
-  facade; same-family helpers own internal concerns.
+  facade; same-family helpers own internal concerns. In the ticket family,
+  `tickets_format.py` owns syntax, closed parsers, and the installed pack
+  mechanism registry; `tickets_markdown.py` is its private byte-preserving
+  Markdown mechanism,
+  `tickets_inputs.py` owns typed identity resolution, `tickets_scope.py` owns
+  mutation/edge closure, and `tickets_admission.py` composes those pure lower
+  graders into receipts. Lifecycle and packet modules consume admission.
+  Cutcheck imports those lower owners directly, never the tickets facade;
+  admission and cutcheck never import each other.
 - [`tools/validate.py`](tools/validate.py) owns mechanical library-text
   admission; [`tools/check_source_sizes.py`](tools/check_source_sizes.py)
   owns executable-source line ceilings. [`tests/`](tests/) owns regression

@@ -26,7 +26,7 @@ frozen one is recorded where `orch-self-improve` reads it.
 
 ## Completion test
 
-- every canary item ran and every divergence is logged as friction, category `surprising-output` | oracle: the friction log for this run beside 00-run's result identities, read against `golden.json` | oracle_class: deterministic | provenance: pre-existing
+- every canary item ran and every divergence is logged as friction | oracle: the friction log for this run beside 00-run's result identities, read against `golden.json` | oracle_class: deterministic | provenance: pre-existing
 - every verdict cites the `golden.json` entry it was decided against | oracle: the verdict set | oracle_class: deterministic | provenance: pre-existing
 
 ## Return fields

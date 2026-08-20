@@ -50,6 +50,7 @@ class GitNoHistoryDispositionTest(unittest.TestCase):
                     cutcheck.VERDICT_IN_OUTPUT,
                     cutcheck.SYMLINK_IN_TREE,
                     cutcheck.BYTECODE_WRITTEN,
+                    cutcheck.SCOPE_OPEN,
                     cutcheck.UNREAD_HALF,
                 }
             ),

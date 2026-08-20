@@ -101,6 +101,7 @@ describe("TicketInspector", () => {
     window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=friction-present");
     render(<TicketInspector state={ready(value)} route={route("friction-present")} />);
     expect(screen.getByText("Linked observation")).not.toBeNull();
+    expect(screen.queryByText("contract-gap")).toBeNull();
     expect(screen.queryByText("Other ticket")).toBeNull();
   });
 

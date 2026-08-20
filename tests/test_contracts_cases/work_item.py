@@ -1,12 +1,15 @@
 """Cases for the work-item contract and its citation laws."""
 
 import unittest
+from pathlib import Path
 
 from tests.test_contracts_cases.support import (
     read,
     read_bullet_flat,
     read_flat,
 )
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 class TestWorkItemContract(unittest.TestCase):
@@ -197,13 +200,84 @@ class TestWorkItemCitationLaws(unittest.TestCase):
                 "`scripts/workspace.py check` as what grades the declaration",
             ),
             (
-                "before the merge",
+                "before assembly",
                 "work-item.md's `isolation` bullet does not order "
-                "`scripts/workspace.py check` before the merge",
+                "`scripts/workspace.py check` before assembly",
             ),
         ):
             with self.subTest(token=token):
                 self.assertIn(token, text, why)
+
+
+class TestV1AdmissionContract(unittest.TestCase):
+    def bullet(self, marker):
+        return read_bullet_flat("work-item.md", marker)
+
+    def test_frontmatter_owns_admission_cohort_and_mutation_plan(self):
+        text = read("work-item.md")
+        for token in ("`admission`", "`cohort`", "`mutations`", "v1:pending", "create", "change", "delete", "write"):
+            with self.subTest(token=token):
+                self.assertIn(token, text)
+
+    def test_fixed_inputs_and_return_size_have_canonical_grammars(self):
+        text = read("work-item.md")
+        for token in (
+            '- input: {"identity":{...},"name":"baseline","type":"identity"}',
+            '- input: {"name":"question","type":"literal","value":"exact value"}',
+            'return-size: {"counter":"words-v1","maximum":3000,"minimum-complete":"return-fixture","target":"result"}',
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, text)
+
+    def test_work_item_keeps_generic_authority_while_tdd_owns_its_procedure(self):
+        contract = read("work-item.md")
+        procedure = (ROOT / "skills" / "instances" / "orch-tdd" / "SKILL.md").read_text(encoding="utf-8")
+        self.assertNotIn("`orch-tdd`", contract)
+        for token in ("verified slice", "ticket workspace", "join", "integration"):
+            with self.subTest(token=token):
+                self.assertIn(token, procedure)
+
+    def test_architecture_and_pack_signature_own_lower_adapters(self):
+        architecture = (ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8")
+        signature = read("pack-signature.md")
+        for token in ("tickets_admission.py", "tickets_inputs.py", "tickets_scope.py", "tickets_format.py"):
+            self.assertIn(token, architecture)
+        for token in ("stable mechanism key", "adapter", "packs remain data"):
+            self.assertIn(token, signature)
+        format_source = (ROOT / "scripts" / "tickets_format.py").read_text(encoding="utf-8")
+        admission_source = (ROOT / "scripts" / "tickets_admission.py").read_text(encoding="utf-8")
+        cutcheck_source = (ROOT / "scripts" / "cutcheck_ticket.py").read_text(encoding="utf-8")
+        for owner in ("parse_mutations", "parse_return_size", "parse_result_identity", "count_return_text"):
+            self.assertIn(f"def {owner}", format_source)
+            self.assertNotIn(f"def {owner}", admission_source)
+        self.assertNotIn("tickets_admission", cutcheck_source)
+
+    def test_decomposer_cuts_one_cohort_with_typed_inputs_and_mutations(self):
+        text = (ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md").read_text(encoding="utf-8")
+        for token in ("--cohort", "--input", "--mutation", "canonical JSON", "stamped workspace cell"):
+            with self.subTest(token=token):
+                self.assertIn(token, text)
+        self.assertNotIn("--mutation create|change|delete|write", text)
+
+    def test_result_clause_shape_and_actual_enforcement_have_distinct_owners(self):
+        work_item = read("work-item.md")
+        result = read("result.md")
+        self.assertIn("return-size:", work_item)
+        self.assertNotIn("set-status complete", work_item)
+        self.assertIn("result: <canonical JSON identity payload>", result)
+        self.assertIn("set-status complete", result)
+
+    def test_pack_workspace_cells_are_declarative_records(self):
+        for relative in ("packs/orch-code-pack/SKILL.md", "packs/orch-design-pack/SKILL.md"):
+            cell = next(line for line in (ROOT / relative).read_text(encoding="utf-8").splitlines() if line.startswith("| workspace |"))
+            for control in (" when ", " if ", "refuse", "stop", "join grades", "merge refuses"):
+                with self.subTest(relative=relative, control=control):
+                    self.assertNotIn(control, cell.lower())
+
+    def test_integrate_assigns_result_grade_defects_to_their_owner(self):
+        text = (ROOT / "skills" / "kernel" / "orch-integrate" / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("reject(caller)", text)
+        self.assertIn("reject(child)", text)
 
     def test_fixed_inputs_forbid_an_unpinned_coordinate_by_citing_identity(self):
         text = self.bullet("`## Fixed inputs` — packet `inputs`")

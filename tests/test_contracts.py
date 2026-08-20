@@ -23,6 +23,7 @@ from tests.test_contracts_cases.topology import TopologyAtomTest  # noqa: F401
 from tests.test_contracts_cases.work_item import (  # noqa: F401
     TestWorkItemCitationLaws,
     TestWorkItemContract,
+    TestV1AdmissionContract,
 )
 
 

@@ -1,6 +1,9 @@
 """Behavioral ticket regression cases."""
 
+import time
+
 from .result_sections import *  # noqa: F401,F403
+from scripts import tickets_store as tickets_store_mod
 
 def run_dir_of(run: str = "testrun") -> Path:
     return sink_root() / "runs" / run
@@ -127,6 +130,39 @@ class TestRunStateWorklog(unittest.TestCase):
                 sorted(notes),
                 sorted(notes_of().read_text(encoding="utf-8").splitlines()),
             )
+
+    def test_a_note_waits_past_the_windows_finite_lock_window(self):
+        """A run mutation waits for ownership instead of failing after the
+        finite retry window built into ``msvcrt.LK_LOCK``.
+
+        Holding the real product lock past that window makes the old locking
+        mode exit with ``PermissionError``.  The child must remain blocked,
+        then append one whole line after the owner releases it.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, worktree, _ = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            note = "writer waited and landed " + "x" * 2000
+            command = [
+                sys.executable, str(TICKETS_PY), "run-state", "testrun",
+                "--note", note,
+            ]
+            with tickets_store_mod._run_lock("testrun"):
+                process = subprocess.Popen(
+                    command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                    text=True, encoding="utf-8", errors="replace",
+                    cwd=str(worktree),
+                )
+                time.sleep(10.5)
+                premature_exit = process.poll()
+            stdout, stderr = process.communicate(timeout=10)
+            self.assertIsNone(
+                premature_exit,
+                f"writer stopped waiting before release: {stdout or stderr}",
+            )
+            self.assertEqual(0, process.returncode, stdout or stderr)
+            self.assertEqual([note], notes_of().read_text(encoding="utf-8").splitlines())
 
 
 class TestRunStateArtifact(unittest.TestCase):

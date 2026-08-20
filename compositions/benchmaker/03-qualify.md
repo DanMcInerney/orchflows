@@ -21,18 +21,9 @@ cost each checked independently, with a verdict per required criterion.
 
 ## Fixed inputs
 
-- 02-materialize's `## Result` — the assembled case set by identity, the
-  fixed identity qualification runs against.
-- 01-design's `## Result` — the required criteria, their oracles and
-  `oracle_class`, and the gaps carried forward.
-- [the protocol](../references/benchmaker-protocol.md#qualification) —
-  what each check means, what the seeded variants are, what the
-  qualifying context supplies, and what leaves a check UNVERIFIED.
-- {{package}} — the target repository the qualified assembly sits in.
-- The standards owner, by pointer: the workspace's own owner file —
-  AGENTS.md or its equivalent.
-- Acceptance as runnable checks: the workspace's required checks as
-  that owner names them, beside this stub's own completion test.
+- input: {"identity":{"kind":"artifact","locator":"project:compositions/references/benchmaker-protocol.md","sha256":"cbe548149efd0ce3184e5f805a91173bd85a6c8a354f8d6e083a1781e4331f8d"},"name":"protocol-contract","type":"identity"}
+- input: {"name":"package","type":"literal","value":"{{package}}"}
+- input: {"name":"pack","type":"literal","value":"{{pack}}"}
 
 ## Completion test
 

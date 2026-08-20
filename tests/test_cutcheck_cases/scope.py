@@ -1,6 +1,7 @@
 """Cutcheck behavioral cases loaded explicitly by tests.test_cutcheck."""
 
 from tests.test_cutcheck import *  # noqa: F401,F403
+from scripts import cutcheck_scope
 
 try:
     del load_tests
@@ -15,6 +16,10 @@ class ScopeOpenLiteralTest(unittest.TestCase):
     the tree holds ordinary words and a finding against all of them says
     nothing about this cut.
     """
+
+    def test_overlap_uses_the_same_slash_normalization_as_authorization(self):
+        self.assertTrue(cutcheck_scope._overlaps("web\\src\\", "web/src/app.ts"))
+        self.assertTrue(cutcheck_scope._overlaps("web/src/app.ts", "web\\src\\"))
 
     def test_scope_open_reads_a_deleted_path_and_the_name_it_ends_in(self):
         """The pin is usually on the basename, never on the path that held it.
@@ -134,10 +139,11 @@ class ScopeOpenTest(unittest.TestCase):
             self.result.stdout,
         )
 
-    def test_scope_open_sets_the_exit_status(self):
-        self.assertNotIn(cutcheck.SCOPE_OPEN, cutcheck.ADVISORY)
+    def test_reverse_scan_is_an_undeclared_scope_edge_advisory(self):
+        self.assertEqual("undeclared-scope-edge", cutcheck.SCOPE_OPEN)
+        self.assertIn(cutcheck.SCOPE_OPEN, cutcheck.ADVISORY)
         self.assertEqual(cutcheck.FAMILY_OF[cutcheck.SCOPE_OPEN], cutcheck.FAMILY_3)
-        self.assertNotEqual(self.result.returncode, 0, self.result.stdout)
+        self.assertEqual(self.result.returncode, 0, self.result.stdout)
 
     def test_scope_open_says_nothing_about_a_cut_that_takes_nothing_away(self):
         """Every other fixture set in this suite, and the affirmative one first.

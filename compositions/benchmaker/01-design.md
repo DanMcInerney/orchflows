@@ -21,15 +21,11 @@ intended coverage, and expected execution cost.
 
 ## Fixed inputs
 
-- 00-acquire's `## Result` — the frozen synthesis identity and its
-  source identities; the design works from these and gathers nothing.
-- {{target}} and {{outcome}} — this run's values for the two things
-  orch-eval-design's Require reads off an `objective`, still opaque.
-- {{sources}} — the source policy and judgment permission
-  orch-eval-design's Require reads off `inputs`.
-- [the protocol](../references/benchmaker-protocol.md#licensed-oracle-material) —
-  what the frozen evidence licenses as oracle material, and what is not
-  a reason to decline casing it.
+- input: {"name":"target","type":"literal","value":"{{target}}"}
+- input: {"name":"outcome","type":"literal","value":"{{outcome}}"}
+- input: {"name":"sources","type":"literal","value":"{{sources}}"}
+- input: {"identity":{"kind":"artifact","locator":"project:compositions/references/benchmaker-protocol.md","sha256":"cbe548149efd0ce3184e5f805a91173bd85a6c8a354f8d6e083a1781e4331f8d"},"name":"protocol-contract","type":"identity"}
+- input: {"name":"package","type":"literal","value":"{{package}}"}
 
 ## Completion test
 

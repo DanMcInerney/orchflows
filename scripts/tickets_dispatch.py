@@ -1,7 +1,7 @@
 """Ticket dispatch support."""
-
 from __future__ import annotations
 import json
+import re
 import sys
 from pathlib import Path
 from datetime import datetime, timezone
@@ -10,13 +10,13 @@ if __package__:
 else:
     from tickets_format import CUT_SECTIONS, EXECUTOR_SECTIONS, PACK_NAME_PREFIX, PACK_NAME_SUFFIX, PLACEHOLDER_RE, ROOT_EXECUTOR, TEMPLATE_FILE, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field, _split_commas, ticket_defects
 if __package__:
-    from .tickets_issue import AMENDABLE_STATUSES, AMEND_USAGE, GATE_ID_MARKER, NEW_DEFAULT_BOUND, NEW_USAGE, _cmd_amend, _cmd_new, _distinct_gate_lenses, _render_ticket
+    from .tickets_issue import AMENDABLE_STATUSES, AMEND_USAGE, GATE_ID_MARKER, NEW_DEFAULT_BOUND, NEW_USAGE, RECUT_USAGE, _cmd_amend, _cmd_new, _cmd_recut, _distinct_gate_lenses, _render_ticket
 else:
-    from tickets_issue import AMENDABLE_STATUSES, AMEND_USAGE, GATE_ID_MARKER, NEW_DEFAULT_BOUND, NEW_USAGE, _cmd_amend, _cmd_new, _distinct_gate_lenses, _render_ticket
+    from tickets_issue import AMENDABLE_STATUSES, AMEND_USAGE, GATE_ID_MARKER, NEW_DEFAULT_BOUND, NEW_USAGE, RECUT_USAGE, _cmd_amend, _cmd_new, _cmd_recut, _distinct_gate_lenses, _render_ticket
 if __package__:
-    from .tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, GRANTABLE_STATUSES, GRANT_USAGE, _cmd_check, _cmd_claim, _cmd_grant, _cmd_list, _cmd_ready, _cmd_set_status
+    from .tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, GRANTABLE_STATUSES, GRANT_USAGE, RESULT_GRADE_USAGE, _cmd_check, _cmd_claim, _cmd_grant, _cmd_list, _cmd_ready, _cmd_result_grade, _cmd_set_status
 else:
-    from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, GRANTABLE_STATUSES, GRANT_USAGE, _cmd_check, _cmd_claim, _cmd_grant, _cmd_list, _cmd_ready, _cmd_set_status
+    from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, GRANTABLE_STATUSES, GRANT_USAGE, RESULT_GRADE_USAGE, _cmd_check, _cmd_claim, _cmd_grant, _cmd_list, _cmd_ready, _cmd_result_grade, _cmd_set_status
 if __package__:
     from .tickets_packet import CHECKER_PATH_EXECUTORS, GATE_CRITIQUE_ID, GATE_EXECUTORS, GATE_EXECUTOR_SECTIONS, GATE_REPAIR_ID, GATE_VERIFY_ID, _cmd_packet
 else:
@@ -33,17 +33,23 @@ if __package__:
     from .tickets_worklog import WORKLOG_USAGE, _closure_defects, _cmd_worklog, _run_tickets, _spec_field_defect, _template_order
 else:
     from tickets_worklog import WORKLOG_USAGE, _closure_defects, _cmd_worklog, _run_tickets, _spec_field_defect, _template_order
-
+if __package__:
+    from .tickets_admission import ADMISSION_PENDING, batch_cohort, root_cohort
+    from .tickets_input_producers import git_head, render_stub, render_ticket_inputs
+else:
+    from tickets_admission import ADMISSION_PENDING, batch_cohort, root_cohort
+    from tickets_input_producers import git_head, render_stub, render_ticket_inputs
 INSTANTIATE_USAGE = 'instantiate <template-dir> --run <run> [--set k=v ...]'
 GATE_USAGE = 'gate <run> <root-id> [--lens <name>[,<name>]] [--write-scope <path>[,<path>]] [--acceptance-from <id>]'
-SUBCOMMAND_USAGE = {'new': NEW_USAGE, 'amend': AMEND_USAGE, 'instantiate': INSTANTIATE_USAGE, 'gate': GATE_USAGE, 'list': 'list [--run R]', 'ready': 'ready [--run R]', 'claim': 'claim <run> <id> --by <name>', 'grant': GRANT_USAGE, 'check': CHECK_USAGE, 'set-status': 'set-status <run> <id> <status>', 'packet': f"packet <run> <id> --reply-to <name> [--workspace <path>] [--executor {' | '.join(CHECKER_PATH_EXECUTORS)}]", 'result': RESULT_USAGE, 'worklog': WORKLOG_USAGE, 'run-state': RUN_STATE_USAGE, 'improvement': IMPROVEMENT_USAGE}
-SUBCOMMAND_SUMMARY = {'new': 'Issue one ticket into the run, refusing any shape `ticket_defects` reports before anything is written; --file places one already written.', 'amend': f'Repair one cut-time section {list(CUT_SECTIONS)} of an issued ticket, through the same refusal `new` applies; refused once the ticket is claimed or has left {sorted(AMENDABLE_STATUSES)}, and never a section the executor writes (that is `result`).', 'instantiate': "Instantiate one template directory into a run's tickets: placeholders filled, every stub graded, the graph checked for edges, cycles and its single terminal, then written all or none.", 'gate': "Write one root ticket's gate stubs: a read-only critique per lens (--lens; absent, the stamped pack's domain) over the root's whole cut subtree, one repair holding the scope (the root's own, unless --write-scope names one) behind them all, and one verify carrying the acceptance verbatim. Refused if the root has no subtree yet, or if a stub already exists.", 'list': 'Every ticket in the tracker, or in one run, as summaries.', 'ready': 'The tickets whose dependencies are complete and whose claim is free or stale; promotes an eligible `pending` to `ready`.', 'claim': 'Take one ready or stale ticket, losing the race rather than overwriting a live claim.', 'grant': f"Record one caller-side widening of a claimed item's write scope — the paths, the granting caller and the time — as frontmatter bookkeeping every reader of the item's authority then honours. Refused on a ticket that is not {sorted(GRANTABLE_STATUSES)}: before a claim the cut owns the scope.", 'check': f"Record the rules/verification.md §10 checker's pass on one claimed item — `checked_by`, the name the join reads that item's `authored-here` acceptance from. Refused on a ticket that is not {sorted(CHECKABLE_STATUSES)}.", 'set-status': f"Set one ticket's status; terminal status is the join's alone. One of {sorted(VALID_STATUSES)}.", 'packet': f"The by-reference dispatch packet for one ticket: path, parts, and the commands the child runs from its own workspace. --executor ({' | '.join(CHECKER_PATH_EXECUTORS)}) emits it for one further rules/verification.md §10 child on the same claimed item instead — the checker, which corrects inside the ticket's write scope and records its pass through `check`, or the re-verifier, which is granted no write.", 'result': f"Write one of the executor's own sections {list(EXECUTOR_SECTIONS)}; a section already carrying content is refused without --append or --replace.", 'worklog': "Render this run's worklog view from its tickets — goal, iterations, failed approaches, queued scope, terminal — as markdown on the payload; --write also puts it at the run's worklog path, replacing a view rendered here and never a worklog written by anything else.", 'run-state': f"Write this run's state under the one user-scope sink, in one of {list(RUN_STATE_TREES)} (default {DEFAULT_RUN_STATE_TREE}); an artifact that already exists is refused without --replace. --terminal closes the run's notes, one of {list(TERMINAL_STATES)}, after which no note is written.", 'improvement': 'Write one improvement evidence record under the sink: a named proposal file, or one appended line of the coverage record.'}
+SUBCOMMAND_USAGE = {'new': NEW_USAGE, 'amend': AMEND_USAGE, 'instantiate': INSTANTIATE_USAGE, 'gate': GATE_USAGE, 'list': 'list [--run R]', 'ready': 'ready [--run R]', 'claim': 'claim <run> <id> --by <name>', 'grant': GRANT_USAGE, 'check': CHECK_USAGE, 'set-status': 'set-status <run> <id> <status>', 'result-grade': RESULT_GRADE_USAGE, 'packet': f"packet <run> <id> --reply-to <name> [--workspace <path>] [--executor {' | '.join(CHECKER_PATH_EXECUTORS)}]", 'result': RESULT_USAGE, 'worklog': WORKLOG_USAGE, 'run-state': RUN_STATE_USAGE, 'improvement': IMPROVEMENT_USAGE}
+SUBCOMMAND_SUMMARY = {'new': 'Issue one ticket into the run, refusing any shape `ticket_defects` reports before anything is written; --file places one already written.', 'amend': f'Repair one cut-time section {list(CUT_SECTIONS)} of an issued ticket, through the same refusal `new` applies; refused once the ticket is claimed or has left {sorted(AMENDABLE_STATUSES)}, and never a section the executor writes (that is `result`).', 'instantiate': "Instantiate one template directory into a run's tickets: placeholders filled, every stub graded, the graph checked for edges, cycles and its single terminal, then written all or none.", 'gate': "Write one root ticket's gate stubs: a read-only critique per lens (--lens; absent, the stamped pack's domain) over the root's whole cut subtree, one repair holding the scope (the root's own, unless --write-scope names one) behind them all, and one verify carrying the acceptance verbatim. Refused if the root has no subtree yet, or if a stub already exists.", 'list': 'Every ticket in the tracker, or in one run, as summaries.', 'ready': 'The tickets whose dependencies are complete and whose claim is free or stale; promotes an eligible `pending` to `ready`.', 'claim': 'Take one ready or stale ticket, losing the race rather than overwriting a live claim.', 'grant': f"Record one caller-side widening of a claimed item's write scope — the paths, the granting caller and the time — as frontmatter bookkeeping every reader of the item's authority then honours. Refused on a ticket that is not {sorted(GRANTABLE_STATUSES)}: before a claim the cut owns the scope.", 'check': f"Record the rules/verification.md §10 checker's pass on one claimed item — `checked_by`, the name the join reads that item's `authored-here` acceptance from. Refused on a ticket that is not {sorted(CHECKABLE_STATUSES)}.", 'set-status': f"Set one ticket's status; complete repeats result-grade before writing. One of {sorted(VALID_STATUSES)}.", 'result-grade': 'Read-only grade of the optional return-size constraint against the resolved result identity.', 'packet': f"The by-reference dispatch packet for one ticket: path, parts, and the commands the child runs from its own workspace. --executor ({' | '.join(CHECKER_PATH_EXECUTORS)}) emits it for one further rules/verification.md §10 child on the same claimed item instead — the checker, which corrects inside the ticket's write scope and records its pass through `check`, or the re-verifier, which is granted no write.", 'result': f"Write one of the executor's own sections {list(EXECUTOR_SECTIONS)}; a section already carrying content is refused without --append or --replace.", 'worklog': "Render this run's worklog view from its tickets — goal, iterations, failed approaches, queued scope, terminal — as markdown on the payload; --write also puts it at the run's worklog path, replacing a view rendered here and never a worklog written by anything else.", 'run-state': f"Write this run's state under the one user-scope sink, in one of {list(RUN_STATE_TREES)} (default {DEFAULT_RUN_STATE_TREE}); an artifact that already exists is refused without --replace. --terminal closes the run's notes, one of {list(TERMINAL_STATES)}, after which no note is written.", 'improvement': 'Write one improvement evidence record under the sink: a named proposal file, or one appended line of the coverage record.'}
+SUBCOMMAND_USAGE['recut'] = RECUT_USAGE
+SUBCOMMAND_SUMMARY['recut'] = 'Replace one pending or ready cut from a candidate file, preserving executor-owned sections and invalidating its unsealed cohorts.'
 HELP_FLAGS = frozenset({'--help', '-h'})
 HELP_COMMANDS = HELP_FLAGS | {'help'}
-VALUE_FLAGS = frozenset({'--run', '--by', '--executor', '--objective', '--criterion', '--depends-on', '--write-scope', '--lens', '--acceptance-from', '--bound', '--pack', '--input', '--excluded', '--profile', '--independence', '--isolation', '--return-fields', '--set', '--section', '--file', '--text', '--note', '--artifact', '--terminal', '--tree', '--reply-to', '--workspace', '--proposal', '--covered'})
+VALUE_FLAGS = frozenset({'--run', '--by', '--executor', '--objective', '--criterion', '--depends-on', '--write-scope', '--lens', '--acceptance-from', '--bound', '--pack', '--input', '--excluded', '--profile', '--independence', '--isolation', '--cohort', '--return-fields', '--set', '--section', '--file', '--text', '--note', '--artifact', '--terminal', '--tree', '--reply-to', '--workspace', '--proposal', '--covered'})
 def _template_stubs(directory: Path, values: dict):
     """``(stubs, error)`` — every stub in the template, substituted and graded.
-
     ``stubs`` maps a stub id to its text and its dependency ids, in file
     order. Each stub is substituted first and graded after, because a
     placeholder standing where an executor or a bound belongs is a defect
@@ -53,14 +59,16 @@ def _template_stubs(directory: Path, values: dict):
     if not paths:
         return (None, {'error': f'template {directory} holds no stub: a template is {TEMPLATE_FILE} plus one or more <id>.md ticket stubs'})
     stubs = {}
+    sources = []
     for path in paths:
         text, failure = _read_utf8(path, f'stub {path.name}')
         if failure is not None:
             return (None, failure)
-        text = PLACEHOLDER_RE.sub(lambda match: values.get(match.group(1), match.group(0)), text)
-        unfilled = PLACEHOLDER_RE.search(text)
-        if unfilled is not None:
-            return (None, {'error': f"stub {path.stem} carries the unfilled placeholder '{{{{{unfilled.group(1)}}}}}': supply it with --set {unfilled.group(1)}=<value>"})
+        sources.append((path, text))
+    for path, text in sources:
+        text, render_error = render_stub(text, values)
+        if render_error is not None:
+            return (None, {'error': f'stub {path.stem} carries {render_error}'})
         defects = ticket_defects(text, stub=True)
         if defects:
             return (None, {'error': f'stub {path.stem} is off contract (contracts/work-item.md): ' + '; '.join(defects)})
@@ -75,7 +83,6 @@ def _template_stubs(directory: Path, values: dict):
     return (stubs, None)
 def _cmd_instantiate(rest):
     """Instantiate one template into one run's tickets.
-
     A template is a directory: ``template.md`` and one file per stub. What
     happens here is substitution, the same grading every issued ticket gets,
     the graph checks a directory of files cannot carry (edges, a cycle, the
@@ -116,7 +123,11 @@ def _cmd_instantiate(rest):
     unsupplied = [name for name in declared if name not in values]
     if unsupplied:
         return {'error': f'{TEMPLATE_FILE} declares the placeholders {unsupplied} that no --set supplies'}
-    stubs, error = _template_stubs(directory, values)
+    builtins = {'run': run}
+    baseline = git_head()
+    if baseline is not None:
+        builtins['baseline'] = baseline
+    stubs, error = _template_stubs(directory, {**values, **builtins})
     if error is not None:
         return error
     ordered, error = _template_order(stubs)
@@ -136,10 +147,13 @@ def _cmd_instantiate(rest):
         return {'error': NO_SINK_ERROR}
     run_dir = tickets_root / run
     rendered = []
+    cohort = batch_cohort(ordered)
     for stub_id in ordered:
         text, dependencies = stubs[stub_id]
         text = _set_frontmatter_field(text, 'run', run)
-        text = _set_frontmatter_field(text, 'status', 'pending' if dependencies else 'ready')
+        text = _set_frontmatter_field(text, 'status', 'pending')
+        text = _set_frontmatter_field(text, 'admission', ADMISSION_PENDING)
+        text = _set_frontmatter_field(text, 'cohort', cohort)
         text = _set_frontmatter_field(text, 'claimed_by', '')
         text = _set_frontmatter_field(text, 'claimed_at', '')
         path = run_dir / f'{stub_id}.md'
@@ -177,7 +191,6 @@ def _cmd_instantiate(rest):
     return {'instantiate': {'template': str(template.get('name') or directory.name), 'run': run, 'ids': ordered, 'paths': [str(path) for path, _ in rendered]}}
 def _pack_domain(pack) -> str:
     """The domain label of a stamped pack: `orch-code-pack` -> `code`.
-
     contracts/pack-signature.md's `lens` cell binds `orch-critique` with the
     pack's craft `## Lens` and names no label of its own, so there is one
     label a caller never has to invent: the domain the pack is named for.
@@ -188,29 +201,61 @@ def _pack_domain(pack) -> str:
     if name.endswith(PACK_NAME_SUFFIX):
         name = name[:-len(PACK_NAME_SUFFIX)]
     return name
-def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list, write_scope: list, sections: list, pack=None) -> str:
-    """One gate stub, rendered as a ticket the dispatcher already accepts."""
-    fields = {'id': ticket_id, 'run': run, 'status': 'pending' if depends_on else 'ready', 'executor': executor, 'pack': pack, 'independence': 'gate', 'depends_on': list(depends_on), 'write_scope': list(write_scope), 'bound': NEW_DEFAULT_BOUND, 'claimed_by': '', 'claimed_at': ''}
-    return _render_ticket(fields, sections)
-def _gate_sections(kind: str, root_id: str, lens: str, scope: list, acceptance_id: str, acceptance: str, units: list) -> list:
+def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list, write_scope: list, sections: list, pack=None, cohort=None, inherited_inputs='', baseline=None) -> str:
+    normalized_scope = [str(path).replace('\\', '/') for path in write_scope]
+    mutations = [f"{'write' if path.endswith('/') else 'change'}:{path}" for path in normalized_scope]
+    fields = {'id': ticket_id, 'run': run, 'status': 'pending', 'admission': ADMISSION_PENDING, 'cohort': cohort or root_cohort(ticket_id.split('.gate.', 1)[0]), 'executor': executor, 'pack': pack, 'independence': 'gate', 'depends_on': list(depends_on), 'write_scope': list(write_scope), 'mutations': mutations, 'bound': NEW_DEFAULT_BOUND, 'claimed_by': '', 'claimed_at': ''}
+    text, error = render_ticket_inputs(_render_ticket(fields, sections), run, inherited_inputs, baseline=baseline)
+    if error is not None:
+        raise ValueError(error)
+    return text
+def _gate_sections(kind: str, root_id: str, lens: str, scope: list, acceptance_id: str, acceptance: str, units: list, run: str='') -> list:
     """The body of one gate stub. One place, so the three read as one gate."""
-    return _gate_body(kind, root_id, lens, scope, acceptance_id, acceptance, units) + GATE_EXECUTOR_SECTIONS
+    return _gate_body(kind, root_id, lens, scope, acceptance_id, acceptance, units, run) + GATE_EXECUTOR_SECTIONS
 def _listed_items(values, indent: str='') -> str:
     """A frontmatter list stated in prose as the items it holds.
-
     Never the Python repr of the list. An executor greps its own ticket for
     the path it may write, and `repr` doubles every separator a Windows path
     carries, so the body named `scripts\\\\one.py` where the frontmatter --
     and the filesystem -- said `scripts\\one.py`.
     """
     return '\n'.join((f'{indent}- `{value}`' for value in values))
-def _gate_body(kind: str, root_id: str, lens: str, scope: list, acceptance_id: str, acceptance: str, units: list) -> list:
+def _gate_input(name: str, *, literal=None, run: str='', ticket: str='', section: str='') -> str:
+    """One canonical fixed-input record for a generated gate."""
+    if ticket:
+        record = {
+            'identity': {'kind': 'ticket-section', 'run': run, 'section': section, 'ticket': ticket},
+            'name': name,
+            'type': 'identity',
+        }
+    else:
+        record = {'name': name, 'type': 'literal', 'value': literal}
+    return '- input: ' + json.dumps(record, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
+def _input_name(prefix: str, value: str, position: int) -> str:
+    slug = re.sub(r'[^a-z0-9]+', '-', str(value).lower()).strip('-')
+    return f'{prefix}-{slug or position}'
+def _gate_body(kind: str, root_id: str, lens: str, scope: list, acceptance_id: str, acceptance: str, units: list, run: str='') -> list:
     """The four cut-time sections of one gate stub."""
     if kind == 'critique':
-        return [('Objective', f"Every defect in `{root_id}`'s delivered result that the `{lens}` lens finds is reported by identity with its evidence: an open search over what the subtree produced, not a re-run of the criteria it already states."), ('Fixed inputs', '\n'.join([f'- lens: `{lens}`', '- the `## Result` of each of the following, by identity:', _listed_items(units, '  '), f"- `{root_id}`'s `## Completion test`, the acceptance this gate closes over:", '', acceptance])), ('Completion test', '\n'.join([f"- every finding names the artifact identity it was found at and the evidence that shows it | oracle: this ticket's `## Result` read under the `{lens}` lens | oracle_class: judged | provenance: pre-existing", f"- every `## Result` named in the fixed inputs was read | oracle: this ticket's `## Result` against that list | oracle_class: deterministic | provenance: pre-existing"])), ('Return fields', 'status; result — ranked findings, each with its artifact identity and evidence; verification; feedback; risks')]
+        inputs = [_gate_input('lens', literal=lens)]
+        inputs.extend(
+            _gate_input(_input_name('unit-result', unit, position), run=run, ticket=unit, section='Result')
+            for position, unit in enumerate(units, start=1)
+        )
+        inputs.append(_gate_input('acceptance', run=run, ticket=acceptance_id, section='Completion test'))
+        return [('Objective', f"Every defect in `{root_id}`'s delivered result that the `{lens}` lens finds is reported by identity with its evidence: an open search over what the subtree produced, not a re-run of the criteria it already states."), ('Fixed inputs', '\n'.join(inputs)), ('Completion test', '\n'.join([f"- every finding names the artifact identity it was found at and the evidence that shows it | oracle: this ticket's `## Result` read under the `{lens}` lens | oracle_class: judged | provenance: pre-existing", f"- every `## Result` named in the fixed inputs was read | oracle: this ticket's `## Result` against that list | oracle_class: deterministic | provenance: pre-existing"])), ('Return fields', 'status; result — ranked findings, each with its artifact identity and evidence; verification; feedback; risks')]
     if kind == 'repair':
-        return [('Objective', f"Every accepted finding against `{root_id}` is repaired inside this ticket's own write scope, or declined with a stated reason; nothing outside that scope changes."), ('Fixed inputs', '\n'.join([f'- the `## Result` of each critique stub of `{root_id}`, by identity', '- write scope:', _listed_items(scope, '  ')])), ('Completion test', '\n'.join(["- every accepted finding is repaired or declined with a stated reason | oracle: the critique tickets' findings against this ticket's `## Result` | oracle_class: deterministic | provenance: pre-existing", "- nothing outside the write scope changed | oracle: `git status --porcelain` in the run's workspace | oracle_class: deterministic | provenance: pre-existing"])), ('Return fields', 'status; result — each finding, its disposition and the changed artifact by identity; verification; feedback; risks')]
-    return [('Objective', f"`{acceptance_id}`'s acceptance is decided at the revision `{GATE_REPAIR_ID.format(root=root_id)}` left: one verdict per criterion, from the oracle that criterion names."), ('Fixed inputs', '\n'.join([f"- `{acceptance_id}`'s `## Completion test`, the criteria this ticket decides, carried verbatim below", f'- the revision `{GATE_REPAIR_ID.format(root=root_id)}` left'])), ('Completion test', acceptance), ('Return fields', "status; verification — one verdict per criterion with the oracle's output; result; feedback; risks")]
+        inputs = [
+            _gate_input(_input_name('critique-result', unit, position), run=run, ticket=unit, section='Result')
+            for position, unit in enumerate(units, start=1)
+        ]
+        return [('Objective', f"Every accepted finding against `{root_id}` is repaired inside this ticket's own write scope, or declined with a stated reason; nothing outside that scope changes."), ('Fixed inputs', '\n'.join(inputs)), ('Completion test', '\n'.join(["- every accepted finding is repaired or declined with a stated reason | oracle: the critique tickets' findings against this ticket's `## Result` | oracle_class: deterministic | provenance: pre-existing", "- nothing outside the write scope changed | oracle: `git status --porcelain` in the run's workspace | oracle_class: deterministic | provenance: pre-existing"])), ('Return fields', 'status; result — each finding, its disposition and the changed artifact by identity; verification; feedback; risks')]
+    repair_id = GATE_REPAIR_ID.format(root=root_id)
+    inputs = [
+        _gate_input('acceptance', run=run, ticket=acceptance_id, section='Completion test'),
+        _gate_input('repair-result', run=run, ticket=repair_id, section='Result'),
+    ]
+    return [('Objective', f"`{acceptance_id}`'s acceptance is decided at the revision `{repair_id}` left: one verdict per criterion, from the oracle that criterion names."), ('Fixed inputs', '\n'.join(inputs)), ('Completion test', acceptance), ('Return fields', "status; verification — one verdict per criterion with the oracle's output; result; feedback; risks")]
 def _cmd_gate(rest):
     """Serialize the gate's complete state read and all-or-none creation."""
     probe = list(rest)
@@ -225,7 +270,6 @@ def _cmd_gate(rest):
         return {'error': f'unable to create gate: {error}. Nothing was written'}
 def _gate_under_run_lock(rest):
     """Write one root ticket's gate stubs into its run.
-
     Refused rather than half-written: a root with no `<root>.NN` units has
     nothing for a critique to close over, and a stub id already issued
     means a gate is already standing — writing a second one would put two
@@ -283,19 +327,26 @@ def _gate_under_run_lock(rest):
     if not acceptance:
         return {'error': f"ticket '{acceptance_id}' states no `## Completion test`, so the verify stub would carry no acceptance"}
     pack = root.get('pack')
+    inherited_inputs = (root.get('sections') or {}).get('Fixed inputs', '')
+    gate_baseline = git_head()
+    if pack in ('orch-code-pack', 'orch-design-pack') and gate_baseline is None:
+        return {'error': f'{pack} gate input rendering cannot resolve the run-project HEAD. Nothing was written'}
     rendered = []
     critique_ids = []
-    for lens in lenses:
-        invalid = _segment_error('lens', lens)
-        if invalid is not None:
-            return invalid
-        stub_id = GATE_CRITIQUE_ID.format(root=root_id, lens=lens)
-        critique_ids.append(stub_id)
-        rendered.append((stub_id, _gate_stub(run, stub_id, GATE_EXECUTORS['critique'], units, [], _gate_sections('critique', root_id, lens, scope, acceptance_id, acceptance, units), pack)))
-    repair_id = GATE_REPAIR_ID.format(root=root_id)
-    rendered.append((repair_id, _gate_stub(run, repair_id, GATE_EXECUTORS['repair'], critique_ids, scope, _gate_sections('repair', root_id, '', scope, acceptance_id, acceptance, units), pack)))
-    verify_id = GATE_VERIFY_ID.format(root=root_id)
-    rendered.append((verify_id, _gate_stub(run, verify_id, GATE_EXECUTORS['verify'], [repair_id], [], _gate_sections('verify', root_id, '', scope, acceptance_id, acceptance, units), pack)))
+    try:
+        for lens in lenses:
+            invalid = _segment_error('lens', lens)
+            if invalid is not None:
+                return invalid
+            stub_id = GATE_CRITIQUE_ID.format(root=root_id, lens=lens)
+            critique_ids.append(stub_id)
+            rendered.append((stub_id, _gate_stub(run, stub_id, GATE_EXECUTORS['critique'], units, [], _gate_sections('critique', root_id, lens, scope, acceptance_id, acceptance, units, run), pack, inherited_inputs=inherited_inputs, baseline=gate_baseline)))
+        repair_id = GATE_REPAIR_ID.format(root=root_id)
+        rendered.append((repair_id, _gate_stub(run, repair_id, GATE_EXECUTORS['repair'], critique_ids, scope, _gate_sections('repair', root_id, '', scope, acceptance_id, acceptance, critique_ids, run), pack, inherited_inputs=inherited_inputs, baseline=gate_baseline)))
+        verify_id = GATE_VERIFY_ID.format(root=root_id)
+        rendered.append((verify_id, _gate_stub(run, verify_id, GATE_EXECUTORS['verify'], [repair_id], [], _gate_sections('verify', root_id, '', scope, acceptance_id, acceptance, units, run), pack, inherited_inputs=inherited_inputs, baseline=gate_baseline)))
+    except ValueError as error:
+        return {'error': str(error) + '. Nothing was written'}
     tickets_root = _tickets_root()
     if tickets_root is None:
         return {'error': NO_SINK_ERROR}
@@ -319,7 +370,6 @@ def _gate_under_run_lock(rest):
     return {'gate': {'run': run, 'root': root_id, 'lenses': lenses, 'acceptance_from': acceptance_id, 'ids': [stub_id for stub_id, _ in rendered], 'paths': [str(path) for path in written]}}
 def _help_requested(rest) -> bool:
     """Whether a help flag in ``rest`` stands as its own token.
-
     A help flag consumed as a value-taking flag's value is that value
     (``VALUE_FLAGS``), so ``--note --help`` writes the note and never
     answers usage: a run-state line whose text happens to be a help flag
@@ -328,7 +378,6 @@ def _help_requested(rest) -> bool:
     return any((token in HELP_FLAGS and (i == 0 or rest[i - 1] not in VALUE_FLAGS) for i, token in enumerate(rest)))
 def _cmd_help(command=None):
     """Usage, answered before any argument is resolved.
-
     A request for usage is a request this script serves, never an unhandled
     case it renders as the ordinary error path. It carries no ``error`` key
     and so exits 0, and it touches no repository: `--help` outside a
@@ -340,23 +389,19 @@ def _cmd_help(command=None):
     return {'help': {'subcommand': command, 'usage': SUBCOMMAND_USAGE[command], 'summary': SUBCOMMAND_SUMMARY[command]}}
 def _cmd_improvement(rest):
     """Write an improvement evidence record into the one user-scope sink.
-
     ``_cmd_run_state``'s sibling, for the other two records the channel
     rules/visibility.md §6 covers: a proposal and the coverage record.
     Same root resolution, same two shapes — one whole-file, one
     single-call append — and the same refusal to reach for a fallback.
-
     ``--proposal`` is whole-file, safe because the name partitions it, and
     the name goes through ``_segment_error`` so nothing can climb out of
     ``proposals/``. ``--covered`` appends to a stream every pass shares, so
     it opens in append mode with an explicit ``newline`` and writes one
     line in one call: a read-modify-write here loses a concurrent writer's
     line, which is the whole reason the record is JSONL.
-
     Neither body is read, parsed or validated. This is a channel; what a
     proposal says and what a coverage line carries belong to
     ``orch-self-improve``.
-
     There is no fallback. A write that cannot reach the resolved root is
     reported as an error and lands nowhere else.
     """
@@ -410,7 +455,7 @@ def _dispatch(argv):
         from tickets import _sync_seams
     _sync_seams()
     if not argv:
-        return {'error': 'missing subcommand: new | amend | instantiate | gate | list | ready | claim | grant | check | set-status | packet | result | worklog | run-state | improvement'}
+        return {'error': 'missing subcommand: new | amend | recut | instantiate | gate | list | ready | claim | grant | check | set-status | result-grade | packet | result | worklog | run-state | improvement'}
     command, rest = (argv[0], argv[1:])
     if command in HELP_COMMANDS:
         return _cmd_help()
@@ -420,6 +465,8 @@ def _dispatch(argv):
         return _cmd_new(rest)
     if command == 'amend':
         return _cmd_amend(rest)
+    if command == 'recut':
+        return _cmd_recut(rest)
     if command == 'instantiate':
         return _cmd_instantiate(rest)
     if command == 'gate':
@@ -436,6 +483,8 @@ def _dispatch(argv):
         return _cmd_check(rest)
     if command == 'set-status':
         return _cmd_set_status(rest)
+    if command == 'result-grade':
+        return _cmd_result_grade(rest)
     if command == 'packet':
         return _cmd_packet(rest)
     if command == 'result':

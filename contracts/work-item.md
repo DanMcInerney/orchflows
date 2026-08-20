@@ -20,6 +20,14 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
 
 - `id` — lifecycle: unique within the run; stable once issued.
 - `run` — lifecycle: the owning run id.
+- `admission` — lifecycle: v1 tickets start `v1:pending`; successful
+  admission replaces it with the portable `v1:<adapter>:sha256:<digest>`
+  receipt for the exact cut/cohort snapshot. Only the common admission
+  grader may move `pending` to `ready` or atomically claim it.
+- `cohort` — graph position: `v1:ticket:<id>`, `v1:root:<root>`, or
+  `v1:batch:<digest>`. Admission grades all members together and seals the
+  cohort when one member becomes live; amendment invalidates every unsealed
+  member's receipt.
 - `status`: `pending` | `ready` | `claimed` | `suspended` | `complete` |
   `blocked` | `stalled` | `failed` | `limited` — lifecycle; transitions
   per `orch-frontier`. `pending` and `suspended` are the two non-terminal
@@ -57,6 +65,11 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
   checker corrects inside this same `write_scope`, per
   [rules/verification.md](../rules/verification.md) §9 and §10 — on a
   root ticket, the cut instead (Root ticket).
+- `mutations` — v1 Git/design cut plan: a list of `create:<file>`,
+  `change:<file>`, `delete:<file>`, or `write:<prefix>/` nodes. Paths are
+  repository-relative POSIX paths without globs; each node fits
+  `write_scope`. Scope-edge closure may assign a required companion to one
+  dependency-ordered cohort member but never widens authority.
 - `excluded_actions` — packet `authority`, optional: named actions this
   item's executor may not take without suspending through the ticket's
   `## Handoff`. Never a path in this item's own `write_scope`: that
@@ -65,7 +78,9 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
   whether this item executes in a workspace of its own; absent reads
   `none`. The decomposer is the field's only setter. The declaration
   `scripts/workspace.py check` grades and `scripts/tickets.py packet`
-  conditions on; the join runs that check before the merge.
+  conditions on; the join runs that check before assembly. Executor-specific
+  isolation and commit procedure belongs to that executor's skill; the field
+  here is only its generic authority shape.
 - `bound` — packet `bounds`: the item's effort budget.
 - `claimed_by`, `claimed_at` — lifecycle: set on claim. A claim is stale
   when no write to the ticket's own sections, or to an artifact its
@@ -92,7 +107,18 @@ parts:
 - `## Fixed inputs` — packet `inputs`: evidence by identity, never prose
   copies and never an unpinned coordinate, which the `identity` entry of
   [docs/vocabulary.md](../docs/vocabulary.md) excludes. An item carries
-  verbatim every field its executor's Require names.
+  verbatim every field its executor's Require names. Every non-empty bullet
+  is one recursively key-sorted canonical UTF-8 JSON record with no
+  insignificant whitespace, exactly one of:
+
+  `- input: {"identity":{...},"name":"baseline","type":"identity"}`
+
+  `- input: {"name":"question","type":"literal","value":"exact value"}`
+
+  Names are unique lower-kebab. Literals carry exact JSON parameters;
+  identities resolve through the stable adapter selected by the stamped
+  pack. Objective states the routed observable end state; procedure belongs
+  to the executor, never to inputs.
 - `## Completion test` — enumerated criteria, each naming its oracle and
   oracle_class per [verdict.md](verdict.md), and optionally its oracle
   provenance — `pre-existing` (the oracle exists or is concretely
@@ -104,7 +130,15 @@ parts:
 - `## Return fields` — packet `return_contract`: the named fields the
   executor's result must carry. A `status` in this list is the result
   envelope's ([result.md](result.md)), never the ticket frontmatter key
-  above.
+  above. It may contain at most one exact size line:
+
+  `return-size: {"counter":"words-v1","maximum":3000,"minimum-complete":"return-fixture","target":"result"}`
+
+  The counter is `words-v1` or `lines-v1`; maximum is positive and the named
+  fixed input is one resolving minimum-complete text fixture. No second
+  numeric word/line constraint is allowed. [Result](result.md) alone owns
+  actual-return identity resolution, counting, and completion enforcement
+  for this clause.
 - `## Result` — the filing law: the executor's, written as produced —
   what changed, by identity, cited here or in the store the packet
   names, per rules/delegation.md §10. A §10 checker appends its own pass — findings,
@@ -159,6 +193,15 @@ Blame rule, recorded at every join and routing the finding to its causal
 owner: work the child had to do because a packet field was missing or
 false is the caller's defect, delivered or not; failure to deliver the
 return contract inside authority and bounds is the child's.
+
+## Admission and migration
+
+All producers issue v1 tickets as pending. `ready` and `claim` call the same
+portable grader and compare-and-swap the same exact snapshot; packet emission
+requires a live claim and current receipt. Pending/ready v0 tickets and stale
+v0 reclaims are re-cut into v1. Already-live v0 claims alone dispatch as
+`legacy-unadmitted`; claimed/terminal history and friction records are never
+rewritten. Direct status writes cannot create `ready` or `claimed`.
 
 ## Root ticket
 

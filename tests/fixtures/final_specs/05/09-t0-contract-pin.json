@@ -1,0 +1,1 @@
+{"name":"t0-contract-pin","mutation":"change:contracts/a.md","edge":{"from":{"operation":"change","path":"contracts/a.md"},"requires":[{"operation":"change","path":"tests/pins.json"}],"reason":"declared contract pin"}}

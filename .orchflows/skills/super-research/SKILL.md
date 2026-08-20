@@ -9,10 +9,18 @@ Require: one bounded question naming the platforms it reaches, a frozen `as_of`
 at or after the run's own reads, a window where the question has one, and a
 hard per-step item cap.
 
-Manifest grammar, the record's fields, the loss codes and the five orders:
-[references/protocol.md](references/protocol.md) — follow it before writing the
-manifest. The roster, each adapter's operations and its smoke:
-[references/operating.md](references/operating.md).
+Preparation, in order:
+1. Read [references/protocol.md](references/protocol.md) alone from its first
+   unread byte through EOF. It owns the manifest grammar, the record's fields,
+   the loss codes and the five orders.
+2. If the response is paginated or truncated, continue that same file from the
+   next unread offset. Do not open another reference yet.
+3. Only after protocol EOF, read
+   [references/operating.md](references/operating.md) alone through EOF,
+   continuing it the same way if necessary. It owns the roster, each adapter's
+   operations and its smoke.
+4. Only after both EOFs may the executor write a manifest or begin acquisition.
+   A combined/multi-file read never satisfies either EOF obligation.
 
 Put this item's `scripts/` on `PYTHONPATH`. Write one manifest to a lane-private
 file — `fused` so every adapter named runs as its own concurrent lane (an origin

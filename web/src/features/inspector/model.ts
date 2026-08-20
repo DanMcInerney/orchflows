@@ -51,7 +51,6 @@ export interface InspectorProofRow {
 
 export interface InspectorFrictionRecord {
   ts: string;
-  category: string;
   observed: string;
   expected: string;
   host: string;
@@ -221,7 +220,6 @@ export function linkedFriction(model: InspectorModel, location: InspectorRoute):
       run: location.run,
       ticket: location.ticket,
       ts: "2026-08-03T11:00:00Z",
-      category: "surprising-output",
       observed: "A deterministic oracle returned a failing verdict.",
       expected: "Every named criterion to carry verified evidence.",
       host: "fixture"
@@ -229,7 +227,6 @@ export function linkedFriction(model: InspectorModel, location: InspectorRoute):
   }
   return linked.map((item) => ({
     ts: text(item.ts) || "Timestamp unavailable",
-    category: text(item.category) || "uncategorized",
     observed: text(item.observed) || "Observation unavailable",
     expected: text(item.expected) || "Expectation unavailable",
     host: text(item.host) || "Host unavailable"

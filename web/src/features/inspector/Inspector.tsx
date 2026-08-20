@@ -155,7 +155,7 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
         <Tabs.Content className="inspector-panel" value="friction">
           <article className="inspector-card"><div className="panel-heading"><p className="eyebrow">Linked by run and ticket</p><h2>Friction records</h2></div>
             {friction.length ? <div className="friction-list">{friction.map((item, index) => <article className="friction-record" key={`${item.ts}-${index}`}>
-              <header><AlertTriangle aria-hidden="true" /><strong>{item.category}</strong><time>{item.ts}</time></header>
+              <header><AlertTriangle aria-hidden="true" /><time>{item.ts}</time></header>
               <dl><div><dt>Observed</dt><dd>{item.observed}</dd></div><div><dt>Expected</dt><dd>{item.expected}</dd></div><div><dt>Host</dt><dd>{item.host}</dd></div></dl>
             </article>)}</div> : <EmptyEvidence title="No linked friction">No friction record names both this run and this ticket.</EmptyEvidence>}
           </article>

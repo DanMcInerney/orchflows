@@ -50,7 +50,6 @@ _FRICTION_SPEC.loader.exec_module(friction)
 RUN_ID_PREFIX = "sweep-e2e"
 PROBE_INPUT = "SWEEP_PROBE"
 PROBE_SENTINEL = "SWEEP_PROBE_RESULT:OK"
-FRICTION_CATEGORY = "surprising-output"
 LOG_DIR_NAME = "live-sweep-e2e"
 
 
@@ -169,7 +168,7 @@ def _cleanup(run_id: str, friction_snapshot: _Snapshot, log_path: Path) -> dict:
 
 
 def _log_friction(run_id: str, observed: str, expected: str) -> None:
-    friction._run([observed, expected, "--run", run_id, "--category", FRICTION_CATEGORY])
+    friction._run([observed, expected, "--run", run_id])
 
 
 def _build_probe_agent(agent_type: str, model: str, effort: str) -> dict:

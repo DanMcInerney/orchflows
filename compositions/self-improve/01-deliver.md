@@ -25,17 +25,9 @@ revision.
 
 ## Fixed inputs
 
-- 00-mine's `## Result` — the top-ranked proposal by path; the proposal
-  file is the run's frozen statement: its causal owner, scope, exact
-  change, evidence entries and blame class, by identity.
-- {{workspace}} — the target repository: the tree holding the owner, at
-  its current revision.
-- The standards owner, by pointer: {{workspace}}'s own owner file —
-  AGENTS.md or its equivalent.
-- Acceptance as runnable checks: {{workspace}}'s required checks as that
-  owner names them.
-- rules/improvement.md §5–§6 — replay before acceptance; coverage as the
-  last act.
+- input: {"name":"workspace","type":"literal","value":"{{workspace}}"}
+- input: {"name":"target-repository","type":"literal","value":"{{workspace}}"}
+- input: {"identity":{"kind":"artifact","locator":"project:rules/improvement.md","sha256":"5855133149c60da7eea97a3ae8430affdc0cc5e0f1fde0c5355d1ecf4c0e616c"},"name":"improvement-law","type":"identity"}
 
 ## Completion test
 

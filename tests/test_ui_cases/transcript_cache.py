@@ -40,7 +40,7 @@ class TestTranscriptParseCache(TranscriptCase):
         with patch.object(ui, "_transcript_summary", counting):
             page = self.sessions()
 
-        self.assertEqual([str(path)], seen)
+        self.assertEqual([str(path.resolve())], seen)
         self.assertIn("Alpha, renamed", session_cell(page, TITLED_SESSION, "title"))
 
     def test_the_cache_is_bounded_so_a_long_lived_viewer_cannot_grow_forever(self):

@@ -134,6 +134,26 @@ class TestPackWorkspaceTableAgainstPacks(unittest.TestCase):
             self.assertIsInstance(node, ast.Constant, ast.dump(node))
 
 
+class TestPackAdmissionRegistryAgainstPacks(unittest.TestCase):
+    def bindings(self, skill_md: Path):
+        found = set()
+        for line in skill_md.read_text(encoding="utf-8").splitlines():
+            match = re.match(r"^\|\s*(?:executor|assembly)\s*\|\s*(.*?)\s*\|$", line)
+            if match:
+                found.update(re.findall(r"`(orch-[a-z0-9-]+)`", match.group(1)))
+        return frozenset(found)
+
+    def test_stable_registry_covers_and_matches_every_pack(self):
+        packs = {path.name for path in PACKS.iterdir() if (path / "SKILL.md").is_file()}
+        self.assertEqual(packs, set(tickets_mod.PACK_EXECUTOR_BINDINGS))
+        for pack in sorted(packs):
+            self.assertEqual(
+                self.bindings(PACKS / pack / "SKILL.md"),
+                tickets_mod.PACK_EXECUTOR_BINDINGS[pack],
+                pack,
+            )
+
+
 CROSS_TIER = "cross-tier near-duplicate"
 
 # One sentence long enough to be content by CELL_CLAUSE_MIN_WORDS, written

@@ -4,17 +4,18 @@ description: Cut a stamped root ticket into work-item tickets under the pack's s
 role: planner
 ---
 
-Require: a root [ticket](../../../contracts/work-item.md#root-ticket) and
-the stamped pack's slicing and oracle_policy. Reject any missing contract
-part, naming it.
+Require: root [ticket](../../../contracts/work-item.md#root-ticket), stamped
+pack slicing and oracle_policy. Reject missing parts by name.
 
-Goal: minimize critical path subject to every item an atom; read its test,
-count and width law in [rules/topology.md](../../../rules/topology.md) §3
-before the first item.
+Goal: minimize critical path; every item an atom; obey §3's test/count/width law.
 
-Cut the root ticket into [work items](../../../contracts/work-item.md)
-under the slicing, issued as `<root>.NN` into the root's own run
-directory through `tickets.py new`. Each item takes a write scope
+Cut [work items](../../../contracts/work-item.md) as `<root>.NN` through
+`tickets.py new --cohort v1:root:<root>`. Pass exact parameters/evidence as
+canonical JSON `--input` records. Reach planned nodes only through the
+stamped workspace cell: when it names `mutations`, carry each through
+`tickets.py new --mutation`. Put routing in
+Objective as the observable routed end state.
+Each item takes a write scope
 overlapping only siblings it is dependency-ordered with,
 `isolation: required` when the pack's workspace cell names a mechanism
 covering that scope, a bound, its edges, and a completion test whose
@@ -22,7 +23,7 @@ criteria name oracles from the pack's oracle policy, each with its
 provenance. Oracle class does not choose the field: stamp
 `independence: gate` if the final gate covers all authored-here criteria;
 otherwise stamp `independence: checker`. This holds regardless of oracle
-class. Draw each edge under §3's edge rule and place each artifact two
+class. Draw each edge under §3's rule and place each artifact two
 items would write under its sole-owner rule.
 Emit the assembly item the pack's cell names, on §4's terms.
 

@@ -18,9 +18,7 @@ carries a compacted brief a fresh context can execute from.
 
 ## Fixed inputs
 
-- 00-audit's `## Result` — the ranked findings and their cited evidence,
-  by identity.
-- The disposition vocabulary, as orch-triage's Require fixes it.
+- input: {"name":"none","type":"literal","value":null}
 
 ## Completion test
 

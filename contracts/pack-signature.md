@@ -25,7 +25,10 @@ Cells:
 - `workspace` — what identities, baselines, and write scopes mean in this
   domain (git revisions and paths; document slots; evidence stores).
   Where it uses a term `craft` defines, the cell cites `craft` for the
-  definition instead of restating it.
+  definition instead of restating it. The selected ticket adapter is a
+  stable mechanism key in code, never executable pack content. A new identity
+  kind changes that key together with adapter code, workspace/craft ownership,
+  and tests; packs remain data.
 - `required_spec_fields` — the fields a spec must carry for decomposition
   to accept it.
 - `craft` — reference owning the domain's vocabulary, and its shape where

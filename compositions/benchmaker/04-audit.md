@@ -25,14 +25,8 @@ gap naming the case and its class.
 
 ## Fixed inputs
 
-- 03-qualify's `## Result` — the qualified assembly at its fixed
-  identity, and its verdict set.
-- [the protocol](../references/benchmaker-protocol.md#audit-and-measurement) —
-  the stage order, §Reference audit's defect classes, §Attack pass's
-  outcomes, and the triage measurement pass that precedes the audit it
-  targets.
-- The dated attack checklist this package carries, appended to with its
-  date where this pass adds a class.
+- input: {"identity":{"kind":"artifact","locator":"project:compositions/references/benchmaker-protocol.md","sha256":"cbe548149efd0ce3184e5f805a91173bd85a6c8a354f8d6e083a1781e4331f8d"},"name":"protocol-contract","type":"identity"}
+- input: {"name":"package","type":"literal","value":"{{package}}"}
 
 ## Completion test
 

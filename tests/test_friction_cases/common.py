@@ -41,16 +41,14 @@ from scripts import tickets  # noqa: E402  the owner of project identity
 
 STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
 
-# The fields the stream carried before it said which project an entry arose
-# in. Named separately from the four added since, because "every existing
-# field survives, with its meaning" is a property in its own right: a reader
-# of an older stream and a reader of this one agree on everything they share.
-LEGACY_ENTRY_KEYS = {
+# The logger's current record fields, named separately from the four project
+# provenance fields so their ownership remains visible in assertions.
+LOGGER_ENTRY_KEYS = {
     "ts", "cwd", "git_rev", "host", "session",
-    "category", "skill", "ticket", "run", "observed", "expected",
+    "skill", "ticket", "run", "observed", "expected",
 }
 PROVENANCE_KEYS = {"project", "project_source", "workspace", "sink_convention"}
-REQUIRED_ENTRY_KEYS = LEGACY_ENTRY_KEYS | PROVENANCE_KEYS
+REQUIRED_ENTRY_KEYS = LOGGER_ENTRY_KEYS | PROVENANCE_KEYS
 
 
 class _IsolatedRepoTestCase(unittest.TestCase):

@@ -1,6 +1,5 @@
 export interface FrictionRecord {
   ts?: string;
-  category?: string;
   host?: string;
   observed?: string;
   expected?: string;
@@ -14,7 +13,7 @@ export interface FrictionModel {
   unreadable: number;
 }
 
-const FRICTION_FIELDS = ["ts", "category", "host", "observed", "expected", "run", "ticket"] as const;
+const FRICTION_FIELDS = ["ts", "host", "observed", "expected", "run", "ticket"] as const;
 const WINDOWS_PATH = /\b[A-Za-z]:\\(?:[^\s<>"']+)/g;
 const HOME_PATH = /\/(?:Users|home)\/(?:[^\s<>"']+)/g;
 

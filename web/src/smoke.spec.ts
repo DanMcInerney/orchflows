@@ -64,7 +64,8 @@ test.beforeAll(async () => {
   const frictionRoot = join(stateRoot, "friction");
   await mkdir(frictionRoot);
   await writeFile(join(frictionRoot, "2026-08.jsonl"), Array.from({ length: 130 }, (_, index) => JSON.stringify({
-    ts: `2026-08-19T12:${String(index % 60).padStart(2, "0")}:00Z`, category: "browser-guard",
+    ts: `2026-08-19T12:${String(index % 60).padStart(2, "0")}:00Z`,
+    ...(index % 2 ? { category: "historical-browser-guard" } : {}),
     host: "fixture", observed: `Synthetic friction ${index + 1}`, expected: "A bounded initial feed"
   })).join("\n"), "utf8");
   serverProcess = spawn(process.env.ORCHFLOWS_PYTHON || "python", [
@@ -185,12 +186,12 @@ async function expectReducedMotion(page, identity) {
   expect(moving, `${identity.identity}: reduced motion leaves active durations`).toEqual([]);
 }
 
-test("Observe platform stays interactive and stable across a reader refresh", async ({ page }) => {
+test("Observe run map stays interactive and stable across an ETag refresh", async ({ page }) => {
   test.skip(action !== "smoke" || experienceMode);
   const errors: string[] = [];
   const remoteRequests: string[] = [];
-  const localRequests: string[] = [];
-  const apiStatuses: number[] = [];
+  const apiMethods: string[] = [];
+  const apiResponses: Array<{ status: number; etag: string }> = [];
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
   });
@@ -199,54 +200,37 @@ test("Observe platform stays interactive and stable across a reader refresh", as
     if (request.url().startsWith("http") && !request.url().startsWith(origin)) {
       remoteRequests.push(request.url());
     }
-    if (request.url().startsWith(origin)) localRequests.push(new URL(request.url()).pathname);
+    if (request.url().startsWith(origin)) {
+      const path = new URL(request.url()).pathname;
+      if (path.startsWith("/api/")) apiMethods.push(request.method());
+    }
   });
   page.on("response", (response) => {
-    if (new URL(response.url()).pathname === "/api/observe") apiStatuses.push(response.status());
+    if (new URL(response.url()).pathname === "/api/v1/experience") {
+      apiResponses.push({ status: response.status(), etag: response.headers().etag ?? "" });
+    }
   });
-  await page.addInitScript(() => {
-    window.__orchflowsWorkerErrors = [];
-    window.__orchflowsWorkerMessages = [];
-    const BrowserWorker = window.Worker;
-    window.Worker = class extends BrowserWorker {
-      constructor(...arguments_) {
-        super(...arguments_);
-        this.addEventListener("error", (event) => {
-          window.__orchflowsWorkerErrors.push(event.message || "worker error");
-        });
-        this.addEventListener("message", (event) => {
-          window.__orchflowsWorkerMessages.push(event.data);
-        });
-      }
-    };
-  });
-
   await page.setViewportSize({ width: 1280, height: 800 });
-  const documentResponse = await page.goto(`${origin}/observe?run=run-gamma`);
+  const documentResponse = await page.goto(`${origin}/runs/run-gamma`);
   expect(documentResponse?.headers()["content-security-policy"]).toContain("default-src 'self'");
   expect(documentResponse?.headers()["x-content-type-options"]).toBe("nosniff");
   await expect(page.locator("main[data-mode=observe]")).toBeVisible();
-  await expect(page.getByText(/revision [0-9a-f]{64}/)).toBeVisible();
-  const firstRevision = await page.getByText(/revision [0-9a-f]{64}/).textContent();
-  await expect(page.locator(".canvas")).toHaveAttribute("data-editing", "disabled");
-
-  await expect.poll(
-    () => localRequests.some((path) => path.startsWith("/assets/layout.worker-"))
-  ).toBe(true);
-  await expect.poll(
-    () => localRequests.some((path) => path.startsWith("/assets/elk.worker-"))
-  ).toBe(true);
-  await expect.poll(() => page.evaluate(() => window.__orchflowsWorkerErrors)).toEqual([]);
-  await expect.poll(
-    () => page.evaluate(() => window.__orchflowsWorkerMessages.length),
-    { timeout: 10_000 }
-  ).toBeGreaterThan(0);
+  await expect(page.getByRole("heading", { level: 1, name: "run-gamma" })).toBeVisible();
+  await expect(page.locator(".run-map__read-only")).toContainText("Observe only");
+  await expect(page.locator(".run-map__canvas")).toBeVisible();
+  await expect.poll(() => apiResponses.some(({ status, etag }) => status === 200 && Boolean(etag))).toBe(true);
+  const firstEtag = apiResponses.find(({ status }) => status === 200)?.etag ?? "";
+  expect(firstEtag).toMatch(/^"[0-9a-f]{64}"$/);
+  await page.getByRole("button", { name: "Expand all tickets" }).click();
 
   const buildNode = page.locator(".react-flow__node").filter({ hasText: "G5" });
+  const buildTicket = buildNode.locator(".run-ticket-node");
   await expect(buildNode).toBeVisible();
-  expect(await page.locator("[draggable=true], .react-flow__handle").count()).toBe(0);
+  await expect(buildTicket).toHaveAttribute("data-status", "running");
+  expect(await page.locator("[draggable=true]").count()).toBe(0);
   await buildNode.focus();
-  await page.keyboard.press("Enter");
+  await expect(buildNode).toBeFocused();
+  await buildNode.click();
   await expect(buildNode).toHaveClass(/selected/);
 
   const viewport = page.locator(".react-flow__viewport");
@@ -254,20 +238,17 @@ test("Observe platform stays interactive and stable across a reader refresh", as
   await page.locator(".react-flow__controls-zoomin").click();
   await expect.poll(() => viewport.getAttribute("style")).not.toBe(beforeZoom);
   const afterZoom = await viewport.getAttribute("style");
-  await expect.poll(() => apiStatuses.includes(304)).toBe(true);
+  await expect.poll(() => apiResponses.some(({ status }) => status === 304)).toBe(true);
   const ticketPath = join(stateRoot, "tickets", "run-gamma", "G5.md");
   const ticket = await readFile(ticketPath, "utf8");
   await writeFile(ticketPath, ticket.replace("status: claimed", "status: complete"), "utf8");
-  await expect.poll(async () => page.getByText(/revision [0-9a-f]{64}/).textContent(), { timeout: 5_000 }).not.toBe(firstRevision);
+  await expect.poll(
+    () => apiResponses.some(({ status, etag }) => status === 200 && Boolean(etag) && etag !== firstEtag),
+    { timeout: 5_000 }
+  ).toBe(true);
+  await expect(buildTicket).toHaveAttribute("data-status", "complete");
   await expect(buildNode).toHaveClass(/selected/);
   expect(await viewport.getAttribute("style")).toBe(afterZoom);
-
-  await expect.poll(
-    () => localRequests.some((path) => path.startsWith("/assets/layout.worker-"))
-  ).toBe(true);
-  const firstApi = localRequests.findIndex((path) => path === "/api/observe");
-  const workerAsset = localRequests.findIndex((path) => path.startsWith("/assets/layout.worker-"));
-  expect(workerAsset).toBeGreaterThan(firstApi);
 
   const accessibility = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa"])
@@ -276,12 +257,14 @@ test("Observe platform stays interactive and stable across a reader refresh", as
 
   await page.setViewportSize({ width: 640, height: 780 });
   const rail = await page.locator(".rail").boundingBox();
-  const canvas = await page.locator(".canvas").boundingBox();
+  const canvas = await page.locator(".run-map__canvas").boundingBox();
   expect(rail).not.toBeNull();
   expect(canvas).not.toBeNull();
   expect(canvas.y).toBeGreaterThanOrEqual(rail.y + rail.height - 1);
   await expect(buildNode).toHaveClass(/selected/);
 
+  expect(apiMethods.length).toBeGreaterThan(0);
+  expect(apiMethods.every((method) => method === "GET")).toBe(true);
   expect(remoteRequests).toEqual([]);
   expect(errors).toEqual([]);
 });
@@ -382,6 +365,7 @@ test("experience drill-down stays actionable and bounded in a real browser", asy
 
   await page.goto(`${origin}/friction`);
   await expect(page.locator(".friction-record")).toHaveCount(50);
+  await expect(page.getByText("historical-browser-guard")).toHaveCount(0);
   await expect(page.getByText("Showing 50 of 130 records")).toBeVisible();
   await page.getByRole("button", { name: "Show 50 more friction records" }).click();
   await expect(page.locator(".friction-record")).toHaveCount(100);

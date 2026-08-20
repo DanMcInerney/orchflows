@@ -1,7 +1,6 @@
 ---
 id: 00-reproduce
 executor: orch-investigate
-pack: orch-code-pack
 depends_on: []
 write_scope: []
 bound: <= 40 tool calls
@@ -20,8 +19,8 @@ behaviour and on nothing else.
 
 ## Fixed inputs
 
-- {{failure}} — the observed failure as reported, verbatim.
-- {{workspace}} — the tree it lives in, at its current revision.
+- input: {"name":"failure","type":"literal","value":"{{failure}}"}
+- input: {"name":"workspace","type":"literal","value":"{{workspace}}"}
 
 ## Completion test
 

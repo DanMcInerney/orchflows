@@ -27,24 +27,16 @@ of candidates, each written and scored under the frozen evaluation,
 until the frozen promotion rule and margin are met over the final
 incumbent's score card or {{bound}} is spent.
 
+Each generation consumes 01-eligibility's `## Result` and scores blind through
+orch-verify; `search_plan.py advance` selects search-policy/v1 cases under the
+generation protocol.
+
 ## Fixed inputs
 
-- 01-eligibility's `## Result` — the admission verdicts and the frozen
-  evaluation identity, mode and criteria, by identity.
-- Body, one generation: generate N candidates through {{writer}} within
-  {{mutation_scope}} ‖ score each one blind through orch-verify against
-  the frozen scoring criteria — a scoring lane's inputs carry that
-  candidate and nothing else, and what blindness is is
-  [orch-verify](../../skills/kernel/orch-verify/SKILL.md)'s — then
-  select by the frozen promotion rule and margin over the score cards;
-  where the frozen search policy is a search-policy/v1 object,
-  `search_plan.py advance` performs the selection. Slot, parent and
-  spend mapping:
-  [the generation protocol](../references/evolve-generation.md).
-- Context packet: the worklog view `tickets.py worklog` renders —
-  goal, iterations, failed approaches, queued scope — beside this
-  campaign's own promotion/kill log and the score cards under
-  {{mutation_scope}}; never a prior transcript.
+- input: {"name":"writer","type":"literal","value":"{{writer}}"}
+- input: {"name":"mutation-scope","type":"literal","value":"{{mutation_scope}}"}
+- input: {"name":"bound","type":"literal","value":"{{bound}}"}
+- input: {"name":"target","type":"literal","value":"{{target}}"}
 
 ## Completion test
 
