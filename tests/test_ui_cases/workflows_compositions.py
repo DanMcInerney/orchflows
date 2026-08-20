@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import tempfile
+import os
 import unittest
 from pathlib import Path
 
@@ -14,6 +15,41 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class WorkflowCompositionTests(unittest.TestCase):
+    def test_escaping_template_and_stub_symlinks_are_rejected(self):
+        for link_kind in ("template", "stub"):
+            with self.subTest(link_kind=link_kind), tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
+                root = Path(directory)
+                composition = root / "compositions" / "demo"
+                composition.mkdir(parents=True)
+                external = Path(outside) / f"{link_kind}.md"
+                if link_kind == "template":
+                    external.write_text(
+                        "---\nname: demo\ndescription: EXTERNAL_SECRET\nentry: named\n---\n",
+                        encoding="utf-8",
+                    )
+                    link = composition / "template.md"
+                    self._write(
+                        composition / "00-start.md",
+                        "---\nid: 00-start\nexecutor: orch-missing\ndepends_on: []\nbound: once\n---\n",
+                    )
+                else:
+                    self._write(
+                        composition / "template.md",
+                        "---\nname: demo\ndescription: Safe owner.\nentry: named\n---\n",
+                    )
+                    external.write_text(
+                        "---\nid: 00-secret\nexecutor: orch-missing\ndepends_on: []\nbound: once\n---\n",
+                        encoding="utf-8",
+                    )
+                    link = composition / "00-secret.md"
+                try:
+                    os.symlink(external, link)
+                except OSError as error:
+                    self.skipTest(f"symlink unavailable: {error}")
+
+                with self.assertRaises(compositions.WorkflowCompositionError):
+                    compositions.project_composition(root, "demo")
+
     def test_evolve_has_exact_dependency_executor_and_deliberate_loop_topology(self):
         detail = compositions.project_composition(ROOT, "evolve")
 

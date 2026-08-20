@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -15,6 +16,32 @@ SUMMARY = ROOT / "docs" / "ui" / "workflow-summary-manifest.json"
 
 
 class WorkflowCatalogTests(unittest.TestCase):
+    def test_escaping_file_and_directory_symlink_owners_are_rejected(self):
+        for link_kind in ("file", "directory"):
+            with self.subTest(link_kind=link_kind), tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
+                root = Path(directory)
+                external = Path(outside) / "demo"
+                external.mkdir()
+                external_template = external / "template.md"
+                external_template.write_text(
+                    "---\nname: demo\ndescription: EXTERNAL_SECRET\nentry: named\n---\n",
+                    encoding="utf-8",
+                )
+                composition = root / "compositions" / "demo"
+                composition.parent.mkdir(parents=True)
+                try:
+                    if link_kind == "directory":
+                        os.symlink(external, composition, target_is_directory=True)
+                    else:
+                        composition.mkdir()
+                        os.symlink(external_template, composition / "template.md")
+                except OSError as error:
+                    self.skipTest(f"symlink unavailable: {error}")
+                summary_path = self._write_summary(root, {"demo": self._summary()})
+
+                with self.assertRaises(catalog.WorkflowCatalogError):
+                    catalog.project_catalog(root, summary_path)
+
     def test_repository_catalog_is_derived_from_compositions_and_workflow_skills(self):
         projected = catalog.project_catalog(ROOT, SUMMARY)
 

@@ -25,6 +25,76 @@ UNREADABLE = {
 
 
 class WorkflowSourceTests(unittest.TestCase):
+    def test_installed_layout_source_route_reads_sibling_bin(self):
+        with tempfile.TemporaryDirectory() as directory:
+            package = Path(directory)
+            root = package / "lib"
+            self._skill(
+                root,
+                "workflows",
+                "demo",
+                "Require: input.\n\nRun `runner.py execute`.\n\nReturn: output.\n",
+            )
+            script = package / "bin" / "runner.py"
+            script.parent.mkdir(parents=True)
+            script.write_text("print('installed')\n", encoding="utf-8")
+            source_id = identity.source_id("bin/runner.py")
+
+            status, payload = sources.project_source(root, "demo", source_id)
+
+        self.assertEqual(200, status)
+        self.assertEqual(f"print('installed'){os.linesep}", payload["text"])
+        self.assertEqual("python", payload["language"])
+
+    def test_inventory_to_open_symlink_swap_never_delivers_external_bytes(self):
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
+            root = Path(directory)
+            self._skill(root, "workflows", "demo", "Require: input.\n\nReturn: output.\n")
+            target = root / "skills" / "workflows" / "demo" / "SKILL.md"
+            external = Path(outside) / "secret.md"
+            external.write_text("OUTSIDE_SECRET\n", encoding="utf-8")
+            source_id = identity.source_id("lib/skills/workflows/demo/SKILL.md")
+            original_inventory = sources._inventory
+            original_read_bytes = Path.read_bytes
+            original_os_open = os.open
+            armed = False
+            swapped = False
+
+            def inventory_then_arm(*args, **kwargs):
+                nonlocal armed
+                projected = original_inventory(*args, **kwargs)
+                armed = True
+                return projected
+
+            def swap() -> None:
+                nonlocal swapped
+                if swapped:
+                    return
+                target.unlink()
+                os.symlink(external, target)
+                swapped = True
+
+            def racing_read(path):
+                if armed and Path(path) == target:
+                    swap()
+                return original_read_bytes(path)
+
+            def racing_open(path, flags, mode=0o777, *, dir_fd=None):
+                if armed and Path(path) == target:
+                    swap()
+                if dir_fd is None:
+                    return original_os_open(path, flags, mode)
+                return original_os_open(path, flags, mode, dir_fd=dir_fd)
+
+            try:
+                with mock.patch.object(sources, "_inventory", inventory_then_arm), mock.patch.object(Path, "read_bytes", racing_read), mock.patch.object(os, "open", racing_open):
+                    status, payload = sources.project_source(root, "demo", source_id)
+            except OSError as error:
+                self.skipTest(f"symlink unavailable: {error}")
+
+        self.assertNotEqual(200, status)
+        self.assertNotIn("OUTSIDE_SECRET", repr(payload))
+
     def test_inventory_is_exact_and_exposes_only_opaque_ids(self):
         evolve = sources.source_inventory(ROOT, "evolve")
         expected_evolve_paths = {
@@ -69,15 +139,23 @@ class WorkflowSourceTests(unittest.TestCase):
             self._script(root, "runner.py", "print('ok')\n")
             source_id = identity.source_id("lib/skills/workflows/demo/SKILL.md")
             target = root / "skills" / "workflows" / "demo" / "SKILL.md"
-            original = Path.read_bytes
+            original_inventory = sources._inventory
+            original = identity.read_contained_bytes
             reads = []
+            armed = False
 
-            def counted(path):
-                if path == target:
+            def inventory_then_arm(*args, **kwargs):
+                nonlocal armed
+                projected = original_inventory(*args, **kwargs)
+                armed = True
+                return projected
+
+            def counted(boundary, path):
+                if armed and path == target:
                     reads.append(path)
-                return original(path)
+                return original(boundary, path)
 
-            with mock.patch.object(Path, "read_bytes", counted):
+            with mock.patch.object(sources, "_inventory", inventory_then_arm), mock.patch.object(identity, "read_contained_bytes", counted):
                 status, payload = sources.project_source(root, "demo", source_id)
 
         self.assertEqual(200, status)

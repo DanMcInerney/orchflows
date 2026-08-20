@@ -36,20 +36,14 @@ class WorkflowSkillError(ValueError):
 
 
 def _contained_file(root: Path, path: Path) -> bool:
-    try:
-        resolved_root = Path(root).resolve()
-        resolved = path.resolve(strict=True)
-        resolved.relative_to(resolved_root)
-    except (OSError, RuntimeError, ValueError):
-        return False
-    return resolved.is_file()
+    return identity.contained_file(root, path)
 
 
-def _read_skill(path: Path) -> tuple[dict, str]:
+def _read_skill(root: Path, path: Path) -> tuple[dict, str]:
     try:
-        text = path.read_text(encoding="utf-8")
+        text = identity.read_contained_text(root, path)
         fields = _parse_frontmatter(text)
-    except (OSError, UnicodeError, ValueError) as error:
+    except (identity.ContainedFileError, ValueError) as error:
         raise WorkflowSkillError("workflow skill source is unreadable") from error
     lines = text.splitlines(keepends=True)
     if not lines or lines[0].strip() != "---":
@@ -74,7 +68,7 @@ def skill_index(root: Path) -> tuple[dict[str, str], set[str]]:
         if not _contained_file(root, path):
             continue
         try:
-            fields, _ = _read_skill(path)
+            fields, _ = _read_skill(root, path)
         except WorkflowSkillError:
             continue
         name = fields.get("name")
@@ -102,13 +96,11 @@ def _script_path(root: Path, token: str) -> tuple[str, bool]:
         identity.script_node_id(installed)
     except identity.WorkflowIdentityError:
         return installed, False
-    if installed.startswith("bin/") and installed.count("/") == 1:
-        source = Path(root) / "scripts" / installed.removeprefix("bin/")
-    elif installed.startswith("lib/"):
-        source = Path(root) / installed.removeprefix("lib/")
-    else:
+    location = identity.installed_source(root, installed)
+    if location is None:
         return installed, False
-    return installed, _contained_file(Path(root), source)
+    boundary, source = location
+    return installed, _contained_file(boundary, source)
 
 
 def _calls(root: Path, body: str) -> tuple[set[str], dict[str, bool]]:
@@ -144,7 +136,7 @@ def project_workflow_skill(root: Path = ROOT, workflow_id: str = "") -> dict:
     path = root / "skills" / "workflows" / workflow_id / "SKILL.md"
     if not _contained_file(root, path):
         raise WorkflowSkillError("workflow skill source is unreadable")
-    fields, body = _read_skill(path)
+    fields, body = _read_skill(root, path)
     if fields.get("name") != workflow_id:
         raise WorkflowSkillError("workflow skill identity is malformed")
 

@@ -26,10 +26,10 @@ class WorkflowCompositionError(ValueError):
     """A composition source cannot form the exact detail projection."""
 
 
-def _fields(path: Path) -> dict:
+def _fields(root: Path, path: Path) -> dict:
     try:
-        return _parse_frontmatter(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, ValueError) as error:
+        return _parse_frontmatter(identity.read_contained_text(root, path))
+    except (identity.ContainedFileError, ValueError) as error:
         raise WorkflowCompositionError("composition source is unreadable") from error
 
 
@@ -44,8 +44,8 @@ def _canonical_name(value: object, subject: str) -> str:
     return value
 
 
-def _stub(path: Path, workflow: str) -> dict:
-    fields = _fields(path)
+def _stub(root: Path, path: Path, workflow: str) -> dict:
+    fields = _fields(root, path)
     stub_id = fields.get("id")
     executor = fields.get("executor")
     try:
@@ -84,7 +84,10 @@ def _skill_index(root: Path) -> tuple[dict[str, str], set[str]]:
         key=lambda path: path.relative_to(root).as_posix(),
     )
     for path in paths:
-        fields = _fields(path)
+        try:
+            fields = _fields(root, path)
+        except WorkflowCompositionError:
+            continue
         name = fields.get("name")
         if not isinstance(name, str) or name != path.parent.name:
             continue
@@ -122,7 +125,7 @@ def project_composition(root: Path = ROOT, workflow_id: str = "") -> dict:
     workflow_id = _canonical_name(workflow_id, "workflow")
     directory = root / "compositions" / workflow_id
     template = directory / "template.md"
-    template_fields = _fields(template)
+    template_fields = _fields(root, template)
     if template_fields.get("name") != workflow_id:
         raise WorkflowCompositionError("composition manifest identity is malformed")
 
@@ -146,7 +149,7 @@ def project_composition(root: Path = ROOT, workflow_id: str = "") -> dict:
     }
 
     stubs = [
-        _stub(path, workflow_id)
+        _stub(root, path, workflow_id)
         for path in sorted(directory.glob("*.md"), key=lambda path: path.name)
         if path.name != "template.md"
     ]

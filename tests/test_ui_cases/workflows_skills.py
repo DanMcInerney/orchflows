@@ -14,6 +14,26 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class WorkflowSkillTests(unittest.TestCase):
+    def test_installed_layout_resolves_sibling_bin_script(self):
+        with tempfile.TemporaryDirectory() as directory:
+            package = Path(directory)
+            root = package / "lib"
+            self._skill(
+                root,
+                "workflows",
+                "demo",
+                "Require: input.\n\nRun `runner.py execute`.\n\nReturn: output.\n",
+            )
+            script = package / "bin" / "runner.py"
+            script.parent.mkdir(parents=True)
+            script.write_text("print('installed')\n", encoding="utf-8")
+
+            detail = skills.project_workflow_skill(root, "demo")
+
+        node = next(item for item in detail["nodes"] if item["id"] == "script:bin/runner.py")
+        self.assertEqual(identity.source_id("bin/runner.py"), node["source_id"])
+        self.assertEqual([], detail["diagnostics"])
+
     def test_repository_skill_derives_only_backticked_calls_and_invoked_scripts(self):
         detail = skills.project_workflow_skill(ROOT, "orch-spec")
 

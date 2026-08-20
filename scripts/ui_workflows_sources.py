@@ -47,9 +47,13 @@ def _workflow_type(root: Path, workflow_id: object) -> str | None:
         identity.workflow_node_id(workflow_id)
     except identity.WorkflowIdentityError:
         return None
-    if (root / "compositions" / workflow_id / "template.md").is_file():
+    if identity.contained_file(
+        root, root / "compositions" / workflow_id / "template.md"
+    ):
         return "composition"
-    if (root / "skills" / "workflows" / workflow_id / "SKILL.md").is_file():
+    if identity.contained_file(
+        root, root / "skills" / "workflows" / workflow_id / "SKILL.md"
+    ):
         return "workflow-skill"
     return None
 
@@ -113,28 +117,6 @@ def source_inventory(root: Path = ROOT, workflow_id: str = "") -> tuple[str, ...
     return tuple(sorted(_inventory(root, workflow_id, workflow_type)))
 
 
-def _resolved_source(root: Path, installed_path: str) -> Path | None:
-    try:
-        installed = identity.normalize_installed_path(installed_path)
-    except identity.WorkflowIdentityError:
-        return None
-    root = root.resolve()
-    if installed.startswith("lib/"):
-        boundary = root
-        candidate = root / installed.removeprefix("lib/")
-    elif installed.startswith("bin/") and installed.count("/") == 1:
-        boundary = (root / "scripts").resolve()
-        candidate = boundary / installed.removeprefix("bin/")
-    else:
-        return None
-    try:
-        resolved = candidate.resolve(strict=True)
-        resolved.relative_to(boundary)
-    except (OSError, RuntimeError, ValueError):
-        return None
-    return resolved if resolved.is_file() else None
-
-
 def _redact(text: str, root: Path) -> tuple[str, bool]:
     delivered = text
     markers = {str(root.resolve()), root.resolve().as_posix()}
@@ -172,13 +154,18 @@ def project_source(
         return 422, UNREADABLE
     if installed_path is None:
         return 404, NOT_FOUND
-    path = _resolved_source(root, installed_path)
-    if path is None:
+    location = identity.installed_source(root, installed_path)
+    if location is None:
         return 404, NOT_FOUND
+    boundary, path = location
     try:
-        raw = path.read_bytes()
+        raw = identity.read_contained_bytes(boundary, path)
         text = raw.decode("utf-8")
-    except (OSError, UnicodeError):
+    except identity.ContainedFileUnavailable:
+        return 422, UNREADABLE
+    except identity.ContainedFileError:
+        return 404, NOT_FOUND
+    except UnicodeError:
         return 422, UNREADABLE
     delivered, redacted = _redact(text, root)
     return 200, {

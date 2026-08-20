@@ -7,9 +7,11 @@ from pathlib import Path
 
 try:
     from scripts.tickets_format import _parse_frontmatter
+    from scripts import ui_workflows_identity as identity
     from scripts.ui_workflows_summary import SummaryManifestError, validate_manifest
 except ImportError:
     from tickets_format import _parse_frontmatter
+    import ui_workflows_identity as identity
     from ui_workflows_summary import SummaryManifestError, validate_manifest
 
 
@@ -35,10 +37,10 @@ def _text_field(fields: dict, key: str, subject: str) -> str:
     return value
 
 
-def _owner(path: Path, workflow_type: str) -> dict:
+def _owner(root: Path, path: Path, workflow_type: str) -> dict:
     try:
-        fields = _parse_frontmatter(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, ValueError) as error:
+        fields = _parse_frontmatter(identity.read_contained_text(root, path))
+    except (identity.ContainedFileError, ValueError) as error:
         raise WorkflowCatalogError("workflow owner is unreadable") from error
     name = _text_field(fields, "name", path.parent.name)
     if name != path.parent.name:
@@ -67,19 +69,24 @@ def _canonical_owners(root: Path) -> list[dict]:
         (root / "skills" / "workflows").glob("*/SKILL.md"),
         key=lambda path: path.parent.name,
     )
-    owners = [_owner(path, "composition") for path in compositions]
-    owners.extend(_owner(path, "workflow-skill") for path in workflow_skills)
+    owners = [_owner(root, path, "composition") for path in compositions]
+    owners.extend(_owner(root, path, "workflow-skill") for path in workflow_skills)
     ids = [owner["id"] for owner in owners]
     if len(ids) != len(set(ids)):
         raise WorkflowCatalogError("canonical workflow identities are not unique")
     return owners
 
 
-def _load_summary(path: Path, workflow_ids: set[str]) -> dict:
+def _load_summary(root: Path, path: Path, workflow_ids: set[str]) -> dict:
     try:
-        candidate = json.loads(path.read_text(encoding="utf-8"))
+        package_root = identity.workflow_roots(root).package
+        candidate = json.loads(identity.read_contained_text(package_root, path))
         return validate_manifest(candidate, workflow_ids)
-    except (OSError, UnicodeError, json.JSONDecodeError, SummaryManifestError) as error:
+    except (
+        identity.ContainedFileError,
+        json.JSONDecodeError,
+        SummaryManifestError,
+    ) as error:
         raise WorkflowCatalogError("workflow summary manifest is invalid") from error
 
 
@@ -90,7 +97,11 @@ def project_catalog(
     """Return the exact catalog, joining UI summaries by canonical owner ID."""
 
     owners = _canonical_owners(Path(root))
-    manifest = _load_summary(Path(summary_path), {owner["id"] for owner in owners})
+    manifest = _load_summary(
+        Path(root),
+        Path(summary_path),
+        {owner["id"] for owner in owners},
+    )
     return [
         {**owner, "summary": manifest["workflows"][owner["id"]]}
         for owner in owners
