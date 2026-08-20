@@ -8,6 +8,7 @@ import subprocess
 
 import scripts.ui_api as legacy
 import scripts.ui_now_projection as now
+import scripts.ui_runs_projection as runs
 
 
 PROJECTORS = (
@@ -79,6 +80,36 @@ class NowProjectionTests(unittest.TestCase):
         self.assertEqual({"revision", "active", "nodes", "edges"}, set(projected))
         self.assertNotEqual(projected, refused)
         self.assertNotIn("outside", json.dumps(refused, sort_keys=True))
+
+
+class RunsProjectionTests(unittest.TestCase):
+    def test_runs_preserve_closed_payloads_and_refuse_path_identifiers(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_sink(Path(tmp))
+            before = snapshot(root)
+            run_index = runs.project_runs(root)
+            run = runs.project_run(root, "run-gamma")
+            ticket = runs.project_ticket(root, "run-gamma", "G1")
+            self.assertIsNone(runs.project_run(root, "../outside"))
+            self.assertIsNone(runs.project_ticket(root, "run-gamma", "../outside"))
+            self.assertEqual(before, snapshot(root))
+
+            self.assertEqual(legacy.project_runs(root), run_index)
+            self.assertEqual(legacy.project_run(root, "run-gamma"), run)
+            self.assertEqual(legacy.project_ticket(root, "run-gamma", "G1"), ticket)
+
+        self.assertEqual({"api_version", "runs", "empty"}, set(run_index))
+        self.assertEqual(
+            {"api_version", "run", "active", "nodes", "edges", "diagnostics", "events"},
+            set(run),
+        )
+        self.assertEqual(
+            {"api_version", "run", "ticket", "linked_friction", "friction_health"},
+            set(ticket),
+        )
+        encoded = json.dumps((run_index, run, ticket), sort_keys=True)
+        self.assertNotIn(str(root), encoded)
+        self.assertNotIn("## Objective", encoded)
 
 
 if __name__ == "__main__":
