@@ -267,7 +267,7 @@ test("compiled experience preserves keyboard-reachable observer state across ref
     if (request.url().startsWith("http") && !request.url().startsWith(origin)) remoteRequests.push(request.url());
   });
   page.on("response", (response) => {
-    if (new URL(response.url()).pathname === "/api/v1/experience") apiStatuses.push(response.status());
+    if (new URL(response.url()).pathname === "/api/v1/views/now") apiStatuses.push(response.status());
   });
 
   await page.setViewportSize({ width: 1280, height: 800 });

@@ -184,11 +184,3 @@ export function matchCatalog(
   }
   return highest[0];
 }
-
-export const featureCatalog = defineCatalog([
-  {
-    kind: "disabled",
-    id: "create",
-    navigation: { label: "Create", reason: "Creation is not available in this read-only reader." },
-  },
-] as const);
