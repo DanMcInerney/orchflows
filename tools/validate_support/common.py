@@ -43,7 +43,7 @@ DESCRIPTION_BUDGET = 140
 ALLOWED_FRONTMATTER_KEYS = {"name", "description", "disable-model-invocation", "role"}
 ROLE_PROFILES = {"orch-planner", "orch-worker"}
 ROLE_VALUES = {"planner", "worker", "none"}
-ROLE_NONE_TIERS = ("engines",)
+ROLE_NONE_TIERS = ("engines", "workflows")
 PACK_SIGNATURE_CELLS = (
     "slicing",
     "executor",
