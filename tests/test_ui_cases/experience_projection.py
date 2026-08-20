@@ -1,5 +1,7 @@
 """Cross-layer contract for the rendered observability experience substrate."""
 
+import hashlib
+
 from tests.test_ui_cases._web import *  # noqa: F401,F403
 
 import scripts.ui_experience as experience
@@ -8,6 +10,23 @@ from scripts.ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG
 
 
 class ExperienceFoundationContractTests(unittest.TestCase):
+    def test_modularization_spec_is_the_accepted_content_with_locator_repair(self):
+        path = ROOT / "docs" / "ui" / "modularization.md"
+        implemented = path.read_bytes()
+        repaired = implemented.replace(
+            b"../../web/src/features/session-graph/index.ts)",
+            b"../../web/src/features/session-graph/index.tsx)",
+        )
+
+        self.assertNotEqual(implemented, repaired)
+        self.assertNotIn(
+            b"../../web/src/features/session-graph/index.tsx)", implemented
+        )
+        self.assertEqual(
+            "D5B7418736D058B881BD9C673277DED0E23816809643FF51BA1631A2A4DC3E87",
+            hashlib.sha256(repaired).hexdigest().upper(),
+        )
+
     def test_session_slug_diagnostic_keeps_legacy_identity_but_api_is_path_safe(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
