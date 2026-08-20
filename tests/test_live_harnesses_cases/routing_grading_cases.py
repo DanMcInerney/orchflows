@@ -130,12 +130,98 @@ def _result_event(cost: float) -> dict:
     return {"type": "result", "subtype": "success", "total_cost_usd": cost}
 
 
+def _child_skill(parent_tool_use_id: str, skill: str, tool_id: str = "s1") -> dict:
+    return {
+        "type": "assistant",
+        "parent_tool_use_id": parent_tool_use_id,
+        "message": {
+            "content": [
+                {
+                    "type": "tool_use",
+                    "id": tool_id,
+                    "name": "Skill",
+                    "input": {"skill": skill},
+                }
+            ]
+        },
+    }
+
+
 class TestRoutingGrading(unittest.TestCase):
     """Every grading branch, against a fabricated stream-json transcript.
     No branch below reaches a `claude` process."""
 
     def _observed(self, events):
         return routing_live.grade_transcript(_stream(events))["observed"]
+
+    def _conformance(self, events, role="worker", skill="orch-build"):
+        return routing_live.grade_transcript(
+            _stream(events), expected_role=role, expected_skill=skill
+        )["execution_conformance"]
+
+    def test_parent_only_skill_fails_without_matching_role_child(self):
+        graded = self._conformance([_skill_use("orch-build")])
+
+        self.assertEqual("failed", graded["status"])
+        self.assertIn("missing_matching_role_child", graded["reasons"])
+        self.assertEqual(0, graded["primary_skill_executions"])
+
+    def test_matching_role_child_requires_exact_skill(self):
+        wrong_skill = [
+            _launch("role-1", "orch-worker", "Apply orch-build exactly"),
+            _child_skill("role-1", "orch-repair"),
+        ]
+        graded = self._conformance(wrong_skill)
+        self.assertEqual("failed", graded["status"])
+        self.assertIn("missing_exact_primary_skill", graded["reasons"])
+
+        exact_skill = [
+            _launch("role-1", "orch-worker", "Apply orch-build exactly"),
+            _child_skill("role-1", "orch-build"),
+        ]
+        graded = self._conformance(exact_skill)
+        self.assertEqual("passed", graded["status"])
+        self.assertEqual(1, graded["primary_skill_executions"])
+
+    def test_planner_helper_edges_preserve_primary_skill_single_execution(self):
+        events = [
+            _launch("planner-1", "orch-planner", "Apply orch-spec exactly"),
+            {
+                "type": "assistant",
+                "parent_tool_use_id": "planner-1",
+                "message": {
+                    "content": [
+                        {
+                            "type": "tool_use",
+                            "id": "primary-1",
+                            "name": "Skill",
+                            "input": {"skill": "orch-spec"},
+                        },
+                        {
+                            "type": "tool_use",
+                            "id": "helper-1",
+                            "name": "Agent",
+                            "input": {
+                                "subagent_type": "orch-worker",
+                                "prompt": "Apply orch-investigate to the bounded evidence question",
+                            },
+                        },
+                    ]
+                },
+            },
+            _child_skill("helper-1", "orch-investigate", tool_id="helper-skill"),
+        ]
+        graded = self._conformance(events, role="planner", skill="orch-spec")
+        self.assertEqual("passed", graded["status"])
+        self.assertEqual(1, graded["primary_skill_executions"])
+        self.assertEqual(1, graded["helper_launches"])
+
+        redispatched = events + [
+            _child_skill("helper-1", "orch-spec", tool_id="redispatched-primary")
+        ]
+        graded = self._conformance(redispatched, role="planner", skill="orch-spec")
+        self.assertEqual("failed", graded["status"])
+        self.assertIn("primary_skill_redispatched", graded["reasons"])
 
     def test_the_two_ticket_skills_grade_as_ticket(self):
         for skill in ("orch-frontier", "orch-spec"):
