@@ -176,6 +176,11 @@ def _analyze_run(stdout: str, returncode: int, expected: dict[str, str]) -> dict
         "reported_models": {
             agent_type: sorted(reported_models[agent_type]) for agent_type in expected
         },
+        "role_skill_topology": {
+            "mode": "enforced",
+            "profile_selection": "verified" if passed else "failed",
+            "binding": "context:fork+agent",
+        },
     }
 
 

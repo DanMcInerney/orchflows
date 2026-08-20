@@ -6,6 +6,29 @@ from ._support import *
 
 
 class TestClaudeLiveProfiles(unittest.TestCase):
+    def test_role_skill_topology_is_enforced(self):
+        agent_type = "orch-worker-e2e-42"
+        sentinel = "ORCH_SKILL_EXECUTED:orch-build"
+        matching = [
+            {"type": "system", "subtype": "init", "agents": [agent_type]},
+            _launch("worker-1", agent_type),
+            _reply("worker-1", sentinel),
+        ]
+
+        result = claude_live._analyze_run(
+            _stream(matching), returncode=0, expected={agent_type: sentinel}
+        )
+        self.assertTrue(result["passed"])
+        self.assertEqual("enforced", result["role_skill_topology"]["mode"])
+        self.assertEqual("verified", result["role_skill_topology"]["profile_selection"])
+
+        parent_only = matching[:2] + [_parent_text(sentinel)]
+        result = claude_live._analyze_run(
+            _stream(parent_only), returncode=0, expected={agent_type: sentinel}
+        )
+        self.assertFalse(result["passed"])
+        self.assertEqual("failed", result["role_skill_topology"]["profile_selection"])
+
     def test_builds_all_production_derived_probe_agents(self):
         agents, expected, configured = claude_live._build_probe_agents(
             claude_live.PROFILE_NAMES, pid=42
@@ -113,6 +136,27 @@ class TestClaudeLiveProfiles(unittest.TestCase):
 
 
 class TestCodexLiveProfiles(unittest.TestCase):
+    def test_role_skill_topology_reports_advisory_when_unsupported(self):
+        stdout = json.dumps(
+            {
+                "type": "item.completed",
+                "item": {
+                    "type": "agent_message",
+                    "text": codex_live.V2_UNSUPPORTED_MARKER,
+                },
+            }
+        )
+
+        result = codex_live._classify_surface(
+            "v2", stdout, 0, {"orch_worker_e2e_42": "SENTINEL:worker"}
+        )
+
+        self.assertEqual("unsupported", result["status"])
+        self.assertEqual("advisory", result["role_skill_topology"]["mode"])
+        self.assertEqual("unsupported", result["role_skill_topology"]["profile_selection"])
+        self.assertFalse(result["role_skill_topology"]["automatic_binding_claimed"])
+        self.assertFalse(result["role_skill_topology"]["hard_root_guard_claimed"])
+
     def test_stable_surface_accepts_all_sentinels(self):
         expected = {
             "orch_planner_e2e_42": "SENTINEL:planner",
