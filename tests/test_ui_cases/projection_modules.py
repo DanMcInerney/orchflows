@@ -8,6 +8,7 @@ from types import SimpleNamespace
 
 import scripts.ui_api as api
 import scripts.ui_friction_projection as friction
+import scripts.ui_experience as experience
 import scripts.ui_now_projection as now
 import scripts.ui_runs_projection as runs
 import scripts.ui_sessions_projection as sessions
@@ -67,6 +68,50 @@ class FacadeProjectionDelegationTests(unittest.TestCase):
         for name, owner in expected.items():
             with self.subTest(name=name):
                 self.assertIs(owner, getattr(api, name))
+
+
+class ClosedViewProjectionTests(unittest.TestCase):
+    def test_each_view_is_a_closed_slice_of_the_compatibility_projection(self):
+        cases = (
+            ("now", {}, "orchflows.now.v1", ("runs",)),
+            ("run-map", {"run": "run-gamma"}, "orchflows.run-map.v1", ("runs", "run")),
+            (
+                "inspector",
+                {"run": "run-gamma", "ticket": "G1"},
+                "orchflows.inspector.v1",
+                ("run", "ticket"),
+            ),
+            ("sessions", {}, "orchflows.sessions.v1", ("sessions",)),
+            (
+                "session-graph",
+                {"session": TITLED_SESSION},
+                "orchflows.session-graph.v1",
+                ("session",),
+            ),
+            ("friction", {}, "orchflows.friction.v1", ("friction",)),
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            root = make_sink(tmp)
+            transcripts = make_transcripts(tmp)
+            for view, query, schema, fields in cases:
+                with self.subTest(view=view):
+                    legacy = experience.project_experience(root, transcripts, query)
+                    projected = experience.project_view(root, transcripts, view, query)
+                    self.assertEqual({"schema", *fields}, set(projected))
+                    self.assertEqual(schema, projected["schema"])
+                    for field in fields:
+                        self.assertEqual(legacy[field], projected[field])
+
+    def test_phase_a_workflows_slice_adds_no_catalog_or_authoring_semantics(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_sink(Path(tmp))
+            projected = experience.project_view(root, None, "run-map", {})
+
+        encoded = json.dumps(projected, sort_keys=True)
+        self.assertNotIn("workflow-catalog", encoded)
+        self.assertNotIn("create", encoded)
+        self.assertEqual((), workflows.ROUTE_SPECS)
 
 
 if __name__ == "__main__":

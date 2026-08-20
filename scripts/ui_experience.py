@@ -56,6 +56,14 @@ POSIX_HOST_PATH_RE = re.compile(
     r"(?<![:A-Za-z0-9_])/(?:Users|home|tmp|private|var|opt|srv|mnt|Volumes)(?:/[^\s`\"'<>]+)+"
 )
 REDACTED_HOST_PATH = "[redacted-host-path]"
+VIEW_SLICES = {
+    "now": ("orchflows.now.v1", ("runs",)),
+    "run-map": ("orchflows.run-map.v1", ("runs", "run")),
+    "inspector": ("orchflows.inspector.v1", ("run", "ticket")),
+    "sessions": ("orchflows.sessions.v1", ("sessions",)),
+    "session-graph": ("orchflows.session-graph.v1", ("session",)),
+    "friction": ("orchflows.friction.v1", ("friction",)),
+}
 
 
 def is_spa_path(path: str) -> bool:
@@ -335,4 +343,15 @@ def project_experience(root, transcripts=None, query=None) -> dict:
             "skipped": int(friction["skipped"]),
             "unreadable": len(friction["unreadable"]),
         },
+    }
+
+
+def project_view(root, transcripts, view: str, query=None) -> dict:
+    """Return one closed feature slice of the compatibility projection."""
+
+    schema, fields = VIEW_SLICES[view]
+    compatibility = project_experience(root, transcripts, query)
+    return {
+        "schema": schema,
+        **{field: compatibility[field] for field in fields},
     }
