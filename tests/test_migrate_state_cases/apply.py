@@ -152,6 +152,25 @@ class TestLegacyFriction(MigrationCase):
             for key in LEGACY_KEYS:
                 self.assertIn(key, entry, f"{key} was dropped from {line}")
 
+    def test_a_historical_category_value_is_preserved(self):
+        root = self.build_source()
+        self.migrate(root)
+
+        entry = next(json.loads(line)
+                     for line in lines_of(self.sink / "friction" / "2026-02.jsonl")
+                     if line.startswith("{") and "resolvable" in line)
+        self.assertEqual("workaround", entry["category"])
+
+    def test_a_category_free_entry_does_not_gain_one(self):
+        root = self.source_root("category-free")
+        entry = json.loads(legacy_entry(root.parent, "new shape"))
+        del entry["category"]
+        write(root / "friction" / "2026-04.jsonl", json.dumps(entry) + "\n")
+
+        self.migrate(root)
+        migrated = json.loads(lines_of(self.sink / "friction" / "2026-04.jsonl")[0])
+        self.assertNotIn("category", migrated)
+
     def test_an_entry_that_already_names_its_convention_keeps_it(self):
         root = self.source_root("gamma")
         live = json.loads(legacy_entry(root.parent, "already current"))

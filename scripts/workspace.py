@@ -74,7 +74,7 @@ import tickets  # noqa: E402  frontmatter and isolation, imported and never copi
 # ``bin`` layout after the directory above has joined ``sys.path``.
 workspace_git = __import__("workspace_git")
 workspace_scope = __import__("workspace_scope")
-
+tickets_scope = __import__("tickets_scope")
 ISOLATION_KEY = "isolation"
 BRANCH_KEY = "workspace_branch"
 BASELINE_KEY = "workspace_baseline"
@@ -172,6 +172,20 @@ def _dirty_paths() -> list:
         _GIT_CWD, lambda cwd, *args: _git(*args)
     )
 
+
+def _branch_worktree(branch: str):
+    """The still-present linked worktree holding ``branch``, if any."""
+    current = {}
+    for line in _git_out("worktree", "list", "--porcelain").splitlines() + [""]:
+        if line:
+            key, _, value = line.partition(" ")
+            current[key] = value
+            continue
+        if current.get("branch") == f"refs/heads/{branch}":
+            return Path(current["worktree"]).resolve()
+        current = {}
+    return None
+
 # --- the ticket, always at the main repository root -------------------------
 
 
@@ -262,7 +276,7 @@ def _extract_flag(args: list, flag: str):
 
 _normalized_scope = workspace_scope._normalized_scope
 _in_scope = workspace_scope._in_scope
-
+_actual_mutations = workspace_scope._actual_mutations
 
 def _is_ancestor(ancestor: str, descendant: str) -> bool:
     return workspace_git._is_ancestor(_git, ancestor, descendant)
@@ -306,28 +320,6 @@ def _cmd_check(rest):
         return {"check": reported}, EXIT_OK
     reported[ISOLATION_KEY] = isolation
 
-    # The other condition `tickets.py packet` puts the establishment step
-    # behind, read here as the same fact about the same item: an effective
-    # write scope of nothing is authority over no path in any workspace --
-    # such an item writes its own ticket sections, and those live in the
-    # sink, which no workspace holds -- so packet emits no `start` line for
-    # it. Such a lane is owed no stamp, and each refusal below that stands
-    # for a missing or empty stamp -- no-record, an unresolvable branch, a
-    # tip HEAD already holds -- refuses it for obeying its own packet, so
-    # each is `not required` instead. What an empty scope does not license
-    # is a change: it is authority over nothing, and a recorded branch that
-    # carries commits HEAD lacks is graded in full below, where every path
-    # it changed is a breach (contracts/work-item.md: a result whose
-    # changed artifacts exceed the granted scope is rejected at the join).
-    #
-    # Effective, never declared: the value `tickets._load_ticket` answers
-    # with is the cut's scope plus every recorded grant, so a lane a grant
-    # has since given paths to is graded in full again.
-    #
-    # Present and empty, never absent: the loader leaves an absent key
-    # absent, and packet refuses that ticket as an incomplete packet rather
-    # than dispatching it. Read alike here, an item that never declared
-    # what it may change would pass its join whatever it changed.
     effective = data.get(WRITE_SCOPE_KEY)
     empty = effective is not None and not tickets._scope_entries(effective)
     if empty:
@@ -401,25 +393,30 @@ def _cmd_check(rest):
             EXIT_WRONG_BRANCH_POINT,
         )
 
-    # three-dot, from the merge base: a breach that arrives inside a merge
-    # commit is invisible to `git log --name-only` and visible here.
-    # `--` terminates the revisions: without it git stats the range as a
-    # filename first, and a long absolute revision came back "Filename too
-    # long" -- a grade lost to a name nobody meant as a path.
-    changed = [
-        line
-        for line in _git_out(
-            "diff", "--name-only", "--no-renames", f"{base_commit}...{tip}", "--"
-        ).splitlines()
-        if line
-    ]
-    breaches = [name for name in changed if not _in_scope(name, scope)]
+    ticket_worktree = _branch_worktree(branch)
+    if ticket_worktree is not None:
+        dirty = workspace_git._dirty_paths(str(ticket_worktree))
+        if dirty:
+            raise Refused(
+                f"branch {branch!r} still has uncommitted bytes in its isolated worktree: "
+                + ", ".join(sorted(dirty)),
+                EXIT_SCOPE_BREACH,
+                dirty=sorted(dirty),
+            )
+
+    actual = _actual_mutations(_git_out(
+        "diff", "--name-status", "--no-renames", "-z", f"{base_commit}...{tip}", "--"))
+    changed = sorted({path for _, path in actual})
+    operation_breaches = tickets_scope.unplanned_mutations(data, actual) if workspace_scope._operation_plan_required(data) else []
+    path_breaches = [name for name in changed if not _in_scope(name, scope)]
+    breaches = sorted(set(path_breaches) | {path for _, path in operation_breaches})
     reported.update(
         {
             BRANCH_KEY: branch,
             "tip": tip,
             "base": base_commit,
             "changed": changed,
+            "mutations": [f"{operation}:{path}" for operation, path in actual],
             WRITE_SCOPE_KEY: list(scope),
         }
     )
@@ -429,6 +426,7 @@ def _cmd_check(rest):
             EXIT_SCOPE_BREACH,
             breaches=breaches,
             changed=changed,
+            operation_breaches=[f"{operation}:{path}" for operation, path in operation_breaches],
         )
     reported["commits"] = int(
         _git_out("rev-list", "--count", f"{base_commit}..{tip}", "--") or 0

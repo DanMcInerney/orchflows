@@ -171,14 +171,13 @@ _HOST_BLOCK_DEMANDS = {
     ),
     "log friction the moment it happens, and never skip the log": (
         "{{FRICTION_COMMANDS}}",
-        "`--category`",
         "`--skill <orch-name>`",
         "`--ticket <id>`",
         "`--run <run-id>`",
         # The fallback half of the demand: the file it is appended to and the
         # fields that line carries.
         "`friction/<yyyy-mm>.jsonl`",
-        "(ts, observed, expected, category, host)",
+        "(ts, observed, expected, host, project, project_source)",
         "{{ORCH_LIB}}/rules/improvement.md §1",
     ),
 }
@@ -225,6 +224,7 @@ class TestHostBlockDemands(unittest.TestCase):
         )
         for token in _HOST_BLOCK_STRUCTURE:
             self.assertIn(token, collapsed)
+        self.assertNotIn("--category", collapsed)
 
     def test_host_block_demands_fit_the_every_turn_budget(self):
         limit = validate.SURFACE_BUDGET["templates/host-block.md"]

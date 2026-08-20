@@ -247,18 +247,17 @@ class TestFrictionProjectFields(_ProvenanceTestCase):
                 self.assertEqual(str(here), self.project_of(entry)["root"])
                 self.assertEqual("cwd", entry["project_source"])
 
-    def test_every_field_the_stream_already_carried_survives(self):
+    def test_every_current_logger_field_survives(self):
         here = self.repository("beta", origin="https://x/beta")
         self.chdir(here)
         entry = self.entry([
             "observed thing", "expected thing",
-            "--category", "contract-gap", "--skill", "orch-tdd",
+            "--skill", "orch-tdd",
             "--ticket", "04-friction-project", "--run", "20260814T000000Z-alpha",
         ])
-        self.assertEqual(LEGACY_ENTRY_KEYS | PROVENANCE_KEYS, set(entry))
+        self.assertEqual(LOGGER_ENTRY_KEYS | PROVENANCE_KEYS, set(entry))
         self.assertEqual("observed thing", entry["observed"])
         self.assertEqual("expected thing", entry["expected"])
-        self.assertEqual("contract-gap", entry["category"])
         self.assertEqual("orch-tdd", entry["skill"])
         self.assertEqual("04-friction-project", entry["ticket"])
         self.assertEqual("20260814T000000Z-alpha", entry["run"])

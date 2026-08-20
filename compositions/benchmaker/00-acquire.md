@@ -20,20 +20,12 @@ charter names.
 
 ## Fixed inputs
 
-- The question, stated as one: what must be true of {{target}} and its
-  class for a benchmark of {{outcome}} to be built from evidence rather
-  than from belief?
-- {{target}} — the target identity, opaque: carried, never defined.
-- {{outcome}} — the intended observable outcome, carried the same way.
-- {{sources}} — the source policy, including judgment permission and
-  any bar on a lane's sources.
-- {{rigor}} — this run's value for the rigor bar orch-research-pack's
-  signature requires of a spec.
-- {{package}} — the evidence store root the frozen synthesis is written
-  under.
-- [the research charter](../references/benchmaker-research.md) — the
-  lane cut, the synthesis artifacts, and the exhibited/protected rule
-  this delivery is cut under.
+- input: {"name":"target","type":"literal","value":"{{target}}"}
+- input: {"name":"outcome","type":"literal","value":"{{outcome}}"}
+- input: {"name":"sources","type":"literal","value":"{{sources}}"}
+- input: {"name":"rigor","type":"literal","value":"{{rigor}}"}
+- input: {"name":"package","type":"literal","value":"{{package}}"}
+- input: {"identity":{"kind":"artifact","locator":"project:compositions/references/benchmaker-research.md","sha256":"b164798c788bb1fa408d858235a54ef26dc9bd48c9ec1cbbe6e6d7f680f9c94c"},"name":"research-charter","type":"identity"}
 
 ## Completion test
 

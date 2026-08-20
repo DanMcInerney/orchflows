@@ -1,0 +1,1 @@
+{"name":"deleted-pin-a","mutation":"delete:skills/old-a.md","edge":{"from":{"operation":"delete","path":"skills/old-a.md"},"requires":[{"operation":"change","path":"tests/test_old_a.py"}],"reason":"declared deleted literal pin"}}

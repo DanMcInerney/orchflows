@@ -123,11 +123,10 @@ def render_friction(log: dict) -> str:
         for entry in entries:
             body.append(
                 '<li class="entry">\n<p class="meta">'
-                '<span class="ts">{ts}</span> · {category} · {host}</p>\n'
+                '<span class="ts">{ts}</span> · {host}</p>\n'
                 '<p class="observed">observed: {observed}</p>\n'
                 '<p class="expected">expected: {expected}</p>\n</li>\n'.format(
                     ts=html.escape(_scalar(entry.get("ts"))),
-                    category=_cell(_scalar(entry.get("category")), EMPTY_UNSET),
                     host=_cell(_scalar(entry.get("host")), EMPTY_UNSET),
                     observed=_cell(_scalar(entry.get("observed")), EMPTY_UNSET),
                     expected=_cell(_scalar(entry.get("expected")), EMPTY_UNSET),

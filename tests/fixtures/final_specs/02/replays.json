@@ -1,0 +1,16 @@
+[
+  {
+    "run": "20260818T112258Z-pr66-ci-error-contract-restart",
+    "id": "01-cause.iter.01",
+    "depends_on": "00-reproduce",
+    "objective": "Determine the cause of the reproduced PR 66 CI error-contract failure.",
+    "completion": "the cause is supported by the reproduced failure | oracle: `python -m unittest` | oracle_class: deterministic | provenance: pre-existing"
+  },
+  {
+    "run": "runtime-test-performance-fix",
+    "id": "01-cause.iter.01",
+    "depends_on": "00-reproduce",
+    "objective": "Determine the cause of the reproduced runtime-test performance failure.",
+    "completion": "the cause is supported by the reproduced failure | oracle: `python -m unittest` | oracle_class: deterministic | provenance: pre-existing"
+  }
+]

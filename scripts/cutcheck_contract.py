@@ -12,7 +12,7 @@ from pathlib import Path
 
 try:  # in-repo; the installed copy sits flat beside tickets.py
     from scripts import state_root
-    from scripts.tickets import (
+    from scripts.tickets_format import (
         CHECKED_BY_KEY,
         GATE_EXECUTORS,
         GATE_ID_MARKER,
@@ -25,7 +25,7 @@ try:  # in-repo; the installed copy sits flat beside tickets.py
     )
 except ImportError:  # pragma: no cover - the installed copy's path
     import state_root
-    from tickets import (
+    from tickets_format import (
         CHECKED_BY_KEY,
         GATE_EXECUTORS,
         GATE_ID_MARKER,
@@ -60,7 +60,7 @@ UNRESOLVED_CITATION = "unresolved-citation"
 QUOTE_NOT_AT_CITATION = "quote-not-at-citation"
 UNSCOPED_WRITE = "unscoped-write"
 SCOPE_CONTRADICTION = "scope-contradiction"
-SCOPE_OPEN = "scope-open"
+SCOPE_OPEN = "undeclared-scope-edge"
 SCOPE_COLLISION = "scope-collision"
 STAGED_INVALIDATION = "staged-invalidation"
 ORPHAN_CRITERION = "orphan-criterion"
@@ -136,6 +136,7 @@ ADVISORY = frozenset(
         VERDICT_IN_OUTPUT,
         SYMLINK_IN_TREE,
         BYTECODE_WRITTEN,
+        SCOPE_OPEN,
         UNREAD_HALF,
     }
 )

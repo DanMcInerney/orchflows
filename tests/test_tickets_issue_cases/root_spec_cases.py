@@ -83,7 +83,7 @@ class RootStubSpecFieldsTest(unittest.TestCase):
             use_sink(tmp)
             make_pack(tmp)
             unit = stub("A", scope="scratch/x.txt").replace(
-                "executor: orch-tdd", "executor: orch-tdd\npack: orch-synth-pack"
+                "pack: orch-code-pack", "pack: orch-synth-pack"
             )
             directory = make_template(tmp, {"A": unit, "B": stub("B", "[A]")})
             self.assertEqual([], self.defects(directory))

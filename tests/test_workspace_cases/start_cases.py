@@ -33,8 +33,10 @@ class TestCheckDisambiguatesItsRevisionRanges(unittest.TestCase):
                     return 0, "main\n", ""
                 if args[0] == "merge-base":  # tip not in HEAD; base is in tip
                     return (1 if args[3] == "HEAD" else 0), "", ""
+                if args[:3] == ("worktree", "list", "--porcelain"):
+                    return 0, "", ""
                 if args[0] == "diff":
-                    return 0, "scratch/a.txt\n", ""
+                    return 0, "A\0scratch/a.txt\0", ""
                 if args[0] == "rev-list":
                     return 0, "1\n", ""
                 raise AssertionError(f"unexpected git call: {args}")
@@ -54,7 +56,7 @@ class TestCheckDisambiguatesItsRevisionRanges(unittest.TestCase):
             ranged = [args for args in calls if any(".." in arg for arg in args)]
             self.assertEqual(
                 [
-                    ("diff", "--name-only", "--no-renames", "basecommit...tip", "--"),
+                    ("diff", "--name-status", "--no-renames", "-z", "basecommit...tip", "--"),
                     ("rev-list", "--count", "basecommit..tip", "--"),
                 ],
                 ranged,

@@ -14,19 +14,15 @@ profile: orch-worker
 
 ## Objective
 
-Every canary item in {{canary_set}} ran under `orch-frontier`, each
-carrying its own result, at one recorded binding — model id, effort
-level, and host.
+The nested run formed by this ticket's `run` plus `.00-run` is terminal and
+contains one `tickets.py new --file` copy of every item in the read-only
+`{{canary_set}}` golden set under `.orch/canary/`. Each copy carries its own
+result from `orch-frontier` at one recorded model-id, effort-level, and host
+binding; the golden set is byte-identical to its input identity.
 
 ## Fixed inputs
 
-- {{canary_set}} — the frozen golden work items under `.orch/canary/`,
-  each already a ticket, spanning the kernel boundaries its README
-  declares. Read only: the run never writes into it.
-- The items are placed, each a copy carrying this ticket's `run` plus
-  `.00-run` as its `run`, through `tickets.py new --file`, before the
-  drain, so a claim or a result lands on the issued copy and the golden
-  set is still byte-clean at close.
+- input: {"name":"canary-set","type":"literal","value":"{{canary_set}}"}
 
 ## Completion test
 

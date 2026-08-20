@@ -48,8 +48,11 @@ class LeaseByArtifactMotionTest(unittest.TestCase):
         return run_dir
 
     def reclaimable(self, tmp: Path) -> bool:
-        listed = [item["id"] for item in run_cmd(tmp, "ready", "--run", "testrun")["ready"]]
-        return listed == ["T1"]
+        payload = run_cmd(tmp, "ready", "--run", "testrun")
+        return any(
+            item.get("id") == "T1" and "stale legacy claim" in item.get("reason", "")
+            for item in payload["skipped"]
+        )
 
     def test_a_claim_past_its_lease_with_a_still_artifact_is_stale(self):
         """The baseline the two cases below are read against: nothing has
@@ -197,6 +200,7 @@ class OSErrorHandlerTest(unittest.TestCase):
             with refusing_to_write(run_dir / "T2.md"):
                 payload = run_cmd(tmp, "ready")
             self.assertEqual(["T3"], [item["id"] for item in payload["ready"]])
+            self.assertTrue(any("requires `recut`" in item["reason"] for item in payload["skipped"]))
             self.assertIn(
                 "status: pending", (run_dir / "T2.md").read_text(encoding="utf-8")
             )
@@ -213,7 +217,7 @@ class OSErrorHandlerTest(unittest.TestCase):
             with refusing_to_read(run_dir / "T1.md", PermissionError, after=2):
                 result = run_main(tmp, "claim", "testrun", "T1", "--by", "agent-a")
             self.assertEqual(1, result.returncode, result.stdout)
-            self.assertIn("unreadable ticket", json.loads(result.stdout)["error"])
+            self.assertIn("requires `recut`", json.loads(result.stdout)["error"])
             self.assertIn(
                 "status: ready", (run_dir / "T1.md").read_text(encoding="utf-8")
             )

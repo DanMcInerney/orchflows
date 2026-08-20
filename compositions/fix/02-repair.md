@@ -1,7 +1,6 @@
 ---
 id: 02-repair
 executor: orch-repair
-pack: orch-code-pack
 depends_on: [01-cause]
 write_scope: [{{workspace}}]
 bound: <= 60 tool calls
@@ -21,10 +20,9 @@ regression check that FAILs on the old behaviour and PASSes on the new.
 
 ## Fixed inputs
 
-- 01-cause's `## Result` — the proven cause by identity and the toggle
-  that demonstrated it.
-- 00-reproduce's `## Result` — the reproduction command and the failure
-  identity it produces.
+- input: {"name":"none","type":"literal","value":null}
+- input: {"name":"workspace","type":"literal","value":"{{workspace}}"}
+- input: {"name":"failure","type":"literal","value":"{{failure}}"}
 
 ## Completion test
 

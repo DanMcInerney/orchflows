@@ -109,6 +109,21 @@ class TestGrant(unittest.TestCase):
             payload = self.grant(tmp, "--write-scope", "scripts/a.py", "--by", "main")
             self.assertNotIn("error", payload)
 
+    def test_a_planned_v1_grant_refuses_to_invent_an_operation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            planned = CLAIMED_TICKET.replace(
+                "status: claimed\n",
+                "status: claimed\nadmission: v1:git:sha256:" + "a" * 64 + "\ncohort: v1:ticket:T1\nmutations: [change:scratch/t1.txt]\n",
+            )
+            path = self.make(tmp, planned)
+            before = path.read_bytes()
+            payload = self.grant(tmp, "--write-scope", "scripts/new.py", "--by", "main")
+            self.assertIn("explicit mutation", payload["error"])
+            self.assertIn("suspend", payload["error"].lower())
+            self.assertIn("recut", payload["error"])
+            self.assertEqual(before, path.read_bytes())
+
     def test_the_granting_caller_and_the_scope_are_both_required(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
@@ -146,8 +161,7 @@ class TestGrantedScopeAtTheJoin(unittest.TestCase):
 
     def test_check_passes_a_path_the_grant_covers_and_nothing_else(self):
         with tempfile.TemporaryDirectory() as tmp:
-            main, worktree, ticket, base = make_isolated_fixture(Path(tmp))
-            self.assertIn("claimed", run_json(worktree, "claim", "testrun", "T1", "--by", "agent-a"))
+            main, worktree, ticket, base = make_isolated_fixture(Path(tmp), ISOLATED_TICKET)
             started = run_argv(
                 [sys.executable, str(WORKSPACE_PY), "start", "testrun", "T1"], worktree
             )
@@ -187,7 +201,7 @@ class TestCheckedByVerb(unittest.TestCase):
         run_dir = use_sink(tmp) / "tickets" / "testrun"
         run_dir.mkdir(parents=True)
         path = run_dir / "T1.md"
-        body = FULL_TICKET.replace("status: ready", f"status: {status}")
+        body = FULL_TICKET.replace("status: claimed", f"status: {status}")
         if status in ("claimed", "suspended"):
             body = body.replace(
                 f"status: {status}\n", f"status: {status}\nclaimed_by: agent-a\n"
@@ -277,5 +291,5 @@ class TestCheckedByVerb(unittest.TestCase):
 
 
 CLAIMED_ISOLATED_TICKET = ISOLATED_TICKET.replace(
-    "status: ready", "status: claimed\nclaimed_by: agent-a"
+    "claimed_by: legacy-agent", "claimed_by: agent-a"
 )

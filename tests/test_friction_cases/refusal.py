@@ -14,8 +14,7 @@ class TestMainMalformedArgvIsRefused(_IsolatedRepoTestCase):
     *absence* of `friction logged`, which is also what a successful run
     looks like to anyone not diffing the stream. On this host a mis-quoted
     call is the common way to lose an entry, so a malformed argv is
-    refused where an off-enum category already is: at parse, before any
-    write, one line on stderr, non-zero.
+    refused at parse, before any write, one line on stderr, non-zero.
     """
 
     def _run_main_stderr(self, argv):
@@ -42,7 +41,7 @@ class TestMainMalformedArgvIsRefused(_IsolatedRepoTestCase):
         self._assert_refused(["a", "b", "c"])
 
     def test_dangling_known_flag_missing_its_value(self):
-        self._assert_refused(["o", "e", "--category"])
+        self._assert_refused(["o", "e", "--skill"])
 
     def test_unknown_flag_is_absorbed_as_positional_and_rejected(self):
         self._assert_refused(["--bogus", "value", "o", "e"])
@@ -68,16 +67,8 @@ class TestMainMalformedArgvIsRefused(_IsolatedRepoTestCase):
         self.assertFalse(self._log_path().exists())
 
 
-class TestOffEnumCategoryIsRefused(_IsolatedRepoTestCase):
-    """The malformed call that would otherwise *succeed*.
-
-    A shape error above loses the entry outright; a category outside the
-    closed set lands one, carrying a key `rules/improvement.md` §4 can
-    cluster on with nothing, and no one reads the stream again until the
-    next cycle. Both are refused at parse, before any write; this one
-    names the set, so the caller's next attempt is a corrected flag rather
-    than a duplicate entry.
-    """
+class TestRemovedCategoryOptionIsRefused(_IsolatedRepoTestCase):
+    """The retired option is an ordinary unknown-option usage error."""
 
     def _run_main_stderr(self, argv):
         out, err = io.StringIO(), io.StringIO()
@@ -85,42 +76,29 @@ class TestOffEnumCategoryIsRefused(_IsolatedRepoTestCase):
             rc = friction.main(argv)
         return rc, out.getvalue(), err.getvalue()
 
-    def test_an_off_enum_category_is_refused_and_nothing_is_written(self):
-        rc, out, err = self._run_main_stderr(["o", "e", "--category", "bogus"])
-        self.assertNotEqual(0, rc)
+    def _assert_removed_option_refused(self, argv):
+        rc, out, err = self._run_main_stderr(argv)
+        self.assertEqual(friction.USAGE_EXIT, rc)
         self.assertEqual("", out)
         self.assertFalse(self._log_path().exists())
-        self.assertIn("bogus", err)
+        self.assertIn("expected two positional arguments", err)
 
-    def test_the_refusal_names_every_category_the_logger_accepts(self):
-        _, _, err = self._run_main_stderr(["o", "e", "--category", "bogus"])
-        for category in friction.CATEGORIES:
-            with self.subTest(category=category):
-                self.assertIn(category, err)
+    def test_space_form_is_refused_without_writing(self):
+        self._assert_removed_option_refused(["o", "e", "--category", "workaround"])
 
-    def test_every_named_category_is_accepted(self):
-        for category in friction.CATEGORIES:
-            with self.subTest(category=category):
-                rc, out, err = self._run_main_stderr(["o", "e", "--category", category])
-                self.assertEqual(0, rc)
-                self.assertEqual("friction logged", out.strip())
-                self.assertEqual("", err)
-
-    def test_an_empty_category_is_refused_rather_than_read_as_absent(self):
-        rc, _, _ = self._run_main_stderr(["o", "e", "--category="])
-        self.assertNotEqual(0, rc)
-        self.assertFalse(self._log_path().exists())
+    def test_equals_form_is_refused_without_writing(self):
+        self._assert_removed_option_refused(["o", "e", "--category=workaround"])
 
     def test_the_process_exit_code_carries_the_refusal(self):
         """`main` returning 2 is only the contract if the process does. The
         CLI path is `raise SystemExit(main(...))`, so it is read here."""
         env = dict(os.environ, **{STATE_HOME_ENV_VAR: str(self.sink)})
         result = subprocess.run(
-            [sys.executable, str(FRICTION_PY), "o", "e", "--category", "bogus"],
+            [sys.executable, str(FRICTION_PY), "o", "e", "--category", "workaround"],
             capture_output=True, text=True, cwd=str(self.repo), env=env,
         )
-        self.assertNotEqual(0, result.returncode)
-        self.assertIn("misrouting", result.stderr)
+        self.assertEqual(friction.USAGE_EXIT, result.returncode)
+        self.assertIn("expected two positional arguments", result.stderr)
         self.assertFalse(self._log_path().exists())
 
 
@@ -267,7 +245,7 @@ class TestFrictionNeverFails(_ProvenanceTestCase):
                 entry = self.last_entry()
                 self.assertIsNone(entry["project"])
                 self.assertEqual("none", entry["project_source"])
-                self.assertEqual(LEGACY_ENTRY_KEYS | PROVENANCE_KEYS, set(entry))
+                self.assertEqual(LOGGER_ENTRY_KEYS | PROVENANCE_KEYS, set(entry))
 
     def test_a_writer_identity_that_raises_costs_the_project_not_the_entry(self):
         with mock.patch.object(

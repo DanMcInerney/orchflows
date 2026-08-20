@@ -26,8 +26,8 @@ completion.
 ## Information and interaction contract
 
 Unreadable and skipped-record counts appear first as an attention notice.
-Each valid record then presents category, timestamp, observed condition,
-expected condition, host label, and exact run/ticket linkage. A run link opens
+Each valid record then presents timestamp, observed condition, expected
+condition, host label, and exact run/ticket linkage. A run link opens
 `/runs/{run}`; a ticket link opens `/runs/{run}/tickets/{ticket}`. Missing
 identifiers remain explicit and never produce a guessed link.
 
@@ -42,8 +42,8 @@ inherits the shell's motion suppression.
 
 ## Projection and privacy
 
-The feature copies only `ts`, `category`, `host`, `observed`, `expected`,
-`run`, and `ticket` string fields from each friction record. All values render
+The feature copies only `ts`, `host`, `observed`, `expected`, `run`, and
+`ticket` string fields from each friction record. All values render
 through React text nodes. Absolute Windows and common Unix home paths are
 replaced with `[redacted path]` before rendering. Unknown keys are discarded,
 including any prompt, tool input/output, file content, command output, or

@@ -18,10 +18,9 @@ on, under {{priorities}} as the lens.
 
 ## Fixed inputs
 
-- {{workspace}} — the tree to audit, at its current revision.
-- {{priorities}} — the maintainer's stated priorities, verbatim, as the
-  critique lens.
-- {{audit_bound}} — this audit's budget, fixed before it starts.
+- input: {"name":"workspace","type":"literal","value":"{{workspace}}"}
+- input: {"name":"priorities","type":"literal","value":"{{priorities}}"}
+- input: {"name":"audit-bound","type":"literal","value":"{{audit_bound}}"}
 
 ## Completion test
 

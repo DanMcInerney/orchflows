@@ -1,0 +1,1 @@
+{"name":"cli-head","mutation":"create:cmd/new.py","edge":{"from":{"operation":"create","path":"cmd/*.py"},"requires":[{"operation":"change","path":"cmd/__main__.py"}],"reason":"declared command head"}}

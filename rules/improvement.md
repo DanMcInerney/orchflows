@@ -5,11 +5,9 @@
    or a workaround — the agent logs and continues, through the installed
    friction logger the host instruction block names, whose fallback that
    block spells too.
-   Record observations only, never causes. The category is one of the
-   closed set the logger enforces, advisory evidence for the clusters §4
-   keys on owner and observed-text similarity. Logging is exempt from
-   every bound. Logging friction is part of completing the task: a
-   session that hit friction and logged nothing failed silently.
+   Record observations only, never causes. Logging is exempt from every
+   bound. Logging friction is part of completing the task: a session that
+   hit friction and logged nothing failed silently.
 2. Observation changes nothing. Logs and proposals are passive; only a
    human-reviewed merge activates a change, and only a later matching
    run verifies it.
@@ -26,9 +24,8 @@
 4. A proposal qualifies on recurrence — the same owner-assigned
    cluster, grouped by observed-text similarity, at least three times,
    or across two distinct sessions, where a differing run or host
-   counts when entries carry no session; category is advisory evidence
-   within a cluster, never its key — or on a checked contradiction: an
-   entry whose observed contradiction checks true against its owner's
+   counts when entries carry no session — or on a checked contradiction:
+   an entry whose observed contradiction checks true against its owner's
    current text qualifies alone. An `environment` cluster qualifies on
    a probe — the exact command whose failure reproduces the defect;
    the probe is its oracle. Other one-off friction is noise until

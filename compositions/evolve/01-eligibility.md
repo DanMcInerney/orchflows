@@ -21,10 +21,8 @@ what permits generation to open, and nothing else does.
 
 ## Fixed inputs
 
-- 00-eval's `## Result` — the evaluation identity, mode and criteria, by
-  identity; {{evaluation}} itself where that is not `none`.
-- {{incumbent}} — the fixed incumbent result/evidence identity for
-  {{target}}, read as admitted and never re-executed.
+- input: {"name":"incumbent","type":"literal","value":"{{incumbent}}"}
+- input: {"name":"target","type":"literal","value":"{{target}}"}
 
 ## Completion test
 

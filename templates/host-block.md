@@ -1,7 +1,7 @@
 <!-- BEGIN ORCHFLOWS (managed block — do not edit inside; reinstall to update) -->
 # orchflows
 
-A four-tier skill library for orchestrator > subagent work. Skills are
+Four-tier orchestrator > subagent library. Skills are
 prefixed `orch-`; terms mean exactly what {{ORCH_DOCS}}/vocabulary.md
 defines.
 
@@ -42,15 +42,16 @@ happens, then continue:
 
 {{FRICTION_COMMANDS}}
 
-Optional flags: `--category`, `--skill <orch-name>`, `--ticket <id>`,
-`--run <run-id>`.
+Optional flags: `--skill <orch-name>`, `--ticket <id>`, `--run <run-id>`.
 
 Whenever the logger cannot run, append one JSON line (ts, observed,
-expected, category, host) to the state sink's
+expected, host, project, project_source) to the state sink's
 `friction/<yyyy-mm>.jsonl`, root {{ORCH_LIB}}/rules/visibility.md §6,
-outside every worktree, with any tool that writes a file; never skip the
-log. Where the refusal covers writing inside a git worktree,
-write where the dispatch permits; the return names that path so the
-caller can collect it. The law itself:
+outside every worktree, using any file-writing tool; never skip the
+log. Where the refusal covers writing inside a git worktree, write where the
+dispatch permits; the return names that path so the caller can collect it.
+Always include project (`null` if unresolved) and project_source
+(`none` if unresolved); session/run/ticket/skill are optional.
+The law itself:
 {{ORCH_LIB}}/rules/improvement.md §1.
 <!-- END ORCHFLOWS -->

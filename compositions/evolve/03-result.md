@@ -20,12 +20,9 @@ final incumbent and the admitted result/evidence behind it.
 
 ## Fixed inputs
 
-- 02-campaign's `## Result` — the final incumbent identity, its score
-  cards, and the promotion/kill log, by identity.
-- 00-eval's `## Result`, or {{evaluation}} where that is not `none` —
-  the frozen evaluation identity, mode, promotion rule and margin.
-- 01-eligibility's `## Result` — the evaluation identity {{incumbent}}
-  was admitted under.
+- input: {"name":"none","type":"literal","value":null}
+- input: {"name":"target","type":"literal","value":"{{target}}"}
+- input: {"name":"incumbent","type":"literal","value":"{{incumbent}}"}
 
 ## Completion test
 

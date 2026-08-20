@@ -12,6 +12,6 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | assembly | none — the merged revision's rendered views are the assembly |
 | lens | `orch-critique` with [references/craft.md#lens](references/craft.md#lens) |
 | oracle_policy | [references/oracles.md](references/oracles.md) |
-| workspace | git plus render: identities are [view identity](references/craft.md); write scopes are path sets; golden captures are spec-frozen paths; run captures are evidence outside write scope; each frontier item gets its own worktree branched from the run's current revision at dispatch, merged at the join; conflict binding `orch-resolve-conflicts` |
+| workspace | git plus render: identities: [view identity](references/craft.md); authority: paths; mutation-plan field: `mutations`; scope-edge manifest: `.orchflows/scope-edges.json`; missing-manifest mode: direct-only; golden captures: spec-frozen paths; run captures: outside write scope; conflict binding: `orch-resolve-conflicts` |
 | required_spec_fields | target repository; render, capture, and diff commands; view set with breakpoints and states; design language; accessibility bar; golden captures by identity (absent for greenfield); standards owner by pointer |
 | craft | [references/craft.md](references/craft.md) |

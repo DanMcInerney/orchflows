@@ -15,20 +15,13 @@ isolation: none
 
 The manifest recorded, and the measurement pass beside it: what the
 candidates scored over the candidate-accessible scope at the declared
-rungs, on §Measurement pass's terms.
+rungs, on [§Measurement pass](../references/benchmaker-protocol.md#measurement-pass)'s terms.
 
 ## Fixed inputs
 
-- 04-audit's `## Result` — the audit and attack records, and the
-  repaired assembly.
-- 03-qualify's `## Result` — the qualification verdict set offered for
-  reuse, which the manifest's `qualification` component names.
-- [the manifest](../references/benchmaker-manifest.md) — the field set,
-  and how a component reference resolves.
-- [the protocol](../references/benchmaker-protocol.md#measurement-pass) —
-  what is declared before running, what this stage may and may not
-  decide, the three-valued per-case status, and the record that lands
-  outside the package.
+- input: {"identity":{"kind":"artifact","locator":"project:compositions/references/benchmaker-manifest.md","sha256":"d9c4ea1a8071409be84ee1f8f3c43c07e995815cd62a4b501ac121b18c52683e"},"name":"manifest-contract","type":"identity"}
+- input: {"identity":{"kind":"artifact","locator":"project:compositions/references/benchmaker-protocol.md","sha256":"cbe548149efd0ce3184e5f805a91173bd85a6c8a354f8d6e083a1781e4331f8d"},"name":"protocol-contract","type":"identity"}
+- input: {"name":"package","type":"literal","value":"{{package}}"}
 
 ## Completion test
 

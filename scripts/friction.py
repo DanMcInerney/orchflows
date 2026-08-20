@@ -1,24 +1,14 @@
 #!/usr/bin/env python3
 """Friction logger. Stdlib-only, cross-platform (Windows + POSIX).
 
-Reliability bar: this script must NEVER block, prompt, or raise. It
-exits non-zero for a malformed call -- argv shape or a ``--category``
-outside ``CATEGORIES`` -- refused at parse before anything is written; an
-internal failure still exits 0 but names itself on stderr. Prints exactly
-one line, ``friction logged``, on success, and one line on stderr
-otherwise.
+Reliability bar: this script must NEVER block, prompt, or raise. It exits
+non-zero for malformed argv, refused at parse before anything is written;
+an internal failure still exits 0 but names itself on stderr. Prints exactly
+one line, ``friction logged``, on success, and one line on stderr otherwise.
 
-Refusing is not a retreat from the bar, it serves it. A mis-spelled
-category is the malformed call that would otherwise *succeed*, landing an
-entry keyed to a cluster ``rules/improvement.md`` §4 can group on
-nothing; a malformed argv loses the entry outright, and exit 0 with an
-empty stdout is not a thing the caller can read that from --
-``templates/host-block.md``'s "append the line by hand whenever the
-logger cannot run" has to have something to trigger on. Refusing costs
-the caller one corrected retry; accepting costs a cycle of
-self-improvement the entry it was logged for. The category set is this
-file's, and the installed logger's usage in ``templates/host-block.md``
-is its one copy.
+Refusing malformed argv gives ``templates/host-block.md``'s manual append
+remedy a readable trigger. A removed or unknown option is ordinary malformed
+argv and is refused without writing.
 
 The one wait it ever takes is the append lock's retry budget: nothing at
 all on POSIX, and on a contended Windows append a bounded half second
@@ -26,9 +16,6 @@ that ends in the write either way. See ``_acquire_append_lock``.
 
 Usage:
     python friction.py "<observed>" "<expected>"
-        [--category repeated-attempts | missing-input | missing-tool |
-                    missing-doc | contract-gap | tool-failure |
-                    surprising-output | workaround | misrouting]
         [--skill S] [--ticket T] [--run R]
 
 Log location: ``<sink>/friction/<YYYY-MM>.jsonl``, where the sink is the
@@ -55,25 +42,10 @@ except ImportError:
     msvcrt = None
 
 FLAG_MAP = {
-    "--category": "category",
     "--skill": "skill",
     "--ticket": "ticket",
     "--run": "run",
 }
-# The closed set rules/improvement.md §1 names without enumerating: this
-# file owns it, the host block's usage line is the one copy an agent
-# reads, and a call naming anything else is refused rather than filed.
-CATEGORIES = (
-    "repeated-attempts",
-    "missing-input",
-    "missing-tool",
-    "missing-doc",
-    "contract-gap",
-    "tool-failure",
-    "surprising-output",
-    "workaround",
-    "misrouting",
-)
 # The one non-zero exit, kept off 0 and off 1: 2 is the usage-error code
 # argparse itself uses, so a caller reading exit codes rather than stderr
 # still reads "you called it wrong" and not "the log failed".
@@ -106,7 +78,7 @@ def _parse_args(argv):
     """Return (observed, expected, options), or raise ``_UsageError``."""
 
     positional = []
-    options = {"category": None, "skill": None, "ticket": None, "run": None}
+    options = {"skill": None, "ticket": None, "run": None}
     i = 0
     while i < len(argv):
         token = argv[i]
@@ -116,10 +88,22 @@ def _parse_args(argv):
                 raise _UsageError(
                     "friction.py: {0} needs a value; nothing followed it".format(token)
                 )
+            if argv[i].startswith('-'):
+                raise _UsageError(
+                    "friction.py: {0} needs a value; got option-shaped token {1}".format(token, argv[i])
+                )
             options[FLAG_MAP[token]] = argv[i]
         elif "=" in token and token.split("=", 1)[0] in FLAG_MAP:
             key, _, value = token.partition("=")
+            if not value or value.startswith('-'):
+                raise _UsageError("friction.py: {0} needs a non-option value".format(key))
             options[FLAG_MAP[key]] = value
+        elif token.startswith('-'):
+            raise _UsageError(
+                "friction.py: expected two positional arguments; unknown option {0}; known flags: {1}".format(
+                    token, ", ".join(sorted(FLAG_MAP))
+                )
+            )
         else:
             positional.append(token)
         i += 1
@@ -332,7 +316,6 @@ def _build_entry(observed, expected, options, now: datetime):
         "git_rev": _git_rev(Path.cwd()),
         "host": _detect_host(),
         "session": _detect_session(),
-        "category": options.get("category") or "uncategorized",
         "skill": options.get("skill"),
         "ticket": options.get("ticket"),
         "run": options.get("run"),
@@ -392,26 +375,8 @@ def _append_line(path: Path, line: str) -> None:
                     pass
 
 
-def _check_category(options):
-    """Raise ``_UsageError`` for a ``--category`` outside the set.
-
-    An omitted flag is not a bad one: it files as ``uncategorized``,
-    which the stream already knows how to read.
-    """
-
-    category = options.get("category")
-    if category is None or category in CATEGORIES:
-        return
-    raise _UsageError(
-        "friction.py: unknown --category {0!r}; the closed set is: {1}".format(
-            category, ", ".join(CATEGORIES)
-        )
-    )
-
-
 def _run(argv):
     observed, expected, options = _parse_args(argv)
-    _check_category(options)
     now = datetime.now(timezone.utc)
     entry = _build_entry(observed, expected, options, now)
     path = _target_path(now)

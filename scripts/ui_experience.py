@@ -48,7 +48,7 @@ NAVIGATION = (
 )
 VIEW_IDS = {"now", "run-map", "ticket", "sessions", "session-graph", "friction"}
 VISIBLE_SECTIONS = ("Objective", "Result", "Feedback", "Risks")
-FRICTION_FIELDS = ("ts", "category", "host", "observed", "expected", "run", "ticket")
+FRICTION_FIELDS = ("ts", "host", "observed", "expected", "run", "ticket")
 WINDOWS_HOST_PATH_RE = re.compile(
     r"(?<![A-Za-z0-9_])(?:[A-Za-z]:[\\/]|\\\\)[^\s`\"'<>]+"
 )

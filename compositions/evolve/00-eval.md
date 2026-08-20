@@ -20,20 +20,17 @@ candidate exists: its identity, mode, scoring criteria, required
 admission and regression criteria, artifact-evidence adapter, promotion
 rule, margin, and search policy.
 
+Write the design into this ticket's `## Result` and nowhere inside
+{{mutation_scope}}. In judged mode the accepted design identity also owns
+the Judge brief, criteria, aggregation and adapter; in benchmark mode the
+qualified benchmark and its runner own them.
+
 ## Fixed inputs
 
-- {{evaluation}} — the frozen evaluation identity, or `none`. Skip when
-  a frozen evaluation identity is supplied: the stubs behind it read
-  that instead.
-- {{incumbent}} — the fixed incumbent result/evidence identity for
-  {{target}}, carrying everything orch-eval-design's Require expects an
-  `inputs` field to carry.
-- The design is written into this ticket's `## Result` and nowhere else,
-  so the evaluation-design scope stays disjoint from {{mutation_scope}}:
-  no evaluation is designed inside the scope its candidates mutate.
-- In judged mode the accepted design identity is both evaluation and
-  scoring identity, covering the Judge brief, criteria, aggregation and
-  adapter; a qualified benchmark plus its runner is benchmark mode.
+- input: {"name":"evaluation","type":"literal","value":"{{evaluation}}"}
+- input: {"name":"incumbent","type":"literal","value":"{{incumbent}}"}
+- input: {"name":"target","type":"literal","value":"{{target}}"}
+- input: {"name":"mutation-scope","type":"literal","value":"{{mutation_scope}}"}
 
 ## Completion test
 

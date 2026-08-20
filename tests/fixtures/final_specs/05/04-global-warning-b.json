@@ -1,0 +1,1 @@
+{"name":"global-warning-b","mutation":"change:rules/b.py","edge":{"from":{"operation":"change","path":"rules/b.py"},"requires":[{"operation":"change","path":"tests/test_warnings_b.py"}],"reason":"declared warning case"}}

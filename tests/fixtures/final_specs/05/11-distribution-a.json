@@ -1,0 +1,1 @@
+{"name":"distribution-a","mutation":"change:web/src/a.js","edge":{"from":{"operation":"write","path":"web/src/"},"requires":[{"operation":"write","path":"web/dist/"}],"reason":"declared built distribution"}}

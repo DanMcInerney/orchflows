@@ -64,7 +64,8 @@ test.beforeAll(async () => {
   const frictionRoot = join(stateRoot, "friction");
   await mkdir(frictionRoot);
   await writeFile(join(frictionRoot, "2026-08.jsonl"), Array.from({ length: 130 }, (_, index) => JSON.stringify({
-    ts: `2026-08-19T12:${String(index % 60).padStart(2, "0")}:00Z`, category: "browser-guard",
+    ts: `2026-08-19T12:${String(index % 60).padStart(2, "0")}:00Z`,
+    ...(index % 2 ? { category: "historical-browser-guard" } : {}),
     host: "fixture", observed: `Synthetic friction ${index + 1}`, expected: "A bounded initial feed"
   })).join("\n"), "utf8");
   serverProcess = spawn(process.env.ORCHFLOWS_PYTHON || "python", [
@@ -342,6 +343,7 @@ test("experience drill-down stays actionable and bounded in a real browser", asy
 
   await page.goto(`${origin}/friction`);
   await expect(page.locator(".friction-record")).toHaveCount(50);
+  await expect(page.getByText("historical-browser-guard")).toHaveCount(0);
   await expect(page.getByText("Showing 50 of 130 records")).toBeVisible();
   await page.getByRole("button", { name: "Show 50 more friction records" }).click();
   await expect(page.locator(".friction-record")).toHaveCount(100);

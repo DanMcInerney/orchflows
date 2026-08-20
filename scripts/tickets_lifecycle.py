@@ -4,9 +4,9 @@ from __future__ import annotations
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 if __package__:
-    from .tickets_format import GRANTED_SCOPE_KEY, RESULT_TOKEN_SPLIT_RE, RESULT_TOKEN_STRIP, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_bound_minutes, _parse_frontmatter, _parse_iso, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _split_commas, effective_write_scope
+    from .tickets_format import CHECKED_BY_KEY, GRANTED_SCOPE_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _split_commas, effective_write_scope, parse_return_size
 else:
-    from tickets_format import GRANTED_SCOPE_KEY, RESULT_TOKEN_SPLIT_RE, RESULT_TOKEN_STRIP, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_bound_minutes, _parse_frontmatter, _parse_iso, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _split_commas, effective_write_scope
+    from tickets_format import CHECKED_BY_KEY, GRANTED_SCOPE_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _split_commas, effective_write_scope, parse_return_size
 if __package__:
     from .tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
 else:
@@ -15,17 +15,24 @@ if __package__:
     from .tickets_worklog import _run_goal, _run_tickets
 else:
     from tickets_worklog import _run_goal, _run_tickets
+if __package__:
+    from .tickets_admission import ADMISSION_PENDING, grade_admission, grade_result, is_receipt, is_v1
+else:
+    from tickets_admission import ADMISSION_PENDING, grade_admission, grade_result, is_receipt, is_v1
+if __package__:
+    from .tickets_packet import _claim_is_stale
+else:
+    from tickets_packet import _claim_is_stale
 CLAIM_USAGE = 'claim <run> <id> --by <name>'
 SET_STATUS_USAGE = 'set-status <run> <id> <status>'
+RESULT_GRADE_USAGE = 'result-grade <run> <id>'
 GRANT_USAGE = 'grant <run> <id> --write-scope <path>[,<path>] --by <name>'
 GRANTED_BY_KEY = 'granted_by'
 GRANTED_AT_KEY = 'granted_at'
 GRANTABLE_STATUSES = frozenset({'claimed', 'suspended'})
 CHECK_USAGE = 'check <run> <id> --by <name>'
-CHECKED_BY_KEY = 'checked_by'
 CHECKABLE_STATUSES = GRANTABLE_STATUSES
 def readiness_facts(ticket: dict, tickets: dict) -> dict:
-    """Return canonical dependency facts without I/O or a clock."""
     dependencies = [str(value) for value in (ticket.get('depends_on') or [])]
     dangling = [value for value in dependencies if value not in tickets]
     incomplete = [
@@ -39,125 +46,35 @@ def readiness_facts(ticket: dict, tickets: dict) -> dict:
         'incomplete': incomplete,
         'dependencies_complete': not dangling and not incomplete,
     }
-def _cited_paths(section_text: str, write_scope=()):
-    """Every existing file one section cites, absolutely, inside
-    ``write_scope``, as ``(paths, unreadable)``.
-
-    A ``## Result`` names what changed by identity, and a file's identity is
-    its path, so the candidates are the section's tokens: split on
-    whitespace and the markdown punctuation a citation is wrapped in, then
-    kept only when the filesystem agrees the name exists. A candidate with
-    neither a separator nor a suffix is dropped before that -- ordinary
-    prose words would otherwise stat a same-named file in the caller's
-    directory and read it as this ticket's artifact.
-
-    Only absolute citations count. A relative one names a different file
-    from every directory it is read in, and this reader is the frontier's,
-    not the executor's: under ``isolation: required`` the writer moves the
-    file in its own worktree while the reader stats the same relative path
-    in the main checkout -- a live lane read as dead, or a sibling's motion
-    counted as this one's.
-
-    A ticket with a ``write_scope`` counts only citations inside it, so a
-    Result naming a shared or always-moving path -- a log, the friction
-    stream, a sibling's output -- cannot keep a dead lane unreclaimable.
-    """
-    scope = [_scope_segments(entry) for entry in _scope_entries(write_scope)]
-    scope = [entry for entry in scope if entry]
-    found = []
-    unreadable = []
-    for token in RESULT_TOKEN_SPLIT_RE.split(section_text or ''):
-        candidate = token.strip(RESULT_TOKEN_STRIP)
-        if not candidate:
-            continue
-        if '/' not in candidate and '\\' not in candidate and ('.' not in candidate[1:]):
-            continue
-        try:
-            path = Path(candidate)
-            if not path.is_absolute() or not path.is_file():
-                continue
-            if scope and (not any((_inside_scope(path, entry) for entry in scope))):
-                continue
-            found.append(path)
-        except (OSError, ValueError) as error:
-            unreadable.append(f'could not look at the cited {candidate}: {error}')
-    return (found, unreadable)
-def _scope_segments(entry) -> list:
-    """One `write_scope` entry as path segments, separator-neutral."""
-    text = str(entry or '').strip().strip('`').strip()
-    return [part for part in text.replace('\\', '/').split('/') if part and part != '.']
-def _inside_scope(path: Path, segments: list) -> bool:
-    """Whether an absolute path names, or sits under, one scope entry.
-
-    Matched on whole segments rather than by string prefix, because a
-    `write_scope` is written relative to the workspace while the citation
-    is absolute: the two meet only where the entry's segments occur in the
-    path in order. Segment-wise, so `tests` never matches `tests-old` and
-    `a/bc` is never read as inside `a/b`.
-    """
-    parts = [part for part in str(path).replace('\\', '/').split('/') if part]
-    width = len(segments)
-    return any((parts[start:start + width] == segments for start in range(len(parts) - width + 1)))
-def _last_motion(ticket_path: Path, result_text: str, write_scope=()):
-    """The most recent write to the ticket or to what its ``## Result``
-    names inside ``write_scope``, as ``(moment, unreadable)``.
-
-    ``moment`` is ``None`` when nothing is readable; ``unreadable`` names
-    every place motion could not be looked for, so the caller reports the
-    blind spot instead of the lease treating it as stillness.
-    """
-    latest = None
-    cited, unreadable = _cited_paths(result_text, write_scope)
-    for path in [ticket_path, *cited]:
-        try:
-            stamp = path.stat().st_mtime
-        except OSError as error:
-            unreadable.append(f'could not stat {path}: {error}')
-            continue
-        moment = datetime.fromtimestamp(stamp, timezone.utc)
-        if latest is None or moment > latest:
-            latest = moment
-    return (latest, unreadable)
-def _is_stale(claimed_at, bound_minutes: int, now: datetime, last_motion=None) -> bool:
-    """Whether a claim may be taken away: nothing has moved for a lease.
-
-    The lease runs from the later of the claim and ``last_motion`` -- the
-    most recent write to the ticket's own sections or to any artifact its
-    ``## Result`` names (REVIEW-2026-08-15.md T3). A lane still writing is
-    never reclaimable however long ago it claimed, which is what stops one
-    item having two live executors (rules/delegation.md §11); a lane that
-    has stopped is reclaimable exactly as before.
-
-    A claim with no timestamp or an unparsable one is stale whatever is
-    moving: the lease it would be measured against has no start, so there
-    is nothing for motion to extend.
-    """
-    parsed = _parse_iso(claimed_at)
-    if parsed is None:
-        return True
-    if last_motion is not None and last_motion > parsed:
-        parsed = last_motion
-    return now - parsed > timedelta(minutes=bound_minutes)
-def _claim_is_stale(ticket_path, text: str, data: dict, now: datetime):
-    """``_is_stale`` for one ticket on disk, motion and all, as
-    ``(stale, unreadable)``.
-
-    The one place ``ready`` and ``claim`` both ask from, so the two cannot
-    answer differently about one claim -- a listing that offers a ticket the
-    claim path then refuses is a frontier that dispatches nothing. Both must
-    hand it the same ``data``: ``ready``'s came through ``_load_ticket``,
-    normalised and grant-merged, while ``claim``'s was raw frontmatter, so a
-    ``write_scope`` written as a bare scalar was iterated by character on one
-    path only and every cited artifact fell outside a scope of letters. Both
-    now load it the same way.
-
-    ``unreadable`` is every place motion could not be looked for. The verdict
-    is unchanged by it -- a blind spot is not motion -- but the caller can
-    say which answer rests on a full look.
-    """
-    motion, unreadable = _last_motion(Path(ticket_path), _sections(text).get('Result', ''), data.get('write_scope') or ())
-    stale = _is_stale(data.get('claimed_at'), _parse_bound_minutes(data.get('bound')), now, motion)
-    return (stale, unreadable)
+def _run_snapshot(run_dir: Path):
+    texts = {}
+    failures = []
+    for ticket_path in sorted(run_dir.glob('*.md')):
+        text, failure = _read_utf8(ticket_path)
+        if failure is not None:
+            failures.append({'id': ticket_path.stem, 'reason': 'ticket unreadable before claimed-state grading: ' + failure['error']})
+        else:
+            texts[ticket_path.stem] = text
+    return texts, failures
+def _snapshot_matches(run_dir: Path, snapshot: dict, _ids=None) -> bool:
+    current, failures = _run_snapshot(run_dir)
+    return not failures and current == snapshot
+def _admit_ready_cas(run: str, ticket_id: str, prior_text: str, snapshot: dict, grade: dict):
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {'error': NO_SINK_ERROR}
+    run_dir = tickets_root / run
+    ticket_path = run_dir / f'{ticket_id}.md'
+    try:
+        with _run_lock(run):
+            if not _snapshot_matches(run_dir, snapshot, grade.get('snapshot_ids') or [ticket_id]):
+                return {'error': 'ticket, dependencies, or cohort changed since admission grade; lost the ready race'}
+            updated = _set_frontmatter_field(prior_text, 'admission', grade['receipt'])
+            updated = _set_frontmatter_field(updated, 'status', 'ready')
+            _write_text_atomically(ticket_path, updated)
+    except OSError as error:
+        return {'error': f'eligible to promote to ready, and the write failed: {error}'}
+    return {'text': updated}
 def _cmd_list(rest):
     args = list(rest)
     run_filter = _extract_flag(args, '--run')
@@ -184,60 +101,75 @@ def _cmd_ready(rest):
     ready_items = []
     skipped = []
     for run_dir in _iter_run_dirs(tickets_root, run_filter):
+        snapshot, read_failures = _run_snapshot(run_dir)
+        skipped.extend(read_failures)
         tickets = {}
         for ticket_path in sorted(run_dir.glob('*.md')):
             loaded = _load_ticket(ticket_path)
             tickets[loaded['id']] = loaded
         for data in tickets.values():
             if 'error' in data:
-                skipped.append({'id': data['id'], 'reason': data['error']})
+                skipped.append({'id': data['id'], 'reason': 'ticket unreadable before claimed-state grading: ' + data['error']})
                 continue
-            depends_on = data.get('depends_on') or []
             facts = readiness_facts(data, tickets)
             dangling = facts['dangling']
-            if dangling:
+            ticket_id = str(data.get('id') or '')
+            text = snapshot.get(ticket_id)
+            v1 = text is not None and is_v1(_parse_frontmatter(text))
+            status = data.get('status')
+            if dangling and not (v1 and status in ('pending', 'ready')):
                 skipped.append({'id': data['id'], 'reason': 'depends_on names no ticket in this run: ' + ', '.join((str(dep) for dep in dangling))})
                 continue
-            status = data.get('status')
             if not facts['status_valid']:
                 skipped.append({'id': data['id'], 'reason': f"status '{status}' is none of {sorted(VALID_STATUSES)}, so readiness cannot be graded"})
                 continue
             deps_complete = facts['dependencies_complete']
-            if not deps_complete:
+            if not deps_complete and not (v1 and status in ('pending', 'ready')):
                 continue
             eligible = False
-            if status == 'ready':
+            if v1 and status in ('pending', 'ready'):
+                if read_failures:
+                    skipped.append({'id': ticket_id, 'reason': 'admission refused: run snapshot is not closed', 'failures': read_failures})
+                    continue
+                grade = grade_admission(ticket_id, text, snapshot)
+                if grade['findings']:
+                    skipped.append({'id': ticket_id, 'reason': 'admission refused', 'findings': grade['findings']})
+                    continue
+                if status == 'pending' or str(data.get('admission') or '') != grade['receipt']:
+                    result = _admit_ready_cas(run_dir.name, ticket_id, text, snapshot, grade)
+                    if 'error' in result:
+                        skipped.append({'id': ticket_id, 'reason': result['error']})
+                        continue
+                    snapshot[ticket_id] = result['text']
+                    data['summary']['status'] = 'ready'
+                    data['summary']['admission'] = grade['receipt']
+                eligible = True
+            elif v1 and status == 'claimed':
+                stale, unreadable = _claim_is_stale(data['path'], text, data, now)
+                if stale:
+                    skipped.append({'id': ticket_id, 'reason': 'stale v1 claim requires the join to set-status pending, then recut, before reclaim'})
+                elif unreadable:
+                    skipped.append({'id': ticket_id, 'reason': 'claim graded without a full look at its motion: ' + '; '.join(unreadable)})
+            elif status == 'ready':
+                # Listing preserves the observable historical queue; claim is
+                # the admission boundary and refuses this v0 item until recut.
                 eligible = True
             elif status == 'pending':
-                try:
-                    ticket_path = Path(data['path'])
-                    text = ticket_path.read_text(encoding='utf-8')
-                    ticket_path.write_text(_set_frontmatter_field(text, 'status', 'ready'), encoding='utf-8')
-                except (OSError, ValueError) as error:
-                    skipped.append({'id': data['id'], 'reason': f'eligible to promote to ready, and the write failed: {error}'})
-                    continue
-                data['summary']['status'] = 'ready'
-                eligible = True
+                skipped.append({'id': ticket_id, 'reason': 'pending legacy ticket requires `recut` before v1 admission'})
             elif status == 'claimed':
                 text, failure = _read_utf8(data['path'])
                 if failure is not None:
                     skipped.append({'id': data['id'], 'reason': f"claimed, and unreadable at the moment its claim was graded: {failure['error']}"})
                     continue
-                eligible, unreadable = _claim_is_stale(data['path'], text, data, now)
+                stale, unreadable = _claim_is_stale(data['path'], text, data, now)
                 if unreadable:
                     skipped.append({'id': data['id'], 'reason': 'claim graded without a full look at its motion: ' + '; '.join(unreadable)})
+                elif stale:
+                    skipped.append({'id': ticket_id, 'reason': 'stale legacy claim requires `recut` before reclaim'})
             if eligible:
                 ready_items.append(data['summary'])
     return {'ready': ready_items, 'skipped': skipped}
-def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime) -> dict:
-    """Claim against the ``prior_text`` snapshot the caller read.
-
-    Re-reads the file and compares it to ``prior_text`` before writing: if
-    another claim already landed since ``prior_text`` was read, this attempt
-    loses the race and reports an error instead of silently overwriting the
-    winner (claim was previously a blind read-modify-write with no such
-    check, so two concurrent claimants could both believe they had won).
-    """
+def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime, receipt=None) -> dict:
     current_text, failure = _read_utf8(ticket_path)
     if failure is not None:
         return failure
@@ -254,10 +186,15 @@ def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime
             return {'error': f'ticket already claimed and not stale: {ticket_path.stem}'}
         if unreadable:
             skipped.append({'id': data['id'], 'reason': 'claim taken as stale without a full look at its motion: ' + '; '.join(unreadable)})
+    elif status == 'pending' and receipt is not None:
+        pass
     elif status != 'ready':
         return {'error': f"ticket is not claimable in status '{status}': {ticket_path.stem}"}
     timestamp = now.strftime(UTC_STAMP)
-    updated = _set_frontmatter_field(prior_text, 'status', 'claimed')
+    updated = prior_text
+    if receipt is not None:
+        updated = _set_frontmatter_field(updated, 'admission', receipt)
+    updated = _set_frontmatter_field(updated, 'status', 'claimed')
     updated = _set_frontmatter_field(updated, 'claimed_by', claimed_by)
     updated = _set_frontmatter_field(updated, 'claimed_at', timestamp)
     _write_text_atomically(ticket_path, updated)
@@ -268,12 +205,29 @@ def _cmd_claim(rest):
     _extract_flag(probe, '--by')
     if len(probe) != 2 or _segment_error('run id', probe[0]) is not None:
         return _claim_under_run_lock(rest)
+    run, ticket_id = probe
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {'error': NO_SINK_ERROR}
+    run_dir = tickets_root / run
+    snapshot, failures = _run_snapshot(run_dir)
+    if failures:
+        return {'error': 'run snapshot is not closed', 'failures': failures}
+    prior_text = snapshot.get(ticket_id)
+    grade = None
+    if prior_text is not None:
+        data = _parse_frontmatter(prior_text)
+        status = str(data.get('status') or '')
+        if is_v1(data) and status in ('pending', 'ready'):
+            grade = grade_admission(ticket_id, prior_text, snapshot)
+            if grade['findings']:
+                return {'error': 'admission refused', 'findings': grade['findings']}
     try:
-        with _run_lock(probe[0]):
-            return _claim_under_run_lock(rest)
+        with _run_lock(run):
+            return _claim_under_run_lock(rest, prior_text=prior_text, snapshot=snapshot, grade=grade)
     except OSError as error:
         return {'error': f'unwritable ticket: {error}'}
-def _claim_under_run_lock(rest):
+def _claim_under_run_lock(rest, prior_text=None, snapshot=None, grade=None):
     args = list(rest)
     claimed_by = _extract_flag(args, '--by')
     if claimed_by is None:
@@ -290,11 +244,31 @@ def _claim_under_run_lock(rest):
     loaded = _load_ticket(ticket_path)
     if 'error' in loaded:
         return {'error': loaded['error']}
-    prior_text, failure = _read_utf8(ticket_path)
-    if failure is not None:
-        return failure
+    if prior_text is None:
+        prior_text, failure = _read_utf8(ticket_path)
+        if failure is not None:
+            return failure
+    data = _parse_frontmatter(prior_text)
+    status = str(data.get('status') or '')
+    if is_v1(data) and status in ('pending', 'ready'):
+        if snapshot is None:
+            snapshot, failures = _run_snapshot(ticket_path.parent)
+            if failures:
+                return {'error': 'run snapshot is not closed', 'failures': failures}
+        if grade is None:
+            grade = grade_admission(ticket_id, prior_text, snapshot)
+        if grade['findings']:
+            return {'error': 'admission refused', 'findings': grade['findings']}
+        if not _snapshot_matches(ticket_path.parent, snapshot, grade.get('snapshot_ids') or [ticket_id]):
+            return {'error': 'ticket, dependencies, or cohort changed since admission grade; lost the claim race'}
+    elif status == 'pending':
+        return {'error': 'pending legacy ticket requires `recut` before v1 admission'}
+    elif is_v1(data) and status == 'claimed':
+        return {'error': 'stale v1 claim requires the join to set-status pending, then recut, before reclaim'}
+    elif not is_v1(data) and status in ('ready', 'claimed'):
+        return {'error': f"{status} legacy ticket requires `recut` before v1 admission or reclaim"}
     now = datetime.now(timezone.utc)
-    result = _do_claim(ticket_path, prior_text, claimed_by, now)
+    result = _do_claim(ticket_path, prior_text, claimed_by, now, grade['receipt'] if grade is not None else None)
     if 'error' in result:
         return result
     claimed = dict(result['claimed'])
@@ -315,16 +289,6 @@ def _cmd_grant(rest):
     except OSError as error:
         return {'error': f'unwritable ticket: {error}'}
 def _grant_under_run_lock(rest):
-    """Record one caller-side widening of a claimed item's write scope.
-
-    The gap this closes: a lane finds a file it must change that the cut did
-    not name, the caller agrees, and nothing on the ticket says so —
-    ``amend`` writes cut-time sections and refuses a claimed ticket, and the
-    item may not widen itself. So the widening was a direct sink edit plus a
-    message, and the result that used it read as a scope breach at the join
-    (friction 2026-08-16T05:29). Written as frontmatter bookkeeping of the
-    ``claimed_*`` class, never a body section: those stay the executor's.
-    """
     args = list(rest)
     scope = _extract_flag(args, '--write-scope')
     granted_by = _extract_flag(args, '--by')
@@ -349,6 +313,21 @@ def _grant_under_run_lock(rest):
     status = str(data.get('status') or '').strip().strip('`').strip()
     if status not in GRANTABLE_STATUSES:
         return {'error': f"ticket is not claimed (status '{status}'): a grant widens the authority of an item already being worked. Before a claim the cut owns the scope — re-place the ticket through `new --file` — and after a terminal status the verdict was already read against the authority the work was done under. ticket: {ticket_path}"}
+    original_scope = _scope_entries(data.get('write_scope'))
+    new_paths = [
+        entry for entry in entries
+        if not any(
+            entry.replace('\\', '/').rstrip('/') == scope.replace('\\', '/').rstrip('/')
+            or entry.replace('\\', '/').rstrip('/').startswith(scope.replace('\\', '/').rstrip('/') + '/')
+            for scope in original_scope if scope.strip()
+        )
+    ]
+    if is_v1(data) and 'mutations' in data and new_paths:
+        return {
+            'error': 'a planned v1 ticket cannot widen operation authority from path-only grant input: '
+                     + ', '.join(new_paths)
+                     + '. Suspend the item and let the join open a successor ticket, or let the join set-status pending and recut it with explicit mutations before reclaim',
+        }
     granted = _scope_entries(data.get(GRANTED_SCOPE_KEY))
     for entry in entries:
         if entry not in granted:
@@ -373,19 +352,6 @@ def _cmd_check(rest):
     except OSError as error:
         return {'error': f'unable to record check: {error}'}
 def _check_under_run_lock(rest):
-    """Record the §10 checker's pass on one claimed item.
-
-    The gap this closes: contracts/work-item.md:44 gave `checked_by` to "the
-    §10 checker on its pass", orch-critique's body told the checker to set
-    it, and orch-integrate refused a `checker`-independence return without
-    it — while no script wrote it and :72-74 makes frontmatter script-written
-    bookkeeping the executor may not touch. So the field was either absent,
-    failing the join, or hand-edited, which the join cannot tell from an
-    executor writing its own acceptance (rules/verification.md §10 exists to
-    make exactly that distinguishable). Written as `claimed_*`-class
-    bookkeeping, never a body section: those stay the executor's, and the
-    checker's own findings go to `## Result` through `result --append`.
-    """
     args = list(rest)
     checked_by = _extract_flag(args, '--by')
     if len(args) != 2:
@@ -429,6 +395,43 @@ def _cmd_set_status(rest):
             return _set_status_under_run_lock(rest)
     except OSError as error:
         return {'error': f'unable to record status and terminal timing: {error}'}
+def _result_snapshot(run_dir):
+    snapshot = {}
+    for path in sorted(run_dir.glob('*.md')):
+        text, failure = _read_utf8(path)
+        if failure is not None:
+            return (None, failure)
+        snapshot[path.stem] = text
+    return (snapshot, None)
+
+
+def _result_grade_snapshot(ticket_path):
+    text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return (None, None, failure)
+    clause, _ = parse_return_size(_sections(text).get('Return fields', ''))
+    if clause is None:
+        return (text, {ticket_path.stem: text}, None)
+    snapshot, failure = _result_snapshot(ticket_path.parent)
+    return (text, snapshot, failure)
+def _cmd_result_grade(rest):
+    if len(rest) != 2:
+        return {'error': f'usage: {RESULT_GRADE_USAGE}'}
+    run, ticket_id = rest
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {'error': NO_SINK_ERROR}
+    ticket_path = tickets_root / run / f'{ticket_id}.md'
+    if not ticket_path.is_file():
+        return {'error': f'ticket not found: {run}/{ticket_id}'}
+    text, snapshot, failure = _result_grade_snapshot(ticket_path)
+    if failure is not None:
+        return failure
+    grade = grade_result(
+        ticket_id, text, snapshot,
+        context={'tickets_root': str(tickets_root), 'run': run},
+    )
+    return {'result_grade': {'run': run, 'id': ticket_id, **grade}}
 def _set_status_under_run_lock(rest):
     args = list(rest)
     if len(args) != 3:
@@ -436,6 +439,8 @@ def _set_status_under_run_lock(rest):
     run, ticket_id, status = args
     if status not in VALID_STATUSES:
         return {'error': f"invalid status '{status}'; must be one of {sorted(VALID_STATUSES)}"}
+    if status in ('ready', 'claimed'):
+        return {'error': f"set-status cannot create '{status}': ready and claim transitions require the admission boundary"}
     tickets_root = _tickets_root()
     if tickets_root is None:
         return {'error': NO_SINK_ERROR}
@@ -445,6 +450,19 @@ def _set_status_under_run_lock(rest):
     text, failure = _read_utf8(ticket_path)
     if failure is not None:
         return failure
+    if status == 'complete':
+        _, snapshot, failure = _result_grade_snapshot(ticket_path)
+        if failure is not None:
+            return failure
+        grade = grade_result(
+            ticket_id, text, snapshot,
+            context={'tickets_root': str(tickets_root), 'run': run},
+        )
+        if grade['findings']:
+            return {
+                'error': f'ticket {run}/{ticket_id} result does not satisfy return-size',
+                'findings': grade['findings'],
+            }
     items, run_error = _run_tickets(run)
     terminal_transition = False
     terminal_now = False

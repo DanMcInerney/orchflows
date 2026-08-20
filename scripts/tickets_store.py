@@ -32,6 +32,26 @@ NO_SINK_ERROR = 'cannot resolve the state sink: no $ORCHFLOWS_STATE_HOME and no 
 RUN_STATE_TREES = ('runs', 'research', 'improvement', 'handoffs')
 DEFAULT_RUN_STATE_TREE = 'runs'
 RUN_NOTES_NAME = 'notes.md'
+WINDOWS_LOCK_RETRY_SECONDS = 0.05
+
+
+def _lock_windows_byte(handle):
+    """Wait for the run's byte lock without ``LK_LOCK``'s finite retry cap.
+
+    ``msvcrt.LK_LOCK`` stops retrying after ten attempts, unlike the blocking
+    ``flock`` used on POSIX.  Polling the non-blocking operation preserves the
+    same wait-until-acquired contract on Windows while still surfacing errors
+    that are not lock contention.
+    """
+
+    while True:
+        try:
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            return
+        except PermissionError:
+            time.sleep(WINDOWS_LOCK_RETRY_SECONDS)
+
+
 def normalized_isolation(declared) -> str:
     """contracts/work-item.md's `isolation`, read one way by both scripts.
 
@@ -108,6 +128,7 @@ def _run_lock(run: str):
         handle = open(path, 'a+b')
     except OSError as error:
         raise OSError(f"unable to lock run '{run}': {error}") from error
+    locked = False
     try:
         handle.seek(0, 2)
         if handle.tell() == 0:
@@ -115,19 +136,21 @@ def _run_lock(run: str):
             handle.flush()
         handle.seek(0)
         if msvcrt is not None:
-            msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+            _lock_windows_byte(handle)
         elif fcntl is not None:
             fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
         else:
             raise OSError('this host provides neither msvcrt nor fcntl locking')
+        locked = True
         yield
     finally:
         try:
-            handle.seek(0)
-            if msvcrt is not None:
-                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
-            elif fcntl is not None:
-                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            if locked:
+                handle.seek(0)
+                if msvcrt is not None:
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+                elif fcntl is not None:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
         finally:
             handle.close()
 def _improvement_root():

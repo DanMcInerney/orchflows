@@ -30,6 +30,7 @@ Subcommands:
     claim <run> <id> --by <name>
     grant <run> <id> --write-scope <path>[,<path>] --by <name>
     set-status <run> <id> <status>
+    result-grade <run> <id>
     packet <run> <id> --reply-to <name> [--workspace <path>]
     result <run> <id> --section <name> (--file <path> | --text <string>)
            [--append | --replace]
@@ -89,6 +90,7 @@ if __package__:
     from . import tickets_result as _tickets_result_module
     from . import tickets_worklog as _tickets_worklog_module
     from . import tickets_dispatch as _tickets_dispatch_module
+    from . import tickets_admission as _tickets_admission_module
 else:
     import tickets_format as _tickets_format_module
     import tickets_store as _tickets_store_module
@@ -98,6 +100,7 @@ else:
     import tickets_result as _tickets_result_module
     import tickets_worklog as _tickets_worklog_module
     import tickets_dispatch as _tickets_dispatch_module
+    import tickets_admission as _tickets_admission_module
 
 CRITERION_BULLET_RE = _tickets_format_module.CRITERION_BULLET_RE
 CUT_SECTIONS = _tickets_format_module.CUT_SECTIONS
@@ -141,6 +144,9 @@ REQUIRED_TICKET_KEYS = _tickets_format_module.REQUIRED_TICKET_KEYS
 RESULT_TOKEN_SPLIT_RE = _tickets_format_module.RESULT_TOKEN_SPLIT_RE
 RESULT_TOKEN_STRIP = _tickets_format_module.RESULT_TOKEN_STRIP
 ROOT_EXECUTOR = _tickets_format_module.ROOT_EXECUTOR
+CHECKED_BY_KEY = _tickets_format_module.CHECKED_BY_KEY
+GATE_EXECUTORS = _tickets_format_module.GATE_EXECUTORS
+GATE_ID_MARKER = _tickets_format_module.GATE_ID_MARKER
 SCRIPT_EXECUTOR_PREFIX = _tickets_format_module.SCRIPT_EXECUTOR_PREFIX
 SECTION_ORDER = _tickets_format_module.SECTION_ORDER
 SECTION_RANK = _tickets_format_module.SECTION_RANK
@@ -148,6 +154,8 @@ TEMPLATE_FILE = _tickets_format_module.TEMPLATE_FILE
 TERMINAL_STATES = _tickets_format_module.TERMINAL_STATES
 TicketFormatError = _tickets_format_module.TicketFormatError
 VALID_STATUSES = _tickets_format_module.VALID_STATUSES
+MUTATION_OPERATIONS = _tickets_format_module.MUTATION_OPERATIONS
+RETURN_SIZE_COUNTERS = _tickets_format_module.RETURN_SIZE_COUNTERS
 _body_block = _tickets_format_module._body_block
 _criteria = _tickets_format_module._criteria
 _executor_of = _tickets_format_module._executor_of
@@ -170,9 +178,30 @@ _split_commas = _tickets_format_module._split_commas
 _unquote = _tickets_format_module._unquote
 _write_section = _tickets_format_module._write_section
 criterion_defects = _tickets_format_module.criterion_defects
+count_return_text = _tickets_format_module.count_return_text
 effective_write_scope = _tickets_format_module.effective_write_scope
 instruction_words = _tickets_format_module.instruction_words
+parse_mutations = _tickets_format_module.parse_mutations
+parse_result_identity = _tickets_format_module.parse_result_identity
+parse_return_size = _tickets_format_module.parse_return_size
 ticket_defects = _tickets_format_module.ticket_defects
+ADMISSION_PENDING = _tickets_admission_module.ADMISSION_PENDING
+ADMISSION_VERSION = _tickets_admission_module.ADMISSION_VERSION
+ADAPTER_BY_PACK = _tickets_admission_module.ADAPTER_BY_PACK
+PACK_EXECUTOR_BINDINGS = _tickets_admission_module.PACK_EXECUTOR_BINDINGS
+VCS_ACTION_TOKENS = _tickets_admission_module.VCS_ACTION_TOKENS
+adapter_id = _tickets_admission_module.adapter_id
+authority_findings = _tickets_admission_module.authority_findings
+batch_cohort = _tickets_admission_module.batch_cohort
+cohort_sealed = _tickets_admission_module.cohort_sealed
+grade_admission = _tickets_admission_module.grade_admission
+grade_result = _tickets_admission_module.grade_result
+is_receipt = _tickets_admission_module.is_receipt
+is_v1 = _tickets_admission_module.is_v1
+valid_cohort = _tickets_admission_module.valid_cohort
+relevant_snapshot_ids = _tickets_admission_module.relevant_snapshot_ids
+root_cohort = _tickets_admission_module.root_cohort
+ticket_cohort = _tickets_admission_module.ticket_cohort
 DEFAULT_RUN_STATE_TREE = _tickets_store_module.DEFAULT_RUN_STATE_TREE
 NO_SINK_ERROR = _tickets_store_module.NO_SINK_ERROR
 REPLACE_BUDGET_SECONDS = _tickets_store_module.REPLACE_BUDGET_SECONDS
@@ -221,7 +250,6 @@ def establishes_a_git_workspace(name: str) -> bool:
 normalized_isolation = _tickets_store_module.normalized_isolation
 AMENDABLE_STATUSES = _tickets_issue_module.AMENDABLE_STATUSES
 AMEND_USAGE = _tickets_issue_module.AMEND_USAGE
-GATE_ID_MARKER = _tickets_issue_module.GATE_ID_MARKER
 INDEPENDENCE_VALUES = _tickets_issue_module.INDEPENDENCE_VALUES
 ISOLATION_VALUES = _tickets_issue_module.ISOLATION_VALUES
 NEW_DEFAULT_BOUND = _tickets_issue_module.NEW_DEFAULT_BOUND
@@ -230,6 +258,7 @@ NEW_DEFAULT_RETURN_FIELDS = _tickets_issue_module.NEW_DEFAULT_RETURN_FIELDS
 NEW_USAGE = _tickets_issue_module.NEW_USAGE
 _ceiling_error = _tickets_issue_module._ceiling_error
 _cmd_amend = _tickets_issue_module._cmd_amend
+_cmd_recut = _tickets_issue_module._cmd_recut
 _cmd_new = _tickets_issue_module._cmd_new
 _distinct_gate_lenses = _tickets_issue_module._distinct_gate_lenses
 _frontmatter_list = _tickets_issue_module._frontmatter_list
@@ -237,7 +266,6 @@ _issue_ticket = _tickets_issue_module._issue_ticket
 _place_ticket = _tickets_issue_module._place_ticket
 _render_ticket = _tickets_issue_module._render_ticket
 CHECKABLE_STATUSES = _tickets_lifecycle_module.CHECKABLE_STATUSES
-CHECKED_BY_KEY = _tickets_lifecycle_module.CHECKED_BY_KEY
 CHECK_USAGE = _tickets_lifecycle_module.CHECK_USAGE
 CLAIM_USAGE = _tickets_lifecycle_module.CLAIM_USAGE
 GRANTABLE_STATUSES = _tickets_lifecycle_module.GRANTABLE_STATUSES
@@ -245,9 +273,11 @@ GRANTED_AT_KEY = _tickets_lifecycle_module.GRANTED_AT_KEY
 GRANTED_BY_KEY = _tickets_lifecycle_module.GRANTED_BY_KEY
 GRANT_USAGE = _tickets_lifecycle_module.GRANT_USAGE
 SET_STATUS_USAGE = _tickets_lifecycle_module.SET_STATUS_USAGE
+RESULT_GRADE_USAGE = _tickets_lifecycle_module.RESULT_GRADE_USAGE
+_cmd_result_grade = _tickets_lifecycle_module._cmd_result_grade
 _check_under_run_lock = _tickets_lifecycle_module._check_under_run_lock
-_cited_paths = _tickets_lifecycle_module._cited_paths
-_claim_is_stale = _tickets_lifecycle_module._claim_is_stale
+_cited_paths = _tickets_packet_module._cited_paths
+_claim_is_stale = _tickets_packet_module._claim_is_stale
 _claim_under_run_lock = _tickets_lifecycle_module._claim_under_run_lock
 _cmd_check = _tickets_lifecycle_module._cmd_check
 _cmd_claim = _tickets_lifecycle_module._cmd_claim
@@ -257,16 +287,15 @@ _cmd_ready = _tickets_lifecycle_module._cmd_ready
 _cmd_set_status = _tickets_lifecycle_module._cmd_set_status
 _do_claim = _tickets_lifecycle_module._do_claim
 _grant_under_run_lock = _tickets_lifecycle_module._grant_under_run_lock
-_inside_scope = _tickets_lifecycle_module._inside_scope
-_is_stale = _tickets_lifecycle_module._is_stale
-_last_motion = _tickets_lifecycle_module._last_motion
-_scope_segments = _tickets_lifecycle_module._scope_segments
+_inside_scope = _tickets_packet_module._inside_scope
+_is_stale = _tickets_packet_module._is_stale
+_last_motion = _tickets_packet_module._last_motion
+_scope_segments = _tickets_packet_module._scope_segments
 _set_status_under_run_lock = _tickets_lifecycle_module._set_status_under_run_lock
 CHECKER_EXECUTOR = _tickets_packet_module.CHECKER_EXECUTOR
 CHECKER_PATH_EXECUTORS = _tickets_packet_module.CHECKER_PATH_EXECUTORS
 CUT_LENS_PARTS = _tickets_packet_module.CUT_LENS_PARTS
 GATE_CRITIQUE_ID = _tickets_packet_module.GATE_CRITIQUE_ID
-GATE_EXECUTORS = _tickets_packet_module.GATE_EXECUTORS
 GATE_EXECUTOR_SECTIONS = _tickets_packet_module.GATE_EXECUTOR_SECTIONS
 GATE_REPAIR_ID = _tickets_packet_module.GATE_REPAIR_ID
 GATE_VERIFY_ID = _tickets_packet_module.GATE_VERIFY_ID
@@ -367,6 +396,7 @@ def _sync_seams():
     _tickets_store_module._cwd = _cwd
     _tickets_store_module.datetime = datetime
     _tickets_lifecycle_module.datetime = datetime
+    _tickets_lifecycle_module.grade_result = grade_result
     _tickets_issue_module.datetime = datetime
     _tickets_result_module.datetime = datetime
     _tickets_dispatch_module.datetime = datetime
@@ -383,11 +413,13 @@ def _sync_seams():
     _tickets_result_module._append_one_line = _append_one_line
     _tickets_dispatch_module._cmd_new = _cmd_new
     _tickets_dispatch_module._cmd_amend = _cmd_amend
+    _tickets_dispatch_module._cmd_recut = _cmd_recut
     _tickets_dispatch_module._cmd_claim = _cmd_claim
     _tickets_dispatch_module._cmd_ready = _cmd_ready
     _tickets_dispatch_module._cmd_grant = _cmd_grant
     _tickets_dispatch_module._cmd_check = _cmd_check
     _tickets_dispatch_module._cmd_set_status = _cmd_set_status
+    _tickets_dispatch_module._cmd_result_grade = _cmd_result_grade
     _tickets_dispatch_module._cmd_packet = _cmd_packet
     _tickets_dispatch_module._cmd_result = _cmd_result
     _tickets_dispatch_module._cmd_worklog = _cmd_worklog

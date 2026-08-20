@@ -15,9 +15,12 @@ workspace; the rendered `<subject>.html` beside it is the deliverable.
 
 Verify: run this package's `scripts/verify_mermaid.py --lint`; one
 correction pass on rejection, then stop. Render with
-`scripts/render_html.py`, view the page, correct once from a defect
-list. Verified when both exit 0; anything else returns failed with the
-page path and the diagnostic.
+`scripts/render_html.py`. Start `python scripts/preview.py <rendered-html>`,
+wait for its JSON URL, open that HTTP URL for the defect-list look pass, and
+require the helper's successful exit; forbid `file://` for verification.
+Correct once from the defect list. Verified when the verifier, renderer, and
+preview helper all exit 0; anything else returns failed with the page path and
+the diagnostic.
 
 Never: decorate beyond the subject's own vocabulary; assert what the
 subject does not state or leave an inferred connection unlabeled;

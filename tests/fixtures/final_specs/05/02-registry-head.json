@@ -1,0 +1,1 @@
+{"name":"registry-head","mutation":"create:plugins/new.py","edge":{"from":{"operation":"create","path":"plugins/*.py"},"requires":[{"operation":"change","path":"plugins/registry.py"}],"reason":"declared registry head"}}

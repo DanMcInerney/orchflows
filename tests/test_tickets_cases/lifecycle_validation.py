@@ -122,7 +122,7 @@ class TestEngineExecutorIsRejected(unittest.TestCase):
                 self.assertNotIn("error", summary, engine)
                 self.assertEqual(["T1"], [t["id"] for t in run_cmd(tmp, "ready")["ready"]])
                 payload = run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-a")
-                self.assertIn("claimed", payload, engine)
+                self.assertIn("recut", payload.get("error", ""), engine)
 
     def test_a_lawful_executor_still_passes(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -150,7 +150,7 @@ class TestOutsideARepoTheSinkStillResolves(unittest.TestCase):
             payload = json.loads(result.stdout)
             self.assertEqual(["T1"], [t["id"] for t in payload["tickets"]])
 
-    def test_claim_outside_a_repo_claims_the_ticket_in_the_sink(self):
+    def test_claim_outside_a_repo_still_enforces_v0_recut(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             run_dir = make_tickets(
@@ -159,10 +159,10 @@ class TestOutsideARepoTheSinkStillResolves(unittest.TestCase):
             bare = tmp / "no-repo-here"
             bare.mkdir()
             result = run_full(bare, "claim", "testrun", "T1", "--by", "agent-a")
-            self.assertEqual(0, result.returncode)
-            self.assertNotIn("error", json.loads(result.stdout))
+            self.assertEqual(1, result.returncode)
+            self.assertIn("requires `recut`", json.loads(result.stdout)["error"])
             self.assertIn(
-                "status: claimed", (run_dir / "T1.md").read_text(encoding="utf-8")
+                "status: ready", (run_dir / "T1.md").read_text(encoding="utf-8")
             )
 
     def test_an_absent_ticket_is_still_reported_missing(self):
@@ -190,12 +190,14 @@ class TestOutsideARepoTheSinkStillResolves(unittest.TestCase):
 FULL_TICKET = """---
 id: T1
 run: testrun
-status: ready
+status: claimed
 executor: orch-tdd
 pack: orch-code-pack
 depends_on: []
 write_scope: scratch/t1.txt
 bound: 30m
+claimed_by: legacy-agent
+claimed_at: 2099-01-01T00:00:00Z
 ---
 
 ## Objective

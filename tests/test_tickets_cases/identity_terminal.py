@@ -52,7 +52,7 @@ class RunTerminalTimingTest(unittest.TestCase):
             ticket = (sink_root() / "tickets" / "testrun" / "R.md").read_text(
                 encoding="utf-8"
             )
-            self.assertEqual("ready", tickets_mod._parse_frontmatter(ticket)["status"])
+            self.assertEqual("pending", tickets_mod._parse_frontmatter(ticket)["status"])
             self.assertNotIn("terminal_at", identity_doc())
             with mock.patch.object(tickets_mod, "_write_identity", real_write):
                 retried = run_cmd(repo, "set-status", "testrun", "R", "complete")

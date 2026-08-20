@@ -34,8 +34,11 @@ id: T1
 run: testrun
 status: ready
 executor: orch-tdd
+pack: orch-code-pack
 depends_on: []
 write_scope: [scratch/t1.txt]
+mutations: [change:scratch/t1.txt]
+isolation: required
 bound: 30m
 claimed_by:
 claimed_at:
@@ -248,10 +251,16 @@ status; result.
 def stub(tid: str, deps: str = "[]", *, executor: str = "orch-tdd",
          scope: str = "scratch/x.txt", criterion: str = GOOD_CRITERION,
          objective: str = "one stub's end state") -> str:
-    return STUB.format(
+    text = STUB.format(
         tid=tid, executor=executor, deps=deps, scope=scope,
         criterion=criterion, objective=objective,
     )
+    if executor == "orch-tdd":
+        text = text.replace(
+            "executor: orch-tdd",
+            f"executor: orch-tdd\npack: orch-code-pack\nisolation: required\nmutations: [change:{scope}]",
+        )
+    return text
 
 
 def make_template(root: Path, stubs: dict, template_md: str = TEMPLATE_MD) -> Path:

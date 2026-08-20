@@ -6,6 +6,11 @@ from scripts.ui_experience import project_experience
 
 
 class TestExperienceFoundationGap(unittest.TestCase):
+    def test_observe_smoke_defaults_off_unless_the_experience_flag_is_one(self):
+        smoke = (ROOT / "web" / "src" / "smoke.spec.ts").read_text(encoding="utf-8")
+        self.assertIn('process.env.ORCHFLOWS_UI_EXPERIENCE === "1"', smoke)
+        self.assertNotIn("const experienceMode = true", smoke)
+
     def test_ticket_inputs_scope_and_raw_share_the_host_path_boundary(self):
         with tempfile.TemporaryDirectory() as raw:
             root = make_sink(Path(raw), runs=("run-gamma",))
@@ -192,7 +197,7 @@ class TestExperienceFoundationGap(unittest.TestCase):
         for item in friction["items"]:
             self.assertTrue(
                 set(item).issubset(
-                    {"ts", "category", "host", "observed", "expected", "run", "ticket"}
+                    {"ts", "host", "observed", "expected", "run", "ticket"}
                 )
             )
 

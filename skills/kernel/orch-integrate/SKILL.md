@@ -15,15 +15,13 @@ at its identities through one outside-independence path per
 [rules/verification.md](../../../rules/verification.md) §10
 (`authored-here` coverage rides `independence`: `gate` defers to the
 gate, `checker` requires `checked_by`), needs-verify reachable. `suspended`
-resumes from `## Handoff`. A bare packet has no completion test: accept or
-reject(blame) its contract; after exclusion-stop, redispatch with a ticket only
-when resume matters.
+resumes from `## Handoff`. Grade a bare packet by its contract; after
+exclusion-stop, use a ticket only when resume matters.
 
-Always require the returning name to match `claimed_by`, `checked_by`, or the
+Require the returning name to match `claimed_by`, `checked_by`, or the
 re-verifier your `tickets.py packet --executor` named; reject mismatch(child)
 and a lapsed claim outside its bound;
-reject a non-root ticket carrying both `independence: gate` and
-`checked_by` before acceptance;
+reject a non-root ticket carrying both `independence: gate` and `checked_by`;
 on a root, `checked_by` is cut reader bookkeeping, never final checker
 acceptance — authored-here acceptance rides the composite gate;
 `changed_artifacts` per
@@ -31,19 +29,23 @@ acceptance — authored-here acceptance rides the composite gate;
 verification entry covers has changed since it was produced. For
 `isolation: required`, run `workspace.py check <run> <id> --base <rev>`
 from the integrating checkout; exit 6 is a caller-vantage error, not a verdict.
+Apply [result.md](../../../contracts/result.md)'s `return-size` crossing:
+`tickets.py result-grade <run> <id>`; attribute each finding through the
+work-item blame rule. Malformed caller-authored clauses and unavailable
+caller/host resolver inputs are `reject(caller)`; an invalid, unresolved, or
+oversized result the executor filed is `reject(child)`.
 
-Classify blame per the
+Classify blame per
 [work-item contract](../../../contracts/work-item.md#dispatch), recording
-it through `tickets.py run-state --note`. The join alone
+writes through `tickets.py run-state --note`. The join alone
 writes terminal status (`tickets.py set-status`). At a critique join,
 an accepted defect set of `[]` across every critique the
 `<root>.gate.repair` depends on completes that repair here — empty
 disposition filed through `tickets.py result`, then
 `set-status complete` — with no dispatch.
 
-Never: trust out-of-scope output; re-run a covered oracle; repair the
-result yourself.
+Never: trust out-of-scope output; re-run a covered oracle; repair it.
 
 Return: disposition — accepted, rejected(blame), suspended (route to
-resume), or ticket-grade-only needs-verify with the exact uncovered
+resume), or ticket-grade-only needs-verify with uncovered
 criteria — plus invalidated evidence and the integrated state.

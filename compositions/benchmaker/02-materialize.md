@@ -23,17 +23,9 @@ each at a preserved identity.
 
 ## Fixed inputs
 
-- 01-design's `## Result`, in full: whatever orch-eval-design's Return
-  filed there.
-- {{pack}} — the run's stamp.
-- {{package}} — the target repository: where the materialized case set
-  is written. Builders' write scopes are disjoint.
-- [the manifest](../references/benchmaker-manifest.md) — the field set
-  this stage writes with the pending `qualification` marker.
-- The standards owner, by pointer: the workspace's own owner file —
-  AGENTS.md or its equivalent.
-- Acceptance as runnable checks: the workspace's required checks as
-  that owner names them, beside this stub's own completion test.
+- input: {"name":"pack","type":"literal","value":"{{pack}}"}
+- input: {"name":"package","type":"literal","value":"{{package}}"}
+- input: {"identity":{"kind":"artifact","locator":"project:compositions/references/benchmaker-manifest.md","sha256":"d9c4ea1a8071409be84ee1f8f3c43c07e995815cd62a4b501ac121b18c52683e"},"name":"manifest-contract","type":"identity"}
 
 ## Completion test
 

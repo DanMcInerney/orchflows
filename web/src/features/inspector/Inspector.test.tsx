@@ -95,13 +95,14 @@ describe("TicketInspector", () => {
 
   it("shows only friction linked by both run and ticket", () => {
     const value = snapshot();
-    value.friction.items = [
+    value.friction.items = ([
       { ts: "2026-08-01T00:00:00Z", run: "run-gamma", ticket: "G1", category: "contract-gap", observed: "Linked observation", expected: "Linked expectation", host: "fixture" },
       { ts: "2026-08-02T00:00:00Z", run: "run-gamma", ticket: "G2", category: "workaround", observed: "Other ticket", expected: "Not shown", host: "fixture" }
-    ];
+    ] as unknown) as ExperienceSnapshot["friction"]["items"];
     window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=friction-present");
     render(<TicketInspector snapshot={value} location={location("friction-present")} />);
     expect(screen.getByText("Linked observation")).not.toBeNull();
+    expect(screen.queryByText("contract-gap")).toBeNull();
     expect(screen.queryByText("Other ticket")).toBeNull();
   });
 

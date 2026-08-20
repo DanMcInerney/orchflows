@@ -1,5 +1,7 @@
 """Cutcheck behavioral cases loaded explicitly by tests.test_cutcheck."""
 
+import types
+
 from tests.test_cutcheck import *  # noqa: F401,F403
 
 try:
@@ -188,6 +190,35 @@ class ParserReuseTest(unittest.TestCase):
     def test_frontmatter_and_section_parsers_are_the_ticket_scripts_own(self):
         self.assertIs(cutcheck._parse_frontmatter, tickets._parse_frontmatter)
         self.assertIs(cutcheck._sections, tickets._sections)
+
+    def test_cutcheck_contract_imports_the_lower_format_owner_not_the_facade(self):
+        source = (ROOT / "scripts" / "cutcheck_contract.py").read_text(encoding="utf-8")
+        self.assertNotIn("from scripts.tickets import", source)
+        self.assertNotIn("from tickets import", source)
+        self.assertIn("tickets_format", source)
+
+    def test_lower_policy_hooks_keep_their_portable_codes(self):
+        from scripts import cutcheck_ticket
+
+        inputs = types.ModuleType("scripts.tickets_inputs")
+        scope = types.ModuleType("scripts.tickets_scope")
+        inputs.grade_inputs = lambda **kwargs: {
+            "findings": [{"code": "input-unresolved", "field": "Fixed inputs", "detail": "baseline"}],
+        }
+        scope.grade_scope = lambda **kwargs: {
+            "findings": [{"code": "scope-owner-missing", "field": "mutations", "detail": "change:a.py"}],
+        }
+        text = "---\nid: T1\npack: orch-code-pack\n---\n"
+        with mock.patch.dict(sys.modules, {
+            "scripts.tickets_inputs": inputs,
+            "scripts.tickets_scope": scope,
+        }):
+            findings = cutcheck_ticket._policy_findings(
+                "T1", text, {"T1": text}, Path("baseline"), Path("head")
+            )
+        self.assertEqual(["input-unresolved", "scope-owner-missing"], [row[2] for row in findings])
+        self.assertEqual(cutcheck.FAMILY_2, cutcheck.FAMILY_OF["input-unresolved"])
+        self.assertEqual(cutcheck.FAMILY_3, cutcheck.FAMILY_OF["scope-owner-missing"])
 
 
 class InstallationTest(unittest.TestCase):
