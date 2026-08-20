@@ -1,4 +1,10 @@
-import type { ComponentType } from "react";
+import {
+  Suspense,
+  createElement,
+  lazy,
+  type ComponentType,
+} from "react";
+import { usePollingTransport } from "../shared/transport";
 import type {
   FeatureData,
   FeatureState,
@@ -41,6 +47,7 @@ export interface FeatureMatch<K extends ViewId = ViewId> {
   matchPriority: number;
   canonicalHref: string;
   isCanonical: boolean;
+  View: ComponentType;
 }
 
 export interface FeatureRegistration<K extends ViewId = ViewId> {
@@ -94,6 +101,7 @@ function validateCanonicalHref(href: string): void {
 export function defineFeature<K extends ViewId, Route, Payload, Model>(
   spec: FeatureSpec<K, Route, Payload, Model>,
 ): FeatureRegistration<K> {
+  const FeatureView = lazy(spec.loadView);
   const navigationHref = spec.navigation === false ? null : spec.route.build(spec.navigation.home);
   if (navigationHref !== null) {
     validateCanonicalHref(navigationHref);
@@ -115,12 +123,21 @@ export function defineFeature<K extends ViewId, Route, Payload, Model>(
       if (route === null) return null;
       const canonicalHref = spec.route.build(route);
       validateCanonicalHref(canonicalHref);
+      const BoundView = () => {
+        const state = usePollingTransport(route, spec.data);
+        return createElement(
+          Suspense,
+          { fallback: null },
+          createElement(FeatureView, { route, state }),
+        );
+      };
       return {
         id: spec.id,
         activeNavigationId: spec.activeNavigationId,
         matchPriority: spec.matchPriority,
         canonicalHref,
         isCanonical: `${location.pathname}${location.search}${location.hash}` === canonicalHref,
+        View: BoundView,
       };
     },
   };

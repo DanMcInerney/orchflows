@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   CatalogError,
   defineCatalog,
@@ -45,7 +47,13 @@ function itemFeature(
       polling: () => false,
       project: (payload) => ({ label: String(payload.value) }),
     },
-    loadView: async () => ({ default: () => null }),
+    loadView: async () => ({
+      default: ({ route, state }) => createElement(
+        "div",
+        null,
+        `${route.item}:${state.status}:${state.model?.label ?? ""}`,
+      ),
+    }),
   });
 }
 
@@ -63,6 +71,8 @@ function catalogErrorCode(run: () => unknown): string | undefined {
 }
 
 describe("feature catalog", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
   it("rejects duplicate identities and duplicate enabled canonical hrefs", () => {
     expect(catalogErrorCode(() => defineCatalog([
       itemFeature("workflow-detail", 10),
@@ -118,7 +128,27 @@ describe("feature catalog", () => {
     ]);
     expect(catalogErrorCode(() => matchCatalog(catalog, location("/items/shared")))).toBe("tied-match");
   });
+
+  it("returns a bound view that keeps route, payload, and model handling inside the registration", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(200, { value: 7 })));
+    const match = matchCatalog(
+      defineCatalog([itemFeature("workflow-detail", 10, { item: "home" })]),
+      location("/items/bound"),
+    );
+    if (match === null) throw new Error("expected a route match");
+
+    render(createElement(match.View));
+
+    expect(await screen.findByText("bound:ready:7")).toBeTruthy();
+  });
 });
+
+function response(status: number, value: unknown): Response {
+  return new Response(JSON.stringify(value), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
 
 // This function is never called; pnpm typecheck proves the catalog keeps a
 // feature's route, payload, and model types correlated at its definition.
