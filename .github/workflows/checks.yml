@@ -124,3 +124,4 @@ jobs:
           name: test-timing-py${{ matrix.python-version }}-${{ matrix.os }}
           path: .orch/run-tests.json
           if-no-files-found: warn
+          include-hidden-files: true

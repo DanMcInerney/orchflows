@@ -29,10 +29,13 @@ DEFAULT_TESTS_DIR = ROOT / "tests"
 CACHE_PATH = ROOT / ".orch" / "run_tests_times.json"
 TIMING_PATH = ROOT / ".orch" / "run_tests_record.json"
 DEFAULT_COLD_ORDER = (
+    "tests.test_installer_planning",
+    "tests.test_installer_shared",
     "tests.test_cutcheck",
     "tests.test_tickets",
-    "tests.test_canary_host",
-    "tests.test_installer",
+    "tests.test_workspace",
+    "tests.test_installer_hosts",
+    "tests.test_installer_receipt",
     "tests.test_validate",
 )
 IMPORT_BOOTSTRAP_ROOTS = frozenset(
@@ -133,6 +136,7 @@ def run_child(module: str, import_root: str, result_path: str, verbosity: int) -
         "failures": len(result.failures),
         "errors": len(result.errors) + len(leaks),
         "skipped": len(result.skipped),
+        "expected_failures": len(result.expectedFailures),
         "unexpected": len(result.unexpectedSuccesses),
         "ok": result.wasSuccessful() and not leaks,
     }
@@ -254,6 +258,7 @@ def run_module(module: str, import_root: Path, verbosity: int) -> dict:
             "failures": 0,
             "errors": 1,
             "skipped": 0,
+            "expected_failures": 0,
             "unexpected": 0,
             "ok": False,
             "note": "child wrote no result (exit %d)" % completed.returncode,
@@ -330,7 +335,7 @@ def timing_record(records, wall, requested_jobs, effective_jobs, started) -> dic
     serial = sum(record["duration"] for record in records)
     outcomes = {
         key: sum(record[key] for record in records)
-        for key in ("tests", "failures", "errors", "skipped", "unexpected")
+        for key in ("tests", "failures", "errors", "skipped", "expected_failures", "unexpected")
     }
     active = peak = 0
     events = [(record[edge], 1 if edge == "started" else -1)
@@ -370,7 +375,7 @@ def timing_record(records, wall, requested_jobs, effective_jobs, started) -> dic
                 "started_seconds": round(record["started"] - started, 6),
                 "finished_seconds": round(record["finished"] - started, 6),
                 **{key: record[key] for key in
-                   ("tests", "failures", "errors", "skipped", "unexpected", "ok")},
+                   ("tests", "failures", "errors", "skipped", "expected_failures", "unexpected", "ok")},
             }
             for record in sorted(records, key=lambda record: record["started"])
         ],

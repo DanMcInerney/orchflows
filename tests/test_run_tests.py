@@ -1,15 +1,7 @@
-"""Tests for tools/run_tests.py — the parallel runner the suite runs through.
-
-The runner is also the suite's whole-interpreter residue oracle. Each module
-gets a fresh child, but a child still has to reject a module that leaves one
-of the process-global seams the suite is known to replace dirty.
-
-The console encoding is a parameter here, not the platform's. A Windows
-runner's is cp1252; ``PYTHONIOENCODING`` makes any host's the same, so the
-shape stops being something only three cells of the matrix can see.
-"""
+"""Process-runner tests for residue, scheduling, telemetry, and console seams."""
 
 from __future__ import annotations
+import ast
 import importlib
 import io
 import os
@@ -30,15 +22,12 @@ RUN_TESTS_PY = REPO_ROOT / "tools" / "run_tests.py"
 CHECKS_YML = REPO_ROOT / ".github" / "workflows" / "checks.yml"
 AGENTS_MD = REPO_ROOT / "AGENTS.md"
 
-# In cp1252 and not in ASCII, versus in neither. The first proves the decode
-# is faithful, the second that an unencodable character costs a glyph and not
-# the report.
+# One glyph fits cp1252 and one does not, testing faithful decode and fallback.
 ENCODABLE = "é"  # é
 UNENCODABLE = "★"  # ★
 
 def run_fixture(source: str):
     """Run one synthetic module through the same child boundary as CI."""
-
     with tempfile.TemporaryDirectory() as tmp:
         (Path(tmp) / "test_fixture.py").write_text(source, encoding="utf-8")
         env = dict(os.environ)
@@ -64,7 +53,6 @@ class TestGuardedSeams(unittest.TestCase):
         '''\
         import unittest
 
-
         class Clean(unittest.TestCase):
             def test_it(self):
                 self.assertTrue(True)
@@ -86,7 +74,6 @@ class TestGuardedSeams(unittest.TestCase):
         return textwrap.dedent(
             '''\
             import unittest
-
 
             class Leaking(unittest.TestCase):
                 def test_it(self):
@@ -193,9 +180,7 @@ class TestGuardedSeams(unittest.TestCase):
             import os
             import unittest
 
-
             atexit.register(lambda: os._exit(7))
-
 
             class Clean(unittest.TestCase):
                 def test_it(self):
@@ -299,6 +284,7 @@ class TestWorkflowContract(unittest.TestCase):
         self.assertIn("uses: actions/upload-artifact@v4", workflow)
         self.assertIn("if: ${{ always() }}", workflow)
         self.assertIn("path: .orch/run-tests.json", workflow)
+        self.assertIn("include-hidden-files: true", workflow)
 
     def test_ci_does_not_repeat_oracles_already_in_the_sharded_suite(self):
         workflow = CHECKS_YML.read_text(encoding="utf-8")
@@ -319,6 +305,15 @@ class TestSchedule(unittest.TestCase):
             name for name in run_tests.discover(run_tests.DEFAULT_TESTS_DIR)[2]
             if name.startswith("tests.test_installer")
         ]
+        expected = [
+            (node.name, method.name)
+            for path in (REPO_ROOT / "tests").rglob("*.py")
+            for node in ast.parse(path.read_text(encoding="utf-8")).body
+            for method in getattr(node, "body", ())
+            if (path.name == "test_installer.py" or "test_installer_cases" in path.parts)
+            and isinstance(node, ast.ClassDef) and isinstance(method, ast.FunctionDef)
+            and method.name.startswith("test")
+        ]
         self.assertGreaterEqual(len(modules), 3)
         for name in modules:
             if name != "tests.test_installer":
@@ -326,45 +321,57 @@ class TestSchedule(unittest.TestCase):
                 self.assertIn('sys.modules.get("test_installer")', source.read_text())
         stack = list(unittest.TestLoader().loadTestsFromNames(modules))
         identities = []
+        cases = []
         while stack:
             item = stack.pop()
             if isinstance(item, unittest.TestSuite):
                 stack.extend(item)
             else:
                 identities.append(item.id())
+                cases.append((type(item).__name__, item._testMethodName))
+        self.assertCountEqual(expected, cases)
         self.assertEqual(len(identities), len(set(identities)))
         self.assertTrue(identities)
         prefixes = ("tests.test_installer.", "test_installer.")
         self.assertTrue(all(name.startswith(prefixes) for name in identities))
     def test_timing_record_carries_context_occupancy_modules_and_outcomes(self):
         records = [{"module": "tests.test_one", "tests": 3, "failures": 1,
-                    "errors": 0, "skipped": 1, "unexpected": 0, "ok": False,
+                    "errors": 0, "skipped": 1, "expected_failures": 1,
+                    "unexpected": 0, "ok": False,
                     "duration": 4.0, "started": 10.0, "finished": 14.0}]
         timing = run_tests.timing_record(records, 5.0, 8, 1, 10.0)
         self.assertEqual(8, timing["requested_workers"])
         self.assertEqual(1, timing["effective_workers"])
         self.assertEqual(0.8, timing["occupancy"]["capacity_ratio"])
         self.assertEqual(3, timing["outcomes"]["tests"])
+        self.assertEqual(1, timing["outcomes"]["expected_failures"])
         self.assertEqual("tests.test_one", timing["modules"][0]["module"])
         self.assertIn("revision", timing)
         self.assertIn("platform", timing)
         self.assertIn("interpreter", timing)
+    def test_expected_failures_are_preserved_as_outcomes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            root.joinpath("test_expected.py").write_text(
+                "import unittest\nclass Expected(unittest.TestCase):\n"
+                " @unittest.expectedFailure\n def test_expected(self): assert False\n", encoding="utf-8")
+            record = run_tests.run_module("test_expected", root, 1)
+        self.assertEqual(1, record["expected_failures"])
+        self.assertTrue(record["ok"])
     def test_a_cold_repository_starts_known_slow_modules_first(self):
         modules = [
-            "tests.test_validate",
             "tests.test_alpha",
             "tests.test_cutcheck",
-            "tests.test_installer",
-            "tests.test_canary_host",
+            "tests.test_installer_planning",
+            "tests.test_installer_shared",
             "tests.test_tickets",
         ]
         self.assertEqual(
             [
+                "tests.test_installer_planning",
+                "tests.test_installer_shared",
                 "tests.test_cutcheck",
                 "tests.test_tickets",
-                "tests.test_canary_host",
-                "tests.test_installer",
-                "tests.test_validate",
                 "tests.test_alpha",
             ],
             run_tests.schedule(modules, {}, run_tests.DEFAULT_TESTS_DIR),
@@ -391,12 +398,7 @@ class TestSchedule(unittest.TestCase):
 
 
 class Console:
-    """A text stdout with a chosen encoding, over a real byte buffer.
-
-    ``io.TextIOWrapper`` with ``errors="strict"`` is what a console is: it
-    raises on a character the encoding cannot carry, which is the whole
-    behaviour under test.
-    """
+    """A strict text stdout with a chosen encoding over a byte buffer."""
 
     def __init__(self, encoding: str):
         self.buffer = io.BytesIO()
@@ -459,10 +461,7 @@ class TestChildEnv(unittest.TestCase):
         self.assertEqual("utf-8", run_tests.child_env()["PYTHONIOENCODING"])
 
     def test_every_other_variable_survives(self):
-        """The child inherits the sink guard ``tests/__init__.py`` installs
-        and whatever else the caller set; a fresh environment would point
-        every child at the operator's real state."""
-
+        """The child inherits the sink guard and every caller variable."""
         env = run_tests.child_env()
         for key, value in os.environ.items():
             if key != "PYTHONIOENCODING":
@@ -470,13 +469,11 @@ class TestChildEnv(unittest.TestCase):
 
 
 class TestFailureOutputSurvivesTheConsole(unittest.TestCase):
-    """End to end, on any host: a module fails with a message carrying both
-    characters, and the runner reports it to a cp1252 console."""
+    """A failing module's non-ASCII message survives a cp1252 console."""
 
     MODULE = textwrap.dedent(
         '''\
         import unittest
-
 
         class Failing(unittest.TestCase):
             def test_it(self):
