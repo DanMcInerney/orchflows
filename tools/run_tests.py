@@ -1,18 +1,9 @@
 #!/usr/bin/env python3
-"""Parallel unit-test runner: one test module per child interpreter.
+"""Process-isolated, module-sharded unit-test runner.
 
-Sharding is by module across *processes*, never threads: the suite
-performs whole-interpreter mutations (``install.Path.home``,
-``ui.html.escape``, ``Path.open``, ``os.chdir``, ``sys.path``) that make
-thread parallelism unsound. Threads here only wait on subprocesses.
-
-Scheduling is longest-first from a duration cache written at
-``.orch/run_tests_times.json`` (gitignored runtime state). On a cold
-repository checkout, known slow suite modules start first; custom test
-directories fall back to alphabetical. Results stream as modules finish;
-a failing module's captured output is reproduced verbatim.
-
-Stdlib only, no network, Python 3.9+, POSIX and Windows.
+Threads only wait on child interpreters because tests mutate global seams.
+Scheduling is longest-first from a gitignored cache, with cold-start priors.
+Stdlib only, Python 3.9+, POSIX and Windows.
 
 Usage:
     python tools/run_tests.py [-j N] [-v] [--tests-dir DIR] [MODULE ...]
@@ -36,6 +27,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_TESTS_DIR = ROOT / "tests"
 CACHE_PATH = ROOT / ".orch" / "run_tests_times.json"
+TIMING_PATH = ROOT / ".orch" / "run_tests_record.json"
 DEFAULT_COLD_ORDER = (
     "tests.test_cutcheck",
     "tests.test_tickets",
@@ -55,8 +47,6 @@ IMPORT_BOOTSTRAP_ROOTS = frozenset(
 
 
 # --- child: run one module in this interpreter ------------------------
-
-
 def guarded_state() -> dict:
     """Snapshot the process-global seams tests are allowed to borrow only.
 
@@ -75,17 +65,7 @@ def guarded_state() -> dict:
 
 
 def meaningful_sys_path(entries):
-    """Drop inert scratch roots and the suite's exact bootstrap roots.
-
-    Isolated-tree tests execute copied tools whose lazy imports put that
-    temporary tree on ``sys.path``. ``TemporaryDirectory`` removes the tree
-    before the module returns; the dead absolute entry is inert in this
-    single-purpose child and is not live whole-interpreter residue.
-
-    A closed set of repository import roots is also intentional suite
-    bootstrap. Exact equality matters: another live path under the repository
-    or temporary tree remains residue rather than inheriting this exception.
-    """
+    """Drop dead scratch roots and the exact suite bootstrap roots."""
 
     temp_root = os.path.normcase(os.path.realpath(tempfile.gettempdir()))
     meaningful = []
@@ -135,13 +115,7 @@ def leaked_seams(before: dict):
 
 
 def run_child(module: str, import_root: str, result_path: str, verbosity: int) -> int:
-    """Run one test module and write its counts to ``result_path``.
-
-    The script's own directory is dropped from ``sys.path`` first: under
-    ``unittest discover`` nothing on ``tools/`` is importable by bare
-    name, and leaving it there would let a test import a tool module the
-    real suite cannot reach.
-    """
+    """Run one module and write its counts; reject guarded-seam residue."""
 
     script_dir = Path(__file__).resolve().parent
     sys.path[:] = [p for p in sys.path if p and Path(p).resolve() != script_dir]
@@ -170,8 +144,6 @@ def run_child(module: str, import_root: str, result_path: str, verbosity: int) -
 
 
 # --- parent: discovery, scheduling, dispatch --------------------------
-
-
 def discover(tests_dir: Path):
     """Return (import root, module-name prefix, dotted module names).
 
@@ -210,12 +182,7 @@ def load_times() -> dict:
 
 
 def save_times(results) -> None:
-    """Merge this run's durations into the cache, atomically.
-
-    Merged rather than replaced so a subset run keeps every other
-    module's timing; ``os.replace`` so two concurrent runs cannot leave
-    a half-written file.
-    """
+    """Atomically merge durations so subset runs preserve other timings."""
 
     times = load_times()
     for record in results:
@@ -231,12 +198,7 @@ def save_times(results) -> None:
 
 
 def schedule(modules, times, tests_dir=DEFAULT_TESTS_DIR):
-    """Schedule cached runs longest-first and cold repository runs by prior.
-
-    An unknown module alongside cached durations starts first because its
-    cost is risky. A custom suite has no repository timing evidence, so its
-    cold order stays generic and deterministic.
-    """
+    """Schedule cached runs longest-first and cold repository runs by prior."""
 
     if not times:
         if Path(tests_dir).resolve() == DEFAULT_TESTS_DIR.resolve():
@@ -248,12 +210,7 @@ def schedule(modules, times, tests_dir=DEFAULT_TESTS_DIR):
 
 
 def child_env() -> dict:
-    """This process's environment with the child's stdio pinned to UTF-8.
-
-    ``PYTHONIOENCODING`` rather than the interpreter's UTF-8 mode: it moves
-    the pipe encoding and nothing else, so a test still sees the filesystem
-    and locale behaviour of the platform it is grading.
-    """
+    """Preserve the environment while pinning only child stdio to UTF-8."""
 
     env = dict(os.environ)
     env["PYTHONIOENCODING"] = "utf-8"
@@ -285,7 +242,8 @@ def run_module(module: str, import_root: Path, verbosity: int) -> dict:
     completed = subprocess.run(
         command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=child_env()
     )
-    duration = time.monotonic() - started
+    finished = time.monotonic()
+    duration = finished - started
     output = completed.stdout.decode("utf-8", "replace")
     try:
         record = json.loads(Path(result_path).read_text(encoding="utf-8"))
@@ -309,14 +267,14 @@ def run_module(module: str, import_root: Path, verbosity: int) -> dict:
         record["ok"] = False
         record["note"] = "child exited %d after reporting success" % completed.returncode
     record["duration"] = duration
+    record["started"] = started
+    record["finished"] = finished
     record["output"] = output
     record["returncode"] = completed.returncode
     return record
 
 
 # --- reporting --------------------------------------------------------
-
-
 def detail(record: dict) -> str:
     parts = [
         "%s=%d" % (key, record[key])
@@ -329,15 +287,7 @@ def detail(record: dict) -> str:
 
 
 def emit(text: str) -> None:
-    """Write captured child output to stdout, whatever it holds.
-
-    A failing module's output is the whole reason a CI log is read, and the
-    console it lands on is not always UTF-8 -- a Windows runner's is cp1252,
-    which cannot encode every character an assertion message may carry.
-    Encoding here with ``backslashreplace`` costs one mangled glyph; letting
-    ``sys.stdout`` raise costs the report, every module after it, and the
-    exit code that says which one failed.
-    """
+    """Preserve failure output; escape only glyphs the host console rejects."""
 
     stream = getattr(sys.stdout, "buffer", None)
     if stream is None:  # a stdout that is not a real file (a captured one)
@@ -374,6 +324,73 @@ def report(records, wall: float, jobs: int) -> int:
     return 0
 
 
+def timing_record(records, wall, requested_jobs, effective_jobs, started) -> dict:
+    """Return one revision-stamped, machine-readable suite observation."""
+
+    serial = sum(record["duration"] for record in records)
+    outcomes = {
+        key: sum(record[key] for record in records)
+        for key in ("tests", "failures", "errors", "skipped", "unexpected")
+    }
+    active = peak = 0
+    events = [(record[edge], 1 if edge == "started" else -1)
+              for record in records for edge in ("started", "finished")]
+    for _, change in sorted(events, key=lambda event: (event[0], -event[1])):
+        active += change
+        peak = max(peak, active)
+    revision = None
+    try:
+        completed = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=str(ROOT),
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        )
+        if completed.returncode == 0:
+            revision = completed.stdout.decode("ascii", "replace").strip() or None
+    except OSError:
+        pass
+    return {
+        "schema": "orchflows.test-timing.v1",
+        "recorded_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "revision": revision,
+        "platform": {"system": os.name, "description": sys.platform},
+        "interpreter": {"version": sys.version.split()[0], "executable": sys.executable},
+        "requested_workers": requested_jobs,
+        "effective_workers": effective_jobs,
+        "wall_time_seconds": round(wall, 6),
+        "summed_module_time_seconds": round(serial, 6),
+        "occupancy": {
+            "capacity_ratio": round(serial / (wall * effective_jobs), 6) if wall else 0.0,
+            "peak_active_workers": peak,
+        },
+        "outcomes": outcomes,
+        "ok": all(record["ok"] for record in records),
+        "modules": [
+            {
+                "module": record["module"], "duration_seconds": round(record["duration"], 6),
+                "started_seconds": round(record["started"] - started, 6),
+                "finished_seconds": round(record["finished"] - started, 6),
+                **{key: record[key] for key in
+                   ("tests", "failures", "errors", "skipped", "unexpected", "ok")},
+            }
+            for record in sorted(records, key=lambda record: record["started"])
+        ],
+        "limitations": ["CPU and disk utilization are not sampled."],
+    }
+
+
+def save_timing(path: Path, record: dict) -> None:
+    """Atomically write optional telemetry without changing suite status."""
+
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handle, tmp = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
+        with os.fdopen(handle, "w", encoding="utf-8") as stream:
+            json.dump(record, stream, sort_keys=True, indent=1)
+        os.replace(tmp, str(path))
+    except OSError:
+        pass
+
+
 # --- entry point ------------------------------------------------------
 
 
@@ -400,6 +417,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--tests-dir", default=str(DEFAULT_TESTS_DIR), help="directory of test_*.py (default: tests/)"
     )
+    parser.add_argument("--timing-file", help="write a machine-readable suite timing record")
     child = parser.add_argument_group("child mode (internal)")
     child.add_argument("--child", metavar="MODULE", help=argparse.SUPPRESS)
     child.add_argument("--import-root", help=argparse.SUPPRESS)
@@ -472,7 +490,13 @@ def main(argv=None) -> int:
 
     if tests_dir == DEFAULT_TESTS_DIR.resolve() and not args.no_cache:
         save_times(records)
-    return report(records, wall, jobs)
+    status = report(records, wall, jobs)
+    timing_path = Path(args.timing_file) if args.timing_file else (
+        TIMING_PATH if tests_dir == DEFAULT_TESTS_DIR.resolve() and not args.modules else None
+    )
+    if timing_path is not None:
+        save_timing(timing_path, timing_record(records, wall, args.jobs, jobs, started))
+    return status
 
 
 if __name__ == "__main__":

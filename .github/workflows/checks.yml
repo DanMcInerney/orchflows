@@ -115,4 +115,12 @@ jobs:
       # TestValidatorAgainstRepo and DryRunOracleTest cases cover the
       # validator and installer dry run without repeating either command.
       - name: python tools/run_tests.py
-        run: python tools/run_tests.py
+        run: python tools/run_tests.py --timing-file .orch/run-tests.json
+
+      - name: upload test timing
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-timing-py${{ matrix.python-version }}-${{ matrix.os }}
+          path: .orch/run-tests.json
+          if-no-files-found: warn

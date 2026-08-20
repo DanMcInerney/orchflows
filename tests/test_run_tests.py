@@ -297,6 +297,13 @@ class TestWorkflowContract(unittest.TestCase):
         self.assertEqual(1, workflow.count("run: python tools/run_tests.py"))
         self.assertNotIn("run: python -m unittest discover", workflow)
 
+    def test_ci_uploads_each_python_legs_timing_even_after_failure(self):
+        workflow = CHECKS_YML.read_text(encoding="utf-8")
+        self.assertIn("--timing-file .orch/run-tests.json", workflow)
+        self.assertIn("uses: actions/upload-artifact@v4", workflow)
+        self.assertIn("if: ${{ always() }}", workflow)
+        self.assertIn("path: .orch/run-tests.json", workflow)
+
     def test_ci_does_not_repeat_oracles_already_in_the_sharded_suite(self):
         workflow = CHECKS_YML.read_text(encoding="utf-8")
         # TestValidatorAgainstRepo and DryRunOracleTest cover these commands
@@ -311,6 +318,37 @@ class TestWorkflowContract(unittest.TestCase):
 
 
 class TestSchedule(unittest.TestCase):
+    def test_installer_cases_are_exactly_once_across_process_visible_shards(self):
+        modules = [
+            name for name in run_tests.discover(run_tests.DEFAULT_TESTS_DIR)[2]
+            if name.startswith("tests.test_installer")
+        ]
+        self.assertGreaterEqual(len(modules), 3)
+        stack = list(unittest.TestLoader().loadTestsFromNames(modules))
+        identities = []
+        while stack:
+            item = stack.pop()
+            if isinstance(item, unittest.TestSuite):
+                stack.extend(item)
+            else:
+                identities.append(item.id())
+        self.assertEqual(len(identities), len(set(identities)))
+        self.assertTrue(identities)
+        self.assertTrue(all(name.startswith("tests.test_installer.") for name in identities))
+
+    def test_timing_record_carries_context_occupancy_modules_and_outcomes(self):
+        records = [{"module": "tests.test_one", "tests": 3, "failures": 1,
+                    "errors": 0, "skipped": 1, "unexpected": 0, "ok": False,
+                    "duration": 4.0, "started": 10.0, "finished": 14.0}]
+        timing = run_tests.timing_record(records, 5.0, 8, 1, 10.0)
+        self.assertEqual(8, timing["requested_workers"])
+        self.assertEqual(1, timing["effective_workers"])
+        self.assertEqual(0.8, timing["occupancy"]["capacity_ratio"])
+        self.assertEqual(3, timing["outcomes"]["tests"])
+        self.assertEqual("tests.test_one", timing["modules"][0]["module"])
+        self.assertIn("revision", timing)
+        self.assertIn("platform", timing)
+        self.assertIn("interpreter", timing)
     def test_a_cold_repository_starts_known_slow_modules_first(self):
         modules = [
             "tests.test_validate",
