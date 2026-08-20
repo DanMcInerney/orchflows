@@ -18,12 +18,12 @@ function parentHref(route: WorkflowSourceRoute): string {
 function SourceNavigation({ route }: { route: WorkflowSourceRoute }) {
   return (
     <>
-      <nav className="workflow-breadcrumbs" aria-label="Breadcrumb">
+      <nav className="workflow-breadcrumbs" aria-label="Breadcrumb" style={{ flexWrap: "wrap" }}>
         <a href={listRoute.build({ fixture: route.fixture })}>Workflows</a>
         <span aria-hidden="true">/</span>
         <a href={parentHref(route)}>{route.workflowId}</a>
         <span aria-hidden="true">/</span>
-        <span aria-current="page">{route.sourceId}</span>
+        <span aria-current="page" style={{ minWidth: 0, overflowWrap: "anywhere" }}>{route.sourceId}</span>
       </nav>
       <a className="workflow-source__back" href={parentHref(route)}><ArrowLeft aria-hidden="true" /> Back to {route.workflowId}</a>
     </>

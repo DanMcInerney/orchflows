@@ -43,6 +43,9 @@ describe("WorkflowCatalogView", () => {
     }
 
     const fixSummary = screen.getByRole("figure", { name: "Summary flow for fix" });
+    const visual = fixSummary.querySelector(".workflow-summary__nodes");
+    expect(getComputedStyle(visual as Element).flexWrap).toBe("wrap");
+    expect(getComputedStyle(visual as Element).overflowX).not.toBe("auto");
     const equivalent = within(fixSummary).getByRole("list", { name: "Nonvisual summary for fix" });
     expect(within(equivalent).getAllByRole("listitem").map((item) => item.textContent)).toEqual([
       "Step: Observe failure",

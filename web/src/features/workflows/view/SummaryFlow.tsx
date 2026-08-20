@@ -16,7 +16,7 @@ export function SummaryFlow({ workflowId, summary }: SummaryFlowProps) {
   return (
     <figure className="workflow-summary" aria-label={`Summary flow for ${workflowId}`}>
       <div className="workflow-summary__visual" aria-hidden="true">
-        <div className="workflow-summary__nodes">
+        <div className="workflow-summary__nodes" style={{ flexWrap: "wrap" }}>
           {summary.nodes.map((node, index) => (
             <span className="workflow-summary__node" key={node.id}>
               {index > 0 && <i>→</i>}

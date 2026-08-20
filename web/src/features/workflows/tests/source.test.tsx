@@ -41,6 +41,17 @@ describe("WorkflowSourceView", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
 
+  it("wraps and contains a long opaque source breadcrumb", () => {
+    const longSourceId = `src_${"opaque".repeat(20)}`;
+    render(<WorkflowSourceView route={{ workflowId: "evolve", sourceId: longSourceId, fixture: "source" }} state={ready(sourceFixture)} />);
+
+    const breadcrumb = screen.getByRole("navigation", { name: "Breadcrumb" });
+    const current = breadcrumb.querySelector("[aria-current='page']");
+    expect(getComputedStyle(breadcrumb).flexWrap).toBe("wrap");
+    expect(getComputedStyle(current as Element).minWidth).toBe("0px");
+    expect(getComputedStyle(current as Element).overflowWrap).toBe("anywhere");
+  });
+
   it("keeps navigation operable while a missing source stays generic", () => {
     const { container } = render(
       <WorkflowSourceView

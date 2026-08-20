@@ -1,13 +1,16 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { FeatureState } from "../../../shared/transport/types";
 import { detailFixture } from "../fixtures";
 import type { WorkflowDetailModel } from "../model";
 import { WorkflowDetailView } from "../view/WorkflowDetailView";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 const ready = (model: WorkflowDetailModel): FeatureState<WorkflowDetailModel> => ({
   status: "ready",
@@ -27,6 +30,8 @@ describe("WorkflowDetailView", () => {
     expect(within(graph).getAllByRole("button")).toHaveLength(
       detailFixture.nodes.length + detailFixture.edges.length,
     );
+    expect(graph.querySelectorAll("[data-workflow-connector]")).toHaveLength(detailFixture.edges.length);
+    expect(graph.querySelectorAll("path[data-edge-kind='loop'][data-self-loop='true']")).toHaveLength(1);
 
     const companion = screen.getByRole("region", { name: "Complete ordered topology" });
     const companionNodes = within(companion).getByRole("list", { name: "Workflow nodes" });
@@ -39,7 +44,27 @@ describe("WorkflowDetailView", () => {
     expect(within(companion).getAllByRole("link", { name: /^View source for / })).toHaveLength(
       detailFixture.nodes.filter((node) => node.sourceId).length,
     );
-    expect(container.querySelector(".workflow-detail__layout")?.firstElementChild?.classList.contains("workflow-inspector")).toBe(true);
+    expect(container.querySelector(".workflow-detail__layout")?.firstElementChild?.classList.contains("workflow-detail__graph-panel")).toBe(true);
+  });
+
+  it("renders the inspector before the graph in compact DOM and tab order", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(max-width: 1024px)",
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    const { container } = render(
+      <WorkflowDetailView route={{ workflowId: "evolve", fixture: "complex-loop" }} state={ready(detailFixture)} />,
+    );
+    const layout = container.querySelector(".workflow-detail__layout");
+    expect(layout?.firstElementChild?.classList.contains("workflow-inspector")).toBe(true);
+    expect(layout?.lastElementChild?.classList.contains("workflow-detail__graph-panel")).toBe(true);
   });
 
   it("selects graph nodes and edges with Enter or Space in a persistent inspector", async () => {

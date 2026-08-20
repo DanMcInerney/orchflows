@@ -1,5 +1,5 @@
 import { AlertTriangle, ArrowLeft, Braces, GitBranch, Link2, Network, SearchX } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { FeatureState } from "../../../shared/transport/types";
 import type { WorkflowDetailEdge, WorkflowDetailModel, WorkflowDetailNode } from "../model";
@@ -18,6 +18,10 @@ function relationVerb(edge: WorkflowDetailEdge): string {
   if (edge.kind === "dependency") return "continues to";
   if (edge.kind === "executor") return "is executed by";
   return "calls";
+}
+
+function compactDetail(): boolean {
+  return typeof window.matchMedia === "function" && window.matchMedia("(max-width: 1024px)").matches;
 }
 
 function sourceHref(route: WorkflowDetailRoute, sourceId: string): string {
@@ -107,6 +111,15 @@ function EmptyDetail({ route }: { route: WorkflowDetailRoute }) {
 
 export function WorkflowDetailView({ route, state }: WorkflowDetailViewProps) {
   const [selectionKey, setSelectionKey] = useState(`node:${state.model?.nodes[0]?.id ?? ""}`);
+  const [compact, setCompact] = useState(compactDetail);
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const query = window.matchMedia("(max-width: 1024px)");
+    const changed = () => setCompact(query.matches);
+    query.addEventListener("change", changed);
+    changed();
+    return () => query.removeEventListener("change", changed);
+  }, []);
   if (!route.fixture && state.status === "loading") return <div className="loading">Waiting for reader</div>;
   if (!route.fixture && state.status === "error") return <div className="notice" role="status">{state.error.message}</div>;
   const model = state.model;
@@ -118,6 +131,14 @@ export function WorkflowDetailView({ route, state }: WorkflowDetailViewProps) {
     ? { type: "edge", value: selectedEdge }
     : { type: "node", value: selectedNode };
   const select = (next: WorkflowSelection) => setSelectionKey(`${next.type}:${next.value.id}`);
+  const inspector = <Inspector route={route} selection={selection} />;
+  const graph = (
+    <article className="workflow-detail__graph-panel">
+      <header><div><p className="eyebrow"><GitBranch aria-hidden="true" /> Canonical topology</p><h2>Skills, scripts, work, and calls</h2></div><span>Observe only</span></header>
+      <WorkflowGraph model={model} selection={selection} onSelect={select} />
+      <TopologyCompanion model={model} route={route} />
+    </article>
+  );
 
   return (
     <main className="foundation-view workflows-view workflow-detail" data-view="workflow-detail" data-fixture={route.fixture || "live"}>
@@ -140,13 +161,9 @@ export function WorkflowDetailView({ route, state }: WorkflowDetailViewProps) {
         </section>
       )}
 
-      <section className="workflow-detail__layout" aria-label="Workflow topology reader">
-        <Inspector route={route} selection={selection} />
-        <article className="workflow-detail__graph-panel">
-          <header><div><p className="eyebrow"><GitBranch aria-hidden="true" /> Canonical topology</p><h2>Skills, scripts, work, and calls</h2></div><span>Observe only</span></header>
-          <WorkflowGraph model={model} selection={selection} onSelect={select} />
-          <TopologyCompanion model={model} route={route} />
-        </article>
+      <section className="workflow-detail__layout" aria-label="Workflow topology reader" data-layout={compact ? "compact" : "wide"}>
+        {compact ? inspector : graph}
+        {compact ? graph : inspector}
       </section>
     </main>
   );
