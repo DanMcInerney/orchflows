@@ -65,12 +65,18 @@ whitespace-delimited words. Use terms exactly as
   exact browser build graph; Node and pnpm stop at the repository boundary.
   [`tools/ui_frontend.py`](tools/ui_frontend.py) owns deterministic build,
   license, browser-smoke, capture, accessibility, and visual-diff admission.
-  `web/src/api`, `state`, `app`, `design`/`styles`, `graph`, and `testing` own
-  the closed reader contract, semantic location, view registry, tokens,
-  read-only graph primitives, and deterministic rendered states respectively.
-  `web/src` owns remaining React/TypeScript and worker source; `web/dist` owns
-  the committed content-hashed distribution copied by the installer. The
-  installed reader never invokes a frontend package manager or build.
+  [`web/src/app/catalog.ts`](web/src/app/catalog.ts) is the one explicit typed
+  owner of route matching/building, navigation order, view loading, and data
+  binding; [`web/src/app/shell/`](web/src/app/shell/) owns browser location and
+  reader chrome. [`web/src/features/`](web/src/features/) owns feature-local
+  routes, schemas, requests, projections, models, views, fixtures, styles, and
+  tests. [`web/src/shared/transport/`](web/src/shared/transport/) owns
+  feature-blind HTTP, ETag, retry, generation, and polling mechanics.
+  [`web/src/design/`](web/src/design/) and [`web/src/styles/`](web/src/styles/)
+  own tokens. Dependency direction is `shell -> catalog -> feature -> shared`.
+  `web/dist` owns the committed content-hashed distribution copied by the
+  installer. The installed reader never invokes a frontend package manager or
+  build.
 - [`DESIGN.md`](DESIGN.md) owns non-normative rationale. [`README.md`](README.md)
   is the non-normative human entry surface, not an owner of agent law.
 
@@ -86,13 +92,24 @@ and immutable terminal timing (`terminal_at`, terminal ticket, `elapsed_ms`).
 `tickets.py grant` is operator-only: only the dispatcher widens claimed
 authority.
 
-The UI reader family keeps one closed boundary: `scripts/ui_api.py` owns JSON
-projections, Starlette routes, security middleware, and loopback Uvicorn;
-`scripts/ui_assets.py` owns contained immutable-asset reads and the standard-
-library compatibility server; `scripts/ui_experience.py` owns the
-`orchflows.experience.v1` projection, navigation contract, and SPA-path
-recognition; `scripts/ui_readiness.py` owns canonical readiness facts and
-causal explanations. Legacy rendering stays in `scripts/ui_server.py`.
+The UI reader family keeps one closed boundary: `scripts/ui_api.py` owns
+explicit route assembly, query validation, shared JSON ETags and closed
+failures, security middleware, and loopback Starlette/Uvicorn with fallback
+parity. Domain projections belong to `scripts/ui_now_projection.py`,
+`scripts/ui_runs_projection.py`, `scripts/ui_workflows_projection.py`,
+`scripts/ui_sessions_projection.py`, and `scripts/ui_friction_projection.py`.
+The Workflows projector owns `GET /api/v1/workflows`,
+`GET /api/v1/workflows/{workflow_id}`, and
+`GET /api/v1/workflows/{workflow_id}/sources/{source_id}`; the typed catalog
+owns their browser counterparts `/workflows`, `/workflows/{workflow}`, and
+`/workflows/{workflow}/sources/{source}`. Existing `/runs/{run}` and
+`/runs/{run}/tickets/{ticket}` remain nav-hidden Workflows children.
+`scripts/ui_experience.py` owns only the `orchflows.experience.v1`
+compatibility projection, its closed feature slices, navigation contract, and
+SPA-path recognition. `scripts/ui_assets.py` owns contained immutable-asset
+reads and the standard-library compatibility server; `scripts/ui_readiness.py`
+owns canonical readiness facts and causal explanations. Legacy rendering
+stays in `scripts/ui_server.py`.
 [The platform contract](docs/ui/platform.md) owns the complete boundary.
 
 ## State boundary

@@ -1,11 +1,10 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
-import type { ExperienceSnapshot } from "../../api/schema";
-import type { LocationState } from "../../state/location";
 import TicketInspector from "./Inspector";
+import type { InspectorModel, TicketDetail } from "./model";
 
-function snapshot(overrides: Record<string, unknown> = {}): ExperienceSnapshot {
+function model(overrides: Partial<TicketDetail> = {}): InspectorModel {
   const ticket = {
     id: "G1",
     status: "complete",
@@ -32,17 +31,16 @@ function snapshot(overrides: Record<string, unknown> = {}): ExperienceSnapshot {
     ...overrides
   };
   return {
-    schema: "orchflows.experience.v1",
-    navigation: [],
-    selection: { view: "ticket", run: "run-gamma", ticket: "G1", session: "" },
-    runs: [], run: null, ticket, sessions: { items: [], diagnostics: [], empty: true }, session: null,
-    friction: { items: [], skipped: 0, unreadable: 0 }
-  } as unknown as ExperienceSnapshot;
+    run: null,
+    ticket,
+  } as InspectorModel;
 }
 
-function location(fixture: string, ticket = "G1"): LocationState {
-  return { view: "ticket", run: "run-gamma", ticket, session: "", fixture };
+function route(fixture: string, ticket = "G1") {
+  return { run: "run-gamma", ticket, fixture };
 }
+
+const ready = (value: InspectorModel) => ({ status: "ready", model: value, error: null } as const);
 
 afterEach(() => {
   cleanup();
@@ -52,7 +50,7 @@ afterEach(() => {
 describe("TicketInspector", () => {
   it("opens a direct-linked tab and keeps pointer selection in the URL", async () => {
     window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=running-overview&tab=proof");
-    const { container } = render(<TicketInspector snapshot={snapshot()} location={location("running-overview")} />);
+    const { container } = render(<TicketInspector state={ready(model())} route={route("running-overview")} />);
 
     expect(container.querySelector(".foundation-view.ticket-inspector")).not.toBeNull();
     expect(screen.getByRole("tab", { name: /Proof/ }).getAttribute("aria-selected")).toBe("true");
@@ -65,7 +63,7 @@ describe("TicketInspector", () => {
 
   it("gives keyboard tab selection the same behavior as pointer selection", async () => {
     window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=running-overview");
-    render(<TicketInspector snapshot={snapshot()} location={location("running-overview")} />);
+    render(<TicketInspector state={ready(model())} route={route("running-overview")} />);
     const overview = screen.getByRole("tab", { name: "Overview" });
     overview.focus();
     await userEvent.keyboard("{ArrowRight}");
@@ -74,18 +72,18 @@ describe("TicketInspector", () => {
   });
 
   it("renders passing and failing proof identities without losing oracle evidence", () => {
-    const passing = snapshot();
+    const passing = model();
     window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=proof-pass");
-    const { unmount } = render(<TicketInspector snapshot={passing} location={location("proof-pass")} />);
+    const { unmount } = render(<TicketInspector state={ready(passing)} route={route("proof-pass")} />);
     expect(screen.getAllByText("PASS")).toHaveLength(3);
     expect(screen.queryByText("FAIL")).toBeNull();
     expect(screen.getByText("install.py --dry-run")).not.toBeNull();
     expect(screen.getByText("plan named 4 scripts, 4 expected")).not.toBeNull();
     unmount();
 
-    const failing = snapshot();
+    const failing = model();
     window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=proof-fail");
-    render(<TicketInspector snapshot={failing} location={location("proof-fail")} />);
+    render(<TicketInspector state={ready(failing)} route={route("proof-fail")} />);
     expect(screen.getByText("FAIL")).not.toBeNull();
     expect(screen.getByLabelText("Ticket state: failed")).not.toBeNull();
     expect(screen.getByText("Criterion 3 failed")).not.toBeNull();
@@ -94,22 +92,23 @@ describe("TicketInspector", () => {
   });
 
   it("shows only friction linked by both run and ticket", () => {
-    const value = snapshot();
-    value.friction.items = ([
+    const value = model();
+    if (!value.ticket) throw new Error("fixture ticket missing");
+    value.ticket.linked_friction = [
       { ts: "2026-08-01T00:00:00Z", run: "run-gamma", ticket: "G1", category: "contract-gap", observed: "Linked observation", expected: "Linked expectation", host: "fixture" },
       { ts: "2026-08-02T00:00:00Z", run: "run-gamma", ticket: "G2", category: "workaround", observed: "Other ticket", expected: "Not shown", host: "fixture" }
-    ] as unknown) as ExperienceSnapshot["friction"]["items"];
+    ];
     window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=friction-present");
-    render(<TicketInspector snapshot={value} location={location("friction-present")} />);
+    render(<TicketInspector state={ready(value)} route={route("friction-present")} />);
     expect(screen.getByText("Linked observation")).not.toBeNull();
     expect(screen.queryByText("contract-gap")).toBeNull();
     expect(screen.queryByText("Other ticket")).toBeNull();
   });
 
   it("states that history is unavailable instead of inferring transcript activity", () => {
-    const value = snapshot({ history: [{ ts: "2026-08-01", event: "tool_pre", agent: "worker", detail: "private activity" }] });
+    const value = model({ history: [{ ts: "2026-08-01", event: "tool_pre", agent: "worker", detail: "private activity" }] });
     window.history.replaceState({}, "", "/runs/run-gamma/tickets/G7?fixture=history-unavailable");
-    render(<TicketInspector snapshot={value} location={location("history-unavailable", "G7")} />);
+    render(<TicketInspector state={ready(value)} route={route("history-unavailable", "G7")} />);
     expect(screen.getByRole("heading", { name: "History unavailable" })).not.toBeNull();
     expect(screen.getByText(/Activity is not inferred from transcripts/)).not.toBeNull();
     expect(screen.queryByText("private activity")).toBeNull();
@@ -118,7 +117,7 @@ describe("TicketInspector", () => {
   it("renders raw markdown as inert text and redacts host paths", () => {
     const raw = "## Objective\n<script>alert('unsafe')</script>\nC:\\Users\\danhm\\secret.txt";
     window.history.replaceState({}, "", "/runs/run-alpha/tickets/A2?fixture=raw-escaped");
-    const { container } = render(<TicketInspector snapshot={snapshot({ id: "A2", raw })} location={{ ...location("raw-escaped", "A2"), run: "run-alpha" }} />);
+    const { container } = render(<TicketInspector state={ready(model({ id: "A2", raw }))} route={{ ...route("raw-escaped", "A2"), run: "run-alpha" }} />);
     const code = screen.getByLabelText("Raw ticket markdown").querySelector("code");
     expect(code?.textContent).toContain("<script>alert('unsafe')</script>");
     expect(code?.textContent).toContain("[redacted-path]");
@@ -127,18 +126,18 @@ describe("TicketInspector", () => {
   });
 
   it("preserves unknown proof rather than treating missing rows as success", () => {
-    const value = snapshot({ verification: { state: "unknown", rows: [] } });
+    const value = model({ verification: { state: "unknown", rows: [] } });
     window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?tab=proof");
-    render(<TicketInspector snapshot={value} location={location("")} />);
+    render(<TicketInspector state={ready(value)} route={route("")} />);
     expect(screen.getByRole("heading", { name: "Proof unavailable" })).not.toBeNull();
     expect(screen.getByText(/Unknown is preserved/)).not.toBeNull();
   });
 
   it("renders named deterministic fixture evidence when the fixed reader fixture cannot select a ticket", () => {
-    const value = snapshot();
+    const value = model();
     value.ticket = null;
     window.history.replaceState({}, "", "/runs/run-gamma/tickets/G4?fixture=running-overview");
-    render(<TicketInspector snapshot={value} location={location("running-overview", "G4")} />);
+    render(<TicketInspector state={ready(value)} route={route("running-overview", "G4")} />);
     expect(screen.getByRole("heading", { name: "G4" })).not.toBeNull();
     expect(screen.getByText(/assigned worker is executing this ticket/i)).not.toBeNull();
     expect(screen.queryByRole("heading", { name: "Ticket unavailable" })).toBeNull();

@@ -1,8 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ExperienceSnapshot, ReadinessState, TicketSummary } from "../../api/schema";
-import type { LocationState } from "../../state/location";
+import type { ReadinessState, RunMapModel, TicketSummary } from "./model";
 import { RunMapView } from "./RunMapView";
 
 interface MockNode {
@@ -55,7 +54,7 @@ function ticket(id: string, status: string, state: ReadinessState): TicketSummar
   };
 }
 
-function snapshot(prefix = "G"): ExperienceSnapshot {
+function model(prefix = "G"): RunMapModel {
   const tickets = [
     ticket(`${prefix}1`, "complete", "complete"),
     ticket(`${prefix}2`, "blocked", "attention"),
@@ -65,28 +64,23 @@ function snapshot(prefix = "G"): ExperienceSnapshot {
     ticket(`${prefix}6`, "suspended", "attention")
   ];
   return {
-    schema: "orchflows.experience.v1",
-    navigation: [],
-    selection: { view: "run-map", run: "run-gamma", ticket: "", session: "" },
     runs: [
       { id: "run-gamma", ticket_count: tickets.length, active: true, objective: "", repository: "", client: "", last_activity: "", unreadable: false, tickets },
       { id: "run-delta", ticket_count: 3, active: false, objective: "", repository: "", client: "", last_activity: "", unreadable: false, tickets: [] }
     ],
     run: { id: "run-gamma", active: true, tickets, diagnostics: [], counts: { claimed: 1, pending: 1 } },
-    ticket: null,
-    sessions: { items: [], diagnostics: [], empty: true },
-    session: null,
-    friction: { items: [], skipped: 0, unreadable: 0 }
   };
 }
 
-function location(fixture: string): LocationState {
-  return { view: "run-map", run: "run-gamma", ticket: "", session: "", fixture };
+function route(fixture: string) {
+  return { run: "run-gamma", fixture };
 }
+
+const ready = (value: RunMapModel) => ({ status: "ready", model: value, error: null } as const);
 
 describe("RunMapView", () => {
   it("expands semantically while preserving filters and exposing keyboard graph controls", () => {
-    const view = render(<RunMapView snapshot={snapshot()} location={location("summary-active")} />);
+    const view = render(<RunMapView state={ready(model())} route={route("summary-active")} />);
     expect(view.container.querySelector(".foundation-view[data-view='run-map']")).not.toBeNull();
     expect(screen.getByRole("heading", { name: "Readiness, without invented phases" })).not.toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /Open canonical graph/i }));
@@ -102,7 +96,7 @@ describe("RunMapView", () => {
   });
 
   it("focuses the shortest authoritative blocking chain and dims irrelevant topology", async () => {
-    render(<RunMapView snapshot={snapshot()} location={location("blocked-causal")} />);
+    render(<RunMapView state={ready(model())} route={route("blocked-causal")} />);
     await screen.findByRole("heading", { name: "G5" });
     expect(screen.getByText("Waiting on failed or blocked upstream work G2.")).not.toBeNull();
     expect(screen.getByText("G5 ← G2")).not.toBeNull();
@@ -112,7 +106,7 @@ describe("RunMapView", () => {
   });
 
   it("renders a truthful minimap from the same visible nodes and canonical edges", () => {
-    const { container } = render(<RunMapView snapshot={snapshot()} location={location("full-expanded")} />);
+    const { container } = render(<RunMapView state={ready(model())} route={route("full-expanded")} />);
     const minimap = screen.getByRole("img", { name: "Run graph minimap, 6 nodes and 6 dependencies" });
     expect(minimap.getAttribute("tabindex")).toBe("0");
     expect(container.querySelectorAll(".run-map__minimap rect")).toHaveLength(6);
@@ -120,7 +114,7 @@ describe("RunMapView", () => {
   });
 
   it("keeps malformed topology explicit without offering mutation controls", () => {
-    const malformed = snapshot();
+    const malformed = model();
     if (!malformed.run) throw new Error("fixture run missing");
     malformed.run.tickets = [
       { ...ticket("E1", "ready", "ready"), depends_on: ["E3"] },
@@ -131,7 +125,7 @@ describe("RunMapView", () => {
       { kind: "dangling", ticket_ids: ["E3", "ZZ9"], message: "E3 depends on missing ticket ZZ9." },
       { kind: "cycle", ticket_ids: ["E1", "E2", "E3"], message: "Dependency cycle: E1 → E3 → E2 → E1" }
     ];
-    render(<RunMapView snapshot={malformed} location={location("malformed-topology")} />);
+    render(<RunMapView state={ready(malformed)} route={route("malformed-topology")} />);
     expect(screen.getByRole("heading", { name: "2 canonical graph issues" })).not.toBeNull();
     expect(screen.getByText("E3 depends on missing ticket ZZ9.")).not.toBeNull();
     expect(screen.getByText(/Dependency cycle:/)).not.toBeNull();
@@ -140,12 +134,12 @@ describe("RunMapView", () => {
   });
 
   it("holds the projected run while paused and adopts the latest safe snapshot on resume", async () => {
-    const first = snapshot("G");
-    const second = snapshot("N");
-    const view = render(<RunMapView snapshot={first} location={location("full-expanded")} />);
+    const first = model("G");
+    const second = model("N");
+    const view = render(<RunMapView state={ready(first)} route={route("full-expanded")} />);
     expect(screen.getByRole("button", { name: "G4" })).not.toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Pause live" }));
-    view.rerender(<RunMapView snapshot={second} location={location("full-expanded")} />);
+    view.rerender(<RunMapView state={ready(second)} route={route("full-expanded")} />);
     expect(screen.getByRole("button", { name: "G4" })).not.toBeNull();
     expect(screen.queryByRole("button", { name: "N4" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Resume live" }));
@@ -154,7 +148,7 @@ describe("RunMapView", () => {
   });
 
   it("preserves disclosure context when opening and closing a persistent inspector", () => {
-    render(<RunMapView snapshot={snapshot()} location={location("full-expanded")} />);
+    render(<RunMapView state={ready(model())} route={route("full-expanded")} />);
     fireEvent.change(screen.getByPlaceholderText("Search ticket or executor"), { target: { value: "G4" } });
     fireEvent.click(screen.getByRole("button", { name: "G4" }));
     expect(screen.getByRole("heading", { name: "G4" })).not.toBeNull();
@@ -164,7 +158,7 @@ describe("RunMapView", () => {
   });
 
   it("gives every enabled fleet row a canonical navigable destination", () => {
-    render(<RunMapView snapshot={snapshot()} location={location("summary-active")} />);
+    render(<RunMapView state={ready(model())} route={route("summary-active")} />);
     fireEvent.click(screen.getByRole("button", { name: "Fleet" }));
 
     expect(screen.getByRole("link", { name: /run-gamma/ }).getAttribute("href")).toBe("/runs/run-gamma");

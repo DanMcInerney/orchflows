@@ -1,5 +1,4 @@
-import type { ReadinessState } from "../../api/schema";
-import type { NowRun, NowTicket } from "./model";
+import type { NowRun, NowTicket, ReadinessState } from "./model";
 
 function ticket(id: string, status: string, state: ReadinessState, depends_on: string[], title: string): NowTicket {
   return {
@@ -72,3 +71,5 @@ export function nowFixture(state: string): { runs: NowRun[]; paused: boolean; di
   if (state === "live-paused") return { runs: [activeRun(), completedRun()], paused: true, diagnostic: "" };
   return { runs: [attentionRun(), activeRun(), completedRun()], paused: false, diagnostic: "" };
 }
+
+export const fixtures = { get: nowFixture };

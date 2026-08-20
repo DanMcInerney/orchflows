@@ -1,0 +1,190 @@
+{
+  "schema": "orchflows.workflow-summary.v1",
+  "workflows": {
+    "fix": {
+      "nodes": [
+        {"id": "reproduce", "label": "Reproduce the failure"},
+        {"id": "cause", "label": "Prove the root cause"},
+        {"id": "repair", "label": "Repair the defect"},
+        {"id": "verify", "label": "Verify the regression guard"}
+      ],
+      "edges": [
+        {"source": "reproduce", "target": "cause", "kind": "sequence"},
+        {"source": "cause", "target": "cause", "kind": "loop"},
+        {"source": "cause", "target": "repair", "kind": "sequence"},
+        {"source": "repair", "target": "verify", "kind": "sequence"}
+      ]
+    },
+    "benchmaker": {
+      "nodes": [
+        {"id": "acquire", "label": "Acquire fixed evidence"},
+        {"id": "design", "label": "Freeze the evaluation"},
+        {"id": "materialize", "label": "Build the benchmark"},
+        {"id": "qualify", "label": "Qualify its discrimination"},
+        {"id": "audit", "label": "Audit the boundaries"},
+        {"id": "measure", "label": "Measure final resolution"}
+      ],
+      "edges": [
+        {"source": "acquire", "target": "design", "kind": "sequence"},
+        {"source": "design", "target": "materialize", "kind": "sequence"},
+        {"source": "materialize", "target": "qualify", "kind": "sequence"},
+        {"source": "qualify", "target": "audit", "kind": "sequence"},
+        {"source": "audit", "target": "measure", "kind": "sequence"}
+      ]
+    },
+    "evolve": {
+      "nodes": [
+        {"id": "evaluation", "label": "Freeze the evaluation"},
+        {"id": "incumbent", "label": "Admit the incumbent"},
+        {"id": "mutations", "label": "Create bounded candidates"},
+        {"id": "judge", "label": "Score candidates blind"},
+        {"id": "select", "label": "Promote the best result"}
+      ],
+      "edges": [
+        {"source": "evaluation", "target": "incumbent", "kind": "sequence"},
+        {"source": "incumbent", "target": "mutations", "kind": "sequence"},
+        {"source": "mutations", "target": "judge", "kind": "sequence"},
+        {"source": "judge", "target": "select", "kind": "sequence"},
+        {"source": "select", "target": "mutations", "kind": "loop"}
+      ]
+    },
+    "drift-canary": {
+      "nodes": [
+        {"id": "replay", "label": "Replay the canary set"},
+        {"id": "compare", "label": "Compare golden results"},
+        {"id": "report", "label": "Report behavior drift"}
+      ],
+      "edges": [
+        {"source": "replay", "target": "compare", "kind": "sequence"},
+        {"source": "compare", "target": "report", "kind": "sequence"}
+      ]
+    },
+    "renovate": {
+      "nodes": [
+        {"id": "audit", "label": "Audit the workspace"},
+        {"id": "triage", "label": "Triage the findings"},
+        {"id": "deliver", "label": "Deliver ready improvements"}
+      ],
+      "edges": [
+        {"source": "audit", "target": "triage", "kind": "sequence"},
+        {"source": "triage", "target": "deliver", "kind": "sequence"}
+      ]
+    },
+    "self-improve": {
+      "nodes": [
+        {"id": "mine", "label": "Mine run and friction evidence"},
+        {"id": "qualify", "label": "Qualify one proposal"},
+        {"id": "deliver", "label": "Land the owner change"}
+      ],
+      "edges": [
+        {"source": "mine", "target": "qualify", "kind": "sequence"},
+        {"source": "qualify", "target": "deliver", "kind": "sequence"}
+      ]
+    },
+    "skill-tournament": {
+      "nodes": [
+        {"id": "benchmark", "label": "Build a qualified benchmark"},
+        {"id": "campaign", "label": "Evolve skill candidates"},
+        {"id": "promote", "label": "Promote the winning skill"}
+      ],
+      "edges": [
+        {"source": "benchmark", "target": "campaign", "kind": "sequence"},
+        {"source": "campaign", "target": "campaign", "kind": "loop"},
+        {"source": "campaign", "target": "promote", "kind": "sequence"}
+      ]
+    },
+    "orch-build": {
+      "nodes": [
+        {"id": "route", "label": "Route existing machinery"},
+        {"id": "shape", "label": "Shape the scoped item"},
+        {"id": "admit", "label": "Run admission checks"},
+        {"id": "critique", "label": "Critique independently"}
+      ],
+      "edges": [
+        {"source": "route", "target": "shape", "kind": "branch"},
+        {"source": "shape", "target": "admit", "kind": "sequence"},
+        {"source": "admit", "target": "critique", "kind": "sequence"}
+      ]
+    },
+    "orch-eval-design": {
+      "nodes": [
+        {"id": "boundary", "label": "Fix target and outcome"},
+        {"id": "design", "label": "Choose the smallest evaluation"},
+        {"id": "freeze", "label": "Freeze the design identity"}
+      ],
+      "edges": [
+        {"source": "boundary", "target": "design", "kind": "sequence"},
+        {"source": "design", "target": "freeze", "kind": "sequence"}
+      ]
+    },
+    "orch-fixture": {
+      "nodes": [
+        {"id": "choose", "label": "Choose a proven boundary"},
+        {"id": "freeze", "label": "Freeze replay evidence"},
+        {"id": "replay", "label": "Replay the canary item"},
+        {"id": "match", "label": "Match the golden result"}
+      ],
+      "edges": [
+        {"source": "choose", "target": "freeze", "kind": "sequence"},
+        {"source": "freeze", "target": "replay", "kind": "sequence"},
+        {"source": "replay", "target": "match", "kind": "sequence"}
+      ]
+    },
+    "orch-repair": {
+      "nodes": [
+        {"id": "accept", "label": "Accept verified defects"},
+        {"id": "repair", "label": "Apply the smallest repair"},
+        {"id": "verify", "label": "Rerun affected oracles"}
+      ],
+      "edges": [
+        {"source": "accept", "target": "repair", "kind": "sequence"},
+        {"source": "repair", "target": "verify", "kind": "sequence"}
+      ]
+    },
+    "orch-self-improve": {
+      "nodes": [
+        {"id": "coverage", "label": "Read prior coverage"},
+        {"id": "mine", "label": "Mine bounded evidence"},
+        {"id": "cluster", "label": "Cluster by causal owner"},
+        {"id": "qualify", "label": "Qualify one proposal"},
+        {"id": "write", "label": "Write the ranked proposal"}
+      ],
+      "edges": [
+        {"source": "coverage", "target": "mine", "kind": "sequence"},
+        {"source": "mine", "target": "cluster", "kind": "sequence"},
+        {"source": "cluster", "target": "qualify", "kind": "sequence"},
+        {"source": "qualify", "target": "write", "kind": "sequence"}
+      ]
+    },
+    "orch-spec": {
+      "nodes": [
+        {"id": "investigate", "label": "Investigate the fixed facts"},
+        {"id": "decide", "label": "Settle user decisions"},
+        {"id": "count", "label": "Count deliverable kinds"},
+        {"id": "successors", "label": "Persist successor work"},
+        {"id": "ticket", "label": "Write the root ticket"}
+      ],
+      "edges": [
+        {"source": "investigate", "target": "decide", "kind": "sequence"},
+        {"source": "decide", "target": "count", "kind": "sequence"},
+        {"source": "count", "target": "successors", "kind": "branch"},
+        {"source": "count", "target": "ticket", "kind": "sequence"},
+        {"source": "successors", "target": "ticket", "kind": "sequence"}
+      ]
+    },
+    "orch-triage": {
+      "nodes": [
+        {"id": "snapshot", "label": "Read the current queue"},
+        {"id": "check", "label": "Check each item cheaply"},
+        {"id": "dispose", "label": "Assign a disposition"},
+        {"id": "brief", "label": "Compact agent-ready briefs"}
+      ],
+      "edges": [
+        {"source": "snapshot", "target": "check", "kind": "sequence"},
+        {"source": "check", "target": "dispose", "kind": "sequence"},
+        {"source": "dispose", "target": "brief", "kind": "branch"},
+        {"source": "brief", "target": "check", "kind": "loop"}
+      ]
+    }
+  }
+}

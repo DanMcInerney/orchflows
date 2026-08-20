@@ -26,8 +26,7 @@ import {
   X
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import type { RunDetail, TicketSummary } from "../../api/schema";
-import type { ViewProps } from "../../app/registry";
+import type { FeatureState } from "../../shared/transport/types";
 import { runForIdentity } from "./fixtures";
 import { RunTopologyMiniMap } from "./RunTopologyMiniMap";
 import {
@@ -37,8 +36,13 @@ import {
   readinessGroups,
   type CausalFocus,
   type ReadinessGroup,
-  type RunMapFilter
+  type RunDetail,
+  type RunMapFilter,
+  type RunMapModel,
+  type RunSummary,
+  type TicketSummary,
 } from "./model";
+import type { RunMapRoute } from "./route";
 import "./run-map.css";
 
 type DisclosureLevel = 0 | 1 | 2 | 3;
@@ -234,9 +238,7 @@ function projectedGraph(
   };
 }
 
-function FleetView({ runs }: {
-  runs: ViewProps["snapshot"]["runs"];
-}) {
+function FleetView({ runs }: { runs: RunSummary[] }) {
   return (
     <section className="run-fleet" aria-labelledby="fleet-heading">
       <header><p className="run-map__eyebrow">Level 0 · fleet</p><h2 id="fleet-heading">Current workflows</h2></header>
@@ -325,11 +327,16 @@ function Inspector({ ticket, group, causal, onWhy, onClose }: {
   );
 }
 
-export function RunMapView({ snapshot, location }: ViewProps) {
-  const identity = location.fixture || "live";
-  const incoming = snapshot.run;
+export interface RunMapViewProps {
+  route: RunMapRoute;
+  state: FeatureState<RunMapModel>;
+}
+
+export function RunMapView({ route, state }: RunMapViewProps) {
+  const identity = route.fixture || "live";
+  const incoming = state.model?.run ?? null;
   const [paused, setPaused] = useState(false);
-  const [heldRun, setHeldRun] = useState<RunDetail | null>(() => location.fixture ? runForIdentity(incoming, identity, location.run) : incoming);
+  const [heldRun, setHeldRun] = useState<RunDetail | null>(() => route.fixture ? runForIdentity(incoming, identity, route.run) : incoming);
   const [level, setLevel] = useState<DisclosureLevel>(() => initialLevel(identity));
   const [expanded, setExpanded] = useState(identity === "full-expanded" || identity === "blocked-causal" || identity === "malformed-topology");
   const [filter, setFilter] = useState<RunMapFilter>("all");
@@ -340,8 +347,8 @@ export function RunMapView({ snapshot, location }: ViewProps) {
   const [compact, setCompact] = useState(compactWorkspace);
 
   const projectedIncoming = useMemo(
-    () => location.fixture ? runForIdentity(incoming, identity, location.run) : incoming,
-    [identity, incoming, location.fixture, location.run]
+    () => route.fixture ? runForIdentity(incoming, identity, route.run) : incoming,
+    [identity, incoming, route.fixture, route.run]
   );
   useEffect(() => { if (!paused) setHeldRun(projectedIncoming); }, [paused, projectedIncoming]);
   useEffect(() => {
@@ -394,12 +401,15 @@ export function RunMapView({ snapshot, location }: ViewProps) {
     setCausal((current) => current ? null : authoritativeCausalFocus(selectedTicket, run.tickets));
   }
 
+  if (!route.fixture && state.status === "loading") return <div className="loading">Waiting for reader</div>;
+  if (!route.fixture && state.status === "error") return <div className="notice" role="status">{state.error.message}</div>;
   if (!run) return (
     <div className="foundation-view run-map" data-view="run-map"><div className="run-map__empty"><GitBranch aria-hidden="true" /><h1>No workflow selected</h1><p>Choose a workflow from the fleet to inspect its canonical graph.</p></div></div>
   );
 
   return (
     <div className="foundation-view run-map" data-view="run-map" data-fixture={identity} data-paused={paused}>
+      {state.status === "stale" && <div className="notice" role="status">{state.error.message}</div>}
       <section className="run-map__hero" aria-labelledby="run-map-title">
         <div>
           <p className="run-map__eyebrow"><GitBranch aria-hidden="true" />Workflows · read-only topology</p>
@@ -422,7 +432,7 @@ export function RunMapView({ snapshot, location }: ViewProps) {
         {level === 3 && <><ChevronRight aria-hidden="true" /><span aria-current="page">Inspector</span></>}
       </nav>
 
-      {level === 0 && <FleetView runs={snapshot.runs} />}
+      {level === 0 && <FleetView runs={state.model?.runs ?? []} />}
       {level === 1 && <SummaryView run={run} onGroup={openGroup} onExpand={() => setLevel(2)} />}
       {level >= 2 && <section className={`run-map__workspace ${level === 3 ? "has-inspector" : ""}`}>
         {level === 3 && compact && <Inspector ticket={ticket} group={group} causal={causal} onWhy={whyWaiting} onClose={() => { setLevel(2); setCausal(null); }} />}
@@ -481,3 +491,5 @@ export function RunMapView({ snapshot, location }: ViewProps) {
     </div>
   );
 }
+
+export default RunMapView;

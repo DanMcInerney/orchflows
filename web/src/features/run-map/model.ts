@@ -1,4 +1,57 @@
-import type { Readiness, ReadinessCause, ReadinessState, TicketSummary } from "../../api/schema";
+export type ReadinessState = "waiting" | "ready" | "running" | "attention" | "complete" | "unknown";
+export type ReadinessCause = "pending_dependency" | "suspended_handoff" | "failed_upstream" | "blocked_upstream" | "stale_claim" | "malformed_topology" | "none";
+
+export interface Readiness {
+  state: ReadinessState;
+  dependencies: string[];
+  explanation: string;
+  cause: ReadinessCause;
+  causal_chain: string[];
+}
+
+export interface TicketSummary {
+  id: string;
+  status: string;
+  executor: string;
+  bound: string;
+  claimed_at: string;
+  claimed_by: string;
+  depends_on: string[];
+  readiness: Readiness;
+  unreadable: boolean;
+  inferred_session_edges?: string[];
+}
+
+export interface RunDiagnostic {
+  kind: "cycle" | "dangling" | "duplicate" | "unreadable" | "inferred_session_edge";
+  ticket_ids: string[];
+  message: string;
+}
+
+export interface RunSummary {
+  id: string;
+  ticket_count: number;
+  active: boolean;
+  objective?: string;
+  repository?: string;
+  client?: string;
+  last_activity?: string;
+  unreadable?: boolean;
+  tickets?: TicketSummary[];
+}
+
+export interface RunDetail {
+  id: string;
+  active: boolean;
+  tickets: TicketSummary[];
+  diagnostics: RunDiagnostic[];
+  counts: Record<string, number>;
+}
+
+export interface RunMapModel {
+  runs: RunSummary[];
+  run: RunDetail | null;
+}
 
 export type RunMapFilter = "active" | "problems" | "ready" | "critical" | "all";
 export type DiagnosticKind = "cycle" | "dangling" | "duplicate" | "unreadable" | "inferred";
@@ -241,3 +294,5 @@ export function authoritativeCausalFocus(ticketId: string, tickets: TicketSummar
     evidence: selected.readiness.explanation
   };
 }
+
+export const model = { buildTopology, readinessGroups, filterTickets, authoritativeCausalFocus };

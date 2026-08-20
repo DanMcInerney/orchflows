@@ -9,52 +9,18 @@ import {
   Server,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { ExperienceSnapshot } from "../../api/schema";
-import type { LocationState } from "../../state/location";
+import type { FeatureState } from "../../shared/transport/types";
+import { linkedCaptureRecord } from "./fixtures";
+import { closedFrictionRecord, type FrictionModel, type FrictionRecord } from "./model";
+import type { FrictionRoute } from "./route";
 import "./friction.css";
 
 export interface FrictionViewProps {
-  snapshot: ExperienceSnapshot;
-  location: LocationState;
+  route: FrictionRoute;
+  state: FeatureState<FrictionModel>;
 }
 
-interface FrictionRecord {
-  ts?: string;
-  host?: string;
-  observed?: string;
-  expected?: string;
-  run?: string;
-  ticket?: string;
-}
-
-const FRICTION_FIELDS = ["ts", "host", "observed", "expected", "run", "ticket"] as const;
 const FRICTION_PAGE_SIZE = 50;
-const LINKED_CAPTURE_RECORD: FrictionRecord = {
-  ts: "2026-08-04T12:20:00Z",
-  host: "fixture",
-  observed: "Verification evidence was detached from its workflow",
-  expected: "The problem record to preserve its run and ticket identity",
-  run: "run-gamma",
-  ticket: "G1",
-};
-const WINDOWS_PATH = /\b[A-Za-z]:\\(?:[^\s<>"']+)/g;
-const HOME_PATH = /\/(?:Users|home)\/(?:[^\s<>"']+)/g;
-
-function plainText(value: unknown): string {
-  if (typeof value !== "string") return "";
-  return value.replace(WINDOWS_PATH, "[redacted path]").replace(HOME_PATH, "[redacted path]");
-}
-
-export function closedFrictionRecord(value: unknown): FrictionRecord | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const source = value as Record<string, unknown>;
-  const record: FrictionRecord = {};
-  for (const field of FRICTION_FIELDS) {
-    const projected = plainText(source[field]);
-    if (projected) record[field] = projected;
-  }
-  return Object.keys(record).length ? record : null;
-}
 
 function timestamp(value = ""): string {
   const matched = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2})?Z$/.exec(value);
@@ -127,22 +93,26 @@ function IntegrityNotice({ skipped, unreadable }: { skipped: number; unreadable:
   );
 }
 
-export function FrictionView({ snapshot, location }: FrictionViewProps) {
+export function FrictionView({ route, state }: FrictionViewProps) {
   const [visibleLimit, setVisibleLimit] = useState(FRICTION_PAGE_SIZE);
-  useEffect(() => setVisibleLimit(FRICTION_PAGE_SIZE), [location.fixture]);
-  const fixtureEmpty = location.fixture === "empty";
+  useEffect(() => setVisibleLimit(FRICTION_PAGE_SIZE), [route.fixture]);
+  const fixtureEmpty = route.fixture === "empty";
   const projectedItems = fixtureEmpty
     ? []
-    : snapshot.friction.items.map(closedFrictionRecord).filter((item): item is FrictionRecord => item !== null);
-  const items = location.fixture === "populated" && !projectedItems.some((item) => item.run && item.ticket)
-    ? [LINKED_CAPTURE_RECORD, ...projectedItems]
+    : state.model?.items.map(closedFrictionRecord).filter((item): item is FrictionRecord => item !== null) ?? [];
+  const items = route.fixture === "populated" && !projectedItems.some((item) => item.run && item.ticket)
+    ? [linkedCaptureRecord, ...projectedItems]
     : projectedItems;
-  const skipped = fixtureEmpty ? 0 : Math.max(0, snapshot.friction.skipped);
-  const unreadable = fixtureEmpty ? 0 : Math.max(0, snapshot.friction.unreadable);
+  const skipped = fixtureEmpty ? 0 : Math.max(0, state.model?.skipped ?? 0);
+  const unreadable = fixtureEmpty ? 0 : Math.max(0, state.model?.unreadable ?? 0);
   const visibleItems = items.slice(0, visibleLimit);
+
+  if (!route.fixture && state.status === "loading") return <div className="loading">Waiting for reader</div>;
+  if (!route.fixture && state.status === "error") return <div className="notice" role="status">{state.error.message}</div>;
 
   return (
     <div className="friction-view foundation-view" data-view="friction" data-state={items.length ? "populated" : "empty"}>
+      {state.status === "stale" && <div className="notice" role="status">{state.error.message}</div>}
       <IntegrityNotice skipped={skipped} unreadable={unreadable} />
       <header className="friction-hero">
         <div>
@@ -187,3 +157,5 @@ export function FrictionView({ snapshot, location }: FrictionViewProps) {
     </div>
   );
 }
+
+export default FrictionView;

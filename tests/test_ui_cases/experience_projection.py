@@ -1,5 +1,7 @@
 """Cross-layer contract for the rendered observability experience substrate."""
 
+import hashlib
+
 from tests.test_ui_cases._web import *  # noqa: F401,F403
 
 import scripts.ui_experience as experience
@@ -8,6 +10,60 @@ from scripts.ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG
 
 
 class ExperienceFoundationContractTests(unittest.TestCase):
+    def test_modularization_spec_is_the_accepted_content_with_locator_repairs(self):
+        path = ROOT / "docs" / "ui" / "modularization.md"
+        implemented = path.read_bytes()
+
+        self.assertNotIn(
+            b"../../web/src/features/session-graph/index.tsx)", implemented
+        )
+        self.assertEqual(
+            "6AEF8758EBEC2DCB6C117A6A566FB0843B6061AF6CE3441278869E7A462AF303",
+            hashlib.sha256(implemented).hexdigest().upper(),
+        )
+
+    def test_workflows_spec_preserves_accepted_content_with_locator_repairs(self):
+        path = ROOT / "docs" / "ui" / "workflows.md"
+        implemented = path.read_bytes()
+
+        self.assertNotIn(b"](../../web/src/api/schema.ts)", implemented)
+        self.assertNotIn(b"](../../web/src/state/location.ts)", implemented)
+        reconstructed = implemented.replace(
+            b"`ExperienceSnapshot` schema (`web/src/api/schema.ts`)",
+            b"[`ExperienceSnapshot` schema](../../web/src/api/schema.ts)",
+        ).replace(
+            b"current routes (`web/src/state/location.ts`)",
+            b"[current routes](../../web/src/state/location.ts)",
+        ).replace(
+            b"schema (`web/src/api/schema.ts`)",
+            b"[schema](../../web/src/api/schema.ts)",
+        )
+        self.assertEqual(
+            "04BCF5297059CBA5B7A49D135A1D328DCD040227590A0A2E51988E946D282072",
+            hashlib.sha256(reconstructed).hexdigest().upper(),
+        )
+
+    def test_architecture_names_live_ui_owners_and_workflow_routes(self):
+        architecture = (ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8")
+
+        for deleted in (
+            "web/src/api",
+            "web/src/state",
+            "web/src/graph",
+            "web/src/testing",
+            "Workflows remains a route-free",
+        ):
+            self.assertNotIn(deleted, architecture)
+        for owner in (
+            "web/src/app/catalog.ts",
+            "web/src/features/",
+            "web/src/shared/transport/",
+            "/api/v1/workflows",
+            "/api/v1/workflows/{workflow_id}",
+            "/api/v1/workflows/{workflow_id}/sources/{source_id}",
+        ):
+            self.assertIn(owner, architecture)
+
     def test_session_slug_diagnostic_keeps_legacy_identity_but_api_is_path_safe(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
@@ -84,6 +140,9 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             "sessions": ["populated", "empty", "diagnostic"],
             "session-graph": ["populated", "diagnostic"],
             "friction": ["populated", "empty"],
+            "workflow-catalog": ["populated", "empty"],
+            "workflow-detail": ["unreadable", "complex-loop"],
+            "workflow-source": ["missing-source", "unreadable-source"],
         }
         expected = {
             "{0}--{1}--{2}".format(view, state, breakpoint)
@@ -94,7 +153,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         self.assertEqual("orchflows.view-manifest.v1", manifest["schema"])
         self.assertEqual({"wide": [1440, 1024], "compact": [1024, 768]}, manifest["breakpoints"])
         self.assertEqual(expected, {item["identity"] for item in manifest["views"]})
-        self.assertEqual(48, len(manifest["views"]))
+        self.assertEqual(60, len(manifest["views"]))
         for item in manifest["views"]:
             self.assertEqual(item["identity"], "{view}--{state}--{breakpoint}".format(**item))
             self.assertTrue(item["path"].startswith("/"))
@@ -119,16 +178,37 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         self.assertNotIn("border-radius: 8px", now_css)
         self.assertGreaterEqual(now_css.count("border-radius: var(--radius-control)"), 3)
 
-        shell = (ROOT / "web" / "src" / "ObserveApp.tsx").read_text(encoding="utf-8")
-        registry = (ROOT / "web" / "src" / "app" / "registry.ts").read_text(encoding="utf-8")
-        router = (ROOT / "web" / "src" / "state" / "location.ts").read_text(encoding="utf-8")
+        app = (ROOT / "web" / "src" / "ObserveApp.tsx").read_text(encoding="utf-8")
+        shell = (ROOT / "web" / "src" / "app" / "shell" / "Shell.tsx").read_text(encoding="utf-8")
+        composition = (ROOT / "web" / "src" / "app" / "shell" / "featureCatalog.ts").read_text(encoding="utf-8")
+        application_catalog = (ROOT / "web" / "src" / "app" / "catalog.ts").read_text(encoding="utf-8")
         harness = (ROOT / "tools" / "ui_frontend.py").read_text(encoding="utf-8")
         experience_harness = (ROOT / "web" / "src" / "smoke.spec.ts").read_text(encoding="utf-8")
+        self.assertEqual('import { Shell } from "./app/shell/Shell";\n\nexport function ObserveApp() {\n  return <Shell />;\n}\n', app)
         self.assertIn('data-mode="observe"', shell)
         self.assertIn("read only", shell.lower())
-        self.assertIn("import.meta.glob", registry)
-        for route in ("/now", "/runs/", "/tickets/", "/sessions", "/friction"):
-            self.assertIn(route, router)
+        self.assertIn('import { featureCatalog } from "./featureCatalog"', shell)
+        self.assertNotIn("FALLBACK", shell)
+        for removed in (
+            ROOT / "web" / "src" / "app" / "registry.ts",
+            ROOT / "web" / "src" / "state" / "location.ts",
+            ROOT / "web" / "src" / "api" / "schema.ts",
+            ROOT / "web" / "src" / "api" / "client.ts",
+            ROOT / "web" / "src" / "feed.ts",
+        ):
+            self.assertFalse(removed.exists(), str(removed))
+        self.assertNotIn("import.meta.glob", composition)
+        self.assertEqual('export { featureCatalog } from "../catalog";\n', composition)
+        self.assertIn("export const featureCatalog = defineCatalog([", application_catalog)
+        self.assertEqual(9, application_catalog.count("defineFeature({"))
+        self.assertNotIn("bindWorkflowDefinitions", application_catalog)
+        self.assertIn('navigation: { label: "Workflows", home: { fixture: "" } }', application_catalog)
+        for path in (
+            "/workflows",
+            "/workflows/evolve",
+            "/workflows/evolve/sources/src_campaign",
+        ):
+            self.assertTrue(experience.is_spa_path(path), path)
         for command in ('add_parser("capture")', 'add_parser("audit")', 'add_parser("diff")'):
             self.assertIn(command, harness)
         for scenario in ("200% zoom-equivalent reflow", "forced-colors: active", "prefers-reduced-motion: reduce", "expectKeyboardParity"):

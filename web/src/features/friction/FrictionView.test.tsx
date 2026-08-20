@@ -1,31 +1,22 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
-import type { ExperienceSnapshot, FrictionItem } from "../../api/schema";
-import type { LocationState } from "../../state/location";
-import { FrictionView, closedFrictionRecord } from "./FrictionView";
+import { FrictionView } from "./FrictionView";
+import { closedFrictionRecord, frictionModel, type FrictionModel } from "./model";
 
-const location: LocationState = { view: "friction", run: "", ticket: "", session: "", fixture: "populated" };
+const route = { fixture: "populated" };
 
 afterEach(cleanup);
 
-function snapshot(items: unknown[], skipped = 0, unreadable = 0): ExperienceSnapshot {
-  return {
-    schema: "orchflows.experience.v1",
-    navigation: [],
-    selection: { view: "friction", run: "", ticket: "", session: "" },
-    runs: [],
-    run: null,
-    ticket: null,
-    sessions: { items: [], diagnostics: [], empty: true },
-    session: null,
-    friction: { items: items as FrictionItem[], skipped, unreadable },
-  };
+function model(items: unknown[], skipped = 0, unreadable = 0): FrictionModel {
+  return frictionModel({ items, skipped, unreadable });
 }
+
+const ready = (value: FrictionModel) => ({ status: "ready", model: value, error: null } as const);
 
 describe("FrictionView", () => {
   it("renders safe diagnostics with exact run and ticket linkage", () => {
-    const { container } = render(<FrictionView snapshot={snapshot([{
+    const { container } = render(<FrictionView state={ready(model([{
       ts: "2026-08-19T04:42:03Z",
       category: "contract-gap",
       host: "codex",
@@ -33,7 +24,7 @@ describe("FrictionView", () => {
       expected: "The feature module should be discoverable",
       run: "run / alpha",
       ticket: "00-ui.07",
-    }], 1, 2)} location={location} />);
+    }], 1, 2))} route={route} />);
 
     expect(screen.getByRole("heading", { name: "Some log records need attention" })).not.toBeNull();
     expect(screen.getByText(/2 unreadable records and 1 skipped line/)).not.toBeNull();
@@ -48,7 +39,7 @@ describe("FrictionView", () => {
   });
 
   it("escapes markup, redacts host paths, and drops every field outside the closed projection", () => {
-    const { container } = render(<FrictionView snapshot={snapshot([{
+    const { container } = render(<FrictionView state={ready(model([{
       ts: "2026-08-19T04:42:03Z",
       category: "<b>markup</b>",
       host: "C:\\Users\\operator\\private",
@@ -60,7 +51,7 @@ describe("FrictionView", () => {
       file_contents: "FILE_SENTINEL",
       command_output: "COMMAND_SENTINEL",
       conversation: "CONVERSATION_SENTINEL",
-    }])} location={location} />);
+    }]))} route={route} />);
 
     expect(screen.queryByText("<b>markup</b>")).toBeNull();
     expect(screen.getByText(/A file at \[redacted path\] contained <script>unsafe\(\)<\/script>/)).not.toBeNull();
@@ -72,7 +63,7 @@ describe("FrictionView", () => {
   });
 
   it("shows an honest empty state for the empty identity", () => {
-    render(<FrictionView snapshot={snapshot([{ observed: "would otherwise render" }], 4, 3)} location={{ ...location, fixture: "empty" }} />);
+    render(<FrictionView state={ready(model([{ observed: "would otherwise render" }], 4, 3))} route={{ fixture: "empty" }} />);
 
     expect(screen.getByRole("heading", { name: "No friction records available" })).not.toBeNull();
     expect(screen.getByLabelText("0 friction records")).not.toBeNull();
@@ -81,7 +72,7 @@ describe("FrictionView", () => {
   });
 
   it("makes exact linked navigation visible in the populated capture fixture", () => {
-    render(<FrictionView snapshot={snapshot([{ observed: "Canonical unlinked record" }])} location={location} />);
+    render(<FrictionView state={ready(model([{ observed: "Canonical unlinked record" }]))} route={route} />);
 
     expect(screen.getByRole("link", { name: "Run run-gamma" }).getAttribute("href")).toBe("/runs/run-gamma");
     expect(screen.getByRole("link", { name: "Ticket G1" }).getAttribute("href")).toBe("/runs/run-gamma/tickets/G1");
@@ -89,10 +80,10 @@ describe("FrictionView", () => {
   });
 
   it("keeps incomplete linkage explicit instead of inventing a route", () => {
-    render(<FrictionView snapshot={snapshot([
+    render(<FrictionView state={ready(model([
       { observed: "No identifiers" },
       { observed: "Ticket only", ticket: "T7" },
-    ])} location={location} />);
+    ]))} route={route} />);
 
     const first = screen.getByRole("heading", { name: "No identifiers" }).closest("article");
     const second = screen.getByRole("heading", { name: "Ticket only" }).closest("article");
@@ -112,7 +103,7 @@ describe("FrictionView", () => {
   it("mounts a bounded initial window and reveals more without losing the canonical total", async () => {
     const user = userEvent.setup();
     const items = Array.from({ length: 130 }, (_, index) => ({ observed: `Record ${index + 1}` }));
-    const { container } = render(<FrictionView snapshot={snapshot(items)} location={{ ...location, fixture: "" }} />);
+    const { container } = render(<FrictionView state={ready(model(items))} route={{ fixture: "" }} />);
 
     expect(screen.getByLabelText("130 friction records")).not.toBeNull();
     expect(container.querySelectorAll(".friction-record")).toHaveLength(50);

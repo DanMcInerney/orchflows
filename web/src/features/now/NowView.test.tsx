@@ -1,22 +1,19 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ExperienceSnapshot } from "../../api/schema";
 import NowView from "./NowView";
+import type { NowModel } from "./model";
 
-vi.mock("../../graph/RunGraph", () => ({ RunGraph: () => <div aria-label="Run dependency graph" /> }));
+vi.mock("./RunGraph", () => ({ RunGraph: () => <div aria-label="Run dependency graph" /> }));
 afterEach(cleanup);
 
-const snapshot: ExperienceSnapshot = {
-  schema: "orchflows.experience.v1", navigation: [], selection: { view: "now", run: "", ticket: "", session: "" },
-  runs: [], run: null, ticket: null, sessions: { items: [], diagnostics: [], empty: true }, session: null,
-  friction: { items: [], skipped: 0, unreadable: 0 },
-};
+const ready = (model: NowModel) => ({ status: "ready", model, error: null } as const);
+const empty = ready({ runs: [] });
 
 describe("Now view", () => {
   it("renders honest bands, exact counts, and reversible expansion", async () => {
     const user = userEvent.setup();
-    const { container } = render(<NowView snapshot={snapshot} location={{ view: "now", run: "", ticket: "", session: "", fixture: "mixed-live" }} />);
+    const { container } = render(<NowView state={empty} route={{ fixture: "mixed-live" }} />);
     expect(container.querySelector(".foundation-view.now-view")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Now" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Needs attention, 1 runs" })).toBeTruthy();
@@ -30,7 +27,7 @@ describe("Now view", () => {
 
   it("pauses without losing selection, filter, expansion, or inspector tab", async () => {
     const user = userEvent.setup();
-    render(<NowView snapshot={snapshot} location={{ view: "now", run: "", ticket: "", session: "", fixture: "live-paused" }} />);
+    render(<NowView state={empty} route={{ fixture: "live-paused" }} />);
     expect(screen.getByText("Live paused")).toBeTruthy();
     await user.click(screen.getByRole("tab", { name: "tickets" }));
     await user.click(screen.getByRole("button", { name: "Needs attention" }));
@@ -41,7 +38,7 @@ describe("Now view", () => {
 
   it("gives the inspector tablist keyboard parity with pointer selection", async () => {
     const user = userEvent.setup();
-    render(<NowView snapshot={snapshot} location={{ view: "now", run: "", ticket: "", session: "", fixture: "mixed-live" }} />);
+    render(<NowView state={empty} route={{ fixture: "mixed-live" }} />);
     const summary = screen.getByRole("tab", { name: "summary" });
     summary.focus();
     await user.keyboard("{ArrowRight}");
@@ -50,10 +47,10 @@ describe("Now view", () => {
   });
 
   it("keeps empty and unreadable projections explicit", () => {
-    render(<NowView snapshot={snapshot} location={{ view: "now", run: "", ticket: "", session: "", fixture: "no-active-runs" }} />);
+    render(<NowView state={empty} route={{ fixture: "no-active-runs" }} />);
     expect(screen.getByText("No active runs. Waiting and completed work remains available.")).toBeTruthy();
     cleanup();
-    render(<NowView snapshot={snapshot} location={{ view: "now", run: "", ticket: "", session: "", fixture: "unreadable-data" }} />);
+    render(<NowView state={empty} route={{ fixture: "unreadable-data" }} />);
     expect(screen.getByText("Unreadable canonical data")).toBeTruthy();
     expect(screen.getByText("Exact graph unavailable")).toBeTruthy();
   });
@@ -61,15 +58,11 @@ describe("Now view", () => {
   it("bounds long objective summaries while preserving deliberate full disclosure", async () => {
     const user = userEvent.setup();
     const objective = "A very long objective ".repeat(180);
-    const longSnapshot: ExperienceSnapshot = {
-      ...snapshot,
-      runs: [{
-        id: "long-run", ticket_count: 0, active: true, objective,
-        repository: "orchflows", client: "Codex", last_activity: "now",
-        unreadable: false, tickets: []
-      }]
-    };
-    const { container } = render(<NowView snapshot={longSnapshot} location={{ view: "now", run: "", ticket: "", session: "", fixture: "" }} />);
+    const longModel: NowModel = { runs: [{
+      id: "long-run", objective, repository: "orchflows", client: "Codex",
+      lastActivity: "now", unreadable: false, tickets: [],
+    }] };
+    const { container } = render(<NowView state={ready(longModel)} route={{ fixture: "" }} />);
 
     expect(container.querySelectorAll(".now-objective-summary")).toHaveLength(3);
     const disclosure = screen.getByText("Full objective").closest("details");
