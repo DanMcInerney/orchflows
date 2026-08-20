@@ -20,7 +20,6 @@ export interface FrictionViewProps {
 
 interface FrictionRecord {
   ts?: string;
-  category?: string;
   host?: string;
   observed?: string;
   expected?: string;
@@ -28,11 +27,10 @@ interface FrictionRecord {
   ticket?: string;
 }
 
-const FRICTION_FIELDS = ["ts", "category", "host", "observed", "expected", "run", "ticket"] as const;
+const FRICTION_FIELDS = ["ts", "host", "observed", "expected", "run", "ticket"] as const;
 const FRICTION_PAGE_SIZE = 50;
 const LINKED_CAPTURE_RECORD: FrictionRecord = {
   ts: "2026-08-04T12:20:00Z",
-  category: "contract-gap",
   host: "fixture",
   observed: "Verification evidence was detached from its workflow",
   expected: "The problem record to preserve its run and ticket identity",
@@ -96,7 +94,6 @@ function FrictionRecordCard({ record, index }: { record: FrictionRecord; index: 
     <article className="friction-record" aria-labelledby={headingId}>
       <header className="friction-record__header">
         <div>
-          <p className="friction-record__category"><FileWarning aria-hidden="true" />{record.category || "Uncategorized"}</p>
           <h2 id={headingId}>{record.observed || "Observed condition unavailable"}</h2>
         </div>
         <time dateTime={record.ts || undefined}><Clock3 aria-hidden="true" />{timestamp(record.ts)}</time>

@@ -23,16 +23,9 @@ whole delivery.
 
 ## Fixed inputs
 
-- 01-triage's `## Result` — the dispositions and compacted briefs by
-  identity.
-- {{pack}} — this run's stamp, which every cut unit takes.
-- {{workspace}} — the target repository: the tree the delivered changes
-  land in.
-- The standards owner, by pointer: the workspace's own owner file —
-  AGENTS.md or its equivalent.
-- Acceptance as runnable checks: the workspace's required checks as
-  that owner names them.
-- {{brief_bound}} — each brief's budget, fixed before that brief starts.
+- input: {"name":"pack","type":"literal","value":"{{pack}}"}
+- input: {"name":"workspace","type":"literal","value":"{{workspace}}"}
+- input: {"name":"brief-bound","type":"literal","value":"{{brief_bound}}"}
 
 ## Completion test
 

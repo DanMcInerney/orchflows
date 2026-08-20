@@ -136,7 +136,9 @@ class PacketGradesEveryCriterionTest(unittest.TestCase):
     the section once."""
 
     def two_criteria(self, second: str) -> str:
-        return GOOD_TICKET.replace(
+        claimed = GOOD_TICKET.replace("status: ready", "status: claimed")
+        claimed = claimed.replace("bound: 30m", "bound: 30m\nclaimed_by: legacy-agent\nclaimed_at: 2099-01-01T00:00:00Z")
+        return claimed.replace(
             f"- {GOOD_CRITERION}", f"- {GOOD_CRITERION}\n- {second}"
         )
 

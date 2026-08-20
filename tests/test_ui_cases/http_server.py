@@ -392,7 +392,12 @@ class TestCompiledApplicationServer(unittest.TestCase):
                     self.assertIsNone(headers.get("Access-Control-Allow-Origin"), method)
                 trace = request(server, "/api/v1/runs", "TRACE")
                 self.assertEqual(405, trace[0])
-                self.assertEqual("GET, HEAD", trace[1].get("Allow"))
+                allow = trace[1].get("Allow")
+                self.assertIsNotNone(allow)
+                self.assertEqual(
+                    {"GET", "HEAD"},
+                    {method.strip() for method in allow.split(",")},
+                )
                 refused = fetch(server, "/", {"Host": "reader.example"})
                 self.assertEqual(400, refused[0])
                 self.assertIsNone(refused[1].get("Access-Control-Allow-Origin"))

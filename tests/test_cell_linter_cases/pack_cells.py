@@ -448,7 +448,7 @@ class TestAllowlist(unittest.TestCase):
 # those are fixed. Raising it is a decision, and it belongs in the commit
 # message that raises it.
 BASELINE_WARNINGS = 47
-WARNING_CEILING = 4
+WARNING_CEILING = 2
 
 # The cross-tier linter's own ratchet (validate.py's
 # validate_cross_tier_duplication). Every one of these is a clause two

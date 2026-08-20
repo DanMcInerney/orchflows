@@ -84,7 +84,7 @@ class TestCheckerPathPacket(unittest.TestCase):
     def test_a_further_child_on_an_unclaimed_ticket_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            self.make(tmp, ISOLATED_TICKET)
+            self.make(tmp, ISOLATED_TICKET.replace("status: claimed", "status: ready"))
             payload = self.packet(tmp, "--executor", "orch-critique")
             self.assertIn("not claimed", payload["error"])
             self.assertNotIn("packet", payload)
@@ -176,7 +176,7 @@ class TestCheckerPathPacket(unittest.TestCase):
 ROOT_TICKET = (
     FULL_TICKET.replace("id: T1", "id: R1")
     .replace("executor: orch-tdd", "executor: orch-decompose")
-    .replace("status: ready", "status: claimed\nclaimed_by: cutter-a")
+    .replace("claimed_by: legacy-agent", "claimed_by: cutter-a")
 )
 
 

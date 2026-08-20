@@ -12,6 +12,6 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | assembly | none — the repository is the assembly |
 | lens | `orch-critique` with [references/craft.md#lens](references/craft.md#lens) |
 | oracle_policy | [references/oracles.md](references/oracles.md) |
-| workspace | git: identities are revisions, isolation is a branch or worktree, write scopes are path sets; each frontier item gets its own worktree branched from the run's current revision at dispatch, merged at the join; conflict binding `orch-resolve-conflicts` |
+| workspace | git: identities: revisions; authority: paths; mutation-plan field: `mutations`; scope-edge manifest: `.orchflows/scope-edges.json`; missing-manifest mode: direct-only; isolation: branch or worktree; conflict binding: `orch-resolve-conflicts` |
 | required_spec_fields | target repository; standards owner by pointer; acceptance as runnable checks |
 | craft | [references/craft.md](references/craft.md) |

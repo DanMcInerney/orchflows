@@ -5,22 +5,19 @@ import re
 import shlex
 import sys
 from pathlib import Path
+from datetime import datetime, timedelta, timezone
 try:
     from scripts import state_root
 except ImportError:
     import state_root
 if __package__:
-    from .tickets_format import DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS, LOOP_EXECUTOR, REQUIRED_ISOLATION, ROOT_EXECUTOR, _executor_of, _extract_flag, _read_utf8, _sections, criterion_defects, effective_write_scope
+    from .tickets_format import CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS, GATE_EXECUTORS, LOOP_EXECUTOR, REQUIRED_ISOLATION, RESULT_TOKEN_SPLIT_RE, RESULT_TOKEN_STRIP, ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _scope_entries, _sections, criterion_defects, effective_write_scope
 else:
-    from tickets_format import DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS, LOOP_EXECUTOR, REQUIRED_ISOLATION, ROOT_EXECUTOR, _executor_of, _extract_flag, _read_utf8, _sections, criterion_defects, effective_write_scope
+    from tickets_format import CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS, GATE_EXECUTORS, LOOP_EXECUTOR, REQUIRED_ISOLATION, RESULT_TOKEN_SPLIT_RE, RESULT_TOKEN_STRIP, ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _scope_entries, _sections, criterion_defects, effective_write_scope
 if __package__:
     from .tickets_issue import AMENDABLE_STATUSES
 else:
     from tickets_issue import AMENDABLE_STATUSES
-if __package__:
-    from .tickets_lifecycle import CHECKABLE_STATUSES, CHECKED_BY_KEY
-else:
-    from tickets_lifecycle import CHECKABLE_STATUSES, CHECKED_BY_KEY
 if __package__:
     from .tickets_store import NO_SINK_ERROR, _executor_script, _load_ticket, _run_lock, _segment_error, _tickets_root, establishes_a_git_workspace, normalized_isolation
 else:
@@ -29,12 +26,17 @@ if __package__:
     from .tickets_worklog import _run_tickets
 else:
     from tickets_worklog import _run_tickets
+if __package__:
+    from .tickets_admission import grade_admission, is_v1
+else:
+    from tickets_admission import grade_admission, is_v1
 
 PACKET_USAGE = "packet <run> <id> --reply-to <name> [--workspace <path>] [--executor orch-critique | orch-verify]"
 PACKET_SECTIONS = (('objective', 'Objective'), ('inputs', 'Fixed inputs'), ('return_contract', 'Return fields'))
 CHECKER_EXECUTOR = 'orch-critique'
 REVERIFIER_EXECUTOR = 'orch-verify'
 CHECKER_PATH_EXECUTORS = (CHECKER_EXECUTOR, REVERIFIER_EXECUTOR)
+CHECKABLE_STATUSES = frozenset({'claimed', 'suspended'})
 _SHELL_SAFE_TOKEN = re.compile(r'^[A-Za-z0-9_./:\\=-]+$')
 
 
@@ -54,8 +56,70 @@ CUT_LENS_PARTS = ('skills', 'kernel', 'orch-decompose', 'references', 'cut-lens.
 GATE_CRITIQUE_ID = '{root}.gate.critique.{lens}'
 GATE_REPAIR_ID = '{root}.gate.repair'
 GATE_VERIFY_ID = '{root}.gate.verify'
-GATE_EXECUTORS = {'critique': 'orch-critique', 'repair': 'orch-repair', 'verify': 'orch-verify'}
 GATE_EXECUTOR_SECTIONS = [('Result', ''), ('Verification', ''), ('Feedback', '[]'), ('Risks', '[]')]
+
+
+def _cited_paths(section_text: str, write_scope=()):
+    """Absolute existing Result citations inside the ticket's write scope."""
+    scope = [_scope_segments(entry) for entry in _scope_entries(write_scope)]
+    scope = [entry for entry in scope if entry]
+    found, unreadable = [], []
+    for token in RESULT_TOKEN_SPLIT_RE.split(section_text or ''):
+        candidate = token.strip(RESULT_TOKEN_STRIP)
+        if not candidate or ('/' not in candidate and '\\' not in candidate and '.' not in candidate[1:]):
+            continue
+        try:
+            path = Path(candidate)
+            if not path.is_absolute() or not path.is_file():
+                continue
+            if scope and not any(_inside_scope(path, entry) for entry in scope):
+                continue
+            found.append(path)
+        except (OSError, ValueError) as error:
+            unreadable.append(f'could not look at the cited {candidate}: {error}')
+    return (found, unreadable)
+
+
+def _scope_segments(entry) -> list:
+    text = str(entry or '').strip().strip('`').strip()
+    return [part for part in text.replace('\\', '/').split('/') if part and part != '.']
+
+
+def _inside_scope(path: Path, segments: list) -> bool:
+    parts = [part for part in str(path).replace('\\', '/').split('/') if part]
+    width = len(segments)
+    return any(parts[start:start + width] == segments for start in range(len(parts) - width + 1))
+
+
+def _last_motion(ticket_path: Path, result_text: str, write_scope=()):
+    latest = None
+    cited, unreadable = _cited_paths(result_text, write_scope)
+    for path in [ticket_path, *cited]:
+        try:
+            moment = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+        except OSError as error:
+            unreadable.append(f'could not stat {path}: {error}')
+            continue
+        if latest is None or moment > latest:
+            latest = moment
+    return (latest, unreadable)
+
+
+def _is_stale(claimed_at, bound_minutes: int, now: datetime, last_motion=None) -> bool:
+    parsed = _parse_iso(claimed_at)
+    if parsed is None:
+        return True
+    if last_motion is not None and last_motion > parsed:
+        parsed = last_motion
+    return now - parsed > timedelta(minutes=bound_minutes)
+
+
+def _claim_is_stale(ticket_path, text: str, data: dict, now: datetime):
+    motion, unreadable = _last_motion(
+        Path(ticket_path), _sections(text).get('Result', ''), data.get('write_scope') or (),
+    )
+    stale = _is_stale(data.get('claimed_at'), _parse_bound_minutes(data.get('bound')), now, motion)
+    return (stale, unreadable)
 def _cut_subtree(run: str, root_id: str) -> list:
     """``(id, status)`` for every `<root>.` ticket the run holds, sorted.
 
@@ -201,6 +265,28 @@ def _packet_under_run_lock(rest):
     text, failure = _read_utf8(ticket_path)
     if failure is not None:
         return failure
+    if str(loaded.get('id') or '') != ticket_id or str(loaded.get('run') or '') != run:
+        return {'error': f'packet path {ticket_path} does not carry the requested run/id {run}/{ticket_id}'}
+    status = str(loaded.get('status') or '').strip().strip('`').strip()
+    admission = 'legacy-unadmitted'
+    if is_v1(loaded):
+        if status not in CHECKABLE_STATUSES:
+            return {'error': f"ticket is not claimed (status '{status}'): v1 packet emission requires an admitted claim"}
+        snapshot = {}
+        for sibling_path in sorted(ticket_path.parent.glob('*.md')):
+            sibling_text, sibling_failure = _read_utf8(sibling_path)
+            if sibling_failure is not None:
+                return sibling_failure
+            snapshot[sibling_path.stem] = sibling_text
+        grade = grade_admission(ticket_id, text, snapshot)
+        if grade['findings']:
+            return {'error': 'packet admission grade failed', 'findings': grade['findings']}
+        stored = str(loaded.get('admission') or '')
+        if stored != grade['receipt']:
+            return {'error': f'ticket has no current admission receipt: stored {stored or "<missing>"}, current {grade["receipt"]}'}
+        admission = stored
+    elif status not in CHECKABLE_STATUSES:
+        return {'error': f"legacy ticket is not claimed (status '{status}'), so it is not an already-live v0 claim: re-cut it before packet emission"}
     sections = _sections(text)
     executor = (loaded.get('executor') or '').strip().strip('`')
     missing = []
@@ -281,4 +367,4 @@ def _packet_under_run_lock(rest):
         prompt.append(f"Your own assigned name is `{assigned_name}` (the ticket's `claimed_by`): every packet you dispatch carries it as that child's `reply_to`.")
     prompt.append(f'reply_to: {reply_to} — address your closing message to `{reply_to}`.')
     profile = None if further is not None else loaded.get('profile')
-    return {'packet': {'run': loaded.get('run') or run, 'id': loaded['id'], 'path': str(ticket_path), 'executor': executor, 'script': executor_script, 'pack': loaded.get('pack'), 'profile': profile, 'independence': loaded.get('independence') or 'checker', 'isolation': isolation, 'assigned_name': assigned_name, 'reply_to': reply_to, 'workspace': workspace, 'prompt': '\n'.join(prompt)}}
+    return {'packet': {'run': loaded.get('run') or run, 'id': loaded['id'], 'path': str(ticket_path), 'executor': executor, 'script': executor_script, 'pack': loaded.get('pack'), 'profile': profile, 'independence': loaded.get('independence') or 'checker', 'isolation': isolation, 'admission': admission, 'assigned_name': assigned_name, 'reply_to': reply_to, 'workspace': workspace, 'prompt': '\n'.join(prompt)}}

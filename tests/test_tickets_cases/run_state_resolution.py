@@ -29,8 +29,9 @@ class TestRunStateRootResolution(unittest.TestCase):
             self.assertEqual(
                 "resolved in process\n", notes_of().read_text(encoding="utf-8")
             )
-            # nothing can shell out to git that never imports a way to:
-            # the whole script's import set, not a word match on its prose
+            # The state-root read still stays in process (the spy above is
+            # the mechanism oracle). The lower identity producer/resolver may
+            # probe Git for immutable ticket inputs, so it owns subprocess.
             imported = set()
             for path in TICKETS_MODULES:
                 for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
@@ -38,7 +39,6 @@ class TestRunStateRootResolution(unittest.TestCase):
                         imported.update(alias.name.split(".")[0] for alias in node.names)
                     elif isinstance(node, ast.ImportFrom) and not node.level:
                         imported.add((node.module or "").split(".")[0])
-            self.assertNotIn("subprocess", imported)
             # `tempfile` is here for `run.json`: the identity document is
             # written beside itself and moved over, so a concurrent reader
             # never meets a half-written one. It opens no process either.
@@ -48,12 +48,12 @@ class TestRunStateRootResolution(unittest.TestCase):
             # `time` is the retry budget `_replace_atomically` waits out a
             # Windows refusal against, and it too starts nothing.
             self.assertEqual(
-                {"__future__", "contextlib", "datetime", "fcntl", "json",
+                {"__future__", "contextlib", "datetime", "fcntl", "hashlib", "importlib", "json",
                  "msvcrt", "pathlib", "re", "scripts", "shlex", "state_root", "sys",
-                 "tempfile", "time", "tickets_format", "tickets_store",
+                 "subprocess", "tempfile", "time", "tickets_format", "tickets_markdown", "tickets_store",
                  "tickets_issue", "tickets_lifecycle", "tickets_packet",
                  "tickets_result", "tickets_worklog", "tickets_dispatch",
-                 "tickets"},
+                 "tickets_admission", "tickets_input_producers", "tickets"},
                 imported,
             )
 

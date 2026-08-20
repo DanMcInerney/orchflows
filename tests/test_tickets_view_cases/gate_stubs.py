@@ -3,8 +3,10 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from tests.test_tickets_view import make_run, run_cmd, ticket, tickets_mod, use_sink
+from scripts import tickets_dispatch
 
 class GateStubsTest(unittest.TestCase):
     """`gate <run> <root>` writes work-item.md Root ticket's three stubs:
@@ -50,6 +52,21 @@ class GateStubsTest(unittest.TestCase):
                 {path.stem for path in run_dir.glob("*.md")},
             )
 
+    def test_every_gate_sibling_uses_one_sealed_head_probe(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            self.make(sink, pack="orch-code-pack")
+            baseline = "a" * 40
+            with mock.patch.object(tickets_dispatch, "git_head", return_value=baseline) as probe:
+                payload = run_cmd(
+                    "gate", "testrun", "R", "--lens", "cut-lens,second-lens",
+                    "--write-scope", "scripts/one.py",
+                )
+            self.assertNotIn("error", payload)
+            self.assertEqual(1, probe.call_count)
+            for path in payload["gate"]["paths"]:
+                self.assertIn('"revision":"' + baseline + '"', Path(path).read_text(encoding="utf-8"))
+
     def test_the_edges_run_units_to_critiques_to_repair_to_verify(self):
         with tempfile.TemporaryDirectory() as tmp:
             sink = use_sink(Path(tmp))
@@ -73,8 +90,8 @@ class GateStubsTest(unittest.TestCase):
             self.assertIn("executor: orch-critique", text)
             self.assertIn("write_scope: []", text)
             inputs = tickets_mod._sections(text)["Fixed inputs"]
-            self.assertIn("cut-lens", inputs)
-            self.assertIn("the suite exits 0", inputs)
+            self.assertIn('"name":"lens","type":"literal","value":"cut-lens"', inputs)
+            self.assertIn('"section":"Completion test","ticket":"R"', inputs)
 
     def test_the_repair_carries_the_given_write_scope(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -85,13 +102,7 @@ class GateStubsTest(unittest.TestCase):
             self.assertIn("executor: orch-repair", text)
             self.assertIn("write_scope: [scripts/one.py]", text)
 
-    def test_the_repairs_body_states_its_scope_as_the_paths_it_grants(self):
-        """A Python list repr is not a path anyone can grep for.
-
-        The body rendered `['scripts\\\\one.py']` on Windows -- repr doubles
-        every separator -- so the executor read one spelling in the frontmatter
-        and another in the two sections that tell it what it may write.
-        """
+    def test_the_repairs_mutation_plan_states_its_scope_as_posix_paths(self):
 
         with tempfile.TemporaryDirectory() as tmp:
             sink = use_sink(Path(tmp))
@@ -101,12 +112,11 @@ class GateStubsTest(unittest.TestCase):
                 "--write-scope", "scripts\\one.py,docs/two.md",
             )
             self.assertNotIn("error", payload)
-            sections = tickets_mod._sections(self.stub(run_dir, "R.gate.repair"))
-            body = sections["Objective"] + sections["Fixed inputs"]
-            for entry in (r"scripts\one.py", "docs/two.md"):
-                self.assertIn(entry, body)
-            self.assertNotIn("\\\\", body)
-            self.assertNotIn("['", body)
+            data = tickets_mod._parse_frontmatter(self.stub(run_dir, "R.gate.repair"))
+            self.assertEqual(
+                ["change:scripts/one.py", "change:docs/two.md"],
+                data["mutations"],
+            )
 
     def test_the_critique_states_the_units_it_reads_as_a_list_of_ids(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -116,8 +126,8 @@ class GateStubsTest(unittest.TestCase):
             inputs = tickets_mod._sections(
                 self.stub(run_dir, "R.gate.critique.cut-lens")
             )["Fixed inputs"]
-            self.assertIn("`R.01`", inputs)
-            self.assertIn("`R.02`", inputs)
+            self.assertIn('"section":"Result","ticket":"R.01"', inputs)
+            self.assertIn('"section":"Result","ticket":"R.02"', inputs)
             self.assertNotIn("['", inputs)
 
     def test_the_verify_carries_the_roots_completion_test_verbatim(self):
@@ -339,7 +349,7 @@ class GateStubsTest(unittest.TestCase):
                 with self.subTest(argv=argv):
                     self.assertIn("error", run_cmd(*argv))
 
-    def test_every_stub_is_a_ticket_the_dispatcher_accepts(self):
+    def test_every_stub_is_a_ticket_but_lifecycle_bypass_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             sink = use_sink(tmp)
@@ -348,9 +358,10 @@ class GateStubsTest(unittest.TestCase):
             for tid in ("R.gate.critique.cut-lens", "R.gate.repair", "R.gate.verify"):
                 with self.subTest(tid):
                     self.assertEqual([], tickets_mod.ticket_defects(self.stub(run_dir, tid)))
-                    run_cmd("set-status", "testrun", tid, "ready")
+                    transition = run_cmd("set-status", "testrun", tid, "ready")
+                    self.assertIn("admission", transition["error"])
                     payload = run_cmd("packet", "testrun", tid, "--reply-to", "main")
-                    self.assertNotIn("error", payload)
+                    self.assertIn("not claimed", payload["error"])
 
     def test_every_stub_declares_its_independence_as_the_gate(self):
         """`rules/verification.md` §10: acceptance resting only on checks

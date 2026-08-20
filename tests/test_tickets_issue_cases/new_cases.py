@@ -33,7 +33,7 @@ class NewTest(unittest.TestCase):
             self.assertFalse(self.ticket_path(sink).exists(), "a refused cut wrote")
             self.assertFalse((sink / "tickets" / "testrun").exists())
 
-    def test_a_complete_cut_is_written_ready_and_listed(self):
+    def test_a_complete_cut_is_written_pending_and_listed(self):
         with tempfile.TemporaryDirectory() as tmp:
             sink = use_sink(Path(tmp))
             payload = run_cmd(*new_args())
@@ -43,7 +43,7 @@ class NewTest(unittest.TestCase):
             self.assertTrue(written.is_file())
             listed = run_cmd("list", "--run", "testrun")["tickets"]
             self.assertEqual(1, len(listed), listed)
-            self.assertEqual("ready", listed[0]["status"])
+            self.assertEqual("pending", listed[0]["status"])
             self.assertEqual("T1", listed[0]["id"])
 
     def test_what_new_writes_has_no_defects_of_its_own(self):
@@ -132,11 +132,11 @@ class NewTest(unittest.TestCase):
             run_cmd(*new_args("--write-scope", "scratch/a.txt", "--bound", "30m"))
             ready = run_cmd("ready", "--run", "testrun")["ready"]
             self.assertEqual(["T1"], [item["id"] for item in ready])
+            claimed = run_cmd("claim", "testrun", "T1", "--by", "agent-a")
+            self.assertEqual("agent-a", claimed["claimed"]["claimed_by"])
             packet = run_cmd("packet", "testrun", "T1", "--reply-to", "main")
             self.assertNotIn("error", packet)
             self.assertEqual("orch-verify", packet["packet"]["executor"])
-            claimed = run_cmd("claim", "testrun", "T1", "--by", "agent-a")
-            self.assertEqual("agent-a", claimed["claimed"]["claimed_by"])
 
     def test_an_id_already_issued_is_refused_and_the_first_survives(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -293,9 +293,10 @@ class NewTest(unittest.TestCase):
             source.write_text(GOOD_TICKET, encoding="utf-8")
             payload = run_cmd("new", "testrun", "--file", str(source))
             self.assertNotIn("error", payload)
-            self.assertEqual(
-                GOOD_TICKET, self.ticket_path(sink).read_text(encoding="utf-8")
-            )
+            text = self.ticket_path(sink).read_text(encoding="utf-8")
+            self.assertIn("status: pending", text)
+            self.assertIn("admission: v1:pending", text)
+            self.assertIn("cohort: v1:ticket:T1", text)
 
     def test_a_defective_file_is_refused_and_placed_nowhere(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -375,9 +376,10 @@ class NewTest(unittest.TestCase):
             payload = run_cmd("new", "testrun", "T1", "--file", str(source))
             self.assertNotIn("error", payload)
             self.assertEqual("T1", payload["new"]["id"])
-            self.assertEqual(
-                GOOD_TICKET, self.ticket_path(sink).read_text(encoding="utf-8")
-            )
+            text = self.ticket_path(sink).read_text(encoding="utf-8")
+            self.assertIn("status: pending", text)
+            self.assertIn("admission: v1:pending", text)
+            self.assertIn("cohort: v1:ticket:T1", text)
 
     def test_an_id_disagreeing_with_the_file_is_refused_and_placed_nowhere(self):
         with tempfile.TemporaryDirectory() as tmp:

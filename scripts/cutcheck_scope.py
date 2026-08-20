@@ -40,6 +40,11 @@ except ImportError:  # installed flat script directory
     import cutcheck_state as _state
 _unread = _state._unread
 
+try:  # repository checkout
+    from scripts import tickets_scope as _tickets_scope
+except ImportError:  # installed flat script directory
+    import tickets_scope as _tickets_scope
+
 def _flat(text):
     return " ".join(text.split())
 
@@ -101,7 +106,7 @@ def _covered(rel, scopes):
         scope = entry.strip().strip("/")
         if not scope:
             continue
-        if target == scope or target.startswith(scope + "/"):
+        if _tickets_scope.path_covers(scope, target):
             return True
         if "/" not in target and scope.rsplit("/", 1)[-1] == target:
             return True
@@ -109,9 +114,7 @@ def _covered(rel, scopes):
 
 
 def _overlaps(left, right):
-    a = left.strip().strip("/")
-    b = right.strip().strip("/")
-    return bool(a and b) and (a == b or a.startswith(b + "/") or b.startswith(a + "/"))
+    return _tickets_scope.path_covers(left, right) or _tickets_scope.path_covers(right, left)
 
 
 def _path_args(command):
@@ -381,23 +384,11 @@ def _pin_index(tree):
 
 
 def _scope_open(frontmatter, objective, tree):
-    """Family 3, the other direction: does the grant close over what is removed?
+    """Advisory reverse scan for an exact reference outside the grant.
 
-    ``_scope_closure`` asks whether the grant covers what the item writes. This
-    asks whether it covers what the rest of the tree pins: a path, a skill
-    name, an enum member, a set member the objective deletes, moves or renames,
-    which some file outside the grant states. The item cannot land without
-    breaking that file and cannot repair it, so either the cut carries the
-    pinning file or the cut is wrong -- and nothing about the item's own text
-    says so, which is why eleven such grants were issued in one build and each
-    failed in flight instead of at the cut.
-
-    One finding per pinning file, naming the file and the literal, because the
-    repair is per file: a grant is extended once however many of the item's
-    literals one file happens to hold, so the most specific literal it holds is
-    the one named. A file the grant already covers is no finding, and neither
-    is one sitting inside the literal being removed -- what goes with the
-    deletion is not a pin left behind by it.
+    A reference can suggest an undeclared structural edge, but never proves
+    causality, widens authority, or changes the exit status.  One advisory per
+    pinning file names the most specific literal it holds.
     """
 
     literals = _literals(objective)

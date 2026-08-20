@@ -39,6 +39,7 @@ describe("FrictionView", () => {
     expect(screen.getByText(/2 unreadable records and 1 skipped line/)).not.toBeNull();
     expect(screen.getByRole("heading", { name: "The verifier could not connect the view outlet" })).not.toBeNull();
     expect(screen.getByText("The feature module should be discoverable")).not.toBeNull();
+    expect(screen.queryByText("contract-gap")).toBeNull();
     expect(screen.getByRole("link", { name: /Run run \/ alpha/ }).getAttribute("href")).toBe("/runs/run%20%2F%20alpha");
     expect(screen.getByRole("link", { name: /Ticket 00-ui\.07/ }).getAttribute("href")).toBe("/runs/run%20%2F%20alpha/tickets/00-ui.07");
     expect(screen.queryByRole("button")).toBeNull();
@@ -61,7 +62,7 @@ describe("FrictionView", () => {
       conversation: "CONVERSATION_SENTINEL",
     }])} location={location} />);
 
-    expect(screen.getByText("<b>markup</b>")).not.toBeNull();
+    expect(screen.queryByText("<b>markup</b>")).toBeNull();
     expect(screen.getByText(/A file at \[redacted path\] contained <script>unsafe\(\)<\/script>/)).not.toBeNull();
     expect(screen.getByText("[redacted path]")).not.toBeNull();
     expect(container.querySelector("script, b")).toBeNull();
@@ -105,6 +106,7 @@ describe("FrictionView", () => {
     expect(closedFrictionRecord(["not", "a", "record"])).toBeNull();
     expect(closedFrictionRecord({ observed: 42, expected: false })).toBeNull();
     expect(closedFrictionRecord({ observed: "kept", extra: "dropped" })).toEqual({ observed: "kept" });
+    expect(closedFrictionRecord({ observed: "kept", category: "legacy" })).toEqual({ observed: "kept" });
   });
 
   it("mounts a bounded initial window and reveals more without losing the canonical total", async () => {

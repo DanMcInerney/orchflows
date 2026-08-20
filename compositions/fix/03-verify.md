@@ -1,7 +1,6 @@
 ---
 id: 03-verify
 executor: orch-verify
-pack: orch-code-pack
 depends_on: [02-repair]
 write_scope: []
 bound: <= 30 tool calls
@@ -20,12 +19,8 @@ returning unobserved.
 
 ## Fixed inputs
 
-- 02-repair's `## Result` — the changed artifacts, the repaired
-  revision, and the regression check, by identity.
-- 00-reproduce's `## Result` — the reproduction command and the failure
-  identity.
-- The oracles {{workspace}} already gates on, named by its standards
-  owner.
+- input: {"name":"workspace","type":"literal","value":"{{workspace}}"}
+- input: {"name":"failure","type":"literal","value":"{{failure}}"}
 
 ## Completion test
 

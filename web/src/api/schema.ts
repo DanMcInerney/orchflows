@@ -89,7 +89,6 @@ export interface SessionDetail {
 }
 export interface FrictionItem {
   ts?: string;
-  category?: string;
   host?: string;
   observed?: string;
   expected?: string;

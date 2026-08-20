@@ -20,12 +20,8 @@ target, or the finding that nothing qualified.
 
 ## Fixed inputs
 
-- {{window}} — this run's value for the window orch-self-improve's
-  Require defines.
-- The state sink's `friction/`, `runs/`, `tickets/` and
-  `improvement/covered.jsonl`, at their root per
-  rules/visibility.md §6, read as data.
-- rules/improvement.md §3–§6 — scope, qualification, replay, coverage.
+- input: {"name":"window","type":"literal","value":"{{window}}"}
+- input: {"identity":{"kind":"artifact","locator":"project:rules/improvement.md","sha256":"5855133149c60da7eea97a3ae8430affdc0cc5e0f1fde0c5355d1ecf4c0e616c"},"name":"improvement-law","type":"identity"}
 
 ## Completion test
 

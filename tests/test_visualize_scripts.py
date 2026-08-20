@@ -8,6 +8,11 @@ discovery target used by local and CI runners.
 from tests.test_visualize_scripts_cases.command_line import (  # noqa: F401
     TestCommandLineEntry,
 )
+from tests.test_visualize_scripts_cases.preview import (  # noqa: F401
+    TestPreviewFailureCleanup,
+    TestPreviewReadinessAndExactFile,
+    TestPreviewSkillContract,
+)
 from tests.test_visualize_scripts_cases.renderer import (  # noqa: F401
     TestKitAndChartFences,
     TestRendererHasNoCdnMode,

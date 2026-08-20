@@ -1,0 +1,306 @@
+"""Specification 05: declared mutation-edge closure at ticket admission."""
+
+from __future__ import annotations
+
+import json
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest import mock
+
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts import tickets_scope  # noqa: E402
+
+
+FIXTURES = ROOT / "tests" / "fixtures" / "final_specs" / "05"
+
+
+def ticket(
+    ticket_id,
+    *,
+    mutations=(),
+    scope=(),
+    depends=(),
+    cohort="v1:batch:scope",
+    pack="orch-code-pack",
+    admission="v1:pending",
+    include_plan=True,
+):
+    lines = [
+        "---",
+        f"id: {ticket_id}",
+        "run: scope-run",
+        "status: pending",
+        f"admission: {admission}",
+        f"cohort: {cohort}",
+        "executor: orch-tdd",
+        f"pack: {pack}",
+        f"depends_on: [{', '.join(depends)}]",
+        f"write_scope: [{', '.join(scope)}]",
+    ]
+    if include_plan:
+        lines.append(f"mutations: [{', '.join(mutations)}]")
+    lines += ["bound: 30m", "---", "", "## Objective", "", "Fixture.", ""]
+    return "\n".join(lines)
+
+
+def manifest(*edges, **extra):
+    value = {"version": 1, "edges": list(edges)}
+    value.update(extra)
+    return json.dumps(value, separators=(",", ":")).encode("utf-8")
+
+
+def edge(source, required, reason="fixture edge"):
+    operation, path = source.split(":", 1)
+    required_operation, required_path = required.split(":", 1)
+    return {
+        "from": {"operation": operation, "path": path},
+        "requires": [{"operation": required_operation, "path": required_path}],
+        "reason": reason,
+    }
+
+
+def grade(ticket_id, siblings, content):
+    text = siblings[ticket_id]
+    return tickets_scope.grade_scope(
+        ticket_id=ticket_id,
+        text=text,
+        siblings=siblings,
+        adapter_id="git",
+        context={"scope_manifest": content},
+    )
+
+
+def codes(result):
+    return [item["code"] for item in result["findings"]]
+
+
+class MutationPlanSchemaTests(unittest.TestCase):
+    def test_v1_git_ticket_requires_an_explicit_plan(self):
+        siblings = {"A": ticket("A", scope=("scripts/a.py",), include_plan=False)}
+        self.assertEqual(["mutation-plan-missing"], codes(grade("A", siblings, None)))
+
+    def test_plan_operations_paths_and_authority_are_graded_without_widening(self):
+        siblings = {
+            "A": ticket(
+                "A",
+                mutations=("create:scripts/a.py", "write:web/src", "change:tests/a.py"),
+                scope=("scripts/a.py", "web/src/"),
+            )
+        }
+        result = grade("A", siblings, None)
+        self.assertEqual(
+            ["mutation-invalid", "mutation-outside-write-scope"],
+            sorted(set(codes(result))),
+        )
+        self.assertNotIn("tests/a.py", result["authorized_scope"])
+
+    def test_absent_manifest_and_non_git_adapters_are_direct_only(self):
+        siblings = {"A": ticket("A", mutations=("change:a.py",), scope=("a.py",))}
+        absent = grade("A", siblings, None)
+        self.assertEqual("direct-only", absent["mode"])
+        self.assertEqual([], absent["findings"])
+
+        non_git = tickets_scope.grade_scope(
+            ticket_id="A",
+            text=ticket("A", pack="orch-content-pack", include_plan=False),
+            siblings={},
+            adapter_id="document-tree",
+            context={"scope_manifest": manifest(edge("change:a.py", "change:b.py"))},
+        )
+        self.assertEqual("direct-only", non_git["mode"])
+        self.assertEqual([], non_git["findings"])
+
+    def test_manifest_schema_is_closed_and_fingerprinted_even_on_refusal(self):
+        siblings = {"A": ticket("A", mutations=("change:a.py",), scope=("a.py",))}
+        malformed = manifest(edge("change:a.py", "change:b.py"), note="not allowed")
+        result = grade("A", siblings, malformed)
+        self.assertEqual(["scope-edge-schema"], codes(result))
+        self.assertRegex(result["fingerprint"], r"^scope:sha256:[0-9a-f]{64}$")
+
+    def test_external_manifest_symlink_and_failed_immutable_read_fail_closed(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw) / "baseline"
+            external = Path(raw) / "external.json"
+            (root / ".orchflows").mkdir(parents=True)
+            external.write_bytes(manifest())
+            link = root / ".orchflows" / "scope-edges.json"
+            try:
+                link.symlink_to(external)
+            except OSError:
+                self.skipTest("symlinks unavailable")
+            _, error = tickets_scope._resolved_manifest("", {"baseline_tree": root})
+            self.assertIn("external", error)
+        text = ticket("A", mutations=("change:a.py",), scope=("a.py",))
+        baseline = '- input: {"identity":{"kind":"git-tree","repo":"run-project","revision":"' + "a" * 40 + '"},"name":"baseline","type":"identity"}'
+        text += "\n## Fixed inputs\n\n" + baseline + "\n"
+        replies = [
+            mock.Mock(returncode=1, stdout=b"", stderr=b"read failed"),
+            mock.Mock(returncode=0, stdout=b"", stderr=b""),
+        ]
+        with mock.patch.object(tickets_scope, "_project_root", return_value=Path(".")), mock.patch.object(tickets_scope.subprocess, "run", side_effect=replies):
+            _, error = tickets_scope._resolved_manifest(text, {})
+        self.assertIn("exists but could not be read", error)
+
+
+class DeclaredClosureTests(unittest.TestCase):
+    OWNERSHIP = edge("create:scripts/*.py", "change:ARCHITECTURE.md", "script ownership")
+
+    def test_same_ticket_owner_closes_the_edge(self):
+        siblings = {
+            "A": ticket(
+                "A",
+                mutations=("create:scripts/tool.py", "change:ARCHITECTURE.md"),
+                scope=("scripts/tool.py", "ARCHITECTURE.md"),
+            )
+        }
+        self.assertEqual([], grade("A", siblings, manifest(self.OWNERSHIP))["findings"])
+
+    def test_one_ordered_companion_owner_closes_the_edge(self):
+        siblings = {
+            "A": ticket("A", mutations=("create:scripts/tool.py",), scope=("scripts/tool.py",)),
+            "B": ticket(
+                "B", mutations=("change:ARCHITECTURE.md",),
+                scope=("ARCHITECTURE.md",), depends=("A",),
+            ),
+        }
+        self.assertEqual([], grade("A", siblings, manifest(self.OWNERSHIP))["findings"])
+
+    def test_missing_multiple_unauthorized_and_unordered_owners_are_distinct(self):
+        source = ticket("A", mutations=("create:scripts/tool.py",), scope=("scripts/tool.py",))
+        required = manifest(self.OWNERSHIP)
+
+        missing = grade("A", {"A": source}, required)
+        self.assertEqual(["scope-owner-missing"], codes(missing))
+
+        multiple = {
+            "A": source,
+            "B": ticket("B", mutations=("change:ARCHITECTURE.md",), scope=("ARCHITECTURE.md",), depends=("A",)),
+            "C": ticket("C", mutations=("change:ARCHITECTURE.md",), scope=("ARCHITECTURE.md",), depends=("A",)),
+        }
+        self.assertIn("scope-owner-multiple", codes(grade("A", multiple, required)))
+
+        unauthorized = {
+            "A": source,
+            "B": ticket("B", mutations=("change:ARCHITECTURE.md",), scope=("docs",), depends=("A",)),
+        }
+        self.assertIn("scope-owner-unauthorized", codes(grade("A", unauthorized, required)))
+
+        unordered = {
+            "A": source,
+            "B": ticket("B", mutations=("change:ARCHITECTURE.md",), scope=("ARCHITECTURE.md",)),
+        }
+        self.assertIn("scope-owner-unordered", codes(grade("A", unordered, required)))
+
+    def test_operation_negative_control_prefix_and_transitive_ordering(self):
+        change_only = {
+            "A": ticket("A", mutations=("change:scripts/tool.py",), scope=("scripts/tool.py",))
+        }
+        self.assertEqual([], grade("A", change_only, manifest(self.OWNERSHIP))["findings"])
+
+        chain = (
+            edge("change:a.txt", "change:b.txt"),
+            edge("change:b.txt", "change:c.txt"),
+        )
+        siblings = {
+            "A": ticket("A", mutations=("change:a.txt",), scope=("a.txt",)),
+            "B": ticket("B", mutations=("change:b.txt",), scope=("b.txt",), depends=("A",)),
+            "C": ticket("C", mutations=("change:c.txt",), scope=("c.txt",), depends=("B",)),
+        }
+        self.assertEqual([], grade("A", siblings, manifest(*chain))["findings"])
+
+        distribution = edge("write:web/src/", "write:web/dist/", "built distribution")
+        siblings = {
+            "A": ticket("A", mutations=("change:web/src/app.js",), scope=("web/src/",)),
+            "B": ticket("B", mutations=("write:web/dist/",), scope=("web/dist/",), depends=("A",)),
+        }
+        self.assertEqual([], grade("A", siblings, manifest(distribution))["findings"])
+
+    def test_duplicate_edges_collapse_and_reachable_cycles_are_findings(self):
+        ownership = self.OWNERSHIP
+        siblings = {
+            "A": ticket(
+                "A",
+                mutations=("create:scripts/tool.py", "change:ARCHITECTURE.md"),
+                scope=("scripts/tool.py", "ARCHITECTURE.md"),
+            )
+        }
+        self.assertEqual([], grade("A", siblings, manifest(ownership, ownership))["findings"])
+
+        cycle = manifest(
+            edge("change:a.txt", "change:b.txt"),
+            edge("change:b.txt", "change:a.txt"),
+        )
+        cycle_ticket = {
+            "A": ticket(
+                "A", mutations=("change:a.txt", "change:b.txt"),
+                scope=("a.txt", "b.txt"),
+            )
+        }
+        self.assertEqual(["scope-edge-cycle"], codes(grade("A", cycle_ticket, cycle)))
+
+    def test_fingerprint_invalidates_when_the_resolved_baseline_graph_changes(self):
+        siblings = {"A": ticket("A", mutations=("change:a.txt",), scope=("a.txt",))}
+        first = grade("A", siblings, manifest())
+        second = grade("A", siblings, manifest(edge("change:z.txt", "change:q.txt")))
+        self.assertNotEqual(first["fingerprint"], second["fingerprint"])
+
+
+class DeclaredObservationFixtureTests(unittest.TestCase):
+    def test_all_twelve_observations_need_ownership_only_when_declared(self):
+        paths = sorted(FIXTURES.glob("*.json"))
+        self.assertEqual(12, len(paths))
+        for path in paths:
+            case = json.loads(path.read_text(encoding="utf-8"))
+            with self.subTest(case=case["name"]):
+                source_path = case["mutation"].split(":", 1)[1]
+                siblings = {
+                    "A": ticket("A", mutations=(case["mutation"],), scope=(source_path,))
+                }
+                declared = grade("A", siblings, manifest(case["edge"]))
+                self.assertEqual(["scope-owner-missing"], codes(declared))
+                direct = grade("A", siblings, None)
+                self.assertEqual("direct-only", direct["mode"])
+                self.assertNotIn("scope-owner-missing", codes(direct))
+
+
+class RepositoryScopeManifestTests(unittest.TestCase):
+    def test_closed_manifest_contains_only_the_five_evidence_backed_edges(self):
+        content = (ROOT / ".orchflows" / "scope-edges.json").read_bytes()
+        parsed, findings = tickets_scope.parse_manifest(content)
+        self.assertEqual([], findings)
+        rows = {
+            (item["from"], required)
+            for item in parsed
+            for required in item["requires"]
+        }
+        self.assertEqual(
+            {
+                (("create", "scripts/*.py"), ("change", "ARCHITECTURE.md")),
+                (("create", "contracts/*.md"), ("change", "tests/pins.json")),
+                (("change", "contracts/*.md"), ("change", "tests/pins.json")),
+                (("delete", "contracts/*.md"), ("change", "tests/pins.json")),
+                (("write", "web/src/"), ("write", "web/dist/")),
+            },
+            rows,
+        )
+        self.assertEqual(5, len(parsed))
+
+    def test_code_and_design_workspace_cells_name_plan_graph_and_direct_only_mode(self):
+        for relative in (
+            "packs/orch-code-pack/SKILL.md",
+            "packs/orch-design-pack/SKILL.md",
+        ):
+            with self.subTest(relative=relative):
+                text = (ROOT / relative).read_text(encoding="utf-8")
+                workspace = next(line for line in text.splitlines() if line.startswith("| workspace |"))
+                for anchor in ("`mutations`", "`.orchflows/scope-edges.json`", "direct-only"):
+                    self.assertIn(anchor, workspace)
+
+
+if __name__ == "__main__":
+    unittest.main()

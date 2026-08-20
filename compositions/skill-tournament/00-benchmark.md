@@ -17,21 +17,16 @@ profile: orch-worker
 
 ## Objective
 
-One qualified benchmark revision for {{skill}}, fixed at the git
-revision its manifest names, that the campaign behind it never changes.
+The terminal nested run formed by this ticket's `run` plus `.00-benchmark`
+is an instantiation of `compositions/benchmaker` for `target={{skill}}`, the
+skill's declared observable outcome, `sources={{sources}}`, `rigor={{rigor}}`,
+`pack={{pack}}`, and this ticket's benchmark write scope as `package`. Its
+qualified result is recorded in the package manifest at the one Git revision
+that versions the benchmark and remains fixed for the campaign.
 
 ## Fixed inputs
 
-- Instantiate compositions/benchmaker into a nested run of its own —
-  this ticket's own `run` field plus `.00-benchmark`, never the outer
-  run — naming every placeholder that manifest declares:
-  target={{skill}}, outcome={{skill}}'s declared observable outcome,
-  sources={{sources}}, rigor={{rigor}}, pack={{pack}},
-  package=the benchmark write scope this stub holds. Drain that ticket
-  set here.
-- The qualified result is recorded in the package's manifest, whose
-  field set and component resolution the manifest reference owns; the
-  benchmark's version is the git revision it sits at.
+- input: {"name":"skill","type":"literal","value":"{{skill}}"}
 
 ## Completion test
 

@@ -3,12 +3,12 @@
 from .packet_workspace import *  # noqa: F401,F403
 
 RUNTIME_CLAIMED_TICKET = ISOLATED_TICKET.replace(
-    "status: ready", "status: claimed\nclaimed_by: agent-a"
+    "claimed_by: legacy-agent", "claimed_by: agent-a"
 )
 RUNTIME_ROOT_TICKET = (
     FULL_TICKET.replace("id: T1", "id: R1")
     .replace("executor: orch-tdd", "executor: orch-decompose")
-    .replace("status: ready", "status: claimed\nclaimed_by: cutter-a")
+    .replace("claimed_by: legacy-agent", "claimed_by: cutter-a")
 )
 
 

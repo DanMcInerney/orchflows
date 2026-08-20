@@ -148,13 +148,16 @@ class TestPacket(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            self.make(tmp)
+            ready_body = FULL_TICKET.replace("status: claimed", "status: ready")
+            self.make(tmp, ready_body)
             first = run_cmd(tmp, "ready", "--run", "testrun")["ready"]
             self.assertEqual(["T1"], [item["id"] for item in first])
             newcomer = sink_root() / "tickets" / "testrun" / "T2.md"
-            newcomer.write_text(FULL_TICKET.replace("id: T1", "id: T2"), encoding="utf-8")
+            newcomer.write_text(ready_body.replace("id: T1", "id: T2"), encoding="utf-8")
             second = run_cmd(tmp, "ready", "--run", "testrun")["ready"]
             self.assertEqual(["T1", "T2"], sorted(item["id"] for item in second))
+            text = newcomer.read_text(encoding="utf-8").replace("status: ready", "status: claimed")
+            newcomer.write_text(text, encoding="utf-8")
             packet = run_cmd(tmp, "packet", "testrun", "T2", "--reply-to", "main")
             self.assertNotIn("error", packet)
             self.assertEqual("T2", packet["packet"]["id"])

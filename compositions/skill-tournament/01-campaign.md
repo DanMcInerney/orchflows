@@ -16,25 +16,20 @@ profile: orch-worker
 
 ## Objective
 
-One campaign over {{skill}} inside {{surface}}, scored against
-00-benchmark's qualified revision and no other: a final score card
-naming the final incumbent and the benchmark revision every candidate
+The terminal nested run formed by this ticket's `run` plus `.01-campaign`
+is an instantiation of `compositions/evolve` with `target={{skill}}`, the
+skill's current fixed result/evidence as `incumbent`, 00-benchmark's qualified
+revision plus {{policy}} as `evaluation`, `writer=orch-build`,
+`mutation_scope={{surface}}`, and `bound={{bound}}`. Its final score card
+names the final incumbent and the one benchmark revision every candidate
 was scored against.
 
 ## Fixed inputs
 
-- 00-benchmark's `## Result` — the qualified benchmark revision, by
-  identity. It is the campaign's evaluation and is read, never rebuilt.
-- Instantiate compositions/evolve into a nested run of its own — this
-  ticket's own `run` field plus `.01-campaign`, never the outer run —
-  naming every placeholder that manifest declares: target={{skill}},
-  incumbent={{skill}}'s fixed result/evidence at its current revision,
-  evaluation=00-benchmark's qualified benchmark revision with
-  {{policy}}'s search policy, promotion rule and margin,
-  writer=orch-build, mutation_scope={{surface}}, bound={{bound}}. Drain
-  that ticket set here.
-- {{policy}} — the frozen search policy, promotion rule, margin and
-  candidate-accessible mappings, fixed for the whole campaign.
+- input: {"name":"policy","type":"literal","value":"{{policy}}"}
+- input: {"name":"surface","type":"literal","value":"{{surface}}"}
+- input: {"name":"bound","type":"literal","value":"{{bound}}"}
+- input: {"name":"skill","type":"literal","value":"{{skill}}"}
 
 ## Completion test
 

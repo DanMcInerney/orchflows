@@ -1,5 +1,7 @@
 """Assemble all findings for one issued ticket."""
 
+import importlib
+
 try:  # repository checkout
     from scripts import cutcheck_contract as _contract
 except ImportError:  # installed flat script directory
@@ -19,6 +21,14 @@ WHOLE_SUITE_ORACLE = _contract.WHOLE_SUITE_ORACLE
 _MUTATED = _contract._MUTATED
 _parse_frontmatter = _contract._parse_frontmatter
 _sections = _contract._sections
+FAMILY_OF = _contract.FAMILY_OF
+FAMILY_2 = _contract.FAMILY_2
+FAMILY_3 = _contract.FAMILY_3
+
+try:  # repository checkout
+    from scripts.tickets_format import adapter_id
+except ImportError:  # installed flat script directory
+    from tickets_format import adapter_id
 
 try:  # repository checkout
     from scripts import cutcheck_commands as _commands_module
@@ -55,13 +65,54 @@ except ImportError:  # installed flat script directory
 _verdict_in_output = _search._verdict_in_output
 _whole_suite = _search._whole_suite
 
+
+def _policy_findings(ticket_id, text, sibling_texts, baseline_tree, head_tree):
+    """Render lower identity/scope validator codes unchanged in cutcheck."""
+    rendered = []
+    data = _parse_frontmatter(text)
+    common = {
+        'ticket_id': ticket_id,
+        'text': text,
+        'siblings': sibling_texts,
+        'adapter_id': adapter_id(data.get('pack')),
+        'context': {'baseline_tree': baseline_tree, 'head_tree': head_tree},
+    }
+    package = __package__.rsplit('.', 1)[0] if __package__ and '.' in __package__ else __package__
+    for module_name, function_name, family in (
+        ('tickets_inputs', 'grade_inputs', FAMILY_2),
+        ('tickets_scope', 'grade_scope', FAMILY_3),
+    ):
+        qualified = f'{package}.{module_name}' if package else module_name
+        try:
+            module = importlib.import_module(qualified)
+        except ModuleNotFoundError as error:
+            if error.name in (qualified, module_name):
+                continue
+            raise
+        probe = getattr(module, function_name, None)
+        if not callable(probe):
+            continue
+        result = probe(**common)
+        for item in result.get('findings', []) if isinstance(result, dict) else []:
+            code = str(item.get('code') or 'validator-finding')
+            FAMILY_OF.setdefault(code, family)
+            field = str(item.get('field') or module_name)
+            detail = str(item.get('detail') or '')
+            rendered.append((ticket_id, 0, code, f'{field}: {detail}'))
+    return rendered
+
 def _check_ticket(path, baseline_tree, head_tree, siblings):
     text = path.read_text(encoding="utf-8")
     frontmatter = _parse_frontmatter(text)
     ticket_id = frontmatter.get("id") or path.stem
     sections = _sections(text)
     granted = _granted(frontmatter, siblings)
-    findings = []
+    sibling_texts = {}
+    for sibling_path in sorted(path.parent.glob('*.md')):
+        sibling_text = sibling_path.read_text(encoding='utf-8')
+        sibling_data = _parse_frontmatter(sibling_text)
+        sibling_texts[str(sibling_data.get('id') or sibling_path.stem)] = sibling_text
+    findings = _policy_findings(ticket_id, text, sibling_texts, baseline_tree, head_tree)
     for number, criterion in _criteria(sections.get(COMPLETION_SECTION, "")):
         prose = _prose(criterion)
         findings.extend(
@@ -167,5 +218,5 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
 # six families are the module docstring's to describe; this names none of them.
 
 __all__ = (
-    '_check_ticket',
+    '_check_ticket', '_policy_findings',
 )

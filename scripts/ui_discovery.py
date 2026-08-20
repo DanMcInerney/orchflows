@@ -98,7 +98,7 @@ def identity_diagnostics(tickets) -> list:
             )
         )
     return diagnostics
-FRICTION_KEYS = ("ts", "observed", "expected", "category", "host")
+FRICTION_KEYS = ("ts", "observed", "expected", "host")
 _EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 

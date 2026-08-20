@@ -1,7 +1,6 @@
 ---
 id: 01-cause
 executor: orch-loop
-pack: orch-code-pack
 depends_on: [00-reproduce]
 write_scope: []
 bound: <= 8 iterations
@@ -20,13 +19,8 @@ toggles the reproduction between FAIL and PASS.
 
 ## Fixed inputs
 
-- 00-reproduce's `## Result` — the reproduction command, the revision it
-  was run at, and the failure identity, by identity.
-- Body: orch-investigate over exactly one hypothesis per iteration —
-  the hypothesis stated as a prediction the reproduction can falsify.
-- Context packet: the killed-hypothesis digest — each hypothesis tried,
-  the observation that killed it, and what it rules out; never the
-  transcript.
+- input: {"name":"workspace","type":"literal","value":"{{workspace}}"}
+- input: {"name":"failure","type":"literal","value":"{{failure}}"}
 
 ## Completion test
 

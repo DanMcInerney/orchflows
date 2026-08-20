@@ -104,9 +104,9 @@ class HelpTest(unittest.TestCase):
         )
 
 
-CLAIMED_TICKET = FULL_TICKET.replace("status: ready", "status: claimed").replace(
-    "bound: 30m", "bound: 30m\nclaimed_by: agent-a\nclaimed_at: 2026-08-16T00:00:00Z"
-)
+CLAIMED_TICKET = FULL_TICKET.replace(
+    "claimed_by: legacy-agent", "claimed_by: agent-a"
+).replace("claimed_at: 2099-01-01T00:00:00Z", "claimed_at: 2026-08-16T00:00:00Z")
 
 
 def filing_lines(prompt: str) -> list:
@@ -215,19 +215,15 @@ class TestPacketNamesTheChildsOwnName(unittest.TestCase):
             self.assertIsNone(packet["assigned_name"])
             self.assertNotIn("assigned name", packet["prompt"])
 
-    def test_an_unclaimed_packet_carries_no_name_and_is_still_complete(self):
-        """Nothing is invented: the name is the claim's, so a packet rendered
-        before one carries `null` rather than a guess, and the dispatcher
-        reads that as the claim it has not made yet."""
+    def test_an_unclaimed_packet_is_refused_before_dispatch(self):
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             make_packet_repo(
-                tmp, FULL_TICKET.replace("executor: orch-tdd", "executor: orch-frontier")
+                tmp, FULL_TICKET.replace("status: claimed", "status: ready").replace("executor: orch-tdd", "executor: orch-frontier")
             )
             payload = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")
-            self.assertNotIn("error", payload)
-            self.assertIsNone(payload["packet"]["assigned_name"])
+            self.assertIn("not claimed", payload["error"])
 
 
 class TestPacketOmitsTheWorkspaceStepForATicketThatWritesOnlyTickets(unittest.TestCase):

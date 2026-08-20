@@ -81,6 +81,25 @@ class TestReadyReportsWhatItCouldNotGrade(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             run_dir = make_repo(tmp, {"T1": ("pending", "[]")})
+            path = run_dir / "T1.md"
+            text = path.read_text(encoding="utf-8")
+            text = tickets_mod._set_frontmatter_field(text, "admission", "v1:pending")
+            text = tickets_mod._set_frontmatter_field(text, "cohort", "v1:ticket:T1")
+            text = tickets_mod._set_frontmatter_field(text, "pack", "orch-code-pack")
+            text = tickets_mod._set_frontmatter_field(text, "isolation", "required")
+            text = tickets_mod._set_frontmatter_field(text, "mutations", "[change:scratch/T1.txt]")
+            subprocess.run(["git", "init", "-q", str(tmp)], check=True)
+            subprocess.run(["git", "-C", str(tmp), "config", "user.email", "test@example.invalid"], check=True)
+            subprocess.run(["git", "-C", str(tmp), "config", "user.name", "Test"], check=True)
+            subprocess.run(["git", "-C", str(tmp), "commit", "--allow-empty", "-qm", "baseline"], check=True)
+            revision = subprocess.check_output(
+                ["git", "-C", str(tmp), "rev-parse", "HEAD"], text=True
+            ).strip()
+            baseline = {"identity": {"kind": "git-tree", "repo": "run-project", "revision": revision}, "name": "baseline", "type": "identity"}
+            text = tickets_mod._write_section(
+                text, "Fixed inputs", "- input: " + json.dumps(baseline, separators=(",", ":"), sort_keys=True)
+            )
+            path.write_text(text, encoding="utf-8")
             with refusing_to_write(run_dir / "T1.md"):
                 payload = self.ready(tmp)
             self.assertEqual([], payload["ready"])
@@ -138,7 +157,7 @@ class TestClaimGradesStalenessAsReadyDoes(unittest.TestCase):
             self.assertEqual([], run_cmd(tmp, "ready", "--run", "testrun")["ready"])
             payload = run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-b")
             self.assertIn("error", payload)
-            self.assertIn("not stale", payload["error"])
+            self.assertIn("requires `recut`", payload["error"])
 
 
 class TestAppendLockDocstringIsTrue(unittest.TestCase):
