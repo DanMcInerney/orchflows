@@ -10,6 +10,7 @@ import scripts.ui_api as legacy
 import scripts.ui_now_projection as now
 import scripts.ui_runs_projection as runs
 import scripts.ui_workflows_projection as workflows
+import scripts.ui_sessions_projection as sessions
 
 
 PROJECTORS = (
@@ -125,6 +126,32 @@ class WorkflowsProjectionTests(unittest.TestCase):
         self.assertEqual({"api_version", "runs", "empty"}, set(projected))
         self.assertEqual((), workflows.ROUTE_SPECS)
         self.assertNotIn("workflow-catalog", json.dumps(projected, sort_keys=True))
+
+
+class SessionsProjectionTests(unittest.TestCase):
+    def test_sessions_preserve_metadata_without_transcript_content_or_path_lookup(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            transcripts = make_transcripts(tmp)
+            before = snapshot(transcripts)
+            index = sessions.project_sessions(transcripts)
+            detail = sessions.project_session(transcripts, TITLED_SESSION)
+            self.assertIsNone(sessions.project_session(transcripts, "../outside"))
+            self.assertEqual(before, snapshot(transcripts))
+
+            self.assertEqual(legacy.project_sessions(transcripts), index)
+            self.assertEqual(legacy.project_session(transcripts, TITLED_SESSION), detail)
+
+        self.assertEqual({"api_version", "sessions", "diagnostics", "empty"}, set(index))
+        self.assertEqual({"api_version", "session"}, set(detail))
+        self.assertEqual(
+            {"id", "title", "modified", "size", "agent_count", "diagnostics", "agents"},
+            set(detail["session"]),
+        )
+        encoded = json.dumps((index, detail), sort_keys=True)
+        self.assertNotIn(TRANSCRIPT_SENTINEL, encoded)
+        self.assertNotIn(str(transcripts), encoded)
+        self.assertNotIn("toolu_alpha_01", encoded)
 
 
 if __name__ == "__main__":
