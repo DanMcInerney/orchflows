@@ -51,7 +51,7 @@ class TestExperienceFoundationGap(unittest.TestCase):
 
     def test_feature_entries_and_safe_live_fields_share_one_contract(self):
         composition = (
-            ROOT / "web" / "src" / "app" / "shell" / "featureCatalog.ts"
+            ROOT / "web" / "src" / "app" / "catalog.ts"
         ).read_text(encoding="utf-8")
         expected_packages = {
             "friction": "friction",
@@ -60,10 +60,11 @@ class TestExperienceFoundationGap(unittest.TestCase):
             "runMap": "run-map",
             "sessionGraph": "session-graph",
             "sessions": "sessions",
+            "workflows": "workflows",
         }
         for alias, package in expected_packages.items():
             self.assertIn(
-                'import * as {0} from "../../features/{1}"'.format(alias, package),
+                'import * as {0} from "../features/{1}"'.format(alias, package),
                 composition,
             )
             index = (
@@ -73,6 +74,15 @@ class TestExperienceFoundationGap(unittest.TestCase):
             self.assertNotIn("featureCatalog", index)
         self.assertEqual(1, composition.count("defineCatalog(["))
         self.assertNotIn("import.meta.glob", composition)
+        shell_reexport = (
+            ROOT / "web" / "src" / "app" / "shell" / "featureCatalog.ts"
+        ).read_text(encoding="utf-8")
+        self.assertEqual(
+            'export { featureCatalog } from "../catalog";',
+            shell_reexport.strip(),
+        )
+        self.assertNotIn("import ", shell_reexport)
+        self.assertNotIn("defineCatalog", shell_reexport)
 
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
