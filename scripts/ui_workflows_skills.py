@@ -35,6 +35,16 @@ class WorkflowSkillError(ValueError):
     """A workflow-skill source cannot form the exact detail projection."""
 
 
+def _contained_file(root: Path, path: Path) -> bool:
+    try:
+        resolved_root = Path(root).resolve()
+        resolved = path.resolve(strict=True)
+        resolved.relative_to(resolved_root)
+    except (OSError, RuntimeError, ValueError):
+        return False
+    return resolved.is_file()
+
+
 def _read_skill(path: Path) -> tuple[dict, str]:
     try:
         text = path.read_text(encoding="utf-8")
@@ -61,6 +71,8 @@ def skill_index(root: Path) -> tuple[dict[str, str], set[str]]:
         key=lambda path: path.relative_to(root).as_posix(),
     )
     for path in paths:
+        if not _contained_file(root, path):
+            continue
         try:
             fields, _ = _read_skill(path)
         except WorkflowSkillError:
@@ -96,7 +108,7 @@ def _script_path(root: Path, token: str) -> tuple[str, bool]:
         source = Path(root) / installed.removeprefix("lib/")
     else:
         return installed, False
-    return installed, source.is_file()
+    return installed, _contained_file(Path(root), source)
 
 
 def _calls(root: Path, body: str) -> tuple[set[str], dict[str, bool]]:
@@ -130,6 +142,8 @@ def project_workflow_skill(root: Path = ROOT, workflow_id: str = "") -> dict:
     except identity.WorkflowIdentityError as error:
         raise WorkflowSkillError("workflow skill identity is malformed") from error
     path = root / "skills" / "workflows" / workflow_id / "SKILL.md"
+    if not _contained_file(root, path):
+        raise WorkflowSkillError("workflow skill source is unreadable")
     fields, body = _read_skill(path)
     if fields.get("name") != workflow_id:
         raise WorkflowSkillError("workflow skill identity is malformed")
