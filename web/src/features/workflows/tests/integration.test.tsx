@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { matchCatalog, type RouteLocation } from "../../../app/catalog";
 import { featureCatalog } from "../../../app/shell/featureCatalog";
@@ -6,6 +7,11 @@ import { featureCatalog } from "../../../app/shell/featureCatalog";
 function location(pathname: string, search = ""): RouteLocation {
   return { pathname, search, hash: "" };
 }
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe("Workflows application integration", () => {
   it("makes definitions the visible Workflows home while preserving nav-hidden run children", () => {
@@ -46,5 +52,29 @@ describe("Workflows application integration", () => {
       id: "ticket",
       activeNavigationId: "workflows",
     });
+  });
+
+  it("binds deterministic catalog, topology, and source states through the feature host", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 503 })));
+
+    const catalog = matchCatalog(featureCatalog, location("/workflows", "?fixture=populated"));
+    if (catalog === null) throw new Error("expected workflow catalog match");
+    const catalogRender = render(<catalog.View />);
+    expect(await screen.findByRole("link", { name: "fix" })).toBeTruthy();
+    catalogRender.unmount();
+
+    const detail = matchCatalog(featureCatalog, location("/workflows/evolve", "?fixture=complex-loop"));
+    if (detail === null) throw new Error("expected workflow detail match");
+    const detailRender = render(<detail.View />);
+    expect(await screen.findByRole("button", { name: "Select loop 02-campaign loops to 02-campaign" })).toBeTruthy();
+    detailRender.unmount();
+
+    const source = matchCatalog(featureCatalog, location(
+      "/workflows/evolve/sources/src_campaign",
+      "?fixture=missing-source",
+    ));
+    if (source === null) throw new Error("expected workflow source match");
+    render(<source.View />);
+    expect(await screen.findByRole("heading", { name: "Source not found" })).toBeTruthy();
   });
 });
