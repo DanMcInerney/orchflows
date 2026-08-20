@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import unittest
 from pathlib import Path
 
@@ -45,6 +46,100 @@ class WorkflowSummaryManifestTests(unittest.TestCase):
                     self.assertEqual({"id", "label"}, set(node))
                 for edge in summary["edges"]:
                     self.assertEqual({"source", "target", "kind"}, set(edge))
+
+    def test_manifest_and_members_are_closed(self):
+        manifest = self._synthetic_manifest()
+        additions = (
+            (manifest, "extra"),
+            (manifest["workflows"]["demo"], "extra"),
+            (manifest["workflows"]["demo"]["nodes"][0], "extra"),
+            (manifest["workflows"]["demo"]["edges"][0], "extra"),
+        )
+
+        for target, field in additions:
+            candidate = copy.deepcopy(manifest)
+            path = self._same_path(candidate, manifest, target)
+            path[field] = True
+            with self.subTest(target=set(target)):
+                with self.assertRaises(summaries.SummaryManifestError):
+                    summaries.validate_manifest(candidate, {"demo"})
+
+    def test_catalog_coverage_is_exact(self):
+        manifest = self._synthetic_manifest()
+        for keys in (set(), {"demo", "invented"}):
+            with self.subTest(keys=keys):
+                with self.assertRaises(summaries.SummaryManifestError):
+                    summaries.validate_manifest(manifest, keys)
+
+    def test_node_ids_are_unique_and_well_formed(self):
+        invalid_ids = ("", " two", "two words", "Two", "two_underscores")
+        for node_id in invalid_ids:
+            manifest = self._synthetic_manifest()
+            manifest["workflows"]["demo"]["nodes"][1]["id"] = node_id
+            with self.subTest(node_id=node_id):
+                with self.assertRaises(summaries.SummaryManifestError):
+                    summaries.validate_manifest(manifest, {"demo"})
+
+        manifest = self._synthetic_manifest()
+        manifest["workflows"]["demo"]["nodes"][1]["id"] = "one"
+        with self.assertRaises(summaries.SummaryManifestError):
+            summaries.validate_manifest(manifest, {"demo"})
+
+    def test_labels_are_trimmed_single_line_and_bounded(self):
+        invalid_labels = ("", " padded", "padded ", "two\nlines", "x" * 41)
+        for label in invalid_labels:
+            manifest = self._synthetic_manifest()
+            manifest["workflows"]["demo"]["nodes"][0]["label"] = label
+            with self.subTest(label=repr(label)):
+                with self.assertRaises(summaries.SummaryManifestError):
+                    summaries.validate_manifest(manifest, {"demo"})
+
+    def test_edges_have_known_endpoints_kinds_and_unique_tuples(self):
+        for field, value in (
+            ("source", "missing"),
+            ("target", "missing"),
+            ("kind", "conditional"),
+        ):
+            manifest = self._synthetic_manifest()
+            manifest["workflows"]["demo"]["edges"][0][field] = value
+            with self.subTest(field=field):
+                with self.assertRaises(summaries.SummaryManifestError):
+                    summaries.validate_manifest(manifest, {"demo"})
+
+        manifest = self._synthetic_manifest()
+        manifest["workflows"]["demo"]["edges"].append(
+            copy.deepcopy(manifest["workflows"]["demo"]["edges"][0])
+        )
+        with self.assertRaises(summaries.SummaryManifestError):
+            summaries.validate_manifest(manifest, {"demo"})
+
+    @staticmethod
+    def _synthetic_manifest():
+        return {
+            "schema": "orchflows.workflow-summary.v1",
+            "workflows": {
+                "demo": {
+                    "nodes": [
+                        {"id": "one", "label": "First"},
+                        {"id": "two", "label": "Second"},
+                    ],
+                    "edges": [
+                        {"source": "one", "target": "two", "kind": "sequence"}
+                    ],
+                }
+            },
+        }
+
+    @staticmethod
+    def _same_path(candidate, original, target):
+        if target is original:
+            return candidate
+        workflow = original["workflows"]["demo"]
+        if target is workflow:
+            return candidate["workflows"]["demo"]
+        if target is workflow["nodes"][0]:
+            return candidate["workflows"]["demo"]["nodes"][0]
+        return candidate["workflows"]["demo"]["edges"][0]
 
 
 if __name__ == "__main__":
