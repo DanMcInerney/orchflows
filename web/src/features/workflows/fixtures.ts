@@ -181,8 +181,8 @@ export const detailFixture: WorkflowDetailModel = {
 export const sourceFixture: WorkflowSourceModel = {
   schema: "orchflows.workflow-source.v1",
   id: "src_fixture",
-  text: "# fixture\n",
+  text: "# Campaign\n\n<button>Run me</button>\n<script>doNotRun()</script>\n",
   sha256: "0".repeat(64),
   language: "markdown",
-  redacted: false,
+  redacted: true,
 };
