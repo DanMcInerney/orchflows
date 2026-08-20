@@ -1,5 +1,41 @@
-import type { ExperienceSnapshot, ReadinessState, TicketDetail, TicketSummary } from "../../api/schema";
-import type { LocationState } from "../../state/location";
+import type { InspectorRoute } from "./route";
+
+export type ReadinessState = "waiting" | "ready" | "running" | "attention" | "complete" | "unknown";
+export type ReadinessCause = "pending_dependency" | "suspended_handoff" | "failed_upstream" | "blocked_upstream" | "stale_claim" | "malformed_topology" | "none";
+
+export interface TicketSummary {
+  id: string;
+  status: string;
+  executor: string;
+  bound: string;
+  claimed_at: string;
+  claimed_by: string;
+  depends_on: string[];
+  unreadable: boolean;
+  readiness: {
+    state: ReadinessState;
+    dependencies: string[];
+    explanation: string;
+    cause: ReadinessCause;
+    causal_chain: string[];
+  };
+}
+
+export interface TicketDetail extends TicketSummary {
+  sections: Record<string, string>;
+  verification: { state: string; rows: Array<Record<string, string>> };
+  inputs: string[];
+  write_scope: string[];
+  pack: string;
+  history: Array<{ ts: string; event: string; agent: string; detail: string }>;
+  raw: string;
+  linked_friction?: Array<Record<string, unknown>>;
+}
+
+export interface InspectorModel {
+  run: Record<string, unknown> | null;
+  ticket: TicketDetail | null;
+}
 
 export const inspectorTabs = ["overview", "details", "proof", "friction", "history", "raw"] as const;
 export type InspectorTab = (typeof inspectorTabs)[number];
@@ -67,7 +103,7 @@ const proofFixtureRows = [
   { "#": "3", verdict: "PASS", oracle: "install.py --dry-run", class: "deterministic", evidence: "plan named 4 scripts, 4 expected" }
 ];
 
-export function fixtureTicket(location: LocationState): TicketDetail | null {
+export function fixtureTicket(location: InspectorRoute): TicketDetail | null {
   if (!fixtureTab[location.fixture]) return null;
   const running = location.fixture === "running-overview";
   const unavailableHistory = location.fixture === "history-unavailable";
@@ -123,7 +159,7 @@ function text(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
-export function selectedTab(location: LocationState, search = window.location.search): InspectorTab {
+export function selectedTab(location: InspectorRoute, search = window.location.search): InspectorTab {
   const requested = new URLSearchParams(search).get("tab")?.toLowerCase();
   if (inspectorTabs.includes(requested as InspectorTab)) return requested as InspectorTab;
   return fixtureTab[location.fixture] ?? "overview";
@@ -146,7 +182,7 @@ export function statusState(ticket: TicketSummary): InspectorState {
   return "unknown";
 }
 
-export function detailRows(ticket: ExperienceSnapshot["ticket"]): Array<{ label: string; value: string; mono?: boolean }> {
+export function detailRows(ticket: TicketDetail | null): Array<{ label: string; value: string; mono?: boolean }> {
   if (!ticket) return [];
   return [
     { label: "Worker", value: ticket.executor || "Unavailable", mono: true },
@@ -159,8 +195,8 @@ export function detailRows(ticket: ExperienceSnapshot["ticket"]): Array<{ label:
   ];
 }
 
-export function proofRows(snapshot: ExperienceSnapshot, fixture: string): InspectorProofRow[] {
-  const rows = snapshot.ticket?.verification.rows ?? [];
+export function proofRows(model: InspectorModel, fixture: string): InspectorProofRow[] {
+  const rows = model.ticket?.verification.rows ?? [];
   return rows.map((value, index) => {
     const row = record(value);
     const verdict = text(row.verdict) || "UNKNOWN";
@@ -174,8 +210,8 @@ export function proofRows(snapshot: ExperienceSnapshot, fixture: string): Inspec
   });
 }
 
-export function linkedFriction(snapshot: ExperienceSnapshot, location: LocationState): InspectorFrictionRecord[] {
-  const rows = Array.isArray(snapshot.friction.items) ? snapshot.friction.items : [];
+export function linkedFriction(model: InspectorModel, location: InspectorRoute): InspectorFrictionRecord[] {
+  const rows = model.ticket?.linked_friction ?? [];
   const linked = rows.map(record).filter((item) =>
     text(item.run) === location.run && text(item.ticket) === location.ticket
   );
@@ -197,9 +233,9 @@ export function linkedFriction(snapshot: ExperienceSnapshot, location: LocationS
   }));
 }
 
-export function durableHistory(snapshot: ExperienceSnapshot, location: LocationState): InspectorHistoryRecord[] {
+export function durableHistory(model: InspectorModel, location: InspectorRoute): InspectorHistoryRecord[] {
   if (location.fixture === "history-unavailable") return [];
-  return (snapshot.ticket?.history ?? []).map((item) => ({
+  return (model.ticket?.history ?? []).map((item) => ({
     ts: item.ts || "Timestamp unavailable",
     event: item.event || "unknown event",
     agent: item.agent || "Agent unavailable",
@@ -213,9 +249,20 @@ export function redactHostPaths(value: string): string {
     .replace(/\/(?:Users|home)\/[^\s/]+(?:\/[^\s]*)?/g, "[redacted-path]");
 }
 
-export function rawTicket(snapshot: ExperienceSnapshot, location: LocationState): string {
-  const projected = snapshot.ticket?.raw ?? "";
+export function rawTicket(model: InspectorModel, location: InspectorRoute): string {
+  const projected = model.ticket?.raw ?? "";
   if (projected) return redactHostPaths(projected);
   if (location.fixture === "raw-escaped") return fixtureRaw;
   return "Raw ticket markdown is unavailable in this reader projection.";
 }
+
+export const model = {
+  selectedTab,
+  tabPath,
+  statusState,
+  detailRows,
+  proofRows,
+  linkedFriction,
+  durableHistory,
+  rawTicket,
+};

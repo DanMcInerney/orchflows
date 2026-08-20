@@ -8,16 +8,17 @@ import {
 } from "@xyflow/react";
 import { AlertTriangle, ArrowLeft, Binary, LockKeyhole, Network, Radio } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { ExperienceSnapshot } from "../../api/schema";
-import type { LocationState } from "../../state/location";
+import type { FeatureState } from "../../shared/transport/types";
 import { SessionAgentNode, type SessionAgentNodeData } from "./SessionAgentNode";
 import {
   isSessionDetail,
   SESSION_NODE_ID,
   sessionTopology,
+  type SessionGraphModel,
   type SessionTopology,
   type TopologyNode
 } from "./topology";
+import type { SessionGraphRoute } from "./route";
 import "./session-graph.css";
 
 const nodeTypes = { sessionAgent: SessionAgentNode };
@@ -132,12 +133,19 @@ function EmptySession({ requested }: { requested: string }) {
   );
 }
 
-export function SessionGraphView({ snapshot, location }: { snapshot: ExperienceSnapshot; location: LocationState }) {
-  const session = isSessionDetail(snapshot.session) ? snapshot.session : null;
+export interface SessionGraphViewProps {
+  route: SessionGraphRoute;
+  state: FeatureState<SessionGraphModel>;
+}
+
+export function SessionGraphView({ route, state }: SessionGraphViewProps) {
+  const session = isSessionDetail(state.model?.session) ? state.model.session : null;
   const topology = useMemo(() => session ? sessionTopology(session) : null, [session]);
   const initial = topology?.nodes.find((node) => node.kind === "agent" && node.state === "running")?.id ?? SESSION_NODE_ID;
   const [selection, setSelection] = useState(initial);
-  if (!session || !topology) return <EmptySession requested={location.session} />;
+  if (!route.fixture && state.status === "loading") return <div className="loading">Waiting for reader</div>;
+  if (!route.fixture && state.status === "error") return <div className="notice" role="status">{state.error.message}</div>;
+  if (!session || !topology) return <EmptySession requested={route.session} />;
 
   const inspected = selectedNode(topology, selection);
   const nodes = graphNodes(topology).map((node) => ({ ...node, selected: node.id === inspected.id }));
@@ -145,7 +153,8 @@ export function SessionGraphView({ snapshot, location }: { snapshot: ExperienceS
   const inferredCount = topology.edges.filter((edge) => edge.inferred).length;
 
   return (
-    <div className="foundation-view session-graph-view" data-view="session-graph" data-fixture={location.fixture || "live"}>
+    <div className="foundation-view session-graph-view" data-view="session-graph" data-fixture={route.fixture || "live"}>
+      {state.status === "stale" && <div className="notice" role="status">{state.error.message}</div>}
       {topology.diagnostics.length > 0 && (
         <section className="session-graph-alert" aria-labelledby="session-graph-alert-title">
           <AlertTriangle aria-hidden="true" />

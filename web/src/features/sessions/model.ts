@@ -94,3 +94,5 @@ export function activityLabel(value: string): string {
   if (Number.isNaN(date.getTime())) return value;
   return `${date.toISOString().slice(0, 16).replace("T", " ")}Z`;
 }
+
+export const model = { sessionsModel, fixtureSessions, sessionLabel, activityLabel };

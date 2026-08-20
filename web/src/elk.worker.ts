@@ -9,6 +9,7 @@ interface LayoutRequest {
   requestId: number;
   nodes: ObserveNode[];
   edges: ObserveEdge[];
+  direction?: "RIGHT" | "DOWN";
 }
 
 interface ElkApi {
@@ -35,7 +36,7 @@ self.addEventListener("message", async (event: MessageEvent<LayoutRequest>) => {
     id: "root",
     layoutOptions: {
       "elk.algorithm": "layered",
-      "elk.direction": "RIGHT",
+      "elk.direction": event.data.direction ?? "RIGHT",
       "elk.spacing.nodeNode": "36",
       "elk.layered.spacing.nodeNodeBetweenLayers": "72"
     },

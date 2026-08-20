@@ -1,8 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ExperienceSnapshot } from "../../api/schema";
-import type { LocationState } from "../../state/location";
 import { SessionGraphView } from "./SessionGraphView";
+import type { SessionGraphModel } from "./topology";
 
 vi.mock("@xyflow/react", async () => {
   const actual = await vi.importActual<typeof import("@xyflow/react")>("@xyflow/react");
@@ -29,20 +28,12 @@ vi.mock("@xyflow/react", async () => {
   };
 });
 
-const location: LocationState = {
-  view: "session-graph",
-  run: "",
-  ticket: "",
+const route = {
   session: "safe-session",
   fixture: "populated"
 };
 
-const snapshot = {
-  schema: "orchflows.experience.v1",
-  navigation: [],
-  selection: { view: "session-graph", run: "", ticket: "", session: "safe-session" },
-  runs: [], run: null, ticket: null,
-  sessions: { items: [], diagnostics: [], empty: false },
+const model = {
   session: {
     id: "safe-session",
     title: "Safe session title",
@@ -57,14 +48,15 @@ const snapshot = {
     cwd: "C:/private/worktree",
     tool_output: "PRIVATE TOOL OUTPUT MUST NOT RENDER"
   },
-  friction: { items: [], skipped: 0, unreadable: 0 }
-} as unknown as ExperienceSnapshot;
+} as unknown as SessionGraphModel;
+
+const ready = (value: SessionGraphModel) => ({ status: "ready", model: value, error: null } as const);
 
 afterEach(cleanup);
 
 describe("SessionGraphView", () => {
   it("renders responsive safe topology with keyboard-reachable selection and provenance", () => {
-    render(<SessionGraphView snapshot={snapshot} location={location} />);
+    render(<SessionGraphView state={ready(model)} route={route} />);
 
     expect(screen.getByRole("heading", { name: "Safe session title" })).not.toBeNull();
     expect(screen.getByLabelText("Session agent topology")).not.toBeNull();
@@ -81,7 +73,7 @@ describe("SessionGraphView", () => {
   });
 
   it("enforces the content and path wall by projecting only closed metadata fields", () => {
-    const { container } = render(<SessionGraphView snapshot={snapshot} location={location} />);
+    const { container } = render(<SessionGraphView state={ready(model)} route={route} />);
     expect(container.textContent).not.toContain("PRIVATE PROMPT");
     expect(container.textContent).not.toContain("PRIVATE TOOL OUTPUT");
     expect(container.textContent).not.toContain("C:/private/worktree");
@@ -89,7 +81,7 @@ describe("SessionGraphView", () => {
   });
 
   it("names missing safe topology without guessing", () => {
-    render(<SessionGraphView snapshot={{ ...snapshot, session: null }} location={location} />);
+    render(<SessionGraphView state={ready({ session: null })} route={route} />);
     expect(screen.getByRole("heading", { name: "Session metadata is unavailable" })).not.toBeNull();
     expect(screen.getByText("safe-session")).not.toBeNull();
   });

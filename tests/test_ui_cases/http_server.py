@@ -321,6 +321,50 @@ class TestCompiledApplicationServer(unittest.TestCase):
                     self.assertEqual(304, unchanged[0], route)
                     self.assertEqual("", unchanged[2], route)
 
+    def test_feature_views_are_closed_json_slices_with_shared_validators(self):
+        cases = {
+            "/api/v1/views/now": ("orchflows.now.v1", {"schema", "runs"}),
+            "/api/v1/views/run-map?run=run-gamma": (
+                "orchflows.run-map.v1",
+                {"schema", "runs", "run"},
+            ),
+            "/api/v1/views/inspector?run=run-gamma&ticket=G1": (
+                "orchflows.inspector.v1",
+                {"schema", "run", "ticket"},
+            ),
+            "/api/v1/views/sessions": (
+                "orchflows.sessions.v1",
+                {"schema", "sessions"},
+            ),
+            "/api/v1/views/session-graph?session={0}".format(TITLED_SESSION): (
+                "orchflows.session-graph.v1",
+                {"schema", "session"},
+            ),
+            "/api/v1/views/friction": (
+                "orchflows.friction.v1",
+                {"schema", "friction"},
+            ),
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            with serving(make_sink(tmp), make_transcripts(tmp)) as server:
+                for route, (schema, keys) in cases.items():
+                    with self.subTest(route=route):
+                        status, headers, body = fetch(server, route)
+                        self.assertEqual(200, status)
+                        self.assertEqual(
+                            "application/json; charset=utf-8",
+                            headers.get("Content-Type"),
+                        )
+                        payload = json.loads(body)
+                        self.assertEqual(keys, set(payload))
+                        self.assertEqual(schema, payload["schema"])
+                        tag = headers.get("ETag")
+                        self.assertTrue(tag)
+                        repeated = fetch(server, route, {"If-None-Match": tag})
+                        self.assertEqual((304, ""), (repeated[0], repeated[2]))
+                        self.assertEqual(tag, repeated[1].get("ETag"))
+
     def test_ticket_projection_names_source_and_partial_friction_health(self):
         with tempfile.TemporaryDirectory() as tmp:
             main = make_sink(Path(tmp))

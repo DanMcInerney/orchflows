@@ -1,12 +1,42 @@
-import type { ReadinessState, TicketSummary } from "../../api/schema";
+export type ReadinessState = "waiting" | "ready" | "running" | "attention" | "complete" | "unknown";
+export type ReadinessCause = "pending_dependency" | "suspended_handoff" | "failed_upstream" | "blocked_upstream" | "stale_claim" | "malformed_topology" | "none";
 
-export type NowBand = "attention" | "active" | "completed";
-export type GroupState = ReadinessState;
+export interface Readiness {
+  state: ReadinessState;
+  dependencies: string[];
+  explanation: string;
+  cause: ReadinessCause;
+  causal_chain: string[];
+}
 
-export interface NowTicket extends TicketSummary {
+export interface NowTicket {
+  id: string;
+  status: string;
+  executor: string;
+  bound: string;
+  claimed_at: string;
+  claimed_by: string;
+  depends_on: string[];
+  readiness: Readiness;
+  unreadable: boolean;
   title?: string;
   required?: boolean;
 }
+
+export interface NowRunPayload {
+  id: string;
+  ticket_count: number;
+  active: boolean;
+  objective: string;
+  repository: string;
+  client: string;
+  last_activity: string;
+  unreadable: boolean;
+  tickets: NowTicket[];
+}
+
+export type NowBand = "attention" | "active" | "completed";
+export type GroupState = ReadinessState;
 
 export interface NowRun {
   id: string;
@@ -16,6 +46,10 @@ export interface NowRun {
   lastActivity: string;
   tickets: NowTicket[];
   unreadable?: boolean;
+}
+
+export interface NowModel {
+  runs: NowRun[];
 }
 
 export interface NowGroup {
@@ -157,3 +191,5 @@ export const bandLabel: Record<NowBand, string> = {
   active: "Active now",
   completed: "Recently completed",
 };
+
+export const model = { dependencyLayers, groupState, projectGroups, projectFleet, bandLabel };

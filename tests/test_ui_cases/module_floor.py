@@ -22,6 +22,18 @@ FLOOR_NODES = tuple(
     for attribute, spelling in (("Match", "match"), ("TryStar", "except*"))
     if getattr(ast, attribute, None) is not None
 )
+PROJECTION_MODULES = tuple(
+    ROOT / "scripts" / name
+    for name in (
+        "ui_api.py",
+        "ui_experience.py",
+        "ui_now_projection.py",
+        "ui_runs_projection.py",
+        "ui_workflows_projection.py",
+        "ui_sessions_projection.py",
+        "ui_friction_projection.py",
+    )
+)
 
 
 def evaluated_nodes(tree) -> list:
@@ -156,3 +168,10 @@ class TestModuleFloor(unittest.TestCase):
             ("__future__", "annotations"),
             first_import("import os\nfrom __future__ import annotations\n"),
         )
+
+    def test_projection_modules_retain_the_python_39_floor(self):
+        for path in PROJECTION_MODULES:
+            with self.subTest(module=path.name):
+                source = path.read_text(encoding="utf-8")
+                self.assertEqual(("__future__", "annotations"), first_import(source))
+                self.assertEqual([], above_the_floor(source))

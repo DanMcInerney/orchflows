@@ -1,28 +1,28 @@
 import { AlertTriangle, CheckCircle2, Clock3, FolderSearch, LockKeyhole, Search, UsersRound } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import type { ExperienceSnapshot } from "../../api/schema";
-import type { LocationState } from "../../state/location";
-import { activityLabel, fixtureSessions, sessionLabel, sessionsModel } from "./model";
+import type { FeatureState } from "../../shared/transport/types";
+import { activityLabel, fixtureSessions, sessionLabel, type SessionsModel } from "./model";
+import type { SessionsRoute } from "./route";
 import "./sessions.css";
 
 export interface SessionsViewProps {
-  snapshot: ExperienceSnapshot;
-  location: LocationState;
+  route: SessionsRoute;
+  state: FeatureState<SessionsModel>;
 }
 
-function diagnosticCount(model: ReturnType<typeof sessionsModel>): number {
+function diagnosticCount(model: SessionsModel): number {
   return new Set([
     ...model.diagnostics,
     ...model.items.flatMap((item) => item.diagnostics)
   ]).size;
 }
 
-export function SessionsView({ snapshot, location }: SessionsViewProps) {
+export function SessionsView({ route, state }: SessionsViewProps) {
   const [query, setQuery] = useState("");
   const model = useMemo(
-    () => fixtureSessions(sessionsModel(snapshot.sessions), location.fixture),
-    [location.fixture, snapshot.sessions]
+    () => fixtureSessions(state.model ?? { items: [], diagnostics: [], empty: true }, route.fixture),
+    [route.fixture, state.model]
   );
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const visible = normalizedQuery
@@ -30,8 +30,12 @@ export function SessionsView({ snapshot, location }: SessionsViewProps) {
     : model.items;
   const diagnostics = diagnosticCount(model);
 
+  if (!route.fixture && state.status === "loading") return <div className="loading">Waiting for reader</div>;
+  if (!route.fixture && state.status === "error") return <div className="notice" role="status">{state.error.message}</div>;
+
   return (
-    <div className="foundation-view sessions-view" data-view="sessions" data-fixture={location.fixture || "live"}>
+    <div className="foundation-view sessions-view" data-view="sessions" data-fixture={route.fixture || "live"}>
+      {state.status === "stale" && <div className="notice" role="status">{state.error.message}</div>}
       {model.diagnostics.length > 0 && (
         <div className="sessions-view__diagnostic" role="status">
           <AlertTriangle aria-hidden="true" />
@@ -120,3 +124,5 @@ export function SessionsView({ snapshot, location }: SessionsViewProps) {
     </div>
   );
 }
+
+export default SessionsView;

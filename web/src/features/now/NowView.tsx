@@ -1,26 +1,15 @@
 import { AlertTriangle, Check, ChevronDown, ChevronRight, Circle, Clock3, Filter, GitBranch, Pause, Play, Radio, ShieldAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import type { ViewProps } from "../../app/registry";
-import type { TicketSummary } from "../../api/schema";
-import { RunGraph } from "../../graph/RunGraph";
+import type { FeatureState } from "../../shared/transport/types";
 import { nowFixture } from "./fixtures";
-import { bandLabel, projectFleet, type FleetRun, type NowBand, type NowRun } from "./model";
+import { bandLabel, projectFleet, type FleetRun, type NowBand, type NowModel } from "./model";
+import type { NowRoute } from "./route";
+import { RunGraph } from "./RunGraph";
 import "./now.css";
 
-export const viewId = "now" as const;
-
-function liveRuns({ runs }: ViewProps["snapshot"]): NowRun[] {
-  return runs.map((summary) => {
-    return {
-      id: summary.id,
-      objective: summary.objective || summary.id,
-      repository: summary.repository || "Repository unavailable",
-      client: summary.client || undefined,
-      lastActivity: summary.last_activity || "Activity unavailable",
-      tickets: summary.tickets,
-      unreadable: summary.unreadable || (!summary.tickets.length && summary.ticket_count > 0),
-    };
-  });
+export interface NowViewProps {
+  route: NowRoute;
+  state: FeatureState<NowModel>;
 }
 
 function stateGlyph(state: string) {
@@ -120,9 +109,9 @@ function Inspector({ run, tab, setTab }: { run: FleetRun; tab: string; setTab: (
   </aside>;
 }
 
-export default function NowView({ snapshot, location }: ViewProps) {
-  const fixture = useMemo(() => location.fixture ? nowFixture(location.fixture) : null, [location.fixture]);
-  const incoming = useMemo(() => fixture?.runs ?? liveRuns(snapshot), [fixture, snapshot]);
+export default function NowView({ route, state }: NowViewProps) {
+  const fixture = useMemo(() => route.fixture ? nowFixture(route.fixture) : null, [route.fixture]);
+  const incoming = useMemo(() => fixture?.runs ?? state.model?.runs ?? [], [fixture, state.model]);
   const initialPaused = fixture?.paused ?? false;
   const [paused, setPaused] = useState(initialPaused);
   const [frozen, setFrozen] = useState(incoming);
@@ -132,7 +121,7 @@ export default function NowView({ snapshot, location }: ViewProps) {
   const [filter, setFilter] = useState<"all" | "attention">("all");
 
   useEffect(() => { if (!paused) setFrozen(incoming); }, [incoming, paused]);
-  useEffect(() => { setPaused(initialPaused); }, [initialPaused, location.fixture]);
+  useEffect(() => { setPaused(initialPaused); }, [initialPaused, route.fixture]);
   const fleet = useMemo(() => projectFleet(frozen), [frozen]);
   const visible = filter === "attention" ? fleet.filter((run) => run.band === "attention") : fleet;
   const selected = fleet.find((run) => run.id === selectedId) ?? visible[0] ?? fleet[0];
@@ -141,7 +130,11 @@ export default function NowView({ snapshot, location }: ViewProps) {
     const next = new Set(current); next.has(id) ? next.delete(id) : next.add(id); return next;
   });
 
-  return <div className="foundation-view now-view" data-fixture={location.fixture || "live"}>
+  if (!fixture && state.status === "loading") return <div className="loading">Waiting for reader</div>;
+  if (!fixture && state.status === "error") return <div className="notice" role="status">{state.error.message}</div>;
+
+  return <div className="foundation-view now-view" data-fixture={route.fixture || "live"}>
+    {state.status === "stale" && <div className="notice" role="status">{state.error.message}</div>}
     <header className="now-header">
       <div><p className="now-kicker"><Radio aria-hidden="true" /> Fleet overview</p><h1>Now</h1><p>Every eligible run, ordered by what needs you first.</p></div>
       <div className="now-live" role="status" aria-live="polite" data-paused={paused}>
@@ -165,7 +158,7 @@ export default function NowView({ snapshot, location }: ViewProps) {
           <header><div><p className="now-kicker">Active objective</p><h2 id="now-map-heading" className="now-objective-summary" title={selected.objective}>{selected.objective}</h2></div><CountSummary counts={selected.counts} /></header>
           <GroupStrip run={selected} expanded={expanded} onToggle={toggleGroup} />
           <div className="now-graph" aria-label="Expanded canonical dependency graph">
-            {selected.tickets.length && !selected.unreadable ? <RunGraph tickets={selected.tickets as TicketSummary[]} /> : <div className="now-unavailable"><ShieldAlert aria-hidden="true" /><strong>Exact graph unavailable</strong><span>The run stays visible until its canonical tickets can be read.</span></div>}
+            {selected.tickets.length && !selected.unreadable ? <RunGraph tickets={selected.tickets} /> : <div className="now-unavailable"><ShieldAlert aria-hidden="true" /><strong>Exact graph unavailable</strong><span>The run stays visible until its canonical tickets can be read.</span></div>}
           </div>
         </> : <div className="now-unavailable"><Check aria-hidden="true" /><strong>No eligible runs</strong><span>There is nothing active or recently completed in the safe projection.</span></div>}
       </main>
