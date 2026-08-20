@@ -23,6 +23,13 @@ except ModuleNotFoundError:  # The installed CLI runs under the private runtime.
     TrustedHostMiddleware = Request = RedirectResponse = Response = Route = None
 
 try:
+    from scripts import (
+        ui_friction_projection,
+        ui_now_projection,
+        ui_runs_projection,
+        ui_sessions_projection,
+        ui_workflows_projection,
+    )
     from scripts.ui_assets import FallbackReaderServer, read_asset, resolve_asset_root, valid_host_headers
     from scripts.ui_discovery import (
         discover,
@@ -40,6 +47,11 @@ try:
     from scripts.ui_sessions import read_session
     from scripts.ui_experience import SPA_ROUTE_PATTERNS, browser_navigation, is_spa_path, project_experience
 except ImportError:
+    import ui_friction_projection
+    import ui_now_projection
+    import ui_runs_projection
+    import ui_sessions_projection
+    import ui_workflows_projection
     from ui_assets import FallbackReaderServer, read_asset, resolve_asset_root, valid_host_headers
     from ui_discovery import (
         discover,
@@ -71,6 +83,34 @@ SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
 }
+
+PROJECTOR_MODULES = (
+    ui_now_projection,
+    ui_runs_projection,
+    ui_workflows_projection,
+    ui_sessions_projection,
+    ui_friction_projection,
+)
+
+
+def _projector_route_specs(modules=None) -> tuple:
+    """Bind each pure domain table while refusing ambiguous HTTP ownership."""
+
+    modules = PROJECTOR_MODULES if modules is None else modules
+    assembled = []
+    seen = set()
+    for module in modules:
+        for method, path, function_name in module.ROUTE_SPECS:
+            key = (method, path)
+            if key in seen:
+                raise ValueError(
+                    "duplicate projection route {0} {1}".format(method, path)
+                )
+            seen.add(key)
+            assembled.append((method, path, module, function_name))
+    return tuple(assembled)
+
+
 def _ticket_record(ticket: dict) -> dict:
     verification = parse_verification(ticket["sections"].get("Verification", ""))
     return {
@@ -294,6 +334,22 @@ async def experience_endpoint(request: Request):
     return _json_response(request, project_experience(root, transcripts, dict(request.query_params)))
 
 
+def _starlette_projector_routes():
+    endpoints = {
+        (ui_now_projection, "project_observe"): observe_endpoint,
+        (ui_runs_projection, "project_runs"): runs_endpoint,
+        (ui_runs_projection, "project_run"): run_endpoint,
+        (ui_runs_projection, "project_ticket"): ticket_endpoint,
+        (ui_sessions_projection, "project_sessions"): sessions_endpoint,
+        (ui_sessions_projection, "project_session"): session_endpoint,
+        (ui_friction_projection, "project_friction"): friction_endpoint,
+    }
+    return [
+        Route(path, endpoints[(module, function_name)], methods=[method])
+        for method, path, module, function_name in _projector_route_specs()
+    ]
+
+
 async def index_endpoint(request: Request):
     asset = read_asset(request.app.state.assets, "index.html")
     if asset is None:
@@ -368,14 +424,8 @@ def create_application(root, transcripts=None, assets=None, legacy_respond=None)
     if Starlette is None:
         raise RuntimeError("Starlette is available only in the installed private runtime")
     routes = [
-        Route("/api/v1/runs", runs_endpoint, methods=["GET"]),
-        Route("/api/v1/runs/{run}/tickets/{ticket}", ticket_endpoint, methods=["GET"]),
-        Route("/api/v1/runs/{run}", run_endpoint, methods=["GET"]),
-        Route("/api/v1/friction", friction_endpoint, methods=["GET"]),
-        Route("/api/v1/sessions", sessions_endpoint, methods=["GET"]),
-        Route("/api/v1/sessions/{session}", session_endpoint, methods=["GET"]),
+        *_starlette_projector_routes(),
         Route("/api/v1/experience", experience_endpoint, methods=["GET"]),
-        Route("/api/observe", observe_endpoint, methods=["GET"]),
         Route("/assets/{asset:path}", asset_endpoint, methods=["GET"]),
         *[Route(pattern, spa_endpoint, methods=["GET"]) for pattern in SPA_ROUTE_PATTERNS],
         Route("/{path:path}", legacy_endpoint, methods=["GET"]),
