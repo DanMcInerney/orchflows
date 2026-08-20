@@ -6,6 +6,9 @@ import ast
 import importlib
 import subprocess
 
+import scripts.ui_api as legacy
+import scripts.ui_now_projection as now
+
 
 PROJECTORS = (
     "ui_now_projection",
@@ -60,6 +63,22 @@ class DomainProjectionBoundaryTests(unittest.TestCase):
                 if isinstance(node, ast.ImportFrom)
             )
             self.assertFalse((set(PROJECTORS) - {name}) & imported)
+
+
+class NowProjectionTests(unittest.TestCase):
+    def test_now_preserves_payload_selection_and_read_only_containment(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_sink(Path(tmp))
+            before = snapshot(root)
+            expected = legacy.project_observe(root, "run-gamma")
+            projected = now.project_observe(root, "run-gamma")
+            refused = now.project_observe(root, "../outside")
+            self.assertEqual(before, snapshot(root))
+
+        self.assertEqual(expected, projected)
+        self.assertEqual({"revision", "active", "nodes", "edges"}, set(projected))
+        self.assertNotEqual(projected, refused)
+        self.assertNotIn("outside", json.dumps(refused, sort_keys=True))
 
 
 if __name__ == "__main__":
