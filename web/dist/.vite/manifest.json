@@ -128,9 +128,9 @@
       "_createLucideIcon-Ct0G_dhG.js"
     ]
   },
-  "_styles-3myxswvA.css": {
-    "file": "assets/styles-3myxswvA.css",
-    "src": "_styles-3myxswvA.css"
+  "_styles-C3jFAaPh.css": {
+    "file": "assets/styles-C3jFAaPh.css",
+    "src": "_styles-C3jFAaPh.css"
   },
   "_triangle-alert-BtUBX7nb.js": {
     "file": "assets/triangle-alert-BtUBX7nb.js",
@@ -140,7 +140,7 @@
     ]
   },
   "index.html": {
-    "file": "assets/index-DktgaN7K.js",
+    "file": "assets/index-D0hLGc99.js",
     "name": "index",
     "src": "index.html",
     "isEntry": true,
@@ -242,7 +242,7 @@
     ]
   },
   "src/features/session-graph/SessionGraphView.tsx": {
-    "file": "assets/SessionGraphView-DvmnbF7o.js",
+    "file": "assets/SessionGraphView-Cz-mCsS_.js",
     "name": "SessionGraphView",
     "src": "src/features/session-graph/SessionGraphView.tsx",
     "isDynamicEntry": true,
@@ -262,7 +262,7 @@
     ]
   },
   "src/features/sessions/SessionsView.tsx": {
-    "file": "assets/SessionsView-G5lOMMqW.js",
+    "file": "assets/SessionsView-CdDP8R2Q.js",
     "name": "SessionsView",
     "src": "src/features/sessions/SessionsView.tsx",
     "isDynamicEntry": true,
@@ -280,7 +280,7 @@
     ]
   },
   "src/features/workflows/view/WorkflowCatalogView.tsx": {
-    "file": "assets/WorkflowCatalogView-BNKppHNG.js",
+    "file": "assets/WorkflowCatalogView-vwWdhPjF.js",
     "name": "WorkflowCatalogView",
     "src": "src/features/workflows/view/WorkflowCatalogView.tsx",
     "isDynamicEntry": true,
@@ -291,11 +291,11 @@
       "index.html"
     ],
     "css": [
-      "assets/styles-3myxswvA.css"
+      "assets/styles-C3jFAaPh.css"
     ]
   },
   "src/features/workflows/view/WorkflowDetailView.tsx": {
-    "file": "assets/WorkflowDetailView-Dj7xav1j.js",
+    "file": "assets/WorkflowDetailView-BA5SblbA.js",
     "name": "WorkflowDetailView",
     "src": "src/features/workflows/view/WorkflowDetailView.tsx",
     "isDynamicEntry": true,
@@ -311,11 +311,11 @@
       "index.html"
     ],
     "css": [
-      "assets/styles-3myxswvA.css"
+      "assets/styles-C3jFAaPh.css"
     ]
   },
   "src/features/workflows/view/WorkflowSourceView.tsx": {
-    "file": "assets/WorkflowSourceView-W7hKaA2o.js",
+    "file": "assets/WorkflowSourceView-32Kg3xjI.js",
     "name": "WorkflowSourceView",
     "src": "src/features/workflows/view/WorkflowSourceView.tsx",
     "isDynamicEntry": true,
@@ -328,7 +328,7 @@
       "index.html"
     ],
     "css": [
-      "assets/styles-3myxswvA.css"
+      "assets/styles-C3jFAaPh.css"
     ]
   }
 }

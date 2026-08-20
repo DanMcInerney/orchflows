@@ -233,6 +233,11 @@
 .workflows-empty a { display: inline-flex; align-items: center; gap: var(--space-2); margin-top: var(--space-3); color: var(--accent); font-weight: 700; }
 .workflows-empty a svg { width: 16px; }
 
+@media (max-width: 1024px) {
+  .workflow-detail__layout { grid-template-columns: 1fr; grid-template-areas: "inspector" "graph"; }
+  .workflow-inspector { position: static; }
+}
+
 @media (max-width: 760px) {
   .workflow-detail__hero { align-items: flex-start; }
   .workflow-detail__hero dl { display: none; }
