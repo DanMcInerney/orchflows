@@ -52,5 +52,22 @@ class FacadeRouteAssemblyTests(unittest.TestCase):
         self.assertEqual(0, completed.returncode, completed.stderr)
 
 
+class FacadeProjectionDelegationTests(unittest.TestCase):
+    def test_public_projection_compatibility_names_delegate_to_domain_owners(self):
+        expected = {
+            "project_observe": now.project_observe,
+            "project_runs": runs.project_runs,
+            "project_run": runs.project_run,
+            "project_ticket": runs.project_ticket,
+            "project_sessions": sessions.project_sessions,
+            "project_session": sessions.project_session,
+            "project_friction": friction.project_friction,
+        }
+
+        for name, owner in expected.items():
+            with self.subTest(name=name):
+                self.assertIs(owner, getattr(api, name))
+
+
 if __name__ == "__main__":
     unittest.main()

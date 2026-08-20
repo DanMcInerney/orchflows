@@ -5,9 +5,8 @@ from __future__ import annotations
 import hashlib
 import json
 import socket
-from collections import Counter
 from pathlib import Path
-from urllib.parse import parse_qs, quote, unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 
 try:
     import uvicorn
@@ -31,20 +30,6 @@ try:
         ui_workflows_projection,
     )
     from scripts.ui_assets import FallbackReaderServer, read_asset, resolve_asset_root, valid_host_headers
-    from scripts.ui_discovery import (
-        discover,
-        find_session,
-        find_ticket,
-        graph_input,
-        identity_diagnostics,
-        read_events,
-        read_friction,
-        read_sessions,
-        run_tickets,
-    )
-    from scripts.ui_model import ACTIVE_STATUS, _safe_name, parse_verification
-    from scripts.ui_layout import graph_layout
-    from scripts.ui_sessions import read_session
     from scripts.ui_experience import SPA_ROUTE_PATTERNS, browser_navigation, is_spa_path, project_experience
 except ImportError:
     import ui_friction_projection
@@ -53,23 +38,8 @@ except ImportError:
     import ui_sessions_projection
     import ui_workflows_projection
     from ui_assets import FallbackReaderServer, read_asset, resolve_asset_root, valid_host_headers
-    from ui_discovery import (
-        discover,
-        find_session,
-        find_ticket,
-        graph_input,
-        identity_diagnostics,
-        read_events,
-        read_friction,
-        read_sessions,
-        run_tickets,
-    )
-    from ui_model import ACTIVE_STATUS, _safe_name, parse_verification
-    from ui_layout import graph_layout
-    from ui_sessions import read_session
     from ui_experience import SPA_ROUTE_PATTERNS, browser_navigation, is_spa_path, project_experience
 
-API_VERSION = "v1"
 JSON_TYPE = "application/json; charset=utf-8"
 SECURITY_HEADERS = {
     "Content-Security-Policy": (
@@ -111,153 +81,13 @@ def _projector_route_specs(modules=None) -> tuple:
     return tuple(assembled)
 
 
-def _ticket_record(ticket: dict) -> dict:
-    verification = parse_verification(ticket["sections"].get("Verification", ""))
-    return {
-        "id": ticket["id"],
-        "status": ticket["status"],
-        "executor": ticket["executor"],
-        "bound": ticket["bound"],
-        "claimed_at": ticket["claimed_at"],
-        "claimed_by": ticket["claimed_by"],
-        "depends_on": list(ticket["depends_on"]),
-        "evidence": {
-            "state": verification["state"],
-            "entries": len(verification["rows"]),
-        },
-        "source": {"file_id": ticket["file_id"], "unreadable": ticket["unreadable"]},
-    }
-def _run_record(root: Path, run: str, tickets: list) -> dict:
-    nodes = [
-        {"id": ticket["id"], "label": ticket["id"], "status": ticket["status"]}
-        for ticket in tickets
-    ]
-    layout = graph_layout(*graph_input(tickets))
-    edges = [
-        {
-            "id": "{0}->{1}".format(source, target),
-            "source": source,
-            "target": target,
-        }
-        for source, target in layout["edges"]
-    ]
-    events = read_events(root, run)
-    return {
-        "api_version": API_VERSION,
-        "run": run,
-        "active": any(ticket["status"] == ACTIVE_STATUS for ticket in tickets),
-        "nodes": nodes,
-        "edges": edges,
-        "diagnostics": identity_diagnostics(tickets) + layout["diagnostics"],
-        "events": {
-            "present": events is not None,
-            "entries": len(events["entries"]) if events else 0,
-            "skipped": events["skipped"] if events else 0,
-            "unreadable": bool(events and events["unreadable"]),
-        },
-    }
-def project_runs(root: Path) -> dict:
-    found = discover(root)
-    runs = []
-    for item in found["runs"]:
-        counts = Counter(ticket["status"] for ticket in item["tickets"])
-        runs.append(
-            {
-                "id": item["run"],
-                "ticket_count": len(item["tickets"]),
-                "active": bool(counts.get(ACTIVE_STATUS)),
-                "statuses": dict(sorted(counts.items())),
-            }
-        )
-    return {"api_version": API_VERSION, "runs": runs, "empty": found["empty"]}
-def project_run(root: Path, run: str):
-    tickets = run_tickets(root, run)
-    return None if tickets is None else _run_record(root, run, tickets)
-def project_ticket(root: Path, run: str, ticket_id: str):
-    ticket = find_ticket(root, run, ticket_id)
-    if ticket is None:
-        return None
-    friction = read_friction(root)
-    linked = sum(
-        1
-        for entry in friction["entries"]
-        if entry.get("run") == run and entry.get("ticket") == ticket_id
-    )
-    return {
-        "api_version": API_VERSION,
-        "run": run,
-        "ticket": _ticket_record(ticket),
-        "linked_friction": linked,
-        "friction_health": {
-            "skipped": friction["skipped"],
-            "unreadable": list(friction["unreadable"]),
-        },
-    }
-def project_friction(root: Path) -> dict:
-    log = read_friction(root)
-    return {
-        "api_version": API_VERSION,
-        "entries": len(log["entries"]),
-        "skipped": log["skipped"],
-        "unreadable": len(log["unreadable"]),
-    }
-def _session_record(session: dict) -> dict:
-    return {
-        "id": session["id"],
-        "title": session.get("title", ""),
-        "modified": session["modified"],
-        "size": session["size"],
-        "agent_count": session["agent_count"],
-        "diagnostics": list(session.get("diagnostics", ())),
-    }
-def project_sessions(transcripts) -> dict:
-    found = read_sessions(transcripts)
-    return {
-        "api_version": API_VERSION,
-        "sessions": [_session_record(item) for item in found["sessions"]],
-        "diagnostics": list(found["diagnostics"]),
-        "empty": found["empty"],
-    }
-def project_session(transcripts, session_id: str):
-    found = find_session(transcripts, session_id)
-    if found is None:
-        return None
-    session = read_session(found)
-    projected = _session_record(session)
-    projected["agents"] = [
-        {
-            "id": agent["id"],
-            "type": agent["type"],
-            "depth": agent["depth"],
-            "parent": agent["parent"],
-            "modified": agent["modified"],
-            "state": agent["state"],
-            "evidence": agent["evidence"],
-            "unreadable": agent["unreadable"],
-        }
-        for agent in session["agents"]
-    ]
-    return {"api_version": API_VERSION, "session": projected}
-def project_observe(root: Path, requested_run: str) -> dict:
-    found = discover(root)
-    names = [item["run"] for item in found["runs"]]
-    selected = requested_run if requested_run in names else ""
-    if not selected:
-        selected = next(
-            (
-                item["run"]
-                for item in found["runs"]
-                if any(ticket["status"] == ACTIVE_STATUS for ticket in item["tickets"])
-            ),
-            names[0] if names else "",
-        )
-    graph = project_run(root, selected) if selected else None
-    nodes, edges, active = [], [], False
-    if graph is not None:
-        nodes, edges, active = graph["nodes"], graph["edges"], graph["active"]
-    basis = {"active": active, "nodes": nodes, "edges": edges}
-    revision = hashlib.sha256(_json_bytes(basis)).hexdigest()
-    return {"revision": revision, **basis}
+project_observe = ui_now_projection.project_observe
+project_runs = ui_runs_projection.project_runs
+project_run = ui_runs_projection.project_run
+project_ticket = ui_runs_projection.project_ticket
+project_sessions = ui_sessions_projection.project_sessions
+project_session = ui_sessions_projection.project_session
+project_friction = ui_friction_projection.project_friction
 
 
 def _json_bytes(value) -> bytes:
@@ -370,26 +200,6 @@ async def asset_endpoint(request: Request):
     return _bytes_response(
         request, asset[0], asset[1], "public, max-age=31536000, immutable", asset[2]
     )
-
-
-def _legacy_location(path: str, query, root=None, transcripts=None) -> str:
-    if path == "/ticket":
-        run, ticket = query.get("run", ""), query.get("id", "")
-        if root is not None and find_ticket(root, run, ticket) is not None:
-            return "/?run={0}&ticket={1}".format(quote(run, safe=""), quote(ticket, safe=""))
-    elif path == "/graph":
-        run = query.get("run", "")
-        if root is not None and run_tickets(root, run) is not None:
-            return "/?run={0}".format(quote(run, safe=""))
-    elif path == "/session":
-        session = query.get("id", "")
-        if find_session(transcripts, session) is not None:
-            return "/?session={0}".format(quote(session, safe=""))
-    elif path == "/sessions":
-        return "/?view=sessions"
-    elif path == "/friction":
-        return "/?view=friction"
-    return ""
 
 
 async def legacy_endpoint(request: Request):
