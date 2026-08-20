@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { ReadinessState, TicketSummary } from "../../api/schema";
 import {
   authoritativeCausalFocus,
   buildTopology,
   filterTickets,
   readinessGroups,
-  type CanonicalCause
+  type CanonicalCause,
+  type ReadinessState,
+  type TicketSummary,
 } from "./model";
 
 function ticket(

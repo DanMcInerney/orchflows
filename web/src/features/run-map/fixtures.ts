@@ -1,5 +1,4 @@
-import type { RunDetail, TicketSummary } from "../../api/schema";
-import type { CanonicalCause, CanonicalCausalReadiness } from "./model";
+import type { CanonicalCause, CanonicalCausalReadiness, RunDetail, TicketSummary } from "./model";
 
 function projected(ticket: TicketSummary, patch: Partial<TicketSummary>): TicketSummary {
   return { ...ticket, ...patch, readiness: patch.readiness ?? ticket.readiness };
@@ -116,3 +115,5 @@ export function runForIdentity(run: RunDetail | null, identity: string, requeste
     }))
   };
 }
+
+export const fixtures = { runForIdentity };
