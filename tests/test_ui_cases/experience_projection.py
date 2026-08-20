@@ -22,6 +22,48 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             hashlib.sha256(implemented).hexdigest().upper(),
         )
 
+    def test_workflows_spec_preserves_accepted_content_with_locator_repairs(self):
+        path = ROOT / "docs" / "ui" / "workflows.md"
+        implemented = path.read_bytes()
+
+        self.assertNotIn(b"](../../web/src/api/schema.ts)", implemented)
+        self.assertNotIn(b"](../../web/src/state/location.ts)", implemented)
+        reconstructed = implemented.replace(
+            b"`ExperienceSnapshot` schema (`web/src/api/schema.ts`)",
+            b"[`ExperienceSnapshot` schema](../../web/src/api/schema.ts)",
+        ).replace(
+            b"current routes (`web/src/state/location.ts`)",
+            b"[current routes](../../web/src/state/location.ts)",
+        ).replace(
+            b"schema (`web/src/api/schema.ts`)",
+            b"[schema](../../web/src/api/schema.ts)",
+        )
+        self.assertEqual(
+            "04BCF5297059CBA5B7A49D135A1D328DCD040227590A0A2E51988E946D282072",
+            hashlib.sha256(reconstructed).hexdigest().upper(),
+        )
+
+    def test_architecture_names_live_ui_owners_and_workflow_routes(self):
+        architecture = (ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8")
+
+        for deleted in (
+            "web/src/api",
+            "web/src/state",
+            "web/src/graph",
+            "web/src/testing",
+            "Workflows remains a route-free",
+        ):
+            self.assertNotIn(deleted, architecture)
+        for owner in (
+            "web/src/app/catalog.ts",
+            "web/src/features/",
+            "web/src/shared/transport/",
+            "/api/v1/workflows",
+            "/api/v1/workflows/{workflow_id}",
+            "/api/v1/workflows/{workflow_id}/sources/{source_id}",
+        ):
+            self.assertIn(owner, architecture)
+
     def test_session_slug_diagnostic_keeps_legacy_identity_but_api_is_path_safe(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
@@ -156,8 +198,10 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         ):
             self.assertFalse(removed.exists(), str(removed))
         self.assertNotIn("import.meta.glob", composition)
-        self.assertEqual(6, composition.count("defineFeature({"))
-        self.assertEqual(3, application_catalog.count("const workflow"))
+        self.assertEqual('export { featureCatalog } from "../catalog";\n', composition)
+        self.assertIn("export const featureCatalog = defineCatalog([", application_catalog)
+        self.assertEqual(9, application_catalog.count("defineFeature({"))
+        self.assertNotIn("bindWorkflowDefinitions", application_catalog)
         self.assertIn('navigation: { label: "Workflows", home: { fixture: "" } }', application_catalog)
         for path in (
             "/workflows",
