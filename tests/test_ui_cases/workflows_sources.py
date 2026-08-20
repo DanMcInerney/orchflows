@@ -25,6 +25,41 @@ UNREADABLE = {
 
 
 class WorkflowSourceTests(unittest.TestCase):
+    def test_redacts_posix_drive_and_unc_paths_with_spaces_before_hashing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            body = (
+                'POSIX "/etc/orchflows/Private Folder/secret.txt"\n'
+                'Drive "C:\\Users\\Jane Doe\\secret.txt"\n'
+                'UNC "\\\\server\\Private Share\\secret.txt"\n'
+            )
+            self._skill(root, "workflows", "demo", body)
+            source_id = identity.source_id("lib/skills/workflows/demo/SKILL.md")
+
+            status, payload = sources.project_source(root, "demo", source_id)
+
+        newline = os.linesep
+        expected = newline.join((
+            "---",
+            "name: demo",
+            "description: Test demo.",
+            "role: none",
+            "---",
+            "",
+            f'POSIX "{sources.REDACTED_HOST_PATH}"',
+            f'Drive "{sources.REDACTED_HOST_PATH}"',
+            f'UNC "{sources.REDACTED_HOST_PATH}"',
+            "",
+        ))
+        self.assertEqual(200, status)
+        self.assertEqual(expected, payload["text"])
+        self.assertTrue(payload["redacted"])
+        self.assertEqual(
+            hashlib.sha256(expected.encode("utf-8")).hexdigest(), payload["sha256"]
+        )
+        for leaked in ("/etc/orchflows", "Jane Doe", "Private Share"):
+            self.assertNotIn(leaked, payload["text"])
+
     def test_installed_layout_source_route_reads_sibling_bin(self):
         with tempfile.TemporaryDirectory() as directory:
             package = Path(directory)

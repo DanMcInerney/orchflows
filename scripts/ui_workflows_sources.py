@@ -22,11 +22,10 @@ ROOT = Path(__file__).resolve().parent.parent
 SOURCE_SCHEMA = "orchflows.workflow-source.v1"
 SOURCE_ID_RE = re.compile(r"src_[A-Za-z0-9_-]{43}\Z")
 WINDOWS_HOST_PATH_RE = re.compile(
-    r"(?<![A-Za-z0-9_])(?:[A-Za-z]:[\\/]|\\\\)[^\s`\"'<>]+"
+    r"(?<![A-Za-z0-9_])(?:[A-Za-z]:[\\/]|\\\\)[^`\"'<>\r\n]+"
 )
 POSIX_HOST_PATH_RE = re.compile(
-    r"(?<![:A-Za-z0-9_])/(?:Users|home|tmp|private|var|opt|srv|mnt|Volumes)"
-    r"(?:/[^\s`\"'<>]+)+"
+    r"(?<![:/A-Za-z0-9_])/(?!/)[^`\"'<>\r\n]+"
 )
 REDACTED_HOST_PATH = "[redacted-host-path]"
 NOT_FOUND = {"error": {"code": "not_found", "message": "resource not found"}}
