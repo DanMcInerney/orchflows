@@ -87,7 +87,7 @@
     ]
   },
   "index.html": {
-    "file": "assets/index-ChzpXE3Y.js",
+    "file": "assets/index-Bj0Cf8c6.js",
     "name": "index",
     "src": "index.html",
     "isEntry": true,
@@ -181,7 +181,7 @@
     ]
   },
   "src/features/session-graph/SessionGraphView.tsx": {
-    "file": "assets/SessionGraphView-CI1_1a6f.js",
+    "file": "assets/SessionGraphView-BahHcvIy.js",
     "name": "SessionGraphView",
     "src": "src/features/session-graph/SessionGraphView.tsx",
     "isDynamicEntry": true,
@@ -199,7 +199,7 @@
     ]
   },
   "src/features/sessions/SessionsView.tsx": {
-    "file": "assets/SessionsView-BBAsiBsc.js",
+    "file": "assets/SessionsView-DVMqYNsY.js",
     "name": "SessionsView",
     "src": "src/features/sessions/SessionsView.tsx",
     "isDynamicEntry": true,
