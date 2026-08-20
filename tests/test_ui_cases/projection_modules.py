@@ -119,6 +119,75 @@ class ClosedViewProjectionTests(unittest.TestCase):
         self.assertNotIn("create", encoded)
         self.assertEqual((), workflows.ROUTE_SPECS)
 
+    def test_closed_views_never_read_an_unrelated_domain_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            root = make_sink(tmp)
+            transcripts = make_transcripts(tmp)
+            with patch.object(
+                experience, "read_sessions", side_effect=AssertionError("sessions read")
+            ), patch.object(
+                experience, "read_friction", side_effect=AssertionError("friction read")
+            ):
+                experience.project_view(root, transcripts, "now", {})
+                experience.project_view(
+                    root, transcripts, "run-map", {"run": "run-gamma"}
+                )
+                experience.project_view(
+                    root,
+                    transcripts,
+                    "inspector",
+                    {"run": "run-gamma", "ticket": "G1"},
+                )
+
+            with patch.object(
+                experience, "discover", side_effect=AssertionError("runs read")
+            ), patch.object(
+                experience, "read_friction", side_effect=AssertionError("friction read")
+            ):
+                experience.project_view(root, transcripts, "sessions", {})
+                experience.project_view(
+                    root,
+                    transcripts,
+                    "session-graph",
+                    {"session": TITLED_SESSION},
+                )
+
+            with patch.object(
+                experience, "discover", side_effect=AssertionError("runs read")
+            ), patch.object(
+                experience, "read_sessions", side_effect=AssertionError("sessions read")
+            ):
+                experience.project_view(root, transcripts, "friction", {})
+
+    def test_legacy_adapter_delegates_domain_identity_and_health_reads(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            root = make_sink(tmp)
+            transcripts = make_transcripts(tmp)
+            with patch.object(
+                experience.ui_runs_projection,
+                "project_runs",
+                wraps=runs.project_runs,
+            ) as run_index, patch.object(
+                experience.ui_sessions_projection,
+                "project_session",
+                wraps=sessions.project_session,
+            ) as session_detail, patch.object(
+                experience.ui_friction_projection,
+                "project_friction",
+                wraps=friction.project_friction,
+            ) as friction_health:
+                experience.project_experience(
+                    root,
+                    transcripts,
+                    {"run": "run-gamma", "session": TITLED_SESSION},
+                )
+
+        run_index.assert_called()
+        session_detail.assert_called_once_with(transcripts, TITLED_SESSION)
+        friction_health.assert_called_once_with(root.resolve())
+
 
 class ProjectionOwnershipTests(unittest.TestCase):
     def test_aggregate_discovers_every_projection_contract_module(self):

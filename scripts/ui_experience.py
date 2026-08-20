@@ -6,9 +6,13 @@ import re
 from pathlib import Path
 
 try:
+    from scripts import (
+        ui_friction_projection,
+        ui_runs_projection,
+        ui_sessions_projection,
+    )
     from scripts.ui_discovery import (
         discover,
-        find_session,
         find_ticket,
         graph_input,
         identity_diagnostics,
@@ -20,16 +24,19 @@ try:
     from scripts.ui_layout import DIAGNOSTIC_CYCLE, DIAGNOSTIC_DANGLING, graph_layout
     from scripts.ui_model import parse_verification
     from scripts.ui_readiness import explain_run
-    from scripts.ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG, read_session
+    from scripts.ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG
 except ImportError:
+    import ui_friction_projection
+    import ui_runs_projection
+    import ui_sessions_projection
     from ui_discovery import (
-        discover, find_session, find_ticket, graph_input, identity_diagnostics,
+        discover, find_ticket, graph_input, identity_diagnostics,
         read_events, read_friction, read_sessions, run_tickets,
     )
     from ui_layout import DIAGNOSTIC_CYCLE, DIAGNOSTIC_DANGLING, graph_layout
     from ui_model import parse_verification
     from ui_readiness import explain_run
-    from ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG, read_session
+    from ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG
 
 SCHEMA = "orchflows.experience.v1"
 SPA_ROUTE_PATTERNS = (
@@ -240,10 +247,11 @@ def _run_record(root: Path, run: str):
 
 
 def _selected_run(root: Path, requested: str) -> str:
+    indexed = ui_runs_projection.project_runs(root)["runs"]
+    if requested in {item["id"] for item in indexed}:
+        return requested
     found = discover(root)
     run_ids = [item["run"] for item in found["runs"]]
-    if requested in run_ids:
-        return requested
     active = next(
         (
             item["run"]
@@ -256,10 +264,14 @@ def _selected_run(root: Path, requested: str) -> str:
 
 
 def _selected_session(transcripts, session_id: str):
-    found = find_session(transcripts, session_id) if session_id else None
-    if found is None:
+    value = (
+        ui_sessions_projection.project_session(transcripts, session_id)
+        if session_id
+        else None
+    )
+    if value is None:
         return None
-    session = read_session(found)
+    session = value["session"]
     projected = _session_summary(session)
     projected["agents"] = [
         {
@@ -277,30 +289,20 @@ def _selected_session(transcripts, session_id: str):
     return projected
 
 
-def project_experience(root, transcripts=None, query=None) -> dict:
-    """Project the entire closed UI substrate without mutating either root."""
-
-    root = Path(root).resolve()
-    query = query or {}
-    requested_view = _text(query.get("view"))
-    view = requested_view if requested_view in VIEW_IDS else "now"
-    run = _selected_run(root, _text(query.get("run")))
-    run_record = _run_record(root, run) if run else None
-    ticket_id = _text(query.get("ticket"))
-    ticket = find_ticket(root, run, ticket_id) if run and ticket_id else None
-    session_id = _text(query.get("session"))
-    sessions = read_sessions(transcripts)
-    friction = read_friction(root)
-    discovered = discover(root)
-    run_summaries = []
-    for found in discovered["runs"]:
+def _run_summaries(root: Path) -> list:
+    summaries = []
+    for found in discover(root)["runs"]:
         detail = _run_record(root, found["run"])
         events = read_events(root, found["run"])
         objective = next(
-            (_text(item.get("objective")) for item in found["tickets"] if item.get("objective")),
+            (
+                _text(item.get("objective"))
+                for item in found["tickets"]
+                if item.get("objective")
+            ),
             "",
         )
-        run_summaries.append({
+        summaries.append({
             "id": found["run"],
             "ticket_count": len(found["tickets"]),
             "active": bool(detail and detail["active"]),
@@ -311,6 +313,56 @@ def project_experience(root, transcripts=None, query=None) -> dict:
             "unreadable": any(bool(item.get("unreadable")) for item in found["tickets"]),
             "tickets": detail["tickets"] if detail else [],
         })
+    return summaries
+
+
+def _run_selection(root: Path, query) -> tuple:
+    run = _selected_run(root, _text(query.get("run")))
+    run_record = _run_record(root, run) if run else None
+    ticket_id = _text(query.get("ticket"))
+    ticket = find_ticket(root, run, ticket_id) if run and ticket_id else None
+    ticket_record = (
+        _ticket_detail(ticket, run_record, root, run) if ticket is not None else None
+    )
+    return run, run_record, ticket_id, ticket_record
+
+
+def _sessions_index(transcripts) -> dict:
+    sessions = read_sessions(transcripts)
+    return {
+        "items": [_session_list_summary(item) for item in sessions["sessions"]],
+        "diagnostics": [_session_diagnostic(item) for item in sessions["diagnostics"]],
+        "empty": bool(sessions["empty"]),
+    }
+
+
+def _friction_compatibility(root: Path) -> dict:
+    friction = read_friction(root)
+    health = ui_friction_projection.project_friction(root)
+    return {
+        "items": [
+            {
+                field: _text(entry.get(field))
+                for field in FRICTION_FIELDS
+                if entry.get(field) is not None
+            }
+            for entry in friction["entries"]
+        ],
+        "skipped": int(health["skipped"]),
+        "unreadable": int(health["unreadable"]),
+    }
+
+
+def project_experience(root, transcripts=None, query=None) -> dict:
+    """Project the entire closed UI substrate without mutating either root."""
+
+    root = Path(root).resolve()
+    query = query or {}
+    requested_view = _text(query.get("view"))
+    view = requested_view if requested_view in VIEW_IDS else "now"
+    run, run_record, ticket_id, ticket = _run_selection(root, query)
+    session_id = _text(query.get("session"))
+    session = _selected_session(transcripts, session_id)
     return {
         "schema": SCHEMA,
         "navigation": [
@@ -324,34 +376,40 @@ def project_experience(root, transcripts=None, query=None) -> dict:
             "view": view,
             "run": run,
             "ticket": ticket_id if ticket is not None else "",
-            "session": session_id if find_session(transcripts, session_id) is not None else "",
+            "session": session_id if session is not None else "",
         },
-        "runs": run_summaries,
+        "runs": _run_summaries(root),
         "run": run_record,
-        "ticket": _ticket_detail(ticket, run_record, root, run) if ticket is not None else None,
-        "sessions": {
-            "items": [_session_list_summary(item) for item in sessions["sessions"]],
-            "diagnostics": [_session_diagnostic(item) for item in sessions["diagnostics"]],
-            "empty": bool(sessions["empty"]),
-        },
-        "session": _selected_session(transcripts, session_id),
-        "friction": {
-            "items": [
-                {field: _text(entry.get(field)) for field in FRICTION_FIELDS if entry.get(field) is not None}
-                for entry in friction["entries"]
-            ],
-            "skipped": int(friction["skipped"]),
-            "unreadable": len(friction["unreadable"]),
-        },
+        "ticket": ticket,
+        "sessions": _sessions_index(transcripts),
+        "session": session,
+        "friction": _friction_compatibility(root),
     }
 
 
 def project_view(root, transcripts, view: str, query=None) -> dict:
-    """Return one closed feature slice of the compatibility projection."""
+    """Return one compatibility slice without opening another domain root."""
 
-    schema, fields = VIEW_SLICES[view]
-    compatibility = project_experience(root, transcripts, query)
-    return {
-        "schema": schema,
-        **{field: compatibility[field] for field in fields},
-    }
+    root = Path(root).resolve()
+    query = query or {}
+    schema = VIEW_SLICES[view][0]
+    if view == "now":
+        return {"schema": schema, "runs": _run_summaries(root)}
+    if view == "run-map":
+        _run, run_record, _ticket_id, _ticket = _run_selection(root, query)
+        return {
+            "schema": schema,
+            "runs": _run_summaries(root),
+            "run": run_record,
+        }
+    if view == "inspector":
+        _run, run_record, _ticket_id, ticket = _run_selection(root, query)
+        return {"schema": schema, "run": run_record, "ticket": ticket}
+    if view == "sessions":
+        return {"schema": schema, "sessions": _sessions_index(transcripts)}
+    if view == "session-graph":
+        return {
+            "schema": schema,
+            "session": _selected_session(transcripts, _text(query.get("session"))),
+        }
+    return {"schema": schema, "friction": _friction_compatibility(root)}
