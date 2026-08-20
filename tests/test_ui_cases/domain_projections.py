@@ -9,6 +9,7 @@ import subprocess
 import scripts.ui_api as legacy
 import scripts.ui_now_projection as now
 import scripts.ui_runs_projection as runs
+import scripts.ui_workflows_projection as workflows
 
 
 PROJECTORS = (
@@ -110,6 +111,20 @@ class RunsProjectionTests(unittest.TestCase):
         encoded = json.dumps((run_index, run, ticket), sort_keys=True)
         self.assertNotIn(str(root), encoded)
         self.assertNotIn("## Objective", encoded)
+
+
+class WorkflowsProjectionTests(unittest.TestCase):
+    def test_phase_a_workflows_is_the_current_run_summary_without_new_routes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_sink(Path(tmp))
+            before = snapshot(root)
+            projected = workflows.project_workflows(root)
+            self.assertEqual(before, snapshot(root))
+            self.assertEqual(legacy.project_runs(root), projected)
+
+        self.assertEqual({"api_version", "runs", "empty"}, set(projected))
+        self.assertEqual((), workflows.ROUTE_SPECS)
+        self.assertNotIn("workflow-catalog", json.dumps(projected, sort_keys=True))
 
 
 if __name__ == "__main__":
