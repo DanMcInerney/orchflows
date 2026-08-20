@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { layoutTopology } from "../../../layout";
 import type { WorkflowDetailEdge, WorkflowDetailModel, WorkflowDetailNode } from "../model";
@@ -72,6 +72,22 @@ function connectorGeometry(edge: WorkflowDetailEdge, positions: Record<string, P
   }
 
   const leftToRight = target.x >= source.x;
+  const vertical = Math.abs(target.y - source.y) > Math.abs(target.x - source.x);
+  if (vertical) {
+    const topToBottom = target.y >= source.y;
+    const sourceX = source.x + NODE_WIDTH / 2;
+    const targetX = target.x + NODE_WIDTH / 2;
+    const sourceY = source.y + (topToBottom ? NODE_HEIGHT : 0);
+    const targetY = target.y + (topToBottom ? 0 : NODE_HEIGHT);
+    const bend = Math.max(54, Math.abs(targetY - sourceY) * .42);
+    const direction = topToBottom ? 1 : -1;
+    return {
+      path: `M ${sourceX} ${sourceY} C ${sourceX} ${sourceY + bend * direction}, ${targetX} ${targetY - bend * direction}, ${targetX} ${targetY}`,
+      label: { x: (sourceX + targetX) / 2, y: (sourceY + targetY) / 2 },
+      selfLoop: false,
+    };
+  }
+
   const sourceX = source.x + (leftToRight ? NODE_WIDTH : 0);
   const targetX = target.x + (leftToRight ? 0 : NODE_WIDTH);
   const sourceY = source.y + NODE_HEIGHT / 2;
@@ -106,10 +122,12 @@ export interface WorkflowGraphProps {
 }
 
 export function WorkflowGraph({ model, selection, onSelect }: WorkflowGraphProps) {
+  const graphRef = useRef<HTMLDivElement>(null);
   const [positions, setPositions] = useState(() => fallbackPositions(model.nodes));
   const topology = useMemo(() => ({
     nodes: model.nodes.map(({ id }) => ({ id })),
     edges: model.edges.map((edge) => ({ id: edge.id, source: edge.from, target: edge.to })),
+    direction: "DOWN" as const,
   }), [model.edges, model.nodes]);
 
   useEffect(() => {
@@ -124,11 +142,23 @@ export function WorkflowGraph({ model, selection, onSelect }: WorkflowGraphProps
 
   const labels = new Map(model.nodes.map((node) => [node.id, node.label]));
   const connectors = model.edges.map((edge) => ({ edge, geometry: connectorGeometry(edge, positions) }));
+  useEffect(() => {
+    const graph = graphRef.current;
+    if (!graph || graph.clientWidth <= 0) return;
+    const selectedPoint = selection.type === "node"
+      ? positions[selection.value.id] && {
+          x: positions[selection.value.id].x + NODE_WIDTH / 2,
+          y: positions[selection.value.id].y + NODE_HEIGHT / 2,
+        }
+      : connectorGeometry(selection.value, positions)?.label;
+    if (!selectedPoint) return;
+    graph.scrollLeft = Math.max(0, selectedPoint.x - graph.clientWidth / 2);
+  }, [positions, selection]);
   const width = Math.max(680, ...Object.values(positions).map((point) => point.x + NODE_WIDTH + CANVAS_GUTTER));
   const height = Math.max(360, ...Object.values(positions).map((point) => point.y + NODE_HEIGHT + CANVAS_GUTTER));
 
   return (
-    <div className="workflow-graph" role="group" aria-label={`Exact topology for ${model.id}`}>
+    <div ref={graphRef} className="workflow-graph" role="group" aria-label={`Exact topology for ${model.id}`}>
       <div className="workflow-graph__canvas" style={{ width, height }}>
         <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} aria-hidden="true">
           <defs>

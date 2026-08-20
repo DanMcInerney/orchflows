@@ -5,6 +5,7 @@ import type { ObserveSnapshot } from "./model";
 export interface TopologyLayoutInput {
   nodes: Array<{ id: string }>;
   edges: Array<{ id: string; source: string; target: string }>;
+  direction?: "RIGHT" | "DOWN";
 }
 
 interface LayoutReply {
@@ -41,7 +42,7 @@ function requestLayout(worker: Worker, topology: TopologyLayoutInput, timeout: n
     const timer = window.setTimeout(failed, timeout);
     worker.addEventListener("message", reply);
     worker.addEventListener("error", failed);
-    worker.postMessage({ requestId, nodes: topology.nodes, edges: topology.edges });
+    worker.postMessage({ requestId, nodes: topology.nodes, edges: topology.edges, direction: topology.direction });
   });
 }
 

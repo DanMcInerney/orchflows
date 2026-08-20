@@ -66,12 +66,14 @@ it("lays out an exact generic topology through the authoritative ELK worker", as
   const positions = await layoutTopology({
     nodes: [{ id: "A" }, { id: "B" }],
     edges: [{ id: "loop-b", source: "B", target: "B" }],
+    direction: "DOWN",
   });
 
   expect(posted.map(({ worker }) => worker)).toEqual(["elk"]);
   expect(posted[0].message).toMatchObject({
     nodes: [{ id: "A" }, { id: "B" }],
     edges: [{ id: "loop-b", source: "B", target: "B" }],
+    direction: "DOWN",
   });
   expect(positions).toEqual({ A: { x: 11, y: 13 }, B: { x: 97, y: 113 } });
 });

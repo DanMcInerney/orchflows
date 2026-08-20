@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -72,8 +72,11 @@ describe("WorkflowDetailView", () => {
     render(<WorkflowDetailView route={{ workflowId: "evolve", fixture: "complex-loop" }} state={ready(detailFixture)} />);
 
     const campaign = screen.getByRole("button", { name: "Select work 02-campaign" });
+    const graph = screen.getByRole("group", { name: "Exact topology for evolve" });
+    Object.defineProperty(graph, "clientWidth", { configurable: true, value: 320 });
     campaign.focus();
     await user.keyboard("{Enter}");
+    await waitFor(() => expect(graph.scrollLeft).toBeGreaterThan(0));
     expect(screen.getByRole("heading", { name: "02-campaign" })).not.toBeNull();
     const inspector = screen.getByRole("complementary", { name: "02-campaign" });
     expect(within(inspector).getByRole("link", { name: "View source for 02-campaign" }).getAttribute("href")).toBe(
