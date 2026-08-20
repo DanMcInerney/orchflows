@@ -206,7 +206,7 @@ test("Observe run map stays interactive and stable across an ETag refresh", asyn
     }
   });
   page.on("response", (response) => {
-    if (new URL(response.url()).pathname === "/api/v1/experience") {
+    if (new URL(response.url()).pathname === "/api/v1/views/run-map") {
       apiResponses.push({ status: response.status(), etag: response.headers().etag ?? "" });
     }
   });

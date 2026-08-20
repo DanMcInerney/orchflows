@@ -6,14 +6,15 @@ from scripts.ui_experience import project_experience
 
 
 class TestExperienceFoundationGap(unittest.TestCase):
-    def test_observe_smoke_defaults_to_the_mounted_experience_feed(self):
+    def test_observe_smoke_tracks_the_mounted_run_map_feed(self):
         smoke = (ROOT / "web" / "src" / "smoke.spec.ts").read_text(encoding="utf-8")
         self.assertIn('process.env.ORCHFLOWS_UI_EXPERIENCE === "1"', smoke)
         self.assertNotIn("const experienceMode = true", smoke)
         start = smoke.index('test("Observe ')
         end = smoke.index('test("compiled experience', start)
         default_contract = smoke[start:end]
-        self.assertIn('"/api/v1/experience"', default_contract)
+        self.assertIn('"/api/v1/views/run-map"', default_contract)
+        self.assertNotIn('"/api/v1/experience"', default_contract)
         self.assertIn('`${origin}/runs/run-gamma`', default_contract)
         self.assertIn("status === 304", default_contract)
         self.assertNotIn("revision [0-9a-f]{64}", default_contract)
