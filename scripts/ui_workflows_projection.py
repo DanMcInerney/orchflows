@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from pathlib import Path
 
 try:
     from scripts import (
@@ -34,7 +35,12 @@ PUBLIC_ROUTE_SPECS = (
     ),
 )
 CATALOG_SCHEMA = "orchflows.workflow-catalog.v1"
-ROOT = catalog.ROOT
+PACKAGE_ROOT = catalog.ROOT
+ROOT = PACKAGE_ROOT if (PACKAGE_ROOT / "compositions").is_dir() else PACKAGE_ROOT / "lib"
+DEFAULT_SUMMARY = next(
+    (path for path in (ROOT / "docs/ui/workflow-summary-manifest.json", catalog.DEFAULT_SUMMARY) if path.is_file()),
+    ROOT / "docs/ui/workflow-summary-manifest.json",
+)
 
 
 class WorkflowProjectionError(ValueError):
@@ -44,7 +50,10 @@ class WorkflowProjectionError(ValueError):
 def project_workflow_catalog(root=ROOT, summary_path=None) -> dict:
     """Return the exact canonical catalog and UI-owned compact summaries."""
 
-    projected = catalog.project_catalog(root, catalog.DEFAULT_SUMMARY if summary_path is None else summary_path)
+    root = Path(root)
+    local_summary = root / "docs/ui/workflow-summary-manifest.json"
+    summary_path = local_summary if summary_path is None and local_summary.is_file() else summary_path
+    projected = catalog.project_catalog(root, DEFAULT_SUMMARY if summary_path is None else summary_path)
     return {"schema": CATALOG_SCHEMA, "workflows": projected}
 
 

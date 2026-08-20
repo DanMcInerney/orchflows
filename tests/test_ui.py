@@ -14,6 +14,8 @@ from tests.test_ui_cases.http_server import *  # noqa: F401,F403
 from tests.test_ui_cases.module_floor import *  # noqa: F401,F403
 from tests.test_ui_cases.projection_modules import *  # noqa: F401,F403
 from tests.test_ui_cases.projection_security import *  # noqa: F401,F403
+from tests.test_ui_cases.workflows_projection import *  # noqa: F401,F403
+from tests.test_ui_cases.workflows_http import *  # noqa: F401,F403
 from tests.test_ui_cases.transcript_index import *  # noqa: F401,F403
 from tests.test_ui_cases.transcript_rendering import *  # noqa: F401,F403
 from tests.test_ui_cases.transcript_cache import *  # noqa: F401,F403

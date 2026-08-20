@@ -94,16 +94,18 @@ NOT_FOUND = {"error": {"code": "not_found", "message": "resource not found"}}
 INTERNAL_ERROR = {
     "error": {"code": "internal_error", "message": "projection failed"}
 }
-
-
 def _projector_route_specs(modules=None) -> tuple:
     """Bind each pure domain table while refusing ambiguous HTTP ownership."""
 
+    include_public_workflows = modules is None
     modules = PROJECTOR_MODULES if modules is None else modules
+    tables = [(module, module.ROUTE_SPECS) for module in modules]
+    if include_public_workflows:
+        tables.append((ui_workflows_projection, ui_workflows_projection.PUBLIC_ROUTE_SPECS))
     assembled = []
     seen = set()
-    for module in modules:
-        for method, path, function_name in module.ROUTE_SPECS:
+    for module, specs in tables:
+        for method, path, function_name in specs:
             key = (method, path)
             if key in seen:
                 raise ValueError(
@@ -112,7 +114,6 @@ def _projector_route_specs(modules=None) -> tuple:
             seen.add(key)
             assembled.append((method, path, module, function_name))
     return tuple(assembled)
-
 
 def _validated_view_query(view: str, values):
     if view not in VIEW_SLICES or view not in VIEW_QUERY_FIELDS:
@@ -124,7 +125,6 @@ def _validated_view_query(view: str, values):
     if any(len(items) != 1 or not items[0] for items in values.values()):
         return None
     return {key: items[0] for key, items in values.items()}
-
 
 def _view_projection(root, transcripts, view: str, query) -> tuple:
     if view == "run-map" and query.get("run"):
@@ -146,13 +146,14 @@ project_ticket = ui_runs_projection.project_ticket
 project_sessions = ui_sessions_projection.project_sessions
 project_session = ui_sessions_projection.project_session
 project_friction = ui_friction_projection.project_friction
-
+project_workflow_catalog = ui_workflows_projection.project_workflow_catalog
+project_workflow = ui_workflows_projection.project_workflow
+project_workflow_source = ui_workflows_projection.project_workflow_source
 
 def _json_bytes(value) -> bytes:
     encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     encoded = encoded.replace("&", "\\u0026").replace("<", "\\u003c").replace(">", "\\u003e")
     return encoded.encode("utf-8")
-
 
 def _etag_matches(header: str, etag: str) -> bool:
     if not header:
@@ -163,7 +164,6 @@ def _etag_matches(header: str, etag: str) -> bool:
         (item[2:] if item.startswith("W/") else item) == target for item in sent
     )
 
-
 def _bytes_response(request: Request, body: bytes, media_type: str, cache: str, tag=None):
     etag = tag or '"{0}"'.format(hashlib.sha256(body).hexdigest())
     headers = {"Cache-Control": cache, "ETag": etag}
@@ -172,16 +172,13 @@ def _bytes_response(request: Request, body: bytes, media_type: str, cache: str, 
     headers["Content-Length"] = str(len(body))
     return Response(body, media_type=media_type, headers=headers)
 
-
 def _json_response(request: Request, value, status=200):
     if status != 200:
         return Response(_json_bytes(value), status_code=status, media_type="application/json")
     return _bytes_response(request, _json_bytes(value), JSON_TYPE, "no-cache")
 
-
 def _context(request: Request):
     return request.app.state.root, request.app.state.transcripts
-
 
 def _projected_response(request: Request, projector, *args):
     try:
@@ -192,15 +189,12 @@ def _projected_response(request: Request, projector, *args):
         return _json_response(request, {"error": "not found"}, 404)
     return _json_response(request, value)
 
-
 async def runs_endpoint(request: Request):
     return _projected_response(request, project_runs, _context(request)[0])
-
 
 async def run_endpoint(request: Request):
     root, _ = _context(request)
     return _projected_response(request, project_run, root, request.path_params["run"])
-
 
 async def ticket_endpoint(request: Request):
     root, _ = _context(request)
@@ -212,20 +206,16 @@ async def ticket_endpoint(request: Request):
         request.path_params["ticket"],
     )
 
-
 async def friction_endpoint(request: Request):
     return _projected_response(request, project_friction, _context(request)[0])
 
-
 async def sessions_endpoint(request: Request):
     return _projected_response(request, project_sessions, _context(request)[1])
-
 
 async def session_endpoint(request: Request):
     return _projected_response(
         request, project_session, _context(request)[1], request.path_params["session"]
     )
-
 
 async def observe_endpoint(request: Request):
     return _projected_response(
@@ -235,13 +225,11 @@ async def observe_endpoint(request: Request):
         request.query_params.get("run", ""),
     )
 
-
 async def experience_endpoint(request: Request):
     root, transcripts = _context(request)
     return _projected_response(
         request, project_experience, root, transcripts, dict(request.query_params)
     )
-
 
 async def view_endpoint(request: Request):
     root, transcripts = _context(request)
@@ -259,6 +247,27 @@ async def view_endpoint(request: Request):
         return _json_response(request, INTERNAL_ERROR, 500)
     return _json_response(request, value, status)
 
+def _workflow_root():
+    return ui_workflows_projection.ROOT
+
+async def workflows_endpoint(request: Request):
+    return _projected_response(request, project_workflow_catalog, _workflow_root())
+
+async def workflow_endpoint(request: Request):
+    try:
+        value = project_workflow(_workflow_root(), request.path_params["workflow_id"])
+    except Exception:
+        return _json_response(request, INTERNAL_ERROR, 500)
+    return _json_response(request, NOT_FOUND, 404) if value is None else _json_response(request, value)
+
+async def workflow_source_endpoint(request: Request):
+    try:
+        status, value = project_workflow_source(
+            _workflow_root(), request.path_params["workflow_id"], request.path_params["source_id"]
+        )
+    except Exception:
+        return _json_response(request, INTERNAL_ERROR, 500)
+    return _json_response(request, value, status)
 
 def _starlette_projector_routes():
     endpoints = {
@@ -269,12 +278,14 @@ def _starlette_projector_routes():
         (ui_sessions_projection, "project_sessions"): sessions_endpoint,
         (ui_sessions_projection, "project_session"): session_endpoint,
         (ui_friction_projection, "project_friction"): friction_endpoint,
+        (ui_workflows_projection, "project_workflow_catalog"): workflows_endpoint,
+        (ui_workflows_projection, "project_workflow"): workflow_endpoint,
+        (ui_workflows_projection, "project_workflow_source"): workflow_source_endpoint,
     }
     return [
         Route(path, endpoints[(module, function_name)], methods=[method])
         for method, path, module, function_name in _projector_route_specs()
     ]
-
 
 async def index_endpoint(request: Request):
     asset = read_asset(request.app.state.assets, "index.html")
@@ -282,12 +293,10 @@ async def index_endpoint(request: Request):
         return Response("reader application unavailable", status_code=503)
     return _bytes_response(request, asset[0], asset[1], "no-cache", asset[2])
 
-
 async def spa_endpoint(request: Request):
     if browser_navigation(request.url.path, request.headers):
         return await index_endpoint(request)
     return await legacy_endpoint(request)
-
 
 async def asset_endpoint(request: Request):
     asset = read_asset(request.app.state.assets, "assets/" + request.path_params["asset"])
@@ -296,7 +305,6 @@ async def asset_endpoint(request: Request):
     return _bytes_response(
         request, asset[0], asset[1], "public, max-age=31536000, immutable", asset[2]
     )
-
 
 async def legacy_endpoint(request: Request):
     responder = request.app.state.legacy_respond
@@ -325,7 +333,6 @@ if BaseHTTPMiddleware is not None:
 else:
     SecurityHeadersMiddleware = None
 
-
 def create_application(root, transcripts=None, assets=None, legacy_respond=None):
     if Starlette is None:
         raise RuntimeError("Starlette is available only in the installed private runtime")
@@ -349,7 +356,6 @@ def create_application(root, transcripts=None, assets=None, legacy_respond=None)
     app.state.assets = resolve_asset_root() if assets is None else Path(assets).resolve()
     app.state.legacy_respond = legacy_respond
     return app
-
 
 def _fallback_response(status, body=b"", media_type="text/plain; charset=utf-8", cache="no-cache", request_headers=None, tag=None, extra=None):
     tag = tag or ('"{0}"'.format(hashlib.sha256(body).hexdigest()) if status < 400 else "")
@@ -376,6 +382,17 @@ def _fallback_api(path, query, query_values, root, transcripts, headers):
                 return _fallback_json(INVALID_REQUEST, headers, 422)
             status, value = _view_projection(root, transcripts, view, validated)
             return _fallback_json(value, headers, status)
+        if path == "/api/v1/workflows":
+            return _fallback_json(project_workflow_catalog(_workflow_root()), headers)
+        if path.startswith("/api/v1/workflows/"):
+            parts = path.strip("/").split("/")
+            if len(parts) == 4:
+                value = project_workflow(_workflow_root(), parts[3])
+                return _fallback_json(value if value is not None else NOT_FOUND, headers, 200 if value is not None else 404)
+            if len(parts) == 6 and parts[4] == "sources":
+                status, value = project_workflow_source(_workflow_root(), parts[3], parts[5])
+                return _fallback_json(value, headers, status)
+            return _fallback_json(NOT_FOUND, headers, 404)
         if path == "/api/v1/runs":
             return _fallback_json(project_runs(root), headers)
         if path.startswith("/api/v1/runs/"):
