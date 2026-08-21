@@ -14,7 +14,7 @@ afterEach(() => {
 });
 
 describe("Workflows application integration", () => {
-  it("makes definitions the visible Workflows home while preserving nav-hidden run children", () => {
+  it("keeps definitions under Workflows while execution descendants belong to Now", () => {
     const visibleRail = featureCatalog.flatMap((entry) => {
       if (entry.kind === "disabled") return [{ id: entry.id, href: null }];
       if (entry.navigation === false) return [];
@@ -46,11 +46,11 @@ describe("Workflows application integration", () => {
     });
     expect(matchCatalog(featureCatalog, location("/runs/run-gamma"))).toMatchObject({
       id: "run-map",
-      activeNavigationId: "workflows",
+      activeNavigationId: "now",
     });
     expect(matchCatalog(featureCatalog, location("/runs/run-gamma/tickets/G1"))).toMatchObject({
       id: "ticket",
-      activeNavigationId: "workflows",
+      activeNavigationId: "now",
     });
   });
 

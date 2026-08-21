@@ -1,13 +1,15 @@
 import * as Tabs from "@radix-ui/react-tabs";
 import {
   Activity, AlertTriangle, ArrowRight, CheckCircle2, CircleHelp, Clock3,
-  Code2, FileCheck2, Flame, History, LayoutDashboard, ListChecks, LockKeyhole, XCircle
+  Code2, ExternalLink, FileCheck2, Flame, History, LayoutDashboard, ListChecks,
+  LockKeyhole, PackageOpen, XCircle
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import type { FeatureState } from "../../shared/transport/types";
 import {
-  detailRows, durableHistory, fixtureTicket, inspectorTabs, linkedFriction, proofRows, rawTicket,
-  selectedTab, statusState, tabPath, type InspectorModel, type InspectorTab
+  artifactRows, detailRows, durableHistory, executorSource, fixtureTicket, inspectorTabs,
+  linkedFriction, proofRows, rawTicket, selectedTab, statusState, tabPath,
+  type InspectorModel, type InspectorTab
 } from "./model";
 import type { InspectorRoute } from "./route";
 import "./inspector.css";
@@ -19,13 +21,14 @@ export interface TicketInspectorProps {
 
 const tabLabels: Record<InspectorTab, string> = {
   overview: "Overview", details: "Details", proof: "Proof",
-  friction: "Friction", history: "History", raw: "Raw"
+  artifacts: "Artifacts", friction: "Friction", history: "History", raw: "Raw"
 };
 
 const tabIcons: Record<InspectorTab, ReactNode> = {
   overview: <LayoutDashboard aria-hidden="true" />,
   details: <ListChecks aria-hidden="true" />,
   proof: <FileCheck2 aria-hidden="true" />,
+  artifacts: <PackageOpen aria-hidden="true" />,
   friction: <Flame aria-hidden="true" />,
   history: <History aria-hidden="true" />,
   raw: <Code2 aria-hidden="true" />
@@ -71,6 +74,8 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
 
   const state = statusState(ticket);
   const rows = proofRows(viewModel, route.fixture);
+  const source = executorSource(ticket);
+  const artifacts = artifactRows(ticket, route);
   const friction = linkedFriction(viewModel, route);
   const history = durableHistory(viewModel, route);
   const objective = ticket.sections.objective || "No objective was recorded.";
@@ -87,7 +92,7 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
       {featureState.status === "stale" && <div className="notice" role="status">{featureState.error.message}</div>}
       <header className="inspector-header">
         <div className="inspector-breadcrumb" aria-label="Ticket location">
-          <span>Workflows</span><ArrowRight aria-hidden="true" /><span className="mono">{route.run}</span><ArrowRight aria-hidden="true" />
+          <span>Now</span><ArrowRight aria-hidden="true" /><span className="mono">{route.run}</span><ArrowRight aria-hidden="true" />
           <strong className="mono">{ticket.id}</strong>
         </div>
         <div className="inspector-heading">
@@ -133,11 +138,26 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
         <Tabs.Content className="inspector-panel" value="details">
           <article className="inspector-card"><div className="panel-heading"><p className="eyebrow">Canonical metadata</p><h2>Routing and limits</h2></div>
             <dl className="detail-list">{detailRows(ticket).map((row) => <div key={row.label}><dt>{row.label}</dt><dd className={row.mono ? "mono" : undefined}>{row.value}</dd></div>)}</dl>
+            <div className="source-disclosure">
+              <div><p className="eyebrow">Canonical association</p><h3>Executor source</h3></div>
+              {source.href
+                ? <a href={source.href} aria-label={`Open canonical ${source.label}`}><ExternalLink aria-hidden="true" /><span>{source.label}</span></a>
+                : <div className="unavailable-state"><strong>Executor source unavailable</strong><p>{source.reason}</p></div>}
+            </div>
           </article>
         </Tabs.Content>
 
         <Tabs.Content className="inspector-panel" value="proof">
           <article className="inspector-card"><div className="panel-heading"><p className="eyebrow">Verification evidence</p><h2>Criteria and verdicts</h2><p>Every projected criterion keeps its oracle class and evidence identity.</p></div>
+            <section className="judgment-summary" aria-labelledby="judgment-title">
+              <div><p className="eyebrow">Canonical fields only</p><h3 id="judgment-title">Judgment explanation</h3></div>
+              <dl>
+                {["result", "feedback", "risks"].map((name) => <div key={name}><dt>{name}</dt><dd>{ticket.sections[name] || "Unavailable"}</dd></div>)}
+                <div><dt>Rationale</dt><dd>{ticket.judgment?.rationale_state === "available" && ticket.judgment.rationale_identity
+                  ? <code>{ticket.judgment.rationale_identity}</code>
+                  : <><strong>Rationale unavailable</strong><span>{ticket.judgment?.rationale_reason || "No canonical rationale identity was recorded."}</span></>}</dd></div>
+              </dl>
+            </section>
             {rows.some((row) => row.verdict.toLowerCase() === "fail") && <div className="proof-alert" role="status"><AlertTriangle aria-hidden="true" /><div><strong>Criterion {rows.find((row) => row.verdict.toLowerCase() === "fail")?.criterion} failed</strong><p>{rows.find((row) => row.verdict.toLowerCase() === "fail")?.oracle}: {rows.find((row) => row.verdict.toLowerCase() === "fail")?.evidence}</p></div></div>}
             {rows.length ? <div className="proof-list" role="list" aria-label="Verification criteria">{rows.map((row) => {
               const verdict = row.verdict.toLowerCase();
@@ -149,6 +169,19 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
                 <div><span className="field-label">Evidence</span><code>{row.evidence}</code></div>
               </article>;
             })}</div> : <EmptyEvidence title="Proof unavailable">No verification rows were projected. Unknown is preserved; it is not treated as a pass.</EmptyEvidence>}
+          </article>
+        </Tabs.Content>
+
+        <Tabs.Content className="inspector-panel" value="artifacts">
+          <article className="inspector-card"><div className="panel-heading"><p className="eyebrow">State-sink identities only</p><h2>Generated artifacts</h2><p>Links use opaque projected identities and the contained artifact reader.</p></div>
+            {ticket.artifacts?.state === "rows" && artifacts.length
+              ? <div className="artifact-list" role="list" aria-label="Generated artifacts">{artifacts.map((item, index) => <article className="artifact-row" role="listitem" key={`${item.id}-${index}`}>
+                <div><strong>{item.label}</strong><span>{item.mediaType}</span></div>
+                {item.href
+                  ? <a href={item.href} aria-label={`Open contained artifact ${item.label}`}><ExternalLink aria-hidden="true" /><span>Open contained artifact</span></a>
+                  : <div className="unavailable-state"><span className="field-label">Unavailable</span><strong>{item.reason}</strong>{item.reason !== item.label && <p>{item.label}</p>}</div>}
+              </article>)}</div>
+              : <EmptyEvidence title="Artifacts unavailable">{ticket.artifacts?.reason || "No canonical artifact identities were projected."}</EmptyEvidence>}
           </article>
         </Tabs.Content>
 

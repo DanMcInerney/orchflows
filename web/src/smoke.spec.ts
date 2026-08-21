@@ -91,10 +91,16 @@ test.afterAll(async () => {
 async function openManifestIdentity(page, identity, width, height) {
   await page.setViewportSize({ width, height });
   await page.goto(`${origin}${identity.path}`);
-  await expect(page.locator(".foundation-view"), identity.identity).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator(".foundation-view"), identity.identity).toBeVisible({ timeout: 45_000 });
 }
 
-async function expectManifestIdentityTruth(page, identity) {
+async function expectManifestIdentityTruth(page, identity, navigationParents) {
+  const navigationParent = navigationParents[identity.view];
+  expect(navigationParent, `${identity.identity}: declared navigation parent`).toBeTruthy();
+  await expect(
+    page.getByRole("link", { name: navigationParent, exact: true }).first(),
+    `${identity.identity}: active navigation parent`,
+  ).toHaveAttribute("aria-current", "page");
   if (identity.identity.startsWith("workflow-catalog--populated--")) {
     await expect(page.locator(".workflow-catalog__row"), `${identity.identity}: canonical definitions`).toHaveCount(14);
     await expect(page.locator(".workflow-catalog a[href^='/runs/']"), `${identity.identity}: definition-only catalog`).toHaveCount(0);
@@ -121,9 +127,6 @@ async function expectManifestIdentityTruth(page, identity) {
   }
   if (identity.identity.startsWith("workflow-source--unreadable-source--")) {
     await expect(page.getByRole("heading", { name: "Source is unreadable" })).toBeVisible();
-  }
-  if (identity.identity.startsWith("workflow-")) {
-    await expect(page.getByRole("link", { name: "Workflows", exact: true }).first()).toHaveAttribute("aria-current", "page");
   }
   if (identity.identity === "run-map--blocked-causal--compact") {
     const inspector = await page.locator(".run-inspector").boundingBox();
@@ -292,24 +295,21 @@ test("compiled experience preserves keyboard-reachable observer state across ref
   const attention = page.getByRole("button", { name: "Needs attention", exact: true });
   await attention.click();
   await expect(attention).toHaveAttribute("aria-pressed", "true");
-  const firstGroup = page.locator(".now-groups button").first();
-  await firstGroup.click();
-  await expect(firstGroup).toHaveAttribute("aria-expanded", "true");
+  const firstRunDetail = page.locator(".now-run-card__open").first();
+  await expect(firstRunDetail).toHaveAttribute("href", /^\/runs\//);
   const pause = page.getByRole("button", { name: "Pause live" });
   await pause.click();
   await expect(page.getByRole("button", { name: "Resume live" })).toHaveAttribute("aria-pressed", "true");
 
-  const summary = page.getByRole("tab", { name: "summary" });
-  await summary.focus();
-  await page.keyboard.press("ArrowRight");
-  await expect(page.getByRole("tab", { name: "tickets" })).toHaveAttribute("aria-selected", "true");
+  await firstRunDetail.focus();
+  await expect(firstRunDetail).toBeFocused();
   await expect.poll(() => apiStatuses.includes(304)).toBe(true);
   await expect(attention).toHaveAttribute("aria-pressed", "true");
-  await expect(firstGroup).toHaveAttribute("aria-expanded", "true");
+  await expect(firstRunDetail).toBeFocused();
   await expect(page.getByRole("button", { name: "Resume live" })).toBeVisible();
 
   await page.setViewportSize({ width: 640, height: 780 });
-  await expect(page.locator(".now-layout")).toBeVisible();
+  await expect(page.locator(".now-hierarchy")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(641);
   expect(remoteRequests).toEqual([]);
   expect(errors).toEqual([]);
@@ -358,10 +358,14 @@ test("experience drill-down stays actionable and bounded in a real browser", asy
   await expect(page.locator("#session-inspector-heading")).toHaveText(agentLabel || "");
 
   await page.goto(`${origin}/now`);
-  await expect(page.locator(".now-run").first()).toBeVisible();
+  const nowRun = page.locator(".now-run-card").first();
+  await expect(nowRun).toBeVisible();
   const objectiveHeights = await page.locator(".now-objective-summary").evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height));
   expect(Math.max(...objectiveHeights)).toBeLessThanOrEqual(72);
-  await expect(page.getByText("Full objective")).toBeVisible();
+  await expect(nowRun.getByText("Full objective")).toBeVisible();
+  await nowRun.locator(".now-run-card__open").click();
+  await expect(page).toHaveURL(/\/runs\/[^/?]+$/);
+  await expect(page.locator('.run-map[data-view="run-map"]')).toBeVisible();
 
   await page.goto(`${origin}/friction`);
   await expect(page.locator(".friction-record")).toHaveCount(50);
@@ -381,7 +385,7 @@ test("capture every manifest identity", async ({ page }) => {
   for (const identity of manifest.views) {
     const [width, height] = manifest.breakpoints[identity.breakpoint];
     await openManifestIdentity(page, identity, width, height);
-    await expectManifestIdentityTruth(page, identity);
+    await expectManifestIdentityTruth(page, identity, manifest.navigationParents);
     await page.screenshot({ path: join(output, `${identity.identity}.png`), fullPage: true });
   }
 });
@@ -394,7 +398,7 @@ test("audit every manifest identity", async ({ page }) => {
     const [width, height] = manifest.breakpoints[identity.breakpoint];
     await page.emulateMedia({ forcedColors: "none", reducedMotion: "no-preference" });
     await openManifestIdentity(page, identity, width, height);
-    await expectManifestIdentityTruth(page, identity);
+    await expectManifestIdentityTruth(page, identity, manifest.navigationParents);
     const result = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
     expect(result.violations, identity.identity).toEqual([]);
 

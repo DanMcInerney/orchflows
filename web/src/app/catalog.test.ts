@@ -114,6 +114,25 @@ describe("feature catalog", () => {
     expect(visibleRail).toEqual(["Now", "Workflows", "Create", "Sessions", "Friction"]);
   });
 
+  it("assigns execution descendants to Now and definition descendants to Workflows", () => {
+    expect(matchCatalog(featureCatalog, location("/runs/run-alpha"))).toMatchObject({
+      id: "run-map",
+      activeNavigationId: "now",
+    });
+    expect(matchCatalog(featureCatalog, location("/runs/run-alpha/tickets/T-1"))).toMatchObject({
+      id: "ticket",
+      activeNavigationId: "now",
+    });
+    expect(matchCatalog(featureCatalog, location("/workflows/evolve"))).toMatchObject({
+      id: "workflow-detail",
+      activeNavigationId: "workflows",
+    });
+    expect(matchCatalog(featureCatalog, location("/workflows/evolve/sources/src_campaign"))).toMatchObject({
+      id: "workflow-source",
+      activeNavigationId: "workflows",
+    });
+  });
+
   it("rejects noncanonical and non-round-tripping navigation homes", () => {
     const invalid = {
       ...itemFeature("workflow-detail", 10),

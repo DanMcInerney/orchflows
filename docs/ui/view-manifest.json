@@ -4,6 +4,17 @@
     "wide": [1440, 1024],
     "compact": [1024, 768]
   },
+  "navigationParents": {
+    "now": "Now",
+    "run-map": "Now",
+    "ticket": "Now",
+    "workflow-catalog": "Workflows",
+    "workflow-detail": "Workflows",
+    "workflow-source": "Workflows",
+    "sessions": "Sessions",
+    "session-graph": "Sessions",
+    "friction": "Friction"
+  },
   "views": [
     {"identity": "now--mixed-live--wide", "view": "now", "state": "mixed-live", "breakpoint": "wide", "path": "/now?fixture=mixed-live"},
     {"identity": "now--mixed-live--compact", "view": "now", "state": "mixed-live", "breakpoint": "compact", "path": "/now?fixture=mixed-live"},

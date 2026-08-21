@@ -7,6 +7,7 @@ import importlib
 import subprocess
 
 import scripts.ui_api as legacy
+import scripts.ui_artifacts_projection as artifacts
 import scripts.ui_now_projection as now
 import scripts.ui_runs_projection as runs
 import scripts.ui_workflows_projection as workflows
@@ -15,6 +16,7 @@ import scripts.ui_friction_projection as friction
 
 
 PROJECTORS = (
+    "ui_artifacts_projection",
     "ui_now_projection",
     "ui_runs_projection",
     "ui_workflows_projection",
@@ -22,6 +24,18 @@ PROJECTORS = (
     "ui_friction_projection",
 )
 ROUTES = {
+    "ui_artifacts_projection": (
+        (
+            "GET",
+            "/api/v1/runs/{run}/tickets/{ticket}/artifacts",
+            "project_artifact_inventory",
+        ),
+        (
+            "GET",
+            "/api/v1/runs/{run}/tickets/{ticket}/artifacts/{artifact_id}",
+            "project_artifact",
+        ),
+    ),
     "ui_now_projection": (("GET", "/api/observe", "project_observe"),),
     "ui_runs_projection": (
         ("GET", "/api/v1/runs", "project_runs"),

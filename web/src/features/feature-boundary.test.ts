@@ -5,6 +5,17 @@ import * as inspector from "./inspector";
 import * as sessions from "./sessions";
 import * as sessionGraph from "./session-graph";
 import * as friction from "./friction";
+import {
+  EXECUTION_ROUTE_PARENT,
+  executionRunRoute,
+  executionTicketRoute,
+} from "../shared/routes/executionRoutes";
+import viewManifestSource from "../../../docs/ui/view-manifest.json?raw";
+
+const viewManifest = JSON.parse(viewManifestSource) as {
+  navigationParents?: Record<string, string>;
+  views: Array<{ view: string }>;
+};
 
 const nowSources = import.meta.glob("./now/**/*.{ts,tsx}", {
   eager: true,
@@ -43,6 +54,44 @@ const frictionSources = import.meta.glob("./friction/**/*.{ts,tsx}", {
 }) as Record<string, string>;
 
 describe("feature package boundaries", () => {
+  it("routes execution descendants through shared builders under Now", () => {
+    const runLocation = { pathname: "/runs/run%20alpha", search: "?fixture=full-expanded", hash: "" };
+    const ticketLocation = {
+      pathname: "/runs/run%20alpha/tickets/T%2F1",
+      search: "?fixture=proof-pass",
+      hash: "",
+    };
+
+    expect(EXECUTION_ROUTE_PARENT).toBe("now");
+    expect(runMap.route.match(runLocation)).toEqual(executionRunRoute.match(runLocation));
+    expect(runMap.route.build({ run: "run alpha", fixture: "full-expanded" })).toBe(
+      executionRunRoute.build({ run: "run alpha", fixture: "full-expanded" }),
+    );
+    expect(inspector.route.match(ticketLocation)).toEqual(executionTicketRoute.match(ticketLocation));
+    expect(inspector.route.build({ run: "run alpha", ticket: "T/1", fixture: "proof-pass" })).toBe(
+      executionTicketRoute.build({ run: "run alpha", ticket: "T/1", fixture: "proof-pass" }),
+    );
+
+    expect(runMapSources["./run-map/route.ts"]).toContain('../../shared/routes/executionRoutes');
+    expect(inspectorSources["./inspector/route.ts"]).toContain('../../shared/routes/executionRoutes');
+  });
+
+  it("keeps execution descendants under Now in the rendered identity contract", () => {
+    expect(viewManifest.views).toHaveLength(60);
+    expect(viewManifest.navigationParents).toEqual({
+      now: "Now",
+      "run-map": "Now",
+      ticket: "Now",
+      "workflow-catalog": "Workflows",
+      "workflow-detail": "Workflows",
+      "workflow-source": "Workflows",
+      sessions: "Sessions",
+      "session-graph": "Sessions",
+      friction: "Friction",
+    });
+    expect(viewManifest.views.filter(({ view }) => view === "run-map" || view === "ticket")).toHaveLength(24);
+  });
+
   it("closes Now behind the catalog-facing feature contract", async () => {
     expect(Object.keys(now)).toEqual(expect.arrayContaining([
       "route",

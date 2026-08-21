@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -22,7 +23,7 @@ try:
         run_tickets,
     )
     from scripts.ui_layout import DIAGNOSTIC_CYCLE, DIAGNOSTIC_DANGLING, graph_layout
-    from scripts.ui_model import parse_verification
+    from scripts.ui_model import _in_tree, _json_object, _safe_name, _scalar, parse_verification
     from scripts.ui_readiness import explain_run
     from scripts.ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG
 except ImportError:
@@ -34,7 +35,7 @@ except ImportError:
         read_events, read_friction, read_sessions, run_tickets,
     )
     from ui_layout import DIAGNOSTIC_CYCLE, DIAGNOSTIC_DANGLING, graph_layout
-    from ui_model import parse_verification
+    from ui_model import _in_tree, _json_object, _safe_name, _scalar, parse_verification
     from ui_readiness import explain_run
     from ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG
 
@@ -64,6 +65,8 @@ POSIX_HOST_PATH_RE = re.compile(
     r"(?<![:A-Za-z0-9_])/(?:Users|home|tmp|private|var|opt|srv|mnt|Volumes)(?:/[^\s`\"'<>]+)+"
 )
 REDACTED_HOST_PATH = "[redacted-host-path]"
+OPAQUE_ARTIFACT_RE = re.compile(r"^art_[A-Za-z0-9_-]{43}$")
+CANONICAL_WORKFLOW_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,126}$")
 VIEW_SLICES = {
     "now": ("orchflows.now.v1", ("runs",)),
     "run-map": ("orchflows.run-map.v1", ("runs", "run")),
@@ -93,6 +96,35 @@ def browser_navigation(path: str, headers) -> bool:
 
 def _text(value) -> str:
     return value if isinstance(value, str) else "" if value is None else str(value)
+
+
+def _rationale_identity(value) -> dict:
+    try:
+        identity = json.loads(_text(value))
+    except (TypeError, ValueError):
+        identity = None
+    available = (
+        isinstance(identity, dict)
+        and set(identity) == {"kind", "id"}
+        and identity.get("kind") == "artifact"
+        and isinstance(identity.get("id"), str)
+        and OPAQUE_ARTIFACT_RE.fullmatch(identity["id"]) is not None
+    )
+    return {
+        "state": "available" if available else "unavailable",
+        "identity": identity if available else None,
+    }
+
+
+def _run_workflow(root: Path, run: str):
+    run = _safe_name(run)
+    path = _in_tree(root.joinpath("runs"), run, "run.json") if run else None
+    try:
+        identity = _json_object(path.read_text(encoding="utf-8")) if path else None
+    except (OSError, UnicodeDecodeError):
+        return None
+    workflow = _scalar(identity.get("workflow")) if identity and _scalar(identity.get("run")) == run else ""
+    return workflow if CANONICAL_WORKFLOW_RE.fullmatch(workflow) else None
 
 
 def _session_summary(session: dict) -> dict:
@@ -176,6 +208,22 @@ def _ticket_detail(ticket: dict, run_record: dict, root: Path, run: str) -> dict
         if name in sections
     }
     record["verification"] = parse_verification(_text(sections.get("Verification")))
+    record["judgment"] = {
+        "criteria": [
+            {
+                "criterion": _text(row.get("#")),
+                "verdict": _text(row.get("verdict")),
+                "oracle": _text(row.get("oracle")),
+                "oracle_class": _text(row.get("class")),
+                "evidence": _text(row.get("evidence")),
+            }
+            for row in record["verification"]["rows"]
+        ],
+        "result": _text(sections.get("Result")),
+        "feedback": _text(sections.get("Feedback")),
+        "risks": _text(sections.get("Risks")),
+        "rationale": _rationale_identity(sections.get("Rationale")),
+    }
     record["inputs"] = [
         line.strip()[2:].strip()
         for line in _redact_host_paths(
@@ -221,6 +269,36 @@ def _run_diagnostics(tickets) -> list:
     return records
 
 
+def _execution_position(tickets) -> dict:
+    def position(ticket: dict) -> dict:
+        return {
+            "id": ticket["id"],
+            "status": ticket["status"],
+            "state": _text(ticket.get("readiness", {}).get("state")),
+        }
+
+    current = [
+        ticket for ticket in tickets
+        if ticket.get("readiness", {}).get("state") == "running"
+    ]
+    current_ids = {ticket["id"] for ticket in current}
+    if current_ids:
+        upcoming = [
+            ticket for ticket in tickets
+            if ticket.get("readiness", {}).get("state") != "complete"
+            and current_ids.intersection(ticket.get("depends_on", ()))
+        ]
+    else:
+        upcoming = [
+            ticket for ticket in tickets
+            if ticket.get("readiness", {}).get("state") == "ready"
+        ]
+    return {
+        "current": [position(ticket) for ticket in current],
+        "next": [position(ticket) for ticket in upcoming],
+    }
+
+
 def _run_record(root: Path, run: str):
     tickets = run_tickets(root, run)
     if tickets is None:
@@ -238,8 +316,14 @@ def _run_record(root: Path, run: str):
         _ticket_summary(ticket, explanations, indexed, malformed_ids)
         for ticket in tickets
     ]
+    workflow = _run_workflow(root, run)
     return {
         "id": run,
+        "workflow": {
+            "state": "available" if workflow is not None else "unavailable",
+            "id": workflow or "",
+        },
+        "execution": _execution_position(records),
         "active": any(ticket["status"] in ("claimed", "ready") for ticket in records),
         "tickets": records,
         "diagnostics": diagnostics,
@@ -308,6 +392,12 @@ def _run_summaries(root: Path) -> list:
         )
         summaries.append({
             "id": found["run"],
+            "workflow": detail["workflow"] if detail else {
+                "state": "unavailable", "id": "",
+            },
+            "execution": detail["execution"] if detail else {
+                "current": [], "next": [],
+            },
             "ticket_count": len(found["tickets"]),
             "active": bool(detail and detail["active"]),
             "objective": objective,

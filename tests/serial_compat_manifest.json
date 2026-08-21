@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2366,
+  "count": 2369,
   "identities": [
    "test_canary_host.BaselinePinOwnerTest.test_both_modules_read_one_owner_for_the_pin",
    "test_canary_host.CanaryHostVerdictTest.test_a_run_that_resolved_no_baseline_fails",
@@ -1659,6 +1659,7 @@
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_the_verify_carries_the_roots_completion_test_verbatim",
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_the_write_scope_defaults_to_the_root_tickets_own",
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_two_lenses_are_two_critiques_and_one_repair_behind_both",
+   "tests.test_ui_cases.active_polling.ActivePollingTest.test_active_polling_preserves_current_next_and_pause_state",
    "tests.test_ui_cases.active_polling.TestActiveBand.test_a_claim_that_can_be_measured_carries_its_meter",
    "tests.test_ui_cases.active_polling.TestActiveBand.test_a_claim_with_nothing_to_measure_is_listed_without_a_meter",
    "tests.test_ui_cases.active_polling.TestActiveBand.test_an_entry_links_to_the_ticket_it_names",
@@ -1684,6 +1685,7 @@
    "tests.test_ui_cases.active_polling.TestPolling.test_the_index_is_live_while_any_run_is",
    "tests.test_ui_cases.active_polling.TestPolling.test_the_poll_revalidates_with_the_tag_it_was_given",
    "tests.test_ui_cases.active_polling.TestPolling.test_the_script_is_inline_and_names_no_remote_source",
+   "tests.test_ui_cases.artifacts_projection.ArtifactsProjectionTest.test_inventory_and_content_enforce_canonical_containment_and_http_contract",
    "tests.test_ui_cases.domain_projections.DomainProjectionBoundaryTests.test_projectors_are_package_and_flat_import_safe_without_cross_imports",
    "tests.test_ui_cases.domain_projections.FrictionProjectionTests.test_friction_preserves_health_counts_without_log_content",
    "tests.test_ui_cases.domain_projections.NowProjectionTests.test_now_preserves_payload_selection_and_read_only_containment",
@@ -1695,6 +1697,7 @@
    "tests.test_ui_cases.experience_projection.ExperienceFoundationContractTests.test_safe_projection_tokens_shell_and_manifest_form_one_contract",
    "tests.test_ui_cases.experience_projection.ExperienceFoundationContractTests.test_session_slug_diagnostic_keeps_legacy_identity_but_api_is_path_safe",
    "tests.test_ui_cases.experience_projection.ExperienceFoundationContractTests.test_workflows_spec_preserves_accepted_content_with_locator_repairs",
+   "tests.test_ui_cases.experience_projection.ExperienceProjectionTest.test_execution_provenance_requires_explicit_associations_and_mechanical_judgment",
    "tests.test_ui_cases.feeds_validation.TestEventsSeam.test_a_log_that_is_there_and_cannot_be_read_is_not_zero_events",
    "tests.test_ui_cases.feeds_validation.TestEventsSeam.test_a_malformed_line_is_skipped_and_counted_as_the_friction_feed_does",
    "tests.test_ui_cases.feeds_validation.TestEventsSeam.test_a_nullable_key_left_null_is_named_rather_than_blank",
@@ -2369,7 +2372,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "7cfb270212711408f72a8ee19233f2c7f255f60f891232fe79791b440ea92a32"
+  "sha256": "7f4bc3408d6c2305668e597129ac2bd8b69a5296cfec4dc16043979b2af5cd98"
  },
  "mutation_owners": [
   {
@@ -4710,6 +4713,14 @@
   {
    "module": "tests.test_ui_cases.active_polling",
    "owner": "TestLayoutCache.counting",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.artifacts_projection",
+   "owner": "ArtifactsProjectionTest.test_inventory_and_content_enforce_canonical_containment_and_http_contract",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"

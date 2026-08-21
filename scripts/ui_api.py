@@ -22,13 +22,7 @@ except ModuleNotFoundError:  # The installed CLI runs under the private runtime.
     TrustedHostMiddleware = Request = RedirectResponse = Response = Route = None
 
 try:
-    from scripts import (
-        ui_friction_projection,
-        ui_now_projection,
-        ui_runs_projection,
-        ui_sessions_projection,
-        ui_workflows_projection,
-    )
+    from scripts import ui_artifacts_projection, ui_friction_projection, ui_now_projection, ui_runs_projection, ui_sessions_projection, ui_workflows_projection
     from scripts.ui_assets import FallbackReaderServer, read_asset, resolve_asset_root, valid_host_headers
     from scripts.ui_experience import (
         SPA_ROUTE_PATTERNS,
@@ -39,11 +33,7 @@ try:
         project_view,
     )
 except ImportError:
-    import ui_friction_projection
-    import ui_now_projection
-    import ui_runs_projection
-    import ui_sessions_projection
-    import ui_workflows_projection
+    import ui_artifacts_projection, ui_friction_projection, ui_now_projection, ui_runs_projection, ui_sessions_projection, ui_workflows_projection
     from ui_assets import FallbackReaderServer, read_asset, resolve_asset_root, valid_host_headers
     from ui_experience import (
         SPA_ROUTE_PATTERNS,
@@ -69,6 +59,7 @@ SECURITY_HEADERS = {
 }
 
 PROJECTOR_MODULES = (
+    ui_artifacts_projection,
     ui_now_projection,
     ui_runs_projection,
     ui_workflows_projection,
@@ -149,6 +140,8 @@ project_friction = ui_friction_projection.project_friction
 project_workflow_catalog = ui_workflows_projection.project_workflow_catalog
 project_workflow = ui_workflows_projection.project_workflow
 project_workflow_source = ui_workflows_projection.project_workflow_source
+project_artifact_inventory = ui_artifacts_projection.project_artifact_inventory
+project_artifact = ui_artifacts_projection.project_artifact
 
 def _json_bytes(value) -> bytes:
     encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
@@ -176,6 +169,8 @@ def _json_response(request: Request, value, status=200):
     if status != 200:
         return Response(_json_bytes(value), status_code=status, media_type="application/json")
     return _bytes_response(request, _json_bytes(value), JSON_TYPE, "no-cache")
+
+artifact_endpoint = ui_artifacts_projection.http_endpoint(globals(), _json_response, INTERNAL_ERROR)
 
 def _context(request: Request):
     return request.app.state.root, request.app.state.transcripts
@@ -271,6 +266,8 @@ async def workflow_source_endpoint(request: Request):
 
 def _starlette_projector_routes():
     endpoints = {
+        (ui_artifacts_projection, "project_artifact_inventory"): artifact_endpoint,
+        (ui_artifacts_projection, "project_artifact"): artifact_endpoint,
         (ui_now_projection, "project_observe"): observe_endpoint,
         (ui_runs_projection, "project_runs"): runs_endpoint,
         (ui_runs_projection, "project_run"): run_endpoint,
@@ -397,6 +394,9 @@ def _fallback_api(path, query, query_values, root, transcripts, headers):
             return _fallback_json(project_runs(root), headers)
         if path.startswith("/api/v1/runs/"):
             parts = path.strip("/").split("/")
+            artifact = ui_artifacts_projection.project_http_path(root, path, project_artifact_inventory, project_artifact)
+            if artifact is not None:
+                return _fallback_json(artifact[1], headers, artifact[0])
             value = None
             if len(parts) == 4:
                 value = project_run(root, parts[3])

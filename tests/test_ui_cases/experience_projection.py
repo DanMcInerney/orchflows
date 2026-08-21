@@ -1,6 +1,7 @@
 """Cross-layer contract for the rendered observability experience substrate."""
 
 import hashlib
+import json
 
 from tests.test_ui_cases._web import *  # noqa: F401,F403
 
@@ -18,7 +19,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             b"../../web/src/features/session-graph/index.tsx)", implemented
         )
         self.assertEqual(
-            "6AEF8758EBEC2DCB6C117A6A566FB0843B6061AF6CE3441278869E7A462AF303",
+            "A0FB8B7CEEAB5555E85F50DBC3F8E08942CF6A23A6AB24B2C10BA82BD7DDCD76",
             hashlib.sha256(implemented).hexdigest().upper(),
         )
 
@@ -39,7 +40,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             b"[schema](../../web/src/api/schema.ts)",
         )
         self.assertEqual(
-            "04BCF5297059CBA5B7A49D135A1D328DCD040227590A0A2E51988E946D282072",
+            "341976D96C566D79DE84844C6F644BA6ED9C09E108863E21BA9C71F0FF42E75D",
             hashlib.sha256(reconstructed).hexdigest().upper(),
         )
 
@@ -213,6 +214,109 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             self.assertIn(command, harness)
         for scenario in ("200% zoom-equivalent reflow", "forced-colors: active", "prefers-reduced-motion: reduce", "expectKeyboardParity"):
             self.assertIn(scenario, experience_harness)
+
+
+class ExperienceProjectionTest(unittest.TestCase):
+    def test_execution_provenance_requires_explicit_associations_and_mechanical_judgment(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_sink(Path(tmp), runs=(), friction=False, events=False)
+            associated = root / "tickets" / "run-associated"
+            inferred = root / "tickets" / "evolve-by-name"
+            ticket = write_ticket(
+                associated,
+                "01-judge",
+                status="complete",
+                executor="orch-critique",
+                depends_on="[]",
+            )
+            ticket.write_text(
+                ticket.read_text(encoding="utf-8")
+                + "\n## Result\n\naccepted revision deadbeef\n\n"
+                + "## Verification\n\n"
+                + "| # | Verdict | Oracle | Class | Evidence |\n"
+                + "| --- | --- | --- | --- | --- |\n"
+                + "| 1 | PASS | code craft lens | judged | review:42 |\n\n"
+                + "## Feedback\n\n[]\n\n"
+                + "## Risks\n\n[]\n",
+                encoding="utf-8",
+            )
+            rationale_id = "art_" + "a" * 43
+            rationale_ticket = write_ticket(
+                associated,
+                "02-rationale",
+                status="complete",
+                executor="orch-critique",
+                depends_on="[01-judge]",
+            )
+            rationale_ticket.write_text(
+                rationale_ticket.read_text(encoding="utf-8")
+                + "\n## Rationale\n\n"
+                + json.dumps({"kind": "artifact", "id": rationale_id})
+                + "\n",
+                encoding="utf-8",
+            )
+            write_ticket(
+                inferred,
+                "01-evolve",
+                status="claimed",
+                executor="orch-evolve",
+                depends_on="[]",
+            )
+            identity = root / "runs" / "run-associated" / "run.json"
+            identity.parent.mkdir(parents=True)
+            identity.write_text(
+                json.dumps({
+                    "run": "run-associated",
+                    "workflow": "evolve",
+                    "project": {"root": "C:/private/project"},
+                    "workspaces": [{"path": "C:/private/worktree"}],
+                }),
+                encoding="utf-8",
+            )
+
+            projected = experience.project_experience(
+                root,
+                query={"view": "ticket", "run": "run-associated", "ticket": "01-judge"},
+            )
+            with_rationale = experience.project_experience(
+                root,
+                query={"view": "ticket", "run": "run-associated", "ticket": "02-rationale"},
+            )
+
+        runs = {run["id"]: run for run in projected["runs"]}
+        self.assertEqual(
+            {"state": "available", "id": "evolve"},
+            runs["run-associated"]["workflow"],
+        )
+        self.assertEqual(
+            {"state": "unavailable", "id": ""},
+            runs["evolve-by-name"]["workflow"],
+        )
+        judgment = projected["ticket"]["judgment"]
+        self.assertEqual(
+            [{
+                "criterion": "1",
+                "verdict": "PASS",
+                "oracle": "code craft lens",
+                "oracle_class": "judged",
+                "evidence": "review:42",
+            }],
+            judgment["criteria"],
+        )
+        self.assertEqual("accepted revision deadbeef", judgment["result"])
+        self.assertEqual("[]", judgment["feedback"])
+        self.assertEqual("[]", judgment["risks"])
+        self.assertEqual(
+            {"state": "unavailable", "identity": None},
+            judgment["rationale"],
+        )
+        self.assertEqual(
+            {"state": "available", "identity": {"kind": "artifact", "id": rationale_id}},
+            with_rationale["ticket"]["judgment"]["rationale"],
+        )
+        encoded = json.dumps(projected, sort_keys=True)
+        self.assertNotIn("C:/private/project", encoded)
+        self.assertNotIn("C:/private/worktree", encoded)
 
 
 if __name__ == "__main__":

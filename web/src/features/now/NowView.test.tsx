@@ -1,58 +1,52 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import NowView from "./NowView";
 import type { NowModel } from "./model";
 
-vi.mock("./RunGraph", () => ({ RunGraph: () => <div aria-label="Run dependency graph" /> }));
 afterEach(cleanup);
 
 const ready = (model: NowModel) => ({ status: "ready", model, error: null } as const);
 const empty = ready({ runs: [] });
 
 describe("Now view", () => {
-  it("renders honest bands, exact counts, and reversible expansion", async () => {
-    const user = userEvent.setup();
+  it("renders one vertical execution hierarchy with compact semantic flow and native detail links", () => {
     const { container } = render(<NowView state={empty} route={{ fixture: "mixed-live" }} />);
     expect(container.querySelector(".foundation-view.now-view")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Now" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Needs attention, 1 runs" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Active now, 1 runs" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Recently completed, 1 runs" })).toBeTruthy();
-    const brief = screen.getByRole("button", { name: "Brief1" });
-    await user.click(brief);
-    expect(screen.getByText("Exact child tickets")).toBeTruthy();
-    expect(screen.getByText("00-scope")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Current work" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Recent history" })).toBeTruthy();
+    expect(screen.getAllByLabelText(/Nonvisual execution summary for/)).toHaveLength(3);
+    expect(screen.getByRole("link", { name: /Open run: Restore installed-reader portability/ }).getAttribute("href"))
+      .toBe("/runs/20260819-portability-repair?fixture=mixed-live");
+    expect(screen.getByRole("link", { name: /Open ticket: Repair the portability seam/ }).getAttribute("href"))
+      .toBe("/runs/20260819-portability-repair/tickets/01-repair?fixture=mixed-live");
+    expect(screen.queryByLabelText(/dependency graph/i)).toBeNull();
   });
 
-  it("pauses without losing selection, filter, expansion, or inspector tab", async () => {
+  it("shows exact current and next work and keeps pause and filter state explicit", async () => {
     const user = userEvent.setup();
     render(<NowView state={empty} route={{ fixture: "live-paused" }} />);
     expect(screen.getByText("Live paused")).toBeTruthy();
-    await user.click(screen.getByRole("tab", { name: "tickets" }));
+    expect(screen.getByRole("heading", { name: "Current work" })).toBeTruthy();
+    expect(screen.getByText("Render the live fleet")).toBeTruthy();
+    expect(screen.getByText("Render session structure")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Needs attention" }));
+    expect(screen.getByText("No runs match this filter.")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Resume live" }));
-    expect(screen.getByRole("tab", { name: "tickets" }).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByRole("button", { name: "Needs attention" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText("Live · checking for changes")).toBeTruthy();
   });
 
-  it("gives the inspector tablist keyboard parity with pointer selection", async () => {
-    const user = userEvent.setup();
-    render(<NowView state={empty} route={{ fixture: "mixed-live" }} />);
-    const summary = screen.getByRole("tab", { name: "summary" });
-    summary.focus();
-    await user.keyboard("{ArrowRight}");
-    expect(screen.getByRole("tab", { name: "tickets" }).getAttribute("aria-selected")).toBe("true");
-    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "tickets" }));
-  });
-
-  it("keeps empty and unreadable projections explicit", () => {
+  it("keeps empty, unreadable, and unknown projections explicit", () => {
     render(<NowView state={empty} route={{ fixture: "no-active-runs" }} />);
-    expect(screen.getByText("No active runs. Waiting and completed work remains available.")).toBeTruthy();
+    expect(screen.getByText("No current work")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Recent history" })).toBeTruthy();
     cleanup();
     render(<NowView state={empty} route={{ fixture: "unreadable-data" }} />);
     expect(screen.getByText("Unreadable canonical data")).toBeTruthy();
-    expect(screen.getByText("Exact graph unavailable")).toBeTruthy();
+    expect(screen.getByText("Unknown progress")).toBeTruthy();
+    expect(screen.getByText("Canonical ticket data is unavailable; no progress was inferred.")).toBeTruthy();
   });
 
   it("bounds long objective summaries while preserving deliberate full disclosure", async () => {
@@ -64,7 +58,7 @@ describe("Now view", () => {
     }] };
     const { container } = render(<NowView state={ready(longModel)} route={{ fixture: "" }} />);
 
-    expect(container.querySelectorAll(".now-objective-summary")).toHaveLength(3);
+    expect(container.querySelectorAll(".now-objective-summary")).toHaveLength(1);
     const disclosure = screen.getByText("Full objective").closest("details");
     expect(disclosure?.hasAttribute("open")).toBe(false);
     await user.click(screen.getByText("Full objective"));

@@ -82,6 +82,8 @@ The same-origin routes are:
 | `/api/v1/runs` | run summaries and lifecycle-status counts |
 | `/api/v1/runs/{run}` | one canonical dependency graph and run diagnostics |
 | `/api/v1/runs/{run}/tickets/{ticket}` | one closed ticket summary plus linked-friction count |
+| `/api/v1/runs/{run}/tickets/{ticket}/artifacts` | canonical structured result identities available to the ticket |
+| `/api/v1/runs/{run}/tickets/{ticket}/artifacts/{artifact_id}` | one contained, redacted artifact selected by opaque ID |
 | `/api/v1/friction` | aggregate friction health |
 | `/api/v1/sessions` | session metadata summaries |
 | `/api/v1/sessions/{session}` | session and subagent structure metadata |
@@ -98,9 +100,10 @@ The browser owns semantic, refresh-safe application routes at `/now`,
 `/runs/{run}`, `/runs/{run}/tickets/{ticket}`, `/sessions`,
 `/sessions/{session}`, and `/friction`. The persistent information
 architecture is exactly **Now / Workflows / Create / Sessions / Friction**.
-Workflows owns run-map and ticket deep links. Create is visibly disabled and
-reserved for future workflow authoring; this observer exposes no creation or
-mutation route.
+Execution run and ticket descendants keep Now active in the rail. Definition
+detail and contained source descendants remain Workflows-owned. Create is
+visibly disabled and reserved for future workflow authoring; this observer
+exposes no creation or mutation route.
 
 ## Projection and privacy boundary
 
@@ -108,7 +111,17 @@ All projections use closed field sets. Run graphs contain ticket identifiers,
 dependency edges, lifecycle statuses, aggregate diagnostics, and event
 counts. The selected-ticket experience projection contains routing and claim
 metadata, canonical readiness facts, parsed verification rows, and the
-Objective, Result, Feedback, and Risks sections as inert strings. Its explicit
+Objective, Result, Feedback, and Risks sections as inert strings. A run is
+associated with a workflow definition only through an explicit canonical
+association; the reader never infers one from a run slug or executor. Judgment
+detail mechanically presents criterion, verdict, oracle, class, evidence,
+Result, Feedback, Risks, and an explicit rationale identity when one exists;
+it authors no rationale and labels an absent identity unavailable. Artifact
+inventory accepts only canonical structured result identities that resolve
+inside the state sink. Prose-only or unresolved artifacts remain unavailable,
+and caller-supplied project or workspace paths are never followed. Artifact
+IDs are opaque; list and detail responses preserve `GET`/`HEAD` parity,
+containment, redaction, content-derived ETags, and generic errors. The explicit
 `raw` field is the one narrow exception for the selected ticket's Markdown:
 the server redacts host paths before delivery and the browser renders the
 string inert. Session projections
@@ -127,10 +140,12 @@ invent a second phase taxonomy.
 ## Rendered-experience admission
 
 `docs/ui/view-manifest.json` is the canonical `orchflows.view-manifest.v1`
-inventory. It declares 60 deterministic identities across Now, the Workflows
-definition catalog, definition detail and contained source states, preserved
-Workflows run maps and ticket details, Sessions, session graphs, and Friction
-at 1440×1024 and 1024×768. `tools/ui_frontend.py capture`, `audit`, and `diff` consume that
+inventory. It declares 60 deterministic identities across Now execution run
+maps and ticket details, the Workflows definition catalog, definition detail
+and contained source states, Sessions, session graphs, and Friction at
+1440×1024 and 1024×768. Its `navigationParents` map makes each view kind's
+active rail owner part of the rendered contract without adding an identity.
+`tools/ui_frontend.py capture`, `audit`, and `diff` consume that
 manifest. Capture writes ephemeral evidence only; audit applies WCAG 2.2 AA
 rules plus 200-percent zoom-equivalent reflow, forced-colors, reduced-motion,
 and keyboard-reach parity to every identity; diff reports `no-golden`

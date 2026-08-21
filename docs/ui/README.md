@@ -8,8 +8,9 @@ has coordinated owners with one-way dependencies:
 - `web/src/ObserveApp.tsx` delegates to `web/src/app/shell/`, which owns the
   persistent reader chrome and imports the one explicit application feature
   catalog. That catalog owns the exact **Now / Workflows / Create / Sessions /
-  Friction** rail; Create remains disabled because authoring is future work
-  outside the observer.
+  Friction** rail. Run and ticket execution descendants activate Now; workflow
+  definition detail and source descendants activate Workflows. Create remains
+  disabled because authoring is future work outside the observer.
 - `web/src/features/` owns each feature's route, schema, request, polling
   policy, projection, model, fixture, style, view, and focused tests.
 - `web/src/shared/transport/` owns feature-blind ETag, retry, abort, and timer
