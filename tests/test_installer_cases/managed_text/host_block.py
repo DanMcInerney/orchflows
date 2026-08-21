@@ -81,20 +81,6 @@ class TestHostBlockRendering(unittest.TestCase):
         for gone in ("orch-task", "orch-deliver", "orch-compose"):
             self.assertNotIn(gone, rendered)
 
-    def test_build_plan_host_block_uses_private_runtime_interpreter(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            project = Path(tmp)
-
-            plan = install.build_plan("project", project)
-
-            block = plan.blocks[0].content
-            self.assertIn("$HOME/.orchflows/runtime/bin/python", block)
-            self.assertIn("$HOME\\.orchflows\\runtime\\Scripts\\python.exe", block)
-            self.assertNotIn(str(install.private_runtime_python()), block)
-            self.assertNotIn(f"{install.resolved_python_interpreter()} ", block)
-            self.assertNotIn("{{PYTHON}}", block)
-
-
 # The eight standing demands templates/host-block.md carries, each keyed to
 # the anchors that carry it. rules/token-economy.md §11 caps the block at
 # eight demands and, from 2026-08-16, at 400 words -- so the pressure on this

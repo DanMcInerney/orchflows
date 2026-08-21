@@ -101,9 +101,10 @@ candidate by default.
 
 A new project creates on day zero exactly: the router file (routing
 plus the friction law), an empty vocabulary, an ownership map, the
-state sink, and this file by reference. `install.py --project` writes
-the first three, never overwriting one already there. Everything else
-is earned by a failure — a section is added when agents repeatedly get
+state sink, and this file by reference. The user install supplies the shared
+library and runtime; it never writes repository artifacts. Project artifacts
+are created explicitly through repository work or `orch-build`. Everything
+else is earned by a failure — a section is added when agents repeatedly get
 the thing wrong, and removed when the convention it guarded changes.
 Start near thirty lines of router; grow only on evidence.
 
@@ -127,7 +128,7 @@ lands. It is proposed and evolves under §5, never from symmetry.
 | skill | [rules/composition.md](../rules/composition.md) §5, §11; [rules/token-economy.md](../rules/token-economy.md) §6; `orch-build` | `skills/` | `<repo>/.orchflows/skills/<name>` | `tools/validate.py`; library lens |
 | composition | [contracts/work-item.md](../contracts/work-item.md), Template and stub; `orch-build` | `compositions/` | `<repo>/.orchflows/compositions/<name>` | `tickets.py instantiate`; `tools/validate.py` |
 | review | [library-review.md](library-review.md) — its method; the constitution is the parameter | this library's constitution | a project's constitution under the same report contract | the report contract |
-| router | `templates/host-block.md`; `install.py --project` | the host block | the project routing block | `install.py --dry-run` |
+| router | `templates/host-block.md`; `orch-build` | the host block | the project routing block | library lens |
 
 The test suite is not a factory: its conventions are owned by the code
 that enforces them (`tests/__init__.py`, `tools/run_tests.py`,

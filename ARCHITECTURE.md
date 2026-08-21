@@ -54,9 +54,8 @@ whitespace-delimited words. Use terms exactly as
   is the installation compatibility facade; [`installer/`](installer/) owns
   static support, `installer/runtime.py` owns the private runtime at
   `~/.orchflows/runtime`, and the planning/application/uninstall modules own
-  the immutable frontend at `~/.orchflows/ui`. User scope creates or reuses
-  both; project scope verifies and borrows them, never creating an environment
-  or UI distribution in a repository. Replacement is staged and probed before
+  the immutable frontend at `~/.orchflows/ui`. The user install is the only
+  installation scope and creates or reuses both. Replacement is staged and probed before
   an owned prior generation moves. [`requirements-runtime.in`](requirements-runtime.in)
   and [`requirements-runtime.txt`](requirements-runtime.txt) own direct pins
   and the hash-locked runtime closure; [`pyproject.toml`](pyproject.toml)
@@ -119,8 +118,9 @@ stays in `scripts/ui_server.py`.
   failure behavior: [visibility §6](rules/visibility.md). Resolver:
   [`scripts/state_root.py`](scripts/state_root.py). Research evidence lives in
   the sink's `research/` tree.
-- `.orch/` holds tracked `canary/` fixtures and project-scope installed `bin/`
-  scripts only.
+- `.orch/` holds tracked `canary/` fixtures and legacy generated `bin/`
+  scripts named by project receipts; cleanup remains receipt-driven through
+  uninstall.
 
 ## Dependency direction
 

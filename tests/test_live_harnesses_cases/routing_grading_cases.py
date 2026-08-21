@@ -439,7 +439,7 @@ class TestRoutingCaseLoader(unittest.TestCase):
         for case in cases:
             if case["expected"] != "build":
                 self.assertNotIn("orch-build", case["prompt"], case["id"])
-        self.assertEqual(30, len(cases))
+        self.assertEqual(31, len(cases))
 
     def test_the_shipped_case_file_loads(self):
         self.assertEqual(

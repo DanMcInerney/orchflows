@@ -21,10 +21,10 @@
     "distractor": false
   },
   {
-    "id": "answer-project-scope",
-    "prompt": "does a project-scope install copy the library, or does it borrow the user one?",
+    "id": "answer-install-scope",
+    "prompt": "is the user install the only orchflows installation scope?",
     "expected": "answer",
-    "note": "Settled by install.py's own docstring and the host block; no change requested.",
+    "note": "Settled by install.py's own boundary and the maintained installation docs; no change requested.",
     "distractor": false
   },
   {
@@ -169,6 +169,13 @@
     "prompt": "make a project-scope custom skill for our deploy checklist",
     "expected": "ticket",
     "note": "Same: orch-build owns the scope law, and the block still routes an unnamed request to a ticket. What the ticket's executor reaches for is the ticket's business.",
+    "distractor": false
+  },
+  {
+    "id": "build-project-custom-composition",
+    "prompt": "make a project-scope custom composition for our release workflow",
+    "expected": "ticket",
+    "note": "Project composition is a build scope, not an install scope; because the prompt names no skill, the host block routes it to a ticket.",
     "distractor": false
   },
   {

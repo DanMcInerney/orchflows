@@ -84,33 +84,6 @@ class RuntimeVenvTests(unittest.TestCase):
         )
         self.assertEqual([], list(self.home.iterdir()))
 
-    def test_project_install_does_not_create_a_runtime(self):
-        project = self.root / "project"
-        project.mkdir()
-        output = io.StringIO()
-        with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("codex"):
-            install.apply_plan(install.build_plan("user", None))
-            marker = install.private_runtime_home() / "project-reuse-marker"
-            marker.write_text("keep", encoding="utf-8")
-        with patch.object(install.Path, "home", return_value=self.home), redirect_stdout(output):
-            plan = install.build_plan("project", project)
-            install.print_plan(plan)
-            install.apply_plan(plan)
-        self.assertIn("private runtime: reuse required", output.getvalue())
-        self.assertEqual("keep", marker.read_text(encoding="utf-8"))
-        self.assertFalse((project / ".orchflows" / "runtime").exists())
-
-    def test_project_install_refuses_before_writing_without_a_user_runtime(self):
-        project = self.root / "project"
-        project.mkdir()
-        with patch.object(install.Path, "home", return_value=self.home):
-            plan = install.build_plan("project", project)
-            with self.assertRaisesRegex(RuntimeError, "run install.py --user first"):
-                install.apply_plan(plan)
-        self.assertFalse((project / "CLAUDE.md").exists())
-        self.assertFalse((project / "AGENTS.md").exists())
-        self.assertFalse((project / ".orchflows").exists())
-
     def test_failed_repair_preserves_the_previous_runtime(self):
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("codex"):
             install.apply_plan(install.build_plan("user", None))

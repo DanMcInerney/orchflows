@@ -55,7 +55,6 @@ def _auto_remove_path_is_safe(
     else:
         scope_boundary = _codex_user_home()
     try:
-        path.absolute().relative_to(boundary.absolute())
         boundary.resolve().relative_to(scope_boundary.resolve())
         path.resolve().relative_to(boundary.resolve())
     except (OSError, ValueError):

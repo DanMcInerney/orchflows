@@ -27,18 +27,8 @@ def render_host_block(
     skills_dir: PurePath,
     lib_dir: PurePath,
     python_interpreter: str,
-    portable: bool = False,
 ) -> str:
-    if portable:
-        friction_commands = (
-            '    PowerShell: & "$HOME\\.orchflows\\runtime\\Scripts\\python.exe" '
-            '"$HOME\\.orchflows\\bin\\friction.py" "<what happened>" '
-            '"<what was expected or missing>"\n'
-            '    POSIX: "$HOME/.orchflows/runtime/bin/python" '
-            '"$HOME/.orchflows/bin/friction.py" "<what happened>" '
-            '"<what was expected or missing>"'
-        )
-    elif os.name == "nt":
+    if os.name == "nt":
         def powershell_token(value: object) -> str:
             return "'" + str(value).replace("'", "''") + "'"
 

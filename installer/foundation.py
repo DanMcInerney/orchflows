@@ -109,7 +109,7 @@ STATE_SINK_SUBPATH = (".orchflows", "state")
 
 
 def _state_sink() -> Path:
-    """The one user-scope sink an install of either scope seeds.
+    """The one sink the user install seeds.
 
     The override is honoured for two reasons, not one: a user who redirects
     the sink gets the root they actually read seeded, and the test suite's own
@@ -124,15 +124,10 @@ def _state_sink() -> Path:
 
 
 def _runtime_dirs(scope: str, project_root: Path | None) -> list[Path]:
-    """The directories an install seeds — the same four in either scope.
-
-    Durable state is user-scope: one sink, reached from any repository, so a
-    project install seeds nothing project-local. ``bin/`` is not state and is
-    absent here; the script-copy step creates it where ``_bin_dir`` puts it.
-    """
+    """The durable state directories the user install seeds."""
 
     if scope != "user":
-        _require_project_root(project_root)
+        raise ValueError("installation supports user scope only")
     sink = _state_sink()
     return [
         sink / "tickets",

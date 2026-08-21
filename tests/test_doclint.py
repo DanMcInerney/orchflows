@@ -9,6 +9,7 @@ already-green direction.
 
 import ast
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -329,6 +330,59 @@ class FactoryTableTest(unittest.TestCase):
         ]
         self.assertEqual(1, len(rows), rows)
         self.assertIn("doclint.py", rows[0].rsplit("|", 2)[1])
+
+
+class InstallationScopeDocumentationTest(unittest.TestCase):
+    INSTALL_DOCS = (
+        "README.md",
+        "ARCHITECTURE.md",
+        "DESIGN.md",
+        "docs/documentation.md",
+        "docs/ui/platform.md",
+        "skills/workflows/orch-build/references/scopes.md",
+    )
+
+    def test_maintained_installation_docs_name_user_scope_and_no_project_install(self):
+        texts = {
+            name: (ROOT / name).read_text(encoding="utf-8")
+            for name in self.INSTALL_DOCS
+        }
+        forbidden = re.compile(r"\bproject(?:-scope)? install(?:ation|s)?\b", re.IGNORECASE)
+        for name, text in texts.items():
+            with self.subTest(name=name):
+                self.assertNotIn("install.py --project", text)
+                self.assertIsNone(forbidden.search(text))
+        for name in self.INSTALL_DOCS[:-1]:
+            with self.subTest(user_anchor=name):
+                self.assertRegex(texts[name].lower(), r"\buser(?:-level|-scope)? install")
+
+    def test_live_routing_cases_teach_user_install_and_keep_project_custom_builds(self):
+        cases = json.loads((ROOT / "benchmarks" / "routing" / "cases.json").read_text())
+        by_id = {case["id"]: case for case in cases}
+        self.assertNotIn("answer-project-scope", by_id)
+        self.assertIn("user install", by_id["answer-install-scope"]["prompt"].lower())
+        self.assertEqual("answer", by_id["answer-install-scope"]["expected"])
+
+        project_build = by_id["build-project-custom-skill"]
+        self.assertIn("project-scope custom skill", project_build["prompt"])
+        self.assertEqual("ticket", project_build["expected"])
+        project_composition = by_id["build-project-custom-composition"]
+        self.assertIn(
+            "project-scope custom composition", project_composition["prompt"]
+        )
+        self.assertEqual("ticket", project_composition["expected"])
+
+    def test_project_build_scope_remains_a_distinct_custom_item_landing_zone(self):
+        scopes = (
+            ROOT / "skills" / "workflows" / "orch-build" / "references" / "scopes.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("## Project build scope", scopes)
+        self.assertIn("<repo>/.orchflows/compositions/<name>", scopes)
+        project_row = next(
+            line for line in scopes.splitlines() if line.startswith("| project |")
+        )
+        self.assertIn("<repo>/.orchflows/skills/<name>/SKILL.md", project_row)
+        self.assertIn("repo's `AGENTS.md`", project_row)
 
 
 if __name__ == "__main__":

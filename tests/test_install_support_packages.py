@@ -51,13 +51,11 @@ class ScriptSupportDistributionTest(unittest.TestCase):
         self.assertEqual(tuple(dest.name for _, dest in plan.scripts), expected_names)
         self.assertTrue(all(dest.parent == plan.bin_dir for _, dest in plan.scripts))
 
-    def test_project_plan_keeps_borrowing_user_runtime(self):
+    def test_project_plan_is_rejected(self):
         with tempfile.TemporaryDirectory() as raw:
             project_root = Path(raw)
-            plan = install.build_plan("project", project_root)
-
-        self.assertEqual(plan.scripts, [])
-        self.assertEqual(plan.runtime_dirs, [])
+            with self.assertRaisesRegex(ValueError, "user scope only"):
+                install.build_plan("project", project_root)
 
 
 if __name__ == "__main__":

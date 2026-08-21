@@ -15,26 +15,15 @@ from .runtime import private_runtime_home
 
 def print_plan(plan: Plan, source_commit: str | None) -> None:
     print(f"scope: {plan.scope}")
-    if plan.project_root is not None:
-        print(f"project root: {plan.project_root}")
-    if plan.scope == "user":
-        print(f"detected Claude Code CLI: {'yes' if plan.claude_enabled else 'no'}")
-        print(f"detected Codex CLI: {'yes' if plan.codex_enabled else 'no'}")
+    print(f"detected Claude Code CLI: {'yes' if plan.claude_enabled else 'no'}")
+    print(f"detected Codex CLI: {'yes' if plan.codex_enabled else 'no'}")
     print(f"source commit: {source_commit or 'unknown'}")
     print(f"library home: {plan.lib_home}")
     print(f"bin dir: {plan.bin_dir}")
-    if plan.scope == "user":
-        if plan.runtime_action is None:
-            print(f"private runtime: not needed {private_runtime_home()}")
-        else:
-            print(f"private runtime: {plan.runtime_action} {private_runtime_home()}")
-    elif plan.runtime_action == "reuse":
-        print(f"private runtime: reuse required at {private_runtime_home()} (project scope)")
+    if plan.runtime_action is None:
+        print(f"private runtime: not needed {private_runtime_home()}")
     else:
-        print(
-            "private runtime: refuse; project scope requires a healthy user "
-            f"runtime at {private_runtime_home()}"
-        )
+        print(f"private runtime: {plan.runtime_action} {private_runtime_home()}")
     if plan.frontend_home is not None:
         print(
             f"frontend distribution: {plan.frontend_action} {plan.frontend_home} "
@@ -93,10 +82,6 @@ def print_plan(plan: Plan, source_commit: str | None) -> None:
     print(f"managed blocks ({len(plan.blocks)}):")
     for block in plan.blocks:
         print(f"  {block.label}: {block.dest}")
-    print()
-    print(f"day-zero documents ({len(plan.day_zero)}):")
-    for document in plan.day_zero:
-        print(f"  write if absent: {document.dest} ({document.label})")
     print()
     if plan.claude_import is not None:
         print("managed imports (1):")

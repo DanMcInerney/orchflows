@@ -263,16 +263,16 @@ invocation; mirroring the whole library there would tax every session
 for skills most turns never invoke, so prompts stay Codex's primary
 surface and only the four entry points `install.py` names get a
 redirect stub — a one-line pointer at
-the lib path a live read keeps at zero staleness. Project scope
-collapsed to a routing-block stub because the two things a project
-install used to carry beyond that were never load-bearing: friction
+the lib path a live read keeps at zero staleness. The former
+repository-local installer path was removed because its routing block
+and day-zero residue were never load-bearing: friction
 logging resolves the user-scope sink through
 `scripts/state_root.py` from any working directory, and a
 project-pinned lib version was never implemented (its receipt recorded
-no source commit) — so a project's committable residue is the day-zero
-set [docs/documentation.md](docs/documentation.md) §6 names; the
-user-scope install still resolves every call edge (`orch-build`'s scope
-law).
+no source commit). The user install resolves every call edge. Project
+build scope remains a distinct `orch-build` landing zone for custom
+skills and compositions under `<repo>/.orchflows`; it is not an
+installer scope.
 
 ## Why session tracing is post-hoc
 

@@ -1,4 +1,4 @@
-"""User and project installation planning."""
+"""User installation planning."""
 
 from __future__ import annotations
 
@@ -26,7 +26,6 @@ from .foundation import (
     _codex_user_home,
     _frontend_home,
     _lib_home,
-    _require_project_root,
     _runtime_dirs,
     _scope_home,
 )
@@ -36,7 +35,6 @@ from .models import (
     ConfigPlan,
     ImportPlan,
     Plan,
-    _day_zero_documents,
     _host_block_content,
     _frontend_manifest_identity,
     _is_build_artifact,
@@ -54,55 +52,7 @@ from .packages import (
     split_frontmatter,
     template_adapter_body,
 )
-from .runtime import private_runtime_action, private_runtime_is_healthy
-
-def _build_project_plan(project_root: Path) -> Plan:
-    """Thin stub: only the two managed instruction blocks plus a minimal
-    receipt. No lib copy, no runtime dirs, no ``.claude``/``.codex`` writes —
-    a project install borrows the user install for everything else."""
-
-    host_block, start_marker, end_marker = _host_block_content(portable=True)
-    blocks = [
-        BlockPlan(
-            _claude_md_path("project", project_root),
-            host_block,
-            start_marker,
-            end_marker,
-            "Claude Code instruction block",
-        ),
-        BlockPlan(
-            _codex_agents_path("project", project_root),
-            host_block,
-            start_marker,
-            end_marker,
-            "Codex AGENTS.md instruction block",
-        ),
-    ]
-    scope_home = _scope_home("project", project_root)
-    frontend_home = _frontend_home()
-    frontend_identity = _frontend_manifest_identity(REPO_ROOT / "web" / "dist")
-    if frontend_identity is None:
-        raise RuntimeError("web/dist is missing its immutable index.html distribution")
-    return Plan(
-        scope="project",
-        project_root=project_root,
-        lib_home=_lib_home("project", project_root),
-        scope_home=scope_home,
-        bin_dir=_bin_dir("project", project_root),
-        frontend_home=frontend_home,
-        frontend_manifest_sha256=frontend_identity,
-        frontend_action=(
-            "reuse"
-            if _frontend_manifest_identity(frontend_home) == frontend_identity
-            else "refuse"
-        ),
-        blocks=blocks,
-        day_zero=_day_zero_documents(project_root),
-        receipt_path=scope_home / "receipt.json",
-        manage_host_surfaces=False,
-        runtime_action="reuse" if private_runtime_is_healthy() else "refuse",
-    )
-
+from .runtime import private_runtime_action
 
 def detect_hosts(home: Path | None = None) -> tuple[bool, bool]:
     """Return host enablement from runnable CLI presence on ``PATH``.
@@ -398,10 +348,8 @@ def build_plan(
     codex_limits_renderer=render_codex_agent_limits,
     script_name_discoverer=None,
 ) -> Plan:
-    if scope == "project":
-        # A project install writes no host skill surfaces at all, so the
-        # adapter set has nothing to select.
-        return _build_project_plan(_require_project_root(project_root))
+    if scope != "user":
+        raise ValueError("installation supports user scope only")
     return _build_user_plan(
         claude_adapter_set, codex_limits_renderer, script_name_discoverer
     )
@@ -428,7 +376,6 @@ def plan_entry_count(plan: Plan) -> int:
         + len(plan.codex_agents)
         + len(plan.configs)
         + len(plan.blocks)
-        + len(plan.day_zero)
         + (1 if plan.host_block is not None else 0)
         + (1 if plan.claude_import is not None else 0)
         + (
