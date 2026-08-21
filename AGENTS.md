@@ -39,3 +39,8 @@ shell locally; the matrix discriminates a host defect from a real one.
 Before pushing, `python tools/preflight.py` runs the suite under every
 CI interpreter installed here; what it covers and what stays CI's is its
 docstring's.
+
+## Experimental serial lane
+
+The lane is `experimental`; its proving contract is
+`tools/serial-compat-policy.md`. Exhaustive serial above remains required.

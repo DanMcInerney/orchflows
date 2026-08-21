@@ -16,6 +16,7 @@ from pathlib import Path
 
 from tools import run_serial_compat
 from tools import run_tests
+from tools import serial_pair
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -23,6 +24,7 @@ MANIFEST = ROOT / "tests" / "serial_compat_manifest.json"
 CHECKS = ROOT / ".github" / "workflows" / "checks.yml"
 PAIRED = ROOT / ".github" / "workflows" / "serial-compat.yml"
 GUIDANCE = ROOT / "AGENTS.md"
+POLICY = ROOT / "tools" / "serial-compat-policy.md"
 
 
 class TestSelectedDiscovery(unittest.TestCase):
@@ -244,6 +246,116 @@ class TestMutationOwnerManifest(unittest.TestCase):
              "module-cache", "monkeypatch", "threads", "warnings"}.issubset(covered),
             covered,
         )
+
+
+class TestExhaustiveObservation(unittest.TestCase):
+    def test_exhaustive_mode_runs_every_discovered_case_in_this_interpreter(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tests_dir = Path(tmp)
+            tests_dir.joinpath("test_all.py").write_text(
+                "import unittest\nclass All(unittest.TestCase):\n"
+                " def test_one(self): pass\n def test_two(self): pass\n",
+                encoding="utf-8",
+            )
+            cases = run_serial_compat.discover_cases(tests_dir)
+            identities = sorted(case.id() for case in cases)
+            manifest = {"discovery": {
+                "count": len(identities),
+                "sha256": hashlib.sha256("\n".join(identities).encode()).hexdigest(),
+                "identities": identities,
+            }}
+            record = run_serial_compat.run_exhaustive(
+                tests_dir, manifest, stream=io.StringIO()
+            )
+        self.assertTrue(record["ok"])
+        self.assertEqual("exhaustive", record["mode"])
+        self.assertEqual(2, record["outcomes"]["tests"])
+        self.assertEqual(os.getpid(), record["interpreter"]["pid"])
+
+
+class TestPairedProvingGate(unittest.TestCase):
+    @staticmethod
+    def observation(mode, *, ok=True, revision="abc", identity="ids"):
+        return {
+            "schema": "orchflows.serial-compat-observation.v1",
+            "mode": mode,
+            "revision": revision,
+            "recorded_at_utc": "2026-08-21T01:00:00Z",
+            "discovery": {"count": 2357, "sha256": identity},
+            "ok": ok,
+        }
+
+    def test_a_pair_requires_matching_revision_and_discovery_identity(self):
+        selected = self.observation("selected")
+        exhaustive = self.observation("exhaustive", identity="different")
+        pair = serial_pair.make_pair(selected, exhaustive, pair_id="pair-1")
+        self.assertFalse(pair["clean"])
+        self.assertIn("discovery-identity-mismatch", pair["reasons"])
+
+    def test_selected_green_exhaustive_red_is_an_explicit_discrepancy(self):
+        pair = serial_pair.make_pair(
+            self.observation("selected"),
+            self.observation("exhaustive", ok=False),
+            pair_id="pair-1",
+        )
+        self.assertFalse(pair["clean"])
+        self.assertTrue(pair["selected_green_exhaustive_red"])
+
+    def test_only_twenty_consecutive_clean_pairs_open_the_promotion_gate(self):
+        clean = serial_pair.make_pair(
+            self.observation("selected"), self.observation("exhaustive"), pair_id="pair"
+        )
+        first = serial_pair.evaluate_pairs([
+            dict(clean, pair_id="pair-%02d" % index, recorded_at_utc="2026-08-21T%02d:00:00Z" % index)
+            for index in range(19)
+        ])
+        self.assertEqual(19, first["clean_streak"])
+        self.assertFalse(first["promotion_ready"])
+        twentieth = dict(clean, pair_id="pair-19", recorded_at_utc="2026-08-21T19:00:00Z")
+        passed = serial_pair.evaluate_pairs(first["pairs"] + [twentieth])
+        self.assertEqual(20, passed["clean_streak"])
+        self.assertTrue(passed["promotion_ready"])
+        discrepancy = dict(
+            clean,
+            pair_id="pair-20",
+            recorded_at_utc="2026-08-21T20:00:00Z",
+            clean=False,
+            selected_green_exhaustive_red=True,
+        )
+        reset = serial_pair.evaluate_pairs(passed["pairs"] + [discrepancy])
+        self.assertEqual(0, reset["clean_streak"])
+        self.assertFalse(reset["promotion_ready"])
+
+
+class TestPairedWorkflowAndPolicy(unittest.TestCase):
+    def test_proving_workflow_is_separate_scheduled_manual_and_paired(self):
+        checks = CHECKS.read_text(encoding="utf-8")
+        paired = PAIRED.read_text(encoding="utf-8")
+        self.assertNotIn("schedule:", checks)
+        self.assertNotIn("workflow_dispatch:", checks)
+        self.assertEqual(1, checks.count("run: python tools/run_tests.py"))
+        self.assertIn("schedule:", paired)
+        self.assertIn("workflow_dispatch:", paired)
+        self.assertIn("os: [ubuntu-latest, windows-latest]", paired)
+        self.assertIn("--mode selected", paired)
+        self.assertIn("--mode exhaustive", paired)
+        self.assertGreaterEqual(paired.count("continue-on-error: true"), 2)
+        self.assertIn("python tools/serial_pair.py", paired)
+        self.assertIn("if: ${{ always() }}", paired)
+        self.assertIn("uses: actions/upload-artifact@v4", paired)
+
+    def test_policy_keeps_exhaustive_required_while_selected_is_experimental(self):
+        guidance = GUIDANCE.read_text(encoding="utf-8")
+        policy = POLICY.read_text(encoding="utf-8")
+        self.assertIn("## Experimental serial lane", guidance)
+        self.assertIn("python -m unittest discover -s tests -v", guidance)
+        self.assertIn("`tools/serial-compat-policy.md`", guidance)
+        self.assertIn("`experimental`", policy)
+        self.assertIn("`20`", policy)
+        self.assertIn("`selected-green/exhaustive-red`", policy)
+        self.assertIn("`90s`", policy)
+        self.assertIn("`100s`", policy)
+        self.assertIn("`120s`", policy)
 
 
 if __name__ == "__main__":

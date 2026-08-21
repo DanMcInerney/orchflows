@@ -299,31 +299,28 @@ def _summary(results):
     }
 
 
+def _require_discovery(cases, manifest):
+    identities = sorted(case.id() for case in cases)
+    identity_hash = hashlib.sha256("\n".join(identities).encode("utf-8")).hexdigest()
+    expected = manifest.get("discovery")
+    if expected is not None and (
+        expected.get("count") != len(identities)
+        or expected.get("sha256") != identity_hash
+        or ("identities" in expected and expected["identities"] != identities)
+    ):
+        raise ValueError(
+            "discovery identity drift: expected %s/%s, observed %d/%s"
+            % (expected.get("count"), expected.get("sha256"), len(identities), identity_hash)
+        )
+    return identities, identity_hash
+
+
 def run_selected(tests_dir: Path, manifest: dict, stream=None, verbosity: int = 1) -> dict:
     """Discover all cases, then run only committed sentinels in this process."""
 
     started = time.monotonic()
     cases = discover_cases(tests_dir)
-    identities = sorted(case.id() for case in cases)
-    identity_hash = hashlib.sha256("\n".join(identities).encode("utf-8")).hexdigest()
-    expected_discovery = manifest.get("discovery")
-    if expected_discovery is not None and (
-        expected_discovery.get("count") != len(identities)
-        or expected_discovery.get("sha256") != identity_hash
-        or (
-            "identities" in expected_discovery
-            and expected_discovery["identities"] != identities
-        )
-    ):
-        raise ValueError(
-            "discovery identity drift: expected %s/%s, observed %d/%s"
-            % (
-                expected_discovery.get("count"),
-                expected_discovery.get("sha256"),
-                len(identities),
-                identity_hash,
-            )
-        )
+    _, identity_hash = _require_discovery(cases, manifest)
     by_id = {}
     for case in cases:
         by_id.setdefault(case.id(), []).append(case)
@@ -386,8 +383,33 @@ def run_selected(tests_dir: Path, manifest: dict, stream=None, verbosity: int = 
     }
 
 
+def run_exhaustive(tests_dir: Path, manifest: dict, stream=None, verbosity: int = 1) -> dict:
+    """Run every discovered case sequentially as the compatibility oracle."""
+
+    started = time.monotonic()
+    cases = discover_cases(tests_dir)
+    _, identity_hash = _require_discovery(cases, manifest)
+    result = unittest.TextTestRunner(
+        stream=stream if stream is not None else sys.stderr, verbosity=verbosity
+    ).run(unittest.TestSuite(cases))
+    return {
+        "schema": "orchflows.serial-compat-observation.v1",
+        "mode": "exhaustive",
+        "revision": revision(),
+        "recorded_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "interpreter": {
+            "pid": os.getpid(), "version": sys.version.split()[0], "executable": sys.executable,
+        },
+        "discovery": {"count": len(cases), "sha256": identity_hash},
+        "outcomes": _summary([result]),
+        "wall_time_seconds": round(time.monotonic() - started, 6),
+        "ok": result.wasSuccessful(),
+    }
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--mode", choices=("selected", "exhaustive"), default="selected")
     parser.add_argument("--manifest", default=str(MANIFEST_PATH))
     parser.add_argument("--tests-dir", default=str(TESTS_DIR))
     parser.add_argument("--record", default=str(RECORD_PATH))
@@ -397,7 +419,8 @@ def build_parser():
 
 def main(argv=None):
     args = build_parser().parse_args(argv)
-    record = run_selected(
+    runner = run_selected if args.mode == "selected" else run_exhaustive
+    record = runner(
         Path(args.tests_dir),
         load_manifest(Path(args.manifest)),
         verbosity=2 if args.verbose else 1,

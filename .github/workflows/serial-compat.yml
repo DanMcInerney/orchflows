@@ -1,0 +1,45 @@
+name: serial compatibility proving
+
+on:
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  paired:
+    name: serial pair / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: astral-sh/setup-uv@v5
+      - name: install exact reader backend
+        run: uv pip install --system --require-hashes -r requirements-runtime.txt
+      - name: selected one-interpreter observation
+        continue-on-error: true
+        run: python tools/run_serial_compat.py --mode selected --record .orch/selected.json
+      - name: exhaustive one-interpreter observation
+        continue-on-error: true
+        run: python tools/run_serial_compat.py --mode exhaustive --record .orch/exhaustive.json
+      - name: record paired verdict
+        if: ${{ always() }}
+        run: python tools/serial_pair.py --selected .orch/selected.json --exhaustive .orch/exhaustive.json --output .orch/pair.json --pair-id "${{ github.run_id }}-${{ matrix.os }}"
+      - name: upload paired evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: serial-pair-${{ matrix.os }}-${{ github.run_id }}
+          path: .orch/*.json
+          if-no-files-found: error
+          include-hidden-files: true
