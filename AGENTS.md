@@ -24,14 +24,14 @@ python` where bare `python` is a Windows Store stub; Python 3.9 or newer,
 
 python tools/validate.py
 python tools/run_tests.py                # sharded, one process per module
-python -m unittest discover -s tests -v  # serial local compatibility oracle
+python tools/run_serial_compat.py         # selected same-process compatibility lane
 python install.py --dry-run
 git diff --check
 
-A full serial run remains a local compatibility oracle for accidental
-cross-module coupling. CI runs the regression suite once through
-`tools/run_tests.py`; that runner gives each module a clean process and rejects
-any guarded whole-interpreter seam the module leaves dirty.
+The selected lane routinely checks cross-module coupling. Exhaustive
+`python -m unittest discover -s tests -v` remains scheduled/manual and
+pre-release. CI runs `tools/run_tests.py`, whose clean processes reject any
+guarded whole-interpreter seam a module leaves dirty.
 
 A green run here is provisional until the CI matrix in
 `.github/workflows/checks.yml` agrees — one host, one interpreter, one
@@ -39,3 +39,7 @@ shell locally; the matrix discriminates a host defect from a real one.
 Before pushing, `python tools/preflight.py` runs the suite under every
 CI interpreter installed here; what it covers and what stays CI's is its
 docstring's.
+
+## Serial compatibility
+
+`tools/serial-compat-policy.md` defines the routine lane and fallback.

@@ -1,0 +1,59 @@
+name: serial compatibility
+
+on:
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: serial-compat-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  serial:
+    name: serial compatibility / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: astral-sh/setup-uv@v5
+      - name: install exact reader backend
+        run: uv pip install --system --require-hashes -r requirements-runtime.txt
+      - name: selected same-process run
+        id: selected
+        continue-on-error: true
+        run: python tools/run_serial_compat.py --mode selected --record .orch/selected.json
+      - name: exhaustive same-process run
+        id: exhaustive
+        continue-on-error: true
+        run: python tools/run_serial_compat.py --mode exhaustive --record .orch/exhaustive.json
+      - name: upload selected raw timing record
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: serial-compat-selected-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .orch/selected.json
+          if-no-files-found: error
+          include-hidden-files: true
+      - name: upload exhaustive raw timing record
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: serial-compat-exhaustive-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .orch/exhaustive.json
+          if-no-files-found: error
+          include-hidden-files: true
+      - name: require green runs
+        if: ${{ always() && (steps.selected.outcome != 'success' || steps.exhaustive.outcome != 'success') }}
+        run: exit 1
