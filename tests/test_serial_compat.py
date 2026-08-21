@@ -17,6 +17,7 @@ from pathlib import Path
 from tools import run_serial_compat
 from tools import run_tests
 from tools import serial_pair
+from tools import serial_trials
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -356,6 +357,39 @@ class TestPairedWorkflowAndPolicy(unittest.TestCase):
         self.assertIn("`90s`", policy)
         self.assertIn("`100s`", policy)
         self.assertIn("`120s`", policy)
+
+
+class TestColdTrialGate(unittest.TestCase):
+    @staticmethod
+    def trial(seconds, revision="candidate", identity="ids"):
+        return {
+            "mode": "selected",
+            "revision": revision,
+            "discovery": {"count": 2363, "sha256": identity},
+            "sentinels": {"count": 14},
+            "wall_time_seconds": seconds,
+            "ok": True,
+        }
+
+    def test_two_green_fixed_revision_trials_decide_the_target(self):
+        gate = serial_trials.evaluate([self.trial(89.0), self.trial(90.0)])
+        self.assertEqual(89.5, gate["median_seconds"])
+        self.assertEqual(90.0, gate["max_seconds"])
+        self.assertTrue(gate["target_met"])
+        self.assertTrue(gate["fallback_met"])
+
+    def test_revision_identity_or_time_drift_refuses_the_target(self):
+        gate = serial_trials.evaluate([
+            self.trial(80.0), self.trial(101.0, revision="other", identity="other")
+        ])
+        self.assertFalse(gate["target_met"])
+        self.assertFalse(gate["fallback_met"])
+        self.assertIn("revision-mismatch", gate["reasons"])
+        self.assertIn("discovery-identity-mismatch", gate["reasons"])
+        self.assertIn("trial-over-100s", gate["reasons"])
+        fallback = serial_trials.evaluate([self.trial(100.0), self.trial(101.0)])
+        self.assertFalse(fallback["target_met"])
+        self.assertTrue(fallback["fallback_met"])
 
 
 if __name__ == "__main__":

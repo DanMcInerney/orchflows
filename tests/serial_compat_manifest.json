@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2363,
+  "count": 2365,
   "identities": [
    "test_canary_host.BaselinePinOwnerTest.test_both_modules_read_one_owner_for_the_pin",
    "test_canary_host.CanaryHostVerdictTest.test_a_run_that_resolved_no_baseline_fails",
@@ -391,6 +391,8 @@
    "test_serial_compat.TestBoundaryRestoration.test_selected_module_boundaries_restore_classified_process_state",
    "test_serial_compat.TestBoundaryRestoration.test_sharded_guard_restores_the_complete_environment",
    "test_serial_compat.TestBoundaryRestoration.test_warning_filters_are_restored_when_a_module_leaves_them_dirty",
+   "test_serial_compat.TestColdTrialGate.test_revision_identity_or_time_drift_refuses_the_target",
+   "test_serial_compat.TestColdTrialGate.test_two_green_fixed_revision_trials_decide_the_target",
    "test_serial_compat.TestExhaustiveObservation.test_exhaustive_mode_runs_every_discovered_case_in_this_interpreter",
    "test_serial_compat.TestMutationOwnerManifest.test_manifest_classifies_every_detected_mutation_owner",
    "test_serial_compat.TestPairedProvingGate.test_a_pair_requires_matching_revision_and_discovery_identity",
@@ -2366,7 +2368,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "4cbe65626597e19ac40a3e796d93c5ccd5c3065545cacea2bd1de50c3f9ebc13"
+  "sha256": "cd4e7663df9bd429adef06808e0b602acc7f9a96dad45ea4887590d69036be3f"
  },
  "mutation_owners": [
   {
