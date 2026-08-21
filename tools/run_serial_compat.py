@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run the selected or exhaustive suite in one interpreter.
-The selected lane is experimental: it proves exact discovery identity and
-executes the committed state sentinels without replacing exhaustive serial.
+The routine selected lane proves exact discovery identity and executes the
+committed state sentinels. Exhaustive mode remains the scheduled/manual fallback.
 Stdlib only, Python 3.9+, POSIX and Windows.
 """
 from __future__ import annotations

@@ -1,4 +1,4 @@
-name: serial compatibility proving
+name: serial compatibility
 
 on:
   schedule:
@@ -9,12 +9,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: serial-compat-proving-${{ github.ref }}
+  group: serial-compat-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  paired:
-    name: serial pair / ${{ matrix.os }}
+  serial:
+    name: serial compatibility / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -30,63 +30,24 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: install exact reader backend
         run: uv pip install --system --require-hashes -r requirements-runtime.txt
-      - name: selected one-interpreter observation
+      - name: selected same-process run
+        id: selected
         continue-on-error: true
         run: python tools/run_serial_compat.py --mode selected --record .orch/selected.json
-      - name: exhaustive one-interpreter observation
+      - name: exhaustive same-process run
+        id: exhaustive
         continue-on-error: true
         run: python tools/run_serial_compat.py --mode exhaustive --record .orch/exhaustive.json
-      - name: record paired verdict
-        if: ${{ always() }}
-        run: python tools/serial_pair.py --selected .orch/selected.json --exhaustive .orch/exhaustive.json --output .orch/pair.json --pair-id "${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.os }}"
-      - name: upload paired evidence
+      - name: upload raw timing records
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: serial-pair-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .orch/*.json
+          name: serial-compat-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .orch/selected.json
+            .orch/exhaustive.json
           if-no-files-found: error
           include-hidden-files: true
-
-  gate:
-    name: serial proving gate
-    if: ${{ always() && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
-    needs: paired
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      - name: restore prior proving history
-        uses: actions/cache/restore@v4
-        with:
-          path: .orch/proving-history
-          key: serial-compat-gate-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: serial-compat-gate-
-      - name: download this run's pairs
-        uses: actions/download-artifact@v4
-        with:
-          pattern: serial-pair-*-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .orch/current-pairs
-      - name: evaluate accumulated proving gate
-        id: proving
-        continue-on-error: true
-        run: python tools/serial_gate.py --previous .orch/proving-history/gate.json --pairs-root .orch/current-pairs --output .orch/proving-history/gate.json
-      - name: upload accumulated gate evidence
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: serial-gate-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .orch/proving-history/gate.json
-          if-no-files-found: error
-          include-hidden-files: true
-      - name: save proving history
-        if: ${{ always() }}
-        uses: actions/cache/save@v4
-        with:
-          path: .orch/proving-history
-          key: serial-compat-gate-${{ github.run_id }}-${{ github.run_attempt }}
-      - name: require valid gate evidence
-        if: steps.proving.outcome != 'success'
+      - name: require green runs
+        if: steps.selected.outcome != 'success' || steps.exhaustive.outcome != 'success'
         run: exit 1

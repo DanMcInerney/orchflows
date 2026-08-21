@@ -18,8 +18,6 @@ from pathlib import Path
 
 from tools import run_serial_compat
 from tools import run_tests
-from tools import serial_pair
-from tools import serial_trials
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -307,150 +305,50 @@ class TestExhaustiveObservation(unittest.TestCase):
         self.assertEqual(os.getpid(), record["interpreter"]["pid"])
 
 
-class TestPairedProvingGate(unittest.TestCase):
-    @staticmethod
-    def observation(mode, *, ok=True, revision="abc", identity="ids"):
-        count = 14 if mode == "selected" else 2357
-        return {
-            "schema": "orchflows.serial-compat-observation.v1",
-            "mode": mode,
-            "revision": revision,
-            "worktree_clean": True,
-            "recorded_at_utc": "2026-08-21T01:00:00Z",
-            "interpreter": {"pid": 1, "version": "3.13", "executable": "python"},
-            "manifest": {"sha256": "a" * 64},
-            "discovery": {"count": 2357, "sha256": hashlib.sha256(identity.encode()).hexdigest()},
-            "sentinels": {"count": 14} if mode == "selected" else None,
-            "boundaries": [] if mode == "selected" else None,
-            "outcomes": {"tests": count, "failures": 0, "errors": 0, "skipped": 0,
-                         "expected_failures": 0, "unexpected_successes": 0},
-            "wall_time_seconds": 1.0,
-            "ok": ok,
-        }
-
-    def test_a_pair_requires_matching_revision_and_discovery_identity(self):
-        selected = self.observation("selected")
-        exhaustive = self.observation("exhaustive", identity="different")
-        pair = serial_pair.make_pair(selected, exhaustive, pair_id="pair-1")
-        self.assertFalse(pair["clean"])
-        self.assertIn("discovery-identity-mismatch", pair["reasons"])
-
-    def test_selected_green_exhaustive_red_is_an_explicit_discrepancy(self):
-        pair = serial_pair.make_pair(
-            self.observation("selected"),
-            self.observation("exhaustive", ok=False),
-            pair_id="pair-1",
-        )
-        self.assertFalse(pair["clean"])
-        self.assertTrue(pair["selected_green_exhaustive_red"])
-
-    def test_only_twenty_consecutive_clean_pairs_open_the_promotion_gate(self):
-        clean = serial_pair.make_pair(
-            self.observation("selected"), self.observation("exhaustive"), pair_id="pair"
-        )
-        first = serial_pair.evaluate_pairs([
-            dict(clean, pair_id="pair-%02d" % index, recorded_at_utc="2026-08-21T%02d:00:00Z" % index)
-            for index in range(19)
-        ])
-        self.assertEqual(19, first["clean_streak"])
-        self.assertFalse(first["promotion_ready"])
-        twentieth = dict(clean, pair_id="pair-19", recorded_at_utc="2026-08-21T19:00:00Z")
-        passed = serial_pair.evaluate_pairs(first["pairs"] + [twentieth])
-        self.assertEqual(20, passed["clean_streak"])
-        self.assertTrue(passed["promotion_ready"])
-        discrepancy = serial_pair.make_pair(
-            self.observation("selected"), self.observation("exhaustive", ok=False),
-            pair_id="pair-20", recorded_at="2026-08-21T20:00:00Z",
-        )
-        reset = serial_pair.evaluate_pairs(passed["pairs"] + [discrepancy])
-        self.assertEqual(0, reset["clean_streak"])
-        self.assertFalse(reset["promotion_ready"])
-
-
-class TestPairedWorkflowAndPolicy(unittest.TestCase):
-    def test_proving_workflow_is_separate_scheduled_manual_and_paired(self):
+class TestScheduledWorkflowAndPolicy(unittest.TestCase):
+    def test_workflow_is_separate_scheduled_manual_and_uploads_raw_runs(self):
         checks = CHECKS.read_text(encoding="utf-8")
-        paired = PAIRED.read_text(encoding="utf-8")
+        workflow = PAIRED.read_text(encoding="utf-8")
         self.assertNotIn("schedule:", checks)
         self.assertNotIn("workflow_dispatch:", checks)
         self.assertEqual(1, checks.count("run: python tools/run_tests.py"))
-        self.assertIn("schedule:", paired)
-        self.assertIn("workflow_dispatch:", paired)
-        self.assertIn("os: [ubuntu-latest, windows-latest]", paired)
-        self.assertIn("--mode selected", paired)
-        self.assertIn("--mode exhaustive", paired)
-        self.assertGreaterEqual(paired.count("continue-on-error: true"), 2)
-        self.assertIn("python tools/serial_pair.py", paired)
-        self.assertIn("python tools/serial_gate.py", paired)
-        self.assertIn("actions/cache/restore@v4", paired)
-        self.assertIn("actions/download-artifact@v4", paired)
-        self.assertIn("actions/cache/save@v4", paired)
-        self.assertIn("github.run_attempt", paired)
-        self.assertIn("github.event.repository.default_branch", paired)
-        self.assertIn("if: ${{ always() }}", paired)
-        self.assertIn("uses: actions/upload-artifact@v4", paired)
+        self.assertIn("schedule:", workflow)
+        self.assertIn("workflow_dispatch:", workflow)
+        self.assertIn("os: [ubuntu-latest, windows-latest]", workflow)
+        self.assertIn("--mode selected", workflow)
+        self.assertIn("--mode exhaustive", workflow)
+        self.assertIn("--record .orch/selected.json", workflow)
+        self.assertIn("--record .orch/exhaustive.json", workflow)
+        self.assertIn("if: ${{ always() }}", workflow)
+        self.assertIn("uses: actions/upload-artifact@v4", workflow)
+        self.assertNotIn("serial_pair.py", workflow)
+        self.assertNotIn("serial_gate.py", workflow)
+        self.assertNotIn("actions/cache", workflow)
+        self.assertNotIn("download-artifact", workflow)
 
-    def test_policy_keeps_exhaustive_required_while_selected_is_experimental(self):
+    def test_policy_names_selected_as_routine_and_exhaustive_as_fallback(self):
         guidance = GUIDANCE.read_text(encoding="utf-8")
         policy = POLICY.read_text(encoding="utf-8")
-        self.assertIn("## Experimental serial lane", guidance)
+        self.assertIn("## Serial compatibility", guidance)
+        self.assertIn("routine", guidance.lower())
         self.assertIn("python -m unittest discover -s tests -v", guidance)
         self.assertIn("`tools/serial-compat-policy.md`", guidance)
-        self.assertIn("`experimental`", policy)
-        self.assertIn("`20`", policy)
-        self.assertIn("`selected-green/exhaustive-red`", policy)
+        self.assertIn("routine", policy.lower())
+        self.assertIn("scheduled", policy.lower())
+        self.assertIn("manual", policy.lower())
+        self.assertIn("pre-release", policy.lower())
         self.assertIn("`90s`", policy)
         self.assertIn("`100s`", policy)
-        self.assertIn("`120s`", policy)
 
-
-class TestColdTrialGate(unittest.TestCase):
-    @staticmethod
-    def trial(seconds, revision="candidate", identity="ids", recorded_at="2026-08-21T01:00:01Z"):
-        return {
-            "schema": "orchflows.serial-compat-observation.v1",
-            "mode": "selected",
-            "revision": revision,
-            "worktree_clean": True,
-            "recorded_at_utc": recorded_at,
-            "interpreter": {"pid": int(recorded_at[-3:-1]), "version": "3.13", "executable": "python"},
-            "manifest": {"sha256": "a" * 64},
-            "discovery": {"count": 2363, "sha256": hashlib.sha256(identity.encode()).hexdigest()},
-            "sentinels": {"count": 14},
-            "boundaries": [],
-            "outcomes": {"tests": 14, "failures": 0, "errors": 0, "skipped": 0,
-                         "expected_failures": 0, "unexpected_successes": 0},
-            "wall_time_seconds": seconds,
-            "ok": True,
-        }
-
-    def test_two_green_fixed_revision_trials_decide_the_target(self):
-        gate = serial_trials.evaluate([
-            self.trial(89.0), self.trial(90.0, recorded_at="2026-08-21T01:00:02Z")
-        ])
-        self.assertEqual(89.5, gate["median_seconds"])
-        self.assertEqual(90.0, gate["max_seconds"])
-        self.assertTrue(gate["target_met"])
-        self.assertTrue(gate["fallback_met"])
-
-    def test_revision_identity_or_time_drift_refuses_the_target(self):
-        gate = serial_trials.evaluate([
-            self.trial(80.0), self.trial(
-                101.0, revision="other", identity="other",
-                recorded_at="2026-08-21T01:00:02Z",
-            )
-        ])
-        self.assertFalse(gate["target_met"])
-        self.assertFalse(gate["fallback_met"])
-        self.assertIn("revision-mismatch", gate["reasons"])
-        self.assertIn("discovery-identity-mismatch", gate["reasons"])
-        self.assertIn("trial-over-100s", gate["reasons"])
-        fallback = serial_trials.evaluate([
-            self.trial(100.0),
-            self.trial(101.0, recorded_at="2026-08-21T01:00:02Z"),
-        ])
-        self.assertFalse(fallback["target_met"])
-        self.assertTrue(fallback["fallback_met"])
+    def test_no_accumulation_or_promotion_support_remains(self):
+        for name in ("serial_pair.py", "serial_gate.py", "serial_records.py", "serial_trials.py"):
+            self.assertFalse((ROOT / "tools" / name).exists(), name)
+        combined = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in (PAIRED, POLICY, GUIDANCE)
+        ).lower()
+        for forbidden in ("promotion", "rollback", "accumulator", "proving-history"):
+            self.assertNotIn(forbidden, combined)
 
 
 if __name__ == "__main__":

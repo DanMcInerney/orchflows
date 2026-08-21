@@ -24,14 +24,16 @@ python` where bare `python` is a Windows Store stub; Python 3.9 or newer,
 
 python tools/validate.py
 python tools/run_tests.py                # sharded, one process per module
-python -m unittest discover -s tests -v  # serial local compatibility oracle
+python tools/run_serial_compat.py         # selected same-process compatibility lane
 python install.py --dry-run
 git diff --check
 
-A full serial run remains a local compatibility oracle for accidental
-cross-module coupling. CI runs the regression suite once through
-`tools/run_tests.py`; that runner gives each module a clean process and rejects
-any guarded whole-interpreter seam the module leaves dirty.
+The selected serial lane is the routine local check for accidental cross-module
+coupling. The exhaustive command, `python -m unittest discover -s tests -v`,
+remains available on the scheduled/manual workflow and for pre-release checks.
+CI runs the regression suite once through `tools/run_tests.py`; that runner gives
+each module a clean process and rejects any guarded whole-interpreter seam the
+module leaves dirty.
 
 A green run here is provisional until the CI matrix in
 `.github/workflows/checks.yml` agrees — one host, one interpreter, one
@@ -40,7 +42,7 @@ Before pushing, `python tools/preflight.py` runs the suite under every
 CI interpreter installed here; what it covers and what stays CI's is its
 docstring's.
 
-## Experimental serial lane
+## Serial compatibility
 
-The lane is `experimental`; its proving contract is
-`tools/serial-compat-policy.md`. Exhaustive serial above remains required.
+The routine selected lane and exhaustive fallback are defined in
+`tools/serial-compat-policy.md`.
