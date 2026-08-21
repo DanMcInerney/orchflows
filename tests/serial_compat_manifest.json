@@ -3283,14 +3283,6 @@
   },
   {
    "module": "tests.test_installer_cases.planning.runtime",
-   "owner": "TestRuntimeDirsSeedTheSink.test_user_scope_seeds_the_sink",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_installer_cases.planning.runtime",
    "owner": "TestRuntimeDirsSeedTheSink.test_no_planned_line_names_a_dot_orch_friction_path",
    "restoration": "sharded-module-guard",
    "seams": [
@@ -3321,6 +3313,14 @@
    "seams": [
     "environment",
     "import-path",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.runtime",
+   "owner": "TestRuntimeDirsSeedTheSink.test_user_scope_seeds_the_sink",
+   "restoration": "sharded-module-guard",
+   "seams": [
     "monkeypatch"
    ]
   },

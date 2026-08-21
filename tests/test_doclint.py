@@ -366,12 +366,18 @@ class InstallationScopeDocumentationTest(unittest.TestCase):
         project_build = by_id["build-project-custom-skill"]
         self.assertIn("project-scope custom skill", project_build["prompt"])
         self.assertEqual("ticket", project_build["expected"])
+        project_composition = by_id["build-project-custom-composition"]
+        self.assertIn(
+            "project-scope custom composition", project_composition["prompt"]
+        )
+        self.assertEqual("ticket", project_composition["expected"])
 
     def test_project_build_scope_remains_a_distinct_custom_item_landing_zone(self):
         scopes = (
             ROOT / "skills" / "workflows" / "orch-build" / "references" / "scopes.md"
         ).read_text(encoding="utf-8")
         self.assertIn("## Project build scope", scopes)
+        self.assertIn("<repo>/.orchflows/compositions/<name>", scopes)
         project_row = next(
             line for line in scopes.splitlines() if line.startswith("| project |")
         )

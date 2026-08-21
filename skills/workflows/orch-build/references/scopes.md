@@ -13,6 +13,10 @@ scope. Canonical work happens in this repository itself and needs no install.
 
 ## Project build scope
 
+- Project-scope custom skills land at
+  `<repo>/.orchflows/skills/<name>/SKILL.md`; project-scope custom
+  compositions land at `<repo>/.orchflows/compositions/<name>`. Both are
+  repository build outputs, not installation scopes.
 - User- and project-scope items are custom: outside library law,
   binding only at their scope, written to a skill's anatomy. What a
   custom item may be named is `orch-build`'s `Never:`.

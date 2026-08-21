@@ -59,6 +59,21 @@ class ProjectInstallBoundaryTest(unittest.TestCase):
             self.assertIsNone(user_plan.project_root)
             self.assertGreater(install.plan_entry_count(user_plan), 0)
 
+            user_scope = root / "user" / ".orchflows"
+            user_application_plan = install.Plan(
+                scope="user",
+                project_root=None,
+                lib_home=user_scope / "lib",
+                scope_home=user_scope,
+                bin_dir=user_scope / "bin",
+                receipt_path=user_scope / "receipt.json",
+                manage_host_surfaces=False,
+            )
+            with patch.object(install, "resolve_source_commit", return_value="test-commit"):
+                user_receipt = install.apply_plan(user_application_plan)
+            self.assertEqual("user", user_receipt["scope"])
+            self.assertTrue(user_application_plan.receipt_path.is_file())
+
     def test_cli_rejects_project_install_and_dry_run_but_keeps_legacy_uninstall(self):
         with tempfile.TemporaryDirectory() as raw:
             project = Path(raw)

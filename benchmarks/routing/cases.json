@@ -172,6 +172,13 @@
     "distractor": false
   },
   {
+    "id": "build-project-custom-composition",
+    "prompt": "make a project-scope custom composition for our release workflow",
+    "expected": "ticket",
+    "note": "Project composition is a build scope, not an install scope; because the prompt names no skill, the host block routes it to a ticket.",
+    "distractor": false
+  },
+  {
     "id": "build-benchmark-contract",
     "prompt": "add a new contract for benchmark manifests under contracts/",
     "expected": "ticket",

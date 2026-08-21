@@ -118,8 +118,9 @@ stays in `scripts/ui_server.py`.
   failure behavior: [visibility §6](rules/visibility.md). Resolver:
   [`scripts/state_root.py`](scripts/state_root.py). Research evidence lives in
   the sink's `research/` tree.
-- `.orch/` holds tracked `canary/` fixtures. Legacy project receipts may still
-  name generated paths there; cleanup remains receipt-driven through uninstall.
+- `.orch/` holds tracked `canary/` fixtures and legacy generated `bin/`
+  scripts named by project receipts; cleanup remains receipt-driven through
+  uninstall.
 
 ## Dependency direction
 
