@@ -140,6 +140,41 @@ class ProjectInstallBoundaryTest(unittest.TestCase):
             self.assertTrue(receipt.is_file())
             self.assertIn("removed unchanged skill", output.getvalue())
 
+    def test_legacy_project_uninstall_normalizes_in_boundary_receipt_paths(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "alias").mkdir()
+            project = root / "alias" / ".."
+            adapter = project / ".claude" / "skills" / "legacy" / "SKILL.md"
+            adapter.parent.mkdir(parents=True)
+            adapter.write_text("legacy\n", encoding="utf-8")
+            receipt = project / ".orchflows" / "receipt.json"
+            receipt.parent.mkdir()
+            receipt.write_text(
+                json.dumps(
+                    {
+                        "scope": "project",
+                        "files": [
+                            {
+                                "path": str(adapter),
+                                "kind": "adapter",
+                                "install_action": "created",
+                                "sha256": hashlib.sha256(adapter.read_bytes()).hexdigest(),
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                0,
+                install.main(["--project", str(project), "--uninstall"]),
+            )
+
+            self.assertFalse(adapter.exists())
+            self.assertTrue(receipt.is_file())
+
 
 class TestFrontendDistribution(unittest.TestCase):
     def _frontend_plan(self, root: Path, source: Path) -> install.Plan:
