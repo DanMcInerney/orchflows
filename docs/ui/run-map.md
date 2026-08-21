@@ -1,12 +1,14 @@
 # Run map
 
-Run map is the read-only Workflows view. It starts with compact, reversible readiness summaries and expands in place until every canonical ticket dependency is visible. It never creates a phase taxonomy, changes graph state, invokes lifecycle commands, or exposes ticket and transcript contents outside the closed experience projection.
+Run map is the read-only execution detail owned by Now. It is the sole full execution graph: compact Now summaries link here instead of recreating its ticket topology. It starts with compact, reversible readiness summaries and expands in place until every canonical ticket dependency is visible. It never creates a phase taxonomy, changes graph state, invokes lifecycle commands, or exposes ticket and transcript contents outside the closed experience projection.
 
 ## Disclosure model
 
 The view has four levels. Level 0 lists runs and one compact activity macro for each run. Level 1 groups the selected run by the canonical readiness states supplied by the reader. Each group names its member ticket ids and canonical lifecycle statuses, so the summary can be reversed without inventing a phase. Level 2 shows either those groups collapsed or the complete ticket graph. Level 3 adds a persistent inspector for a selected group or ticket.
 
-Moving between levels keeps the run, search, filter, live or paused mode, selected group or ticket, and React Flow viewport in the same mounted view. Groups bundle edges only while collapsed. Expanded mode emits one edge for every `depends_on` entry, including an edge to an explicit missing-dependency node when its source ticket is absent.
+Moving between levels keeps the run, search, filter, live or paused mode, selected group or ticket, and React Flow viewport in the same mounted view. Groups bundle edges only while collapsed. Expanded mode emits one edge for every `depends_on` entry, including an edge to an explicit missing-dependency node when its source ticket is absent. Selecting a ticket preserves that complete graph while the inspector names its upstream dependencies, its immediate downstream work, and its present canonical state.
+
+The UI-neutral `web/src/shared/routes/executionRoutes.ts` owns canonical run and ticket path matching and construction. The run-map route delegates to that owner, and every selected ticket inspector exposes a descriptive native link to `/runs/{run}/tickets/{ticket}` while preserving the fixture query used by deterministic captures. Run and ticket descendants keep Now active in the application rail.
 
 ## Reader contract
 

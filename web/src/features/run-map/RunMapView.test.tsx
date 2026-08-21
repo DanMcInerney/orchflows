@@ -1,7 +1,8 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ReadinessState, RunMapModel, TicketSummary } from "./model";
+import { route as runMapRoute } from "./route";
 import { RunMapView } from "./RunMapView";
 
 interface MockNode {
@@ -163,5 +164,35 @@ describe("RunMapView", () => {
 
     expect(screen.getByRole("link", { name: /run-gamma/ }).getAttribute("href")).toBe("/runs/run-gamma");
     expect(screen.getByRole("link", { name: /run-delta/ }).getAttribute("href")).toBe("/runs/run-delta");
+  });
+
+  it("keeps causal context complete and hands keyboard users from a selected node to its ticket", () => {
+    const projection = model();
+    if (!projection.run) throw new Error("fixture run missing");
+    projection.run.id = "run/gamma";
+    projection.run.tickets = [
+      ticket("plan/one", "complete", "complete"),
+      { ...ticket("work item", "claimed", "running"), depends_on: ["plan/one"] },
+      { ...ticket("verify#1", "pending", "waiting"), depends_on: ["work item"] }
+    ];
+    const href = runMapRoute.build({ run: projection.run.id, fixture: "full-expanded" });
+    const location = new URL(href, "https://orchflows.test");
+    const deepLink = runMapRoute.match({ pathname: location.pathname, search: location.search, hash: location.hash });
+
+    expect(deepLink).toEqual({ run: "run/gamma", fixture: "full-expanded" });
+    if (!deepLink) throw new Error("run deep link did not parse");
+    render(<RunMapView state={ready(projection)} route={deepLink} />);
+    expect(screen.getByText("plan/one is a dependency of work item")).not.toBeNull();
+    expect(screen.getByText("work item is a dependency of verify#1")).not.toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "work item" }));
+    const inspector = screen.getByRole("complementary");
+    expect(within(inspector).getByText("running", { selector: "strong" })).not.toBeNull();
+    expect(within(inspector).getByText("plan/one")).not.toBeNull();
+    expect(within(inspector).getByText("verify#1")).not.toBeNull();
+    const ticketLink = screen.getByRole("link", { name: "Open ticket work item" });
+    expect(ticketLink.getAttribute("href")).toBe("/runs/run%2Fgamma/tickets/work%20item?fixture=full-expanded");
+    ticketLink.focus();
+    expect(document.activeElement).toBe(ticketLink);
   });
 });

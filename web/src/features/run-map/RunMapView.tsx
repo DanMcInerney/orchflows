@@ -26,6 +26,7 @@ import {
   X
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { executionTicketRoute } from "../../shared/routes/executionRoutes";
 import type { FeatureState } from "../../shared/transport/types";
 import { runForIdentity } from "./fixtures";
 import { RunTopologyMiniMap } from "./RunTopologyMiniMap";
@@ -283,13 +284,18 @@ function SummaryView({ run, onGroup, onExpand }: {
   );
 }
 
-function Inspector({ ticket, group, causal, onWhy, onClose }: {
+function Inspector({ run, fixture, ticket, group, causal, onWhy, onClose }: {
+  run: RunDetail;
+  fixture: string;
   ticket: TicketSummary | null;
   group: ReadinessGroup | null;
   causal: CausalFocus | null;
   onWhy: () => void;
   onClose: () => void;
 }) {
+  const downstream = ticket
+    ? run.tickets.filter((candidate) => candidate.depends_on.includes(ticket.id)).map((candidate) => candidate.id)
+    : [];
   return (
     <aside className="run-inspector" aria-labelledby="inspector-heading">
       <header>
@@ -312,10 +318,14 @@ function Inspector({ ticket, group, causal, onWhy, onClose }: {
         <dl>
           <div><dt>Executor</dt><dd>{ticket.executor || "unavailable"}</dd></div>
           <div><dt>Depends on</dt><dd>{ticket.depends_on.join(", ") || "none"}</dd></div>
+          <div><dt>Downstream work</dt><dd>{downstream.join(", ") || "none"}</dd></div>
           <div><dt>Bound</dt><dd>{ticket.bound || "unavailable"}</dd></div>
           <div><dt>Claim</dt><dd>{ticket.claimed_by || "unclaimed"}</dd></div>
         </dl>
         <p className="run-inspector__evidence">{ticket.readiness.explanation}</p>
+        <a href={executionTicketRoute.build({ run: run.id, ticket: ticket.id, fixture })}>
+          Open ticket {ticket.id}<ChevronRight aria-hidden="true" />
+        </a>
       </>}
       {group && <div className="run-inspector__group">
         <p>This summary is a reversible projection of canonical readiness.</p>
@@ -435,7 +445,7 @@ export function RunMapView({ route, state }: RunMapViewProps) {
       {level === 0 && <FleetView runs={state.model?.runs ?? []} />}
       {level === 1 && <SummaryView run={run} onGroup={openGroup} onExpand={() => setLevel(2)} />}
       {level >= 2 && <section className={`run-map__workspace ${level === 3 ? "has-inspector" : ""}`}>
-        {level === 3 && compact && <Inspector ticket={ticket} group={group} causal={causal} onWhy={whyWaiting} onClose={() => { setLevel(2); setCausal(null); }} />}
+        {level === 3 && compact && <Inspector run={run} fixture={route.fixture} ticket={ticket} group={group} causal={causal} onWhy={whyWaiting} onClose={() => { setLevel(2); setCausal(null); }} />}
         <article className="run-map__graph-card" aria-labelledby="canonical-graph-heading">
           <header className="run-map__graph-heading">
             <div><p className="run-map__eyebrow">Level 2 · topology</p><h2 id="canonical-graph-heading">{expanded ? "Every canonical dependency" : "Readiness groups collapsed"}</h2></div>
@@ -479,7 +489,7 @@ export function RunMapView({ route, state }: RunMapViewProps) {
             {(["waiting", "ready", "running", "attention", "complete", "unknown"] as const).map((state) => <span key={state} data-status={state}><i aria-hidden="true">{statusGlyph(state)}</i>{state}</span>)}
           </footer>
         </article>
-        {level === 3 && !compact && <Inspector ticket={ticket} group={group} causal={causal} onWhy={whyWaiting} onClose={() => { setLevel(2); setCausal(null); }} />}
+        {level === 3 && !compact && <Inspector run={run} fixture={route.fixture} ticket={ticket} group={group} causal={causal} onWhy={whyWaiting} onClose={() => { setLevel(2); setCausal(null); }} />}
       </section>}
 
       {diagnostics.length > 0 && <section className="run-map__diagnostics" aria-labelledby="diagnostics-heading">
