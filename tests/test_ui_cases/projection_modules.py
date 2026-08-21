@@ -7,6 +7,7 @@ import subprocess
 from types import SimpleNamespace
 
 import scripts.ui_api as api
+import scripts.ui_artifacts_projection as artifacts
 import scripts.ui_friction_projection as friction
 import scripts.ui_experience as experience
 import scripts.ui_now_projection as now
@@ -15,7 +16,7 @@ import scripts.ui_sessions_projection as sessions
 import scripts.ui_workflows_projection as workflows
 
 
-DOMAIN_MODULES = (now, runs, workflows, sessions, friction)
+DOMAIN_MODULES = (artifacts, now, runs, workflows, sessions, friction)
 
 
 class FacadeRouteAssemblyTests(unittest.TestCase):
@@ -62,6 +63,8 @@ class FacadeRouteAssemblyTests(unittest.TestCase):
 class FacadeProjectionDelegationTests(unittest.TestCase):
     def test_public_projection_compatibility_names_delegate_to_domain_owners(self):
         expected = {
+            "project_artifact_inventory": artifacts.project_artifact_inventory,
+            "project_artifact": artifacts.project_artifact,
             "project_observe": now.project_observe,
             "project_runs": runs.project_runs,
             "project_run": runs.project_run,
@@ -199,6 +202,7 @@ class ProjectionOwnershipTests(unittest.TestCase):
         }
         expected = {
             "tests.test_ui_cases.domain_projections",
+            "tests.test_ui_cases.artifacts_projection",
             "tests.test_ui_cases.experience_projection",
             "tests.test_ui_cases.projection_modules",
             "tests.test_ui_cases.projection_security",
@@ -210,6 +214,7 @@ class ProjectionOwnershipTests(unittest.TestCase):
         architecture = (ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8")
         owners = {
             "scripts/ui_api.py",
+            "scripts/ui_artifacts_projection.py",
             "scripts/ui_experience.py",
             "scripts/ui_now_projection.py",
             "scripts/ui_runs_projection.py",

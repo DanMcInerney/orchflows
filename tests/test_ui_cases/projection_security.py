@@ -47,6 +47,7 @@ class TestProjectionContentWall(unittest.TestCase):
                     "/api/v1/runs",
                     "/api/v1/runs/run-gamma",
                     "/api/v1/runs/run-gamma/tickets/G1",
+                    "/api/v1/runs/run-gamma/tickets/G1/artifacts",
                     "/api/v1/friction",
                     "/api/observe?run=run-gamma",
                 ):
@@ -65,6 +66,7 @@ class TestProjectionContentWall(unittest.TestCase):
                 "/api/v1/runs/..",
                 "/api/v1/runs/%2e%2e",
                 "/api/v1/runs/run-gamma/tickets/%2e%2e%2f%2e%2e%2fsecret",
+                "/api/v1/runs/run-gamma/tickets/G1/artifacts/%2e%2e",
                 "/api/v1/sessions/%2e%2e",
             )
             with serving(main) as server:

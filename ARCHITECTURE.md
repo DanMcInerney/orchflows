@@ -95,7 +95,8 @@ authority.
 The UI reader family keeps one closed boundary: `scripts/ui_api.py` owns
 explicit route assembly, query validation, shared JSON ETags and closed
 failures, security middleware, and loopback Starlette/Uvicorn with fallback
-parity. Domain projections belong to `scripts/ui_now_projection.py`,
+parity. Domain projections belong to `scripts/ui_artifacts_projection.py`,
+`scripts/ui_now_projection.py`,
 `scripts/ui_runs_projection.py`, `scripts/ui_workflows_projection.py`,
 `scripts/ui_sessions_projection.py`, and `scripts/ui_friction_projection.py`.
 The Workflows projector owns `GET /api/v1/workflows`,

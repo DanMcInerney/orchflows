@@ -26,6 +26,7 @@ PROJECTION_MODULES = tuple(
     ROOT / "scripts" / name
     for name in (
         "ui_api.py",
+        "ui_artifacts_projection.py",
         "ui_experience.py",
         "ui_now_projection.py",
         "ui_runs_projection.py",

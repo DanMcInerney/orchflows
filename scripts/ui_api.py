@@ -23,6 +23,7 @@ except ModuleNotFoundError:  # The installed CLI runs under the private runtime.
 
 try:
     from scripts import (
+        ui_artifacts_projection,
         ui_friction_projection,
         ui_now_projection,
         ui_runs_projection,
@@ -39,6 +40,7 @@ try:
         project_view,
     )
 except ImportError:
+    import ui_artifacts_projection
     import ui_friction_projection
     import ui_now_projection
     import ui_runs_projection
@@ -69,6 +71,7 @@ SECURITY_HEADERS = {
 }
 
 PROJECTOR_MODULES = (
+    ui_artifacts_projection,
     ui_now_projection,
     ui_runs_projection,
     ui_workflows_projection,
@@ -149,6 +152,8 @@ project_friction = ui_friction_projection.project_friction
 project_workflow_catalog = ui_workflows_projection.project_workflow_catalog
 project_workflow = ui_workflows_projection.project_workflow
 project_workflow_source = ui_workflows_projection.project_workflow_source
+project_artifact_inventory = ui_artifacts_projection.project_artifact_inventory
+project_artifact = ui_artifacts_projection.project_artifact
 
 def _json_bytes(value) -> bytes:
     encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
@@ -269,8 +274,33 @@ async def workflow_source_endpoint(request: Request):
         return _json_response(request, INTERNAL_ERROR, 500)
     return _json_response(request, value, status)
 
+async def artifact_inventory_endpoint(request: Request):
+    root, _ = _context(request)
+    try:
+        status, value = project_artifact_inventory(
+            root, request.path_params["run"], request.path_params["ticket"]
+        )
+    except Exception:
+        return _json_response(request, INTERNAL_ERROR, 500)
+    return _json_response(request, value, status)
+
+async def artifact_endpoint(request: Request):
+    root, _ = _context(request)
+    try:
+        status, value = project_artifact(
+            root,
+            request.path_params["run"],
+            request.path_params["ticket"],
+            request.path_params["artifact_id"],
+        )
+    except Exception:
+        return _json_response(request, INTERNAL_ERROR, 500)
+    return _json_response(request, value, status)
+
 def _starlette_projector_routes():
     endpoints = {
+        (ui_artifacts_projection, "project_artifact_inventory"): artifact_inventory_endpoint,
+        (ui_artifacts_projection, "project_artifact"): artifact_endpoint,
         (ui_now_projection, "project_observe"): observe_endpoint,
         (ui_runs_projection, "project_runs"): runs_endpoint,
         (ui_runs_projection, "project_run"): run_endpoint,
@@ -397,6 +427,12 @@ def _fallback_api(path, query, query_values, root, transcripts, headers):
             return _fallback_json(project_runs(root), headers)
         if path.startswith("/api/v1/runs/"):
             parts = path.strip("/").split("/")
+            if len(parts) == 7 and parts[4] == "tickets" and parts[6] == "artifacts":
+                status, value = project_artifact_inventory(root, parts[3], parts[5])
+                return _fallback_json(value, headers, status)
+            if len(parts) == 8 and parts[4] == "tickets" and parts[6] == "artifacts":
+                status, value = project_artifact(root, parts[3], parts[5], parts[7])
+                return _fallback_json(value, headers, status)
             value = None
             if len(parts) == 4:
                 value = project_run(root, parts[3])

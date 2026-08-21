@@ -300,6 +300,7 @@ class TestCompiledApplicationServer(unittest.TestCase):
                 "/api/v1/runs",
                 "/api/v1/runs/run-gamma",
                 "/api/v1/runs/run-gamma/tickets/G1",
+                "/api/v1/runs/run-gamma/tickets/G1/artifacts",
                 "/api/v1/friction",
                 "/api/v1/sessions",
                 "/api/v1/sessions/{0}".format(TITLED_SESSION),
