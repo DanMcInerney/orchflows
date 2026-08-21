@@ -133,6 +133,98 @@ describe("TicketInspector", () => {
     expect(screen.getByText(/Unknown is preserved/)).not.toBeNull();
   });
 
+  it("links the executor source only from an explicit canonical association", () => {
+    const value = model({
+      executor: "orch-tdd",
+      executor_source: {
+        state: "available",
+        workflow_id: "evolve/code pack",
+        source_id: "skill:orch-tdd",
+        label: "orch-tdd skill source"
+      }
+    });
+    window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?tab=details");
+    const { unmount } = render(<TicketInspector state={ready(value)} route={route("")} />);
+    const source = screen.getByRole("link", { name: "Open canonical orch-tdd skill source" });
+    expect(source.getAttribute("href")).toBe("/workflows/evolve%2Fcode%20pack/sources/skill%3Aorch-tdd");
+    unmount();
+
+    const unavailable = model({
+      executor: "orch-tdd",
+      executor_source: {
+        state: "unavailable",
+        reason: "No canonical workflow association was recorded."
+      }
+    });
+    render(<TicketInspector state={ready(unavailable)} route={route("")} />);
+    expect(screen.getByText("Executor source unavailable")).not.toBeNull();
+    expect(screen.getByText("No canonical workflow association was recorded.")).not.toBeNull();
+    expect(screen.queryByRole("link", { name: /orch-tdd.*source/i })).toBeNull();
+  });
+
+  it("derives contained artifact links from opaque identities and keeps unresolved entries unavailable", () => {
+    const value = model({
+      id: "G/1",
+      artifacts: {
+        state: "rows",
+        rows: [
+          { artifact_id: "7e3f18d02a8d4b52a1c951f0", label: "Coverage report", state: "available", media_type: "text/markdown" },
+          { artifact_id: "../outside", label: "Untrusted path", state: "available", media_type: "text/plain" },
+          { artifact_id: "", label: "Prose-only result", state: "unavailable", reason: "No canonical structured result identity resolved inside the state sink." }
+        ]
+      }
+    });
+    window.history.replaceState({}, "", "/runs/run%20alpha/tickets/G%2F1?tab=artifacts");
+    render(<TicketInspector state={ready(value)} route={{ ...route("", "G/1"), run: "run alpha" }} />);
+
+    const artifact = screen.getByRole("link", { name: "Open contained artifact Coverage report" });
+    expect(artifact.getAttribute("href")).toBe("/api/v1/runs/run%20alpha/tickets/G%2F1/artifacts/7e3f18d02a8d4b52a1c951f0");
+    expect(screen.getByText("Artifact identity unavailable", { selector: "strong" })).not.toBeNull();
+    expect(screen.getByText("No canonical structured result identity resolved inside the state sink.")).not.toBeNull();
+    expect(screen.queryByRole("link", { name: /Untrusted path/ })).toBeNull();
+  });
+
+  it("assembles judgment explanation mechanically and labels absent rationale unavailable", () => {
+    const value = model({
+      sections: {
+        objective: "Keep projected judgment facts exact.",
+        result: "Candidate revision recorded.",
+        feedback: "[]",
+        risks: "[\"compact viewport\"]"
+      },
+      judgment: {
+        rationale_identity: "",
+        rationale_state: "unavailable",
+        rationale_reason: "No canonical rationale identity was recorded."
+      }
+    });
+    window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?tab=proof");
+    render(<TicketInspector state={ready(value)} route={route("")} />);
+
+    expect(screen.getByRole("heading", { name: "Judgment explanation" })).not.toBeNull();
+    expect(screen.getByText("Candidate revision recorded.")).not.toBeNull();
+    expect(screen.getByText("[]")).not.toBeNull();
+    expect(screen.getByText("[\"compact viewport\"]")).not.toBeNull();
+    expect(screen.getByText("Rationale unavailable")).not.toBeNull();
+    expect(screen.getByText("No canonical rationale identity was recorded.")).not.toBeNull();
+    expect(screen.getByText("tools/validate.py")).not.toBeNull();
+    expect(screen.getAllByText("deterministic", { selector: "span" })).toHaveLength(2);
+  });
+
+  it("makes absent artifact inventory explicit", () => {
+    const value = model({
+      artifacts: {
+        state: "unavailable",
+        rows: [],
+        reason: "No canonical artifact identities were projected."
+      }
+    });
+    window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?tab=artifacts");
+    render(<TicketInspector state={ready(value)} route={route("")} />);
+    expect(screen.getByRole("heading", { name: "Artifacts unavailable" })).not.toBeNull();
+    expect(screen.getByText("No canonical artifact identities were projected.")).not.toBeNull();
+  });
+
   it("renders named deterministic fixture evidence when the fixed reader fixture cannot select a ticket", () => {
     const value = model();
     value.ticket = null;

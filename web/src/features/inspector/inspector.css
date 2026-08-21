@@ -44,6 +44,14 @@
 .detail-list { margin: 0; padding: 0 var(--space-5); }
 .detail-list > div { min-height: var(--row-comfortable); display: grid; grid-template-columns: 160px 1fr; align-items: center; gap: var(--space-4); border-bottom: 1px solid var(--border-subtle); }
 .detail-list > div:last-child { border-bottom: 0; }.detail-list dt, .field-label { color: var(--text-faint); font-size: var(--type-xs); font-weight: 740; letter-spacing: .08em; text-transform: uppercase; }.detail-list dd { margin: 0; color: var(--text-strong); }
+.source-disclosure { min-height: var(--row-comfortable); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); background: var(--surface-2); }
+.source-disclosure h3, .judgment-summary h3 { margin: var(--space-1) 0 0; color: var(--text-strong); }.source-disclosure p { margin: 0; }
+.source-disclosure > a, .artifact-row > a { min-height: var(--row-compact); display: inline-flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-3); border: 1px solid var(--accent-selected); border-radius: var(--radius-control); color: var(--text-strong); background: var(--surface-raised); font-weight: 680; text-decoration: none; }
+.source-disclosure > a:hover, .artifact-row > a:hover { border-color: var(--accent); }.source-disclosure > a svg, .artifact-row > a svg { width: 16px; color: var(--accent); }
+.unavailable-state { display: grid; gap: var(--space-1); }.unavailable-state strong { color: var(--text-strong); }.unavailable-state p { margin: 0; color: var(--text-muted); font-size: var(--type-sm); }
+.judgment-summary { padding: var(--space-5); border-bottom: 1px solid var(--border-subtle); background: var(--surface-2); }.judgment-summary > div { margin-bottom: var(--space-3); }
+.judgment-summary dl { margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); }.judgment-summary dl > div { min-width: 0; padding: var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-control); background: var(--surface-1); }
+.judgment-summary dt { margin-bottom: var(--space-2); color: var(--text-faint); font-size: var(--type-xs); font-weight: 740; letter-spacing: .08em; text-transform: uppercase; }.judgment-summary dd { margin: 0; color: var(--text-strong); overflow-wrap: anywhere; }.judgment-summary dd > strong, .judgment-summary dd > span { display: block; }.judgment-summary dd > span { margin-top: var(--space-1); color: var(--text-muted); font-size: var(--type-sm); }
 .proof-list { display: grid; }
 .proof-alert { min-height: var(--row-comfortable); display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-5); border-bottom: 1px solid var(--status-failed); color: var(--status-failed); background: var(--surface-2); }
 .proof-alert svg { flex: 0 0 auto; width: 18px; }.proof-alert strong { color: var(--status-failed); }.proof-alert p { margin: 0; color: var(--text); font: var(--type-sm)/1.45 var(--font-mono); }
@@ -52,6 +60,7 @@
 .proof-verdict { display: grid; grid-template-columns: 20px 1fr; align-items: center; gap: 0 var(--space-2); color: var(--status-unknown); }.proof-verdict svg { width: 18px; grid-row: 1 / 3; }.proof-verdict span { font-weight: 780; }.proof-verdict small { color: var(--text-faint); }
 .proof-row[data-verdict="pass"] { border-left-color: var(--status-complete); }.proof-row[data-verdict="pass"] .proof-verdict { color: var(--status-complete); }
 .proof-row[data-verdict="fail"] { border-left-color: var(--status-failed); }.proof-row[data-verdict="fail"] .proof-verdict { color: var(--status-failed); }
+.artifact-list { display: grid; }.artifact-row { min-height: var(--row-comfortable); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) var(--space-5); border-bottom: 1px solid var(--border-subtle); }.artifact-row:last-child { border-bottom: 0; }.artifact-row > div:first-child { min-width: 0; display: grid; gap: var(--space-1); }.artifact-row > div:first-child strong { color: var(--text-strong); }.artifact-row > div:first-child span { color: var(--text-faint); font: var(--type-xs) var(--font-mono); }
 .friction-list { display: grid; gap: var(--space-3); padding: var(--space-5); }
 .friction-record { overflow: hidden; border: 1px solid var(--status-attention); border-radius: var(--radius-card); background: var(--surface-2); }
 .friction-record header { min-height: var(--row-compact); display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-3); border-bottom: 1px solid var(--border-subtle); color: var(--status-attention); }.friction-record header svg { width: 17px; }.friction-record time { margin-left: auto; color: var(--text-faint); font: var(--type-xs) var(--font-mono); }
@@ -66,8 +75,9 @@
 @media (max-width: 760px) {
   .inspector-heading { display: grid; }.inspector-status { width: 100%; }.inspector-tab { padding-inline: var(--space-2); }.inspector-tab svg { display: none; }
   .detail-list > div { grid-template-columns: 1fr; align-content: center; gap: 0; }.proof-row { grid-template-columns: 1fr; padding-block: var(--space-3); }
+  .source-disclosure, .artifact-row { align-items: stretch; flex-direction: column; }.source-disclosure > a, .artifact-row > a { justify-content: center; }.judgment-summary dl { grid-template-columns: 1fr; }
   .friction-record header { align-items: flex-start; flex-wrap: wrap; padding-block: var(--space-2); }.friction-record time { width: 100%; margin-left: 25px; }.friction-record dl > div { grid-template-columns: 1fr; gap: var(--space-1); }
 }
 @media (forced-colors: active) {
-  .inspector-status, .inspector-tab[data-state="active"], .proof-row, .friction-record { border-color: CanvasText; }.inspector-tab[data-state="active"] { outline: 2px solid Highlight; }
+  .inspector-status, .inspector-tab[data-state="active"], .proof-row, .friction-record, .source-disclosure > a, .artifact-row > a { border-color: CanvasText; }.inspector-tab[data-state="active"] { outline: 2px solid Highlight; }
 }

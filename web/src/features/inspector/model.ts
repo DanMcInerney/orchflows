@@ -30,6 +30,37 @@ export interface TicketDetail extends TicketSummary {
   history: Array<{ ts: string; event: string; agent: string; detail: string }>;
   raw: string;
   linked_friction?: Array<Record<string, unknown>>;
+  executor_source?: ExecutorSource;
+  artifacts?: ArtifactInventory;
+  judgment?: JudgmentProjection;
+}
+
+export interface ExecutorSource {
+  state: "available" | "unavailable";
+  workflow_id?: string;
+  source_id?: string;
+  label?: string;
+  reason?: string;
+}
+
+export interface ArtifactReference {
+  artifact_id: string;
+  label: string;
+  state: "available" | "unavailable";
+  media_type?: string;
+  reason?: string;
+}
+
+export interface ArtifactInventory {
+  state: "rows" | "unavailable";
+  rows: ArtifactReference[];
+  reason?: string;
+}
+
+export interface JudgmentProjection {
+  rationale_identity: string;
+  rationale_state: "available" | "unavailable";
+  rationale_reason?: string;
 }
 
 export interface InspectorModel {
@@ -37,7 +68,7 @@ export interface InspectorModel {
   ticket: TicketDetail | null;
 }
 
-export const inspectorTabs = ["overview", "details", "proof", "friction", "history", "raw"] as const;
+export const inspectorTabs = ["overview", "details", "proof", "artifacts", "friction", "history", "raw"] as const;
 export type InspectorTab = (typeof inspectorTabs)[number];
 export type InspectorState = ReadinessState | "failed";
 
@@ -61,6 +92,20 @@ export interface InspectorHistoryRecord {
   event: string;
   agent: string;
   detail: string;
+}
+
+export interface InspectorArtifact {
+  id: string;
+  label: string;
+  mediaType: string;
+  href: string | null;
+  reason: string;
+}
+
+export interface InspectorExecutorSource {
+  label: string;
+  href: string | null;
+  reason: string;
 }
 
 type UnknownRecord = Record<string, unknown>;
@@ -195,6 +240,41 @@ export function detailRows(ticket: TicketDetail | null): Array<{ label: string; 
   ];
 }
 
+export function executorSource(ticket: TicketDetail): InspectorExecutorSource {
+  const source = ticket.executor_source;
+  if (source?.state === "available" && source.workflow_id && source.source_id) {
+    return {
+      label: source.label || ticket.executor,
+      href: `/workflows/${encodeURIComponent(source.workflow_id)}/sources/${encodeURIComponent(source.source_id)}`,
+      reason: ""
+    };
+  }
+  return {
+    label: ticket.executor,
+    href: null,
+    reason: source?.reason || "No canonical workflow association was recorded."
+  };
+}
+
+function opaqueArtifactId(value: string): boolean {
+  return /^[A-Za-z0-9_-]{16,128}$/.test(value);
+}
+
+export function artifactRows(ticket: TicketDetail, location: InspectorRoute): InspectorArtifact[] {
+  return (ticket.artifacts?.rows ?? []).map((item) => {
+    const contained = item.state === "available" && opaqueArtifactId(item.artifact_id);
+    return {
+      id: item.artifact_id,
+      label: item.label || "Unnamed artifact",
+      mediaType: item.media_type || "Media type unavailable",
+      href: contained
+        ? `/api/v1/runs/${encodeURIComponent(location.run)}/tickets/${encodeURIComponent(location.ticket)}/artifacts/${encodeURIComponent(item.artifact_id)}`
+        : null,
+      reason: contained ? "" : item.reason || "Artifact identity unavailable"
+    };
+  });
+}
+
 export function proofRows(model: InspectorModel, fixture: string): InspectorProofRow[] {
   const rows = model.ticket?.verification.rows ?? [];
   return rows.map((value, index) => {
@@ -261,6 +341,8 @@ export const model = {
   tabPath,
   statusState,
   detailRows,
+  executorSource,
+  artifactRows,
   proofRows,
   linkedFriction,
   durableHistory,
