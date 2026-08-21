@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2365,
+  "count": 2366,
   "identities": [
    "test_canary_host.BaselinePinOwnerTest.test_both_modules_read_one_owner_for_the_pin",
    "test_canary_host.CanaryHostVerdictTest.test_a_run_that_resolved_no_baseline_fails",
@@ -402,6 +402,7 @@
    "test_serial_compat.TestPairedWorkflowAndPolicy.test_proving_workflow_is_separate_scheduled_manual_and_paired",
    "test_serial_compat.TestSelectedDiscovery.test_a_missing_selected_identity_is_refused_before_any_case_runs",
    "test_serial_compat.TestSelectedDiscovery.test_discovery_manifest_drift_is_refused_before_any_case_runs",
+   "test_serial_compat.TestSelectedDiscovery.test_discovery_preserves_preloaded_test_module_identities",
    "test_serial_compat.TestSelectedDiscovery.test_every_selected_identity_exists_exactly_once",
    "test_serial_compat.TestSelectedDiscovery.test_manifest_is_the_exact_discovered_identity_multiset",
    "test_serial_compat.TestSelectedDiscovery.test_selected_cases_execute_once_in_the_calling_interpreter",
@@ -2368,7 +2369,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "cd4e7663df9bd429adef06808e0b602acc7f9a96dad45ea4887590d69036be3f"
+  "sha256": "7551873881c67a1b6f8a42498ac97c0384c93653339536ef0ca58de3e83f6f92"
  },
  "mutation_owners": [
   {

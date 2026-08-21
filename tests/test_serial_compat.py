@@ -29,6 +29,25 @@ POLICY = ROOT / "tools" / "serial-compat-policy.md"
 
 
 class TestSelectedDiscovery(unittest.TestCase):
+    def test_discovery_preserves_preloaded_test_module_identities(self):
+        tests_dir = (ROOT / "tests").resolve()
+        before = {}
+        for name, module in list(__import__("sys").modules.items()):
+            module_file = getattr(module, "__file__", None)
+            if module_file is None:
+                continue
+            try:
+                Path(module_file).resolve().relative_to(tests_dir)
+            except (OSError, ValueError):
+                continue
+            before[name] = module
+
+        self.assertTrue(before)
+        run_serial_compat.discover_cases(tests_dir)
+
+        for name, module in before.items():
+            self.assertIs(module, __import__("sys").modules.get(name), name)
+
     def test_manifest_is_the_exact_discovered_identity_multiset(self):
         manifest = run_serial_compat.load_manifest(MANIFEST)
         cases = run_serial_compat.discover_cases(ROOT / "tests")

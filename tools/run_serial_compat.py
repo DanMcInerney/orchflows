@@ -60,16 +60,19 @@ def discover_cases(tests_dir: Path = TESTS_DIR):
 
     tests_dir = Path(tests_dir).resolve()
     for path in tests_dir.glob("test*.py"):
-        sys.modules.pop(path.stem, None)
-    for name, cached in list(sys.modules.items()):
+        cached = sys.modules.get(path.stem)
+        if cached is None:
+            continue
         cached_file = getattr(cached, "__file__", None)
         if cached_file is None:
+            sys.modules.pop(path.stem, None)
             continue
         try:
-            Path(cached_file).resolve().relative_to(tests_dir)
-        except (OSError, ValueError):
-            continue
-        del sys.modules[name]
+            same_module = Path(cached_file).resolve() == path.resolve()
+        except OSError:
+            same_module = False
+        if not same_module:
+            sys.modules.pop(path.stem, None)
     before = list(sys.path)
     try:
         import_paths = [str(tests_dir), str(tests_dir.parent)]
