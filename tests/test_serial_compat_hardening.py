@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import hashlib
 import io
 import json
@@ -22,15 +23,17 @@ ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = ROOT / "tests" / "serial_compat_manifest.json"
 
 
-def observation(mode, *, ok=True, identity="identity", manifest="manifest"):
+def observation(
+        mode, *, ok=True, identity="identity", manifest="manifest",
+        recorded_at="2026-08-21T01:00:00Z", pid=1):
     tests = 14 if mode == "selected" else 42
     record = {
         "schema": "orchflows.serial-compat-observation.v1",
         "mode": mode,
         "revision": "candidate",
         "worktree_clean": True,
-        "recorded_at_utc": "2026-08-21T01:00:00Z",
-        "interpreter": {"pid": 1, "version": "3.13", "executable": "python"},
+        "recorded_at_utc": recorded_at,
+        "interpreter": {"pid": pid, "version": "3.13", "executable": "python"},
         "manifest": {"sha256": hashlib.sha256(manifest.encode()).hexdigest()},
         "discovery": {"count": 42, "sha256": hashlib.sha256(identity.encode()).hexdigest()},
         "outcomes": {"tests": tests, "failures": 0, "errors": 0, "skipped": 0,
@@ -43,12 +46,22 @@ def observation(mode, *, ok=True, identity="identity", manifest="manifest"):
     return record
 
 
-def pair(pair_id, hour=1, *, identity="identity", manifest="manifest", exhaustive_ok=True):
+def pair(
+        pair_id, hour=1, *, identity="identity", manifest="manifest",
+        exhaustive_ok=True, recorded_at=None):
+    recorded_at = recorded_at or "2026-08-21T%02d:00:00Z" % hour
+    evidence_pid = int(hashlib.sha256(pair_id.encode()).hexdigest()[:7], 16) + 1
     return serial_pair.make_pair(
-        observation("selected", identity=identity, manifest=manifest),
-        observation("exhaustive", ok=exhaustive_ok, identity=identity, manifest=manifest),
+        observation(
+            "selected", identity=identity, manifest=manifest,
+            recorded_at=recorded_at, pid=evidence_pid,
+        ),
+        observation(
+            "exhaustive", ok=exhaustive_ok, identity=identity, manifest=manifest,
+            recorded_at=recorded_at, pid=evidence_pid + 1,
+        ),
         pair_id,
-        "2026-08-21T%02d:00:00Z" % hour,
+        recorded_at,
     )
 
 
@@ -150,6 +163,22 @@ class TestEvidenceGateHardening(unittest.TestCase):
             )
         return current
 
+    def _pairs_after(self, gate, prefix, count=2, **kwargs):
+        latest = max(
+            datetime.datetime.strptime(item["recorded_at_utc"], "%Y-%m-%dT%H:%M:%SZ")
+            for item in gate["pairs"]
+        )
+        return [
+            pair(
+                "%s-%d" % (prefix, index),
+                recorded_at=(latest + datetime.timedelta(seconds=index)).strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                ),
+                **kwargs,
+            )
+            for index in range(1, count + 1)
+        ]
+
     def test_nonfinite_or_wrong_sentinel_timing_records_fail_closed(self):
         bad = observation("selected")
         bad["wall_time_seconds"] = math.nan
@@ -176,20 +205,73 @@ class TestEvidenceGateHardening(unittest.TestCase):
             previous = root / "gate.json"
             previous.write_text(json.dumps(duplicate), encoding="utf-8")
             current = self._write_current_pairs(
-                root, [pair("new-1", 19), pair("new-2", 20)]
+                root, [
+                    pair("new-1", recorded_at="2026-08-22T01:00:00Z"),
+                    pair("new-2", recorded_at="2026-08-22T02:00:00Z"),
+                ]
             )
             accumulated = serial_gate.accumulate(previous, current)
         self.assertEqual(0, accumulated["clean_streak"])
         self.assertFalse(accumulated["promotion_ready"])
         self.assertTrue(accumulated["source_errors"])
 
+        original = pair("clone", 1)
+        renamed_clones = []
+        for index in range(1, 21):
+            clone = json.loads(json.dumps(original))
+            clone["pair_id"] = "clone-%02d" % index
+            clone["recorded_at_utc"] = "2026-08-21T%02d:00:00Z" % index
+            renamed_clones.append(clone)
+        cloned_gate = serial_pair.evaluate_pairs(renamed_clones)
+        self.assertTrue(cloned_gate["promotion_ready"])
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            previous = root / "gate.json"
+            previous.write_text(json.dumps(cloned_gate), encoding="utf-8")
+            current = self._write_current_pairs(
+                root, [
+                    pair("fresh-1", recorded_at="2026-08-22T01:00:00Z"),
+                    pair("fresh-2", recorded_at="2026-08-22T02:00:00Z"),
+                ]
+            )
+            accumulated = serial_gate.accumulate(previous, current)
+        self.assertFalse(accumulated["promotion_ready"])
+        self.assertTrue(accumulated["rollback_required"])
+        self.assertTrue(accumulated["source_errors"])
+
     def test_discovery_or_manifest_change_restarts_the_streak(self):
-        initial = [pair("p-%02d" % index, index, manifest="one") for index in range(1, 20)]
-        changed = pair("p-20", 20, manifest="two")
-        gate = serial_pair.evaluate_pairs(initial + [changed])
-        self.assertEqual(1, gate["clean_streak"])
+        for field, changed_kwargs in (
+                ("manifest", {"manifest": "two"}),
+                ("discovery", {"identity": "two"})):
+            with self.subTest(field=field):
+                initial = [
+                    pair("%s-%02d" % (field, index), index)
+                    for index in range(1, 20)
+                ]
+                changed = pair("%s-20" % field, 20, **changed_kwargs)
+                gate = serial_pair.evaluate_pairs(initial + [changed])
+                self.assertEqual(1, gate["clean_streak"])
+                self.assertFalse(gate["promotion_ready"])
+                self.assertEqual(
+                    "contract-identity-change", gate["resets"][-1]["reason"]
+                )
+
+        promoted = serial_pair.evaluate_pairs([
+            pair("promoted-%02d" % index, index) for index in range(1, 21)
+        ])
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            previous = root / "gate.json"
+            previous.write_text(json.dumps(promoted), encoding="utf-8")
+            current = self._write_current_pairs(root, [
+                pair("backdated-red", 0, exhaustive_ok=False),
+                pair("after-red", 21),
+            ])
+            gate = serial_gate.accumulate(previous, current)
+        self.assertTrue(gate["source_errors"])
         self.assertFalse(gate["promotion_ready"])
-        self.assertEqual("contract-identity-change", gate["resets"][-1]["reason"])
+        self.assertTrue(gate["rollback_required"])
+        self.assertEqual("unclean-pair", gate["resets"][-1]["reason"])
 
     def test_accumulator_carries_prior_pairs_and_fails_closed_on_history_loss(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -218,82 +300,197 @@ class TestEvidenceGateHardening(unittest.TestCase):
         valid_history = serial_pair.evaluate_pairs([
             pair("old-%02d" % index, index) for index in range(1, 19)
         ])
-        duplicate_history = serial_pair.evaluate_pairs([pair("duplicate")] * 2)
-        stale_history = serial_pair.evaluate_pairs([
-            pair("stale-%02d" % index, index, manifest="old-contract")
-            for index in range(1, 19)
+        promoted_history = serial_pair.evaluate_pairs([
+            pair("promoted-%02d" % index, index) for index in range(1, 21)
         ])
+        duplicate_history = serial_pair.evaluate_pairs([pair("duplicate")] * 2)
+        nested_timestamp = json.loads(json.dumps(valid_history))
+        nested_timestamp["pairs"][0]["recorded_at_utc"] = 1
+        nested_observation = json.loads(json.dumps(valid_history))
+        nested_observation["pairs"][0]["selected"] = []
+        numeric_state = dict(valid_history, required_clean_pairs=20.0)
+        forged_promotion = dict(valid_history, clean_streak=20, promotion_ready=True)
+        contradictory_promoted = dict(promoted_history, rollback_required=True)
         corrupt_promoted = dict(valid_history, promotion_ready=True, pairs="corrupt")
-        cases = {
-            "wrong-top-level": (json.dumps([]), valid_history, False),
-            "malformed-schema": (
-                json.dumps(dict(valid_history, schema="unknown")), valid_history, False
-            ),
-            "truncated": ('{"schema":', valid_history, False),
-            "duplicate": (json.dumps(duplicate_history), valid_history, False),
-            "partial-host": (json.dumps(valid_history), valid_history, True),
-            "stale-contract": (json.dumps(stale_history), stale_history, False),
-            "corrupt-promoted": (
-                json.dumps(corrupt_promoted), corrupt_promoted, False
-            ),
+        invalid_cases = {
+            "wrong-top-level": json.dumps([]),
+            "malformed-schema": json.dumps(dict(valid_history, schema="unknown")),
+            "truncated": '{"schema":',
+            "duplicate": json.dumps(duplicate_history),
+            "nested-timestamp": json.dumps(nested_timestamp),
+            "nested-observation": json.dumps(nested_observation),
+            "numeric-state": json.dumps(numeric_state),
+            "forged-promotion": json.dumps(forged_promotion),
+            "contradictory-promoted": json.dumps(contradictory_promoted),
+            "corrupt-promoted": json.dumps(corrupt_promoted),
         }
-        for name, (history_text, history, partial_host) in cases.items():
-            with self.subTest(name=name), tempfile.TemporaryDirectory() as tmp:
-                root = Path(tmp)
-                previous = root / "gate.json"
-                previous.write_text(history_text, encoding="utf-8")
-                current_pairs = [
-                    pair("new-1", 19, manifest="new-contract"),
-                    pair("new-2", 20, manifest="new-contract"),
-                ]
-                if partial_host:
-                    current_pairs.pop()
-                current = self._write_current_pairs(root, current_pairs)
+        for name, history_text in invalid_cases.items():
+            with self.subTest(name=name):
+                with tempfile.TemporaryDirectory() as tmp:
+                    root = Path(tmp)
+                    previous = root / "gate.json"
+                    previous.write_text(history_text, encoding="utf-8")
+                    current = self._write_current_pairs(root, [
+                        pair("%s-new-1" % name, recorded_at="2026-08-22T01:00:00Z"),
+                        pair("%s-new-2" % name, recorded_at="2026-08-22T02:00:00Z"),
+                    ])
+                    gate = serial_gate.accumulate(previous, current)
 
-                gate = serial_gate.accumulate(previous, current)
-                continued = None
-                if name == "corrupt-promoted":
+                    reset_id = gate["pairs"][-1]["pair_id"]
                     continued_history = root / "continued-gate.json"
                     continued_history.write_text(json.dumps(gate), encoding="utf-8")
                     continued_current = self._write_current_pairs(
                         root / "continued",
-                        [pair("new-3", 21), pair("new-4", 22)],
+                        self._pairs_after(gate, name + "-continued"),
                     )
                     continued = serial_gate.accumulate(
                         continued_history, continued_current
                     )
 
-            self.assertFalse(gate["promotion_ready"], name)
-            self.assertEqual(2 if name == "stale-contract" else 0,
-                             gate["clean_streak"], name)
-            self.assertTrue(gate["resets"], name)
-            if name == "stale-contract":
-                self.assertIn(
-                    "contract-identity-change",
-                    [reset["reason"] for reset in gate["resets"]],
-                )
-            else:
-                self.assertTrue(gate["source_errors"], name)
-                self.assertTrue(any(not item["clean"] for item in gate["pairs"]), name)
-            if history.get("promotion_ready") is True:
-                self.assertTrue(gate["rollback_required"], name)
-            if continued is not None:
+                self.assertFalse(gate["promotion_ready"])
+                self.assertEqual(0, gate["clean_streak"])
+                self.assertEqual([], gate["defects"])
+                self.assertTrue(gate["source_errors"])
+                self.assertTrue(gate["rollback_required"])
+                self.assertTrue(reset_id.startswith("source-error-"))
                 self.assertFalse(continued["source_errors"])
+                self.assertEqual(2, continued["clean_streak"])
                 self.assertFalse(continued["promotion_ready"])
                 self.assertTrue(continued["rollback_required"])
+                self.assertIn(
+                    reset_id, [item["pair_id"] for item in continued["pairs"]]
+                )
 
-    def test_a_partial_host_run_records_a_durable_reset(self):
+        stale_history = serial_pair.evaluate_pairs([
+            pair("stale-%02d" % index, index, manifest="old-contract")
+            for index in range(1, 19)
+        ])
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            current = root / "current" / "one-host"
-            current.mkdir(parents=True)
-            current.joinpath("pair.json").write_text(
-                json.dumps(pair("only-host")), encoding="utf-8"
+            previous = root / "gate.json"
+            previous.write_text(json.dumps(stale_history), encoding="utf-8")
+            current = self._write_current_pairs(root, [
+                pair(
+                    "new-contract-1", manifest="new-contract",
+                    recorded_at="2026-08-22T01:00:00Z",
+                ),
+                pair(
+                    "new-contract-2", manifest="new-contract",
+                    recorded_at="2026-08-22T02:00:00Z",
+                ),
+            ])
+            gate = serial_gate.accumulate(previous, current)
+            continued_history = root / "continued-gate.json"
+            continued_history.write_text(json.dumps(gate), encoding="utf-8")
+            continued_current = self._write_current_pairs(
+                root / "continued",
+                self._pairs_after(gate, "new-contract-continued", manifest="new-contract"),
             )
-            gate = serial_gate.accumulate(root / "missing.json", root / "current")
-        self.assertFalse(gate["promotion_ready"])
-        self.assertTrue(gate["source_errors"])
-        self.assertTrue(any(not item["clean"] for item in gate["pairs"]))
+            continued = serial_gate.accumulate(continued_history, continued_current)
+        self.assertFalse(gate["source_errors"])
+        self.assertEqual(2, gate["clean_streak"])
+        self.assertIn(
+            "contract-identity-change",
+            [reset["reason"] for reset in gate["resets"]],
+        )
+        self.assertEqual(4, continued["clean_streak"])
+        self.assertFalse(continued["rollback_required"])
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            previous = root / "gate.json"
+            previous.write_text(json.dumps(corrupt_promoted), encoding="utf-8")
+            current = self._write_current_pairs(root, [
+                pair("reset-seed-1", recorded_at="2026-08-22T01:00:00Z"),
+                pair("reset-seed-2", recorded_at="2026-08-22T02:00:00Z"),
+            ])
+            gate = serial_gate.accumulate(previous, current)
+            for hop in range(1, 11):
+                history = root / ("hop-%02d-gate.json" % hop)
+                history.write_text(json.dumps(gate), encoding="utf-8")
+                hop_current = self._write_current_pairs(
+                    root / ("hop-%02d" % hop), self._pairs_after(gate, "hop-%02d" % hop)
+                )
+                gate = serial_gate.accumulate(history, hop_current)
+                self.assertFalse(gate["source_errors"], hop)
+                self.assertEqual(2 * hop, gate["clean_streak"], hop)
+                if hop < 10:
+                    self.assertFalse(gate["promotion_ready"], hop)
+                    self.assertTrue(gate["rollback_required"], hop)
+            self.assertTrue(gate["promotion_ready"])
+            self.assertFalse(gate["rollback_required"])
+
+    def test_a_partial_host_run_records_a_durable_reset(self):
+        promoted = serial_pair.evaluate_pairs([
+            pair("promoted-host-%02d" % index, index) for index in range(1, 21)
+        ])
+        for shape in ("missing", "one-max", "extra", "same-host", "malformed"):
+            with self.subTest(shape=shape):
+                with tempfile.TemporaryDirectory() as tmp:
+                    root = Path(tmp)
+                    previous = root / "gate.json"
+                    previous.write_text(json.dumps(promoted), encoding="utf-8")
+                    current = root / "current"
+                    if shape == "one-max":
+                        directory = current / "one-host"
+                        directory.mkdir(parents=True)
+                        directory.joinpath("pair.json").write_text(
+                            json.dumps(pair(
+                                "only-host", recorded_at="9999-12-31T23:59:59Z"
+                            )),
+                            encoding="utf-8",
+                        )
+                    elif shape == "extra":
+                        current = self._write_current_pairs(root, [
+                            pair("extra-1", recorded_at="2026-08-22T01:00:00Z"),
+                            pair("extra-2", recorded_at="2026-08-22T02:00:00Z"),
+                            pair("extra-3", recorded_at="2026-08-22T03:00:00Z"),
+                        ])
+                    elif shape == "same-host":
+                        for index in (1, 2):
+                            directory = current / "one-host" / str(index)
+                            directory.mkdir(parents=True)
+                            directory.joinpath("pair.json").write_text(
+                                json.dumps(pair(
+                                    "same-host-%d" % index,
+                                    recorded_at="2026-08-22T0%d:00:00Z" % index,
+                                )),
+                                encoding="utf-8",
+                            )
+                    elif shape == "malformed":
+                        malformed = pair(
+                            "malformed-1", recorded_at="2026-08-22T01:00:00Z"
+                        )
+                        malformed["selected"] = []
+                        current = self._write_current_pairs(root, [
+                            malformed,
+                            pair("malformed-2", recorded_at="2026-08-22T02:00:00Z"),
+                        ])
+
+                    gate = serial_gate.accumulate(previous, current)
+                    reset_id = gate["pairs"][-1]["pair_id"]
+                    continued_history = root / "continued-gate.json"
+                    continued_history.write_text(json.dumps(gate), encoding="utf-8")
+                    continued_current = self._write_current_pairs(
+                        root / "continued",
+                        self._pairs_after(gate, shape + "-continued"),
+                    )
+                    continued = serial_gate.accumulate(
+                        continued_history, continued_current
+                    )
+
+                self.assertFalse(gate["promotion_ready"])
+                self.assertTrue(gate["rollback_required"])
+                self.assertTrue(gate["source_errors"])
+                self.assertEqual([], gate["defects"])
+                self.assertEqual("unclean-pair", gate["resets"][-1]["reason"])
+                self.assertTrue(reset_id.startswith("source-error-"))
+                self.assertFalse(continued["source_errors"])
+                self.assertEqual(2, continued["clean_streak"])
+                self.assertTrue(continued["rollback_required"])
+                self.assertIn(
+                    reset_id, [item["pair_id"] for item in continued["pairs"]]
+                )
 
 if __name__ == "__main__":
     unittest.main()
