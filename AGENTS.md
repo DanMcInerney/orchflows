@@ -28,12 +28,10 @@ python tools/run_serial_compat.py         # selected same-process compatibility 
 python install.py --dry-run
 git diff --check
 
-The selected serial lane is the routine local check for accidental cross-module
-coupling. The exhaustive command, `python -m unittest discover -s tests -v`,
-remains available on the scheduled/manual workflow and for pre-release checks.
-CI runs the regression suite once through `tools/run_tests.py`; that runner gives
-each module a clean process and rejects any guarded whole-interpreter seam the
-module leaves dirty.
+The selected lane routinely checks cross-module coupling. Exhaustive
+`python -m unittest discover -s tests -v` remains scheduled/manual and
+pre-release. CI runs `tools/run_tests.py`, whose clean processes reject any
+guarded whole-interpreter seam a module leaves dirty.
 
 A green run here is provisional until the CI matrix in
 `.github/workflows/checks.yml` agrees — one host, one interpreter, one
@@ -44,5 +42,4 @@ docstring's.
 
 ## Serial compatibility
 
-The routine selected lane and exhaustive fallback are defined in
-`tools/serial-compat-policy.md`.
+`tools/serial-compat-policy.md` defines the routine lane and fallback.
