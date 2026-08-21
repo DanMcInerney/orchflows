@@ -258,6 +258,36 @@ def _run_diagnostics(tickets) -> list:
     return records
 
 
+def _execution_position(tickets) -> dict:
+    def position(ticket: dict) -> dict:
+        return {
+            "id": ticket["id"],
+            "status": ticket["status"],
+            "state": _text(ticket.get("readiness", {}).get("state")),
+        }
+
+    current = [
+        ticket for ticket in tickets
+        if ticket.get("readiness", {}).get("state") == "running"
+    ]
+    current_ids = {ticket["id"] for ticket in current}
+    if current_ids:
+        upcoming = [
+            ticket for ticket in tickets
+            if ticket.get("readiness", {}).get("state") != "complete"
+            and current_ids.intersection(ticket.get("depends_on", ()))
+        ]
+    else:
+        upcoming = [
+            ticket for ticket in tickets
+            if ticket.get("readiness", {}).get("state") == "ready"
+        ]
+    return {
+        "current": [position(ticket) for ticket in current],
+        "next": [position(ticket) for ticket in upcoming],
+    }
+
+
 def _run_record(root: Path, run: str):
     tickets = run_tickets(root, run)
     if tickets is None:
@@ -282,6 +312,7 @@ def _run_record(root: Path, run: str):
             "state": "available" if workflow is not None else "unavailable",
             "id": workflow or "",
         },
+        "execution": _execution_position(records),
         "active": any(ticket["status"] in ("claimed", "ready") for ticket in records),
         "tickets": records,
         "diagnostics": diagnostics,
@@ -352,6 +383,9 @@ def _run_summaries(root: Path) -> list:
             "id": found["run"],
             "workflow": detail["workflow"] if detail else {
                 "state": "unavailable", "id": "",
+            },
+            "execution": detail["execution"] if detail else {
+                "current": [], "next": [],
             },
             "ticket_count": len(found["tickets"]),
             "active": bool(detail and detail["active"]),

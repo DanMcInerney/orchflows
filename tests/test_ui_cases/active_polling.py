@@ -1,6 +1,60 @@
 """Layout-cache, active-band, and polling regressions."""
 
 from tests.test_ui_cases._web import *  # noqa: F401,F403
+
+import scripts.ui_experience as experience
+
+
+class ActivePollingTest(unittest.TestCase):
+    def test_active_polling_preserves_current_next_and_pause_state(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_sink(Path(tmp), runs=(), friction=False, events=False)
+            run_dir = root / "tickets" / "polling-run"
+            current = write_ticket(
+                run_dir, "A", status="claimed", executor="orch-tdd", depends_on="[]"
+            )
+            upcoming = write_ticket(
+                run_dir, "B", status="pending", executor="orch-tdd", depends_on="[A]"
+            )
+            write_ticket(
+                run_dir, "C", status="pending", executor="orch-verify", depends_on="[B]"
+            )
+
+            paused = experience.project_view(root, None, "now")
+            current.write_text(
+                current.read_text(encoding="utf-8").replace(
+                    "status: claimed", "status: complete"
+                ),
+                encoding="utf-8",
+            )
+            upcoming.write_text(
+                upcoming.read_text(encoding="utf-8").replace(
+                    "status: pending", "status: claimed"
+                ),
+                encoding="utf-8",
+            )
+            refreshed = experience.project_view(root, None, "now")
+
+        paused_run = paused["runs"][0]
+        refreshed_run = refreshed["runs"][0]
+        self.assertEqual("polling-run", paused_run["id"])
+        self.assertEqual("polling-run", refreshed_run["id"])
+        self.assertEqual(
+            {
+                "current": [{"id": "A", "status": "claimed", "state": "running"}],
+                "next": [{"id": "B", "status": "pending", "state": "waiting"}],
+            },
+            paused_run["execution"],
+        )
+        self.assertEqual(
+            {
+                "current": [{"id": "B", "status": "claimed", "state": "running"}],
+                "next": [{"id": "C", "status": "pending", "state": "waiting"}],
+            },
+            refreshed_run["execution"],
+        )
+
+
 class TestLayoutCache(unittest.TestCase):
     """`lane-ui-patterns.md` §6(3): re-laying out a graph on a refresh that
     moved no node is a live defect in a shipped orchestrator, whose own fix
