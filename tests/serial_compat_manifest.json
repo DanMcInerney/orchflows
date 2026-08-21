@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2368,
+  "count": 2369,
   "identities": [
    "test_canary_host.BaselinePinOwnerTest.test_both_modules_read_one_owner_for_the_pin",
    "test_canary_host.CanaryHostVerdictTest.test_a_run_that_resolved_no_baseline_fails",
@@ -1659,6 +1659,7 @@
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_the_verify_carries_the_roots_completion_test_verbatim",
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_the_write_scope_defaults_to_the_root_tickets_own",
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_two_lenses_are_two_critiques_and_one_repair_behind_both",
+   "tests.test_ui_cases.active_polling.ActivePollingTest.test_active_polling_preserves_current_next_and_pause_state",
    "tests.test_ui_cases.active_polling.TestActiveBand.test_a_claim_that_can_be_measured_carries_its_meter",
    "tests.test_ui_cases.active_polling.TestActiveBand.test_a_claim_with_nothing_to_measure_is_listed_without_a_meter",
    "tests.test_ui_cases.active_polling.TestActiveBand.test_an_entry_links_to_the_ticket_it_names",
@@ -2371,7 +2372,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "ce4abd119ad16cada85b55776eccf0cad4982e7b244a2ec7cad0e60fa8692e22"
+  "sha256": "7f4bc3408d6c2305668e597129ac2bd8b69a5296cfec4dc16043979b2af5cd98"
  },
  "mutation_owners": [
   {
