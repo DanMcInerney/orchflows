@@ -48,6 +48,9 @@ def _validated_history(path: Path, prior) -> tuple[list, list[str]]:
     if evaluated["defects"]:
         errors.append("%s: invalid pair history" % path)
     for field in GATE_STATE_FIELDS:
+        if (field == "rollback_required" and
+                prior.get(field) is True and evaluated[field] is False):
+            continue
         if prior.get(field) != evaluated[field]:
             errors.append("%s: inconsistent gate field %s" % (path, field))
     return ([] if errors else history_pairs), errors
@@ -76,6 +79,7 @@ def accumulate(previous: Path, pairs_root: Path) -> dict:
     pairs = []
     source_errors = []
     prior_promotion_claimed = False
+    prior_rollback_required = False
     if previous.is_file():
         prior, error = _read(previous)
         if error:
@@ -83,6 +87,9 @@ def accumulate(previous: Path, pairs_root: Path) -> dict:
         else:
             prior_promotion_claimed = (
                 isinstance(prior, dict) and prior.get("promotion_ready") is True
+            )
+            prior_rollback_required = (
+                isinstance(prior, dict) and prior.get("rollback_required") is True
             )
             history_pairs, history_errors = _validated_history(previous, prior)
             source_errors.extend(history_errors)
@@ -111,8 +118,10 @@ def accumulate(previous: Path, pairs_root: Path) -> dict:
     gate["source_errors"] = source_errors
     if source_errors:
         gate["promotion_ready"] = False
+    if not gate["promotion_ready"]:
         gate["rollback_required"] = bool(
-            prior_promotion_claimed or gate.get("rollback_required")
+            prior_promotion_claimed or prior_rollback_required or
+            gate.get("rollback_required")
         )
     return gate
 

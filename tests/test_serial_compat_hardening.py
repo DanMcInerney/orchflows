@@ -251,6 +251,17 @@ class TestEvidenceGateHardening(unittest.TestCase):
                 current = self._write_current_pairs(root, current_pairs)
 
                 gate = serial_gate.accumulate(previous, current)
+                continued = None
+                if name == "corrupt-promoted":
+                    continued_history = root / "continued-gate.json"
+                    continued_history.write_text(json.dumps(gate), encoding="utf-8")
+                    continued_current = self._write_current_pairs(
+                        root / "continued",
+                        [pair("new-3", 21), pair("new-4", 22)],
+                    )
+                    continued = serial_gate.accumulate(
+                        continued_history, continued_current
+                    )
 
             self.assertFalse(gate["promotion_ready"], name)
             self.assertEqual(2 if name == "stale-contract" else 0,
@@ -266,6 +277,10 @@ class TestEvidenceGateHardening(unittest.TestCase):
                 self.assertTrue(any(not item["clean"] for item in gate["pairs"]), name)
             if history.get("promotion_ready") is True:
                 self.assertTrue(gate["rollback_required"], name)
+            if continued is not None:
+                self.assertFalse(continued["source_errors"])
+                self.assertFalse(continued["promotion_ready"])
+                self.assertTrue(continued["rollback_required"])
 
     def test_a_partial_host_run_records_a_durable_reset(self):
         with tempfile.TemporaryDirectory() as tmp:
