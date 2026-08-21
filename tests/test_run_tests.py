@@ -293,10 +293,13 @@ class TestWorkflowContract(unittest.TestCase):
         self.assertNotIn("run: python tools/validate.py", workflow)
         self.assertNotIn("run: python install.py --dry-run", workflow)
 
-    def test_serial_residue_check_remains_a_documented_local_oracle(self):
+    def test_selected_serial_is_routine_and_exhaustive_is_the_fallback(self):
         guidance = AGENTS_MD.read_text(encoding="utf-8")
+        self.assertIn("python tools/run_serial_compat.py", guidance)
         self.assertIn("python -m unittest discover -s tests -v", guidance)
-        self.assertIn("serial local compatibility oracle", guidance)
+        self.assertIn("routinely", guidance)
+        self.assertIn("scheduled/manual", guidance)
+        self.assertIn("pre-release", guidance)
 
 
 class TestSchedule(unittest.TestCase):

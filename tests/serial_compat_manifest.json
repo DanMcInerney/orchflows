@@ -370,7 +370,7 @@
    "test_run_tests.TestWorkflowContract.test_ci_has_exactly_the_five_supported_boundary_legs",
    "test_run_tests.TestWorkflowContract.test_ci_runs_the_regression_suite_once_through_the_parallel_runner",
    "test_run_tests.TestWorkflowContract.test_ci_uploads_each_python_legs_timing_even_after_failure",
-   "test_run_tests.TestWorkflowContract.test_serial_residue_check_remains_a_documented_local_oracle",
+   "test_run_tests.TestWorkflowContract.test_selected_serial_is_routine_and_exhaustive_is_the_fallback",
    "test_run_tests.TestWorkflowContract.test_star_imported_facades_do_not_export_test_cases",
    "test_scope_closure.DeclaredClosureTests.test_duplicate_edges_collapse_and_reachable_cycles_are_findings",
    "test_scope_closure.DeclaredClosureTests.test_fingerprint_invalidates_when_the_resolved_baseline_graph_changes",
@@ -2369,7 +2369,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "a5f38870f07889d85e68a8031f7db7b688c56dc8740d9014282c85d4a3807b88"
+  "sha256": "7cfb270212711408f72a8ee19233f2c7f255f60f891232fe79791b440ea92a32"
  },
  "mutation_owners": [
   {
