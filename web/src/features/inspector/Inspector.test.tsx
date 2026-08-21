@@ -1,8 +1,10 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { executionTicketRoute } from "../../shared/routes/executionRoutes";
 import TicketInspector from "./Inspector";
 import type { InspectorModel, TicketDetail } from "./model";
+import { route as inspectorRoute } from "./route";
 
 function model(overrides: Partial<TicketDetail> = {}): InspectorModel {
   const ticket = {
@@ -44,10 +46,23 @@ const ready = (value: InspectorModel) => ({ status: "ready", model: value, error
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   window.history.replaceState({}, "", "/");
 });
 
 describe("TicketInspector", () => {
+  it("delegates canonical ticket matching and construction to the shared execution route", () => {
+    const match = vi.spyOn(executionTicketRoute, "match");
+    const build = vi.spyOn(executionTicketRoute, "build");
+    const location = { pathname: "/runs/run%20gamma/tickets/G%2F1", search: "?fixture=running-overview", hash: "" };
+
+    expect(inspectorRoute.match(location)).toEqual({ run: "run gamma", ticket: "G/1", fixture: "running-overview" });
+    expect(match).toHaveBeenCalledWith(location);
+    expect(inspectorRoute.build({ run: "run gamma", ticket: "G/1", fixture: "running-overview" }))
+      .toBe("/runs/run%20gamma/tickets/G%2F1?fixture=running-overview");
+    expect(build).toHaveBeenCalledWith({ run: "run gamma", ticket: "G/1", fixture: "running-overview" });
+  });
+
   it("opens a direct-linked tab and keeps pointer selection in the URL", async () => {
     window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=running-overview&tab=proof");
     const { container } = render(<TicketInspector state={ready(model())} route={route("running-overview")} />);
