@@ -19,12 +19,11 @@ try:
         identity_diagnostics,
         read_events,
         read_friction,
-        read_run_workflow,
         read_sessions,
         run_tickets,
     )
     from scripts.ui_layout import DIAGNOSTIC_CYCLE, DIAGNOSTIC_DANGLING, graph_layout
-    from scripts.ui_model import parse_verification
+    from scripts.ui_model import _in_tree, _json_object, _safe_name, _scalar, parse_verification
     from scripts.ui_readiness import explain_run
     from scripts.ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG
 except ImportError:
@@ -33,10 +32,10 @@ except ImportError:
     import ui_sessions_projection
     from ui_discovery import (
         discover, find_ticket, graph_input, identity_diagnostics,
-        read_events, read_friction, read_run_workflow, read_sessions, run_tickets,
+        read_events, read_friction, read_sessions, run_tickets,
     )
     from ui_layout import DIAGNOSTIC_CYCLE, DIAGNOSTIC_DANGLING, graph_layout
-    from ui_model import parse_verification
+    from ui_model import _in_tree, _json_object, _safe_name, _scalar, parse_verification
     from ui_readiness import explain_run
     from ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG
 
@@ -67,6 +66,7 @@ POSIX_HOST_PATH_RE = re.compile(
 )
 REDACTED_HOST_PATH = "[redacted-host-path]"
 OPAQUE_ARTIFACT_RE = re.compile(r"^art_[A-Za-z0-9_-]{43}$")
+CANONICAL_WORKFLOW_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,126}$")
 VIEW_SLICES = {
     "now": ("orchflows.now.v1", ("runs",)),
     "run-map": ("orchflows.run-map.v1", ("runs", "run")),
@@ -114,6 +114,17 @@ def _rationale_identity(value) -> dict:
         "state": "available" if available else "unavailable",
         "identity": identity if available else None,
     }
+
+
+def _run_workflow(root: Path, run: str):
+    run = _safe_name(run)
+    path = _in_tree(root.joinpath("runs"), run, "run.json") if run else None
+    try:
+        identity = _json_object(path.read_text(encoding="utf-8")) if path else None
+    except (OSError, UnicodeDecodeError):
+        return None
+    workflow = _scalar(identity.get("workflow")) if identity and _scalar(identity.get("run")) == run else ""
+    return workflow if CANONICAL_WORKFLOW_RE.fullmatch(workflow) else None
 
 
 def _session_summary(session: dict) -> dict:
@@ -305,7 +316,7 @@ def _run_record(root: Path, run: str):
         _ticket_summary(ticket, explanations, indexed, malformed_ids)
         for ticket in tickets
     ]
-    workflow = read_run_workflow(root, run)
+    workflow = _run_workflow(root, run)
     return {
         "id": run,
         "workflow": {
