@@ -1,22 +1,19 @@
 #!/usr/bin/env python3
 """Run the selected or exhaustive suite in one interpreter.
-
 The selected lane is experimental: it proves exact discovery identity and
 executes the committed state sentinels without replacing exhaustive serial.
 Stdlib only, Python 3.9+, POSIX and Windows.
 """
-
 from __future__ import annotations
-
 import argparse
 import ast
 import asyncio
 import html
 import hashlib
-import inspect
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -26,38 +23,64 @@ import warnings
 from collections import OrderedDict
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parent.parent
 TESTS_DIR = ROOT / "tests"
 MANIFEST_PATH = TESTS_DIR / "serial_compat_manifest.json"
 RECORD_PATH = ROOT / ".orch" / "serial-compat.json"
 RESTORABLE_SEAMS = frozenset(
-    {"cwd", "environment", "event-loop", "import-path", "logging", "monkeypatch", "warnings"}
+    {"cwd", "environment", "event-loop", "import-path", "logging", "module-cache",
+     "monkeypatch", "warnings"}
 )
-
-
+ALL_SEAMS = RESTORABLE_SEAMS | {"threads"}
+REQUIRED_CATEGORIES = frozenset({
+    "boundary-restoration", "cutcheck-corpus", "cutcheck-process", "cwd", "discovery",
+    "environment", "git-process", "hash-contract", "health-contract", "installer-fidelity",
+    "process", "real-hashed-runtime", "receipt-state", "state-sink", "thread-server",
+    "ticket-contention", "workspace-state",
+})
 def load_manifest(path: Path = MANIFEST_PATH) -> dict:
     """Load the committed identity, sentinel, and mutation-owner contract."""
-
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     if data.get("schema") != "orchflows.serial-compat.v1":
         raise ValueError("unsupported serial compatibility manifest")
+    entries = data.get("sentinels")
+    if not isinstance(entries, list) or not entries:
+        raise ValueError("serial compatibility manifest has no sentinels")
+    ids = [entry.get("id") for entry in entries]
+    categories = {category for entry in entries for category in entry.get("categories", [])}
+    allowed = {seam for entry in entries for seam in entry.get("allowed_seams", [])}
+    if len(ids) != len(set(ids)) or any(not identity for identity in ids):
+        raise ValueError("serial compatibility sentinel identities must be unique")
+    if not REQUIRED_CATEGORIES.issubset(categories):
+        raise ValueError("serial compatibility sentinel categories are incomplete")
+    if not allowed.issubset(RESTORABLE_SEAMS):
+        raise ValueError("serial compatibility manifest allows an unrestorable seam")
+    owners = data.get("mutation_owners")
+    owner_keys = [(owner.get("module"), owner.get("owner")) for owner in owners or []]
+    if not isinstance(owners, list) or len(owner_keys) != len(set(owner_keys)):
+        raise ValueError("serial compatibility mutation owners are missing or duplicated")
+    if any(not set(owner.get("seams", [])).issubset(ALL_SEAMS) for owner in owners):
+        raise ValueError("serial compatibility mutation owner names an unknown seam")
+    if any(owner.get("restoration") not in {
+        "selected-module-boundary", "sharded-module-guard"
+    } for owner in owners):
+        raise ValueError("serial compatibility mutation owner has no restoration")
     return data
 
+def manifest_identity(manifest: dict) -> dict:
+    encoded = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return {"sha256": hashlib.sha256(encoded).hexdigest()}
 
 def flatten(suite):
     """Yield cases from a unittest suite without executing its fixtures."""
-
     for item in suite:
         if isinstance(item, unittest.TestSuite):
             yield from flatten(item)
         else:
             yield item
 
-
 def discover_cases(tests_dir: Path = TESTS_DIR):
     """Discover the same identities as ``unittest discover -s tests``."""
-
     tests_dir = Path(tests_dir).resolve()
     for path in tests_dir.glob("test*.py"):
         cached = sys.modules.get(path.stem)
@@ -82,36 +105,41 @@ def discover_cases(tests_dir: Path = TESTS_DIR):
     finally:
         sys.path[:] = before
 
-
+def _logger_state(logger):
+    return (logger, tuple(logger.handlers), tuple(logger.filters), logger.level,
+            logger.disabled, logger.propagate)
 def capture_state() -> dict:
     """Snapshot process seams selected modules may borrow but must return."""
-
     root_logger = logging.getLogger()
+    logger_dict = logging.root.manager.loggerDict
+    logger_states = {name: _logger_state(logger) for name, logger in logger_dict.items()
+                     if isinstance(logger, logging.Logger)}
+    policy = asyncio.get_event_loop_policy()
+    loop_local = getattr(policy, "_local", None)
     return {
         "environment": (os.environ, dict(os.environ)),
         "cwd": (os.chdir, os.getcwd()),
         "import-path": (sys.path, tuple(sys.path)),
-        "warnings": (warnings.filters, tuple(warnings.filters)),
+        "warnings": (warnings.filters, tuple(warnings.filters), warnings.showwarning,
+                     warnings.formatwarning, warnings.defaultaction),
         "logging": (
             root_logger,
             tuple(root_logger.handlers),
+            tuple(root_logger.filters),
             root_logger.level,
             root_logger.disabled,
             logging.root.manager.disable,
+            logger_dict,
+            dict(logger_dict),
+            logger_states,
         ),
-        "event-loop": asyncio.get_event_loop_policy(),
+        "event-loop": (policy, loop_local, dict(vars(loop_local)) if loop_local else None),
+        "module-cache": (sys.modules, dict(sys.modules)),
         "threads": frozenset(id(thread) for thread in threading.enumerate()),
-        "monkeypatch": (
-            inspect.getattr_static(Path, "home"),
-            inspect.getattr_static(Path, "open"),
-            html.escape,
-        ),
+        "monkeypatch": (dict(vars(Path)), html.escape),
     }
-
-
 def changed_state(before: dict) -> list[str]:
     """Return stable seam names whose identity or value changed."""
-
     changed = []
     env_object, env_value = before["environment"]
     if os.environ is not env_object or dict(os.environ) != env_value:
@@ -126,35 +154,42 @@ def changed_state(before: dict) -> list[str]:
     path_object, path_value = before["import-path"]
     if sys.path is not path_object or tuple(sys.path) != path_value:
         changed.append("import-path")
-    filters_object, filters_value = before["warnings"]
-    if warnings.filters is not filters_object or tuple(warnings.filters) != filters_value:
+    filters_object, filters_value, showwarning, formatwarning, defaultaction = before["warnings"]
+    if (warnings.filters is not filters_object or tuple(warnings.filters) != filters_value
+            or warnings.showwarning is not showwarning or warnings.formatwarning is not formatwarning
+            or warnings.defaultaction != defaultaction):
         changed.append("warnings")
-    root, handlers, level, disabled, manager_disable = before["logging"]
+    root, handlers, root_filters, level, disabled, manager_disable, logger_dict, loggers, states = before["logging"]
     if (
         logging.getLogger() is not root
         or tuple(root.handlers) != handlers
+        or tuple(root.filters) != root_filters
         or root.level != level
         or root.disabled != disabled
         or logging.root.manager.disable != manager_disable
+        or logging.root.manager.loggerDict is not logger_dict
+        or dict(logger_dict) != loggers
+        or any(_logger_state(state[0]) != state for state in states.values())
     ):
         changed.append("logging")
-    if asyncio.get_event_loop_policy() is not before["event-loop"]:
+    policy, loop_local, loop_state = before["event-loop"]
+    current_local = getattr(asyncio.get_event_loop_policy(), "_local", None)
+    if (asyncio.get_event_loop_policy() is not policy or current_local is not loop_local
+            or (dict(vars(current_local)) if current_local else None) != loop_state):
         changed.append("event-loop")
+    modules_object, modules_value = before["module-cache"]
+    if sys.modules is not modules_object or dict(sys.modules) != modules_value:
+        changed.append("module-cache")
     if frozenset(id(thread) for thread in threading.enumerate()) != before["threads"]:
         changed.append("threads")
-    path_home, path_open, escape = before["monkeypatch"]
-    if (
-        inspect.getattr_static(Path, "home") is not path_home
-        or inspect.getattr_static(Path, "open") is not path_open
-        or html.escape is not escape
-    ):
+    path_namespace, escape = before["monkeypatch"]
+    if dict(vars(Path)) != path_namespace or html.escape is not escape:
         changed.append("monkeypatch")
     return sorted(changed)
 
 
 def restore_state(before: dict) -> list[str]:
     """Restore every safely restorable seam and return what was restored."""
-
     changed = changed_state(before)
     if "environment" in changed:
         env_object, env_value = before["environment"]
@@ -170,34 +205,64 @@ def restore_state(before: dict) -> list[str]:
         sys.path = path_object
         sys.path[:] = path_value
     if "warnings" in changed:
-        filters_object, filters_value = before["warnings"]
+        filters_object, filters_value, showwarning, formatwarning, defaultaction = before["warnings"]
         warnings.filters = filters_object
         warnings.filters[:] = filters_value
+        warnings.showwarning, warnings.formatwarning = showwarning, formatwarning
+        warnings.defaultaction = defaultaction
     if "logging" in changed:
-        root, handlers, level, disabled, manager_disable = before["logging"]
+        root, handlers, root_filters, level, disabled, manager_disable, logger_dict, loggers, states = before["logging"]
         root.handlers[:] = handlers
+        root.filters[:] = root_filters
         root.setLevel(level)
         root.disabled = disabled
         logging.disable(manager_disable)
+        logging.root.manager.loggerDict = logger_dict
+        logger_dict.clear()
+        logger_dict.update(loggers)
+        for logger, handlers, filters, level, disabled, propagate in states.values():
+            logger.handlers[:], logger.filters[:] = handlers, filters
+            logger.level, logger.disabled, logger.propagate = level, disabled, propagate
     if "event-loop" in changed:
-        asyncio.set_event_loop_policy(before["event-loop"])
+        policy, loop_local, loop_state = before["event-loop"]
+        current_loop = getattr(getattr(asyncio.get_event_loop_policy(), "_local", None), "_loop", None)
+        if current_loop is not None and current_loop is not (loop_state or {}).get("_loop"):
+            if not current_loop.is_running():
+                current_loop.close()
+        asyncio.set_event_loop_policy(policy)
+        if loop_local is not None:
+            vars(loop_local).clear()
+            vars(loop_local).update(loop_state)
+    if "module-cache" in changed:
+        modules_object, modules_value = before["module-cache"]
+        sys.modules = modules_object
+        sys.modules.clear()
+        sys.modules.update(modules_value)
     if "monkeypatch" in changed:
-        path_home, path_open, escape = before["monkeypatch"]
-        setattr(Path, "home", path_home)
-        setattr(Path, "open", path_open)
+        path_namespace, escape = before["monkeypatch"]
+        for name in set(vars(Path)) - set(path_namespace):
+            delattr(Path, name)
+        for name, value in path_namespace.items():
+            if vars(Path).get(name) is not value:
+                setattr(Path, name, value)
         html.escape = escape
     return sorted(set(changed) & RESTORABLE_SEAMS)
 
-
 class _MutationVisitor(ast.NodeVisitor):
     """Conservative syntactic inventory of process-mutating test owners."""
-
     def __init__(self, module: str, source: str):
         self.module = module
         self.source = source
         self.stack = []
         self.owners = {}
-
+        self.aliases = {}
+    def visit_Import(self, node):
+        for name in node.names:
+            self.aliases[name.asname or name.name.split(".")[0]] = name.name
+    def visit_ImportFrom(self, node):
+        for name in node.names:
+            if node.module and name.name != "*":
+                self.aliases[name.asname or name.name] = node.module + "." + name.name
     def _visit_owner(self, node):
         self.stack.append(node.name)
         self.generic_visit(node)
@@ -209,6 +274,8 @@ class _MutationVisitor(ast.NodeVisitor):
 
     def _record(self, node):
         text = ast.get_source_segment(self.source, node) or ""
+        for alias, target in sorted(self.aliases.items(), key=lambda item: -len(item[0])):
+            text = re.sub(r"\b%s\b" % re.escape(alias), target, text)
         seams = set()
         if "os.environ" in text or "putenv(" in text or "unsetenv(" in text:
             seams.add("environment")
@@ -226,7 +293,7 @@ class _MutationVisitor(ast.NodeVisitor):
             seams.add("event-loop")
         if any(token in text for token in ("Thread(", "ThreadPoolExecutor(", ".serve_forever(", ".start()")):
             seams.add("threads")
-        if "patch.object(" in text:
+        if "patch.object(" in text or re.search(r"\b(?:[\w.]*Path\.\w+|html\.escape)\s*=", text):
             seams.add("monkeypatch")
         if seams:
             owner = ".".join(self.stack) or "<module>"
@@ -252,10 +319,8 @@ class _MutationVisitor(ast.NodeVisitor):
         self._record(node)
         self.generic_visit(node)
 
-
 def scan_mutation_owners(tests_dir: Path) -> list[dict]:
     """Return the deterministic review surface the committed manifest pins."""
-
     tests_dir = Path(tests_dir).resolve()
     records = [{
         "module": "<suite>",
@@ -275,7 +340,6 @@ def scan_mutation_owners(tests_dir: Path) -> list[dict]:
         )
     return sorted(records, key=lambda record: (record["module"], record["owner"]))
 
-
 def revision(root: Path = ROOT):
     try:
         completed = subprocess.run(
@@ -290,6 +354,15 @@ def revision(root: Path = ROOT):
         return None
     return completed.stdout.decode("ascii", "replace").strip() or None
 
+def worktree_clean(root: Path = ROOT) -> bool:
+    try:
+        completed = subprocess.run(
+            ["git", "status", "--porcelain=v1", "--untracked-files=all"], cwd=str(root),
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        )
+    except OSError:
+        return False
+    return completed.returncode == 0 and not completed.stdout.strip()
 
 def _summary(results):
     return {
@@ -300,7 +373,6 @@ def _summary(results):
         "expected_failures": sum(len(result.expectedFailures) for result in results),
         "unexpected_successes": sum(len(result.unexpectedSuccesses) for result in results),
     }
-
 
 def _require_discovery(cases, manifest):
     identities = sorted(case.id() for case in cases)
@@ -317,10 +389,8 @@ def _require_discovery(cases, manifest):
         )
     return identities, identity_hash
 
-
 def run_selected(tests_dir: Path, manifest: dict, stream=None, verbosity: int = 1) -> dict:
     """Discover all cases, then run only committed sentinels in this process."""
-
     started = time.monotonic()
     cases = discover_cases(tests_dir)
     _, identity_hash = _require_discovery(cases, manifest)
@@ -331,7 +401,6 @@ def run_selected(tests_dir: Path, manifest: dict, stream=None, verbosity: int = 
     missing = [entry["id"] for entry in entries if len(by_id.get(entry["id"], ())) != 1]
     if missing:
         raise ValueError("selected identity missing or duplicated: " + ", ".join(missing))
-
     groups = OrderedDict()
     for entry in entries:
         groups.setdefault(entry["module"], []).append(by_id[entry["id"]][0])
@@ -340,7 +409,8 @@ def run_selected(tests_dir: Path, manifest: dict, stream=None, verbosity: int = 
     boundaries = []
     allowed = {}
     for owner in manifest.get("mutation_owners", []):
-        allowed.setdefault(owner["module"], set()).update(owner["seams"])
+        if owner.get("restoration") == "selected-module-boundary":
+            allowed.setdefault(owner["module"], set()).update(owner["seams"])
     for entry in entries:
         allowed.setdefault(entry["module"], set()).update(entry.get("allowed_seams", []))
     for module, selected in groups.items():
@@ -351,13 +421,16 @@ def run_selected(tests_dir: Path, manifest: dict, stream=None, verbosity: int = 
         )
         changed = changed_state(before)
         restored = restore_state(before)
+        remaining = changed_state(before)
         unexpected = sorted(set(changed) - allowed.get(module, set()))
         if "threads" in changed:
             unexpected = sorted(set(unexpected) | {"threads"})
+        unexpected = sorted(set(unexpected) | set(remaining))
         boundaries.append({
             "module": module,
             "changed": changed,
             "restored": restored,
+            "remaining": remaining,
             "unexpected": unexpected,
         })
         results.append(result)
@@ -371,6 +444,8 @@ def run_selected(tests_dir: Path, manifest: dict, stream=None, verbosity: int = 
         "schema": "orchflows.serial-compat-observation.v1",
         "mode": "selected",
         "revision": revision(),
+        "worktree_clean": worktree_clean(),
+        "manifest": manifest_identity(manifest),
         "recorded_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "interpreter": {
             "pid": os.getpid(),
@@ -385,10 +460,8 @@ def run_selected(tests_dir: Path, manifest: dict, stream=None, verbosity: int = 
         "ok": ok,
     }
 
-
 def run_exhaustive(tests_dir: Path, manifest: dict, stream=None, verbosity: int = 1) -> dict:
     """Run every discovered case sequentially as the compatibility oracle."""
-
     started = time.monotonic()
     cases = discover_cases(tests_dir)
     _, identity_hash = _require_discovery(cases, manifest)
@@ -399,6 +472,8 @@ def run_exhaustive(tests_dir: Path, manifest: dict, stream=None, verbosity: int 
         "schema": "orchflows.serial-compat-observation.v1",
         "mode": "exhaustive",
         "revision": revision(),
+        "worktree_clean": worktree_clean(),
+        "manifest": manifest_identity(manifest),
         "recorded_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "interpreter": {
             "pid": os.getpid(), "version": sys.version.split()[0], "executable": sys.executable,
@@ -409,7 +484,6 @@ def run_exhaustive(tests_dir: Path, manifest: dict, stream=None, verbosity: int 
         "ok": result.wasSuccessful(),
     }
 
-
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", choices=("selected", "exhaustive"), default="selected")
@@ -418,7 +492,6 @@ def build_parser():
     parser.add_argument("--record", default=str(RECORD_PATH))
     parser.add_argument("-v", "--verbose", action="store_true")
     return parser
-
 
 def main(argv=None):
     args = build_parser().parse_args(argv)
@@ -433,7 +506,5 @@ def main(argv=None):
     path.write_text(json.dumps(record, sort_keys=True, indent=1), encoding="utf-8")
     print(json.dumps(record, sort_keys=True))
     return 0 if record["ok"] else 1
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

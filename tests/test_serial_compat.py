@@ -310,12 +310,21 @@ class TestExhaustiveObservation(unittest.TestCase):
 class TestPairedProvingGate(unittest.TestCase):
     @staticmethod
     def observation(mode, *, ok=True, revision="abc", identity="ids"):
+        count = 14 if mode == "selected" else 2357
         return {
             "schema": "orchflows.serial-compat-observation.v1",
             "mode": mode,
             "revision": revision,
+            "worktree_clean": True,
             "recorded_at_utc": "2026-08-21T01:00:00Z",
-            "discovery": {"count": 2357, "sha256": identity},
+            "interpreter": {"pid": 1, "version": "3.13", "executable": "python"},
+            "manifest": {"sha256": "a" * 64},
+            "discovery": {"count": 2357, "sha256": hashlib.sha256(identity.encode()).hexdigest()},
+            "sentinels": {"count": 14} if mode == "selected" else None,
+            "boundaries": [] if mode == "selected" else None,
+            "outcomes": {"tests": count, "failures": 0, "errors": 0, "skipped": 0,
+                         "expected_failures": 0, "unexpected_successes": 0},
+            "wall_time_seconds": 1.0,
             "ok": ok,
         }
 
@@ -349,12 +358,9 @@ class TestPairedProvingGate(unittest.TestCase):
         passed = serial_pair.evaluate_pairs(first["pairs"] + [twentieth])
         self.assertEqual(20, passed["clean_streak"])
         self.assertTrue(passed["promotion_ready"])
-        discrepancy = dict(
-            clean,
-            pair_id="pair-20",
-            recorded_at_utc="2026-08-21T20:00:00Z",
-            clean=False,
-            selected_green_exhaustive_red=True,
+        discrepancy = serial_pair.make_pair(
+            self.observation("selected"), self.observation("exhaustive", ok=False),
+            pair_id="pair-20", recorded_at="2026-08-21T20:00:00Z",
         )
         reset = serial_pair.evaluate_pairs(passed["pairs"] + [discrepancy])
         self.assertEqual(0, reset["clean_streak"])
@@ -375,6 +381,12 @@ class TestPairedWorkflowAndPolicy(unittest.TestCase):
         self.assertIn("--mode exhaustive", paired)
         self.assertGreaterEqual(paired.count("continue-on-error: true"), 2)
         self.assertIn("python tools/serial_pair.py", paired)
+        self.assertIn("python tools/serial_gate.py", paired)
+        self.assertIn("actions/cache/restore@v4", paired)
+        self.assertIn("actions/download-artifact@v4", paired)
+        self.assertIn("actions/cache/save@v4", paired)
+        self.assertIn("github.run_attempt", paired)
+        self.assertIn("github.event.repository.default_branch", paired)
         self.assertIn("if: ${{ always() }}", paired)
         self.assertIn("uses: actions/upload-artifact@v4", paired)
 
@@ -394,18 +406,28 @@ class TestPairedWorkflowAndPolicy(unittest.TestCase):
 
 class TestColdTrialGate(unittest.TestCase):
     @staticmethod
-    def trial(seconds, revision="candidate", identity="ids"):
+    def trial(seconds, revision="candidate", identity="ids", recorded_at="2026-08-21T01:00:01Z"):
         return {
+            "schema": "orchflows.serial-compat-observation.v1",
             "mode": "selected",
             "revision": revision,
-            "discovery": {"count": 2363, "sha256": identity},
+            "worktree_clean": True,
+            "recorded_at_utc": recorded_at,
+            "interpreter": {"pid": int(recorded_at[-3:-1]), "version": "3.13", "executable": "python"},
+            "manifest": {"sha256": "a" * 64},
+            "discovery": {"count": 2363, "sha256": hashlib.sha256(identity.encode()).hexdigest()},
             "sentinels": {"count": 14},
+            "boundaries": [],
+            "outcomes": {"tests": 14, "failures": 0, "errors": 0, "skipped": 0,
+                         "expected_failures": 0, "unexpected_successes": 0},
             "wall_time_seconds": seconds,
             "ok": True,
         }
 
     def test_two_green_fixed_revision_trials_decide_the_target(self):
-        gate = serial_trials.evaluate([self.trial(89.0), self.trial(90.0)])
+        gate = serial_trials.evaluate([
+            self.trial(89.0), self.trial(90.0, recorded_at="2026-08-21T01:00:02Z")
+        ])
         self.assertEqual(89.5, gate["median_seconds"])
         self.assertEqual(90.0, gate["max_seconds"])
         self.assertTrue(gate["target_met"])
@@ -413,14 +435,20 @@ class TestColdTrialGate(unittest.TestCase):
 
     def test_revision_identity_or_time_drift_refuses_the_target(self):
         gate = serial_trials.evaluate([
-            self.trial(80.0), self.trial(101.0, revision="other", identity="other")
+            self.trial(80.0), self.trial(
+                101.0, revision="other", identity="other",
+                recorded_at="2026-08-21T01:00:02Z",
+            )
         ])
         self.assertFalse(gate["target_met"])
         self.assertFalse(gate["fallback_met"])
         self.assertIn("revision-mismatch", gate["reasons"])
         self.assertIn("discovery-identity-mismatch", gate["reasons"])
         self.assertIn("trial-over-100s", gate["reasons"])
-        fallback = serial_trials.evaluate([self.trial(100.0), self.trial(101.0)])
+        fallback = serial_trials.evaluate([
+            self.trial(100.0),
+            self.trial(101.0, recorded_at="2026-08-21T01:00:02Z"),
+        ])
         self.assertFalse(fallback["target_met"])
         self.assertTrue(fallback["fallback_met"])
 

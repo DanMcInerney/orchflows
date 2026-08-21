@@ -5,8 +5,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import statistics
 from pathlib import Path
+
+try:
+    from tools.serial_records import observation_defects
+except ModuleNotFoundError:  # direct ``python tools/serial_trials.py`` execution
+    from serial_records import observation_defects
 
 
 TRIAL_COUNT = 2
@@ -20,30 +26,39 @@ def evaluate(trials) -> dict:
     reasons = []
     if len(trials) != TRIAL_COUNT:
         reasons.append("trial-count")
-    if any(trial.get("mode") != "selected" for trial in trials):
-        reasons.append("mode-mismatch")
-    if any(not trial.get("ok") for trial in trials):
+    for index, trial in enumerate(trials, 1):
+        reasons.extend(
+            "trial-%d-%s" % (index, defect)
+            for defect in observation_defects(trial, "selected")
+        )
+    if any(trial.get("ok") is not True for trial in trials):
         reasons.append("red-trial")
+    observed_at = {trial.get("recorded_at_utc") for trial in trials}
+    if len(observed_at) != len(trials):
+        reasons.append("duplicate-trial")
     revisions = {trial.get("revision") for trial in trials}
     if len(revisions) != 1 or None in revisions:
         reasons.append("revision-mismatch")
-    identities = {
-        (trial.get("discovery") or {}).get("sha256") for trial in trials
-    }
-    if len(identities) != 1 or None in identities:
+    identities = {json.dumps(trial.get("discovery"), sort_keys=True) for trial in trials}
+    if len(identities) != 1 or "null" in identities:
         reasons.append("discovery-identity-mismatch")
-    sentinel_counts = {
-        (trial.get("sentinels") or {}).get("count") for trial in trials
-    }
-    if len(sentinel_counts) != 1 or None in sentinel_counts:
-        reasons.append("sentinel-count-mismatch")
-    durations = [float(trial.get("wall_time_seconds", float("inf"))) for trial in trials]
+    manifests = {json.dumps(trial.get("manifest"), sort_keys=True) for trial in trials}
+    if len(manifests) != 1 or "null" in manifests:
+        reasons.append("manifest-identity-mismatch")
+    durations = []
+    for trial in trials:
+        try:
+            duration = float(trial.get("wall_time_seconds"))
+        except (TypeError, ValueError):
+            duration = float("inf")
+        durations.append(duration if math.isfinite(duration) and duration >= 0 else float("inf"))
     median = statistics.median(durations) if durations else float("inf")
     maximum = max(durations, default=float("inf"))
     if maximum > EACH_MAX:
         reasons.append("trial-over-100s")
     if median > MEDIAN_MAX:
         reasons.append("median-over-90s")
+    reasons = list(dict.fromkeys(reasons))
     timing_reasons = {"trial-over-100s", "median-over-90s"}
     structural = [reason for reason in reasons if reason not in timing_reasons]
     return {

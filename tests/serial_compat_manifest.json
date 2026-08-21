@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2366,
+  "count": 2375,
   "identities": [
    "test_canary_host.BaselinePinOwnerTest.test_both_modules_read_one_owner_for_the_pin",
    "test_canary_host.CanaryHostVerdictTest.test_a_run_that_resolved_no_baseline_fails",
@@ -406,6 +406,15 @@
    "test_serial_compat.TestSelectedDiscovery.test_every_selected_identity_exists_exactly_once",
    "test_serial_compat.TestSelectedDiscovery.test_manifest_is_the_exact_discovered_identity_multiset",
    "test_serial_compat.TestSelectedDiscovery.test_selected_cases_execute_once_in_the_calling_interpreter",
+   "test_serial_compat_hardening.TestEvidenceGateHardening.test_a_partial_host_run_records_a_durable_reset",
+   "test_serial_compat_hardening.TestEvidenceGateHardening.test_accumulator_carries_prior_pairs_and_fails_closed_on_history_loss",
+   "test_serial_compat_hardening.TestEvidenceGateHardening.test_discovery_or_manifest_change_restarts_the_streak",
+   "test_serial_compat_hardening.TestEvidenceGateHardening.test_duplicate_or_forged_pairs_cannot_open_promotion",
+   "test_serial_compat_hardening.TestEvidenceGateHardening.test_nonfinite_or_wrong_sentinel_timing_records_fail_closed",
+   "test_serial_compat_hardening.TestManifestHardening.test_an_aliased_environment_write_is_owned",
+   "test_serial_compat_hardening.TestManifestHardening.test_only_observed_intentional_residue_is_allowlisted",
+   "test_serial_compat_hardening.TestManifestHardening.test_required_fidelity_category_cannot_be_silently_removed",
+   "test_serial_compat_hardening.TestStateBoundaryDiscrimination.test_each_process_seam_is_detected_and_restorable_seams_are_restored",
    "test_source_sizes.SourceSizeCheckerTest.test_510_lines_pass_and_511_lines_fail",
    "test_source_sizes.SourceSizeCheckerTest.test_all_six_executable_suffixes_are_owned",
    "test_source_sizes.SourceSizeCheckerTest.test_explicit_directory_covers_six_suffixes_and_hidden_files",
@@ -2369,7 +2378,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "7551873881c67a1b6f8a42498ac97c0384c93653339536ef0ca58de3e83f6f92"
+  "sha256": "03305c1cb75c0a1d951edf82122d28eb7c39f6463dd8b51a0cec776e0221471a"
  },
  "mutation_owners": [
   {
@@ -2409,7 +2418,8 @@
    "owner": "install",
    "restoration": "sharded-module-guard",
    "seams": [
-    "environment"
+    "environment",
+    "monkeypatch"
    ]
   },
   {
@@ -3957,7 +3967,8 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "cwd",
-    "import-path"
+    "import-path",
+    "monkeypatch"
    ]
   },
   {
@@ -4074,6 +4085,30 @@
    "owner": "TestBoundaryRestoration.test_warning_filters_are_restored_when_a_module_leaves_them_dirty",
    "restoration": "sharded-module-guard",
    "seams": [
+    "warnings"
+   ]
+  },
+  {
+   "module": "tests.test_serial_compat_hardening",
+   "owner": "TestManifestHardening.test_an_aliased_environment_write_is_owned",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_serial_compat_hardening",
+   "owner": "TestStateBoundaryDiscrimination",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd",
+    "environment",
+    "event-loop",
+    "import-path",
+    "logging",
+    "module-cache",
+    "monkeypatch",
+    "threads",
     "warnings"
    ]
   },
@@ -4366,6 +4401,22 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.common",
+   "owner": "refusing_to_read",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.common",
+   "owner": "refusing_to_write",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {
@@ -5250,9 +5301,6 @@
  "schema": "orchflows.serial-compat.v1",
  "sentinels": [
   {
-   "allowed_seams": [
-    "monkeypatch"
-   ],
    "categories": [
     "installer-fidelity",
     "real-hashed-runtime"
@@ -5261,9 +5309,6 @@
    "module": "test_installer"
   },
   {
-   "allowed_seams": [
-    "monkeypatch"
-   ],
    "categories": [
     "installer-fidelity",
     "hash-contract"
@@ -5272,9 +5317,6 @@
    "module": "test_installer"
   },
   {
-   "allowed_seams": [
-    "monkeypatch"
-   ],
    "categories": [
     "installer-fidelity",
     "health-contract"
@@ -5283,9 +5325,6 @@
    "module": "test_installer"
   },
   {
-   "allowed_seams": [
-    "monkeypatch"
-   ],
    "categories": [
     "installer-fidelity",
     "receipt-state"
@@ -5294,9 +5333,6 @@
    "module": "test_installer"
   },
   {
-   "allowed_seams": [
-    "monkeypatch"
-   ],
    "categories": [
     "cutcheck-corpus"
    ],
@@ -5304,9 +5340,6 @@
    "module": "tests.test_cutcheck_cases.decidability"
   },
   {
-   "allowed_seams": [
-    "environment"
-   ],
    "categories": [
     "cutcheck-process"
    ],
@@ -5315,8 +5348,7 @@
   },
   {
    "allowed_seams": [
-    "environment",
-    "threads"
+    "environment"
    ],
    "categories": [
     "ticket-contention",
@@ -5327,9 +5359,7 @@
   },
   {
    "allowed_seams": [
-    "environment",
-    "monkeypatch",
-    "threads"
+    "environment"
    ],
    "categories": [
     "workspace-state",
@@ -5339,11 +5369,6 @@
    "module": "tests.test_tickets_cases.identity_core"
   },
   {
-   "allowed_seams": [
-    "cwd",
-    "environment",
-    "import-path"
-   ],
    "categories": [
     "environment",
     "state-sink"
@@ -5352,11 +5377,6 @@
    "module": "tests.test_state_root_cases.environment"
   },
   {
-   "allowed_seams": [
-    "cwd",
-    "environment",
-    "import-path"
-   ],
    "categories": [
     "environment",
     "discovery"
@@ -5365,11 +5385,6 @@
    "module": "tests.test_state_root_cases.environment"
   },
   {
-   "allowed_seams": [
-    "cwd",
-    "environment",
-    "import-path"
-   ],
    "categories": [
     "workspace-state",
     "state-sink"
@@ -5386,7 +5401,7 @@
   },
   {
    "allowed_seams": [
-    "monkeypatch"
+    "module-cache"
    ],
    "categories": [
     "thread-server"
@@ -5395,13 +5410,6 @@
    "module": "tests.test_ui_cases.http_server"
   },
   {
-   "allowed_seams": [
-    "cwd",
-    "environment",
-    "import-path",
-    "module-cache",
-    "monkeypatch"
-   ],
    "categories": [
     "boundary-restoration"
    ],
