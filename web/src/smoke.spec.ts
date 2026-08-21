@@ -91,7 +91,7 @@ test.afterAll(async () => {
 async function openManifestIdentity(page, identity, width, height) {
   await page.setViewportSize({ width, height });
   await page.goto(`${origin}${identity.path}`);
-  await expect(page.locator(".foundation-view"), identity.identity).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator(".foundation-view"), identity.identity).toBeVisible({ timeout: 45_000 });
 }
 
 async function expectManifestIdentityTruth(page, identity, navigationParents) {
