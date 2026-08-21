@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2354,
+  "count": 2355,
   "identities": [
    "test_canary_host.BaselinePinOwnerTest.test_both_modules_read_one_owner_for_the_pin",
    "test_canary_host.CanaryHostVerdictTest.test_a_run_that_resolved_no_baseline_fails",
@@ -81,6 +81,7 @@
    "test_installer.DryRunOracleTest.test_dry_run_writes_nothing",
    "test_installer.DryRunOracleTest.test_the_printed_plan_is_non_empty_when_a_host_is_enabled",
    "test_installer.ProjectInstallBoundaryTest.test_cli_rejects_project_install_and_dry_run_but_keeps_legacy_uninstall",
+   "test_installer.ProjectInstallBoundaryTest.test_legacy_project_uninstall_normalizes_in_boundary_receipt_paths",
    "test_installer.ProjectInstallBoundaryTest.test_public_facade_rejects_project_plans_before_planning_or_application",
    "test_installer.RoleProfileRefusalTest.test_a_missing_role_row_is_refused_and_the_role_is_named",
    "test_installer.RoleProfileRefusalTest.test_a_row_whose_role_is_outside_the_closed_set_is_skipped",
@@ -2357,7 +2358,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "633655103049e581caef5b5188bc33ffe15acfcf47f96b12e2b03017c0609aca"
+  "sha256": "d4aba002d4375a82ebda8affa0c22d12f6b949be026abe6c82d8f80476d71897"
  },
  "mutation_owners": [
   {
