@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 try:
     from scripts.ui_model import *
     from scripts.ui_model import _facade_value, _in_tree, _json_object, _parse_iso, _safe_name, _scalar
@@ -12,6 +14,34 @@ except ImportError:
     from ui_model import _facade_value, _in_tree, _json_object, _parse_iso, _safe_name, _scalar
     from ui_sessions import *
     from ui_sessions import _agent_count, _label_session, _stat_identity, _subagent_files, _subagent_identities
+
+RUNS_DIR = ("runs",)
+RUN_IDENTITY_NAME = "run.json"
+CANONICAL_WORKFLOW_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,126}$")
+
+
+def read_run_workflow(root: Path, run: str):
+    """Return only an explicit canonical workflow association for one run.
+
+    ``run.json`` contains host project and workspace paths that are not reader
+    authority. This seam opens the contained identity document and projects
+    only its closed ``workflow`` scalar; it never follows any path it carries.
+    """
+
+    run = _safe_name(run)
+    if not run:
+        return None
+    path = _in_tree(Path(root).joinpath(*RUNS_DIR), run, RUN_IDENTITY_NAME)
+    try:
+        text = path.read_text(encoding="utf-8") if path is not None else ""
+    except (OSError, UnicodeDecodeError):
+        return None
+    identity = _json_object(text)
+    if identity is None or _scalar(identity.get("run")) != run:
+        return None
+    workflow = _scalar(identity.get("workflow"))
+    return workflow if CANONICAL_WORKFLOW_RE.fullmatch(workflow) else None
+
 
 def find_ticket(root: Path, run: str, ticket_id: str):
     """One ticket by run and id, or ``None``. Never walks the whole tree,
