@@ -27,8 +27,8 @@ class TestInstallReceipt(unittest.TestCase):
             agents.write_text("user instructions\n", encoding="utf-8")
 
             plan = install.Plan(
-                scope="project",
-                project_root=project,
+                scope="user",
+                project_root=None,
                 lib_home=project / ".orchflows" / "lib",
                 scope_home=project / ".orchflows",
                 bin_dir=project / ".orch" / "bin",
@@ -61,8 +61,8 @@ class TestInstallReceipt(unittest.TestCase):
 
     def _role_agent_plan(self, project: Path, **kwargs) -> "install.Plan":
         defaults = dict(
-            scope="project",
-            project_root=project,
+            scope="user",
+            project_root=None,
             lib_home=project / ".orchflows" / "lib",
             scope_home=project / ".orchflows",
             bin_dir=project / ".orch" / "bin",
@@ -205,8 +205,8 @@ class TestInstallReceipt(unittest.TestCase):
             )
             new_agent = project / ".codex" / "agents" / "orch_worker.toml"
             plan = install.Plan(
-                scope="project",
-                project_root=project,
+                scope="user",
+                project_root=None,
                 lib_home=project / ".orchflows" / "lib",
                 scope_home=project / ".orchflows",
                 bin_dir=project / ".orch" / "bin",

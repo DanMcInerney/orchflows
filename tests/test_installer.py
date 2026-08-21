@@ -8,31 +8,122 @@ import json
 import shutil
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
 import install
 
-from tests.test_installer_cases.support import seed_user_frontend, setUpModule, tearDownModule
-from tests.test_installer_cases.planning.day_zero import TestDayZeroBootstrap
+from tests.test_installer_cases.support import setUpModule, tearDownModule
 
 
-# Keep the historical module identity: unittest keys module fixtures and stable
-# test identifiers from each class's ``__module__``, even when a facade imports
-# the class. Explicit assignments preserve both seams without duplicating setup.
-TestDayZeroBootstrap.__module__ = __name__
+class ProjectInstallBoundaryTest(unittest.TestCase):
+    def test_public_facade_rejects_project_plans_before_planning_or_application(self):
+        self.assertFalse(hasattr(install, "_build_project_plan"))
 
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            project_plan = install.Plan(
+                scope="project",
+                project_root=root,
+                lib_home=root / ".orchflows" / "lib",
+                scope_home=root / ".orchflows",
+                bin_dir=root / ".orch" / "bin",
+                receipt_path=root / ".orchflows" / "receipt.json",
+            )
+            with patch.object(
+                install._planning,
+                "_build_user_plan",
+                side_effect=AssertionError("planning reached"),
+            ) as planner:
+                with self.assertRaisesRegex(ValueError, "user"):
+                    install.build_plan("project", root)
+            planner.assert_not_called()
 
-_day_zero_setup = TestDayZeroBootstrap.setUp
+            with patch.object(
+                install,
+                "_apply_plan",
+                side_effect=AssertionError("application reached"),
+            ) as application:
+                with self.assertRaisesRegex(ValueError, "user"):
+                    install.apply_plan(project_plan)
+            application.assert_not_called()
 
+            home = root / "home"
+            home.mkdir()
+            with patch.object(install.Path, "home", return_value=home), patch.object(
+                install.shutil, "which", return_value="mock-host"
+            ):
+                user_plan = install.build_plan("user", None)
+            self.assertEqual("user", user_plan.scope)
+            self.assertIsNone(user_plan.project_root)
+            self.assertGreater(install.plan_entry_count(user_plan), 0)
 
-def _day_zero_setup_with_user_frontend(self):
-    _day_zero_setup(self)
-    seed_user_frontend(self.home)
+    def test_cli_rejects_project_install_and_dry_run_but_keeps_legacy_uninstall(self):
+        with tempfile.TemporaryDirectory() as raw:
+            project = Path(raw)
+            adapter = project / ".claude" / "skills" / "legacy" / "SKILL.md"
+            adapter.parent.mkdir(parents=True)
+            adapter.write_text("legacy\n", encoding="utf-8")
+            receipt = project / ".orchflows" / "receipt.json"
+            receipt.parent.mkdir()
+            receipt.write_text(
+                json.dumps(
+                    {
+                        "scope": "project",
+                        "files": [
+                            {
+                                "path": str(adapter),
+                                "kind": "adapter",
+                                "install_action": "created",
+                                "sha256": hashlib.sha256(adapter.read_bytes()).hexdigest(),
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
 
+            error = io.StringIO()
+            with patch.object(
+                install,
+                "build_plan",
+                side_effect=AssertionError("planning reached"),
+            ) as planner, patch.object(
+                install,
+                "apply_plan",
+                side_effect=AssertionError("application reached"),
+            ) as application, redirect_stderr(error):
+                self.assertEqual(2, install.main(["--project", str(project)]))
+                self.assertEqual(
+                    2,
+                    install.main(["--project", str(project), "--dry-run"]),
+                )
+            planner.assert_not_called()
+            application.assert_not_called()
+            self.assertIn("only available with --uninstall", error.getvalue())
+            self.assertTrue(adapter.is_file())
+            self.assertTrue(receipt.is_file())
 
-TestDayZeroBootstrap.setUp = _day_zero_setup_with_user_frontend
+            output = io.StringIO()
+            with patch.object(
+                install,
+                "build_plan",
+                side_effect=AssertionError("planning reached"),
+            ) as planner, patch.object(
+                install,
+                "apply_plan",
+                side_effect=AssertionError("application reached"),
+            ) as application, redirect_stdout(output):
+                self.assertEqual(
+                    0,
+                    install.main(["--project", str(project), "--uninstall"]),
+                )
+            planner.assert_not_called()
+            application.assert_not_called()
+            self.assertFalse(adapter.exists())
+            self.assertTrue(receipt.is_file())
+            self.assertIn("removed unchanged skill", output.getvalue())
 
 
 class TestFrontendDistribution(unittest.TestCase):
@@ -59,7 +150,7 @@ class TestFrontendDistribution(unittest.TestCase):
             manage_host_surfaces=False,
         )
 
-    def test_user_plan_carries_the_exact_distribution_and_project_borrows_it(self):
+    def test_user_plan_carries_the_exact_distribution(self):
         source_root = install.REPO_ROOT / "web" / "dist"
         expected_files = {
             path.relative_to(source_root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
@@ -71,14 +162,11 @@ class TestFrontendDistribution(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as raw:
             home = Path(raw) / "home"
-            project = Path(raw) / "project"
             home.mkdir()
-            project.mkdir()
             with patch.object(install.Path, "home", return_value=home), patch.object(
                 install.shutil, "which", return_value="mock-host"
             ):
                 user_plan = install.build_plan("user", None)
-                project_plan = install.build_plan("project", project)
 
         planned_files = {
             destination.relative_to(user_plan.frontend_home).as_posix(): hashlib.sha256(
@@ -90,20 +178,16 @@ class TestFrontendDistribution(unittest.TestCase):
         self.assertEqual(user_plan.frontend_manifest_sha256, expected_identity)
         self.assertEqual(user_plan.frontend_action, "create")
         self.assertEqual(user_plan.frontend_home, home / ".orchflows" / "ui")
-        self.assertEqual(project_plan.frontend_assets, [])
-        self.assertEqual(project_plan.frontend_home, user_plan.frontend_home)
-        self.assertEqual(project_plan.frontend_manifest_sha256, expected_identity)
-        self.assertEqual(project_plan.frontend_action, "refuse")
         self.assertIn(
             (install.REPO_ROOT / "THIRD_PARTY_NOTICES.md", user_plan.lib_home / "THIRD_PARTY_NOTICES.md"),
             user_plan.lib_copies,
         )
 
-    def test_project_frontend_refusal_prevents_a_success_receipt(self):
+    def test_frontend_refusal_prevents_a_success_receipt(self):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             plan = install.Plan(
-                scope="project", project_root=root, scope_home=root / ".orchflows",
+                scope="user", project_root=None, scope_home=root / ".orchflows",
                 lib_home=root / ".orchflows" / "lib", bin_dir=root / ".orchflows" / "bin",
                 receipt_path=root / ".orchflows" / "receipt.json",
                 frontend_home=root / "missing-ui", frontend_manifest_sha256="expected",

@@ -22,7 +22,6 @@ from .presentation import print_summary
 from .runtime import (
     _create_private_runtime,
     private_runtime_home,
-    private_runtime_is_healthy,
     private_runtime_python,
 )
 
@@ -263,16 +262,9 @@ def _prompt_keep_role_agents(diverged: list) -> bool:
 def apply_plan(
     plan: Plan, source_commit: str | None, keep_role_agents: bool | None = None
 ) -> dict:
+    if plan.scope != "user":
+        raise ValueError("installation supports user scope only")
     old_receipt = _load_json(plan.receipt_path)
-    if (
-        plan.scope == "project"
-        and plan.runtime_action is not None
-        and not private_runtime_is_healthy()
-    ):
-        raise RuntimeError(
-            "project install requires a healthy user runtime at "
-            f"{private_runtime_home()}; run install.py --user first"
-        )
     diverged = _diverged_role_agents(plan, old_receipt)
     # A kept agent stays in the plan so ``_remove_stale`` still counts it as
     # wanted; only its write is skipped. Dropping it from the plan would
@@ -430,23 +422,6 @@ def apply_plan(
                 "install_action": action,
             }
         )
-
-    # Day-zero documents. Day zero happens once: a document the project
-    # already holds is left byte-identical and only recorded, because the
-    # installer owns the skeleton, never the project's own thinking.
-    for document in plan.day_zero:
-        existed = document.dest.is_file()
-        if not existed:
-            document.dest.parent.mkdir(parents=True, exist_ok=True)
-            document.dest.write_text(document.content, encoding="utf-8")
-        # "created" once this installer has ever written the document — on
-        # this run, or on an earlier one whose receipt says so — and "kept"
-        # only while it never has. Uninstall reads this to know which is
-        # which, so a kept document the project later removed and this run
-        # rewrote turns "created" rather than inheriting "kept".
-        old_entry = old_entries.get((str(document.dest), document.kind), {})
-        action = "created" if not existed else (old_entry.get("install_action") or "kept")
-        written_files.append(_installed_file(document.dest, document.kind, action))
 
     written_imports = []
     if plan.claude_import is not None:

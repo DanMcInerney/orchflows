@@ -94,10 +94,6 @@ def print_plan(plan: Plan, source_commit: str | None) -> None:
     for block in plan.blocks:
         print(f"  {block.label}: {block.dest}")
     print()
-    print(f"day-zero documents ({len(plan.day_zero)}):")
-    for document in plan.day_zero:
-        print(f"  write if absent: {document.dest} ({document.label})")
-    print()
     if plan.claude_import is not None:
         print("managed imports (1):")
         print(f"  {plan.claude_import.label}: {plan.claude_import.dest} -> @{plan.claude_import.import_target}")

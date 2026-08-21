@@ -38,8 +38,8 @@ class TestPartialApplyAfterRmtree(unittest.TestCase):
             dest_c = lib_home / "c.md"
 
             plan = install.Plan(
-                scope="project",
-                project_root=project,
+                scope="user",
+                project_root=None,
                 lib_home=lib_home,
                 scope_home=project / ".orchflows",
                 bin_dir=project / ".orch" / "bin",

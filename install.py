@@ -40,23 +40,10 @@ the installer warns and exits successfully without writing anything.
   an import line. A preflight warns (never edits or deletes) if
   ``~/.codex/hooks.json`` references a now-missing orchflows path.
 
-Project scope (``--project PATH``) is a thin stub: it writes only the two
-managed instruction blocks (project ``CLAUDE.md``, project ``AGENTS.md``),
-rendered against the *user* library paths since a project carries no
-library of its own, the day-zero documents ``docs/documentation.md`` §6
-names (``docs/vocabulary.md``, ``ARCHITECTURE.md``) where the project holds
-none — a document already there is left byte-identical, and the receipt says
-which of the two the installer wrote — plus a minimal receipt. Both blocks stay
-inline marker blocks (never an import) since a project is committable and
-must resolve each teammate's own ``~/.orchflows`` rather than freezing the
-installer's absolute home or operating-system runtime path. Project apply
-requires that user install and refuses before writing when its private runtime
-is absent or unhealthy.
-Durable state is user-scope in either scope: an install seeds the one sink
-``_state_sink`` names and never a project runtime tree, so a record carries
-the project it arose in as a field rather than by its location. Of
-``<project>/.orch`` only ``bin/`` is still written, by a project install that
-copies scripts — installed scripts are not state.
+Installation has one scope: user. Legacy project receipts remain accepted by
+``--project PATH --uninstall`` only, so installations created by older
+versions can still be cleaned up conservatively without recreating project
+artifacts.
 
 The receipt records ``source_commit`` (the installed-from repo's git HEAD,
 read from a clone or a worktree checkout); a rerun whose HEAD has moved
@@ -203,10 +190,8 @@ from installer.managed_text import (
 from installer.models import (
     BlockPlan,
     ConfigPlan,
-    DayZeroPlan,
     ImportPlan,
     Plan,
-    _day_zero_documents,
     _host_block_content,
     _frontend_manifest,
     _frontend_manifest_identity,
@@ -233,12 +218,7 @@ from installer.packages import (
     template_adapter_body,
     template_markers,
 )
-from installer.planning import (
-    _build_project_plan,
-    _mints_claude_adapter,
-    detect_hosts,
-    plan_entry_count,
-)
+from installer.planning import _mints_claude_adapter, detect_hosts, plan_entry_count
 from installer.uninstall import (
     _auto_remove_path_is_safe,
     _uninstall_boundary,
@@ -317,6 +297,8 @@ def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
 def build_plan(
     scope: str, project_root: Path | None, claude_adapter_set: str = "all"
 ) -> Plan:
+    if scope != "user":
+        raise ValueError("installation supports user scope only")
     _sync_installer_seams()
     return _planning.build_plan(
         scope,
@@ -332,6 +314,8 @@ def print_plan(plan: Plan) -> None:
 
 
 def apply_plan(plan: Plan, keep_role_agents: bool | None = None) -> dict:
+    if plan.scope != "user":
+        raise ValueError("installation supports user scope only")
     _sync_installer_seams()
     return _apply_plan(plan, resolve_source_commit(), keep_role_agents)
 
@@ -348,7 +332,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         const=".",
         default=None,
         metavar="PATH",
-        help="Install scope: project, optionally at PATH (default: current directory).",
+        help="Legacy cleanup scope, optionally at PATH; requires --uninstall.",
     )
     parser.add_argument(
         "--yes",
@@ -374,28 +358,18 @@ def build_arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _prompt_scope() -> str:
-    print("Install scope? [1] user (all sessions)  [2] project (this repo only)")
-    print("Project scope must be run in each project repository.")
-    try:
-        choice = input("> ").strip()
-    except EOFError:
-        choice = ""
-    return "project" if choice == "2" else "user"
-
-
 def _resolve_scope(args) -> tuple[str, Path | None]:
     if args.user and args.project is not None:
         raise SystemExit("error: --user and --project are mutually exclusive")
+    if args.project is not None and not args.uninstall:
+        raise SystemExit("error: --project is only available with --uninstall for legacy cleanup")
     if args.uninstall and not args.user and args.project is None:
         raise SystemExit("error: --uninstall requires --user or --project [PATH]")
     if args.user:
         return "user", None
     if args.project is not None:
         return "project", Path(args.project).resolve()
-    if args.dry_run or args.yes:
-        return "user", None
-    return ("project", Path.cwd().resolve()) if _prompt_scope() == "project" else ("user", None)
+    return "user", None
 
 
 def main(argv=None) -> int:
