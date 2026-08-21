@@ -6,9 +6,7 @@ from ..support import *  # noqa: F403
 
 
 class TestRuntimeDirsSeedTheSink(unittest.TestCase):
-    """An install of either scope seeds the one user-scope sink, and no
-    install seeds project-local durable state. Only ``<project>/.orch/bin``
-    stays in the repository: installed scripts are not state."""
+    """The user install seeds the one user-scope sink."""
 
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
@@ -28,28 +26,6 @@ class TestRuntimeDirsSeedTheSink(unittest.TestCase):
         self.addCleanup(guard.stop)
         os.environ.pop(SINK_ENV_VAR, None)
 
-    def planned_paths(self, plan) -> list:
-        """Every filesystem path the plan would write or create."""
-
-        paths = [plan.lib_home, plan.scope_home, plan.bin_dir, plan.receipt_path]
-        paths.extend(plan.runtime_dirs)
-        for src, dest in list(plan.lib_copies) + list(plan.scripts):
-            del src
-            paths.append(dest)
-        for pair in (list(plan.claude_adapters) + list(plan.codex_prompts)
-                     + list(plan.codex_skills) + list(plan.by_name)
-                     + list(plan.claude_agents) + list(plan.codex_agents)
-                     + list(plan.configs)):
-            paths.append(pair[0])
-        for block in plan.blocks:
-            paths.append(block.dest)
-        for document in plan.day_zero:
-            paths.append(document.dest)
-        for extra in (plan.host_block, plan.claude_import):
-            if extra is not None:
-                paths.append(extra.dest)
-        return paths
-
     @staticmethod
     def under(root: Path, path: Path) -> bool:
         """Whole segments only: ``.orchflows`` is not under ``.orch``."""
@@ -59,10 +35,9 @@ class TestRuntimeDirsSeedTheSink(unittest.TestCase):
     def assert_under(self, root: Path, path: Path, why: str):
         self.assertTrue(self.under(root, path), f"{path}: {why}")
 
-    def test_both_scopes_seed_the_sink_and_neither_seeds_project_state(self):
+    def test_user_scope_seeds_the_sink(self):
         with patch.object(install.Path, "home", return_value=self.home):
             user = install._runtime_dirs("user", None)
-            project = install._runtime_dirs("project", self.project)
 
         expected = [
             self.sink / "tickets",
@@ -70,15 +45,9 @@ class TestRuntimeDirsSeedTheSink(unittest.TestCase):
             self.sink / "friction",
             self.sink / "improvement" / "proposals",
         ]
-        for scope, seeded in (("user", user), ("project", project)):
-            with self.subTest(scope=scope):
-                self.assertEqual(expected, list(seeded))
-                for path in seeded:
-                    self.assert_under(self.sink, path, "seeded outside the sink")
-                    self.assertFalse(
-                        self.under(self.project / ".orch", path),
-                        f"{path}: project-local durable state",
-                    )
+        self.assertEqual(expected, list(user))
+        for path in user:
+            self.assert_under(self.sink, path, "seeded outside the sink")
 
     def test_the_override_redirects_what_an_install_seeds(self):
         """A user who redirects the sink gets the root they read seeded, and

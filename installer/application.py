@@ -156,8 +156,7 @@ def _apply_frontend(plan: Plan) -> None:
         return
     if plan.frontend_action == "refuse":
         raise RuntimeError(
-            f"project install requires healthy frontend assets at {home}; "
-            "run install.py --user first"
+            f"install requires healthy frontend assets at {home}"
         )
     if plan.frontend_action == "reuse":
         if _frontend_manifest_identity(home) != expected:

@@ -310,6 +310,8 @@ def build_plan(
 
 
 def print_plan(plan: Plan) -> None:
+    if plan.scope != "user":
+        raise ValueError("installation supports user scope only")
     _presentation.print_plan(plan, resolve_source_commit())
 
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass, field
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
 from .foundation import HOST_BLOCK_TEMPLATE, _bin_dir, _lib_home
 from .managed_text import render_host_block
@@ -106,13 +106,11 @@ def _frontend_manifest_identity(root: Path) -> str | None:
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
-def _host_block_content(portable: bool = False) -> tuple[str, str, str]:
-    """Render the instruction block against the *user* library paths
-    (``~/.orchflows/...``). Both scopes point here: project installs carry
-    no library of their own and read the user install instead."""
+def _host_block_content() -> tuple[str, str, str]:
+    """Render the instruction block against the user installation."""
 
-    lib_home = PurePosixPath("~/.orchflows/lib") if portable else _lib_home("user", None)
-    bin_dir = PurePosixPath("~/.orchflows/bin") if portable else _bin_dir("user", None)
+    lib_home = _lib_home("user", None)
+    bin_dir = _bin_dir("user", None)
     template_text = HOST_BLOCK_TEMPLATE.read_text(encoding="utf-8")
     start_marker, end_marker = template_markers(template_text)
     content = render_host_block(
@@ -122,7 +120,5 @@ def _host_block_content(portable: bool = False) -> tuple[str, str, str]:
         lib_home / "skills",
         lib_home,
         str(private_runtime_python()),
-        portable=portable,
     )
     return content, start_marker, end_marker
-

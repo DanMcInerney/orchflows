@@ -21,10 +21,10 @@
     "distractor": false
   },
   {
-    "id": "answer-project-scope",
-    "prompt": "does a project-scope install copy the library, or does it borrow the user one?",
+    "id": "answer-install-scope",
+    "prompt": "is the user install the only orchflows installation scope?",
     "expected": "answer",
-    "note": "Settled by install.py's own docstring and the host block; no change requested.",
+    "note": "Settled by install.py's own boundary and the maintained installation docs; no change requested.",
     "distractor": false
   },
   {

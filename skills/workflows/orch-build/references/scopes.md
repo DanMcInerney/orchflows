@@ -1,12 +1,9 @@
-# Scopes
+# Custom-item build scopes
 
-Landing zones and oracles per scope. The scope law: a user-scope
-install is the one resolver for both user- and project-scope custom
-items' call edges, per its install receipt — project scope alone,
-without a user-scope install, resolves nothing. A project additionally
-carries a committable routing block, written by `install.py --project`,
-so the item is discoverable in-repo. Canonical work happens in this
-repository itself and needs no install.
+Landing zones and oracles per build scope. The user install is the one
+resolver for both user- and project-scope custom items' call edges. Build
+scope chooses where `orch-build` writes an item; it is not an installation
+scope. Canonical work happens in this repository itself and needs no install.
 
 | scope | skills land at | always-on rules land in | oracles |
 | --- | --- | --- | --- |
@@ -14,10 +11,12 @@ repository itself and needs no install.
 | user | `~/.orchflows/skills/<name>/SKILL.md` + host integrations | `~/.codex/AGENTS.md` and the user CLAUDE.md, outside managed blocks | library lens |
 | project | `<repo>/.orchflows/skills/<name>/SKILL.md` + host integrations | the repo's `AGENTS.md`, outside managed blocks | library lens |
 
+## Project build scope
+
 - User- and project-scope items are custom: outside library law,
   binding only at their scope, written to a skill's anatomy. What a
   custom item may be named is `orch-build`'s `Never:`.
-- Host integrations match the installer's own: a Claude adapter stub
+- Host integrations are built with each custom item: a Claude adapter stub
   at the scope's `.claude/skills/<name>/SKILL.md`, carrying the
   host-legal frontmatter (`name`, `description`, and for a role-bearing
   skill `context: fork` plus its matching `agent`) and an

@@ -56,10 +56,9 @@ remote URLs, or view-time network dependency. Maintainers verify it with:
 
 A user install stages the distribution, checks its manifest identity, then
 creates, reuses, or repairs `~/.orchflows/ui`. The receipt records each asset
-and the distribution identity. A project install borrows that user-owned
-distribution and refuses an absent or unhealthy copy. Uninstall removes only
-unchanged receipted assets and leaves modified or out-of-bound paths for
-review.
+and the distribution identity. User installation is the only installation
+scope. Uninstall removes only unchanged receipted assets and leaves modified
+or out-of-bound paths for review.
 
 Fresh installation may access the configured Python package index because
 this repository ships no wheelhouse. After installation the reader is

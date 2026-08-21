@@ -16,13 +16,14 @@ picks the right workflow.
 Works with Claude Code and Codex, on Windows, macOS, and Linux. It
 configures whichever CLI it finds. To update: `git pull`, rerun.
 
-User installs create or reuse `~/.orchflows/runtime`, a private Python
+This is a user install, the only installation scope. It creates or reuses
+`~/.orchflows/runtime`, a private Python
 environment used by installed commands even when installation starts from
 an active project environment. Runtime dependencies are declared in
 `requirements-runtime.txt`, with exact hashes for the local UI server and its
 transitive closure.
-Project installs never create an environment in the project, dry runs create
-nothing, and uninstall retains the private runtime for explicit manual cleanup.
+Dry runs create nothing, and user uninstall retains the private runtime for
+explicit manual cleanup.
 
 ## Observe
 
@@ -92,12 +93,11 @@ Runs survive session death: every ticket is a file in one per-user
 state sink outside every repository, so a fresh context — in any
 checkout — resumes mid-flight.
 
-Team setup: after each teammate has run the user install, `python install.py
---project PATH` verifies that user's healthy private runtime and writes a
-committable routing block whose `~/.orchflows` paths resolve locally. It
-refuses before writing when that prerequisite is missing. Uninstall: `python install.py --user
---uninstall` removes only what it generated; `--dry-run` previews
-either, including whether runtime apply will create, reuse, or repair.
+Team setup: each teammate runs the user install. Repository-local custom
+skills and compositions remain ordinary `orch-build` outputs under
+`<repo>/.orchflows`; they are not an installation scope. Uninstall:
+`python install.py --user --uninstall` removes only what it generated;
+`--dry-run` previews whether runtime apply will create, reuse, or repair.
 `--claude-adapters {all,four}` chooses how much of the library
 Claude gets first-class adapters for — `all` (the default) mints one per
 package and template, `four` mints only `orch-spec`, `orch-frontier`,
