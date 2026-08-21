@@ -216,3 +216,29 @@ def project_artifact(
         "sha256": hashlib.sha256(delivered.encode("utf-8")).hexdigest(),
         "redacted": redacted,
     }
+
+
+def http_endpoint(namespace: dict, response, internal_error):
+    """Bind both fixed Starlette routes without moving response policy here."""
+
+    async def endpoint(request):
+        params = dict(request.path_params)
+        name = "project_artifact" if "artifact_id" in params else "project_artifact_inventory"
+        try:
+            status, value = namespace[name](request.app.state.root, **params)
+        except Exception:
+            return response(request, internal_error, 500)
+        return response(request, value, status)
+
+    return endpoint
+
+
+def project_http_path(root: Path, path: str, inventory, content):
+    """Project one exact fallback artifact path, or decline unrelated paths."""
+
+    parts = path.strip("/").split("/")
+    if len(parts) == 7 and parts[4] == "tickets" and parts[6] == "artifacts":
+        return inventory(root, parts[3], parts[5])
+    if len(parts) == 8 and parts[4] == "tickets" and parts[6] == "artifacts":
+        return content(root, parts[3], parts[5], parts[7])
+    return None

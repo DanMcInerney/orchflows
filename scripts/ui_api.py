@@ -22,14 +22,7 @@ except ModuleNotFoundError:  # The installed CLI runs under the private runtime.
     TrustedHostMiddleware = Request = RedirectResponse = Response = Route = None
 
 try:
-    from scripts import (
-        ui_artifacts_projection,
-        ui_friction_projection,
-        ui_now_projection,
-        ui_runs_projection,
-        ui_sessions_projection,
-        ui_workflows_projection,
-    )
+    from scripts import ui_artifacts_projection, ui_friction_projection, ui_now_projection, ui_runs_projection, ui_sessions_projection, ui_workflows_projection
     from scripts.ui_assets import FallbackReaderServer, read_asset, resolve_asset_root, valid_host_headers
     from scripts.ui_experience import (
         SPA_ROUTE_PATTERNS,
@@ -40,12 +33,7 @@ try:
         project_view,
     )
 except ImportError:
-    import ui_artifacts_projection
-    import ui_friction_projection
-    import ui_now_projection
-    import ui_runs_projection
-    import ui_sessions_projection
-    import ui_workflows_projection
+    import ui_artifacts_projection, ui_friction_projection, ui_now_projection, ui_runs_projection, ui_sessions_projection, ui_workflows_projection
     from ui_assets import FallbackReaderServer, read_asset, resolve_asset_root, valid_host_headers
     from ui_experience import (
         SPA_ROUTE_PATTERNS,
@@ -182,6 +170,8 @@ def _json_response(request: Request, value, status=200):
         return Response(_json_bytes(value), status_code=status, media_type="application/json")
     return _bytes_response(request, _json_bytes(value), JSON_TYPE, "no-cache")
 
+artifact_endpoint = ui_artifacts_projection.http_endpoint(globals(), _json_response, INTERNAL_ERROR)
+
 def _context(request: Request):
     return request.app.state.root, request.app.state.transcripts
 
@@ -274,32 +264,9 @@ async def workflow_source_endpoint(request: Request):
         return _json_response(request, INTERNAL_ERROR, 500)
     return _json_response(request, value, status)
 
-async def artifact_inventory_endpoint(request: Request):
-    root, _ = _context(request)
-    try:
-        status, value = project_artifact_inventory(
-            root, request.path_params["run"], request.path_params["ticket"]
-        )
-    except Exception:
-        return _json_response(request, INTERNAL_ERROR, 500)
-    return _json_response(request, value, status)
-
-async def artifact_endpoint(request: Request):
-    root, _ = _context(request)
-    try:
-        status, value = project_artifact(
-            root,
-            request.path_params["run"],
-            request.path_params["ticket"],
-            request.path_params["artifact_id"],
-        )
-    except Exception:
-        return _json_response(request, INTERNAL_ERROR, 500)
-    return _json_response(request, value, status)
-
 def _starlette_projector_routes():
     endpoints = {
-        (ui_artifacts_projection, "project_artifact_inventory"): artifact_inventory_endpoint,
+        (ui_artifacts_projection, "project_artifact_inventory"): artifact_endpoint,
         (ui_artifacts_projection, "project_artifact"): artifact_endpoint,
         (ui_now_projection, "project_observe"): observe_endpoint,
         (ui_runs_projection, "project_runs"): runs_endpoint,
@@ -427,12 +394,9 @@ def _fallback_api(path, query, query_values, root, transcripts, headers):
             return _fallback_json(project_runs(root), headers)
         if path.startswith("/api/v1/runs/"):
             parts = path.strip("/").split("/")
-            if len(parts) == 7 and parts[4] == "tickets" and parts[6] == "artifacts":
-                status, value = project_artifact_inventory(root, parts[3], parts[5])
-                return _fallback_json(value, headers, status)
-            if len(parts) == 8 and parts[4] == "tickets" and parts[6] == "artifacts":
-                status, value = project_artifact(root, parts[3], parts[5], parts[7])
-                return _fallback_json(value, headers, status)
+            artifact = ui_artifacts_projection.project_http_path(root, path, project_artifact_inventory, project_artifact)
+            if artifact is not None:
+                return _fallback_json(artifact[1], headers, artifact[0])
             value = None
             if len(parts) == 4:
                 value = project_run(root, parts[3])
