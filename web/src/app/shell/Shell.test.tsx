@@ -24,7 +24,7 @@ describe("application feature catalog", () => {
 
     expect(matchCatalog(featureCatalog, location("/runs/run%20alpha/tickets/T-1/"))).toMatchObject({
       id: "ticket",
-      activeNavigationId: "workflows",
+      activeNavigationId: "now",
       canonicalHref: "/runs/run%20alpha/tickets/T-1",
       isCanonical: false,
     });
@@ -73,7 +73,7 @@ describe("catalog-bound shell", () => {
     expect(requests).toEqual(["/api/v1/views/now", "/api/v1/views/sessions"]);
   });
 
-  it("refreshes a hidden deep link with its parent highlighted and no fallback route", async () => {
+  it("refreshes an execution deep link with Now highlighted and no fallback route", async () => {
     window.history.replaceState({}, "", "/runs/run%20alpha/tickets/T-1/");
     vi.stubGlobal("fetch", vi.fn(async () => response({
       schema: "orchflows.inspector.v1",
@@ -83,8 +83,8 @@ describe("catalog-bound shell", () => {
 
     const { unmount } = render(<Shell />);
 
-    const workflows = await screen.findByRole("link", { name: "Workflows" });
-    expect(workflows.getAttribute("aria-current")).toBe("page");
+    const now = await screen.findByRole("link", { name: "Now" });
+    expect(now.getAttribute("aria-current")).toBe("page");
     await waitFor(() => expect(window.location.pathname).toBe("/runs/run%20alpha/tickets/T-1"));
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
       "/api/v1/views/inspector?run=run+alpha&ticket=T-1",
