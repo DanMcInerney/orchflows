@@ -94,7 +94,13 @@ async function openManifestIdentity(page, identity, width, height) {
   await expect(page.locator(".foundation-view"), identity.identity).toBeVisible({ timeout: 15_000 });
 }
 
-async function expectManifestIdentityTruth(page, identity) {
+async function expectManifestIdentityTruth(page, identity, navigationParents) {
+  const navigationParent = navigationParents[identity.view];
+  expect(navigationParent, `${identity.identity}: declared navigation parent`).toBeTruthy();
+  await expect(
+    page.getByRole("link", { name: navigationParent, exact: true }).first(),
+    `${identity.identity}: active navigation parent`,
+  ).toHaveAttribute("aria-current", "page");
   if (identity.identity.startsWith("workflow-catalog--populated--")) {
     await expect(page.locator(".workflow-catalog__row"), `${identity.identity}: canonical definitions`).toHaveCount(14);
     await expect(page.locator(".workflow-catalog a[href^='/runs/']"), `${identity.identity}: definition-only catalog`).toHaveCount(0);
@@ -121,9 +127,6 @@ async function expectManifestIdentityTruth(page, identity) {
   }
   if (identity.identity.startsWith("workflow-source--unreadable-source--")) {
     await expect(page.getByRole("heading", { name: "Source is unreadable" })).toBeVisible();
-  }
-  if (identity.identity.startsWith("workflow-")) {
-    await expect(page.getByRole("link", { name: "Workflows", exact: true }).first()).toHaveAttribute("aria-current", "page");
   }
   if (identity.identity === "run-map--blocked-causal--compact") {
     const inspector = await page.locator(".run-inspector").boundingBox();
@@ -381,7 +384,7 @@ test("capture every manifest identity", async ({ page }) => {
   for (const identity of manifest.views) {
     const [width, height] = manifest.breakpoints[identity.breakpoint];
     await openManifestIdentity(page, identity, width, height);
-    await expectManifestIdentityTruth(page, identity);
+    await expectManifestIdentityTruth(page, identity, manifest.navigationParents);
     await page.screenshot({ path: join(output, `${identity.identity}.png`), fullPage: true });
   }
 });
@@ -394,7 +397,7 @@ test("audit every manifest identity", async ({ page }) => {
     const [width, height] = manifest.breakpoints[identity.breakpoint];
     await page.emulateMedia({ forcedColors: "none", reducedMotion: "no-preference" });
     await openManifestIdentity(page, identity, width, height);
-    await expectManifestIdentityTruth(page, identity);
+    await expectManifestIdentityTruth(page, identity, manifest.navigationParents);
     const result = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
     expect(result.violations, identity.identity).toEqual([]);
 

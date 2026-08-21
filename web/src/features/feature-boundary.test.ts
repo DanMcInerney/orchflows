@@ -10,6 +10,12 @@ import {
   executionRunRoute,
   executionTicketRoute,
 } from "../shared/routes/executionRoutes";
+import viewManifestSource from "../../../docs/ui/view-manifest.json?raw";
+
+const viewManifest = JSON.parse(viewManifestSource) as {
+  navigationParents?: Record<string, string>;
+  views: Array<{ view: string }>;
+};
 
 const nowSources = import.meta.glob("./now/**/*.{ts,tsx}", {
   eager: true,
@@ -68,6 +74,22 @@ describe("feature package boundaries", () => {
 
     expect(runMapSources["./run-map/route.ts"]).toContain('../../shared/routes/executionRoutes');
     expect(inspectorSources["./inspector/route.ts"]).toContain('../../shared/routes/executionRoutes');
+  });
+
+  it("keeps execution descendants under Now in the rendered identity contract", () => {
+    expect(viewManifest.views).toHaveLength(60);
+    expect(viewManifest.navigationParents).toEqual({
+      now: "Now",
+      "run-map": "Now",
+      ticket: "Now",
+      "workflow-catalog": "Workflows",
+      "workflow-detail": "Workflows",
+      "workflow-source": "Workflows",
+      sessions: "Sessions",
+      "session-graph": "Sessions",
+      friction: "Friction",
+    });
+    expect(viewManifest.views.filter(({ view }) => view === "run-map" || view === "ticket")).toHaveLength(24);
   });
 
   it("closes Now behind the catalog-facing feature contract", async () => {
