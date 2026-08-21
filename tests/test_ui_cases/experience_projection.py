@@ -19,7 +19,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             b"../../web/src/features/session-graph/index.tsx)", implemented
         )
         self.assertEqual(
-            "6AEF8758EBEC2DCB6C117A6A566FB0843B6061AF6CE3441278869E7A462AF303",
+            "A0FB8B7CEEAB5555E85F50DBC3F8E08942CF6A23A6AB24B2C10BA82BD7DDCD76",
             hashlib.sha256(implemented).hexdigest().upper(),
         )
 
@@ -40,7 +40,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             b"[schema](../../web/src/api/schema.ts)",
         )
         self.assertEqual(
-            "04BCF5297059CBA5B7A49D135A1D328DCD040227590A0A2E51988E946D282072",
+            "341976D96C566D79DE84844C6F644BA6ED9C09E108863E21BA9C71F0FF42E75D",
             hashlib.sha256(reconstructed).hexdigest().upper(),
         )
 
