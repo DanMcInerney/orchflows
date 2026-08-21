@@ -7,6 +7,8 @@ import io
 import json
 import logging
 import os
+import subprocess
+import sys
 import tempfile
 import textwrap
 import threading
@@ -50,8 +52,20 @@ class TestSelectedDiscovery(unittest.TestCase):
 
     def test_manifest_is_the_exact_discovered_identity_multiset(self):
         manifest = run_serial_compat.load_manifest(MANIFEST)
-        cases = run_serial_compat.discover_cases(ROOT / "tests")
-        identities = sorted(case.id() for case in cases)
+        probe = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import json; from tools.run_serial_compat import discover_cases; "
+                "print(json.dumps(sorted(case.id() for case in discover_cases())))",
+            ],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+        identities = json.loads(probe.stdout)
         encoded = "\n".join(identities).encode("utf-8")
         self.assertEqual(len(identities), manifest["discovery"]["count"])
         self.assertEqual(hashlib.sha256(encoded).hexdigest(), manifest["discovery"]["sha256"])
