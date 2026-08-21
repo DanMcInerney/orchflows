@@ -50,6 +50,13 @@ class TestSelectedDiscovery(unittest.TestCase):
 
     def test_manifest_is_the_exact_discovered_identity_multiset(self):
         manifest = run_serial_compat.load_manifest(MANIFEST)
+        without_discovery = dict(manifest)
+        without_discovery.pop("discovery")
+        with tempfile.TemporaryDirectory() as tmp:
+            malformed = Path(tmp) / "manifest.json"
+            malformed.write_text(json.dumps(without_discovery), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "exact discovery"):
+                run_serial_compat.load_manifest(malformed)
         probe = subprocess.run(
             [
                 sys.executable,
@@ -319,8 +326,20 @@ class TestScheduledWorkflowAndPolicy(unittest.TestCase):
         self.assertIn("--mode exhaustive", workflow)
         self.assertIn("--record .orch/selected.json", workflow)
         self.assertIn("--record .orch/exhaustive.json", workflow)
+        self.assertEqual(2, workflow.count("continue-on-error: true"))
+        self.assertIn("id: selected", workflow)
+        self.assertIn("id: exhaustive", workflow)
         self.assertIn("if: ${{ always() }}", workflow)
-        self.assertIn("uses: actions/upload-artifact@v4", workflow)
+        self.assertEqual(2, workflow.count("uses: actions/upload-artifact@v4"))
+        self.assertEqual(1, workflow.count("path: .orch/selected.json"))
+        self.assertEqual(1, workflow.count("path: .orch/exhaustive.json"))
+        self.assertEqual(2, workflow.count("if-no-files-found: error"))
+        self.assertIn(
+            "if: ${{ always() && (steps.selected.outcome != 'success' || "
+            "steps.exhaustive.outcome != 'success') }}",
+            workflow,
+        )
+        self.assertIn("run: exit 1", workflow)
         self.assertNotIn("serial_pair.py", workflow)
         self.assertNotIn("serial_gate.py", workflow)
         self.assertNotIn("actions/cache", workflow)

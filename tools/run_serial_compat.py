@@ -22,7 +22,6 @@ import unittest
 import warnings
 from collections import OrderedDict
 from pathlib import Path
-
 ROOT = Path(__file__).resolve().parent.parent
 TESTS_DIR = ROOT / "tests"
 MANIFEST_PATH = TESTS_DIR / "serial_compat_manifest.json"
@@ -32,6 +31,7 @@ RESTORABLE_SEAMS = frozenset(
      "monkeypatch", "warnings"}
 )
 ALL_SEAMS = RESTORABLE_SEAMS | {"threads"}
+EXPECTED_SENTINELS = 14
 REQUIRED_CATEGORIES = frozenset({
     "boundary-restoration", "cutcheck-corpus", "cutcheck-process", "cwd", "discovery",
     "environment", "git-process", "hash-contract", "health-contract", "installer-fidelity",
@@ -43,6 +43,15 @@ def load_manifest(path: Path = MANIFEST_PATH) -> dict:
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     if data.get("schema") != "orchflows.serial-compat.v1":
         raise ValueError("unsupported serial compatibility manifest")
+    discovery = data.get("discovery")
+    identities = discovery.get("identities") if isinstance(discovery, dict) else None
+    if (not isinstance(identities, list)
+            or any(not isinstance(identity, str) or not identity for identity in identities)
+            or identities != sorted(set(identities))
+            or discovery.get("count") != len(identities)
+            or discovery.get("sha256") != hashlib.sha256(
+                "\n".join(identities).encode("utf-8")).hexdigest()):
+        raise ValueError("serial compatibility exact discovery is invalid")
     entries = data.get("sentinels")
     if not isinstance(entries, list) or not entries:
         raise ValueError("serial compatibility manifest has no sentinels")
@@ -53,6 +62,8 @@ def load_manifest(path: Path = MANIFEST_PATH) -> dict:
         raise ValueError("serial compatibility sentinel identities must be unique")
     if not REQUIRED_CATEGORIES.issubset(categories):
         raise ValueError("serial compatibility sentinel categories are incomplete")
+    if len(entries) != EXPECTED_SENTINELS:
+        raise ValueError("serial compatibility manifest must contain exactly 14 sentinels")
     if not allowed.issubset(RESTORABLE_SEAMS):
         raise ValueError("serial compatibility manifest allows an unrestorable seam")
     owners = data.get("mutation_owners")
@@ -66,11 +77,9 @@ def load_manifest(path: Path = MANIFEST_PATH) -> dict:
     } for owner in owners):
         raise ValueError("serial compatibility mutation owner has no restoration")
     return data
-
 def manifest_identity(manifest: dict) -> dict:
     encoded = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return {"sha256": hashlib.sha256(encoded).hexdigest()}
-
 def flatten(suite):
     """Yield cases from a unittest suite without executing its fixtures."""
     for item in suite:
@@ -78,7 +87,6 @@ def flatten(suite):
             yield from flatten(item)
         else:
             yield item
-
 def discover_cases(tests_dir: Path = TESTS_DIR):
     """Discover the same identities as ``unittest discover -s tests``."""
     tests_dir = Path(tests_dir).resolve()
@@ -104,7 +112,6 @@ def discover_cases(tests_dir: Path = TESTS_DIR):
         return list(flatten(suite))
     finally:
         sys.path[:] = before
-
 def _logger_state(logger):
     return (logger, tuple(logger.handlers), tuple(logger.filters), logger.level,
             logger.disabled, logger.propagate)
@@ -186,8 +193,6 @@ def changed_state(before: dict) -> list[str]:
     if dict(vars(Path)) != path_namespace or html.escape is not escape:
         changed.append("monkeypatch")
     return sorted(changed)
-
-
 def restore_state(before: dict) -> list[str]:
     """Restore every safely restorable seam and return what was restored."""
     changed = changed_state(before)
@@ -247,7 +252,6 @@ def restore_state(before: dict) -> list[str]:
                 setattr(Path, name, value)
         html.escape = escape
     return sorted(set(changed) & RESTORABLE_SEAMS)
-
 class _MutationVisitor(ast.NodeVisitor):
     """Conservative syntactic inventory of process-mutating test owners."""
     def __init__(self, module: str, source: str):
@@ -267,11 +271,9 @@ class _MutationVisitor(ast.NodeVisitor):
         self.stack.append(node.name)
         self.generic_visit(node)
         self.stack.pop()
-
     visit_FunctionDef = _visit_owner
     visit_AsyncFunctionDef = _visit_owner
     visit_ClassDef = _visit_owner
-
     def _record(self, node):
         text = ast.get_source_segment(self.source, node) or ""
         for alias, target in sorted(self.aliases.items(), key=lambda item: -len(item[0])):
@@ -298,11 +300,9 @@ class _MutationVisitor(ast.NodeVisitor):
         if seams:
             owner = ".".join(self.stack) or "<module>"
             self.owners.setdefault(owner, set()).update(seams)
-
     def visit_Call(self, node):
         self._record(node)
         self.generic_visit(node)
-
     def visit_Assign(self, node):
         self._record(node)
         self.generic_visit(node)

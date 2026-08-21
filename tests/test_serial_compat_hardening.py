@@ -89,6 +89,17 @@ class TestManifestHardening(unittest.TestCase):
             path.write_text(json.dumps(data), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "categories are incomplete"):
                 run_serial_compat.load_manifest(path)
+            data = json.loads(MANIFEST.read_text(encoding="utf-8"))
+            data["sentinels"] = [
+                entry for entry in data["sentinels"]
+                if entry["id"] != (
+                    "tests.test_state_root_cases.environment.TestNoTestReachesTheRealSink."
+                    "test_the_redirect_is_in_force_in_this_process"
+                )
+            ]
+            path.write_text(json.dumps(data), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "exactly 14 sentinels"):
+                run_serial_compat.load_manifest(path)
 
     def test_only_observed_intentional_residue_is_allowlisted(self):
         entries = run_serial_compat.load_manifest(MANIFEST)["sentinels"]

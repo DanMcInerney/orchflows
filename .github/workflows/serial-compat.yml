@@ -38,16 +38,22 @@ jobs:
         id: exhaustive
         continue-on-error: true
         run: python tools/run_serial_compat.py --mode exhaustive --record .orch/exhaustive.json
-      - name: upload raw timing records
+      - name: upload selected raw timing record
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: serial-compat-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            .orch/selected.json
-            .orch/exhaustive.json
+          name: serial-compat-selected-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .orch/selected.json
+          if-no-files-found: error
+          include-hidden-files: true
+      - name: upload exhaustive raw timing record
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: serial-compat-exhaustive-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .orch/exhaustive.json
           if-no-files-found: error
           include-hidden-files: true
       - name: require green runs
-        if: steps.selected.outcome != 'success' || steps.exhaustive.outcome != 'success'
+        if: ${{ always() && (steps.selected.outcome != 'success' || steps.exhaustive.outcome != 'success') }}
         run: exit 1
