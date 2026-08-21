@@ -54,6 +54,10 @@
       "_react-dom-CEQGG5yC.js"
     ]
   },
+  "_executionRoutes-DvI61L8d.js": {
+    "file": "assets/executionRoutes-DvI61L8d.js",
+    "name": "executionRoutes"
+  },
   "_file-question-mark-CGOZidAX.js": {
     "file": "assets/file-question-mark-CGOZidAX.js",
     "name": "file-question-mark",
@@ -121,8 +125,8 @@
       "_createLucideIcon-Ct0G_dhG.js"
     ]
   },
-  "_shield-alert-R3JyXC-I.js": {
-    "file": "assets/shield-alert-R3JyXC-I.js",
+  "_shield-alert-GDcNi70R.js": {
+    "file": "assets/shield-alert-GDcNi70R.js",
     "name": "shield-alert",
     "imports": [
       "_createLucideIcon-Ct0G_dhG.js"
@@ -140,7 +144,7 @@
     ]
   },
   "index.html": {
-    "file": "assets/index-Cz_cE5v-.js",
+    "file": "assets/index-uSZtOCZZ.js",
     "name": "index",
     "src": "index.html",
     "isEntry": true,
@@ -150,7 +154,8 @@
       "_dist-CTB5QH-Y.js",
       "_lock-keyhole-dmpjtIT7.js",
       "_radio-nz6-ow8o.js",
-      "_model-Okx1th0z.js"
+      "_model-Okx1th0z.js",
+      "_executionRoutes-DvI61L8d.js"
     ],
     "dynamicImports": [
       "src/features/friction/FrictionView.tsx",
@@ -187,7 +192,7 @@
     ]
   },
   "src/features/inspector/Inspector.tsx": {
-    "file": "assets/Inspector-DP1BdVUf.js",
+    "file": "assets/Inspector-BTDHwc47.js",
     "name": "Inspector",
     "src": "src/features/inspector/Inspector.tsx",
     "isDynamicEntry": true,
@@ -202,39 +207,41 @@
       "_triangle-alert-BtUBX7nb.js"
     ],
     "css": [
-      "assets/Inspector-DyQkVbdg.css"
+      "assets/Inspector-CIKSIVsC.css"
     ]
   },
   "src/features/now/NowView.tsx": {
-    "file": "assets/NowView-DJVop1QF.js",
+    "file": "assets/NowView-Cp2MCVY8.js",
     "name": "NowView",
     "src": "src/features/now/NowView.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_createLucideIcon-Ct0G_dhG.js",
-      "_shield-alert-R3JyXC-I.js",
+      "_arrow-right-BXGZRLAW.js",
       "_clock-3-CeJ2z50N.js",
       "_git-branch-Oc79H51m.js",
+      "_shield-alert-GDcNi70R.js",
       "_radio-nz6-ow8o.js",
       "_triangle-alert-BtUBX7nb.js",
-      "_esm-BRcUNsYe.js"
+      "_executionRoutes-DvI61L8d.js"
     ],
     "css": [
-      "assets/NowView-DMY3zRbc.css"
+      "assets/NowView-BXK3A4rL.css"
     ]
   },
   "src/features/run-map/RunMapView.tsx": {
-    "file": "assets/RunMapView-BWRIgdOc.js",
+    "file": "assets/RunMapView-lvsregqC.js",
     "name": "RunMapView",
     "src": "src/features/run-map/RunMapView.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_createLucideIcon-Ct0G_dhG.js",
-      "_shield-alert-R3JyXC-I.js",
       "_git-branch-Oc79H51m.js",
       "_lock-keyhole-dmpjtIT7.js",
+      "_shield-alert-GDcNi70R.js",
       "_search-BwD1lxRJ.js",
       "_triangle-alert-BtUBX7nb.js",
+      "_executionRoutes-DvI61L8d.js",
       "_esm-BRcUNsYe.js"
     ],
     "css": [
@@ -242,7 +249,7 @@
     ]
   },
   "src/features/session-graph/SessionGraphView.tsx": {
-    "file": "assets/SessionGraphView-B7EY1Ocf.js",
+    "file": "assets/SessionGraphView-60IgVP7Q.js",
     "name": "SessionGraphView",
     "src": "src/features/session-graph/SessionGraphView.tsx",
     "isDynamicEntry": true,
@@ -262,7 +269,7 @@
     ]
   },
   "src/features/sessions/SessionsView.tsx": {
-    "file": "assets/SessionsView-CLkbIS2d.js",
+    "file": "assets/SessionsView-Cnq5jRHv.js",
     "name": "SessionsView",
     "src": "src/features/sessions/SessionsView.tsx",
     "isDynamicEntry": true,
@@ -280,7 +287,7 @@
     ]
   },
   "src/features/workflows/view/WorkflowCatalogView.tsx": {
-    "file": "assets/WorkflowCatalogView-0LuJa8T8.js",
+    "file": "assets/WorkflowCatalogView-C83_0z8D.js",
     "name": "WorkflowCatalogView",
     "src": "src/features/workflows/view/WorkflowCatalogView.tsx",
     "isDynamicEntry": true,
@@ -295,7 +302,7 @@
     ]
   },
   "src/features/workflows/view/WorkflowDetailView.tsx": {
-    "file": "assets/WorkflowDetailView-D86bhNAs.js",
+    "file": "assets/WorkflowDetailView-BSuSXxIv.js",
     "name": "WorkflowDetailView",
     "src": "src/features/workflows/view/WorkflowDetailView.tsx",
     "isDynamicEntry": true,
@@ -314,7 +321,7 @@
     ]
   },
   "src/features/workflows/view/WorkflowSourceView.tsx": {
-    "file": "assets/WorkflowSourceView-BAwDLM_0.js",
+    "file": "assets/WorkflowSourceView-B00AwARj.js",
     "name": "WorkflowSourceView",
     "src": "src/features/workflows/view/WorkflowSourceView.tsx",
     "isDynamicEntry": true,
