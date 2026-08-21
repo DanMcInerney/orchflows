@@ -362,7 +362,7 @@ test("experience drill-down stays actionable and bounded in a real browser", asy
   await expect(nowRun).toBeVisible();
   const objectiveHeights = await page.locator(".now-objective-summary").evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height));
   expect(Math.max(...objectiveHeights)).toBeLessThanOrEqual(72);
-  await expect(page.getByText("Full objective")).toBeVisible();
+  await expect(nowRun.getByText("Full objective")).toBeVisible();
   await nowRun.locator(".now-run-card__open").click();
   await expect(page).toHaveURL(/\/runs\/[^/?]+$/);
   await expect(page.locator('.run-map[data-view="run-map"]')).toBeVisible();
