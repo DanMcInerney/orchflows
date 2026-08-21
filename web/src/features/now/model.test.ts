@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { nowFixture } from "./fixtures";
-import { dependencyLayers, groupState, projectFleet, projectGroups } from "./model";
+import { dependencyLayers, groupState, projectFleet, projectGroups, projectWork } from "./model";
 
 describe("Now fleet projection", () => {
   it("assigns each run exactly once and orders attention, active, completed", () => {
@@ -38,5 +38,18 @@ describe("Now fleet projection", () => {
     run.tickets[1].depends_on = ["missing-parent"];
     expect(dependencyLayers(run.tickets).flat()).toContain(run.tickets[1].id);
     expect(projectGroups(run.tickets).some((group) => group.state === "unknown")).toBe(true);
+  });
+
+  it("names exact current and next tickets without guessing past dependencies", () => {
+    const active = projectWork(nowFixture("mixed-live").runs[1].tickets);
+    expect(active.current.map((ticket) => ticket.id)).toEqual(["02-now", "03-workflows"]);
+    expect(active.next.map((ticket) => ticket.id)).toEqual(["04-sessions"]);
+
+    const attention = projectWork(nowFixture("needs-attention").runs[0].tickets);
+    expect(attention.current.map((ticket) => ticket.id)).toEqual(["01-repair"]);
+    expect(attention.next).toEqual([]);
+
+    const unknown = projectWork(nowFixture("unreadable-data").runs[0].tickets);
+    expect(unknown.unknown.map((ticket) => ticket.id)).toEqual(["01-repair"]);
   });
 });

@@ -68,7 +68,26 @@ export interface FleetRun extends NowRun {
   counts: Record<string, number>;
 }
 
+export interface NowWork {
+  current: NowTicket[];
+  next: NowTicket[];
+  unknown: NowTicket[];
+}
+
 const ATTENTION = new Set(["failed", "blocked", "stalled", "limited", "suspended"]);
+
+export function projectWork(tickets: NowTicket[]): NowWork {
+  const unknown = tickets.filter((ticket) => ticket.unreadable || ticket.readiness.state === "unknown");
+  const known = tickets.filter((ticket) => !unknown.includes(ticket));
+  return {
+    current: known.filter((ticket) => ATTENTION.has(ticket.status)
+      || ticket.status === "claimed"
+      || ticket.readiness.state === "attention"
+      || ticket.readiness.state === "running"),
+    next: known.filter((ticket) => ticket.status === "ready" || ticket.readiness.state === "ready"),
+    unknown,
+  };
+}
 
 function countsFor(tickets: NowTicket[]): Record<string, number> {
   const counts: Record<string, number> = {};
@@ -192,4 +211,4 @@ export const bandLabel: Record<NowBand, string> = {
   completed: "Recently completed",
 };
 
-export const model = { dependencyLayers, groupState, projectGroups, projectFleet, bandLabel };
+export const model = { dependencyLayers, groupState, projectGroups, projectFleet, projectWork, bandLabel };
