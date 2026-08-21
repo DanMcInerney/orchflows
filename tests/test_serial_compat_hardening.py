@@ -140,6 +140,16 @@ class TestManifestHardening(unittest.TestCase):
 
 
 class TestEvidenceGateHardening(unittest.TestCase):
+    def _write_current_pairs(self, root, pairs):
+        current = root / "current"
+        for index, current_pair in enumerate(pairs, 1):
+            directory = current / ("host-%d" % index)
+            directory.mkdir(parents=True)
+            directory.joinpath("pair.json").write_text(
+                json.dumps(current_pair), encoding="utf-8"
+            )
+        return current
+
     def test_nonfinite_or_wrong_sentinel_timing_records_fail_closed(self):
         bad = observation("selected")
         bad["wall_time_seconds"] = math.nan
@@ -161,6 +171,17 @@ class TestEvidenceGateHardening(unittest.TestCase):
         forged["exhaustive"] = observation("exhaustive", ok=False)
         evaluated = serial_pair.evaluate_pairs([forged] * 20)
         self.assertFalse(evaluated["promotion_ready"])
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            previous = root / "gate.json"
+            previous.write_text(json.dumps(duplicate), encoding="utf-8")
+            current = self._write_current_pairs(
+                root, [pair("new-1", 19), pair("new-2", 20)]
+            )
+            accumulated = serial_gate.accumulate(previous, current)
+        self.assertEqual(0, accumulated["clean_streak"])
+        self.assertFalse(accumulated["promotion_ready"])
+        self.assertTrue(accumulated["source_errors"])
 
     def test_discovery_or_manifest_change_restarts_the_streak(self):
         initial = [pair("p-%02d" % index, index, manifest="one") for index in range(1, 20)]
@@ -194,6 +215,58 @@ class TestEvidenceGateHardening(unittest.TestCase):
             self.assertFalse(failed["promotion_ready"])
             self.assertTrue(failed["source_errors"])
 
+        valid_history = serial_pair.evaluate_pairs([
+            pair("old-%02d" % index, index) for index in range(1, 19)
+        ])
+        duplicate_history = serial_pair.evaluate_pairs([pair("duplicate")] * 2)
+        stale_history = serial_pair.evaluate_pairs([
+            pair("stale-%02d" % index, index, manifest="old-contract")
+            for index in range(1, 19)
+        ])
+        corrupt_promoted = dict(valid_history, promotion_ready=True, pairs="corrupt")
+        cases = {
+            "wrong-top-level": (json.dumps([]), valid_history, False),
+            "malformed-schema": (
+                json.dumps(dict(valid_history, schema="unknown")), valid_history, False
+            ),
+            "truncated": ('{"schema":', valid_history, False),
+            "duplicate": (json.dumps(duplicate_history), valid_history, False),
+            "partial-host": (json.dumps(valid_history), valid_history, True),
+            "stale-contract": (json.dumps(stale_history), stale_history, False),
+            "corrupt-promoted": (
+                json.dumps(corrupt_promoted), corrupt_promoted, False
+            ),
+        }
+        for name, (history_text, history, partial_host) in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                previous = root / "gate.json"
+                previous.write_text(history_text, encoding="utf-8")
+                current_pairs = [
+                    pair("new-1", 19, manifest="new-contract"),
+                    pair("new-2", 20, manifest="new-contract"),
+                ]
+                if partial_host:
+                    current_pairs.pop()
+                current = self._write_current_pairs(root, current_pairs)
+
+                gate = serial_gate.accumulate(previous, current)
+
+            self.assertFalse(gate["promotion_ready"], name)
+            self.assertEqual(2 if name == "stale-contract" else 0,
+                             gate["clean_streak"], name)
+            self.assertTrue(gate["resets"], name)
+            if name == "stale-contract":
+                self.assertIn(
+                    "contract-identity-change",
+                    [reset["reason"] for reset in gate["resets"]],
+                )
+            else:
+                self.assertTrue(gate["source_errors"], name)
+                self.assertTrue(any(not item["clean"] for item in gate["pairs"]), name)
+            if history.get("promotion_ready") is True:
+                self.assertTrue(gate["rollback_required"], name)
+
     def test_a_partial_host_run_records_a_durable_reset(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -206,7 +279,6 @@ class TestEvidenceGateHardening(unittest.TestCase):
         self.assertFalse(gate["promotion_ready"])
         self.assertTrue(gate["source_errors"])
         self.assertTrue(any(not item["clean"] for item in gate["pairs"]))
-
 
 if __name__ == "__main__":
     unittest.main()
