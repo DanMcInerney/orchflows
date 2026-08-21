@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2350,
+  "count": 2357,
   "identities": [
    "test_canary_host.BaselinePinOwnerTest.test_both_modules_read_one_owner_for_the_pin",
    "test_canary_host.CanaryHostVerdictTest.test_a_run_that_resolved_no_baseline_fails",
@@ -386,7 +386,14 @@
    "test_scope_closure.MutationPlanSchemaTests.test_v1_git_ticket_requires_an_explicit_plan",
    "test_scope_closure.RepositoryScopeManifestTests.test_closed_manifest_contains_only_the_five_evidence_backed_edges",
    "test_scope_closure.RepositoryScopeManifestTests.test_code_and_design_workspace_cells_name_plan_graph_and_direct_only_mode",
+   "test_serial_compat.TestBoundaryRestoration.test_a_live_thread_is_detected_and_cannot_be_classified_as_restorable",
+   "test_serial_compat.TestBoundaryRestoration.test_an_unclassified_boundary_change_fails_the_lane",
+   "test_serial_compat.TestBoundaryRestoration.test_selected_module_boundaries_restore_classified_process_state",
+   "test_serial_compat.TestBoundaryRestoration.test_sharded_guard_restores_the_complete_environment",
+   "test_serial_compat.TestBoundaryRestoration.test_warning_filters_are_restored_when_a_module_leaves_them_dirty",
+   "test_serial_compat.TestMutationOwnerManifest.test_manifest_classifies_every_detected_mutation_owner",
    "test_serial_compat.TestSelectedDiscovery.test_a_missing_selected_identity_is_refused_before_any_case_runs",
+   "test_serial_compat.TestSelectedDiscovery.test_discovery_manifest_drift_is_refused_before_any_case_runs",
    "test_serial_compat.TestSelectedDiscovery.test_every_selected_identity_exists_exactly_once",
    "test_serial_compat.TestSelectedDiscovery.test_manifest_is_the_exact_discovered_identity_multiset",
    "test_serial_compat.TestSelectedDiscovery.test_selected_cases_execute_once_in_the_calling_interpreter",
@@ -2353,12 +2360,2890 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "d411acac8a70e15d43c8b7ff8e266dfa89f7a9a45cc1b83bf7bb70472696329e"
+  "sha256": "cb52c1dd4ae5d199fca436a450602650451e7d3853f9bc3ac7f5b8b5e5546314"
  },
- "mutation_owners": [],
+ "mutation_owners": [
+  {
+   "module": "<suite>",
+   "owner": "discovery-baseline",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "cwd",
+    "environment",
+    "event-loop",
+    "import-path",
+    "logging",
+    "module-cache",
+    "monkeypatch",
+    "threads",
+    "warnings"
+   ]
+  },
+  {
+   "module": "tests.__init__",
+   "owner": "ensure_temporary_sink",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests._windows_semantics",
+   "owner": "_refuse",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests._windows_semantics",
+   "owner": "install",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.baseline_pin",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.baseline_pin",
+   "owner": "_grade",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_benchmaker_cases.shared",
+   "owner": "ticket_law",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_canary_host",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_carriage_cases._support",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_cell_linter_cases.pack_cells",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_commit_authority",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_commit_authority",
+   "owner": "AdmissionAuthorityTest.test_packet_uses_stored_authority_without_synthesizing_a_mode",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_contracts_cases.support",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck",
+   "owner": "RuntimeInterpreterBoundaryTests.test_oracle_subprocesses_inherit_the_caller_environment",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck",
+   "owner": "RuntimeInterpreterBoundaryTests.test_oracle_subprocesses_inherit_the_caller_environment.run_in_caller",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck",
+   "owner": "_graded_with",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.confinement",
+   "owner": "SymlinkCapabilityGuardTest._incapable",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.decidability",
+   "owner": "CutTimeDecidabilityTest._class",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.decidability",
+   "owner": "GitNoHistoryDispositionTest.test_every_git_span_is_executed_rather_than_excused_for_its_head",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.decidability",
+   "owner": "HeadHalfNonReadingTest._class",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.decidability",
+   "owner": "HeadHalfNonReadingTest.test_the_two_halves_refuse_the_same_pair_of_non_readings",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.decidability",
+   "owner": "NodeIdOracleGapTest._report",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.decidability",
+   "owner": "UnreadHalfTest.test_a_baseline_reading_that_decided_nothing_says_so",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.decidability",
+   "owner": "UnreadHalfTest.test_a_head_reading_that_decided_nothing_says_so_too",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.decidability",
+   "owner": "UnreadHalfTest.test_a_library_with_no_packs_grades_family_6_against_nothing_and_says_so",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.decidability",
+   "owner": "UnreadHalfTest.test_cut_time_is_a_stated_ladder_and_not_an_unread_half",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.evaluation",
+   "owner": "ExecutionCacheTest.test_a_command_extracted_twice_for_one_tree_runs_once",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.evaluation",
+   "owner": "ExecutionCacheTest.test_the_other_tree_is_its_own_execution",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.evaluation",
+   "owner": "ExecutionCacheTest.test_the_status_read_is_paid_once_per_execution_and_never_on_a_hit",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.evaluation",
+   "owner": "ScratchTreeHistoryTest.test_the_trees_own_top_level_is_the_tree_not_the_enclosing_checkout",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.extraction",
+   "owner": "BareCommandNounTest.test_the_mention_reaches_no_executor",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.extraction",
+   "owner": "ParserReuseTest.test_lower_policy_hooks_keep_their_portable_codes",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.layout",
+   "owner": "RootGateLayoutTest.test_command_rejects_the_independent_roots_and_partial_gate",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.scope",
+   "owner": "SearchSpanMatcherTest.test_no_process_is_started_for_a_search_span",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.scratch",
+   "owner": "BytecodeAdvisoryTest._classes",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.scratch",
+   "owner": "ScratchCleanupReportingTest._main_naming_its_scratch_root",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.scratch",
+   "owner": "ScratchCleanupReportingTest.setUp",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.scratch",
+   "owner": "ScratchCleanupReportingTest.test_a_failing_removal_is_reported",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.scratch",
+   "owner": "ScratchCleanupReportingTest.test_a_failing_removal_stays_out_of_the_graded_report",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.state",
+   "owner": "TestCutcheckResolvesSink.launched_from",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd",
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.state",
+   "owner": "TestCutcheckResolvesSink.test_a_run_nowhere_is_still_the_named_absence",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_cutcheck_cases.state",
+   "owner": "TestCutcheckResolvesSink.test_a_sink_resident_run_is_graded_end_to_end",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_doclint",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_doclint",
+   "owner": "FixtureRootTest.test_a_target_the_path_layer_refuses_is_reported_missing_not_skipped",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.cli",
+   "owner": "TestMainWritesEntry.test_a_worktree_and_its_main_checkout_append_to_one_stream",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.cli",
+   "owner": "TestMainWritesEntry.test_git_lookup_missing_executable_still_appends_entry",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.cli",
+   "owner": "TestMainWritesEntry.test_git_lookup_nonzero_exit_yields_none_git_rev",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.cli",
+   "owner": "TestMainWritesEntry.test_git_lookup_timeout_still_appends_entry",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.common",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.common",
+   "owner": "_IsolatedRepoTestCase.setUp",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd",
+    "environment",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.refusal",
+   "owner": "TestFrictionNeverFails.test_a_project_resolver_that_raises_costs_the_fields_not_the_entry",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.refusal",
+   "owner": "TestFrictionNeverFails.test_a_sink_root_whose_parent_is_a_regular_file",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.refusal",
+   "owner": "TestFrictionNeverFails.test_a_writer_identity_that_raises_costs_the_project_not_the_entry",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.refusal",
+   "owner": "TestMainInternalFailuresNameThemselvesAndExitZero.test_a_resolver_that_cannot_be_imported_is_named",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.refusal",
+   "owner": "TestMainMalformedArgvIsRefused.test_the_process_exit_code_carries_the_refusal",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.refusal",
+   "owner": "TestRemovedCategoryOptionIsRefused.test_the_process_exit_code_carries_the_refusal",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.storage",
+   "owner": "TestTargetPath._chdir",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.storage",
+   "owner": "TestTargetPath.setUp",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.storage",
+   "owner": "TestTargetPath.test_a_worktree_a_main_checkout_and_no_repository_agree",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.storage",
+   "owner": "TestTargetPath.test_the_override_is_honoured_after_the_module_was_imported",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.storage",
+   "owner": "_ProvenanceTestCase.chdir",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.storage_lock",
+   "owner": "FrictionAppendLockTest.test_a_held_lock_serialises_the_append_instead_of_losing_the_line",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.storage_lock",
+   "owner": "FrictionAppendLockTest.test_an_unacquirable_lock_still_writes_and_never_raises",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.storage_lock",
+   "owner": "FrictionAppendLockTest.test_concurrent_writers_lose_no_line",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.storage_lock",
+   "owner": "FrictionAppendLockTest.test_the_unacquired_path_returns_inside_a_budget_under_one_second",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_install_support_packages",
+   "owner": "ScriptSupportDistributionTest.test_user_plan_uses_discovered_inventory_at_bin_root",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer",
+   "owner": "TestFrontendDistribution.test_failed_swap_and_failed_restore_keep_the_prior_backup",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer",
+   "owner": "TestFrontendDistribution.test_frontend_uninstall_dry_run_is_one_consistent_preview",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer",
+   "owner": "TestFrontendDistribution.test_uninstall_removes_an_unchanged_receipted_distribution",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer",
+   "owner": "TestFrontendDistribution.test_user_plan_carries_the_exact_distribution_and_project_borrows_it",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.application.configuration",
+   "owner": "TestClaudeConfigDir.test_blank_claude_config_dir_falls_back_to_home",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.application.configuration",
+   "owner": "TestCodexHome.test_blank_codex_home_falls_back_to_home",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.application.configuration",
+   "owner": "TestCodexHome.test_hooks_warning_reads_relocated_codex_home",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.application.configuration",
+   "owner": "TestCodexHooksPreflight.test_no_toml_check_warning_when_this_interpreter_has_tomllib",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.application.configuration",
+   "owner": "TestCodexHooksPreflight.test_user_plan_says_when_the_codex_config_could_not_be_toml_checked",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.application.configuration",
+   "owner": "TestCodexHooksPreflight.test_user_plan_surfaces_hooks_warnings",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.application.partial_apply",
+   "owner": "TestPartialApplyAfterRmtree.test_crash_mid_copy_leaves_lib_home_partially_repopulated_and_no_receipt",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.managed_text.claude_import",
+   "owner": "TestClaudeAlwaysOnImport.test_apply_migrates_legacy_inline_block_in_claude_md",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.managed_text.claude_import",
+   "owner": "TestClaudeAlwaysOnImport.test_reapply_does_not_duplicate_import_line",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.managed_text.claude_import",
+   "owner": "TestClaudeAlwaysOnImport.test_user_plan_renders_host_block_file_and_claude_import",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.managed_text.host_block",
+   "owner": "TestHostBlockRendering.test_resolved_python_interpreter_refuses_a_bare_name",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.day_zero",
+   "owner": "TestDayZeroBootstrap.bootstrap",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.day_zero",
+   "owner": "TestDayZeroBootstrap.project_plan",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.day_zero",
+   "owner": "TestDayZeroBootstrap.test_a_bootstrap_uninstall_removes_no_day_zero_document_and_says_which_it_wrote",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.day_zero",
+   "owner": "TestDayZeroBootstrap.test_a_user_install_bootstraps_no_day_zero_document",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.host_detection",
+   "owner": "DryRunOracleTest._dry_run",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.host_detection",
+   "owner": "DryRunOracleTest.test_dry_run_writes_nothing",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.host_detection",
+   "owner": "DryRunOracleTest.test_the_printed_plan_is_non_empty_when_a_host_is_enabled",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.host_detection",
+   "owner": "TestHostAutoDetection.test_dry_run_prints_what_it_detected",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.host_detection",
+   "owner": "TestHostAutoDetection.test_each_cross_platform_cli_candidate_enables_its_host",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.host_detection",
+   "owner": "TestHostAutoDetection.test_neither_host_present_dry_run_returns_success_with_no_writes",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.host_detection",
+   "owner": "TestHostAutoDetection.test_neither_host_present_returns_success_with_no_writes",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.host_detection",
+   "owner": "TestHostAutoDetection.test_only_claude_present_builds_claude_half_only",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.host_detection",
+   "owner": "TestHostAutoDetection.test_only_codex_present_builds_codex_half_only",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.host_detection",
+   "owner": "TestHostAutoDetection.test_protected_stale_codex_directory_is_ignored_without_codex_cli",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.private_runtime",
+   "owner": "RuntimeVenvTests.test_dependency_install_ignores_project_and_pip_location_overrides",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.private_runtime",
+   "owner": "RuntimeVenvTests.test_dry_run_has_no_runtime_or_filesystem_effects",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.private_runtime",
+   "owner": "RuntimeVenvTests.test_dry_run_reports_create_reuse_and_repair",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.private_runtime",
+   "owner": "RuntimeVenvTests.test_failed_first_install_leaves_runtime_discoverable_to_uninstall",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.private_runtime",
+   "owner": "RuntimeVenvTests.test_failed_repair_preserves_the_previous_runtime",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.private_runtime",
+   "owner": "RuntimeVenvTests.test_project_install_does_not_create_a_runtime",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.private_runtime",
+   "owner": "RuntimeVenvTests.test_project_install_refuses_before_writing_without_a_user_runtime",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.private_runtime",
+   "owner": "RuntimeVenvTests.test_rendered_friction_command_executes_from_a_spaced_home",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.private_runtime",
+   "owner": "RuntimeVenvTests.test_runtime_build_enforces_hashes_from_the_complete_lock",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.private_runtime",
+   "owner": "RuntimeVenvTests.test_runtime_health_requires_exact_server_dependency_versions",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.private_runtime",
+   "owner": "RuntimeVenvTests.test_unowned_runtime_is_refused_and_preserved",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.private_runtime",
+   "owner": "RuntimeVenvTests.test_update_and_uninstall_follow_the_private_runtime_policy",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.private_runtime",
+   "owner": "RuntimeVenvTests.test_user_install_repairs_an_unhealthy_private_runtime",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.private_runtime",
+   "owner": "RuntimeVenvTests.test_user_install_reuses_healthy_private_runtime",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.private_runtime",
+   "owner": "RuntimeVenvTests.test_user_install_uses_private_runtime_when_project_venv_is_active",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "module-cache",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.runtime",
+   "owner": "TestClaudeAdapterSet._plan",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.runtime",
+   "owner": "TestClaudeAdapterSet.test_a_project_plan_ignores_the_adapter_set",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.runtime",
+   "owner": "TestClaudeAdapterSet.test_the_cli_defaults_to_all_and_carries_four_into_the_plan._dry_run",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.runtime",
+   "owner": "TestClaudeAdapterSet.test_the_receipt_records_only_the_minted_adapters",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.runtime",
+   "owner": "TestRuntimeDirsSeedTheSink.setUp",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.runtime",
+   "owner": "TestRuntimeDirsSeedTheSink.test_a_real_plan_writes_no_project_runtime_state",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.runtime",
+   "owner": "TestRuntimeDirsSeedTheSink.test_both_scopes_seed_the_sink_and_neither_seeds_project_state",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.runtime",
+   "owner": "TestRuntimeDirsSeedTheSink.test_no_planned_line_in_either_scope_names_a_dot_orch_friction_path",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.runtime",
+   "owner": "TestRuntimeDirsSeedTheSink.test_the_bin_dir_is_unchanged_in_shape",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.runtime",
+   "owner": "TestRuntimeDirsSeedTheSink.test_the_override_redirects_what_an_install_seeds",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.runtime",
+   "owner": "TestRuntimeDirsSeedTheSink.test_the_sink_it_seeds_is_the_one_the_scripts_resolve",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "import-path",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.scoped_hosts",
+   "owner": "TestScopedHostConfiguration.test_by_name_index_is_host_agnostic",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.scoped_hosts",
+   "owner": "TestScopedHostConfiguration.test_codex_role_agent_names_follow_spawn_identifier_grammar",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.scoped_hosts",
+   "owner": "TestScopedHostConfiguration.test_project_apply_never_touches_legacy_fat_install_claude_files",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.scoped_hosts",
+   "owner": "TestScopedHostConfiguration.test_project_apply_writes_only_blocks_and_receipt",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.scoped_hosts",
+   "owner": "TestScopedHostConfiguration.test_project_plan_writes_only_instruction_blocks_and_minimal_receipt",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.scoped_hosts",
+   "owner": "TestScopedHostConfiguration.test_template_surfaces_cover_every_entry_value",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.scoped_hosts",
+   "owner": "TestScopedHostConfiguration.test_user_plan_merges_limits_and_writes_native_role_agents",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.scoped_hosts",
+   "owner": "TestScopedHostConfiguration.test_user_plan_targets_user_config_and_agent_directories",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.scoped_hosts",
+   "owner": "TestScopedHostConfiguration.test_user_plan_writes_claude_adapters_and_four_codex_skill_stubs",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.scoped_hosts",
+   "owner": "TestScopedHostConfiguration.test_user_plan_writes_flat_by_name_index_for_every_package",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.script_inventory",
+   "owner": "TestScriptNames.test_the_installed_writers_resolve_their_sink_from_the_flat_layout",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.receipt.source_commit",
+   "owner": "TestSourceCommit.test_main_prints_drift_on_second_install_with_moved_head",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.receipt.source_commit",
+   "owner": "TestSourceCommit.test_main_warns_when_the_installed_receipt_names_no_source_commit",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.receipt.source_commit",
+   "owner": "TestSourceCommit.test_receipt_carries_resolved_source_commit",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.receipt.source_commit",
+   "owner": "TestUnreadableReceipt.test_install_refuses_rather_than_overwriting_a_corrupt_receipt",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.support",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.support",
+   "owner": "mock_host_clis",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.support",
+   "owner": "relocated_user_install",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.support",
+   "owner": "relocated_user_uninstall",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.support",
+   "owner": "setUpModule",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.uninstall.conservative",
+   "owner": "TestConservativeUninstall.test_modified_and_unverified_skills_require_manual_cleanup",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.uninstall.conservative",
+   "owner": "TestConservativeUninstall.test_uninstall_auto_removes_unchanged_codex_skill_stub",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.uninstall.conservative",
+   "owner": "TestConservativeUninstall.test_uninstall_removes_only_unchanged_skill_entrypoints",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_hosts",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_installer_managed",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_installer_planning",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_installer_receipt",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_installer_runtime",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_installer_shared",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_installer_wrappers",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_isolate",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_isolate",
+   "owner": "IsolateFixture.setUp",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_isolate",
+   "owner": "IsolateTest.test_an_interpreter_without_the_tar_filter_names_the_downgrade",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_isolate",
+   "owner": "IsolateTest.test_the_silent_case_is_skipped_where_the_interpreter_has_no_filter",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_isolate",
+   "owner": "TestIsolateCopiesFromSink.test_the_snapshot_keeps_the_sinks_own_layout",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.loop_cases",
+   "owner": "TestBuiltCommand._capture_command",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.loop_cases",
+   "owner": "TestRunScenario.test_timeout_returns_structured_failure",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.profile_cases",
+   "owner": "TestClaudeLiveProfiles.test_timeout_returns_structured_failure",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.profile_cases",
+   "owner": "TestCodexLiveProfiles._capture_surface_command",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.profile_cases",
+   "owner": "TestCodexLiveProfiles.test_exception_during_surface_run_still_cleans_up_temp_agent_file",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.profile_cases",
+   "owner": "TestCodexLiveProfiles.test_probe_sentinel_injection_does_not_require_tomllib",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.profile_cases",
+   "owner": "TestCodexLiveProfiles.test_timeout_returns_structured_surface_failure",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.routing_run_cases",
+   "owner": "TestRoutingBenchRun._run",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.routing_run_cases",
+   "owner": "TestRoutingBenchRun._run_with_budget",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.routing_run_cases",
+   "owner": "TestRoutingBenchRun.test_a_failing_install_is_reported_rather_than_measured",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.routing_run_cases",
+   "owner": "TestRoutingBenchRun.test_a_timed_out_case_is_recorded_as_an_error_not_a_misroute",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.routing_run_cases",
+   "owner": "TestRoutingBenchRun.test_case_requires_role_and_exact_skill",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.routing_run_cases",
+   "owner": "TestRoutingBenchRun.test_the_install_env_overrides_every_root_an_install_could_write",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.routing_summary_cases",
+   "owner": "TestRoutingBenchMain._main",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.sweep_cases",
+   "owner": "TestLogDirIsInTheSink.test_main_passes_the_sink_default_when_no_log_dir_is_named",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.sweep_cases",
+   "owner": "TestLogDirIsInTheSink.test_resolving_the_default_creates_nothing",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.sweep_cases",
+   "owner": "TestLogDirIsInTheSink.test_the_default_log_dir_resolves_under_the_sink",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.sweep_cases",
+   "owner": "TestMainGuard.test_main_requires_explicit_invocation_argv",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.sweep_cases",
+   "owner": "TestRunLiveSweepCleanupPaths.setUp",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.sweep_cases",
+   "owner": "TestRunLiveSweepCleanupPaths.test_failure_path_cleans_up_tagged_friction_and_log_file",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.sweep_cases",
+   "owner": "TestRunLiveSweepCleanupPaths.test_run_id_tags_the_friction_entry_it_writes",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.sweep_cases",
+   "owner": "TestRunLiveSweepCleanupPaths.test_success_path_cleans_up_and_leaves_friction_untouched",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_live_harnesses_cases.sweep_cases",
+   "owner": "TestRunLiveSweepCleanupPaths.test_timeout_path_cleans_up_tagged_friction_and_log_file",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_loop_pending_claim",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_loop_pending_claim",
+   "owner": "PendingClaimAtomicityTest.test_failed_final_write_never_exposes_ready_bytes",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_loop_pending_claim",
+   "owner": "PendingClaimAtomicityTest.test_two_process_claims_have_one_final_owner",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_migrate_state_cases.common",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_migrate_state_cases.common",
+   "owner": "MigrationCase.setUp",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_migrate_state_cases.common",
+   "owner": "MigrationCase.setUp.restore",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_migrate_state_cases.plan",
+   "owner": "TestMigrationPlan.test_a_sink_inside_a_migrating_stream_is_refused",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_migrate_state_cases.plan",
+   "owner": "TestMigrationPlan.test_a_source_that_merely_holds_the_sink_still_migrates",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_return_size",
+   "owner": "ActualResultGradeTest.setUp",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_return_size",
+   "owner": "ActualResultGradeTest.test_unbounded_result_does_not_read_an_unrelated_sibling",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_run_tests",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_run_tests",
+   "owner": "TestChildEnv.test_every_other_variable_survives",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_run_tests",
+   "owner": "TestFailureOutputSurvivesTheConsole.test_the_report_names_the_module_and_carries_the_message",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_run_tests",
+   "owner": "TestGuardedSeams",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd",
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_run_tests",
+   "owner": "TestGuardedSeams.test_an_arbitrary_live_import_path_is_still_rejected",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_run_tests",
+   "owner": "TestGuardedSeams.test_an_expired_non_scratch_import_path_is_still_rejected",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_run_tests",
+   "owner": "TestGuardedSeams.test_an_expired_scratch_import_path_is_not_live_residue",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_run_tests",
+   "owner": "TestGuardedSeams.test_an_expired_scratch_path_matches_a_resolved_temp_alias",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_run_tests",
+   "owner": "TestSchedule.test_installer_cases_are_exactly_once_across_process_visible_shards",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_run_tests",
+   "owner": "run_fixture",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_scope_closure",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_scope_closure",
+   "owner": "MutationPlanSchemaTests.test_external_manifest_symlink_and_failed_immutable_read_fail_closed",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_search_plan",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_serial_compat",
+   "owner": "TestBoundaryRestoration.test_a_live_thread_is_detected_and_cannot_be_classified_as_restorable",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_serial_compat",
+   "owner": "TestBoundaryRestoration.test_an_unclassified_boundary_change_fails_the_lane",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_serial_compat",
+   "owner": "TestBoundaryRestoration.test_selected_module_boundaries_restore_classified_process_state",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd",
+    "environment",
+    "import-path",
+    "logging",
+    "warnings"
+   ]
+  },
+  {
+   "module": "tests.test_serial_compat",
+   "owner": "TestBoundaryRestoration.test_sharded_guard_restores_the_complete_environment",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_serial_compat",
+   "owner": "TestBoundaryRestoration.test_warning_filters_are_restored_when_a_module_leaves_them_dirty",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "warnings"
+   ]
+  },
+  {
+   "module": "tests.test_source_sizes",
+   "owner": "SourceSizeCheckerTest.test_git_reader_is_nul_safe_and_keeps_hidden_paths",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_state_root",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_state_root_cases.environment",
+   "owner": "TestNoTestReachesTheRealSink.test_a_subprocess_launched_by_a_test_inherits_the_redirect",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_state_root_cases.environment",
+   "owner": "TestNoTestReachesTheRealSink.test_discovery_of_this_suite_arms_the_guard_without_the_package_init",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_state_root_cases.environment",
+   "owner": "TestNoTestReachesTheRealSink.test_the_redirect_is_in_force_in_this_process",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_state_root_cases.environment",
+   "owner": "TestOneResolverOwnsBothFacts.test_all_three_writers_resolve_to_the_one_sink",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_state_root_cases.environment",
+   "owner": "TestOneResolverOwnsBothFacts.test_workspace_reads_its_ticket_out_of_the_sink",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd",
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_state_root_cases.environment",
+   "owner": "TestTheOverrideAndTheDefault.test_a_set_value_wins_and_a_tilde_is_expanded",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_state_root_cases.environment",
+   "owner": "TestTheOverrideAndTheDefault.test_set_but_empty_reads_as_unset",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_state_root_cases.environment",
+   "owner": "TestTheOverrideAndTheDefault.test_the_four_subroots_hang_off_the_one_root",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_state_root_cases.environment",
+   "owner": "TestTheOverrideAndTheDefault.test_the_variable_is_read_at_call_time_not_at_import_time",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_state_root_cases.environment",
+   "owner": "TestTheOverrideAndTheDefault.test_unset_resolves_under_the_home_directory_without_writing",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_state_root_cases.repository",
+   "owner": "TestFindRepoRootNamesTheProject.test_a_none_project_does_not_stop_the_sink_from_resolving",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_state_root_cases.repository",
+   "owner": "TestFindRepoRootNamesTheProject.test_a_pointer_that_cannot_be_read_names_the_worktree_too",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_state_root_cases.support",
+   "owner": "run_script",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_static_tree_invariants_cases._support",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_suite_check",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_suite_check_cases.matrix",
+   "owner": "TestPreflightMatrix._workflow",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_suite_check_cases.matrix",
+   "owner": "TestPreflightMatrix.test_main_refuses_before_running_anything",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_suite_check_cases.matrix",
+   "owner": "TestPreflightOsLine._line",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_suite_check_cases.matrix",
+   "owner": "TestPreflightWhich._path",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_suite_check_cases.snapshot",
+   "owner": "TestHashAndSnapshot.test_collect_snapshot_watches_relocated_host_config_dirs",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_suite_check_cases.snapshot",
+   "owner": "TestHashAndSnapshot.test_the_sink_is_watched_under_its_own_name_wherever_it_points",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_suite_check_cases.snapshot",
+   "owner": "TestHashAndSnapshot.test_the_sink_root_it_watches_is_the_one_the_scripts_resolve",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_suite_check_cases.subprocess",
+   "owner": "TestHarnessSubprocess.test_a_stray_write_into_the_sink_fails_the_run",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_super_research_runner",
+   "owner": "SuperResearchRunnerTests.test_delegates_to_installed_python_39",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_super_research_runner",
+   "owner": "SuperResearchRunnerTests.test_runner_itself_does_not_access_network",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_templates_cases.closure",
+   "owner": "_temporary_sink",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_templates_cases.shape",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_thin_orchestrator",
+   "owner": "ThinOrchestratorContractTests.test_claude_role_skills_use_native_fork_and_matching_agent",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_thin_orchestrator",
+   "owner": "ThinOrchestratorContractTests.test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.admission_v1",
+   "owner": "AdmissionPrimitiveTest.test_closed_snapshot_rejects_new_members_and_read_failures",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.admission_v1",
+   "owner": "ResultGradeLifecycleTest.test_exact_maximum_completes_and_failure_status_stays_available",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.admission_v1",
+   "owner": "ResultGradeLifecycleTest.test_result_grade_and_complete_share_exact_findings",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.common",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.common",
+   "owner": "sink_root",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.common",
+   "owner": "use_sink",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.identity_core",
+   "owner": "TestRunIdentity.test_a_failed_first_payload_does_not_freeze_an_opening_identity",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.identity_core",
+   "owner": "TestRunIdentity.test_two_concurrent_openings_leave_one_well_formed_identity",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.identity_terminal",
+   "owner": "RunTerminalTimingTest.test_fake_clock_decides_exact_elapsed_milliseconds",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.identity_terminal",
+   "owner": "RunTerminalTimingTest.test_same_status_retry_recovers_an_interrupted_terminal_identity",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.identity_terminal",
+   "owner": "RunTerminalTimingTest.test_terminal_identity_failure_is_reported_and_retry_is_durable",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.identity_terminal",
+   "owner": "TestAtomicReplace.test_a_reader_refused_past_the_budget_is_still_refused_by_name",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.identity_terminal",
+   "owner": "TestAtomicReplace.test_a_refusal_that_never_ends_is_reported_when_the_budget_runs_out",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.identity_terminal",
+   "owner": "TestAtomicReplace.test_an_absent_file_is_an_answer_and_is_never_waited_on",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.identity_terminal",
+   "owner": "TestAtomicReplace.test_an_unobstructed_move_costs_one_attempt_on_either_platform",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.identity_terminal",
+   "owner": "TestAtomicReplace.test_posix_takes_the_first_answer",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.identity_terminal",
+   "owner": "TestAtomicReplace.test_the_reader_waits_out_a_writers_move_and_returns_the_document",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.identity_terminal",
+   "owner": "TestAtomicReplace.test_windows_waits_out_a_transient_refusal",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.identity_terminal",
+   "owner": "TestNoFallback.block_the_sink",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.improvement",
+   "owner": "TestImprovementWriter.test_ten_concurrent_writers_each_land_one_whole_line",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.lifecycle_claim",
+   "owner": "TestClaim.race",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.lifecycle_validation",
+   "owner": "TestOutsideARepoTheSinkStillResolves.test_a_sink_that_cannot_be_resolved_is_the_one_remaining_refusal",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.packet_execution",
+   "owner": "RuntimeInterpreterBoundaryTests.test_internal_builtin_commands_use_the_current_interpreter",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.packet_execution",
+   "owner": "RuntimeInterpreterBoundaryTests.test_ticket_commands_inherit_the_caller_environment",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.readiness",
+   "owner": "TestReadyReportsWhatItCouldNotGrade.test_the_flat_ticket_family_needs_no_ui_reader_module",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.run_state_artifacts",
+   "owner": "TestRunStateWorklog.test_concurrent_notes_all_land_whole",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.run_state_artifacts",
+   "owner": "make_real_worktree",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.run_state_resolution",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.run_state_resolution",
+   "owner": "TestRunStateRootResolution.test_the_root_comes_from_the_one_resolver_with_no_subprocess",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_issue_cases.common",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_issue_cases.common",
+   "owner": "use_sink",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_issue_cases.console_cases",
+   "owner": "NarrowConsoleTest.test_a_payload_holding_an_unencodable_character_still_prints",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_view",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path",
+    "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_view",
+   "owner": "use_sink",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_view_cases.gate_stubs",
+   "owner": "GateStubsTest.test_every_gate_sibling_uses_one_sealed_head_probe",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_trace",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_trace",
+   "owner": "TestClaudeBoundaryInputs.test_a_transcript_that_cannot_be_read_is_not_full_confidence",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases._base",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases._base",
+   "owner": "far_future_mtimes",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases._web",
+   "owner": "frozen_clock",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases._web",
+   "owner": "serving",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.active_polling",
+   "owner": "TestLayoutCache.counting",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.domain_projections",
+   "owner": "DomainProjectionBoundaryTests.test_projectors_are_package_and_flat_import_safe_without_cross_imports",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.feeds_validation",
+   "owner": "TestEventsSeam.test_a_log_that_is_there_and_cannot_be_read_is_not_zero_events",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.http_server",
+   "owner": "TestConditionalRequests.test_a_304_renders_nothing_at_all",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.http_server",
+   "owner": "TestLoopbackOnly.test_an_unavailable_port_exits_2_with_a_message_not_a_traceback",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.platform_admission",
+   "owner": "TestPlatformAdmission.test_generated_manifest_rewrites_a_crlf_checkout_to_canonical_lf_bytes",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.projection_modules",
+   "owner": "ClosedViewProjectionTests.test_closed_views_never_read_an_unrelated_domain_root",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.projection_modules",
+   "owner": "ClosedViewProjectionTests.test_legacy_adapter_delegates_domain_identity_and_health_reads",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.projection_modules",
+   "owner": "FacadeRouteAssemblyTests.test_duplicate_domain_method_and_path_is_rejected_at_startup",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.projection_modules",
+   "owner": "FacadeRouteAssemblyTests.test_facade_imports_in_package_and_flat_installed_layouts",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.projection_security",
+   "owner": "TestProjectionFailureBoundary.test_unexpected_new_and_legacy_projection_faults_are_generic_500s",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.root_resolution",
+   "owner": "TestRootResolution.test_every_workspace_reads_the_one_sink",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd",
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.root_resolution",
+   "owner": "TestRootResolution.test_the_default_root_is_the_resolvers_sink_and_root_overrides_it",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.session_activity",
+   "owner": "TestActivityState.test_a_subagent_whose_files_will_not_stat_is_not_dated_at_the_epoch",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.session_rendering",
+   "owner": "TestSessionEmptyStates.test_a_traversal_shaped_id_is_refused_before_any_directory_is_read",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.session_rendering",
+   "owner": "TestSessionEmptyStates.test_no_transcript_root_configured_reads_nothing_and_says_so",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.session_rendering",
+   "owner": "TestSessionEscaping.test_removing_the_escaping_breaks_every_assertion_above",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.session_rendering",
+   "owner": "TestSessionLayoutCache.counting",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.session_rendering",
+   "owner": "TestSubagentContentWall.test_a_subagents_own_transcript_is_listed_and_never_opened",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.session_rendering",
+   "owner": "TestSubagentContentWall.test_narrowing_the_closed_set_narrows_the_row_it_renders",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.ticket_security",
+   "owner": "TestUnreadableTicketFile.test_the_ticket_page_itself_names_the_read_failure",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.transcript_cache",
+   "owner": "TestAbsentTranscriptRoot.test_a_root_the_host_will_not_answer_for_is_not_an_absent_root",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.transcript_cache",
+   "owner": "TestAbsentTranscriptRoot.test_a_session_file_that_will_not_stat_is_named_rather_than_dropped",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.transcript_cache",
+   "owner": "TestTranscriptParseCache.test_a_changed_transcript_is_parsed_again",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.transcript_cache",
+   "owner": "TestTranscriptParseCache.test_two_requests_over_an_unchanged_root_parse_each_session_once",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.transcript_index",
+   "owner": "TestTranscriptRoot.test_no_root_configured_reads_nothing_at_all",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.transcript_index",
+   "owner": "TestTranscriptRoot.test_the_default_is_the_operators_projects_directory",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.transcript_index",
+   "owner": "TestTranscriptRoot.test_the_entry_point_hands_the_resolved_root_to_the_server",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.transcript_rendering",
+   "owner": "TestContentWall.test_narrowing_the_closed_set_narrows_the_row_it_renders",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.transcript_rendering",
+   "owner": "TestTranscriptDegradation.test_a_transcript_that_cannot_be_opened_is_named_rather_than_raised",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.workflows_http",
+   "owner": "WorkflowHttpTests.test_startup_refuses_a_public_route_that_duplicates_an_existing_owner",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.workflows_http",
+   "owner": "WorkflowHttpTests.test_unreadable_source_and_unexpected_faults_are_closed_and_uncached",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.workflows_sources",
+   "owner": "WorkflowSourceTests.test_escaped_symlink_is_not_opened_and_is_indistinguishable_from_missing",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.workflows_sources",
+   "owner": "WorkflowSourceTests.test_inventory_to_open_symlink_swap_never_delivers_external_bytes",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui_cases.workflows_sources",
+   "owner": "WorkflowSourceTests.test_success_reads_once_and_hashes_the_redacted_delivered_text",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_validate_cases.sink_contracts",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_validate_cases.sink_contracts",
+   "owner": "TestWorklogStatesRunIdentity.test_installed_revision_and_terminal_timing_have_single_owners",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_validate_cases.sink_law",
+   "owner": "numbered_section",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_validate_cases.validator_ownership",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_validate_cases.validator_ownership",
+   "owner": "FrictionLocationSyncTest._resolved_tree",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_validate_cases_schema",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path",
+    "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_validate_measures",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path",
+    "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_validator",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_validator_cases.support",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_visualize_scripts_cases.preview",
+   "owner": "TestPreviewFailureCleanup.test_connected_client_that_sends_no_request_is_bounded_by_deadline",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_visualize_scripts_cases.preview",
+   "owner": "TestPreviewFailureCleanup.test_read_and_bind_failures_emit_no_readiness",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_visualize_scripts_cases.renderer",
+   "owner": "TestRendererHasNoCdnMode.test_each_unrendered_fence_is_an_error_and_no_page_is_written",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_visualize_scripts_cases.support",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_visualize_scripts_cases.support",
+   "owner": "_ScriptCase.call",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_visualize_scripts_cases.support",
+   "owner": "_no_npx_env",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_windows_semantics",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_windows_semantics",
+   "owner": "StandsElsewhere.setUp",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_windows_semantics",
+   "owner": "TestTheGuardPassesEverythingElse.test_a_missing_or_unanswerable_path_is_left_to_the_real_call",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_windows_semantics",
+   "owner": "TestTheGuardPassesEverythingElse.test_a_prefix_match_that_is_not_a_parent_is_not_refused",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_windows_semantics",
+   "owner": "TestTheGuardPassesEverythingElse.test_a_sibling_tree_is_removed_normally",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_windows_semantics",
+   "owner": "TestTheGuardPassesEverythingElse.test_the_restored_cwd_pattern_this_suite_uses_is_never_flagged",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_windows_semantics",
+   "owner": "TestTheGuardRefusesDeletingTheCwd.test_os_rmdir_and_path_rmdir_and_removedirs",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_windows_semantics",
+   "owner": "TestTheGuardRefusesDeletingTheCwd.test_rmtree_of_an_ancestor_of_the_directory_the_process_stands_in",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_windows_semantics",
+   "owner": "TestTheGuardRefusesDeletingTheCwd.test_rmtree_of_the_directory_the_process_stands_in",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_windows_semantics",
+   "owner": "TestTheGuardRefusesDeletingTheCwd.test_temporary_directory_cleanup_of_the_directory_it_moved_into",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_windows_semantics",
+   "owner": "TestTheGuardRefusesDeletingTheCwd.test_the_message_names_the_tree_the_cwd_and_the_way_out",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_windows_semantics",
+   "owner": "TestTheGuardRefusesDeletingTheCwd.test_the_refusal_is_not_an_oserror",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_workspace",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_workspace_cases.common",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_workspace_cases.common",
+   "owner": "git_env",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_workspace_cases.common",
+   "owner": "graded_repository",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_workspace_cases.common",
+   "owner": "use_sink",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_workspace_cases.grade_cases",
+   "owner": "RuntimeInterpreterBoundaryTests.test_git_subprocesses_inherit_the_caller_environment",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_workspace_cases.grade_cases",
+   "owner": "RuntimeInterpreterBoundaryTests.test_git_subprocesses_inherit_the_caller_environment.run_in_caller",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_workspace_cases.start_cases",
+   "owner": "TestCheckDisambiguatesItsRevisionRanges.test_every_range_is_terminated_before_the_pathspec",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_workspace_cases.start_cases",
+   "owner": "TestStartFailureBehavior.test_a_lost_race_exits_one_and_writes_nothing",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_workspace_cases.start_cases",
+   "owner": "TestStartFailureBehavior.test_a_write_landing_during_the_git_work_is_reported_through_start",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  }
+ ],
  "schema": "orchflows.serial-compat.v1",
  "sentinels": [
   {
+   "allowed_seams": [
+    "monkeypatch"
+   ],
    "categories": [
     "installer-fidelity",
     "real-hashed-runtime"
@@ -2367,6 +5252,9 @@
    "module": "test_installer"
   },
   {
+   "allowed_seams": [
+    "monkeypatch"
+   ],
    "categories": [
     "installer-fidelity",
     "hash-contract"
@@ -2375,6 +5263,9 @@
    "module": "test_installer"
   },
   {
+   "allowed_seams": [
+    "monkeypatch"
+   ],
    "categories": [
     "installer-fidelity",
     "health-contract"
@@ -2383,6 +5274,9 @@
    "module": "test_installer"
   },
   {
+   "allowed_seams": [
+    "monkeypatch"
+   ],
    "categories": [
     "installer-fidelity",
     "receipt-state"
@@ -2391,6 +5285,9 @@
    "module": "test_installer"
   },
   {
+   "allowed_seams": [
+    "monkeypatch"
+   ],
    "categories": [
     "cutcheck-corpus"
    ],
@@ -2398,6 +5295,9 @@
    "module": "tests.test_cutcheck_cases.decidability"
   },
   {
+   "allowed_seams": [
+    "environment"
+   ],
    "categories": [
     "cutcheck-process"
    ],
@@ -2405,6 +5305,10 @@
    "module": "tests.test_cutcheck_cases.layout"
   },
   {
+   "allowed_seams": [
+    "environment",
+    "threads"
+   ],
    "categories": [
     "ticket-contention",
     "process"
@@ -2413,6 +5317,11 @@
    "module": "tests.test_tickets_cases.run_state_artifacts"
   },
   {
+   "allowed_seams": [
+    "environment",
+    "monkeypatch",
+    "threads"
+   ],
    "categories": [
     "workspace-state",
     "git-process"
@@ -2421,6 +5330,11 @@
    "module": "tests.test_tickets_cases.identity_core"
   },
   {
+   "allowed_seams": [
+    "cwd",
+    "environment",
+    "import-path"
+   ],
    "categories": [
     "environment",
     "state-sink"
@@ -2429,6 +5343,11 @@
    "module": "tests.test_state_root_cases.environment"
   },
   {
+   "allowed_seams": [
+    "cwd",
+    "environment",
+    "import-path"
+   ],
    "categories": [
     "environment",
     "discovery"
@@ -2437,6 +5356,11 @@
    "module": "tests.test_state_root_cases.environment"
   },
   {
+   "allowed_seams": [
+    "cwd",
+    "environment",
+    "import-path"
+   ],
    "categories": [
     "workspace-state",
     "state-sink"
@@ -2452,6 +5376,9 @@
    "module": "tests.test_static_tree_invariants_cases.repository_shape"
   },
   {
+   "allowed_seams": [
+    "monkeypatch"
+   ],
    "categories": [
     "thread-server"
    ],
@@ -2459,6 +5386,13 @@
    "module": "tests.test_ui_cases.http_server"
   },
   {
+   "allowed_seams": [
+    "cwd",
+    "environment",
+    "import-path",
+    "module-cache",
+    "monkeypatch"
+   ],
    "categories": [
     "boundary-restoration"
    ],

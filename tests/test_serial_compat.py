@@ -5,13 +5,17 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import logging
 import os
 import tempfile
 import textwrap
+import threading
 import unittest
+import warnings
 from pathlib import Path
 
 from tools import run_serial_compat
+from tools import run_tests
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -93,6 +97,153 @@ class TestSelectedDiscovery(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "selected identity"):
                 run_serial_compat.run_selected(tests_dir, manifest, stream=io.StringIO())
             self.assertFalse(marker.exists())
+
+    def test_discovery_manifest_drift_is_refused_before_any_case_runs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tests_dir = Path(tmp)
+            marker = tests_dir / "ran"
+            tests_dir.joinpath("test_drift.py").write_text(
+                "import pathlib, unittest\nclass Drift(unittest.TestCase):\n"
+                f" def test_one(self): pathlib.Path({str(marker)!r}).touch()\n",
+                encoding="utf-8",
+            )
+            manifest = {
+                "discovery": {"count": 2, "sha256": "wrong"},
+                "sentinels": [{"id": "test_drift.Drift.test_one", "module": "test_drift"}],
+                "mutation_owners": [],
+            }
+            with self.assertRaisesRegex(ValueError, "discovery identity"):
+                run_serial_compat.run_selected(tests_dir, manifest, stream=io.StringIO())
+            self.assertFalse(marker.exists())
+
+
+class TestBoundaryRestoration(unittest.TestCase):
+    def test_selected_module_boundaries_restore_classified_process_state(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tests_dir = Path(tmp)
+            original_cwd = os.getcwd()
+            changed_cwd = tests_dir / "changed"
+            changed_cwd.mkdir()
+            tests_dir.joinpath("test_first.py").write_text(
+                textwrap.dedent(
+                    f"""\
+                    import logging, os, sys, unittest, warnings
+                    def tearDownModule():
+                        warnings.filters.append(('serial-compat-unique',))
+                    class First(unittest.TestCase):
+                        def test_mutates(self):
+                            os.environ['SERIAL_COMPAT_LEAK'] = 'changed'
+                            os.chdir({str(changed_cwd)!r})
+                            sys.path.append({str(changed_cwd)!r})
+                            logging.getLogger().setLevel(logging.CRITICAL)
+                    """
+                ),
+                encoding="utf-8",
+            )
+            tests_dir.joinpath("test_second.py").write_text(
+                textwrap.dedent(
+                    f"""\
+                    import logging, os, sys, unittest
+                    class Second(unittest.TestCase):
+                        def test_observes_baseline(self):
+                            self.assertNotIn('SERIAL_COMPAT_LEAK', os.environ)
+                            self.assertEqual({original_cwd!r}, os.getcwd())
+                            self.assertNotIn({str(changed_cwd)!r}, sys.path)
+                            self.assertNotEqual(logging.CRITICAL, logging.getLogger().level)
+                    """
+                ),
+                encoding="utf-8",
+            )
+            manifest = {
+                "sentinels": [
+                    {"id": "test_first.First.test_mutates", "module": "test_first"},
+                    {"id": "test_second.Second.test_observes_baseline", "module": "test_second"},
+                ],
+                "mutation_owners": [{
+                    "module": "test_first",
+                    "seams": ["environment", "cwd", "import-path", "warnings", "logging"],
+                    "restoration": "selected-module-boundary",
+                }],
+            }
+            record = run_serial_compat.run_selected(tests_dir, manifest, stream=io.StringIO())
+        self.assertTrue(record["ok"], record)
+        self.assertEqual(
+            {"cwd", "environment", "import-path", "logging"},
+            set(record["boundaries"][0]["restored"]),
+        )
+
+    def test_warning_filters_are_restored_when_a_module_leaves_them_dirty(self):
+        before = run_serial_compat.capture_state()
+        warnings.filters.append(("serial-compat-unique",))
+        try:
+            self.assertIn("warnings", run_serial_compat.changed_state(before))
+            self.assertIn("warnings", run_serial_compat.restore_state(before))
+            self.assertNotIn("warnings", run_serial_compat.changed_state(before))
+        finally:
+            run_serial_compat.restore_state(before)
+
+    def test_an_unclassified_boundary_change_fails_the_lane(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tests_dir = Path(tmp)
+            tests_dir.joinpath("test_leak.py").write_text(
+                "import os, unittest\nclass Leak(unittest.TestCase):\n"
+                " def test_it(self): os.environ['SERIAL_COMPAT_UNCLASSIFIED'] = '1'\n",
+                encoding="utf-8",
+            )
+            manifest = {
+                "sentinels": [{"id": "test_leak.Leak.test_it", "module": "test_leak"}],
+                "mutation_owners": [],
+            }
+            record = run_serial_compat.run_selected(tests_dir, manifest, stream=io.StringIO())
+        self.assertFalse(record["ok"])
+        self.assertEqual(["environment"], record["boundaries"][0]["unexpected"])
+
+    def test_a_live_thread_is_detected_and_cannot_be_classified_as_restorable(self):
+        release = threading.Event()
+        thread = threading.Thread(target=release.wait, name="serial-compat-leak", daemon=True)
+        before = run_serial_compat.capture_state()
+        thread.start()
+        try:
+            changed = run_serial_compat.changed_state(before)
+            self.assertIn("threads", changed)
+            self.assertNotIn("threads", run_serial_compat.RESTORABLE_SEAMS)
+        finally:
+            release.set()
+            thread.join(timeout=5)
+
+    def test_sharded_guard_restores_the_complete_environment(self):
+        before = run_tests.guarded_state()
+        original = dict(os.environ)
+        os.environ["SERIAL_COMPAT_SHARDED"] = "changed"
+        try:
+            restored = run_tests.restore_guarded_state(before)
+            self.assertIn("os.environ", restored)
+            self.assertEqual(original, dict(os.environ))
+        finally:
+            os.environ.clear()
+            os.environ.update(original)
+
+
+class TestMutationOwnerManifest(unittest.TestCase):
+    def test_manifest_classifies_every_detected_mutation_owner(self):
+        manifest = run_serial_compat.load_manifest(MANIFEST)
+        expected = run_serial_compat.scan_mutation_owners(ROOT / "tests")
+        actual = [
+            {"module": owner["module"], "owner": owner["owner"], "seams": owner["seams"]}
+            for owner in manifest["mutation_owners"]
+        ]
+        self.assertEqual(expected, actual)
+        for owner in manifest["mutation_owners"]:
+            self.assertIn(
+                owner["restoration"],
+                {"sharded-module-guard", "selected-module-boundary"},
+            )
+        covered = {seam for owner in actual for seam in owner["seams"]}
+        self.assertTrue(
+            {"cwd", "environment", "event-loop", "import-path", "logging",
+             "module-cache", "monkeypatch", "threads", "warnings"}.issubset(covered),
+            covered,
+        )
 
 
 if __name__ == "__main__":

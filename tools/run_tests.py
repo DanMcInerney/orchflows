@@ -48,7 +48,6 @@ IMPORT_BOOTSTRAP_ROOTS = frozenset(
     )
 )
 
-
 # --- child: run one module in this interpreter ------------------------
 def guarded_state() -> dict:
     """Snapshot the process-global seams tests are allowed to borrow only.
@@ -64,8 +63,17 @@ def guarded_state() -> dict:
         "pathlib.Path.open": inspect.getattr_static(Path, "open"),
         "os.chdir": (os.chdir, os.getcwd()),
         "sys.path": (sys.path, tuple(sys.path)),
+        "os.environ": (os.environ, dict(os.environ)),
     }
 
+def restore_guarded_state(before: dict) -> list[str]:
+    """Restore environment state a module borrowed before its child exits."""
+    env_object, env_value = before["os.environ"]
+    changed = os.environ is not env_object or dict(os.environ) != env_value
+    if changed:
+        os.environ = env_object
+        os.environ.clear(); os.environ.update(env_value)
+    return ["os.environ"] if changed else []
 
 def meaningful_sys_path(entries):
     """Drop dead scratch roots and the exact suite bootstrap roots."""
@@ -89,7 +97,6 @@ def meaningful_sys_path(entries):
             continue
         meaningful.append(entry)
     return tuple(meaningful)
-
 
 def leaked_seams(before: dict):
     """Name every guarded seam whose identity or value escaped a test."""
@@ -116,7 +123,6 @@ def leaked_seams(before: dict):
         leaked.append("sys.path")
     return leaked
 
-
 def run_child(module: str, import_root: str, result_path: str, verbosity: int) -> int:
     """Run one module and write its counts; reject guarded-seam residue."""
 
@@ -127,6 +133,7 @@ def run_child(module: str, import_root: str, result_path: str, verbosity: int) -
     before = guarded_state()
     suite = unittest.TestLoader().loadTestsFromName(module)
     result = unittest.TextTestRunner(stream=sys.stderr, verbosity=verbosity).run(suite)
+    restored = restore_guarded_state(before)
     leaks = leaked_seams(before)
     for seam in leaks:
         sys.stderr.write("leaked whole-interpreter seam: " + seam + "\n")
@@ -139,13 +146,13 @@ def run_child(module: str, import_root: str, result_path: str, verbosity: int) -
         "expected_failures": len(result.expectedFailures),
         "unexpected": len(result.unexpectedSuccesses),
         "ok": result.wasSuccessful() and not leaks,
+        "restored_seams": restored,
     }
     # A leaked ``Path.open`` must not keep the child from reporting that
     # exact leak. ``open`` is a separate seam and the result path is absolute.
     with open(result_path, "w", encoding="utf-8") as stream:
         stream.write(json.dumps(payload))
     return 0 if payload["ok"] else 1
-
 
 # --- parent: discovery, scheduling, dispatch --------------------------
 def discover(tests_dir: Path):
@@ -165,7 +172,6 @@ def discover(tests_dir: Path):
     modules = sorted(prefix + path.stem for path in tests_dir.glob("test*.py"))
     return import_root, prefix, modules
 
-
 def resolve(selector: str, modules, prefix: str) -> str:
     """Map ``tests/test_x.py``, ``tests.test_x`` or ``test_x`` to a module."""
 
@@ -176,14 +182,12 @@ def resolve(selector: str, modules, prefix: str) -> str:
             return candidate
     raise SystemExit("run_tests: no such test module: " + selector)
 
-
 def load_times() -> dict:
     try:
         data = json.loads(CACHE_PATH.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
     return data if isinstance(data, dict) else {}
-
 
 def save_times(results) -> None:
     """Atomically merge durations so subset runs preserve other timings."""
@@ -200,7 +204,6 @@ def save_times(results) -> None:
     except OSError:
         pass  # A timing cache is an optimization; never fail a run for it.
 
-
 def schedule(modules, times, tests_dir=DEFAULT_TESTS_DIR):
     """Schedule cached runs longest-first and cold repository runs by prior."""
 
@@ -212,14 +215,12 @@ def schedule(modules, times, tests_dir=DEFAULT_TESTS_DIR):
 
     return sorted(modules, key=lambda name: (-times.get(name, float("inf")), name))
 
-
 def child_env() -> dict:
     """Preserve the environment while pinning only child stdio to UTF-8."""
 
     env = dict(os.environ)
     env["PYTHONIOENCODING"] = "utf-8"
     return env
-
 
 def run_module(module: str, import_root: Path, verbosity: int) -> dict:
     handle, result_path = tempfile.mkstemp(prefix="run_tests_", suffix=".json")
@@ -277,7 +278,6 @@ def run_module(module: str, import_root: Path, verbosity: int) -> dict:
     record["output"] = output
     record["returncode"] = completed.returncode
     return record
-
 
 # --- reporting --------------------------------------------------------
 def detail(record: dict) -> str:
