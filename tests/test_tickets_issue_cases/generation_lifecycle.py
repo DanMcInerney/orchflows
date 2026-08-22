@@ -1,9 +1,14 @@
 """Executable v2 draft, validation, seal, and correction lifecycle contract."""
 
+import os
+import tempfile
 import unittest
+from pathlib import Path
+from unittest import mock
 
 from scripts import tickets_admission as admission
 from scripts import tickets_generations as generations
+from scripts.tickets_dispatch import _dispatch
 from scripts.tickets_format import _parse_frontmatter, _set_frontmatter_field
 
 
@@ -70,6 +75,21 @@ class DraftValidateSealLifecycleTest(unittest.TestCase):
         changed["00-root.01"] = changed["00-root.01"].replace("deliver", "moved target")
         with self.assertRaises(generations.GenerationError):
             generations.seal_assignments("00-root", changed, draft, receipt)
+
+    def test_commands_validate_seal_and_release_units_to_ready(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": directory}):
+                run_dir = Path(directory) / "tickets" / "run"
+                run_dir.mkdir(parents=True)
+                for ticket_id, text in snapshot().items():
+                    (run_dir / f"{ticket_id}.md").write_text(text, encoding="utf-8")
+                validated = _dispatch(["draft-validate", "run", "00-root"])
+                self.assertEqual("validated", validated["draft_validation"]["state"])
+                cut = validated["draft_validation"]["cut_generation"]
+                sealed = _dispatch(["seal", "run", "00-root", "--cut-generation", cut])
+                self.assertEqual(cut, sealed["assignment_seal"]["cut_generation"])
+                ready = _dispatch(["ready", "--run", "run"])
+                self.assertIn("00-root.01", {item["id"] for item in ready["ready"]})
 
 
 class CorrectionGenerationPolicyTest(unittest.TestCase):

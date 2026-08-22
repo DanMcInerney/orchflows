@@ -27,9 +27,9 @@ if __package__:
 else:
     from tickets_worklog import _run_tickets
 if __package__:
-    from .tickets_admission import grade_admission, is_v1
+    from .tickets_admission import grade_admission, is_v1, is_v2
 else:
-    from tickets_admission import grade_admission, is_v1
+    from tickets_admission import grade_admission, is_v1, is_v2
 
 PACKET_USAGE = "packet <run> <id> --reply-to <name> [--workspace <path>] [--executor orch-critique | orch-verify]"
 PACKET_SECTIONS = (('objective', 'Objective'), ('inputs', 'Fixed inputs'), ('return_contract', 'Return fields'))
@@ -269,7 +269,7 @@ def _packet_under_run_lock(rest):
         return {'error': f'packet path {ticket_path} does not carry the requested run/id {run}/{ticket_id}'}
     status = str(loaded.get('status') or '').strip().strip('`').strip()
     admission = 'legacy-unadmitted'
-    if is_v1(loaded):
+    if is_v1(loaded) or is_v2(loaded):
         if status not in CHECKABLE_STATUSES:
             return {'error': f"ticket is not claimed (status '{status}'): v1 packet emission requires an admitted claim"}
         snapshot = {}

@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from pathlib import Path
 
 if __package__:
     from .tickets_format import (
@@ -249,9 +250,190 @@ def v2_seal_findings(ticket_id: str, text: str) -> list:
     return findings
 
 
+DRAFT_VALIDATE_USAGE = "draft-validate <run> <root-id> [--correction-bound N]"
+SEAL_USAGE = "seal <run> <root-id> --cut-generation <identity>"
+AMENDMENT_REQUEST_USAGE = "amendment-request <run> <id> --record <canonical-json>"
+
+
+def _store_bindings():
+    if __package__:
+        from .tickets_store import NO_SINK_ERROR, _run_lock, _runs_root, _tickets_root, _write_text_atomically
+    else:
+        from tickets_store import NO_SINK_ERROR, _run_lock, _runs_root, _tickets_root, _write_text_atomically
+    return NO_SINK_ERROR, _run_lock, _runs_root, _tickets_root, _write_text_atomically
+
+
+def _extract(args: list, flag: str):
+    if flag not in args:
+        return None
+    index = args.index(flag)
+    if index + 1 >= len(args):
+        del args[index]
+        return None
+    value = args[index + 1]
+    del args[index:index + 2]
+    return value
+
+
+def _snapshot(run: str):
+    NO_SINK_ERROR, _, _, tickets_root, _ = _store_bindings()
+    root = tickets_root()
+    if root is None:
+        raise GenerationError(NO_SINK_ERROR)
+    run_dir = root / run
+    values = {}
+    for path in sorted(run_dir.glob("*.md")):
+        values[path.stem] = path.read_text(encoding="utf-8")
+    return run_dir, values
+
+
+def _generation_dir(run: str) -> Path:
+    NO_SINK_ERROR, _, runs_root, _, _ = _store_bindings()
+    root = runs_root()
+    if root is None:
+        raise GenerationError(NO_SINK_ERROR)
+    return root / run / "generations"
+
+
+def _state_path(run: str, cut_generation: str, state: str) -> Path:
+    match = GENERATION_RE.fullmatch(cut_generation)
+    if match is None or match.group(1) != "cut":
+        raise GenerationError("cut generation identity is malformed")
+    return _generation_dir(run) / f"{match.group(4)}.{state}.json"
+
+
+def _validated_documents(run: str) -> list:
+    documents = []
+    directory = _generation_dir(run)
+    for path in sorted(directory.glob("*.validated.json")) if directory.is_dir() else []:
+        try:
+            value = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, ValueError, json.JSONDecodeError):
+            continue
+        if isinstance(value, dict) and isinstance(value.get("draft"), dict):
+            documents.append(value)
+    return documents
+
+
+def _next_draft(run: str, root_id: str, snapshot: dict) -> dict:
+    documents = _validated_documents(run)
+    highest = 0
+    for document in documents:
+        prior = document["draft"]
+        try:
+            ordinal = generation_ordinal(prior.get("cut_generation"), "cut")
+        except GenerationError:
+            continue
+        highest = max(highest, ordinal)
+        if draft_snapshot(root_id, snapshot, ordinal) == prior:
+            return prior
+    return draft_snapshot(root_id, snapshot, highest + 1)
+
+
+def _cmd_draft_validate(rest) -> dict:
+    args = list(rest)
+    bound_value = _extract(args, "--correction-bound")
+    if len(args) != 2:
+        return {"error": f"usage: {DRAFT_VALIDATE_USAGE}"}
+    run, root_id = args
+    try:
+        bound = 1 if bound_value is None else int(bound_value)
+        if bound <= 0:
+            raise ValueError
+    except ValueError:
+        return {"error": "--correction-bound must be a finite positive integer"}
+    _, run_lock, _, _, write_atomically = _store_bindings()
+    try:
+        with run_lock(run):
+            _, snapshot = _snapshot(run)
+            draft = _next_draft(run, root_id, snapshot)
+            receipt = validate_draft(root_id, snapshot, draft)
+            document = {"correction_bound": bound, "draft": draft, "receipt": receipt}
+            path = _state_path(run, draft["cut_generation"], "validated")
+            path.parent.mkdir(parents=True, exist_ok=True)
+            encoded = canonical_json(document) + "\n"
+            if path.exists() and path.read_text(encoding="utf-8") != encoded:
+                return {"error": "content-addressed validation receipt collision"}
+            if not path.exists():
+                write_atomically(path, encoded)
+    except (OSError, UnicodeDecodeError, GenerationError) as error:
+        return {"error": str(error)}
+    return {"draft_validation": {**receipt, "path": str(path)}}
+
+
+def _cmd_seal(rest) -> dict:
+    args = list(rest)
+    cut_generation = _extract(args, "--cut-generation")
+    if len(args) != 2 or cut_generation is None:
+        return {"error": f"usage: {SEAL_USAGE}"}
+    run, root_id = args
+    _, run_lock, _, _, write_atomically = _store_bindings()
+    try:
+        with run_lock(run):
+            run_dir, snapshot = _snapshot(run)
+            validated_path = _state_path(run, cut_generation, "validated")
+            if not validated_path.is_file():
+                return {"error": "seal refused: no validation receipt for requested cut generation"}
+            document = json.loads(validated_path.read_text(encoding="utf-8"))
+            draft, receipt = document["draft"], document["receipt"]
+            if draft.get("cut_generation") != cut_generation:
+                return {"error": "seal refused: validation receipt names another cut generation"}
+            sealed = seal_assignments(root_id, snapshot, draft, receipt)
+            root_text = sealed[root_id]
+            root_text = _set_frontmatter_field(root_text, "root_generation", draft["root_generation"])
+            root_text = _set_frontmatter_field(root_text, "cut_generation", draft["cut_generation"])
+            sealed[root_id] = root_text
+            prior = dict(snapshot)
+            try:
+                for ticket_id, text in sealed.items():
+                    if text != snapshot[ticket_id]:
+                        write_atomically(run_dir / f"{ticket_id}.md", text)
+                sealed_path = _state_path(run, cut_generation, "sealed")
+                sealed_path.parent.mkdir(parents=True, exist_ok=True)
+                write_atomically(sealed_path, canonical_json({"receipt": receipt, "state": "sealed"}) + "\n")
+            except OSError:
+                for ticket_id, text in prior.items():
+                    write_atomically(run_dir / f"{ticket_id}.md", text)
+                raise
+    except (OSError, UnicodeDecodeError, ValueError, KeyError, GenerationError, json.JSONDecodeError) as error:
+        return {"error": str(error)}
+    return {"assignment_seal": {"cut_generation": cut_generation, "root_generation": draft["root_generation"], "state": "sealed", "path": str(sealed_path)}}
+
+
+def _cmd_amendment_request(rest) -> dict:
+    args = list(rest)
+    encoded = _extract(args, "--record")
+    if len(args) != 2 or encoded is None:
+        return {"error": f"usage: {AMENDMENT_REQUEST_USAGE}"}
+    run, ticket_id = args
+    try:
+        record = json.loads(encoded)
+        if canonical_json(record) != encoded:
+            raise GenerationError("amendment request JSON must be canonical")
+    except (ValueError, json.JSONDecodeError, GenerationError) as error:
+        return {"error": str(error)}
+    _, run_lock, _, tickets_root, write_atomically = _store_bindings()
+    root = tickets_root()
+    if root is None:
+        return {"error": _store_bindings()[0]}
+    path = root / run / f"{ticket_id}.md"
+    try:
+        with run_lock(run):
+            text = path.read_text(encoding="utf-8")
+            if record.get("requester-ticket") != ticket_id:
+                return {"error": "requester-ticket must equal the worker ticket being written"}
+            updated = append_amendment_request(text, record)
+            updated = _set_frontmatter_field(updated, "status", "suspended")
+            write_atomically(path, updated)
+    except (OSError, UnicodeDecodeError, GenerationError) as error:
+        return {"error": str(error)}
+    return {"amendment_request": {"id": record["request-id"], "run": run, "ticket": ticket_id, "status": "suspended"}}
+
+
 __all__ = (
     "AMENDMENT_FIELDS", "GENERATION_RE", "GenerationError", "append_amendment_request",
     "assignment_digest", "assignment_payload", "canonical_json", "correction_decision",
     "draft_snapshot", "generation_identity", "generation_ordinal", "seal_assignments",
-    "validate_draft", "v2_seal_findings",
+    "validate_draft", "v2_seal_findings", "_cmd_amendment_request",
+    "_cmd_draft_validate", "_cmd_seal",
 )

@@ -16,9 +16,9 @@ if __package__:
 else:
     from tickets_worklog import _run_goal, _run_tickets
 if __package__:
-    from .tickets_admission import ADMISSION_PENDING, grade_admission, grade_result, is_receipt, is_v1
+    from .tickets_admission import ADMISSION_PENDING, grade_admission, grade_result, is_receipt, is_v1, is_v2
 else:
-    from tickets_admission import ADMISSION_PENDING, grade_admission, grade_result, is_receipt, is_v1
+    from tickets_admission import ADMISSION_PENDING, grade_admission, grade_result, is_receipt, is_v1, is_v2
 if __package__:
     from .tickets_packet import _claim_is_stale
 else:
@@ -116,18 +116,20 @@ def _cmd_ready(rest):
             ticket_id = str(data.get('id') or '')
             text = snapshot.get(ticket_id)
             v1 = text is not None and is_v1(_parse_frontmatter(text))
+            v2 = text is not None and is_v2(_parse_frontmatter(text))
+            versioned = v1 or v2
             status = data.get('status')
-            if dangling and not (v1 and status in ('pending', 'ready')):
+            if dangling and not (versioned and status in ('pending', 'ready')):
                 skipped.append({'id': data['id'], 'reason': 'depends_on names no ticket in this run: ' + ', '.join((str(dep) for dep in dangling))})
                 continue
             if not facts['status_valid']:
                 skipped.append({'id': data['id'], 'reason': f"status '{status}' is none of {sorted(VALID_STATUSES)}, so readiness cannot be graded"})
                 continue
             deps_complete = facts['dependencies_complete']
-            if not deps_complete and not (v1 and status in ('pending', 'ready')):
+            if not deps_complete and not (versioned and status in ('pending', 'ready')):
                 continue
             eligible = False
-            if v1 and status in ('pending', 'ready'):
+            if versioned and status in ('pending', 'ready'):
                 if read_failures:
                     skipped.append({'id': ticket_id, 'reason': 'admission refused: run snapshot is not closed', 'failures': read_failures})
                     continue
@@ -144,7 +146,7 @@ def _cmd_ready(rest):
                     data['summary']['status'] = 'ready'
                     data['summary']['admission'] = grade['receipt']
                 eligible = True
-            elif v1 and status == 'claimed':
+            elif versioned and status == 'claimed':
                 stale, unreadable = _claim_is_stale(data['path'], text, data, now)
                 if stale:
                     skipped.append({'id': ticket_id, 'reason': 'stale v1 claim requires the join to set-status pending, then recut, before reclaim'})
@@ -218,7 +220,7 @@ def _cmd_claim(rest):
     if prior_text is not None:
         data = _parse_frontmatter(prior_text)
         status = str(data.get('status') or '')
-        if is_v1(data) and status in ('pending', 'ready'):
+        if (is_v1(data) or is_v2(data)) and status in ('pending', 'ready'):
             grade = grade_admission(ticket_id, prior_text, snapshot)
             if grade['findings']:
                 return {'error': 'admission refused', 'findings': grade['findings']}
@@ -250,7 +252,7 @@ def _claim_under_run_lock(rest, prior_text=None, snapshot=None, grade=None):
             return failure
     data = _parse_frontmatter(prior_text)
     status = str(data.get('status') or '')
-    if is_v1(data) and status in ('pending', 'ready'):
+    if (is_v1(data) or is_v2(data)) and status in ('pending', 'ready'):
         if snapshot is None:
             snapshot, failures = _run_snapshot(ticket_path.parent)
             if failures:
@@ -263,9 +265,9 @@ def _claim_under_run_lock(rest, prior_text=None, snapshot=None, grade=None):
             return {'error': 'ticket, dependencies, or cohort changed since admission grade; lost the claim race'}
     elif status == 'pending':
         return {'error': 'pending legacy ticket requires `recut` before v1 admission'}
-    elif is_v1(data) and status == 'claimed':
+    elif (is_v1(data) or is_v2(data)) and status == 'claimed':
         return {'error': 'stale v1 claim requires the join to set-status pending, then recut, before reclaim'}
-    elif not is_v1(data) and status in ('ready', 'claimed'):
+    elif not (is_v1(data) or is_v2(data)) and status in ('ready', 'claimed'):
         return {'error': f"{status} legacy ticket requires `recut` before v1 admission or reclaim"}
     now = datetime.now(timezone.utc)
     result = _do_claim(ticket_path, prior_text, claimed_by, now, grade['receipt'] if grade is not None else None)
