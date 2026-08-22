@@ -34,8 +34,10 @@ class TicketsFacadeCompatibilityTest(unittest.TestCase):
 
     COMMANDS = {
         "amend",
+        "amendment-request",
         "check",
         "claim",
+        "draft-validate",
         "gate",
         "grant",
         "improvement",
@@ -48,6 +50,7 @@ class TicketsFacadeCompatibilityTest(unittest.TestCase):
         "result",
         "result-grade",
         "run-state",
+        "seal",
         "set-status",
         "worklog",
     }
@@ -217,7 +220,7 @@ class V2ProducerMigrationTest(unittest.TestCase):
 
         for name, text in documents.items():
             with self.subTest(document=name, compatibility="v1"):
-                self.assertIn("absence of v2 fields means v1", text)
+                self.assertIn("absence of v2 fields means v1", " ".join(text.lower().split()))
 
         manifest = json.loads(
             (ROOT / "tests/serial_compat_manifest.json").read_text()

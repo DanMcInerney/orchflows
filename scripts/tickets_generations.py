@@ -430,6 +430,13 @@ def _cmd_amendment_request(rest) -> dict:
     return {"amendment_request": {"id": record["request-id"], "run": run, "ticket": ticket_id, "status": "suspended"}}
 
 
+GENERATION_SUBCOMMANDS = {
+    "draft-validate": (DRAFT_VALIDATE_USAGE, "Grade one exact v2 assignment snapshot and persist its content-addressed validation receipt.", _cmd_draft_validate),
+    "seal": (SEAL_USAGE, "Compare-and-swap seal only the exact validated v2 cut generation, making its units eligible for admission.", _cmd_seal),
+    "amendment-request": (AMENDMENT_REQUEST_USAGE, "Append one canonical typed parent-amendment request to the worker-owned Handoff and suspend the worker.", _cmd_amendment_request),
+}
+
+
 __all__ = (
     "AMENDMENT_FIELDS", "GENERATION_RE", "GenerationError", "append_amendment_request",
     "assignment_digest", "assignment_payload", "canonical_json", "correction_decision",
