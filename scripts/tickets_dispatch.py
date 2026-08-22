@@ -1,6 +1,6 @@
 """Ticket dispatch support."""
 from __future__ import annotations
-import hashlib, json
+import json
 import re
 import sys
 from pathlib import Path
@@ -35,10 +35,10 @@ else:
     from tickets_worklog import WORKLOG_USAGE, _closure_defects, _cmd_worklog, _run_tickets, _spec_field_defect, _template_order
 if __package__:
     from .tickets_admission import ADMISSION_PENDING, batch_cohort, root_cohort
-    from .tickets_input_producers import git_head, render_stub, render_ticket_inputs; from .tickets_generations import GENERATION_SUBCOMMANDS
+    from .tickets_input_producers import git_head, render_stub, render_ticket_inputs; from .tickets_generations import GENERATION_SUBCOMMANDS; from .tickets_gate_mutations import _canonical_gate_mutation_plan
 else:
     from tickets_admission import ADMISSION_PENDING, batch_cohort, root_cohort
-    from tickets_input_producers import git_head, render_stub, render_ticket_inputs
+    from tickets_input_producers import git_head, render_stub, render_ticket_inputs; from tickets_gate_mutations import _canonical_gate_mutation_plan
     try: GENERATION_SUBCOMMANDS = __import__("tickets_generations").GENERATION_SUBCOMMANDS
     except ModuleNotFoundError: GENERATION_SUBCOMMANDS = {}
 INSTANTIATE_USAGE = 'instantiate <template-dir> --run <run> [--set k=v ...]'
@@ -236,10 +236,6 @@ def _gate_input(name: str, *, literal=None, run: str='', ticket: str='', section
 def _input_name(prefix: str, value: str, position: int) -> str:
     slug = re.sub(r'[^a-z0-9]+', '-', str(value).lower()).strip('-')
     return f'{prefix}-{slug or position}'
-def _canonical_gate_mutation_plan(mutations):
-    mutations = mutations or []; parsed = [re.fullmatch(r'(create|change|delete|write):(.+)', value) if isinstance(value, str) else None for value in mutations] if isinstance(mutations, list) else []
-    valid = isinstance(mutations, list) and all(match is not None and match.group(2).removesuffix('/') and '\\' not in match.group(2) and not match.group(2).startswith('/') and ((match.group(1) == 'write') == match.group(2).endswith('/')) and all(part not in ('', '.', '..') for part in match.group(2).removesuffix('/').split('/')) and not any(char in match.group(2) for char in '*?[]') and ':' not in match.group(2).split('/', 1)[0] for match in parsed)
-    paths = sorted({match.group(2) for match in parsed}) if valid else []; canonical = json.dumps(paths, ensure_ascii=False, separators=(',', ':'), sort_keys=True).encode('utf-8'); return ({'identity': 'sha256:' + hashlib.sha256(canonical).hexdigest(), 'paths': paths}, None) if valid else (None, 'root mutation plan is malformed')
 def _gate_body(kind: str, root_id: str, lens: str, scope: list, acceptance_id: str, acceptance: str, units: list, run: str='', mutation_plan=None) -> list:
     """The four cut-time sections of one gate stub."""
     if kind == 'critique':
@@ -314,9 +310,13 @@ def _gate_under_run_lock(rest):
     other_gate_roots = [owner for owner in gate_roots if owner != root_id]
     if other_gate_roots:
         return {'error': f"run '{run}' already has the one gate owned by root '{other_gate_roots[0]}': root '{root_id}' cannot create a second gate family. Nothing was written"}
-    scope = _split_commas(scope_arg) if scope_arg is not None else list(root.get('write_scope') or []); mutation_plan, mutation_error = _canonical_gate_mutation_plan(root.get('mutations'))
-    if not scope or mutation_error is not None:
-        return {'error': (f"gate requires --write-scope: the scope the repair holds, and root ticket '{root_id}' declares none to default to. usage: " + GATE_USAGE) if not scope else mutation_error + '. Nothing was written'}
+    scope = (_split_commas(scope_arg) if scope_arg is not None
+             else list(root.get('write_scope') or []))
+    if not scope:
+        return {'error': f"gate requires --write-scope: the scope the repair holds, and root ticket '{root_id}' declares none to default to. usage: " + GATE_USAGE}
+    mutation_plan, mutation_error = _canonical_gate_mutation_plan(root.get('mutations'))
+    if mutation_error is not None:
+        return {'error': mutation_error + '. Nothing was written'}
     gate_prefix = f'{root_id}.gate.'
     units = sorted((item_id for item_id in by_id if item_id.startswith(f'{root_id}.') and (not item_id.startswith(gate_prefix))))
     if not units:

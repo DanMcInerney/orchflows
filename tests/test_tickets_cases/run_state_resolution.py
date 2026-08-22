@@ -53,7 +53,8 @@ class TestRunStateRootResolution(unittest.TestCase):
                  "subprocess", "tempfile", "time", "tickets_format", "tickets_markdown", "tickets_store",
                  "tickets_issue", "tickets_lifecycle", "tickets_packet",
                  "tickets_result", "tickets_worklog", "tickets_dispatch",
-                 "tickets_admission", "tickets_input_producers", "tickets"},
+                 "tickets_gate_mutations", "tickets_admission",
+                 "tickets_input_producers", "tickets"},
                 imported,
             )
 
