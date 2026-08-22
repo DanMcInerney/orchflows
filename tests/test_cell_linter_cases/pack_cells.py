@@ -60,6 +60,7 @@ REAL_PACKS = frozenset({
 # The signature table's `assembly` row. The row label is the anchor; what
 # stands to the right of it is the pack's own to write.
 ASSEMBLY_ROW = re.compile(r"^\| assembly \| (.+?) \|\s*$", re.M)
+CELL_ROW = re.compile(r"^\| ([a-z_]+) \| (.+?) \|\s*$", re.M)
 
 
 def real_assembly_cells():
@@ -67,6 +68,15 @@ def real_assembly_cells():
 
     return {
         skill.parent.name: ASSEMBLY_ROW.findall(skill.read_text(encoding="utf-8"))
+        for skill in sorted((ROOT / "packs").glob("*/SKILL.md"))
+    }
+
+
+def real_pack_cells():
+    """Every shipped pack's signature cells, keyed by pack directory."""
+
+    return {
+        skill.parent.name: dict(CELL_ROW.findall(skill.read_text(encoding="utf-8")))
         for skill in sorted((ROOT / "packs").glob("*/SKILL.md"))
     }
 
@@ -213,6 +223,69 @@ class TestAssemblyForm(_IsolatedTree):
         # anything satisfies the assertNotIn: no output contains no finding.
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertNotIn("assembly cell", result.stdout)
+
+
+class V2WorkspaceBindingTest(unittest.TestCase):
+    """The public v2 lifecycle is data-bound by every shipped pack."""
+
+    EXPECTED = {
+        "orch-code-pack": {
+            "executor": "`orch-tdd`",
+            "adapter": "`git`",
+            "legacy": (
+                "git:", "identities: revisions", "authority: paths",
+                "isolation: branch or worktree",
+            ),
+        },
+        "orch-content-pack": {
+            "executor": "`orch-draft`",
+            "adapter": "`document-tree`",
+            "legacy": (
+                "document tree:", "identities are document revisions",
+                "isolation is a run-scoped directory", "write scopes are outline slots",
+            ),
+        },
+        "orch-design-pack": {
+            "executor": "`orch-render`",
+            "adapter": "`git-plus-render`",
+            "legacy": (
+                "git plus render:", "identities: [view identity]", "authority: paths",
+                "golden captures:", "run captures: outside write scope",
+            ),
+        },
+        "orch-research-pack": {
+            "executor": "`orch-investigate`",
+            "adapter": "`evidence-store`",
+            "legacy": (
+                "evidence store:", "identities are [evidence packets]",
+                "isolation is a run-scoped directory", "write scopes are lane stores",
+            ),
+        },
+    }
+    PUBLIC_V2_FIELDS = (
+        "root_generation", "cut_generation", "assignment_seal", "ownership_regions",
+    )
+
+    def test_every_shipped_workspace_binds_v2_without_replacing_legacy_meaning(self):
+        packs = real_pack_cells()
+        self.assertEqual(set(self.EXPECTED), set(packs))
+        for pack, expected in self.EXPECTED.items():
+            with self.subTest(pack=pack):
+                cells = packs[pack]
+                workspace = cells["workspace"]
+                self.assertEqual(expected["executor"], cells["executor"])
+                self.assertIn("ticket adapter: %s" % expected["adapter"], workspace)
+                for fragment in expected["legacy"]:
+                    self.assertIn(fragment, workspace)
+                for field in self.PUBLIC_V2_FIELDS:
+                    self.assertIn(field, workspace)
+                self.assertRegex(
+                    workspace,
+                    r"ownership_regions: (?:`(?:symbol|heading|json-pointer)`|adapter-equivalent)",
+                )
+                self.assertIn("fallback: dependency order or one sole owner", workspace)
+                self.assertIn("merge oracle:", workspace)
+                self.assertIn("stable non-overlap at a pinned identity", workspace)
 
 
 class TestCellClauseSplitter(unittest.TestCase):

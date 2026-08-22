@@ -12,6 +12,6 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | assembly | `orch-edit` |
 | lens | `orch-critique` with [references/craft.md#lens](references/craft.md#lens) |
 | oracle_policy | [references/oracles.md](references/oracles.md) |
-| workspace | document tree: identities are document revisions, isolation is a run-scoped directory, write scopes are outline slots |
+| workspace | document tree: identities are document revisions, isolation is a run-scoped directory, write scopes are outline slots; ticket adapter: `document-tree`; v2 lifecycle fields: root_generation, cut_generation, assignment_seal, ownership_regions; ownership_regions: `heading` outline slots at a pinned document revision; fallback: dependency order or one sole owner; merge oracle: the document-tree adapter proves stable non-overlap at a pinned identity for same-artifact parallelism |
 | required_spec_fields | target directory; audience; voice contract; length budget; citation policy |
 | craft | [references/craft.md](references/craft.md) |
