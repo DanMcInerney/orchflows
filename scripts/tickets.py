@@ -91,6 +91,7 @@ if __package__:
     from . import tickets_worklog as _tickets_worklog_module
     from . import tickets_dispatch as _tickets_dispatch_module
     from . import tickets_admission as _tickets_admission_module
+    from . import tickets_generations as _tickets_generations_module
 else:
     import tickets_format as _tickets_format_module
     import tickets_store as _tickets_store_module
@@ -101,6 +102,7 @@ else:
     import tickets_worklog as _tickets_worklog_module
     import tickets_dispatch as _tickets_dispatch_module
     import tickets_admission as _tickets_admission_module
+    import tickets_generations as _tickets_generations_module
 
 CRITERION_BULLET_RE = _tickets_format_module.CRITERION_BULLET_RE
 CUT_SECTIONS = _tickets_format_module.CUT_SECTIONS
@@ -186,6 +188,7 @@ parse_result_identity = _tickets_format_module.parse_result_identity
 parse_return_size = _tickets_format_module.parse_return_size
 ticket_defects = _tickets_format_module.ticket_defects
 ADMISSION_PENDING = _tickets_admission_module.ADMISSION_PENDING
+ADMISSION_V2_PENDING = _tickets_admission_module.ADMISSION_V2_PENDING
 ADMISSION_VERSION = _tickets_admission_module.ADMISSION_VERSION
 ADAPTER_BY_PACK = _tickets_admission_module.ADAPTER_BY_PACK
 PACK_EXECUTOR_BINDINGS = _tickets_admission_module.PACK_EXECUTOR_BINDINGS
@@ -198,10 +201,21 @@ grade_admission = _tickets_admission_module.grade_admission
 grade_result = _tickets_admission_module.grade_result
 is_receipt = _tickets_admission_module.is_receipt
 is_v1 = _tickets_admission_module.is_v1
+is_v2 = _tickets_admission_module.is_v2
 valid_cohort = _tickets_admission_module.valid_cohort
 relevant_snapshot_ids = _tickets_admission_module.relevant_snapshot_ids
 root_cohort = _tickets_admission_module.root_cohort
 ticket_cohort = _tickets_admission_module.ticket_cohort
+GenerationError = _tickets_generations_module.GenerationError
+append_amendment_request = _tickets_generations_module.append_amendment_request
+assignment_digest = _tickets_generations_module.assignment_digest
+assignment_payload = _tickets_generations_module.assignment_payload
+correction_decision = _tickets_generations_module.correction_decision
+draft_snapshot = _tickets_generations_module.draft_snapshot
+generation_identity = _tickets_generations_module.generation_identity
+generation_ordinal = _tickets_generations_module.generation_ordinal
+seal_assignments = _tickets_generations_module.seal_assignments
+validate_draft = _tickets_generations_module.validate_draft
 DEFAULT_RUN_STATE_TREE = _tickets_store_module.DEFAULT_RUN_STATE_TREE
 NO_SINK_ERROR = _tickets_store_module.NO_SINK_ERROR
 REPLACE_BUDGET_SECONDS = _tickets_store_module.REPLACE_BUDGET_SECONDS

@@ -8,6 +8,7 @@ from unittest import mock
 
 from scripts import tickets_admission as admission
 from scripts import tickets_generations as generations
+from scripts import tickets
 from scripts.tickets_dispatch import _dispatch
 from scripts.tickets_format import _parse_frontmatter, _set_frontmatter_field
 
@@ -40,6 +41,10 @@ def snapshot():
 
 
 class GenerationIdentityTest(unittest.TestCase):
+    def test_public_facade_exposes_v2_generation_engine(self):
+        self.assertIs(tickets.draft_snapshot, generations.draft_snapshot)
+        self.assertIs(tickets.assignment_digest, generations.assignment_digest)
+
     def test_root_and_cut_identities_cover_assignment_not_bookkeeping(self):
         original = snapshot()
         draft = generations.draft_snapshot("00-root", original)
