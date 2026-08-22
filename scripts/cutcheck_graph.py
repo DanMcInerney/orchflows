@@ -82,6 +82,20 @@ def _first_overlap(paths, scopes):
     return None
 
 
+def _shared_artifacts(left, right):
+    """Every distinct path overlapped by two scopes, most-specific first."""
+
+    shared = set()
+    for left_path in left:
+        for right_path in right:
+            if not _overlaps(left_path, right_path):
+                continue
+            left_value = str(left_path).replace("\\", "/").rstrip("/")
+            right_value = str(right_path).replace("\\", "/").rstrip("/")
+            shared.add(left_value if len(left_value) >= len(right_value) else right_value)
+    return sorted(shared)
+
+
 def _decomposers(siblings):
     """Every id in this set whose executor is the decomposer."""
 
@@ -284,7 +298,7 @@ def _issued_items(siblings, roots):
     ]
 
 
-def _pairwise(siblings, reads):
+def _pairwise(siblings, reads, region_prover=None):
     """Family 4: the pairs the DAG leaves free to run at the same time.
 
     Ordering is reachability, not adjacency -- a pair joined through a third
@@ -304,15 +318,15 @@ def _pairwise(siblings, reads):
             scopes = {
                 item: _listed(siblings[item], "write_scope") for item in (left, right)
             }
-            shared = _first_overlap(scopes[left], scopes[right])
-            if shared is not None:
-                region_keys = {"ownership_regions", "merge_oracles"}
+            for shared in _shared_artifacts(scopes[left], scopes[right]):
+                region_keys = {"ownership_regions"}
                 uses_regions = any(
                     region_keys & set(siblings[item]) for item in (left, right)
                 )
                 if uses_regions:
                     region_grade = _region_parallel_admission(
-                        left, siblings[left], right, siblings[right], shared
+                        left, siblings[left], right, siblings[right], shared,
+                        prover=region_prover,
                     )
                     if not region_grade["admitted"]:
                         codes = ",".join(item["code"] for item in region_grade["findings"])
