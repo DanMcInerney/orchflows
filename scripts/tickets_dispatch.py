@@ -193,11 +193,7 @@ def _cmd_instantiate(rest):
         return {'error': f'unwritable ticket: {error}. Nothing was written'}
     return {'instantiate': {'template': str(template.get('name') or directory.name), 'run': run, 'ids': ordered, 'paths': [str(path) for path, _ in rendered]}}
 def _pack_domain(pack) -> str:
-    """The domain label of a stamped pack: `orch-code-pack` -> `code`.
-    contracts/pack-signature.md's `lens` cell binds `orch-critique` with the
-    pack's craft `## Lens` and names no label of its own, so there is one
-    label a caller never has to invent: the domain the pack is named for.
-    """
+    """The stamped pack's domain label: `orch-code-pack` -> `code`."""
     name = str(pack or '').strip()
     if name.startswith(PACK_NAME_PREFIX):
         name = name[len(PACK_NAME_PREFIX):]
@@ -216,12 +212,7 @@ def _gate_sections(kind: str, root_id: str, lens: str, scope: list, acceptance_i
     """The body of one gate stub. One place, so the three read as one gate."""
     return _gate_body(kind, root_id, lens, scope, acceptance_id, acceptance, units, run, mutation_plan) + GATE_EXECUTOR_SECTIONS
 def _listed_items(values, indent: str='') -> str:
-    """A frontmatter list stated in prose as the items it holds.
-    Never the Python repr of the list. An executor greps its own ticket for
-    the path it may write, and `repr` doubles every separator a Windows path
-    carries, so the body named `scripts\\\\one.py` where the frontmatter --
-    and the filesystem -- said `scripts\\one.py`.
-    """
+    """State frontmatter items without Python repr's escaped separators."""
     return '\n'.join((f'{indent}- `{value}`' for value in values))
 def _gate_input(name: str, *, literal=None, run: str='', ticket: str='', section: str='') -> str:
     """One canonical fixed-input record for a generated gate."""
@@ -238,40 +229,18 @@ def _input_name(prefix: str, value: str, position: int) -> str:
     slug = re.sub(r'[^a-z0-9]+', '-', str(value).lower()).strip('-')
     return f'{prefix}-{slug or position}'
 def _canonical_gate_mutation_plan(mutations):
-    """Return the verify packet's exact path set, or one refusal reason."""
-    if mutations is None:
-        mutations = []
-    if not isinstance(mutations, list):
-        return None, 'root mutation plan is not a list'
+    mutations = mutations or []
+    if not isinstance(mutations, list): return None, 'root mutation plan is not a list'
     paths = []
     for mutation in mutations:
-        if not isinstance(mutation, str):
-            return None, f'root mutation plan entry is not text: {mutation!r}'
-        match = re.fullmatch(r'(create|change|delete|write):(.+)', mutation)
-        if match is None:
-            return None, f'root mutation plan entry is malformed: {mutation!r}'
-        action, path = match.groups()
-        body = path[:-1] if path.endswith('/') else path
-        parts = body.split('/')
-        if (
-            not body
-            or '\\' in path
-            or path.startswith('/')
-            or (action == 'write') != path.endswith('/')
-            or any(part in ('', '.', '..') for part in parts)
-            or any(char in path for char in '*?[]')
-            or (parts and ':' in parts[0])
-        ):
+        match = re.fullmatch(r'(create|change|delete|write):(.+)', mutation) if isinstance(mutation, str) else None
+        if match is None: return None, f'root mutation plan entry is malformed: {mutation!r}'
+        action, path = match.groups(); body = path[:-1] if path.endswith('/') else path; parts = body.split('/')
+        if not body or '\\' in path or path.startswith('/') or (action == 'write') != path.endswith('/') or any(part in ('', '.', '..') for part in parts) or any(char in path for char in '*?[]') or (parts and ':' in parts[0]):
             return None, f'root mutation plan path is not repository-relative POSIX: {path!r}'
         paths.append(path)
-    paths = sorted(set(paths))
-    canonical = json.dumps(
-        paths, ensure_ascii=False, separators=(',', ':'), sort_keys=True
-    ).encode('utf-8')
-    return {
-        'identity': 'sha256:' + hashlib.sha256(canonical).hexdigest(),
-        'paths': paths,
-    }, None
+    paths = sorted(set(paths)); canonical = json.dumps(paths, ensure_ascii=False, separators=(',', ':'), sort_keys=True).encode('utf-8')
+    return {'identity': 'sha256:' + hashlib.sha256(canonical).hexdigest(), 'paths': paths}, None
 def _gate_body(kind: str, root_id: str, lens: str, scope: list, acceptance_id: str, acceptance: str, units: list, run: str='', mutation_plan=None) -> list:
     """The four cut-time sections of one gate stub."""
     if kind == 'critique':
@@ -289,11 +258,7 @@ def _gate_body(kind: str, root_id: str, lens: str, scope: list, acceptance_id: s
         ]
         return [('Objective', f"Every accepted finding against `{root_id}` is repaired inside this ticket's own write scope, or declined with a stated reason; nothing outside that scope changes."), ('Fixed inputs', '\n'.join(inputs)), ('Completion test', '\n'.join(["- every accepted finding is repaired or declined with a stated reason | oracle: the critique tickets' findings against this ticket's `## Result` | oracle_class: deterministic | provenance: pre-existing", "- nothing outside the write scope changed | oracle: `git status --porcelain` in the run's workspace | oracle_class: deterministic | provenance: pre-existing"])), ('Return fields', 'status; result — each finding, its disposition and the changed artifact by identity; verification; feedback; risks')]
     repair_id = GATE_REPAIR_ID.format(root=root_id)
-    inputs = [
-        _gate_input('acceptance', run=run, ticket=acceptance_id, section='Completion test'),
-        _gate_input('repair-result', run=run, ticket=repair_id, section='Result'),
-        _gate_input('mutation-plan-paths', literal=mutation_plan),
-    ]
+    inputs = [_gate_input('acceptance', run=run, ticket=acceptance_id, section='Completion test'), _gate_input('repair-result', run=run, ticket=repair_id, section='Result'), _gate_input('mutation-plan-paths', literal=mutation_plan)]
     return [('Objective', f"`{acceptance_id}`'s acceptance is decided at the revision `{repair_id}` left: one verdict per criterion, from the oracle that criterion names."), ('Fixed inputs', '\n'.join(inputs)), ('Completion test', acceptance), ('Return fields', "status; verification — one verdict per criterion with the oracle's output; result; feedback; risks")]
 def _cmd_gate(rest):
     """Serialize the gate's complete state read and all-or-none creation."""
@@ -308,12 +273,7 @@ def _cmd_gate(rest):
     except OSError as error:
         return {'error': f'unable to create gate: {error}. Nothing was written'}
 def _gate_under_run_lock(rest):
-    """Write one root ticket's gate stubs into its run.
-    Refused rather than half-written: a root with no `<root>.NN` units has
-    nothing for a critique to close over, and a stub id already issued
-    means a gate is already standing — writing a second one would put two
-    repairs on one scope. Nothing lands until every stub is graded.
-    """
+    """Write one graded, all-or-none composite gate for the run's root."""
     args = list(rest)
     lens_arg = _extract_flag(args, '--lens')
     scope_arg = _extract_flag(args, '--write-scope')
