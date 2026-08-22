@@ -4322,6 +4322,14 @@
    ]
   },
   {
+   "module": "tests.test_tickets_cases.admission_v2",
+   "owner": "PostSealAssignmentGenerationTest.test_amend_invalidates_the_seal_and_validates_a_successor",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
    "module": "tests.test_tickets_cases.common",
    "owner": "<module>",
    "restoration": "sharded-module-guard",
@@ -4564,6 +4572,14 @@
   {
    "module": "tests.test_tickets_issue_cases.console_cases",
    "owner": "NarrowConsoleTest.test_a_payload_holding_an_unencodable_character_still_prints",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_issue_cases.generation_lifecycle",
+   "owner": "DraftValidateSealLifecycleTest.test_commands_validate_seal_and_release_units_to_ready",
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
