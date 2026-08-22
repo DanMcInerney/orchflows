@@ -104,6 +104,18 @@ class TestWorkItemContract(unittest.TestCase):
                 f"work-item.md's root ticket does not name {token}",
             )
 
+    def test_verify_gate_inputs_pin_the_canonical_mutation_plan_contract(self):
+        text = read("work-item.md")
+        for token in (
+            "`mutation-plan-paths`",
+            "sorted unique repository-relative POSIX paths",
+            "canonical UTF-8 JSON",
+            "`sha256:<64 lowercase hex>`",
+            "refuses gate creation",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, text)
+
     def test_template_and_stub_names_its_shape_and_its_owner(self):
         text = read("work-item.md")
         for token in (

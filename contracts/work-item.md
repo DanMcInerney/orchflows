@@ -247,6 +247,17 @@ The change updates its focused contract checks and re-pins the superseded
 canonical bytes in `tests/pins.json`; it never reinterprets claimed or
 terminal history.
 
+This T0 supersession adds only verify-gate mutation-plan carriage. Every
+`<id>.gate.verify` `## Fixed inputs` carries `mutation-plan-paths`, whose
+value is shaped as
+`{"identity":"sha256:<64 lowercase hex>","paths":["<path>"]}`. The paths are
+the sorted unique repository-relative POSIX paths derived from the admitted
+root `mutations`; their canonical UTF-8 JSON array is bound by SHA-256, and
+the identity is `sha256:<64 lowercase hex>`. A
+malformed mutation refuses gate creation rather than omitting an entry. This
+does not change approved v2 lifecycle fields or semantics, v1 interpretation
+or history, or v0 migration behavior.
+
 ## Root ticket
 
 A ticket whose `executor` is `orch-decompose` and whose `pack` is stamped

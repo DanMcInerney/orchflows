@@ -3854,6 +3854,14 @@
    ]
   },
   {
+   "module": "tests.test_refactor_compat",
+   "owner": "V2ProducerMigrationTest.test_v2_cut_producers_and_consumers_share_one_sealed_generation_contract",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
    "module": "tests.test_return_size",
    "owner": "ActualResultGradeTest.setUp",
    "restoration": "sharded-module-guard",
@@ -4329,7 +4337,31 @@
   },
   {
    "module": "tests.test_tickets_cases.admission_v2",
+   "owner": "ParentAmendmentRequestTest.test_mutators_refuse_unsafe_paths_and_non_v2_history",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.admission_v2",
    "owner": "PostSealAssignmentGenerationTest.test_amend_invalidates_the_seal_and_validates_a_successor",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.admission_v2",
+   "owner": "SealedAdmissionTest.test_generation_pair_and_durable_seal_record_are_both_required",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.admission_v2",
+   "owner": "SealedAuthorityAndOutputTest.test_v2_grant_and_result_replace_are_refused",
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
@@ -4585,7 +4617,23 @@
   },
   {
    "module": "tests.test_tickets_issue_cases.generation_lifecycle",
+   "owner": "CorrectionGenerationPolicyTest.test_command_path_applies_bound_and_recurring_failure_policy",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_issue_cases.generation_lifecycle",
    "owner": "DraftValidateSealLifecycleTest.test_commands_validate_seal_and_release_units_to_ready",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_issue_cases.generation_lifecycle",
+   "owner": "DraftValidateSealLifecycleTest.test_reverting_an_old_assignment_still_allocates_a_successor",
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"

@@ -1,5 +1,6 @@
 """Ticket dispatch support."""
 from __future__ import annotations
+import hashlib
 import json
 import re
 import sys
@@ -211,9 +212,9 @@ def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list, write_
     if error is not None:
         raise ValueError(error)
     return text
-def _gate_sections(kind: str, root_id: str, lens: str, scope: list, acceptance_id: str, acceptance: str, units: list, run: str='') -> list:
+def _gate_sections(kind: str, root_id: str, lens: str, scope: list, acceptance_id: str, acceptance: str, units: list, run: str='', mutation_plan=None) -> list:
     """The body of one gate stub. One place, so the three read as one gate."""
-    return _gate_body(kind, root_id, lens, scope, acceptance_id, acceptance, units, run) + GATE_EXECUTOR_SECTIONS
+    return _gate_body(kind, root_id, lens, scope, acceptance_id, acceptance, units, run, mutation_plan) + GATE_EXECUTOR_SECTIONS
 def _listed_items(values, indent: str='') -> str:
     """A frontmatter list stated in prose as the items it holds.
     Never the Python repr of the list. An executor greps its own ticket for
@@ -236,7 +237,42 @@ def _gate_input(name: str, *, literal=None, run: str='', ticket: str='', section
 def _input_name(prefix: str, value: str, position: int) -> str:
     slug = re.sub(r'[^a-z0-9]+', '-', str(value).lower()).strip('-')
     return f'{prefix}-{slug or position}'
-def _gate_body(kind: str, root_id: str, lens: str, scope: list, acceptance_id: str, acceptance: str, units: list, run: str='') -> list:
+def _canonical_gate_mutation_plan(mutations):
+    """Return the verify packet's exact path set, or one refusal reason."""
+    if mutations is None:
+        mutations = []
+    if not isinstance(mutations, list):
+        return None, 'root mutation plan is not a list'
+    paths = []
+    for mutation in mutations:
+        if not isinstance(mutation, str):
+            return None, f'root mutation plan entry is not text: {mutation!r}'
+        match = re.fullmatch(r'(create|change|delete|write):(.+)', mutation)
+        if match is None:
+            return None, f'root mutation plan entry is malformed: {mutation!r}'
+        action, path = match.groups()
+        body = path[:-1] if path.endswith('/') else path
+        parts = body.split('/')
+        if (
+            not body
+            or '\\' in path
+            or path.startswith('/')
+            or (action == 'write') != path.endswith('/')
+            or any(part in ('', '.', '..') for part in parts)
+            or any(char in path for char in '*?[]')
+            or (parts and ':' in parts[0])
+        ):
+            return None, f'root mutation plan path is not repository-relative POSIX: {path!r}'
+        paths.append(path)
+    paths = sorted(set(paths))
+    canonical = json.dumps(
+        paths, ensure_ascii=False, separators=(',', ':'), sort_keys=True
+    ).encode('utf-8')
+    return {
+        'identity': 'sha256:' + hashlib.sha256(canonical).hexdigest(),
+        'paths': paths,
+    }, None
+def _gate_body(kind: str, root_id: str, lens: str, scope: list, acceptance_id: str, acceptance: str, units: list, run: str='', mutation_plan=None) -> list:
     """The four cut-time sections of one gate stub."""
     if kind == 'critique':
         inputs = [_gate_input('lens', literal=lens)]
@@ -256,6 +292,7 @@ def _gate_body(kind: str, root_id: str, lens: str, scope: list, acceptance_id: s
     inputs = [
         _gate_input('acceptance', run=run, ticket=acceptance_id, section='Completion test'),
         _gate_input('repair-result', run=run, ticket=repair_id, section='Result'),
+        _gate_input('mutation-plan-paths', literal=mutation_plan),
     ]
     return [('Objective', f"`{acceptance_id}`'s acceptance is decided at the revision `{repair_id}` left: one verdict per criterion, from the oracle that criterion names."), ('Fixed inputs', '\n'.join(inputs)), ('Completion test', acceptance), ('Return fields', "status; verification — one verdict per criterion with the oracle's output; result; feedback; risks")]
 def _cmd_gate(rest):
@@ -317,6 +354,9 @@ def _gate_under_run_lock(rest):
     scope = _split_commas(scope_arg) if scope_arg is not None else list(root.get('write_scope') or [])
     if not scope:
         return {'error': f"gate requires --write-scope: the scope the repair holds, and root ticket '{root_id}' declares none to default to. usage: " + GATE_USAGE}
+    mutation_plan, mutation_error = _canonical_gate_mutation_plan(root.get('mutations'))
+    if mutation_error is not None:
+        return {'error': mutation_error + '. Nothing was written'}
     gate_prefix = f'{root_id}.gate.'
     units = sorted((item_id for item_id in by_id if item_id.startswith(f'{root_id}.') and (not item_id.startswith(gate_prefix))))
     if not units:
@@ -346,7 +386,7 @@ def _gate_under_run_lock(rest):
         repair_id = GATE_REPAIR_ID.format(root=root_id)
         rendered.append((repair_id, _gate_stub(run, repair_id, GATE_EXECUTORS['repair'], critique_ids, scope, _gate_sections('repair', root_id, '', scope, acceptance_id, acceptance, critique_ids, run), pack, inherited_inputs=inherited_inputs, baseline=gate_baseline)))
         verify_id = GATE_VERIFY_ID.format(root=root_id)
-        rendered.append((verify_id, _gate_stub(run, verify_id, GATE_EXECUTORS['verify'], [repair_id], [], _gate_sections('verify', root_id, '', scope, acceptance_id, acceptance, units, run), pack, inherited_inputs=inherited_inputs, baseline=gate_baseline)))
+        rendered.append((verify_id, _gate_stub(run, verify_id, GATE_EXECUTORS['verify'], [repair_id], [], _gate_sections('verify', root_id, '', scope, acceptance_id, acceptance, units, run, mutation_plan), pack, inherited_inputs=inherited_inputs, baseline=gate_baseline)))
     except ValueError as error:
         return {'error': str(error) + '. Nothing was written'}
     tickets_root = _tickets_root()
