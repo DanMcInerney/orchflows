@@ -23,6 +23,11 @@ from tests.test_tickets_issue_cases.surface_cases import SurfaceTest
 from tests.test_tickets_issue_cases.template_cases import InstantiateTest
 from tests.test_tickets_issue_cases.admission_producers import V1ProducerTest
 from tests.test_tickets_issue_cases.admission_recut import RecutAndCohortTest
+from tests.test_tickets_issue_cases.generation_lifecycle import (
+    CorrectionGenerationPolicyTest,
+    DraftValidateSealLifecycleTest,
+    GenerationIdentityTest,
+)
 
 
 if __name__ == "__main__":

@@ -78,3 +78,36 @@
    multi-run shape is a template
    ([work-item.md](../contracts/work-item.md)) run by `orch-frontier`.
    Mixed decomposition inside one graph is undefined.
+8. A v2 assignment cut advances only through `draft`, `validated`, and
+   `sealed`. The draft is the complete implementation cut: units,
+   dependencies, ownership regions, coverage map, and composite gate.
+   Validation grades one exact draft snapshot and records its validation
+   receipt. Run-lock compare-and-swap seals only that exact validated digest;
+   only then are its units eligible for ready, claim, or packet.
+9. The public v2 references are `root_generation`, `cut_generation`, and
+   `assignment_seal`; a generation identity is exactly
+   `v2:<root|cut>:<root-id>:<ordinal>:sha256:<digest>`. The root digest covers
+   frozen root assignment fields and excludes cut membership, lifecycle
+   bookkeeping, and executor-owned sections. The cut digest covers its
+   referenced root generation, unit and gate assignment digests, coverage-map
+   digest, ownership-region declarations, and merge-oracle identities; it
+   excludes lifecycle bookkeeping, executor-owned sections, and
+   self-referential generation fields. Storage is content-addressed,
+   script-owned run state; filename and layout are internal.
+10. An ownership region uses a symbol, heading, JSON Pointer, or
+    adapter-equivalent selector. A same-artifact parallelism request requires
+    a merge oracle and a stamped adapter proving stable non-overlap at a
+    pinned identity. Without that proof, use dependency order or one sole owner.
+    A line number is not region identity, and string inequality is not proof
+    of non-overlap.
+11. V2 migration is additive: absence of v2 fields means v1, and no v1 value
+    is reinterpreted. All claimed or terminal v1 tickets are never rewritten
+    and preserve their execution and history. A live v1 root opens a successor or
+    new v2 root citing its Handoff or Result identity; pending or ready v1
+    remains v1 unless the caller explicitly recuts or migrates it. New
+    `orch-spec` and `orch-decompose` producers may opt into v2 while legacy
+    and ad-hoc producers remain v1. Existing v0 admission and migration
+    behavior is preserved; v1 pending, receipt, cohort, ready, claim, and
+    packet semantics do not change. A named-field or enum change to the work
+    item or pack signature lands as explicit T0 supersession with
+    `tests/pins.json` re-pinned.

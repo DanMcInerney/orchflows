@@ -1,5 +1,7 @@
 """Gate-stub behavior cases loaded through :mod:`tests.test_tickets_view`."""
 
+import hashlib
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -141,6 +143,57 @@ class GateStubsTest(unittest.TestCase):
                 tickets_mod._sections(self.stub(run_dir, "R"))["Completion test"],
                 tickets_mod._sections(text)["Completion test"],
             )
+
+    def test_the_verify_carries_the_canonical_root_mutation_plan(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            root = run_dir / "R.md"
+            root.write_text(
+                root.read_text(encoding="utf-8").replace(
+                    "write_scope: []",
+                    "write_scope: []\nmutations: [change:z.py, create:a.py]",
+                ),
+                encoding="utf-8",
+            )
+            self.gate()
+            inputs = tickets_mod._sections(
+                self.stub(run_dir, "R.gate.verify")
+            )["Fixed inputs"]
+            records = [
+                json.loads(line.removeprefix("- input: "))
+                for line in inputs.splitlines()
+            ]
+            record = next(
+                item for item in records if item["name"] == "mutation-plan-paths"
+            )
+            paths = ["a.py", "z.py"]
+            canonical = json.dumps(
+                paths, ensure_ascii=False, separators=(",", ":"), sort_keys=True
+            ).encode("utf-8")
+            self.assertEqual(
+                {
+                    "identity": "sha256:" + hashlib.sha256(canonical).hexdigest(),
+                    "paths": paths,
+                },
+                record["value"],
+            )
+
+    def test_a_malformed_root_mutation_refuses_the_whole_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = self.make(sink)
+            root = run_dir / "R.md"
+            root.write_text(
+                root.read_text(encoding="utf-8").replace(
+                    "write_scope: []",
+                    "write_scope: []\nmutations: [change:/outside.py]",
+                ),
+                encoding="utf-8",
+            )
+            payload = self.gate()
+            self.assertIn("mutation plan", payload["error"])
+            self.assertEqual([], list(run_dir.glob("R.gate.*.md")))
 
     def test_acceptance_can_be_taken_from_another_ticket(self):
         with tempfile.TemporaryDirectory() as tmp:

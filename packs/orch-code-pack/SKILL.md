@@ -12,6 +12,6 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | assembly | none — the repository is the assembly |
 | lens | `orch-critique` with [references/craft.md#lens](references/craft.md#lens) |
 | oracle_policy | [references/oracles.md](references/oracles.md) |
-| workspace | git: identities: revisions; authority: paths; mutation-plan field: `mutations`; scope-edge manifest: `.orchflows/scope-edges.json`; missing-manifest mode: direct-only; isolation: branch or worktree; conflict binding: `orch-resolve-conflicts` |
+| workspace | git: identities: revisions; authority: paths; mutation-plan field: `mutations`; scope-edge manifest: `.orchflows/scope-edges.json`; missing-manifest mode: direct-only; isolation: branch or worktree; conflict binding: `orch-resolve-conflicts`; ticket adapter: `git`; v2 references: root_generation, cut_generation, assignment_seal, and ownership_regions; ownership_regions: `symbol` or `json-pointer` at a pinned revision; absent region proof, order dependencies or assign a sole owner; merge oracle: the git adapter proves stable non-overlap at a pinned identity for same-artifact parallelism |
 | required_spec_fields | target repository; standards owner by pointer; acceptance as runnable checks |
 | craft | [references/craft.md](references/craft.md) |

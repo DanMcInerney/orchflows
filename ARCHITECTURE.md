@@ -43,6 +43,8 @@ whitespace-delimited words. Use terms exactly as
   `tickets_inputs.py` owns typed identity resolution, `tickets_scope.py` owns
   mutation/edge closure, and `tickets_admission.py` composes those pure lower
   graders into receipts. Lifecycle and packet modules consume admission.
+  Gate mutation-plan derivation belongs to one ticket-family internal helper;
+  dispatch consumes its canonical result.
   Cutcheck imports those lower owners directly, never the tickets facade;
   admission and cutcheck never import each other.
 - [`tools/validate.py`](tools/validate.py) owns mechanical library-text

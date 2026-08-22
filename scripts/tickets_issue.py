@@ -11,13 +11,13 @@ if __package__:
 else:
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
 if __package__:
-    from .tickets_admission import ADMISSION_PENDING, cohort_sealed, ticket_cohort, valid_cohort
+    from .tickets_admission import ADMISSION_PENDING, ADMISSION_V2_PENDING, cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from .tickets_input_producers import render_ticket_inputs
 else:
-    from tickets_admission import ADMISSION_PENDING, cohort_sealed, ticket_cohort, valid_cohort
+    from tickets_admission import ADMISSION_PENDING, ADMISSION_V2_PENDING, cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from tickets_input_producers import render_ticket_inputs
-
 AMENDABLE_STATUSES = frozenset({'pending', 'ready'})
+def _invalidate_assignment(text): v2 = is_v2(_parse_frontmatter(text)); text = _set_frontmatter_field(text, 'admission', ADMISSION_V2_PENDING if v2 else ADMISSION_PENDING); return _remove_frontmatter_field(text, 'assignment_seal') if v2 else text
 NEW_USAGE = 'new <run> <id> --executor E --objective TEXT --criterion C [--criterion C ...] [--depends-on a,b] [--write-scope p[,p]] [--mutation create|change|delete|write:path ...] [--bound B] [--pack P] [--input JSON ...] [--excluded X ...] [--profile P] [--independence gate|checker] [--isolation required|none] [--cohort v1:<ticket|root|batch>:<id>] [--return-fields TEXT] | new <run> [<id>] --file <path> [--cohort v1:<ticket|root|batch>:<id>]'
 NEW_DEFAULT_BOUND = f'{DEFAULT_BOUND_MINUTES}m'
 NEW_DEFAULT_INPUTS = '- input: {"name":"none","type":"literal","value":null}'
@@ -284,7 +284,7 @@ def _amend_under_run_lock(rest):
         return over
     cohort = str(frontmatter.get('cohort') or '').strip() or ticket_cohort(ticket_id)
     rendered = _set_frontmatter_field(rendered, 'status', 'pending')
-    rendered = _set_frontmatter_field(rendered, 'admission', ADMISSION_PENDING)
+    rendered = _invalidate_assignment(rendered)
     rendered = _set_frontmatter_field(rendered, 'cohort', cohort)
     failure = _replace_and_invalidate(ticket_path.parent, snapshot, ticket_id, rendered, {cohort})
     if failure is not None:
@@ -314,7 +314,7 @@ def _replace_and_invalidate(run_dir, snapshot, ticket_id, replacement, cohorts):
         if member_id != ticket_id and status not in AMENDABLE_STATUSES:
             continue
         source = _set_frontmatter_field(source, 'status', 'pending')
-        source = _set_frontmatter_field(source, 'admission', ADMISSION_PENDING)
+        source = _invalidate_assignment(source)
         updates[member_id] = source
     written = []
     try:

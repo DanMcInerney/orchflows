@@ -51,3 +51,31 @@
     child under-delivered at the join. How a caller watches a lane on a
     given host is
     [profiles.md](../skills/engines/orch-frontier/references/profiles.md)'s.
+12. The caller owns the semantic root: objective; acceptance meaning and
+    oracle set; total authority and scope; fixed evidence; exclusions;
+    bounds; return contract; deliverable kind and pack. Before seal, a
+    decomposer may mechanically correct unit and gate assignment packets,
+    dependency edges, allocation within total authority, mutation
+    projections, stable ownership regions and merge-oracle bindings,
+    coverage map, composite gate layout, lifecycle receipts and generation
+    references, and mechanically derived root projections only when a
+    deterministic equivalence oracle proves the semantic root unchanged.
+    Otherwise the proposed change is semantic and suspends for the caller.
+13. The default mechanical correction is one generation. A caller or policy
+    may instead set another finite positive bound. Recurrence of the same
+    normalized validation-failure identity suspends immediately rather than
+    consuming another generation.
+14. Under rule 9, once per dispatch a worker needing changed assignment
+    appends one `- amendment-request: <canonical JSON record>` to its own
+    `## Handoff` and parks; it never edits a parent ticket. The record has
+    `request-id`, `requester-ticket`, `parent-ticket`, `root-generation`,
+    `cut-generation`, `change-kind`, `target-fields`, `reason`,
+    `evidence-identities`, and `bound-state`. The caller alone disposes it as
+    `continue`, `amend-and-reseal`, `recut-remaining`, or
+    `successor-or-new-root`.
+15. Before a worker becomes ready, is claimed, or receives a packet, the
+    caller seals the exact validated assignment digest over objective,
+    inputs, authority, dependencies, acceptance, and executor. Those fields
+    are immutable after seal; any change creates a new generation. The
+    executor-owned `Result`, `Verification`, `Feedback`, `Risks`, and
+    `Handoff` sections remain append-only and outside the sealed assignment.

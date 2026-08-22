@@ -161,3 +161,55 @@ class TopologyAtomTest(unittest.TestCase):
             "disjoint scopes, isolation or resumption — the clause the atom "
             "bound replaces",
         )
+
+
+class V2GenerationTopologyContractTest(unittest.TestCase):
+    """Draft lifecycle, generation identity, regions, and migration law."""
+
+    def clause(self, number):
+        return read_clause_flat("rules/topology.md", number)
+
+    def test_draft_validation_and_seal_are_one_exact_snapshot_lifecycle(self):
+        text = self.clause(8)
+        for token in (
+            "draft", "validated", "sealed", "complete implementation cut",
+            "dependencies", "ownership regions", "coverage map",
+            "composite gate", "exact draft snapshot", "validation receipt",
+            "compare-and-swap", "exact validated digest", "eligible",
+        ):
+            self.assertIn(token, text, f"topology.md §8 omits {token!r}")
+
+    def test_generation_references_are_exact_and_digest_covered(self):
+        text = self.clause(9)
+        for token in (
+            "`root_generation`", "`cut_generation`", "`assignment_seal`",
+            "`v2:<root|cut>:<root-id>:<ordinal>:sha256:<digest>`",
+            "frozen root assignment fields", "referenced root generation",
+            "unit and gate assignment digests", "coverage-map digest",
+            "ownership-region declarations", "merge-oracle identities",
+            "lifecycle bookkeeping", "executor-owned sections",
+            "self-referential generation fields", "content-addressed",
+            "script-owned run state",
+        ):
+            self.assertIn(token, text, f"topology.md §9 omits {token!r}")
+
+    def test_parallel_regions_require_pinned_non_overlap_and_merge_oracle(self):
+        text = self.clause(10)
+        for token in (
+            "symbol", "heading", "JSON Pointer", "adapter-equivalent",
+            "merge oracle", "same-artifact parallelism", "stable non-overlap",
+            "pinned identity", "dependency order", "sole owner", "line number",
+            "string inequality",
+        ):
+            self.assertIn(token, text, f"topology.md §10 omits {token!r}")
+
+    def test_v0_and_v1_history_is_not_reinterpreted_during_v2_migration(self):
+        text = self.clause(11)
+        for token in (
+            "absence of v2 fields means v1", "no v1 value is reinterpreted",
+            "claimed or terminal", "never rewritten", "live v1 root",
+            "successor", "new v2 root", "pending or ready v1", "explicitly",
+            "v0", "admission", "migration", "v1 pending", "receipt", "cohort",
+            "ready", "claim", "packet", "T0 supersession", "`tests/pins.json`",
+        ):
+            self.assertIn(token, text, f"topology.md §11 omits {token!r}")

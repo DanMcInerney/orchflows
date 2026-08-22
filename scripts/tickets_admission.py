@@ -7,7 +7,9 @@ lock.
 from __future__ import annotations
 import hashlib
 import importlib
+import json
 import re
+from pathlib import Path
 if __package__:
     from .tickets_format import (
         CUT_SECTIONS,
@@ -46,6 +48,7 @@ else:
     )
 ADMISSION_PENDING = "v1:pending"
 ADMISSION_VERSION = 1
+ADMISSION_V2_PENDING = "v2:pending"
 VCS_ACTION_TOKENS = frozenset({
     "vcs.isolate",
     "vcs.commit",
@@ -65,7 +68,7 @@ _VCS_PROSE_WORDS = (
     "version control",
 )
 _COHORT_RE = re.compile(r"^v1:(?:ticket|root|batch):[A-Za-z0-9][A-Za-z0-9._-]*$")
-_RECEIPT_RE = re.compile(r"^v1:([a-z][a-z0-9-]*):sha256:([0-9a-f]{64})$")
+_RECEIPT_RE = re.compile(r"^v[12]:([a-z][a-z0-9-]*):sha256:([0-9a-f]{64})$")
 _PACK_ROW_RE = re.compile(r"^\|\s*(executor|assembly)\s*\|\s*(.*?)\s*\|\s*$", re.MULTILINE)
 _SKILL_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
 _DYNAMIC_FIELDS = frozenset({
@@ -83,6 +86,20 @@ def batch_cohort(ticket_ids) -> str:
     return f"v1:batch:{hashlib.sha256(joined).hexdigest()[:12]}"
 def is_v1(data: dict) -> bool:
     return str(data.get("admission") or "").startswith("v1:")
+
+
+def is_v2(data: dict) -> bool:
+    """Whether a producer explicitly opted this ticket into v2.
+
+    No legacy value is reinterpreted: one of the four public v2 fields is
+    required.  An admission receipt is a consequence, never a version flag.
+    """
+
+    return any(
+        key in data for key in (
+            "root_generation", "cut_generation", "ownership_regions", "assignment_seal",
+        )
+    )
 
 
 def is_receipt(value) -> bool:
@@ -268,6 +285,8 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
 
     context = dict(context or {})
     data = _parse_frontmatter(text)
+    if is_v2(data):
+        return _grade_v2_admission(ticket_id, text, siblings, context)
     findings = []
     cohort = str(data.get("cohort") or "").strip()
     if not _COHORT_RE.fullmatch(cohort):
@@ -305,6 +324,84 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
         "findings": ordered,
         "receipt": receipt,
         "snapshot_ids": relevant_snapshot_ids(ticket_id, text, siblings),
+        "input_fingerprint": input_fingerprint,
+        "scope_fingerprint": scope_fingerprint,
+    }
+
+
+def _grade_v2_admission(ticket_id: str, text: str, siblings: dict, context: dict) -> dict:
+    """Grade the exact sealed v2 assignment without changing v1 semantics."""
+
+    if __package__:
+        from .tickets_generations import GENERATION_RE, assignment_digest, v2_seal_findings
+    else:
+        module = __import__("tickets_generations")
+        GENERATION_RE = module.GENERATION_RE
+        assignment_digest = module.assignment_digest
+        v2_seal_findings = module.v2_seal_findings
+    data = _parse_frontmatter(text)
+    findings = list(v2_seal_findings(ticket_id, text))
+    sealed_record = None
+    runs_root = context.get("runs_root")
+    run = str(data.get("run") or context.get("run") or "")
+    cut_generation = str(data.get("cut_generation") or "")
+    match = GENERATION_RE.fullmatch(cut_generation)
+    if not runs_root or not run or match is None:
+        findings.append(finding("seal-state-unavailable", "cut_generation", "admission requires the script-owned sealed run-state record"))
+    else:
+        generation_dir = Path(runs_root) / run / "generations"
+        sealed_path = generation_dir / f"{match.group(4)}.sealed.json"
+        validated_path = generation_dir / f"{match.group(4)}.validated.json"
+        try:
+            sealed_record = json.loads(sealed_path.read_text(encoding="utf-8"))
+            validated_record = json.loads(validated_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, ValueError):
+            findings.append(finding("seal-state-missing", "cut_generation", "sealed and validated run-state records must both resolve"))
+        else:
+            if not isinstance(sealed_record, dict):
+                sealed_record = {}
+            root_match = GENERATION_RE.fullmatch(str(data.get("root_generation") or ""))
+            expected = {
+                "cut_generation": cut_generation,
+                "root_generation": str(data.get("root_generation") or ""),
+                "root_id": root_match.group(2) if root_match is not None else None,
+                "state": "sealed",
+            }
+            if any(sealed_record.get(key) != value for key, value in expected.items()):
+                findings.append(finding("seal-state-mismatch", "cut_generation", "sealed run state names another generation"))
+            validated_draft = validated_record.get("draft") if isinstance(validated_record, dict) else None
+            if not isinstance(validated_draft, dict) or sealed_record.get("receipt") != validated_record.get("receipt") or validated_draft.get("cut_generation") != cut_generation:
+                findings.append(finding("validation-receipt-mismatch", "cut_generation", "sealed state does not bind the exact validation receipt"))
+            seals = sealed_record.get("assignment_seals") or {}
+            if seals.get(ticket_id) != data.get("assignment_seal"):
+                findings.append(finding("sealed-assignment-mismatch", "assignment_seal", "sealed run state does not bind this assignment digest"))
+    dependencies = [str(value) for value in (data.get("depends_on") or [])]
+    for dependency in dependencies:
+        if dependency not in siblings:
+            findings.append(finding("dependency-dangling", "depends_on", dependency))
+            continue
+        status = str(_parse_frontmatter(siblings[dependency]).get("status") or "")
+        if status != "complete":
+            findings.append(finding("dependency-incomplete", "depends_on", f"{dependency}:{status or '<missing>'}"))
+    findings.extend(authority_findings(ticket_id, data))
+    adapter = adapter_id(data.get("pack"))
+    common = {"ticket_id": ticket_id, "text": text, "siblings": siblings, "adapter_id": adapter, "context": context}
+    input_findings, input_fingerprint = _optional_probe("tickets_inputs", "grade_inputs", **common)
+    scope_findings, scope_fingerprint = _optional_probe("tickets_scope", "grade_scope", **common)
+    return_findings, _ = _optional_probe("tickets_result", "grade_return_fixture", **common)
+    findings.extend(input_findings)
+    findings.extend(scope_findings)
+    findings.extend(return_findings)
+    ordered = _ordered(findings)
+    receipt = ADMISSION_V2_PENDING
+    if not ordered:
+        payload = {"assignment": assignment_digest(ticket_id, text), "sealed_state": sealed_record}
+        receipt = f"v2:{adapter}:sha256:{hashlib.sha256(_canonical_json(payload)).hexdigest()}"
+    return {
+        "adapter": adapter,
+        "findings": ordered,
+        "receipt": receipt,
+        "snapshot_ids": sorted({ticket_id, *dependencies}),
         "input_fingerprint": input_fingerprint,
         "scope_fingerprint": scope_fingerprint,
     }
@@ -389,9 +486,9 @@ def grade_result(ticket_id: str, text: str, siblings: dict, context=None) -> dic
 
 
 __all__ = (
-    "ADMISSION_PENDING", "ADMISSION_VERSION", "ADAPTER_BY_PACK", "PACK_EXECUTOR_BINDINGS",
+    "ADMISSION_PENDING", "ADMISSION_V2_PENDING", "ADMISSION_VERSION", "ADAPTER_BY_PACK", "PACK_EXECUTOR_BINDINGS",
     "PLAIN_ADAPTER", "VCS_ACTION_TOKENS", "TDD_FORBIDDEN_ACTIONS",
-    "ticket_cohort", "root_cohort", "batch_cohort", "adapter_id", "is_v1",
+    "ticket_cohort", "root_cohort", "batch_cohort", "adapter_id", "is_v1", "is_v2",
     "is_receipt", "valid_cohort", "finding", "authority_findings", "relevant_snapshot_ids",
     "cohort_sealed", "grade_admission", "grade_result",
 )

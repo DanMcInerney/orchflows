@@ -35,6 +35,7 @@ TICKETS_SUPPORT_NAMES = (
     "tickets_result.py",
     "tickets_worklog.py",
     "tickets_dispatch.py",
+    "tickets_gate_mutations.py",
     "tickets_admission.py",
     "tickets_inputs.py",
     "tickets_input_producers.py",

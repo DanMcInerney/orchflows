@@ -17,6 +17,21 @@ the unclaimed items, `tickets.py new` for one the cut is missing, and
 
 ## Kept
 
+- V2 lifecycle fidelity: the draft is complete before validation; one
+  validation receipt grades the exact root and cut generation digests; each
+  `assignment_seal` covers the exact validated assignment; and only that
+  sealed generation is eligible for ready, claim, or packet.
+- Region fidelity: every same-artifact parallel pair has stable non-overlap
+  proved at the pinned identity through a symbol, heading, JSON pointer, or
+  adapter-equivalent ownership region, plus its required merge oracle. A line
+  number or string inequality is not proof; without proof the cut uses
+  dependency order or one sole owner.
+- Amendment fidelity: a worker may append one canonical typed request to its
+  Handoff and park, never edit its parent; integration routes the bounded
+  caller disposition against the request's named generations.
+- Migration fidelity: absence of v2 fields means v1. Legacy producers and
+  existing v0/v1 history retain their established cut and dispatch path.
+
 - Unowned outcome: some item's completion test observes the root
   ticket's outcome across item boundaries, in the pack's workspace
   semantics — a

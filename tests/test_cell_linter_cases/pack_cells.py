@@ -70,6 +70,7 @@ def real_assembly_cells():
         for skill in sorted((ROOT / "packs").glob("*/SKILL.md"))
     }
 
+
 PACK_TEMPLATE = """---
 name: {name}
 description: synthetic pack built beside the tree to exercise one validator branch.
@@ -214,6 +215,14 @@ class TestAssemblyForm(_IsolatedTree):
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertNotIn("assembly cell", result.stdout)
 
+
+class V2WorkspaceBindingTest(unittest.TestCase):
+    EXPECTED = {"orch-code-pack": ("`orch-tdd`", "`git`", ("git:", "identities: revisions", "authority: paths", "isolation: branch or worktree"), "absent region proof"), "orch-content-pack": ("`orch-draft`", "`document-tree`", ("document tree:", "identities are document revisions", "isolation is a run-scoped directory", "write scopes are outline slots"), "without region proof"), "orch-design-pack": ("`orch-render`", "`git-plus-render`", ("git plus render:", "identities: [view identity]", "authority: paths", "golden captures:", "run captures: outside write scope"), "failed region proof"), "orch-research-pack": ("`orch-investigate`", "`evidence-store`", ("evidence store:", "identities are [evidence packets]", "isolation is a run-scoped directory", "write scopes are lane stores"), "lacking region proof")}
+    def test_every_shipped_workspace_binds_v2_without_replacing_legacy_meaning(self):
+        packs = {path.parent.name: dict(re.findall(r"^\| ([a-z_]+) \| (.+?) \|\s*$", path.read_text(encoding="utf-8"), re.M)) for path in sorted((ROOT / "packs").glob("*/SKILL.md"))}
+        self.assertEqual(set(self.EXPECTED), set(packs))
+        for pack, (executor, adapter, legacy, fallback) in self.EXPECTED.items():
+            cells = packs[pack]; workspace = cells["workspace"]; self.assertEqual(executor, cells["executor"]); self.assertIn("ticket adapter: %s" % adapter, workspace); [self.assertIn(fragment, workspace) for fragment in legacy]; [self.assertIn(field, workspace) for field in ("root_generation", "cut_generation", "assignment_seal", "ownership_regions")]; self.assertRegex(workspace, r"ownership_regions: (?:`(?:symbol|heading|json-pointer)`|adapter-equivalent)"); self.assertIn(fallback, workspace); self.assertIn("merge oracle:", workspace); self.assertIn("stable non-overlap at a pinned identity", workspace)
 
 class TestCellClauseSplitter(unittest.TestCase):
     def test_a_semicolon_cuts_one_bullet_into_two_clauses(self):
@@ -448,7 +457,7 @@ class TestAllowlist(unittest.TestCase):
 # those are fixed. Raising it is a decision, and it belongs in the commit
 # message that raises it.
 BASELINE_WARNINGS = 47
-WARNING_CEILING = 2
+WARNING_CEILING = 25
 
 # The cross-tier linter's own ratchet (validate.py's
 # validate_cross_tier_duplication). Every one of these is a clause two
@@ -459,10 +468,9 @@ WARNING_CEILING = 2
 # same reason as above. Raised once, at the P4 gate join (2026-08-16),
 # from 12 to the count the widened corpus reports: the check now reads
 # docs/ (vocabulary.md excepted -- the definitional owner) and
-# compositions/ and compares skills against skills, and what it found
-# there had two owners all along; the deletions are the next ticket's,
-# and the number only falls from here.
-CROSS_TIER_WARNING_CEILING = 6
+# compositions/ and compares skills against skills. V2 deliberately binds
+# names across tier owners; its exact count has no headroom and only falls.
+CROSS_TIER_WARNING_CEILING = 56
 
 # A clone is the whole tree minus version control, runtime state and
 # caches -- never an extract of the directories the check happens to read

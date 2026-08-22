@@ -201,6 +201,12 @@ def _result_under_run_lock(rest):
     text, failure = _read_utf8(ticket_path)
     if failure is not None:
         return failure
+    data = _parse_frontmatter(text)
+    v2 = any(key in data for key in (
+        'root_generation', 'cut_generation', 'ownership_regions', 'assignment_seal',
+    ))
+    if v2 and replace:
+        return {'error': f"v2 executor-owned section '## {canonical}' is append-only; --replace is prohibited"}
     try:
         rendered = _write_section(text, canonical, body, append)
     except TicketFormatError as error:

@@ -274,3 +274,76 @@ class TestSkillDescriptions(unittest.TestCase):
                 len(desc), 140,
                 f"{skill_md} description is {len(desc)} chars (>140): {desc!r}",
             )
+
+
+class V2LifecycleRuleContractTest(unittest.TestCase):
+    """Caller authority, sealed assignment, and amendment ownership."""
+
+    def vocabulary_entry(self, term):
+        flat = read_at_flat("docs/vocabulary.md")
+        self.assertEqual(
+            flat.count(term), 1,
+            f"docs/vocabulary.md must define {term} exactly once",
+        )
+        return flat.split(term, 1)[1].split(" - **", 1)[0]
+
+    def test_vocabulary_owns_the_v2_lifecycle_terms(self):
+        expected = {
+            "**semantic root**": (
+                "executable delivery contract", "caller", "deterministic",
+                "semantic", "suspends",
+            ),
+            "**assignment generation**": (
+                "`root_generation`", "`cut_generation`", "content digest",
+            ),
+            "**assignment seal**": (
+                "validated", "assignment digest", "immutable", "generation",
+            ),
+            "**amendment request**": (
+                "canonical", "`## Handoff`", "worker", "caller",
+            ),
+        }
+        for term, tokens in expected.items():
+            entry = self.vocabulary_entry(term)
+            for token in tokens:
+                with self.subTest(term=term, token=token):
+                    self.assertIn(token, entry)
+
+    def test_delegation_owns_semantic_authority_and_bounded_correction(self):
+        boundary = read_clause_flat("rules/delegation.md", 12)
+        for token in (
+            "semantic root", "objective", "oracle set", "total authority",
+            "fixed evidence", "exclusions", "bounds", "return contract",
+            "deliverable kind", "pack", "deterministic equivalence oracle",
+            "suspends for the caller",
+        ):
+            self.assertIn(token, boundary, f"delegation.md §12 omits {token!r}")
+
+        correction = read_clause_flat("rules/delegation.md", 13)
+        for token in (
+            "mechanical correction", "one generation", "finite positive",
+            "normalized validation-failure identity", "suspends immediately",
+        ):
+            self.assertIn(token, correction, f"delegation.md §13 omits {token!r}")
+
+    def test_delegation_owns_worker_amendment_and_caller_dispositions(self):
+        amendment = read_clause_flat("rules/delegation.md", 14)
+        for token in (
+            "`request-id`", "`requester-ticket`", "`parent-ticket`",
+            "`root-generation`", "`cut-generation`", "`change-kind`",
+            "`target-fields`", "`reason`", "`evidence-identities`",
+            "`bound-state`", "canonical JSON", "`## Handoff`", "park",
+            "never edits a parent ticket", "once per dispatch", "continue",
+            "amend-and-reseal", "recut-remaining", "successor-or-new-root",
+        ):
+            self.assertIn(token, amendment, f"delegation.md §14 omits {token!r}")
+
+    def test_delegation_owns_sealed_assignment_immutability(self):
+        seal = read_clause_flat("rules/delegation.md", 15)
+        for token in (
+            "exact validated assignment digest", "ready", "claim", "packet",
+            "new generation", "`Result`", "`Verification`", "`Feedback`",
+            "`Risks`", "`Handoff`", "append-only", "objective", "inputs",
+            "authority", "dependencies", "acceptance", "executor",
+        ):
+            self.assertIn(token, seal, f"delegation.md §15 omits {token!r}")

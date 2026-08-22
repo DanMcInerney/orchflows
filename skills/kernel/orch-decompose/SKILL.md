@@ -11,36 +11,36 @@ Goal: minimize critical path; every item an atom; obey §3's test/count/width la
 
 Cut [work items](../../../contracts/work-item.md) as `<root>.NN` through
 `tickets.py new --cohort v1:root:<root>`. Pass exact parameters/evidence as
-canonical JSON `--input` records. Reach planned nodes only through the
-stamped workspace cell: when it names `mutations`, carry each through
-`tickets.py new --mutation`. Put routing in
-Objective as the observable routed end state.
-Each item takes a write scope
-overlapping only siblings it is dependency-ordered with,
-`isolation: required` when the pack's workspace cell names a mechanism
-covering that scope, a bound, its edges, and a completion test whose
-criteria name oracles from the pack's oracle policy, each with its
-provenance. Oracle class does not choose the field: stamp
-`independence: gate` if the final gate covers all authored-here criteria;
-otherwise stamp `independence: checker`. This holds regardless of oracle
-class. Draw each edge under §3's rule and place each artifact two
-items would write under its sole-owner rule.
-Emit the assembly item the pack's cell names, on §4's terms.
+canonical JSON `--input` records. Use the stamped workspace cell; carry its
+`mutations` via `--mutation`. Objective states the routed observable end
+state. Give every item a write scope (siblings overlap only when dependency-ordered),
+required isolation when available, bound, edges, and completion criteria with
+pack oracles and provenance. Stamp `independence: gate` exactly when the gate
+covers all authored-here criteria, otherwise `independence: checker`,
+regardless of oracle class. Apply §3 edges and sole ownership; emit §4
+assembly when named.
 
-Run `cutcheck.py` against the cut revision; repair every defect through
-`tickets.py amend` and re-run to exit 0.
-[The cut lens](references/cut-lens.md) judges advisories and whatever the
-script cannot decide. Only then
-write the run's one composite gate through `tickets.py gate`: one critique
-per unique lens name, all feeding one repair and one verification over the
-run's scope.
+Run `cutcheck.py` on the cut revision; amend defects and re-run to 0. The
+[cut lens](references/cut-lens.md) judges advisories and undecidable matters.
+Then write one composite gate: one critique per unique lens, all feeding one
+repair and one verification over run scope.
 
 Map every acceptance criterion to an item, the gate, or uncovered
 remainder at `<state-root>/runs/<run>/<root>.coverage.md`.
 
+For v2, complete one `draft` before eligibility: all assignments, edges,
+coverage, `ownership_regions`, and merge-oracle identities. Every assignment
+names one `root_generation`; the cut names its content-addressed
+`cut_generation` and `assignment_seal` over exact validated worker fields.
+Grade one exact snapshot, persist its validation receipt, then compare-and-swap
+only that digest to sealed after cutcheck and lens pass. Post-seal assignment
+changes create and validate a new generation; repeated normalized validation
+failure suspends at the correction bound. The absence of v2 fields means v1;
+never reinterpret legacy membership, receipts, cohorts, readiness, claims, or
+packets.
+
 Never: edit the root ticket's frozen statement.
 
-Return: status; result — the ticket directory; verification — the
-cutcheck result; then item ids with edges, the critical-path length
-and per-level width from cutcheck's `graph` block, uncovered
-remainder (`[]` when none), and decision_gap (`[]` when coverable).
+Return: status; ticket directory; cutcheck; item ids and edges; graph critical
+path and level widths; uncovered remainder (`[]` when none); decision_gap
+(`[]` when coverable).

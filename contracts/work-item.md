@@ -28,6 +28,29 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
   `v1:batch:<digest>`. Admission grades all members together and seals the
   cohort when one member becomes live; amendment invalidates every unsealed
   member's receipt.
+- `root_generation` — v2 lifecycle: the content identity
+  `v2:root:<root-id>:<ordinal>:sha256:<digest>` of the canonical frozen root assignment fields.
+  Its digest excludes cut membership, lifecycle
+  bookkeeping, and executor-owned sections.
+- `cut_generation` — v2 lifecycle and graph position: the content identity
+  `v2:cut:<root-id>:<ordinal>:sha256:<digest>` of one complete validated cut.
+  Its digest covers the referenced root generation, unit and gate assignment digests,
+  coverage-map digest, ownership-region declarations, and
+  merge-oracle identities. It excludes lifecycle bookkeeping, executor-owned
+  sections, and self-referential generation fields.
+- `ownership_regions` — v2 packet `authority`: a list of canonical records
+  shaped as
+  `{"artifact":"<path>","merge_oracle":"<identity>","owner":"<ticket-id>","selector":{"kind":"<kind>","value":"<stable identity>"}}`.
+  Selector kind is exactly `symbol`, `heading`, `json-pointer`, or
+  `adapter-equivalent`. Same-artifact parallelism requires the stamped
+  adapter to prove stable non-overlap at the pinned identity and binds a
+  merge oracle. A `line-number` identity and string inequality as proof are
+  prohibited; the fallback is dependency-order work or one sole owner.
+- `assignment_seal` — v2 lifecycle: `sha256:<digest>` of the canonical bytes
+  of the exact validated assignment fields `objective`, `inputs`, `authority`,
+  `dependencies`, `acceptance`, and `executor`. The exact validated assignment digest
+  is sealed before worker ready, claim, or packet emission. A post-seal assignment change
+  creates a new generation.
 - `status`: `pending` | `ready` | `claimed` | `suspended` | `complete` |
   `blocked` | `stalled` | `failed` | `limited` — lifecycle; transitions
   per `orch-frontier`. `pending` and `suspended` are the two non-terminal
@@ -157,6 +180,10 @@ parts:
   accepted — re-verify only entries the handoff marks unverified or
   invalidated.
 
+For v2, `## Result`, `## Verification`, `## Feedback`, `## Risks`, and
+`## Handoff` are append-only executor-owned sections. They never enter a
+root generation, cut generation, or assignment seal digest.
+
 ## Dispatch
 
 The six packet parts every dispatch carries are the ticket's own fields:
@@ -202,6 +229,34 @@ requires a live claim and current receipt. Pending/ready v0 tickets and stale
 v0 reclaims are re-cut into v1. Already-live v0 claims alone dispatch as
 `legacy-unadmitted`; claimed/terminal history and friction records are never
 rewritten. Direct status writes cannot create `ready` or `claimed`.
+
+The absence of all four v2 fields — `root_generation`, `cut_generation`,
+`ownership_regions`, and `assignment_seal` — means v1, and no v1 value is reinterpreted.
+History for every claimed or terminal v1 ticket is never rewritten and keeps
+its original execution and history. A pending or ready v1 ticket stays v1
+unless the caller explicitly recuts or migrates it. A live v1 root continues
+through a successor or new v2 root that cites its Handoff or Result identity.
+New producers may opt into v2 explicitly while legacy and ad-hoc producers
+remain v1 during migration; existing v0 behavior remains unchanged.
+
+## T0 supersession
+
+A named-field or enum change to this contract or
+[pack-signature.md](pack-signature.md) lands as an explicit T0 supersession.
+The change updates its focused contract checks and re-pins the superseded
+canonical bytes in `tests/pins.json`; it never reinterprets claimed or
+terminal history.
+
+This T0 supersession adds only verify-gate mutation-plan carriage. Every
+`<id>.gate.verify` `## Fixed inputs` carries `mutation-plan-paths`, whose
+value is shaped as
+`{"identity":"sha256:<64 lowercase hex>","paths":["<path>"]}`. The paths are
+the sorted unique repository-relative POSIX paths derived from the admitted
+root `mutations`; their canonical UTF-8 JSON array is bound by SHA-256, and
+the identity is `sha256:<64 lowercase hex>`. A
+malformed mutation refuses gate creation rather than omitting an entry. This
+does not change approved v2 lifecycle fields or semantics, v1 interpretation
+or history, or v0 migration behavior.
 
 ## Root ticket
 

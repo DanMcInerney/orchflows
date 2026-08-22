@@ -4,48 +4,45 @@ description: Adjudicate one returned child result at the join before anything do
 role: none
 ---
 
-Require: one child return — its completed ticket per
-[work-item.md](../../../contracts/work-item.md), or a bare packet's
-contracted return fields with the originating
-[delegation packet](../../../contracts/work-item.md#dispatch) — plus the
+Require: one child return: its completed
+[ticket](../../../contracts/work-item.md), or a bare packet's contracted fields
+and originating [dispatch](../../../contracts/work-item.md#dispatch); also the
 caller write scope.
 
-Grade a work item by its ticket: verification covers every frozen criterion
-at its identities through one outside-independence path per
-[rules/verification.md](../../../rules/verification.md) §10
-(`authored-here` coverage rides `independence`: `gate` defers to the
-gate, `checker` requires `checked_by`), needs-verify reachable. `suspended`
-resumes from `## Handoff`. Grade a bare packet by its contract; after
-exclusion-stop, use a ticket only when resume matters.
+Grade tickets against every frozen criterion and identity through one
+outside-independence path per
+[verification.md](../../../rules/verification.md) §10. `independence: gate`
+defers authored checks; `checker` requires `checked_by`; uncovered criteria
+yield needs-verify. Grade bare returns by their contract. Suspension resumes
+from `## Handoff`.
 
-Require the returning name to match `claimed_by`, `checked_by`, or the
-re-verifier your `tickets.py packet --executor` named; reject mismatch(child)
-and a lapsed claim outside its bound;
-reject a non-root ticket carrying both `independence: gate` and `checked_by`;
-on a root, `checked_by` is cut reader bookkeeping, never final checker
-acceptance — authored-here acceptance rides the composite gate;
-`changed_artifacts` per
-[work-item.md](../../../contracts/work-item.md#dispatch); nothing a
-verification entry covers has changed since it was produced. For
-`isolation: required`, run `workspace.py check <run> <id> --base <rev>`
-from the integrating checkout; exit 6 is a caller-vantage error, not a verdict.
-Apply [result.md](../../../contracts/result.md)'s `return-size` crossing:
-`tickets.py result-grade <run> <id>`; attribute each finding through the
-work-item blame rule. Malformed caller-authored clauses and unavailable
-caller/host resolver inputs are `reject(caller)`; an invalid, unresolved, or
-oversized result the executor filed is `reject(child)`.
+The returning name must match `claimed_by`, `checked_by`, or the re-verifier
+named by `tickets.py packet --executor`; reject mismatches and expired claims.
+Reject a non-root carrying both `independence: gate` and `checked_by`. By
+contrast, on a root, `checked_by` is cut reader bookkeeping and never final checker acceptance
+because the composite gate decides authored acceptance. Confirm `changed_artifacts`,
+unchanged evidence, and, for required isolation, run `workspace.py check` from
+the integrating checkout (exit 6 is caller-vantage failure).
 
-Classify blame per
-[work-item contract](../../../contracts/work-item.md#dispatch), recording
-writes through `tickets.py run-state --note`. The join alone
-writes terminal status (`tickets.py set-status`). At a critique join,
-an accepted defect set of `[]` across every critique the
-`<root>.gate.repair` depends on completes that repair here — empty
-disposition filed through `tickets.py result`, then
-`set-status complete` — with no dispatch.
+Apply [result.md](../../../contracts/result.md)'s `return-size` crossing once:
+`tickets.py result-grade <run> <id>`. Caller-authored malformed clauses or
+missing resolver inputs are `reject(caller)`; executor-authored invalid,
+unresolved, or oversized results are `reject(child)`. Record blame with
+`tickets.py run-state --note`; only this join calls `tickets.py set-status`.
+An accepted defect set of `[]` from every critique feeding
+`<root>.gate.repair` completes that repair here by filing the empty result and
+status, without dispatch.
 
-Never: trust out-of-scope output; re-run a covered oracle; repair it.
+For v2, validate exactly one
+`- amendment-request: <canonical JSON record>` in a parked worker's Handoff,
+including all fields required by [delegation.md](../../../rules/delegation.md).
+Route it once per dispatch; neither worker nor join edits its parent. The
+caller records `continue`, `amend-and-reseal`, `recut-remaining`, or
+`successor-or-new-root`; resume only from the resulting sealed generation or
+unchanged packet. The absence of v2 fields means v1; old free-form Handoffs and
+claimed or terminal v1 history retain their path.
 
-Return: disposition — accepted, rejected(blame), suspended (route to
-resume), or ticket-grade-only needs-verify with uncovered
-criteria — plus invalidated evidence and the integrated state.
+Never: trust out-of-scope output, rerun covered oracles, or repair here.
+
+Return: the disposition (accepted, rejected(blame), suspended, or needs-verify),
+invalidated evidence, and integrated state.

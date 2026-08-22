@@ -40,6 +40,16 @@ Stamp routing — exactly one pack per
 stamp> --independence gate …`; the root's `checked_by` is its cut-reader
 bookkeeping, never its final acceptance path.
 
+For every new root this producer opens, opt into v2 explicitly. Finish its
+frozen assignment as a `draft`, derive `root_generation` as
+`v2:root:<root-id>:<ordinal>:sha256:<digest>`, validate that exact snapshot,
+record its validation receipt in script-owned run state, then compare-and-swap
+it from `validated` to `sealed`. Only the exact validated digest is sealed and
+made eligible for `orch-decompose`; its `assignment_seal` records that exact
+assignment digest, and a post-seal assignment change is a new generation.
+Compatibility is closed: absence of v2 fields means v1, so legacy producers
+and existing v0/v1 tickets keep their prior admission and execution path.
+
 Never: stamp two packs in one root ticket; leave an acceptance criterion
 oracle-less; restate standards an exemplar's owner already states.
 
