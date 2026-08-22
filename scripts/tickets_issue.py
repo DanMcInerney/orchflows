@@ -11,10 +11,10 @@ if __package__:
 else:
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
 if __package__:
-    from .tickets_admission import ADMISSION_PENDING, cohort_sealed, ticket_cohort, valid_cohort
+    from .tickets_admission import ADMISSION_PENDING, ADMISSION_V2_PENDING, cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from .tickets_input_producers import render_ticket_inputs
 else:
-    from tickets_admission import ADMISSION_PENDING, cohort_sealed, ticket_cohort, valid_cohort
+    from tickets_admission import ADMISSION_PENDING, ADMISSION_V2_PENDING, cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from tickets_input_producers import render_ticket_inputs
 
 AMENDABLE_STATUSES = frozenset({'pending', 'ready'})
@@ -284,7 +284,11 @@ def _amend_under_run_lock(rest):
         return over
     cohort = str(frontmatter.get('cohort') or '').strip() or ticket_cohort(ticket_id)
     rendered = _set_frontmatter_field(rendered, 'status', 'pending')
-    rendered = _set_frontmatter_field(rendered, 'admission', ADMISSION_PENDING)
+    if is_v2(frontmatter):
+        rendered = _set_frontmatter_field(rendered, 'admission', ADMISSION_V2_PENDING)
+        rendered = _remove_frontmatter_field(rendered, 'assignment_seal')
+    else:
+        rendered = _set_frontmatter_field(rendered, 'admission', ADMISSION_PENDING)
     rendered = _set_frontmatter_field(rendered, 'cohort', cohort)
     failure = _replace_and_invalidate(ticket_path.parent, snapshot, ticket_id, rendered, {cohort})
     if failure is not None:
@@ -314,7 +318,11 @@ def _replace_and_invalidate(run_dir, snapshot, ticket_id, replacement, cohorts):
         if member_id != ticket_id and status not in AMENDABLE_STATUSES:
             continue
         source = _set_frontmatter_field(source, 'status', 'pending')
-        source = _set_frontmatter_field(source, 'admission', ADMISSION_PENDING)
+        if is_v2(_parse_frontmatter(source)):
+            source = _set_frontmatter_field(source, 'admission', ADMISSION_V2_PENDING)
+            source = _remove_frontmatter_field(source, 'assignment_seal')
+        else:
+            source = _set_frontmatter_field(source, 'admission', ADMISSION_PENDING)
         updates[member_id] = source
     written = []
     try:

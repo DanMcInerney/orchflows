@@ -1,9 +1,15 @@
 """Admission boundaries unique to sealed v2 assignments."""
 
+import os
+import tempfile
 import unittest
+from pathlib import Path
+from unittest import mock
 
 from scripts import tickets_admission as admission
 from scripts import tickets_generations as generations
+from scripts.tickets_dispatch import _dispatch
+from scripts.tickets_format import _parse_frontmatter
 from tests.test_tickets_issue_cases.generation_lifecycle import snapshot
 
 
@@ -52,6 +58,23 @@ class PostSealAssignmentGenerationTest(unittest.TestCase):
         successor = generations.draft_snapshot("00-root", changed, ordinal=2)
         self.assertIn(":2:sha256:", successor["cut_generation"])
         self.assertNotEqual(draft["cut_generation"], successor["cut_generation"])
+
+    def test_amend_invalidates_the_seal_and_validates_a_successor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": directory}):
+                run_dir = Path(directory) / "tickets" / "run"
+                run_dir.mkdir(parents=True)
+                for ticket_id, text in snapshot().items():
+                    (run_dir / f"{ticket_id}.md").write_text(text, encoding="utf-8")
+                first = _dispatch(["draft-validate", "run", "00-root"])["draft_validation"]
+                self.assertNotIn("error", _dispatch(["seal", "run", "00-root", "--cut-generation", first["cut_generation"]]))
+                amended = _dispatch(["amend", "run", "00-root.01", "--section", "Objective", "--text", "successor assignment"])
+                self.assertNotIn("error", amended)
+                data = _parse_frontmatter((run_dir / "00-root.01.md").read_text(encoding="utf-8"))
+                self.assertEqual("v2:pending", data["admission"])
+                self.assertNotIn("assignment_seal", data)
+                second = _dispatch(["draft-validate", "run", "00-root"])["draft_validation"]
+                self.assertIn(":2:sha256:", second["cut_generation"])
 
 
 if __name__ == "__main__":
