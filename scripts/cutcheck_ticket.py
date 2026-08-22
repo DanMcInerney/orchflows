@@ -18,6 +18,7 @@ PRE_EXISTING = _contract.PRE_EXISTING
 UNCONFINED_ORACLE = _contract.UNCONFINED_ORACLE
 VERDICT_IN_OUTPUT = _contract.VERDICT_IN_OUTPUT
 WHOLE_SUITE_ORACLE = _contract.WHOLE_SUITE_ORACLE
+WRITE_RE = _contract.WRITE_RE
 _MUTATED = _contract._MUTATED
 _parse_frontmatter = _contract._parse_frontmatter
 _sections = _contract._sections
@@ -106,6 +107,17 @@ def _policy_findings(ticket_id, text, sibling_texts, baseline_tree, head_tree):
             rendered.append((ticket_id, 0, code, f'{field}: {detail}'))
     return rendered
 
+def _root_acceptance_prose(text):
+    """Mask only write verbs immediately negated by ``no``.
+
+    A root criterion such as "creates no derived files" freezes an absence;
+    it grants no root write.  Other write prose remains authority-bearing.
+    """
+    def mask_negated(match):
+        following = match.string[match.end():].lstrip().lower()
+        return 'observes' if following.startswith('no ') else match.group(0)
+    return WRITE_RE.sub(mask_negated, text)
+
 def _check_ticket(path, baseline_tree, head_tree, siblings):
     text = path.read_text(encoding="utf-8")
     frontmatter = _parse_frontmatter(text)
@@ -118,13 +130,13 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
         sibling_data = _parse_frontmatter(sibling_text)
         sibling_texts[str(sibling_data.get('id') or sibling_path.stem)] = sibling_text
     findings = _policy_findings(ticket_id, text, sibling_texts, baseline_tree, head_tree)
-    # A top-level root freezes acceptance; it is not one of the unit artifacts
-    # that acceptance issues.  Keep the identity and scope policy grades above,
-    # but do not reinterpret the root's read-only invariants as unit paths or
-    # writes.  Use the graph's positional definition so a nested decomposer
-    # receives no root exemption.
-    if ticket_id in _root_ids(siblings):
-        return findings
+    # A top-level root freezes acceptance; commands in that acceptance observe
+    # the unit result and can therefore name paths absent from the baseline.
+    # That positional exemption covers only command-argument path existence
+    # and write-looking Completion-test prose.  Command shape, citations, and
+    # the root's own Objective/frontmatter authority remain graded.  A nested
+    # decomposer is not a root and receives no exemption.
+    is_root = ticket_id in _root_ids(siblings)
     for number, criterion in _criteria(sections.get(COMPLETION_SECTION, "")):
         prose = _prose(criterion)
         findings.extend(
@@ -156,7 +168,7 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
                 for arg in _path_args(command)
                 if not (baseline_tree / arg).exists() and not _covered(arg, granted)
             ]
-            if missing:
+            if missing and not is_root:
                 # A command reaching for a path nothing has is not discriminating.
                 findings.extend(
                     (ticket_id, number, MISSING_PATH, "{}: {}".format(arg, command))
@@ -210,9 +222,10 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
         (ticket_id, 0, klass, detail)
         for klass, detail in _path_reality(_prose(header), baseline_tree)
     )
-    body = "\n".join(
-        sections.get(name, "") for name in (OBJECTIVE_SECTION, COMPLETION_SECTION)
-    )
+    completion = sections.get(COMPLETION_SECTION, "")
+    if is_root:
+        completion = _root_acceptance_prose(completion)
+    body = "\n".join((sections.get(OBJECTIVE_SECTION, ""), completion))
     findings.extend(
         (ticket_id, 0, klass, detail)
         for klass, detail in _scope_closure(frontmatter, _prose(body))

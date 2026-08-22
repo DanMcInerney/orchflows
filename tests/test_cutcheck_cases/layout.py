@@ -407,6 +407,39 @@ Freeze the read-only acceptance without changing the checkout.
         self.assertIn(cutcheck.MISSING_PATH, [finding[2] for finding in nested_findings])
         self.assertIn(cutcheck.UNSCOPED_WRITE, [finding[2] for finding in nested_findings])
 
+    def test_a_top_level_root_keeps_acceptance_and_authority_diagnostics(self):
+        ticket_text = """---
+id: 00-root
+executor: orch-decompose
+depends_on: []
+write_scope: [scripts/allowed.py]
+excluded_actions: [never write scripts/allowed.py]
+---
+
+## Objective
+
+Preserve the contract cited at docs/absent-proof.md:1.
+
+## Fixed inputs
+
+## Completion test
+
+- the cumulative result writes scripts/outside_scope.py | oracle: `git diff baseline..HEAD -- scripts/tool.py` | oracle_class: deterministic | provenance: pre-existing
+"""
+        siblings = {
+            "00-root": {"id": "00-root", "executor": cutcheck.ROOT_EXECUTOR},
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            ticket = Path(tmp) / "00-root.md"
+            ticket.write_text(ticket_text, encoding="utf-8")
+            findings = cutcheck._check_ticket(ticket, ROOT, None, siblings)
+
+        classes = [finding[2] for finding in findings]
+        self.assertIn(cutcheck.CUMULATIVE_RANGE, classes)
+        self.assertIn(cutcheck.UNRESOLVED_CITATION, classes)
+        self.assertIn(cutcheck.UNSCOPED_WRITE, classes)
+        self.assertIn(cutcheck.SCOPE_CONTRADICTION, classes)
+
 
 class ExecutorLegalityTest(unittest.TestCase):
     def setUp(self):
