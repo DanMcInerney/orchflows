@@ -1,5 +1,7 @@
 """Cases for the work-item contract and its citation laws."""
 
+import hashlib
+import json
 import unittest
 from pathlib import Path
 
@@ -301,3 +303,115 @@ class TestV1AdmissionContract(unittest.TestCase):
         ):
             with self.subTest(token=token):
                 self.assertIn(token, text, why)
+
+
+class WorkItemV2ContractTest(unittest.TestCase):
+    def test_v2_frontmatter_exposes_generation_region_and_seal_fields(self):
+        text = read("work-item.md")
+        for field in (
+            "root_generation",
+            "cut_generation",
+            "ownership_regions",
+            "assignment_seal",
+        ):
+            with self.subTest(field=field):
+                self.assertIn(f"`{field}`", text)
+
+    def test_generation_identities_pin_their_digest_boundaries(self):
+        text = read("work-item.md")
+        for token in (
+            "`v2:root:<root-id>:<ordinal>:sha256:<digest>`",
+            "`v2:cut:<root-id>:<ordinal>:sha256:<digest>`",
+            "frozen root assignment fields",
+            "referenced root generation",
+            "unit and gate assignment digests",
+            "coverage-map digest",
+            "ownership-region declarations",
+            "merge-oracle identities",
+            "executor-owned sections",
+            "self-referential generation fields",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, text)
+
+    def test_ownership_region_shape_pins_stable_selectors_and_merge_oracle(self):
+        text = read("work-item.md")
+        for token in (
+            '"artifact"',
+            '"owner"',
+            '"selector"',
+            '"kind"',
+            '"value"',
+            '"merge_oracle"',
+            "`symbol`",
+            "`heading`",
+            "`json-pointer`",
+            "`adapter-equivalent`",
+            "line-number",
+            "string inequality",
+            "dependency-order work",
+            "one sole owner",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, text)
+
+    def test_assignment_seal_pins_assignment_fields_and_executor_append_only_sections(self):
+        text = read("work-item.md")
+        for token in (
+            "`objective`",
+            "`inputs`",
+            "`authority`",
+            "`dependencies`",
+            "`acceptance`",
+            "`executor`",
+            "`sha256:<digest>`",
+            "exact validated assignment digest",
+            "post-seal assignment change",
+            "new generation",
+            "worker ready",
+            "claim",
+            "packet",
+            "`## Result`",
+            "`## Verification`",
+            "`## Feedback`",
+            "`## Risks`",
+            "`## Handoff`",
+            "append-only",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, text)
+
+    def test_absent_v2_fields_preserve_v1_without_reinterpretation(self):
+        text = read("work-item.md")
+        for token in (
+            "absence of all four v2 fields",
+            "v1",
+            "no v1 value is reinterpreted",
+            "claimed or terminal v1",
+            "pending or ready v1",
+            "successor or new v2 root",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, text)
+
+    def test_t0_supersession_is_explicit_and_contract_bytes_are_pinned(self):
+        work_item = read("work-item.md")
+        signature = read("pack-signature.md")
+        for name, text in (
+            ("work-item.md", work_item),
+            ("pack-signature.md", signature),
+        ):
+            with self.subTest(contract=name):
+                self.assertIn("## T0 supersession", text)
+                self.assertIn("tests/pins.json", text)
+
+        pins = json.loads((ROOT / "tests" / "pins.json").read_text(encoding="utf-8"))
+        for name, text in (
+            ("work-item.md", work_item),
+            ("pack-signature.md", signature),
+        ):
+            with self.subTest(pin=name):
+                self.assertEqual(
+                    pins[name],
+                    hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                )

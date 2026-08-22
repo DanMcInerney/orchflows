@@ -61,3 +61,11 @@ Admission: a domain earns a pack only for a new oracle class or new
 workspace semantics, read strictly. A cell earns its slot only when the
 content behind it would differ between two packs, and no other cell
 already carries that content.
+
+## T0 supersession
+
+A named-field or enum change to this signature or
+[work-item.md](work-item.md) is an explicit T0 supersession. The change
+updates its focused contract checks and re-pins the superseded canonical
+bytes in `tests/pins.json`; old admission versions and claimed or terminal
+history retain their existing meaning.
