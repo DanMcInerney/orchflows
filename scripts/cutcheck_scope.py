@@ -260,6 +260,7 @@ def _scope_closure(frontmatter, prose):
         window = flat[match.end():end]
         if len(flat) > end and not flat[end].isspace():
             window = window.rpartition(" ")[0]
+        window = window.partition(";")[0]
         for target in _paths_in(window):
             if target in seen or _covered(target, scope):
                 continue

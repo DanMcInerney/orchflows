@@ -418,7 +418,8 @@ excluded_actions: [never write scripts/allowed.py]
 
 ## Objective
 
-Preserve the contract cited at docs/absent-proof.md:1.
+Create one composite code gate at artifacts/gate.json; preserve caller
+HANDOFF.md exactly invariant and the contract cited at docs/absent-proof.md:1.
 
 ## Fixed inputs
 
@@ -435,10 +436,18 @@ Preserve the contract cited at docs/absent-proof.md:1.
             findings = cutcheck._check_ticket(ticket, ROOT, None, siblings)
 
         classes = [finding[2] for finding in findings]
+        unscoped = {
+            finding[3]
+            for finding in findings
+            if finding[2] == cutcheck.UNSCOPED_WRITE
+        }
         self.assertIn(cutcheck.CUMULATIVE_RANGE, classes)
         self.assertIn(cutcheck.UNRESOLVED_CITATION, classes)
         self.assertIn(cutcheck.UNSCOPED_WRITE, classes)
         self.assertIn(cutcheck.SCOPE_CONTRADICTION, classes)
+        self.assertIn("artifacts/gate.json", unscoped)
+        self.assertIn("scripts/outside_scope.py", unscoped)
+        self.assertNotIn("HANDOFF.md", unscoped)
 
 
 class ExecutorLegalityTest(unittest.TestCase):
