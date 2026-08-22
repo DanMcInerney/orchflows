@@ -38,6 +38,19 @@ run's scope.
 Map every acceptance criterion to an item, the gate, or uncovered
 remainder at `<state-root>/runs/<run>/<root>.coverage.md`.
 
+For a v2 root, produce one complete `draft` before any unit becomes eligible:
+all unit and gate assignments, dependency edges, the coverage map,
+`ownership_regions`, and merge-oracle identities. Every assignment names the
+same `root_generation`; the cut names a content-addressed `cut_generation` of
+the form `v2:cut:<root-id>:<ordinal>:sha256:<digest>` and carries an
+`assignment_seal` over its exact validated worker fields. Grade one exact
+draft snapshot, persist its validation receipt, and compare-and-swap only that
+digest to sealed after cutcheck and the cut lens pass. Any post-seal assignment
+change creates and validates a new generation; a repeated normalized
+validation failure suspends immediately under the correction bound.
+The absence of v2 fields means v1. Never reinterpret or rewrite legacy cut
+membership, receipts, cohorts, readiness, claims, or packets.
+
 Never: edit the root ticket's frozen statement.
 
 Return: status; result — the ticket directory; verification — the

@@ -19,6 +19,16 @@ checked, or pre-existing-only tickets, never emit it. Then, where its pass inval
 that packet's `--executor orch-verify` form; else re-run the
 invalidated deterministic oracles at the checked identity here, the
 rest covered ([rules/verification.md](../../../rules/verification.md) §10).
+For v2, the exact sealed generation is required for readiness, claim, and
+packet emission: the ticket's `root_generation`, `cut_generation`, and
+`assignment_seal` must all resolve to the same sealed run-state snapshot and
+its validation receipt. Refuse a draft, merely validated, stale, missing, or
+mismatched generation; never substitute the latest generation for the one the
+packet names. Recompute the frontier after an accepted amendment disposition
+so only a newly validated and sealed generation can proceed.
+The absence of v2 fields means v1.
+Its existing ready, claim, packet, receipt, and cohort semantics remain
+unchanged.
 A root cut reader is the exception: take it with three or more `<id>.NN` or
 after a cutcheck advisory; units stay `pending` until `checked_by` and this
 engine's `cutcheck.py` re-run — the re-verification — exits 0. Below that

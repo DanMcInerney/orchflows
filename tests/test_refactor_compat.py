@@ -4,6 +4,7 @@ import io
 import json
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
+from pathlib import Path
 
 from scripts import cutcheck
 from scripts import migrate_state
@@ -12,6 +13,9 @@ from scripts import tickets
 from scripts import trace
 from scripts import ui
 from scripts import workspace
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _call(main, argv):
@@ -149,6 +153,79 @@ class MigrateStateFacadeCompatibilityTest(unittest.TestCase):
         self.assertEqual(
             f"at least one --from ROOT is required. {migrate_state.USAGE}",
             payload["error"],
+        )
+
+
+class V2ProducerMigrationTest(unittest.TestCase):
+    """New cut producers opt in while dispatch and legacy paths stay exact."""
+
+    def test_v2_cut_producers_and_consumers_share_one_sealed_generation_contract(self):
+        documents = {
+            "spec": (ROOT / "skills/workflows/orch-spec/SKILL.md").read_text(),
+            "decompose": (
+                ROOT / "skills/kernel/orch-decompose/SKILL.md"
+            ).read_text(),
+            "frontier": (
+                ROOT / "skills/engines/orch-frontier/SKILL.md"
+            ).read_text(),
+            "integrate": (
+                ROOT / "skills/kernel/orch-integrate/SKILL.md"
+            ).read_text(),
+            "lens": (
+                ROOT / "skills/kernel/orch-decompose/references/cut-lens.md"
+            ).read_text(),
+        }
+
+        required = {
+            "spec": ("v2", "draft", "root_generation", "validated", "sealed"),
+            "decompose": (
+                "v2",
+                "cut_generation",
+                "ownership_regions",
+                "assignment_seal",
+                "validation receipt",
+            ),
+            "frontier": (
+                "assignment_seal",
+                "root_generation",
+                "cut_generation",
+                "exact sealed generation",
+                "v1",
+            ),
+            "integrate": (
+                "amendment-request:",
+                "continue",
+                "amend-and-reseal",
+                "recut-remaining",
+                "successor-or-new-root",
+                "once per dispatch",
+            ),
+            "lens": (
+                "draft",
+                "validation receipt",
+                "assignment_seal",
+                "generation",
+                "ownership region",
+                "merge oracle",
+            ),
+        }
+        for name, tokens in required.items():
+            text = documents[name]
+            for token in tokens:
+                with self.subTest(document=name, token=token):
+                    self.assertIn(token, text)
+
+        for name, text in documents.items():
+            with self.subTest(document=name, compatibility="v1"):
+                self.assertIn("absence of v2 fields means v1", text)
+
+        manifest = json.loads(
+            (ROOT / "tests/serial_compat_manifest.json").read_text()
+        )
+        self.assertIn(
+            "test_refactor_compat.V2ProducerMigrationTest."
+            "test_v2_cut_producers_and_consumers_share_one_sealed_generation_contract",
+            manifest["discovery"]["identities"],
         )
 
 

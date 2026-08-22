@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2355,
+  "count": 2356,
   "identities": [
    "test_canary_host.BaselinePinOwnerTest.test_both_modules_read_one_owner_for_the_pin",
    "test_canary_host.CanaryHostVerdictTest.test_a_run_that_resolved_no_baseline_fails",
@@ -316,6 +316,7 @@
    "test_refactor_compat.TicketsFacadeCompatibilityTest.test_help_keeps_the_command_set_and_json_exit_contract",
    "test_refactor_compat.TraceFacadeCompatibilityTest.test_missing_source_keeps_the_usage_exit_contract",
    "test_refactor_compat.UiFacadeCompatibilityTest.test_help_keeps_the_public_flags_and_argparse_exit_contract",
+   "test_refactor_compat.V2ProducerMigrationTest.test_v2_cut_producers_and_consumers_share_one_sealed_generation_contract",
    "test_refactor_compat.WorkspaceFacadeCompatibilityTest.test_help_keeps_commands_verdicts_and_direct_return_contract",
    "test_return_size.ActualResultGradeTest.test_actual_result_refuses_duplicate_unresolved_and_non_text_targets",
    "test_return_size.ActualResultGradeTest.test_non_success_terminal_statuses_do_not_trust_the_target",

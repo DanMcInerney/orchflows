@@ -44,6 +44,20 @@ an accepted defect set of `[]` across every critique the
 disposition filed through `tickets.py result`, then
 `set-status complete` — with no dispatch.
 
+When a v2 worker parks with exactly one
+`- amendment-request: <canonical JSON record>` in its `## Handoff`, validate
+the record's `request-id`, `requester-ticket`, `parent-ticket`,
+`root-generation`, `cut-generation`, `change-kind`, `target-fields`, reason,
+`evidence-identities`, and `bound-state`.
+Route it to its caller once per dispatch; never let the worker or this join
+edit the parent assignment. The
+caller records exactly one bounded disposition: `continue`,
+`amend-and-reseal`, `recut-remaining`, or `successor-or-new-root`. Resume only
+through the resulting exact sealed generation or unchanged sealed packet.
+The absence of v2 fields means v1.
+An old free-form Handoff and every claimed or terminal v1 history keep their
+existing suspension and join path.
+
 Never: trust out-of-scope output; re-run a covered oracle; repair it.
 
 Return: disposition — accepted, rejected(blame), suspended (route to
