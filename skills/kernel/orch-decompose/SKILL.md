@@ -13,7 +13,7 @@ Cut [work items](../../../contracts/work-item.md) as `<root>.NN` through
 `tickets.py new --cohort v1:root:<root>`. Pass exact parameters/evidence as
 canonical JSON `--input` records. Use the stamped workspace cell; carry its
 `mutations` via `--mutation`. Objective states the routed observable end
-state. Give every item scope (siblings overlap only when dependency-ordered),
+state. Give every item a write scope (siblings overlap only when dependency-ordered),
 required isolation when available, bound, edges, and completion criteria with
 pack oracles and provenance. Stamp `independence: gate` exactly when the gate
 covers all authored-here criteria, otherwise `independence: checker`,
