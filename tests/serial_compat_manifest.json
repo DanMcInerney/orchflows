@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2369,
+  "count": 2371,
   "identities": [
    "test_canary_host.BaselinePinOwnerTest.test_both_modules_read_one_owner_for_the_pin",
    "test_canary_host.CanaryHostVerdictTest.test_a_run_that_resolved_no_baseline_fails",
@@ -59,6 +59,7 @@
    "test_input_identities.GitAdapterTest.test_git_remote_metadata_and_symbol_boundaries_are_exact",
    "test_input_identities.InputRecordTest.test_composition_producers_use_only_canonical_records",
    "test_input_identities.InputRecordTest.test_cutcheck_renders_the_shared_input_codes_unchanged",
+   "test_input_identities.InputRecordTest.test_cutcheck_reports_pending_dependency_as_advisory",
    "test_input_identities.InputRecordTest.test_dependency_carriage_compares_the_whole_ticket_section_identity",
    "test_input_identities.InputRecordTest.test_exact_fourteen_historical_sections_replay_only_as_non_identity",
    "test_input_identities.InputRecordTest.test_generated_git_gate_carries_exactly_one_baseline",
@@ -791,6 +792,7 @@
    "tests.test_cutcheck_cases.layout.NestedRootTest.test_a_nested_root_is_reported_as_a_nested_root",
    "tests.test_cutcheck_cases.layout.NestedRootTest.test_a_nested_roots_gate_stub_is_no_longer_exempt",
    "tests.test_cutcheck_cases.layout.NestedRootTest.test_a_top_level_decompose_stub_beside_others_is_still_a_root",
+   "tests.test_cutcheck_cases.layout.RootArtifactParsingTest.test_only_a_top_level_root_skips_unit_artifact_extraction",
    "tests.test_cutcheck_cases.layout.RootGateLayoutTest.test_a_gate_stub_naming_an_executor_the_gate_never_writes_is_reported",
    "tests.test_cutcheck_cases.layout.RootGateLayoutTest.test_a_partial_or_wrongly_edged_gate_is_malformed",
    "tests.test_cutcheck_cases.layout.RootGateLayoutTest.test_a_unit_ticket_is_still_graded_against_the_packs_cell",
@@ -2372,7 +2374,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "7f4bc3408d6c2305668e597129ac2bd8b69a5296cfec4dc16043979b2af5cd98"
+  "sha256": "61f505c951fe530df9ead38e0584e85a963bb889d12cdb677ead11c6ab38ec37"
  },
  "mutation_owners": [
   {

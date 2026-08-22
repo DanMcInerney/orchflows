@@ -65,6 +65,11 @@ except ImportError:  # installed flat script directory
 _verdict_in_output = _search._verdict_in_output
 _whole_suite = _search._whole_suite
 
+try:  # repository checkout
+    from scripts.cutcheck_graph import _root_ids
+except ImportError:  # installed flat script directory
+    from cutcheck_graph import _root_ids
+
 
 def _policy_findings(ticket_id, text, sibling_texts, baseline_tree, head_tree):
     """Render lower identity/scope validator codes unchanged in cutcheck."""
@@ -113,6 +118,13 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
         sibling_data = _parse_frontmatter(sibling_text)
         sibling_texts[str(sibling_data.get('id') or sibling_path.stem)] = sibling_text
     findings = _policy_findings(ticket_id, text, sibling_texts, baseline_tree, head_tree)
+    # A top-level root freezes acceptance; it is not one of the unit artifacts
+    # that acceptance issues.  Keep the identity and scope policy grades above,
+    # but do not reinterpret the root's read-only invariants as unit paths or
+    # writes.  Use the graph's positional definition so a nested decomposer
+    # receives no root exemption.
+    if ticket_id in _root_ids(siblings):
+        return findings
     for number, criterion in _criteria(sections.get(COMPLETION_SECTION, "")):
         prose = _prose(criterion)
         findings.extend(

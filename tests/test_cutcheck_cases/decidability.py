@@ -52,6 +52,7 @@ class GitNoHistoryDispositionTest(unittest.TestCase):
                     cutcheck.BYTECODE_WRITTEN,
                     cutcheck.SCOPE_OPEN,
                     cutcheck.UNREAD_HALF,
+                    "ticket-result-not-terminal",
                 }
             ),
         )

@@ -129,6 +129,9 @@ FAMILY_OF = {
 # not there is a fact about the run, not a defect of the cut; a committed
 # symlink is a fact about the repository, and confinement does not rest on
 # reporting it -- the clone flag holds whether or not anyone reads this line.
+# A same-run dependency Result is necessarily non-terminal before frontier;
+# admission still rejects consuming it, while cutcheck reports that readiness
+# state without treating the unstarted graph as a defective cut.
 ADVISORY = frozenset(
     {
         EXTRACTION_GAP,
@@ -138,6 +141,7 @@ ADVISORY = frozenset(
         BYTECODE_WRITTEN,
         SCOPE_OPEN,
         UNREAD_HALF,
+        "ticket-result-not-terminal",
     }
 )
 # The shape reading's classes, which are in neither set. An advisory is a
