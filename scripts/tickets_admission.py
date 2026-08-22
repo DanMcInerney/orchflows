@@ -7,7 +7,9 @@ lock.
 from __future__ import annotations
 import hashlib
 import importlib
+import json
 import re
+from pathlib import Path
 if __package__:
     from .tickets_format import (
         CUT_SECTIONS,
@@ -89,12 +91,14 @@ def is_v1(data: dict) -> bool:
 def is_v2(data: dict) -> bool:
     """Whether a producer explicitly opted this ticket into v2.
 
-    No legacy value is reinterpreted: the v2 prefix or one of the three v2
-    assignment fields is required.
+    No legacy value is reinterpreted: one of the four public v2 fields is
+    required.  An admission receipt is a consequence, never a version flag.
     """
 
-    return str(data.get("admission") or "").startswith("v2:") or any(
-        key in data for key in ("root_generation", "cut_generation", "assignment_seal")
+    return any(
+        key in data for key in (
+            "root_generation", "cut_generation", "ownership_regions", "assignment_seal",
+        )
     )
 
 
@@ -329,13 +333,48 @@ def _grade_v2_admission(ticket_id: str, text: str, siblings: dict, context: dict
     """Grade the exact sealed v2 assignment without changing v1 semantics."""
 
     if __package__:
-        from .tickets_generations import assignment_digest, v2_seal_findings
+        from .tickets_generations import GENERATION_RE, assignment_digest, v2_seal_findings
     else:
         module = __import__("tickets_generations")
+        GENERATION_RE = module.GENERATION_RE
         assignment_digest = module.assignment_digest
         v2_seal_findings = module.v2_seal_findings
     data = _parse_frontmatter(text)
     findings = list(v2_seal_findings(ticket_id, text))
+    sealed_record = None
+    runs_root = context.get("runs_root")
+    run = str(data.get("run") or context.get("run") or "")
+    cut_generation = str(data.get("cut_generation") or "")
+    match = GENERATION_RE.fullmatch(cut_generation)
+    if not runs_root or not run or match is None:
+        findings.append(finding("seal-state-unavailable", "cut_generation", "admission requires the script-owned sealed run-state record"))
+    else:
+        generation_dir = Path(runs_root) / run / "generations"
+        sealed_path = generation_dir / f"{match.group(4)}.sealed.json"
+        validated_path = generation_dir / f"{match.group(4)}.validated.json"
+        try:
+            sealed_record = json.loads(sealed_path.read_text(encoding="utf-8"))
+            validated_record = json.loads(validated_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, ValueError):
+            findings.append(finding("seal-state-missing", "cut_generation", "sealed and validated run-state records must both resolve"))
+        else:
+            if not isinstance(sealed_record, dict):
+                sealed_record = {}
+            root_match = GENERATION_RE.fullmatch(str(data.get("root_generation") or ""))
+            expected = {
+                "cut_generation": cut_generation,
+                "root_generation": str(data.get("root_generation") or ""),
+                "root_id": root_match.group(2) if root_match is not None else None,
+                "state": "sealed",
+            }
+            if any(sealed_record.get(key) != value for key, value in expected.items()):
+                findings.append(finding("seal-state-mismatch", "cut_generation", "sealed run state names another generation"))
+            validated_draft = validated_record.get("draft") if isinstance(validated_record, dict) else None
+            if not isinstance(validated_draft, dict) or sealed_record.get("receipt") != validated_record.get("receipt") or validated_draft.get("cut_generation") != cut_generation:
+                findings.append(finding("validation-receipt-mismatch", "cut_generation", "sealed state does not bind the exact validation receipt"))
+            seals = sealed_record.get("assignment_seals") or {}
+            if seals.get(ticket_id) != data.get("assignment_seal"):
+                findings.append(finding("sealed-assignment-mismatch", "assignment_seal", "sealed run state does not bind this assignment digest"))
     dependencies = [str(value) for value in (data.get("depends_on") or [])]
     for dependency in dependencies:
         if dependency not in siblings:
@@ -356,7 +395,8 @@ def _grade_v2_admission(ticket_id: str, text: str, siblings: dict, context: dict
     ordered = _ordered(findings)
     receipt = ADMISSION_V2_PENDING
     if not ordered:
-        receipt = f"v2:{adapter}:sha256:{assignment_digest(ticket_id, text).split(':', 1)[1]}"
+        payload = {"assignment": assignment_digest(ticket_id, text), "sealed_state": sealed_record}
+        receipt = f"v2:{adapter}:sha256:{hashlib.sha256(_canonical_json(payload)).hexdigest()}"
     return {
         "adapter": adapter,
         "findings": ordered,

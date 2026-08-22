@@ -33,24 +33,21 @@ AMENDMENT_FIELDS = (
 )
 ASSIGNMENT_AUTHORITY_FIELDS = (
     "write_scope", "mutations", "excluded_actions", "isolation", "pack",
-    "independence", "bound", "ownership_regions", "merge_oracles",
+    "independence", "bound", "ownership_regions", "granted_scope",
 )
 
 
 class GenerationError(ValueError):
     """A draft, seal, or typed request is not the exact value required."""
 
-
 def _digest(value) -> str:
     return hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
-
 
 def _field_value(data, key):
     value = data.get(key)
     if key in {"write_scope", "mutations", "excluded_actions"}:
         return _scope_entries(value)
     return value
-
 
 def assignment_payload(ticket_id: str, text: str) -> dict:
     """The six caller-owned assignment facets sealed before dispatch."""
@@ -70,10 +67,8 @@ def assignment_payload(ticket_id: str, text: str) -> dict:
         "ticket": ticket_id,
     }
 
-
 def assignment_digest(ticket_id: str, text: str) -> str:
     return "sha256:" + _digest(assignment_payload(ticket_id, text))
-
 
 def generation_identity(kind: str, root_id: str, ordinal: int, payload) -> str:
     if kind not in {"root", "cut"}:
@@ -82,21 +77,18 @@ def generation_identity(kind: str, root_id: str, ordinal: int, payload) -> str:
         raise GenerationError("generation ordinal must be a positive integer")
     return f"v2:{kind}:{root_id}:{ordinal}:sha256:{_digest(payload)}"
 
-
 def generation_ordinal(identity: str, kind: str | None = None) -> int:
     match = GENERATION_RE.fullmatch(str(identity or ""))
     if match is None or (kind is not None and match.group(1) != kind):
         raise GenerationError(f"invalid {kind or 'v2'} generation identity")
     return int(match.group(3))
 
-
 def _cut_members(root_id: str, snapshot: dict) -> list:
     prefix = root_id + "."
     return sorted(
         ticket_id for ticket_id in snapshot
-        if ticket_id.startswith(prefix) and ".gate." not in ticket_id
+        if ticket_id.startswith(prefix)
     )
-
 
 def _root_payload(root_id: str, snapshot: dict) -> dict:
     try:
@@ -105,8 +97,7 @@ def _root_payload(root_id: str, snapshot: dict) -> dict:
         raise GenerationError(f"root ticket not found in exact snapshot: {root_id}") from error
     return {"assignment": assignment_payload(root_id, root_text), "version": 2}
 
-
-def _cut_payload(root_id: str, snapshot: dict, root_generation: str) -> dict:
+def _cut_payload(root_id: str, snapshot: dict, root_generation: str, coverage_map="") -> dict:
     members = _cut_members(root_id, snapshot)
     assignments = [
         {"digest": assignment_digest(ticket_id, snapshot[ticket_id]), "id": ticket_id}
@@ -118,26 +109,24 @@ def _cut_payload(root_id: str, snapshot: dict, root_generation: str) -> dict:
         data = _parse_frontmatter(snapshot[ticket_id])
         if data.get("ownership_regions"):
             declarations.append({"id": ticket_id, "value": data["ownership_regions"]})
-        if data.get("merge_oracles"):
-            merge_oracles.append({"id": ticket_id, "value": data["merge_oracles"]})
-    root_data = _parse_frontmatter(snapshot[root_id])
-    coverage = root_data.get("coverage_map") or []
+        for record in data.get("ownership_regions") or []:
+            if isinstance(record, dict) and record.get("merge_oracle"):
+                merge_oracles.append({"id": ticket_id, "value": record["merge_oracle"]})
     return {
         "assignments": assignments,
-        "coverage_map_digest": "sha256:" + _digest(coverage),
+        "coverage_map_digest": "sha256:" + _digest(coverage_map),
         "merge_oracles": merge_oracles,
         "ownership_regions": declarations,
         "root_generation": root_generation,
         "version": 2,
     }
 
-
-def draft_snapshot(root_id: str, snapshot: dict, ordinal: int = 1) -> dict:
+def draft_snapshot(root_id: str, snapshot: dict, ordinal: int = 1, coverage_map="") -> dict:
     """Materialize one complete immutable draft from an exact ticket snapshot."""
 
     root_payload = _root_payload(root_id, snapshot)
     root_generation = generation_identity("root", root_id, ordinal, root_payload)
-    cut_payload = _cut_payload(root_id, snapshot, root_generation)
+    cut_payload = _cut_payload(root_id, snapshot, root_generation, coverage_map)
     cut_generation = generation_identity("cut", root_id, ordinal, cut_payload)
     return {
         "assignments": cut_payload["assignments"],
@@ -147,12 +136,11 @@ def draft_snapshot(root_id: str, snapshot: dict, ordinal: int = 1) -> dict:
         "root_payload": root_payload,
     }
 
-
-def validate_draft(root_id: str, snapshot: dict, draft: dict) -> dict:
+def validate_draft(root_id: str, snapshot: dict, draft: dict, coverage_map="") -> dict:
     """Grade exactly one draft snapshot and return its validation receipt."""
 
     ordinal = generation_ordinal(draft.get("cut_generation"), "cut")
-    expected = draft_snapshot(root_id, snapshot, ordinal)
+    expected = draft_snapshot(root_id, snapshot, ordinal, coverage_map)
     if expected != draft:
         raise GenerationError("draft validation failed: supplied draft is not the exact snapshot grade")
     return {
@@ -162,22 +150,20 @@ def validate_draft(root_id: str, snapshot: dict, draft: dict) -> dict:
         "state": "validated",
     }
 
-
-def seal_assignments(root_id: str, snapshot: dict, draft: dict, receipt: dict) -> dict:
+def seal_assignments(root_id: str, snapshot: dict, draft: dict, receipt: dict, coverage_map="") -> dict:
     """Compare-and-swap seal only the exact draft named by ``receipt``."""
 
-    validated = validate_draft(root_id, snapshot, draft)
+    validated = validate_draft(root_id, snapshot, draft, coverage_map)
     if receipt != validated or receipt.get("state") != "validated":
         raise GenerationError("seal refused: validation receipt does not name this exact draft")
     sealed = dict(snapshot)
-    for ticket_id in _cut_members(root_id, snapshot):
+    for ticket_id in [root_id, *_cut_members(root_id, snapshot)]:
         text = snapshot[ticket_id]
         text = _set_frontmatter_field(text, "root_generation", draft["root_generation"])
         text = _set_frontmatter_field(text, "cut_generation", draft["cut_generation"])
         text = _set_frontmatter_field(text, "assignment_seal", assignment_digest(ticket_id, text))
         sealed[ticket_id] = text
     return sealed
-
 
 def _failure_identity(findings) -> str:
     normalized = sorted(
@@ -188,7 +174,6 @@ def _failure_identity(findings) -> str:
         for item in findings
     )
     return "sha256:" + _digest(normalized)
-
 
 def correction_decision(findings, history, bound: int = 1) -> dict:
     """Spend one bounded correction generation, or suspend deterministically."""
@@ -204,7 +189,6 @@ def correction_decision(findings, history, bound: int = 1) -> dict:
     updated = prior + [identity]
     return {"disposition": "new-generation", "failure_identity": identity, "history": updated, "next_ordinal": len(updated) + 1}
 
-
 def _validate_amendment(record: dict) -> None:
     if not isinstance(record, dict) or tuple(record) != AMENDMENT_FIELDS:
         raise GenerationError(f"amendment request fields must be exactly {list(AMENDMENT_FIELDS)} in canonical order")
@@ -219,7 +203,6 @@ def _validate_amendment(record: dict) -> None:
     if record["parent-ticket"] == record["requester-ticket"]:
         raise GenerationError("amendment requester must not be its own parent")
 
-
 def append_amendment_request(worker_text: str, record: dict) -> str:
     """Append the one worker-owned typed request allowed per dispatch."""
 
@@ -229,7 +212,6 @@ def append_amendment_request(worker_text: str, record: dict) -> str:
         raise GenerationError("one amendment request is already recorded for this dispatch")
     line = "- amendment-request: " + canonical_json(record)
     return _write_section(worker_text, "Handoff", line, append=True)
-
 
 def v2_seal_findings(ticket_id: str, text: str) -> list:
     """Findings that guard worker eligibility at the v2 seal boundary."""
@@ -242,13 +224,22 @@ def v2_seal_findings(ticket_id: str, text: str) -> list:
         findings.append({"code": "assignment-unsealed", "field": "assignment_seal", "detail": "v2 assignment has no validated seal"})
     elif seal != expected:
         findings.append({"code": "assignment-seal-mismatch", "field": "assignment_seal", "detail": "sealed digest does not match the current assignment"})
+    parsed = {}
     for field, kind in (("root_generation", "root"), ("cut_generation", "cut")):
         try:
-            generation_ordinal(str(data.get(field) or ""), kind)
+            value = str(data.get(field) or "")
+            generation_ordinal(value, kind)
+            parsed[field] = GENERATION_RE.fullmatch(value)
         except GenerationError:
             findings.append({"code": "generation-invalid", "field": field, "detail": f"missing or malformed v2 {kind} generation"})
+    if len(parsed) == 2:
+        root_match, cut_match = parsed["root_generation"], parsed["cut_generation"]
+        if root_match.group(2) != cut_match.group(2) or root_match.group(3) != cut_match.group(3):
+            findings.append({"code": "generation-pair-mismatch", "field": "cut_generation", "detail": "root and cut generations must name one root and ordinal"})
+        root_id = root_match.group(2)
+        if ticket_id != root_id and not ticket_id.startswith(root_id + "."):
+            findings.append({"code": "generation-root-mismatch", "field": "root_generation", "detail": f"{ticket_id} is not assigned under {root_id}"})
     return findings
-
 
 DRAFT_VALIDATE_USAGE = "draft-validate <run> <root-id> [--correction-bound N]"
 SEAL_USAGE = "seal <run> <root-id> --cut-generation <identity>"
@@ -257,10 +248,10 @@ AMENDMENT_REQUEST_USAGE = "amendment-request <run> <id> --record <canonical-json
 
 def _store_bindings():
     if __package__:
-        from .tickets_store import NO_SINK_ERROR, _run_lock, _runs_root, _tickets_root, _write_text_atomically
+        from .tickets_store import NO_SINK_ERROR, _run_lock, _runs_root, _segment_error, _tickets_root, _write_text_atomically
     else:
-        from tickets_store import NO_SINK_ERROR, _run_lock, _runs_root, _tickets_root, _write_text_atomically
-    return NO_SINK_ERROR, _run_lock, _runs_root, _tickets_root, _write_text_atomically
+        from tickets_store import NO_SINK_ERROR, _run_lock, _runs_root, _segment_error, _tickets_root, _write_text_atomically
+    return NO_SINK_ERROR, _run_lock, _runs_root, _segment_error, _tickets_root, _write_text_atomically
 
 
 def _extract(args: list, flag: str):
@@ -276,7 +267,7 @@ def _extract(args: list, flag: str):
 
 
 def _snapshot(run: str):
-    NO_SINK_ERROR, _, _, tickets_root, _ = _store_bindings()
+    NO_SINK_ERROR, _, _, _, tickets_root, _ = _store_bindings()
     root = tickets_root()
     if root is None:
         raise GenerationError(NO_SINK_ERROR)
@@ -288,7 +279,7 @@ def _snapshot(run: str):
 
 
 def _generation_dir(run: str) -> Path:
-    NO_SINK_ERROR, _, runs_root, _, _ = _store_bindings()
+    NO_SINK_ERROR, _, runs_root, _, _, _ = _store_bindings()
     root = runs_root()
     if root is None:
         raise GenerationError(NO_SINK_ERROR)
@@ -315,19 +306,66 @@ def _validated_documents(run: str) -> list:
     return documents
 
 
-def _next_draft(run: str, root_id: str, snapshot: dict) -> dict:
+def _coverage_map(run: str, root_id: str) -> str:
+    _, _, runs_root, _, _, _ = _store_bindings()
+    root = runs_root()
+    if root is None:
+        raise GenerationError(_store_bindings()[0])
+    path = root / run / f"{root_id}.coverage.md"
+    try:
+        return path.read_text(encoding="utf-8") if path.is_file() else ""
+    except (OSError, UnicodeDecodeError) as error:
+        raise GenerationError(f"coverage map is unreadable: {error}") from error
+
+
+def _next_draft(run: str, root_id: str, snapshot: dict, coverage_map="") -> dict:
     documents = _validated_documents(run)
-    highest = 0
+    ranked = []
     for document in documents:
         prior = document["draft"]
         try:
-            ordinal = generation_ordinal(prior.get("cut_generation"), "cut")
+            identity = str(prior.get("cut_generation") or "")
+            match = GENERATION_RE.fullmatch(identity)
+            if match is not None and match.group(2) == root_id:
+                ranked.append((generation_ordinal(identity, "cut"), prior))
         except GenerationError:
             continue
-        highest = max(highest, ordinal)
-        if draft_snapshot(root_id, snapshot, ordinal) == prior:
-            return prior
-    return draft_snapshot(root_id, snapshot, highest + 1)
+    if not ranked:
+        return draft_snapshot(root_id, snapshot, 1, coverage_map)
+    highest, latest = max(ranked, key=lambda item: item[0])
+    candidate = draft_snapshot(root_id, snapshot, highest, coverage_map)
+    return latest if candidate == latest else draft_snapshot(root_id, snapshot, highest + 1, coverage_map)
+
+
+def _v2_draft_findings(root_id: str, snapshot: dict) -> list:
+    findings = []
+    for ticket_id in [root_id, *_cut_members(root_id, snapshot)]:
+        data = _parse_frontmatter(snapshot[ticket_id])
+        status = str(data.get("status") or "")
+        explicit = str(data.get("admission") or "").startswith("v2:") or any(
+            key in data for key in ("root_generation", "cut_generation", "ownership_regions", "assignment_seal")
+        )
+        if not explicit:
+            findings.append({"code": "v2-opt-in-missing", "field": "admission", "ticket": ticket_id})
+        if status not in {"pending", "ready", "suspended"}:
+            findings.append({"code": "v2-draft-status", "field": "status", "ticket": ticket_id})
+    return findings
+
+
+def _failure_path(run: str, root_id: str) -> Path:
+    return _generation_dir(run) / f"{root_id}.failures.json"
+
+
+def _record_failure(run: str, root_id: str, findings: list, bound: int, write_atomically) -> dict:
+    path = _failure_path(run, root_id)
+    history = []
+    if path.is_file():
+        value = json.loads(path.read_text(encoding="utf-8"))
+        history = list(value.get("history") or []) if isinstance(value, dict) else []
+    decision = correction_decision(findings, history, bound)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    write_atomically(path, canonical_json({"bound": bound, "history": decision.get("history") or history}) + "\n")
+    return decision
 
 
 def _cmd_draft_validate(rest) -> dict:
@@ -336,19 +374,30 @@ def _cmd_draft_validate(rest) -> dict:
     if len(args) != 2:
         return {"error": f"usage: {DRAFT_VALIDATE_USAGE}"}
     run, root_id = args
+    _, _, _, segment_error, _, _ = _store_bindings()
+    for kind, value in (("run id", run), ("ticket id", root_id)):
+        refusal = segment_error(kind, value)
+        if refusal is not None: return refusal
     try:
         bound = 1 if bound_value is None else int(bound_value)
         if bound <= 0:
             raise ValueError
     except ValueError:
         return {"error": "--correction-bound must be a finite positive integer"}
-    _, run_lock, _, _, write_atomically = _store_bindings()
+    _, run_lock, _, _, _, write_atomically = _store_bindings()
     try:
         with run_lock(run):
             _, snapshot = _snapshot(run)
-            draft = _next_draft(run, root_id, snapshot)
-            receipt = validate_draft(root_id, snapshot, draft)
-            document = {"correction_bound": bound, "draft": draft, "receipt": receipt}
+            if root_id not in snapshot:
+                return {"error": f"root ticket not found in exact snapshot: {root_id}"}
+            findings = _v2_draft_findings(root_id, snapshot)
+            if findings:
+                decision = _record_failure(run, root_id, findings, bound, write_atomically)
+                return {"error": "draft validation failed", "findings": findings, "correction": decision}
+            coverage = _coverage_map(run, root_id)
+            draft = _next_draft(run, root_id, snapshot, coverage)
+            receipt = validate_draft(root_id, snapshot, draft, coverage)
+            document = {"draft": draft, "receipt": receipt}
             path = _state_path(run, draft["cut_generation"], "validated")
             path.parent.mkdir(parents=True, exist_ok=True)
             encoded = canonical_json(document) + "\n"
@@ -367,7 +416,10 @@ def _cmd_seal(rest) -> dict:
     if len(args) != 2 or cut_generation is None:
         return {"error": f"usage: {SEAL_USAGE}"}
     run, root_id = args
-    _, run_lock, _, _, write_atomically = _store_bindings()
+    _, run_lock, _, segment_error, _, write_atomically = _store_bindings()
+    for kind, value in (("run id", run), ("ticket id", root_id)):
+        refusal = segment_error(kind, value)
+        if refusal is not None: return refusal
     try:
         with run_lock(run):
             run_dir, snapshot = _snapshot(run)
@@ -378,11 +430,11 @@ def _cmd_seal(rest) -> dict:
             draft, receipt = document["draft"], document["receipt"]
             if draft.get("cut_generation") != cut_generation:
                 return {"error": "seal refused: validation receipt names another cut generation"}
-            sealed = seal_assignments(root_id, snapshot, draft, receipt)
-            root_text = sealed[root_id]
-            root_text = _set_frontmatter_field(root_text, "root_generation", draft["root_generation"])
-            root_text = _set_frontmatter_field(root_text, "cut_generation", draft["cut_generation"])
-            sealed[root_id] = root_text
+            findings = _v2_draft_findings(root_id, snapshot)
+            if findings:
+                return {"error": "seal refused: snapshot is not a mutable v2 draft", "findings": findings}
+            coverage = _coverage_map(run, root_id)
+            sealed = seal_assignments(root_id, snapshot, draft, receipt, coverage)
             prior = dict(snapshot)
             try:
                 for ticket_id, text in sealed.items():
@@ -390,7 +442,9 @@ def _cmd_seal(rest) -> dict:
                         write_atomically(run_dir / f"{ticket_id}.md", text)
                 sealed_path = _state_path(run, cut_generation, "sealed")
                 sealed_path.parent.mkdir(parents=True, exist_ok=True)
-                write_atomically(sealed_path, canonical_json({"receipt": receipt, "state": "sealed"}) + "\n")
+                seals = {ticket_id: _parse_frontmatter(text).get("assignment_seal") for ticket_id, text in sealed.items() if ticket_id == root_id or ticket_id.startswith(root_id + ".")}
+                record = {"assignment_seals": seals, "cut_generation": draft["cut_generation"], "receipt": receipt, "root_generation": draft["root_generation"], "root_id": root_id, "state": "sealed"}
+                write_atomically(sealed_path, canonical_json(record) + "\n")
             except OSError:
                 for ticket_id, text in prior.items():
                     write_atomically(run_dir / f"{ticket_id}.md", text)
@@ -406,13 +460,17 @@ def _cmd_amendment_request(rest) -> dict:
     if len(args) != 2 or encoded is None:
         return {"error": f"usage: {AMENDMENT_REQUEST_USAGE}"}
     run, ticket_id = args
+    _, _, _, segment_error, _, _ = _store_bindings()
+    for kind, value in (("run id", run), ("ticket id", ticket_id)):
+        refusal = segment_error(kind, value)
+        if refusal is not None: return refusal
     try:
         record = json.loads(encoded)
         if canonical_json(record) != encoded:
             raise GenerationError("amendment request JSON must be canonical")
     except (ValueError, json.JSONDecodeError, GenerationError) as error:
         return {"error": str(error)}
-    _, run_lock, _, tickets_root, write_atomically = _store_bindings()
+    _, run_lock, _, _, tickets_root, write_atomically = _store_bindings()
     root = tickets_root()
     if root is None:
         return {"error": _store_bindings()[0]}
@@ -420,8 +478,13 @@ def _cmd_amendment_request(rest) -> dict:
     try:
         with run_lock(run):
             text = path.read_text(encoding="utf-8")
+            data = _parse_frontmatter(text)
+            if str(data.get("status") or "") != "claimed" or not all(data.get(key) for key in ("root_generation", "cut_generation", "assignment_seal")):
+                return {"error": "amendment request requires one claimed sealed v2 worker"}
             if record.get("requester-ticket") != ticket_id:
                 return {"error": "requester-ticket must equal the worker ticket being written"}
+            if record.get("root-generation") != data.get("root_generation") or record.get("cut-generation") != data.get("cut_generation"):
+                return {"error": "amendment request generations must equal the worker's sealed assignment"}
             updated = append_amendment_request(text, record)
             updated = _set_frontmatter_field(updated, "status", "suspended")
             write_atomically(path, updated)

@@ -26,6 +26,28 @@ class SealedAdmissionTest(unittest.TestCase):
         grade = admission.grade_admission("00-root.01", stale["00-root.01"], stale)
         self.assertIn("assignment-seal-mismatch", {item["code"] for item in grade["findings"]})
 
+    def test_generation_pair_and_durable_seal_record_are_both_required(self):
+        current = snapshot()
+        draft = generations.draft_snapshot("00-root", current)
+        sealed = generations.seal_assignments("00-root", current, draft, generations.validate_draft("00-root", current, draft))
+        text = sealed["00-root.01"].replace("v2:cut:00-root:1:", "v2:cut:other-root:2:")
+        text = generations._set_frontmatter_field(text, "assignment_seal", generations.assignment_digest("00-root.01", text))
+        grade = admission.grade_admission("00-root.01", text, {**sealed, "00-root.01": text})
+        self.assertIn("generation-pair-mismatch", {item["code"] for item in grade["findings"]})
+
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": directory}):
+                run_dir = Path(directory) / "tickets" / "run"
+                run_dir.mkdir(parents=True)
+                for ticket_id, value in current.items(): (run_dir / f"{ticket_id}.md").write_text(value, encoding="utf-8")
+                cut = _dispatch(["draft-validate", "run", "00-root"])["draft_validation"]["cut_generation"]
+                _dispatch(["seal", "run", "00-root", "--cut-generation", cut])
+                sealed_path = next((Path(directory) / "runs" / "run" / "generations").glob("*.sealed.json"))
+                sealed_path.write_text('{"state":"sealed"}\n', encoding="utf-8")
+                ready = _dispatch(["ready", "--run", "run"])
+                refused = next(item for item in ready["skipped"] if item["id"] == "00-root.01")
+                self.assertIn("seal-state-mismatch", {item["code"] for item in refused["findings"]})
+
 
 class ParentAmendmentRequestTest(unittest.TestCase):
     def test_worker_appends_one_typed_request_without_editing_parent(self):
@@ -44,6 +66,35 @@ class ParentAmendmentRequestTest(unittest.TestCase):
         self.assertEqual(parent_before, current["00-root"])
         with self.assertRaises(generations.GenerationError):
             generations.append_amendment_request(amended, {**record, "request-id": "req-2"})
+
+    def test_mutators_refuse_unsafe_paths_and_non_v2_history(self):
+        self.assertIn("unsafe run id", _dispatch(["draft-validate", "..\\escape", "00-root"])["error"])
+        self.assertIn("unsafe ticket id", _dispatch(["amendment-request", "run", "..\\escape", "--record", "{}"])["error"])
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": directory}):
+                run_dir = Path(directory) / "tickets" / "run"
+                run_dir.mkdir(parents=True)
+                legacy = snapshot()["00-root.01"].replace("admission: v2:pending", "admission: v1:git:sha256:" + "0" * 64).replace("ownership_regions: []\n", "").replace("status: pending", "status: complete")
+                (run_dir / "00-root.01.md").write_text(legacy, encoding="utf-8")
+                refusal = _dispatch(["amendment-request", "run", "00-root.01", "--record", "{}"])
+                self.assertIn("claimed sealed v2 worker", refusal["error"])
+
+
+class SealedAuthorityAndOutputTest(unittest.TestCase):
+    def test_v2_grant_and_result_replace_are_refused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": directory}):
+                run_dir = Path(directory) / "tickets" / "run"
+                run_dir.mkdir(parents=True)
+                for ticket_id, value in snapshot().items(): (run_dir / f"{ticket_id}.md").write_text(value, encoding="utf-8")
+                cut = _dispatch(["draft-validate", "run", "00-root"])["draft_validation"]["cut_generation"]
+                _dispatch(["seal", "run", "00-root", "--cut-generation", cut])
+                _dispatch(["claim", "run", "00-root.01", "--by", "worker"])
+                grant = _dispatch(["grant", "run", "00-root.01", "--write-scope", "extra.py", "--by", "caller"])
+                self.assertIn("cannot widen authority", grant["error"])
+                self.assertNotIn("error", _dispatch(["result", "run", "00-root.01", "--section", "Result", "--text", "first"]))
+                replace = _dispatch(["result", "run", "00-root.01", "--section", "Result", "--text", "second", "--replace"])
+                self.assertIn("append-only", replace["error"])
 
 
 class PostSealAssignmentGenerationTest(unittest.TestCase):

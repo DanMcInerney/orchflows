@@ -2,9 +2,12 @@
 
 import io
 import json
+import os
+import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 from scripts import cutcheck
 from scripts import migrate_state
@@ -163,73 +166,28 @@ class V2ProducerMigrationTest(unittest.TestCase):
     """New cut producers opt in while dispatch and legacy paths stay exact."""
 
     def test_v2_cut_producers_and_consumers_share_one_sealed_generation_contract(self):
-        documents = {
-            "spec": (ROOT / "skills/workflows/orch-spec/SKILL.md").read_text(),
-            "decompose": (
-                ROOT / "skills/kernel/orch-decompose/SKILL.md"
-            ).read_text(),
-            "frontier": (
-                ROOT / "skills/engines/orch-frontier/SKILL.md"
-            ).read_text(),
-            "integrate": (
-                ROOT / "skills/kernel/orch-integrate/SKILL.md"
-            ).read_text(),
-            "lens": (
-                ROOT / "skills/kernel/orch-decompose/references/cut-lens.md"
-            ).read_text(),
-        }
+        from scripts.tickets_dispatch import _dispatch
+        from scripts.tickets_format import _parse_frontmatter
+        from tests.test_tickets_issue_cases.generation_lifecycle import snapshot
 
-        required = {
-            "spec": ("v2", "draft", "root_generation", "validated", "sealed"),
-            "decompose": (
-                "v2",
-                "cut_generation",
-                "ownership_regions",
-                "assignment_seal",
-                "validation receipt",
-            ),
-            "frontier": (
-                "assignment_seal",
-                "root_generation",
-                "cut_generation",
-                "exact sealed generation",
-                "v1",
-            ),
-            "integrate": (
-                "amendment-request:",
-                "continue",
-                "amend-and-reseal",
-                "recut-remaining",
-                "successor-or-new-root",
-                "once per dispatch",
-            ),
-            "lens": (
-                "draft",
-                "validation receipt",
-                "assignment_seal",
-                "generation",
-                "ownership region",
-                "merge oracle",
-            ),
-        }
-        for name, tokens in required.items():
-            text = documents[name]
-            for token in tokens:
-                with self.subTest(document=name, token=token):
-                    self.assertIn(token, text)
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": directory}):
+                run_dir = Path(directory) / "tickets" / "run"
+                run_dir.mkdir(parents=True)
+                for ticket_id, text in snapshot().items():
+                    (run_dir / f"{ticket_id}.md").write_text(text, encoding="utf-8")
+                validation = _dispatch(["draft-validate", "run", "00-root"])
+                cut = validation["draft_validation"]["cut_generation"]
+                self.assertNotIn("error", _dispatch(["seal", "run", "00-root", "--cut-generation", cut]))
+                for ticket_id in ("00-root", "00-root.01"):
+                    data = _parse_frontmatter((run_dir / f"{ticket_id}.md").read_text(encoding="utf-8"))
+                    self.assertEqual(cut, data["cut_generation"])
+                    self.assertTrue(data["assignment_seal"].startswith("sha256:"))
+                ready = _dispatch(["ready", "--run", "run"])
+                self.assertIn("00-root.01", {item["id"] for item in ready["ready"]})
 
-        for name, text in documents.items():
-            with self.subTest(document=name, compatibility="v1"):
-                self.assertIn("absence of v2 fields means v1", " ".join(text.lower().split()))
-
-        manifest = json.loads(
-            (ROOT / "tests/serial_compat_manifest.json").read_text()
-        )
-        self.assertIn(
-            "test_refactor_compat.V2ProducerMigrationTest."
-            "test_v2_cut_producers_and_consumers_share_one_sealed_generation_contract",
-            manifest["discovery"]["identities"],
-        )
+                legacy = snapshot()["00-root.01"].replace("admission: v2:pending", "admission: v1:pending").replace("ownership_regions: []\n", "")
+                self.assertFalse(tickets.is_v2(_parse_frontmatter(legacy)))
 
 
 if __name__ == "__main__":

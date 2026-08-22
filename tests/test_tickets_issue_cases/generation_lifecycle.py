@@ -21,8 +21,7 @@ def ticket(ticket_id, *, executor="orch-tdd", objective="deliver", result="", re
         "mutations: [change:scripts/example.py]", "isolation: required", "bound: 30m",
         "claimed_by:", "claimed_at:",
     ]
-    if regions is not None:
-        fields.append("ownership_regions: " + generations.canonical_json(regions))
+    fields.append("ownership_regions: " + generations.canonical_json(regions or []))
     return "\n".join(fields + [
         "---", "", "## Objective", "", objective, "", "## Fixed inputs", "",
         '- input: {"name":"fixture","type":"literal","value":1}', "",
@@ -70,12 +69,13 @@ class DraftValidateSealLifecycleTest(unittest.TestCase):
         receipt = generations.validate_draft("00-root", current, draft)
         sealed = generations.seal_assignments("00-root", current, draft, receipt)
         unit = _parse_frontmatter(sealed["00-root.01"])
+        root = _parse_frontmatter(sealed["00-root"])
         self.assertEqual(draft["root_generation"], unit["root_generation"])
         self.assertEqual(draft["cut_generation"], unit["cut_generation"])
         self.assertEqual(generations.assignment_digest("00-root.01", sealed["00-root.01"]), unit["assignment_seal"])
+        self.assertEqual(generations.assignment_digest("00-root", sealed["00-root"]), root["assignment_seal"])
         grade = admission.grade_admission("00-root.01", sealed["00-root.01"], sealed)
-        self.assertEqual([], grade["findings"])
-        self.assertTrue(grade["receipt"].startswith("v2:git:sha256:"))
+        self.assertIn("seal-state-unavailable", {item["code"] for item in grade["findings"]})
         changed = dict(current)
         changed["00-root.01"] = changed["00-root.01"].replace("deliver", "moved target")
         with self.assertRaises(generations.GenerationError):
@@ -96,6 +96,32 @@ class DraftValidateSealLifecycleTest(unittest.TestCase):
                 ready = _dispatch(["ready", "--run", "run"])
                 self.assertIn("00-root.01", {item["id"] for item in ready["ready"]})
 
+    def test_cut_binds_gate_assignments_and_durable_coverage(self):
+        current = snapshot()
+        current["00-root.gate.verify"] = ticket("00-root.gate.verify", executor="orch-verify")
+        first = generations.draft_snapshot("00-root", current, coverage_map="criterion: unit\n")
+        changed_gate = dict(current)
+        changed_gate["00-root.gate.verify"] = changed_gate["00-root.gate.verify"].replace("deliver", "verify exact")
+        self.assertNotEqual(first["cut_generation"], generations.draft_snapshot("00-root", changed_gate, coverage_map="criterion: unit\n")["cut_generation"])
+        self.assertNotEqual(first["cut_generation"], generations.draft_snapshot("00-root", current, coverage_map="criterion: gate\n")["cut_generation"])
+
+    def test_reverting_an_old_assignment_still_allocates_a_successor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": directory}):
+                run_dir = Path(directory) / "tickets" / "run"
+                run_dir.mkdir(parents=True)
+                original = snapshot()
+                for ticket_id, text in original.items(): (run_dir / f"{ticket_id}.md").write_text(text, encoding="utf-8")
+                first = _dispatch(["draft-validate", "run", "00-root"])["draft_validation"]
+                self.assertNotIn("error", _dispatch(["seal", "run", "00-root", "--cut-generation", first["cut_generation"]]))
+                changed = original["00-root.01"].replace("deliver", "successor")
+                (run_dir / "00-root.01.md").write_text(changed, encoding="utf-8")
+                second = _dispatch(["draft-validate", "run", "00-root"])["draft_validation"]
+                self.assertIn(":2:sha256:", second["cut_generation"])
+                (run_dir / "00-root.01.md").write_text(original["00-root.01"], encoding="utf-8")
+                third = _dispatch(["draft-validate", "run", "00-root"])["draft_validation"]
+                self.assertIn(":3:sha256:", third["cut_generation"])
+
 
 class CorrectionGenerationPolicyTest(unittest.TestCase):
     def test_one_default_correction_and_recurrence_suspends_immediately(self):
@@ -107,6 +133,17 @@ class CorrectionGenerationPolicyTest(unittest.TestCase):
         self.assertEqual("recurring-validation-failure", repeated["reason"])
         bounded = generations.correction_decision([{"code": "other", "field": "assignment"}], first["history"], 1)
         self.assertEqual("correction-bound-exhausted", bounded["reason"])
+
+    def test_command_path_applies_bound_and_recurring_failure_policy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": directory}):
+                run_dir = Path(directory) / "tickets" / "run"
+                run_dir.mkdir(parents=True)
+                (run_dir / "00-root.md").write_text(ticket("00-root", executor="orch-decompose").replace("admission: v2:pending", "admission: v1:pending").replace("ownership_regions: []\n", ""), encoding="utf-8")
+                first = _dispatch(["draft-validate", "run", "00-root", "--correction-bound", "2"])
+                self.assertEqual("new-generation", first["correction"]["disposition"])
+                repeated = _dispatch(["draft-validate", "run", "00-root", "--correction-bound", "2"])
+                self.assertEqual("recurring-validation-failure", repeated["correction"]["reason"])
 
 
 if __name__ == "__main__":
