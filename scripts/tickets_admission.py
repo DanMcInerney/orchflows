@@ -46,6 +46,7 @@ else:
     )
 ADMISSION_PENDING = "v1:pending"
 ADMISSION_VERSION = 1
+ADMISSION_V2_PENDING = "v2:pending"
 VCS_ACTION_TOKENS = frozenset({
     "vcs.isolate",
     "vcs.commit",
@@ -65,7 +66,7 @@ _VCS_PROSE_WORDS = (
     "version control",
 )
 _COHORT_RE = re.compile(r"^v1:(?:ticket|root|batch):[A-Za-z0-9][A-Za-z0-9._-]*$")
-_RECEIPT_RE = re.compile(r"^v1:([a-z][a-z0-9-]*):sha256:([0-9a-f]{64})$")
+_RECEIPT_RE = re.compile(r"^v[12]:([a-z][a-z0-9-]*):sha256:([0-9a-f]{64})$")
 _PACK_ROW_RE = re.compile(r"^\|\s*(executor|assembly)\s*\|\s*(.*?)\s*\|\s*$", re.MULTILINE)
 _SKILL_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
 _DYNAMIC_FIELDS = frozenset({
@@ -83,6 +84,18 @@ def batch_cohort(ticket_ids) -> str:
     return f"v1:batch:{hashlib.sha256(joined).hexdigest()[:12]}"
 def is_v1(data: dict) -> bool:
     return str(data.get("admission") or "").startswith("v1:")
+
+
+def is_v2(data: dict) -> bool:
+    """Whether a producer explicitly opted this ticket into v2.
+
+    No legacy value is reinterpreted: the v2 prefix or one of the three v2
+    assignment fields is required.
+    """
+
+    return str(data.get("admission") or "").startswith("v2:") or any(
+        key in data for key in ("root_generation", "cut_generation", "assignment_seal")
+    )
 
 
 def is_receipt(value) -> bool:
@@ -268,6 +281,8 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
 
     context = dict(context or {})
     data = _parse_frontmatter(text)
+    if is_v2(data):
+        return _grade_v2_admission(ticket_id, text, siblings, context)
     findings = []
     cohort = str(data.get("cohort") or "").strip()
     if not _COHORT_RE.fullmatch(cohort):
@@ -305,6 +320,46 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
         "findings": ordered,
         "receipt": receipt,
         "snapshot_ids": relevant_snapshot_ids(ticket_id, text, siblings),
+        "input_fingerprint": input_fingerprint,
+        "scope_fingerprint": scope_fingerprint,
+    }
+
+
+def _grade_v2_admission(ticket_id: str, text: str, siblings: dict, context: dict) -> dict:
+    """Grade the exact sealed v2 assignment without changing v1 semantics."""
+
+    if __package__:
+        from .tickets_generations import assignment_digest, v2_seal_findings
+    else:
+        from tickets_generations import assignment_digest, v2_seal_findings
+    data = _parse_frontmatter(text)
+    findings = list(v2_seal_findings(ticket_id, text))
+    dependencies = [str(value) for value in (data.get("depends_on") or [])]
+    for dependency in dependencies:
+        if dependency not in siblings:
+            findings.append(finding("dependency-dangling", "depends_on", dependency))
+            continue
+        status = str(_parse_frontmatter(siblings[dependency]).get("status") or "")
+        if status != "complete":
+            findings.append(finding("dependency-incomplete", "depends_on", f"{dependency}:{status or '<missing>'}"))
+    findings.extend(authority_findings(ticket_id, data))
+    adapter = adapter_id(data.get("pack"))
+    common = {"ticket_id": ticket_id, "text": text, "siblings": siblings, "adapter_id": adapter, "context": context}
+    input_findings, input_fingerprint = _optional_probe("tickets_inputs", "grade_inputs", **common)
+    scope_findings, scope_fingerprint = _optional_probe("tickets_scope", "grade_scope", **common)
+    return_findings, _ = _optional_probe("tickets_result", "grade_return_fixture", **common)
+    findings.extend(input_findings)
+    findings.extend(scope_findings)
+    findings.extend(return_findings)
+    ordered = _ordered(findings)
+    receipt = ADMISSION_V2_PENDING
+    if not ordered:
+        receipt = f"v2:{adapter}:sha256:{assignment_digest(ticket_id, text).split(':', 1)[1]}"
+    return {
+        "adapter": adapter,
+        "findings": ordered,
+        "receipt": receipt,
+        "snapshot_ids": sorted({ticket_id, *dependencies}),
         "input_fingerprint": input_fingerprint,
         "scope_fingerprint": scope_fingerprint,
     }
@@ -389,9 +444,9 @@ def grade_result(ticket_id: str, text: str, siblings: dict, context=None) -> dic
 
 
 __all__ = (
-    "ADMISSION_PENDING", "ADMISSION_VERSION", "ADAPTER_BY_PACK", "PACK_EXECUTOR_BINDINGS",
+    "ADMISSION_PENDING", "ADMISSION_V2_PENDING", "ADMISSION_VERSION", "ADAPTER_BY_PACK", "PACK_EXECUTOR_BINDINGS",
     "PLAIN_ADAPTER", "VCS_ACTION_TOKENS", "TDD_FORBIDDEN_ACTIONS",
-    "ticket_cohort", "root_cohort", "batch_cohort", "adapter_id", "is_v1",
+    "ticket_cohort", "root_cohort", "batch_cohort", "adapter_id", "is_v1", "is_v2",
     "is_receipt", "valid_cohort", "finding", "authority_findings", "relevant_snapshot_ids",
     "cohort_sealed", "grade_admission", "grade_result",
 )
