@@ -88,6 +88,14 @@ that needs a different meaning needs a different word.
   `contracts/work-item.md`; input to decomposition; `orch-spec` is its
   only editor, at intake — every other reader, `orch-decompose`
   included while cutting, treats it as frozen.
+- **semantic root** — the executable delivery contract owned by the caller,
+  not the spec's general vision. `rules/delegation.md` owns which facts the
+  caller freezes and which deterministic corrections a decomposer may make;
+  a correction without deterministic equivalence is semantic and suspends
+  for the caller.
+- **assignment generation** — one root or cut assignment fixed by a content
+  digest, named by `root_generation` or `cut_generation`; identity and
+  lifecycle law are `rules/topology.md`'s.
 - **exemplar** — an artifact a root ticket's `## Fixed inputs` names to
   imitate, by pointer plus each property the imitation must carry
   (`contracts/work-item.md`); always non-normative.
@@ -199,6 +207,12 @@ composition).
   `contracts/work-item.md`, plus an optional one-shot `profile`
   overriding role resolution for that dispatch alone. A packet-only
   dispatch is a ticket the dispatcher does not persist.
+- **assignment seal** — the proof that an exact validated assignment digest
+  is immutable for dispatch; changing sealed assignment fields creates a new
+  assignment generation under `rules/delegation.md`.
+- **amendment request** — the canonical typed record a worker appends to its
+  `## Handoff` when its assignment must change; the worker parks and the
+  caller alone chooses a disposition under `rules/delegation.md`.
 - **authority** — the write scope plus named excluded actions a dispatch
   grants; per `contracts/work-item.md`.
 - **write scope** — the capability naming exactly what a child may change,
