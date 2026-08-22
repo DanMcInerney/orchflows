@@ -470,9 +470,8 @@ WARNING_CEILING = 25
 # docs/ (vocabulary.md excepted -- the definitional owner) and
 # compositions/ and compares skills against skills, and what it found
 # there had two owners all along; the deletions are the next ticket's,
-# and the number only falls from here. Raised to the exact no-headroom count
-# when the v2 lifecycle deliberately bound the same public field names across
-# contracts, rules, producers, consumers, and all four pack adapters.
+# and it only falls. Raised to the exact v2 lifecycle count across contracts,
+# rules, producers, consumers, and all four pack adapters; no headroom.
 CROSS_TIER_WARNING_CEILING = 56
 
 # A clone is the whole tree minus version control, runtime state and
