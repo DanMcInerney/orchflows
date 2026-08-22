@@ -9,9 +9,9 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | --- | --- |
 | slicing | [references/slicing.md](references/slicing.md) |
 | executor | `orch-render` |
-| assembly | none — the merged revision's rendered views are the assembly |
+| assembly | none — merged views form the assembly |
 | lens | `orch-critique` with [references/craft.md#lens](references/craft.md#lens) |
 | oracle_policy | [references/oracles.md](references/oracles.md) |
-| workspace | git plus render: identities: [view identity](references/craft.md); authority: paths; mutation-plan field: `mutations`; scope-edge manifest: `.orchflows/scope-edges.json`; missing-manifest mode: direct-only; golden captures: spec-frozen paths; run captures: outside write scope; conflict binding: `orch-resolve-conflicts`; ticket adapter: `git-plus-render`; v2 lifecycle fields: root_generation, cut_generation, assignment_seal, ownership_regions; ownership_regions: `symbol` or `json-pointer` within a pinned view identity; fallback: dependency order or one sole owner; merge oracle: the git-plus-render adapter proves stable non-overlap at a pinned identity for same-artifact parallelism |
-| required_spec_fields | target repository; render, capture, and diff commands; view set with breakpoints and states; design language; accessibility bar; golden captures by identity (absent for greenfield); standards owner by pointer |
+| workspace | git plus render: identities: [view identity](references/craft.md); authority: paths; mutation-plan field: `mutations`; scope-edge manifest: `.orchflows/scope-edges.json`; missing-manifest mode: direct-only; golden captures: spec-frozen paths; run captures: outside write scope; conflict binding: `orch-resolve-conflicts`; ticket adapter: `git-plus-render`; generation metadata: root_generation, cut_generation, and assignment_seal, with ownership_regions; ownership_regions: `symbol` or `json-pointer` within a pinned view identity; failed region proof: dependency-order views or keep one owner; merge oracle: the git-plus-render adapter proves stable non-overlap at a pinned identity for same-artifact parallelism |
+| required_spec_fields | repository; render/capture/diff commands; views by breakpoint/state; language; accessibility bar; golden identities (none greenfield); standards owner pointer |
 | craft | [references/craft.md](references/craft.md) |
