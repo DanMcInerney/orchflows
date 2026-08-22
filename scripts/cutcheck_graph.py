@@ -306,15 +306,24 @@ def _pairwise(siblings, reads):
             }
             shared = _first_overlap(scopes[left], scopes[right])
             if shared is not None:
-                region_grade = _region_parallel_admission(
-                    left, siblings[left], right, siblings[right], shared
+                region_keys = {"ownership_regions", "merge_oracles"}
+                uses_regions = any(
+                    region_keys & set(siblings[item]) for item in (left, right)
                 )
-                if not region_grade["admitted"]:
-                    codes = ",".join(item["code"] for item in region_grade["findings"])
+                if uses_regions:
+                    region_grade = _region_parallel_admission(
+                        left, siblings[left], right, siblings[right], shared
+                    )
+                    if not region_grade["admitted"]:
+                        codes = ",".join(item["code"] for item in region_grade["findings"])
+                        findings.append(
+                            (left, 0, SCOPE_COLLISION, "with {}: {}; {}; fallback {}".format(
+                                right, shared, codes, region_grade["fallback"]
+                            ))
+                        )
+                else:
                     findings.append(
-                        (left, 0, SCOPE_COLLISION, "with {}: {}; {}; fallback {}".format(
-                            right, shared, codes, region_grade["fallback"]
-                        ))
+                        (left, 0, SCOPE_COLLISION, "with {}: {}".format(right, shared))
                     )
             for reader, writer in ((left, right), (right, left)):
                 path = _first_overlap(reads.get(reader) or [], scopes[writer])

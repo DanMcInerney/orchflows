@@ -39,7 +39,7 @@ if __package__:
 else:
     from tickets_admission import ADMISSION_PENDING, batch_cohort, root_cohort
     from tickets_input_producers import git_head, render_stub, render_ticket_inputs
-    try: from tickets_generations import GENERATION_SUBCOMMANDS
+    try: GENERATION_SUBCOMMANDS = __import__("tickets_generations").GENERATION_SUBCOMMANDS
     except ModuleNotFoundError: GENERATION_SUBCOMMANDS = {}
 INSTANTIATE_USAGE = 'instantiate <template-dir> --run <run> [--set k=v ...]'
 GATE_USAGE = 'gate <run> <root-id> [--lens <name>[,<name>]] [--write-scope <path>[,<path>]] [--acceptance-from <id>]'

@@ -331,7 +331,9 @@ def _grade_v2_admission(ticket_id: str, text: str, siblings: dict, context: dict
     if __package__:
         from .tickets_generations import assignment_digest, v2_seal_findings
     else:
-        from tickets_generations import assignment_digest, v2_seal_findings
+        module = __import__("tickets_generations")
+        assignment_digest = module.assignment_digest
+        v2_seal_findings = module.v2_seal_findings
     data = _parse_frontmatter(text)
     findings = list(v2_seal_findings(ticket_id, text))
     dependencies = [str(value) for value in (data.get("depends_on") or [])]

@@ -91,7 +91,6 @@ if __package__:
     from . import tickets_worklog as _tickets_worklog_module
     from . import tickets_dispatch as _tickets_dispatch_module
     from . import tickets_admission as _tickets_admission_module
-    from . import tickets_generations as _tickets_generations_module
 else:
     import tickets_format as _tickets_format_module
     import tickets_store as _tickets_store_module
@@ -102,7 +101,6 @@ else:
     import tickets_worklog as _tickets_worklog_module
     import tickets_dispatch as _tickets_dispatch_module
     import tickets_admission as _tickets_admission_module
-    import tickets_generations as _tickets_generations_module
 
 CRITERION_BULLET_RE = _tickets_format_module.CRITERION_BULLET_RE
 CUT_SECTIONS = _tickets_format_module.CUT_SECTIONS
@@ -206,16 +204,28 @@ valid_cohort = _tickets_admission_module.valid_cohort
 relevant_snapshot_ids = _tickets_admission_module.relevant_snapshot_ids
 root_cohort = _tickets_admission_module.root_cohort
 ticket_cohort = _tickets_admission_module.ticket_cohort
-GenerationError = _tickets_generations_module.GenerationError
-append_amendment_request = _tickets_generations_module.append_amendment_request
-assignment_digest = _tickets_generations_module.assignment_digest
-assignment_payload = _tickets_generations_module.assignment_payload
-correction_decision = _tickets_generations_module.correction_decision
-draft_snapshot = _tickets_generations_module.draft_snapshot
-generation_identity = _tickets_generations_module.generation_identity
-generation_ordinal = _tickets_generations_module.generation_ordinal
-seal_assignments = _tickets_generations_module.seal_assignments
-validate_draft = _tickets_generations_module.validate_draft
+_GENERATION_EXPORTS = frozenset({
+    "GenerationError", "append_amendment_request", "assignment_digest",
+    "assignment_payload", "correction_decision", "draft_snapshot",
+    "generation_identity", "generation_ordinal", "seal_assignments",
+    "validate_draft",
+})
+
+
+def __getattr__(name):
+    """Load the additive v2 facade only when a caller asks for it.
+
+    Legacy standalone copies intentionally remain the closed v1 ticket
+    family; installed and package callers still receive the helper's exact
+    objects rather than wrappers.
+    """
+    if name not in _GENERATION_EXPORTS:
+        raise AttributeError(name)
+    qualified = f"{__package__}.tickets_generations" if __package__ else "tickets_generations"
+    module = __import__(qualified, fromlist=[name])
+    value = getattr(module, name)
+    globals()[name] = value
+    return value
 DEFAULT_RUN_STATE_TREE = _tickets_store_module.DEFAULT_RUN_STATE_TREE
 NO_SINK_ERROR = _tickets_store_module.NO_SINK_ERROR
 REPLACE_BUDGET_SECONDS = _tickets_store_module.REPLACE_BUDGET_SECONDS

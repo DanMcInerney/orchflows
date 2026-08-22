@@ -46,7 +46,7 @@ frozen assignment as a `draft`, derive `root_generation` as
 record its validation receipt in script-owned run state, then compare-and-swap
 it from `validated` to `sealed`. Only the exact validated digest is sealed and
 made eligible for `orch-decompose`; its `assignment_seal` records that exact
-assignment digest, and a change after sealing is a new generation.
+assignment digest, and a post-seal assignment change is a new generation.
 Compatibility is closed: absence of v2 fields means v1, so legacy producers
 and existing v0/v1 tickets keep their prior admission and execution path.
 
