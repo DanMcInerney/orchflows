@@ -173,19 +173,6 @@ def _dirty_paths() -> list:
     )
 
 
-def _branch_worktree(branch: str):
-    """The still-present linked worktree holding ``branch``, if any."""
-    current = {}
-    for line in _git_out("worktree", "list", "--porcelain").splitlines() + [""]:
-        if line:
-            key, _, value = line.partition(" ")
-            current[key] = value
-            continue
-        if current.get("branch") == f"refs/heads/{branch}":
-            return Path(current["worktree"]).resolve()
-        current = {}
-    return None
-
 # --- the ticket, always at the main repository root -------------------------
 
 
@@ -227,8 +214,11 @@ def _cmd_start(rest):
     top = Path(_git_out("rev-parse", "--show-toplevel")).resolve()
     # after `top`, which is the root a relative scope entry resolves against
     _refuse_ungradable_scope(data.get(WRITE_SCOPE_KEY), top)
-    branch = _git_out("rev-parse", "--abbrev-ref", "HEAD")
-    head = _git_out("rev-parse", "HEAD")
+    # both roots: an absolute entry may be written against the workspace it
+    # was cut for or against the checkout the join grades it in, and the two
+    # are different directories holding the same repository
+    scope = _normalized_scope(data.get(WRITE_SCOPE_KEY), top, root)
+    branch, head = workspace_git._head_and_branch(_git_out)
     dirty = sorted(set(_dirty_paths()))
     for entry in dirty:
         for character in AMBIGUOUS:
@@ -259,6 +249,7 @@ def _cmd_start(rest):
             "main_root": str(root),
             "isolated": top != root,
             "dirty": dirty,
+            WRITE_SCOPE_KEY: list(scope),
         }
     }, EXIT_OK
 
@@ -335,9 +326,15 @@ def _cmd_check(rest):
             "was executed in",
             EXIT_NO_RECORD,
         )
-    scope = _normalized_scope(data.get(WRITE_SCOPE_KEY), root)
+    # every checkout of this repository, because an absolute grant written
+    # against the workspace it was cut for names the same repository-relative
+    # path as one written against the checkout grading it
+    scope = _normalized_scope(
+        data.get(WRITE_SCOPE_KEY), root, *workspace_git._checkouts(_git_out)
+    )
 
-    code, tip, _ = _git("rev-parse", "--verify", "--quiet", f"{branch}^{{commit}}")
+    ref = workspace_git._tip_ref(branch)
+    code, tip, _ = _git("rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}")
     if code != 0:
         if empty:
             reported.update({BRANCH_KEY: branch, "verdict": "not required"})
@@ -347,7 +344,9 @@ def _cmd_check(rest):
             EXIT_ISOLATION_MISSING,
         )
     tip = tip.strip()
-    own = _git_out("rev-parse", "--abbrev-ref", "HEAD")
+    if ref != branch:
+        tip = workspace_git._detached_tip(_git_out, _is_ancestor, tip)
+    own = workspace_git._current_branch(_git_out)
     if branch == own:
         # Git checks a branch out in at most one tree, so standing on this
         # item's branch inside a linked worktree is standing inside the item's
@@ -393,7 +392,7 @@ def _cmd_check(rest):
             EXIT_WRONG_BRANCH_POINT,
         )
 
-    ticket_worktree = _branch_worktree(branch)
+    ticket_worktree = workspace_git._ticket_worktree(_git_out, branch, tip)
     if ticket_worktree is not None:
         dirty = workspace_git._dirty_paths(str(ticket_worktree))
         if dirty:

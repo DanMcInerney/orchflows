@@ -10,6 +10,11 @@ import tickets
 
 
 EXIT_ERROR = 1
+# What ``start`` records for a workspace that is on no branch. ``rev-parse
+# --abbrev-ref HEAD`` answers the literal word ``HEAD`` there, which names no
+# ref at the join: the item graded isolation-missing however clean its work
+# was. The sha under this prefix is a ref every git call can resolve.
+DETACHED_PREFIX = "detached:"
 
 
 class Refused(Exception):
@@ -54,6 +59,86 @@ def _dirty_paths(cwd, git=_git) -> list:
                 found.append(fields[index])
                 index += 1
     return found
+
+
+def _current_branch(git_out) -> str:
+    """This checkout's branch, named so that it resolves in either state.
+
+    The sha is read only when there is no branch to read instead: ``check``
+    calls this once per grade, and a caller that has stubbed git for the
+    calls a grade makes should not have to answer a call a grade never
+    needed.
+    """
+
+    branch = git_out("rev-parse", "--abbrev-ref", "HEAD")
+    if branch != "HEAD":
+        return branch
+    return f"{DETACHED_PREFIX}{git_out('rev-parse', 'HEAD')}"
+
+
+def _head_and_branch(git_out):
+    """This workspace's branch and the revision it derives from."""
+
+    return _current_branch(git_out), git_out("rev-parse", "HEAD")
+
+
+def _checkouts(git_out) -> list:
+    """Every directory this repository is checked out in."""
+
+    return [
+        Path(entry["worktree"]).resolve()
+        for entry in _worktrees(git_out)
+        if entry.get("worktree")
+    ]
+
+
+def _worktrees(git_out) -> list:
+    """Every record ``git worktree list --porcelain`` reports, as read."""
+
+    found, current = [], {}
+    for line in git_out("worktree", "list", "--porcelain").splitlines() + [""]:
+        if line:
+            key, _, value = line.partition(" ")
+            current[key] = value
+            continue
+        if current:
+            found.append(current)
+        current = {}
+    return found
+
+
+def _tip_ref(branch: str) -> str:
+    """The revision a recorded ``workspace_branch`` names."""
+
+    return branch[len(DETACHED_PREFIX):] if branch.startswith(DETACHED_PREFIX) else branch
+
+
+def _detached_tip(git_out, is_ancestor, sha: str) -> str:
+    """Where a detached workspace stands now, not where it stood at ``start``.
+
+    A branch name resolves to whatever the item committed onto it; a bare sha
+    is frozen at the moment ``start`` read it, so grading it directly would
+    see none of the item's commits and report a pass over an empty diff. The
+    still-present detached worktree standing past that sha is the same item's
+    workspace, and its HEAD is the ref a branch would have been.
+    """
+
+    for entry in _worktrees(git_out):
+        head = entry.get("HEAD", "")
+        if "detached" in entry and head and head != sha and is_ancestor(sha, head):
+            return head
+    return sha
+
+
+def _ticket_worktree(git_out, branch: str, tip: str):
+    """The still-present linked worktree carrying this item's work, if any."""
+
+    for entry in _worktrees(git_out):
+        if entry.get("branch") == f"refs/heads/{branch}" or (
+            "detached" in entry and entry.get("HEAD") == tip
+        ):
+            return Path(entry["worktree"]).resolve()
+    return None
 
 
 def _graded(payload, what: str) -> dict:
