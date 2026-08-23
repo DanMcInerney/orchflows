@@ -9,6 +9,8 @@ import unittest
 
 from tests.test_affected_tests_cases.common import ROOT, build_tree
 
+from tools import run_tests_scope  # noqa: E402
+
 RUN_TESTS_PY = ROOT / "tools" / "run_tests.py"
 
 
@@ -61,6 +63,34 @@ class TestScopeSelection(RunnerScopeCase):
         self.assertEqual(0, completed.returncode, completed.stdout + completed.stderr)
         self.assertNotIn("running", completed.stdout)
         self.assertIn("scripts/mod_orphan.py", completed.stdout + completed.stderr)
+
+
+class TestSelectRefusals(RunnerScopeCase):
+    """The branch module answers for itself, not only through the runner."""
+
+    def select(self, scope):
+        return run_tests_scope.select(
+            scope,
+            self.root / "tests",
+            ["tests.test_import_edge", "tests.test_from_edge"],
+        )
+
+    def test_a_scope_of_only_separators_is_refused_by_name(self):
+        with self.assertRaises(SystemExit) as raised:
+            self.select(" , ")
+        self.assertIn("--scope needs at least one path", str(raised.exception.code))
+
+    def test_a_scope_reaching_nothing_exits_zero_rather_than_the_whole_suite(self):
+        with self.assertRaises(SystemExit) as raised:
+            self.select("scripts/mod_orphan.py")
+        self.assertEqual(0, raised.exception.code)
+
+    def test_a_module_outside_the_discovered_set_is_dropped(self):
+        # ``tests.test_dir_edge`` is real but was not discovered here, so a
+        # scope reaching only it must not be handed to the runner to resolve.
+        with self.assertRaises(SystemExit) as raised:
+            self.select("pkgdir")
+        self.assertEqual(0, raised.exception.code)
 
 
 class TestScopeIsDocumented(unittest.TestCase):
