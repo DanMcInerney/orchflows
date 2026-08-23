@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2377,
+  "count": 2384,
   "identities": [
    "test_canary_host.BaselinePinOwnerTest.test_both_modules_read_one_owner_for_the_pin",
    "test_canary_host.CanaryHostVerdictTest.test_a_run_that_resolved_no_baseline_fails",
@@ -360,6 +360,10 @@
    "test_run_tests.TestWorkflowContract.test_ci_uploads_each_python_legs_timing_even_after_failure",
    "test_run_tests.TestWorkflowContract.test_selected_serial_is_routine_and_exhaustive_is_the_fallback",
    "test_run_tests.TestWorkflowContract.test_star_imported_facades_do_not_export_test_cases",
+   "test_scope_closure.CohortCompanionOwnerTests.test_a_root_graded_alone_still_owns_its_own_companions",
+   "test_scope_closure.CohortCompanionOwnerTests.test_no_unit_owner_is_missing_rather_than_owned_by_root_and_gate",
+   "test_scope_closure.CohortCompanionOwnerTests.test_one_unit_owner_closes_the_edge_beside_the_root_and_its_gate",
+   "test_scope_closure.CohortCompanionOwnerTests.test_two_unit_owners_collide_and_naming_only_units",
    "test_scope_closure.DeclaredClosureTests.test_duplicate_edges_collapse_and_reachable_cycles_are_findings",
    "test_scope_closure.DeclaredClosureTests.test_fingerprint_invalidates_when_the_resolved_baseline_graph_changes",
    "test_scope_closure.DeclaredClosureTests.test_missing_multiple_unauthorized_and_unordered_owners_are_distinct",
@@ -796,6 +800,9 @@
    "tests.test_cutcheck_cases.layout.RootGateLayoutTest.test_the_whole_layout_exits_zero",
    "tests.test_cutcheck_cases.layout.RootGateLayoutTest.test_two_roots_and_two_gate_systems_fail",
    "tests.test_cutcheck_cases.layout.RootGateLayoutTest.test_two_unrelated_roots_fail_before_either_has_a_gate",
+   "tests.test_cutcheck_cases.scope.FrozenAuthorityProseTest.test_a_gate_verify_stub_completion_test_commits_it_to_no_write",
+   "tests.test_cutcheck_cases.scope.FrozenAuthorityProseTest.test_a_root_completion_test_commits_the_root_to_no_write",
+   "tests.test_cutcheck_cases.scope.FrozenAuthorityProseTest.test_the_same_criterion_on_a_unit_still_commits_the_unit",
    "tests.test_cutcheck_cases.scope.ScopeOpenLiteralTest.test_overlap_uses_the_same_slash_normalization_as_authorization",
    "tests.test_cutcheck_cases.scope.ScopeOpenLiteralTest.test_scope_open_leaves_a_denied_removal_alone",
    "tests.test_cutcheck_cases.scope.ScopeOpenLiteralTest.test_scope_open_reads_a_deleted_path_and_the_name_it_ends_in",
@@ -2380,7 +2387,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "d9c3151505cea2974c7cb27fe9512d979b18ee1e5269e29b933cba0361ba9962"
+  "sha256": "f5d248a177fba66143f02bcbd2634a7b6febfc527fcf8bc2ffba2e10b6973c96"
  },
  "mutation_owners": [
   {
