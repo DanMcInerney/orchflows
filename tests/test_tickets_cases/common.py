@@ -25,6 +25,8 @@ if str(ROOT) not in sys.path:
 import scripts.tickets as tickets_mod  # noqa: E402
 
 TICKETS_PY = ROOT / "scripts" / "tickets.py"
+
+
 def support_names() -> tuple:
     """The flat ticket family, named the way `install.py` names it.
 
