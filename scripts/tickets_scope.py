@@ -240,6 +240,31 @@ def _cycle_nodes(graph):
     return sorted(cycles)
 
 
+ROOT_COHORT_PREFIX = "v1:root:"
+GATE_INFIX = ".gate."
+
+
+def _companion_owners(cohort, members):
+    """The member ids that may own a scope-edge companion in this cohort.
+
+    A decomposed cohort's root holds its whole subtree's write scope and its
+    gate stubs repair anywhere that subtree writes, so both cover every
+    companion the cut plans. Counting them would report the lawful shape --
+    one unit owning the companion -- as several owners, and the shape with no
+    unit owner as owned. Where the cohort holds no unit at all, a root or a
+    gate stub is the only member there is and owns what it plans.
+    """
+
+    root_id = (
+        cohort[len(ROOT_COHORT_PREFIX):] if cohort.startswith(ROOT_COHORT_PREFIX) else ""
+    )
+    units = {
+        member_id for member_id in members
+        if member_id != root_id and GATE_INFIX not in member_id
+    }
+    return units or set(members)
+
+
 def grade_closure(ticket_id, text, siblings, edges):
     """Grade every explicit mutation in this ticket's cohort."""
 
@@ -274,6 +299,7 @@ def grade_closure(ticket_id, text, siblings, edges):
                 ))
 
     owners = {}
+    eligible = _companion_owners(cohort, plans)
     initial = set()
     for member_id, nodes in plans.items():
         for node in nodes:
@@ -286,7 +312,8 @@ def grade_closure(ticket_id, text, siblings, edges):
         expanded.add(node)
         node_owners = {
             member_id for member_id, declared in plans.items()
-            if any(_plan_covers(plan, node) for plan in declared)
+            if member_id in eligible
+            and any(_plan_covers(plan, node) for plan in declared)
         }
         owners[node] = node_owners
         for declared_edge in edges:
@@ -302,7 +329,8 @@ def grade_closure(ticket_id, text, siblings, edges):
     for required in sorted(required_by):
         node_owners = {
             member_id for member_id, declared in plans.items()
-            if any(_plan_covers(plan, required) for plan in declared)
+            if member_id in eligible
+            and any(_plan_covers(plan, required) for plan in declared)
         }
         owners[required] = node_owners
         rendered = f"{required[0]}:{required[1]}"
