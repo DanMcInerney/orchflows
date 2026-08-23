@@ -45,6 +45,10 @@ SUBCOMMAND_SUMMARY['bound-check'] = "Every live claim in one run measured agains
 SUBCOMMAND_USAGE['lint'] = LINT_USAGE
 SUBCOMMAND_SUMMARY['lint'] = "Report every finding a later `new`, `ready`, `claim` or `packet` would refuse one ticket or draft for -- contract defects, the instruction ceiling with its count and overage, admission, the graded result, and the whole-suite oracle -- as one list rather than the first one reached. --fix rewrites only the syntactic ones, and only on a draft or an unclaimed ticket."
 VALUE_FLAGS = VALUE_FLAGS | {'--record-file'}
+REISSUE_USAGE = 'reissue <run> <id> --run <new-run> [--id <new-id>] [--set <key>=<value> ...] [--add-scope <path>[,<path>]] [--cite result|handoff]'
+SUBCOMMAND_USAGE['reissue'] = REISSUE_USAGE
+SUBCOMMAND_SUMMARY['reissue'] = "Supersede one taken-up ticket into a successor run without a second specification pass: its cut carried forward, its lifecycle -- claim, checker, workspace, v2 generations and seal -- dropped, a cohort of the same shape freshly named, --set applied to frontmatter and --add-scope to write_scope and mutations, and one fixed input citing the predecessor's Handoff or Result by identity and digest. Landed through `new --file`, so every admission rule applies; the lint report of what landed is printed. Refused on a source `amend` still owns, on a root whose new run already holds one, and on a --set naming an executor-owned section. The source is never written."
+VALUE_FLAGS = VALUE_FLAGS | {'--id', '--add-scope', '--cite'}
 def read_payload(source, subject: str='payload file'):
     """One flag's value read from a file, or from stdin when ``source`` is ``-``.
 

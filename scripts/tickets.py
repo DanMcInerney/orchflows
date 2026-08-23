@@ -92,6 +92,7 @@ if __package__:
     from . import tickets_worklog as _tickets_worklog_module
     from . import tickets_commands as _tickets_commands_module
     from . import tickets_lint as _tickets_lint_module
+    from . import tickets_reissue as _tickets_reissue_module
     from . import tickets_dispatch as _tickets_dispatch_module
     from . import tickets_admission as _tickets_admission_module
 else:
@@ -107,6 +108,7 @@ else:
     import tickets_worklog as _tickets_worklog_module
     import tickets_commands as _tickets_commands_module
     import tickets_lint as _tickets_lint_module
+    _tickets_reissue_module = __import__('tickets_reissue')
     import tickets_dispatch as _tickets_dispatch_module
     import tickets_admission as _tickets_admission_module
 
@@ -405,6 +407,8 @@ LINT_USAGE = _tickets_lint_module.LINT_USAGE
 apply_fixes = _tickets_lint_module.apply_fixes
 lint_findings = _tickets_lint_module.lint_findings
 _cmd_lint = _tickets_lint_module._cmd_lint
+REISSUE_USAGE = _tickets_commands_module.REISSUE_USAGE
+_cmd_reissue = _tickets_reissue_module._cmd_reissue
 _cmd_gate = _tickets_dispatch_module._cmd_gate
 _cmd_help = _tickets_dispatch_module._cmd_help
 _cmd_improvement = _tickets_dispatch_module._cmd_improvement
@@ -471,6 +475,7 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_run_state = _cmd_run_state
     _tickets_dispatch_module._cmd_lint = _cmd_lint
     _tickets_dispatch_module._cmd_bound_check = _cmd_bound_check
+    _tickets_dispatch_module._cmd_reissue = _cmd_reissue
     _tickets_lint_module._write_text_atomically = _write_text_atomically
 
 if __name__ == "__main__":

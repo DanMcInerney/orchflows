@@ -52,6 +52,7 @@ class TicketsFacadeCompatibilityTest(unittest.TestCase):
         "packet",
         "ready",
         "recut",
+        "reissue",
         "result",
         "result-grade",
         "run-state",
