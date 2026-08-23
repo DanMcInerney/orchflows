@@ -120,7 +120,7 @@ def _affected_tool(tree):
         return _AFFECTED_TOOLS[key]
     _AFFECTED_TOOLS[key] = None
     path = Path(tree) / AFFECTED_TESTS
-    spec = importlib.util.spec_from_file_location("cutcheck_affected", str(path))         if path.is_file() else None
+    spec = importlib.util.spec_from_file_location("cutcheck_affected", str(path)) if path.is_file() else None
     if spec is None or spec.loader is None:
         return None
     module = importlib.util.module_from_spec(spec)

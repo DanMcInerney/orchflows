@@ -388,10 +388,21 @@ def _indirect_whole_suite(criterion, literals, tree):
     input" carries no command head, so it left the report as an extraction gap
     while naming the whole gate's row. The record is resolved by name and its
     value read with the same detector, so both spellings reach one verdict.
+
+    The oracle field alone, never the prose beside it. A criterion cites the
+    policy it works under and states its own focused check, and policy prose
+    holds commands: this run's `unit-oracle-policy` states `git diff --check`
+    inside its value. Reading the whole criterion convicted the citation, and
+    this class sets the exit status, so the cost of that reading is an honest
+    cut refused.
     """
 
+    stated = _syntax.ORACLE_RE.search(criterion)
+    if stated is None:
+        return None
+    oracle = stated.group(1)
     for name in sorted(literals):
-        if not re.search(NAME_EDGE.format(re.escape(name)), criterion):
+        if not re.search(NAME_EDGE.format(re.escape(name)), oracle):
             continue
         segment = _whole_suite_value(literals[name], tree)
         if segment is not None:

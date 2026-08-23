@@ -41,8 +41,17 @@ The item extends the whole-suite reading in scripts/cutcheck_search.py.
 
 ## Completion test
 
-- the item's acceptance holds | oracle: {oracle} | oracle_class: deterministic | provenance: authored-here
+- {prose} | oracle: {oracle} | oracle_class: deterministic | provenance: authored-here
 """
+
+# A policy record, spelled as this run's own `unit-oracle-policy` is: prose
+# about which oracles a unit states, holding a required check inside it. The
+# name is what a criterion cites; the value is what makes the citation
+# dangerous to read from anywhere but the oracle field.
+POLICY = (
+    "A unit names its own focused oracles, and git diff --check, "
+    "and tools/validate.py only where it edits rules/."
+)
 
 INPUT_LINE = '- input: {}'
 
@@ -55,7 +64,8 @@ def input_record(name, value):
     )
 
 
-def graded(case, oracle, inputs, ticket_id="01-unit", executor="orch-tdd"):
+def graded(case, oracle, inputs, ticket_id="01-unit", executor="orch-tdd",
+           prose="the item's acceptance holds"):
     """Every finding class cutcheck reports for one ticket holding this oracle.
 
     Written into a directory of its own so that `_check_ticket`'s sibling glob
@@ -69,7 +79,7 @@ def graded(case, oracle, inputs, ticket_id="01-unit", executor="orch-tdd"):
     # that fails is a fact about the run and not noise to be swallowed.
     case.addCleanup(shutil.rmtree, str(directory))
     text = TICKET.format(
-        id=ticket_id, executor=executor, oracle=oracle,
+        id=ticket_id, executor=executor, oracle=oracle, prose=prose,
         inputs="\n".join(inputs),
     )
     path = directory / (ticket_id + ".md")
@@ -178,6 +188,25 @@ class FixedInputIndirectionTest(unittest.TestCase):
             self,
             "run the `focused-regression-suite` fixed input",
             [input_record("focused-regression", ACCEPTANCE)],
+        )
+        self.assertNotIn(cutcheck.WHOLE_SUITE_ORACLE, classes, classes)
+
+    def test_a_name_cited_in_the_prose_half_is_not_an_oracle(self):
+        """Where the name stands decides what it names.
+
+        A criterion cites the policy it works under and states its own focused
+        check. Policy prose holds commands -- this run's `unit-oracle-policy`
+        states `git diff --check` inside its value -- so reading the whole
+        criterion convicted the citation, and this class sets the exit status.
+        An honest cut is refused by it, which is why the reading is the oracle
+        field's alone.
+        """
+
+        classes = graded(
+            self,
+            "`{}`".format(FOCUSED),
+            [input_record("unit-oracle-policy", POLICY)],
+            prose="the item states the oracles unit-oracle-policy asks for",
         )
         self.assertNotIn(cutcheck.WHOLE_SUITE_ORACLE, classes, classes)
 
