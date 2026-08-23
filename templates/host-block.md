@@ -18,7 +18,7 @@ defines.
   naming oracles with `oracle_class`, fixed inputs, write scope, bound)
   through `tickets.py new`; one executor can meet it → `orch-frontier`;
   it must be cut → `executor` is `orch-decompose`, pack stamped
-  (`orch-spec` writes that ticket when decisions or evidence come
+  (`orch-spec` writes that ticket when decisions or evidence must come
   first), then `orch-frontier`; **fix** — an unknown-cause failure →
   `tickets.py instantiate {{ORCH_LIB}}/compositions/fix --run <run>
   --set failure=<the observed failure> --set workspace=<the tree>`,
