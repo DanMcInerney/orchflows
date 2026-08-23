@@ -64,6 +64,9 @@ CHECKER_TICKET = PRE_EXISTING_TICKET.replace(
 GATE_TICKET = PRE_EXISTING_TICKET.replace(
     "executor: orch-tdd", "executor: orch-tdd\nindependence: gate"
 )
+GATE_ROOT_TICKET = PRE_EXISTING_TICKET.replace(
+    "executor: orch-tdd", "executor: orch-decompose\nindependence: gate"
+)
 
 
 def make_repo(tmp: Path, body: str) -> Path:
@@ -160,6 +163,21 @@ class TestCheckerNotDispatchedWhenSectionTenExempts(unittest.TestCase):
                     payload = self.packet(tmp, "--executor", executor)
                     self.assertIn("downstream gate", payload.get("error", ""), payload)
                     self.assertNotIn(REFUSAL, payload["error"])
+
+    def test_a_gate_root_still_reaches_its_cut_reader(self):
+        """`independence` is the load-bearing half of the condition only on a
+        root: `gate` is the one value that is not `checker`, and the branch
+        above returns for every *non-root* ticket carrying it, so the case
+        above passes whether the condition reads `independence` or not. The
+        root is where it decides — contracts/work-item.md gives every root
+        `independence: gate`, and the cut reader's lens is the issued subtree,
+        never the root's own completion test, however that test is sourced."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_repo(tmp, GATE_ROOT_TICKET)
+            payload = self.packet(tmp, "--executor", "orch-critique")
+            self.assertNotIn(REFUSAL, payload.get("error", ""), payload)
+            self.assertIn("subtree ticket yet", payload["error"])
 
 
 if __name__ == "__main__":
