@@ -220,6 +220,22 @@ class InputRecordTest(unittest.TestCase):
         actual = [item[2] for item in rendered if item[2] in expected]
         self.assertEqual(expected, actual)
 
+    def test_cutcheck_reports_pending_dependency_as_advisory(self):
+        revision = tickets_input_producers.git_head()
+        predecessor = ticket("", ticket_id="P")
+        dependent = ticket(
+            record("predecessor", identity={
+                "kind": "ticket-section", "run": "run", "section": "Result", "ticket": "P",
+            }),
+            ticket_id="D", depends="[P]",
+        )
+        rendered = cutcheck_ticket._policy_findings(
+            "D", dependent, {"D": dependent, "P": predecessor}, revision, revision,
+        )
+        codes = [item[2] for item in rendered]
+        self.assertIn("ticket-result-not-terminal", codes)
+        self.assertIn("ticket-result-not-terminal", cutcheck_ticket._contract.ADVISORY)
+
 
 class ResolverFixture(unittest.TestCase):
     def setUp(self):
