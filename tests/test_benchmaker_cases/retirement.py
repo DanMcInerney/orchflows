@@ -84,12 +84,18 @@ RETIRED_WORD = re.compile(r"seal|immutab", re.IGNORECASE)
 # The path guard below reads the whole tree, where one further exclusion
 # applies: a guard names what it forbids, so it excludes itself.
 RETIRED_PATH_EXCLUSIONS = frozenset(DATED_RECORDS) | {"tests/test_benchmaker_cases/retirement.py"}
-SKIPPED_TREES = frozenset({".git", ".orch", ".claude", "__pycache__"})
+# Trees that hold no live surface: repository plumbing, session state, and
+# the two vendored working trees git already ignores. Installed packages
+# are somebody else's bytes, so a relapse can never hide in one.
+SKIPPED_TREES = frozenset(
+    {".git", ".orch", ".claude", "__pycache__", "node_modules", ".venv"}
+)
 # A guard that cannot read what it scans decides nothing. An unreadable file
 # is reported by name; only a declared binary suffix is skipped, and every
 # scan asserts a floor far below the ~1100 files it reads today, so a scan
-# that collapses is red rather than green.
-BINARY_SUFFIXES = (".png",)
+# that collapses is red rather than green. Fonts join the list because a
+# typeface is bytes with a suffix, never prose a grep could relapse into.
+BINARY_SUFFIXES = (".png", ".ttf", ".woff", ".woff2")
 SCAN_FLOOR = 700
 
 
