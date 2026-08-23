@@ -2,15 +2,13 @@
 
 try:  # repository checkout
     from scripts import cutcheck_contract as _contract
+    from scripts import tickets_format as _syntax
 except ImportError:  # installed flat script directory
     import cutcheck_contract as _contract
+    import tickets_format as _syntax
 COUNT_FLAG_RE = _contract.COUNT_FLAG_RE
-DISCOVER = _contract.DISCOVER
-FILTER_MATCHES_ALL = _contract.FILTER_MATCHES_ALL
 GIT_COUNT_FLAG = _contract.GIT_COUNT_FLAG
 GIT_HEAD = _contract.GIT_HEAD
-NODE_FILTER = _contract.NODE_FILTER
-NODE_SEP = _contract.NODE_SEP
 NO_MATCH = _contract.NO_MATCH
 Path = _contract.Path
 SEARCH_ERROR = _contract.SEARCH_ERROR
@@ -18,10 +16,21 @@ SEARCH_FLAGS = _contract.SEARCH_FLAGS
 SEARCH_HEADS = _contract.SEARCH_HEADS
 SEARCH_LONG_FLAGS = _contract.SEARCH_LONG_FLAGS
 SEARCH_PATTERN_FLAG = _contract.SEARCH_PATTERN_FLAG
-TEST_RUNNERS = _contract.TEST_RUNNERS
 os = _contract.os
 re = _contract.re
 shlex = _contract.shlex
+# The oracle-shape vocabulary and the whole-suite detector belong to the
+# syntax owner, `scripts/tickets_format.py`: a criterion's oracle is ticket
+# syntax, and `tickets.py lint` grades it without cutcheck in the room.
+# Read here rather than restated, so one reading decides both callers.
+DISCOVER = _syntax.DISCOVER
+FILTER_MATCHES_ALL = _syntax.FILTER_MATCHES_ALL
+NODE_FILTER = _syntax.NODE_FILTER
+NODE_SEP = _syntax.NODE_SEP
+TEST_RUNNERS = _syntax.TEST_RUNNERS
+_filter_narrows = _syntax._filter_narrows
+_whole_suite = _syntax._whole_suite
+_whole_target = _syntax._whole_target
 
 def _search_span(argv):
     """A search span as ``(letters, pattern, operands)``, or None where a token
@@ -263,9 +272,6 @@ def _verdict_in_output(command):
     return any(COUNT_FLAG_RE.match(token) for token in argv[1:])
 
 
-_filter_narrows = _contract._filter_narrows
-_whole_suite = _contract._whole_suite
-_whole_target = _contract._whole_target
 __all__ = (
     '_search_span', '_search_matcher', '_selected', '_files_under',
     '_inside_the_copy', '_search_exit', '_unreadable_search', '_verdict_in_output',
