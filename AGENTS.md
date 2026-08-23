@@ -28,20 +28,21 @@ python tools/run_serial_compat.py         # selected same-process compatibility 
 python install.py --dry-run
 git diff --check
 
-`python tools/run_required.py` runs the five above, overlapping where it
-can and skipping what this tree already proved green.
+`python tools/run_required.py` runs the five, overlapping where it can,
+skipping what this tree already proved green. While working, `python
+tools/run_tests.py --scope <changed-paths>` runs only the affected
+shards; the five decide the tip. Adding or removing tests regenerates
+the manifest: `python tools/run_serial_compat.py --write-manifest`.
 
-The selected lane routinely checks cross-module coupling. Exhaustive
-`python -m unittest discover -s tests -v` remains scheduled/manual and
-pre-release. CI runs `tools/run_tests.py`, whose clean processes reject any
-guarded whole-interpreter seam a module leaves dirty.
+Selected routinely checks cross-module coupling; exhaustive
+`python -m unittest discover -s tests -v` stays scheduled/manual and
+pre-release. CI runs `tools/run_tests.py`: clean processes reject a
+guarded whole-interpreter seam left dirty.
 
-A green run here is provisional until the CI matrix in
-`.github/workflows/checks.yml` agrees — one host, one interpreter, one
-shell locally; the matrix discriminates a host defect from a real one.
-Before pushing, `python tools/preflight.py` runs the suite under every
-CI interpreter installed here; what it covers and what stays CI's is its
-docstring's.
+A green run here is provisional: one host, one interpreter, one shell;
+the CI matrix in `.github/workflows/checks.yml` decides. Before pushing,
+`python tools/preflight.py` replays it under every CI interpreter
+installed here; its docstring owns the rest.
 
 ## Serial compatibility
 
