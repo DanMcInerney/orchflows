@@ -49,9 +49,15 @@ whitespace-delimited words. Use terms exactly as
   admission and cutcheck never import each other.
 - [`tools/validate.py`](tools/validate.py) owns mechanical library-text
   admission; [`tools/check_source_sizes.py`](tools/check_source_sizes.py)
-  owns executable-source line ceilings. [`tests/`](tests/) owns regression
-  evidence and pinned canonical bytes. [`AGENTS.md`](AGENTS.md) owns required
-  checks and local-versus-CI guidance.
+  owns executable-source line ceilings.
+  [`tools/run_required.py`](tools/run_required.py) owns the local
+  required-check run and its tree-keyed verdict cache.
+  [`tools/affected_tests.py`](tools/affected_tests.py) owns
+  write-scope-to-test-module derivation.
+  [`tools/run_report.py`](tools/run_report.py) owns the retrospective speed
+  report. [`tests/`](tests/) owns regression evidence and pinned canonical
+  bytes. [`AGENTS.md`](AGENTS.md) owns required checks and local-versus-CI
+  guidance.
 - [`templates/`](templates/) owns host-block source. [`install.py`](install.py)
   is the installation compatibility facade; [`installer/`](installer/) owns
   static support, `installer/runtime.py` owns the private runtime at
