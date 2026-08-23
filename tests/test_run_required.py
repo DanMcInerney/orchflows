@@ -341,6 +341,25 @@ class TestWhatIsNeverStored(RunRequiredCase):
         self.assertEqual(1, len(self.cache_entries()))
 
 
+class TestTextReport(RunRequiredCase):
+    """A reader gets every check's own output, then the verdict."""
+
+    def test_text_carries_each_check_its_own_output_and_the_verdict(self):
+        status, payload, text, _ = self.invoke("--format", "text")
+        self.assertEqual(0, status)
+        self.assertIsNone(payload)
+        self.assertEqual(4, text.count("stub-out"))
+        for needle in ("tools/validate.py", "diff --check", "exit 0"):
+            self.assertIn(needle, text)
+
+    def test_a_served_run_says_which_commands_it_did_not_run(self):
+        self.invoke("--format", "text")
+        status, _, text, _ = self.invoke("--format", "text")
+        self.assertEqual(0, status)
+        self.assertEqual(5, text.count("(cached)"))
+        self.assertNotIn("stub-out", text)
+
+
 class TestTheSurfaceNamesTheRunner(unittest.TestCase):
     """`AGENTS.md` stays the owner of the five; it now also names the runner."""
 
