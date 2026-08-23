@@ -272,8 +272,137 @@ def _verdict_in_output(command):
     return any(COUNT_FLAG_RE.match(token) for token in argv[1:])
 
 
+
+# The gate's row, read as the tokens that identify each of the five checks
+# `AGENTS.md` requires. An oracle naming a fixed input whose value holds one of
+# them is stating the gate's row through a name, which is the one spelling the
+# command-shaped reading above cannot see.
+REQUIRED_SCRIPTS = frozenset({"validate.py", "run_serial_compat.py"})
+SHARD_RUNNER = "run_tests.py"
+DRY_RUN = ("install.py", "--dry-run")
+DIFF_CHECK = ("git", "diff", "--check")
+# `tools/run_tests.py` is the one required check that also spells a unit's own
+# focused oracle, so the name alone decides nothing about it: a run naming what
+# it runs -- through `--scope` or through a positional module -- is the oracle
+# the unit policy asks for, and convicting it would convict every honest unit.
+SELECTION_FLAG = "--scope"
+# A value states several commands and each is read where it stands: a shard
+# runner in one clause and a `--scope` in the next are two commands, not one
+# selected run.
+SEGMENT_RE = re.compile(r"[;,\n]")
+INPUT_PREFIX = "- input: "
+# A name is named, never merely spelled inside a longer one: `focused` must not
+# be found in `focused-regression`, and the separator these names carry is a
+# word character to no regular expression that does not say so.
+NAME_EDGE = r"(?<![0-9A-Za-z_-]){}(?![0-9A-Za-z_-])"
+
+
+def _value_tokens(segment):
+    """One segment's argv-ish tokens, punctuation and path separators evened out."""
+
+    return [token.strip("`\"'.()").replace("\\", "/") for token in segment.split()]
+
+
+def _selects_its_shards(tokens, index):
+    """Does this shard-runner invocation name which shards it runs?"""
+
+    return any(
+        token == SELECTION_FLAG or not token.startswith("-")
+        for token in tokens[index + 1:]
+    )
+
+
+def _required_check(segment):
+    """Is this segment one of the five checks the standards owner requires?
+
+    Read on what stands in the segment rather than on an exact spelling: the
+    interpreter in front differs by host, `python`, `python3` and `uv run
+    --no-project python` all being the same check, and the value is prose that
+    happens to hold a command rather than a command line.
+    """
+
+    tokens = _value_tokens(segment)
+    names = [token.rsplit("/", 1)[-1] for token in tokens]
+    present = set(tokens) | set(names)
+    if present & REQUIRED_SCRIPTS:
+        return True
+    if all(part in present for part in DRY_RUN):
+        return True
+    if all(part in present for part in DIFF_CHECK):
+        return True
+    if SHARD_RUNNER in names:
+        return not _selects_its_shards(tokens, names.index(SHARD_RUNNER))
+    return False
+
+
+def _whole_suite_value(value, tree):
+    """The segment of this literal value that names a whole-suite run, or None.
+
+    The same question `_whole_suite` asks of a command, asked of the text a
+    fixed input holds: is, or contains, one of the five required checks, a
+    shard-runner invocation naming no shard, or a test invocation naming no
+    node id. The segment is returned rather than a bare yes so the report can
+    name which half of the value earned the finding.
+    """
+
+    if not isinstance(value, str):
+        return None
+    for segment in SEGMENT_RE.split(value):
+        segment = segment.strip()
+        if segment and (_required_check(segment) or _whole_suite(segment, tree)):
+            return segment
+    return None
+
+
+def _input_literals(section):
+    """``{name: value}`` for every literal record this Fixed-inputs section holds.
+
+    Read leniently: whether a record is canonical, complete or unique is the
+    admission layer's finding and is reported there. What is asked here is
+    narrower -- which name stands for which literal text -- and a record that
+    would fail admission still answers it.
+    """
+
+    literals = {}
+    for line in section.splitlines():
+        line = line.strip()
+        if not line.startswith(INPUT_PREFIX):
+            continue
+        try:
+            record = _syntax.parse_canonical_json(line[len(INPUT_PREFIX):])
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(record, dict) or record.get("type") != "literal":
+            continue
+        name, value = record.get("name"), record.get("value")
+        if isinstance(name, str) and isinstance(value, str):
+            literals[name] = value
+    return literals
+
+
+def _indirect_whole_suite(criterion, literals, tree):
+    """``(name, segment)`` where this criterion's oracle names its acceptance.
+
+    An oracle may state its command or name the fixed input holding it, and the
+    second spelling ran unread: "run the `acceptance-as-runnable-checks` fixed
+    input" carries no command head, so it left the report as an extraction gap
+    while naming the whole gate's row. The record is resolved by name and its
+    value read with the same detector, so both spellings reach one verdict.
+    """
+
+    for name in sorted(literals):
+        if not re.search(NAME_EDGE.format(re.escape(name)), criterion):
+            continue
+        segment = _whole_suite_value(literals[name], tree)
+        if segment is not None:
+            return name, segment
+    return None
+
+
 __all__ = (
     '_search_span', '_search_matcher', '_selected', '_files_under',
     '_inside_the_copy', '_search_exit', '_unreadable_search', '_verdict_in_output',
-    '_whole_target', '_filter_narrows', '_whole_suite',
+    '_whole_target', '_filter_narrows', '_whole_suite', '_value_tokens',
+    '_selects_its_shards', '_required_check', '_whole_suite_value',
+    '_input_literals', '_indirect_whole_suite',
 )

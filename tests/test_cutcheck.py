@@ -264,6 +264,7 @@ CASE_MODULES = (
     "spans",
     "scratch",
     "scope",
+    "fixed_input_oracle",
 )
 
 # Case modules deliberately share this facade's helpers through ``import *``.

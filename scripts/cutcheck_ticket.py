@@ -64,6 +64,8 @@ except ImportError:  # installed flat script directory
     import cutcheck_search as _search
 _verdict_in_output = _search._verdict_in_output
 _whole_suite = _search._whole_suite
+_indirect_whole_suite = _search._indirect_whole_suite
+_input_literals = _search._input_literals
 
 try:  # repository checkout
     from scripts.cutcheck_graph import _root_ids
@@ -141,6 +143,11 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
     # citations, and each item's own Objective/frontmatter authority remain
     # graded.  A nested decomposer is not a root and receives no exemption.
     is_root = ticket_id in _root_ids(siblings)
+    # Resolved once for the item: the same section answers every criterion, and
+    # a frozen item's completion test is the acceptance itself, so naming the
+    # gate's row there is what it is for rather than a defect of it.
+    frozen = _frozen_authority(ticket_id, is_root)
+    literals = {} if frozen else _input_literals(sections.get(INPUTS_SECTION, ""))
     for number, criterion in _criteria(sections.get(COMPLETION_SECTION, "")):
         prose = _prose(criterion)
         findings.extend(
@@ -148,7 +155,17 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
             for klass, detail in _path_reality(prose, baseline_tree)
         )
         commands = _commands(criterion)
+        # An oracle naming the fixed input that holds its command states that
+        # command through a name. Read before the gap below, because the gap
+        # says no extractor recognized the oracle and this one recognized it.
+        indirect = _indirect_whole_suite(criterion, literals, baseline_tree)
+        if indirect is not None:
+            findings.append(
+                (ticket_id, number, WHOLE_SUITE_ORACLE, "{}: {}".format(*indirect))
+            )
         if not commands:
+            if indirect is not None:
+                continue
             # The stated class travels with the gap: a judged criterion states
             # no command by design, and one that names a class this tool can
             # run is under-coverage. The decomposer reads which it has.
@@ -227,7 +244,7 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
         for klass, detail in _path_reality(_prose(header), baseline_tree)
     )
     completion = sections.get(COMPLETION_SECTION, "")
-    if _frozen_authority(ticket_id, is_root):
+    if frozen:
         completion = ""
     body = "\n".join((sections.get(OBJECTIVE_SECTION, ""), completion))
     findings.extend(
