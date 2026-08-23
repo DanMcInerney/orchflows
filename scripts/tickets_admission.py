@@ -77,10 +77,11 @@ _DYNAMIC_FIELDS = frozenset({
     "granted_at",
 })
 _TERMINAL = frozenset({"complete", "blocked", "stalled", "limited", "failed"})
+_ROOT_COHORT_PREFIX = "v1:root:"
 def ticket_cohort(ticket_id: str) -> str:
     return f"v1:ticket:{ticket_id}"
 def root_cohort(root_id: str) -> str:
-    return f"v1:root:{root_id}"
+    return f"{_ROOT_COHORT_PREFIX}{root_id}"
 def batch_cohort(ticket_ids) -> str:
     joined = "\0".join(sorted(str(value) for value in ticket_ids)).encode("utf-8")
     return f"v1:batch:{hashlib.sha256(joined).hexdigest()[:12]}"
@@ -264,12 +265,24 @@ def relevant_snapshot_ids(ticket_id: str, text: str, siblings: dict) -> list:
 
 
 def cohort_sealed(ticket_id: str, text: str, siblings: dict) -> bool:
+    """Whether any other member of this ticket's cohort has been taken up.
+
+    A `v1:root:` cohort is held open against the one member whose id is
+    the root's: the decomposer holds that claim by definition for as long
+    as it is cutting and correcting, so counting it would seal the cut
+    against its own author. No other member and no other cohort kind is
+    exempt -- a `v1:ticket:` segment names an ordinary member, and a
+    `v1:batch:` one is a digest naming none.
+    """
     data = _parse_frontmatter(text)
     cohort = str(data.get("cohort") or "")
     if not cohort:
         return False
+    exempt = {ticket_id}
+    if cohort.startswith(_ROOT_COHORT_PREFIX):
+        exempt.add(cohort[len(_ROOT_COHORT_PREFIX):].strip())
     for sibling_id, sibling_text in siblings.items():
-        if sibling_id == ticket_id:
+        if sibling_id in exempt:
             continue
         sibling = _parse_frontmatter(sibling_text)
         if str(sibling.get("cohort") or "") != cohort:
