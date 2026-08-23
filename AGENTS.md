@@ -28,6 +28,9 @@ python tools/run_serial_compat.py         # selected same-process compatibility 
 python install.py --dry-run
 git diff --check
 
+`python tools/run_required.py` runs the five above, overlapping where it
+can and skipping what this tree already proved green.
+
 The selected lane routinely checks cross-module coupling. Exhaustive
 `python -m unittest discover -s tests -v` remains scheduled/manual and
 pre-release. CI runs `tools/run_tests.py`, whose clean processes reject any

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -338,6 +339,36 @@ class TestWhatIsNeverStored(RunRequiredCase):
         self.assertEqual(0, status)
         self.assertEqual(4, len(self.stub.calls()))
         self.assertEqual(1, len(self.cache_entries()))
+
+
+class TestTheSurfaceNamesTheRunner(unittest.TestCase):
+    """`AGENTS.md` stays the owner of the five; it now also names the runner."""
+
+    SURFACE = REPO_ROOT / "AGENTS.md"
+
+    def surface(self) -> str:
+        return self.SURFACE.read_text(encoding="utf-8")
+
+    def test_the_surface_names_the_runner_and_still_lists_the_five(self):
+        text = self.surface()
+        self.assertIn("tools/run_required.py", text)
+        for command in ("python tools/validate.py",
+                        "python tools/run_tests.py",
+                        "python tools/run_serial_compat.py",
+                        "python install.py --dry-run",
+                        "git diff --check"):
+            self.assertIn(command, text)
+
+    def test_the_surface_never_names_the_runtime_state_directory(self):
+        pattern = re.compile(re.escape(runtime_directory_name()) + r"\b")
+        self.assertIsNone(pattern.search(self.surface()))
+
+    def test_the_surface_stays_inside_its_every_turn_budget(self):
+        from tools.validate_support.packages import SURFACE_BUDGET, body_words
+
+        self.assertLessEqual(
+            body_words(self.surface()), SURFACE_BUDGET["AGENTS.md"]
+        )
 
 
 if __name__ == "__main__":
