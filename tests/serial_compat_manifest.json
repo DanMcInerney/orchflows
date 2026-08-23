@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2623,
+  "count": 2636,
   "identities": [
    "test_benchmaker.TestVendoredTreesAreNotSurfaces.test_a_font_suffix_is_declared_binary_rather_than_unreadable",
    "test_benchmaker.TestVendoredTreesAreNotSurfaces.test_the_live_scan_prunes_a_vendored_tree_holding_binaries",
@@ -509,6 +509,19 @@
    "test_tickets_packet_checker.TestCheckerNotDispatchedWhenSectionTenExempts.test_the_re_verifier_packet_is_unchanged",
    "test_tickets_packet_checker.TestCheckerNotDispatchedWhenSectionTenExempts.test_the_refusal_is_a_non_zero_exit_across_the_process_boundary",
    "test_tickets_packet_checker.TestCheckerNotDispatchedWhenSectionTenExempts.test_the_same_ticket_still_gets_its_own_executor_packet",
+   "test_tickets_reissue.ReissueRefusalTest.test_a_cited_section_the_source_does_not_carry_is_refused",
+   "test_tickets_reissue.ReissueRefusalTest.test_a_root_is_refused_into_a_run_that_already_holds_one",
+   "test_tickets_reissue.ReissueRefusalTest.test_a_set_naming_an_executor_owned_section_is_refused",
+   "test_tickets_reissue.ReissueRefusalTest.test_a_source_amend_still_owns_is_refused_at_both_statuses",
+   "test_tickets_reissue.ReissueRefusalTest.test_a_source_that_is_not_there_is_refused_before_anything_is_written",
+   "test_tickets_reissue.ReissueRefusalTest.test_a_successor_new_refuses_is_refused_by_the_same_admission",
+   "test_tickets_reissue.ReissueRefusalTest.test_the_refusal_reaches_the_process_exit_code",
+   "test_tickets_reissue.ReissueRefusalTest.test_the_successor_run_is_required_and_the_flag_values_are_closed",
+   "test_tickets_reissue.ReissueSuccessionTest.test_a_blocked_root_reissued_carries_its_predecessor_and_drops_its_lifecycle",
+   "test_tickets_reissue.ReissueSuccessionTest.test_a_new_id_renames_the_successor_and_its_fresh_cohort",
+   "test_tickets_reissue.ReissueSuccessionTest.test_a_successor_with_nothing_left_to_report_exits_zero",
+   "test_tickets_reissue.ReissueSuccessionTest.test_cite_result_names_the_result_section_and_its_digest",
+   "test_tickets_reissue.ReissueSuccessionTest.test_the_lint_report_of_the_placed_ticket_is_printed",
    "test_tickets_view.WorklogRendersTheLiveTemplateTest.test_the_fix_template_renders_every_section",
    "test_tickets_view.WorklogRendersTheLiveTemplateTest.test_the_process_prints_one_json_document_carrying_the_view",
    "test_tickets_view.WorklogViewTest.test_a_failed_ticket_contributes_its_result_and_its_feedback",
@@ -2626,7 +2639,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "d4d210eb2b5745bf2668b43c26a429a2fd2a76d307c24fc9e406648325da6c37"
+  "sha256": "2171f197e4ed1e33f4133ff5bdbf8480ae0c9a2bdf89dda07497f6a2fe24b08d"
  },
  "mutation_owners": [
   {
@@ -5003,6 +5016,22 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_reissue",
+   "owner": "ReissueFixture.setUp",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_reissue",
+   "owner": "ReissueFixture.tearDown",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
    ]
   },
   {
