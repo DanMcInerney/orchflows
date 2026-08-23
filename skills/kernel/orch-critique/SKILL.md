@@ -36,5 +36,6 @@ Never: soften a finding because fixing it is costly; report a finding
 without the evidence that shows it; rewrite another context's entries;
 a second correction pass.
 
-Return: ranked findings with evidence, uncertainties, and the evidence
-inspected.
+Return: ranked findings, each with evidence and the
+`blocking: true|false` its lens decides; uncertainties; and the
+evidence inspected.

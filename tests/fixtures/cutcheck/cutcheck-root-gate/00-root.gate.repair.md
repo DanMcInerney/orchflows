@@ -11,9 +11,10 @@ write_scope:
 ---
 ## Objective
 
-Every accepted finding against `00-root` is repaired inside this ticket's own
-write scope, or declined with a stated reason; nothing outside that scope
-changes.
+Every accepted blocking finding against `00-root` is repaired inside this
+ticket's own write scope, or declined with a stated reason; every accepted
+non-blocking finding is queued as candidate scope per verification §9, and
+nothing outside that scope changes.
 
 ## Fixed inputs
 
