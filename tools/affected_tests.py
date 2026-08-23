@@ -79,7 +79,13 @@ def relative(raw, root: Path) -> str:
             text = candidate.resolve().relative_to(root.resolve()).as_posix()
         except (OSError, ValueError):
             text = candidate.as_posix()
-    return text.lstrip("./") or text
+    # Strip a leading ``./`` and a leading root slash, never a character set:
+    # this repository's scope paths include ``.github/``, ``.orch/`` and
+    # ``.claude/``, whose leading dot is part of the name.
+    text = text.lstrip("/")
+    while text.startswith("./"):
+        text = text[2:]
+    return text
 
 
 def dotted_names(rel: str):

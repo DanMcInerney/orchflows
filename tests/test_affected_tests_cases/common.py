@@ -23,9 +23,12 @@ FIXTURE_SOURCES = {
     "scripts/mod_alpha.py": 'VALUE = "alpha"\n',
     "scripts/mod_beta.py": 'VALUE = "beta"\n',
     "scripts/mod_delta.py": 'VALUE = "delta"\n',
+    "scripts/mod_epsilon.py": 'VALUE = "epsilon"\n',
     "scripts/mod_orphan.py": 'VALUE = "orphan"\n',
     "tools/mod_gamma.py": 'VALUE = "gamma"\n',
     "pkgdir/thing.md": "a document under a directory scope\n",
+    ".dotdir/thing.md": "a document under a dot-directory scope\n",
+    "dotdir_other/thing.md": "the decoy a mangled dot-directory scope would take\n",
     "tests/__init__.py": '"""Fixture suite package."""\n',
     "tests/test_import_edge.py": (
         '"""Fixture: a dotted package import edge."""\n'
@@ -35,14 +38,22 @@ FIXTURE_SOURCES = {
         '"""Fixture: a from-package import edge."""\n'
         "from scripts import mod_alpha\n"
     ),
+    # The two literals such a call spells -- the file's base name and the
+    # module stem it is loaded under -- are separate resolver mechanisms, so
+    # they are graded apart. Here the loaded name is deliberately NOT the
+    # stem, which leaves the base-name literal the only way in.
     "tests/test_spec_edge.py": (
-        '"""Fixture: an importlib file-location edge."""\n'
+        '"""Fixture: an importlib file-location edge, by base name."""\n'
         "import importlib.util\n"
         "from pathlib import Path\n"
         "ROOT = Path(__file__).resolve().parent.parent\n"
         "SPEC = importlib.util.spec_from_file_location(\n"
-        '    "mod_beta", ROOT / "scripts" / "mod_beta.py"\n'
+        '    "beta_module", ROOT / "scripts" / "mod_beta.py"\n'
         ")\n"
+    ),
+    "tests/test_stem_edge.py": (
+        '"""Fixture: a module named only by its stem, as a spec call spells it."""\n'
+        'LOADED_AS = "mod_epsilon"\n'
     ),
     "tests/test_literal_edge.py": (
         '"""Fixture: a whole string-literal path edge."""\n'
@@ -61,6 +72,15 @@ FIXTURE_SOURCES = {
     "tests/test_dir_edge.py": (
         '"""Fixture: a module reading a literal under a directory scope."""\n'
         'NOTE = "pkgdir/thing.md"\n'
+    ),
+    "tests/test_dotdir_edge.py": (
+        '"""Fixture: a literal under a dot-directory scope."""\n'
+        'NOTE = ".dotdir/thing.md"\n'
+    ),
+    "tests/test_decoy_edge.py": (
+        '"""Fixture: the shard a scope path stripped of its leading dot would\n'
+        'wrongly select, and a directory scope must not."""\n'
+        'NOTE = "dotdir_other/thing.md"\n'
     ),
     "tests/test_broken.py": (
         '"""Fixture: a module no parser can read."""\n'

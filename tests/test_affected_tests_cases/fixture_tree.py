@@ -35,7 +35,14 @@ class TestImportEdges(FixtureTreeCase):
         )
 
     def test_a_spec_from_file_location_path_reaches_its_module(self):
+        # Spelled as its base name only: the fixture loads it under a name
+        # that is not its stem, so the stem literal cannot answer for this.
         self.assertEqual(["tests.test_spec_edge"], self.modules("scripts/mod_beta.py"))
+
+    def test_a_module_named_only_by_its_stem_reaches_its_module(self):
+        # The other half of the same call: the name the module is loaded
+        # under, with no path literal anywhere in the shard.
+        self.assertEqual(["tests.test_stem_edge"], self.modules("scripts/mod_epsilon.py"))
 
     def test_a_whole_string_literal_path_reaches_its_module(self):
         self.assertEqual(["tests.test_literal_edge"], self.modules("tools/mod_gamma.py"))
@@ -53,6 +60,20 @@ class TestImportEdges(FixtureTreeCase):
 class TestDirectoryAndTestScopes(FixtureTreeCase):
     def test_a_directory_scope_reaches_every_module_reading_under_it(self):
         self.assertEqual(["tests.test_dir_edge"], self.modules("pkgdir"))
+
+    def test_a_dot_directory_scope_keeps_its_leading_dot(self):
+        # ``.github/``, ``.orch/`` and ``.claude/`` are real write-scope
+        # prefixes here; stripping the dot both mangles the path and drops
+        # the answer out of the directory branch into loose substring match.
+        self.assertEqual(
+            ".github/workflows/checks.yml",
+            affected_tests.relative(".github/workflows/checks.yml", self.root),
+        )
+        self.assertEqual("tools/foo.py", affected_tests.relative("./tools/foo.py", self.root))
+
+    def test_a_dot_directory_scope_takes_only_what_is_under_it(self):
+        # ``dotdir_other/`` is what a scope stripped of its dot would reach.
+        self.assertEqual(["tests.test_dotdir_edge"], self.modules(".dotdir"))
 
     def test_a_scope_path_already_under_tests_is_its_own_module(self):
         self.assertEqual(
