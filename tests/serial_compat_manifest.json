@@ -1,7 +1,12 @@
 {
  "discovery": {
-  "count": 2636,
+  "count": 2649,
   "identities": [
+   "test_architecture_owners.NewToolOwnershipTest.test_dropping_any_one_sentence_fails_the_check",
+   "test_architecture_owners.NewToolOwnershipTest.test_the_section_names_each_new_tool_with_its_responsibility",
+   "test_architecture_owners.StatedCeilingTest.test_padding_a_copy_past_the_ceiling_fails_the_check",
+   "test_architecture_owners.StatedCeilingTest.test_the_map_is_inside_the_ceiling_it_states",
+   "test_architecture_owners.StatedCeilingTest.test_the_map_states_a_ceiling",
    "test_benchmaker.TestVendoredTreesAreNotSurfaces.test_a_font_suffix_is_declared_binary_rather_than_unreadable",
    "test_benchmaker.TestVendoredTreesAreNotSurfaces.test_the_live_scan_prunes_a_vendored_tree_holding_binaries",
    "test_canary_host.BaselinePinOwnerTest.test_both_modules_read_one_owner_for_the_pin",
@@ -1496,6 +1501,14 @@
    "tests.test_tickets_cases.file_payloads.NoteFilePayloadTest.test_a_note_given_inline_still_reaches_the_sink",
    "tests.test_tickets_cases.file_payloads.NoteFilePayloadTest.test_a_note_read_from_a_file_lands_byte_exactly",
    "tests.test_tickets_cases.file_payloads.NoteFilePayloadTest.test_a_note_read_from_stdin_lands_byte_exactly",
+   "tests.test_tickets_cases.gate_blocking.CritiqueReturnsTheFlagTest.test_the_join_routes_the_non_blocking_ones_elsewhere",
+   "tests.test_tickets_cases.gate_blocking.CritiqueReturnsTheFlagTest.test_the_lens_cell_decides_the_value",
+   "tests.test_tickets_cases.gate_blocking.CritiqueReturnsTheFlagTest.test_the_return_shape_carries_the_field",
+   "tests.test_tickets_cases.gate_blocking.GateRepairConsumesBlockingFindingsTest.test_the_first_criterion_splits_the_two_dispositions",
+   "tests.test_tickets_cases.gate_blocking.GateRepairConsumesBlockingFindingsTest.test_the_objective_keeps_the_non_blocking_ones_out_of_the_repair",
+   "tests.test_tickets_cases.gate_blocking.GateRepairConsumesBlockingFindingsTest.test_the_objective_repairs_the_accepted_blocking_findings",
+   "tests.test_tickets_cases.gate_blocking.GateRepairConsumesBlockingFindingsTest.test_the_stub_cites_no_file_section_it_does_not_quote_from",
+   "tests.test_tickets_cases.gate_blocking.GateRepairConsumesBlockingFindingsTest.test_the_stub_still_states_exactly_its_two_criteria",
    "tests.test_tickets_cases.grant.TestCheckedByVerb.test_check_is_reachable_and_documented_like_every_other_verb",
    "tests.test_tickets_cases.grant.TestCheckedByVerb.test_check_is_refused_on_a_ticket_that_is_not_claimed",
    "tests.test_tickets_cases.grant.TestCheckedByVerb.test_check_refuses_a_ticket_that_is_not_there",
@@ -2639,7 +2652,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "2171f197e4ed1e33f4133ff5bdbf8480ae0c9a2bdf89dda07497f6a2fe24b08d"
+  "sha256": "a8ee17f294f7237540c716d46f189922dc9b52f05d81a1baeef3b655513aba50"
  },
  "mutation_owners": [
   {
