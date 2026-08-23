@@ -31,7 +31,7 @@ BODY_BUDGET = {
 LINK_TARGET_RE = re.compile(r"\]\([^)]*\)")
 # rules/token-economy.md §11: every-turn surfaces tightest, every-dispatch
 # units next, every-run units widest. Ceilings only fall.
-SURFACE_BUDGET = {"templates/host-block.md": 400, "AGENTS.md": 300}
+SURFACE_BUDGET = {"templates/host-block.md": 400, "AGENTS.md": 230}
 MANIFEST_BUDGET = 250
 # A stub's instruction ceiling is not here: a stub is a ticket before it is
 # issued, and `scripts/tickets.py` refuses an issued one over the same
