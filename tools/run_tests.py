@@ -6,7 +6,8 @@ Scheduling is longest-first from a gitignored cache, with cold-start priors.
 Stdlib only, Python 3.9+, POSIX and Windows.
 
 Usage:
-    python tools/run_tests.py [-j N] [-v] [--tests-dir DIR] [MODULE ...]
+    python tools/run_tests.py [-j N] [-v] [--tests-dir DIR]
+        [--scope PATH[,PATH]] [MODULE ...]
 """
 
 from __future__ import annotations
@@ -23,6 +24,11 @@ import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+
+try:  # imported as ``tools.run_tests`` with the repository on sys.path
+    from tools import run_tests_scope
+except ImportError:  # run as ``python tools/run_tests.py``, tools/ on sys.path
+    import run_tests_scope
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_TESTS_DIR = ROOT / "tests"
@@ -290,7 +296,6 @@ def detail(record: dict) -> str:
         parts.append(record["note"])
     return "  (" + ", ".join(parts) + ")" if parts else ""
 
-
 def emit(text: str) -> None:
     """Preserve failure output; escape only glyphs the host console rejects."""
 
@@ -301,7 +306,6 @@ def emit(text: str) -> None:
     sys.stdout.flush()
     stream.write(text.encode(sys.stdout.encoding or "utf-8", "backslashreplace"))
     stream.flush()
-
 
 def report(records, wall: float, jobs: int) -> int:
     failed = [record for record in records if not record["ok"]]
@@ -327,7 +331,6 @@ def report(records, wall: float, jobs: int) -> int:
         return 1
     print("OK")
     return 0
-
 
 def timing_record(records, wall, requested_jobs, effective_jobs, started) -> dict:
     """Return one revision-stamped, machine-readable suite observation."""
@@ -382,7 +385,6 @@ def timing_record(records, wall, requested_jobs, effective_jobs, started) -> dic
         "limitations": ["CPU and disk utilization are not sampled."],
     }
 
-
 def save_timing(path: Path, record: dict) -> None:
     """Atomically write optional telemetry without changing suite status."""
 
@@ -395,10 +397,7 @@ def save_timing(path: Path, record: dict) -> None:
     except OSError:
         pass
 
-
 # --- entry point ------------------------------------------------------
-
-
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="run_tests.py",
@@ -422,6 +421,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--tests-dir", default=str(DEFAULT_TESTS_DIR), help="directory of test_*.py (default: tests/)"
     )
+    parser.add_argument("--scope", help="run only the modules PATH[,PATH] affects (affected_tests.py)")
     parser.add_argument("--timing-file", help="write a machine-readable suite timing record")
     child = parser.add_argument_group("child mode (internal)")
     child.add_argument("--child", metavar="MODULE", help=argparse.SUPPRESS)
@@ -429,7 +429,6 @@ def build_parser() -> argparse.ArgumentParser:
     child.add_argument("--result-file", help=argparse.SUPPRESS)
     child.add_argument("--child-verbosity", type=int, default=1, help=argparse.SUPPRESS)
     return parser
-
 
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
@@ -455,6 +454,8 @@ def main(argv=None) -> int:
             emit(size_check.stdout.decode("utf-8", "replace"))
             print("FAILED: tracked source-size admission")
             return 1
+    if args.scope:
+        args.modules = run_tests_scope.select(args.scope, tests_dir, discovered)
     selected = (
         [resolve(name, discovered, prefix) for name in args.modules] if args.modules else discovered
     )
@@ -502,7 +503,6 @@ def main(argv=None) -> int:
     if timing_path is not None:
         save_timing(timing_path, timing_record(records, wall, args.jobs, jobs, started))
     return status
-
 
 if __name__ == "__main__":
     # Guarded for Windows: any spawn-based re-import of this module must
