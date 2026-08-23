@@ -56,8 +56,10 @@ for token, spec in PLAN.items():
         time.sleep(spec.get("sleep", 0))
         CODE = spec.get("exit", 0)
         break
-sys.stdout.write("stub-out " + " ".join(ARGV) + "\\n")
-sys.stderr.write("stub-err " + " ".join(ARGV) + "\\n")
+# Bytes, not text: the runner digests what it captured, so a test
+# that checks a digest against its stream must know the exact bytes.
+sys.stdout.buffer.write(("stub-out " + " ".join(ARGV) + "\\n").encode("utf-8"))
+sys.stderr.buffer.write(("stub-err " + " ".join(ARGV) + "\\n").encode("utf-8"))
 sys.exit(CODE)
 '''
 
@@ -185,6 +187,10 @@ class RunRequiredCase(unittest.TestCase):
 
     def touch_tracked(self) -> None:
         (self.repo / "README.md").write_text("changed\n", encoding="utf-8")
+
+    def add_untracked(self) -> None:
+        (self.repo / "loose.txt").write_text("x", encoding="utf-8")
+
 
     def cache_entries(self):
         """Every stored verdict for this checkout, newest name order."""

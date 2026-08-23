@@ -145,12 +145,23 @@ def execute(planned, repo: Path):
     return [outcomes[name] for name, _ in planned]
 
 
+def display(argv) -> str:
+    """The command as a reader would type it; only the interpreter is noise.
+
+    Every python check carries the resolved interpreter's absolute path as
+    its own first word; the whitespace check's first word is ``git``, and
+    dropping that would name a command nobody could run.
+    """
+
+    return " ".join(argv[1:] if Path(argv[0]).is_absolute() else argv)
+
+
 def report(outcomes, payload, form: str) -> None:
     """Put every check's own output in front of a reader, then the verdict."""
 
     stream = sys.stdout if form == "text" else sys.stderr
     for _, record, out, err in outcomes:
-        stream.write("--- {0}\n".format(" ".join(record["argv"][1:])))
+        stream.write("--- {0}\n".format(display(record["argv"])))
         for raw in (out, err):
             if raw:
                 stream.write(raw.decode("utf-8", "replace"))
@@ -161,7 +172,7 @@ def report(outcomes, payload, form: str) -> None:
         stream.write(
             "{0:>4}  {1}{2}\n".format(
                 record["exit_status"],
-                " ".join(record["argv"][1:]),
+                display(record["argv"]),
                 "  (cached)" if record["cached"] else "",
             )
         )

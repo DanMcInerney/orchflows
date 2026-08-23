@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import sys
@@ -35,6 +36,21 @@ COMMAND_KEYS = {
 RECORD_KEYS = {
     "kind", "repository_identity", "tree_identity", "dirty", "commands", "exit",
 }
+
+
+def stream_digest(record, tag: str) -> str:
+    """What the stub must have put on that stream, digested.
+
+    `git diff --check` is the one check the stub never sees, and it says
+    nothing here, so both of its streams are the digest of no bytes at all.
+    """
+
+    if Path(record["argv"][0]).name == "git":
+        payload = b""
+    else:
+        argv = " ".join(record["argv"][1:])
+        payload = "{0} {1}\n".format(tag, argv).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
 
 
 class TestRefusal(RunRequiredCase):
@@ -176,6 +192,11 @@ class TestRecordShape(RunRequiredCase):
             for key in ("stdout_sha256", "stderr_sha256"):
                 self.assertRegex(record[key], r"\A[0-9a-f]{64}\Z")
             digests.add(record["stdout_sha256"])
+            # Named for a stream, so digested from that stream: two
+            # hex strings of the right shape prove nothing on their own.
+            for key, tag in (("stdout_sha256", "stub-out"),
+                             ("stderr_sha256", "stub-err")):
+                self.assertEqual(stream_digest(record, tag), record[key])
         self.assertEqual(5, len(digests))
 
     def test_a_freshly_run_command_is_not_marked_cached(self):
@@ -233,6 +254,19 @@ class TestCacheService(RunRequiredCase):
         _, payload, _, _ = self.invoke()
         self.assertEqual(4, len(self.stub.calls()))
         self.assertEqual([False] * 5, [r["cached"] for r in payload["commands"]])
+
+    def test_dirt_after_a_stored_run_is_never_served(self):
+        self.invoke()
+        for dirty in (self.touch_tracked, self.add_untracked):
+            self.stub.forget()
+            dirty()
+            _, payload, _, _ = self.invoke()
+            self.assertTrue(payload["dirty"])
+            self.assertEqual(4, len(self.stub.calls()))
+            self.assertEqual(
+                [False] * 5, [r["cached"] for r in payload["commands"]]
+            )
+            git(self.repo, "checkout", "--", "README.md")
 
     def test_another_interpreter_is_another_key(self):
         self.invoke()
@@ -349,7 +383,7 @@ class TestTextReport(RunRequiredCase):
         self.assertEqual(0, status)
         self.assertIsNone(payload)
         self.assertEqual(4, text.count("stub-out"))
-        for needle in ("tools/validate.py", "diff --check", "exit 0"):
+        for needle in ("tools/validate.py", "git diff --check", "exit 0"):
             self.assertIn(needle, text)
 
     def test_a_served_run_says_which_commands_it_did_not_run(self):
