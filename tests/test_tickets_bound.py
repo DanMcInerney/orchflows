@@ -312,6 +312,42 @@ class BoundCheckCommandTest(unittest.TestCase):
             self.assertEqual(1, result.returncode)
             self.assertIn("error", json.loads(result.stdout))
 
+    def test_a_row_is_never_parked_while_the_run_reports_nothing_overdue(self):
+        """`elapsed_minutes` is floored for a reader; the deadline is not.
+
+        Reading `overdue` off the floor put a claim 30m30s into a `30m`
+        bound at `park: true` beside `overdue: false`, with `overdue: 0` and
+        exit 0 for the run -- so the engine's own sentence (overdue with no
+        motion parks) and the exit status `profiles.md` says the re-check
+        reads disagreed about one deadline for the length of a minute.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_run(Path(tmp), (("T1", "claimed", "30m", 30, 20),))
+            payload, code = bound_check(
+                root, "--now", (NOW + timedelta(seconds=30)).strftime(UTC_STAMP)
+            )
+            row = rows_by_id(payload)["T1"]
+
+            self.assertEqual(30, row["elapsed_minutes"])  # floored, for a reader
+            self.assertTrue(row["park"])
+            self.assertTrue(row["overdue"])
+            self.assertEqual(1, code, payload)
+
+    def test_a_claim_exactly_at_its_bound_has_not_yet_passed_it(self):
+        """The other side of the same deadline, so the fix above cannot be
+        paid for by calling every claim overdue one minute early."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_run(Path(tmp), (("T1", "claimed", "30m", 30, 20),))
+            payload, code = bound_check(root, "--now", NOW.strftime(UTC_STAMP))
+            row = rows_by_id(payload)["T1"]
+
+            self.assertEqual(0, code, payload)
+            self.assertEqual(30, row["elapsed_minutes"])
+            self.assertFalse(row["overdue"])
+            self.assertFalse(row["park"])
+
     def test_the_command_is_in_the_usage_table_the_help_view_reads(self):
         self.assertIn("bound-check", tickets_mod.SUBCOMMAND_USAGE)
         self.assertIn("bound-check", tickets_mod.SUBCOMMAND_SUMMARY)

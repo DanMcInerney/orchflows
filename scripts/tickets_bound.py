@@ -103,9 +103,14 @@ def _bound_row(item: dict, now: datetime, support: dict) -> tuple:
         'claimed_at': item.get('claimed_at'),
         'last_motion_at': None if motion is None else motion.strftime(support['UTC_STAMP']),
         'elapsed_minutes': elapsed,
-        # An unreadable start is over every bound rather than inside one:
-        # the lease already hands such a claim to the next taker.
-        'overdue': True if elapsed is None else elapsed > minutes,
+        # The deadline `should_park` reads, not the whole minutes the row
+        # displays: 30m30s into a `30m` bound is past that bound, and a row
+        # that floored it answered `park: true` beside `overdue: false` and
+        # left the run at exit 0 -- the engine's rule and the exit status its
+        # re-check reads on opposite sides of one deadline. An unreadable
+        # start is over every bound rather than inside one: the lease already
+        # hands such a claim to the next taker.
+        'overdue': claimed is None or now > claimed + timedelta(minutes=minutes),
         'park': should_park(claimed, minutes, motion, now),
     }, unreadable)
 
