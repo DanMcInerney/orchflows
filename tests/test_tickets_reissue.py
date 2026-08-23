@@ -13,12 +13,13 @@ fixtures here are built from their published primitives alone.
 """
 
 import hashlib
+import json
 import os
 import tempfile
 import unittest
 from pathlib import Path
 
-from tests.test_tickets_issue_cases.common import run_cmd, use_sink
+from tests.test_tickets_issue_cases.common import run_cmd, run_full, use_sink
 from tests.test_tickets_cases.admission_v1 import initialize_git_fixture, v1_ticket
 
 import scripts.tickets as tickets_mod  # noqa: E402
@@ -174,6 +175,77 @@ class ReissueSuccessionTest(ReissueFixture):
         self.assertEqual("Result", payload["reissue"]["cite"])
         digest = hashlib.sha256(b"").hexdigest()
         self.assertIn(f'"sha256":"{digest}"', _sections(self.placed())["Fixed inputs"])
+
+
+class ReissueRefusalTest(ReissueFixture):
+    """Each stated refusal, at exit 2, with nothing written either side."""
+
+    def assert_refused(self, payload, *, fragment):
+        self.assertIn("error", payload)
+        self.assertIn(fragment, payload["error"])
+        self.assertEqual(2, payload["exit_code"])
+        self.assertFalse((self.sink / "tickets" / "newrun").exists())
+
+    def test_a_source_amend_still_owns_is_refused_at_both_statuses(self):
+        for status in ("pending", "ready"):
+            with self.subTest(status=status):
+                self.source_path = self.place_source(status=status)
+                before = self.source_path.read_bytes()
+                self.assert_refused(
+                    self.reissue("--run", "newrun"), fragment=f"is '{status}'",
+                )
+                self.assertEqual(before, self.source_path.read_bytes())
+
+    def test_a_root_is_refused_into_a_run_that_already_holds_one(self):
+        run_dir = self.sink / "tickets" / "otherrun"
+        run_dir.mkdir(parents=True)
+        (run_dir / "00-other.md").write_text(
+            self.source_text(tid="00-other").replace("run: oldrun", "run: otherrun"),
+            encoding="utf-8",
+        )
+        payload = self.reissue("--run", "otherrun")
+        self.assertIn("error", payload)
+        self.assertIn("already has root ticket '00-other'", payload["error"])
+        self.assertEqual(2, payload["exit_code"])
+        self.assertFalse((run_dir / "00-root.md").exists())
+
+    def test_a_set_naming_an_executor_owned_section_is_refused(self):
+        for key in ("result", "Handoff", "risks"):
+            with self.subTest(key=key):
+                self.assert_refused(
+                    self.reissue("--run", "newrun", "--set", f"{key}=anything"),
+                    fragment="names the executor-owned section",
+                )
+
+    def test_a_cited_section_the_source_does_not_carry_is_refused(self):
+        self.source_path = self.place_source(handoff=False)
+        self.assert_refused(
+            self.reissue("--run", "newrun", "--cite", "handoff"),
+            fragment="has no ## Handoff section",
+        )
+
+    def test_the_successor_run_is_required_and_the_flag_values_are_closed(self):
+        self.assert_refused(self.reissue(), fragment="usage: ")
+        self.assert_refused(
+            self.reissue("--run", "newrun", "--cite", "objective"),
+            fragment="is not one of ['handoff', 'result']",
+        )
+        self.assert_refused(
+            self.reissue("--run", "newrun", "--set", "isolation"),
+            fragment="is not <key>=<value>",
+        )
+
+    def test_a_source_that_is_not_there_is_refused_before_anything_is_written(self):
+        self.assert_refused(
+            run_cmd("reissue", "oldrun", "00-absent", "--run", "newrun"),
+            fragment="unreadable",
+        )
+
+    def test_the_refusal_reaches_the_process_exit_code(self):
+        self.source_path = self.place_source(status="pending")
+        completed = run_full(self.repo, "reissue", "oldrun", "00-root", "--run", "newrun")
+        self.assertEqual(2, completed.returncode)
+        self.assertIn("error", json.loads(completed.stdout))
 
 
 if __name__ == "__main__":
