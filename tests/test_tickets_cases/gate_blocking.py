@@ -20,6 +20,10 @@ from scripts.cutcheck_contract import CITATION_RE, SECTION_CITATION_RE
 CRITIQUE_MD = ROOT / "skills" / "kernel" / "orch-critique" / "SKILL.md"
 INTEGRATE_MD = ROOT / "skills" / "kernel" / "orch-integrate" / "SKILL.md"
 CRAFT_MD = ROOT / "packs" / "orch-code-pack" / "references" / "craft.md"
+FIXTURE_STUB = (
+    ROOT / "tests" / "fixtures" / "cutcheck" / "cutcheck-root-gate"
+    / "00-root.gate.repair.md"
+)
 
 
 def repair_sections() -> dict:
@@ -103,3 +107,23 @@ class CritiqueReturnsTheFlagTest(unittest.TestCase):
 
     def test_the_join_routes_the_non_blocking_ones_elsewhere(self):
         self.assertIn("non-blocking", INTEGRATE_MD.read_text(encoding="utf-8"))
+
+
+class PinnedStubMatchesTheGeneratorTest(unittest.TestCase):
+    """The replayable copy is this generator's output, or it pins nothing.
+
+    `tests/fixtures/cutcheck/verdicts.json` freezes the opening of this
+    stub's criteria, so a fixture that drifts from `_gate_body` freezes
+    text no dispatcher writes. That is how the copy came to carry the
+    pre-blocking criterion 1 and `provenance: authored-here` for a whole
+    generation after the generator had moved past both.
+    """
+
+    def test_the_fixture_carries_the_generated_objective_and_criteria(self):
+        generated = repair_sections()
+        for heading in ("Objective", "Completion test"):
+            self.assertEqual(
+                " ".join(generated[heading].split()),
+                " ".join(section_of(FIXTURE_STUB, heading).split()),
+                "{} drifted from `_gate_body`".format(heading),
+            )

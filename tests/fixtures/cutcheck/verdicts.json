@@ -315,7 +315,7 @@
    "cutcheck: advisory -- reported, and never setting the exit status:",
    "00-root.gate.critique.code: family 1: extraction-gap: criterion 1: every finding names the artifact identity it was found at and the evidence that shows it | oracle: t | oracle_class: judged",
    "00-root.gate.critique.code: family 1: extraction-gap: criterion 2: every `## Result` named in the fixed inputs was read | oracle: this ticket's `## Result` against tha | oracle_class: deterministic",
-   "00-root.gate.repair: family 1: extraction-gap: criterion 1: every accepted finding is repaired or declined with a stated reason | oracle: the critique tickets'  | oracle_class: deterministic",
+   "00-root.gate.repair: family 1: extraction-gap: criterion 1: every accepted blocking finding is repaired or declined with a stated reason, and every accepted non | oracle_class: deterministic",
    "cutcheck: the shape of this cut -- how long and how wide it is, and no finding of any kind:",
    "cutcheck-root-gate: graph: critical-path: 1: 00-root.01",
    "cutcheck-root-gate: graph: level-width: 1",
