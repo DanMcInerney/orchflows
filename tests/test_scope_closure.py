@@ -275,10 +275,23 @@ class CohortCompanionOwnerTests(unittest.TestCase):
             scope=("ARCHITECTURE.md",), **kwargs
         )
 
+    def subtree(self, ticket_id):
+        """A root and its gate stub plan the whole cut, trigger included.
+
+        Reading a cohort whose root plans only the companion would leave the
+        trigger half of the filter unexercised -- the owners `required_by`
+        records, which is the half that grades ordering.
+        """
+        return self.member(
+            ticket_id,
+            mutations=("create:scripts/tool.py", "change:ARCHITECTURE.md"),
+            scope=("scripts/tool.py", "ARCHITECTURE.md"),
+        )
+
     def cohort(self, *units):
         siblings = {
-            "00-root": self.companion("00-root"),
-            "00-root.gate.repair": self.companion("00-root.gate.repair"),
+            "00-root": self.subtree("00-root"),
+            "00-root.gate.repair": self.subtree("00-root.gate.repair"),
             "00-root.01": self.member(
                 "00-root.01", mutations=("create:scripts/tool.py",),
                 scope=("scripts/tool.py",),
@@ -311,6 +324,14 @@ class CohortCompanionOwnerTests(unittest.TestCase):
         self.assertEqual(
             ["scope-owner-missing"],
             codes(grade("00-root.01", self.cohort(), manifest(self.OWNERSHIP))),
+        )
+
+    def test_ordering_is_graded_against_the_unit_trigger_owner_alone(self):
+        siblings = self.cohort(("00-root.02", self.companion("00-root.02")))
+        findings = grade("00-root.01", siblings, manifest(self.OWNERSHIP))["findings"]
+        self.assertEqual(["scope-owner-unordered"], [item["code"] for item in findings])
+        self.assertEqual(
+            "change:ARCHITECTURE.md requires 00-root.01", findings[0]["detail"]
         )
 
     def test_a_root_graded_alone_still_owns_its_own_companions(self):

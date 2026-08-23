@@ -251,8 +251,10 @@ def _companion_owners(cohort, members):
     gate stubs repair anywhere that subtree writes, so both cover every
     companion the cut plans. Counting them would report the lawful shape --
     one unit owning the companion -- as several owners, and the shape with no
-    unit owner as owned. Where the cohort holds no unit at all, a root or a
-    gate stub is the only member there is and owns what it plans.
+    unit owner as owned. Where the cohort holds no unit at all the whole
+    membership is eligible again, so a root graded on its own still owns the
+    companions it plans -- and a root standing with only gate stubs is read
+    exactly as it was, several owners and all.
     """
 
     root_id = (

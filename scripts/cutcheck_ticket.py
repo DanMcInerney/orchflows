@@ -18,7 +18,6 @@ PRE_EXISTING = _contract.PRE_EXISTING
 UNCONFINED_ORACLE = _contract.UNCONFINED_ORACLE
 VERDICT_IN_OUTPUT = _contract.VERDICT_IN_OUTPUT
 WHOLE_SUITE_ORACLE = _contract.WHOLE_SUITE_ORACLE
-WRITE_RE = _contract.WRITE_RE
 _MUTATED = _contract._MUTATED
 _parse_frontmatter = _contract._parse_frontmatter
 _sections = _contract._sections
