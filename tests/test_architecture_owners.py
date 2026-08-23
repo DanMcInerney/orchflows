@@ -24,6 +24,9 @@ SECTION = "## Cross-cutting owners"
 LINK_TARGET_RE = re.compile(r"\]\([^)]*\)")
 # A `tools/<name>.py` ownership clause, up to the sentence or clause end.
 OWNERSHIP_CLAUSE = re.compile(r"`tools/([^`]+\.py)`\]? owns ([^;.]+)")
+# The map states its own ceiling; nothing else in the tree states it, so the
+# number a reader is held to is the number the file carries.
+CEILING_RE = re.compile(r"Ceiling: (\d+) whitespace-delimited words")
 
 # The three tools this run added, and the words each sentence must carry.
 # The responsibility, not the wording: what is pinned is that the map says
@@ -53,6 +56,40 @@ def unnamed_tools(text):
         if owned is None or any(phrase not in owned for phrase in phrases):
             missing.append(name)
     return missing
+
+
+def stated_ceiling(text):
+    """The word ceiling the map states for itself, or None."""
+
+    match = CEILING_RE.search(re.sub(r"\s+", " ", text))
+    return None if match is None else int(match.group(1))
+
+
+def counted_words(text):
+    """The validator's count: link targets stripped, then a whitespace split."""
+
+    return len(LINK_TARGET_RE.sub("]", text).split())
+
+
+class StatedCeilingTest(unittest.TestCase):
+    """The map holds itself to the ceiling it publishes."""
+
+    def setUp(self):
+        self.text = ARCHITECTURE.read_text(encoding="utf-8")
+        self.ceiling = stated_ceiling(self.text)
+
+    def test_the_map_states_a_ceiling(self):
+        self.assertIsNotNone(self.ceiling, "ARCHITECTURE.md states no ceiling")
+
+    def test_the_map_is_inside_the_ceiling_it_states(self):
+        self.assertLessEqual(counted_words(self.text), self.ceiling)
+
+    def test_padding_a_copy_past_the_ceiling_fails_the_check(self):
+        """The can-fail direction pads a copy, never the tree."""
+
+        over = self.ceiling - counted_words(self.text) + 1
+        padded = self.text + " pad" * over
+        self.assertGreater(counted_words(padded), self.ceiling)
 
 
 class NewToolOwnershipTest(unittest.TestCase):
