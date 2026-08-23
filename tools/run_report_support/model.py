@@ -371,10 +371,10 @@ def build_report(root, since=None, until=None, top: int = DEFAULT_TOP) -> dict:
             {key: value for key, value in row.items() if not key.startswith("_")}
             for row in windowed[: max(top, 0)]
         ],
-        "families": family_section(windowed),
+        "families": family_section(windowed)[: max(top, 0)],
         "tickets": ticket_section(tickets, now, top),
         "friction": friction_support.friction_section(
-            log, lambda stamp: in_window(parse_instant(stamp), since_at, until_at)
+            log, lambda stamp: in_window(parse_instant(stamp), since_at, until_at), top
         ),
         "totals": {
             "runs": len(windowed),

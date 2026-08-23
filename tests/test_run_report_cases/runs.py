@@ -88,3 +88,15 @@ class RunTableTest(unittest.TestCase):
         report = report_of(self.sink, top=2)
         self.assertEqual([row["run"] for row in report["runs"]], [COMPLETE_RUN, OPEN_RUN])
         self.assertEqual(report["totals"]["runs"], 3)
+
+    def test_top_bounds_every_ranked_table_and_no_fixed_one(self):
+        # The real sink's eight-day window holds 227 families and one
+        # grouping row per run: a `--top` that bounded the runs alone
+        # leaves the report unreadable at exactly the size it is for.
+        report = report_of(self.sink, top=1)
+        self.assertEqual([row["family"] for row in report["families"]], ["alpha-thing"])
+        self.assertEqual(len(report["friction"]["by_category"]), 1)
+        self.assertEqual(len(report["friction"]["by_run"]), 1)
+        self.assertEqual(len(report["friction"]["clusters"]), 11)
+        self.assertEqual(len(report["tickets"]["by_executor"]), 2)
+        self.assertEqual(report["totals"], report_of(self.sink)["totals"])

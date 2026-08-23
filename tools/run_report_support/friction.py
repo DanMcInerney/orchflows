@@ -76,12 +76,15 @@ def clusters_of(entries) -> tuple:
     return [{"cluster": name, "count": counts[name]} for name, _ in CLUSTER_RES], unclustered
 
 
-def friction_section(log: dict, keeps) -> dict:
+def friction_section(log: dict, keeps, top: int = 0) -> dict:
     """Section (d) for one window, from ``read_friction``'s payload.
 
     ``keeps`` decides whether one record's ``ts`` is in the window and is
     handed in rather than imported: ``model`` owns what a window is, and
-    this module owns only the counting.
+    this module owns only the counting. ``top`` bounds the four groupings,
+    whose longest -- by run -- is one row per run in the window; the
+    cluster table is fixed and is never bounded, so two windows' tables
+    stay subtractable.
     """
 
     inside, outside = [], 0
@@ -94,5 +97,6 @@ def friction_section(log: dict, keeps) -> dict:
     section = {"total": len(inside), "outside_window": outside,
                "clusters": rows, "unclustered": unclustered}
     for field in GROUPINGS:
-        section["by_" + field] = _grouped(inside, field)
+        rows = _grouped(inside, field)
+        section["by_" + field] = rows[: max(top, 0)] if top else rows
     return section
