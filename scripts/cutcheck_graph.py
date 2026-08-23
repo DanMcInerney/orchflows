@@ -1,10 +1,15 @@
 """Grade ticket graph layout and render graph readings."""
 
+import functools
+import importlib.util
+
 try:  # repository checkout
     from scripts import cutcheck_contract as _contract
 except ImportError:  # installed flat script directory
     import cutcheck_contract as _contract
 CHECKED_BY_KEY = _contract.CHECKED_BY_KEY
+Path = _contract.Path
+SHARED_TEST_MODULE = _contract.SHARED_TEST_MODULE
 COMPLETION_SECTION = _contract.COMPLETION_SECTION
 CRITICAL_PATH = _contract.CRITICAL_PATH
 GATE_EXECUTORS = _contract.GATE_EXECUTORS
@@ -94,6 +99,48 @@ def _shared_artifacts(left, right):
             right_value = str(right_path).replace("\\", "/").rstrip("/")
             shared.add(left_value if len(left_value) >= len(right_value) else right_value)
     return sorted(shared)
+
+
+AFFECTED_TESTS = "tools/affected_tests.py"
+# One resolver per graded tree, its parses cached: a cut asks it per item.
+_AFFECTED_TOOLS = {}
+
+
+def _affected_tool(tree):
+    """The graded revision's own scope-to-shard resolver, or None.
+
+    From the tree under test, the shards it names being that revision's.
+    `tools/` is never installed and a repository may hold none, so the reading
+    is skipped where it is absent -- in silence, every line printed here being
+    one some filter selects on.
+    """
+
+    key = str(tree)
+    if key in _AFFECTED_TOOLS:
+        return _AFFECTED_TOOLS[key]
+    _AFFECTED_TOOLS[key] = None
+    path = Path(tree) / AFFECTED_TESTS
+    spec = importlib.util.spec_from_file_location("cutcheck_affected", str(path))         if path.is_file() else None
+    if spec is None or spec.loader is None:
+        return None
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    except Exception:  # a tree's own file, and no reading of a cut rests on it
+        return None
+    module.read_facts = functools.lru_cache(maxsize=None)(module.read_facts)
+    _AFFECTED_TOOLS[key] = module
+    return module
+
+
+def _affected_modules(tree, scope):
+    """The shard modules this write scope can be observed by, or None."""
+
+    tool = _affected_tool(tree)
+    try:
+        return frozenset(tool.affected(list(scope), root=Path(tree))["modules"])
+    except Exception:  # absent, unloadable, or unable to read this tree
+        return None
 
 
 def _decomposers(siblings):
@@ -298,7 +345,7 @@ def _issued_items(siblings, roots):
     ]
 
 
-def _pairwise(siblings, reads, region_prover=None):
+def _pairwise(siblings, reads, region_prover=None, tree=None):
     """Family 4: the pairs the DAG leaves free to run at the same time.
 
     Ordering is reachability, not adjacency -- a pair joined through a third
@@ -306,11 +353,17 @@ def _pairwise(siblings, reads, region_prover=None):
     unordered pair the write scopes must be disjoint and neither item's oracle
     may read what the other writes, or the first result to land invalidates the
     second's evidence.
+
+    Given a tree, one more reading of the same pair, and advisory: two scopes
+    sharing no file may still be graded by one shard, so whichever lands first
+    decides what the other's regression read. Never counted: the resolver
+    over-approximates on purpose.
     """
 
     findings = []
     ids = _issued_items(siblings, _root_ids(siblings))
     ancestors = {item: _ancestors(item, siblings) for item in ids}
+    shards = {}
     for index, left in enumerate(ids):
         for right in ids[index + 1:]:
             if right in ancestors[left] or left in ancestors[right]:
@@ -350,6 +403,15 @@ def _pairwise(siblings, reads, region_prover=None):
                             "with {}: {}".format(writer, path),
                         )
                     )
+            if tree is None:
+                continue
+            for item in (left, right):
+                if item not in shards:
+                    shards[item] = _affected_modules(tree, scopes[item]) or frozenset()
+            both = sorted(shards[left] & shards[right])
+            if both:
+                detail = "with {}: {}".format(right, ", ".join(both))
+                findings.append((left, 0, SHARED_TEST_MODULE, detail))
     return findings
 
 
@@ -440,6 +502,7 @@ def _graph_reading(run, siblings):
     ]
 
 __all__ = (
+    '_affected_tool', '_affected_modules',
     '_oracle_reads', '_ancestors', '_first_overlap', '_decomposers',
     '_root_ids', '_gate_stub_of', '_gate_owners', '_staged_template_roots',
     '_gate_shape', '_root_gate_layout', '_issued_items', '_pairwise',

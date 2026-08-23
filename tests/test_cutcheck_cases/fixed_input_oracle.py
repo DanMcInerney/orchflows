@@ -65,7 +65,9 @@ def graded(case, oracle, inputs, ticket_id="01-unit", executor="orch-tdd"):
     """
 
     directory = Path(tempfile.mkdtemp(prefix="cutcheck-indirection-"))
-    case.addCleanup(shutil.rmtree, str(directory), True)
+    # Strictly: this directory holds one file this process wrote, so a removal
+    # that fails is a fact about the run and not noise to be swallowed.
+    case.addCleanup(shutil.rmtree, str(directory))
     text = TICKET.format(
         id=ticket_id, executor=executor, oracle=oracle,
         inputs="\n".join(inputs),
