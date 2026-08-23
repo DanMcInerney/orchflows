@@ -38,6 +38,7 @@ class TicketsFacadeCompatibilityTest(unittest.TestCase):
     COMMANDS = {
         "amend",
         "amendment-request",
+        "bound-check",
         "check",
         "claim",
         "draft-validate",

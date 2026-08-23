@@ -40,7 +40,8 @@ class GitNoHistoryDispositionTest(unittest.TestCase):
     def test_the_advisory_set_lost_that_one_member_and_no_other(self):
         # `symlink-in-tree` and `unread-half` joined later and are additions,
         # not survivals: the claim this pins is still that GIT_NO_HISTORY left
-        # and that no member standing beside it left with it.
+        # and that no member standing beside it left with it. `shared-test-module`
+        # joined later still, on those same terms.
         self.assertEqual(
             cutcheck.ADVISORY,
             frozenset(
@@ -52,6 +53,7 @@ class GitNoHistoryDispositionTest(unittest.TestCase):
                     cutcheck.BYTECODE_WRITTEN,
                     cutcheck.SCOPE_OPEN,
                     cutcheck.UNREAD_HALF,
+                    cutcheck.SHARED_TEST_MODULE,
                     "ticket-result-not-terminal",
                 }
             ),
