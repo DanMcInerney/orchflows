@@ -329,6 +329,49 @@ class LintTicketTest(LintFixture):
         self.assertEqual("semantic", finding["kind"])
         self.assertIsNone(finding["fix"])
 
+    def test_a_checked_ticket_lints_clean(self):
+        """`check` writes `checked_by`; the issued form may not call that a defect.
+
+        `new`'s grader refuses `checked_by` because an unissued ticket
+        carrying it would suppress the checker before dispatch. Once
+        `check` has written it the same field is the lawful record, and
+        `lint <run> <id>` reads issued tickets only.
+        """
+        text = (draft(self.baseline)
+                .replace("independence: gate", "independence: checker")
+                .replace("status: pending", "status: complete")
+                .replace("claimed_by:\n", "claimed_by: unit_01\n")
+                .replace("claimed_at:\n",
+                         "claimed_at: 2026-08-23T14:25:12Z\nchecked_by: check_unit_01\n"))
+        place(self.sink, "testrun", "T1", text)
+        payload = self.lint("testrun", "T1")
+        self.assertEqual([], payload["lint"]["findings"], payload)
+        self.assertEqual(0, payload["exit_code"])
+
+    def test_a_draft_carrying_checked_by_is_still_a_defect(self):
+        """The issue-time rule stands where issue time is: `--file`."""
+        text = (draft(self.baseline)
+                .replace("independence: gate", "independence: checker")
+                .replace("claimed_at:", "claimed_at:\nchecked_by: check_unit_01", 1))
+        payload = self.lint("--file", str(self.write_draft(text)))
+        self.assertIn(
+            "an unissued ticket cannot carry 'checked_by'",
+            " ".join(item["message"] for item in payload["lint"]["findings"]),
+        )
+        self.assertEqual(1, payload["exit_code"])
+
+    def test_a_non_root_gate_ticket_carrying_checked_by_stays_a_defect(self):
+        """The contract half of the rule is not issue-time and does not lift."""
+        text = draft(self.baseline).replace(
+            "claimed_at:", "claimed_at:\nchecked_by: check_gate", 1)
+        place(self.sink, "testrun", "T1", text)
+        payload = self.lint("testrun", "T1")
+        self.assertIn(
+            "non-root independence 'gate' cannot carry 'checked_by'",
+            " ".join(item["message"] for item in payload["lint"]["findings"]),
+        )
+        self.assertEqual(1, payload["exit_code"])
+
     def test_a_missing_ticket_is_exit_two(self):
         payload = self.lint("testrun", "absent")
         self.assertEqual(2, payload["exit_code"])
