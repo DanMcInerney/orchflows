@@ -73,6 +73,7 @@ import tickets  # noqa: E402  frontmatter and isolation, imported and never copi
 # Literal sibling imports work in the source tree and in the flat installed
 # ``bin`` layout after the directory above has joined ``sys.path``.
 workspace_git = __import__("workspace_git")
+workspace_prepare = __import__("workspace_prepare")
 workspace_scope = __import__("workspace_scope")
 tickets_scope = __import__("tickets_scope")
 ISOLATION_KEY = "isolation"
@@ -112,9 +113,7 @@ VERDICTS = {
     EXIT_NO_RECORD: "no-record",
     EXIT_WRONG_VANTAGE: "wrong-vantage",
 }
-# A frontmatter scalar carries the dirty set as one comma-joined line, so a
-# path holding either character cannot be written unambiguously.
-AMBIGUOUS = (",", '"', "'")
+AMBIGUOUS = workspace_git.AMBIGUOUS
 # ``contracts/work-item.md``: ``write_scope`` is exactly what the item may
 # change -- paths, and this script compares them against the paths a diff
 # names. A space or a parenthesis makes an entry prose ("scripts/ and tests/",
@@ -220,24 +219,14 @@ def _cmd_start(rest):
     scope = _normalized_scope(data.get(WRITE_SCOPE_KEY), top, root)
     branch, head = workspace_git._head_and_branch(_git_out)
     dirty = sorted(set(_dirty_paths()))
-    for entry in dirty:
-        for character in AMBIGUOUS:
-            if character in entry:
-                raise Refused(
-                    f"dirty path {entry!r} contains {character!r}, which a comma-joined "
-                    "frontmatter value cannot carry unambiguously: commit, "
-                    "remove or rename it, then run start again"
-                )
-    # the revision this workspace derives from, plus what was dirty at start:
-    # orch-workspace forbids proceeding without recording, not proceeding
-    baseline = (
-        f"{head} clean"
-        if not dirty
-        else f"{head} dirty: {', '.join(dirty)}"
-    )
+    baseline = workspace_git._baseline(head, dirty)
     outcome = _record(path, prior_text, branch, baseline)
     if "error" in outcome:
         raise Refused(outcome["error"])
+    # after recording, never before: a tree that cannot be prepared is still
+    # a workspace whose branch and baseline the join has to be able to read,
+    # and the preparation's own verdict is reported rather than raised
+    prepared = workspace_prepare.prepare(top)
     return {
         "start": {
             "run": run,
@@ -250,6 +239,7 @@ def _cmd_start(rest):
             "isolated": top != root,
             "dirty": dirty,
             WRITE_SCOPE_KEY: list(scope),
+            **prepared,
         }
     }, EXIT_OK
 

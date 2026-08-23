@@ -15,6 +15,9 @@ EXIT_ERROR = 1
 # ref at the join: the item graded isolation-missing however clean its work
 # was. The sha under this prefix is a ref every git call can resolve.
 DETACHED_PREFIX = "detached:"
+# A frontmatter scalar carries the dirty set as one comma-joined line, so a
+# path holding either character cannot be written unambiguously.
+AMBIGUOUS = (",", '"', "'")
 
 
 class Refused(Exception):
@@ -139,6 +142,26 @@ def _ticket_worktree(git_out, branch: str, tip: str):
         ):
             return Path(entry["worktree"]).resolve()
     return None
+
+
+def _baseline(head: str, dirty) -> str:
+    """The revision this workspace derives from, plus what was dirty at start.
+
+    ``orch-workspace`` forbids proceeding without recording, not proceeding:
+    a dirty tree is stamped, never refused. A path carrying one of the
+    characters below is refused, because the stamp is one comma-joined
+    frontmatter scalar and no reader could tell such a path's ends apart.
+    """
+
+    for entry in dirty:
+        for character in AMBIGUOUS:
+            if character in entry:
+                raise Refused(
+                    f"dirty path {entry!r} contains {character!r}, which a comma-joined "
+                    "frontmatter value cannot carry unambiguously: commit, "
+                    "remove or rename it, then run start again"
+                )
+    return f"{head} clean" if not dirty else f"{head} dirty: {', '.join(dirty)}"
 
 
 def _graded(payload, what: str) -> dict:
