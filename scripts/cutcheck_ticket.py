@@ -107,16 +107,20 @@ def _policy_findings(ticket_id, text, sibling_texts, baseline_tree, head_tree):
             rendered.append((ticket_id, 0, code, f'{field}: {detail}'))
     return rendered
 
-def _root_acceptance_prose(text):
-    """Mask only write verbs immediately negated by ``no``.
+GATE_VERIFY_SUFFIX = '.gate.verify'
 
-    A root criterion such as "creates no derived files" freezes an absence;
-    it grants no root write.  Other write prose remains authority-bearing.
+
+def _frozen_authority(ticket_id, is_root):
+    """Is this item's write authority its frontmatter's alone?
+
+    A root freezes the cumulative acceptance its units deliver, and its
+    ``gate.verify`` stub re-runs that same acceptance.  Neither writes what
+    those criteria describe -- the units do -- so a criterion such as
+    "records required-check-run/v1" names a unit's artifact and commits the
+    frozen item to nothing.  Their own Objective and frontmatter authority
+    stay graded, and a unit's Completion test still commits the unit.
     """
-    def mask_negated(match):
-        following = match.string[match.end():].lstrip().lower()
-        return 'observes' if following.startswith('no ') else match.group(0)
-    return WRITE_RE.sub(mask_negated, text)
+    return is_root or ticket_id.endswith(GATE_VERIFY_SUFFIX)
 
 def _check_ticket(path, baseline_tree, head_tree, siblings):
     text = path.read_text(encoding="utf-8")
@@ -132,10 +136,11 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
     findings = _policy_findings(ticket_id, text, sibling_texts, baseline_tree, head_tree)
     # A top-level root freezes acceptance; commands in that acceptance observe
     # the unit result and can therefore name paths absent from the baseline.
-    # That positional exemption covers only command-argument path existence
-    # and write-looking Completion-test prose.  Command shape, citations, and
-    # the root's own Objective/frontmatter authority remain graded.  A nested
-    # decomposer is not a root and receives no exemption.
+    # That positional exemption covers only command-argument path existence;
+    # write-looking Completion-test prose is `_frozen_authority`'s, which
+    # reads the root and its gate.verify stub alike.  Command shape,
+    # citations, and each item's own Objective/frontmatter authority remain
+    # graded.  A nested decomposer is not a root and receives no exemption.
     is_root = ticket_id in _root_ids(siblings)
     for number, criterion in _criteria(sections.get(COMPLETION_SECTION, "")):
         prose = _prose(criterion)
@@ -223,8 +228,8 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
         for klass, detail in _path_reality(_prose(header), baseline_tree)
     )
     completion = sections.get(COMPLETION_SECTION, "")
-    if is_root:
-        completion = _root_acceptance_prose(completion)
+    if _frozen_authority(ticket_id, is_root):
+        completion = ""
     body = "\n".join((sections.get(OBJECTIVE_SECTION, ""), completion))
     findings.extend(
         (ticket_id, 0, klass, detail)
@@ -243,5 +248,5 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
 # six families are the module docstring's to describe; this names none of them.
 
 __all__ = (
-    '_check_ticket', '_policy_findings',
+    '_check_ticket', '_policy_findings', '_frozen_authority',
 )
