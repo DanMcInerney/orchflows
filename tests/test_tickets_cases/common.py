@@ -25,21 +25,23 @@ if str(ROOT) not in sys.path:
 import scripts.tickets as tickets_mod  # noqa: E402
 
 TICKETS_PY = ROOT / "scripts" / "tickets.py"
-TICKETS_SUPPORT_NAMES = (
-    "tickets_format.py",
-    "tickets_markdown.py",
-    "tickets_store.py",
-    "tickets_issue.py",
-    "tickets_lifecycle.py",
-    "tickets_packet.py",
-    "tickets_result.py",
-    "tickets_worklog.py",
-    "tickets_dispatch.py",
-    "tickets_gate_mutations.py",
-    "tickets_admission.py",
-    "tickets_inputs.py",
-    "tickets_input_producers.py",
-)
+def support_names() -> tuple:
+    """The flat ticket family, named the way `install.py` names it.
+
+    `discover_script_names` copies every `scripts/*.py` whose stem starts
+    with a `SCRIPT_SUPPORT_PREFIXES` entry and an underscore, sorted, minus
+    the entrypoints; for this family that is exactly `tickets_*.py`, and the
+    `tickets.py` facade is an entrypoint the pattern cannot match. Read at
+    call time, so a module added beside the facade joins the installed-copy
+    fixtures without an edit here.
+    """
+
+    return tuple(
+        sorted(path.name for path in TICKETS_PY.parent.glob("tickets_*.py"))
+    )
+
+
+TICKETS_SUPPORT_NAMES = support_names()
 TICKETS_MODULES = (TICKETS_PY,) + tuple(
     TICKETS_PY.with_name(name) for name in TICKETS_SUPPORT_NAMES
 )
