@@ -91,7 +91,8 @@ like a `/site-work-and-merge` you own; `orch-frontier` runs it.
 
 Runs survive session death: every ticket is a file in one per-user
 state sink outside every repository, so a fresh context — in any
-checkout — resumes mid-flight.
+checkout — resumes mid-flight. What a ticket is — anatomy, lifecycle,
+review, failure handling — is [TICKETS.md](TICKETS.md).
 
 Team setup: each teammate runs the user install. Repository-local custom
 skills and compositions remain ordinary `orch-build` outputs under

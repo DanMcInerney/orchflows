@@ -21,7 +21,7 @@ NAME_CHECKED_DIRS = ("rules", "docs", "contracts", "templates")
 # non-recursive glob over four directories above saw the top level and
 # stopped, which is how a stub could name a deleted skill through exit 0.
 NAME_CHECKED_TREES = ("compositions", "packs", "skills")
-NAME_CHECKED_FILES = ("README.md", "DESIGN.md", "ARCHITECTURE.md", "AGENTS.md")
+NAME_CHECKED_FILES = ("README.md", "DESIGN.md", "ARCHITECTURE.md", "AGENTS.md", "TICKETS.md")
 # `orch-` alone is the prefix, not a name; a name carries at least one
 # segment after it. Plain text is how the library says "mentioned, not
 # called" (rule 2 again), so DESIGN.md's supersession history needs no
