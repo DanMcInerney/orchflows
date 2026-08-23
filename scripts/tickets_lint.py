@@ -113,13 +113,20 @@ def _oracle_findings(text: str, tree: Path) -> list:
     return findings
 
 
-def lint_findings(text: str, *, ticket_id: str, siblings=None, tree=None) -> list:
-    """Every finding the graders report on this exact snapshot, deduplicated."""
+def lint_findings(text: str, *, ticket_id: str, siblings=None, tree=None, issued: bool=False) -> list:
+    """Every finding the graders report on this exact snapshot, deduplicated.
+
+    ``issued`` says which of the two targets this is. A draft is graded as
+    ``new`` would grade it; a ticket already in the sink is not, because
+    ``new``'s issue-time rules grade a state it has lawfully left -- the
+    checker identity `check` wrote is the one this module kept reporting as
+    a defect, so `lint <run> <id>` could not return to exit 0 after a check.
+    """
     data = _parse_frontmatter(text)
     if not data:
         return [_finding('no-frontmatter', "a ticket opens with a '---' block (contracts/work-item.md)")]
     findings = []
-    for defect in _issue_defects(text):
+    for defect in _issue_defects(text, issued=issued):
         missing = MISSING_KEY_RE.match(defect)
         key = missing.group(1) if missing else None
         if key in DEFAULTABLE:
@@ -292,7 +299,8 @@ def _cmd_lint(rest) -> dict:
     if refusal is not None:
         return refusal
     path, ticket_id, text, siblings = target
-    findings = lint_findings(text, ticket_id=ticket_id, siblings=siblings)
+    issued = file_arg is None
+    findings = lint_findings(text, ticket_id=ticket_id, siblings=siblings, issued=issued)
     applied = []
     if fix:
         blocked = _rewritable(text, path, ticket_id, siblings)
@@ -309,7 +317,7 @@ def _cmd_lint(rest) -> dict:
             text = updated
         except (OSError, ValueError) as error:
             return {'error': f'unwritable {path}: {error}', 'exit_code': 2}
-        findings = lint_findings(text, ticket_id=ticket_id, siblings=siblings)
+        findings = lint_findings(text, ticket_id=ticket_id, siblings=siblings, issued=issued)
     remaining = [item for item in findings if item['kind'] == SEMANTIC]
     return {
         'lint': {
