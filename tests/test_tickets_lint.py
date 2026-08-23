@@ -266,6 +266,44 @@ class LintFixTest(LintFixture):
         self.assertIn("is claimed by someone", payload["error"])
         self.assertEqual(claimed, path.read_text(encoding="utf-8"))
 
+    def test_fix_refuses_every_cut_time_freeze_amend_refuses(self):
+        """`--fix` is a cut-time rewrite, so it stops where `amend` stops.
+
+        Each of these is unclaimed and `pending`, so both status guards pass
+        and the ticket is one `amend` refuses on its own separate terms.
+        """
+        frozen = (
+            ("checked_by: some_checker", "has an immutable checked_by"),
+            ("assignment_seal: v2:sha256:deadbeef", "carries an assignment_seal"),
+        )
+        for index, (field, expected) in enumerate(frozen):
+            tid = f"F{index}"
+            text = five_defect_draft(self.baseline, tid=tid).replace(
+                "claimed_at:", "claimed_at:" + chr(10) + field, 1)
+            path = place(self.sink, "testrun", tid, text)
+            before = path.read_text(encoding="utf-8")
+            payload = self.lint("testrun", tid, "--fix")
+            self.assertEqual(2, payload["exit_code"], payload)
+            self.assertIn(expected, payload["error"])
+            self.assertEqual(before, path.read_text(encoding="utf-8"))
+
+    def test_fix_refuses_a_sealed_cohort(self):
+        """A sibling of the cohort is claimed, so the cut is closed."""
+        cohort = "cohort: v1:batch:wave"
+        sibling = (draft(self.baseline, tid="S0")
+                   .replace("cohort: v1:ticket:S0", cohort)
+                   .replace("status: pending", "status: claimed")
+                   .replace("claimed_by:", "claimed_by: someone", 1))
+        place(self.sink, "testrun", "S0", sibling)
+        path = place(self.sink, "testrun", "S1",
+                     five_defect_draft(self.baseline, tid="S1")
+                     .replace("cohort: v1:ticket:S1", cohort))
+        before = path.read_text(encoding="utf-8")
+        payload = self.lint("testrun", "S1", "--fix")
+        self.assertEqual(2, payload["exit_code"], payload)
+        self.assertIn("sealed cohort", payload["error"])
+        self.assertEqual(before, path.read_text(encoding="utf-8"))
+
     def test_fix_rewrites_an_unclaimed_ticket_in_the_sink(self):
         path = place(self.sink, "testrun", "T1", five_defect_draft(self.baseline))
         payload = self.lint("testrun", "T1", "--fix")
