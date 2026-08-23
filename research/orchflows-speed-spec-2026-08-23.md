@@ -205,8 +205,9 @@ record `{repository_identity, tree_identity, dirty, commands[], exit}` as JSON
 refusal (interpreter missing, not a git checkout). **Cache:** key = sha256
 over (`git rev-parse HEAD^{tree}`, a sha256 of `git diff HEAD` including
 untracked-but-not-ignored files, argv, resolved interpreter path,
-`sys.platform`, `python --version`); store under
-`<repo>/.orch/required_cache/<key>.json` (gitignored already via `.orch/*`).
+`sys.platform`, `python --version`); store as `required_cache/<key>.json` inside the repository's gitignored
+runtime-cache directory — the parent of `tools/run_tests.py`'s `CACHE_PATH`
+— never in the state sink, and named in prose only by that reference.
 A hit on exit 0 returns the stored record with `cached: true` and does not
 re-run. A stored non-zero exit is never served (always re-run). A run is
 cached only when the tree was clean at start and unchanged at end. `--no-cache`
