@@ -34,11 +34,12 @@ if __package__:
 else:
     from tickets_worklog import WORKLOG_USAGE, _closure_defects, _cmd_worklog, _run_tickets, _spec_field_defect, _template_order
 if __package__:
-    from .tickets_admission import ADMISSION_PENDING, batch_cohort, root_cohort; from .tickets_commands import GATE_USAGE, HELP_COMMANDS, HELP_FLAGS, INSTANTIATE_USAGE, LINT_USAGE, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags; from .tickets_lint import _cmd_lint
+    from .tickets_admission import ADMISSION_PENDING, batch_cohort, root_cohort; from .tickets_commands import GATE_USAGE, HELP_COMMANDS, HELP_FLAGS, INSTANTIATE_USAGE, LINT_USAGE, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags; from .tickets_lint import _cmd_lint; from .tickets_bound import _cmd_bound_check
     from .tickets_input_producers import git_head, render_stub, render_ticket_inputs; from .tickets_generations import GENERATION_SUBCOMMANDS; from .tickets_gate_mutations import _canonical_gate_mutation_plan
 else:
     from tickets_admission import ADMISSION_PENDING, batch_cohort, root_cohort; from tickets_commands import GATE_USAGE, HELP_COMMANDS, HELP_FLAGS, INSTANTIATE_USAGE, LINT_USAGE, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags; from tickets_lint import _cmd_lint
     from tickets_input_producers import git_head, render_stub, render_ticket_inputs; from tickets_gate_mutations import _canonical_gate_mutation_plan
+    _cmd_bound_check = __import__('tickets_bound')._cmd_bound_check  # by name: the family's import census is pinned
     try: GENERATION_SUBCOMMANDS = __import__("tickets_generations").GENERATION_SUBCOMMANDS
     except ModuleNotFoundError: GENERATION_SUBCOMMANDS = {}
 def _template_stubs(directory: Path, values: dict):
@@ -448,7 +449,7 @@ def _dispatch(argv):
         from tickets import _sync_seams
     _sync_seams()
     if not argv:
-        return {'error': 'missing subcommand: new | amend | recut | lint | instantiate | gate | list | ready | claim | grant | check | set-status | result-grade | packet | result | worklog | run-state | improvement'}
+        return {'error': 'missing subcommand: new | amend | recut | lint | bound-check | instantiate | gate | list | ready | claim | grant | check | set-status | result-grade | packet | result | worklog | run-state | improvement'}
     command, rest = (argv[0], argv[1:])
     if command in HELP_COMMANDS:
         return _cmd_help()
@@ -457,6 +458,7 @@ def _dispatch(argv):
     rest, refusal = resolve_payload_flags(command, rest)
     if refusal is not None: return refusal
     if command == 'lint': return _cmd_lint(rest)
+    if command == 'bound-check': return _cmd_bound_check(rest)
     if command == 'new': return _cmd_new(rest)
     if command == 'amend': return _cmd_amend(rest)
     if command == 'recut': return _cmd_recut(rest)

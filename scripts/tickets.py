@@ -114,6 +114,9 @@ BOUND_KINDS = _tickets_bound_module.BOUND_KINDS
 OTHER_BOUND_KIND = _tickets_bound_module.OTHER_BOUND_KIND
 TOOL_CALL_MINUTES = _tickets_bound_module.TOOL_CALL_MINUTES
 parse_bound = _tickets_bound_module.parse_bound
+should_park = _tickets_bound_module.should_park
+_cmd_bound_check = _tickets_bound_module._cmd_bound_check
+BOUND_CHECK_USAGE = _tickets_commands_module.BOUND_CHECK_USAGE
 CRITERION_BULLET_RE = _tickets_format_module.CRITERION_BULLET_RE
 CUT_SECTIONS = _tickets_format_module.CUT_SECTIONS
 CUT_SECTIONS_BY_KEY = _tickets_format_module.CUT_SECTIONS_BY_KEY
@@ -467,6 +470,7 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_worklog = _cmd_worklog
     _tickets_dispatch_module._cmd_run_state = _cmd_run_state
     _tickets_dispatch_module._cmd_lint = _cmd_lint
+    _tickets_dispatch_module._cmd_bound_check = _cmd_bound_check
     _tickets_lint_module._write_text_atomically = _write_text_atomically
 
 if __name__ == "__main__":
