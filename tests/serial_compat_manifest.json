@@ -1,7 +1,9 @@
 {
  "discovery": {
-  "count": 2385,
+  "count": 2395,
   "identities": [
+   "test_benchmaker.TestVendoredTreesAreNotSurfaces.test_a_font_suffix_is_declared_binary_rather_than_unreadable",
+   "test_benchmaker.TestVendoredTreesAreNotSurfaces.test_the_live_scan_prunes_a_vendored_tree_holding_binaries",
    "test_canary_host.BaselinePinOwnerTest.test_both_modules_read_one_owner_for_the_pin",
    "test_canary_host.CanaryHostVerdictTest.test_a_run_that_resolved_no_baseline_fails",
    "test_canary_host.CanaryHostVerdictTest.test_an_empty_report_fails_the_guard",
@@ -399,6 +401,14 @@
    "test_serial_compat_hardening.TestManifestHardening.test_only_observed_intentional_residue_is_allowlisted",
    "test_serial_compat_hardening.TestManifestHardening.test_required_fidelity_category_cannot_be_silently_removed",
    "test_serial_compat_hardening.TestStateBoundaryDiscrimination.test_each_process_seam_is_detected_and_restorable_seams_are_restored",
+   "test_serial_manifest.TestCommittedManifest.test_every_committed_owner_still_carries_its_restoration",
+   "test_serial_manifest.TestCommittedManifest.test_the_committed_bytes_are_exactly_what_regeneration_would_write",
+   "test_serial_manifest.TestRegeneration.test_a_prior_owner_keeps_its_restoration_and_a_new_owner_has_none",
+   "test_serial_manifest.TestRegeneration.test_regeneration_replaces_stale_discovery_with_the_live_multiset",
+   "test_serial_manifest.TestRegeneration.test_the_rendered_manifest_keeps_key_order_indent_and_lf_newlines",
+   "test_serial_manifest.TestRegeneration.test_the_sentinels_block_survives_regeneration_byte_for_byte",
+   "test_serial_manifest.TestWriteManifestFlag.test_the_flag_reconciles_a_tree_that_grew_one_test_and_exits_zero",
+   "test_serial_manifest.TestWriteManifestFlag.test_the_flag_reconciles_a_tree_that_grew_one_test_for_the_requirement",
    "test_source_sizes.SourceSizeCheckerTest.test_510_lines_pass_and_511_lines_fail",
    "test_source_sizes.SourceSizeCheckerTest.test_all_six_executable_suffixes_are_owned",
    "test_source_sizes.SourceSizeCheckerTest.test_explicit_directory_covers_six_suffixes_and_hidden_files",
@@ -2388,7 +2398,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "5ebc508e0e7905704b688e94f33159a78be96eb83e37dacb67c0bbb3f41cc6df"
+  "sha256": "c48f1ec8fdacfa123a173ca327e2fd2d5942d0bebf06ebc9258fb70c315da519"
  },
  "mutation_owners": [
   {
