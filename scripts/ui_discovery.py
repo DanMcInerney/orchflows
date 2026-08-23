@@ -45,6 +45,23 @@ def run_tickets(root: Path, run: str):
         return None
     paths = (_in_tree(run_dir, path.name) for path in sorted(run_dir.glob("*" + TICKET_SUFFIX)))
     return [read_ticket(path) for path in paths if path is not None]
+# ``scripts/tickets.py`` owns this layout; ``ui_model``'s sink-relative
+# constants are the reader's copy of it, and that module is at its ceiling.
+RUNS_DIR, RUN_IDENTITY_NAME = ("runs",), "run.json"
+def read_run_identity(root, run: str):
+    """One run's ``run.json``, ``None`` when the run has none, and
+    ``{"unreadable": True}`` when the file is there and is not a JSON
+    object -- absent and unread are different facts (``DIAGNOSTIC_UNREADABLE``
+    one tree over), and a raise loses every run behind the bad one."""
+
+    path = _in_tree(Path(root).joinpath(*RUNS_DIR), run, RUN_IDENTITY_NAME) if _safe_name(run) else None
+    try:
+        if path is None or not path.is_file():
+            return None
+        document = _json_object(path.read_text(encoding="utf-8", errors="replace"))
+    except OSError:
+        document = None
+    return {"unreadable": True} if document is None else document
 def graph_input(tickets) -> tuple:
     """``(node ids, edges)`` for one run. An edge runs from a dependency to
     the ticket that declares it, so it points up the layers."""
@@ -98,7 +115,6 @@ def identity_diagnostics(tickets) -> list:
             )
         )
     return diagnostics
-FRICTION_KEYS = ("ts", "observed", "expected", "host")
 _EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 
@@ -244,27 +260,11 @@ def discover(start) -> dict:
             candidates = (_in_tree(tickets_root, p.name) for p in tickets_root.iterdir())
             for run_dir in sorted(p for p in candidates if p is not None and p.is_dir()):
                 ticket_paths = (_in_tree(run_dir, p.name) for p in sorted(run_dir.glob("*.md")))
-                runs.append(
-                    {
-                        "run": run_dir.name,
-                        "tickets": [read_ticket(p) for p in ticket_paths if p is not None],
-                    }
-                )
+                runs.append({"run": run_dir.name, "tickets": [read_ticket(p) for p in ticket_paths if p is not None]})
         empty = "" if runs else EMPTY_NO_RUNS
     return {"root": root, "empty": empty, "runs": runs}
 
 
-# --- dependency graph layout -------------------------------------------------
-
-# A layered layout with a Coffman-Graham sorter, computed here rather than
-# in the browser: Argo Workflows ships the same two phases hand-rolled in
-# 56 + 48 lines with zero dependencies for graphs far larger than this
-# project's 3-12 tickets (`lane-ui-patterns.md` §3), and in Python it falls
-# under `unittest discover`, so a layout bug is a failing test rather than
-# a visual regression nobody catches.
-
-# Coffman-Graham's width bound W. Four keeps a run inside a laptop viewport;
-# a wider fan spills onto further layers instead of off the right edge.
 def _project_directories(root: Path) -> list:
     """Every project directory that is actually inside the transcript root.
 
