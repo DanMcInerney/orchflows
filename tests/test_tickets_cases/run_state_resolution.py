@@ -47,13 +47,17 @@ class TestRunStateRootResolution(unittest.TestCase):
             # one lock _append_one_line takes; it reaches no subprocess.
             # `time` is the retry budget `_replace_atomically` waits out a
             # Windows refusal against, and it too starts nothing.
+            # the census of the discovered family, not a list kept by hand:
+            # `TICKETS_MODULES` is `scripts/tickets_*.py` read at call time, so
+            # a module added there updates this set rather than ages it.
             self.assertEqual(
-                {"__future__", "contextlib", "datetime", "fcntl", "hashlib", "importlib", "json",
+                {"__future__", "contextlib", "datetime", "fcntl", "fnmatch", "hashlib",
+                 "importlib", "json",
                  "msvcrt", "pathlib", "re", "scripts", "shlex", "state_root", "sys",
                  "subprocess", "tempfile", "time", "tickets_format", "tickets_markdown", "tickets_store",
                  "tickets_issue", "tickets_lifecycle", "tickets_packet",
                  "tickets_result", "tickets_worklog", "tickets_dispatch",
-                 "tickets_gate_mutations", "tickets_admission",
+                 "tickets_gate_mutations", "tickets_admission", "tickets_inputs",
                  "tickets_input_producers", "tickets"},
                 imported,
             )
