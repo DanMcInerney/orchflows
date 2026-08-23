@@ -25,7 +25,7 @@ _FACADE_ROOT = Path(__file__).resolve().parent.parent
 if str(_FACADE_ROOT) not in sys.path:
     sys.path.insert(0, str(_FACADE_ROOT))
 
-from tools.run_required_support import execution, identity  # noqa: E402
+from tools.run_required_support import cache, execution, identity  # noqa: E402
 
 ROOT = _FACADE_ROOT
 RECORD_KIND = "required-check-run/v1"
@@ -173,18 +173,44 @@ def report(outcomes, payload, form: str) -> None:
     )
 
 
+def key_for(tree: str, working: str, planned, interpreter: str, version: str) -> str:
+    """Everything that could change a verdict, in one sha256."""
+
+    return identity.cache_key([
+        RECORD_KIND,
+        tree,
+        working,
+        json.dumps([argv for _, argv in planned], sort_keys=False),
+        interpreter,
+        sys.platform,
+        version,
+    ])
+
+
 def _run(args) -> int:
     repo = Path(args.repo).resolve()
     if not repo.is_dir():
         raise Refusal("no such directory: {0}".format(repo))
+    skip = cache.runtime_directory_name()
     commit = identity.head_commit(repo)
     tree = identity.tree_identity(repo)
-    _working, dirty = identity.working_digest(repo)
+    working, dirty = identity.working_digest(repo, skip)
     interpreter = resolve_interpreter(args.python)
     if interpreter is None:
         raise Refusal("interpreter not found: {0}".format(args.python))
-    interpreter_version(interpreter)
+    version = interpreter_version(interpreter)
     planned = plan_commands(interpreter)
+    key = key_for(tree, working, planned, interpreter, version)
+
+    # A memo is served only for a clean tree: a dirty one was never stored,
+    # so looking is a question whose answer cannot be yes.
+    if not args.no_cache and not dirty:
+        stored = cache.load(repo, key)
+        if stored is not None:
+            served = cache.serve(stored)
+            report([], served, args.format)
+            return 0
+
     outcomes = execute(planned, repo)
     records = [record for _, record, _, _ in outcomes]
     payload = {
@@ -195,8 +221,29 @@ def _run(args) -> int:
         "commands": records,
         "exit": 0 if all(r["exit_status"] == 0 for r in records) else 1,
     }
+    if _storable(args, repo, skip, tree, working, dirty, payload):
+        cache.store(repo, key, payload)
     report(outcomes, payload, args.format)
     return payload["exit"]
+
+
+def _storable(args, repo: Path, skip: str, tree: str, working: str,
+              dirty: bool, payload: dict) -> bool:
+    """A verdict is stored only for the tree it actually judged, all green.
+
+    The tree is read again at the end: a check that writes into the checkout
+    judged a tree that no longer exists, and a memo for it would answer for
+    work nobody did.
+    """
+
+    if args.no_cache or dirty or payload["exit"] != 0:
+        return False
+    after_working, after_dirty = identity.working_digest(repo, skip)
+    return (
+        not after_dirty
+        and after_working == working
+        and identity.tree_identity(repo) == tree
+    )
 
 
 if __name__ == "__main__":

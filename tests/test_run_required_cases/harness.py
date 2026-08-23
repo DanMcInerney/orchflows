@@ -26,16 +26,24 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 RECORDER = '''\
-"""Stub interpreter body: record argv, obey the plan, exit."""
+"""Stub interpreter body: record argv, obey the plan, exit.
+
+One file per invocation: three of these run at once, and appends to a
+shared file interleave, which would make the record itself the flake.
+"""
 import json
+import os
 import sys
 import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ARGV = sys.argv[1:]
-with (HERE / "record.jsonl").open("a", encoding="utf-8") as stream:
-    stream.write(json.dumps(ARGV) + "\\n")
+RECORDS = HERE / "records"
+RECORDS.mkdir(exist_ok=True)
+(RECORDS / "{0}-{1}.json".format(os.getpid(), time.time_ns())).write_text(
+    json.dumps(ARGV), encoding="utf-8"
+)
 try:
     PLAN = json.loads((HERE / "plan.json").read_text(encoding="utf-8"))
 except (OSError, ValueError):
@@ -43,6 +51,8 @@ except (OSError, ValueError):
 CODE = 0
 for token, spec in PLAN.items():
     if any(token in part for part in ARGV):
+        if spec.get("touch"):
+            Path(spec["touch"]).write_text("stub touched\\n", encoding="utf-8")
         time.sleep(spec.get("sleep", 0))
         CODE = spec.get("exit", 0)
         break
@@ -63,6 +73,14 @@ def git(cwd: Path, *args: str) -> str:
         check=True,
     )
     return done.stdout.decode("utf-8", "replace").strip()
+
+
+def runtime_directory_name() -> str:
+    """The gitignored runtime directory the unit-test runner already owns."""
+
+    from tools import run_tests
+
+    return run_tests.CACHE_PATH.parent.name
 
 
 def moment(stamp: str) -> datetime:
@@ -100,11 +118,13 @@ class Stub:
         )
 
     def _records(self):
-        try:
-            text = (self.home / "record.jsonl").read_text(encoding="utf-8")
-        except OSError:
+        directory = self.home / "records"
+        if not directory.is_dir():
             return []
-        return [json.loads(line) for line in text.splitlines() if line.strip()]
+        return [
+            json.loads(path.read_text(encoding="utf-8"))
+            for path in sorted(directory.glob("*.json"))
+        ]
 
     def calls(self):
         """Every stub invocation that was a check, not the version probe."""
@@ -115,10 +135,11 @@ class Stub:
         return [argv for argv in self._records() if argv == VERSION_PROBE]
 
     def forget(self) -> None:
-        try:
-            (self.home / "record.jsonl").unlink()
-        except OSError:
-            pass
+        for path in (self.home / "records").glob("*.json"):
+            try:
+                path.unlink()
+            except OSError:
+                pass
 
 
 class RunRequiredCase(unittest.TestCase):
@@ -134,7 +155,9 @@ class RunRequiredCase(unittest.TestCase):
         git(self.repo, "config", "user.email", "case@example.invalid")
         git(self.repo, "config", "user.name", "case")
         (self.repo / "README.md").write_text("baseline\n", encoding="utf-8")
-        (self.repo / ".gitignore").write_text("ignored/\n", encoding="utf-8")
+        (self.repo / ".gitignore").write_text(
+            "ignored/\n{0}/\n".format(runtime_directory_name()), encoding="utf-8"
+        )
         git(self.repo, "add", "README.md", ".gitignore")
         git(self.repo, "commit", "--quiet", "-m", "baseline")
         self.stub = Stub(root / "stub")
@@ -162,6 +185,16 @@ class RunRequiredCase(unittest.TestCase):
 
     def touch_tracked(self) -> None:
         (self.repo / "README.md").write_text("changed\n", encoding="utf-8")
+
+    def cache_entries(self):
+        """Every stored verdict for this checkout, newest name order."""
+
+        from tools.run_required_support import cache
+
+        directory = cache.runtime_cache_dir(self.repo)
+        if not directory.is_dir():
+            return []
+        return sorted(directory.glob("*.json"))
 
     def named(self, payload, needle: str):
         """The one command record whose argv mentions ``needle``."""

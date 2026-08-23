@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -9,8 +10,10 @@ from pathlib import Path
 from tests.test_run_required_cases.harness import (
     REPO_ROOT,
     RunRequiredCase,
+    Stub,
     git,
     moment,
+    runtime_directory_name,
 )
 
 if str(REPO_ROOT) not in sys.path:
@@ -177,6 +180,164 @@ class TestRecordShape(RunRequiredCase):
     def test_a_freshly_run_command_is_not_marked_cached(self):
         _, payload, _, _ = self.invoke()
         self.assertEqual([False] * 5, [r["cached"] for r in payload["commands"]])
+
+
+class TestCacheLocation(RunRequiredCase):
+    """A verdict memo is runtime state, so it lives where runtime state does."""
+
+    def test_the_cache_sits_under_the_runners_own_gitignored_directory(self):
+        from tools.run_required_support import cache
+
+        directory = cache.runtime_cache_dir(self.repo)
+        self.assertEqual(self.repo, directory.parent.parent)
+        self.assertEqual(runtime_directory_name(), directory.parent.name)
+        self.assertEqual("required_cache", directory.name)
+
+    def test_a_green_clean_run_stores_exactly_one_entry_named_by_its_key(self):
+        self.invoke()
+        entries = self.cache_entries()
+        self.assertEqual(1, len(entries))
+        self.assertRegex(entries[0].stem, r"\A[0-9a-f]{64}\Z")
+        stored = json.loads(entries[0].read_text(encoding="utf-8"))
+        self.assertEqual(0, stored["exit"])
+
+    def test_the_stored_entry_is_ignored_by_the_checkout(self):
+        self.invoke()
+        entries = self.cache_entries()
+        relative = entries[0].relative_to(self.repo).as_posix()
+        self.assertEqual(relative, git(self.repo, "check-ignore", relative))
+
+
+class TestCacheService(RunRequiredCase):
+    """What may be served, and what must be run again."""
+
+    def test_an_unchanged_clean_tree_is_served_without_running_a_check(self):
+        first = self.invoke()[1]
+        self.stub.forget()
+        status, payload, _, _ = self.invoke()
+        self.assertEqual(0, status)
+        self.assertEqual([], self.stub.calls())
+        self.assertEqual([True] * 5, [r["cached"] for r in payload["commands"]])
+        self.assertEqual(
+            [r["started_at"] for r in first["commands"]],
+            [r["started_at"] for r in payload["commands"]],
+        )
+
+    def test_touching_one_tracked_file_invalidates_the_entry(self):
+        self.invoke()
+        self.stub.forget()
+        self.touch_tracked()
+        git(self.repo, "add", "README.md")
+        git(self.repo, "commit", "--quiet", "-m", "second")
+        _, payload, _, _ = self.invoke()
+        self.assertEqual(4, len(self.stub.calls()))
+        self.assertEqual([False] * 5, [r["cached"] for r in payload["commands"]])
+
+    def test_another_interpreter_is_another_key(self):
+        self.invoke()
+        self.stub.forget()
+        other = Stub(Path(self.repo).parent / "second-stub")
+        status, _, _, _ = self.invoke("--python", str(other.path))
+        self.assertEqual(0, status)
+        self.assertEqual(4, len(other.calls()))
+        self.assertEqual(2, len(self.cache_entries()))
+
+    def test_the_runners_own_memo_never_counts_as_a_change(self):
+        (self.repo / ".gitignore").write_text("ignored/\n", encoding="utf-8")
+        git(self.repo, "add", ".gitignore")
+        git(self.repo, "commit", "--quiet", "-m", "stop ignoring runtime state")
+        _, payload, _, _ = self.invoke()
+        self.assertFalse(payload["dirty"])
+        self.assertEqual(1, len(self.cache_entries()))
+        self.stub.forget()
+        _, payload, _, _ = self.invoke()
+        self.assertEqual([], self.stub.calls())
+        self.assertEqual([True] * 5, [r["cached"] for r in payload["commands"]])
+
+    def test_no_cache_runs_again_and_stores_nothing_new(self):
+        self.invoke()
+        stored = self.cache_entries()[0].read_bytes()
+        self.stub.forget()
+        _, payload, _, _ = self.invoke("--no-cache")
+        self.assertEqual(4, len(self.stub.calls()))
+        self.assertEqual([False] * 5, [r["cached"] for r in payload["commands"]])
+        self.assertEqual(stored, self.cache_entries()[0].read_bytes())
+
+
+class TestWhatIsNeverStored(RunRequiredCase):
+    """The three ways a run forfeits its memo."""
+
+    def test_a_red_run_is_not_stored(self):
+        self.stub.plan({"run_tests.py": {"exit": 1}})
+        status, _, _, _ = self.invoke()
+        self.assertEqual(1, status)
+        self.assertEqual([], self.cache_entries())
+
+    def test_a_dirty_tree_is_run_but_never_stored(self):
+        self.touch_tracked()
+        status, payload, _, _ = self.invoke()
+        self.assertEqual(0, status)
+        self.assertTrue(payload["dirty"])
+        self.assertEqual(4, len(self.stub.calls()))
+        self.assertEqual([], self.cache_entries())
+        self.stub.forget()
+        self.invoke()
+        self.assertEqual(4, len(self.stub.calls()))
+
+    def test_a_tree_changed_by_the_checks_themselves_is_not_stored(self):
+        self.stub.plan({
+            "validate.py": {"touch": str(self.repo / "written-by-a-check.txt")},
+        })
+        status, payload, _, _ = self.invoke()
+        self.assertEqual(0, status)
+        self.assertFalse(payload["dirty"])
+        self.assertEqual([], self.cache_entries())
+
+    def poison(self, mutate):
+        """Store a green run, corrupt the entry, and run again."""
+
+        green = self.invoke()[1]
+        entry = self.cache_entries()[0]
+        stored = json.loads(entry.read_text(encoding="utf-8"))
+        mutate(stored)
+        entry.write_text(json.dumps(stored), encoding="utf-8")
+        self.stub.forget()
+        status, payload, _, _ = self.invoke()
+        self.assertEqual(0, status)
+        self.assertEqual(4, len(self.stub.calls()))
+        self.assertEqual([False] * 5, [r["cached"] for r in payload["commands"]])
+        self.assertEqual(green["tree_identity"], payload["tree_identity"])
+
+    def test_a_stored_overall_non_zero_exit_is_never_served(self):
+        def mutate(stored):
+            stored["exit"] = 1
+
+        self.poison(mutate)
+
+    def test_a_stored_red_command_is_never_served(self):
+        def mutate(stored):
+            stored["commands"][1]["exit_status"] = 1
+
+        self.poison(mutate)
+
+    def test_an_unreadable_entry_is_never_served(self):
+        def mutate(stored):
+            stored.clear()
+            stored["kind"] = "something else entirely"
+
+        self.poison(mutate)
+
+    def test_a_red_run_does_not_overwrite_nothing_it_could_be_served_from(self):
+        self.stub.plan({"run_tests.py": {"exit": 1}})
+        status, _, _, _ = self.invoke()
+        self.assertEqual(1, status)
+        self.assertEqual([], self.cache_entries())
+        self.stub.plan({})
+        self.stub.forget()
+        status, payload, _, _ = self.invoke()
+        self.assertEqual(0, status)
+        self.assertEqual(4, len(self.stub.calls()))
+        self.assertEqual(1, len(self.cache_entries()))
 
 
 if __name__ == "__main__":

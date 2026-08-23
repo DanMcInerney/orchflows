@@ -56,17 +56,26 @@ def tree_identity(repo: Path) -> str:
     return _text(repo, "rev-parse", "HEAD^{tree}")
 
 
-def untracked_files(repo: Path):
-    """Paths git can see and has not been told about, ignored ones excluded."""
+def untracked_files(repo: Path, skip: str = None):
+    """Paths git can see and has not been told about, ignored ones excluded.
+
+    ``skip`` drops one directory prefix -- the runner's own runtime state.
+    A checkout that has not ignored it would otherwise report itself changed
+    the moment a verdict was stored, and no run could ever be served.
+    """
 
     done = git(repo, "ls-files", "--others", "--exclude-standard", "-z")
     if done.returncode != 0:
         raise NotAGitCheckout("git ls-files failed in {0}".format(repo))
     raw = done.stdout.decode("utf-8", "replace")
-    return sorted(name for name in raw.split("\0") if name)
+    names = (name for name in raw.split("\0") if name)
+    if skip:
+        prefix = skip.rstrip("/") + "/"
+        names = (name for name in names if not name.startswith(prefix))
+    return sorted(names)
 
 
-def working_digest(repo: Path):
+def working_digest(repo: Path, skip: str = None):
     """Return ``(digest, dirty)`` for everything HEAD's tree does not say.
 
     The digest covers the tracked diff and every untracked-but-not-ignored
@@ -78,7 +87,7 @@ def working_digest(repo: Path):
         raise NotAGitCheckout("git diff HEAD failed in {0}".format(repo))
     hasher = hashlib.sha256()
     hasher.update(done.stdout)
-    names = untracked_files(repo)
+    names = untracked_files(repo, skip)
     for name in names:
         hasher.update(b"\0")
         hasher.update(name.encode("utf-8"))
