@@ -15,7 +15,9 @@ Exit 0 when all five exit 0, 1 when any does not, 2 on refusal.
 from __future__ import annotations
 
 import argparse
+import json
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -23,7 +25,7 @@ _FACADE_ROOT = Path(__file__).resolve().parent.parent
 if str(_FACADE_ROOT) not in sys.path:
     sys.path.insert(0, str(_FACADE_ROOT))
 
-from tools.run_required_support import identity  # noqa: E402
+from tools.run_required_support import execution, identity  # noqa: E402
 
 ROOT = _FACADE_ROOT
 RECORD_KIND = "required-check-run/v1"
@@ -60,8 +62,6 @@ def resolve_interpreter(name: str):
 
 def interpreter_version(interpreter: str) -> str:
     """Ask the resolved interpreter what it is; refuse if it cannot say."""
-
-    import subprocess
 
     try:
         done = subprocess.run(
@@ -106,8 +106,6 @@ def main(argv=None) -> int:
     except (Refusal, identity.NotAGitCheckout) as error:
         sys.stderr.write("run_required: {0}\n".format(error))
         if args.format == "json":
-            import json
-
             sys.stdout.write(
                 json.dumps(
                     {"kind": REFUSAL_KIND, "reason": str(error)},
@@ -117,16 +115,88 @@ def main(argv=None) -> int:
         return 2
 
 
+def plan_commands(interpreter: str):
+    """The five, as ``(name, argv)`` in the surface's order."""
+
+    planned = []
+    for check in REQUIRED_CHECKS:
+        if check["args"] is None:
+            argv = list(check["argv"])
+        else:
+            argv = [interpreter] + list(check["args"])
+        planned.append((check["name"], argv))
+    return planned
+
+
+def execute(planned, repo: Path):
+    """Run the cheap phase at once, then each long check on its own."""
+
+    by_name = dict(planned)
+    cheap = [
+        (check["name"], by_name[check["name"]])
+        for check in REQUIRED_CHECKS if check["cheap"]
+    ]
+    outcomes = execution.run_phase(cheap, repo)
+    for check in REQUIRED_CHECKS:
+        if check["cheap"]:
+            continue
+        name = check["name"]
+        outcomes.update(execution.run_phase([(name, by_name[name])], repo))
+    return [outcomes[name] for name, _ in planned]
+
+
+def report(outcomes, payload, form: str) -> None:
+    """Put every check's own output in front of a reader, then the verdict."""
+
+    stream = sys.stdout if form == "text" else sys.stderr
+    for _, record, out, err in outcomes:
+        stream.write("--- {0}\n".format(" ".join(record["argv"][1:])))
+        for raw in (out, err):
+            if raw:
+                stream.write(raw.decode("utf-8", "replace"))
+    if form == "json":
+        sys.stdout.write(json.dumps(payload, indent=1, sort_keys=True) + "\n")
+        return
+    for record in payload["commands"]:
+        stream.write(
+            "{0:>4}  {1}{2}\n".format(
+                record["exit_status"],
+                " ".join(record["argv"][1:]),
+                "  (cached)" if record["cached"] else "",
+            )
+        )
+    stream.write(
+        "exit {0}  tree {1}{2}\n".format(
+            payload["exit"], payload["tree_identity"][:12],
+            "  (dirty)" if payload["dirty"] else "",
+        )
+    )
+
+
 def _run(args) -> int:
     repo = Path(args.repo).resolve()
     if not repo.is_dir():
         raise Refusal("no such directory: {0}".format(repo))
-    identity.head_commit(repo)
+    commit = identity.head_commit(repo)
+    tree = identity.tree_identity(repo)
+    _working, dirty = identity.working_digest(repo)
     interpreter = resolve_interpreter(args.python)
     if interpreter is None:
         raise Refusal("interpreter not found: {0}".format(args.python))
     interpreter_version(interpreter)
-    raise NotImplementedError("the five checks are not wired yet")
+    planned = plan_commands(interpreter)
+    outcomes = execute(planned, repo)
+    records = [record for _, record, _, _ in outcomes]
+    payload = {
+        "kind": RECORD_KIND,
+        "repository_identity": commit,
+        "tree_identity": tree,
+        "dirty": dirty,
+        "commands": records,
+        "exit": 0 if all(r["exit_status"] == 0 for r in records) else 1,
+    }
+    report(outcomes, payload, args.format)
+    return payload["exit"]
 
 
 if __name__ == "__main__":
